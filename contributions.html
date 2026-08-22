@@ -1,86 +1,355 @@
 <!doctype html>
 <html lang="en">
+
 <head>
+
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1"
+>
+
 <title>Contributions — Chama Live</title>
 
 <style>
-*{box-sizing:border-box}
-body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f5f7f5;color:#1d2521}
-header{background:#17663f;color:#fff;padding:14px 16px}
-.header{max-width:1100px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.brand{font-size:20px;font-weight:900}
-.sub{font-size:12px;opacity:.9;margin-top:2px}
-.actions{display:flex;gap:8px}
-button,.back{border:0;border-radius:8px;padding:10px 13px;font-weight:800;cursor:pointer;text-decoration:none}
-.back{background:#fff;color:#17663f}
-.logout{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.7)}
-main{max-width:1100px;margin:auto;padding:20px 14px 45px}
-h1{margin:0;font-size:26px}
-.intro{color:#68736e;font-size:14px;margin:6px 0 20px}
-.notice{display:none;padding:12px 14px;border-radius:9px;margin-bottom:16px;font-size:14px;white-space:pre-wrap}
-.notice.show{display:block;background:#f8e6e3;color:#87392d}
-.notice.ok{background:#e5f1e9;color:#17663f}
-.panel{background:#fff;border:1px solid #e1e7e3;border-radius:12px;padding:17px;margin-bottom:18px;box-shadow:0 3px 12px rgba(0,0,0,.04)}
-.panel h2{font-size:17px;margin:0 0 14px}
-.formgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-label{display:block;font-size:12px;font-weight:800;margin-bottom:5px}
-input,select,textarea{width:100%;padding:11px;border:1px solid #ccd5cf;border-radius:8px;background:#fff;outline:none}
-textarea{min-height:75px;resize:vertical}
-input:focus,select:focus,textarea:focus{border-color:#17663f}
-.full{grid-column:1/-1}
-.add{background:#17663f;color:#fff;margin-top:14px}
-.add:disabled{opacity:.6}
-.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
-.card{background:#fff;border:1px solid #e1e7e3;border-radius:12px;padding:16px}
-.card small{color:#68736e;font-weight:700}
-.card strong{display:block;color:#17663f;font-size:22px;margin-top:5px}
-.tablewrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;min-width:850px}
-th,td{text-align:left;padding:11px 9px;border-bottom:1px solid #edf0ee;font-size:13px}
-th{font-size:11px;text-transform:uppercase;color:#68736e}
-.loading{text-align:center;color:#68736e;padding:30px}
-.empty{text-align:center;color:#68736e;padding:25px}
-@media(max-width:650px){
-.header{align-items:flex-start}
-.actions{flex-wrap:wrap;justify-content:flex-end}
-main{padding:17px 12px 35px}
-.formgrid,.summary{grid-template-columns:1fr}
-.full{grid-column:auto}
-h1{font-size:23px}
-.panel{padding:14px}
+
+*{
+  box-sizing:border-box
 }
+
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+  background:#f5f7f5;
+  color:#1d2521
+}
+
+header{
+  background:#17663f;
+  color:#fff;
+  padding:14px 16px
+}
+
+.header{
+  max-width:1100px;
+  margin:auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px
+}
+
+.brand{
+  font-size:20px;
+  font-weight:900
+}
+
+.sub{
+  font-size:12px;
+  opacity:.9;
+  margin-top:2px
+}
+
+.actions{
+  display:flex;
+  gap:8px
+}
+
+button,
+.back{
+  border:0;
+  border-radius:8px;
+  padding:10px 13px;
+  font-weight:800;
+  cursor:pointer;
+  text-decoration:none
+}
+
+.back{
+  background:#fff;
+  color:#17663f
+}
+
+.logout{
+  background:transparent;
+  color:#fff;
+  border:1px solid rgba(255,255,255,.7)
+}
+
+main{
+  max-width:1100px;
+  margin:auto;
+  padding:20px 14px 45px
+}
+
+h1{
+  margin:0;
+  font-size:26px
+}
+
+.intro{
+  color:#68736e;
+  font-size:14px;
+  margin:6px 0 20px
+}
+
+.notice{
+  display:none;
+  padding:12px 14px;
+  border-radius:9px;
+  margin-bottom:16px;
+  font-size:14px;
+  white-space:pre-wrap
+}
+
+.notice.show{
+  display:block;
+  background:#f8e6e3;
+  color:#87392d
+}
+
+.notice.ok{
+  display:block;
+  background:#e5f1e9;
+  color:#17663f
+}
+
+.panel{
+  background:#fff;
+  border:1px solid #e1e7e3;
+  border-radius:12px;
+  padding:17px;
+  margin-bottom:18px;
+  box-shadow:0 3px 12px rgba(0,0,0,.04)
+}
+
+.panel h2{
+  font-size:17px;
+  margin:0 0 14px
+}
+
+.formgrid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px
+}
+
+label{
+  display:block;
+  font-size:12px;
+  font-weight:800;
+  margin-bottom:5px
+}
+
+input,
+select,
+textarea{
+  width:100%;
+  padding:11px;
+  border:1px solid #ccd5cf;
+  border-radius:8px;
+  background:#fff;
+  outline:none;
+  font:inherit
+}
+
+textarea{
+  min-height:75px;
+  resize:vertical
+}
+
+input:focus,
+select:focus,
+textarea:focus{
+  border-color:#17663f
+}
+
+.full{
+  grid-column:1/-1
+}
+
+.add{
+  background:#17663f;
+  color:#fff;
+  margin-top:14px
+}
+
+.add:disabled{
+  opacity:.6;
+  cursor:not-allowed
+}
+
+.summary{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:12px;
+  margin-bottom:18px
+}
+
+.card{
+  background:#fff;
+  border:1px solid #e1e7e3;
+  border-radius:12px;
+  padding:16px
+}
+
+.card small{
+  color:#68736e;
+  font-weight:700
+}
+
+.card strong{
+  display:block;
+  color:#17663f;
+  font-size:22px;
+  margin-top:5px
+}
+
+.tablewrap{
+  overflow-x:auto
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:800px
+}
+
+th,
+td{
+  text-align:left;
+  padding:11px 9px;
+  border-bottom:1px solid #edf0ee;
+  font-size:13px
+}
+
+th{
+  font-size:11px;
+  text-transform:uppercase;
+  color:#68736e
+}
+
+.loading{
+  text-align:center;
+  color:#68736e;
+  padding:30px
+}
+
+.empty{
+  text-align:center;
+  color:#68736e;
+  padding:25px
+}
+
+.member-option-note{
+  font-size:12px;
+  color:#68736e;
+  margin-top:5px
+}
+
+@media(max-width:650px){
+
+  .header{
+    align-items:flex-start
+  }
+
+  .actions{
+    flex-wrap:wrap;
+    justify-content:flex-end
+  }
+
+  main{
+    padding:17px 12px 35px
+  }
+
+  .formgrid,
+  .summary{
+    grid-template-columns:1fr
+  }
+
+  .full{
+    grid-column:auto
+  }
+
+  h1{
+    font-size:23px
+  }
+
+  .panel{
+    padding:14px
+  }
+
+}
+
 </style>
+
 </head>
+
 
 <body>
 
+
 <header>
+
 <div class="header">
 
 <div>
-<div class="brand">Chama Live</div>
-<div id="groupName" class="sub">Loading group...</div>
+
+<div class="brand">
+Chama Live
 </div>
+
+<div
+  id="groupName"
+  class="sub"
+>
+Loading group...
+</div>
+
+</div>
+
 
 <div class="actions">
-<a class="back" href="dashboard.html">Dashboard</a>
-<button id="logout" class="logout" type="button">Logout</button>
+
+<a
+  class="back"
+  href="dashboard.html"
+>
+Dashboard
+</a>
+
+<button
+  id="logout"
+  class="logout"
+  type="button"
+>
+Logout
+</button>
+
 </div>
 
 </div>
+
 </header>
+
 
 <main>
 
-<h1>Contributions</h1>
+
+<h1>
+Contributions
+</h1>
 
 <p class="intro">
 Record and track member contributions, goals and payment references.
 </p>
 
-<div id="notice" class="notice"></div>
+
+<div
+  id="notice"
+  class="notice"
+></div>
 
 
 <!-- SUMMARY -->
@@ -88,18 +357,41 @@ Record and track member contributions, goals and payment references.
 <div class="summary">
 
 <div class="card">
-<small>Total Contributions</small>
-<strong id="total">KSh 0</strong>
+
+<small>
+Total Contributions
+</small>
+
+<strong id="total">
+KSh 0
+</strong>
+
 </div>
 
-<div class="card">
-<small>This Month</small>
-<strong id="monthTotal">KSh 0</strong>
-</div>
 
 <div class="card">
-<small>Records</small>
-<strong id="recordCount">0</strong>
+
+<small>
+This Month
+</small>
+
+<strong id="monthTotal">
+KSh 0
+</strong>
+
+</div>
+
+
+<div class="card">
+
+<small>
+Records
+</small>
+
+<strong id="recordCount">
+0
+</strong>
+
 </div>
 
 </div>
@@ -109,152 +401,235 @@ Record and track member contributions, goals and payment references.
 
 <section class="panel">
 
-<h2>Record Contribution</h2>
+<h2>
+Record Contribution
+</h2>
+
 
 <form id="contributionForm">
 
+
 <div class="formgrid">
 
-<div>
-<label for="member">Member</label>
 
-<select id="member" required>
-<option value="">Select member</option>
+<div>
+
+<label for="member">
+Member
+</label>
+
+<select
+  id="member"
+  required
+>
+
+<option value="">
+Loading members...
+</option>
+
 </select>
+
+<div class="member-option-note">
+Select the member who made this contribution.
+</div>
+
 </div>
 
 
 <div>
-<label for="amount">Amount (KSh)</label>
+
+<label for="amount">
+Amount (KSh)
+</label>
 
 <input
-id="amount"
-type="number"
-min="0.01"
-step="0.01"
-inputmode="decimal"
-required
+  id="amount"
+  type="number"
+  min="0.01"
+  step="0.01"
+  inputmode="decimal"
+  required
 >
+
 </div>
 
 
 <div>
-<label for="type">Contribution Type</label>
+
+<label for="type">
+Contribution Type
+</label>
 
 <input
-id="type"
-type="text"
-placeholder="e.g. Monthly, Welfare, Project"
-required
+  id="type"
+  type="text"
+  placeholder="e.g. Monthly, Welfare, Project"
+  required
 >
+
 </div>
 
 
 <div>
-<label for="date">Contribution Date</label>
+
+<label for="month">
+Contribution Month
+</label>
 
 <input
-id="date"
-type="date"
-required
+  id="month"
+  type="text"
+  placeholder="e.g. August 2026"
+  required
 >
+
 </div>
 
 
 <div>
-<label for="month">Month</label>
 
-<input
-id="month"
-type="text"
-placeholder="e.g. August 2026"
->
-</div>
-
-
-<div>
-<label for="payment">Payment Method</label>
+<label for="payment">
+Payment Method
+</label>
 
 <select id="payment">
-<option value="">Select method</option>
-<option value="M-Pesa">M-Pesa</option>
-<option value="Cash">Cash</option>
-<option value="Bank">Bank</option>
-<option value="Mobile Money">Mobile Money</option>
-<option value="Other">Other</option>
+
+<option value="">
+Select method
+</option>
+
+<option value="M-Pesa">
+M-Pesa
+</option>
+
+<option value="Cash">
+Cash
+</option>
+
+<option value="Bank">
+Bank
+</option>
+
+<option value="Mobile Money">
+Mobile Money
+</option>
+
+<option value="Other">
+Other
+</option>
+
 </select>
+
 </div>
 
 
 <div>
-<label for="reference">Payment Reference</label>
+
+<label for="reference">
+Payment Reference
+</label>
 
 <input
-id="reference"
-type="text"
-placeholder="e.g. MPESA code"
+  id="reference"
+  type="text"
+  placeholder="e.g. MPESA code"
 >
+
 </div>
 
 
 <div class="full">
-<label for="notes">Notes</label>
+
+<label for="notes">
+Notes
+</label>
 
 <textarea
-id="notes"
-placeholder="Optional notes"
+  id="notes"
+  placeholder="Optional notes"
 ></textarea>
+
 </div>
+
 
 </div>
 
 
 <button
-id="saveButton"
-class="add"
-type="submit"
+  id="saveButton"
+  class="add"
+  type="submit"
 >
 Save Contribution
 </button>
+
 
 </form>
 
 </section>
 
 
-<!-- CONTRIBUTION HISTORY -->
+<!-- HISTORY -->
 
 <section class="panel">
 
-<h2>Contribution History</h2>
+<h2>
+Contribution History
+</h2>
+
 
 <div
-id="loading"
-class="loading"
+  id="loading"
+  class="loading"
 >
 Loading contributions...
 </div>
 
 
 <div
-id="tableWrap"
-class="tablewrap"
-style="display:none"
+  id="tableWrap"
+  class="tablewrap"
+  style="display:none"
 >
 
 <table>
 
 <thead>
+
 <tr>
-<th>Date</th>
-<th>Member</th>
-<th>Type</th>
-<th>Amount</th>
-<th>Month</th>
-<th>Payment</th>
-<th>Reference</th>
+
+<th>
+Member
+</th>
+
+<th>
+Type
+</th>
+
+<th>
+Amount
+</th>
+
+<th>
+Month
+</th>
+
+<th>
+Payment
+</th>
+
+<th>
+Reference
+</th>
+
+<th>
+Notes
+</th>
+
 </tr>
+
 </thead>
+
 
 <tbody id="rows"></tbody>
 
@@ -264,686 +639,1184 @@ style="display:none"
 
 </section>
 
+
 </main>
 
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script src="js/supabase-client.js"></script>
+
 
 <script>
 
 "use strict";
 
+
+/*
+==================================================
+SUPABASE
+==================================================
+*/
+
 const supabase =
-window.chamaSupabase;
+  window.chamaSupabase;
+
+
+if(!supabase){
+
+  document.getElementById("loading").textContent =
+    "Supabase client unavailable.";
+
+  throw new Error(
+    "Supabase client unavailable."
+  );
+
+}
+
+
+/*
+==================================================
+ELEMENTS
+==================================================
+*/
 
 const notice =
-document.getElementById("notice");
+  document.getElementById("notice");
 
 const loading =
-document.getElementById("loading");
+  document.getElementById("loading");
 
 const tableWrap =
-document.getElementById("tableWrap");
+  document.getElementById("tableWrap");
 
 const rows =
-document.getElementById("rows");
+  document.getElementById("rows");
 
 const memberSelect =
-document.getElementById("member");
+  document.getElementById("member");
 
 const saveButton =
-document.getElementById("saveButton");
+  document.getElementById("saveButton");
+
+const form =
+  document.getElementById("contributionForm");
 
 
 let currentAccount = null;
 
 
-function showNotice(text,ok=false){
+/*
+==================================================
+MESSAGE
+==================================================
+*/
 
-notice.textContent = text;
+function showNotice(
+  text,
+  ok=false
+){
 
-notice.className =
-"notice show" +
-(ok ? " ok" : "");
+  notice.textContent =
+    text;
+
+  notice.className =
+    "notice show" +
+    (
+      ok
+      ? " ok"
+      : ""
+    );
 
 }
 
+
+/*
+==================================================
+MONEY
+==================================================
+*/
 
 function money(value){
 
-return "KSh " +
-Number(value || 0).toLocaleString(
-"en-KE",
-{
-minimumFractionDigits:0,
-maximumFractionDigits:2
-}
-);
+  return "KSh " +
+    Number(value || 0)
+      .toLocaleString(
+        "en-KE",
+        {
+          minimumFractionDigits:0,
+          maximumFractionDigits:2
+        }
+      );
 
 }
 
+
+/*
+==================================================
+ESCAPE HTML
+==================================================
+*/
 
 function escapeHtml(value){
 
-return String(value ?? "").replace(
-/[&<>"']/g,
-c => ({
-"&":"&amp;",
-"<":"&lt;",
-">":"&gt;",
-'"':"&quot;",
-"'":"&#039;"
-}[c])
-);
+  return String(
+    value ?? ""
+  ).replace(
+    /[&<>"']/g,
+    function(c){
+
+      return {
+        "&":"&amp;",
+        "<":"&lt;",
+        ">":"&gt;",
+        '"':"&quot;",
+        "'":"&#039;"
+      }[c];
+
+    }
+  );
 
 }
 
 
-async function getAccount(){
+/*
+==================================================
+GET CURRENT USER
+==================================================
+*/
 
-if(!supabase){
+async function getCurrentUser(){
 
-throw new Error(
-"Supabase client is unavailable."
-);
+  const result =
+    await supabase.auth.getUser();
 
-}
 
-const sessionResult =
-await supabase.auth.getSession();
+  if(result.error){
 
-if(sessionResult.error)
-throw sessionResult.error;
+    throw result.error;
 
-if(!sessionResult.data.session){
+  }
 
-location.replace("login.html");
-return null;
 
-}
+  if(!result.data.user){
 
-const userResult =
-await supabase.auth.getUser();
+    window.location.href =
+      "login.html";
 
-if(userResult.error)
-throw userResult.error;
+    return null;
 
-const user =
-userResult.data.user;
+  }
 
-if(!user){
 
-location.replace("login.html");
-return null;
+  return result.data.user;
 
 }
 
 
-let result =
-await supabase
-.from("members")
-.select("*")
-.eq("auth_user_id",user.id)
-.maybeSingle();
+/*
+==================================================
+GET CURRENT MEMBER
+==================================================
+*/
+
+async function getCurrentMember(
+  user
+){
+
+  /*
+   IMPORTANT:
+   Your live table uses user_id.
+   Do NOT query auth_user_id.
+  */
+
+  const result =
+    await supabase
+      .from("members")
+      .select(`
+        id,
+        group_id,
+        user_id,
+        name,
+        email,
+        role,
+        member_number,
+        membership_number,
+        phone,
+        status,
+        onboarding_status
+      `)
+      .eq(
+        "user_id",
+        user.id
+      )
+      .maybeSingle();
 
 
-if(result.error)
-throw result.error;
+  if(result.error){
+
+    throw result.error;
+
+  }
 
 
-let member =
-result.data;
+  if(!result.data){
+
+    throw new Error(
+      "Your login is not linked to a member account."
+    );
+
+  }
 
 
-if(!member){
+  if(!result.data.group_id){
 
-result =
-await supabase
-.from("members")
-.select("*")
-.eq("user_id",user.id)
-.maybeSingle();
+    throw new Error(
+      "Your member account has no group."
+    );
 
-if(result.error)
-throw result.error;
+  }
 
-member =
-result.data;
+
+  return result.data;
+
+}
+
+
+/*
+==================================================
+GET GROUP
+==================================================
+*/
+
+async function getGroup(
+  groupId
+){
+
+  const result =
+    await supabase
+      .from("groups")
+      .select(
+        "id,name"
+      )
+      .eq(
+        "id",
+        groupId
+      )
+      .maybeSingle();
+
+
+  if(result.error){
+
+    throw result.error;
+
+  }
+
+
+  if(!result.data){
+
+    throw new Error(
+      "Your group could not be found."
+    );
+
+  }
+
+
+  return result.data;
 
 }
 
 
-if(!member)
-throw new Error(
-"Your login is not linked to a member account."
-);
-
-
-if(!member.group_id)
-throw new Error(
-"Your member account has no group."
-);
-
-
-const groupResult =
-await supabase
-.from("groups")
-.select("id,name")
-.eq("id",member.group_id)
-.maybeSingle();
-
-
-if(groupResult.error)
-throw groupResult.error;
-
-
-if(!groupResult.data)
-throw new Error(
-"Your group could not be found."
-);
-
-
-return {
-user:user,
-member:member,
-group:groupResult.data
-};
-
-}
-
+/*
+==================================================
+LOAD MEMBERS
+==================================================
+*/
 
 async function loadMembers(){
 
-const result =
-await supabase
-.from("members")
-.select("id,name,member_number,membership_number,status")
-.eq("group_id",currentAccount.group.id)
-.order("name",{ascending:true});
+  memberSelect.innerHTML =
+    `
+    <option value="">
+      Loading members...
+    </option>
+    `;
 
 
-if(result.error)
-throw result.error;
+  console.log(
+    "Loading members for group:",
+    currentAccount.group.id
+  );
 
 
-memberSelect.innerHTML =
-'<option value="">Select member</option>';
+  const result =
+    await supabase
+      .from("members")
+      .select(`
+        id,
+        group_id,
+        member_number,
+        membership_number,
+        name,
+        phone,
+        role,
+        status,
+        onboarding_status
+      `)
+      .eq(
+        "group_id",
+        currentAccount.group.id
+      )
+      .order(
+        "name",
+        {
+          ascending:true
+        }
+      );
 
 
-(result.data || []).forEach(
-member => {
+  console.log(
+    "Contribution member query:",
+    result
+  );
 
-const option =
-document.createElement("option");
 
-option.value =
-member.id;
+  if(result.error){
 
-option.textContent =
-(member.name || "Unnamed") +
-(
-member.member_number ||
-member.membership_number
-?
-" — " +
-(member.member_number ||
-member.membership_number)
-:
-""
-);
+    throw new Error(
+      "Unable to load members: " +
+      result.error.message
+    );
 
-memberSelect.appendChild(option);
+  }
 
-});
+
+  const members =
+    result.data || [];
+
+
+  memberSelect.innerHTML =
+    "";
+
+
+  if(!members.length){
+
+    memberSelect.innerHTML =
+      `
+      <option value="">
+        No members found
+      </option>
+      `;
+
+    return;
+
+  }
+
+
+  const firstOption =
+    document.createElement(
+      "option"
+    );
+
+  firstOption.value =
+    "";
+
+  firstOption.textContent =
+    "Select member";
+
+  memberSelect.appendChild(
+    firstOption
+  );
+
+
+  members.forEach(
+    function(member){
+
+      const option =
+        document.createElement(
+          "option"
+        );
+
+
+      option.value =
+        member.id;
+
+
+      const number =
+        member.member_number ||
+        member.membership_number ||
+        "";
+
+
+      option.textContent =
+        member.name +
+        (
+          number
+          ? " — " + number
+          : ""
+        );
+
+
+      memberSelect.appendChild(
+        option
+      );
+
+    }
+  );
+
+
+  console.log(
+    "Members loaded:",
+    members.length
+  );
 
 }
 
+
+/*
+==================================================
+LOAD CONTRIBUTIONS
+==================================================
+*/
 
 async function loadContributions(){
 
-const result =
-await supabase
-.from("contributions")
-.select(`
-id,
-member_id,
-amount,
-contribution_type,
-month,
-payment_method,
-reference,
-contribution_date,
-notes,
-created_at
-`)
-.eq(
-"group_id",
-currentAccount.group.id
-)
-.order(
-"contribution_date",
-{ascending:false}
-)
-.order(
-"created_at",
-{ascending:false}
+  loading.style.display =
+    "block";
+
+  tableWrap.style.display =
+    "none";
+
+  loading.textContent =
+    "Loading contributions...";
+
+
+  console.log(
+    "Loading contributions for group:",
+    currentAccount.group.id
+  );
+
+
+  /*
+   IMPORTANT:
+   We deliberately DO NOT request
+   contribution_date because your
+   existing schema uses month.
+  */
+
+  const result =
+    await supabase
+      .from("contributions")
+      .select("*")
+      .eq(
+        "group_id",
+        currentAccount.group.id
+      )
+      .order(
+        "created_at",
+        {
+          ascending:false
+        }
+      );
+
+
+  console.log(
+    "Contribution query result:",
+    result
+  );
+
+
+  if(result.error){
+
+    throw new Error(
+      "Unable to load contributions: " +
+      result.error.message
+    );
+
+  }
+
+
+  const list =
+    result.data || [];
+
+
+  /*
+   Get member names.
+  */
+
+  const memberIds =
+    [
+      ...new Set(
+        list
+          .map(
+            item =>
+              item.member_id
+          )
+          .filter(Boolean)
+      )
+    ];
+
+
+  const memberNames = {};
+
+
+  if(memberIds.length){
+
+    const memberResult =
+      await supabase
+        .from("members")
+        .select(
+          "id,name,member_number,membership_number"
+        )
+        .in(
+          "id",
+          memberIds
+        );
+
+
+    if(memberResult.error){
+
+      console.warn(
+        "Member names could not be loaded:",
+        memberResult.error
+      );
+
+    }else{
+
+      (
+        memberResult.data || []
+      ).forEach(
+        function(member){
+
+          memberNames[
+            member.id
+          ] =
+            member.name +
+            (
+              member.member_number ||
+              member.membership_number
+              ?
+              " — " +
+              (
+                member.member_number ||
+                member.membership_number
+              )
+              :
+              ""
+            );
+
+        }
+      );
+
+    }
+
+  }
+
+
+  rows.innerHTML =
+    "";
+
+
+  if(!list.length){
+
+    rows.innerHTML =
+      `
+      <tr>
+
+        <td
+          colspan="7"
+          class="empty"
+        >
+          No contributions recorded yet.
+        </td>
+
+      </tr>
+      `;
+
+  }else{
+
+    list.forEach(
+      function(item){
+
+        const tr =
+          document.createElement(
+            "tr"
+          );
+
+
+        tr.innerHTML =
+          `
+
+          <td>
+            ${
+              escapeHtml(
+                memberNames[item.member_id] ||
+                "Unknown member"
+              )
+            }
+          </td>
+
+          <td>
+            ${
+              escapeHtml(
+                item.contribution_type ||
+                item.type ||
+                "—"
+              )
+            }
+          </td>
+
+          <td>
+            <strong>
+              ${money(item.amount)}
+            </strong>
+          </td>
+
+          <td>
+            ${
+              escapeHtml(
+                item.month ||
+                "—"
+              )
+            }
+          </td>
+
+          <td>
+            ${
+              escapeHtml(
+                item.payment_method ||
+                item.payment ||
+                "—"
+              )
+            }
+          </td>
+
+          <td>
+            ${
+              escapeHtml(
+                item.reference ||
+                "—"
+              )
+            }
+          </td>
+
+          <td>
+            ${
+              escapeHtml(
+                item.notes ||
+                "—"
+              )
+            }
+          </td>
+
+          `;
+
+
+        rows.appendChild(
+          tr
+        );
+
+      }
+    );
+
+  }
+
+
+  /*
+   Summary.
+  */
+
+  const total =
+    list.reduce(
+      function(sum,item){
+
+        return sum +
+          Number(
+            item.amount || 0
+          );
+
+      },
+      0
+    );
+
+
+  /*
+   Month summary based on
+   the month text field.
+  */
+
+  const currentMonth =
+    new Date()
+      .toLocaleDateString(
+        "en-US",
+        {
+          month:"long",
+          year:"numeric"
+        }
+      );
+
+
+  const monthTotal =
+    list
+      .filter(
+        function(item){
+
+          return String(
+            item.month || ""
+          ).toLowerCase()
+          ===
+          currentMonth.toLowerCase();
+
+        }
+      )
+      .reduce(
+        function(sum,item){
+
+          return sum +
+            Number(
+              item.amount || 0
+            );
+
+        },
+        0
+      );
+
+
+  document.getElementById(
+    "total"
+  ).textContent =
+    money(total);
+
+
+  document.getElementById(
+    "monthTotal"
+  ).textContent =
+    money(monthTotal);
+
+
+  document.getElementById(
+    "recordCount"
+  ).textContent =
+    list.length;
+
+
+  loading.style.display =
+    "none";
+
+  tableWrap.style.display =
+    "block";
+
+}
+
+
+/*
+==================================================
+SAVE CONTRIBUTION
+==================================================
+*/
+
+form.addEventListener(
+  "submit",
+  async function(event){
+
+    event.preventDefault();
+
+
+    saveButton.disabled =
+      true;
+
+    saveButton.textContent =
+      "Saving...";
+
+
+    try{
+
+      const memberId =
+        memberSelect.value;
+
+
+      const amount =
+        Number(
+          document.getElementById(
+            "amount"
+          ).value
+        );
+
+
+      const type =
+        document.getElementById(
+          "type"
+        ).value
+        .trim();
+
+
+      const month =
+        document.getElementById(
+          "month"
+        ).value
+        .trim();
+
+
+      const payment =
+        document.getElementById(
+          "payment"
+        ).value;
+
+
+      const reference =
+        document.getElementById(
+          "reference"
+        ).value
+        .trim();
+
+
+      const notes =
+        document.getElementById(
+          "notes"
+        ).value
+        .trim();
+
+
+      if(!memberId){
+
+        throw new Error(
+          "Please select the member who made the contribution."
+        );
+
+      }
+
+
+      if(!amount || amount <= 0){
+
+        throw new Error(
+          "Please enter a valid contribution amount."
+        );
+
+      }
+
+
+      if(!type){
+
+        throw new Error(
+          "Please enter the contribution type."
+        );
+
+      }
+
+
+      if(!month){
+
+        throw new Error(
+          "Please enter the contribution month."
+        );
+
+      }
+
+
+      /*
+       IMPORTANT:
+       No contribution_date is inserted.
+       */
+
+      const record = {
+
+        group_id:
+          currentAccount.group.id,
+
+        member_id:
+          memberId,
+
+        amount:
+          amount,
+
+        contribution_type:
+          type,
+
+        month:
+          month,
+
+        payment_method:
+          payment || null,
+
+        reference:
+          reference || null,
+
+        notes:
+          notes || null
+
+      };
+
+
+      console.log(
+        "Contribution being saved:",
+        record
+      );
+
+
+      const result =
+        await supabase
+          .from("contributions")
+          .insert(
+            record
+          );
+
+
+      console.log(
+        "Save result:",
+        result
+      );
+
+
+      if(result.error){
+
+        throw new Error(
+          "Unable to save contribution: " +
+          result.error.message
+        );
+
+      }
+
+
+      showNotice(
+        "Contribution recorded successfully.",
+        true
+      );
+
+
+      document.getElementById(
+        "amount"
+      ).value =
+        "";
+
+
+      document.getElementById(
+        "type"
+      ).value =
+        "";
+
+
+      document.getElementById(
+        "reference"
+      ).value =
+        "";
+
+
+      document.getElementById(
+        "notes"
+      ).value =
+        "";
+
+
+      await loadContributions();
+
+
+    }catch(error){
+
+      console.error(
+        "SAVE CONTRIBUTION ERROR:",
+        error
+      );
+
+
+      showNotice(
+        error.message ||
+        "Unable to save contribution."
+      );
+
+
+    }finally{
+
+      saveButton.disabled =
+        false;
+
+      saveButton.textContent =
+        "Save Contribution";
+
+    }
+
+  }
 );
 
 
-if(result.error)
-throw result.error;
-
-
-const list =
-result.data || [];
-
-
-const memberIds =
-[
-...new Set(
-list
-.map(x => x.member_id)
-.filter(Boolean)
-)
-];
-
-
-let names = {};
-
-
-if(memberIds.length){
-
-const memberResult =
-await supabase
-.from("members")
-.select("id,name")
-.in("id",memberIds);
-
-
-if(!memberResult.error){
-
-(memberResult.data || [])
-.forEach(
-m => {
-names[m.id] =
-m.name;
-}
-);
-
-}
-
-}
-
-
-rows.innerHTML = "";
-
-
-if(!list.length){
-
-rows.innerHTML = `
-<tr>
-<td colspan="7" class="empty">
-No contributions recorded yet.
-</td>
-</tr>
-`;
-
-}else{
-
-list.forEach(
-item => {
-
-const tr =
-document.createElement("tr");
-
-tr.innerHTML = `
-
-<td>
-${escapeHtml(item.contribution_date || "—")}
-</td>
-
-<td>
-${escapeHtml(names[item.member_id] || "—")}
-</td>
-
-<td>
-${escapeHtml(item.contribution_type || "—")}
-</td>
-
-<td>
-<strong>
-${money(item.amount)}
-</strong>
-</td>
-
-<td>
-${escapeHtml(item.month || "—")}
-</td>
-
-<td>
-${escapeHtml(item.payment_method || "—")}
-</td>
-
-<td>
-${escapeHtml(item.reference || "—")}
-</td>
-
-`;
-
-rows.appendChild(tr);
-
-});
-
-}
-
-
-const total =
-list.reduce(
-(sum,item) =>
-sum + Number(item.amount || 0),
-0
-);
-
-
-const currentMonth =
-new Date().toISOString().slice(0,7);
-
-
-const monthTotal =
-list
-.filter(item =>
-item.contribution_date &&
-item.contribution_date.startsWith(
-currentMonth
-)
-)
-.reduce(
-(sum,item) =>
-sum + Number(item.amount || 0),
-0
-);
-
-
-document.getElementById("total")
-.textContent =
-money(total);
-
-
-document.getElementById("monthTotal")
-.textContent =
-money(monthTotal);
-
-
-document.getElementById("recordCount")
-.textContent =
-list.length;
-
-
-loading.style.display =
-"none";
-
-tableWrap.style.display =
-"block";
-
-}
-
+/*
+==================================================
+LOGOUT
+==================================================
+*/
 
 document
-.getElementById("contributionForm")
-.addEventListener(
-"submit",
-async event => {
+  .getElementById(
+    "logout"
+  )
+  .addEventListener(
+    "click",
+    async function(){
 
-event.preventDefault();
+      await supabase
+        .auth
+        .signOut();
 
-saveButton.disabled =
-true;
 
-saveButton.textContent =
-"Saving...";
+      window.location.href =
+        "login.html";
 
-notice.className =
-"notice";
+    }
+  );
 
 
-try{
+/*
+==================================================
+INITIALIZE
+==================================================
+*/
 
-const memberId =
-memberSelect.value;
+(async function(){
 
-const amount =
-Number(
-document.getElementById("amount").value
-);
+  try{
 
-const type =
-document.getElementById("type").value.trim();
+    const user =
+      await getCurrentUser();
 
-const date =
-document.getElementById("date").value;
 
-const month =
-document.getElementById("month").value.trim();
+    if(!user){
 
-const payment =
-document.getElementById("payment").value;
+      return;
 
-const reference =
-document.getElementById("reference").value.trim();
+    }
 
-const notes =
-document.getElementById("notes").value.trim();
 
+    const member =
+      await getCurrentMember(
+        user
+      );
 
-if(!memberId)
-throw new Error(
-"Select the member who made the contribution."
-);
 
+    const group =
+      await getGroup(
+        member.group_id
+      );
 
-if(!amount || amount <= 0)
-throw new Error(
-"Enter a valid contribution amount."
-);
 
+    currentAccount = {
 
-if(!type)
-throw new Error(
-"Enter the contribution type."
-);
+      user:user,
 
+      member:member,
 
-if(!date)
-throw new Error(
-"Select the contribution date."
-);
+      group:group
 
+    };
 
-const record = {
 
-group_id:
-currentAccount.group.id,
+    document.getElementById(
+      "groupName"
+    ).textContent =
+      group.name ||
+      "Chama";
 
-member_id:
-memberId,
 
-amount:
-amount,
+    /*
+     Default month.
+    */
 
-contribution_type:
-type,
+    document.getElementById(
+      "month"
+    ).value =
+      new Date()
+        .toLocaleDateString(
+          "en-US",
+          {
+            month:"long",
+            year:"numeric"
+          }
+        );
 
-month:
-month || new Date(date)
-.toLocaleDateString(
-"en-US",
-{
-month:"long",
-year:"numeric"
-}
-),
 
-payment_method:
-payment || null,
+    /*
+     IMPORTANT:
+     Load members first.
+     Even if contribution history
+     has a problem, member selection
+     should still work.
+    */
 
-reference:
-reference || null,
+    try{
 
-recorded_by:
-currentAccount.user.id,
+      await loadMembers();
 
-contribution_date:
-date,
+    }catch(memberError){
 
-notes:
-notes || null
+      console.error(
+        "MEMBER LOAD ERROR:",
+        memberError
+      );
 
-};
 
+      memberSelect.innerHTML =
+        `
+        <option value="">
+          Unable to load members
+        </option>
+        `;
 
-const result =
-await supabase
-.from("contributions")
-.insert(record)
-.select()
-.single();
 
+      showNotice(
+        memberError.message
+      );
 
-if(result.error){
+    }
 
-throw new Error(
-"Unable to save contribution: " +
-result.error.message
-);
 
-}
+    /*
+     Load history separately.
+    */
 
+    try{
 
-showNotice(
-"Contribution recorded successfully.",
-true
-);
+      await loadContributions();
 
+    }catch(contributionError){
 
-document
-.getElementById("amount")
-.value = "";
+      console.error(
+        "CONTRIBUTION LOAD ERROR:",
+        contributionError
+      );
 
-document
-.getElementById("reference")
-.value = "";
 
-document
-.getElementById("notes")
-.value = "";
+      loading.textContent =
+        "Unable to load contributions.";
 
 
-await loadContributions();
+      showNotice(
+        contributionError.message
+      );
 
+    }
 
-}catch(error){
 
-console.error(error);
+  }catch(error){
 
-showNotice(
-error.message ||
-"Unable to save contribution."
-);
+    console.error(
+      "CONTRIBUTIONS INITIALIZATION ERROR:",
+      error
+    );
 
-}finally{
 
-saveButton.disabled =
-false;
+    loading.textContent =
+      "Unable to load contributions.";
 
-saveButton.textContent =
-"Save Contribution";
 
-}
+    showNotice(
+      error.message ||
+      "Unable to open Contributions."
+    );
 
-});
-
-
-document
-.getElementById("logout")
-.addEventListener(
-"click",
-async () => {
-
-await supabase.auth.signOut();
-
-location.replace(
-"login.html"
-);
-
-});
-
-
-(async function init(){
-
-try{
-
-currentAccount =
-await getAccount();
-
-if(!currentAccount)
-return;
-
-
-document.getElementById(
-"groupName"
-).textContent =
-currentAccount.group.name;
-
-
-const today =
-new Date();
-
-
-document.getElementById(
-"date"
-).value =
-today.toISOString().slice(0,10);
-
-
-document.getElementById(
-"month"
-).value =
-today.toLocaleDateString(
-"en-US",
-{
-month:"long",
-year:"numeric"
-}
-);
-
-
-await loadMembers();
-
-await loadContributions();
-
-
-}catch(error){
-
-console.error(
-"CONTRIBUTIONS ERROR:",
-error
-);
-
-loading.style.display =
-"none";
-
-showNotice(
-error.message ||
-"Unable to load contributions."
-);
-
-}
+  }
 
 })();
 
 </script>
 
 </body>
-  </html>
-  
+
+</html>
