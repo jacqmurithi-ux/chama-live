@@ -1,0 +1,1074 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Financial Reports — Chama Live</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+  background:#f5f7f5;
+  color:#1d2521
+}
+
+header{
+  background:#17663f;
+  color:#fff;
+  padding:14px 16px
+}
+
+.header{
+  max-width:1150px;
+  margin:auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px
+}
+
+.brand{font-size:20px;font-weight:900}
+.sub{font-size:12px;opacity:.9;margin-top:2px}
+
+.actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap
+}
+
+button,.back{
+  border:0;
+  border-radius:8px;
+  padding:10px 13px;
+  font-weight:800;
+  cursor:pointer;
+  text-decoration:none
+}
+
+.back{
+  background:#fff;
+  color:#17663f
+}
+
+.logout{
+  background:transparent;
+  color:#fff;
+  border:1px solid rgba(255,255,255,.7)
+}
+
+main{
+  max-width:1150px;
+  margin:auto;
+  padding:20px 14px 45px
+}
+
+h1{margin:0;font-size:26px}
+
+.intro{
+  color:#68736e;
+  font-size:14px;
+  margin:6px 0 20px
+}
+
+.panel{
+  background:#fff;
+  border:1px solid #e1e7e3;
+  border-radius:12px;
+  padding:17px;
+  margin-bottom:18px;
+  box-shadow:0 3px 12px rgba(0,0,0,.04)
+}
+
+.panel h2{
+  font-size:17px;
+  margin:0 0 14px
+}
+
+.filters{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px
+}
+
+label{
+  display:block;
+  font-size:12px;
+  font-weight:800;
+  margin-bottom:5px
+}
+
+input,select{
+  width:100%;
+  padding:11px;
+  border:1px solid #ccd5cf;
+  border-radius:8px;
+  background:#fff;
+  outline:none
+}
+
+input:focus,select:focus{
+  border-color:#17663f
+}
+
+.filterbuttons{
+  display:flex;
+  gap:8px;
+  margin-top:14px;
+  flex-wrap:wrap
+}
+
+.primary{
+  background:#17663f;
+  color:#fff
+}
+
+.secondary{
+  background:#eef3ef;
+  color:#17663f
+}
+
+.summary{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+  margin-bottom:18px
+}
+
+.card{
+  background:#fff;
+  border:1px solid #e1e7e3;
+  border-radius:12px;
+  padding:16px
+}
+
+.card small{
+  color:#68736e;
+  font-weight:700
+}
+
+.card strong{
+  display:block;
+  color:#17663f;
+  font-size:21px;
+  margin-top:5px
+}
+
+.negative{
+  color:#a33a2d!important
+}
+
+.tablewrap{
+  overflow-x:auto
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:760px
+}
+
+th,td{
+  text-align:left;
+  padding:11px 9px;
+  border-bottom:1px solid #edf0ee;
+  font-size:13px
+}
+
+th{
+  font-size:11px;
+  text-transform:uppercase;
+  color:#68736e
+}
+
+.loading{
+  text-align:center;
+  color:#68736e;
+  padding:30px
+}
+
+.empty{
+  text-align:center;
+  color:#68736e;
+  padding:25px
+}
+
+.notice{
+  display:none;
+  padding:12px 14px;
+  border-radius:9px;
+  margin-bottom:16px;
+  font-size:14px
+}
+
+.notice.show{
+  display:block;
+  background:#f8e6e3;
+  color:#87392d
+}
+
+.report-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  margin-bottom:12px
+}
+
+@media(max-width:800px){
+  .filters{grid-template-columns:repeat(2,1fr)}
+  .summary{grid-template-columns:repeat(2,1fr)}
+}
+
+@media(max-width:600px){
+  .header{align-items:flex-start}
+  main{padding:17px 12px 35px}
+  .filters,.summary{grid-template-columns:1fr}
+  h1{font-size:23px}
+  .panel{padding:14px}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<div class="header">
+
+<div>
+<div class="brand">Chama Live</div>
+<div id="groupName" class="sub">Loading group...</div>
+</div>
+
+<div class="actions">
+<a class="back" href="dashboard.html">Dashboard</a>
+<button id="logout" class="logout" type="button">Logout</button>
+</div>
+
+</div>
+</header>
+
+
+<main>
+
+<h1>Financial Reports Centre</h1>
+
+<p class="intro">
+Analyse contributions, expenses and group financial activity by date, month, year, member and contribution type.
+</p>
+
+<div id="notice" class="notice"></div>
+
+
+<section class="panel">
+
+<h2>Report Filters</h2>
+
+<div class="filters">
+
+<div>
+<label for="fromDate">From Date</label>
+<input id="fromDate" type="date">
+</div>
+
+<div>
+<label for="toDate">To Date</label>
+<input id="toDate" type="date">
+</div>
+
+<div>
+<label for="memberFilter">Member</label>
+<select id="memberFilter">
+<option value="">All Members</option>
+</select>
+</div>
+
+<div>
+<label for="typeFilter">Contribution Type</label>
+<select id="typeFilter">
+<option value="">All Types</option>
+</select>
+</div>
+
+</div>
+
+
+<div class="filterbuttons">
+
+<button id="apply" class="primary">
+Generate Report
+</button>
+
+<button id="clear" class="secondary">
+Clear Filters
+</button>
+
+<button id="print" class="secondary">
+Print Report
+</button>
+
+</div>
+
+</section>
+
+
+<div class="summary">
+
+<div class="card">
+<small>Total Contributions</small>
+<strong id="contributionsTotal">KSh 0</strong>
+</div>
+
+<div class="card">
+<small>Total Expenses</small>
+<strong id="expensesTotal">KSh 0</strong>
+</div>
+
+<div class="card">
+<small>Net Balance</small>
+<strong id="netBalance">KSh 0</strong>
+</div>
+
+<div class="card">
+<small>Contribution Records</small>
+<strong id="recordCount">0</strong>
+</div>
+
+</div>
+
+
+<section class="panel">
+
+<h2>Contribution Report</h2>
+
+<div id="loading" class="loading">
+Loading report...
+</div>
+
+<div id="reportTable" class="tablewrap" style="display:none">
+
+<table>
+
+<thead>
+<tr>
+<th>Date</th>
+<th>Member</th>
+<th>Type / Goal</th>
+<th>Month</th>
+<th>Amount</th>
+<th>Payment</th>
+<th>Reference</th>
+</tr>
+</thead>
+
+<tbody id="rows"></tbody>
+
+</table>
+
+</div>
+
+</section>
+
+
+<section class="panel">
+
+<h2>Expense Summary</h2>
+
+<div id="expenseTable" class="tablewrap">
+
+<table>
+
+<thead>
+<tr>
+<th>Date</th>
+<th>Category</th>
+<th>Description</th>
+<th>Paid To</th>
+<th>Amount</th>
+</tr>
+</thead>
+
+<tbody id="expenseRows"></tbody>
+
+</table>
+
+</div>
+
+</section>
+
+</main>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+
+<script>
+
+"use strict";
+
+const supabase =
+window.chamaSupabase;
+
+let account = null;
+let members = [];
+let contributions = [];
+let expenses = [];
+let memberNames = {};
+
+const notice =
+document.getElementById("notice");
+
+function showError(text){
+
+notice.textContent = text;
+notice.className = "notice show";
+
+}
+
+function money(value){
+
+return "KSh " +
+Number(value || 0).toLocaleString(
+"en-KE",
+{
+minimumFractionDigits:0,
+maximumFractionDigits:2
+}
+);
+
+}
+
+function escapeHtml(value){
+
+return String(value ?? "").replace(
+/[&<>"']/g,
+c => ({
+"&":"&amp;",
+"<":"&lt;",
+">":"&gt;",
+'"':"&quot;",
+"'":"&#039;"
+}[c])
+);
+
+}
+
+
+async function getAccount(){
+
+const session =
+await supabase.auth.getSession();
+
+if(session.error)
+throw session.error;
+
+if(!session.data.session){
+
+location.replace("login.html");
+return null;
+
+}
+
+const userResult =
+await supabase.auth.getUser();
+
+if(userResult.error)
+throw userResult.error;
+
+const user =
+userResult.data.user;
+
+let result =
+await supabase
+.from("members")
+.select("*")
+.eq("auth_user_id",user.id)
+.maybeSingle();
+
+if(result.error)
+throw result.error;
+
+let member =
+result.data;
+
+if(!member){
+
+result =
+await supabase
+.from("members")
+.select("*")
+.eq("user_id",user.id)
+.maybeSingle();
+
+if(result.error)
+throw result.error;
+
+member =
+result.data;
+
+}
+
+if(!member)
+throw new Error(
+"Your account is not linked to a Chama member."
+);
+
+const groupResult =
+await supabase
+.from("groups")
+.select("id,name")
+.eq("id",member.group_id)
+.maybeSingle();
+
+if(groupResult.error)
+throw groupResult.error;
+
+if(!groupResult.data)
+throw new Error("Group could not be found.");
+
+return {
+user,
+member,
+group:groupResult.data
+};
+
+}
+
+
+async function loadMembers(){
+
+const result =
+await supabase
+.from("members")
+.select("id,name,member_number,membership_number")
+.eq("group_id",account.group.id)
+.order("name");
+
+if(result.error)
+throw result.error;
+
+members =
+result.data || [];
+
+memberNames = {};
+
+members.forEach(m => {
+memberNames[m.id] = m.name;
+});
+
+const select =
+document.getElementById("memberFilter");
+
+members.forEach(m => {
+
+const option =
+document.createElement("option");
+
+option.value = m.id;
+
+option.textContent =
+m.name +
+(
+m.member_number ||
+m.membership_number
+?
+" — " +
+(m.member_number || m.membership_number)
+:
+""
+);
+
+select.appendChild(option);
+
+});
+
+}
+
+
+async function loadContributions(){
+
+const result =
+await supabase
+.from("contributions")
+.select("*")
+.eq("group_id",account.group.id)
+.order("contribution_date",{ascending:false});
+
+if(result.error)
+throw result.error;
+
+contributions =
+result.data || [];
+
+const types = [
+...new Set(
+contributions
+.map(c => c.contribution_type)
+.filter(Boolean)
+)
+];
+
+const select =
+document.getElementById("typeFilter");
+
+types.forEach(type => {
+
+const option =
+document.createElement("option");
+
+option.value = type;
+option.textContent = type;
+
+select.appendChild(option);
+
+});
+
+}
+
+
+async function loadExpenses(){
+
+const result =
+await supabase
+.from("expenses")
+.select("*")
+.eq("group_id",account.group.id)
+.order("expense_date",{ascending:false});
+
+if(result.error){
+
+/*
+If the expenses table is not yet ready,
+reports should still load contributions.
+*/
+
+console.warn(
+"Expenses unavailable:",
+result.error.message
+);
+
+expenses = [];
+
+return;
+
+}
+
+expenses =
+result.data || [];
+
+}
+
+
+function filterContributions(){
+
+const from =
+document.getElementById("fromDate").value;
+
+const to =
+document.getElementById("toDate").value;
+
+const member =
+document.getElementById("memberFilter").value;
+
+const type =
+document.getElementById("typeFilter").value;
+
+return contributions.filter(c => {
+
+const date =
+c.contribution_date ||
+"";
+
+if(from && date < from)
+return false;
+
+if(to && date > to)
+return false;
+
+if(member &&
+String(c.member_id) !== String(member))
+return false;
+
+if(type &&
+String(c.contribution_type || "") !== String(type))
+return false;
+
+return true;
+
+});
+
+}
+
+
+function filterExpenses(){
+
+const from =
+document.getElementById("fromDate").value;
+
+const to =
+document.getElementById("toDate").value;
+
+return expenses.filter(e => {
+
+const date =
+e.expense_date ||
+e.date ||
+(
+e.created_at
+?
+e.created_at.substring(0,10)
+:
+""
+);
+
+if(from && date < from)
+return false;
+
+if(to && date > to)
+return false;
+
+return true;
+
+});
+
+}
+
+
+function renderReport(){
+
+const list =
+filterContributions();
+
+const expenseList =
+filterExpenses();
+
+
+const contributionTotal =
+list.reduce(
+(sum,c) =>
+sum + Number(c.amount || 0),
+0
+);
+
+
+const expenseTotal =
+expenseList.reduce(
+(sum,e) =>
+sum + Number(e.amount || 0),
+0
+);
+
+
+const net =
+contributionTotal -
+expenseTotal;
+
+
+document.getElementById(
+"contributionsTotal"
+).textContent =
+money(contributionTotal);
+
+
+document.getElementById(
+"expensesTotal"
+).textContent =
+money(expenseTotal);
+
+
+const netElement =
+document.getElementById(
+"netBalance"
+);
+
+netElement.textContent =
+money(net);
+
+netElement.className =
+net < 0
+?
+"negative"
+:
+"";
+
+
+document.getElementById(
+"recordCount"
+).textContent =
+list.length;
+
+
+const rows =
+document.getElementById("rows");
+
+rows.innerHTML = "";
+
+
+if(!list.length){
+
+rows.innerHTML = `
+<tr>
+<td colspan="7" class="empty">
+No contributions match the selected filters.
+</td>
+</tr>
+`;
+
+}else{
+
+list.forEach(c => {
+
+const tr =
+document.createElement("tr");
+
+tr.innerHTML = `
+
+<td>
+${escapeHtml(c.contribution_date || "—")}
+</td>
+
+<td>
+${escapeHtml(
+memberNames[c.member_id] || "—"
+)}
+</td>
+
+<td>
+${escapeHtml(
+c.contribution_type || "—"
+)}
+</td>
+
+<td>
+${escapeHtml(c.month || "—")}
+</td>
+
+<td>
+<strong>
+${money(c.amount)}
+</strong>
+</td>
+
+<td>
+${escapeHtml(
+c.payment_method || "—"
+)}
+</td>
+
+<td>
+${escapeHtml(
+c.reference || "—"
+)}
+</td>
+
+`;
+
+rows.appendChild(tr);
+
+});
+
+}
+
+
+const expenseRows =
+document.getElementById(
+"expenseRows"
+);
+
+expenseRows.innerHTML = "";
+
+
+if(!expenseList.length){
+
+expenseRows.innerHTML = `
+<tr>
+<td colspan="5" class="empty">
+No expenses match the selected dates.
+</td>
+</tr>
+`;
+
+}else{
+
+expenseList.forEach(e => {
+
+const tr =
+document.createElement("tr");
+
+const date =
+e.expense_date ||
+e.date ||
+(
+e.created_at
+?
+e.created_at.substring(0,10)
+:
+"—"
+);
+
+const category =
+e.category ||
+e.expense_category ||
+"—";
+
+const description =
+e.description ||
+e.notes ||
+"—";
+
+const payee =
+e.payee ||
+e.paid_to ||
+"—";
+
+tr.innerHTML = `
+
+<td>${escapeHtml(date)}</td>
+
+<td>${escapeHtml(category)}</td>
+
+<td>${escapeHtml(description)}</td>
+
+<td>${escapeHtml(payee)}</td>
+
+<td>
+<strong>${money(e.amount)}</strong>
+</td>
+
+`;
+
+expenseRows.appendChild(tr);
+
+});
+
+}
+
+}
+
+
+document
+.getElementById("apply")
+.addEventListener(
+"click",
+renderReport
+);
+
+
+document
+.getElementById("clear")
+.addEventListener(
+"click",
+() => {
+
+document.getElementById(
+"fromDate"
+).value = "";
+
+document.getElementById(
+"toDate"
+).value = "";
+
+document.getElementById(
+"memberFilter"
+).value = "";
+
+document.getElementById(
+"typeFilter"
+).value = "";
+
+renderReport();
+
+});
+
+
+document
+.getElementById("print")
+.addEventListener(
+"click",
+() => {
+
+window.print();
+
+});
+
+
+document
+.getElementById("logout")
+.addEventListener(
+"click",
+async () => {
+
+await supabase.auth.signOut();
+
+location.replace(
+"login.html"
+);
+
+});
+
+
+(async function(){
+
+try{
+
+if(!supabase)
+throw new Error(
+"Supabase client is unavailable."
+);
+
+account =
+await getAccount();
+
+if(!account)
+return;
+
+document.getElementById(
+"groupName"
+).textContent =
+account.group.name;
+
+await loadMembers();
+
+await loadContributions();
+
+await loadExpenses();
+
+renderReport();
+
+document.getElementById(
+"loading"
+).style.display =
+"none";
+
+document.getElementById(
+"reportTable"
+).style.display =
+"block";
+
+}catch(error){
+
+console.error(
+"REPORT ERROR:",
+error
+);
+
+document.getElementById(
+"loading"
+).style.display =
+"none";
+
+showError(
+error.message ||
+"Unable to load financial reports."
+);
+
+}
+
+})();
+
+</script>
+
+</body>
+  </html>
+  
