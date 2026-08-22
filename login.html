@@ -1,1 +1,312 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Login — Chama Live</title><link rel="stylesheet" href="css/app.css"></head><body><div class="auth"><main class="card"><div class="brand-big">Chama Live</div><p class="muted" style="text-align:center">Sign in to your group account.</p><div id="msg" class="alert hidden"></div><form id="form"><div class="field"><label for="email">Email</label><input id="email" name="email" type="email" required autocomplete="username"></div><div class="field" style="margin-top:12px"><label for="password">Password</label><input id="password" name="password" type="password" required autocomplete="current-password"></div><button id="submit" class="btn full" style="margin-top:16px">LOGIN</button></form><p class="muted" style="text-align:center"><a href="create-group.html">Create a new group</a> · <a href="activate-account.html">Activate account</a></p></main></div><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/supabase-client.js"></script><script>const db=window.chamaSupabase;const f=document.getElementById('form'),m=document.getElementById('msg'),b=document.getElementById('submit');f.addEventListener('submit',async e=>{e.preventDefault();b.disabled=true;b.textContent='SIGNING IN...';m.className='alert hidden';try{const email=document.getElementById('email').value.trim().toLowerCase();const password=document.getElementById('password').value;const {data,error}=await db.auth.signInWithPassword({email,password});if(error)throw error;if(!data.session)throw new Error('No login session was created.');location.href='dashboard.html'}catch(x){m.textContent=x.message||'Login failed.';m.className='alert'}finally{b.disabled=false;b.textContent='LOGIN'}});</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Login — Chama Live</title>
+  <link rel="stylesheet" href="css/mobile-lightweight.css">
+</head>
+
+<body class="auth-page">
+
+<main class="auth-card">
+
+  <div class="brand">Chama Live</div>
+
+  <h1>Login</h1>
+
+  <p class="muted">
+    Sign in to your Chama Live account.
+  </p>
+
+  <div id="message" class="message" role="alert"></div>
+
+  <form id="loginForm" autocomplete="on">
+
+    <div class="field">
+      <label for="email">Email</label>
+
+      <input
+        id="email"
+        name="email"
+        type="email"
+        required
+        autocomplete="username"
+        placeholder="Enter your email"
+      >
+    </div>
+
+    <div class="field">
+      <label for="password">Password</label>
+
+      <input
+        id="password"
+        name="password"
+        type="password"
+        required
+        autocomplete="current-password"
+        placeholder="Enter your password"
+      >
+    </div>
+
+    <button id="loginButton" type="submit">
+      LOGIN
+    </button>
+
+  </form>
+
+  <div class="links">
+    <a href="create-group.html">Create New Group</a>
+  </div>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+
+<script>
+
+const form = document.getElementById("loginForm");
+const button = document.getElementById("loginButton");
+const message = document.getElementById("message");
+
+function errorMessage(text) {
+  message.className = "message show";
+  message.textContent = text;
+}
+
+function successMessage(text) {
+  message.className = "message success";
+  message.textContent = text;
+}
+
+
+form.addEventListener("submit", async function(event) {
+
+  event.preventDefault();
+
+  message.className = "message";
+  message.textContent = "";
+
+  button.disabled = true;
+  button.textContent = "SIGNING IN...";
+
+  try {
+
+    const supabase = window.chamaSupabase;
+
+    if (!supabase) {
+      throw new Error(
+        "Supabase client is not available."
+      );
+    }
+
+    const email =
+      document.getElementById("email")
+        .value
+        .trim()
+        .toLowerCase();
+
+    const password =
+      document.getElementById("password").value;
+
+
+    /*
+     * IMPORTANT:
+     * Do NOT sign out before login.
+     * Supabase needs to establish the new session.
+     */
+
+    const {
+      data,
+      error
+    } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data || !data.user || !data.session) {
+      throw new Error(
+        "Login succeeded but no authenticated session was returned."
+      );
+    }
+
+
+    console.log(
+      "Authenticated user:",
+      data.user.id
+    );
+
+
+    /*
+     * Find the member belonging to this
+     * authenticated Supabase user.
+     *
+     * IMPORTANT:
+     * The current database uses auth_user_id.
+     */
+
+    const {
+      data: member,
+      error: memberError
+    } = await supabase
+      .from("members")
+      .select(`
+        id,
+        group_id,
+        auth_user_id,
+        name,
+        email,
+        phone,
+        role,
+        status,
+        onboarding_status
+      `)
+      .eq("auth_user_id", data.user.id)
+      .maybeSingle();
+
+
+    if (memberError) {
+      throw new Error(
+        "Login succeeded, but the member account could not be loaded: " +
+        memberError.message
+      );
+    }
+
+
+    if (!member) {
+
+      /*
+       * DO NOT sign the user out here.
+       *
+       * Keep the authenticated session so the actual
+       * problem can be diagnosed rather than silently
+       * destroying the login.
+       */
+
+      throw new Error(
+        "Your login is valid, but your Chama Live member record " +
+        "is not linked to this account. Please contact the administrator."
+      );
+    }
+
+
+    /*
+     * Load the member's group.
+     */
+
+    const {
+      data: group,
+      error: groupError
+    } = await supabase
+      .from("groups")
+      .select(`
+        id,
+        name,
+        registration_number,
+        phone,
+        email,
+        category,
+        description,
+        country
+      `)
+      .eq("id", member.group_id)
+      .maybeSingle();
+
+
+    if (groupError) {
+      throw new Error(
+        "Your account was found, but the group could not be loaded: " +
+        groupError.message
+      );
+    }
+
+
+    if (!group) {
+      throw new Error(
+        "Your account is not linked to a valid Chama group."
+      );
+    }
+
+
+    /*
+     * Store ONLY non-sensitive context.
+     *
+     * Authentication itself remains in Supabase.
+     */
+
+    sessionStorage.setItem(
+      "chama_member_id",
+      member.id
+    );
+
+    sessionStorage.setItem(
+      "chama_group_id",
+      member.group_id
+    );
+
+    sessionStorage.setItem(
+      "chama_member_role",
+      member.role || "member"
+    );
+
+    sessionStorage.setItem(
+      "chama_member_name",
+      member.name || ""
+    );
+
+    sessionStorage.setItem(
+      "chama_group_name",
+      group.name || ""
+    );
+
+
+    successMessage(
+      "Login successful. Opening your dashboard..."
+    );
+
+
+    /*
+     * IMPORTANT:
+     * No signOut() here.
+     */
+
+    window.location.replace(
+      "dashboard.html"
+    );
+
+  }
+
+  catch (error) {
+
+    console.error(
+      "LOGIN ERROR:",
+      error
+    );
+
+    errorMessage(
+      error.message ||
+      "Unable to sign in."
+    );
+
+  }
+
+  finally {
+
+    button.disabled = false;
+    button.textContent = "LOGIN";
+
+  }
+
+});
+
+</script>
+
+</body>
+  </html>
+  
