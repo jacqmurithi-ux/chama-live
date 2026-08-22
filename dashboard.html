@@ -19,6 +19,7 @@
     body {
       margin: 0;
       padding: 0;
+      min-height: 100%;
     }
 
     body {
@@ -33,14 +34,21 @@
       color: #1d2521;
     }
 
+    button,
+    input {
+      font: inherit;
+    }
+
     .app {
       min-height: 100vh;
     }
 
+    /* HEADER */
+
     header {
       background: #17663f;
       color: white;
-      padding: 16px;
+      padding: 15px;
     }
 
     .header-inner {
@@ -62,32 +70,38 @@
     .group-name {
       margin-top: 3px;
       font-size: 13px;
-      opacity: 0.9;
+      opacity: .9;
     }
 
     .logout-button {
       width: auto;
       min-height: 42px;
-      padding: 8px 14px;
 
-      border: 1px solid rgba(255,255,255,.5);
+      padding: 8px 15px;
+
+      border: 1px solid rgba(255,255,255,.6);
       border-radius: 8px;
 
       background: transparent;
       color: white;
 
       font-weight: 800;
+
       cursor: pointer;
     }
 
-    .logout-button:hover {
-      background: rgba(255,255,255,.1);
+    .logout-button:disabled {
+      opacity: .6;
+      cursor: wait;
     }
+
+    /* MAIN */
 
     main {
       max-width: 1100px;
       margin: auto;
-      padding: 20px 16px 40px;
+
+      padding: 20px 16px 45px;
     }
 
     .welcome {
@@ -96,40 +110,49 @@
 
     .welcome h1 {
       margin: 0;
-      font-size: 25px;
+
+      font-size: 26px;
+      line-height: 1.2;
     }
 
     .welcome p {
-      margin: 6px 0 0;
-      color: #65716b;
+      margin: 7px 0 0;
+
+      color: #68736e;
+      font-size: 14px;
     }
 
     .role {
       display: inline-block;
 
       margin-top: 10px;
-      padding: 5px 10px;
+      padding: 5px 11px;
 
       border-radius: 20px;
 
-      background: #e7f2ea;
+      background: #e5f1e9;
       color: #17663f;
 
-      font-size: 12px;
-      font-weight: 800;
+      font-size: 11px;
+      font-weight: 900;
+
       text-transform: uppercase;
     }
+
+    /* MESSAGE */
 
     .message {
       display: none;
 
       margin-bottom: 18px;
-      padding: 13px;
+      padding: 13px 15px;
 
       border-radius: 9px;
 
-      background: #f8e8e4;
-      color: #8b3a2e;
+      background: #f8e6e3;
+      color: #87392d;
+
+      font-size: 14px;
 
       white-space: pre-wrap;
       overflow-wrap: anywhere;
@@ -139,11 +162,19 @@
       display: block;
     }
 
+    /* LOADING */
+
     .loading {
-      padding: 30px;
+      padding: 45px 20px;
+
       text-align: center;
-      color: #65716b;
+
+      color: #68736e;
+
+      font-size: 15px;
     }
+
+    /* STATS */
 
     .stats {
       display: grid;
@@ -153,13 +184,13 @@
 
       gap: 14px;
 
-      margin-bottom: 22px;
+      margin-bottom: 26px;
     }
 
     .stat {
       background: white;
 
-      border: 1px solid #e2e7e3;
+      border: 1px solid #e1e7e3;
       border-radius: 12px;
 
       padding: 17px;
@@ -169,24 +200,27 @@
     }
 
     .stat-label {
-      color: #65716b;
+      color: #68736e;
+
       font-size: 12px;
       font-weight: 700;
     }
 
     .stat-value {
-      margin-top: 6px;
-
-      font-size: 24px;
-      font-weight: 900;
+      margin-top: 7px;
 
       color: #17663f;
+
+      font-size: 23px;
+      font-weight: 900;
     }
 
-    .menu-title {
+    /* MENU */
+
+    .section-title {
       margin: 25px 0 12px;
 
-      font-size: 17px;
+      font-size: 18px;
       font-weight: 900;
     }
 
@@ -202,11 +236,13 @@
     .menu-card {
       display: block;
 
+      min-height: 125px;
+
       padding: 18px;
 
       background: white;
 
-      border: 1px solid #e2e7e3;
+      border: 1px solid #e1e7e3;
       border-radius: 12px;
 
       color: inherit;
@@ -224,55 +260,67 @@
       transform: translateY(-2px);
 
       box-shadow:
-        0 6px 18px rgba(0,0,0,.08);
+        0 7px 20px rgba(0,0,0,.08);
     }
 
     .menu-icon {
-      font-size: 25px;
-      margin-bottom: 8px;
+      margin-bottom: 9px;
+
+      font-size: 26px;
     }
 
     .menu-card strong {
       display: block;
 
-      font-size: 15px;
       color: #17663f;
+
+      font-size: 15px;
     }
 
     .menu-card span {
       display: block;
 
-      margin-top: 4px;
+      margin-top: 5px;
+
+      color: #68736e;
 
       font-size: 12px;
-      color: #65716b;
+      line-height: 1.4;
     }
 
+    /* ACCOUNT */
+
     .account {
-      margin-top: 25px;
+      margin-top: 27px;
+
+      padding: 18px;
 
       background: white;
 
-      border: 1px solid #e2e7e3;
+      border: 1px solid #e1e7e3;
       border-radius: 12px;
 
-      padding: 18px;
+      box-shadow:
+        0 3px 12px rgba(0,0,0,.04);
     }
 
     .account h2 {
       margin: 0 0 12px;
-      font-size: 16px;
+
+      font-size: 17px;
     }
 
     .account-row {
       display: flex;
+
       justify-content: space-between;
-
-      padding: 8px 0;
-
-      border-bottom: 1px solid #edf0ee;
+      align-items: center;
 
       gap: 20px;
+
+      padding: 9px 0;
+
+      border-bottom: 1px solid #edf0ee;
     }
 
     .account-row:last-child {
@@ -280,18 +328,23 @@
     }
 
     .account-label {
-      color: #65716b;
+      color: #68736e;
+
       font-size: 13px;
     }
 
     .account-value {
       text-align: right;
-      font-weight: 700;
+
       font-size: 13px;
+      font-weight: 700;
+
       overflow-wrap: anywhere;
     }
 
-    @media (max-width: 800px) {
+    /* MOBILE */
+
+    @media (max-width: 850px) {
 
       .stats {
         grid-template-columns:
@@ -302,6 +355,7 @@
         grid-template-columns:
           repeat(2, minmax(0, 1fr));
       }
+
     }
 
     @media (max-width: 560px) {
@@ -318,8 +372,19 @@
         font-size: 19px;
       }
 
+      .group-name {
+        max-width: 210px;
+
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
       .logout-button {
         min-height: 40px;
+        padding: 7px 12px;
+
+        font-size: 12px;
       }
 
       main {
@@ -327,13 +392,10 @@
       }
 
       .welcome h1 {
-        font-size: 22px;
+        font-size: 23px;
       }
 
       .stats {
-        grid-template-columns:
-          repeat(2, minmax(0, 1fr));
-
         gap: 10px;
       }
 
@@ -342,11 +404,15 @@
       }
 
       .stat-value {
-        font-size: 20px;
+        font-size: 19px;
       }
 
       .menu {
         grid-template-columns: 1fr;
+      }
+
+      .menu-card {
+        min-height: auto;
       }
 
       .account-row {
@@ -357,13 +423,18 @@
         margin-top: 3px;
         text-align: left;
       }
+
     }
+
   </style>
 </head>
+
 
 <body>
 
 <div class="app">
+
+  <!-- HEADER -->
 
   <header>
 
@@ -384,6 +455,7 @@
 
       </div>
 
+
       <button
         id="logoutButton"
         class="logout-button"
@@ -396,6 +468,8 @@
 
   </header>
 
+
+  <!-- MAIN -->
 
   <main>
 
@@ -414,13 +488,20 @@
     </div>
 
 
-    <div id="dashboardContent" style="display:none;">
+    <div
+      id="dashboardContent"
+      style="display:none;"
+    >
+
+      <!-- WELCOME -->
 
       <section class="welcome">
 
         <h1>
           Welcome,
-          <span id="memberName">Member</span>
+          <span id="memberName">
+            Member
+          </span>
         </h1>
 
         <p>
@@ -437,7 +518,7 @@
       </section>
 
 
-      <!-- SUMMARY -->
+      <!-- FINANCIAL SUMMARY -->
 
       <section class="stats">
 
@@ -467,7 +548,7 @@
             id="contributionsTotal"
             class="stat-value"
           >
-            KSh 0
+            —
           </div>
 
         </div>
@@ -483,7 +564,7 @@
             id="expensesTotal"
             class="stat-value"
           >
-            KSh 0
+            —
           </div>
 
         </div>
@@ -499,7 +580,7 @@
             id="balanceTotal"
             class="stat-value"
           >
-            KSh 0
+            —
           </div>
 
         </div>
@@ -507,9 +588,9 @@
       </section>
 
 
-      <!-- MAIN MENU -->
+      <!-- MENU -->
 
-      <div class="menu-title">
+      <div class="section-title">
         Chama Management
       </div>
 
@@ -520,6 +601,7 @@
           class="menu-card"
           href="members.html"
         >
+
           <div class="menu-icon">
             👥
           </div>
@@ -531,6 +613,7 @@
           <span>
             Manage members and roles
           </span>
+
         </a>
 
 
@@ -538,6 +621,7 @@
           class="menu-card"
           href="contributions.html"
         >
+
           <div class="menu-icon">
             💰
           </div>
@@ -549,6 +633,7 @@
           <span>
             Record and track contributions
           </span>
+
         </a>
 
 
@@ -556,6 +641,7 @@
           class="menu-card"
           href="expenses.html"
         >
+
           <div class="menu-icon">
             💳
           </div>
@@ -567,6 +653,7 @@
           <span>
             Record group expenses
           </span>
+
         </a>
 
 
@@ -574,6 +661,7 @@
           class="menu-card"
           href="reports.html"
         >
+
           <div class="menu-icon">
             📊
           </div>
@@ -583,8 +671,9 @@
           </strong>
 
           <span>
-            View and analyse financial records
+            View financial reports
           </span>
+
         </a>
 
 
@@ -592,6 +681,7 @@
           class="menu-card"
           href="meetings.html"
         >
+
           <div class="menu-icon">
             📅
           </div>
@@ -603,6 +693,7 @@
           <span>
             Manage group meetings
           </span>
+
         </a>
 
 
@@ -610,6 +701,7 @@
           class="menu-card"
           href="members.html"
         >
+
           <div class="menu-icon">
             ⚙️
           </div>
@@ -619,8 +711,9 @@
           </strong>
 
           <span>
-            Manage group information and roles
+            Manage group information
           </span>
+
         </a>
 
       </section>
@@ -735,6 +828,10 @@
 "use strict";
 
 
+/* -----------------------------------------
+   ELEMENTS
+----------------------------------------- */
+
 const loading =
   document.getElementById("loading");
 
@@ -748,16 +845,26 @@ const logoutButton =
   document.getElementById("logoutButton");
 
 
+/* -----------------------------------------
+   ERROR MESSAGE
+----------------------------------------- */
+
 function showError(text) {
 
   loading.style.display = "none";
 
-  message.className = "message show";
+  message.className =
+    "message show";
 
-  message.textContent = text;
+  message.textContent =
+    text;
 
 }
 
+
+/* -----------------------------------------
+   MONEY FORMAT
+----------------------------------------- */
 
 function money(value) {
 
@@ -778,15 +885,9 @@ function money(value) {
 }
 
 
-/*
- * Authentication guard.
- *
- * IMPORTANT:
- * This function NEVER calls signOut().
- *
- * It only redirects to login if there genuinely
- * is no Supabase session.
- */
+/* -----------------------------------------
+   AUTHENTICATION
+----------------------------------------- */
 
 async function requireAuthenticatedUser() {
 
@@ -803,26 +904,32 @@ async function requireAuthenticatedUser() {
   }
 
 
-  const {
-    data,
-    error
-  } =
+  console.log(
+    "Checking Supabase session..."
+  );
+
+
+  const result =
     await supabase.auth.getSession();
 
 
-  if (error) {
+  if (result.error) {
 
-    throw error;
+    throw result.error;
 
   }
 
 
   const session =
-    data?.session;
+    result.data?.session;
 
 
   if (!session) {
 
+    console.log(
+      "No active session. Redirecting to login."
+    );
+
     window.location.replace(
       "login.html"
     );
@@ -832,25 +939,28 @@ async function requireAuthenticatedUser() {
   }
 
 
-  /*
-   * Get the authenticated user.
-   */
+  console.log(
+    "Active session found:",
+    session.user.id
+  );
 
-  const {
-    data: userData,
-    error: userError
-  } =
+
+  const userResult =
     await supabase.auth.getUser();
 
 
-  if (userError) {
+  if (userResult.error) {
 
-    throw userError;
+    throw userResult.error;
 
   }
 
 
-  if (!userData?.user) {
+  const user =
+    userResult.data?.user;
+
+
+  if (!user) {
 
     window.location.replace(
       "login.html"
@@ -861,14 +971,14 @@ async function requireAuthenticatedUser() {
   }
 
 
-  return userData.user;
+  return user;
 
 }
 
 
-/*
- * Load member and group.
- */
+/* -----------------------------------------
+   LOAD MEMBER + GROUP
+----------------------------------------- */
 
 async function loadAccount(user) {
 
@@ -876,14 +986,17 @@ async function loadAccount(user) {
     window.chamaSupabase;
 
 
+  console.log(
+    "Loading member:",
+    user.id
+  );
+
+
   /*
-   * Find member using auth_user_id.
+   * First try auth_user_id.
    */
 
-  let {
-    data: member,
-    error: memberError
-  } =
+  const memberResult =
     await supabase
       .from("members")
       .select(`
@@ -904,28 +1017,32 @@ async function loadAccount(user) {
       .maybeSingle();
 
 
-  if (memberError) {
+  if (memberResult.error) {
 
     throw new Error(
-      "Unable to load your member record: " +
-      memberError.message
+      "Unable to load your member account: " +
+      memberResult.error.message
     );
 
   }
 
 
+  let member =
+    memberResult.data;
+
+
   /*
-   * Compatibility fallback.
-   *
-   * Some older Chama Live records may use
-   * user_id rather than auth_user_id.
-   *
-   * This does NOT alter the database.
+   * Compatibility with older records.
    */
 
   if (!member) {
 
-    const fallback =
+    console.log(
+      "No auth_user_id match. Checking user_id..."
+    );
+
+
+    const oldResult =
       await supabase
         .from("members")
         .select(`
@@ -946,18 +1063,18 @@ async function loadAccount(user) {
         .maybeSingle();
 
 
-    if (fallback.error) {
+    if (oldResult.error) {
 
       throw new Error(
-        "Unable to find your member account: " +
-        fallback.error.message
+        "Unable to load your member account: " +
+        oldResult.error.message
       );
 
     }
 
 
     member =
-      fallback.data;
+      oldResult.data;
 
   }
 
@@ -965,8 +1082,8 @@ async function loadAccount(user) {
   if (!member) {
 
     throw new Error(
-      "Your login is valid, but this Supabase account " +
-      "is not linked to a Chama Live member record."
+      "Your login is valid, but your account is not linked " +
+      "to a Chama Live member record."
     );
 
   }
@@ -981,14 +1098,23 @@ async function loadAccount(user) {
   }
 
 
+  console.log(
+    "Member found:",
+    member.id
+  );
+
+
   /*
    * Load group.
    */
 
-  const {
-    data: group,
-    error: groupError
-  } =
+  console.log(
+    "Loading group:",
+    member.group_id
+  );
+
+
+  const groupResult =
     await supabase
       .from("groups")
       .select("*")
@@ -999,14 +1125,18 @@ async function loadAccount(user) {
       .maybeSingle();
 
 
-  if (groupError) {
+  if (groupResult.error) {
 
     throw new Error(
       "Unable to load your group: " +
-      groupError.message
+      groupResult.error.message
     );
 
   }
+
+
+  const group =
+    groupResult.data;
 
 
   if (!group) {
@@ -1018,6 +1148,12 @@ async function loadAccount(user) {
   }
 
 
+  console.log(
+    "Group found:",
+    group.id
+  );
+
+
   return {
     member,
     group
@@ -1026,163 +1162,15 @@ async function loadAccount(user) {
 }
 
 
-/*
- * Load dashboard statistics.
- *
- * These are deliberately defensive so the
- * dashboard can still open even if a statistics
- * table/view is unavailable.
- */
+/* -----------------------------------------
+   RENDER ACCOUNT
+----------------------------------------- */
 
-async function loadStatistics(groupId) {
-
-  const supabase =
-    window.chamaSupabase;
-
-
-  let membersCount = 0;
-  let contributionsTotal = 0;
-  let expensesTotal = 0;
-
-
-  /*
-   * MEMBERS
-   */
-
-  try {
-
-    const {
-      count,
-      error
-    } =
-      await supabase
-        .from("members")
-        .select(
-          "id",
-          {
-            count: "exact",
-            head: true
-          }
-        )
-        .eq(
-          "group_id",
-          groupId
-        );
-
-
-    if (!error) {
-
-      membersCount =
-        count || 0;
-
-    }
-
-  } catch (_) {
-
-    /*
-     * Keep default.
-     */
-
-  }
-
-
-  /*
-   * CONTRIBUTIONS
-   *
-   * Try amount first.
-   */
-
-  try {
-
-    const {
-      data,
-      error
-    } =
-      await supabase
-        .from("contributions")
-        .select("amount")
-        .eq(
-          "group_id",
-          groupId
-        );
-
-
-    if (!error && Array.isArray(data)) {
-
-      contributionsTotal =
-        data.reduce(
-          (sum, row) =>
-            sum + Number(row.amount || 0),
-          0
-        );
-
-    }
-
-  } catch (_) {
-
-    /*
-     * Keep zero.
-     */
-
-  }
-
-
-  /*
-   * EXPENSES
-   */
-
-  try {
-
-    const {
-      data,
-      error
-    } =
-      await supabase
-        .from("expenses")
-        .select("amount")
-        .eq(
-          "group_id",
-          groupId
-        );
-
-
-    if (!error && Array.isArray(data)) {
-
-      expensesTotal =
-        data.reduce(
-          (sum, row) =>
-            sum + Number(row.amount || 0),
-          0
-        );
-
-    }
-
-  } catch (_) {
-
-    /*
-     * Keep zero.
-     */
-
-  }
-
-
-  return {
-    membersCount,
-    contributionsTotal,
-    expensesTotal,
-    balance:
-      contributionsTotal -
-      expensesTotal
-  };
-
-}
-
-
-/*
- * Populate dashboard.
- */
-
-function renderAccount(member, group, user) {
+function renderAccount(
+  member,
+  group,
+  user
+) {
 
   const name =
     member.name ||
@@ -1211,7 +1199,8 @@ function renderAccount(member, group, user) {
   document.getElementById(
     "headerGroupName"
   ).textContent =
-    group.name || "Chama";
+    group.name ||
+    "Chama";
 
 
   document.getElementById(
@@ -1250,17 +1239,264 @@ function renderAccount(member, group, user) {
 }
 
 
-/*
- * Main dashboard initialization.
- */
+/* -----------------------------------------
+   LOAD STATISTICS
+----------------------------------------- */
 
-async function initDashboard() {
+async function loadStatistics(groupId) {
+
+  const supabase =
+    window.chamaSupabase;
+
+
+  let membersCount = 0;
+
+  let contributionsTotal = 0;
+
+  let expensesTotal = 0;
+
+
+  /*
+   * MEMBERS
+   */
 
   try {
 
-    /*
-     * Get authenticated user.
-     */
+    const result =
+      await supabase
+        .from("members")
+        .select(
+          "id",
+          {
+            count: "exact",
+            head: true
+          }
+        )
+        .eq(
+          "group_id",
+          groupId
+        );
+
+
+    if (!result.error) {
+
+      membersCount =
+        result.count || 0;
+
+    } else {
+
+      console.warn(
+        "Members statistics failed:",
+        result.error
+      );
+
+    }
+
+  } catch (error) {
+
+    console.warn(
+      "Members statistics error:",
+      error
+    );
+
+  }
+
+
+  /*
+   * CONTRIBUTIONS
+   */
+
+  try {
+
+    const result =
+      await supabase
+        .from("contributions")
+        .select("amount")
+        .eq(
+          "group_id",
+          groupId
+        );
+
+
+    if (!result.error && result.data) {
+
+      contributionsTotal =
+        result.data.reduce(
+          function(sum, row) {
+
+            return (
+              sum +
+              Number(row.amount || 0)
+            );
+
+          },
+          0
+        );
+
+    } else {
+
+      console.warn(
+        "Contribution statistics failed:",
+        result.error
+      );
+
+    }
+
+  } catch (error) {
+
+    console.warn(
+      "Contribution statistics error:",
+      error
+    );
+
+  }
+
+
+  /*
+   * EXPENSES
+   */
+
+  try {
+
+    const result =
+      await supabase
+        .from("expenses")
+        .select("amount")
+        .eq(
+          "group_id",
+          groupId
+        );
+
+
+    if (!result.error && result.data) {
+
+      expensesTotal =
+        result.data.reduce(
+          function(sum, row) {
+
+            return (
+              sum +
+              Number(row.amount || 0)
+            );
+
+          },
+          0
+        );
+
+    } else {
+
+      console.warn(
+        "Expense statistics failed:",
+        result.error
+      );
+
+    }
+
+  } catch (error) {
+
+    console.warn(
+      "Expense statistics error:",
+      error
+    );
+
+  }
+
+
+  return {
+
+    membersCount,
+
+    contributionsTotal,
+
+    expensesTotal,
+
+    balance:
+      contributionsTotal -
+      expensesTotal
+
+  };
+
+}
+
+
+/* -----------------------------------------
+   UPDATE STATISTICS
+----------------------------------------- */
+
+function renderStatistics(stats) {
+
+  document.getElementById(
+    "membersCount"
+  ).textContent =
+    stats.membersCount;
+
+
+  document.getElementById(
+    "contributionsTotal"
+  ).textContent =
+    money(
+      stats.contributionsTotal
+    );
+
+
+  document.getElementById(
+    "expensesTotal"
+  ).textContent =
+    money(
+      stats.expensesTotal
+    );
+
+
+  document.getElementById(
+    "balanceTotal"
+  ).textContent =
+    money(
+      stats.balance
+    );
+
+}
+
+
+/* -----------------------------------------
+   MAIN INITIALIZATION
+----------------------------------------- */
+
+async function initDashboard() {
+
+  /*
+   * Hard timeout.
+   *
+   * The page will NEVER remain on
+   * "Loading your Chama..." forever.
+   */
+
+  const timeout =
+    setTimeout(
+      function() {
+
+        if (
+          content.style.display !== "block"
+        ) {
+
+          showError(
+            "Dashboard loading timed out. " +
+            "Your login session may be active, but " +
+            "a Chama data request did not respond."
+          );
+
+        }
+
+      },
+      10000
+    );
+
+
+  try {
+
+    console.log(
+      "STEP 1 — Authentication"
+    );
+
 
     const user =
       await requireAuthenticatedUser();
@@ -1268,39 +1504,61 @@ async function initDashboard() {
 
     if (!user) {
 
+      clearTimeout(timeout);
+
       return;
 
     }
 
 
-    /*
-     * Load member + group.
-     */
+    console.log(
+      "STEP 2 — Loading member and group"
+    );
 
-    const {
-      member,
-      group
-    } =
+
+    const account =
       await loadAccount(user);
 
 
+    console.log(
+      "STEP 3 — Account loaded"
+    );
+
+
     /*
-     * Store non-sensitive navigation context.
+     * Save navigation context.
      */
 
     sessionStorage.setItem(
       "chama_member_id",
-      member.id
+      account.member.id
     );
+
 
     sessionStorage.setItem(
       "chama_group_id",
-      member.group_id
+      account.member.group_id
     );
+
 
     sessionStorage.setItem(
       "chama_member_role",
-      member.role || "member"
+      account.member.role ||
+      "member"
+    );
+
+
+    sessionStorage.setItem(
+      "chama_member_name",
+      account.member.name ||
+      ""
+    );
+
+
+    sessionStorage.setItem(
+      "chama_group_name",
+      account.group.name ||
+      ""
     );
 
 
@@ -1309,54 +1567,18 @@ async function initDashboard() {
      */
 
     renderAccount(
-      member,
-      group,
+      account.member,
+      account.group,
       user
     );
 
 
     /*
-     * Load statistics.
-     */
-
-    const stats =
-      await loadStatistics(
-        group.id
-      );
-
-
-    document.getElementById(
-      "membersCount"
-    ).textContent =
-      stats.membersCount;
-
-
-    document.getElementById(
-      "contributionsTotal"
-    ).textContent =
-      money(
-        stats.contributionsTotal
-      );
-
-
-    document.getElementById(
-      "expensesTotal"
-    ).textContent =
-      money(
-        stats.expensesTotal
-      );
-
-
-    document.getElementById(
-      "balanceTotal"
-    ).textContent =
-      money(
-        stats.balance
-      );
-
-
-    /*
-     * Dashboard is ready.
+     * IMPORTANT:
+     *
+     * Show dashboard NOW.
+     *
+     * Statistics cannot block it.
      */
 
     loading.style.display =
@@ -1366,10 +1588,113 @@ async function initDashboard() {
       "block";
 
 
+    clearTimeout(timeout);
+
+
+    console.log(
+      "STEP 4 — Dashboard displayed"
+    );
+
+
+    /*
+     * Load statistics separately.
+     */
+
+    try {
+
+      console.log(
+        "STEP 5 — Loading statistics"
+      );
+
+
+      const statisticsPromise =
+        loadStatistics(
+          account.group.id
+        );
+
+
+      const statistics =
+        await Promise.race([
+
+          statisticsPromise,
+
+          new Promise(
+            function(_, reject) {
+
+              setTimeout(
+                function() {
+
+                  reject(
+                    new Error(
+                      "Statistics request timed out."
+                    )
+                  );
+
+                },
+                5000
+              );
+
+            }
+          )
+
+        ]);
+
+
+      renderStatistics(
+        statistics
+      );
+
+
+      console.log(
+        "STEP 6 — Statistics loaded"
+      );
+
+
+    } catch (statisticsError) {
+
+      console.warn(
+        "Statistics could not be loaded:",
+        statisticsError
+      );
+
+
+      /*
+       * Keep the dashboard working.
+       */
+
+      document.getElementById(
+        "membersCount"
+      ).textContent =
+        "—";
+
+
+      document.getElementById(
+        "contributionsTotal"
+      ).textContent =
+        "—";
+
+
+      document.getElementById(
+        "expensesTotal"
+      ).textContent =
+        "—";
+
+
+      document.getElementById(
+        "balanceTotal"
+      ).textContent =
+        "—";
+
+    }
+
+
   } catch (error) {
 
+    clearTimeout(timeout);
+
+
     console.error(
-      "Dashboard initialization error:",
+      "DASHBOARD ERROR:",
       error
     );
 
@@ -1384,18 +1709,16 @@ async function initDashboard() {
 }
 
 
-/*
- * LOGOUT
- *
- * This is the ONLY normal place where the
- * application deliberately signs the user out.
- */
+/* -----------------------------------------
+   LOGOUT
+----------------------------------------- */
 
 logoutButton.addEventListener(
   "click",
-  async function () {
+  async function() {
 
-    logoutButton.disabled = true;
+    logoutButton.disabled =
+      true;
 
     logoutButton.textContent =
       "SIGNING OUT...";
@@ -1414,24 +1737,56 @@ logoutButton.addEventListener(
       }
 
 
-      sessionStorage.removeItem(
-        "chama_member_id"
+    } catch (error) {
+
+      console.error(
+        "Logout error:",
+        error
       );
 
-      sessionStorage.removeItem(
-        "chama_group_id"
-      );
+    }
 
-      sessionStorage.removeItem(
-        "chama_member_role"
-      );
 
-      sessionStorage.removeItem(
-        "chama_member_name"
-      );
+    /*
+     * Clear local navigation context.
+     */
 
-      sessionStorage.removeItem(
-        "chama_group_name"
-      );
-      <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase-client.js"></script>
+    sessionStorage.removeItem(
+      "chama_member_id"
+    );
+
+    sessionStorage.removeItem(
+      "chama_group_id"
+    );
+
+    sessionStorage.removeItem(
+      "chama_member_role"
+    );
+
+    sessionStorage.removeItem(
+      "chama_member_name"
+    );
+
+    sessionStorage.removeItem(
+      "chama_group_name"
+    );
+
+
+    window.location.replace(
+      "login.html"
+    );
+
+  }
+);
+
+
+/*
+ * Start dashboard.
+ */
+
+initDashboard();
+
+</script>
+
+</body>
+</html>
