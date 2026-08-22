@@ -4,39 +4,27 @@
   const SUPABASE_URL =
     "https://ptktftwyltxmtcodyzoa.supabase.co";
 
+  const SUPABASE_KEY =
+    "sb_publishable_Nfuc0Xj1LuSU-qJmSXpH5A_GSTMvmSS";
+
   /*
-   * IMPORTANT:
-   * Put your EXISTING Supabase Publishable/Anon key below.
-   * Never use the service_role key in browser code.
+   * Make sure the Supabase CDN library has loaded first.
    */
-  const SUPABASE_KEY = "YOUR_EXISTING_PUBLISHABLE_OR_ANON_KEY";
-
-  if (!window.supabase) {
-    console.error(
-      "ERROR: Supabase JavaScript library is not loaded."
-    );
-    return;
-  }
-
-  if (typeof window.supabase.createClient !== "function") {
-    console.error(
-      "ERROR: window.supabase.createClient is unavailable."
-    );
-    return;
-  }
-
   if (
-    !SUPABASE_KEY ||
-    SUPABASE_KEY === "YOUR_EXISTING_PUBLISHABLE_OR_ANON_KEY"
+    !window.supabase ||
+    typeof window.supabase.createClient !== "function"
   ) {
     console.error(
-      "ERROR: Supabase publishable/anon key is missing."
+      "Chama Live: Supabase JavaScript library was not loaded."
     );
+
     return;
   }
 
+  /*
+   * Create the Supabase client.
+   */
   try {
-
     const client = window.supabase.createClient(
       SUPABASE_URL,
       SUPABASE_KEY,
@@ -50,6 +38,10 @@
       }
     );
 
+    /*
+     * Make the client available to the rest
+     * of the Chama Live application.
+     */
     window.chamaSupabase = client;
 
     console.log(
@@ -59,7 +51,7 @@
   } catch (error) {
 
     console.error(
-      "Chama Live: Failed to initialize Supabase client.",
+      "Chama Live: Supabase client initialization failed.",
       error
     );
 
