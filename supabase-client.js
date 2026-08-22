@@ -1,5 +1,6 @@
+"use strict";
+
 (function () {
-  "use strict";
 
   const SUPABASE_URL =
     "https://ptktftwyltxmtcodyzoa.supabase.co";
@@ -7,54 +8,45 @@
   const SUPABASE_KEY =
     "sb_publishable_Nfuc0Xj1LuSU-qJmSXpH5A_GSTMvmSS";
 
-  /*
-   * Make sure the Supabase CDN library has loaded first.
-   */
-  if (
-    !window.supabase ||
-    typeof window.supabase.createClient !== "function"
-  ) {
+  if (typeof window.supabase === "undefined") {
+
     console.error(
-      "Chama Live: Supabase JavaScript library was not loaded."
+      "Chama Live: Supabase JS library did not load."
     );
+
+    window.chamaSupabase = null;
 
     return;
   }
 
-  /*
-   * Create the Supabase client.
-   */
   try {
-    const client = window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_KEY,
-      {
-        auth: {
-          persistSession: true,
-          autoRefreshToken: true,
-          detectSessionInUrl: true,
-          storage: window.localStorage
-        }
-      }
-    );
 
-    /*
-     * Make the client available to the rest
-     * of the Chama Live application.
-     */
-    window.chamaSupabase = client;
+    window.chamaSupabase =
+      window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY,
+        {
+          auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true,
+            storageKey: "chama-live-auth"
+          }
+        }
+      );
 
     console.log(
-      "Chama Live: Supabase client initialized successfully."
+      "Chama Live Supabase client ready."
     );
 
   } catch (error) {
 
     console.error(
-      "Chama Live: Supabase client initialization failed.",
+      "Chama Live Supabase initialization failed:",
       error
     );
 
+    window.chamaSupabase = null;
   }
 
 })();
