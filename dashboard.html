@@ -1,1 +1,1437 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dashboard — Chama Live</title><link rel="stylesheet" href="css/app.css"></head><body><div class="shell"><header class="top"><div class="brand">Chama Live</div><button id="logout" class="btn">LOGOUT</button></header><main class="container"><div class="card"><h1 id="groupName">Dashboard</h1><p id="memberInfo" class="muted">Loading your group...</p></div><div class="stats"><div class="card stat"><span>Members</span><strong id="members">—</strong></div><div class="card stat"><span>Contributions</span><strong id="contrib">KSh 0</strong></div><div class="card stat"><span>Expenses</span><strong id="expenses">KSh 0</strong></div><div class="card stat"><span>Balance</span><strong id="balance">KSh 0</strong></div></div><div class="card"><h2>Modules</h2><div class="nav"><a class="btn" href="members.html">Members</a><a class="btn" href="contributions.html">Contributions</a><a class="btn" href="expenses.html">Expenses</a><a class="btn" href="meetings.html">Meetings</a><a class="btn" href="reports.html">Reports</a></div></div></main></div><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/supabase-client.js"></script><script>const db=window.chamaSupabase;async function boot(){const {data:{session}}=await db.auth.getSession();if(!session){location.href='login.html';return}const {data:member}=await db.from('members').select('group_id,name,role').eq('auth_user_id',session.user.id).maybeSingle();if(!member){await db.auth.signOut({scope:'local'});location.href='login.html';return}const {data:group}=await db.from('groups').select('name').eq('id',member.group_id).single();document.getElementById('groupName').textContent=group?.name||'Dashboard';document.getElementById('memberInfo').textContent=member.name+' · '+member.role;const [{count:mc},{data:cs},{data:es},{data:bal}]=await Promise.all([db.from('members').select('*',{count:'exact',head:true}).eq('group_id',member.group_id),db.from('contributions').select('amount').eq('group_id',member.group_id),db.from('expenses').select('amount').eq('group_id',member.group_id),db.from('group_balances').select('current_balance').eq('group_id',member.group_id).maybeSingle()]);document.getElementById('members').textContent=mc??0;document.getElementById('contrib').textContent='KSh '+(cs||[]).reduce((a,x)=>a+Number(x.amount||0),0).toLocaleString();document.getElementById('expenses').textContent='KSh '+(es||[]).reduce((a,x)=>a+Number(x.amount||0),0).toLocaleString();document.getElementById('balance').textContent='KSh '+Number(bal?.current_balance||0).toLocaleString()}boot();document.getElementById('logout').onclick=async()=>{await db.auth.signOut({scope:'local'});location.href='login.html'};</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+
+  <title>Dashboard — Chama Live</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family:
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+      background: #f5f7f5;
+      color: #1d2521;
+    }
+
+    .app {
+      min-height: 100vh;
+    }
+
+    header {
+      background: #17663f;
+      color: white;
+      padding: 16px;
+    }
+
+    .header-inner {
+      max-width: 1100px;
+      margin: auto;
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      gap: 15px;
+    }
+
+    .brand {
+      font-size: 21px;
+      font-weight: 900;
+    }
+
+    .group-name {
+      margin-top: 3px;
+      font-size: 13px;
+      opacity: 0.9;
+    }
+
+    .logout-button {
+      width: auto;
+      min-height: 42px;
+      padding: 8px 14px;
+
+      border: 1px solid rgba(255,255,255,.5);
+      border-radius: 8px;
+
+      background: transparent;
+      color: white;
+
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .logout-button:hover {
+      background: rgba(255,255,255,.1);
+    }
+
+    main {
+      max-width: 1100px;
+      margin: auto;
+      padding: 20px 16px 40px;
+    }
+
+    .welcome {
+      margin-bottom: 20px;
+    }
+
+    .welcome h1 {
+      margin: 0;
+      font-size: 25px;
+    }
+
+    .welcome p {
+      margin: 6px 0 0;
+      color: #65716b;
+    }
+
+    .role {
+      display: inline-block;
+
+      margin-top: 10px;
+      padding: 5px 10px;
+
+      border-radius: 20px;
+
+      background: #e7f2ea;
+      color: #17663f;
+
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .message {
+      display: none;
+
+      margin-bottom: 18px;
+      padding: 13px;
+
+      border-radius: 9px;
+
+      background: #f8e8e4;
+      color: #8b3a2e;
+
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .message.show {
+      display: block;
+    }
+
+    .loading {
+      padding: 30px;
+      text-align: center;
+      color: #65716b;
+    }
+
+    .stats {
+      display: grid;
+
+      grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+      gap: 14px;
+
+      margin-bottom: 22px;
+    }
+
+    .stat {
+      background: white;
+
+      border: 1px solid #e2e7e3;
+      border-radius: 12px;
+
+      padding: 17px;
+
+      box-shadow:
+        0 3px 12px rgba(0,0,0,.04);
+    }
+
+    .stat-label {
+      color: #65716b;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .stat-value {
+      margin-top: 6px;
+
+      font-size: 24px;
+      font-weight: 900;
+
+      color: #17663f;
+    }
+
+    .menu-title {
+      margin: 25px 0 12px;
+
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .menu {
+      display: grid;
+
+      grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+      gap: 14px;
+    }
+
+    .menu-card {
+      display: block;
+
+      padding: 18px;
+
+      background: white;
+
+      border: 1px solid #e2e7e3;
+      border-radius: 12px;
+
+      color: inherit;
+      text-decoration: none;
+
+      box-shadow:
+        0 3px 12px rgba(0,0,0,.04);
+
+      transition:
+        transform .12s ease,
+        box-shadow .12s ease;
+    }
+
+    .menu-card:hover {
+      transform: translateY(-2px);
+
+      box-shadow:
+        0 6px 18px rgba(0,0,0,.08);
+    }
+
+    .menu-icon {
+      font-size: 25px;
+      margin-bottom: 8px;
+    }
+
+    .menu-card strong {
+      display: block;
+
+      font-size: 15px;
+      color: #17663f;
+    }
+
+    .menu-card span {
+      display: block;
+
+      margin-top: 4px;
+
+      font-size: 12px;
+      color: #65716b;
+    }
+
+    .account {
+      margin-top: 25px;
+
+      background: white;
+
+      border: 1px solid #e2e7e3;
+      border-radius: 12px;
+
+      padding: 18px;
+    }
+
+    .account h2 {
+      margin: 0 0 12px;
+      font-size: 16px;
+    }
+
+    .account-row {
+      display: flex;
+      justify-content: space-between;
+
+      padding: 8px 0;
+
+      border-bottom: 1px solid #edf0ee;
+
+      gap: 20px;
+    }
+
+    .account-row:last-child {
+      border-bottom: 0;
+    }
+
+    .account-label {
+      color: #65716b;
+      font-size: 13px;
+    }
+
+    .account-value {
+      text-align: right;
+      font-weight: 700;
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 800px) {
+
+      .stats {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+
+      .menu {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 560px) {
+
+      header {
+        padding: 13px;
+      }
+
+      .header-inner {
+        align-items: flex-start;
+      }
+
+      .brand {
+        font-size: 19px;
+      }
+
+      .logout-button {
+        min-height: 40px;
+      }
+
+      main {
+        padding: 17px 12px 35px;
+      }
+
+      .welcome h1 {
+        font-size: 22px;
+      }
+
+      .stats {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+
+        gap: 10px;
+      }
+
+      .stat {
+        padding: 13px;
+      }
+
+      .stat-value {
+        font-size: 20px;
+      }
+
+      .menu {
+        grid-template-columns: 1fr;
+      }
+
+      .account-row {
+        display: block;
+      }
+
+      .account-value {
+        margin-top: 3px;
+        text-align: left;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <header>
+
+    <div class="header-inner">
+
+      <div>
+
+        <div class="brand">
+          Chama Live
+        </div>
+
+        <div
+          id="headerGroupName"
+          class="group-name"
+        >
+          Loading group...
+        </div>
+
+      </div>
+
+      <button
+        id="logoutButton"
+        class="logout-button"
+        type="button"
+      >
+        LOGOUT
+      </button>
+
+    </div>
+
+  </header>
+
+
+  <main>
+
+    <div
+      id="message"
+      class="message"
+      role="alert"
+    ></div>
+
+
+    <div
+      id="loading"
+      class="loading"
+    >
+      Loading your Chama...
+    </div>
+
+
+    <div id="dashboardContent" style="display:none;">
+
+      <section class="welcome">
+
+        <h1>
+          Welcome,
+          <span id="memberName">Member</span>
+        </h1>
+
+        <p>
+          Manage your group's financial records and activities.
+        </p>
+
+        <span
+          id="memberRole"
+          class="role"
+        >
+          Member
+        </span>
+
+      </section>
+
+
+      <!-- SUMMARY -->
+
+      <section class="stats">
+
+        <div class="stat">
+
+          <div class="stat-label">
+            Members
+          </div>
+
+          <div
+            id="membersCount"
+            class="stat-value"
+          >
+            —
+          </div>
+
+        </div>
+
+
+        <div class="stat">
+
+          <div class="stat-label">
+            Contributions
+          </div>
+
+          <div
+            id="contributionsTotal"
+            class="stat-value"
+          >
+            KSh 0
+          </div>
+
+        </div>
+
+
+        <div class="stat">
+
+          <div class="stat-label">
+            Expenses
+          </div>
+
+          <div
+            id="expensesTotal"
+            class="stat-value"
+          >
+            KSh 0
+          </div>
+
+        </div>
+
+
+        <div class="stat">
+
+          <div class="stat-label">
+            Balance
+          </div>
+
+          <div
+            id="balanceTotal"
+            class="stat-value"
+          >
+            KSh 0
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- MAIN MENU -->
+
+      <div class="menu-title">
+        Chama Management
+      </div>
+
+
+      <section class="menu">
+
+        <a
+          class="menu-card"
+          href="members.html"
+        >
+          <div class="menu-icon">
+            👥
+          </div>
+
+          <strong>
+            Members
+          </strong>
+
+          <span>
+            Manage members and roles
+          </span>
+        </a>
+
+
+        <a
+          class="menu-card"
+          href="contributions.html"
+        >
+          <div class="menu-icon">
+            💰
+          </div>
+
+          <strong>
+            Contributions
+          </strong>
+
+          <span>
+            Record and track contributions
+          </span>
+        </a>
+
+
+        <a
+          class="menu-card"
+          href="expenses.html"
+        >
+          <div class="menu-icon">
+            💳
+          </div>
+
+          <strong>
+            Expenses
+          </strong>
+
+          <span>
+            Record group expenses
+          </span>
+        </a>
+
+
+        <a
+          class="menu-card"
+          href="reports.html"
+        >
+          <div class="menu-icon">
+            📊
+          </div>
+
+          <strong>
+            Financial Reports
+          </strong>
+
+          <span>
+            View and analyse financial records
+          </span>
+        </a>
+
+
+        <a
+          class="menu-card"
+          href="meetings.html"
+        >
+          <div class="menu-icon">
+            📅
+          </div>
+
+          <strong>
+            Meetings
+          </strong>
+
+          <span>
+            Manage group meetings
+          </span>
+        </a>
+
+
+        <a
+          class="menu-card"
+          href="members.html"
+        >
+          <div class="menu-icon">
+            ⚙️
+          </div>
+
+          <strong>
+            Group Management
+          </strong>
+
+          <span>
+            Manage group information and roles
+          </span>
+        </a>
+
+      </section>
+
+
+      <!-- ACCOUNT -->
+
+      <section class="account">
+
+        <h2>
+          Account Information
+        </h2>
+
+
+        <div class="account-row">
+
+          <div class="account-label">
+            Name
+          </div>
+
+          <div
+            id="accountName"
+            class="account-value"
+          >
+            —
+          </div>
+
+        </div>
+
+
+        <div class="account-row">
+
+          <div class="account-label">
+            Email
+          </div>
+
+          <div
+            id="accountEmail"
+            class="account-value"
+          >
+            —
+          </div>
+
+        </div>
+
+
+        <div class="account-row">
+
+          <div class="account-label">
+            Phone
+          </div>
+
+          <div
+            id="accountPhone"
+            class="account-value"
+          >
+            —
+          </div>
+
+        </div>
+
+
+        <div class="account-row">
+
+          <div class="account-label">
+            Role
+          </div>
+
+          <div
+            id="accountRole"
+            class="account-value"
+          >
+            —
+          </div>
+
+        </div>
+
+
+        <div class="account-row">
+
+          <div class="account-label">
+            Group
+          </div>
+
+          <div
+            id="accountGroup"
+            class="account-value"
+          >
+            —
+          </div>
+
+        </div>
+
+      </section>
+
+    </div>
+
+  </main>
+
+</div>
+
+
+<!-- SUPABASE -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="js/supabase-client.js"></script>
+
+
+<script>
+
+"use strict";
+
+
+const loading =
+  document.getElementById("loading");
+
+const content =
+  document.getElementById("dashboardContent");
+
+const message =
+  document.getElementById("message");
+
+const logoutButton =
+  document.getElementById("logoutButton");
+
+
+function showError(text) {
+
+  loading.style.display = "none";
+
+  message.className = "message show";
+
+  message.textContent = text;
+
+}
+
+
+function money(value) {
+
+  const number =
+    Number(value || 0);
+
+  return (
+    "KSh " +
+    number.toLocaleString(
+      "en-KE",
+      {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      }
+    )
+  );
+
+}
+
+
+/*
+ * Authentication guard.
+ *
+ * IMPORTANT:
+ * This function NEVER calls signOut().
+ *
+ * It only redirects to login if there genuinely
+ * is no Supabase session.
+ */
+
+async function requireAuthenticatedUser() {
+
+  const supabase =
+    window.chamaSupabase;
+
+
+  if (!supabase) {
+
+    throw new Error(
+      "Supabase client is unavailable."
+    );
+
+  }
+
+
+  const {
+    data,
+    error
+  } =
+    await supabase.auth.getSession();
+
+
+  if (error) {
+
+    throw error;
+
+  }
+
+
+  const session =
+    data?.session;
+
+
+  if (!session) {
+
+    window.location.replace(
+      "login.html"
+    );
+
+    return null;
+
+  }
+
+
+  /*
+   * Get the authenticated user.
+   */
+
+  const {
+    data: userData,
+    error: userError
+  } =
+    await supabase.auth.getUser();
+
+
+  if (userError) {
+
+    throw userError;
+
+  }
+
+
+  if (!userData?.user) {
+
+    window.location.replace(
+      "login.html"
+    );
+
+    return null;
+
+  }
+
+
+  return userData.user;
+
+}
+
+
+/*
+ * Load member and group.
+ */
+
+async function loadAccount(user) {
+
+  const supabase =
+    window.chamaSupabase;
+
+
+  /*
+   * Find member using auth_user_id.
+   */
+
+  let {
+    data: member,
+    error: memberError
+  } =
+    await supabase
+      .from("members")
+      .select(`
+        id,
+        group_id,
+        auth_user_id,
+        name,
+        email,
+        phone,
+        role,
+        status,
+        onboarding_status
+      `)
+      .eq(
+        "auth_user_id",
+        user.id
+      )
+      .maybeSingle();
+
+
+  if (memberError) {
+
+    throw new Error(
+      "Unable to load your member record: " +
+      memberError.message
+    );
+
+  }
+
+
+  /*
+   * Compatibility fallback.
+   *
+   * Some older Chama Live records may use
+   * user_id rather than auth_user_id.
+   *
+   * This does NOT alter the database.
+   */
+
+  if (!member) {
+
+    const fallback =
+      await supabase
+        .from("members")
+        .select(`
+          id,
+          group_id,
+          user_id,
+          name,
+          email,
+          phone,
+          role,
+          status,
+          onboarding_status
+        `)
+        .eq(
+          "user_id",
+          user.id
+        )
+        .maybeSingle();
+
+
+    if (fallback.error) {
+
+      throw new Error(
+        "Unable to find your member account: " +
+        fallback.error.message
+      );
+
+    }
+
+
+    member =
+      fallback.data;
+
+  }
+
+
+  if (!member) {
+
+    throw new Error(
+      "Your login is valid, but this Supabase account " +
+      "is not linked to a Chama Live member record."
+    );
+
+  }
+
+
+  if (!member.group_id) {
+
+    throw new Error(
+      "Your member account is not linked to a group."
+    );
+
+  }
+
+
+  /*
+   * Load group.
+   */
+
+  const {
+    data: group,
+    error: groupError
+  } =
+    await supabase
+      .from("groups")
+      .select("*")
+      .eq(
+        "id",
+        member.group_id
+      )
+      .maybeSingle();
+
+
+  if (groupError) {
+
+    throw new Error(
+      "Unable to load your group: " +
+      groupError.message
+    );
+
+  }
+
+
+  if (!group) {
+
+    throw new Error(
+      "The group linked to your account could not be found."
+    );
+
+  }
+
+
+  return {
+    member,
+    group
+  };
+
+}
+
+
+/*
+ * Load dashboard statistics.
+ *
+ * These are deliberately defensive so the
+ * dashboard can still open even if a statistics
+ * table/view is unavailable.
+ */
+
+async function loadStatistics(groupId) {
+
+  const supabase =
+    window.chamaSupabase;
+
+
+  let membersCount = 0;
+  let contributionsTotal = 0;
+  let expensesTotal = 0;
+
+
+  /*
+   * MEMBERS
+   */
+
+  try {
+
+    const {
+      count,
+      error
+    } =
+      await supabase
+        .from("members")
+        .select(
+          "id",
+          {
+            count: "exact",
+            head: true
+          }
+        )
+        .eq(
+          "group_id",
+          groupId
+        );
+
+
+    if (!error) {
+
+      membersCount =
+        count || 0;
+
+    }
+
+  } catch (_) {
+
+    /*
+     * Keep default.
+     */
+
+  }
+
+
+  /*
+   * CONTRIBUTIONS
+   *
+   * Try amount first.
+   */
+
+  try {
+
+    const {
+      data,
+      error
+    } =
+      await supabase
+        .from("contributions")
+        .select("amount")
+        .eq(
+          "group_id",
+          groupId
+        );
+
+
+    if (!error && Array.isArray(data)) {
+
+      contributionsTotal =
+        data.reduce(
+          (sum, row) =>
+            sum + Number(row.amount || 0),
+          0
+        );
+
+    }
+
+  } catch (_) {
+
+    /*
+     * Keep zero.
+     */
+
+  }
+
+
+  /*
+   * EXPENSES
+   */
+
+  try {
+
+    const {
+      data,
+      error
+    } =
+      await supabase
+        .from("expenses")
+        .select("amount")
+        .eq(
+          "group_id",
+          groupId
+        );
+
+
+    if (!error && Array.isArray(data)) {
+
+      expensesTotal =
+        data.reduce(
+          (sum, row) =>
+            sum + Number(row.amount || 0),
+          0
+        );
+
+    }
+
+  } catch (_) {
+
+    /*
+     * Keep zero.
+     */
+
+  }
+
+
+  return {
+    membersCount,
+    contributionsTotal,
+    expensesTotal,
+    balance:
+      contributionsTotal -
+      expensesTotal
+  };
+
+}
+
+
+/*
+ * Populate dashboard.
+ */
+
+function renderAccount(member, group, user) {
+
+  const name =
+    member.name ||
+    user.user_metadata?.full_name ||
+    user.email ||
+    "Member";
+
+
+  const role =
+    member.role ||
+    "member";
+
+
+  document.getElementById(
+    "memberName"
+  ).textContent =
+    name;
+
+
+  document.getElementById(
+    "memberRole"
+  ).textContent =
+    role;
+
+
+  document.getElementById(
+    "headerGroupName"
+  ).textContent =
+    group.name || "Chama";
+
+
+  document.getElementById(
+    "accountName"
+  ).textContent =
+    name;
+
+
+  document.getElementById(
+    "accountEmail"
+  ).textContent =
+    member.email ||
+    user.email ||
+    "—";
+
+
+  document.getElementById(
+    "accountPhone"
+  ).textContent =
+    member.phone ||
+    "—";
+
+
+  document.getElementById(
+    "accountRole"
+  ).textContent =
+    role;
+
+
+  document.getElementById(
+    "accountGroup"
+  ).textContent =
+    group.name ||
+    "—";
+
+}
+
+
+/*
+ * Main dashboard initialization.
+ */
+
+async function initDashboard() {
+
+  try {
+
+    /*
+     * Get authenticated user.
+     */
+
+    const user =
+      await requireAuthenticatedUser();
+
+
+    if (!user) {
+
+      return;
+
+    }
+
+
+    /*
+     * Load member + group.
+     */
+
+    const {
+      member,
+      group
+    } =
+      await loadAccount(user);
+
+
+    /*
+     * Store non-sensitive navigation context.
+     */
+
+    sessionStorage.setItem(
+      "chama_member_id",
+      member.id
+    );
+
+    sessionStorage.setItem(
+      "chama_group_id",
+      member.group_id
+    );
+
+    sessionStorage.setItem(
+      "chama_member_role",
+      member.role || "member"
+    );
+
+
+    /*
+     * Render account.
+     */
+
+    renderAccount(
+      member,
+      group,
+      user
+    );
+
+
+    /*
+     * Load statistics.
+     */
+
+    const stats =
+      await loadStatistics(
+        group.id
+      );
+
+
+    document.getElementById(
+      "membersCount"
+    ).textContent =
+      stats.membersCount;
+
+
+    document.getElementById(
+      "contributionsTotal"
+    ).textContent =
+      money(
+        stats.contributionsTotal
+      );
+
+
+    document.getElementById(
+      "expensesTotal"
+    ).textContent =
+      money(
+        stats.expensesTotal
+      );
+
+
+    document.getElementById(
+      "balanceTotal"
+    ).textContent =
+      money(
+        stats.balance
+      );
+
+
+    /*
+     * Dashboard is ready.
+     */
+
+    loading.style.display =
+      "none";
+
+    content.style.display =
+      "block";
+
+
+  } catch (error) {
+
+    console.error(
+      "Dashboard initialization error:",
+      error
+    );
+
+
+    showError(
+      error.message ||
+      "Unable to load your dashboard."
+    );
+
+  }
+
+}
+
+
+/*
+ * LOGOUT
+ *
+ * This is the ONLY normal place where the
+ * application deliberately signs the user out.
+ */
+
+logoutButton.addEventListener(
+  "click",
+  async function () {
+
+    logoutButton.disabled = true;
+
+    logoutButton.textContent =
+      "SIGNING OUT...";
+
+
+    try {
+
+      const supabase =
+        window.chamaSupabase;
+
+
+      if (supabase) {
+
+        await supabase.auth.signOut();
+
+      }
+
+
+      sessionStorage.removeItem(
+        "chama_member_id"
+      );
+
+      sessionStorage.removeItem(
+        "chama_group_id"
+      );
+
+      sessionStorage.removeItem(
+        "chama_member_role"
+      );
+
+      sessionStorage.removeItem(
+        "chama_member_name"
+      );
+
+      sessionStorage.removeItem(
+        "chama_group_name"
+      );
+      <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
