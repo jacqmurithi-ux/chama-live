@@ -1,426 +1,259 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
-
-<meta charset="utf-8">
-
-<meta
-  name="viewport"
-  content="width=device-width,initial-scale=1"
->
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Contributions — Chama Live</title>
+<link rel="stylesheet" href="css/style.css">
 
 <style>
-
-*{
-  box-sizing:border-box
+.loading-row{
+  text-align:center;
+  padding:28px 16px;
+  color:var(--ink-soft);
 }
 
-body{
-  margin:0;
-  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
-  background:#f5f7f5;
-  color:#1d2521
+.error-row{
+  text-align:center;
+  padding:28px 16px;
+  color:var(--clay);
 }
 
-header{
-  background:#17663f;
-  color:#fff;
-  padding:14px 16px
+.field select:disabled{
+  opacity:.7;
+  cursor:wait;
 }
 
-.header{
-  max-width:1100px;
-  margin:auto;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px
-}
-
-.brand{
-  font-size:20px;
-  font-weight:900
-}
-
-.sub{
-  font-size:12px;
-  opacity:.9;
-  margin-top:2px
-}
-
-.actions{
-  display:flex;
-  gap:8px
-}
-
-button,
-.back{
-  border:0;
-  border-radius:8px;
-  padding:10px 13px;
-  font-weight:800;
-  cursor:pointer;
-  text-decoration:none
-}
-
-.back{
-  background:#fff;
-  color:#17663f
-}
-
-.logout{
-  background:transparent;
-  color:#fff;
-  border:1px solid rgba(255,255,255,.7)
-}
-
-main{
-  max-width:1100px;
-  margin:auto;
-  padding:20px 14px 45px
-}
-
-h1{
-  margin:0;
-  font-size:26px
-}
-
-.intro{
-  color:#68736e;
-  font-size:14px;
-  margin:6px 0 20px
-}
-
-.notice{
+.status-message{
   display:none;
-  padding:12px 14px;
-  border-radius:9px;
   margin-bottom:16px;
-  font-size:14px;
-  white-space:pre-wrap
+  padding:12px 14px;
+  border-radius:6px;
+  font-size:13px;
 }
 
-.notice.show{
+.status-message.success{
   display:block;
-  background:#f8e6e3;
-  color:#87392d
+  background:var(--forest-100);
+  color:var(--forest-700);
 }
 
-.notice.ok{
+.status-message.error{
   display:block;
-  background:#e5f1e9;
-  color:#17663f
+  background:var(--clay-100);
+  color:var(--clay);
 }
 
-.panel{
-  background:#fff;
-  border:1px solid #e1e7e3;
-  border-radius:12px;
-  padding:17px;
-  margin-bottom:18px;
-  box-shadow:0 3px 12px rgba(0,0,0,.04)
-}
-
-.panel h2{
-  font-size:17px;
-  margin:0 0 14px
-}
-
-.formgrid{
-  display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:12px
-}
-
-label{
+.status-message.info{
   display:block;
-  font-size:12px;
-  font-weight:800;
-  margin-bottom:5px
+  background:rgba(44,95,138,.08);
+  color:#2c5f8a;
 }
 
-input,
-select,
-textarea{
-  width:100%;
-  padding:11px;
-  border:1px solid #ccd5cf;
-  border-radius:8px;
-  background:#fff;
-  outline:none;
-  font:inherit
-}
-
-textarea{
-  min-height:75px;
-  resize:vertical
-}
-
-input:focus,
-select:focus,
-textarea:focus{
-  border-color:#17663f
-}
-
-.full{
-  grid-column:1/-1
-}
-
-.add{
-  background:#17663f;
-  color:#fff;
-  margin-top:14px
-}
-
-.add:disabled{
-  opacity:.6;
-  cursor:not-allowed
-}
-
-.summary{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:12px;
-  margin-bottom:18px
-}
-
-.card{
-  background:#fff;
-  border:1px solid #e1e7e3;
-  border-radius:12px;
-  padding:16px
-}
-
-.card small{
-  color:#68736e;
-  font-weight:700
-}
-
-.card strong{
-  display:block;
-  color:#17663f;
-  font-size:22px;
-  margin-top:5px
-}
-
-.tablewrap{
-  overflow-x:auto
-}
-
-table{
-  width:100%;
-  border-collapse:collapse;
-  min-width:800px
-}
-
-th,
-td{
-  text-align:left;
-  padding:11px 9px;
-  border-bottom:1px solid #edf0ee;
-  font-size:13px
-}
-
-th{
-  font-size:11px;
-  text-transform:uppercase;
-  color:#68736e
-}
-
-.loading{
+.empty-state{
   text-align:center;
-  color:#68736e;
-  padding:30px
+  padding:35px 16px;
+  color:var(--ink-soft);
 }
 
-.empty{
-  text-align:center;
-  color:#68736e;
-  padding:25px
+.empty-state strong{
+  display:block;
+  margin-bottom:5px;
+  color:var(--ink);
 }
 
-.member-option-note{
-  font-size:12px;
-  color:#68736e;
-  margin-top:5px
+@media(max-width:700px){
+  .toolbar{
+    flex-direction:column;
+  }
+
+  .toolbar .search-input,
+  .toolbar .btn{
+    width:100%;
+  }
+
+  .modal{
+    width:calc(100% - 24px);
+    max-height:92vh;
+    overflow-y:auto;
+  }
 }
-
-@media(max-width:650px){
-
-  .header{
-    align-items:flex-start
-  }
-
-  .actions{
-    flex-wrap:wrap;
-    justify-content:flex-end
-  }
-
-  main{
-    padding:17px 12px 35px
-  }
-
-  .formgrid,
-  .summary{
-    grid-template-columns:1fr
-  }
-
-  .full{
-    grid-column:auto
-  }
-
-  h1{
-    font-size:23px
-  }
-
-  .panel{
-    padding:14px
-  }
-
-}
-
 </style>
-
 </head>
-
 
 <body>
 
+<div class="shell">
 
-<header>
-
-<div class="header">
-
-<div>
+<aside class="sidebar">
 
 <div class="brand">
-Chama Live
+<div class="brand-mark">Chama Live</div>
+<div class="brand-sub">Digital Ledger</div>
 </div>
 
-<div
-  id="groupName"
-  class="sub"
->
-Loading group...
+<div class="group-tag">
+<strong id="sidebarGroupName">Chama Live</strong>
+<span id="sidebarGroupType">Community Welfare Group</span>
 </div>
 
-</div>
+<nav class="primary-nav">
 
-
-<div class="actions">
-
-<a
-  class="back"
-  href="dashboard.html"
->
+<a href="dashboard.html">
+<span class="ic">&#9632;</span>
 Dashboard
 </a>
 
-<button
-  id="logout"
-  class="logout"
-  type="button"
+<a href="members.html">
+<span class="ic">&#128101;</span>
+Members
+</a>
+
+<a href="contributions.html" class="active">
+<span class="ic">&#128176;</span>
+Contributions
+</a>
+
+<a href="goals.html">
+<span class="ic">&#127919;</span>
+Goals
+</a>
+
+<a href="expenses.html">
+<span class="ic">&#128179;</span>
+Expenses
+</a>
+
+<a href="meetings.html">
+<span class="ic">&#128197;</span>
+Meetings
+</a>
+
+<a href="reports.html">
+<span class="ic">&#128203;</span>
+Reports
+</a>
+
+</nav>
+
+<div class="sidebar-foot" id="sidebarIdentity">
+Loading...
+</div>
+
+</aside>
+
+
+<div class="main">
+
+<div class="topbar">
+
+<div class="page-title">
+<span class="eyebrow">Money in</span>
+Contributions
+</div>
+
+<div class="avatar" id="userAvatar">
+—
+</div>
+
+</div>
+
+
+<div class="content">
+
+<div id="statusMessage" class="status-message"></div>
+
+
+<div class="toolbar">
+
+<input
+class="search-input"
+id="contribSearch"
+type="search"
+placeholder="Search by member or reference..."
+autocomplete="off"
 >
-Logout
+
+<button
+type="button"
+class="btn btn-primary"
+id="recordContributionBtn"
+>
++ Record contribution
 </button>
 
 </div>
 
+
+<div class="panel" style="padding:0;">
+
+<div class="table-wrap">
+
+<table class="ledger">
+
+<thead>
+
+<tr>
+<th>Member</th>
+<th>Amount</th>
+<th>For month</th>
+<th>Goal</th>
+<th>Method</th>
+<th>Reference</th>
+<th>Recorded</th>
+</tr>
+
+</thead>
+
+<tbody id="contribRows">
+
+<tr>
+<td colspan="7" class="loading-row">
+Loading contributions...
+</td>
+</tr>
+
+</tbody>
+
+</table>
+
 </div>
 
-</header>
+</div>
 
+</div>
 
-<main>
+</div>
 
-
-<h1>
-Contributions
-</h1>
-
-<p class="intro">
-Record and track member contributions, goals and payment references.
-</p>
+</div>
 
 
 <div
-  id="notice"
-  class="notice"
-></div>
+class="modal-backdrop"
+id="recordModal"
+style="display:none;"
+>
 
+<div class="modal">
 
-<!-- SUMMARY -->
+<h3>Record contribution</h3>
 
-<div class="summary">
-
-<div class="card">
-
-<small>
-Total Contributions
-</small>
-
-<strong id="total">
-KSh 0
-</strong>
-
+<div
+id="formStatus"
+class="status-message">
 </div>
 
 
-<div class="card">
+<div class="field">
 
-<small>
-This Month
-</small>
-
-<strong id="monthTotal">
-KSh 0
-</strong>
-
-</div>
-
-
-<div class="card">
-
-<small>
-Records
-</small>
-
-<strong id="recordCount">
-0
-</strong>
-
-</div>
-
-</div>
-
-
-<!-- RECORD CONTRIBUTION -->
-
-<section class="panel">
-
-<h2>
-Record Contribution
-</h2>
-
-
-<form id="contributionForm">
-
-
-<div class="formgrid">
-
-
-<div>
-
-<label for="member">
+<label for="modalMember">
 Member
 </label>
 
 <select
-  id="member"
-  required
+id="modalMember"
+required
+disabled
 >
 
 <option value="">
@@ -429,74 +262,75 @@ Loading members...
 
 </select>
 
-<div class="member-option-note">
-Select the member who made this contribution.
+<div
+id="memberHelp"
+style="font-size:11px;color:var(--ink-soft);margin-top:5px;"
+>
+Loading members for this group...
 </div>
 
 </div>
 
 
-<div>
+<div class="field">
 
-<label for="amount">
+<label for="modalAmount">
 Amount (KSh)
 </label>
 
 <input
-  id="amount"
-  type="number"
-  min="0.01"
-  step="0.01"
-  inputmode="decimal"
-  required
+type="number"
+id="modalAmount"
+value="200"
+min="1"
+step="1"
+required
 >
 
 </div>
 
 
-<div>
+<div class="field">
 
-<label for="type">
-Contribution Type
+<label for="modalMonth">
+Month
 </label>
 
 <input
-  id="type"
-  type="text"
-  placeholder="e.g. Monthly, Welfare, Project"
-  required
+type="text"
+id="modalMonth"
+value=""
+placeholder="August 2026"
+required
 >
 
 </div>
 
 
-<div>
+<div class="field">
 
-<label for="month">
-Contribution Month
+<label for="modalGoal">
+Goal (optional)
 </label>
 
-<input
-  id="month"
-  type="text"
-  placeholder="e.g. August 2026"
-  required
->
-
-</div>
-
-
-<div>
-
-<label for="payment">
-Payment Method
-</label>
-
-<select id="payment">
+<select id="modalGoal">
 
 <option value="">
-Select method
+No goal / general contribution
 </option>
+
+</select>
+
+</div>
+
+
+<div class="field">
+
+<label for="modalMethod">
+Payment method
+</label>
+
+<select id="modalMethod">
 
 <option value="M-Pesa">
 M-Pesa
@@ -506,16 +340,8 @@ M-Pesa
 Cash
 </option>
 
-<option value="Bank">
-Bank
-</option>
-
-<option value="Mobile Money">
-Mobile Money
-</option>
-
-<option value="Other">
-Other
+<option value="Bank transfer">
+Bank transfer
 </option>
 
 </select>
@@ -523,1272 +349,1155 @@ Other
 </div>
 
 
-<div>
+<div class="field">
 
-<label for="reference">
-Payment Reference
+<label for="modalRef">
+Reference
 </label>
 
 <input
-  id="reference"
-  type="text"
-  placeholder="e.g. MPESA code"
+type="text"
+id="modalRef"
+placeholder="M-Pesa code, if any"
 >
 
 </div>
 
 
-<div class="full">
-
-<label for="notes">
-Notes
-</label>
-
-<textarea
-  id="notes"
-  placeholder="Optional notes"
-></textarea>
-
-</div>
-
-
-</div>
-
+<div class="modal-actions">
 
 <button
-  id="saveButton"
-  class="add"
-  type="submit"
+type="button"
+class="btn btn-ghost"
+id="cancelContributionBtn"
 >
-Save Contribution
+Cancel
 </button>
 
-
-</form>
-
-</section>
-
-
-<!-- HISTORY -->
-
-<section class="panel">
-
-<h2>
-Contribution History
-</h2>
-
-
-<div
-  id="loading"
-  class="loading"
+<button
+type="button"
+class="btn btn-primary"
+id="saveContribBtn"
 >
-Loading contributions...
-</div>
-
-
-<div
-  id="tableWrap"
-  class="tablewrap"
-  style="display:none"
->
-
-<table>
-
-<thead>
-
-<tr>
-
-<th>
-Member
-</th>
-
-<th>
-Type
-</th>
-
-<th>
-Amount
-</th>
-
-<th>
-Month
-</th>
-
-<th>
-Payment
-</th>
-
-<th>
-Reference
-</th>
-
-<th>
-Notes
-</th>
-
-</tr>
-
-</thead>
-
-
-<tbody id="rows"></tbody>
-
-</table>
+Save
+</button>
 
 </div>
 
-</section>
+</div>
 
-
-</main>
+</div>
 
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 <script src="js/supabase-client.js"></script>
-
+<script src="js/supabase-auth.js"></script>
+<script src="js/supabase-data.js"></script>
+<script src="js/feedback-widget.js"></script>
+<script src="js/app.js"></script>
 
 <script>
 
 "use strict";
 
+let membersCache=[];
+let contributionsCache=[];
+let goalsCache=[];
+let loadingMembers=false;
+let loadingContributions=false;
 
-/*
-==================================================
-SUPABASE
-==================================================
-*/
+function el(id){
+return document.getElementById(id);
+}
 
-const supabase =
-  window.chamaSupabase;
+function showStatus(text,type="info"){
 
+const box=el("statusMessage");
 
-if(!supabase){
+if(!box)return;
 
-  document.getElementById("loading").textContent =
-    "Supabase client unavailable.";
+box.textContent=text;
 
-  throw new Error(
-    "Supabase client unavailable."
-  );
+box.className="status-message "+type;
 
 }
 
+function hideStatus(){
 
-/*
-==================================================
-ELEMENTS
-==================================================
-*/
+const box=el("statusMessage");
 
-const notice =
-  document.getElementById("notice");
+if(!box)return;
 
-const loading =
-  document.getElementById("loading");
+box.textContent="";
 
-const tableWrap =
-  document.getElementById("tableWrap");
-
-const rows =
-  document.getElementById("rows");
-
-const memberSelect =
-  document.getElementById("member");
-
-const saveButton =
-  document.getElementById("saveButton");
-
-const form =
-  document.getElementById("contributionForm");
-
-
-let currentAccount = null;
-
-
-/*
-==================================================
-MESSAGE
-==================================================
-*/
-
-function showNotice(
-  text,
-  ok=false
-){
-
-  notice.textContent =
-    text;
-
-  notice.className =
-    "notice show" +
-    (
-      ok
-      ? " ok"
-      : ""
-    );
+box.className="status-message";
 
 }
 
+function showFormStatus(text,type="error"){
 
-/*
-==================================================
-MONEY
-==================================================
-*/
+const box=el("formStatus");
 
-function money(value){
+if(!box)return;
 
-  return "KSh " +
-    Number(value || 0)
-      .toLocaleString(
-        "en-KE",
-        {
-          minimumFractionDigits:0,
-          maximumFractionDigits:2
-        }
-      );
+box.textContent=text;
+
+box.className="status-message "+type;
 
 }
 
+function hideFormStatus(){
 
-/*
-==================================================
-ESCAPE HTML
-==================================================
-*/
+const box=el("formStatus");
+
+if(!box)return;
+
+box.textContent="";
+
+box.className="status-message";
+
+}
+
+function setCurrentMonth(){
+
+const input=el("modalMonth");
+
+if(!input)return;
+
+const now=new Date();
+
+input.value=
+now.toLocaleString("en-US",{month:"long"})
++" "+
+now.getFullYear();
+
+}
 
 function escapeHtml(value){
 
-  return String(
-    value ?? ""
-  ).replace(
-    /[&<>"']/g,
-    function(c){
+return String(value??"")
+.replace(/&/g,"&amp;")
+.replace(/</g,"&lt;")
+.replace(/>/g,"&gt;")
+.replace(/"/g,"&quot;")
+.replace(/'/g,"&#039;");
 
-      return {
-        "&":"&amp;",
-        "<":"&lt;",
-        ">":"&gt;",
-        '"':"&quot;",
-        "'":"&#039;"
-      }[c];
+}
 
-    }
-  );
+function formatMoney(value){
+
+return "KSh "+
+Number(value||0).toLocaleString(
+"en-KE",
+{
+minimumFractionDigits:0,
+maximumFractionDigits:2
+}
+);
+
+}
+
+async function loadIdentity(){
+
+try{
+
+if(typeof renderIdentity==="function"){
+await renderIdentity();
+}
+
+}catch(error){
+
+console.warn(
+"Could not render identity:",
+error
+);
+
+}
+
+}
+
+async function loadGroupName(){
+
+try{
+
+if(typeof fetchGroup!=="function"){
+return;
+}
+
+const group=await fetchGroup();
+
+if(!group)return;
+
+if(el("sidebarGroupName")){
+el("sidebarGroupName").textContent=
+group.name||"Chama Live";
+}
+
+if(el("sidebarGroupType")){
+el("sidebarGroupType").textContent=
+group.description||
+"Community Welfare Group";
+}
+
+}catch(error){
+
+console.warn(
+"Could not load group:",
+error
+);
+
+}
+
+}
+
+
+/* MEMBERS */
+
+async function loadMembersForContribution(){
+
+if(loadingMembers){
+return membersCache;
+}
+
+loadingMembers=true;
+
+const select=el("modalMember");
+const help=el("memberHelp");
+
+try{
+
+if(!select){
+
+throw new Error(
+"Member dropdown was not found on the page."
+);
+
+}
+
+select.disabled=true;
+
+select.innerHTML=
+'<option value="">Loading members...</option>';
+
+if(help){
+
+help.textContent=
+"Loading members for this group...";
+
+help.style.color=
+"var(--ink-soft)";
 
 }
 
 
 /*
-==================================================
-GET CURRENT USER
-==================================================
+IMPORTANT:
+Use the existing fetchMembers()
+from supabase-data.js.
 */
 
-async function getCurrentUser(){
+const members=
+await fetchMembers();
 
-  const result =
-    await supabase.auth.getUser();
+membersCache=
+Array.isArray(members)
+?members
+:[];
 
-
-  if(result.error){
-
-    throw result.error;
-
-  }
+select.innerHTML="";
 
 
-  if(!result.data.user){
+if(membersCache.length===0){
 
-    window.location.href =
-      "login.html";
+select.innerHTML=
+'<option value="">No members found</option>';
 
-    return null;
+select.disabled=true;
 
-  }
+if(help){
 
+help.textContent=
+"No members are currently linked to this group.";
 
-  return result.data.user;
+help.style.color=
+"var(--clay)";
+
+}
+
+return membersCache;
 
 }
 
 
-/*
-==================================================
-GET CURRENT MEMBER
-==================================================
-*/
+const placeholder=
+document.createElement("option");
 
-async function getCurrentMember(
-  user
-){
+placeholder.value="";
+
+placeholder.textContent=
+"Select member";
+
+placeholder.selected=true;
+
+select.appendChild(placeholder);
+
+
+membersCache.forEach(function(member){
+
+const option=
+document.createElement("option");
+
+option.value=member.id;
+
+const number=
+member.member_number
+?member.member_number+" — "
+:"";
+
+option.textContent=
+number+
+(member.name||"Unnamed member");
+
+select.appendChild(option);
+
+});
+
+
+select.disabled=false;
+
+if(help){
+
+help.textContent=
+membersCache.length+
+" member"+
+(membersCache.length===1?"":"s")+
+" available.";
+
+help.style.color=
+"var(--forest-700)";
+
+}
+
+return membersCache;
+
+}catch(error){
+
+console.error(
+"MEMBER LOADING ERROR:",
+error
+);
+
+membersCache=[];
+
+if(select){
+
+select.innerHTML=
+'<option value="">Unable to load members</option>';
+
+select.disabled=true;
+
+}
+
+if(help){
+
+help.textContent=
+error.message||
+"Could not load members.";
+
+help.style.color=
+"var(--clay)";
+
+}
+
+showStatus(
+"Members could not be loaded: "+
+(error.message||"Unknown error"),
+"error"
+);
+
+throw error;
+
+}finally{
+
+loadingMembers=false;
+
+}
+
+}
+
+
+/* GOALS */
+
+async function loadContributionGoals(){
+
+const select=el("modalGoal");
+
+if(!select)return;
+
+try{
+
+select.innerHTML=
+'<option value="">Loading goals...</option>';
+
+let goals=[];
+
+if(typeof fetchGoals==="function"){
+
+goals=
+await fetchGoals({
+activeOnly:true
+});
+
+}
+
+goalsCache=
+Array.isArray(goals)
+?goals
+:[];
+
+select.innerHTML=
+'<option value="">No goal / general contribution</option>';
+
+goalsCache.forEach(function(goal){
+
+const option=
+document.createElement("option");
+
+option.value=goal.id;
+
+option.textContent=
+goal.goal_name;
+
+select.appendChild(option);
+
+});
+
+}catch(error){
+
+console.warn(
+"Could not load contribution goals:",
+error
+);
+
+goalsCache=[];
+
+select.innerHTML=
+'<option value="">No goal / general contribution</option>';
+
+}
+
+}
+
+
+/* RENDER */
+
+function renderContributions(contributions){
+
+const tbody=el("contribRows");
+
+if(!tbody)return;
+
+contributionsCache=
+Array.isArray(contributions)
+?contributions
+:[];
+
+if(contributionsCache.length===0){
+
+tbody.innerHTML=`
+<tr>
+<td colspan="7" class="empty-state">
+<strong>No contributions yet</strong>
+Record the first contribution for this group.
+</td>
+</tr>
+`;
+
+return;
+
+}
+
+tbody.innerHTML="";
+
+contributionsCache.forEach(function(c){
+
+const tr=
+document.createElement("tr");
+
+const memberName=
+c.members&&c.members.name
+?c.members.name
+:"Unknown member";
+
+const goalName=
+c.goals&&c.goals.goal_name
+?c.goals.goal_name
+:"—";
+
+const method=
+c.payment_method||"—";
+
+const reference=
+c.reference||"—";
+
+let recorded="—";
+
+if(c.created_at){
+
+const date=
+new Date(c.created_at);
+
+if(!Number.isNaN(date.getTime())){
+
+recorded=
+date.toLocaleString("en-KE");
+
+}
+
+}
+
+tr.innerHTML=`
+
+<td>
+<strong>
+${escapeHtml(memberName)}
+</strong>
+</td>
+
+<td class="amount in">
++ ${formatMoney(c.amount)}
+</td>
+
+<td>
+${escapeHtml(c.month||"—")}
+</td>
+
+<td>
+${
+goalName==="—"
+?"<span style='color:var(--ink-soft);'>—</span>"
+:escapeHtml(goalName)
+}
+</td>
+
+<td>
+${escapeHtml(method)}
+</td>
+
+<td
+class="mono"
+style="color:var(--ink-soft);font-size:12.5px;"
+>
+${escapeHtml(reference)}
+</td>
+
+<td
+style="color:var(--ink-soft);font-size:12.5px;"
+>
+${escapeHtml(recorded)}
+</td>
+
+`;
+
+tbody.appendChild(tr);
+
+});
+
+}
+
+
+/* LOAD CONTRIBUTIONS */
+
+async function loadContributionsList(){
+
+if(loadingContributions){
+return;
+}
+
+loadingContributions=true;
+
+const tbody=el("contribRows");
+
+try{
+
+if(tbody){
+
+tbody.innerHTML=`
+<tr>
+<td colspan="7" class="loading-row">
+Loading contributions...
+</td>
+</tr>
+`;
+
+}
+
+const contributions=
+await fetchContributions();
+
+renderContributions(contributions);
+
+}catch(error){
+
+console.error(
+"CONTRIBUTIONS LOADING ERROR:",
+error
+);
+
+if(tbody){
+
+tbody.innerHTML=`
+<tr>
+<td colspan="7" class="error-row">
+Could not load contributions.
+${escapeHtml(error.message||"")}
+</td>
+</tr>
+`;
+
+}
+
+showStatus(
+error.message||
+"Could not load contributions.",
+"error"
+);
+
+}finally{
+
+loadingContributions=false;
+
+}
+
+}
+  /* ============================================================
+   OPEN RECORD CONTRIBUTION MODAL
+   ============================================================ */
+
+async function openRecordContributionModal(){
+
+  const modal =
+    el("recordModal");
+
+  if(!modal){
+    return;
+  }
+
+  hideFormStatus();
+
+  modal.style.display =
+    "flex";
+
+  setCurrentMonth();
 
   /*
-   IMPORTANT:
-   Your live table uses user_id.
-   Do NOT query auth_user_id.
-  */
+   * Members are loaded first.
+   * Goals are optional.
+   *
+   * A goal-loading failure must never
+   * prevent the member list from loading.
+   */
 
-  const result =
-    await supabase
-      .from("members")
-      .select(`
-        id,
-        group_id,
-        user_id,
-        name,
-        email,
-        role,
-        member_number,
-        membership_number,
-        phone,
-        status,
-        onboarding_status
-      `)
-      .eq(
-        "user_id",
-        user.id
-      )
-      .maybeSingle();
+  try{
 
+    await loadMembersForContribution();
 
-  if(result.error){
+  }catch(error){
 
-    throw result.error;
-
-  }
-
-
-  if(!result.data){
-
-    throw new Error(
-      "Your login is not linked to a member account."
+    console.error(
+      "Could not load members:",
+      error
     );
 
   }
 
+  try{
 
-  if(!result.data.group_id){
+    await loadContributionGoals();
 
-    throw new Error(
-      "Your member account has no group."
+  }catch(error){
+
+    console.warn(
+      "Could not load goals:",
+      error
     );
 
   }
-
-
-  return result.data;
 
 }
 
 
-/*
-==================================================
-GET GROUP
-==================================================
-*/
+/* ============================================================
+   CLOSE MODAL
+   ============================================================ */
 
-async function getGroup(
-  groupId
-){
+function closeRecordContributionModal(){
 
-  const result =
-    await supabase
-      .from("groups")
-      .select(
-        "id,name"
-      )
-      .eq(
-        "id",
-        groupId
-      )
-      .maybeSingle();
+  const modal =
+    el("recordModal");
 
-
-  if(result.error){
-
-    throw result.error;
-
+  if(!modal){
+    return;
   }
 
+  modal.style.display =
+    "none";
 
-  if(!result.data){
-
-    throw new Error(
-      "Your group could not be found."
-    );
-
-  }
-
-
-  return result.data;
+  hideFormStatus();
 
 }
 
 
-/*
-==================================================
-LOAD MEMBERS
-==================================================
-*/
+/* ============================================================
+   SAVE CONTRIBUTION
+   ============================================================ */
 
-async function loadMembers(){
+async function saveContribution(){
 
-  memberSelect.innerHTML =
-    `
-    <option value="">
-      Loading members...
-    </option>
-    `;
+  const button =
+    el("saveContribBtn");
 
+  const member =
+    el("modalMember");
 
-  console.log(
-    "Loading members for group:",
-    currentAccount.group.id
-  );
+  const amountInput =
+    el("modalAmount");
 
+  const monthInput =
+    el("modalMonth");
 
-  const result =
-    await supabase
-      .from("members")
-      .select(`
-        id,
-        group_id,
-        member_number,
-        membership_number,
-        name,
-        phone,
-        role,
-        status,
-        onboarding_status
-      `)
-      .eq(
-        "group_id",
-        currentAccount.group.id
-      )
-      .order(
-        "name",
-        {
-          ascending:true
-        }
-      );
+  const methodInput =
+    el("modalMethod");
+
+  const referenceInput =
+    el("modalRef");
+
+  const goalInput =
+    el("modalGoal");
 
 
-  console.log(
-    "Contribution member query:",
-    result
-  );
+  hideFormStatus();
 
 
-  if(result.error){
+  /*
+   * MEMBER VALIDATION
+   */
 
-    throw new Error(
-      "Unable to load members: " +
-      result.error.message
+  if(
+    !member ||
+    !member.value
+  ){
+
+    showFormStatus(
+      "Please select a member.",
+      "error"
     );
-
-  }
-
-
-  const members =
-    result.data || [];
-
-
-  memberSelect.innerHTML =
-    "";
-
-
-  if(!members.length){
-
-    memberSelect.innerHTML =
-      `
-      <option value="">
-        No members found
-      </option>
-      `;
 
     return;
 
   }
 
 
-  const firstOption =
-    document.createElement(
-      "option"
+  /*
+   * AMOUNT VALIDATION
+   */
+
+  const amount =
+    Number(
+      amountInput.value
     );
 
-  firstOption.value =
-    "";
 
-  firstOption.textContent =
-    "Select member";
+  if(
+    !Number.isFinite(amount) ||
+    amount <= 0
+  ){
 
-  memberSelect.appendChild(
-    firstOption
-  );
+    showFormStatus(
+      "Please enter a valid contribution amount.",
+      "error"
+    );
 
+    return;
 
-  members.forEach(
-    function(member){
-
-      const option =
-        document.createElement(
-          "option"
-        );
+  }
 
 
-      option.value =
-        member.id;
+  /*
+   * MONTH VALIDATION
+   */
+
+  const month =
+    monthInput.value.trim();
 
 
-      const number =
-        member.member_number ||
-        member.membership_number ||
-        "";
+  if(!month){
+
+    showFormStatus(
+      "Please enter the contribution month.",
+      "error"
+    );
+
+    return;
+
+  }
 
 
-      option.textContent =
-        member.name +
-        (
-          number
-          ? " — " + number
-          : ""
-        );
+  /*
+   * PREVENT DOUBLE SUBMISSION
+   */
+
+  button.disabled =
+    true;
+
+  button.textContent =
+    "Saving...";
 
 
-      memberSelect.appendChild(
-        option
+  try{
+
+    /*
+     * IMPORTANT:
+     *
+     * Use the existing recordContribution()
+     * from supabase-data.js.
+     *
+     * It handles the group_id.
+     */
+
+    await recordContribution({
+
+      memberId:
+        member.value,
+
+      amount:
+        amount,
+
+      month:
+        month,
+
+      method:
+        methodInput.value,
+
+      reference:
+        referenceInput.value.trim() ||
+        null,
+
+      goalId:
+        goalInput.value ||
+        null
+
+    });
+
+
+    /*
+     * Close the form after successful save.
+     */
+
+    closeRecordContributionModal();
+
+
+    /*
+     * Tell the user that the save succeeded.
+     */
+
+    showStatus(
+      "Contribution recorded successfully. Dashboard updated.",
+      "success"
+    );
+
+
+    /*
+     * Reload the table.
+     */
+
+    await loadContributionsList();
+
+
+  }catch(error){
+
+    console.error(
+      "RECORD CONTRIBUTION ERROR:",
+      error
+    );
+
+
+    showFormStatus(
+      error.message ||
+      "Could not record contribution.",
+      "error"
+    );
+
+
+  }finally{
+
+    button.disabled =
+      false;
+
+    button.textContent =
+      "Save";
+
+  }
+
+}
+
+
+/* ============================================================
+   SEARCH
+   ============================================================ */
+
+function setupSearch(){
+
+  const input =
+    el("contribSearch");
+
+  if(!input){
+    return;
+  }
+
+
+  input.addEventListener(
+    "input",
+    function(){
+
+      const query =
+        input.value
+          .trim()
+          .toLowerCase();
+
+
+      const rows =
+        el("contribRows");
+
+      if(!rows){
+        return;
+      }
+
+
+      const allRows =
+        rows.querySelectorAll("tr");
+
+
+      allRows.forEach(
+        function(row){
+
+          /*
+           * Do not hide loading,
+           * empty or error messages.
+           */
+
+          if(
+            row.querySelector(
+              ".empty-state"
+            ) ||
+            row.querySelector(
+              ".loading-row"
+            ) ||
+            row.querySelector(
+              ".error-row"
+            )
+          ){
+
+            return;
+
+          }
+
+
+          const text =
+            row.textContent
+              .toLowerCase();
+
+
+          row.style.display =
+            text.includes(query)
+              ? ""
+              : "none";
+
+        }
       );
 
     }
   );
 
-
-  console.log(
-    "Members loaded:",
-    members.length
-  );
-
 }
 
 
-/*
-==================================================
-LOAD CONTRIBUTIONS
-==================================================
-*/
+/* ============================================================
+   INITIALIZE CONTRIBUTIONS PAGE
+   ============================================================ */
 
-async function loadContributions(){
+async function initializeContributionsPage(){
 
-  loading.style.display =
-    "block";
+  try{
 
-  tableWrap.style.display =
-    "none";
+    /*
+     * ----------------------------------------------------------
+     * STEP 1
+     * Check authentication.
+     * ----------------------------------------------------------
+     */
 
-  loading.textContent =
-    "Loading contributions...";
+    if(
+      typeof requireSession ===
+      "function"
+    ){
 
-
-  console.log(
-    "Loading contributions for group:",
-    currentAccount.group.id
-  );
-
-
-  /*
-   IMPORTANT:
-   We deliberately DO NOT request
-   contribution_date because your
-   existing schema uses month.
-  */
-
-  const result =
-    await supabase
-      .from("contributions")
-      .select("*")
-      .eq(
-        "group_id",
-        currentAccount.group.id
-      )
-      .order(
-        "created_at",
-        {
-          ascending:false
-        }
-      );
-
-
-  console.log(
-    "Contribution query result:",
-    result
-  );
-
-
-  if(result.error){
-
-    throw new Error(
-      "Unable to load contributions: " +
-      result.error.message
-    );
-
-  }
-
-
-  const list =
-    result.data || [];
-
-
-  /*
-   Get member names.
-  */
-
-  const memberIds =
-    [
-      ...new Set(
-        list
-          .map(
-            item =>
-              item.member_id
-          )
-          .filter(Boolean)
-      )
-    ];
-
-
-  const memberNames = {};
-
-
-  if(memberIds.length){
-
-    const memberResult =
-      await supabase
-        .from("members")
-        .select(
-          "id,name,member_number,membership_number"
-        )
-        .in(
-          "id",
-          memberIds
-        );
-
-
-    if(memberResult.error){
-
-      console.warn(
-        "Member names could not be loaded:",
-        memberResult.error
-      );
+      await requireSession();
 
     }else{
 
-      (
-        memberResult.data || []
-      ).forEach(
-        function(member){
+      /*
+       * Fallback authentication check.
+       */
 
-          memberNames[
-            member.id
-          ] =
-            member.name +
-            (
-              member.member_number ||
-              member.membership_number
-              ?
-              " — " +
-              (
-                member.member_number ||
-                member.membership_number
-              )
-              :
-              ""
-            );
+      const {
+        data,
+        error
+      } =
+        await supabase.auth.getSession();
 
-        }
+
+      if(error){
+
+        throw error;
+
+      }
+
+
+      if(
+        !data ||
+        !data.session
+      ){
+
+        window.location.href =
+          "login.html";
+
+        return;
+
+      }
+
+    }
+
+
+    /*
+     * ----------------------------------------------------------
+     * STEP 2
+     * Load identity.
+     * ----------------------------------------------------------
+     */
+
+    try{
+
+      await loadIdentity();
+
+    }catch(error){
+
+      console.warn(
+        "Identity loading failed:",
+        error
       );
 
     }
 
-  }
 
-
-  rows.innerHTML =
-    "";
-
-
-  if(!list.length){
-
-    rows.innerHTML =
-      `
-      <tr>
-
-        <td
-          colspan="7"
-          class="empty"
-        >
-          No contributions recorded yet.
-        </td>
-
-      </tr>
-      `;
-
-  }else{
-
-    list.forEach(
-      function(item){
-
-        const tr =
-          document.createElement(
-            "tr"
-          );
-
-
-        tr.innerHTML =
-          `
-
-          <td>
-            ${
-              escapeHtml(
-                memberNames[item.member_id] ||
-                "Unknown member"
-              )
-            }
-          </td>
-
-          <td>
-            ${
-              escapeHtml(
-                item.contribution_type ||
-                item.type ||
-                "—"
-              )
-            }
-          </td>
-
-          <td>
-            <strong>
-              ${money(item.amount)}
-            </strong>
-          </td>
-
-          <td>
-            ${
-              escapeHtml(
-                item.month ||
-                "—"
-              )
-            }
-          </td>
-
-          <td>
-            ${
-              escapeHtml(
-                item.payment_method ||
-                item.payment ||
-                "—"
-              )
-            }
-          </td>
-
-          <td>
-            ${
-              escapeHtml(
-                item.reference ||
-                "—"
-              )
-            }
-          </td>
-
-          <td>
-            ${
-              escapeHtml(
-                item.notes ||
-                "—"
-              )
-            }
-          </td>
-
-          `;
-
-
-        rows.appendChild(
-          tr
-        );
-
-      }
-    );
-
-  }
-
-
-  /*
-   Summary.
-  */
-
-  const total =
-    list.reduce(
-      function(sum,item){
-
-        return sum +
-          Number(
-            item.amount || 0
-          );
-
-      },
-      0
-    );
-
-
-  /*
-   Month summary based on
-   the month text field.
-  */
-
-  const currentMonth =
-    new Date()
-      .toLocaleDateString(
-        "en-US",
-        {
-          month:"long",
-          year:"numeric"
-        }
-      );
-
-
-  const monthTotal =
-    list
-      .filter(
-        function(item){
-
-          return String(
-            item.month || ""
-          ).toLowerCase()
-          ===
-          currentMonth.toLowerCase();
-
-        }
-      )
-      .reduce(
-        function(sum,item){
-
-          return sum +
-            Number(
-              item.amount || 0
-            );
-
-        },
-        0
-      );
-
-
-  document.getElementById(
-    "total"
-  ).textContent =
-    money(total);
-
-
-  document.getElementById(
-    "monthTotal"
-  ).textContent =
-    money(monthTotal);
-
-
-  document.getElementById(
-    "recordCount"
-  ).textContent =
-    list.length;
-
-
-  loading.style.display =
-    "none";
-
-  tableWrap.style.display =
-    "block";
-
-}
-
-
-/*
-==================================================
-SAVE CONTRIBUTION
-==================================================
-*/
-
-form.addEventListener(
-  "submit",
-  async function(event){
-
-    event.preventDefault();
-
-
-    saveButton.disabled =
-      true;
-
-    saveButton.textContent =
-      "Saving...";
-
+    /*
+     * ----------------------------------------------------------
+     * STEP 3
+     * Load group information.
+     * ----------------------------------------------------------
+     */
 
     try{
 
-      const memberId =
-        memberSelect.value;
+      await loadGroupName();
 
+    }catch(error){
 
-      const amount =
-        Number(
-          document.getElementById(
-            "amount"
-          ).value
-        );
-
-
-      const type =
-        document.getElementById(
-          "type"
-        ).value
-        .trim();
-
-
-      const month =
-        document.getElementById(
-          "month"
-        ).value
-        .trim();
-
-
-      const payment =
-        document.getElementById(
-          "payment"
-        ).value;
-
-
-      const reference =
-        document.getElementById(
-          "reference"
-        ).value
-        .trim();
-
-
-      const notes =
-        document.getElementById(
-          "notes"
-        ).value
-        .trim();
-
-
-      if(!memberId){
-
-        throw new Error(
-          "Please select the member who made the contribution."
-        );
-
-      }
-
-
-      if(!amount || amount <= 0){
-
-        throw new Error(
-          "Please enter a valid contribution amount."
-        );
-
-      }
-
-
-      if(!type){
-
-        throw new Error(
-          "Please enter the contribution type."
-        );
-
-      }
-
-
-      if(!month){
-
-        throw new Error(
-          "Please enter the contribution month."
-        );
-
-      }
-
-
-      /*
-       IMPORTANT:
-       No contribution_date is inserted.
-       */
-
-      const record = {
-
-        group_id:
-          currentAccount.group.id,
-
-        member_id:
-          memberId,
-
-        amount:
-          amount,
-
-        contribution_type:
-          type,
-
-        month:
-          month,
-
-        payment_method:
-          payment || null,
-
-        reference:
-          reference || null,
-
-        notes:
-          notes || null
-
-      };
-
-
-      console.log(
-        "Contribution being saved:",
-        record
+      console.warn(
+        "Group loading failed:",
+        error
       );
 
-
-      const result =
-        await supabase
-          .from("contributions")
-          .insert(
-            record
-          );
+    }
 
 
-      console.log(
-        "Save result:",
-        result
-      );
+    /*
+     * ----------------------------------------------------------
+     * STEP 4
+     *
+     * CRITICAL FIX
+     *
+     * Load MEMBERS independently.
+     *
+     * DO NOT use Promise.all().
+     *
+     * This ensures that a failure in:
+     *
+     * - goals
+     * - contributions
+     * - dashboard totals
+     * - another query
+     *
+     * cannot prevent the member dropdown
+     * from being populated.
+     * ----------------------------------------------------------
+     */
 
+    try{
 
-      if(result.error){
-
-        throw new Error(
-          "Unable to save contribution: " +
-          result.error.message
-        );
-
-      }
-
-
-      showNotice(
-        "Contribution recorded successfully.",
-        true
-      );
-
-
-      document.getElementById(
-        "amount"
-      ).value =
-        "";
-
-
-      document.getElementById(
-        "type"
-      ).value =
-        "";
-
-
-      document.getElementById(
-        "reference"
-      ).value =
-        "";
-
-
-      document.getElementById(
-        "notes"
-      ).value =
-        "";
-
-
-      await loadContributions();
-
+      await loadMembersForContribution();
 
     }catch(error){
 
       console.error(
-        "SAVE CONTRIBUTION ERROR:",
+        "Initial member loading failed:",
         error
       );
 
-
-      showNotice(
-        error.message ||
-        "Unable to save contribution."
-      );
-
-
-    }finally{
-
-      saveButton.disabled =
-        false;
-
-      saveButton.textContent =
-        "Save Contribution";
-
     }
-
-  }
-);
-
-
-/*
-==================================================
-LOGOUT
-==================================================
-*/
-
-document
-  .getElementById(
-    "logout"
-  )
-  .addEventListener(
-    "click",
-    async function(){
-
-      await supabase
-        .auth
-        .signOut();
-
-
-      window.location.href =
-        "login.html";
-
-    }
-  );
-
-
-/*
-==================================================
-INITIALIZE
-==================================================
-*/
-
-(async function(){
-
-  try{
-
-    const user =
-      await getCurrentUser();
-
-
-    if(!user){
-
-      return;
-
-    }
-
-
-    const member =
-      await getCurrentMember(
-        user
-      );
-
-
-    const group =
-      await getGroup(
-        member.group_id
-      );
-
-
-    currentAccount = {
-
-      user:user,
-
-      member:member,
-
-      group:group
-
-    };
-
-
-    document.getElementById(
-      "groupName"
-    ).textContent =
-      group.name ||
-      "Chama";
 
 
     /*
-     Default month.
-    */
-
-    document.getElementById(
-      "month"
-    ).value =
-      new Date()
-        .toLocaleDateString(
-          "en-US",
-          {
-            month:"long",
-            year:"numeric"
-          }
-        );
-
-
-    /*
-     IMPORTANT:
-     Load members first.
-     Even if contribution history
-     has a problem, member selection
-     should still work.
-    */
+     * ----------------------------------------------------------
+     * STEP 5
+     *
+     * Load contribution history independently.
+     * ----------------------------------------------------------
+     */
 
     try{
 
-      await loadMembers();
+      await loadContributionsList();
 
-    }catch(memberError){
+    }catch(error){
 
       console.error(
-        "MEMBER LOAD ERROR:",
-        memberError
-      );
-
-
-      memberSelect.innerHTML =
-        `
-        <option value="">
-          Unable to load members
-        </option>
-        `;
-
-
-      showNotice(
-        memberError.message
+        "Initial contribution loading failed:",
+        error
       );
 
     }
 
 
     /*
-     Load history separately.
-    */
+     * ----------------------------------------------------------
+     * STEP 6
+     *
+     * Goals are OPTIONAL.
+     *
+     * Even if this fails, members are already loaded.
+     * ----------------------------------------------------------
+     */
 
     try{
 
-      await loadContributions();
+      await loadContributionGoals();
 
-    }catch(contributionError){
+    }catch(error){
 
-      console.error(
-        "CONTRIBUTION LOAD ERROR:",
-        contributionError
-      );
-
-
-      loading.textContent =
-        "Unable to load contributions.";
-
-
-      showNotice(
-        contributionError.message
+      console.warn(
+        "Initial goal loading failed:",
+        error
       );
 
     }
@@ -1796,27 +1505,195 @@ INITIALIZE
 
   }catch(error){
 
+    /*
+     * Only a genuine page/session initialization
+     * failure reaches this point.
+     */
+
     console.error(
-      "CONTRIBUTIONS INITIALIZATION ERROR:",
+      "CONTRIBUTIONS PAGE INITIALIZATION ERROR:",
       error
     );
 
 
-    loading.textContent =
-      "Unable to load contributions.";
-
-
-    showNotice(
+    showStatus(
       error.message ||
-      "Unable to open Contributions."
+      "Could not initialize the Contributions page.",
+      "error"
     );
 
   }
 
-})();
+}
+
+
+/* ============================================================
+   BUTTON EVENTS
+   ============================================================ */
+
+const recordButton =
+  el("recordContributionBtn");
+
+if(recordButton){
+
+  recordButton.addEventListener(
+    "click",
+    openRecordContributionModal
+  );
+
+}
+
+
+const cancelButton =
+  el("cancelContributionBtn");
+
+if(cancelButton){
+
+  cancelButton.addEventListener(
+    "click",
+    closeRecordContributionModal
+  );
+
+}
+
+
+const saveButton =
+  el("saveContribBtn");
+
+if(saveButton){
+
+  saveButton.addEventListener(
+    "click",
+    saveContribution
+  );
+
+}
+
+
+/* ============================================================
+   CLOSE MODAL WHEN CLICKING BACKDROP
+   ============================================================ */
+
+const recordModal =
+  el("recordModal");
+
+if(recordModal){
+
+  recordModal.addEventListener(
+    "click",
+    function(event){
+
+      if(
+        event.target ===
+        recordModal
+      ){
+
+        closeRecordContributionModal();
+
+      }
+
+    }
+  );
+
+}
+
+
+/* ============================================================
+   ESCAPE KEY
+   ============================================================ */
+
+document.addEventListener(
+  "keydown",
+  function(event){
+
+    if(
+      event.key ===
+      "Escape"
+    ){
+
+      const modal =
+        el("recordModal");
+
+      if(
+        modal &&
+        modal.style.display ===
+        "flex"
+      ){
+
+        closeRecordContributionModal();
+
+      }
+
+    }
+
+  }
+);
+
+
+/* ============================================================
+   SEARCH INITIALIZATION
+   ============================================================ */
+
+setupSearch();
+
+
+/* ============================================================
+   START PAGE
+   ============================================================ */
+
+initializeContributionsPage();
+  /* ============================================================
+   REALTIME UPDATES
+   ============================================================ */
+
+if (
+  typeof subscribeToLiveUpdates ===
+  "function"
+) {
+
+  subscribeToLiveUpdates(
+    async function(){
+
+      try {
+
+        /*
+         * Refresh only the contribution table.
+         *
+         * We deliberately do NOT reload the member
+         * dropdown on every realtime event.
+         */
+
+        await loadContributionsList();
+
+      } catch (error) {
+
+        console.warn(
+          "Realtime contribution refresh failed:",
+          error
+        );
+
+      }
+
+    }
+  ).catch(
+    function(error){
+
+      console.warn(
+        "Realtime subscription unavailable:",
+        error
+      );
+
+    }
+  );
+
+}
+
+
+/* ============================================================
+   END OF CONTRIBUTIONS PAGE
+   ============================================================ */
 
 </script>
 
 </body>
-
 </html>
