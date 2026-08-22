@@ -3,500 +3,395 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Members - Chama Live</title>
 
 <style>
-* {
-  box-sizing: border-box;
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:Arial,Helvetica,sans-serif;
+  background:#f4f7f5;
+  color:#17221c
 }
 
-body {
-  margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
-  background: #f4f7f5;
-  color: #17221c;
+header{
+  background:#17663f;
+  color:#fff;
+  padding:14px 16px
 }
 
-header {
-  background: #17663f;
-  color: white;
-  padding: 14px 16px;
+.header{
+  max-width:1100px;
+  margin:auto;
+  display:flex;
+  justify-content:space-between;
+  align-items:center
 }
 
-.header-inner {
-  max-width: 1100px;
-  margin: auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
+.logo{
+  font-size:21px;
+  font-weight:800
 }
 
-.logo {
-  font-size: 21px;
-  font-weight: 800;
+.group{
+  font-size:13px;
+  margin-top:3px;
+  opacity:.9
 }
 
-.group-name {
-  font-size: 13px;
-  margin-top: 3px;
-  opacity: .9;
+.actions{
+  display:flex;
+  gap:8px
 }
 
-.header-actions {
-  display: flex;
-  gap: 8px;
+.actions a,
+.actions button{
+  padding:9px 13px;
+  border-radius:8px;
+  font-weight:700;
+  text-decoration:none;
+  cursor:pointer
 }
 
-.header-actions a,
-.header-actions button {
-  border-radius: 8px;
-  padding: 9px 13px;
-  font-weight: 700;
-  cursor: pointer;
-  text-decoration: none;
+.actions a{
+  background:#fff;
+  color:#17663f
 }
 
-.dashboard-btn {
-  background: white;
-  color: #17663f;
+.actions button{
+  background:transparent;
+  color:#fff;
+  border:1px solid #fff
 }
 
-.logout-btn {
-  background: transparent;
-  color: white;
-  border: 1px solid rgba(255,255,255,.7);
+main{
+  max-width:1100px;
+  margin:auto;
+  padding:20px 14px 50px
 }
 
-main {
-  max-width: 1100px;
-  margin: auto;
-  padding: 20px 14px 50px;
+h1{
+  margin:0;
+  font-size:27px
 }
 
-h1 {
-  margin: 0;
-  font-size: 27px;
+.subtitle{
+  color:#68736e;
+  font-size:14px;
+  margin:6px 0 20px
 }
 
-.subtitle {
-  color: #68736e;
-  margin: 6px 0 20px;
-  font-size: 14px;
+.card{
+  background:#fff;
+  border:1px solid #e0e7e2;
+  border-radius:12px;
+  padding:18px;
+  margin-bottom:18px
 }
 
-.card {
-  background: white;
-  border: 1px solid #e0e7e2;
-  border-radius: 12px;
-  padding: 18px;
-  margin-bottom: 18px;
+.card h2{
+  margin:0 0 16px;
+  font-size:18px
 }
 
-.card h2 {
-  margin: 0 0 16px;
-  font-size: 18px;
+.form-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px
 }
 
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 14px;
+label{
+  display:block;
+  font-size:12px;
+  font-weight:800;
+  margin-bottom:6px
 }
 
-.field label {
-  display: block;
-  font-size: 12px;
-  font-weight: 800;
-  margin-bottom: 6px;
+input,
+select{
+  width:100%;
+  padding:12px;
+  border:1px solid #ccd6d0;
+  border-radius:8px;
+  font-size:15px;
+  background:#fff
 }
 
-.field input,
-.field select {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #ccd6d0;
-  border-radius: 8px;
-  font-size: 15px;
-  background: white;
+button.add{
+  margin-top:16px;
+  padding:12px 18px;
+  border:0;
+  border-radius:8px;
+  background:#17663f;
+  color:#fff;
+  font-weight:800;
+  cursor:pointer
 }
 
-.field input:focus,
-.field select:focus {
-  outline: none;
-  border-color: #17663f;
+button.add:disabled{
+  opacity:.6
 }
 
-.add-btn {
-  margin-top: 16px;
-  padding: 12px 18px;
-  background: #17663f;
-  color: white;
-  border: 0;
-  border-radius: 8px;
-  font-weight: 800;
-  cursor: pointer;
+.message{
+  display:none;
+  padding:13px;
+  border-radius:8px;
+  margin-bottom:18px;
+  white-space:pre-wrap;
+  font-size:14px
 }
 
-.add-btn:disabled {
-  opacity: .6;
-  cursor: not-allowed;
+.message.show{
+  display:block;
+  background:#fdebea;
+  color:#8b3028
 }
 
-.message {
-  display: none;
-  padding: 13px;
-  border-radius: 8px;
-  margin-bottom: 18px;
-  font-size: 14px;
-  line-height: 1.5;
-  white-space: pre-wrap;
+.message.success{
+  display:block;
+  background:#e8f5ec;
+  color:#17663f
 }
 
-.message.show {
-  display: block;
-  background: #fdebea;
-  color: #8b3028;
-  border: 1px solid #efc5c0;
+.loading{
+  padding:25px;
+  text-align:center;
+  color:#68736e
 }
 
-.message.success {
-  display: block;
-  background: #e8f5ec;
-  color: #17663f;
-  border: 1px solid #c9e4d1;
+.table-wrap{
+  display:none;
+  overflow-x:auto
 }
 
-.loading {
-  padding: 25px;
-  text-align: center;
-  color: #68736e;
+table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:700px
 }
 
-.table-container {
-  overflow-x: auto;
-  display: none;
+th,td{
+  padding:12px 9px;
+  text-align:left;
+  border-bottom:1px solid #edf0ee;
+  font-size:13px
 }
 
-table {
-  width: 100%;
-  min-width: 760px;
-  border-collapse: collapse;
+th{
+  font-size:11px;
+  color:#68736e;
+  text-transform:uppercase
 }
 
-th,
-td {
-  text-align: left;
-  padding: 12px 9px;
-  border-bottom: 1px solid #edf0ee;
-  font-size: 13px;
+.badge{
+  display:inline-block;
+  padding:4px 8px;
+  border-radius:20px;
+  background:#e7f4eb;
+  color:#17663f;
+  font-size:11px;
+  font-weight:800
 }
 
-th {
-  color: #68736e;
-  font-size: 11px;
-  text-transform: uppercase;
-}
-
-.role {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 20px;
-  background: #e7f4eb;
-  color: #17663f;
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.status {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 20px;
-  background: #eef2f0;
-  font-size: 11px;
-}
-
-.empty {
-  text-align: center;
-  padding: 25px;
-  color: #68736e;
-}
-
-@media(max-width:650px) {
-
-  .header-inner {
-    align-items: flex-start;
+@media(max-width:650px){
+  .header{
+    align-items:flex-start
   }
 
-  .header-actions {
-    flex-direction: column;
+  .actions{
+    flex-direction:column
   }
 
-  main {
-    padding: 18px 12px 40px;
+  .form-grid{
+    grid-template-columns:1fr
   }
 
-  h1 {
-    font-size: 23px;
-  }
-
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .card {
-    padding: 14px;
+  main{
+    padding:18px 12px 40px
   }
 }
 </style>
 </head>
 
-
 <body>
 
 <header>
 
-  <div class="header-inner">
+<div class="header">
 
-    <div>
+<div>
+<div class="logo">Chama Live</div>
+<div id="groupName" class="group">
+Loading group...
+</div>
+</div>
 
-      <div class="logo">
-        Chama Live
-      </div>
+<div class="actions">
 
-      <div
-        id="groupName"
-        class="group-name"
-      >
-        Loading group...
-      </div>
+<a href="dashboard.html">
+Dashboard
+</a>
 
-    </div>
+<button id="logoutBtn" type="button">
+Logout
+</button>
 
+</div>
 
-    <div class="header-actions">
-
-      <a
-        href="dashboard.html"
-        class="dashboard-btn"
-      >
-        Dashboard
-      </a>
-
-      <button
-        id="logoutBtn"
-        class="logout-btn"
-        type="button"
-      >
-        Logout
-      </button>
-
-    </div>
-
-  </div>
+</div>
 
 </header>
 
 
 <main>
 
-  <h1>
-    Members
-  </h1>
+<h1>Members</h1>
 
-  <p class="subtitle">
-    Manage members and roles in your Chama.
-  </p>
+<p class="subtitle">
+Manage members and roles in your Chama.
+</p>
 
 
-  <div
-    id="message"
-    class="message"
-  ></div>
+<div id="message" class="message"></div>
 
 
-  <!-- ADD MEMBER -->
+<section class="card">
 
-  <section class="card">
+<h2>Add New Member</h2>
 
-    <h2>
-      Add New Member
-    </h2>
+<form id="memberForm">
 
+<div class="form-grid">
 
-    <form id="memberForm">
+<div>
+<label for="memberName">
+Full Name
+</label>
 
-      <div class="form-grid">
+<input
+id="memberName"
+name="name"
+type="text"
+autocomplete="name"
+required>
+</div>
 
 
-        <div class="field">
+<div>
+<label for="memberEmail">
+Email Address
+</label>
 
-          <label for="memberName">
-            Full Name
-          </label>
+<input
+id="memberEmail"
+name="email"
+type="email"
+autocomplete="email"
+required>
+</div>
 
-          <input
-            id="memberName"
-            name="name"
-            type="text"
-            autocomplete="name"
-            required
-          >
 
-        </div>
+<div>
+<label for="memberPhone">
+Phone Number
+</label>
 
+<input
+id="memberPhone"
+name="phone"
+type="tel"
+inputmode="tel"
+autocomplete="tel"
+required>
+</div>
 
-        <div class="field">
 
-          <label for="memberEmail">
-            Email Address
-          </label>
+<div>
+<label for="memberRole">
+Role
+</label>
 
-          <input
-            id="memberEmail"
-            name="email"
-            type="email"
-            autocomplete="email"
-            required
-          >
+<select
+id="memberRole"
+name="role">
 
-        </div>
+<option value="member">
+Member
+</option>
 
+<option value="secretary">
+Secretary
+</option>
 
-        <div class="field">
+<option value="treasurer">
+Treasurer
+</option>
 
-          <label for="memberPhone">
-            Phone Number
-          </label>
+</select>
+</div>
 
-          <input
-            id="memberPhone"
-            name="phone"
-            type="tel"
-            inputmode="tel"
-            autocomplete="tel"
-            required
-          >
+</div>
 
-        </div>
 
+<button
+id="addButton"
+class="add"
+type="submit">
 
-        <div class="field">
+Add Member
 
-          <label for="memberRole">
-            Role
-          </label>
+</button>
 
-          <select
-            id="memberRole"
-            name="role"
-          >
+</form>
 
-            <option value="member">
-              Member
-            </option>
+</section>
 
-            <option value="secretary">
-              Secretary
-            </option>
 
-            <option value="treasurer">
-              Treasurer
-            </option>
+<section class="card">
 
-          </select>
+<h2>Group Members</h2>
 
-        </div>
+<div
+id="loading"
+class="loading">
 
+Loading members...
 
-      </div>
+</div>
 
 
-      <button
-        id="addMemberBtn"
-        class="add-btn"
-        type="submit"
-      >
-        Add Member
-      </button>
+<div
+id="tableWrap"
+class="table-wrap">
 
-    </form>
+<table>
 
-  </section>
+<thead>
 
+<tr>
 
-  <!-- GROUP MEMBERS -->
+<th>Member No.</th>
+<th>Name</th>
+<th>Email</th>
+<th>Phone</th>
+<th>Role</th>
+<th>Status</th>
 
-  <section class="card">
+</tr>
 
-    <h2>
-      Group Members
-    </h2>
+</thead>
 
+<tbody id="memberRows"></tbody>
 
-    <div
-      id="loading"
-      class="loading"
-    >
-      Loading members...
-    </div>
+</table>
 
+</div>
 
-    <div
-      id="tableContainer"
-      class="table-container"
-    >
-
-      <table>
-
-        <thead>
-
-          <tr>
-
-            <th>
-              Member No.
-            </th>
-
-            <th>
-              Name
-            </th>
-
-            <th>
-              Email
-            </th>
-
-            <th>
-              Phone
-            </th>
-
-            <th>
-              Role
-            </th>
-
-            <th>
-              Status
-            </th>
-
-          </tr>
-
-        </thead>
-
-
-        <tbody
-          id="memberRows"
-        ></tbody>
-
-      </table>
-
-    </div>
-
-  </section>
+</section>
 
 </main>
 
-
-<!-- SUPABASE -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -508,924 +403,656 @@ th {
 "use strict";
 
 
-/*
-==================================================
-SUPABASE
-==================================================
-*/
-
 const supabase =
-  window.chamaSupabase;
+window.chamaSupabase;
 
-
-let currentUser = null;
-let currentMember = null;
-let currentGroup = null;
-
-
-const message =
-  document.getElementById("message");
-
-const form =
-  document.getElementById("memberForm");
-
-const addButton =
-  document.getElementById("addMemberBtn");
 
 const loading =
-  document.getElementById("loading");
+document.getElementById("loading");
 
-const tableContainer =
-  document.getElementById("tableContainer");
+const tableWrap =
+document.getElementById("tableWrap");
 
-const memberRows =
-  document.getElementById("memberRows");
+const rows =
+document.getElementById("memberRows");
+
+const message =
+document.getElementById("message");
 
 const groupName =
-  document.getElementById("groupName");
+document.getElementById("groupName");
+
+const form =
+document.getElementById("memberForm");
+
+const addButton =
+document.getElementById("addButton");
+
+
+let user = null;
+let member = null;
+let group = null;
+
+
+/* MESSAGE */
+
+function showMessage(text,success=false){
+
+message.textContent=text;
+
+message.className=
+success
+?"message success"
+:"message show";
+
+}
+
+
+/* ESCAPE */
+
+function safe(value){
+
+return String(value ?? "")
+.replace(/[&<>"']/g,function(x){
+
+return {
+
+"&":"&amp;",
+"<":"&lt;",
+">":"&gt;",
+'"':"&quot;",
+"'":"&#039;"
+
+}[x];
+
+});
+
+}
+
+
+/* USER */
+
+async function getUser(){
+
+const result =
+await supabase.auth.getUser();
+
+if(result.error)
+throw result.error;
+
+if(!result.data.user){
+
+window.location.href="login.html";
+
+return null;
+
+}
+
+return result.data.user;
+
+}
+
+
+/* MEMBER */
+
+async function getMember(){
+
+/*
+Only request columns we actually need.
+*/
+
+let result =
+await supabase
+.from("members")
+.select(
+"id,group_id,user_id,name,email,role,member_number,membership_number,phone,status,onboarding_status"
+)
+.eq(
+"user_id",
+user.id
+)
+.maybeSingle();
+
+
+if(result.error)
+throw result.error;
+
+
+if(result.data)
+return result.data;
 
 
 /*
-==================================================
-DISPLAY MESSAGE
-==================================================
+Fallback to email.
 */
 
-function showMessage(
-  text,
-  success = false
-) {
+result =
+await supabase
+.from("members")
+.select(
+"id,group_id,user_id,name,email,role,member_number,membership_number,phone,status,onboarding_status"
+)
+.eq(
+"email",
+user.email
+)
+.maybeSingle();
 
-  message.textContent = text;
 
-  if (success) {
+if(result.error)
+throw result.error;
 
-    message.className =
-      "message success";
 
-  } else {
+if(!result.data){
 
-    message.className =
-      "message show";
+throw new Error(
+"Your account is not linked to a Chama member."
+);
 
-  }
+}
+
+return result.data;
+
+}
+
+
+/* GROUP */
+
+async function getGroup(){
+
+const result =
+await supabase
+.from("groups")
+.select("id,name")
+.eq(
+"id",
+member.group_id
+)
+.maybeSingle();
+
+
+if(result.error)
+throw result.error;
+
+
+if(!result.data){
+
+throw new Error(
+"Your Chama could not be found."
+);
+
+}
+
+return result.data;
 
 }
 
 
 /*
-==================================================
-ESCAPE HTML
-==================================================
-*/
-
-function escapeHtml(value) {
-
-  return String(
-    value ?? ""
-  ).replace(
-    /[&<>"']/g,
-    function(character) {
-
-      const entities = {
-
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#039;"
-
-      };
-
-      return entities[character];
-
-    }
-  );
-
-}
-
-
-/*
-==================================================
-CHECK SUPABASE CLIENT
-==================================================
-*/
-
-if (!supabase) {
-
-  loading.textContent =
-    "Supabase client unavailable.";
-
-  showMessage(
-    "Supabase client is unavailable. Check js/supabase-client.js."
-  );
-
-  throw new Error(
-    "Supabase client unavailable."
-  );
-
-}
-
-
-/*
-==================================================
-GET LOGGED-IN USER
-==================================================
-*/
-
-async function getCurrentUser() {
-
-  const result =
-    await supabase.auth.getUser();
-
-
-  if (result.error) {
-
-    throw result.error;
-
-  }
-
-
-  if (!result.data.user) {
-
-    window.location.href =
-      "login.html";
-
-    return null;
-
-  }
-
-
-  return result.data.user;
-
-}
-
-
-/*
-==================================================
-GET CURRENT MEMBER
-==================================================
-*/
-
-async function getCurrentMember(
-  user
-) {
-
-  /*
-   * Primary lookup:
-   * your live members table has user_id.
-   */
-
-  let result =
-    await supabase
-      .from("members")
-      .select("*")
-      .eq(
-        "user_id",
-        user.id
-      )
-      .maybeSingle();
-
-
-  if (result.error) {
-
-    throw result.error;
-
-  }
-
-
-  if (result.data) {
-
-    return result.data;
-
-  }
-
-
-  /*
-   * Fallback using email.
-   */
-
-  result =
-    await supabase
-      .from("members")
-      .select("*")
-      .eq(
-        "email",
-        user.email
-      )
-      .maybeSingle();
-
-
-  if (result.error) {
-
-    throw result.error;
-
-  }
-
-
-  if (!result.data) {
-
-    throw new Error(
-      "Your account is not linked to a member record."
-    );
-
-  }
-
-
-  return result.data;
-
-}
-
-
-/*
-==================================================
-GET GROUP
-==================================================
-*/
-
-async function getCurrentGroup(
-  member
-) {
-
-  if (!member.group_id) {
-
-    throw new Error(
-      "Your member record has no group ID."
-    );
-
-  }
-
-
-  const result =
-    await supabase
-      .from("groups")
-      .select("*")
-      .eq(
-        "id",
-        member.group_id
-      )
-      .maybeSingle();
-
-
-  if (result.error) {
-
-    throw result.error;
-
-  }
-
-
-  if (!result.data) {
-
-    throw new Error(
-      "The group linked to your account could not be found."
-    );
-
-  }
-
-
-  return result.data;
-
-}
-
-
-/*
-==================================================
-GET NEXT MEMBER NUMBER
-==================================================
-*/
-
-async function getNextMemberNumber() {
-
-  const result =
-    await supabase
-      .from("members")
-      .select(
-        "member_number,membership_number"
-      )
-      .eq(
-        "group_id",
-        currentGroup.id
-      );
-
-
-  if (result.error) {
-
-    throw result.error;
-
-  }
-
-
-  let highest = 0;
-
-
-  (result.data || []).forEach(
-    function(member) {
-
-      const memberNumber =
-        parseInt(
-          String(
-            member.member_number || ""
-          ).replace(
-            /\D/g,
-            ""
-          ),
-          10
-        );
-
-
-      const membershipNumber =
-        parseInt(
-          String(
-            member.membership_number || ""
-          ).replace(
-            /\D/g,
-            ""
-          ),
-          10
-        );
-
-
-      if (
-        Number.isFinite(memberNumber) &&
-        memberNumber > highest
-      ) {
-
-        highest =
-          memberNumber;
-
-      }
-
-
-      if (
-        Number.isFinite(membershipNumber) &&
-        membershipNumber > highest
-      ) {
-
-        highest =
-          membershipNumber;
-
-      }
-
-    }
-  );
-
-
-  /*
-   * Your current member is 1504.
-   */
-
-  if (highest < 1504) {
-
-    highest = 1504;
-
-  }
-
-
-  return String(
-    highest + 1
-  );
-
-}
-
-
-/*
-==================================================
+================================================
 LOAD MEMBERS
-==================================================
+================================================
 */
 
-async function loadMembers() {
+async function loadMembers(){
 
-  loading.style.display =
-    "block";
+loading.style.display="block";
 
-  loading.textContent =
-    "Loading members...";
+tableWrap.style.display="none";
 
-  tableContainer.style.display =
-    "none";
+loading.textContent=
+"Loading members...";
 
 
-  try {
-
-    console.log(
-      "Loading members for group:",
-      currentGroup.id
-    );
-
-
-    const result =
-      await supabase
-        .from("members")
-        .select(`
-          id,
-          group_id,
-          user_id,
-          member_number,
-          name,
-          phone,
-          role,
-          join_date,
-          status,
-          created_at,
-          email,
-          membership_number,
-          onboarding_status
-        `)
-        .eq(
-          "group_id",
-          currentGroup.id
-        )
-        .order(
-          "created_at",
-          {
-            ascending: true
-          }
-        );
-
-
-    console.log(
-      "MEMBERS QUERY RESULT:",
-      result
-    );
-
-
-    if (result.error) {
-
-      throw new Error(
-        result.error.message
-      );
-
-    }
-
-
-    memberRows.innerHTML =
-      "";
-
-
-    const members =
-      result.data || [];
-
-
-    if (members.length === 0) {
-
-      memberRows.innerHTML = `
-
-        <tr>
-
-          <td
-            colspan="6"
-            class="empty"
-          >
-            No members found in this Chama.
-          </td>
-
-        </tr>
-
-      `;
-
-    } else {
-
-      members.forEach(
-        function(member) {
-
-          const number =
-            member.member_number ||
-            member.membership_number ||
-            "—";
-
-
-          const name =
-            member.name ||
-            "—";
-
-
-          const email =
-            member.email ||
-            "—";
-
-
-          const phone =
-            member.phone ||
-            "—";
-
-
-          const role =
-            member.role ||
-            "member";
-
-
-          const status =
-            member.status ||
-            member.onboarding_status ||
-            "—";
-
-
-          const row =
-            document.createElement("tr");
-
-
-          row.innerHTML = `
-
-            <td>
-              ${escapeHtml(number)}
-            </td>
-
-            <td>
-              <strong>
-                ${escapeHtml(name)}
-              </strong>
-            </td>
-
-            <td>
-              ${escapeHtml(email)}
-            </td>
-
-            <td>
-              ${escapeHtml(phone)}
-            </td>
-
-            <td>
-
-              <span class="role">
-                ${escapeHtml(role)}
-              </span>
-
-            </td>
-
-            <td>
-
-              <span class="status">
-                ${escapeHtml(status)}
-              </span>
-
-            </td>
-
-          `;
-
-
-          memberRows.appendChild(
-            row
-          );
-
-        }
-      );
-
-    }
-
-
-    loading.style.display =
-      "none";
-
-    tableContainer.style.display =
-      "block";
-
-
-  } catch (error) {
-
-    console.error(
-      "LOAD MEMBERS ERROR:",
-      error
-    );
-
-
-    loading.textContent =
-      "Unable to load members.";
-
-
-    tableContainer.style.display =
-      "none";
-
-
-    showMessage(
-      "Unable to load members:\n\n" +
-      (
-        error.message ||
-        "Unknown error"
-      )
-    );
-
-  }
-
-}
-
-
-/*
-==================================================
-ADD MEMBER
-==================================================
-*/
-
-form.addEventListener(
-  "submit",
-  async function(event) {
-
-    event.preventDefault();
-
-
-    addButton.disabled =
-      true;
-
-    addButton.textContent =
-      "Adding...";
-
-
-    showMessage(
-      "Creating member...",
-      true
-    );
-
-
-    try {
-
-      const name =
-        document
-          .getElementById("memberName")
-          .value
-          .trim();
-
-
-      const email =
-        document
-          .getElementById("memberEmail")
-          .value
-          .trim()
-          .toLowerCase();
-
-
-      const phone =
-        document
-          .getElementById("memberPhone")
-          .value
-          .trim();
-
-
-      const role =
-        document
-          .getElementById("memberRole")
-          .value;
-
-
-      /*
-       * Validation
-       */
-
-      if (!name) {
-
-        throw new Error(
-          "Please enter the member's full name."
-        );
-
-      }
-
-
-      if (!email) {
-
-        throw new Error(
-          "Please enter the member's email address."
-        );
-
-      }
-
-
-      if (!phone) {
-
-        throw new Error(
-          "Please enter the member's phone number."
-        );
-
-      }
-
-
-      /*
-       * Generate member number.
-       */
-
-      const nextNumber =
-        await getNextMemberNumber();
-
-
-      /*
-       * IMPORTANT:
-       *
-       * These columns match the live
-       * members table you inspected.
-       */
-
-      const payload = {
-
-        group_id:
-          currentGroup.id,
-
-        member_number:
-          nextNumber,
-
-        membership_number:
-          nextNumber,
-
-        name:
-          name,
-
-        phone:
-          phone,
-
-        role:
-          role,
-
-        email:
-          email,
-
-        status:
-          "active",
-
-        onboarding_status:
-          "pending"
-
-      };
-
-
-      console.log(
-        "CHAMA LIVE MEMBER PAYLOAD:",
-        payload
-      );
-
-
-      /*
-       * INSERT
-       */
-
-      const result =
-        await supabase
-          .from("members")
-          .insert(
-            payload
-          )
-          .select()
-          .single();
-
-
-      console.log(
-        "MEMBER INSERT RESULT:",
-        result
-      );
-
-
-      if (result.error) {
-
-        throw new Error(
-          result.error.message
-        );
-
-      }
-
-
-      /*
-       * SUCCESS
-       */
-
-      showMessage(
-        "Member " +
-        nextNumber +
-        " added successfully.",
-        true
-      );
-
-
-      form.reset();
-
-
-      document.getElementById(
-        "memberRole"
-      ).value =
-        "member";
-
-
-      /*
-       * Reload member list.
-       */
-
-      await loadMembers();
-
-
-    }
-    catch (error) {
-
-      console.error(
-        "ADD MEMBER ERROR:",
-        error
-      );
-
-
-      showMessage(
-        "Unable to add member:\n\n" +
-        (
-          error.message ||
-          "Unknown error"
-        )
-      );
-
-    }
-    finally {
-
-      addButton.disabled =
-        false;
-
-      addButton.textContent =
-        "Add Member";
-
-    }
-
-  }
+console.log(
+"MEMBERS: Loading group:",
+group.id
 );
 
 
+try{
+
 /*
-==================================================
+IMPORTANT:
+Use only the columns confirmed
+to exist in your database.
+*/
+
+const result =
+await supabase
+.from("members")
+.select(
+"id,group_id,user_id,member_number,membership_number,name,phone,role,status,email,onboarding_status"
+)
+.eq(
+"group_id",
+group.id
+);
+
+
+console.log(
+"MEMBERS RESULT:",
+result
+);
+
+
+if(result.error){
+
+throw result.error;
+
+}
+
+
+const list =
+result.data || [];
+
+
+rows.innerHTML="";
+
+
+if(list.length===0){
+
+rows.innerHTML=`
+
+<tr>
+<td colspan="6"
+style="text-align:center;padding:25px">
+
+No members found.
+
+</td>
+</tr>
+
+`;
+
+}else{
+
+list.forEach(function(m){
+
+const number =
+m.member_number ||
+m.membership_number ||
+"—";
+
+const status =
+m.status ||
+m.onboarding_status ||
+"—";
+
+
+const tr =
+document.createElement("tr");
+
+
+tr.innerHTML=`
+
+<td>
+${safe(number)}
+</td>
+
+<td>
+<strong>
+${safe(m.name)}
+</strong>
+</td>
+
+<td>
+${safe(m.email || "—")}
+</td>
+
+<td>
+${safe(m.phone || "—")}
+</td>
+
+<td>
+<span class="badge">
+${safe(m.role || "member")}
+</span>
+</td>
+
+<td>
+${safe(status)}
+</td>
+
+`;
+
+
+rows.appendChild(tr);
+
+});
+
+}
+
+
+loading.style.display="none";
+
+tableWrap.style.display="block";
+
+
+}catch(error){
+
+console.error(
+"MEMBERS LOAD ERROR:",
+error
+);
+
+
+loading.textContent=
+"Unable to load members.";
+
+
+showMessage(
+"Unable to load members:\n\n"+
+(error.message || error)
+);
+
+}
+
+}
+
+
+/*
+================================================
+ADD MEMBER
+================================================
+*/
+
+form.addEventListener(
+"submit",
+async function(e){
+
+e.preventDefault();
+
+
+addButton.disabled=true;
+
+addButton.textContent=
+"Adding...";
+
+
+try{
+
+const name =
+document
+.getElementById("memberName")
+.value
+.trim();
+
+const email =
+document
+.getElementById("memberEmail")
+.value
+.trim()
+.toLowerCase();
+
+const phone =
+document
+.getElementById("memberPhone")
+.value
+.trim();
+
+const role =
+document
+.getElementById("memberRole")
+.value;
+
+
+if(!name)
+throw new Error("Enter the member's full name.");
+
+if(!email)
+throw new Error("Enter the member's email.");
+
+if(!phone)
+throw new Error("Enter the member's phone number.");
+
+
+/*
+Get existing member numbers.
+*/
+
+const existing =
+await supabase
+.from("members")
+.select(
+"member_number,membership_number"
+)
+.eq(
+"group_id",
+group.id
+);
+
+
+if(existing.error)
+throw existing.error;
+
+
+let highest=1504;
+
+
+(existing.data || [])
+.forEach(function(m){
+
+const a =
+parseInt(
+String(
+m.member_number || ""
+).replace(/\D/g,""),
+10
+);
+
+const b =
+parseInt(
+String(
+m.membership_number || ""
+).replace(/\D/g,""),
+10
+);
+
+
+if(Number.isFinite(a) && a>highest)
+highest=a;
+
+if(Number.isFinite(b) && b>highest)
+highest=b;
+
+});
+
+
+const next =
+String(highest+1);
+
+
+/*
+Insert using your confirmed schema.
+*/
+
+const payload={
+
+group_id:group.id,
+
+member_number:next,
+
+membership_number:next,
+
+name:name,
+
+phone:phone,
+
+role:role,
+
+email:email,
+
+status:"active",
+
+onboarding_status:"pending"
+
+};
+
+
+console.log(
+"ADDING MEMBER:",
+payload
+);
+
+
+const result =
+await supabase
+.from("members")
+.insert(payload)
+.select()
+.single();
+
+
+console.log(
+"INSERT RESULT:",
+result
+);
+
+
+if(result.error)
+throw result.error;
+
+
+showMessage(
+"Member "+next+" added successfully.",
+true
+);
+
+
+form.reset();
+
+
+document.getElementById(
+"memberRole"
+).value="member";
+
+
+await loadMembers();
+
+
+}catch(error){
+
+console.error(
+"ADD MEMBER ERROR:",
+error
+);
+
+
+showMessage(
+"Unable to add member:\n\n"+
+(error.message || error)
+);
+
+}finally{
+
+addButton.disabled=false;
+
+addButton.textContent=
+"Add Member";
+
+}
+
+});
+
+
+/*
+================================================
 LOGOUT
-==================================================
+================================================
 */
 
 document
-  .getElementById("logoutBtn")
-  .addEventListener(
-    "click",
-    async function() {
+.getElementById("logoutBtn")
+.addEventListener(
+"click",
+async function(){
 
-      try {
+await supabase.auth.signOut();
 
-        await supabase.auth.signOut();
+window.location.href=
+"login.html";
 
-      } finally {
-
-        window.location.href =
-          "login.html";
-
-      }
-
-    }
-  );
+});
 
 
 /*
-==================================================
-INITIALISE
-==================================================
+================================================
+START
+================================================
 */
 
-(async function() {
+(async function(){
 
-  try {
+try{
 
-    currentUser =
-      await getCurrentUser();
+if(!supabase){
 
+throw new Error(
+"Supabase client is unavailable."
+);
 
-    if (!currentUser) {
-
-      return;
-
-    }
+}
 
 
-    currentMember =
-      await getCurrentMember(
-        currentUser
-      );
+user =
+await getUser();
 
 
-    currentGroup =
-      await getCurrentGroup(
-        currentMember
-      );
+if(!user)
+return;
 
 
-    groupName.textContent =
-      currentGroup.name ||
-      "Chama";
+member =
+await getMember();
 
 
-    await loadMembers();
+group =
+await getGroup();
 
 
-  }
-  catch (error) {
-
-    console.error(
-      "MEMBERS PAGE INITIALISATION ERROR:",
-      error
-    );
+groupName.textContent =
+group.name ||
+"Chama";
 
 
-    loading.textContent =
-      "Unable to load group members.";
+console.log(
+"CURRENT USER:",
+user.id
+);
+
+console.log(
+"CURRENT MEMBER:",
+member
+);
+
+console.log(
+"CURRENT GROUP:",
+group
+);
 
 
-    showMessage(
-      error.message ||
-      "Unable to load Members page."
-    );
+await loadMembers();
 
-  }
+
+}catch(error){
+
+console.error(
+"MEMBERS STARTUP ERROR:",
+error
+);
+
+
+loading.textContent=
+"Unable to load Members.";
+
+
+showMessage(
+error.message ||
+"Unable to load Members."
+);
+
+}
 
 })();
 
