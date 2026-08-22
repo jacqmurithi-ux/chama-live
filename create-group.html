@@ -1,1 +1,835 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Create Group — Chama Live</title><link rel="stylesheet" href="css/app.css"></head><body><div class="auth"><main class="card"><h1>Create your Chama</h1><p class="muted">Create the group and chairperson/admin account.</p><div id="msg" class="alert hidden"></div><form id="form" autocomplete="off"><div class="grid"><div class="field"><label for="groupName">Group name</label><input id="groupName" name="group_name" type="text" required></div><div class="field"><label for="registrationNumber">Registration number</label><input id="registrationNumber" name="registration_number" type="text"></div><div class="field"><label for="groupPhone">Group phone</label><input id="groupPhone" name="group_phone" type="tel" inputmode="tel" autocomplete="tel"></div><div class="field"><label for="groupEmail">Group email</label><input id="groupEmail" name="group_email" type="email" autocomplete="email"></div><div class="field"><label for="chairName">Chairperson full name</label><input id="chairName" name="name" type="text" required autocomplete="name"></div><div class="field"><label for="chairPhone">Chairperson phone</label><input id="chairPhone" name="phone" type="tel" inputmode="tel" autocomplete="tel" required></div><div class="field"><label for="chairEmail">Chairperson email</label><input id="chairEmail" name="email" type="email" required autocomplete="email"></div></div><button id="submit" class="btn full" style="margin-top:16px">CREATE GROUP</button></form><p class="muted" style="text-align:center"><a href="login.html">Back to login</a></p></main></div><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/supabase-client.js"></script><script>const db=window.chamaSupabase;const f=document.getElementById('form'),m=document.getElementById('msg'),b=document.getElementById('submit');f.addEventListener('submit',async e=>{e.preventDefault();if(!f.checkValidity()){f.reportValidity();return}b.disabled=true;b.textContent='CREATING...';m.className='alert hidden';try{const v=id=>document.getElementById(id).value.trim();const {data,error}=await db.functions.invoke('create-group',{body:{group_name:v('groupName'),registration_number:v('registrationNumber'),group_phone:v('groupPhone'),group_email:v('groupEmail').toLowerCase(),name:v('chairName'),phone:v('chairPhone'),email:v('chairEmail').toLowerCase()}});if(error)throw error;if(!data?.success)throw new Error(data?.message||'Could not create group.');m.innerHTML='Group created. Your one-time access code is <strong>'+data.access_code+'</strong>. Use the activation link sent to the chairperson email.';m.className='alert success';f.reset()}catch(x){m.textContent=x.message||'Could not create group.';m.className='alert'}finally{b.disabled=false;b.textContent='CREATE GROUP'}});</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+
+  <title>Create Group — Chama Live</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family:
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+      background: #f5f7f5;
+      color: #1d2521;
+      line-height: 1.45;
+    }
+
+    .page {
+      min-height: 100vh;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 560px;
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 24px;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 26px;
+      color: #104b2e;
+    }
+
+    .intro {
+      margin: 0 0 20px;
+      color: #65716b;
+      font-size: 14px;
+    }
+
+    .section-title {
+      margin: 22px 0 8px;
+      padding-bottom: 7px;
+      border-bottom: 1px solid #e4e8e5;
+      font-size: 15px;
+      font-weight: 800;
+      color: #104b2e;
+    }
+
+    .field {
+      margin-top: 15px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    input {
+      display: block;
+      width: 100%;
+      min-height: 48px;
+      padding: 11px 12px;
+      border: 1px solid #ccd4cf;
+      border-radius: 9px;
+      background: #ffffff;
+      color: #1d2521;
+      font-size: 16px;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #17663f;
+      box-shadow: 0 0 0 3px rgba(23, 102, 63, 0.12);
+    }
+
+    input:invalid:not(:placeholder-shown) {
+      border-color: #c45a4a;
+    }
+
+    .required {
+      color: #b33a2c;
+    }
+
+    button {
+      width: 100%;
+      min-height: 50px;
+      margin-top: 22px;
+      padding: 12px 16px;
+      border: 0;
+      border-radius: 9px;
+      background: #17663f;
+      color: white;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    button:hover {
+      opacity: 0.94;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
+    .message {
+      display: none;
+      margin: 15px 0;
+      padding: 12px;
+      border-radius: 9px;
+      font-size: 14px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .message.show {
+      display: block;
+      background: #f8e8e4;
+      color: #8b3a2e;
+    }
+
+    .message.success {
+      display: block;
+      background: #e7f2ea;
+      color: #245c37;
+    }
+
+    .code {
+      margin-top: 10px;
+      padding: 12px;
+      border-radius: 8px;
+      background: #ffffff;
+      border: 1px dashed #17663f;
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-align: center;
+    }
+
+    .links {
+      margin-top: 18px;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .links a {
+      color: #17663f;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .links a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 600px) {
+      .page {
+        align-items: flex-start;
+        padding: 12px;
+        padding-top: 25px;
+      }
+
+      .card {
+        padding: 18px;
+        border-radius: 12px;
+      }
+
+      h1 {
+        font-size: 23px;
+      }
+
+      input,
+      button {
+        min-height: 50px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="page">
+
+    <section class="card">
+
+      <h1>Create Your Chama</h1>
+
+      <p class="intro">
+        Enter the group details and chairperson information to create a new
+        Chama Live account.
+      </p>
+
+      <div
+        id="message"
+        class="message"
+        role="alert"
+        aria-live="polite"
+      ></div>
+
+      <form
+        id="groupForm"
+        autocomplete="off"
+        novalidate
+      >
+
+        <!-- GROUP DETAILS -->
+
+        <div class="section-title">
+          Group Details
+        </div>
+
+        <div class="field">
+          <label for="groupName">
+            Group name <span class="required">*</span>
+          </label>
+
+          <input
+            id="groupName"
+            name="group_name"
+            type="text"
+            required
+            maxlength="120"
+            autocomplete="organization"
+            placeholder="Enter group name"
+          >
+        </div>
+
+
+        <div class="field">
+          <label for="registrationNumber">
+            Registration number
+          </label>
+
+          <input
+            id="registrationNumber"
+            name="registration_number"
+            type="text"
+            maxlength="80"
+            autocomplete="off"
+            placeholder="Optional"
+          >
+        </div>
+
+
+        <div class="field">
+          <label for="groupPhone">
+            Group phone
+          </label>
+
+          <input
+            id="groupPhone"
+            name="group_phone"
+            type="tel"
+            inputmode="tel"
+            maxlength="30"
+            autocomplete="tel"
+            placeholder="e.g. 0712345678"
+          >
+        </div>
+
+
+        <div class="field">
+          <label for="groupEmail">
+            Group email
+          </label>
+
+          <input
+            id="groupEmail"
+            name="group_email"
+            type="email"
+            maxlength="160"
+            autocomplete="email"
+            placeholder="group@example.com"
+          >
+        </div>
+
+
+        <!-- CHAIRPERSON DETAILS -->
+
+        <div class="section-title">
+          Chairperson / Administrator
+        </div>
+
+
+        <div class="field">
+          <label for="chairpersonName">
+            Chairperson full name <span class="required">*</span>
+          </label>
+
+          <input
+            id="chairpersonName"
+            name="name"
+            type="text"
+            required
+            maxlength="120"
+            autocomplete="name"
+            placeholder="Enter full name"
+          >
+        </div>
+
+
+        <div class="field">
+          <label for="chairpersonPhone">
+            Chairperson phone <span class="required">*</span>
+          </label>
+
+          <input
+            id="chairpersonPhone"
+            name="phone"
+            type="tel"
+            inputmode="tel"
+            required
+            maxlength="30"
+            autocomplete="tel"
+            placeholder="e.g. 0712345678"
+          >
+        </div>
+
+
+        <div class="field">
+          <label for="chairpersonEmail">
+            Chairperson email <span class="required">*</span>
+          </label>
+
+          <input
+            id="chairpersonEmail"
+            name="email"
+            type="email"
+            required
+            maxlength="160"
+            autocomplete="email"
+            placeholder="chairperson@example.com"
+          >
+        </div>
+
+
+        <button
+          id="createButton"
+          type="submit"
+        >
+          CREATE GROUP
+        </button>
+
+      </form>
+
+
+      <div class="links">
+        <a href="login.html">
+          Already have an account? Login
+        </a>
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <!-- Supabase -->
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script src="js/supabase-client.js"></script>
+
+
+  <script>
+
+    /*
+     * CHAMA LIVE CREATE GROUP
+     *
+     * This page deliberately does not contain Supabase keys.
+     * It uses the existing js/supabase-client.js configuration.
+     */
+
+
+    const form =
+      document.getElementById("groupForm");
+
+    const button =
+      document.getElementById("createButton");
+
+    const message =
+      document.getElementById("message");
+
+
+    function showError(text) {
+
+      message.className = "message show";
+
+      message.innerHTML = "";
+
+      const title = document.createElement("strong");
+      title.textContent = "Unable to create group";
+
+      const body = document.createElement("div");
+      body.style.marginTop = "6px";
+      body.textContent = text;
+
+      message.appendChild(title);
+      message.appendChild(body);
+    }
+
+
+    function showSuccess(accessCode, activationUrl) {
+
+      message.className = "message success";
+
+      message.innerHTML = "";
+
+      const title = document.createElement("strong");
+
+      title.textContent =
+        "Group created successfully.";
+
+      const body = document.createElement("div");
+
+      body.style.marginTop = "8px";
+
+      body.textContent =
+        "Your chairperson account has been created. " +
+        "Use the one-time access code below to activate the account.";
+
+      const code = document.createElement("div");
+
+      code.className = "code";
+
+      code.textContent =
+        accessCode || "Check your email";
+
+      message.appendChild(title);
+
+      message.appendChild(body);
+
+      message.appendChild(code);
+
+
+      if (activationUrl) {
+
+        const link = document.createElement("a");
+
+        link.href = activationUrl;
+
+        link.target = "_self";
+
+        link.textContent =
+          "Open Account Activation";
+
+        link.style.display = "block";
+
+        link.style.marginTop = "12px";
+
+        link.style.fontWeight = "800";
+
+        link.style.color = "#17663f";
+
+        message.appendChild(link);
+
+      }
+
+    }
+
+
+    function getSupabaseClient() {
+
+      /*
+       * The project client should be exposed as
+       * window.chamaSupabase by js/supabase-client.js.
+       *
+       * window.supabase is retained as a fallback
+       * for compatibility with the older project.
+       */
+
+      const client =
+        window.chamaSupabase ||
+        window.supabase;
+
+      if (!client) {
+
+        throw new Error(
+          "Supabase client was not loaded. " +
+          "Check js/supabase-client.js and the deployed site."
+        );
+
+      }
+
+      if (
+        !client.functions ||
+        typeof client.functions.invoke !== "function"
+      ) {
+
+        throw new Error(
+          "Supabase Functions client is unavailable. " +
+          "Check the Supabase client configuration."
+        );
+
+      }
+
+      return client;
+
+    }
+
+
+    function value(id) {
+
+      const element =
+        document.getElementById(id);
+
+      if (!element) {
+
+        throw new Error(
+          "Form field is missing: " + id
+        );
+
+      }
+
+      return element.value.trim();
+
+    }
+
+
+    form.addEventListener(
+      "submit",
+      async function(event) {
+
+        event.preventDefault();
+
+
+        /*
+         * Clear previous message.
+         */
+
+        message.className = "message";
+
+        message.textContent = "";
+
+
+        /*
+         * Browser validation.
+         */
+
+        if (!form.checkValidity()) {
+
+          form.reportValidity();
+
+          return;
+
+        }
+
+
+        /*
+         * Immediately show activity.
+         */
+
+        button.disabled = true;
+
+        button.textContent =
+          "CREATING...";
+
+
+        try {
+
+          /*
+           * Verify Supabase client first.
+           */
+
+          const supabase =
+            getSupabaseClient();
+
+
+          /*
+           * Read fields by ID.
+           *
+           * This prevents field-order/autofill
+           * problems from changing the payload.
+           */
+
+          const groupName =
+            value("groupName");
+
+          const registrationNumber =
+            value("registrationNumber");
+
+          const groupPhone =
+            value("groupPhone");
+
+          const groupEmail =
+            value("groupEmail").toLowerCase();
+
+          const chairpersonName =
+            value("chairpersonName");
+
+          const chairpersonPhone =
+            value("chairpersonPhone");
+
+          const chairpersonEmail =
+            value("chairpersonEmail").toLowerCase();
+
+
+          /*
+           * Extra email validation.
+           */
+
+          const emailPattern =
+            /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+
+          if (
+            groupEmail &&
+            !emailPattern.test(groupEmail)
+          ) {
+
+            throw new Error(
+              "Enter a valid group email address."
+            );
+
+          }
+
+
+          if (
+            !emailPattern.test(chairpersonEmail)
+          ) {
+
+            throw new Error(
+              "Enter a valid chairperson email address."
+            );
+
+          }
+
+
+          /*
+           * Build the exact Edge Function payload.
+           */
+
+          const payload = {
+
+            group_name:
+              groupName,
+
+            registration_number:
+              registrationNumber,
+
+            group_phone:
+              groupPhone,
+
+            group_email:
+              groupEmail,
+
+            name:
+              chairpersonName,
+
+            phone:
+              chairpersonPhone,
+
+            email:
+              chairpersonEmail
+
+          };
+
+
+          console.log(
+            "Chama Live create-group payload:",
+            {
+              ...payload,
+              email: "[hidden]",
+              group_email:
+                groupEmail ? "[hidden]" : ""
+            }
+          );
+
+
+          /*
+           * Call Supabase Edge Function.
+           */
+
+          const result =
+            await supabase.functions.invoke(
+              "create-group",
+              {
+                body: payload
+              }
+            );
+
+
+          console.log(
+            "create-group response:",
+            result
+          );
+
+
+          /*
+           * Handle Edge Function errors.
+           */
+
+          if (result.error) {
+
+            let details =
+              result.error.message ||
+              "The create-group function returned an error.";
+
+            /*
+             * Supabase sometimes places the useful
+             * backend response inside error.context.
+             */
+
+            if (
+              result.error.context &&
+              typeof result.error.context.json === "function"
+            ) {
+
+              try {
+
+                const backend =
+                  await result.error.context.json();
+
+                if (backend?.message) {
+
+                  details =
+                    backend.message;
+
+                }
+
+              } catch (_) {
+
+                /*
+                 * Keep original error.
+                 */
+
+              }
+
+            }
+
+            throw new Error(details);
+
+          }
+
+
+          const data =
+            result.data;
+
+
+          if (!data) {
+
+            throw new Error(
+              "The server returned an empty response."
+            );
+
+          }
+
+
+          if (!data.success) {
+
+            throw new Error(
+              data.message ||
+              "The group could not be created."
+            );
+
+          }
+
+
+          /*
+           * SUCCESS
+           */
+
+          showSuccess(
+            data.access_code,
+            data.activation_url ||
+              "activate-account.html"
+          );
+
+
+          /*
+           * Clear the form after successful creation.
+           */
+
+          form.reset();
+
+
+        } catch (error) {
+
+          console.error(
+            "Chama Live Create Group Error:",
+            error
+          );
+
+
+          showError(
+            error?.message ||
+            String(error) ||
+            "An unexpected error occurred."
+          );
+
+
+        } finally {
+
+          button.disabled = false;
+
+          button.textContent =
+            "CREATE GROUP";
+
+        }
+
+      }
+    );
+
+  </script>
+
+</body>
+            </html>
+            
