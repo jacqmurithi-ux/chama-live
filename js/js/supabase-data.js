@@ -1,512 +1,1605 @@
-(function () {
+"use strict";
 
-  "use strict";
-
-
-  /* ============================================================
-     GET EXISTING SUPABASE CLIENT
-     ============================================================ */
-
-  function getSupabase() {
-
-    const client =
-      window.chamaSupabase;
-
-    if (!client) {
-
-      throw new Error(
-        "Chama Live Supabase client is not initialized. " +
-        "Make sure js/supabase-client.js loads first."
-      );
-
-    }
-
-    return client;
-  }
-
-
-  /* ============================================================
-     CURRENT USER
-     ============================================================ */
-
-  async function getCurrentUser() {
-
-    const supabase =
-      getSupabase();
-
-    const {
-      data,
-      error
-    } =
-      await supabase.auth.getUser();
-
-    if (error) {
-      throw error;
-    }
-
-    if (
-      !data ||
-      !data.user
-    ) {
-
-      throw new Error(
-        "You are not logged in."
-      );
-
-    }
-
-    return data.user;
-  }
+/*
+ * ============================================================
+ * CHAMA LIVE
+ * SUPABASE DATA LAYER
+ * PART 1 OF 3
+ * ============================================================
+ *
+ * This file handles database operations for:
+ *
+ * - Groups
+ * - Members
+ * - Contributions
+ * - Goals
+ * - Expenses
+ *
+ * IMPORTANT:
+ *
+ * It uses the ONE Supabase client created by:
+ *
+ *     js/supabase-client.js
+ *
+ * Authentication comes from:
+ *
+ *     js/supabase-auth.js
+ *
+ * ============================================================
+ */
 
 
-  /* ============================================================
-     CURRENT MEMBER
-     ============================================================ */
+/* ============================================================
+   GET DATABASE CLIENT
+   ============================================================ */
 
-  async function getCurrentMember() {
+function dataClient() {
 
-    const supabase =
-      getSupabase();
-
-    const user =
-      await getCurrentUser();
-
-
-    /*
-     * First try auth_user_id.
-     */
-
-    let result =
-      await supabase
-        .from("members")
-        .select(`
-          id,
-          group_id,
-          user_id,
-          auth_user_id,
-          member_number,
-          membership_number,
-          name,
-          email,
-          phone,
-          role,
-          status,
-          onboarding_status
-        `)
-        .eq(
-          "auth_user_id",
-          user.id
-        )
-        .maybeSingle();
-
-
-    if (result.error) {
-
-      throw result.error;
-
-    }
-
-
-    if (result.data) {
-
-      return result.data;
-
-    }
-
-
-    /*
-     * Some older Chama Live records may
-     * use user_id instead.
-     */
-
-    result =
-      await supabase
-        .from("members")
-        .select(`
-          id,
-          group_id,
-          user_id,
-          auth_user_id,
-          member_number,
-          membership_number,
-          name,
-          email,
-          phone,
-          role,
-          status,
-          onboarding_status
-        `)
-        .eq(
-          "user_id",
-          user.id
-        )
-        .maybeSingle();
-
-
-    if (result.error) {
-
-      throw result.error;
-
-    }
-
-
-    if (result.data) {
-
-      return result.data;
-
-    }
-
-
-    /*
-     * Final fallback:
-     * Match authenticated email.
-     */
-
-    if (user.email) {
-
-      result =
-        await supabase
-          .from("members")
-          .select(`
-            id,
-            group_id,
-            user_id,
-            auth_user_id,
-            member_number,
-            membership_number,
-            name,
-            email,
-            phone,
-            role,
-            status,
-            onboarding_status
-          `)
-          .eq(
-            "email",
-            user.email
-          )
-          .maybeSingle();
-
-
-      if (result.error) {
-
-        throw result.error;
-
-      }
-
-
-      if (result.data) {
-
-        return result.data;
-
-      }
-
-    }
-
+  if (
+    typeof window.getSupabaseClient !== "function"
+  ) {
 
     throw new Error(
-      "Your login account is not linked to a Chama member."
+      "Supabase client is missing. Make sure js/supabase-client.js loads first."
     );
 
   }
 
 
-  /* ============================================================
-     CURRENT GROUP
-     ============================================================ */
-
-  async function getCurrentGroup() {
-
-    const supabase =
-      getSupabase();
-
-    const member =
-      await getCurrentMember();
+  const client =
+    window.getSupabaseClient();
 
 
-    if (!member.group_id) {
+  if (
+    !client
+  ) {
 
-      throw new Error(
-        "Your member account is not linked to a group."
-      );
+    throw new Error(
+      "Supabase client is not initialized."
+    );
 
-    }
+  }
 
 
-    const {
-      data,
+  return client;
+
+}
+
+
+/* ============================================================
+   REQUIRE AUTHENTICATED USER
+   ============================================================ */
+
+async function dataUser() {
+
+  if (
+    typeof window.getCurrentUser !== "function"
+  ) {
+
+    throw new Error(
+      "Authentication module is missing. Make sure js/supabase-auth.js loads first."
+    );
+
+  }
+
+
+  const user =
+    await window.getCurrentUser();
+
+
+  if (
+    !user
+  ) {
+
+    throw new Error(
+      "You are not signed in."
+    );
+
+  }
+
+
+  return user;
+
+}
+
+
+/* ============================================================
+   GET GROUP ID
+   ============================================================ */
+
+async function dataGroupId() {
+
+  /*
+   * Use the authentication module's group resolver.
+   */
+
+  if (
+    typeof window.getCurrentGroupId !== "function"
+  ) {
+
+    throw new Error(
+      "getCurrentGroupId() is unavailable. Check js/supabase-auth.js."
+    );
+
+  }
+
+
+  return await window.getCurrentGroupId();
+
+}
+
+
+/* ============================================================
+   NORMALIZE ARRAY
+   ============================================================ */
+
+function normalizeArray(
+  value
+) {
+
+  return Array.isArray(value)
+    ? value
+    : [];
+
+}
+
+
+/* ============================================================
+   DATABASE ERROR HELPER
+   ============================================================ */
+
+function databaseError(
+  error,
+  operation
+) {
+
+  if (
+    !error
+  ) {
+
+    return null;
+
+  }
+
+
+  console.error(
+    "Chama Live database error:",
+    operation,
+    error
+  );
+
+
+  /*
+   * Supabase errors normally contain:
+   *
+   * message
+   * details
+   * hint
+   * code
+   */
+
+  let message =
+    error.message ||
+    "Database operation failed.";
+
+
+  if (
+    error.code
+  ) {
+
+    message +=
+      " [" +
+      error.code +
+      "]";
+
+  }
+
+
+  return new Error(
+    message
+  );
+
+}
+
+
+/* ============================================================
+   FETCH GROUP
+   ============================================================ */
+
+async function fetchGroup() {
+
+  const client =
+    dataClient();
+
+
+  const user =
+    await dataUser();
+
+
+  /*
+   * First attempt:
+   * group ID from authenticated account.
+   */
+
+  let groupId =
+    null;
+
+
+  try {
+
+    groupId =
+      await dataGroupId();
+
+  } catch (error) {
+
+    console.warn(
+      "Could not resolve group ID:",
       error
-    } =
-      await supabase
+    );
+
+  }
+
+
+  /*
+   * If we have a group ID, fetch the group.
+   */
+
+  if (
+    groupId
+  ) {
+
+    const result =
+      await client
         .from("groups")
-        .select(`
-          id,
-          name,
-          category,
-          description,
-          monthly_contribution
-        `)
+        .select("*")
         .eq(
           "id",
-          member.group_id
+          groupId
         )
         .maybeSingle();
 
 
-    if (error) {
+    if (
+      result.error
+    ) {
 
-      throw error;
-
-    }
-
-
-    if (!data) {
-
-      throw new Error(
-        "Your Chama group could not be found."
+      throw databaseError(
+        result.error,
+        "fetchGroup by group_id"
       );
 
     }
 
 
-    return data;
+    if (
+      result.data
+    ) {
 
-  }
-
-
-  /* ============================================================
-     FETCH MEMBERS
-     ============================================================ */
-
-  async function fetchMembers() {
-
-    const supabase =
-      getSupabase();
-
-    const group =
-      await getCurrentGroup();
-
-
-    const {
-      data,
-      error
-    } =
-      await supabase
-        .from("members")
-        .select(`
-          id,
-          group_id,
-          member_number,
-          membership_number,
-          name,
-          phone,
-          role,
-          status,
-          email,
-          onboarding_status
-        `)
-        .eq(
-          "group_id",
-          group.id
-        )
-        .order(
-          "name",
-          {
-            ascending: true
-          }
-        );
-
-
-    if (error) {
-
-      throw error;
+      return result.data;
 
     }
 
-
-    return data || [];
-
   }
 
 
-  /* ============================================================
-     FETCH GOALS
-     ============================================================ */
+  /*
+   * Fallback:
+   * Some Chama Live schemas may identify the
+   * group through a group_members relationship.
+   */
 
-  async function fetchGoals(
-    options = {}
-  ) {
+  try {
 
-    const supabase =
-      getSupabase();
-
-    const group =
-      await getCurrentGroup();
-
-
-    let query =
-      supabase
-        .from("contribution_goals")
-        .select(`
-          id,
-          group_id,
-          goal_name,
-          category,
-          description,
-          frequency,
-          target_amount,
-          status
-        `)
+    const result =
+      await client
+        .from("groups")
+        .select("*")
         .eq(
-          "group_id",
-          group.id
+          "created_by",
+          user.id
         )
-        .order(
-          "goal_name",
-          {
-            ascending: true
-          }
-        );
+        .maybeSingle();
 
 
     if (
-      options.activeOnly
+      !result.error &&
+      result.data
     ) {
 
-      query =
-        query.eq(
-          "status",
-          "active"
-        );
+      return result.data;
 
     }
 
+  } catch (error) {
 
-    const {
-      data,
+    console.warn(
+      "Group creator fallback failed:",
       error
-    } =
-      await query;
-
-
-    if (error) {
-
-      throw error;
-
-    }
-
-
-    return data || [];
+    );
 
   }
 
 
-  /* ============================================================
-     FETCH CONTRIBUTIONS
-     ============================================================ */
+  /*
+   * Nothing found.
+   */
 
-  async function fetchContributions() {
+  throw new Error(
+    "No Chama group could be found for your account."
+  );
 
-    const supabase =
-      getSupabase();
-
-    const group =
-      await getCurrentGroup();
+}
 
 
-    const {
-      data,
-      error
-    } =
-      await supabase
-        .from("contributions")
-        .select(`
-          id,
-          group_id,
-          member_id,
-          amount,
-          contribution_type,
-          month,
-          payment_method,
-          reference,
-          recorded_by,
-          created_at,
-          goal_id,
-          contribution_date,
-          notes,
-          members:member_id (
-            id,
-            name,
-            member_number
-          ),
-          goals:goal_id (
-            id,
-            goal_name
-          )
-        `)
-        .eq(
-          "group_id",
-          group.id
+/* ============================================================
+   FETCH MEMBERS
+   ============================================================ */
+
+async function fetchMembers() {
+
+  const client =
+    dataClient();
+
+
+  const groupId =
+    await dataGroupId();
+
+
+  if (
+    !groupId
+  ) {
+
+    throw new Error(
+      "No group is linked to the current account."
+    );
+
+  }
+
+
+  /*
+   * Query members belonging to this group.
+   *
+   * We deliberately select the fields used by
+   * Contributions and Members pages.
+   */
+
+  const result =
+    await client
+      .from("members")
+      .select(`
+        id,
+        group_id,
+        name,
+        member_number,
+        email,
+        phone,
+        role,
+        status,
+        created_at
+      `)
+      .eq(
+        "group_id",
+        groupId
+      )
+      .order(
+        "name",
+        {
+          ascending:true
+        }
+      );
+
+
+  if (
+    result.error
+  ) {
+
+    throw databaseError(
+      result.error,
+      "fetchMembers"
+    );
+
+  }
+
+
+  return normalizeArray(
+    result.data
+  );
+
+}
+
+
+/* ============================================================
+   FETCH ONE MEMBER
+   ============================================================ */
+
+async function fetchMember(
+  memberId
+) {
+
+  const client =
+    dataClient();
+
+
+  const groupId =
+    await dataGroupId();
+
+
+  if (
+    !memberId
+  ) {
+
+    throw new Error(
+      "Member ID is required."
+    );
+
+  }
+
+
+  const result =
+    await client
+      .from("members")
+      .select("*")
+      .eq(
+        "id",
+        memberId
+      )
+      .eq(
+        "group_id",
+        groupId
+      )
+      .maybeSingle();
+
+
+  if (
+    result.error
+  ) {
+
+    throw databaseError(
+      result.error,
+      "fetchMember"
+    );
+
+  }
+
+
+  return result.data || null;
+
+}
+
+
+/* ============================================================
+   FETCH ACTIVE MEMBERS
+   ============================================================ */
+
+async function fetchActiveMembers() {
+
+  const members =
+    await fetchMembers();
+
+
+  return members.filter(
+    function(member) {
+
+      /*
+       * Treat null status as active so older
+       * records are not accidentally hidden.
+       */
+
+      if (
+        !member.status
+      ) {
+
+        return true;
+
+      }
+
+
+      return (
+        String(
+          member.status
         )
-        .order(
-          "contribution_date",
-          {
-            ascending: false
-          }
+        .toLowerCase()
+        ===
+        "active"
+      );
+
+    }
+  );
+
+}
+
+
+/* ============================================================
+   EXPORT PART 1
+   ============================================================ */
+
+window.fetchGroup =
+  fetchGroup;
+
+
+window.fetchMembers =
+  fetchMembers;
+
+
+window.fetchMember =
+  fetchMember;
+
+
+window.fetchActiveMembers =
+  fetchActiveMembers;
+
+
+/* ============================================================
+   DATA LAYER READY
+   ============================================================ */
+
+console.log(
+  "Chama Live: supabase-data.js Part 1 loaded."
+);
+/* ============================================================
+   CHAMA LIVE
+   SUPABASE DATA LAYER
+   PART 2 OF 3
+   ============================================================
+*/
+
+
+/* ============================================================
+   FETCH CONTRIBUTIONS
+   ============================================================ */
+
+async function fetchContributions() {
+
+  const client =
+    dataClient();
+
+
+  const groupId =
+    await dataGroupId();
+
+
+  if (!groupId) {
+
+    throw new Error(
+      "No group is linked to the current account."
+    );
+
+  }
+
+
+  /*
+   * Load contributions belonging to this group.
+   *
+   * We request the related member and goal records
+   * so contributions.html can display:
+   *
+   * Member
+   * Goal
+   * Amount
+   * Month
+   * Method
+   * Reference
+   * Recorded date
+   */
+
+  const result =
+    await client
+      .from("contributions")
+      .select(`
+        id,
+        group_id,
+        member_id,
+        amount,
+        month,
+        goal_id,
+        payment_method,
+        reference,
+        created_at,
+        members (
+          id,
+          name,
+          member_number
+        ),
+        goals (
+          id,
+          goal_name
+        )
+      `)
+      .eq(
+        "group_id",
+        groupId
+      )
+      .order(
+        "created_at",
+        {
+          ascending:false
+        }
+      );
+
+
+  if (
+    result.error
+  ) {
+
+    throw databaseError(
+      result.error,
+      "fetchContributions"
+    );
+
+  }
+
+
+  return normalizeArray(
+    result.data
+  );
+
+}
+
+
+/* ============================================================
+   FETCH CONTRIBUTION BY ID
+   ============================================================ */
+
+async function fetchContribution(
+  contributionId
+) {
+
+  const client =
+    dataClient();
+
+
+  const groupId =
+    await dataGroupId();
+
+
+  if (
+    !contributionId
+  ) {
+
+    throw new Error(
+      "Contribution ID is required."
+    );
+
+  }
+
+
+  const result =
+    await client
+      .from("contributions")
+      .select(`
+        id,
+        group_id,
+        member_id,
+        amount,
+        month,
+        goal_id,
+        payment_method,
+        reference,
+        created_at,
+        members (
+          id,
+          name,
+          member_number
+        ),
+        goals (
+          id,
+          goal_name
+        )
+      `)
+      .eq(
+        "id",
+        contributionId
+      )
+      .eq(
+        "group_id",
+        groupId
+      )
+      .maybeSingle();
+
+
+  if (
+    result.error
+  ) {
+
+    throw databaseError(
+      result.error,
+      "fetchContribution"
+    );
+
+  }
+
+
+  return result.data || null;
+
+}
+
+
+/* ============================================================
+   FETCH GOALS
+   ============================================================ */
+
+async function fetchGoals(
+  options = {}
+) {
+
+  const client =
+    dataClient();
+
+
+  const groupId =
+    await dataGroupId();
+
+
+  if (!groupId) {
+
+    throw new Error(
+      "No group is linked to the current account."
+    );
+
+  }
+
+
+  const activeOnly =
+    options.activeOnly !== false;
+
+
+  /*
+   * Start with the basic query.
+   *
+   * We avoid depending on a specific optional
+   * column until the query is built.
+   */
+
+  let query =
+    client
+      .from("goals")
+      .select("*")
+      .eq(
+        "group_id",
+        groupId
+      );
+
+
+  /*
+   * If activeOnly is requested, try the common
+   * "status" column first.
+   *
+   * If the database does not have status, we
+   * gracefully fall back to all goals.
+   */
+
+  if (
+    activeOnly
+  ) {
+
+    const activeResult =
+      await query
+        .eq(
+          "status",
+          "active"
         )
         .order(
           "created_at",
           {
-            ascending: false
+            ascending:false
           }
         );
 
 
-    if (error) {
-
-      throw error;
-
-    }
-
-
-    return data || [];
-
-  }
-
-
-  /* ============================================================
-     RECORD CONTRIBUTION
-     ============================================================ */
-
-  async function recordContribution(
-    payload
-  ) {
-
-    const supabase =
-      getSupabase();
-
-    const currentMember =
-      await getCurrentMember();
-
-    const group =
-      await getCurrentGroup();
-
-
     if (
-      !payload ||
-      !payload.memberId
+      !activeResult.error
     ) {
 
-      throw new Error(
-        "Please select a member."
+      return normalizeArray(
+        activeResult.data
       );
 
     }
 
 
+    /*
+     * Fallback for schemas without status.
+     */
+
+    console.warn(
+      "Goals status filter unavailable; loading all group goals."
+    );
+
+  }
+
+
+  const result =
+    await client
+      .from("goals")
+      .select("*")
+      .eq(
+        "group_id",
+        groupId
+      )
+      .order(
+        "created_at",
+        {
+          ascending:false
+        }
+      );
+
+
+  if (
+    result.error
+  ) {
+
+    throw databaseError(
+      result.error,
+      "fetchGoals"
+    );
+
+  }
+
+
+  return normalizeArray(
+    result.data
+  );
+
+}
+
+
+/* ============================================================
+   FETCH ONE GOAL
+   ============================================================ */
+
+async function fetchGoal(
+  goalId
+) {
+
+  const client =
+    dataClient();
+
+
+  const groupId =
+    await dataGroupId();
+
+
+  if (
+    !goalId
+  ) {
+
+    throw new Error(
+      "Goal ID is required."
+    );
+
+  }
+
+
+  const result =
+    await client
+      .from("goals")
+      .select("*")
+      .eq(
+        "id",
+        goalId
+      )
+      .eq(
+        "group_id",
+        groupId
+      )
+      .maybeSingle();
+
+
+  if (
+    result.error
+  ) {
+
+    throw databaseError(
+      result.error,
+      "fetchGoal"
+    );
+
+  }
+
+
+  return result.data || null;
+
+}
+
+
+/* ============================================================
+   FETCH MEMBER CONTRIBUTIONS
+   ============================================================ */
+
+async function fetchMemberContributions(
+  memberId
+) {
+
+  const client =
+    dataClient();
+
+
+  const groupId =
+    await dataGroupId();
+
+
+  if (
+    !memberId
+  ) {
+
+    throw new Error(
+      "Member ID is required."
+    );
+
+  }
+
+
+  const result =
+    await client
+      .from("contributions")
+      .select(`
+        id,
+        group_id,
+        member_id,
+        amount,
+        month,
+        goal_id,
+        payment_method,
+        reference,
+        created_at,
+        goals (
+          id,
+          goal_name
+        )
+      `)
+      .eq(
+        "group_id",
+        groupId
+      )
+      .eq(
+        "member_id",
+        memberId
+      )
+      .order(
+        "created_at",
+        {
+          ascending:false
+        }
+      );
+
+
+  if (
+    result.error
+  ) {
+
+    throw databaseError(
+      result.error,
+      "fetchMemberContributions"
+    );
+
+  }
+
+
+  return normalizeArray(
+    result.data
+  );
+
+}
+
+
+/* ============================================================
+   CALCULATE MEMBER CONTRIBUTION TOTAL
+   ============================================================ */
+
+async function getMemberContributionTotal(
+  memberId
+) {
+
+  const contributions =
+    await fetchMemberContributions(
+      memberId
+    );
+
+
+  return contributions.reduce(
+    function(total, contribution) {
+
+      return (
+        total +
+        Number(
+          contribution.amount || 0
+        )
+      );
+
+    },
+    0
+  );
+
+}
+
+
+/* ============================================================
+   CALCULATE GROUP CONTRIBUTION TOTAL
+   ============================================================ */
+
+async function getContributionTotal() {
+
+  const contributions =
+    await fetchContributions();
+
+
+  return contributions.reduce(
+    function(total, contribution) {
+
+      return (
+        total +
+        Number(
+          contribution.amount || 0
+        )
+      );
+
+    },
+    0
+  );
+
+}
+
+
+/* ============================================================
+   FETCH CONTRIBUTIONS FOR A MONTH
+   ============================================================ */
+
+async function fetchContributionsByMonth(
+  month
+) {
+
+  const client =
+    dataClient();
+
+
+  const groupId =
+    await dataGroupId();
+
+
+  if (!month) {
+
+    throw new Error(
+      "Contribution month is required."
+    );
+
+  }
+
+
+  const result =
+    await client
+      .from("contributions")
+      .select(`
+        id,
+        group_id,
+        member_id,
+        amount,
+        month,
+        goal_id,
+        payment_method,
+        reference,
+        created_at,
+        members (
+          id,
+          name,
+          member_number
+        ),
+        goals (
+          id,
+          goal_name
+        )
+      `)
+      .eq(
+        "group_id",
+        groupId
+      )
+      .eq(
+        "month",
+        month
+      )
+      .order(
+        "created_at",
+        {
+          ascending:false
+        }
+      );
+
+
+  if (
+    result.error
+  ) {
+
+    throw databaseError(
+      result.error,
+      "fetchContributionsByMonth"
+    );
+
+  }
+
+
+  return normalizeArray(
+    result.data
+  );
+
+}
+
+
+/* ============================================================
+   EXPORT PART 2
+   ============================================================ */
+
+window.fetchContributions =
+  fetchContributions;
+
+
+window.fetchContribution =
+  fetchContribution;
+
+
+window.fetchGoals =
+  fetchGoals;
+
+
+window.fetchGoal =
+  fetchGoal;
+
+
+window.fetchMemberContributions =
+  fetchMemberContributions;
+
+
+window.getMemberContributionTotal =
+  getMemberContributionTotal;
+
+
+window.getContributionTotal =
+  getContributionTotal;
+
+
+window.fetchContributionsByMonth =
+  fetchContributionsByMonth;
+
+
+/* ============================================================
+   STATUS
+   ============================================================ */
+
+console.log(
+  "Chama Live: supabase-data.js Part 2 loaded."
+);
+/* ============================================================
+   CHAMA LIVE
+   SUPABASE DATA LAYER
+   PART 3 OF 3
+   ============================================================
+ */
+
+
+/* ============================================================
+   RECORD CONTRIBUTION
+   ============================================================ */
+
+async function recordContribution(
+  contribution
+) {
+
+  const client =
+    dataClient();
+
+
+  const user =
+    await dataUser();
+
+
+  const groupId =
+    await dataGroupId();
+
+
+  if (!groupId) {
+
+    throw new Error(
+      "No Chama group is linked to your account."
+    );
+
+  }
+
+
+  if (
+    !contribution
+  ) {
+
+    throw new Error(
+      "Contribution details are missing."
+    );
+
+  }
+
+
+  const memberId =
+    contribution.memberId;
+
+
+  const amount =
+    Number(
+      contribution.amount
+    );
+
+
+  const month =
+    String(
+      contribution.month || ""
+    ).trim();
+
+
+  const method =
+    String(
+      contribution.method || "M-Pesa"
+    ).trim();
+
+
+  const reference =
+    contribution.reference
+      ? String(
+          contribution.reference
+        ).trim()
+      : null;
+
+
+  const goalId =
+    contribution.goalId ||
+    null;
+
+
+  /* ==========================================================
+     VALIDATION
+     ========================================================== */
+
+  if (!memberId) {
+
+    throw new Error(
+      "Please select a member."
+    );
+
+  }
+
+
+  if (
+    !Number.isFinite(amount) ||
+    amount <= 0
+  ) {
+
+    throw new Error(
+      "Contribution amount must be greater than zero."
+    );
+
+  }
+
+
+  if (!month) {
+
+    throw new Error(
+      "Contribution month is required."
+    );
+
+  }
+
+
+  /* ==========================================================
+     VERIFY MEMBER BELONGS TO CURRENT GROUP
+     ========================================================== */
+
+  const memberResult =
+    await client
+      .from("members")
+      .select(`
+        id,
+        group_id,
+        name
+      `)
+      .eq(
+        "id",
+        memberId
+      )
+      .eq(
+        "group_id",
+        groupId
+      )
+      .maybeSingle();
+
+
+  if (
+    memberResult.error
+  ) {
+
+    throw databaseError(
+      memberResult.error,
+      "verify contribution member"
+    );
+
+  }
+
+
+  if (
+    !memberResult.data
+  ) {
+
+    throw new Error(
+      "The selected member does not belong to your group."
+    );
+
+  }
+
+
+  /* ==========================================================
+     VERIFY GOAL IF PROVIDED
+     ========================================================== */
+
+  if (
+    goalId
+  ) {
+
+    const goalResult =
+      await client
+        .from("goals")
+        .select(`
+          id,
+          group_id,
+          goal_name
+        `)
+        .eq(
+          "id",
+          goalId
+        )
+        .eq(
+          "group_id",
+          groupId
+        )
+        .maybeSingle();
+
+
+    if (
+      goalResult.error
+    ) {
+
+      throw databaseError(
+        goalResult.error,
+        "verify contribution goal"
+      );
+
+    }
+
+
+    if (
+      !goalResult.data
+    ) {
+
+      throw new Error(
+        "The selected goal does not belong to your group."
+      );
+
+    }
+
+  }
+
+
+  /* ==========================================================
+     PREPARE DATABASE RECORD
+     ========================================================== */
+
+  const row = {
+
+    group_id:
+      groupId,
+
+    member_id:
+      memberId,
+
+    amount:
+      amount,
+
+    month:
+      month,
+
+    goal_id:
+      goalId,
+
+    payment_method:
+      method,
+
+    reference:
+      reference
+
+  };
+
+
+  /*
+   * If your contributions table has a recorded_by
+   * column, it can be added later.
+   *
+   * We intentionally do not include it here because
+   * the core Chama Live contribution structure should
+   * not fail simply because that optional column does
+   * not exist.
+   */
+
+
+  /* ==========================================================
+     INSERT
+     ========================================================== */
+
+  const result =
+    await client
+      .from("contributions")
+      .insert(
+        row
+      )
+      .select(`
+        id,
+        group_id,
+        member_id,
+        amount,
+        month,
+        goal_id,
+        payment_method,
+        reference,
+        created_at
+      `)
+      .single();
+
+
+  if (
+    result.error
+  ) {
+
+    throw databaseError(
+      result.error,
+      "recordContribution"
+    );
+
+  }
+
+
+  /* ==========================================================
+     SUCCESS
+     ========================================================== */
+
+  console.log(
+    "Chama Live: Contribution recorded:",
+    result.data
+  );
+
+
+  return result.data;
+
+}
+
+
+/* ============================================================
+   DELETE CONTRIBUTION
+   ============================================================ */
+
+async function deleteContribution(
+  contributionId
+) {
+
+  const client =
+    dataClient();
+
+
+  const groupId =
+    await dataGroupId();
+
+
+  if (
+    !contributionId
+  ) {
+
+    throw new Error(
+      "Contribution ID is required."
+    );
+
+  }
+
+
+  /*
+   * Restrict deletion to the current group.
+   */
+
+  const result =
+    await client
+      .from("contributions")
+      .delete()
+      .eq(
+        "id",
+        contributionId
+      )
+      .eq(
+        "group_id",
+        groupId
+      );
+
+
+  if (
+    result.error
+  ) {
+
+    throw databaseError(
+      result.error,
+      "deleteContribution"
+    );
+
+  }
+
+
+  return true;
+
+}
+
+
+/* ============================================================
+   UPDATE CONTRIBUTION
+   ============================================================ */
+
+async function updateContribution(
+  contributionId,
+  updates
+) {
+
+  const client =
+    dataClient();
+
+
+  const groupId =
+    await dataGroupId();
+
+
+  if (
+    !contributionId
+  ) {
+
+    throw new Error(
+      "Contribution ID is required."
+    );
+
+  }
+
+
+  if (
+    !updates ||
+    typeof updates !== "object"
+  ) {
+
+    throw new Error(
+      "Contribution updates are missing."
+    );
+
+  }
+
+
+  const allowed =
+    {};
+
+
+  /*
+   * Only allow fields that belong to a contribution.
+   */
+
+  if (
+    updates.memberId !== undefined
+  ) {
+
+    allowed.member_id =
+      updates.memberId;
+
+  }
+
+
+  if (
+    updates.amount !== undefined
+  ) {
+
     const amount =
       Number(
-        payload.amount
+        updates.amount
       );
 
 
@@ -516,144 +1609,274 @@
     ) {
 
       throw new Error(
-        "Please enter a valid contribution amount."
+        "Contribution amount must be greater than zero."
       );
 
     }
 
 
-    if (
-      !payload.month
-    ) {
-
-      throw new Error(
-        "Please enter the contribution month."
-      );
-
-    }
-
-
-    const row = {
-
-      group_id:
-        group.id,
-
-      member_id:
-        payload.memberId,
-
-      amount:
-        amount,
-
-      contribution_type:
-        payload.contributionType ||
-        "monthly",
-
-      month:
-        payload.month,
-
-      payment_method:
-        payload.method ||
-        "M-Pesa",
-
-      reference:
-        payload.reference ||
-        null,
-
-      recorded_by:
-        currentMember.id,
-
-      goal_id:
-        payload.goalId ||
-        null,
-
-      contribution_date:
-        payload.contributionDate ||
-        new Date()
-          .toISOString()
-          .slice(
-            0,
-            10
-          ),
-
-      notes:
-        payload.notes ||
-        null
-
-    };
-
-
-    const {
-      data,
-      error
-    } =
-      await supabase
-        .from("contributions")
-        .insert(
-          row
-        )
-        .select("*")
-        .single();
-
-
-    if (error) {
-
-      throw error;
-
-    }
-
-
-    return data;
+    allowed.amount =
+      amount;
 
   }
 
 
-  /* ============================================================
-     GLOBAL EXPORTS
-     ============================================================ */
+  if (
+    updates.month !== undefined
+  ) {
 
-  window.chamaData = {
+    allowed.month =
+      String(
+        updates.month
+      ).trim();
 
-    getCurrentUser:
-      getCurrentUser,
+  }
 
-    getCurrentMember:
-      getCurrentMember,
 
-    getCurrentGroup:
-      getCurrentGroup,
+  if (
+    updates.goalId !== undefined
+  ) {
 
-    fetchMembers:
-      fetchMembers,
+    allowed.goal_id =
+      updates.goalId ||
+      null;
 
-    fetchGoals:
-      fetchGoals,
+  }
 
-    fetchContributions:
-      fetchContributions,
 
-    recordContribution:
-      recordContribution
+  if (
+    updates.method !== undefined
+  ) {
 
-  };
+    allowed.payment_method =
+      String(
+        updates.method
+      ).trim();
+
+  }
+
+
+  if (
+    updates.reference !== undefined
+  ) {
+
+    allowed.reference =
+      updates.reference
+        ? String(
+            updates.reference
+          ).trim()
+        : null;
+
+  }
+
+
+  if (
+    Object.keys(allowed).length === 0
+  ) {
+
+    throw new Error(
+      "No contribution changes were provided."
+    );
+
+  }
 
 
   /*
-   * Global aliases for existing pages.
+   * Update only within the current group.
    */
 
-  window.fetchMembers =
-    fetchMembers;
+  const result =
+    await client
+      .from("contributions")
+      .update(
+        allowed
+      )
+      .eq(
+        "id",
+        contributionId
+      )
+      .eq(
+        "group_id",
+        groupId
+      )
+      .select(`
+        id,
+        group_id,
+        member_id,
+        amount,
+        month,
+        goal_id,
+        payment_method,
+        reference,
+        created_at
+      `)
+      .single();
 
-  window.fetchGoals =
-    fetchGoals;
 
-  window.fetchContributions =
-    fetchContributions;
+  if (
+    result.error
+  ) {
 
-  window.recordContribution =
-    recordContribution;
+    throw databaseError(
+      result.error,
+      "updateContribution"
+    );
 
-  window.fetchGroup =
-    getCurrentGroup;
+  }
+
+
+  return result.data;
+
+}
+
+
+/* ============================================================
+   GROUP CONTRIBUTION SUMMARY
+   ============================================================ */
+
+async function getContributionSummary() {
+
+  const contributions =
+    await fetchContributions();
+
+
+  let total =
+    0;
+
+
+  const memberTotals =
+    {};
+
+
+  contributions.forEach(
+    function(contribution) {
+
+      const amount =
+        Number(
+          contribution.amount || 0
+        );
+
+
+      total +=
+        amount;
+
+
+      const memberId =
+        contribution.member_id;
+
+
+      if (
+        memberId
+      ) {
+
+        if (
+          !memberTotals[memberId]
+        ) {
+
+          memberTotals[memberId] =
+            0;
+
+        }
+
+
+        memberTotals[memberId] +=
+          amount;
+
+      }
+
+    }
+  );
+
+
+  return {
+
+    total:
+      total,
+
+    count:
+      contributions.length,
+
+    memberTotals:
+      memberTotals
+
+  };
+
+}
+
+
+/* ============================================================
+   EXPORT PART 3
+   ============================================================ */
+
+window.recordContribution =
+  recordContribution;
+
+
+window.deleteContribution =
+  deleteContribution;
+
+
+window.updateContribution =
+  updateContribution;
+
+
+window.getContributionSummary =
+  getContributionSummary;
+
+
+/* ============================================================
+   FINAL DATA-LAYER CHECK
+   ============================================================ */
+
+(function () {
+
+  const requiredFunctions = [
+
+    "fetchGroup",
+
+    "fetchMembers",
+
+    "fetchContributions",
+
+    "fetchGoals",
+
+    "recordContribution"
+
+  ];
+
+
+  const missing =
+    requiredFunctions.filter(
+      function(name) {
+
+        return typeof window[name] !== "function";
+
+      }
+    );
+
+
+  if (
+    missing.length
+  ) {
+
+    console.error(
+      "Chama Live DATA ERROR: Missing functions:",
+      missing
+    );
+
+  } else {
+
+    console.log(
+      "Chama Live: supabase-data.js loaded successfully."
+    );
+
+  }
 
 })();
+
+
+/*
+ * ============================================================
+ * END OF supabase-data.js
+ * ============================================================
+ */
