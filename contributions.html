@@ -1,0 +1,949 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Contributions — Chama Live</title>
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f5f7f5;color:#1d2521}
+header{background:#17663f;color:#fff;padding:14px 16px}
+.header{max-width:1100px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{font-size:20px;font-weight:900}
+.sub{font-size:12px;opacity:.9;margin-top:2px}
+.actions{display:flex;gap:8px}
+button,.back{border:0;border-radius:8px;padding:10px 13px;font-weight:800;cursor:pointer;text-decoration:none}
+.back{background:#fff;color:#17663f}
+.logout{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.7)}
+main{max-width:1100px;margin:auto;padding:20px 14px 45px}
+h1{margin:0;font-size:26px}
+.intro{color:#68736e;font-size:14px;margin:6px 0 20px}
+.notice{display:none;padding:12px 14px;border-radius:9px;margin-bottom:16px;font-size:14px;white-space:pre-wrap}
+.notice.show{display:block;background:#f8e6e3;color:#87392d}
+.notice.ok{background:#e5f1e9;color:#17663f}
+.panel{background:#fff;border:1px solid #e1e7e3;border-radius:12px;padding:17px;margin-bottom:18px;box-shadow:0 3px 12px rgba(0,0,0,.04)}
+.panel h2{font-size:17px;margin:0 0 14px}
+.formgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+label{display:block;font-size:12px;font-weight:800;margin-bottom:5px}
+input,select,textarea{width:100%;padding:11px;border:1px solid #ccd5cf;border-radius:8px;background:#fff;outline:none}
+textarea{min-height:75px;resize:vertical}
+input:focus,select:focus,textarea:focus{border-color:#17663f}
+.full{grid-column:1/-1}
+.add{background:#17663f;color:#fff;margin-top:14px}
+.add:disabled{opacity:.6}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
+.card{background:#fff;border:1px solid #e1e7e3;border-radius:12px;padding:16px}
+.card small{color:#68736e;font-weight:700}
+.card strong{display:block;color:#17663f;font-size:22px;margin-top:5px}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:850px}
+th,td{text-align:left;padding:11px 9px;border-bottom:1px solid #edf0ee;font-size:13px}
+th{font-size:11px;text-transform:uppercase;color:#68736e}
+.loading{text-align:center;color:#68736e;padding:30px}
+.empty{text-align:center;color:#68736e;padding:25px}
+@media(max-width:650px){
+.header{align-items:flex-start}
+.actions{flex-wrap:wrap;justify-content:flex-end}
+main{padding:17px 12px 35px}
+.formgrid,.summary{grid-template-columns:1fr}
+.full{grid-column:auto}
+h1{font-size:23px}
+.panel{padding:14px}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<div class="header">
+
+<div>
+<div class="brand">Chama Live</div>
+<div id="groupName" class="sub">Loading group...</div>
+</div>
+
+<div class="actions">
+<a class="back" href="dashboard.html">Dashboard</a>
+<button id="logout" class="logout" type="button">Logout</button>
+</div>
+
+</div>
+</header>
+
+<main>
+
+<h1>Contributions</h1>
+
+<p class="intro">
+Record and track member contributions, goals and payment references.
+</p>
+
+<div id="notice" class="notice"></div>
+
+
+<!-- SUMMARY -->
+
+<div class="summary">
+
+<div class="card">
+<small>Total Contributions</small>
+<strong id="total">KSh 0</strong>
+</div>
+
+<div class="card">
+<small>This Month</small>
+<strong id="monthTotal">KSh 0</strong>
+</div>
+
+<div class="card">
+<small>Records</small>
+<strong id="recordCount">0</strong>
+</div>
+
+</div>
+
+
+<!-- RECORD CONTRIBUTION -->
+
+<section class="panel">
+
+<h2>Record Contribution</h2>
+
+<form id="contributionForm">
+
+<div class="formgrid">
+
+<div>
+<label for="member">Member</label>
+
+<select id="member" required>
+<option value="">Select member</option>
+</select>
+</div>
+
+
+<div>
+<label for="amount">Amount (KSh)</label>
+
+<input
+id="amount"
+type="number"
+min="0.01"
+step="0.01"
+inputmode="decimal"
+required
+>
+</div>
+
+
+<div>
+<label for="type">Contribution Type</label>
+
+<input
+id="type"
+type="text"
+placeholder="e.g. Monthly, Welfare, Project"
+required
+>
+</div>
+
+
+<div>
+<label for="date">Contribution Date</label>
+
+<input
+id="date"
+type="date"
+required
+>
+</div>
+
+
+<div>
+<label for="month">Month</label>
+
+<input
+id="month"
+type="text"
+placeholder="e.g. August 2026"
+>
+</div>
+
+
+<div>
+<label for="payment">Payment Method</label>
+
+<select id="payment">
+<option value="">Select method</option>
+<option value="M-Pesa">M-Pesa</option>
+<option value="Cash">Cash</option>
+<option value="Bank">Bank</option>
+<option value="Mobile Money">Mobile Money</option>
+<option value="Other">Other</option>
+</select>
+</div>
+
+
+<div>
+<label for="reference">Payment Reference</label>
+
+<input
+id="reference"
+type="text"
+placeholder="e.g. MPESA code"
+>
+</div>
+
+
+<div class="full">
+<label for="notes">Notes</label>
+
+<textarea
+id="notes"
+placeholder="Optional notes"
+></textarea>
+</div>
+
+</div>
+
+
+<button
+id="saveButton"
+class="add"
+type="submit"
+>
+Save Contribution
+</button>
+
+</form>
+
+</section>
+
+
+<!-- CONTRIBUTION HISTORY -->
+
+<section class="panel">
+
+<h2>Contribution History</h2>
+
+<div
+id="loading"
+class="loading"
+>
+Loading contributions...
+</div>
+
+
+<div
+id="tableWrap"
+class="tablewrap"
+style="display:none"
+>
+
+<table>
+
+<thead>
+<tr>
+<th>Date</th>
+<th>Member</th>
+<th>Type</th>
+<th>Amount</th>
+<th>Month</th>
+<th>Payment</th>
+<th>Reference</th>
+</tr>
+</thead>
+
+<tbody id="rows"></tbody>
+
+</table>
+
+</div>
+
+</section>
+
+</main>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+
+<script>
+
+"use strict";
+
+const supabase =
+window.chamaSupabase;
+
+const notice =
+document.getElementById("notice");
+
+const loading =
+document.getElementById("loading");
+
+const tableWrap =
+document.getElementById("tableWrap");
+
+const rows =
+document.getElementById("rows");
+
+const memberSelect =
+document.getElementById("member");
+
+const saveButton =
+document.getElementById("saveButton");
+
+
+let currentAccount = null;
+
+
+function showNotice(text,ok=false){
+
+notice.textContent = text;
+
+notice.className =
+"notice show" +
+(ok ? " ok" : "");
+
+}
+
+
+function money(value){
+
+return "KSh " +
+Number(value || 0).toLocaleString(
+"en-KE",
+{
+minimumFractionDigits:0,
+maximumFractionDigits:2
+}
+);
+
+}
+
+
+function escapeHtml(value){
+
+return String(value ?? "").replace(
+/[&<>"']/g,
+c => ({
+"&":"&amp;",
+"<":"&lt;",
+">":"&gt;",
+'"':"&quot;",
+"'":"&#039;"
+}[c])
+);
+
+}
+
+
+async function getAccount(){
+
+if(!supabase){
+
+throw new Error(
+"Supabase client is unavailable."
+);
+
+}
+
+const sessionResult =
+await supabase.auth.getSession();
+
+if(sessionResult.error)
+throw sessionResult.error;
+
+if(!sessionResult.data.session){
+
+location.replace("login.html");
+return null;
+
+}
+
+const userResult =
+await supabase.auth.getUser();
+
+if(userResult.error)
+throw userResult.error;
+
+const user =
+userResult.data.user;
+
+if(!user){
+
+location.replace("login.html");
+return null;
+
+}
+
+
+let result =
+await supabase
+.from("members")
+.select("*")
+.eq("auth_user_id",user.id)
+.maybeSingle();
+
+
+if(result.error)
+throw result.error;
+
+
+let member =
+result.data;
+
+
+if(!member){
+
+result =
+await supabase
+.from("members")
+.select("*")
+.eq("user_id",user.id)
+.maybeSingle();
+
+if(result.error)
+throw result.error;
+
+member =
+result.data;
+
+}
+
+
+if(!member)
+throw new Error(
+"Your login is not linked to a member account."
+);
+
+
+if(!member.group_id)
+throw new Error(
+"Your member account has no group."
+);
+
+
+const groupResult =
+await supabase
+.from("groups")
+.select("id,name")
+.eq("id",member.group_id)
+.maybeSingle();
+
+
+if(groupResult.error)
+throw groupResult.error;
+
+
+if(!groupResult.data)
+throw new Error(
+"Your group could not be found."
+);
+
+
+return {
+user:user,
+member:member,
+group:groupResult.data
+};
+
+}
+
+
+async function loadMembers(){
+
+const result =
+await supabase
+.from("members")
+.select("id,name,member_number,membership_number,status")
+.eq("group_id",currentAccount.group.id)
+.order("name",{ascending:true});
+
+
+if(result.error)
+throw result.error;
+
+
+memberSelect.innerHTML =
+'<option value="">Select member</option>';
+
+
+(result.data || []).forEach(
+member => {
+
+const option =
+document.createElement("option");
+
+option.value =
+member.id;
+
+option.textContent =
+(member.name || "Unnamed") +
+(
+member.member_number ||
+member.membership_number
+?
+" — " +
+(member.member_number ||
+member.membership_number)
+:
+""
+);
+
+memberSelect.appendChild(option);
+
+});
+
+}
+
+
+async function loadContributions(){
+
+const result =
+await supabase
+.from("contributions")
+.select(`
+id,
+member_id,
+amount,
+contribution_type,
+month,
+payment_method,
+reference,
+contribution_date,
+notes,
+created_at
+`)
+.eq(
+"group_id",
+currentAccount.group.id
+)
+.order(
+"contribution_date",
+{ascending:false}
+)
+.order(
+"created_at",
+{ascending:false}
+);
+
+
+if(result.error)
+throw result.error;
+
+
+const list =
+result.data || [];
+
+
+const memberIds =
+[
+...new Set(
+list
+.map(x => x.member_id)
+.filter(Boolean)
+)
+];
+
+
+let names = {};
+
+
+if(memberIds.length){
+
+const memberResult =
+await supabase
+.from("members")
+.select("id,name")
+.in("id",memberIds);
+
+
+if(!memberResult.error){
+
+(memberResult.data || [])
+.forEach(
+m => {
+names[m.id] =
+m.name;
+}
+);
+
+}
+
+}
+
+
+rows.innerHTML = "";
+
+
+if(!list.length){
+
+rows.innerHTML = `
+<tr>
+<td colspan="7" class="empty">
+No contributions recorded yet.
+</td>
+</tr>
+`;
+
+}else{
+
+list.forEach(
+item => {
+
+const tr =
+document.createElement("tr");
+
+tr.innerHTML = `
+
+<td>
+${escapeHtml(item.contribution_date || "—")}
+</td>
+
+<td>
+${escapeHtml(names[item.member_id] || "—")}
+</td>
+
+<td>
+${escapeHtml(item.contribution_type || "—")}
+</td>
+
+<td>
+<strong>
+${money(item.amount)}
+</strong>
+</td>
+
+<td>
+${escapeHtml(item.month || "—")}
+</td>
+
+<td>
+${escapeHtml(item.payment_method || "—")}
+</td>
+
+<td>
+${escapeHtml(item.reference || "—")}
+</td>
+
+`;
+
+rows.appendChild(tr);
+
+});
+
+}
+
+
+const total =
+list.reduce(
+(sum,item) =>
+sum + Number(item.amount || 0),
+0
+);
+
+
+const currentMonth =
+new Date().toISOString().slice(0,7);
+
+
+const monthTotal =
+list
+.filter(item =>
+item.contribution_date &&
+item.contribution_date.startsWith(
+currentMonth
+)
+)
+.reduce(
+(sum,item) =>
+sum + Number(item.amount || 0),
+0
+);
+
+
+document.getElementById("total")
+.textContent =
+money(total);
+
+
+document.getElementById("monthTotal")
+.textContent =
+money(monthTotal);
+
+
+document.getElementById("recordCount")
+.textContent =
+list.length;
+
+
+loading.style.display =
+"none";
+
+tableWrap.style.display =
+"block";
+
+}
+
+
+document
+.getElementById("contributionForm")
+.addEventListener(
+"submit",
+async event => {
+
+event.preventDefault();
+
+saveButton.disabled =
+true;
+
+saveButton.textContent =
+"Saving...";
+
+notice.className =
+"notice";
+
+
+try{
+
+const memberId =
+memberSelect.value;
+
+const amount =
+Number(
+document.getElementById("amount").value
+);
+
+const type =
+document.getElementById("type").value.trim();
+
+const date =
+document.getElementById("date").value;
+
+const month =
+document.getElementById("month").value.trim();
+
+const payment =
+document.getElementById("payment").value;
+
+const reference =
+document.getElementById("reference").value.trim();
+
+const notes =
+document.getElementById("notes").value.trim();
+
+
+if(!memberId)
+throw new Error(
+"Select the member who made the contribution."
+);
+
+
+if(!amount || amount <= 0)
+throw new Error(
+"Enter a valid contribution amount."
+);
+
+
+if(!type)
+throw new Error(
+"Enter the contribution type."
+);
+
+
+if(!date)
+throw new Error(
+"Select the contribution date."
+);
+
+
+const record = {
+
+group_id:
+currentAccount.group.id,
+
+member_id:
+memberId,
+
+amount:
+amount,
+
+contribution_type:
+type,
+
+month:
+month || new Date(date)
+.toLocaleDateString(
+"en-US",
+{
+month:"long",
+year:"numeric"
+}
+),
+
+payment_method:
+payment || null,
+
+reference:
+reference || null,
+
+recorded_by:
+currentAccount.user.id,
+
+contribution_date:
+date,
+
+notes:
+notes || null
+
+};
+
+
+const result =
+await supabase
+.from("contributions")
+.insert(record)
+.select()
+.single();
+
+
+if(result.error){
+
+throw new Error(
+"Unable to save contribution: " +
+result.error.message
+);
+
+}
+
+
+showNotice(
+"Contribution recorded successfully.",
+true
+);
+
+
+document
+.getElementById("amount")
+.value = "";
+
+document
+.getElementById("reference")
+.value = "";
+
+document
+.getElementById("notes")
+.value = "";
+
+
+await loadContributions();
+
+
+}catch(error){
+
+console.error(error);
+
+showNotice(
+error.message ||
+"Unable to save contribution."
+);
+
+}finally{
+
+saveButton.disabled =
+false;
+
+saveButton.textContent =
+"Save Contribution";
+
+}
+
+});
+
+
+document
+.getElementById("logout")
+.addEventListener(
+"click",
+async () => {
+
+await supabase.auth.signOut();
+
+location.replace(
+"login.html"
+);
+
+});
+
+
+(async function init(){
+
+try{
+
+currentAccount =
+await getAccount();
+
+if(!currentAccount)
+return;
+
+
+document.getElementById(
+"groupName"
+).textContent =
+currentAccount.group.name;
+
+
+const today =
+new Date();
+
+
+document.getElementById(
+"date"
+).value =
+today.toISOString().slice(0,10);
+
+
+document.getElementById(
+"month"
+).value =
+today.toLocaleDateString(
+"en-US",
+{
+month:"long",
+year:"numeric"
+}
+);
+
+
+await loadMembers();
+
+await loadContributions();
+
+
+}catch(error){
+
+console.error(
+"CONTRIBUTIONS ERROR:",
+error
+);
+
+loading.style.display =
+"none";
+
+showNotice(
+error.message ||
+"Unable to load contributions."
+);
+
+}
+
+})();
+
+</script>
+
+</body>
+  </html>
+  
