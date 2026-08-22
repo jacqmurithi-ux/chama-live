@@ -1,0 +1,17 @@
+[build]
+  publish = "."
+
+[[redirects]]
+  from = "/create-group"
+  to = "/create-group.html"
+  status = 200
+
+[[redirects]]
+  from = "/activate-account"
+  to = "/activate-account.html"
+  status = 200
+
+[[redirects]]
+  from = "/login"
+  to = "/login.html"
+  status = 200
