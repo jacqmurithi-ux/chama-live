@@ -1,0 +1,848 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Group Management — Chama Live</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+  background:#f5f7f5;
+  color:#1d2521
+}
+
+header{
+  background:#17663f;
+  color:#fff;
+  padding:14px 16px
+}
+
+.header{
+  max-width:1100px;
+  margin:auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px
+}
+
+.brand{
+  font-size:20px;
+  font-weight:900
+}
+
+.sub{
+  font-size:12px;
+  opacity:.9;
+  margin-top:2px
+}
+
+.actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap
+}
+
+button,.back{
+  border:0;
+  border-radius:8px;
+  padding:10px 13px;
+  font-weight:800;
+  cursor:pointer;
+  text-decoration:none
+}
+
+.back{
+  background:#fff;
+  color:#17663f
+}
+
+.logout{
+  background:transparent;
+  color:#fff;
+  border:1px solid rgba(255,255,255,.7)
+}
+
+main{
+  max-width:1100px;
+  margin:auto;
+  padding:20px 14px 45px
+}
+
+h1{
+  margin:0;
+  font-size:26px
+}
+
+.intro{
+  color:#68736e;
+  font-size:14px;
+  margin:6px 0 20px
+}
+
+.panel{
+  background:#fff;
+  border:1px solid #e1e7e3;
+  border-radius:12px;
+  padding:17px;
+  margin-bottom:18px;
+  box-shadow:0 3px 12px rgba(0,0,0,.04)
+}
+
+.panel h2{
+  font-size:17px;
+  margin:0 0 14px
+}
+
+.formgrid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px
+}
+
+.full{
+  grid-column:1/-1
+}
+
+label{
+  display:block;
+  font-size:12px;
+  font-weight:800;
+  margin-bottom:5px
+}
+
+input,textarea{
+  width:100%;
+  padding:11px;
+  border:1px solid #ccd5cf;
+  border-radius:8px;
+  background:#fff;
+  outline:none
+}
+
+textarea{
+  min-height:85px;
+  resize:vertical
+}
+
+input:focus,textarea:focus{
+  border-color:#17663f
+}
+
+.primary{
+  background:#17663f;
+  color:#fff;
+  margin-top:14px
+}
+
+.primary:disabled{
+  opacity:.6
+}
+
+.notice{
+  display:none;
+  padding:12px 14px;
+  border-radius:9px;
+  margin-bottom:16px;
+  font-size:14px;
+  white-space:pre-wrap
+}
+
+.notice.show{
+  display:block;
+  background:#f8e6e3;
+  color:#87392d
+}
+
+.notice.ok{
+  background:#e5f1e9;
+  color:#17663f
+}
+
+.info{
+  background:#eef5f0;
+  border-left:4px solid #17663f;
+  padding:12px;
+  border-radius:7px;
+  font-size:13px;
+  margin-bottom:15px
+}
+
+@media(max-width:650px){
+  .header{
+    align-items:flex-start
+  }
+
+  main{
+    padding:17px 12px 35px
+  }
+
+  .formgrid{
+    grid-template-columns:1fr
+  }
+
+  .full{
+    grid-column:auto
+  }
+
+  h1{
+    font-size:23px
+  }
+
+  .panel{
+    padding:14px
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+
+<div class="header">
+
+<div>
+
+<div class="brand">
+Chama Live
+</div>
+
+<div
+id="groupNameHeader"
+class="sub"
+>
+Loading group...
+</div>
+
+</div>
+
+<div class="actions">
+
+<a
+class="back"
+href="dashboard.html"
+>
+Dashboard
+</a>
+
+<button
+id="logout"
+class="logout"
+type="button"
+>
+Logout
+</button>
+
+</div>
+
+</div>
+
+</header>
+
+
+<main>
+
+<h1>Group Management</h1>
+
+<p class="intro">
+Manage your Chama's basic group information.
+</p>
+
+<div
+id="notice"
+class="notice"
+></div>
+
+
+<section class="panel">
+
+<h2>
+Group Information
+</h2>
+
+<div class="info">
+Only authorised group administrators should change
+group information.
+</div>
+
+
+<form id="groupForm">
+
+<div class="formgrid">
+
+
+<div>
+
+<label for="groupName">
+Group Name
+</label>
+
+<input
+id="groupName"
+type="text"
+autocomplete="organization"
+required
+>
+
+</div>
+
+
+<div>
+
+<label for="registration">
+Registration Number
+</label>
+
+<input
+id="registration"
+type="text"
+autocomplete="off"
+>
+
+</div>
+
+
+<div>
+
+<label for="groupPhone">
+Group Phone
+</label>
+
+<input
+id="groupPhone"
+type="tel"
+inputmode="tel"
+autocomplete="tel"
+>
+
+</div>
+
+
+<div>
+
+<label for="groupEmail">
+Group Email
+</label>
+
+<input
+id="groupEmail"
+type="email"
+autocomplete="organization"
+>
+
+</div>
+
+
+<div class="full">
+
+<label for="address">
+Group Address
+</label>
+
+<textarea
+id="address"
+placeholder="Physical or postal address"
+></textarea>
+
+</div>
+
+
+</div>
+
+
+<button
+id="saveButton"
+class="primary"
+type="submit"
+>
+Save Group Information
+</button>
+
+</form>
+
+</section>
+
+
+<section class="panel">
+
+<h2>
+Account Information
+</h2>
+
+<div class="formgrid">
+
+<div>
+
+<label>
+Logged-in Email
+</label>
+
+<input
+id="userEmail"
+type="email"
+readonly
+>
+
+</div>
+
+
+<div>
+
+<label>
+Your Role
+</label>
+
+<input
+id="userRole"
+type="text"
+readonly
+>
+
+</div>
+
+</div>
+
+</section>
+
+</main>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="js/supabase-client.js"></script>
+
+
+<script>
+
+"use strict";
+
+
+const supabase =
+window.chamaSupabase;
+
+let account = null;
+
+const notice =
+document.getElementById("notice");
+
+const saveButton =
+document.getElementById("saveButton");
+
+
+function showNotice(
+text,
+ok=false
+){
+
+notice.textContent =
+text;
+
+notice.className =
+"notice show" +
+(ok ? " ok" : "");
+
+}
+
+
+async function getAccount(){
+
+if(!supabase){
+
+throw new Error(
+"Supabase client is unavailable."
+);
+
+}
+
+
+const session =
+await supabase.auth.getSession();
+
+
+if(session.error)
+throw session.error;
+
+
+if(!session.data.session){
+
+location.replace(
+"login.html"
+);
+
+return null;
+
+}
+
+
+const userResult =
+await supabase.auth.getUser();
+
+
+if(userResult.error)
+throw userResult.error;
+
+
+const user =
+userResult.data.user;
+
+
+let result =
+await supabase
+.from("members")
+.select("*")
+.eq(
+"auth_user_id",
+user.id
+)
+.maybeSingle();
+
+
+if(result.error)
+throw result.error;
+
+
+let member =
+result.data;
+
+
+if(!member){
+
+result =
+await supabase
+.from("members")
+.select("*")
+.eq(
+"user_id",
+user.id
+)
+.maybeSingle();
+
+
+if(result.error)
+throw result.error;
+
+
+member =
+result.data;
+
+}
+
+
+if(!member){
+
+throw new Error(
+"Your login is not linked to a Chama member account."
+);
+
+}
+
+
+if(!member.group_id){
+
+throw new Error(
+"Your account has no group assigned."
+);
+
+}
+
+
+const groupResult =
+await supabase
+.from("groups")
+.select("*")
+.eq(
+"id",
+member.group_id
+)
+.maybeSingle();
+
+
+if(groupResult.error)
+throw groupResult.error;
+
+
+if(!groupResult.data){
+
+throw new Error(
+"Your Chama could not be found."
+);
+
+}
+
+
+return {
+
+user:user,
+
+member:member,
+
+group:groupResult.data
+
+};
+
+}
+
+
+function fillForm(){
+
+const group =
+account.group;
+
+document.getElementById(
+"groupName"
+).value =
+group.name ||
+"";
+
+document.getElementById(
+"registration"
+).value =
+group.registration_number ||
+group.registration ||
+"";
+
+document.getElementById(
+"groupPhone"
+).value =
+group.phone ||
+group.group_phone ||
+"";
+
+document.getElementById(
+"groupEmail"
+).value =
+group.email ||
+group.group_email ||
+"";
+
+document.getElementById(
+"address"
+).value =
+group.address ||
+"";
+
+document.getElementById(
+"groupNameHeader"
+).textContent =
+group.name ||
+"Chama";
+
+document.getElementById(
+"userEmail"
+).value =
+account.user.email ||
+"";
+
+document.getElementById(
+"userRole"
+).value =
+account.member.role ||
+account.member.member_role ||
+"Member";
+
+}
+
+
+document
+.getElementById(
+"groupForm"
+)
+.addEventListener(
+"submit",
+async event => {
+
+event.preventDefault();
+
+
+saveButton.disabled =
+true;
+
+saveButton.textContent =
+"Saving...";
+
+notice.className =
+"notice";
+
+
+try{
+
+const groupName =
+document.getElementById(
+"groupName"
+).value.trim();
+
+
+const registration =
+document.getElementById(
+"registration"
+).value.trim();
+
+
+const phone =
+document.getElementById(
+"groupPhone"
+).value.trim();
+
+
+const email =
+document.getElementById(
+"groupEmail"
+).value.trim();
+
+
+const address =
+document.getElementById(
+"address"
+).value.trim();
+
+
+if(!groupName){
+
+throw new Error(
+"Group name is required."
+);
+
+}
+
+
+/*
+Only send columns that belong
+to the group information.
+*/
+
+const update = {
+
+name:
+groupName,
+
+registration_number:
+registration || null,
+
+phone:
+phone || null,
+
+email:
+email || null,
+
+address:
+address || null
+
+};
+
+
+const result =
+await supabase
+.from("groups")
+.update(update)
+.eq(
+"id",
+account.group.id
+);
+
+
+if(result.error){
+
+throw new Error(
+"Unable to update group: " +
+result.error.message
+);
+
+}
+
+
+account.group.name =
+groupName;
+
+
+showNotice(
+"Group information updated successfully.",
+true
+);
+
+
+document.getElementById(
+"groupNameHeader"
+).textContent =
+groupName;
+
+
+}catch(error){
+
+console.error(
+"GROUP UPDATE ERROR:",
+error
+);
+
+showNotice(
+error.message ||
+"Unable to update group."
+);
+
+}finally{
+
+saveButton.disabled =
+false;
+
+saveButton.textContent =
+"Save Group Information";
+
+}
+
+});
+
+
+document
+.getElementById(
+"logout"
+)
+.addEventListener(
+"click",
+async () => {
+
+await supabase.auth.signOut();
+
+location.replace(
+"login.html"
+);
+
+});
+
+
+(async function(){
+
+try{
+
+account =
+await getAccount();
+
+if(!account)
+return;
+
+fillForm();
+
+}catch(error){
+
+console.error(
+"GROUP MANAGEMENT ERROR:",
+error
+);
+
+showNotice(
+error.message ||
+"Unable to load group information."
+);
+
+}
+
+})();
+
+</script>
+
+</body>
+  </html>
+  
