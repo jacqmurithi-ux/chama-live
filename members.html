@@ -7,240 +7,247 @@
 <title>Members - Chama Live</title>
 
 <style>
-*{
-  box-sizing:border-box;
+* {
+  box-sizing: border-box;
 }
 
-body{
-  margin:0;
-  font-family:Arial,Helvetica,sans-serif;
-  background:#f4f7f5;
-  color:#17221c;
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f4f7f5;
+  color: #17221c;
 }
 
-header{
-  background:#17663f;
-  color:white;
-  padding:14px 16px;
+header {
+  background: #17663f;
+  color: white;
+  padding: 14px 16px;
 }
 
-.header-inner{
-  max-width:1100px;
-  margin:auto;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:10px;
+.header-inner {
+  max-width: 1100px;
+  margin: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
 }
 
-.logo{
-  font-size:21px;
-  font-weight:800;
+.logo {
+  font-size: 21px;
+  font-weight: 800;
 }
 
-.group-name{
-  font-size:13px;
-  margin-top:3px;
-  opacity:.9;
+.group-name {
+  font-size: 13px;
+  margin-top: 3px;
+  opacity: .9;
 }
 
-.header-actions{
-  display:flex;
-  gap:8px;
+.header-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .header-actions a,
-.header-actions button{
-  border-radius:8px;
-  padding:9px 13px;
-  font-weight:700;
-  cursor:pointer;
-  text-decoration:none;
+.header-actions button {
+  border-radius: 8px;
+  padding: 9px 13px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
 }
 
-.dashboard-btn{
-  background:white;
-  color:#17663f;
+.dashboard-btn {
+  background: white;
+  color: #17663f;
 }
 
-.logout-btn{
-  background:transparent;
-  color:white;
-  border:1px solid rgba(255,255,255,.7);
+.logout-btn {
+  background: transparent;
+  color: white;
+  border: 1px solid rgba(255,255,255,.7);
 }
 
-main{
-  max-width:1100px;
-  margin:auto;
-  padding:20px 14px 50px;
+main {
+  max-width: 1100px;
+  margin: auto;
+  padding: 20px 14px 50px;
 }
 
-h1{
-  margin:0;
-  font-size:27px;
+h1 {
+  margin: 0;
+  font-size: 27px;
 }
 
-.subtitle{
-  color:#68736e;
-  margin:6px 0 20px;
-  font-size:14px;
+.subtitle {
+  color: #68736e;
+  margin: 6px 0 20px;
+  font-size: 14px;
 }
 
-.card{
-  background:white;
-  border:1px solid #e0e7e2;
-  border-radius:12px;
-  padding:18px;
-  margin-bottom:18px;
+.card {
+  background: white;
+  border: 1px solid #e0e7e2;
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 18px;
 }
 
-.card h2{
-  margin:0 0 16px;
-  font-size:18px;
+.card h2 {
+  margin: 0 0 16px;
+  font-size: 18px;
 }
 
-.form-grid{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:14px;
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
 }
 
-.field label{
-  display:block;
-  font-size:12px;
-  font-weight:800;
-  margin-bottom:6px;
+.field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 6px;
 }
 
 .field input,
-.field select{
-  width:100%;
-  padding:12px;
-  border:1px solid #ccd6d0;
-  border-radius:8px;
-  font-size:15px;
-  background:white;
+.field select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccd6d0;
+  border-radius: 8px;
+  font-size: 15px;
+  background: white;
 }
 
 .field input:focus,
-.field select:focus{
-  outline:none;
-  border-color:#17663f;
+.field select:focus {
+  outline: none;
+  border-color: #17663f;
 }
 
-.add-btn{
-  margin-top:16px;
-  padding:12px 18px;
-  background:#17663f;
-  color:white;
-  border:0;
-  border-radius:8px;
-  font-weight:800;
-  cursor:pointer;
+.add-btn {
+  margin-top: 16px;
+  padding: 12px 18px;
+  background: #17663f;
+  color: white;
+  border: 0;
+  border-radius: 8px;
+  font-weight: 800;
+  cursor: pointer;
 }
 
-.add-btn:disabled{
-  opacity:.6;
-  cursor:not-allowed;
+.add-btn:disabled {
+  opacity: .6;
+  cursor: not-allowed;
 }
 
-.message{
-  display:none;
-  padding:13px;
-  border-radius:8px;
-  margin-bottom:18px;
-  font-size:14px;
-  line-height:1.5;
-  white-space:pre-wrap;
+.message {
+  display: none;
+  padding: 13px;
+  border-radius: 8px;
+  margin-bottom: 18px;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
 }
 
-.message.show{
-  display:block;
-  background:#fdebea;
-  color:#8b3028;
-  border:1px solid #efc5c0;
+.message.show {
+  display: block;
+  background: #fdebea;
+  color: #8b3028;
+  border: 1px solid #efc5c0;
 }
 
-.message.success{
-  display:block;
-  background:#e8f5ec;
-  color:#17663f;
-  border:1px solid #c9e4d1;
+.message.success {
+  display: block;
+  background: #e8f5ec;
+  color: #17663f;
+  border: 1px solid #c9e4d1;
 }
 
-.loading{
-  padding:25px;
-  text-align:center;
-  color:#68736e;
+.loading {
+  padding: 25px;
+  text-align: center;
+  color: #68736e;
 }
 
-.table-container{
-  overflow-x:auto;
-  display:none;
+.table-container {
+  overflow-x: auto;
+  display: none;
 }
 
-table{
-  width:100%;
-  min-width:760px;
-  border-collapse:collapse;
+table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
 }
 
 th,
-td{
-  text-align:left;
-  padding:12px 9px;
-  border-bottom:1px solid #edf0ee;
-  font-size:13px;
+td {
+  text-align: left;
+  padding: 12px 9px;
+  border-bottom: 1px solid #edf0ee;
+  font-size: 13px;
 }
 
-th{
-  color:#68736e;
-  font-size:11px;
-  text-transform:uppercase;
+th {
+  color: #68736e;
+  font-size: 11px;
+  text-transform: uppercase;
 }
 
-.role{
-  display:inline-block;
-  padding:4px 8px;
-  border-radius:20px;
-  background:#e7f4eb;
-  color:#17663f;
-  font-size:11px;
-  font-weight:800;
+.role {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 20px;
+  background: #e7f4eb;
+  color: #17663f;
+  font-size: 11px;
+  font-weight: 800;
 }
 
-.empty{
-  text-align:center;
-  padding:25px;
-  color:#68736e;
+.status {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 20px;
+  background: #eef2f0;
+  font-size: 11px;
 }
 
-@media(max-width:650px){
+.empty {
+  text-align: center;
+  padding: 25px;
+  color: #68736e;
+}
 
-  .header-inner{
-    align-items:flex-start;
+@media(max-width:650px) {
+
+  .header-inner {
+    align-items: flex-start;
   }
 
-  .header-actions{
-    flex-direction:column;
+  .header-actions {
+    flex-direction: column;
   }
 
-  main{
-    padding:18px 12px 40px;
+  main {
+    padding: 18px 12px 40px;
   }
 
-  h1{
-    font-size:23px;
+  h1 {
+    font-size: 23px;
   }
 
-  .form-grid{
-    grid-template-columns:1fr;
+  .form-grid {
+    grid-template-columns: 1fr;
   }
 
-  .card{
-    padding:14px;
+  .card {
+    padding: 14px;
   }
-
 }
 </style>
 </head>
@@ -419,7 +426,7 @@ th{
   </section>
 
 
-  <!-- MEMBER LIST -->
+  <!-- GROUP MEMBERS -->
 
   <section class="card">
 
@@ -489,7 +496,7 @@ th{
 </main>
 
 
-<!-- Supabase -->
+<!-- SUPABASE -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -503,7 +510,7 @@ th{
 
 /*
 ==================================================
-SUPABASE CLIENT
+SUPABASE
 ==================================================
 */
 
@@ -540,21 +547,28 @@ const groupName =
 
 /*
 ==================================================
-MESSAGE
+DISPLAY MESSAGE
 ==================================================
 */
 
 function showMessage(
   text,
   success = false
-){
+) {
 
   message.textContent = text;
 
-  message.className =
-    success
-      ? "message success"
-      : "message show";
+  if (success) {
+
+    message.className =
+      "message success";
+
+  } else {
+
+    message.className =
+      "message show";
+
+  }
 
 }
 
@@ -565,21 +579,21 @@ ESCAPE HTML
 ==================================================
 */
 
-function escapeHtml(value){
+function escapeHtml(value) {
 
   return String(
     value ?? ""
   ).replace(
     /[&<>"']/g,
-    function(character){
+    function(character) {
 
       const entities = {
 
-        "&":"&amp;",
-        "<":"&lt;",
-        ">":"&gt;",
-        '"':"&quot;",
-        "'":"&#039;"
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
 
       };
 
@@ -593,11 +607,14 @@ function escapeHtml(value){
 
 /*
 ==================================================
-CHECK SUPABASE
+CHECK SUPABASE CLIENT
 ==================================================
 */
 
-if(!supabase){
+if (!supabase) {
+
+  loading.textContent =
+    "Supabase client unavailable.";
 
   showMessage(
     "Supabase client is unavailable. Check js/supabase-client.js."
@@ -612,24 +629,24 @@ if(!supabase){
 
 /*
 ==================================================
-GET CURRENT USER
+GET LOGGED-IN USER
 ==================================================
 */
 
-async function getCurrentUser(){
+async function getCurrentUser() {
 
   const result =
     await supabase.auth.getUser();
 
 
-  if(result.error){
+  if (result.error) {
 
     throw result.error;
 
   }
 
 
-  if(!result.data.user){
+  if (!result.data.user) {
 
     window.location.href =
       "login.html";
@@ -652,10 +669,11 @@ GET CURRENT MEMBER
 
 async function getCurrentMember(
   user
-){
+) {
 
   /*
-   * Your live table uses user_id.
+   * Primary lookup:
+   * your live members table has user_id.
    */
 
   let result =
@@ -669,14 +687,14 @@ async function getCurrentMember(
       .maybeSingle();
 
 
-  if(result.error){
+  if (result.error) {
 
     throw result.error;
 
   }
 
 
-  if(result.data){
+  if (result.data) {
 
     return result.data;
 
@@ -698,17 +716,17 @@ async function getCurrentMember(
       .maybeSingle();
 
 
-  if(result.error){
+  if (result.error) {
 
     throw result.error;
 
   }
 
 
-  if(!result.data){
+  if (!result.data) {
 
     throw new Error(
-      "Your account is not linked to a member in this Chama."
+      "Your account is not linked to a member record."
     );
 
   }
@@ -727,9 +745,9 @@ GET GROUP
 
 async function getCurrentGroup(
   member
-){
+) {
 
-  if(!member.group_id){
+  if (!member.group_id) {
 
     throw new Error(
       "Your member record has no group ID."
@@ -749,14 +767,14 @@ async function getCurrentGroup(
       .maybeSingle();
 
 
-  if(result.error){
+  if (result.error) {
 
     throw result.error;
 
   }
 
 
-  if(!result.data){
+  if (!result.data) {
 
     throw new Error(
       "The group linked to your account could not be found."
@@ -772,11 +790,11 @@ async function getCurrentGroup(
 
 /*
 ==================================================
-GENERATE NEXT MEMBER NUMBER
+GET NEXT MEMBER NUMBER
 ==================================================
 */
 
-async function getNextMemberNumber(){
+async function getNextMemberNumber() {
 
   const result =
     await supabase
@@ -790,7 +808,7 @@ async function getNextMemberNumber(){
       );
 
 
-  if(result.error){
+  if (result.error) {
 
     throw result.error;
 
@@ -801,9 +819,9 @@ async function getNextMemberNumber(){
 
 
   (result.data || []).forEach(
-    function(member){
+    function(member) {
 
-      const number1 =
+      const memberNumber =
         parseInt(
           String(
             member.member_number || ""
@@ -815,7 +833,7 @@ async function getNextMemberNumber(){
         );
 
 
-      const number2 =
+      const membershipNumber =
         parseInt(
           String(
             member.membership_number || ""
@@ -827,22 +845,24 @@ async function getNextMemberNumber(){
         );
 
 
-      if(
-        Number.isFinite(number1) &&
-        number1 > highest
-      ){
+      if (
+        Number.isFinite(memberNumber) &&
+        memberNumber > highest
+      ) {
 
-        highest = number1;
+        highest =
+          memberNumber;
 
       }
 
 
-      if(
-        Number.isFinite(number2) &&
-        number2 > highest
-      ){
+      if (
+        Number.isFinite(membershipNumber) &&
+        membershipNumber > highest
+      ) {
 
-        highest = number2;
+        highest =
+          membershipNumber;
 
       }
 
@@ -851,11 +871,10 @@ async function getNextMemberNumber(){
 
 
   /*
-   * Your existing member is 1504.
-   * Therefore the first new member becomes 1505.
+   * Your current member is 1504.
    */
 
-  if(highest < 1504){
+  if (highest < 1504) {
 
     highest = 1504;
 
@@ -875,154 +894,218 @@ LOAD MEMBERS
 ==================================================
 */
 
-async function loadMembers(){
+async function loadMembers() {
 
   loading.style.display =
     "block";
+
+  loading.textContent =
+    "Loading members...";
 
   tableContainer.style.display =
     "none";
 
 
-  const result =
-    await supabase
-      .from("members")
-      .select(
-        "id,group_id,user_id,member_number,name,phone,role,join_date,status,created_at,email,membership_number,onboarding_status"
-      )
-      .eq(
-        "group_id",
-        currentGroup.id
-      )
-      .order(
-        "created_at",
-        {
-          ascending:true
+  try {
+
+    console.log(
+      "Loading members for group:",
+      currentGroup.id
+    );
+
+
+    const result =
+      await supabase
+        .from("members")
+        .select(`
+          id,
+          group_id,
+          user_id,
+          member_number,
+          name,
+          phone,
+          role,
+          join_date,
+          status,
+          created_at,
+          email,
+          membership_number,
+          onboarding_status
+        `)
+        .eq(
+          "group_id",
+          currentGroup.id
+        )
+        .order(
+          "created_at",
+          {
+            ascending: true
+          }
+        );
+
+
+    console.log(
+      "MEMBERS QUERY RESULT:",
+      result
+    );
+
+
+    if (result.error) {
+
+      throw new Error(
+        result.error.message
+      );
+
+    }
+
+
+    memberRows.innerHTML =
+      "";
+
+
+    const members =
+      result.data || [];
+
+
+    if (members.length === 0) {
+
+      memberRows.innerHTML = `
+
+        <tr>
+
+          <td
+            colspan="6"
+            class="empty"
+          >
+            No members found in this Chama.
+          </td>
+
+        </tr>
+
+      `;
+
+    } else {
+
+      members.forEach(
+        function(member) {
+
+          const number =
+            member.member_number ||
+            member.membership_number ||
+            "—";
+
+
+          const name =
+            member.name ||
+            "—";
+
+
+          const email =
+            member.email ||
+            "—";
+
+
+          const phone =
+            member.phone ||
+            "—";
+
+
+          const role =
+            member.role ||
+            "member";
+
+
+          const status =
+            member.status ||
+            member.onboarding_status ||
+            "—";
+
+
+          const row =
+            document.createElement("tr");
+
+
+          row.innerHTML = `
+
+            <td>
+              ${escapeHtml(number)}
+            </td>
+
+            <td>
+              <strong>
+                ${escapeHtml(name)}
+              </strong>
+            </td>
+
+            <td>
+              ${escapeHtml(email)}
+            </td>
+
+            <td>
+              ${escapeHtml(phone)}
+            </td>
+
+            <td>
+
+              <span class="role">
+                ${escapeHtml(role)}
+              </span>
+
+            </td>
+
+            <td>
+
+              <span class="status">
+                ${escapeHtml(status)}
+              </span>
+
+            </td>
+
+          `;
+
+
+          memberRows.appendChild(
+            row
+          );
+
         }
       );
 
-
-  if(result.error){
-
-    throw result.error;
-
-  }
+    }
 
 
-  memberRows.innerHTML =
-    "";
+    loading.style.display =
+      "none";
+
+    tableContainer.style.display =
+      "block";
 
 
-  if(
-    !result.data ||
-    result.data.length === 0
-  ){
+  } catch (error) {
 
-    memberRows.innerHTML = `
-
-      <tr>
-
-        <td
-          colspan="6"
-          class="empty"
-        >
-          No members found.
-        </td>
-
-      </tr>
-
-    `;
-
-  }
-  else{
-
-    result.data.forEach(
-      function(member){
-
-        const number =
-          member.member_number ||
-          member.membership_number ||
-          "—";
+    console.error(
+      "LOAD MEMBERS ERROR:",
+      error
+    );
 
 
-        const name =
-          member.name ||
-          "—";
+    loading.textContent =
+      "Unable to load members.";
 
 
-        const email =
-          member.email ||
-          "—";
+    tableContainer.style.display =
+      "none";
 
 
-        const phone =
-          member.phone ||
-          "—";
-
-
-        const role =
-          member.role ||
-          "member";
-
-
-        const status =
-          member.status ||
-          member.onboarding_status ||
-          "—";
-
-
-        const row =
-          document.createElement("tr");
-
-
-        row.innerHTML = `
-
-          <td>
-            ${escapeHtml(number)}
-          </td>
-
-          <td>
-            <strong>
-              ${escapeHtml(name)}
-            </strong>
-          </td>
-
-          <td>
-            ${escapeHtml(email)}
-          </td>
-
-          <td>
-            ${escapeHtml(phone)}
-          </td>
-
-          <td>
-
-            <span class="role">
-              ${escapeHtml(role)}
-            </span>
-
-          </td>
-
-          <td>
-            ${escapeHtml(status)}
-          </td>
-
-        `;
-
-
-        memberRows.appendChild(row);
-
-      }
+    showMessage(
+      "Unable to load members:\n\n" +
+      (
+        error.message ||
+        "Unknown error"
+      )
     );
 
   }
-
-
-  loading.style.display =
-    "none";
-
-  tableContainer.style.display =
-    "block";
 
 }
 
@@ -1035,7 +1118,7 @@ ADD MEMBER
 
 form.addEventListener(
   "submit",
-  async function(event){
+  async function(event) {
 
     event.preventDefault();
 
@@ -1053,11 +1136,7 @@ form.addEventListener(
     );
 
 
-    try{
-
-      /*
-       * Read form
-       */
+    try {
 
       const name =
         document
@@ -1088,10 +1167,10 @@ form.addEventListener(
 
 
       /*
-       * Validate
+       * Validation
        */
 
-      if(!name){
+      if (!name) {
 
         throw new Error(
           "Please enter the member's full name."
@@ -1100,7 +1179,7 @@ form.addEventListener(
       }
 
 
-      if(!email){
+      if (!email) {
 
         throw new Error(
           "Please enter the member's email address."
@@ -1109,7 +1188,7 @@ form.addEventListener(
       }
 
 
-      if(!phone){
+      if (!phone) {
 
         throw new Error(
           "Please enter the member's phone number."
@@ -1119,7 +1198,7 @@ form.addEventListener(
 
 
       /*
-       * Generate the next number.
+       * Generate member number.
        */
 
       const nextNumber =
@@ -1129,8 +1208,8 @@ form.addEventListener(
       /*
        * IMPORTANT:
        *
-       * These are the actual required
-       * columns from your live database.
+       * These columns match the live
+       * members table you inspected.
        */
 
       const payload = {
@@ -1166,13 +1245,13 @@ form.addEventListener(
 
 
       console.log(
-        "CHAMA LIVE INSERT:",
+        "CHAMA LIVE MEMBER PAYLOAD:",
         payload
       );
 
 
       /*
-       * Insert member.
+       * INSERT
        */
 
       const result =
@@ -1185,13 +1264,13 @@ form.addEventListener(
           .single();
 
 
-      if(result.error){
+      console.log(
+        "MEMBER INSERT RESULT:",
+        result
+      );
 
-        console.error(
-          "SUPABASE INSERT ERROR:",
-          result.error
-        );
 
+      if (result.error) {
 
         throw new Error(
           result.error.message
@@ -1201,7 +1280,7 @@ form.addEventListener(
 
 
       /*
-       * Success
+       * SUCCESS
        */
 
       showMessage(
@@ -1211,10 +1290,6 @@ form.addEventListener(
         true
       );
 
-
-      /*
-       * Clear form.
-       */
 
       form.reset();
 
@@ -1226,14 +1301,14 @@ form.addEventListener(
 
 
       /*
-       * Refresh list.
+       * Reload member list.
        */
 
       await loadMembers();
 
 
     }
-    catch(error){
+    catch (error) {
 
       console.error(
         "ADD MEMBER ERROR:",
@@ -1250,7 +1325,7 @@ form.addEventListener(
       );
 
     }
-    finally{
+    finally {
 
       addButton.disabled =
         false;
@@ -1274,12 +1349,18 @@ document
   .getElementById("logoutBtn")
   .addEventListener(
     "click",
-    async function(){
+    async function() {
 
-      await supabase.auth.signOut();
+      try {
 
-      window.location.href =
-        "login.html";
+        await supabase.auth.signOut();
+
+      } finally {
+
+        window.location.href =
+          "login.html";
+
+      }
 
     }
   );
@@ -1287,19 +1368,19 @@ document
 
 /*
 ==================================================
-INITIALISE PAGE
+INITIALISE
 ==================================================
 */
 
-(async function(){
+(async function() {
 
-  try{
+  try {
 
     currentUser =
       await getCurrentUser();
 
 
-    if(!currentUser){
+    if (!currentUser) {
 
       return;
 
@@ -1325,22 +1406,23 @@ INITIALISE PAGE
 
     await loadMembers();
 
+
   }
-  catch(error){
+  catch (error) {
 
     console.error(
-      "MEMBERS PAGE ERROR:",
+      "MEMBERS PAGE INITIALISATION ERROR:",
       error
     );
 
 
-    loading.style.display =
-      "none";
+    loading.textContent =
+      "Unable to load group members.";
 
 
     showMessage(
       error.message ||
-      "Unable to load members."
+      "Unable to load Members page."
     );
 
   }
