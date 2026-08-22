@@ -4,40 +4,65 @@
   const SUPABASE_URL =
     "https://ptktftwyltxmtcodyzoa.supabase.co";
 
-  const SUPABASE_ANON_KEY =
-    "PASTE_YOUR_EXISTING_SUPABASE_ANON_KEY_HERE";
+  /*
+   * IMPORTANT:
+   * Put your EXISTING Supabase Publishable/Anon key below.
+   * Never use the service_role key in browser code.
+   */
+  const SUPABASE_KEY = "YOUR_EXISTING_PUBLISHABLE_OR_ANON_KEY";
 
-  if (!window.supabase || typeof window.supabase.createClient !== "function") {
+  if (!window.supabase) {
     console.error(
-      "Supabase JS library was not loaded before supabase-client.js"
+      "ERROR: Supabase JavaScript library is not loaded."
+    );
+    return;
+  }
+
+  if (typeof window.supabase.createClient !== "function") {
+    console.error(
+      "ERROR: window.supabase.createClient is unavailable."
     );
     return;
   }
 
   if (
-    !SUPABASE_ANON_KEY ||
-    SUPABASE_ANON_KEY === "PASTE_YOUR_EXISTING_SUPABASE_ANON_KEY_HERE"
+    !SUPABASE_KEY ||
+    SUPABASE_KEY === "YOUR_EXISTING_PUBLISHABLE_OR_ANON_KEY"
   ) {
     console.error(
-      "Supabase publishable/anon key has not been configured."
+      "ERROR: Supabase publishable/anon key is missing."
     );
     return;
   }
 
-  const client = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY,
-    {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-        storage: window.localStorage
+  try {
+
+    const client = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_KEY,
+      {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true,
+          storage: window.localStorage
+        }
       }
-    }
-  );
+    );
 
-  window.chamaSupabase = client;
+    window.chamaSupabase = client;
 
-  console.log("Chama Live Supabase client initialized.");
+    console.log(
+      "Chama Live: Supabase client initialized successfully."
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Chama Live: Failed to initialize Supabase client.",
+      error
+    );
+
+  }
+
 })();
