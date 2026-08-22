@@ -1,30 +1,63 @@
 <!doctype html>
 <html lang="en">
+
 <head>
+
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  >
+
   <title>Login — Chama Live</title>
-  <link rel="stylesheet" href="css/mobile-lightweight.css">
+
+  <link
+    rel="stylesheet"
+    href="css/mobile-lightweight.css"
+  >
+
 </head>
+
 
 <body class="auth-page">
 
+
 <main class="auth-card">
 
-  <div class="brand">Chama Live</div>
 
-  <h1>Login</h1>
+  <div class="brand">
+    Chama Live
+  </div>
+
+
+  <h1>
+    Login
+  </h1>
+
 
   <p class="muted">
     Sign in to your Chama Live account.
   </p>
 
-  <div id="message" class="message" role="alert"></div>
 
-  <form id="loginForm" autocomplete="on">
+  <div
+    id="message"
+    class="message"
+    role="alert"
+  ></div>
+
+
+  <form
+    id="loginForm"
+    autocomplete="on"
+  >
 
     <div class="field">
-      <label for="email">Email</label>
+
+      <label for="email">
+        Email
+      </label>
 
       <input
         id="email"
@@ -34,10 +67,15 @@
         autocomplete="username"
         placeholder="Enter your email"
       >
+
     </div>
 
+
     <div class="field">
-      <label for="password">Password</label>
+
+      <label for="password">
+        Password
+      </label>
 
       <input
         id="password"
@@ -47,266 +85,771 @@
         autocomplete="current-password"
         placeholder="Enter your password"
       >
+
     </div>
 
-    <button id="loginButton" type="submit">
+
+    <button
+      id="loginButton"
+      type="submit"
+    >
       LOGIN
     </button>
 
   </form>
 
+
   <div class="links">
-    <a href="create-group.html">Create New Group</a>
+
+    <a href="create-group.html">
+      Create New Group
+    </a>
+
   </div>
+
 
 </main>
 
+
+<!-- ============================================================
+     SUPABASE CDN
+     ============================================================ -->
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+<!-- ============================================================
+     CHAMA LIVE SUPABASE CLIENT
+     ============================================================ -->
+
 <script src="js/supabase-client.js"></script>
+
 
 <script>
 
-const form = document.getElementById("loginForm");
-const button = document.getElementById("loginButton");
-const message = document.getElementById("message");
+"use strict";
 
-function errorMessage(text) {
-  message.className = "message show";
-  message.textContent = text;
+
+/* ============================================================
+   ELEMENTS
+   ============================================================ */
+
+const form =
+  document.getElementById("loginForm");
+
+const button =
+  document.getElementById("loginButton");
+
+const message =
+  document.getElementById("message");
+
+
+/* ============================================================
+   TIMEOUT
+   ============================================================ */
+
+const STEP_TIMEOUT = 10000;
+
+
+function withTimeout(
+  promise,
+  milliseconds,
+  stepName
+) {
+
+  let timeoutId;
+
+
+  const timeoutPromise =
+    new Promise(
+      function(resolve, reject) {
+
+        timeoutId =
+          setTimeout(
+            function() {
+
+              reject(
+                new Error(
+                  stepName +
+                  " timed out after " +
+                  (milliseconds / 1000) +
+                  " seconds."
+                )
+              );
+
+            },
+            milliseconds
+          );
+
+      }
+    );
+
+
+  return Promise.race([
+    promise,
+    timeoutPromise
+  ])
+  .finally(
+    function() {
+
+      clearTimeout(
+        timeoutId
+      );
+
+    }
+  );
+
 }
 
-function successMessage(text) {
-  message.className = "message success";
-  message.textContent = text;
+
+/* ============================================================
+   MESSAGE
+   ============================================================ */
+
+function showMessage(
+  text,
+  type = "error"
+) {
+
+  message.textContent =
+    text || "";
+
+  message.className =
+    "message show";
+
+
+  if (
+    type === "success"
+  ) {
+
+    message.className =
+      "message show success";
+
+  }
+
 }
 
 
-form.addEventListener("submit", async function(event) {
+/* ============================================================
+   SUPABASE CLIENT CHECK
+   ============================================================ */
 
-  event.preventDefault();
+function getClient() {
 
-  message.className = "message";
-  message.textContent = "";
+  console.log(
+    "[LOGIN] Checking Supabase client..."
+  );
 
-  button.disabled = true;
-  button.textContent = "SIGNING IN...";
 
-  try {
+  if (
+    !window.chamaSupabase
+  ) {
 
-    const supabase = window.chamaSupabase;
+    throw new Error(
+      "Supabase client is not available."
+    );
 
-    if (!supabase) {
-      throw new Error(
-        "Supabase client is not available."
+  }
+
+
+  if (
+    !window.chamaSupabase.auth
+  ) {
+
+    throw new Error(
+      "Supabase Auth is not available."
+    );
+
+  }
+
+
+  if (
+    typeof
+    window.chamaSupabase
+      .auth
+      .signInWithPassword !==
+    "function"
+  ) {
+
+    throw new Error(
+      "Supabase signInWithPassword() is unavailable."
+    );
+
+  }
+
+
+  console.log(
+    "[LOGIN] Supabase client and Auth are ready."
+  );
+
+
+  return window.chamaSupabase;
+
+}
+
+
+/* ============================================================
+   LOGIN
+   ============================================================ */
+
+form.addEventListener(
+  "submit",
+  async function(event) {
+
+    event.preventDefault();
+
+
+    button.disabled =
+      true;
+
+    button.textContent =
+      "SIGNING IN...";
+
+
+    showMessage(
+      "SIGNING IN...",
+      "info"
+    );
+
+
+    try {
+
+
+      /* ======================================================
+         CLIENT
+         ====================================================== */
+
+      const supabase =
+        getClient();
+
+
+      /* ======================================================
+         INPUT
+         ====================================================== */
+
+      const email =
+        document
+          .getElementById("email")
+          .value
+          .trim()
+          .toLowerCase();
+
+
+      const password =
+        document
+          .getElementById("password")
+          .value;
+
+
+      if (
+        !email
+      ) {
+
+        throw new Error(
+          "Please enter your email address."
+        );
+
+      }
+
+
+      if (
+        !password
+      ) {
+
+        throw new Error(
+          "Please enter your password."
+        );
+
+      }
+
+
+      /* ======================================================
+         STEP 1 — SIGN IN
+         ====================================================== */
+
+      console.log(
+        "[LOGIN] STEP 1 START: signInWithPassword()"
       );
-    }
-
-    const email =
-      document.getElementById("email")
-        .value
-        .trim()
-        .toLowerCase();
-
-    const password =
-      document.getElementById("password").value;
 
 
-    /*
-     * IMPORTANT:
-     * Do NOT sign out before login.
-     * Supabase needs to establish the new session.
-     */
-
-    const {
-      data,
-      error
-    } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-
-
-    if (error) {
-      throw error;
-    }
-
-    if (!data || !data.user || !data.session) {
-      throw new Error(
-        "Login succeeded but no authenticated session was returned."
+      showMessage(
+        "Checking your email and password...",
+        "info"
       );
+
+
+      let authResult;
+
+
+      try {
+
+        authResult =
+          await withTimeout(
+            supabase.auth.signInWithPassword({
+              email: email,
+              password: password
+            }),
+            STEP_TIMEOUT,
+            "Sign-in request"
+          );
+
+
+        console.log(
+          "[LOGIN] STEP 1 COMPLETE: signInWithPassword()",
+          authResult
+        );
+
+      }
+      catch(error) {
+
+        console.error(
+          "[LOGIN] STEP 1 FAILED:",
+          error
+        );
+
+        throw new Error(
+          error.message ||
+          "Sign-in failed."
+        );
+
+      }
+
+
+      if (
+        authResult.error
+      ) {
+
+        console.error(
+          "[LOGIN] Supabase Auth error:",
+          authResult.error
+        );
+
+
+        throw new Error(
+          authResult.error.message ||
+          "Invalid login credentials."
+        );
+
+      }
+
+
+      if (
+        !authResult.data ||
+        !authResult.data.user
+      ) {
+
+        throw new Error(
+          "Sign-in completed but no authenticated user was returned."
+        );
+
+      }
+
+
+      if (
+        !authResult.data.session
+      ) {
+
+        throw new Error(
+          "Sign-in completed but no session was returned."
+        );
+
+      }
+
+
+      const user =
+        authResult.data.user;
+
+
+      console.log(
+        "[LOGIN] Authenticated user ID:",
+        user.id
+      );
+
+
+      /* ======================================================
+         STEP 2 — MEMBER LOOKUP
+         ====================================================== */
+
+      console.log(
+        "[LOGIN] STEP 2 START: members lookup"
+      );
+
+
+      showMessage(
+        "Authentication successful. Loading member account...",
+        "info"
+      );
+
+
+      let memberResult;
+
+
+      try {
+
+        memberResult =
+          await withTimeout(
+
+            supabase
+              .from("members")
+              .select(`
+                id,
+                group_id,
+                auth_user_id,
+                name,
+                email,
+                phone,
+                role,
+                status,
+                onboarding_status
+              `)
+              .eq(
+                "auth_user_id",
+                user.id
+              )
+              .maybeSingle(),
+
+            STEP_TIMEOUT,
+
+            "Member lookup"
+
+          );
+
+
+        console.log(
+          "[LOGIN] STEP 2 COMPLETE: members lookup",
+          memberResult
+        );
+
+      }
+      catch(error) {
+
+        console.error(
+          "[LOGIN] STEP 2 FAILED:",
+          error
+        );
+
+        throw new Error(
+          error.message ||
+          "Member lookup failed."
+        );
+
+      }
+
+
+      if (
+        memberResult.error
+      ) {
+
+        console.error(
+          "[LOGIN] Member lookup error:",
+          memberResult.error
+        );
+
+
+        throw new Error(
+          "Member lookup failed: " +
+          (
+            memberResult.error.message ||
+            "Unknown database error."
+          )
+        );
+
+      }
+
+
+      const member =
+        memberResult.data;
+
+
+      if (
+        !member
+      ) {
+
+        throw new Error(
+          "Authentication succeeded, but no Chama Live member record is linked to this login."
+        );
+
+      }
+
+
+      console.log(
+        "[LOGIN] Member found:",
+        member
+      );
+
+
+      /* ======================================================
+         STEP 3 — GROUP LOOKUP
+         ====================================================== */
+
+      console.log(
+        "[LOGIN] STEP 3 START: groups lookup"
+      );
+
+
+      showMessage(
+        "Member found. Loading group account...",
+        "info"
+      );
+
+
+      if (
+        !member.group_id
+      ) {
+
+        throw new Error(
+          "Member account has no group_id."
+        );
+
+      }
+
+
+      let groupResult;
+
+
+      try {
+
+        groupResult =
+          await withTimeout(
+
+            supabase
+              .from("groups")
+              .select(`
+                id,
+                name,
+                registration_number,
+                phone,
+                email,
+                category,
+                description,
+                country
+              `)
+              .eq(
+                "id",
+                member.group_id
+              )
+              .maybeSingle(),
+
+            STEP_TIMEOUT,
+
+            "Group lookup"
+
+          );
+
+
+        console.log(
+          "[LOGIN] STEP 3 COMPLETE: groups lookup",
+          groupResult
+        );
+
+      }
+      catch(error) {
+
+        console.error(
+          "[LOGIN] STEP 3 FAILED:",
+          error
+        );
+
+        throw new Error(
+          error.message ||
+          "Group lookup failed."
+        );
+
+      }
+
+
+      if (
+        groupResult.error
+      ) {
+
+        console.error(
+          "[LOGIN] Group lookup error:",
+          groupResult.error
+        );
+
+
+        throw new Error(
+          "Group lookup failed: " +
+          (
+            groupResult.error.message ||
+            "Unknown database error."
+          )
+        );
+
+      }
+
+
+      const group =
+        groupResult.data;
+
+
+      if (
+        !group
+      ) {
+
+        throw new Error(
+          "Member account was found, but its Chama group could not be found."
+        );
+
+      }
+
+
+      console.log(
+        "[LOGIN] Group found:",
+        group
+      );
+
+
+      /* ======================================================
+         STORE SESSION CONTEXT
+         ====================================================== */
+
+      sessionStorage.setItem(
+        "chama_member_id",
+        member.id
+      );
+
+
+      sessionStorage.setItem(
+        "chama_group_id",
+        member.group_id
+      );
+
+
+      sessionStorage.setItem(
+        "chama_member_role",
+        member.role || "member"
+      );
+
+
+      sessionStorage.setItem(
+        "chama_member_name",
+        member.name || ""
+      );
+
+
+      sessionStorage.setItem(
+        "chama_group_name",
+        group.name || ""
+      );
+
+
+      /* ======================================================
+         SUCCESS
+         ====================================================== */
+
+      console.log(
+        "[LOGIN] ALL THREE STEPS COMPLETED SUCCESSFULLY."
+      );
+
+
+      showMessage(
+        "Login successful. Opening your dashboard...",
+        "success"
+      );
+
+
+      button.textContent =
+        "SUCCESS";
+
+
+      setTimeout(
+        function() {
+
+          window.location.replace(
+            "dashboard.html"
+          );
+
+        },
+        500
+      );
+
+
     }
+    catch(error) {
+
+
+      console.error(
+        "[LOGIN] FINAL ERROR:",
+        error
+      );
+
+
+      showMessage(
+        error &&
+        error.message
+          ? error.message
+          : "Unable to sign in.",
+        "error"
+      );
+
+
+    }
+    finally {
+
+
+      setTimeout(
+        function() {
+
+          button.disabled =
+            false;
+
+
+          button.textContent =
+            "LOGIN";
+
+        },
+        100
+      );
+
+    }
+
+  }
+);
+
+
+/* ============================================================
+   PAGE LOAD DIAGNOSTICS
+   ============================================================ */
+
+window.addEventListener(
+  "load",
+  function() {
+
+    console.log(
+      "[LOGIN] Login page loaded."
+    );
 
 
     console.log(
-      "Authenticated user:",
-      data.user.id
+      "[LOGIN] Supabase library:",
+      typeof window.supabase
     );
 
 
-    /*
-     * Find the member belonging to this
-     * authenticated Supabase user.
-     *
-     * IMPORTANT:
-     * The current database uses auth_user_id.
-     */
-
-    const {
-      data: member,
-      error: memberError
-    } = await supabase
-      .from("members")
-      .select(`
-        id,
-        group_id,
-        auth_user_id,
-        name,
-        email,
-        phone,
-        role,
-        status,
-        onboarding_status
-      `)
-      .eq("auth_user_id", data.user.id)
-      .maybeSingle();
+    console.log(
+      "[LOGIN] Chama Supabase client:",
+      window.chamaSupabase
+    );
 
 
-    if (memberError) {
-      throw new Error(
-        "Login succeeded, but the member account could not be loaded: " +
-        memberError.message
+    if (
+      window.chamaSupabase
+    ) {
+
+      console.log(
+        "[LOGIN] Supabase Auth:",
+        window.chamaSupabase.auth
       );
+
     }
-
-
-    if (!member) {
-
-      /*
-       * DO NOT sign the user out here.
-       *
-       * Keep the authenticated session so the actual
-       * problem can be diagnosed rather than silently
-       * destroying the login.
-       */
-
-      throw new Error(
-        "Your login is valid, but your Chama Live member record " +
-        "is not linked to this account. Please contact the administrator."
-      );
-    }
-
-
-    /*
-     * Load the member's group.
-     */
-
-    const {
-      data: group,
-      error: groupError
-    } = await supabase
-      .from("groups")
-      .select(`
-        id,
-        name,
-        registration_number,
-        phone,
-        email,
-        category,
-        description,
-        country
-      `)
-      .eq("id", member.group_id)
-      .maybeSingle();
-
-
-    if (groupError) {
-      throw new Error(
-        "Your account was found, but the group could not be loaded: " +
-        groupError.message
-      );
-    }
-
-
-    if (!group) {
-      throw new Error(
-        "Your account is not linked to a valid Chama group."
-      );
-    }
-
-
-    /*
-     * Store ONLY non-sensitive context.
-     *
-     * Authentication itself remains in Supabase.
-     */
-
-    sessionStorage.setItem(
-      "chama_member_id",
-      member.id
-    );
-
-    sessionStorage.setItem(
-      "chama_group_id",
-      member.group_id
-    );
-
-    sessionStorage.setItem(
-      "chama_member_role",
-      member.role || "member"
-    );
-
-    sessionStorage.setItem(
-      "chama_member_name",
-      member.name || ""
-    );
-
-    sessionStorage.setItem(
-      "chama_group_name",
-      group.name || ""
-    );
-
-
-    successMessage(
-      "Login successful. Opening your dashboard..."
-    );
-
-
-    /*
-     * IMPORTANT:
-     * No signOut() here.
-     */
-
-    window.location.replace(
-      "dashboard.html"
-    );
 
   }
-
-  catch (error) {
-
-    console.error(
-      "LOGIN ERROR:",
-      error
-    );
-
-    errorMessage(
-      error.message ||
-      "Unable to sign in."
-    );
-
-  }
-
-  finally {
-
-    button.disabled = false;
-    button.textContent = "LOGIN";
-
-  }
-
-});
+);
 
 </script>
 
+
 </body>
-  </html>
-  
+
+</html>
