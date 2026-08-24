@@ -20,22 +20,26 @@ async function loadReports() {
       expensesResult,
       membersResult
     ] = await Promise.all([
+      // Opening balance
       supabase
         .from("groups")
         .select("opening_balance")
         .eq("id", groupId)
         .single(),
 
+      // Contributions
       supabase
         .from("contributions")
         .select("amount")
         .eq("group_id", groupId),
 
+      // Expenses
       supabase
         .from("expenses")
         .select("amount, approval_status")
         .eq("group_id", groupId),
 
+      // Active members
       supabase
         .from("members")
         .select("id", {
@@ -46,28 +50,36 @@ async function loadReports() {
         .eq("status", "active")
     ]);
 
+    // Check group
     if (groupResult.error) {
       throw groupResult.error;
     }
 
+    // Check contributions
     if (contributionsResult.error) {
       throw contributionsResult.error;
     }
 
+    // Check expenses
     if (expensesResult.error) {
       throw expensesResult.error;
     }
 
+    // Check members
     if (membersResult.error) {
       throw membersResult.error;
     }
 
-    // Opening balance
+    /*
+     * OPENING BALANCE
+     */
     const openingBalance = Number(
       groupResult.data?.opening_balance || 0
     );
 
-    // Total contributions
+    /*
+     * TOTAL CONTRIBUTIONS
+     */
     const totalContributions = (
       contributionsResult.data || []
     ).reduce(
@@ -76,13 +88,16 @@ async function loadReports() {
       0
     );
 
-    // Approved expenses only
+    /*
+     * APPROVED EXPENSES
+     */
     const approvedExpenses = (
       expensesResult.data || []
     )
-      .filter(
-        expense =>
-          expense.approval_status === "approved"
+      .filter(expense =>
+        String(
+          expense.approval_status || ""
+        ).toLowerCase() === "approved"
       )
       .reduce(
         (total, expense) =>
@@ -90,44 +105,63 @@ async function loadReports() {
         0
       );
 
-    // Closing balance
+    /*
+     * CLOSING BALANCE
+     *
+     * Opening Balance
+     * + Contributions
+     * - Approved Expenses
+     */
     const closingBalance =
       openingBalance +
       totalContributions -
       approvedExpenses;
 
-    // Summary cards
+    /*
+     * SUMMARY CARDS
+     */
+
+    // Active members
     setText(
       "#members",
       membersResult.count ?? 0
     );
 
+    // Contributions
     setText(
       "#contributions",
       money(totalContributions)
     );
 
+    // Approved expenses
     setText(
       "#expenses",
       money(approvedExpenses)
     );
 
-    // Financial position
+    /*
+     * FINANCIAL POSITION
+     */
+
+    // Opening balance
     setText(
       "#opening",
       money(openingBalance)
     );
 
+    // Contributions
     setText(
       "#c2",
       money(totalContributions)
     );
 
+    // Approved expenses
     setText(
       "#e2",
       money(approvedExpenses)
     );
 
+    // Closing balance
     setText(
       "#balance",
       money(closingBalance)
