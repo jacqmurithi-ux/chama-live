@@ -17,7 +17,6 @@ async function getCurrentGroupId() {
     return null;
   }
 
-
   const {
     data: member,
     error
@@ -27,11 +26,9 @@ async function getCurrentGroupId() {
     .eq("auth_user_id", user.id)
     .maybeSingle();
 
-
   if (error) {
     throw error;
   }
-
 
   if (!member) {
     throw new Error(
@@ -39,21 +36,17 @@ async function getCurrentGroupId() {
     );
   }
 
-
   return member.group_id;
 }
 
 
 function money(value) {
 
-  return new Intl.NumberFormat(
-    "en-KE",
-    {
-      style: "currency",
-      currency: "KES",
-      minimumFractionDigits: 2
-    }
-  ).format(Number(value) || 0);
+  return new Intl.NumberFormat("en-KE", {
+    style: "currency",
+    currency: "KES",
+    minimumFractionDigits: 2
+  }).format(Number(value) || 0);
 
 }
 
@@ -95,29 +88,22 @@ async function loadContributions() {
   const rows =
     document.querySelector("#rows");
 
-
   if (!rows) {
-
     console.error(
       "CHAMA LIVE: #rows was not found."
     );
-
     return;
   }
-
 
   try {
 
     const groupId =
       await getCurrentGroupId();
 
-
     if (!groupId) {
-
       throw new Error(
         "No group is linked to this account."
       );
-
     }
 
 
@@ -135,7 +121,7 @@ async function loadContributions() {
         amount,
         contribution_type,
         payment_method,
-        mpesa_reference,
+        reference,
         member_id
       `)
       .eq("group_id", groupId)
@@ -263,7 +249,7 @@ async function loadContributions() {
 
               <td>
                 ${escapeHtml(
-                  contribution.mpesa_reference ?? "—"
+                  contribution.reference ?? "—"
                 )}
               </td>
 
