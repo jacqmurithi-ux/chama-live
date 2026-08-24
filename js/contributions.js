@@ -1,62 +1,47 @@
 import { supabase } from "./supabase.js";
 
-import {
-  getCurrentGroupId,
-  money,
-  showError
-} from "./app.js";
-
+const rows = document.querySelector("#rows");
 
 async function loadContributions() {
 
-  const rows = document.querySelector("#rows");
+  if (!rows) {
+    return;
+  }
+
+  rows.innerHTML =
+    "<tr><td colspan='6'>Connecting...</td></tr>";
 
   try {
 
-    if (!rows) {
-      throw new Error("Missing #rows");
+    const {
+      data: {
+        session
+      }
+    } = await supabase.auth.getSession();
+
+    if (!session) {
+      throw new Error("Not logged in.");
     }
-
-    rows.innerHTML =
-      "<tr><td colspan='6'>Connecting to database...</td></tr>";
-
-
-    const groupId =
-      await getCurrentGroupId();
-
-    console.log("CHAMA GROUP ID:", groupId);
-
-
-    if (!groupId) {
-      throw new Error(
-        "No group is linked to this account."
-      );
-    }
-
 
     rows.innerHTML =
       "<tr><td colspan='6'>Loading contributions...</td></tr>";
 
 
+    /*
+     * First test: load contributions
+     */
     const result =
       await supabase
         .from("contributions")
         .select(
-          "contribution_date, amount, contribution_type, payment_method, reference, member_id"
+          "contribution_date, amount, contribution_type, payment_method, reference, member_id, group_id"
         )
-        .eq("group_id", groupId)
         .order(
           "contribution_date",
           {
             ascending: false
           }
         );
-
-
-    console.log(
-      "CONTRIBUTIONS RESULT:",
-      result
-    );
 
 
     if (result.error) {
@@ -87,6 +72,9 @@ async function loadContributions() {
     }
 
 
+    /*
+     * Load members
+     */
     const memberIds =
       [
         ...new Set(
@@ -104,25 +92,19 @@ async function loadContributions() {
 
     if (memberIds.length > 0) {
 
-      const memberResult =
+      const membersResult =
         await supabase
           .from("members")
           .select("id, name")
           .in("id", memberIds);
 
 
-      console.log(
-        "MEMBERS RESULT:",
-        memberResult
-      );
-
-
-      if (memberResult.error) {
-        throw memberResult.error;
+      if (membersResult.error) {
+        throw membersResult.error;
       }
 
 
-      (memberResult.data || [])
+      (membersResult.data || [])
         .forEach(function (member) {
 
           memberNames[member.id] =
@@ -132,53 +114,42 @@ async function loadContributions() {
     }
 
 
+    /*
+     * Display
+     */
     rows.innerHTML =
       contributions
         .map(function (item) {
 
-          return (
-            "<tr>" +
+          return `
+            <tr>
 
-            "<td>" +
-            (item.contribution_date || "—") +
-            "</td>" +
+              <td>
+                ${item.contribution_date || "—"}
+              </td>
 
-            "<td>" +
-            (
-              memberNames[item.member_id] ||
-              "—"
-            ) +
-            "</td>" +
+              <td>
+                ${memberNames[item.member_id] || "—"}
+              </td>
 
-            "<td>" +
-            money(
-              Number(item.amount || 0)
-            ) +
-            "</td>" +
+              <td>
+                KSh ${Number(item.amount || 0).toLocaleString()}
+              </td>
 
-            "<td>" +
-            (
-              item.contribution_type ||
-              "—"
-            ) +
-            "</td>" +
+              <td>
+                ${item.contribution_type || "—"}
+              </td>
 
-            "<td>" +
-            (
-              item.payment_method ||
-              "—"
-            ) +
-            "</td>" +
+              <td>
+                ${item.payment_method || "—"}
+              </td>
 
-            "<td>" +
-            (
-              item.reference ||
-              "—"
-            ) +
-            "</td>" +
+              <td>
+                ${item.reference || "—"}
+              </td>
 
-            "</tr>"
-          );
+            </tr>
+          `;
 
         })
         .join("");
@@ -187,28 +158,19 @@ async function loadContributions() {
   } catch (error) {
 
     console.error(
-      "CHAMA LIVE CONTRIBUTIONS ERROR:",
+      "CONTRIBUTIONS ERROR:",
       error
     );
 
 
-    if (rows) {
-
-      rows.innerHTML =
-        "<tr>" +
-        "<td colspan='6'>" +
-        "ERROR: " +
-        (error.message || error) +
-        "</td>" +
-        "</tr>";
-
-    }
-
-
-    showError(error);
-
+    rows.innerHTML =
+      "<tr>" +
+      "<td colspan='6' style='color:red'>" +
+      "ERROR: " +
+      error.message +
+      "</td>" +
+      "</tr>";
   }
-
 }
 
 
