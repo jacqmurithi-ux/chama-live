@@ -1,6 +1,4 @@
-// Public browser configuration only.
-// NEVER put the Supabase service-role/secret key here.
 window.CHAMA_CONFIG = {
-  supabaseUrl: "https://YOUR_PROJECT.supabase.co",
-  supabaseAnonKey: "YOUR_PUBLIC_ANON_OR_PUBLISHABLE_KEY"
+  supabaseUrl: "https://ptktftwyltxmtcodyzoa.supabase.co",
+  supabaseAnonKey: "sb_publishable_Nfuc0Xj1LuSU-qJmSXpH5A_GSTMvmSS"
 };
