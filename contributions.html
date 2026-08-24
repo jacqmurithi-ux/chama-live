@@ -7,7 +7,7 @@
 
   <title>Contributions — CHAMA LIVE</title>
 
-  <link rel="stylesheet" href="./css/app.css">
+  <link rel="stylesheet" href="css/app.css">
 </head>
 
 <body>
@@ -18,10 +18,7 @@
     CHAMA <span>LIVE</span>
   </div>
 
-  <button
-    class="btn btn-secondary"
-    id="logout"
-  >
+  <button class="btn btn-secondary" id="logout">
     Sign out
   </button>
 
@@ -34,23 +31,13 @@
 
     <nav class="nav">
 
-      <a href="./dashboard.html">Dashboard</a>
-
-      <a href="./members.html">Members</a>
-
-      <a class="active" href="./contributions.html">
-        Contributions
-      </a>
-
-      <a href="./expenses.html">Expenses</a>
-
-      <a href="./meetings.html">Meetings</a>
-
-      <a href="./reports.html">Reports</a>
-
-      <a href="./group-management.html">
-        Group Management
-      </a>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="members.html">Members</a>
+      <a class="active" href="contributions.html">Contributions</a>
+      <a href="expenses.html">Expenses</a>
+      <a href="meetings.html">Meetings</a>
+      <a href="reports.html">Reports</a>
+      <a href="group-management.html">Group Management</a>
 
     </nav>
 
@@ -63,16 +50,171 @@
 
       <div>
         <h1>Contributions</h1>
-
         <p class="muted">
-          Live contribution ledger.
+          Record and manage group contributions.
         </p>
       </div>
 
     </div>
 
 
+    <!-- RECORD CONTRIBUTION -->
+
     <section class="card">
+
+      <h2>Record Contribution</h2>
+
+      <div class="form">
+
+        <div class="field">
+
+          <label for="member">
+            Member
+          </label>
+
+          <select id="member">
+            <option value="">
+              Loading members...
+            </option>
+          </select>
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="amount">
+            Amount (KSh)
+          </label>
+
+          <input
+            id="amount"
+            type="number"
+            min="1"
+            step="1"
+            placeholder="200"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="type">
+            Contribution Type
+          </label>
+
+          <select id="type">
+
+            <option value="monthly">
+              Monthly
+            </option>
+
+            <option value="registration">
+              Registration
+            </option>
+
+            <option value="welfare">
+              Welfare
+            </option>
+
+            <option value="fundraising">
+              Fundraising
+            </option>
+
+            <option value="other">
+              Other
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="month">
+            Month
+          </label>
+
+          <input
+            id="month"
+            type="month"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="method">
+            Payment Method
+          </label>
+
+          <select id="method">
+
+            <option value="M-Pesa">
+              M-Pesa
+            </option>
+
+            <option value="Cash">
+              Cash
+            </option>
+
+            <option value="Bank">
+              Bank
+            </option>
+
+            <option value="Other">
+              Other
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="reference">
+            M-Pesa Reference
+          </label>
+
+          <input
+            id="reference"
+            type="text"
+            placeholder="e.g. SH12ABC345"
+          >
+
+        </div>
+
+
+        <button
+          class="btn btn-primary"
+          id="saveContribution"
+        >
+          Record Contribution
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- ERROR -->
+
+    <div
+      class="error"
+      data-error
+      hidden
+    ></div>
+
+
+    <!-- LEDGER -->
+
+    <section class="card">
+
+      <h2>Contribution Ledger</h2>
 
       <div class="table-wrap">
 
@@ -107,13 +249,6 @@
 
     </section>
 
-
-    <div
-      class="error"
-      data-error
-      hidden
-    ></div>
-
   </main>
 
 </div>
@@ -121,9 +256,457 @@
 
 <script type="module">
 
-  import "./js/contributions.js";
+  import { boot } from "./js/layout.js";
+
+  import {
+    getCurrentGroupId,
+    money,
+    showError
+  } from "./js/app.js";
+
+  import { supabase } from "./js/supabase.js";
+
+
+  await boot();
+
+
+  /*
+   * SET CURRENT MONTH
+   */
+
+  document.querySelector("#month").value =
+    new Date().toISOString().slice(0, 7);
+
+
+  /*
+   * LOAD MEMBERS
+   */
+
+  async function loadMembers() {
+
+    const select =
+      document.querySelector("#member");
+
+    try {
+
+      const groupId =
+        await getCurrentGroupId();
+
+      if (!groupId) {
+        throw new Error(
+          "No group is linked to this account."
+        );
+      }
+
+
+      const {
+        data,
+        error
+      } = await supabase
+        .from("members")
+        .select("id, name")
+        .eq("group_id", groupId)
+        .order("name");
+
+
+      if (error) {
+        throw error;
+      }
+
+
+      select.innerHTML =
+        '<option value="">Select member</option>';
+
+
+      for (const member of data || []) {
+
+        const option =
+          document.createElement("option");
+
+        option.value = member.id;
+
+        option.textContent =
+          member.name;
+
+        select.appendChild(option);
+
+      }
+
+    } catch (error) {
+
+      console.error(error);
+
+      select.innerHTML =
+        '<option value="">Unable to load members</option>';
+
+      showError(error);
+
+    }
+
+  }
+
+
+  /*
+   * SAVE CONTRIBUTION
+   */
+
+  async function saveContribution() {
+
+    try {
+
+      const button =
+        document.querySelector("#saveContribution");
+
+      const memberId =
+        document.querySelector("#member").value;
+
+      const amount =
+        Number(
+          document.querySelector("#amount").value
+        );
+
+      const type =
+        document.querySelector("#type").value;
+
+      const month =
+        document.querySelector("#month").value;
+
+      const method =
+        document.querySelector("#method").value;
+
+      const reference =
+        document.querySelector("#reference").value.trim();
+
+
+      if (!memberId) {
+        throw new Error("Please select a member.");
+      }
+
+
+      if (!amount || amount <= 0) {
+        throw new Error(
+          "Please enter a valid amount."
+        );
+      }
+
+
+      if (!month) {
+        throw new Error(
+          "Please select the contribution month."
+        );
+      }
+
+
+      button.disabled = true;
+
+      button.textContent = "Saving…";
+
+
+      const groupId =
+        await getCurrentGroupId();
+
+
+      if (!groupId) {
+        throw new Error(
+          "No group is linked to this account."
+        );
+      }
+
+
+      const {
+        data: {
+          user
+        }
+      } =
+        await supabase.auth.getUser();
+
+
+      const { error } =
+        await supabase
+          .from("contributions")
+          .insert({
+            group_id: groupId,
+            member_id: memberId,
+            amount: amount,
+            contribution_type: type,
+            month: month,
+            payment_method: method,
+            reference: reference || null,
+            recorded_by: user?.id || null,
+            contribution_date:
+              new Date().toISOString().slice(0, 10)
+          });
+
+
+      if (error) {
+        throw error;
+      }
+
+
+      /*
+       * CLEAR FORM
+       */
+
+      document.querySelector("#amount").value = "";
+      document.querySelector("#reference").value = "";
+
+
+      alert(
+        "Contribution recorded successfully."
+      );
+
+
+      /*
+       * RELOAD LEDGER
+       */
+
+      await loadContributions();
+
+
+    } catch (error) {
+
+      console.error(
+        "CHAMA LIVE save contribution:",
+        error
+      );
+
+      showError(error);
+
+    } finally {
+
+      const button =
+        document.querySelector("#saveContribution");
+
+      button.disabled = false;
+
+      button.textContent =
+        "Record Contribution";
+
+    }
+
+  }
+
+
+  /*
+   * LOAD CONTRIBUTIONS
+   */
+
+  async function loadContributions() {
+
+    try {
+
+      const rows =
+        document.querySelector("#rows");
+
+
+      const groupId =
+        await getCurrentGroupId();
+
+
+      if (!groupId) {
+        throw new Error(
+          "No group is linked to this account."
+        );
+      }
+
+
+      const {
+        data,
+        error
+      } = await supabase
+        .from("contributions")
+        .select(
+          "contribution_date, amount, contribution_type, payment_method, reference, member_id"
+        )
+        .eq("group_id", groupId)
+        .order(
+          "contribution_date",
+          {
+            ascending: false
+          }
+        );
+
+
+      if (error) {
+        throw error;
+      }
+
+
+      const contributions =
+        data || [];
+
+
+      if (
+        contributions.length === 0
+      ) {
+
+        rows.innerHTML = `
+          <tr>
+            <td colspan="6">
+              No contributions yet.
+            </td>
+          </tr>
+        `;
+
+        return;
+
+      }
+
+
+      const memberIds = [
+        ...new Set(
+          contributions
+            .map(
+              item =>
+                item.member_id
+            )
+            .filter(Boolean)
+        )
+      ];
+
+
+      let memberNames = {};
+
+
+      if (memberIds.length) {
+
+        const {
+          data: members,
+          error: memberError
+        } = await supabase
+          .from("members")
+          .select("id, name")
+          .in("id", memberIds);
+
+
+        if (memberError) {
+          throw memberError;
+        }
+
+
+        for (
+          const member
+          of members || []
+        ) {
+
+          memberNames[
+            member.id
+          ] =
+            member.name;
+
+        }
+
+      }
+
+
+      rows.innerHTML =
+        contributions
+          .map(item => {
+
+            return `
+              <tr>
+
+                <td>
+                  ${escapeHtml(
+                    item.contribution_date || "—"
+                  )}
+                </td>
+
+                <td>
+                  ${escapeHtml(
+                    memberNames[
+                      item.member_id
+                    ] || "—"
+                  )}
+                </td>
+
+                <td>
+                  ${money(
+                    Number(
+                      item.amount || 0
+                    )
+                  )}
+                </td>
+
+                <td>
+                  ${escapeHtml(
+                    item.contribution_type || "—"
+                  )}
+                </td>
+
+                <td>
+                  ${escapeHtml(
+                    item.payment_method || "—"
+                  )}
+                </td>
+
+                <td>
+                  ${escapeHtml(
+                    item.reference || "—"
+                  )}
+                </td>
+
+              </tr>
+            `;
+
+          })
+          .join("");
+
+    } catch (error) {
+
+      console.error(error);
+
+      showError(error);
+
+    }
+
+  }
+
+
+  /*
+   * ESCAPE HTML
+   */
+
+  function escapeHtml(value) {
+
+    return String(value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll(
+        '"',
+        "&quot;"
+      )
+      .replaceAll(
+        "'",
+        "&#039;"
+      );
+
+  }
+
+
+  /*
+   * EVENTS
+   */
+
+  document
+    .querySelector("#saveContribution")
+    .addEventListener(
+      "click",
+      saveContribution
+    );
+
+
+  /*
+   * START
+   */
+
+  await loadMembers();
+
+  await loadContributions();
 
 </script>
 
 </body>
-</html>
+  </html>
+  
