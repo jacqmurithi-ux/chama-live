@@ -62,10 +62,12 @@ async function loadReports() {
       throw membersResult.error;
     }
 
+    // Opening balance
     const openingBalance = Number(
       groupResult.data?.opening_balance || 0
     );
 
+    // Total contributions
     const totalContributions = (
       contributionsResult.data || []
     ).reduce(
@@ -74,6 +76,7 @@ async function loadReports() {
       0
     );
 
+    // Approved expenses only
     const approvedExpenses = (
       expensesResult.data || []
     )
@@ -87,11 +90,13 @@ async function loadReports() {
         0
       );
 
+    // Closing balance
     const closingBalance =
       openingBalance +
       totalContributions -
       approvedExpenses;
 
+    // Summary cards
     setText(
       "#members",
       membersResult.count ?? 0
@@ -107,9 +112,20 @@ async function loadReports() {
       money(approvedExpenses)
     );
 
+    // Financial position
     setText(
       "#opening",
       money(openingBalance)
+    );
+
+    setText(
+      "#c2",
+      money(totalContributions)
+    );
+
+    setText(
+      "#e2",
+      money(approvedExpenses)
     );
 
     setText(
