@@ -1,1 +1,123 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Login — CHAMA LIVE</title><link rel="stylesheet" href="css/app.css"></head><body><main class="auth"><section class="card auth-card"><h1>CHAMA LIVE</h1><p class="muted">Sign in to manage your group.</p><div class="form"><div class="field"><label for="email">Email</label><input id="email" type="email" required></div><div class="field"><label for="password">Password</label><input id="password" type="password" required></div><button class="btn btn-primary" id="login">Sign in</button><div class="error" data-error hidden></div></div></section></main><script type="module">import {supabase} from './js/supabase.js';import {showError} from './js/app.js';document.querySelector('#login').onclick=async()=>{try{const email=document.querySelector('#email').value.trim();const password=document.querySelector('#password').value;const {error}=await supabase.auth.signInWithPassword({email,password});if(error)throw error;location.href='dashboard.html'}catch(error){showError(error)}};</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Login — CHAMA LIVE</title>
+  <link rel="stylesheet" href="css/app.css">
+</head>
+
+<body>
+
+<main class="auth">
+  <section class="card auth-card">
+
+    <h1>CHAMA LIVE</h1>
+
+    <p class="muted">
+      Sign in to manage your group.
+    </p>
+
+    <div class="form">
+
+      <div class="field">
+        <label for="email">Email</label>
+        <input
+          id="email"
+          type="email"
+          autocomplete="email"
+          required
+        >
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <input
+          id="password"
+          type="password"
+          autocomplete="current-password"
+          required
+        >
+      </div>
+
+      <button
+        class="btn btn-primary"
+        id="login"
+        type="button"
+      >
+        Sign in
+      </button>
+
+      <div
+        class="error"
+        id="error"
+        hidden
+      ></div>
+
+    </div>
+
+  </section>
+</main>
+
+<script type="module">
+
+import { supabase } from "./js/supabase.js";
+
+const loginButton = document.getElementById("login");
+const errorBox = document.getElementById("error");
+
+loginButton.addEventListener("click", async () => {
+
+  errorBox.hidden = true;
+  errorBox.textContent = "";
+
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+
+  if (!email || !password) {
+    errorBox.textContent = "Please enter your email and password.";
+    errorBox.hidden = false;
+    return;
+  }
+
+  loginButton.disabled = true;
+  loginButton.textContent = "Signing in...";
+
+  try {
+
+    const { data, error } =
+      await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+    if (error) {
+      throw error;
+    }
+
+    console.log("Login successful:", data);
+
+    window.location.href = "./dashboard.html";
+
+  } catch (error) {
+
+    console.error("Login error:", error);
+
+    errorBox.textContent =
+      error.message || "Unable to sign in.";
+
+    errorBox.hidden = false;
+
+  } finally {
+
+    loginButton.disabled = false;
+    loginButton.textContent = "Sign in";
+
+  }
+
+});
+
+</script>
+
+</body>
+</html>
