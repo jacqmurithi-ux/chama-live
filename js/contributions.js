@@ -11,8 +11,7 @@ async function loadContributions() {
 
   try {
 
-    const rows =
-      document.querySelector("#rows");
+    const rows = document.querySelector("#rows");
 
     if (!rows) {
       throw new Error(
@@ -21,8 +20,7 @@ async function loadContributions() {
     }
 
 
-    const groupId =
-      await getCurrentGroupId();
+    const groupId = await getCurrentGroupId();
 
     if (!groupId) {
       throw new Error(
@@ -50,8 +48,7 @@ async function loadContributions() {
     }
 
 
-    const contributions =
-      data || [];
+    const contributions = data || [];
 
 
     if (contributions.length === 0) {
@@ -105,58 +102,57 @@ async function loadContributions() {
     }
 
 
-    rows.innerHTML =
-      contributions
-        .map(item => {
+    rows.innerHTML = contributions
+      .map(item => {
 
-          const memberName =
-            memberNames[item.member_id] ||
-            "—";
+        const memberName =
+          memberNames[item.member_id] || "—";
 
-          return `
-            <tr>
 
-              <td>
-                ${escapeHtml(
-                  item.contribution_date || "—"
-                )}
-              </td>
+        return `
+          <tr>
 
-              <td>
-                ${escapeHtml(
-                  memberName
-                )}
-              </td>
+            <td>
+              ${escapeHtml(
+                item.contribution_date || "—"
+              )}
+            </td>
 
-              <td>
-                ${money(
-                  Number(item.amount || 0)
-                )}
-              </td>
+            <td>
+              ${escapeHtml(
+                memberName
+              )}
+            </td>
 
-              <td>
-                ${escapeHtml(
-                  item.contribution_type || "—"
-                )}
-              </td>
+            <td>
+              ${money(
+                Number(item.amount || 0)
+              )}
+            </td>
 
-              <td>
-                ${escapeHtml(
-                  item.payment_method || "—"
-                )}
-              </td>
+            <td>
+              ${escapeHtml(
+                item.contribution_type || "—"
+              )}
+            </td>
 
-              <td>
-                ${escapeHtml(
-                  item.reference || "—"
-                )}
-              </td>
+            <td>
+              ${escapeHtml(
+                item.payment_method || "—"
+              )}
+            </td>
 
-            </tr>
-          `;
+            <td>
+              ${escapeHtml(
+                item.reference || "—"
+              )}
+            </td>
 
-        })
-        .join("");
+          </tr>
+        `;
+
+      })
+      .join("");
 
 
   } catch (error) {
