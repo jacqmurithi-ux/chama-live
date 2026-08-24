@@ -19,7 +19,7 @@ async function loadContributions() {
     } = await supabase
       .from("contributions")
       .select(
-        "contribution_date, amount, contribution_type, payment_method, mpesa_reference, member_id"
+        "contribution_date, amount, contribution_type, payment_method, member_id"
       )
       .eq("group_id", groupId)
       .order("contribution_date", {
@@ -30,9 +30,16 @@ async function loadContributions() {
       throw error;
     }
 
+    const rows = document.querySelector("#rows");
+
+    if (!rows) {
+      throw new Error(
+        "Contributions table container (#rows) was not found."
+      );
+    }
+
     const contributionRows = contributions || [];
 
-    // Get member names
     const memberIds = [
       ...new Set(
         contributionRows
@@ -64,51 +71,37 @@ async function loadContributions() {
       );
     }
 
-    const rows = document.querySelector("#rows");
-
-    if (!rows) {
-      throw new Error(
-        "Contributions table container (#rows) was not found."
-      );
-    }
-
     if (contributionRows.length === 0) {
       rows.innerHTML = `
         <tr>
-          <td colspan="6">No contributions yet.</td>
+          <td colspan="5">No contributions yet.</td>
         </tr>
       `;
       return;
     }
 
     rows.innerHTML = contributionRows
-      .map(contribution => {
-        return `
-          <tr>
-            <td>${escapeHtml(
-              contribution.contribution_date ?? "—"
-            )}</td>
+      .map(contribution => `
+        <tr>
+          <td>${escapeHtml(
+            contribution.contribution_date ?? "—"
+          )}</td>
 
-            <td>${escapeHtml(
-              memberNames[contribution.member_id] ?? "—"
-            )}</td>
+          <td>${escapeHtml(
+            memberNames[contribution.member_id] ?? "—"
+          )}</td>
 
-            <td>${money(contribution.amount)}</td>
+          <td>${money(contribution.amount)}</td>
 
-            <td>${escapeHtml(
-              contribution.contribution_type ?? "—"
-            )}</td>
+          <td>${escapeHtml(
+            contribution.contribution_type ?? "—"
+          )}</td>
 
-            <td>${escapeHtml(
-              contribution.payment_method ?? "—"
-            )}</td>
-
-            <td>${escapeHtml(
-              contribution.mpesa_reference ?? "—"
-            )}</td>
-          </tr>
-        `;
-      })
+          <td>${escapeHtml(
+            contribution.payment_method ?? "—"
+          )}</td>
+        </tr>
+      `)
       .join("");
 
   } catch (error) {
