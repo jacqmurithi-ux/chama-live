@@ -1,126 +1,188 @@
-<!doctype html>
-<html lang="en">
+import { supabase } from "./supabase.js";
 
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-
-  <title>Contributions — CHAMA LIVE</title>
-
-  <link rel="stylesheet" href="./css/app.css">
-</head>
-
-<body>
-
-<header class="topbar">
-
-  <div class="brand">
-    CHAMA <span>LIVE</span>
-  </div>
-
-  <button class="btn btn-secondary" id="logout">
-    Sign out
-  </button>
-
-</header>
+import {
+  getCurrentGroupId,
+  money,
+  showError
+} from "./app.js";
 
 
-<div class="layout">
+async function loadContributions() {
 
-  <aside class="sidebar">
+  try {
 
-    <nav class="nav">
+    const rows =
+      document.querySelector("#rows");
 
-      <a href="./dashboard.html">Dashboard</a>
-      <a href="./members.html">Members</a>
-      <a class="active" href="./contributions.html">
-        Contributions
-      </a>
-      <a href="./expenses.html">Expenses</a>
-      <a href="./meetings.html">Meetings</a>
-      <a href="./reports.html">Reports</a>
-      <a href="./group-management.html">
-        Group Management
-      </a>
-
-    </nav>
-
-  </aside>
+    if (!rows) {
+      throw new Error(
+        "The contributions table (#rows) is missing."
+      );
+    }
 
 
-  <main class="main">
+    const groupId =
+      await getCurrentGroupId();
 
-    <div class="page-head">
-
-      <div>
-        <h1>Contributions</h1>
-
-        <p class="muted">
-          Live contribution ledger.
-        </p>
-      </div>
-
-    </div>
+    if (!groupId) {
+      throw new Error(
+        "No group is linked to this account."
+      );
+    }
 
 
-    <section class="card">
+    const {
+      data,
+      error
+    } = await supabase
+      .from("contributions")
+      .select(
+        "contribution_date, amount, contribution_type, payment_method, reference, member_id"
+      )
+      .eq("group_id", groupId)
+      .order("contribution_date", {
+        ascending: false
+      });
 
-      <div class="table-wrap">
 
-        <table class="table">
+    if (error) {
+      throw error;
+    }
 
-          <thead>
 
+    const contributions =
+      data || [];
+
+
+    if (contributions.length === 0) {
+
+      rows.innerHTML = `
+        <tr>
+          <td colspan="6">
+            No contributions yet.
+          </td>
+        </tr>
+      `;
+
+      return;
+    }
+
+
+    const memberIds = [
+      ...new Set(
+        contributions
+          .map(item => item.member_id)
+          .filter(Boolean)
+      )
+    ];
+
+
+    let memberNames = {};
+
+
+    if (memberIds.length > 0) {
+
+      const {
+        data: members,
+        error: memberError
+      } = await supabase
+        .from("members")
+        .select("id, name")
+        .in("id", memberIds);
+
+
+      if (memberError) {
+        throw memberError;
+      }
+
+
+      for (const member of members || []) {
+
+        memberNames[member.id] =
+          member.name;
+
+      }
+    }
+
+
+    rows.innerHTML =
+      contributions
+        .map(item => {
+
+          const memberName =
+            memberNames[item.member_id] ||
+            "—";
+
+          return `
             <tr>
-              <th>Date</th>
-              <th>Member</th>
-              <th>Amount</th>
-              <th>Type</th>
-              <th>Method</th>
-              <th>M-Pesa Ref</th>
-            </tr>
 
-          </thead>
-
-
-          <tbody id="rows">
-
-            <tr>
-              <td colspan="6">
-                Loading…
+              <td>
+                ${escapeHtml(
+                  item.contribution_date || "—"
+                )}
               </td>
+
+              <td>
+                ${escapeHtml(
+                  memberName
+                )}
+              </td>
+
+              <td>
+                ${money(
+                  Number(item.amount || 0)
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  item.contribution_type || "—"
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  item.payment_method || "—"
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  item.reference || "—"
+                )}
+              </td>
+
             </tr>
+          `;
 
-          </tbody>
-
-        </table>
-
-      </div>
-
-    </section>
+        })
+        .join("");
 
 
-    <div
-      class="error"
-      data-error
-      hidden
-    ></div>
+  } catch (error) {
 
-  </main>
+    console.error(
+      "CHAMA LIVE contributions:",
+      error
+    );
 
-</div>
+    showError(error);
+
+  }
+
+}
 
 
-<script type="module">
+function escapeHtml(value) {
 
-  import { boot }
-    from "./js/layout.js";
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 
-  await boot();
+}
 
-  await import("./js/contributions.js");
 
-</script>
-
-</body>
-</html>
+loadContributions();
