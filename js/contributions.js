@@ -6,24 +6,19 @@ import {
   showError
 } from "./app.js";
 
-
 async function loadContributions() {
-
   try {
-
     const rows = document.querySelector("#rows");
 
     if (!rows) {
       throw new Error("Missing #rows");
     }
 
-
     const groupId = await getCurrentGroupId();
 
     if (!groupId) {
       throw new Error("No group is linked to this account.");
     }
-
 
     const result = await supabase
       .from("contributions")
@@ -35,23 +30,17 @@ async function loadContributions() {
         ascending: false
       });
 
-
     if (result.error) {
       throw result.error;
     }
 
-
     const contributions = result.data || [];
 
-
     if (contributions.length === 0) {
-
       rows.innerHTML =
         "<tr><td colspan='6'>No contributions yet.</td></tr>";
-
       return;
     }
-
 
     const memberIds = [
       ...new Set(
@@ -63,90 +52,51 @@ async function loadContributions() {
       )
     ];
 
-
     const memberNames = {};
 
-
     if (memberIds.length > 0) {
-
       const memberResult = await supabase
         .from("members")
         .select("id, name")
         .in("id", memberIds);
 
-
       if (memberResult.error) {
         throw memberResult.error;
       }
 
-
-      (memberResult.data || []).forEach(
-        function (member) {
-          memberNames[member.id] =
-            member.name;
-        }
-      );
+      (memberResult.data || []).forEach(function (member) {
+        memberNames[member.id] = member.name;
+      });
     }
-
 
     rows.innerHTML = contributions
       .map(function (item) {
-
-        const date =
-          item.contribution_date || "—";
-
-        const member =
-          memberNames[item.member_id] || "—";
-
-        const amount =
-          money(Number(item.amount || 0));
-
-        const type =
-          item.contribution_type || "—";
-
-        const method =
-          item.payment_method || "—";
-
-        const reference =
-          item.reference || "—";
-
-
         return (
           "<tr>" +
-
           "<td>" +
-          date +
+          (item.contribution_date || "—") +
           "</td>" +
-
           "<td>" +
-          member +
+          (memberNames[item.member_id] || "—") +
           "</td>" +
-
           "<td>" +
-          amount +
+          money(Number(item.amount || 0)) +
           "</td>" +
-
           "<td>" +
-          type +
+          (item.contribution_type || "—") +
           "</td>" +
-
           "<td>" +
-          method +
+          (item.payment_method || "—") +
           "</td>" +
-
           "<td>" +
-          reference +
+          (item.reference || "—") +
           "</td>" +
-
           "</tr>"
         );
-
       })
       .join("");
 
-
   } catch (error) {
-
     console.error(
       "CHAMA LIVE contributions error:",
       error
@@ -156,6 +106,4 @@ async function loadContributions() {
   }
 }
 
-
-console.log("CONTRIBUTIONS.JS LOADED");
 loadContributions();
