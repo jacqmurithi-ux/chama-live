@@ -157,4 +157,5 @@ async function loadContributions() {
 }
 
 
+console.log("CONTRIBUTIONS.JS LOADED");
 loadContributions();
