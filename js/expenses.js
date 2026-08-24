@@ -10,7 +10,9 @@ async function loadExpenses() {
     const groupId = await getCurrentGroupId();
 
     if (!groupId) {
-      throw new Error("No group is linked to this account.");
+      throw new Error(
+        "No group is linked to this account."
+      );
     }
 
     const {
@@ -40,35 +42,62 @@ async function loadExpenses() {
 
     const expenseRows = expenses || [];
 
+    /*
+     * NO EXPENSES
+     */
     if (expenseRows.length === 0) {
       rows.innerHTML = `
         <tr>
-          <td colspan="5">No expenses yet.</td>
+          <td colspan="5">
+            No expenses yet.
+          </td>
         </tr>
       `;
+
       return;
     }
 
+    /*
+     * DISPLAY EXPENSES
+     */
     rows.innerHTML = expenseRows
-      .map(expense => `
-        <tr>
-          <td>${escapeHtml(expense.date ?? "—")}</td>
+      .map(expense => {
 
-          <td>${escapeHtml(
-            expense.description ?? "—"
-          )}</td>
+        const status =
+          expense.approval_status || "—";
 
-          <td>${escapeHtml(
-            expense.category ?? "—"
-          )}</td>
+        return `
+          <tr>
+            <td>
+              ${escapeHtml(
+                expense.date ?? "—"
+              )}
+            </td>
 
-          <td>${money(expense.amount)}</td>
+            <td>
+              ${escapeHtml(
+                expense.description ?? "—"
+              )}
+            </td>
 
-          <td>${escapeHtml(
-            expense.approval_status ?? "—"
-          )}</td>
-        </tr>
-      `)
+            <td>
+              ${escapeHtml(
+                expense.category ?? "—"
+              )}
+            </td>
+
+            <td>
+              ${money(
+                Number(expense.amount || 0)
+              )}
+            </td>
+
+            <td>
+              ${escapeHtml(status)}
+            </td>
+          </tr>
+        `;
+      })
       .join("");
 
   } catch (error) {
@@ -81,6 +110,13 @@ async function loadExpenses() {
   }
 }
 
+
+/*
+ * SECURITY
+ *
+ * Prevent database/user content from being
+ * interpreted as HTML.
+ */
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -89,5 +125,6 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
+
 
 loadExpenses();
