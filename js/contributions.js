@@ -10,9 +10,14 @@ async function loadContributions() {
     const groupId = await getCurrentGroupId();
 
     if (!groupId) {
-      throw new Error("No group is linked to this account.");
+      throw new Error(
+        "No group is linked to this account."
+      );
     }
 
+    /*
+     * LOAD CONTRIBUTIONS
+     */
     const {
       data: contributions,
       error
@@ -30,6 +35,9 @@ async function loadContributions() {
       throw error;
     }
 
+    /*
+     * FIND TABLE
+     */
     const rows = document.querySelector("#rows");
 
     if (!rows) {
@@ -40,6 +48,9 @@ async function loadContributions() {
 
     const contributionRows = contributions || [];
 
+    /*
+     * GET MEMBER IDS
+     */
     const memberIds = [
       ...new Set(
         contributionRows
@@ -50,6 +61,9 @@ async function loadContributions() {
 
     let memberNames = {};
 
+    /*
+     * LOAD MEMBERS
+     */
     if (memberIds.length > 0) {
       const {
         data: members,
@@ -57,6 +71,7 @@ async function loadContributions() {
       } = await supabase
         .from("members")
         .select("id, name")
+        .eq("group_id", groupId)
         .in("id", memberIds);
 
       if (memberError) {
@@ -71,35 +86,56 @@ async function loadContributions() {
       );
     }
 
+    /*
+     * NO CONTRIBUTIONS
+     */
     if (contributionRows.length === 0) {
       rows.innerHTML = `
         <tr>
-          <td colspan="5">No contributions yet.</td>
+          <td colspan="5">
+            No contributions yet.
+          </td>
         </tr>
       `;
+
       return;
     }
 
+    /*
+     * DISPLAY CONTRIBUTIONS
+     */
     rows.innerHTML = contributionRows
       .map(contribution => `
         <tr>
-          <td>${escapeHtml(
-            contribution.contribution_date ?? "—"
-          )}</td>
+          <td>
+            ${escapeHtml(
+              contribution.contribution_date ?? "—"
+            )}
+          </td>
 
-          <td>${escapeHtml(
-            memberNames[contribution.member_id] ?? "—"
-          )}</td>
+          <td>
+            ${escapeHtml(
+              memberNames[contribution.member_id] ?? "—"
+            )}
+          </td>
 
-          <td>${money(contribution.amount)}</td>
+          <td>
+            ${money(
+              Number(contribution.amount || 0)
+            )}
+          </td>
 
-          <td>${escapeHtml(
-            contribution.contribution_type ?? "—"
-          )}</td>
+          <td>
+            ${escapeHtml(
+              contribution.contribution_type ?? "—"
+            )}
+          </td>
 
-          <td>${escapeHtml(
-            contribution.payment_method ?? "—"
-          )}</td>
+          <td>
+            ${escapeHtml(
+              contribution.payment_method ?? "—"
+            )}
+          </td>
         </tr>
       `)
       .join("");
@@ -114,6 +150,13 @@ async function loadContributions() {
   }
 }
 
+
+/*
+ * SECURITY
+ *
+ * Escape database values before inserting
+ * them into HTML.
+ */
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -122,5 +165,6 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
+
 
 loadContributions();
