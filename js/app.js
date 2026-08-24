@@ -52,3 +52,4 @@ export function setText(selector, value) {
   const element = document.querySelector(selector);
   if (element) element.textContent = value ?? "—";
 }
+
