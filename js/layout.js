@@ -1,156 +1,154 @@
+```javascript
 import {
   requireMember,
-  logout,
-  normalizeRole,
-  roleLabel
+  setupLogoutButton,
+  getRoleLabel,
+  hasPermission
 } from "./auth.js";
 
 
 /*
-=====================================================
- CHAMA LIVE — LAYOUT + RBAC
-=====================================================
+=========================================================
+CHAMA LIVE — GLOBAL LAYOUT + RBAC
+=========================================================
+
+This file:
+
+1. Authenticates the user
+2. Loads member/group information
+3. Displays user information
+4. Displays group information
+5. Applies role-based navigation
+6. Hides unauthorized buttons
+7. Handles logout
+8. Protects every application page
 */
 
 
-let currentMember = null;
+/* =====================================================
+   GLOBAL AUTH CONTEXT
+===================================================== */
+
+let authContext = null;
 
 
 /* =====================================================
-   NAVIGATION RULES
+   INITIALIZE
 ===================================================== */
 
-const NAV_RULES = {
-
-  "dashboard.html": [
-    "admin",
-    "chairperson",
-    "treasurer",
-    "secretary",
-    "member"
-  ],
-
-  "members.html": [
-    "admin",
-    "chairperson",
-    "secretary",
-    "treasurer",
-    "member"
-  ],
-
-  "contributions.html": [
-    "admin",
-    "chairperson",
-    "treasurer",
-    "secretary",
-    "member"
-  ],
-
-  "expenses.html": [
-    "admin",
-    "chairperson",
-    "treasurer",
-    "secretary",
-    "member"
-  ],
-
-  "meetings.html": [
-    "admin",
-    "chairperson",
-    "secretary",
-    "treasurer",
-    "member"
-  ],
-
-  "reports.html": [
-    "admin",
-    "chairperson",
-    "treasurer",
-    "secretary",
-    "member"
-  ],
-
-  "monthly-closing.html": [
-    "admin",
-    "chairperson",
-    "treasurer"
-  ],
-
-  "group-management.html": [
-    "admin",
-    "chairperson"
-  ]
-
-};
-
-
-/* =====================================================
-   INIT
-===================================================== */
-
-export async function boot() {
+export async function boot(
+  options = {}
+) {
 
   try {
 
     /*
-     * Authenticate and obtain member.
-     */
+    Authenticate the current user.
+    */
 
-    currentMember =
-      await requireMember();
+    authContext =
+      await requireMember({
+        loginPage:
+          options.loginPage ||
+          "login.html",
+
+        setupPage:
+          options.setupPage ||
+          "create-group.html",
+
+        redirect:
+          options.redirect !== false
+      });
 
 
-    if (!currentMember) {
+    if (!authContext) {
+
       return null;
+
     }
 
 
     /*
-     * Setup logout.
-     */
+    Setup logout.
+    */
 
-    setupLogout();
-
-
-    /*
-     * Setup user information.
-     */
-
-    renderUser();
+    setupLogoutButton(
+      "logout"
+    );
 
 
     /*
-     * Apply RBAC to navigation.
-     */
+    Render global user information.
+    */
 
-    applyNavigationRBAC();
-
-
-    /*
-     * Highlight current page.
-     */
-
-    highlightCurrentPage();
+    renderUser(
+      authContext
+    );
 
 
     /*
-     * Protect current page.
-     */
+    Render group information.
+    */
 
-    protectCurrentPage();
+    renderGroup(
+      authContext
+    );
 
 
-    return currentMember;
+    /*
+    Apply role-based navigation.
+    */
+
+    applyNavigationRBAC(
+      authContext
+    );
+
+
+    /*
+    Apply permission-based controls.
+    */
+
+    applyPermissionRBAC(
+      authContext
+    );
+
+
+    /*
+    Mark page as ready.
+    */
+
+    document.body.classList.add(
+      "auth-ready"
+    );
+
+
+    /*
+    Fire optional event.
+    */
+
+    document.dispatchEvent(
+      new CustomEvent(
+        "chama:auth-ready",
+        {
+          detail:
+            authContext
+        }
+      )
+    );
+
+
+    return authContext;
+
 
   } catch (error) {
 
     console.error(
-      "Layout boot error:",
+      "CHAMA LIVE boot failed:",
       error
     );
 
 
-    showFatalError(
+    showBootError(
       error
     );
 
@@ -163,73 +161,12 @@ export async function boot() {
 
 
 /* =====================================================
-   LOGOUT
+   GET AUTH CONTEXT
 ===================================================== */
 
-function setupLogout() {
+export function getAuthContext() {
 
-  const button =
-    document.getElementById(
-      "logout"
-    );
-
-
-  if (!button) {
-    return;
-  }
-
-
-  /*
-   * Prevent duplicate handlers.
-   */
-
-  if (
-    button.dataset.bound ===
-    "true"
-  ) {
-    return;
-  }
-
-
-  button.dataset.bound =
-    "true";
-
-
-  button.addEventListener(
-    "click",
-    async () => {
-
-      button.disabled =
-        true;
-
-      button.textContent =
-        "Signing out...";
-
-
-      try {
-
-        await logout();
-
-      } catch (error) {
-
-        console.error(
-          error
-        );
-
-        button.disabled =
-          false;
-
-        button.textContent =
-          "Sign out";
-
-        alert(
-          "Unable to sign out. Please try again."
-        );
-
-      }
-
-    }
-  );
+  return authContext;
 
 }
 
@@ -238,520 +175,375 @@ function setupLogout() {
    RENDER USER
 ===================================================== */
 
-function renderUser() {
+function renderUser(
+  context
+) {
 
-  if (!currentMember) {
-    return;
-  }
-
-
-  const role =
-    normalizeRole(
-      currentMember.role
-    );
+  const member =
+    context.member;
 
 
   /*
-   * Optional elements supported
-   * by different pages.
-   */
+  Supported elements:
 
-  const nameElements =
-    document.querySelectorAll(
-      "[data-user-name]"
-    );
+  #currentUserName
+  #userName
+  #currentUserRole
+  #userRole
+  #memberName
+  */
 
+  setText(
+    "currentUserName",
+    member.name
+  );
 
-  nameElements.forEach(
-    element => {
+  setText(
+    "userName",
+    member.name
+  );
 
-      element.textContent =
-        currentMember.name ||
-        "Member";
-
-    }
+  setText(
+    "memberName",
+    member.name
   );
 
 
-  const roleElements =
-    document.querySelectorAll(
-      "[data-user-role]"
+  const roleLabel =
+    getRoleLabel(
+      context.role
     );
 
 
-  roleElements.forEach(
-    element => {
+  setText(
+    "currentUserRole",
+    roleLabel
+  );
 
-      element.textContent =
-        roleLabel(role);
-
-    }
+  setText(
+    "userRole",
+    roleLabel
   );
 
 
-  const memberNumberElements =
-    document.querySelectorAll(
-      "[data-member-number]"
-    );
-
-
-  memberNumberElements.forEach(
-    element => {
-
-      element.textContent =
-        currentMember.member_number ||
-        "—";
-
-    }
+  setText(
+    "memberRole",
+    roleLabel
   );
 
 
-  const groupElements =
+  /*
+  Optional email.
+  */
+
+  setText(
+    "currentUserEmail",
+    member.email ||
+    context.user?.email ||
+    ""
+  );
+
+
+  /*
+  Optional phone.
+  */
+
+  setText(
+    "currentUserPhone",
+    member.phone ||
+    ""
+  );
+
+}
+
+
+/* =====================================================
+   RENDER GROUP
+===================================================== */
+
+function renderGroup(
+  context
+) {
+
+  const group =
+    context.group;
+
+
+  if (!group) {
+
+    return;
+
+  }
+
+
+  /*
+  Supported elements:
+
+  #groupName
+  #currentGroupName
+  #groupTitle
+  */
+
+  setText(
+    "groupName",
+    group.name
+  );
+
+  setText(
+    "currentGroupName",
+    group.name
+  );
+
+  setText(
+    "groupTitle",
+    group.name
+  );
+
+
+  /*
+  Group ID is sometimes useful
+  for hidden application elements.
+  */
+
+  const groupIdElements =
     document.querySelectorAll(
       "[data-group-id]"
     );
 
 
-  groupElements.forEach(
+  groupIdElements.forEach(
     element => {
 
-      element.textContent =
-        currentMember.group_id ||
-        "—";
+      element.dataset.groupId =
+        group.id;
 
     }
   );
 
-
-  /*
-   * Body-level role attribute.
-   * Useful for CSS.
-   */
-
-  document.body.dataset.role =
-    role;
-
 }
 
 
 /* =====================================================
-   APPLY NAVIGATION RBAC
+   NAVIGATION RBAC
 ===================================================== */
 
-function applyNavigationRBAC() {
+function applyNavigationRBAC(
+  context
+) {
 
-  if (!currentMember) {
-    return;
-  }
+  /*
+  Navigation links can specify:
+
+  data-permission="members.view"
+
+  OR
+
+  data-role="admin,chairperson"
+
+  OR
+
+  data-permission="reports.view"
+  */
 
 
-  const role =
-    normalizeRole(
-      currentMember.role
+  const navigationItems =
+    document.querySelectorAll(
+      "[data-permission], [data-role]"
     );
 
 
-  /*
-   * Every normal link.
-   */
+  navigationItems.forEach(
+    element => {
 
-  document
-    .querySelectorAll(
-      ".nav a"
-    )
-    .forEach(
-      link => {
+      const permission =
+        element.dataset.permission;
 
-        const href =
-          getPageName(
-            link.getAttribute(
-              "href"
-            )
+
+      const roles =
+        element.dataset.role;
+
+
+      let allowed =
+        true;
+
+
+      /*
+      Permission check.
+      */
+
+      if (permission) {
+
+        allowed =
+          hasPermission(
+            context.role,
+            permission
           );
-
-
-        if (!href) {
-          return;
-        }
-
-
-        const allowed =
-          NAV_RULES[href];
-
-
-        /*
-         * If the page isn't defined
-         * in NAV_RULES, leave it alone.
-         */
-
-        if (!allowed) {
-          return;
-        }
-
-
-        const canAccess =
-          allowed.includes(role);
-
-
-        if (!canAccess) {
-
-          /*
-           * Hide instead of removing
-           * so layout remains stable.
-           */
-
-          link.hidden =
-            true;
-
-          link.setAttribute(
-            "aria-hidden",
-            "true"
-          );
-
-        }
 
       }
-    );
 
 
-  /*
-   * Generic RBAC attributes.
-   *
-   * Example:
-   *
-   * <button
-   *   data-role="admin,chairperson">
-   * </button>
-   */
+      /*
+      Role check.
+      */
 
-  document
-    .querySelectorAll(
-      "[data-role]"
-    )
-    .forEach(
-      element => {
+      if (
+        allowed &&
+        roles
+      ) {
 
-        const allowed =
-          element.dataset.role
+        const allowedRoles =
+          roles
             .split(",")
             .map(
-              normalizeRole
-            )
-            .filter(Boolean);
+              role =>
+                role
+                  .trim()
+                  .toLowerCase()
+            );
 
 
-        const allowedForUser =
-          allowed.includes(role);
-
-
-        if (
-          !allowedForUser
-        ) {
-
-          element.hidden =
-            true;
-
-        }
-
-      }
-    );
-
-
-  /*
-   * Minimum role.
-   *
-   * Example:
-   *
-   * data-min-role="treasurer"
-   *
-   * Note: this is UI-level convenience,
-   * not database security.
-   */
-
-  document
-    .querySelectorAll(
-      "[data-min-role]"
-    )
-    .forEach(
-      element => {
-
-        const minimum =
-          normalizeRole(
-            element.dataset.minRole
+        allowed =
+          allowedRoles.includes(
+            context.role
           );
 
-
-        const allowed =
-          hasMinimumRole(
-            role,
-            minimum
-          );
+      }
 
 
-        if (!allowed) {
+      /*
+      Hide unauthorized item.
+      */
 
-          element.hidden =
-            true;
+      if (!allowed) {
 
-        }
+        element.style.display =
+          "none";
+
+        element.setAttribute(
+          "aria-hidden",
+          "true"
+        );
+
+      } else {
+
+        element.style.display =
+          "";
+
+        element.removeAttribute(
+          "aria-hidden"
+        );
 
       }
-    );
 
-}
-
-
-/* =====================================================
-   MINIMUM ROLE
-===================================================== */
-
-function hasMinimumRole(
-  currentRole,
-  minimumRole
-) {
-
-  const levels = {
-
-    member: 10,
-
-    secretary: 60,
-
-    treasurer: 60,
-
-    chairperson: 80,
-
-    admin: 100
-
-  };
-
-
-  const current =
-    levels[
-      normalizeRole(
-        currentRole
-      )
-    ] || 0;
-
-
-  const minimum =
-    levels[
-      normalizeRole(
-        minimumRole
-      )
-    ] || 0;
-
-
-  return (
-    current >=
-    minimum
+    }
   );
 
 }
 
 
 /* =====================================================
-   PROTECT CURRENT PAGE
+   BUTTON / ACTION RBAC
 ===================================================== */
 
-function protectCurrentPage() {
-
-  const page =
-    getCurrentPage();
-
-
-  const allowed =
-    NAV_RULES[page];
-
+function applyPermissionRBAC(
+  context
+) {
 
   /*
-   * Unknown pages aren't blocked.
-   */
+  Any element with:
 
-  if (!allowed) {
-    return;
-  }
+  data-requires="permission"
 
+  is hidden if the user doesn't
+  have that permission.
+  */
 
-  const role =
-    normalizeRole(
-      currentMember.role
+  const elements =
+    document.querySelectorAll(
+      "[data-requires]"
     );
 
 
-  if (
-    allowed.includes(role)
-  ) {
+  elements.forEach(
+    element => {
+
+      const permission =
+        element.dataset.requires;
+
+
+      const allowed =
+        hasPermission(
+          context.role,
+          permission
+        );
+
+
+      if (!allowed) {
+
+        element.style.display =
+          "none";
+
+        element.disabled =
+          true;
+
+        element.setAttribute(
+          "aria-hidden",
+          "true"
+        );
+
+      }
+
+    }
+  );
+
+}
+
+
+/* =====================================================
+   HELPER — SET TEXT
+===================================================== */
+
+function setText(
+  id,
+  value
+) {
+
+  const element =
+    document.getElementById(
+      id
+    );
+
+
+  if (!element) {
 
     return;
 
   }
 
 
-  /*
-   * User somehow opened a URL they
-   * shouldn't access.
-   */
-
-  console.warn(
-    `RBAC blocked ${page} for role ${role}`
-  );
-
-
-  window.location.href =
-    "dashboard.html";
+  element.textContent =
+    value ?? "";
 
 }
 
 
 /* =====================================================
-   ACTIVE NAV
+   BOOT ERROR
 ===================================================== */
 
-function highlightCurrentPage() {
-
-  const current =
-    getCurrentPage();
-
-
-  document
-    .querySelectorAll(
-      ".nav a"
-    )
-    .forEach(
-      link => {
-
-        const href =
-          getPageName(
-            link.getAttribute(
-              "href"
-            )
-          );
-
-
-        if (
-          href ===
-          current
-        ) {
-
-          link.classList.add(
-            "active"
-          );
-
-        } else {
-
-          link.classList.remove(
-            "active"
-          );
-
-        }
-
-      }
-    );
-
-}
-
-
-/* =====================================================
-   GET CURRENT PAGE
-===================================================== */
-
-function getCurrentPage() {
-
-  return (
-    window.location.pathname
-      .split("/")
-      .pop() ||
-    "index.html"
-  );
-
-}
-
-
-/* =====================================================
-   GET PAGE NAME FROM HREF
-===================================================== */
-
-function getPageName(
-  href
-) {
-
-  if (!href) {
-    return null;
-  }
-
-
-  /*
-   * Ignore external links.
-   */
-
-  if (
-    href.startsWith(
-      "http://"
-    ) ||
-    href.startsWith(
-      "https://"
-    ) ||
-    href.startsWith(
-      "//"
-    )
-  ) {
-
-    return null;
-
-  }
-
-
-  /*
-   * Remove query string.
-   */
-
-  const clean =
-    href.split("?")[0]
-      .split("#")[0];
-
-
-  return clean
-    .split("/")
-    .pop();
-
-}
-
-
-/* =====================================================
-   FATAL ERROR
-===================================================== */
-
-function showFatalError(
+function showBootError(
   error
 ) {
-
-  console.error(
-    error
-  );
-
-
-  const message =
-    error?.message ||
-    "Unable to initialize your account.";
-
-
-  /*
-   * Don't expose raw database
-   * errors in production.
-   */
-
-  const safeMessage =
-    message.includes(
-      "JWT"
-    )
-      ? "Your session has expired. Please sign in again."
-      : "Unable to load your account. Please sign in again.";
-
 
   const existing =
     document.getElementById(
       "error"
     );
+
+
+  const message =
+    error?.message ||
+    "Unable to load your account.";
 
 
   if (existing) {
@@ -760,38 +552,219 @@ function showFatalError(
       false;
 
     existing.textContent =
-      safeMessage;
+      message;
 
-  } else {
-
-    alert(
-      safeMessage
-    );
+    return;
 
   }
 
-}
+
+  /*
+  Avoid replacing the entire page.
+  */
+
+  const banner =
+    document.createElement(
+      "div"
+    );
 
 
-/* =====================================================
-   EXPORT CURRENT MEMBER
-===================================================== */
-
-export function getLayoutMember() {
-
-  return currentMember;
-
-}
+  banner.className =
+    "error";
 
 
-/* =====================================================
-   EXPORT CURRENT ROLE
-===================================================== */
+  banner.style.margin =
+    "20px";
 
-export function getLayoutRole() {
 
-  return normalizeRole(
-    currentMember?.role
+  banner.textContent =
+    message;
+
+
+  document.body.prepend(
+    banner
   );
 
 }
+
+
+/* =====================================================
+   PAGE PROTECTION HELPERS
+===================================================== */
+
+/*
+You can use this on pages that require
+a specific permission.
+
+Example:
+
+const context =
+  await requirePagePermission(
+    "monthly_closing.close"
+  );
+
+*/
+
+export async function requirePagePermission(
+  permission
+) {
+
+  const {
+    requirePermission
+  } =
+    await import(
+      "./auth.js"
+    );
+
+
+  return requirePermission(
+    permission
+  );
+
+}
+
+
+/* =====================================================
+   ROLE DISPLAY
+===================================================== */
+
+export function currentRole() {
+
+  return authContext?.role ||
+    "member";
+
+}
+
+
+/* =====================================================
+   CURRENT GROUP
+===================================================== */
+
+export function currentGroup() {
+
+  return authContext?.group ||
+    null;
+
+}
+
+
+/* =====================================================
+   CURRENT MEMBER
+===================================================== */
+
+export function currentMember() {
+
+  return authContext?.member ||
+    null;
+
+}
+
+
+/* =====================================================
+   CURRENT USER
+===================================================== */
+
+export function currentUser() {
+
+  return authContext?.user ||
+    null;
+
+}
+
+
+/* =====================================================
+   ROLE CHECK
+===================================================== */
+
+export function userHasRole(
+  role
+) {
+
+  return (
+    authContext?.role ===
+    role
+  );
+
+}
+
+
+/* =====================================================
+   PERMISSION CHECK
+===================================================== */
+
+export function userHasPermission(
+  permission
+) {
+
+  if (!authContext) {
+
+    return false;
+
+  }
+
+
+  return hasPermission(
+    authContext.role,
+    permission
+  );
+
+}
+
+
+/* =====================================================
+   UPDATE PAGE TITLE
+===================================================== */
+
+export function setPageTitle(
+  title
+) {
+
+  const groupName =
+    authContext?.group?.name;
+
+
+  if (!groupName) {
+
+    document.title =
+      `${title} — CHAMA LIVE`;
+
+    return;
+
+  }
+
+
+  document.title =
+    `${title} — ${groupName} — CHAMA LIVE`;
+
+}
+
+
+/* =====================================================
+   EXPOSE AUTH CONTEXT
+===================================================== */
+
+window.CHAMA =
+  window.CHAMA || {};
+
+
+window.CHAMA.auth =
+  () => authContext;
+
+
+window.CHAMA.role =
+  () =>
+    authContext?.role ||
+    null;
+
+
+window.CHAMA.group =
+  () =>
+    authContext?.group ||
+    null;
+
+
+window.CHAMA.member =
+  () =>
+    authContext?.member ||
+    null;
+```
