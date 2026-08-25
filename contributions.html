@@ -24,6 +24,7 @@
 
 </header>
 
+
 <div class="layout">
 
   <aside class="sidebar">
@@ -42,24 +43,21 @@
 
   </aside>
 
+
   <main class="main">
 
     <div class="page-head">
 
       <div>
-
         <h1>Contributions</h1>
 
         <p class="muted">
           Record and manage group contributions.
         </p>
-
       </div>
 
     </div>
 
-
-    <!-- STATUS -->
 
     <div
       id="status"
@@ -215,8 +213,6 @@
     </section>
 
 
-    <!-- ERROR -->
-
     <div
       id="error"
       class="error"
@@ -237,14 +233,12 @@
           <thead>
 
             <tr>
-
               <th>Date</th>
               <th>Member</th>
               <th>Amount</th>
               <th>Type</th>
               <th>Method</th>
               <th>M-Pesa Ref</th>
-
             </tr>
 
           </thead>
@@ -252,11 +246,9 @@
           <tbody id="rows">
 
             <tr>
-
               <td colspan="6">
                 Loading...
               </td>
-
             </tr>
 
           </tbody>
@@ -274,54 +266,45 @@
 
 <script type="module">
 
-/* =====================================
-   IMPORTS
-===================================== */
-
-import { boot } from "./js/layout.js";
+import { supabase } from "./js/supabase.js";
 
 import {
   getCurrentGroupId,
   money
 } from "./js/app.js";
 
-import { supabase } from "./js/supabase.js";
 
-
-/* =====================================
+/* =================================
    STATUS
-===================================== */
+================================= */
 
-function status(message) {
+function status(text) {
 
-  const box =
-    document.getElementById("status");
-
-  if (box) {
-    box.textContent = message;
-  }
+  document.getElementById(
+    "status"
+  ).textContent = text;
 
 }
 
 
-/* =====================================
+/* =================================
    ERROR
-===================================== */
+================================= */
 
-function errorMessage(message) {
+function showPageError(error) {
 
-  const box =
-    document.getElementById("error");
+  const message =
+    error?.message ||
+    String(error);
 
-  if (box) {
+  document.getElementById(
+    "error"
+  ).textContent =
+    message;
 
-    box.textContent =
-      message;
-
-    box.hidden =
-      false;
-
-  }
+  document.getElementById(
+    "error"
+  ).hidden = false;
 
   status(
     "ERROR: " + message
@@ -330,428 +313,393 @@ function errorMessage(message) {
 }
 
 
-/* =====================================
+/* =================================
    ESCAPE HTML
-===================================== */
+================================= */
 
 function escapeHtml(value) {
 
   return String(value)
 
     .replaceAll("&", "&amp;")
-
     .replaceAll("<", "&lt;")
-
     .replaceAll(">", "&gt;")
-
     .replaceAll('"', "&quot;")
-
     .replaceAll("'", "&#039;");
 
 }
 
 
-/* =====================================
-   BOOT
-===================================== */
+/* =================================
+   LOGOUT
+================================= */
 
-try {
+document
+  .getElementById("logout")
+  .addEventListener(
+    "click",
+    async () => {
+
+      await supabase.auth.signOut();
+
+      window.location.href =
+        "login.html";
+
+    }
+  );
+
+
+/* =================================
+   AUTHENTICATION
+================================= */
+
+async function checkLogin() {
 
   status(
     "Checking login..."
   );
 
-  await boot();
+  const {
+    data,
+    error
+  } =
+    await supabase.auth.getSession();
+
+
+  if (error) {
+
+    throw error;
+
+  }
+
+
+  if (!data.session) {
+
+    window.location.href =
+      "login.html";
+
+    return false;
+
+  }
+
 
   status(
-    "Login OK. Getting group..."
+    "Login confirmed. Finding group..."
   );
 
-} catch (error) {
-
-  errorMessage(
-    "Login failed: " +
-    error.message
-  );
+  return true;
 
 }
 
 
-/* =====================================
-   MONTH
-===================================== */
-
-const monthInput =
-  document.getElementById("month");
-
-monthInput.value =
-  new Date()
-    .toISOString()
-    .slice(0, 7);
-
-
-/* =====================================
+/* =================================
    LOAD MEMBERS
-===================================== */
+================================= */
 
 async function loadMembers() {
 
-  const select =
-    document.getElementById("member");
-
-  try {
-
-    status(
-      "Getting your group..."
-    );
-
-    const groupId =
-      await getCurrentGroupId();
+  status(
+    "Finding group..."
+  );
 
 
-    if (!groupId) {
-
-      throw new Error(
-        "No group is linked to this account."
-      );
-
-    }
+  const groupId =
+    await getCurrentGroupId();
 
 
-    status(
-      "Group found. Loading members..."
-    );
+  if (!groupId) {
 
-
-    const result =
-      await supabase
-        .from("members")
-        .select("id,name")
-        .eq(
-          "group_id",
-          groupId
-        )
-        .order("name");
-
-
-    if (result.error) {
-
-      throw result.error;
-
-    }
-
-
-    const members =
-      result.data || [];
-
-
-    select.innerHTML =
-      '<option value="">Select member</option>';
-
-
-    members.forEach(
-      member => {
-
-        const option =
-          document.createElement(
-            "option"
-          );
-
-        option.value =
-          member.id;
-
-        option.textContent =
-          member.name;
-
-        select.appendChild(
-          option
-        );
-
-      }
-    );
-
-
-    if (members.length === 0) {
-
-      select.innerHTML =
-        '<option value="">No members found</option>';
-
-      status(
-        "Group found, but no members were found."
-      );
-
-      return;
-
-    }
-
-
-    status(
-      members.length +
-      " member(s) loaded. Loading contributions..."
-    );
-
-
-  } catch (error) {
-
-    errorMessage(
-      "Members failed: " +
-      error.message
+    throw new Error(
+      "No group is linked to this account."
     );
 
   }
 
+
+  status(
+    "Group found. Loading members..."
+  );
+
+
+  const result =
+    await supabase
+      .from("members")
+      .select("id,name")
+      .eq(
+        "group_id",
+        groupId
+      )
+      .order("name");
+
+
+  if (result.error) {
+
+    throw result.error;
+
+  }
+
+
+  const members =
+    result.data || [];
+
+
+  const select =
+    document.getElementById(
+      "member"
+    );
+
+
+  select.innerHTML =
+    '<option value="">Select member</option>';
+
+
+  members.forEach(
+    member => {
+
+      const option =
+        document.createElement(
+          "option"
+        );
+
+      option.value =
+        member.id;
+
+      option.textContent =
+        member.name;
+
+      select.appendChild(
+        option
+      );
+
+    }
+  );
+
+
+  if (members.length === 0) {
+
+    select.innerHTML =
+      '<option value="">No members found</option>';
+
+    throw new Error(
+      "No members were found in this group."
+    );
+
+  }
+
+
+  status(
+    members.length +
+    " member(s) loaded. Loading contributions..."
+  );
+
 }
 
 
-/* =====================================
+/* =================================
    LOAD CONTRIBUTIONS
-===================================== */
+================================= */
 
 async function loadContributions() {
 
   const rows =
-    document.getElementById("rows");
-
-
-  try {
-
-    rows.innerHTML = `
-      <tr>
-        <td colspan="6">
-          Loading contributions...
-        </td>
-      </tr>
-    `;
-
-
-    const groupId =
-      await getCurrentGroupId();
-
-
-    if (!groupId) {
-
-      throw new Error(
-        "No group is linked to this account."
-      );
-
-    }
-
-
-    status(
-      "Loading contribution ledger..."
+    document.getElementById(
+      "rows"
     );
 
 
-    const result =
-      await supabase
-        .from("contributions")
-        .select(
-          "contribution_date,amount,contribution_type,payment_method,reference,member_id"
-        )
-        .eq(
-          "group_id",
-          groupId
-        )
-        .order(
-          "contribution_date",
-          {
-            ascending: false
-          }
-        );
+  const groupId =
+    await getCurrentGroupId();
 
 
-    if (result.error) {
+  if (!groupId) {
 
-      throw result.error;
-
-    }
-
-
-    const contributions =
-      result.data || [];
-
-
-    if (
-      contributions.length === 0
-    ) {
-
-      rows.innerHTML = `
-        <tr>
-          <td colspan="6">
-            No contributions yet.
-          </td>
-        </tr>
-      `;
-
-
-      status(
-        "No contributions found."
-      );
-
-      return;
-
-    }
-
-
-    /* ===============================
-       MEMBER NAMES
-    =============================== */
-
-    const memberIds = [
-      ...new Set(
-        contributions
-          .map(
-            item =>
-              item.member_id
-          )
-          .filter(Boolean)
-      )
-    ];
-
-
-    const memberNames = {};
-
-
-    if (
-      memberIds.length > 0
-    ) {
-
-      const memberResult =
-        await supabase
-          .from("members")
-          .select(
-            "id,name"
-          )
-          .in(
-            "id",
-            memberIds
-          );
-
-
-      if (
-        memberResult.error
-      ) {
-
-        throw memberResult.error;
-
-      }
-
-
-      (
-        memberResult.data ||
-        []
-      ).forEach(
-        member => {
-
-          memberNames[
-            member.id
-          ] =
-            member.name;
-
-        }
-      );
-
-    }
-
-
-    /* ===============================
-       DISPLAY
-    =============================== */
-
-    rows.innerHTML =
-      contributions
-        .map(
-          item => {
-
-            return `
-
-              <tr>
-
-                <td>
-                  ${escapeHtml(
-                    item.contribution_date ||
-                    "—"
-                  )}
-                </td>
-
-                <td>
-                  ${escapeHtml(
-                    memberNames[
-                      item.member_id
-                    ] ||
-                    "—"
-                  )}
-                </td>
-
-                <td>
-                  ${money(
-                    Number(
-                      item.amount ||
-                      0
-                    )
-                  )}
-                </td>
-
-                <td>
-                  ${escapeHtml(
-                    item.contribution_type ||
-                    "—"
-                  )}
-                </td>
-
-                <td>
-                  ${escapeHtml(
-                    item.payment_method ||
-                    "—"
-                  )}
-                </td>
-
-                <td>
-                  ${escapeHtml(
-                    item.reference ||
-                    "—"
-                  )}
-                </td>
-
-              </tr>
-
-            `;
-
-          }
-        )
-        .join("");
-
-
-    status(
-      contributions.length +
-      " contribution(s) loaded."
-    );
-
-
-  } catch (error) {
-
-    rows.innerHTML = `
-      <tr>
-        <td colspan="6">
-          Unable to load contributions.
-        </td>
-      </tr>
-    `;
-
-
-    errorMessage(
-      "Contributions failed: " +
-      error.message
+    throw new Error(
+      "No group is linked to this account."
     );
 
   }
 
+
+  const result =
+    await supabase
+      .from("contributions")
+      .select(
+        "contribution_date,amount,contribution_type,payment_method,reference,member_id"
+      )
+      .eq(
+        "group_id",
+        groupId
+      )
+      .order(
+        "contribution_date",
+        {
+          ascending: false
+        }
+      );
+
+
+  if (result.error) {
+
+    throw result.error;
+
+  }
+
+
+  const contributions =
+    result.data || [];
+
+
+  if (
+    contributions.length === 0
+  ) {
+
+    rows.innerHTML = `
+      <tr>
+        <td colspan="6">
+          No contributions yet.
+        </td>
+      </tr>
+    `;
+
+    status(
+      "No contributions found."
+    );
+
+    return;
+
+  }
+
+
+  /* MEMBERS */
+
+  const memberIds = [
+    ...new Set(
+      contributions
+        .map(
+          item =>
+            item.member_id
+        )
+        .filter(Boolean)
+    )
+  ];
+
+
+  const memberNames = {};
+
+
+  if (
+    memberIds.length
+  ) {
+
+    const resultMembers =
+      await supabase
+        .from("members")
+        .select("id,name")
+        .in(
+          "id",
+          memberIds
+        );
+
+
+    if (
+      resultMembers.error
+    ) {
+
+      throw resultMembers.error;
+
+    }
+
+
+    (
+      resultMembers.data ||
+      []
+    ).forEach(
+      member => {
+
+        memberNames[
+          member.id
+        ] =
+          member.name;
+
+      }
+    );
+
+  }
+
+
+  /* DISPLAY */
+
+  rows.innerHTML =
+    contributions
+      .map(
+        item => `
+
+          <tr>
+
+            <td>
+              ${escapeHtml(
+                item.contribution_date ||
+                "—"
+              )}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                memberNames[
+                  item.member_id
+                ] ||
+                "—"
+              )}
+            </td>
+
+            <td>
+              ${money(
+                Number(
+                  item.amount ||
+                  0
+                )
+              )}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                item.contribution_type ||
+                "—"
+              )}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                item.payment_method ||
+                "—"
+              )}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                item.reference ||
+                "—"
+              )}
+            </td>
+
+          </tr>
+
+        `
+      )
+      .join("");
+
+
+  status(
+    contributions.length +
+    " contribution(s) loaded."
+  );
+
 }
 
 
-/* =====================================
-   SAVE
-===================================== */
+/* =================================
+   SAVE CONTRIBUTION
+================================= */
 
 async function saveContribution() {
 
@@ -804,7 +752,7 @@ async function saveContribution() {
     if (!memberId) {
 
       throw new Error(
-        "Select a member."
+        "Please select a member."
       );
 
     }
@@ -831,6 +779,19 @@ async function saveContribution() {
     }
 
 
+    const groupId =
+      await getCurrentGroupId();
+
+
+    if (!groupId) {
+
+      throw new Error(
+        "No group is linked to this account."
+      );
+
+    }
+
+
     button.disabled =
       true;
 
@@ -838,16 +799,12 @@ async function saveContribution() {
       "Saving...";
 
 
-    const groupId =
-      await getCurrentGroupId();
-
-
-    const userResult =
+    const {
+      data: {
+        user
+      }
+    } =
       await supabase.auth.getUser();
-
-
-    const user =
-      userResult.data.user;
 
 
     const result =
@@ -878,14 +835,13 @@ async function saveContribution() {
             null,
 
           recorded_by:
-            user
-              ? user.id
-              : null,
+            user?.id ||
+            null,
 
           contribution_date:
             new Date()
               .toISOString()
-              .slice(0, 10)
+              .slice(0,10)
 
         });
 
@@ -897,14 +853,14 @@ async function saveContribution() {
     }
 
 
-    alert(
-      "Contribution recorded successfully."
-    );
-
-
     document.getElementById(
       "reference"
     ).value = "";
+
+
+    alert(
+      "Contribution recorded successfully."
+    );
 
 
     await loadContributions();
@@ -912,9 +868,8 @@ async function saveContribution() {
 
   } catch (error) {
 
-    errorMessage(
-      "Save failed: " +
-      error.message
+    showPageError(
+      error
     );
 
 
@@ -931,9 +886,50 @@ async function saveContribution() {
 }
 
 
-/* =====================================
-   EVENT
-===================================== */
+/* =================================
+   START
+================================= */
+
+async function start() {
+
+  try {
+
+    const loggedIn =
+      await checkLogin();
+
+
+    if (!loggedIn) {
+      return;
+    }
+
+
+    document.getElementById(
+      "month"
+    ).value =
+      new Date()
+        .toISOString()
+        .slice(0,7);
+
+
+    await loadMembers();
+
+    await loadContributions();
+
+
+  } catch (error) {
+
+    showPageError(
+      error
+    );
+
+  }
+
+}
+
+
+/* =================================
+   BUTTON
+================================= */
 
 document
   .getElementById(
@@ -945,13 +941,7 @@ document
   );
 
 
-/* =====================================
-   START
-===================================== */
-
-await loadMembers();
-
-await loadContributions();
+start();
 
 </script>
 
