@@ -1,1 +1,1016 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Expenses — CHAMA LIVE</title><link rel="stylesheet" href="css/app.css"></head><body><header class="topbar"><div class="brand">CHAMA <span>LIVE</span></div><button class="btn btn-secondary" id="logout">Sign out</button></header><div class="layout"><aside class="sidebar"><nav class="nav"><a class="" href="dashboard.html">Dashboard</a><a class="" href="members.html">Members</a><a class="" href="contributions.html">Contributions</a><a class="active" href="expenses.html">Expenses</a><a class="" href="meetings.html">Meetings</a><a class="" href="reports.html">Reports</a><a class="" href="group-management.html">Group Management</a></nav></aside><main class="main"><div class="page-head"><div><h1>Expenses</h1><p class="muted">Live expense ledger. Only approved expenses affect balance.</p></div></div><section class="card"><div class="table-wrap"><table class="table"><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Amount</th><th>Status</th></tr></thead><tbody id="rows"><tr><td colspan="5">Loading…</td></tr></tbody></table></div></section><div class="error" data-error hidden></div></main></div><script type="module">import {boot} from './js/layout.js';await boot();import "./js/expenses.js";</script></body></html>
+<!doctype html>
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  >
+
+  <title>Expenses — CHAMA LIVE</title>
+
+  <link
+    rel="stylesheet"
+    href="css/app.css"
+  >
+
+</head>
+
+
+<body>
+
+
+<header class="topbar">
+
+  <div class="brand">
+    CHAMA <span>LIVE</span>
+  </div>
+
+  <button
+    class="btn btn-secondary"
+    id="logout"
+    type="button"
+  >
+    Sign out
+  </button>
+
+</header>
+
+
+
+<div class="layout">
+
+
+  <aside class="sidebar">
+
+    <nav class="nav">
+
+      <a href="dashboard.html">
+        Dashboard
+      </a>
+
+      <a href="members.html">
+        Members
+      </a>
+
+      <a href="contributions.html">
+        Contributions
+      </a>
+
+      <a
+        class="active"
+        href="expenses.html"
+      >
+        Expenses
+      </a>
+
+      <a href="meetings.html">
+        Meetings
+      </a>
+
+      <a href="reports.html">
+        Reports
+      </a>
+
+      <a href="group-management.html">
+        Group Management
+      </a>
+
+    </nav>
+
+  </aside>
+
+
+
+  <main class="main">
+
+
+    <div class="page-head">
+
+      <div>
+
+        <h1>
+          Expenses
+        </h1>
+
+        <p class="muted">
+          Record and manage group expenses.
+        </p>
+
+      </div>
+
+    </div>
+
+
+
+    <!-- STATUS -->
+
+    <div
+      id="status"
+      class="card"
+      style="margin-bottom:20px;"
+    >
+      Starting Expenses...
+    </div>
+
+
+
+    <!-- ERROR -->
+
+    <div
+      id="error"
+      class="error"
+      hidden
+      style="margin-bottom:20px;"
+    ></div>
+
+
+
+    <!-- RECORD EXPENSE -->
+
+    <section class="card">
+
+      <h2>
+        Record Expense
+      </h2>
+
+
+      <div class="form">
+
+
+        <!-- DESCRIPTION -->
+
+        <div class="field">
+
+          <label for="description">
+            Description
+          </label>
+
+          <input
+            id="description"
+            type="text"
+            placeholder="e.g. Meeting catering"
+          >
+
+        </div>
+
+
+
+        <!-- CATEGORY -->
+
+        <div class="field">
+
+          <label for="category">
+            Category
+          </label>
+
+          <select id="category">
+
+            <option value="food">
+              Food
+            </option>
+
+            <option value="transport">
+              Transport
+            </option>
+
+            <option value="meeting">
+              Meeting
+            </option>
+
+            <option value="welfare">
+              Welfare
+            </option>
+
+            <option value="office">
+              Office
+            </option>
+
+            <option value="utilities">
+              Utilities
+            </option>
+
+            <option value="other">
+              Other
+            </option>
+
+          </select>
+
+        </div>
+
+
+
+        <!-- AMOUNT -->
+
+        <div class="field">
+
+          <label for="amount">
+            Amount (KSh)
+          </label>
+
+          <input
+            id="amount"
+            type="number"
+            min="1"
+            step="1"
+            placeholder="1000"
+          >
+
+        </div>
+
+
+
+        <!-- DATE -->
+
+        <div class="field">
+
+          <label for="expenseDate">
+            Date
+          </label>
+
+          <input
+            id="expenseDate"
+            type="date"
+          >
+
+        </div>
+
+
+
+        <!-- PAYMENT METHOD -->
+
+        <div class="field">
+
+          <label for="method">
+            Payment Method
+          </label>
+
+          <select id="method">
+
+            <option value="M-Pesa">
+              M-Pesa
+            </option>
+
+            <option value="Cash">
+              Cash
+            </option>
+
+            <option value="Bank">
+              Bank
+            </option>
+
+            <option value="Other">
+              Other
+            </option>
+
+          </select>
+
+        </div>
+
+
+
+        <!-- REFERENCE -->
+
+        <div class="field">
+
+          <label for="reference">
+            Reference
+          </label>
+
+          <input
+            id="reference"
+            type="text"
+            placeholder="e.g. MPESA123"
+          >
+
+        </div>
+
+
+
+        <!-- STATUS -->
+
+        <div class="field">
+
+          <label for="expenseStatus">
+            Status
+          </label>
+
+          <select id="expenseStatus">
+
+            <option value="approved">
+              Approved
+            </option>
+
+            <option value="pending">
+              Pending
+            </option>
+
+            <option value="rejected">
+              Rejected
+            </option>
+
+          </select>
+
+        </div>
+
+
+
+        <!-- SAVE -->
+
+        <button
+          class="btn btn-primary"
+          id="saveExpense"
+          type="button"
+        >
+          Record Expense
+        </button>
+
+
+      </div>
+
+    </section>
+
+
+
+    <!-- LEDGER -->
+
+    <section class="card">
+
+      <h2>
+        Expense Ledger
+      </h2>
+
+
+      <div class="table-wrap">
+
+        <table class="table">
+
+          <thead>
+
+            <tr>
+
+              <th>
+                Date
+              </th>
+
+              <th>
+                Description
+              </th>
+
+              <th>
+                Category
+              </th>
+
+              <th>
+                Amount
+              </th>
+
+              <th>
+                Status
+              </th>
+
+              <th>
+                Method
+              </th>
+
+              <th>
+                Reference
+              </th>
+
+            </tr>
+
+          </thead>
+
+
+          <tbody id="rows">
+
+            <tr>
+
+              <td colspan="7">
+                Loading...
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+
+  </main>
+
+</div>
+
+
+
+<script type="module">
+
+import { supabase } from "./js/supabase.js";
+
+
+/* =====================================================
+   ELEMENTS
+===================================================== */
+
+const statusBox =
+  document.getElementById("status");
+
+const errorBox =
+  document.getElementById("error");
+
+const descriptionInput =
+  document.getElementById("description");
+
+const categorySelect =
+  document.getElementById("category");
+
+const amountInput =
+  document.getElementById("amount");
+
+const dateInput =
+  document.getElementById("expenseDate");
+
+const methodSelect =
+  document.getElementById("method");
+
+const referenceInput =
+  document.getElementById("reference");
+
+const expenseStatusSelect =
+  document.getElementById("expenseStatus");
+
+const saveButton =
+  document.getElementById("saveExpense");
+
+const rows =
+  document.getElementById("rows");
+
+
+/* =====================================================
+   STATUS
+===================================================== */
+
+function setStatus(message) {
+
+  statusBox.textContent =
+    message;
+
+}
+
+
+/* =====================================================
+   ERROR
+===================================================== */
+
+function showError(error) {
+
+  const message =
+    error?.message ||
+    String(error);
+
+  console.error(
+    "CHAMA LIVE expenses:",
+    error
+  );
+
+  errorBox.textContent =
+    "Error: " + message;
+
+  errorBox.hidden =
+    false;
+
+  setStatus(
+    "Something went wrong."
+  );
+
+}
+
+
+/* =====================================================
+   ESCAPE HTML
+===================================================== */
+
+function escapeHtml(value) {
+
+  return String(value)
+
+    .replaceAll("&", "&amp;")
+
+    .replaceAll("<", "&lt;")
+
+    .replaceAll(">", "&gt;")
+
+    .replaceAll('"', "&quot;")
+
+    .replaceAll("'", "&#039;");
+
+}
+
+
+/* =====================================================
+   GET USER
+===================================================== */
+
+async function getUser() {
+
+  const result =
+    await supabase.auth.getUser();
+
+
+  if (result.error) {
+    throw result.error;
+  }
+
+
+  if (!result.data?.user) {
+
+    window.location.href =
+      "login.html";
+
+    return null;
+
+  }
+
+
+  return result.data.user;
+
+}
+
+
+/* =====================================================
+   GET CURRENT MEMBER
+===================================================== */
+
+async function getCurrentMember() {
+
+  const user =
+    await getUser();
+
+
+  if (!user) {
+    return null;
+  }
+
+
+  const result =
+    await supabase
+
+      .from("members")
+
+      .select(
+        "id,name,user_id,group_id"
+      )
+
+      .eq(
+        "user_id",
+        user.id
+      )
+
+      .limit(1);
+
+
+  if (result.error) {
+    throw result.error;
+  }
+
+
+  const members =
+    result.data || [];
+
+
+  if (members.length === 0) {
+
+    throw new Error(
+      "No member record is linked to your login."
+    );
+
+  }
+
+
+  if (!members[0].group_id) {
+
+    throw new Error(
+      "Your member record has no group."
+    );
+
+  }
+
+
+  return members[0];
+
+}
+
+
+/* =====================================================
+   GET GROUP ID
+===================================================== */
+
+async function getGroupId() {
+
+  const member =
+    await getCurrentMember();
+
+
+  return member.group_id;
+
+}
+
+
+/* =====================================================
+   LOAD EXPENSES
+===================================================== */
+
+async function loadExpenses() {
+
+  const groupId =
+    await getGroupId();
+
+
+  setStatus(
+    "Loading expense ledger..."
+  );
+
+
+  const result =
+    await supabase
+
+      .from("expenses")
+
+      .select(
+        "id,expense_date,description,category,amount,status,payment_method,reference"
+      )
+
+      .eq(
+        "group_id",
+        groupId
+      )
+
+      .order(
+        "expense_date",
+        {
+          ascending: false
+        }
+      );
+
+
+  if (result.error) {
+    throw result.error;
+  }
+
+
+  const expenses =
+    result.data || [];
+
+
+  if (expenses.length === 0) {
+
+    rows.innerHTML = `
+      <tr>
+        <td colspan="7">
+          No expenses yet.
+        </td>
+      </tr>
+    `;
+
+
+    setStatus(
+      "No expenses found."
+    );
+
+
+    return;
+
+  }
+
+
+  rows.innerHTML =
+    expenses
+      .map(
+        expense => {
+
+          return `
+
+            <tr>
+
+              <td>
+                ${escapeHtml(
+                  expense.expense_date || "—"
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  expense.description || "—"
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  expense.category || "—"
+                )}
+              </td>
+
+              <td>
+                KSh ${Number(
+                  expense.amount || 0
+                ).toLocaleString("en-KE")}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  expense.status || "—"
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  expense.payment_method || "—"
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  expense.reference || "—"
+                )}
+              </td>
+
+            </tr>
+
+          `;
+
+        }
+      )
+      .join("");
+
+
+  setStatus(
+    expenses.length +
+    " expense(s) loaded."
+  );
+
+}
+
+
+/* =====================================================
+   SAVE EXPENSE
+===================================================== */
+
+async function saveExpense() {
+
+  errorBox.hidden =
+    true;
+
+
+  try {
+
+    const description =
+      descriptionInput.value.trim();
+
+    const category =
+      categorySelect.value;
+
+    const amount =
+      Number(
+        amountInput.value
+      );
+
+    const expenseDate =
+      dateInput.value;
+
+    const method =
+      methodSelect.value;
+
+    const reference =
+      referenceInput.value.trim();
+
+    const expenseStatus =
+      expenseStatusSelect.value;
+
+
+    /* VALIDATION */
+
+    if (!description) {
+
+      throw new Error(
+        "Please enter an expense description."
+      );
+
+    }
+
+
+    if (
+      !amount ||
+      amount <= 0
+    ) {
+
+      throw new Error(
+        "Please enter a valid expense amount."
+      );
+
+    }
+
+
+    if (!expenseDate) {
+
+      throw new Error(
+        "Please select the expense date."
+      );
+
+    }
+
+
+    const groupId =
+      await getGroupId();
+
+
+    saveButton.disabled =
+      true;
+
+    saveButton.textContent =
+      "Saving...";
+
+
+    setStatus(
+      "Saving expense..."
+    );
+
+
+    /*
+     * IMPORTANT:
+     *
+     * We deliberately do NOT send recorded_by.
+     *
+     * Your contributions table already showed
+     * that recorded_by points to members.id,
+     * not auth.users.id.
+     */
+
+
+    const result =
+      await supabase
+
+        .from("expenses")
+
+        .insert({
+
+          group_id:
+            groupId,
+
+          description:
+            description,
+
+          category:
+            category,
+
+          amount:
+            amount,
+
+          expense_date:
+            expenseDate,
+
+          status:
+            expenseStatus,
+
+          payment_method:
+            method,
+
+          reference:
+            reference ||
+            null
+
+        });
+
+
+    if (result.error) {
+      throw result.error;
+    }
+
+
+    /* CLEAR */
+
+    descriptionInput.value =
+      "";
+
+    amountInput.value =
+      "";
+
+    referenceInput.value =
+      "";
+
+
+    setStatus(
+      "Expense recorded successfully."
+    );
+
+
+    alert(
+      "Expense recorded successfully."
+    );
+
+
+    await loadExpenses();
+
+  }
+
+  catch(error) {
+
+    showError(error);
+
+  }
+
+  finally {
+
+    saveButton.disabled =
+      false;
+
+    saveButton.textContent =
+      "Record Expense";
+
+  }
+
+}
+
+
+/* =====================================================
+   LOGOUT
+===================================================== */
+
+document
+  .getElementById("logout")
+  .addEventListener(
+    "click",
+    async function() {
+
+      await supabase.auth.signOut();
+
+      window.location.href =
+        "login.html";
+
+    }
+  );
+
+
+/* =====================================================
+   START
+===================================================== */
+
+async function start() {
+
+  try {
+
+    setStatus(
+      "Starting Expenses..."
+    );
+
+
+    await getUser();
+
+
+    dateInput.value =
+      new Date()
+        .toISOString()
+        .slice(
+          0,
+          10
+        );
+
+
+    await loadExpenses();
+
+  }
+
+  catch(error) {
+
+    showError(error);
+
+  }
+
+}
+
+
+/* =====================================================
+   BUTTON
+===================================================== */
+
+saveButton.addEventListener(
+  "click",
+  saveExpense
+);
+
+
+/* START */
+
+start();
+
+</script>
+
+</body>
+
+</html>
