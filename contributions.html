@@ -18,7 +18,11 @@
     CHAMA <span>LIVE</span>
   </div>
 
-  <button class="btn btn-secondary" id="logout">
+  <button
+    class="btn btn-secondary"
+    id="logout"
+    type="button"
+  >
     Sign out
   </button>
 
@@ -49,15 +53,19 @@
     <div class="page-head">
 
       <div>
+
         <h1>Contributions</h1>
 
         <p class="muted">
           Record and manage group contributions.
         </p>
+
       </div>
 
     </div>
 
+
+    <!-- STATUS -->
 
     <div
       id="status"
@@ -68,13 +76,26 @@
     </div>
 
 
-    <!-- RECORD -->
+    <!-- ERROR -->
+
+    <div
+      id="error"
+      class="error"
+      hidden
+      style="margin-bottom:20px;"
+    ></div>
+
+
+    <!-- RECORD CONTRIBUTION -->
 
     <section class="card">
 
       <h2>Record Contribution</h2>
 
       <div class="form">
+
+
+        <!-- MEMBER -->
 
         <div class="field">
 
@@ -93,6 +114,8 @@
         </div>
 
 
+        <!-- AMOUNT -->
+
         <div class="field">
 
           <label for="amount">
@@ -103,11 +126,15 @@
             id="amount"
             type="number"
             min="1"
+            step="1"
             value="200"
+            placeholder="200"
           >
 
         </div>
 
+
+        <!-- TYPE -->
 
         <div class="field">
 
@@ -142,6 +169,8 @@
         </div>
 
 
+        <!-- MONTH -->
+
         <div class="field">
 
           <label for="month">
@@ -155,6 +184,8 @@
 
         </div>
 
+
+        <!-- METHOD -->
 
         <div class="field">
 
@@ -185,6 +216,8 @@
         </div>
 
 
+        <!-- REFERENCE -->
+
         <div class="field">
 
           <label for="reference">
@@ -200,6 +233,8 @@
         </div>
 
 
+        <!-- SAVE -->
+
         <button
           class="btn btn-primary"
           id="saveContribution"
@@ -208,16 +243,10 @@
           Record Contribution
         </button>
 
+
       </div>
 
     </section>
-
-
-    <div
-      id="error"
-      class="error"
-      hidden
-    ></div>
 
 
     <!-- LEDGER -->
@@ -233,22 +262,32 @@
           <thead>
 
             <tr>
+
               <th>Date</th>
+
               <th>Member</th>
+
               <th>Amount</th>
+
               <th>Type</th>
+
               <th>Method</th>
+
               <th>M-Pesa Ref</th>
+
             </tr>
 
           </thead>
 
+
           <tbody id="rows">
 
             <tr>
+
               <td colspan="6">
                 Loading...
               </td>
+
             </tr>
 
           </tbody>
@@ -259,6 +298,7 @@
 
     </section>
 
+
   </main>
 
 </div>
@@ -266,7 +306,16 @@
 
 <script type="module">
 
+/* =====================================================
+   SUPABASE
+===================================================== */
+
 import { supabase } from "./js/supabase.js";
+
+
+/* =====================================================
+   APP HELPERS
+===================================================== */
 
 import {
   getCurrentGroupId,
@@ -274,106 +323,183 @@ import {
 } from "./js/app.js";
 
 
-/* =================================
+/* =====================================================
+   ELEMENTS
+===================================================== */
+
+const statusBox =
+  document.getElementById("status");
+
+const errorBox =
+  document.getElementById("error");
+
+const memberSelect =
+  document.getElementById("member");
+
+const amountInput =
+  document.getElementById("amount");
+
+const typeSelect =
+  document.getElementById("type");
+
+const monthInput =
+  document.getElementById("month");
+
+const methodSelect =
+  document.getElementById("method");
+
+const referenceInput =
+  document.getElementById("reference");
+
+const saveButton =
+  document.getElementById("saveContribution");
+
+const rows =
+  document.getElementById("rows");
+
+const logoutButton =
+  document.getElementById("logout");
+
+
+/* =====================================================
    STATUS
-================================= */
+===================================================== */
 
-function status(text) {
+function setStatus(message) {
 
-  document.getElementById(
-    "status"
-  ).textContent = text;
+  statusBox.textContent =
+    message;
 
 }
 
 
-/* =================================
+/* =====================================================
    ERROR
-================================= */
+===================================================== */
 
-function showPageError(error) {
+function showError(error) {
+
+  console.error(
+    "CHAMA LIVE:",
+    error
+  );
 
   const message =
     error?.message ||
     String(error);
 
-  document.getElementById(
-    "error"
-  ).textContent =
-    message;
+  errorBox.textContent =
+    "Error: " + message;
 
-  document.getElementById(
-    "error"
-  ).hidden = false;
+  errorBox.hidden =
+    false;
 
-  status(
-    "ERROR: " + message
+  setStatus(
+    "Something went wrong."
   );
 
 }
 
 
-/* =================================
+/* =====================================================
+   CLEAR ERROR
+===================================================== */
+
+function clearError() {
+
+  errorBox.textContent =
+    "";
+
+  errorBox.hidden =
+    true;
+
+}
+
+
+/* =====================================================
    ESCAPE HTML
-================================= */
+===================================================== */
 
 function escapeHtml(value) {
 
   return String(value)
 
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
 
 }
 
 
-/* =================================
+/* =====================================================
    LOGOUT
-================================= */
+===================================================== */
 
-document
-  .getElementById("logout")
-  .addEventListener(
-    "click",
-    async () => {
+logoutButton.addEventListener(
+  "click",
+  async function () {
+
+    try {
 
       await supabase.auth.signOut();
 
       window.location.href =
         "login.html";
 
+    } catch (error) {
+
+      showError(error);
+
     }
-  );
+
+  }
+);
 
 
-/* =================================
-   AUTHENTICATION
-================================= */
+/* =====================================================
+   CHECK LOGIN
+===================================================== */
 
 async function checkLogin() {
 
-  status(
+  setStatus(
     "Checking login..."
   );
 
-  const {
-    data,
-    error
-  } =
+
+  const result =
     await supabase.auth.getSession();
 
 
-  if (error) {
+  if (result.error) {
 
-    throw error;
+    throw result.error;
 
   }
 
 
-  if (!data.session) {
+  if (!result.data.session) {
 
     window.location.href =
       "login.html";
@@ -383,23 +509,24 @@ async function checkLogin() {
   }
 
 
-  status(
-    "Login confirmed. Finding group..."
+  setStatus(
+    "Login confirmed."
   );
+
 
   return true;
 
 }
 
 
-/* =================================
+/* =====================================================
    LOAD MEMBERS
-================================= */
+===================================================== */
 
 async function loadMembers() {
 
-  status(
-    "Finding group..."
+  setStatus(
+    "Finding your group..."
   );
 
 
@@ -416,20 +543,31 @@ async function loadMembers() {
   }
 
 
-  status(
+  setStatus(
     "Group found. Loading members..."
   );
 
 
   const result =
     await supabase
+
       .from("members")
-      .select("id,name")
+
+      .select(
+        "id,name"
+      )
+
       .eq(
         "group_id",
         groupId
       )
-      .order("name");
+
+      .order(
+        "name",
+        {
+          ascending: true
+        }
+      );
 
 
   if (result.error) {
@@ -443,18 +581,38 @@ async function loadMembers() {
     result.data || [];
 
 
-  const select =
-    document.getElementById(
-      "member"
+  memberSelect.innerHTML =
+    "";
+
+
+  if (
+    members.length === 0
+  ) {
+
+    memberSelect.innerHTML =
+      `
+        <option value="">
+          No members found
+        </option>
+      `;
+
+    throw new Error(
+      "No members were found in this group."
     );
 
+  }
 
-  select.innerHTML =
-    '<option value="">Select member</option>';
+
+  memberSelect.innerHTML =
+    `
+      <option value="">
+        Select member
+      </option>
+    `;
 
 
   members.forEach(
-    member => {
+    function (member) {
 
       const option =
         document.createElement(
@@ -467,7 +625,7 @@ async function loadMembers() {
       option.textContent =
         member.name;
 
-      select.appendChild(
+      memberSelect.appendChild(
         option
       );
 
@@ -475,36 +633,23 @@ async function loadMembers() {
   );
 
 
-  if (members.length === 0) {
-
-    select.innerHTML =
-      '<option value="">No members found</option>';
-
-    throw new Error(
-      "No members were found in this group."
-    );
-
-  }
-
-
-  status(
+  setStatus(
     members.length +
-    " member(s) loaded. Loading contributions..."
+    " member(s) loaded."
   );
 
 }
 
 
-/* =================================
+/* =====================================================
    LOAD CONTRIBUTIONS
-================================= */
+===================================================== */
 
 async function loadContributions() {
 
-  const rows =
-    document.getElementById(
-      "rows"
-    );
+  setStatus(
+    "Loading contribution ledger..."
+  );
 
 
   const groupId =
@@ -522,14 +667,18 @@ async function loadContributions() {
 
   const result =
     await supabase
+
       .from("contributions")
+
       .select(
         "contribution_date,amount,contribution_type,payment_method,reference,member_id"
       )
+
       .eq(
         "group_id",
         groupId
       )
+
       .order(
         "contribution_date",
         {
@@ -553,15 +702,21 @@ async function loadContributions() {
     contributions.length === 0
   ) {
 
-    rows.innerHTML = `
-      <tr>
-        <td colspan="6">
-          No contributions yet.
-        </td>
-      </tr>
-    `;
+    rows.innerHTML =
+      `
+        <tr>
 
-    status(
+          <td colspan="6">
+
+            No contributions yet.
+
+          </td>
+
+        </tr>
+      `;
+
+
+    setStatus(
       "No contributions found."
     );
 
@@ -570,31 +725,49 @@ async function loadContributions() {
   }
 
 
-  /* MEMBERS */
+  /* ================================================
+     GET MEMBER IDS
+  ================================================ */
 
   const memberIds = [
     ...new Set(
+
       contributions
+
         .map(
-          item =>
-            item.member_id
+          function (item) {
+
+            return item.member_id;
+
+          }
         )
+
         .filter(Boolean)
+
     )
   ];
 
+
+  /* ================================================
+     GET MEMBER NAMES
+  ================================================ */
 
   const memberNames = {};
 
 
   if (
-    memberIds.length
+    memberIds.length > 0
   ) {
 
-    const resultMembers =
+    const memberResult =
       await supabase
+
         .from("members")
-        .select("id,name")
+
+        .select(
+          "id,name"
+        )
+
         .in(
           "id",
           memberIds
@@ -602,19 +775,18 @@ async function loadContributions() {
 
 
     if (
-      resultMembers.error
+      memberResult.error
     ) {
 
-      throw resultMembers.error;
+      throw memberResult.error;
 
     }
 
 
     (
-      resultMembers.data ||
-      []
+      memberResult.data || []
     ).forEach(
-      member => {
+      function (member) {
 
         memberNames[
           member.id
@@ -627,69 +799,92 @@ async function loadContributions() {
   }
 
 
-  /* DISPLAY */
+  /* ================================================
+     DISPLAY LEDGER
+  ================================================ */
 
   rows.innerHTML =
+
     contributions
+
       .map(
-        item => `
+        function (item) {
 
-          <tr>
+          const date =
+            item.contribution_date ||
+            "—";
 
-            <td>
-              ${escapeHtml(
-                item.contribution_date ||
-                "—"
-              )}
-            </td>
 
-            <td>
-              ${escapeHtml(
-                memberNames[
-                  item.member_id
-                ] ||
-                "—"
-              )}
-            </td>
+          const member =
+            memberNames[
+              item.member_id
+            ] ||
+            "—";
 
-            <td>
-              ${money(
-                Number(
-                  item.amount ||
-                  0
-                )
-              )}
-            </td>
 
-            <td>
-              ${escapeHtml(
-                item.contribution_type ||
-                "—"
-              )}
-            </td>
+          const amount =
+            money(
+              Number(
+                item.amount ||
+                0
+              )
+            );
 
-            <td>
-              ${escapeHtml(
-                item.payment_method ||
-                "—"
-              )}
-            </td>
 
-            <td>
-              ${escapeHtml(
-                item.reference ||
-                "—"
-              )}
-            </td>
+          const type =
+            item.contribution_type ||
+            "—";
 
-          </tr>
 
-        `
+          const method =
+            item.payment_method ||
+            "—";
+
+
+          const reference =
+            item.reference ||
+            "—";
+
+
+          return `
+
+            <tr>
+
+              <td>
+                ${escapeHtml(date)}
+              </td>
+
+              <td>
+                ${escapeHtml(member)}
+              </td>
+
+              <td>
+                ${amount}
+              </td>
+
+              <td>
+                ${escapeHtml(type)}
+              </td>
+
+              <td>
+                ${escapeHtml(method)}
+              </td>
+
+              <td>
+                ${escapeHtml(reference)}
+              </td>
+
+            </tr>
+
+          `;
+
+        }
       )
+
       .join("");
 
 
-  status(
+  setStatus(
     contributions.length +
     " contribution(s) loaded."
   );
@@ -697,57 +892,54 @@ async function loadContributions() {
 }
 
 
-/* =================================
+/* =====================================================
    SAVE CONTRIBUTION
-================================= */
+===================================================== */
 
 async function saveContribution() {
 
-  const button =
-    document.getElementById(
-      "saveContribution"
-    );
+  clearError();
+
+
+  const originalText =
+    saveButton.textContent;
 
 
   try {
 
+    /* ================================================
+       FORM VALUES
+    ================================================ */
+
     const memberId =
-      document.getElementById(
-        "member"
-      ).value;
+      memberSelect.value;
 
 
     const amount =
       Number(
-        document.getElementById(
-          "amount"
-        ).value
+        amountInput.value
       );
 
 
     const type =
-      document.getElementById(
-        "type"
-      ).value;
+      typeSelect.value;
 
 
     const month =
-      document.getElementById(
-        "month"
-      ).value;
+      monthInput.value;
 
 
     const method =
-      document.getElementById(
-        "method"
-      ).value;
+      methodSelect.value;
 
 
     const reference =
-      document.getElementById(
-        "reference"
-      ).value.trim();
+      referenceInput.value.trim();
 
+
+    /* ================================================
+       VALIDATION
+    ================================================ */
 
     if (!memberId) {
 
@@ -764,7 +956,7 @@ async function saveContribution() {
     ) {
 
       throw new Error(
-        "Enter a valid amount."
+        "Please enter a valid amount."
       );
 
     }
@@ -773,11 +965,15 @@ async function saveContribution() {
     if (!month) {
 
       throw new Error(
-        "Select the contribution month."
+        "Please select the contribution month."
       );
 
     }
 
+
+    /* ================================================
+       GET GROUP
+    ================================================ */
 
     const groupId =
       await getCurrentGroupId();
@@ -792,24 +988,48 @@ async function saveContribution() {
     }
 
 
-    button.disabled =
+    /* ================================================
+       GET USER
+    ================================================ */
+
+    const userResult =
+      await supabase.auth.getUser();
+
+
+    if (
+      userResult.error
+    ) {
+
+      throw userResult.error;
+
+    }
+
+
+    const user =
+      userResult.data.user;
+
+
+    /* ================================================
+       SAVE
+    ================================================ */
+
+    saveButton.disabled =
       true;
 
-    button.textContent =
+    saveButton.textContent =
       "Saving...";
 
 
-    const {
-      data: {
-        user
-      }
-    } =
-      await supabase.auth.getUser();
+    setStatus(
+      "Saving contribution..."
+    );
 
 
     const result =
       await supabase
+
         .from("contributions")
+
         .insert({
 
           group_id:
@@ -841,7 +1061,10 @@ async function saveContribution() {
           contribution_date:
             new Date()
               .toISOString()
-              .slice(0,10)
+              .slice(
+                0,
+                10
+              )
 
         });
 
@@ -853,9 +1076,20 @@ async function saveContribution() {
     }
 
 
-    document.getElementById(
-      "reference"
-    ).value = "";
+    /* ================================================
+       CLEAR FORM
+    ================================================ */
+
+    amountInput.value =
+      "200";
+
+    referenceInput.value =
+      "";
+
+
+    setStatus(
+      "Contribution recorded successfully."
+    );
 
 
     alert(
@@ -863,87 +1097,115 @@ async function saveContribution() {
     );
 
 
+    /* ================================================
+       REFRESH LEDGER
+    ================================================ */
+
     await loadContributions();
 
 
   } catch (error) {
 
-    showPageError(
-      error
-    );
-
+    showError(error);
 
   } finally {
 
-    button.disabled =
+    saveButton.disabled =
       false;
 
-    button.textContent =
-      "Record Contribution";
+    saveButton.textContent =
+      originalText;
 
   }
 
 }
 
 
-/* =================================
-   START
-================================= */
+/* =====================================================
+   BUTTON EVENT
+===================================================== */
+
+saveButton.addEventListener(
+  "click",
+  saveContribution
+);
+
+
+/* =====================================================
+   START APPLICATION
+===================================================== */
 
 async function start() {
 
   try {
+
+    clearError();
+
+
+    setStatus(
+      "Starting Contributions..."
+    );
+
+
+    /* ================================================
+       LOGIN
+    ================================================ */
 
     const loggedIn =
       await checkLogin();
 
 
     if (!loggedIn) {
+
       return;
+
     }
 
 
-    document.getElementById(
-      "month"
-    ).value =
+    /* ================================================
+       CURRENT MONTH
+    ================================================ */
+
+    monthInput.value =
       new Date()
         .toISOString()
-        .slice(0,7);
+        .slice(
+          0,
+          7
+        );
 
+
+    /* ================================================
+       MEMBERS
+    ================================================ */
 
     await loadMembers();
+
+
+    /* ================================================
+       CONTRIBUTIONS
+    ================================================ */
 
     await loadContributions();
 
 
   } catch (error) {
 
-    showPageError(
-      error
-    );
+    showError(error);
 
   }
 
 }
 
 
-/* =================================
-   BUTTON
-================================= */
-
-document
-  .getElementById(
-    "saveContribution"
-  )
-  .addEventListener(
-    "click",
-    saveContribution
-  );
-
+/* =====================================================
+   RUN
+===================================================== */
 
 start();
 
 </script>
 
 </body>
+
 </html>
