@@ -7,224 +7,12 @@
   <title>Members — CHAMA LIVE</title>
 
   <link rel="stylesheet" href="css/app.css">
-
-  <style>
-    .member-account {
-      margin-top: 24px;
-    }
-
-    .account-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 20px;
-      margin-bottom: 20px;
-    }
-
-    .account-status {
-      display: inline-block;
-      padding: 5px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-
-    .status-active {
-      background: #dcfce7;
-      color: #166534;
-    }
-
-    .status-inactive {
-      background: #fee2e2;
-      color: #991b1b;
-    }
-
-    .account-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 18px;
-    }
-
-    .account-item {
-      padding: 14px 0;
-    }
-
-    .account-item .label {
-      color: #6b7280;
-      font-size: 13px;
-      margin-bottom: 5px;
-    }
-
-    .account-item strong {
-      font-size: 16px;
-    }
-
-    .account-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 20px;
-    }
-
-    .monthly-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 15px;
-      margin-top: 15px;
-    }
-
-    .monthly-box {
-      padding: 16px;
-      border: 1px solid #e5e7eb;
-      border-radius: 10px;
-    }
-
-    .monthly-box .muted {
-      font-size: 13px;
-      margin-bottom: 6px;
-    }
-
-    .monthly-box strong {
-      font-size: 20px;
-    }
-
-    .edit-panel {
-      display: none;
-      margin-top: 20px;
-      padding-top: 20px;
-      border-top: 1px solid #e5e7eb;
-    }
-
-    .edit-panel.show {
-      display: block;
-    }
-
-    .form-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 15px;
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .form-group.full {
-      grid-column: 1 / -1;
-    }
-
-    .form-group label {
-      font-weight: 600;
-      font-size: 14px;
-    }
-
-    .form-group input,
-    .form-group select {
-      padding: 10px 12px;
-      border: 1px solid #d1d5db;
-      border-radius: 7px;
-      font: inherit;
-      width: 100%;
-      box-sizing: border-box;
-    }
-
-    .detail-loading {
-      color: #6b7280;
-    }
-
-    .success {
-      color: #166534;
-      background: #dcfce7;
-      padding: 10px 12px;
-      border-radius: 7px;
-    }
-
-    .error-box {
-      color: #991b1b;
-      background: #fee2e2;
-      padding: 10px 12px;
-      border-radius: 7px;
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 4px 8px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-
-    .badge-paid {
-      background: #dcfce7;
-      color: #166534;
-    }
-
-    .badge-outstanding {
-      background: #fef3c7;
-      color: #92400e;
-    }
-
-    .badge-inactive {
-      background: #fee2e2;
-      color: #991b1b;
-    }
-
-    .statement-print {
-      display: none;
-    }
-
-    @media (max-width: 800px) {
-      .account-grid,
-      .monthly-grid,
-      .form-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .account-header {
-        flex-direction: column;
-      }
-
-      .table-wrap {
-        overflow-x: auto;
-      }
-    }
-
-    @media print {
-      body * {
-        visibility: hidden !important;
-      }
-
-      #printStatement,
-      #printStatement * {
-        visibility: visible !important;
-      }
-
-      #printStatement {
-        display: block !important;
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        padding: 30px;
-        box-sizing: border-box;
-        background: white;
-      }
-
-      @page {
-        size: A4;
-        margin: 15mm;
-      }
-    }
-  </style>
 </head>
 
 <body>
 
 <header class="topbar">
+
   <div class="brand">
     CHAMA <span>LIVE</span>
   </div>
@@ -236,6 +24,7 @@
   >
     Sign out
   </button>
+
 </header>
 
 
@@ -245,17 +34,32 @@
 
     <nav class="nav">
 
-      <a href="dashboard.html">Dashboard</a>
+      <a href="dashboard.html">
+        Dashboard
+      </a>
 
-      <a class="active" href="members.html">Members</a>
+      <a
+        class="active"
+        href="members.html"
+      >
+        Members
+      </a>
 
-      <a href="contributions.html">Contributions</a>
+      <a href="contributions.html">
+        Contributions
+      </a>
 
-      <a href="expenses.html">Expenses</a>
+      <a href="expenses.html">
+        Expenses
+      </a>
 
-      <a href="meetings.html">Meetings</a>
+      <a href="meetings.html">
+        Meetings
+      </a>
 
-      <a href="reports.html">Reports</a>
+      <a href="reports.html">
+        Reports
+      </a>
 
       <a href="group-management.html">
         Group Management
@@ -268,14 +72,20 @@
 
   <main class="main">
 
+    <!-- PAGE HEADER -->
+
     <div class="page-head">
 
       <div>
-        <h1>Members</h1>
+
+        <h1>
+          Members
+        </h1>
 
         <p class="muted">
           Manage members and view their contribution status.
         </p>
+
       </div>
 
     </div>
@@ -307,6 +117,7 @@
     <div class="grid grid-3">
 
       <div class="card">
+
         <div class="muted">
           Total Members
         </div>
@@ -317,10 +128,12 @@
         >
           —
         </div>
+
       </div>
 
 
       <div class="card">
+
         <div class="muted">
           Active Members
         </div>
@@ -331,10 +144,12 @@
         >
           —
         </div>
+
       </div>
 
 
       <div class="card">
+
         <div class="muted">
           Inactive Members
         </div>
@@ -345,6 +160,7 @@
         >
           —
         </div>
+
       </div>
 
     </div>
@@ -357,90 +173,104 @@
 
     <section class="card">
 
-      <h2>Add Member</h2>
+      <h2>
+        Add Member
+      </h2>
 
-      <form id="addMemberForm">
+      <form id="memberForm">
 
-        <div class="form-grid">
+        <div class="grid grid-3">
 
-          <div class="form-group">
-            <label for="memberName">
+          <div>
+
+            <label for="name">
               Full Name
             </label>
 
             <input
-              id="memberName"
+              id="name"
               name="name"
               type="text"
               required
             >
+
           </div>
 
 
-          <div class="form-group">
-            <label for="memberNumber">
+          <div>
+
+            <label for="member_number">
               Member Number
             </label>
 
             <input
-              id="memberNumber"
+              id="member_number"
               name="member_number"
               type="text"
               required
             >
+
           </div>
 
 
-          <div class="form-group">
-            <label for="membershipNumber">
+          <div>
+
+            <label for="membership_number">
               Membership Number
             </label>
 
             <input
-              id="membershipNumber"
+              id="membership_number"
               name="membership_number"
               type="text"
               required
             >
+
           </div>
 
 
-          <div class="form-group">
-            <label for="memberPhone">
+          <div>
+
+            <label for="phone">
               Phone
             </label>
 
             <input
-              id="memberPhone"
+              id="phone"
               name="phone"
-              type="text"
+              type="tel"
               required
             >
+
           </div>
 
 
-          <div class="form-group">
-            <label for="memberEmail">
+          <div>
+
+            <label for="email">
               Email
             </label>
 
             <input
-              id="memberEmail"
+              id="email"
               name="email"
               type="email"
             >
+
           </div>
 
 
-          <div class="form-group">
-            <label for="memberRole">
+          <div>
+
+            <label for="role">
               Role
             </label>
 
             <select
-              id="memberRole"
+              id="role"
               name="role"
             >
+
               <option value="member">
                 Member
               </option>
@@ -464,20 +294,24 @@
               <option value="admin">
                 Admin
               </option>
+
             </select>
+
           </div>
 
 
-          <div class="form-group">
-            <label for="joinDate">
+          <div>
+
+            <label for="join_date">
               Join Date
             </label>
 
             <input
-              id="joinDate"
+              id="join_date"
               name="join_date"
               type="date"
             >
+
           </div>
 
         </div>
@@ -488,6 +322,7 @@
         <button
           class="btn"
           type="submit"
+          id="addMemberBtn"
         >
           Add Member
         </button>
@@ -504,7 +339,10 @@
 
     <section class="card">
 
-      <h2>Member Register</h2>
+      <h2>
+        Member Register
+      </h2>
+
 
       <div style="margin-bottom:15px;">
 
@@ -536,13 +374,21 @@
             <tr>
 
               <th>Name</th>
+
               <th>Member No.</th>
+
               <th>Phone</th>
+
               <th>Role</th>
+
               <th>Status</th>
+
               <th>Monthly</th>
+
               <th>Paid</th>
+
               <th>Outstanding</th>
+
               <th>Actions</th>
 
             </tr>
@@ -553,9 +399,11 @@
           <tbody id="memberRows">
 
             <tr>
+
               <td colspan="9">
                 Loading...
               </td>
+
             </tr>
 
           </tbody>
@@ -567,15 +415,26 @@
     </section>
 
 
+    <br>
+
+
     <!-- MEMBER ACCOUNT -->
 
     <section
+      class="card"
       id="memberAccount"
-      class="card member-account"
       hidden
     >
 
-      <div class="account-header">
+      <div
+        style="
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          gap:15px;
+          flex-wrap:wrap;
+        "
+      >
 
         <div>
 
@@ -590,86 +449,11 @@
         </div>
 
 
-        <div>
-
-          <span
-            id="accountStatus"
-            class="account-status"
-          >
-            —
-          </span>
-
-        </div>
-
-      </div>
-
-
-      <div class="account-grid">
-
-        <div class="account-item">
-          <div class="label">
-            Member Number
-          </div>
-
-          <strong id="accountMemberNumber">
-            —
-          </strong>
-        </div>
-
-
-        <div class="account-item">
-          <div class="label">
-            Membership Number
-          </div>
-
-          <strong id="accountMembershipNumber">
-            —
-          </strong>
-        </div>
-
-
-        <div class="account-item">
-          <div class="label">
-            Phone
-          </div>
-
-          <strong id="accountPhone">
-            —
-          </strong>
-        </div>
-
-
-        <div class="account-item">
-          <div class="label">
-            Email
-          </div>
-
-          <strong id="accountEmail">
-            —
-          </strong>
-        </div>
-
-
-        <div class="account-item">
-          <div class="label">
-            Role
-          </div>
-
-          <strong id="accountRole">
-            —
-          </strong>
-        </div>
-
-
-        <div class="account-item">
-          <div class="label">
-            Join Date
-          </div>
-
-          <strong id="accountJoinDate">
-            —
-          </strong>
-        </div>
+        <strong
+          id="accountStatus"
+        >
+          ACTIVE
+        </strong>
 
       </div>
 
@@ -677,48 +461,81 @@
       <hr>
 
 
-      <!-- MONTHLY -->
+      <div class="grid grid-3">
 
-      <h3>
-        Monthly Contribution
-      </h3>
-
-      <div class="monthly-grid">
-
-        <div class="monthly-box">
+        <div>
 
           <div class="muted">
-            Expected
+            Member Number
           </div>
 
-          <strong id="monthlyExpected">
-            KSh 0
+          <strong id="accountMemberNumber">
+            —
           </strong>
 
         </div>
 
 
-        <div class="monthly-box">
+        <div>
 
           <div class="muted">
-            Paid
+            Membership Number
           </div>
 
-          <strong id="monthlyPaid">
-            KSh 0
+          <strong id="accountMembershipNumber">
+            —
           </strong>
 
         </div>
 
 
-        <div class="monthly-box">
+        <div>
 
           <div class="muted">
-            Outstanding
+            Phone
           </div>
 
-          <strong id="monthlyOutstanding">
-            KSh 0
+          <strong id="accountPhone">
+            —
+          </strong>
+
+        </div>
+
+
+        <div>
+
+          <div class="muted">
+            Email
+          </div>
+
+          <strong id="accountEmail">
+            —
+          </strong>
+
+        </div>
+
+
+        <div>
+
+          <div class="muted">
+            Role
+          </div>
+
+          <strong id="accountRole">
+            —
+          </strong>
+
+        </div>
+
+
+        <div>
+
+          <div class="muted">
+            Join Date
+          </div>
+
+          <strong id="accountJoinDate">
+            —
           </strong>
 
         </div>
@@ -726,80 +543,166 @@
       </div>
 
 
-      <p style="margin-top:15px;">
+      <br>
 
-        Monthly Status:
 
-        <strong id="monthlyStatus">
-          OUTSTANDING
-        </strong>
+      <!-- MONTHLY CONTRIBUTION -->
 
-      </p>
+      <section>
+
+        <h3>
+          Monthly Contribution
+        </h3>
+
+
+        <div class="grid grid-3">
+
+          <div>
+
+            <div class="muted">
+              Expected
+            </div>
+
+            <strong id="accountExpected">
+              KSh 0
+            </strong>
+
+          </div>
+
+
+          <div>
+
+            <div class="muted">
+              Paid
+            </div>
+
+            <strong id="accountPaid">
+              KSh 0
+            </strong>
+
+          </div>
+
+
+          <div>
+
+            <div class="muted">
+              Outstanding
+            </div>
+
+            <strong id="accountOutstanding">
+              KSh 0
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <br>
+
+
+        <div>
+
+          <div class="muted">
+            Monthly Status
+          </div>
+
+          <strong id="accountMonthlyStatus">
+            OUTSTANDING
+          </strong>
+
+        </div>
+
+      </section>
+
+
+      <br>
 
 
       <!-- LIFETIME -->
 
-      <div class="card" style="margin-top:20px;">
+      <section>
 
-        <div class="muted">
+        <h3>
           Lifetime Contributions
-        </div>
+        </h3>
 
         <div
           class="metric"
-          id="lifetimeContributions"
+          id="accountLifetime"
         >
           KSh 0
         </div>
 
-      </div>
+      </section>
 
 
-      <!-- HISTORY -->
-
-      <h3 style="margin-top:25px;">
-        Contribution History
-      </h3>
-
-      <div class="table-wrap">
-
-        <table class="table">
-
-          <thead>
-
-            <tr>
-
-              <th>Date</th>
-              <th>Amount</th>
-              <th>Type</th>
-              <th>Method</th>
-              <th>Reference</th>
-
-            </tr>
-
-          </thead>
+      <br>
 
 
-          <tbody id="historyRows">
+      <!-- CONTRIBUTION HISTORY -->
 
-            <tr>
+      <section>
 
-              <td colspan="5">
-                No contributions recorded.
-              </td>
-
-            </tr>
-
-          </tbody>
-
-        </table>
-
-      </div>
+        <h3>
+          Contribution History
+        </h3>
 
 
-      <!-- ACTIONS -->
+        <div class="table-wrap">
 
-      <div class="account-actions">
+          <table class="table">
+
+            <thead>
+
+              <tr>
+
+                <th>Date</th>
+
+                <th>Amount</th>
+
+                <th>Type</th>
+
+                <th>Method</th>
+
+                <th>Reference</th>
+
+              </tr>
+
+            </thead>
+
+
+            <tbody id="accountContributionRows">
+
+              <tr>
+
+                <td colspan="5">
+                  No contributions recorded.
+                </td>
+
+              </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </section>
+
+
+      <br>
+
+
+      <!-- ACCOUNT ACTIONS -->
+
+      <div
+        style="
+          display:flex;
+          gap:10px;
+          flex-wrap:wrap;
+        "
+      >
 
         <button
           class="btn"
@@ -829,307 +732,186 @@
 
       </div>
 
-
-      <!-- EDIT MEMBER -->
-
-      <div
-        id="editPanel"
-        class="edit-panel"
-      >
-
-        <h3>
-          Edit Member
-        </h3>
+    </section>
 
 
-        <form id="editMemberForm">
-
-          <div class="form-grid">
-
-            <div class="form-group">
-              <label for="editName">
-                Full Name
-              </label>
-
-              <input
-                id="editName"
-                type="text"
-                required
-              >
-            </div>
+    <br>
 
 
-            <div class="form-group">
-              <label for="editMemberNumber">
-                Member Number
-              </label>
+    <!-- EDIT MEMBER -->
 
-              <input
-                id="editMemberNumber"
-                type="text"
-                required
-              >
-            </div>
+    <section
+      class="card"
+      id="editMemberSection"
+      hidden
+    >
 
-
-            <div class="form-group">
-              <label for="editMembershipNumber">
-                Membership Number
-              </label>
-
-              <input
-                id="editMembershipNumber"
-                type="text"
-                required
-              >
-            </div>
+      <h2>
+        Edit Member
+      </h2>
 
 
-            <div class="form-group">
-              <label for="editPhone">
-                Phone
-              </label>
+      <form id="editMemberForm">
 
-              <input
-                id="editPhone"
-                type="text"
-                required
-              >
-            </div>
+        <input
+          type="hidden"
+          id="edit_id"
+        >
 
 
-            <div class="form-group">
-              <label for="editEmail">
-                Email
-              </label>
+        <div class="grid grid-3">
 
-              <input
-                id="editEmail"
-                type="email"
-              >
-            </div>
+          <div>
 
+            <label for="edit_name">
+              Full Name
+            </label>
 
-            <div class="form-group">
-              <label for="editRole">
-                Role
-              </label>
-
-              <select id="editRole">
-
-                <option value="member">
-                  Member
-                </option>
-
-                <option value="chairperson">
-                  Chairperson
-                </option>
-
-                <option value="secretary">
-                  Secretary
-                </option>
-
-                <option value="treasurer">
-                  Treasurer
-                </option>
-
-                <option value="official">
-                  Official
-                </option>
-
-                <option value="admin">
-                  Admin
-                </option>
-
-              </select>
-
-            </div>
-
-
-            <div class="form-group">
-              <label for="editJoinDate">
-                Join Date
-              </label>
-
-              <input
-                id="editJoinDate"
-                type="date"
-              >
-            </div>
+            <input
+              id="edit_name"
+              type="text"
+              required
+            >
 
           </div>
 
 
-          <br>
+          <div>
+
+            <label for="edit_member_number">
+              Member Number
+            </label>
+
+            <input
+              id="edit_member_number"
+              type="text"
+              required
+            >
+
+          </div>
 
 
-          <button
-            class="btn"
-            type="submit"
-          >
-            Save Changes
-          </button>
+          <div>
+
+            <label for="edit_membership_number">
+              Membership Number
+            </label>
+
+            <input
+              id="edit_membership_number"
+              type="text"
+              required
+            >
+
+          </div>
 
 
-          <button
-            class="btn btn-secondary"
-            id="cancelEditBtn"
-            type="button"
-          >
-            Cancel
-          </button>
+          <div>
 
-        </form>
+            <label for="edit_phone">
+              Phone
+            </label>
 
-      </div>
+            <input
+              id="edit_phone"
+              type="tel"
+              required
+            >
+
+          </div>
+
+
+          <div>
+
+            <label for="edit_email">
+              Email
+            </label>
+
+            <input
+              id="edit_email"
+              type="email"
+            >
+
+          </div>
+
+
+          <div>
+
+            <label for="edit_role">
+              Role
+            </label>
+
+            <select id="edit_role">
+
+              <option value="member">
+                Member
+              </option>
+
+              <option value="chairperson">
+                Chairperson
+              </option>
+
+              <option value="secretary">
+                Secretary
+              </option>
+
+              <option value="treasurer">
+                Treasurer
+              </option>
+
+              <option value="official">
+                Official
+              </option>
+
+              <option value="admin">
+                Admin
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div>
+
+            <label for="edit_join_date">
+              Join Date
+            </label>
+
+            <input
+              id="edit_join_date"
+              type="date"
+            >
+
+          </div>
+
+        </div>
+
+
+        <br>
+
+
+        <button
+          class="btn"
+          type="submit"
+        >
+          Save Changes
+        </button>
+
+
+        <button
+          class="btn btn-secondary"
+          type="button"
+          id="cancelEditBtn"
+        >
+          Cancel
+        </button>
+
+      </form>
 
     </section>
 
   </main>
-
-</div>
-
-
-<!-- PRINT STATEMENT -->
-
-<div
-  id="printStatement"
-  class="statement-print"
->
-
-  <h1 id="printGroupName">
-    CHAMA LIVE
-  </h1>
-
-  <h2>
-    Member Contribution Statement
-  </h2>
-
-  <hr>
-
-
-  <p>
-    <strong>Member:</strong>
-    <span id="printName">—</span>
-  </p>
-
-  <p>
-    <strong>Member Number:</strong>
-    <span id="printMemberNumber">—</span>
-  </p>
-
-  <p>
-    <strong>Membership Number:</strong>
-    <span id="printMembershipNumber">—</span>
-  </p>
-
-  <p>
-    <strong>Phone:</strong>
-    <span id="printPhone">—</span>
-  </p>
-
-  <p>
-    <strong>Email:</strong>
-    <span id="printEmail">—</span>
-  </p>
-
-  <p>
-    <strong>Status:</strong>
-    <span id="printStatus">—</span>
-  </p>
-
-
-  <hr>
-
-
-  <h3>
-    Current Month
-  </h3>
-
-  <p>
-    Expected:
-    <strong id="printExpected">
-      KSh 0
-    </strong>
-  </p>
-
-  <p>
-    Paid:
-    <strong id="printPaid">
-      KSh 0
-    </strong>
-  </p>
-
-  <p>
-    Outstanding:
-    <strong id="printOutstanding">
-      KSh 0
-    </strong>
-  </p>
-
-
-  <h3>
-    Contribution History
-  </h3>
-
-
-  <table
-    style="
-      width:100%;
-      border-collapse:collapse;
-      margin-top:10px;
-    "
-  >
-
-    <thead>
-
-      <tr>
-
-        <th style="border:1px solid #000;padding:7px;text-align:left;">
-          Date
-        </th>
-
-        <th style="border:1px solid #000;padding:7px;text-align:right;">
-          Amount
-        </th>
-
-        <th style="border:1px solid #000;padding:7px;text-align:left;">
-          Type
-        </th>
-
-        <th style="border:1px solid #000;padding:7px;text-align:left;">
-          Method
-        </th>
-
-        <th style="border:1px solid #000;padding:7px;text-align:left;">
-          Reference
-        </th>
-
-      </tr>
-
-    </thead>
-
-
-    <tbody id="printHistoryRows"></tbody>
-
-  </table>
-
-
-  <h3 style="margin-top:25px;">
-    Lifetime Contributions:
-    <span id="printLifetime">
-      KSh 0
-    </span>
-  </h3>
-
-
-  <hr>
-
-  <p>
-    Statement generated by CHAMA LIVE
-  </p>
-
-  <p id="printDate"></p>
 
 </div>
 
