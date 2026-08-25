@@ -1,1268 +1,673 @@
-import { supabase } from "./supabase.js";
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Reports — CHAMA LIVE</title>
 
+  <link rel="stylesheet" href="css/app.css">
 
-/* =======================================================
-   ELEMENTS
-======================================================= */
-
-const statusEl =
-  document.getElementById("status");
-
-const errorEl =
-  document.getElementById("error");
-
-
-/* Financial metrics */
-
-const activeMembersEl =
-  document.getElementById(
-    "activeMembers"
-  );
-
-const totalMembersEl =
-  document.getElementById(
-    "totalMembers"
-  );
-
-const contributionsEl =
-  document.getElementById(
-    "contributions"
-  );
-
-const approvedExpensesEl =
-  document.getElementById(
-    "approvedExpenses"
-  );
-
-const pendingExpensesEl =
-  document.getElementById(
-    "pendingExpenses"
-  );
-
-const currentBalanceEl =
-  document.getElementById(
-    "currentBalance"
-  );
-
-
-/* Financial position */
-
-const openingEl =
-  document.getElementById(
-    "opening"
-  );
-
-const contributions2El =
-  document.getElementById(
-    "contributions2"
-  );
-
-const expenses2El =
-  document.getElementById(
-    "expenses2"
-  );
-
-const balanceEl =
-  document.getElementById(
-    "balance"
-  );
-
-
-/* Monthly summary */
-
-const reportMonthEl =
-  document.getElementById(
-    "reportMonth"
-  );
-
-const monthlyExpectedEl =
-  document.getElementById(
-    "monthlyExpected"
-  );
-
-const monthlyCollectedEl =
-  document.getElementById(
-    "monthlyCollected"
-  );
-
-const monthlyOutstandingEl =
-  document.getElementById(
-    "monthlyOutstanding"
-  );
-
-const membersPaidEl =
-  document.getElementById(
-    "membersPaid"
-  );
-
-const membersPartialEl =
-  document.getElementById(
-    "membersPartial"
-  );
-
-const collectionRateEl =
-  document.getElementById(
-    "collectionRate"
-  );
-
-
-/* Tables */
-
-const contributionRows =
-  document.getElementById(
-    "contributionRows"
-  );
-
-const expenseRows =
-  document.getElementById(
-    "expenseRows"
-  );
-
-
-/* Meetings */
-
-const upcomingMeetingsEl =
-  document.getElementById(
-    "upcomingMeetings"
-  );
-
-const completedMeetingsEl =
-  document.getElementById(
-    "completedMeetings"
-  );
-
-const cancelledMeetingsEl =
-  document.getElementById(
-    "cancelledMeetings"
-  );
-
-
-/* =======================================================
-   STATE
-======================================================= */
-
-let groupId = null;
-
-let group = null;
-
-let members = [];
-
-let contributions = [];
-
-let expenses = [];
-
-let meetings = [];
-
-
-/* =======================================================
-   HELPERS
-======================================================= */
-
-function money(value) {
-
-  return new Intl.NumberFormat(
-    "en-KE",
-    {
-      style: "currency",
-      currency: "KES",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2
+  <style>
+    .report-controls {
+      display:flex;
+      gap:12px;
+      align-items:end;
+      flex-wrap:wrap;
     }
-  ).format(
-    Number(value || 0)
-  );
 
-}
-
-
-function formatDate(value) {
-
-  if (!value) {
-    return "—";
-  }
-
-  const date =
-    new Date(value);
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-    return value;
-  }
-
-  return date.toLocaleDateString(
-    "en-KE",
-    {
-      year: "numeric",
-      month: "short",
-      day: "numeric"
+    .report-controls label {
+      display:flex;
+      flex-direction:column;
+      gap:6px;
     }
-  );
 
-}
+    .report-grid {
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:16px;
+    }
 
+    .report-card {
+      padding:20px;
+      border:1px solid #e5e7eb;
+      border-radius:12px;
+      background:#fff;
+    }
 
-function escapeHtml(value) {
+    .report-card .value {
+      font-size:24px;
+      font-weight:700;
+      margin-top:8px;
+    }
 
-  if (
-    value === null ||
-    value === undefined
-  ) {
-    return "";
-  }
+    .table-wrap {
+      overflow-x:auto;
+    }
 
-  return String(value)
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
+    .status-paid {
+      font-weight:700;
+    }
 
-}
+    .status-outstanding {
+      font-weight:700;
+    }
 
+    .status-partial {
+      font-weight:700;
+    }
 
-/* =======================================================
-   ERROR HANDLING
-======================================================= */
+    .report-actions {
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:15px;
+    }
 
-function showError(error) {
-
-  console.error(
-    "CHAMA LIVE Reports Error:",
-    error
-  );
-
-  errorEl.textContent =
-    error?.message ||
-    "Unable to load reports.";
-
-  errorEl.hidden = false;
-
-  statusEl.textContent =
-    "Unable to load reports.";
-
-}
-
-
-/* =======================================================
-   GET CURRENT USER GROUP
-======================================================= */
-
-async function getGroupId() {
-
-  const {
-    data,
-    error
-  } = await supabase.rpc(
-    "my_group_id"
-  );
-
-  if (error) {
-    throw error;
-  }
-
-  if (!data) {
-
-    throw new Error(
-      "No group is associated with your account."
-    );
-
-  }
-
-  return data;
-
-}
-
-
-/* =======================================================
-   LOAD GROUP
-======================================================= */
-
-async function loadGroup() {
-
-  const {
-    data,
-    error
-  } = await supabase
-    .from("groups")
-    .select(`
-      id,
-      name,
-      monthly_contribution,
-      opening_balance
-    `)
-    .eq(
-      "id",
-      groupId
-    )
-    .single();
-
-  if (error) {
-    throw error;
-  }
-
-  group =
-    data;
-
-}
-
-
-/* =======================================================
-   LOAD MEMBERS
-======================================================= */
-
-async function loadMembers() {
-
-  const {
-    data,
-    error
-  } = await supabase
-    .from("members")
-    .select(`
-      id,
-      name,
-      status
-    `)
-    .eq(
-      "group_id",
-      groupId
-    );
-
-  if (error) {
-    throw error;
-  }
-
-  members =
-    data || [];
-
-}
-
-
-/* =======================================================
-   LOAD CONTRIBUTIONS
-======================================================= */
-
-async function loadContributions() {
-
-  const {
-    data,
-    error
-  } = await supabase
-    .from("contributions")
-    .select(`
-      id,
-      group_id,
-      member_id,
-      amount,
-      contribution_type,
-      month,
-      payment_method,
-      reference,
-      contribution_date,
-      mpesa_reference,
-      created_at
-    `)
-    .eq(
-      "group_id",
-      groupId
-    )
-    .order(
-      "contribution_date",
-      {
-        ascending: false
+    @media(max-width:800px) {
+      .report-grid {
+        grid-template-columns:1fr;
       }
-    )
-    .order(
-      "created_at",
-      {
-        ascending: false
+    }
+
+    @media print {
+      .sidebar,
+      .topbar,
+      .report-controls,
+      .report-actions,
+      #status,
+      #error {
+        display:none !important;
       }
-    );
 
-  if (error) {
-    throw error;
-  }
-
-  contributions =
-    data || [];
-
-}
-
-
-/* =======================================================
-   LOAD EXPENSES
-======================================================= */
-
-async function loadExpenses() {
-
-  const {
-    data,
-    error
-  } = await supabase
-    .from("expenses")
-    .select(`
-      id,
-      group_id,
-      description,
-      category,
-      amount,
-      date,
-      approval_status,
-      created_at
-    `)
-    .eq(
-      "group_id",
-      groupId
-    )
-    .order(
-      "date",
-      {
-        ascending: false
+      .main {
+        margin:0 !important;
+        width:100% !important;
       }
-    )
-    .order(
-      "created_at",
-      {
-        ascending: false
+
+      .card,
+      .report-card {
+        break-inside:avoid;
       }
-    );
-
-  if (error) {
-    throw error;
-  }
-
-  expenses =
-    data || [];
-
-}
-
-
-/* =======================================================
-   LOAD MEETINGS
-======================================================= */
-
-async function loadMeetings() {
-
-  const {
-    data,
-    error
-  } = await supabase
-    .from("meetings")
-    .select(`
-      id,
-      group_id,
-      title,
-      date,
-      venue,
-      status,
-      created_at
-    `)
-    .eq(
-      "group_id",
-      groupId
-    )
-    .order(
-      "date",
-      {
-        ascending: true
-      }
-    );
-
-  if (error) {
-    throw error;
-  }
-
-  meetings =
-    data || [];
-
-}
-
-
-/* =======================================================
-   ACTIVE MEMBERS
-======================================================= */
-
-function getActiveMembers() {
-
-  return members.filter(
-    member =>
-      String(
-        member.status || ""
-      ).toLowerCase() ===
-      "active"
-  );
-
-}
-
-
-/* =======================================================
-   TOTAL CONTRIBUTIONS
-======================================================= */
-
-function getTotalContributions() {
-
-  return contributions.reduce(
-    (
-      total,
-      item
-    ) =>
-      total +
-      Number(
-        item.amount || 0
-      ),
-    0
-  );
-
-}
-
-
-/* =======================================================
-   APPROVED EXPENSES
-======================================================= */
-
-function getApprovedExpenses() {
-
-  return expenses
-    .filter(
-      expense =>
-        String(
-          expense.approval_status || ""
-        ).toLowerCase() ===
-        "approved"
-    )
-    .reduce(
-      (
-        total,
-        expense
-      ) =>
-        total +
-        Number(
-          expense.amount || 0
-        ),
-      0
-    );
-
-}
-
-
-/* =======================================================
-   PENDING EXPENSES
-======================================================= */
-
-function getPendingExpenses() {
-
-  return expenses
-    .filter(
-      expense =>
-        String(
-          expense.approval_status || ""
-        ).toLowerCase() ===
-        "pending"
-    )
-    .reduce(
-      (
-        total,
-        expense
-      ) =>
-        total +
-        Number(
-          expense.amount || 0
-        ),
-      0
-    );
-
-}
-
-
-/* =======================================================
-   CURRENT BALANCE
-======================================================= */
-
-function getCurrentBalance() {
-
-  const opening =
-    Number(
-      group?.opening_balance ||
-      0
-    );
+    }
+  </style>
+</head>
 
-  const contributionsTotal =
-    getTotalContributions();
+<body>
 
-  const approvedExpenses =
-    getApprovedExpenses();
-
-  return (
-    opening +
-    contributionsTotal -
-    approvedExpenses
-  );
-
-}
-
-
-/* =======================================================
-   RENDER FINANCIAL METRICS
-======================================================= */
-
-function renderMetrics() {
-
-  const activeMembers =
-    getActiveMembers();
+<header class="topbar">
 
-  const totalMembers =
-    members.length;
+  <div class="brand">
+    CHAMA <span>LIVE</span>
+  </div>
 
-  const contributionTotal =
-    getTotalContributions();
+  <button
+    class="btn btn-secondary"
+    id="logout"
+    type="button"
+  >
+    Sign out
+  </button>
 
-  const approvedExpenses =
-    getApprovedExpenses();
+</header>
 
-  const pendingExpenses =
-    getPendingExpenses();
+<div class="layout">
 
-  const opening =
-    Number(
-      group?.opening_balance ||
-      0
-    );
+  <aside class="sidebar">
 
-  const balance =
-    getCurrentBalance();
+    <nav class="nav">
 
+      <a href="dashboard.html">
+        Dashboard
+      </a>
 
-  activeMembersEl.textContent =
-    activeMembers.length;
+      <a href="members.html">
+        Members
+      </a>
 
-  totalMembersEl.textContent =
-    totalMembers;
+      <a href="contributions.html">
+        Contributions
+      </a>
 
-  contributionsEl.textContent =
-    money(
-      contributionTotal
-    );
-
-  approvedExpensesEl.textContent =
-    money(
-      approvedExpenses
-    );
+      <a href="expenses.html">
+        Expenses
+      </a>
 
-  pendingExpensesEl.textContent =
-    money(
-      pendingExpenses
-    );
+      <a href="meetings.html">
+        Meetings
+      </a>
 
-  currentBalanceEl.textContent =
-    money(
-      balance
-    );
+      <a
+        href="reports.html"
+        class="active"
+      >
+        Reports
+      </a>
 
+      <a href="monthly-closing.html">
+        Monthly Closing
+      </a>
 
-  /* Financial Position */
+      <a href="group-management.html">
+        Group Management
+      </a>
 
-  openingEl.textContent =
-    money(
-      opening
-    );
+    </nav>
 
-  contributions2El.textContent =
-    money(
-      contributionTotal
-    );
-
-  expenses2El.textContent =
-    money(
-      approvedExpenses
-    );
-
-  balanceEl.textContent =
-    money(
-      balance
-    );
-
-}
-
-
-/* =======================================================
-   GET MEMBER NAME
-======================================================= */
-
-function getMemberName(
-  memberId
-) {
-
-  const member =
-    members.find(
-      item =>
-        item.id ===
-        memberId
-    );
-
-  return (
-    member?.name ||
-    "Unknown member"
-  );
-
-}
-
-
-/* =======================================================
-   RENDER CONTRIBUTION LEDGER
-======================================================= */
-
-function renderContributions() {
-
-  if (
-    !contributions.length
-  ) {
-
-    contributionRows.innerHTML = `
-      <tr>
-        <td colspan="6">
-          No contributions recorded yet.
-        </td>
-      </tr>
-    `;
-
-    return;
-
-  }
-
-
-  contributionRows.innerHTML =
-    contributions
-      .slice(0, 20)
-      .map(
-        item => {
-
-          const date =
-            item.contribution_date ||
-            item.created_at ||
-            (
-              item.month
-                ? `${item.month}-01`
-                : null
-            );
-
-
-          const reference =
-            item.mpesa_reference ||
-            item.reference ||
-            "—";
-
-
-          return `
-            <tr>
-
-              <td>
-                ${escapeHtml(
-                  formatDate(date)
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  getMemberName(
-                    item.member_id
-                  )
-                )}
-              </td>
-
-              <td>
-                <strong>
-                  ${escapeHtml(
-                    money(
-                      item.amount
-                    )
-                  )}
-                </strong>
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  item.contribution_type ||
-                  "—"
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  item.payment_method ||
-                  "—"
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  reference
-                )}
-              </td>
-
-            </tr>
-          `;
-
-        }
-      )
-      .join("");
-
-}
-
-
-/* =======================================================
-   RENDER EXPENSES
-======================================================= */
-
-function renderExpenses() {
-
-  if (
-    !expenses.length
-  ) {
-
-    expenseRows.innerHTML = `
-      <tr>
-        <td colspan="5">
-          No expenses recorded yet.
-        </td>
-      </tr>
-    `;
-
-    return;
-
-  }
-
+  </aside>
 
-  expenseRows.innerHTML =
-    expenses
-      .slice(0, 20)
-      .map(
-        expense => {
+  <main class="main">
 
-          return `
-            <tr>
+    <div class="page-head">
 
-              <td>
-                ${escapeHtml(
-                  formatDate(
-                    expense.date
-                  )
-                )}
-              </td>
+      <div>
 
-              <td>
-                ${escapeHtml(
-                  expense.description
-                )}
-              </td>
+        <h1>
+          Reports
+        </h1>
 
-              <td>
-                ${escapeHtml(
-                  expense.category
-                )}
-              </td>
+        <p class="muted">
+          View your group's financial and
+          member contribution reports.
+        </p>
 
-              <td>
-                <strong>
-                  ${escapeHtml(
-                    money(
-                      expense.amount
-                    )
-                  )}
-                </strong>
-              </td>
+      </div>
 
-              <td>
-                ${escapeHtml(
-                  expense.approval_status
-                )}
-              </td>
+      <div class="report-controls">
 
-            </tr>
-          `;
+        <label>
 
-        }
-      )
-      .join("");
+          <span class="muted">
+            Month
+          </span>
 
-}
+          <input
+            type="month"
+            id="month"
+          >
 
-
-/* =======================================================
-   MONTHLY CONTRIBUTION SUMMARY
-======================================================= */
+        </label>
 
-function renderMonthlyContributionSummary() {
+        <button
+          class="btn btn-primary"
+          id="loadReport"
+          type="button"
+        >
+          Load Report
+        </button>
 
-  const activeMembers =
-    getActiveMembers();
+      </div>
 
+    </div>
 
-  const expectedPerMember =
-    Number(
-      group?.monthly_contribution ||
-      0
-    );
-
+    <div
+      id="status"
+      class="card"
+      style="margin-bottom:20px;"
+    >
+      Loading report...
+    </div>
 
-  /* Current month */
+    <div
+      id="error"
+      class="error"
+      hidden
+      style="margin-bottom:20px;"
+    ></div>
 
-  const now =
-    new Date();
 
+    <!-- FINANCIAL SUMMARY -->
 
-  const currentMonth =
-    `${now.getFullYear()}-${String(
-      now.getMonth() + 1
-    ).padStart(2, "0")}`;
+    <section class="card">
 
+      <h2>
+        Financial Summary
+      </h2>
 
-  const monthName =
-    now.toLocaleDateString(
-      "en-KE",
-      {
-        month: "long",
-        year: "numeric"
-      }
-    );
+      <div class="report-grid">
 
+        <div class="report-card">
 
-  /*
-    Expected contribution.
+          <div class="muted">
+            Opening Balance
+          </div>
 
-    Example:
-
-    3 members × KSh 200
-    = KSh 600
-  */
-
-  const expected =
-    expectedPerMember *
-    activeMembers.length;
-
-
-  /*
-    Only monthly contributions
-    for the current month.
-  */
-
-  const monthlyContributions =
-    contributions.filter(
-      item => {
-
-        return (
-
-          String(
-            item.contribution_type ||
-            ""
-          ).toLowerCase() ===
-          "monthly"
-
-          &&
-
-          String(
-            item.month ||
-            ""
-          ) ===
-          currentMonth
-
-        );
-
-      }
-    );
-
-
-  /*
-    Total collected.
-  */
-
-  const collected =
-    monthlyContributions.reduce(
-      (
-        total,
-        item
-      ) =>
-        total +
-        Number(
-          item.amount || 0
-        ),
-      0
-    );
-
-
-  /*
-    Outstanding.
-
-    Never display a negative
-    outstanding amount.
-  */
-
-  const outstanding =
-    Math.max(
-      expected -
-      collected,
-      0
-    );
-
-
-  /*
-    Member statuses.
-  */
-
-  let paidCount = 0;
-
-  let partialCount = 0;
-
-
-  activeMembers.forEach(
-    member => {
-
-      const paid =
-        monthlyContributions
-          .filter(
-            item =>
-              item.member_id ===
-              member.id
-          )
-          .reduce(
-            (
-              total,
-              item
-            ) =>
-              total +
-              Number(
-                item.amount || 0
-              ),
+          <div
+            class="value"
+            id="openingBalance"
+          >
+            KSh 0.00
+          </div>
+
+        </div>
+
+        <div class="report-card">
+
+          <div class="muted">
+            Expected Contributions
+          </div>
+
+          <div
+            class="value"
+            id="expected"
+          >
+            KSh 0.00
+          </div>
+
+        </div>
+
+        <div class="report-card">
+
+          <div class="muted">
+            Contributions Collected
+          </div>
+
+          <div
+            class="value"
+            id="collected"
+          >
+            KSh 0.00
+          </div>
+
+        </div>
+
+        <div class="report-card">
+
+          <div class="muted">
+            Outstanding
+          </div>
+
+          <div
+            class="value"
+            id="outstanding"
+          >
+            KSh 0.00
+          </div>
+
+        </div>
+
+        <div class="report-card">
+
+          <div class="muted">
+            Approved Expenses
+          </div>
+
+          <div
+            class="value"
+            id="expenses"
+          >
+            KSh 0.00
+          </div>
+
+        </div>
+
+        <div class="report-card">
+
+          <div class="muted">
+            Closing Balance
+          </div>
+
+          <div
+            class="value"
+            id="closingBalance"
+          >
+            KSh 0.00
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <br>
+
+
+    <!-- CONTRIBUTION STATISTICS -->
+
+    <section class="card">
+
+      <h2>
+        Contribution Statistics
+      </h2>
+
+      <div class="report-grid">
+
+        <div class="report-card">
+
+          <div class="muted">
+            Active Members
+          </div>
+
+          <div
+            class="value"
+            id="memberCount"
+          >
             0
-          );
+          </div>
 
+        </div>
 
-      if (
-        expectedPerMember > 0 &&
-        paid >=
-          expectedPerMember
-      ) {
+        <div class="report-card">
 
-        paidCount++;
+          <div class="muted">
+            Members Paid
+          </div>
 
-      }
-      else if (
-        paid > 0
-      ) {
+          <div
+            class="value"
+            id="paidMembers"
+          >
+            0
+          </div>
 
-        partialCount++;
+        </div>
 
-      }
+        <div class="report-card">
 
-    }
-  );
+          <div class="muted">
+            Partial Payments
+          </div>
 
+          <div
+            class="value"
+            id="partialMembers"
+          >
+            0
+          </div>
 
-  /*
-    Collection rate.
-  */
+        </div>
 
-  const collectionRate =
-    expected > 0
-      ? (
-          collected /
-          expected
-        ) * 100
-      : 0;
+        <div class="report-card">
 
+          <div class="muted">
+            Outstanding Members
+          </div>
 
-  /*
-    Update UI.
-  */
+          <div
+            class="value"
+            id="outstandingMembers"
+          >
+            0
+          </div>
 
-  reportMonthEl.textContent =
-    monthName;
+        </div>
 
+        <div class="report-card">
 
-  monthlyExpectedEl.textContent =
-    money(
-      expected
-    );
+          <div class="muted">
+            Collection Rate
+          </div>
 
+          <div
+            class="value"
+            id="collectionRate"
+          >
+            0%
+          </div>
 
-  monthlyCollectedEl.textContent =
-    money(
-      collected
-    );
+        </div>
 
+        <div class="report-card">
 
-  monthlyOutstandingEl.textContent =
-    money(
-      outstanding
-    );
+          <div class="muted">
+            Period Status
+          </div>
 
+          <div
+            class="value"
+            id="periodStatus"
+          >
+            OPEN
+          </div>
 
-  membersPaidEl.textContent =
-    `${paidCount} / ${activeMembers.length}`;
+        </div>
 
+      </div>
 
-  membersPartialEl.textContent =
-    partialCount;
+    </section>
 
+    <br>
 
-  collectionRateEl.textContent =
-    `${collectionRate.toFixed(1)}%`;
 
-}
+    <!-- CASHBOOK -->
 
+    <section class="card">
 
-/* =======================================================
-   MEETINGS SUMMARY
-======================================================= */
+      <h2>
+        Cashbook
+      </h2>
 
-function renderMeetings() {
+      <div class="table-wrap">
 
-  const upcoming =
-    meetings.filter(
-      meeting =>
-        String(
-          meeting.status || ""
-        ).toLowerCase() ===
-        "upcoming"
-    ).length;
+        <table class="table">
 
+          <thead>
 
-  const completed =
-    meetings.filter(
-      meeting =>
-        String(
-          meeting.status || ""
-        ).toLowerCase() ===
-        "completed"
-    ).length;
+            <tr>
 
+              <th>
+                Date
+              </th>
 
-  const cancelled =
-    meetings.filter(
-      meeting =>
-        String(
-          meeting.status || ""
-        ).toLowerCase() ===
-        "cancelled"
-    ).length;
+              <th>
+                Description
+              </th>
 
+              <th>
+                Type
+              </th>
 
-  upcomingMeetingsEl.textContent =
-    upcoming;
+              <th>
+                Method
+              </th>
 
-  completedMeetingsEl.textContent =
-    completed;
+              <th>
+                Reference
+              </th>
 
-  cancelledMeetingsEl.textContent =
-    cancelled;
+              <th>
+                Amount
+              </th>
 
-}
+            </tr>
 
+          </thead>
 
-/* =======================================================
-   INITIALIZE
-======================================================= */
+          <tbody id="cashbookRows">
 
-async function init() {
+            <tr>
+              <td colspan="6">
+                Loading...
+              </td>
+            </tr>
 
-  try {
+          </tbody>
 
-    errorEl.hidden =
-      true;
+        </table>
 
-    errorEl.textContent =
-      "";
+      </div>
 
-    statusEl.textContent =
-      "Loading reports...";
+    </section>
 
+    <br>
 
-    /*
-      Get current group.
-    */
 
-    groupId =
-      await getGroupId();
+    <!-- MEMBER CONTRIBUTIONS -->
 
+    <section class="card">
 
-    /*
-      Load all live data.
-    */
+      <h2>
+        Member Contribution Report
+      </h2>
 
-    await Promise.all([
+      <div class="table-wrap">
 
-      loadGroup(),
+        <table class="table">
 
-      loadMembers(),
+          <thead>
 
-      loadContributions(),
+            <tr>
 
-      loadExpenses(),
+              <th>
+                Member
+              </th>
 
-      loadMeetings()
+              <th>
+                Member No.
+              </th>
 
-    ]);
+              <th>
+                Expected
+              </th>
 
+              <th>
+                Paid
+              </th>
 
-    /*
-      Render report.
-    */
+              <th>
+                Outstanding
+              </th>
 
-    renderMetrics();
+              <th>
+                Status
+              </th>
 
-    renderMonthlyContributionSummary();
+            </tr>
 
-    renderContributions();
+          </thead>
 
-    renderExpenses();
+          <tbody id="memberRows">
 
-    renderMeetings();
+            <tr>
 
+              <td colspan="6">
+                Loading...
+              </td>
 
-    /*
-      Timestamp.
-    */
+            </tr>
 
-    const now =
-      new Date();
+          </tbody>
 
+        </table>
 
-    statusEl.textContent =
-      `Reports updated • ${now.toLocaleString(
-        "en-KE"
-      )}`;
+      </div>
 
+    </section>
 
-  }
-  catch (error) {
+    <br>
 
-    showError(
-      error
-    );
 
-  }
+    <!-- EXPENSE REPORT -->
 
-}
+    <section class="card">
 
+      <h2>
+        Expense Report
+      </h2>
 
-/* =======================================================
-   START
-======================================================= */
+      <div class="table-wrap">
 
-init();
+        <table class="table">
+
+          <thead>
+
+            <tr>
+
+              <th>
+                Date
+              </th>
+
+              <th>
+                Description
+              </th>
+
+              <th>
+                Category
+              </th>
+
+              <th>
+                Amount
+              </th>
+
+              <th>
+                Status
+              </th>
+
+            </tr>
+
+          </thead>
+
+          <tbody id="expenseRows">
+
+            <tr>
+
+              <td colspan="5">
+                Loading...
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+    <br>
+
+
+    <!-- ACTIONS -->
+
+    <section class="card">
+
+      <h2>
+        Report Actions
+      </h2>
+
+      <p class="muted">
+        Print the complete monthly financial report.
+      </p>
+
+      <div class="report-actions">
+
+        <button
+          class="btn btn-primary"
+          id="printReport"
+          type="button"
+        >
+          Print Report
+        </button>
+
+        <button
+          class="btn btn-secondary"
+          id="monthlyClosing"
+          type="button"
+        >
+          Monthly Closing
+        </button>
+
+      </div>
+
+    </section>
+
+  </main>
+
+</div>
+
+
+<script type="module">
+
+  import {
+    boot
+  } from "./js/layout.js";
+
+  await boot();
+
+  import "./js/reports.js";
+
+</script>
+
+</body>
+</html>
