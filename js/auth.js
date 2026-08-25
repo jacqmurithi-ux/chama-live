@@ -1,58 +1,77 @@
+
 import { supabase } from "./supabase.js";
 
 /*
-=========================================================
- CHAMA LIVE AUTHENTICATION + RBAC
-=========================================================
+=====================================================
+ CHAMA LIVE AUTH + RBAC
+=====================================================
 
-Database member structure expected:
+Database model assumed:
 
 members
 ---------
 id
 group_id
-auth_user_id
+user_id / auth_user_id
 member_number
 name
 phone
 email
 role
 status
-join_date
 
-Supported application roles:
-
-admin
-chairperson
-treasurer
-secretary
-member
+Roles:
+- admin
+- chairperson
+- treasurer
+- secretary
+- member
+- other
 
 IMPORTANT:
-The role comes from the database members table.
-Do NOT use user_metadata for authorization.
-=========================================================
+Authorization is determined from the members table,
+NOT from user-editable user_metadata.
 */
 
 
 /* =====================================================
-   CONSTANTS
+   ROLE DEFINITIONS
 ===================================================== */
 
-const LOGIN_PAGE = "login.html";
-const DASHBOARD_PAGE = "dashboard.html";
+export const ROLES = {
+  ADMIN: "admin",
+  CHAIRPERSON: "chairperson",
+  TREASURER: "treasurer",
+  SECRETARY: "secretary",
+  MEMBER: "member"
+};
 
-const VALID_ROLES = [
-  "admin",
-  "chairperson",
-  "treasurer",
-  "secretary",
-  "member"
+
+/* =====================================================
+   ROLE GROUPS
+===================================================== */
+
+export const MANAGEMENT_ROLES = [
+  ROLES.ADMIN,
+  ROLES.CHAIRPERSON
+];
+
+export const FINANCE_ROLES = [
+  ROLES.ADMIN,
+  ROLES.CHAIRPERSON,
+  ROLES.TREASURER
+];
+
+export const RECORD_ROLES = [
+  ROLES.ADMIN,
+  ROLES.CHAIRPERSON,
+  ROLES.SECRETARY,
+  ROLES.TREASURER
 ];
 
 
 /* =====================================================
-   INTERNAL CACHE
+   CURRENT USER
 ===================================================== */
 
 let cachedUser = null;
@@ -60,40 +79,24 @@ let cachedMember = null;
 
 
 /* =====================================================
-   NORMALIZE ROLE
-===================================================== */
-
-export function normalizeRole(role) {
-
-  const value = String(role || "")
-    .trim()
-    .toLowerCase();
-
-  if (VALID_ROLES.includes(value)) {
-    return value;
-  }
-
-  return "member";
-}
-
-
-/* =====================================================
-   GET CURRENT AUTH USER
+   GET AUTHENTICATED USER
 ===================================================== */
 
 export async function getCurrentUser() {
 
   const {
-    data,
+    data: {
+      user
+    },
     error
   } = await supabase.auth.getUser();
 
   if (error) {
-    console.error("getCurrentUser:", error);
+    console.error("getCurrentUser error:", error);
     return null;
   }
 
-  cachedUser = data?.user || null;
+  cachedUser = user || null;
 
   return cachedUser;
 }
@@ -103,13 +106,17 @@ export async function getCurrentUser() {
    REQUIRE AUTHENTICATION
 ===================================================== */
 
-export async function requireAuth() {
+export async function requireAuth(
+  redirect = true
+) {
 
   const user = await getCurrentUser();
 
   if (!user) {
 
-    redirectToLogin();
+    if (redirect) {
+      window.location.href = "login.html";
+    }
 
     return null;
   }
@@ -122,36 +129,37 @@ export async function requireAuth() {
    GET MY MEMBER RECORD
 ===================================================== */
 
-export async function getMyMember(options = {}) {
+export async function getMyMember(
+  options = {}
+) {
 
   const {
-    forceRefresh = false
+    redirect = true
   } = options;
 
-
-  if (
-    cachedMember &&
-    !forceRefresh
-  ) {
-
-    return cachedMember;
-  }
-
-
-  const user = await requireAuth();
+  const user = await requireAuth(
+    redirect
+  );
 
   if (!user) {
     return null;
   }
 
 
+  if (cachedMember) {
+    return cachedMember;
+  }
+
+
   /*
-   * auth_user_id links the Supabase Auth user
-   * to the member record.
+   * Your database has used auth_user_id
+   * in the existing member structure.
+   *
+   * We first try auth_user_id.
    */
 
-  const {
-    data,
+  let {
+    data: member,
     error
   } = await supabase
 
@@ -167,7 +175,8 @@ export async function getMyMember(options = {}) {
       email,
       role,
       status,
-      join_date
+      join_date,
+      created_at
     `)
 
     .eq(
@@ -178,88 +187,179 @@ export async function getMyMember(options = {}) {
     .maybeSingle();
 
 
-  if (error) {
-
-    console.error(
-      "getMyMember:",
-      error
-    );
-
-    throw error;
-  }
-
-
-  if (!data) {
-
-    console.error(
-      "No member record linked to user:",
-      user.id
-    );
-
-    return null;
-  }
-
-
   /*
-   * Normalize the role before returning it.
+   * Some older installations may use user_id.
+   *
+   * If auth_user_id does not find a record,
+   * try user_id.
    */
 
-  data.role =
-    normalizeRole(data.role);
+  if (
+    !member &&
+    !error
+  ) {
+
+    const fallback =
+      await supabase
+
+        .from("members")
+
+        .select(`
+          id,
+          group_id,
+          user_id,
+          member_number,
+          name,
+          phone,
+          email,
+          role,
+          status,
+          join_date,
+          created_at
+        `)
+
+        .eq(
+          "user_id",
+          user.id
+        )
+
+        .maybeSingle();
 
 
-  cachedMember = data;
+    if (fallback.error) {
 
-  return data;
-}
+      console.error(
+        "Member lookup error:",
+        fallback.error
+      );
+
+    } else {
+
+      member =
+        fallback.data;
+
+    }
+
+  }
 
 
-/* =====================================================
-   REQUIRE MEMBER
-===================================================== */
+  if (error) {
 
-export async function requireMember() {
+    /*
+     * If auth_user_id does not exist in the
+     * database schema, try the fallback query.
+     */
 
-  const member =
-    await getMyMember();
+    if (
+      String(error.message || "")
+        .toLowerCase()
+        .includes("auth_user_id")
+    ) {
+
+      const fallback =
+        await supabase
+
+          .from("members")
+
+          .select("*")
+
+          .eq(
+            "user_id",
+            user.id
+          )
+
+          .maybeSingle();
+
+
+      if (fallback.error) {
+
+        console.error(
+          "Fallback member lookup error:",
+          fallback.error
+        );
+
+        if (redirect) {
+          showAuthError(
+            fallback.error.message
+          );
+        }
+
+        return null;
+      }
+
+      member =
+        fallback.data;
+
+    } else {
+
+      console.error(
+        "Member lookup error:",
+        error
+      );
+
+      if (redirect) {
+        showAuthError(
+          error.message
+        );
+      }
+
+      return null;
+    }
+
+  }
 
 
   if (!member) {
 
-    showAccessError(
-      "Your login is not linked to a CHAMA LIVE member account."
+    console.error(
+      "Authenticated user has no member record."
     );
+
+    if (redirect) {
+
+      showAuthError(
+        "Your account is authenticated, but your member record has not been added to this group. Please contact your group administrator."
+      );
+
+    }
 
     return null;
   }
 
 
   /*
-   * Disabled members cannot continue.
+   * Disabled members should not access the app.
    */
 
-  const status =
-    String(
-      member.status || "active"
-    ).toLowerCase();
-
-
   if (
-    status !== "active"
+    member.status &&
+    member.status !== "active"
   ) {
 
-    await signOut();
+    if (redirect) {
+
+      await supabase.auth.signOut({
+        scope: "local"
+      });
+
+      window.location.href =
+        "login.html?error=inactive";
+
+    }
 
     return null;
   }
 
+
+  cachedMember =
+    member;
 
   return member;
 }
 
 
 /* =====================================================
-   GET MY GROUP
+   GET CURRENT GROUP
 ===================================================== */
 
 export async function getMyGroup() {
@@ -267,14 +367,13 @@ export async function getMyGroup() {
   const member =
     await getMyMember();
 
-
   if (!member) {
     return null;
   }
 
 
   const {
-    data,
+    data: group,
     error
   } = await supabase
 
@@ -293,20 +392,20 @@ export async function getMyGroup() {
   if (error) {
 
     console.error(
-      "getMyGroup:",
+      "Group lookup error:",
       error
     );
 
-    throw error;
+    return null;
   }
 
 
-  return data || null;
+  return group || null;
 }
 
 
 /* =====================================================
-   GET MY ROLE
+   GET CURRENT ROLE
 ===================================================== */
 
 export async function getMyRole() {
@@ -314,11 +413,9 @@ export async function getMyRole() {
   const member =
     await getMyMember();
 
-
   if (!member) {
     return null;
   }
-
 
   return normalizeRole(
     member.role
@@ -327,7 +424,27 @@ export async function getMyRole() {
 
 
 /* =====================================================
-   HAS ROLE
+   NORMALIZE ROLE
+===================================================== */
+
+export function normalizeRole(
+  role
+) {
+
+  return String(
+    role || "member"
+  )
+    .trim()
+    .toLowerCase()
+    .replaceAll(
+      " ",
+      "_"
+    );
+}
+
+
+/* =====================================================
+   ROLE CHECK
 ===================================================== */
 
 export async function hasRole(
@@ -336,7 +453,6 @@ export async function hasRole(
 
   const role =
     await getMyRole();
-
 
   if (!role) {
     return false;
@@ -356,6 +472,69 @@ export async function hasRole(
 
 
 /* =====================================================
+   ADMIN CHECK
+===================================================== */
+
+export async function isAdmin() {
+  return hasRole(
+    ROLES.ADMIN
+  );
+}
+
+
+/* =====================================================
+   CHAIRPERSON CHECK
+===================================================== */
+
+export async function isChairperson() {
+
+  return hasRole(
+    ROLES.CHAIRPERSON
+  );
+
+}
+
+
+/* =====================================================
+   GROUP MANAGEMENT CHECK
+===================================================== */
+
+export async function canManageGroup() {
+
+  return hasRole(
+    MANAGEMENT_ROLES
+  );
+
+}
+
+
+/* =====================================================
+   FINANCE CHECK
+===================================================== */
+
+export async function canManageFinance() {
+
+  return hasRole(
+    FINANCE_ROLES
+  );
+
+}
+
+
+/* =====================================================
+   RECORD MANAGEMENT CHECK
+===================================================== */
+
+export async function canManageRecords() {
+
+  return hasRole(
+    RECORD_ROLES
+  );
+
+}
+
+
+/* =====================================================
    REQUIRE ROLE
 ===================================================== */
 
@@ -365,12 +544,15 @@ export async function requireRole(
 ) {
 
   const {
-    redirect = true
+    redirect = true,
+    redirectTo = "dashboard.html"
   } = options;
 
 
   const member =
-    await requireMember();
+    await getMyMember({
+      redirect
+    });
 
 
   if (!member) {
@@ -378,13 +560,13 @@ export async function requireRole(
   }
 
 
-  const currentRole =
+  const role =
     normalizeRole(
       member.role
     );
 
 
-  const allowedRoles =
+  const allowed =
     (
       Array.isArray(roles)
         ? roles
@@ -394,187 +576,72 @@ export async function requireRole(
 
 
   if (
-    allowedRoles.includes(
-      currentRole
-    )
+    !allowed.includes(role)
   ) {
 
-    return member;
-  }
-
-
-  if (redirect) {
-
-    showAccessError(
-      "You do not have permission to access this page."
-    );
-
-    setTimeout(() => {
+    if (redirect) {
 
       window.location.href =
-        DASHBOARD_PAGE;
+        redirectTo;
 
-    }, 1200);
+    }
 
+    return null;
   }
 
 
-  return null;
+  return member;
 }
 
 
 /* =====================================================
-   ROLE HELPERS
+   REQUIRE GROUP MANAGEMENT
 ===================================================== */
 
-export function isAdmin(member) {
+export async function requireGroupManagement() {
 
-  return normalizeRole(
-    member?.role
-  ) === "admin";
-}
+  return requireRole(
+    MANAGEMENT_ROLES
+  );
 
-
-export function isChairperson(member) {
-
-  return normalizeRole(
-    member?.role
-  ) === "chairperson";
-}
-
-
-export function isTreasurer(member) {
-
-  return normalizeRole(
-    member?.role
-  ) === "treasurer";
-}
-
-
-export function isSecretary(member) {
-
-  return normalizeRole(
-    member?.role
-  ) === "secretary";
-}
-
-
-export function isMember(member) {
-
-  return normalizeRole(
-    member?.role
-  ) === "member";
 }
 
 
 /* =====================================================
-   ADMIN / MANAGEMENT CHECK
+   REQUIRE FINANCE
 ===================================================== */
 
-export function canManageGroup(
-  member
-) {
+export async function requireFinanceRole() {
 
-  const role =
-    normalizeRole(
-      member?.role
-    );
+  return requireRole(
+    FINANCE_ROLES
+  );
 
-
-  return [
-    "admin",
-    "chairperson"
-  ].includes(role);
 }
 
 
 /* =====================================================
-   FINANCE MANAGEMENT CHECK
+   REQUIRE RECORD MANAGEMENT
 ===================================================== */
 
-export function canManageFinance(
-  member
-) {
+export async function requireRecordRole() {
 
-  const role =
-    normalizeRole(
-      member?.role
-    );
+  return requireRole(
+    RECORD_ROLES
+  );
 
-
-  return [
-    "admin",
-    "chairperson",
-    "treasurer"
-  ].includes(role);
 }
 
 
 /* =====================================================
-   CONTRIBUTION MANAGEMENT
+   CLEAR CACHE
 ===================================================== */
 
-export function canManageContributions(
-  member
-) {
+export function clearAuthCache() {
 
-  const role =
-    normalizeRole(
-      member?.role
-    );
+  cachedUser = null;
+  cachedMember = null;
 
-
-  return [
-    "admin",
-    "chairperson",
-    "treasurer",
-    "secretary"
-  ].includes(role);
-}
-
-
-/* =====================================================
-   MEMBER MANAGEMENT
-===================================================== */
-
-export function canManageMembers(
-  member
-) {
-
-  const role =
-    normalizeRole(
-      member?.role
-    );
-
-
-  return [
-    "admin",
-    "chairperson",
-    "secretary"
-  ].includes(role);
-}
-
-
-/* =====================================================
-   REPORT ACCESS
-===================================================== */
-
-export function canViewReports(
-  member
-) {
-
-  const role =
-    normalizeRole(
-      member?.role
-    );
-
-
-  return [
-    "admin",
-    "chairperson",
-    "treasurer",
-    "secretary"
-  ].includes(role);
 }
 
 
@@ -582,60 +649,32 @@ export function canViewReports(
    LOGOUT
 ===================================================== */
 
-export async function signOut() {
+export async function logout() {
 
-  try {
-
-    const {
-      error
-    } = await supabase.auth.signOut();
+  clearAuthCache();
 
 
-    if (error) {
-      throw error;
-    }
+  const {
+    error
+  } = await supabase.auth.signOut({
+    scope: "local"
+  });
 
 
-  } catch (error) {
+  if (error) {
 
     console.error(
-      "Sign out error:",
+      "Logout error:",
       error
     );
 
-  } finally {
-
-    cachedUser = null;
-    cachedMember = null;
-
-    redirectToLogin();
+    throw error;
   }
-}
 
 
-/* =====================================================
-   REDIRECT TO LOGIN
-===================================================== */
+  window.location.href =
+    "login.html";
 
-export function redirectToLogin() {
-
-  const current =
-    window.location.pathname;
-
-
-  /*
-   * Avoid endless redirects.
-   */
-
-  if (
-    !current.endsWith(
-      LOGIN_PAGE
-    )
-  ) {
-
-    window.location.href =
-      LOGIN_PAGE;
-  }
 }
 
 
@@ -643,72 +682,99 @@ export function redirectToLogin() {
    AUTH STATE LISTENER
 ===================================================== */
 
-export function watchAuthState(
+export function watchAuth(
   callback
 ) {
 
-  const {
-    data
-  } =
-    supabase.auth.onAuthStateChange(
-      async (
-        event,
-        session
-      ) => {
+  return supabase.auth.onAuthStateChange(
+    async (
+      event,
+      session
+    ) => {
 
-        /*
-         * Clear cache when user signs out.
-         */
+      /*
+       * Clear cached records whenever
+       * authentication changes.
+       */
 
-        if (
-          event ===
-          "SIGNED_OUT"
-        ) {
+      if (
+        event === "SIGNED_OUT" ||
+        event === "USER_DELETED"
+      ) {
 
-          cachedUser = null;
-          cachedMember = null;
-        }
-
-
-        /*
-         * Refresh user cache when
-         * authentication changes.
-         */
-
-        if (
-          session &&
-          event !== "SIGNED_OUT"
-        ) {
-
-          cachedUser =
-            session.user;
-        }
-
-
-        if (
-          typeof callback ===
-          "function"
-        ) {
-
-          await callback(
-            event,
-            session
-          );
-        }
+        clearAuthCache();
 
       }
-    );
 
 
-  return data.subscription;
+      if (typeof callback === "function") {
+
+        await callback(
+          event,
+          session
+        );
+
+      }
+
+    }
+  );
+
 }
 
 
 /* =====================================================
-   ACCESS ERROR
+   DISPLAY ROLE
 ===================================================== */
 
-function showAccessError(
+export function roleLabel(
+  role
+) {
+
+  const labels = {
+
+    admin:
+      "Administrator",
+
+    chairperson:
+      "Chairperson",
+
+    treasurer:
+      "Treasurer",
+
+    secretary:
+      "Secretary",
+
+    member:
+      "Member"
+
+  };
+
+
+  const normalized =
+    normalizeRole(role);
+
+
+  return (
+    labels[normalized] ||
+    normalized
+      .replaceAll(
+        "_",
+        " "
+      )
+      .replace(
+        /^\w/,
+        c => c.toUpperCase()
+      )
+  );
+
+}
+
+
+/* =====================================================
+   AUTH ERROR
+===================================================== */
+
+function showAuthError(
   message
 ) {
 
@@ -718,8 +784,8 @@ function showAccessError(
 
 
   /*
-   * If a global error element exists,
-   * use it.
+   * Keep error handling simple so this works
+   * even on pages without an #error element.
    */
 
   const error =
@@ -730,7 +796,8 @@ function showAccessError(
 
   if (error) {
 
-    error.hidden = false;
+    error.hidden =
+      false;
 
     error.textContent =
       message;
@@ -739,55 +806,55 @@ function showAccessError(
   }
 
 
-  /*
-   * Otherwise use a simple alert.
-   */
-
   alert(message);
+
 }
 
 
 /* =====================================================
-   CLEAR AUTH CACHE
+   EXPORT USER + MEMBER SNAPSHOT
 ===================================================== */
 
-export function clearAuthCache() {
+export async function getAuthContext() {
 
-  cachedUser = null;
-  cachedMember = null;
+  const user =
+    await getCurrentUser();
+
+  if (!user) {
+    return null;
+  }
+
+
+  const member =
+    await getMyMember({
+      redirect: false
+    });
+
+
+  if (!member) {
+    return null;
+  }
+
+
+  return {
+
+    user,
+
+    member,
+
+    groupId:
+      member.group_id,
+
+    role:
+      normalizeRole(
+        member.role
+      ),
+
+    roleLabel:
+      roleLabel(
+        member.role
+      )
+
+  };
+
 }
-
-
-/* =====================================================
-   EXPORT DEFAULT OBJECT
-===================================================== */
-
-export default {
-
-  getCurrentUser,
-  requireAuth,
-  getMyMember,
-  requireMember,
-  getMyGroup,
-  getMyRole,
-  hasRole,
-  requireRole,
-
-  isAdmin,
-  isChairperson,
-  isTreasurer,
-  isSecretary,
-  isMember,
-
-  canManageGroup,
-  canManageFinance,
-  canManageContributions,
-  canManageMembers,
-  canViewReports,
-
-  signOut,
-  redirectToLogin,
-  watchAuthState,
-  clearAuthCache
-
-};
