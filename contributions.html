@@ -37,11 +37,15 @@
 
       <a href="dashboard.html">Dashboard</a>
       <a href="members.html">Members</a>
-      <a class="active" href="contributions.html">Contributions</a>
+      <a class="active" href="contributions.html">
+        Contributions
+      </a>
       <a href="expenses.html">Expenses</a>
       <a href="meetings.html">Meetings</a>
       <a href="reports.html">Reports</a>
-      <a href="group-management.html">Group Management</a>
+      <a href="group-management.html">
+        Group Management
+      </a>
 
     </nav>
 
@@ -261,12 +265,14 @@
           <thead>
 
             <tr>
+
               <th>Date</th>
               <th>Member</th>
               <th>Amount</th>
               <th>Type</th>
               <th>Method</th>
               <th>M-Pesa Ref</th>
+
             </tr>
 
           </thead>
@@ -490,6 +496,11 @@ async function checkLogin() {
   }
 
 
+  setStatus(
+    "Login confirmed."
+  );
+
+
   return true;
 
 }
@@ -689,6 +700,7 @@ async function loadContributions() {
         </tr>
       `;
 
+
     setStatus(
       "No contributions found."
     );
@@ -698,7 +710,9 @@ async function loadContributions() {
   }
 
 
-  /* GET MEMBER IDS */
+  /* ===================================================
+     GET MEMBER IDS
+  =================================================== */
 
   const memberIds = [
     ...new Set(
@@ -719,7 +733,9 @@ async function loadContributions() {
   ];
 
 
-  /* GET MEMBER NAMES */
+  /* ===================================================
+     GET MEMBER NAMES
+  =================================================== */
 
   const memberNames = {};
 
@@ -768,7 +784,9 @@ async function loadContributions() {
   }
 
 
-  /* DISPLAY */
+  /* ===================================================
+     DISPLAY
+  =================================================== */
 
   rows.innerHTML =
 
@@ -874,6 +892,10 @@ async function saveContribution() {
 
   try {
 
+    /* ================================================
+       FORM VALUES
+    ================================================ */
+
     const memberId =
       memberSelect.value;
 
@@ -900,7 +922,9 @@ async function saveContribution() {
       referenceInput.value.trim();
 
 
-    /* VALIDATION */
+    /* ================================================
+       VALIDATION
+    ================================================ */
 
     if (!memberId) {
 
@@ -932,7 +956,9 @@ async function saveContribution() {
     }
 
 
-    /* GET GROUP */
+    /* ================================================
+       GROUP
+    ================================================ */
 
     const groupId =
       await getCurrentGroupId();
@@ -947,7 +973,63 @@ async function saveContribution() {
     }
 
 
-    /* DISABLE BUTTON */
+    /* ================================================
+       CHECK DUPLICATE M-PESA REFERENCE
+    ================================================ */
+
+    if (reference) {
+
+      setStatus(
+        "Checking M-Pesa reference..."
+      );
+
+
+      const duplicate =
+        await supabase
+
+          .from("contributions")
+
+          .select("id")
+
+          .eq(
+            "group_id",
+            groupId
+          )
+
+          .eq(
+            "reference",
+            reference
+          )
+
+          .maybeSingle();
+
+
+      if (duplicate.error) {
+
+        throw duplicate.error;
+
+      }
+
+
+      if (duplicate.data) {
+
+        throw new Error(
+          "This M-Pesa reference has already been recorded."
+        );
+
+      }
+
+    }
+
+
+    /* ================================================
+       SAVE
+       
+       IMPORTANT:
+       recorded_by is set to the selected member ID
+       because contributions.recorded_by references
+       public.members(id).
+    ================================================ */
 
     saveButton.disabled =
       true;
@@ -960,14 +1042,6 @@ async function saveContribution() {
       "Saving contribution..."
     );
 
-
-    /* =================================================
-       INSERT CONTRIBUTION
-
-       IMPORTANT:
-       recorded_by is intentionally NOT included.
-       This avoids the current foreign-key error.
-    ================================================= */
 
     const result =
       await supabase
@@ -998,6 +1072,9 @@ async function saveContribution() {
             reference ||
             null,
 
+          recorded_by:
+            memberId,
+
           contribution_date:
             new Date()
               .toISOString()
@@ -1016,7 +1093,9 @@ async function saveContribution() {
     }
 
 
-    /* SUCCESS */
+    /* ================================================
+       SUCCESS
+    ================================================ */
 
     amountInput.value =
       "200";
@@ -1038,7 +1117,9 @@ async function saveContribution() {
     );
 
 
-    /* REFRESH */
+    /* ================================================
+       REFRESH
+    ================================================ */
 
     await loadContributions();
 
@@ -1082,10 +1163,13 @@ async function start() {
 
     clearError();
 
+
     setStatus(
       "Starting Contributions..."
     );
 
+
+    /* LOGIN */
 
     const loggedIn =
       await checkLogin();
@@ -1098,7 +1182,7 @@ async function start() {
     }
 
 
-    /* SET CURRENT MONTH */
+    /* CURRENT MONTH */
 
     monthInput.value =
       new Date()
@@ -1109,12 +1193,12 @@ async function start() {
         );
 
 
-    /* LOAD MEMBERS */
+    /* MEMBERS */
 
     await loadMembers();
 
 
-    /* LOAD LEDGER */
+    /* LEDGER */
 
     await loadContributions();
 
@@ -1130,7 +1214,9 @@ async function start() {
 }
 
 
-/* START APPLICATION */
+/* =====================================================
+   START APPLICATION
+===================================================== */
 
 start();
 
@@ -1139,5 +1225,3 @@ start();
 </body>
 
 </html>
-
-
