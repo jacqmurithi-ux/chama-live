@@ -4,13 +4,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+
   <title>Contributions — CHAMA LIVE</title>
+
   <link rel="stylesheet" href="css/app.css">
 </head>
 
 <body>
 
 <header class="topbar">
+
   <div class="brand">
     CHAMA <span>LIVE</span>
   </div>
@@ -18,6 +21,7 @@
   <button class="btn btn-secondary" id="logout">
     Sign out
   </button>
+
 </header>
 
 <div class="layout">
@@ -27,27 +31,16 @@
     <nav class="nav">
 
       <a href="dashboard.html">Dashboard</a>
-
       <a href="members.html">Members</a>
-
-      <a class="active" href="contributions.html">
-        Contributions
-      </a>
-
+      <a class="active" href="contributions.html">Contributions</a>
       <a href="expenses.html">Expenses</a>
-
       <a href="meetings.html">Meetings</a>
-
       <a href="reports.html">Reports</a>
-
-      <a href="group-management.html">
-        Group Management
-      </a>
+      <a href="group-management.html">Group Management</a>
 
     </nav>
 
   </aside>
-
 
   <main class="main">
 
@@ -66,7 +59,18 @@
     </div>
 
 
-    <!-- RECORD CONTRIBUTION -->
+    <!-- STATUS -->
+
+    <div
+      id="status"
+      class="card"
+      style="margin-bottom:20px;"
+    >
+      Starting Contributions...
+    </div>
+
+
+    <!-- RECORD -->
 
     <section class="card">
 
@@ -211,9 +215,11 @@
     </section>
 
 
+    <!-- ERROR -->
+
     <div
-      class="error"
       id="error"
+      class="error"
       hidden
     ></div>
 
@@ -231,12 +237,14 @@
           <thead>
 
             <tr>
+
               <th>Date</th>
               <th>Member</th>
               <th>Amount</th>
               <th>Type</th>
               <th>Method</th>
               <th>M-Pesa Ref</th>
+
             </tr>
 
           </thead>
@@ -244,9 +252,11 @@
           <tbody id="rows">
 
             <tr>
+
               <td colspan="6">
-                Loading…
+                Loading...
               </td>
+
             </tr>
 
           </tbody>
@@ -264,6 +274,10 @@
 
 <script type="module">
 
+/* =====================================
+   IMPORTS
+===================================== */
+
 import { boot } from "./js/layout.js";
 
 import {
@@ -274,29 +288,51 @@ import {
 import { supabase } from "./js/supabase.js";
 
 
-/* ===============================
-   ERROR DISPLAY
-================================ */
+/* =====================================
+   STATUS
+===================================== */
 
-function showPageError(message) {
+function status(message) {
 
   const box =
-    document.querySelector("#error");
+    document.getElementById("status");
 
-  if (!box) return;
-
-  box.textContent =
-    message;
-
-  box.hidden = false;
+  if (box) {
+    box.textContent = message;
+  }
 
 }
 
 
+/* =====================================
+   ERROR
+===================================== */
 
-/* ===============================
+function errorMessage(message) {
+
+  const box =
+    document.getElementById("error");
+
+  if (box) {
+
+    box.textContent =
+      message;
+
+    box.hidden =
+      false;
+
+  }
+
+  status(
+    "ERROR: " + message
+  );
+
+}
+
+
+/* =====================================
    ESCAPE HTML
-================================ */
+===================================== */
 
 function escapeHtml(value) {
 
@@ -315,39 +351,63 @@ function escapeHtml(value) {
 }
 
 
-
-/* ===============================
+/* =====================================
    BOOT
-================================ */
+===================================== */
 
-await boot();
+try {
+
+  status(
+    "Checking login..."
+  );
+
+  await boot();
+
+  status(
+    "Login OK. Getting group..."
+  );
+
+} catch (error) {
+
+  errorMessage(
+    "Login failed: " +
+    error.message
+  );
+
+}
 
 
+/* =====================================
+   MONTH
+===================================== */
 
-/* ===============================
-   CURRENT MONTH
-================================ */
+const monthInput =
+  document.getElementById("month");
 
-document.querySelector("#month").value =
+monthInput.value =
   new Date()
     .toISOString()
     .slice(0, 7);
 
 
-
-/* ===============================
+/* =====================================
    LOAD MEMBERS
-================================ */
+===================================== */
 
 async function loadMembers() {
 
   const select =
-    document.querySelector("#member");
+    document.getElementById("member");
 
   try {
 
+    status(
+      "Getting your group..."
+    );
+
     const groupId =
       await getCurrentGroupId();
+
 
     if (!groupId) {
 
@@ -358,11 +418,19 @@ async function loadMembers() {
     }
 
 
+    status(
+      "Group found. Loading members..."
+    );
+
+
     const result =
       await supabase
         .from("members")
         .select("id,name")
-        .eq("group_id", groupId)
+        .eq(
+          "group_id",
+          groupId
+        )
         .order("name");
 
 
@@ -381,20 +449,26 @@ async function loadMembers() {
       '<option value="">Select member</option>';
 
 
-    members.forEach(member => {
+    members.forEach(
+      member => {
 
-      const option =
-        document.createElement("option");
+        const option =
+          document.createElement(
+            "option"
+          );
 
-      option.value =
-        member.id;
+        option.value =
+          member.id;
 
-      option.textContent =
-        member.name;
+        option.textContent =
+          member.name;
 
-      select.appendChild(option);
+        select.appendChild(
+          option
+        );
 
-    });
+      }
+    );
 
 
     if (members.length === 0) {
@@ -402,20 +476,25 @@ async function loadMembers() {
       select.innerHTML =
         '<option value="">No members found</option>';
 
+      status(
+        "Group found, but no members were found."
+      );
+
+      return;
+
     }
+
+
+    status(
+      members.length +
+      " member(s) loaded. Loading contributions..."
+    );
 
 
   } catch (error) {
 
-    console.error(
-      "Members error:",
-      error
-    );
-
-    select.innerHTML =
-      '<option value="">Unable to load members</option>';
-
-    showPageError(
+    errorMessage(
+      "Members failed: " +
       error.message
     );
 
@@ -424,22 +503,22 @@ async function loadMembers() {
 }
 
 
-
-/* ===============================
+/* =====================================
    LOAD CONTRIBUTIONS
-================================ */
+===================================== */
 
 async function loadContributions() {
 
   const rows =
-    document.querySelector("#rows");
+    document.getElementById("rows");
+
 
   try {
 
     rows.innerHTML = `
       <tr>
         <td colspan="6">
-          Loading…
+          Loading contributions...
         </td>
       </tr>
     `;
@@ -458,17 +537,16 @@ async function loadContributions() {
     }
 
 
-    /*
-     * IMPORTANT:
-     * Only use columns confirmed
-     * to exist in your table.
-     */
+    status(
+      "Loading contribution ledger..."
+    );
+
 
     const result =
       await supabase
         .from("contributions")
         .select(
-          "id,contribution_date,amount,contribution_type,payment_method,reference,member_id"
+          "contribution_date,amount,contribution_type,payment_method,reference,member_id"
         )
         .eq(
           "group_id",
@@ -493,7 +571,9 @@ async function loadContributions() {
       result.data || [];
 
 
-    if (contributions.length === 0) {
+    if (
+      contributions.length === 0
+    ) {
 
       rows.innerHTML = `
         <tr>
@@ -503,19 +583,27 @@ async function loadContributions() {
         </tr>
       `;
 
+
+      status(
+        "No contributions found."
+      );
+
       return;
 
     }
 
 
-    /*
-     * Get member IDs
-     */
+    /* ===============================
+       MEMBER NAMES
+    =============================== */
 
     const memberIds = [
       ...new Set(
         contributions
-          .map(row => row.member_id)
+          .map(
+            item =>
+              item.member_id
+          )
           .filter(Boolean)
       )
     ];
@@ -524,124 +612,123 @@ async function loadContributions() {
     const memberNames = {};
 
 
-    /*
-     * Get member names
-     */
+    if (
+      memberIds.length > 0
+    ) {
 
-    if (memberIds.length > 0) {
-
-      const resultMembers =
+      const memberResult =
         await supabase
           .from("members")
-          .select("id,name")
+          .select(
+            "id,name"
+          )
           .in(
             "id",
             memberIds
           );
 
 
-      if (resultMembers.error) {
+      if (
+        memberResult.error
+      ) {
 
-        throw resultMembers.error;
+        throw memberResult.error;
 
       }
 
 
       (
-        resultMembers.data || []
-      ).forEach(member => {
+        memberResult.data ||
+        []
+      ).forEach(
+        member => {
 
-        memberNames[
-          member.id
-        ] =
-          member.name;
+          memberNames[
+            member.id
+          ] =
+            member.name;
 
-      });
+        }
+      );
 
     }
 
 
-    /*
-     * Build ledger
-     */
+    /* ===============================
+       DISPLAY
+    =============================== */
 
     rows.innerHTML =
       contributions
-        .map(row => {
+        .map(
+          item => {
 
-          const date =
-            row.contribution_date
-            || "—";
+            return `
 
-          const member =
-            memberNames[
-              row.member_id
-            ]
-            || "—";
+              <tr>
 
-          const amount =
-            money(
-              Number(
-                row.amount || 0
-              )
-            );
+                <td>
+                  ${escapeHtml(
+                    item.contribution_date ||
+                    "—"
+                  )}
+                </td>
 
-          const type =
-            row.contribution_type
-            || "—";
+                <td>
+                  ${escapeHtml(
+                    memberNames[
+                      item.member_id
+                    ] ||
+                    "—"
+                  )}
+                </td>
 
-          const method =
-            row.payment_method
-            || "—";
+                <td>
+                  ${money(
+                    Number(
+                      item.amount ||
+                      0
+                    )
+                  )}
+                </td>
 
-          const reference =
-            row.reference
-            || "—";
+                <td>
+                  ${escapeHtml(
+                    item.contribution_type ||
+                    "—"
+                  )}
+                </td>
 
+                <td>
+                  ${escapeHtml(
+                    item.payment_method ||
+                    "—"
+                  )}
+                </td>
 
-          return `
+                <td>
+                  ${escapeHtml(
+                    item.reference ||
+                    "—"
+                  )}
+                </td>
 
-            <tr>
+              </tr>
 
-              <td>
-                ${escapeHtml(date)}
-              </td>
+            `;
 
-              <td>
-                ${escapeHtml(member)}
-              </td>
-
-              <td>
-                ${escapeHtml(amount)}
-              </td>
-
-              <td>
-                ${escapeHtml(type)}
-              </td>
-
-              <td>
-                ${escapeHtml(method)}
-              </td>
-
-              <td>
-                ${escapeHtml(reference)}
-              </td>
-
-            </tr>
-
-          `;
-
-        })
+          }
+        )
         .join("");
 
 
-  } catch (error) {
-
-    console.error(
-      "Contributions error:",
-      error
+    status(
+      contributions.length +
+      " contribution(s) loaded."
     );
 
+
+  } catch (error) {
 
     rows.innerHTML = `
       <tr>
@@ -652,7 +739,8 @@ async function loadContributions() {
     `;
 
 
-    showPageError(
+    errorMessage(
+      "Contributions failed: " +
       error.message
     );
 
@@ -661,72 +749,74 @@ async function loadContributions() {
 }
 
 
-
-/* ===============================
-   SAVE CONTRIBUTION
-================================ */
+/* =====================================
+   SAVE
+===================================== */
 
 async function saveContribution() {
 
   const button =
-    document.querySelector(
-      "#saveContribution"
+    document.getElementById(
+      "saveContribution"
     );
 
 
   try {
 
     const memberId =
-      document.querySelector(
-        "#member"
+      document.getElementById(
+        "member"
       ).value;
 
 
     const amount =
       Number(
-        document.querySelector(
-          "#amount"
+        document.getElementById(
+          "amount"
         ).value
       );
 
 
     const type =
-      document.querySelector(
-        "#type"
+      document.getElementById(
+        "type"
       ).value;
 
 
     const month =
-      document.querySelector(
-        "#month"
+      document.getElementById(
+        "month"
       ).value;
 
 
     const method =
-      document.querySelector(
-        "#method"
+      document.getElementById(
+        "method"
       ).value;
 
 
     const reference =
-      document.querySelector(
-        "#reference"
+      document.getElementById(
+        "reference"
       ).value.trim();
 
 
     if (!memberId) {
 
       throw new Error(
-        "Please select a member."
+        "Select a member."
       );
 
     }
 
 
-    if (!amount || amount <= 0) {
+    if (
+      !amount ||
+      amount <= 0
+    ) {
 
       throw new Error(
-        "Please enter a valid amount."
+        "Enter a valid amount."
       );
 
     }
@@ -735,7 +825,7 @@ async function saveContribution() {
     if (!month) {
 
       throw new Error(
-        "Please select the contribution month."
+        "Select the contribution month."
       );
 
     }
@@ -745,20 +835,11 @@ async function saveContribution() {
       true;
 
     button.textContent =
-      "Saving…";
+      "Saving...";
 
 
     const groupId =
       await getCurrentGroupId();
-
-
-    if (!groupId) {
-
-      throw new Error(
-        "No group is linked to this account."
-      );
-
-    }
 
 
     const userResult =
@@ -793,7 +874,8 @@ async function saveContribution() {
             method,
 
           reference:
-            reference || null,
+            reference ||
+            null,
 
           recorded_by:
             user
@@ -815,19 +897,14 @@ async function saveContribution() {
     }
 
 
-    document.querySelector(
-      "#amount"
-    ).value = "200";
-
-
-    document.querySelector(
-      "#reference"
-    ).value = "";
-
-
     alert(
       "Contribution recorded successfully."
     );
+
+
+    document.getElementById(
+      "reference"
+    ).value = "";
 
 
     await loadContributions();
@@ -835,12 +912,8 @@ async function saveContribution() {
 
   } catch (error) {
 
-    console.error(
-      "Save contribution error:",
-      error
-    );
-
-    showPageError(
+    errorMessage(
+      "Save failed: " +
       error.message
     );
 
@@ -858,14 +931,13 @@ async function saveContribution() {
 }
 
 
-
-/* ===============================
-   BUTTON
-================================ */
+/* =====================================
+   EVENT
+===================================== */
 
 document
-  .querySelector(
-    "#saveContribution"
+  .getElementById(
+    "saveContribution"
   )
   .addEventListener(
     "click",
@@ -873,10 +945,9 @@ document
   );
 
 
-
-/* ===============================
+/* =====================================
    START
-================================ */
+===================================== */
 
 await loadMembers();
 
