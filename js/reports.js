@@ -1,5 +1,3 @@
-
-```javascript
 import { supabase } from "./supabase.js";
 import { getCurrentGroupId } from "./app.js";
 
@@ -179,19 +177,22 @@ async function loadReports() {
 
   /* ===================================================
      CONTRIBUTIONS
-
-     IMPORTANT:
-
-     Your contributions table has:
-
+     
+     ACTUAL DATABASE COLUMNS:
+     
+     id
      group_id
      member_id
      amount
      contribution_type
      month
      payment_method
-
-     THERE IS NO contributions.date
+     reference
+     recorded_by
+     created_at
+     goal_id
+     contribution_date
+     notes
   =================================================== */
 
   const contributionsResult =
@@ -205,6 +206,9 @@ async function loadReports() {
         contribution_type,
         month,
         payment_method,
+        reference,
+        contribution_date,
+        notes,
         members (
           name
         )
@@ -212,11 +216,19 @@ async function loadReports() {
       .eq(
         "group_id",
         groupId
+      )
+      .order(
+        "contribution_date",
+        {
+          ascending: false
+        }
       );
 
 
   if (contributionsResult.error) {
+
     throw contributionsResult.error;
+
   }
 
 
@@ -226,16 +238,19 @@ async function loadReports() {
 
   /* ===================================================
      EXPENSES
-
-     Known columns:
-
+     
+     ACTUAL DATABASE COLUMNS:
+     
      id
      group_id
      description
      category
      amount
      date
+     recorded_by
+     receipt_url
      approval_status
+     created_at
   =================================================== */
 
   const expensesResult =
@@ -263,7 +278,9 @@ async function loadReports() {
 
 
   if (expensesResult.error) {
+
     throw expensesResult.error;
+
   }
 
 
@@ -273,6 +290,19 @@ async function loadReports() {
 
   /* ===================================================
      MEETINGS
+     
+     ACTUAL DATABASE COLUMNS:
+     
+     id
+     group_id
+     title
+     date
+     venue
+     agenda
+     minutes
+     resolution
+     status
+     created_at
   =================================================== */
 
   const meetingsResult =
@@ -298,7 +328,9 @@ async function loadReports() {
 
 
   if (meetingsResult.error) {
+
     throw meetingsResult.error;
+
   }
 
 
@@ -542,7 +574,7 @@ async function loadReports() {
 
 
   /* ===================================================
-     MEETING SUMMARY
+     MEETINGS
   =================================================== */
 
   renderMeetingsSummary(
@@ -582,7 +614,7 @@ function renderRecentContributions(
 
     table.innerHTML = `
       <tr>
-        <td colspan="5">
+        <td colspan="6">
           No contributions yet.
         </td>
       </tr>
@@ -603,24 +635,13 @@ function renderRecentContributions(
             "Unknown";
 
 
-          /*
-           * Your table has no date column.
-           *
-           * We display the contribution
-           * month instead.
-           */
-
-          const displayDate =
-            contribution.month ||
-            "—";
-
-
           return `
             <tr>
 
               <td>
                 ${escapeHtml(
-                  displayDate
+                  contribution.contribution_date ||
+                  "—"
                 )}
               </td>
 
@@ -646,6 +667,13 @@ function renderRecentContributions(
               <td>
                 ${escapeHtml(
                   contribution.payment_method ||
+                  "—"
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  contribution.reference ||
                   "—"
                 )}
               </td>
@@ -854,9 +882,7 @@ if (logoutButton) {
 
       catch(error) {
 
-        showError(
-          error
-        );
+        showError(error);
 
       }
 
@@ -874,6 +900,8 @@ async function start() {
 
   try {
 
+    clearError();
+
     await loadReports();
 
   }
@@ -890,4 +918,3 @@ async function start() {
 
 
 start();
-```
