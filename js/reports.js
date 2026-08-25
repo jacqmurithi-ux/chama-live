@@ -11,12 +11,14 @@ const $ = (id) =>
 
 
 let groupId = null;
+
 let currentMonth = "";
-let currentSummary = null;
+
+let currentReport = null;
 
 
 /* =====================================================
-   INITIALISE
+   INIT
 ===================================================== */
 
 async function init() {
@@ -25,6 +27,7 @@ async function init() {
 
     const member =
       await getMyMember();
+
 
     if (!member) {
 
@@ -39,12 +42,11 @@ async function init() {
       member.group_id;
 
 
-    /* -----------------------------------------------
-       CURRENT MONTH
-    ------------------------------------------------ */
+    /* Current month */
 
     const today =
       new Date();
+
 
     currentMonth =
       `${today.getFullYear()}-${String(
@@ -56,22 +58,15 @@ async function init() {
       $("month");
 
 
-    if (!monthInput) {
+    if (monthInput) {
 
-      throw new Error(
-        "Month selector was not found."
-      );
+      monthInput.value =
+        currentMonth;
 
     }
 
 
-    monthInput.value =
-      currentMonth;
-
-
-    /* -----------------------------------------------
-       EVENTS
-    ------------------------------------------------ */
+    /* Load button */
 
     $("loadReport")
       ?.addEventListener(
@@ -80,25 +75,28 @@ async function init() {
       );
 
 
-    monthInput
-      .addEventListener(
+    /* Month change */
+
+    $("month")
+      ?.addEventListener(
         "change",
         async () => {
 
-          if (
-            monthInput.value
-          ) {
+          const value =
+            $("month").value;
 
-            currentMonth =
-              monthInput.value;
+          if (!value) return;
 
-            await loadReport();
+          currentMonth =
+            value;
 
-          }
+          await loadReport();
 
         }
       );
 
+
+    /* Print */
 
     $("printReport")
       ?.addEventListener(
@@ -106,10 +104,6 @@ async function init() {
         printReport
       );
 
-
-    /* -----------------------------------------------
-       LOAD
-    ------------------------------------------------ */
 
     await loadReport();
 
@@ -132,19 +126,37 @@ async function loadReport() {
   clearError();
 
 
+  currentMonth =
+    $("month")?.value ||
+    currentMonth;
+
+
+  if (!currentMonth) {
+
+    showError(
+      new Error(
+        "Please select a financial month."
+      )
+    );
+
+    return;
+
+  }
+
+
   setStatus(
     `Loading ${formatMonth(
       currentMonth
-    )} report...`
+    )}...`
   );
 
 
   try {
 
 
-    /* ===============================================
+    /* =================================================
        GROUP
-    =============================================== */
+    ================================================= */
 
     const {
       data: group,
@@ -165,18 +177,16 @@ async function loadReport() {
         .single();
 
 
-    if (groupError) {
-
+    if (groupError)
       throw groupError;
 
-    }
 
 
-    /* ===============================================
+    /* =================================================
        FINANCIAL PERIOD
-    =============================================== */
+    ================================================= */
 
-    const {
+    let {
       data: period,
       error: periodError
     } =
@@ -194,16 +204,63 @@ async function loadReport() {
         .maybeSingle();
 
 
-    if (periodError) {
-
+    if (periodError)
       throw periodError;
+
+
+
+    /*
+     * If the month doesn't have a financial
+     * period yet, create one.
+     */
+
+    if (!period) {
+
+      const opening =
+        await calculateOpeningBalance(
+          group
+        );
+
+
+      const {
+        data,
+        error
+      } =
+        await supabase
+          .from("financial_periods")
+          .insert({
+
+            group_id:
+              groupId,
+
+            month:
+              currentMonth,
+
+            opening_balance:
+              opening,
+
+            status:
+              "open"
+
+          })
+          .select()
+          .single();
+
+
+      if (error)
+        throw error;
+
+
+      period =
+        data;
 
     }
 
 
-    /* ===============================================
-       MEMBERS
-    =============================================== */
+
+    /* =================================================
+       ACTIVE MEMBERS
+    ================================================= */
 
     const {
       data: members,
@@ -230,16 +287,14 @@ async function loadReport() {
         );
 
 
-    if (membersError) {
-
+    if (membersError)
       throw membersError;
 
-    }
 
 
-    /* ===============================================
+    /* =================================================
        CONTRIBUTIONS
-    =============================================== */
+    ================================================= */
 
     const {
       data: contributions,
@@ -257,8 +312,7 @@ async function loadReport() {
           reference,
           mpesa_reference,
           contribution_date,
-          created_at,
-          notes
+          created_at
         `)
         .eq(
           "group_id",
@@ -276,16 +330,20 @@ async function loadReport() {
         );
 
 
-    if (contributionsError) {
-
+    if (contributionsError)
       throw contributionsError;
 
-    }
 
 
-    /* ===============================================
+    /* =================================================
        EXPENSES
-    =============================================== */
+    ================================================= */
+
+    const next =
+      nextMonth(
+        currentMonth
+      );
+
 
     const {
       data: expenses,
@@ -311,9 +369,7 @@ async function loadReport() {
         )
         .lt(
           "date",
-          nextMonth(
-            currentMonth
-          )
+          next
         )
         .order(
           "date",
@@ -323,33 +379,28 @@ async function loadReport() {
         );
 
 
-    if (expensesError) {
-
+    if (expensesError)
       throw expensesError;
 
-    }
 
 
-    /* ===============================================
-       MONTHLY CONTRIBUTION
-    =============================================== */
+    /* =================================================
+       MEMBER STATUS
+    ================================================= */
 
     const monthlyContribution =
       Number(
-        group.monthly_contribution || 0
+        group.monthly_contribution ||
+        0
       );
 
 
-    /* ===============================================
-       MEMBER STATUS
-    =============================================== */
-
-    const memberStatus =
-      (members || []).map(
+    const memberReport =
+      members.map(
         member => {
 
           const paid =
-            (contributions || [])
+            contributions
               .filter(
                 contribution =>
                   contribution.member_id ===
@@ -362,7 +413,8 @@ async function loadReport() {
                 ) =>
                   total +
                   Number(
-                    contribution.amount || 0
+                    contribution.amount ||
+                    0
                   ),
                 0
               );
@@ -374,7 +426,8 @@ async function loadReport() {
 
           const outstanding =
             Math.max(
-              expected - paid,
+              expected -
+              paid,
               0
             );
 
@@ -391,7 +444,8 @@ async function loadReport() {
             status =
               "PAID";
 
-          } else if (
+          }
+          else if (
             paid > 0
           ) {
 
@@ -420,12 +474,13 @@ async function loadReport() {
       );
 
 
-    /* ===============================================
+
+    /* =================================================
        TOTALS
-    =============================================== */
+    ================================================= */
 
     const expected =
-      memberStatus.reduce(
+      memberReport.reduce(
         (
           total,
           member
@@ -437,18 +492,18 @@ async function loadReport() {
 
 
     const collected =
-      (contributions || [])
-        .reduce(
-          (
-            total,
-            contribution
-          ) =>
-            total +
-            Number(
-              contribution.amount || 0
-            ),
-          0
-        );
+      contributions.reduce(
+        (
+          total,
+          contribution
+        ) =>
+          total +
+          Number(
+            contribution.amount ||
+            0
+          ),
+        0
+      );
 
 
     const outstanding =
@@ -460,7 +515,7 @@ async function loadReport() {
 
 
     const approvedExpenses =
-      (expenses || [])
+      expenses
         .filter(
           expense =>
             expense.approval_status ===
@@ -473,7 +528,8 @@ async function loadReport() {
           ) =>
             total +
             Number(
-              expense.amount || 0
+              expense.amount ||
+              0
             ),
           0
         );
@@ -481,25 +537,38 @@ async function loadReport() {
 
     const opening =
       Number(
-        period?.opening_balance ??
-        group.opening_balance ??
+        period.opening_balance ||
         0
       );
 
 
+    /*
+     * If month is closed, use the stored
+     * closing balance.
+     *
+     * Otherwise calculate live balance.
+     */
+
     const closing =
-      period?.status === "closed" &&
-      period?.closing_balance !== null
+      period.status === "closed" &&
+      period.closing_balance !== null
+
         ? Number(
             period.closing_balance
           )
+
         : opening +
           collected -
           approvedExpenses;
 
 
+
+    /* =================================================
+       STATISTICS
+    ================================================= */
+
     const paidMembers =
-      memberStatus.filter(
+      memberReport.filter(
         member =>
           member.contributionStatus ===
           "PAID"
@@ -507,7 +576,7 @@ async function loadReport() {
 
 
     const partialMembers =
-      memberStatus.filter(
+      memberReport.filter(
         member =>
           member.contributionStatus ===
           "PARTIAL"
@@ -515,7 +584,7 @@ async function loadReport() {
 
 
     const outstandingMembers =
-      memberStatus.filter(
+      memberReport.filter(
         member =>
           member.contributionStatus ===
           "OUTSTANDING"
@@ -524,76 +593,33 @@ async function loadReport() {
 
     const collectionRate =
       expected > 0
+
         ? (
             collected /
             expected
           ) * 100
+
         : 0;
 
 
-    const pendingExpenses =
-      (expenses || [])
-        .filter(
-          expense =>
-            expense.approval_status ===
-            "pending"
-        )
-        .reduce(
-          (
-            total,
-            expense
-          ) =>
-            total +
-            Number(
-              expense.amount || 0
-            ),
-          0
-        );
 
+    /* =================================================
+       STORE REPORT
+    ================================================= */
 
-    const rejectedExpenses =
-      (expenses || [])
-        .filter(
-          expense =>
-            expense.approval_status ===
-            "rejected"
-        )
-        .reduce(
-          (
-            total,
-            expense
-          ) =>
-            total +
-            Number(
-              expense.amount || 0
-            ),
-          0
-        );
-
-
-    /* ===============================================
-       SAVE REPORT
-    =============================================== */
-
-    currentSummary = {
+    currentReport = {
 
       group,
 
       period,
 
-      members:
+      members,
 
-        members || [],
+      contributions,
 
-      contributions:
+      expenses,
 
-        contributions || [],
-
-      expenses:
-
-        expenses || [],
-
-      memberStatus,
+      memberReport,
 
       expected,
 
@@ -602,10 +628,6 @@ async function loadReport() {
       outstanding,
 
       approvedExpenses,
-
-      pendingExpenses,
-
-      rejectedExpenses,
 
       opening,
 
@@ -622,9 +644,10 @@ async function loadReport() {
     };
 
 
-    /* ===============================================
+
+    /* =================================================
        RENDER
-    =============================================== */
+    ================================================= */
 
     renderSummary();
 
@@ -633,6 +656,7 @@ async function loadReport() {
     renderMembers();
 
     renderExpenses();
+
 
 
     setStatus(
@@ -654,76 +678,127 @@ async function loadReport() {
 
 
 /* =====================================================
-   RENDER SUMMARY
+   OPENING BALANCE
+===================================================== */
+
+async function calculateOpeningBalance(
+  group
+) {
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("financial_periods")
+      .select(`
+        month,
+        closing_balance,
+        status
+      `)
+      .eq(
+        "group_id",
+        groupId
+      )
+      .eq(
+        "status",
+        "closed"
+      )
+      .lt(
+        "month",
+        currentMonth
+      )
+      .order(
+        "month",
+        {
+          ascending: false
+        }
+      )
+      .limit(1);
+
+
+  if (error)
+    throw error;
+
+
+  if (
+    data &&
+    data.length > 0 &&
+    data[0].closing_balance !== null
+  ) {
+
+    return Number(
+      data[0].closing_balance
+    );
+
+  }
+
+
+  return Number(
+    group.opening_balance ||
+    0
+  );
+
+}
+
+
+/* =====================================================
+   SUMMARY
 ===================================================== */
 
 function renderSummary() {
 
-  const s =
-    currentSummary;
+  const r =
+    currentReport;
 
 
   $("openingBalance").textContent =
-    money(
-      s.opening
-    );
+    money(r.opening);
 
 
   $("expected").textContent =
-    money(
-      s.expected
-    );
+    money(r.expected);
 
 
   $("collected").textContent =
-    money(
-      s.collected
-    );
+    money(r.collected);
 
 
   $("outstanding").textContent =
-    money(
-      s.outstanding
-    );
+    money(r.outstanding);
 
 
   $("approvedExpenses").textContent =
-    money(
-      s.approvedExpenses
-    );
+    money(r.approvedExpenses);
 
 
   $("closingBalance").textContent =
-    money(
-      s.closing
-    );
+    money(r.closing);
 
 
   $("activeMembers").textContent =
-    s.members.length;
+    r.members.length;
 
 
   $("membersPaid").textContent =
-    s.paidMembers;
+    r.paidMembers;
 
 
   $("membersPartial").textContent =
-    s.partialMembers;
+    r.partialMembers;
 
 
   $("membersOutstanding").textContent =
-    s.outstandingMembers;
+    r.outstandingMembers;
 
 
   $("collectionRate").textContent =
-    `${s.collectionRate.toFixed(
-      1
-    )}%`;
+    `${r.collectionRate.toFixed(1)}%`;
 
 
   $("periodStatus").textContent =
     String(
-      s.period?.status ||
+      r.period.status ||
       "open"
     ).toUpperCase();
 
@@ -740,22 +815,27 @@ function renderCashbook() {
     $("cashbookRows");
 
 
-  const contributions =
-    currentSummary
-      .contributions
-      .map(
-        contribution => ({
+  const rows = [];
+
+
+  /* Contributions */
+
+  currentReport.contributions
+    .forEach(
+      contribution => {
+
+        rows.push({
 
           date:
             contribution.contribution_date ||
             contribution.created_at,
 
           description:
-            contribution.contribution_type ||
-            "Contribution",
+            "Member Contribution",
 
           type:
-            "Contribution",
+            contribution.contribution_type ||
+            "monthly",
 
           method:
             contribution.payment_method ||
@@ -768,26 +848,23 @@ function renderCashbook() {
 
           amount:
             Number(
-              contribution.amount || 0
-            ),
+              contribution.amount ||
+              0
+            )
 
-          sort:
-            1
+        });
 
-        })
-      );
+      }
+    );
 
 
-  const expenses =
-    currentSummary
-      .expenses
-      .filter(
-        expense =>
-          expense.approval_status ===
-          "approved"
-      )
-      .map(
-        expense => ({
+  /* Expenses */
+
+  currentReport.expenses
+    .forEach(
+      expense => {
+
+        rows.push({
 
           date:
             expense.date,
@@ -806,39 +883,31 @@ function renderCashbook() {
 
           amount:
             -Number(
-              expense.amount || 0
-            ),
+              expense.amount ||
+              0
+            )
 
-          sort:
-            2
+        });
 
-        })
-      );
-
-
-  const entries =
-    [
-      ...contributions,
-      ...expenses
-    ]
-      .sort(
-        (
-          a,
-          b
-        ) =>
-          new Date(a.date) -
-          new Date(b.date)
-      );
+      }
+    );
 
 
-  if (!entries.length) {
+  rows.sort(
+    (a, b) =>
+      new Date(a.date) -
+      new Date(b.date)
+  );
+
+
+  if (!rows.length) {
 
     tbody.innerHTML = `
 
       <tr>
 
         <td colspan="6">
-          No cashbook entries recorded.
+          No cashbook transactions recorded.
         </td>
 
       </tr>
@@ -851,59 +920,57 @@ function renderCashbook() {
 
 
   tbody.innerHTML =
-    entries
-      .map(
-        entry => `
+    rows.map(
+      row => `
 
-          <tr>
+        <tr>
 
-            <td>
-              ${formatDate(
-                entry.date
-              )}
-            </td>
+          <td>
+            ${formatDate(row.date)}
+          </td>
 
-            <td>
-              ${escapeHtml(
-                entry.description
-              )}
-            </td>
+          <td>
+            ${escapeHtml(
+              row.description
+            )}
+          </td>
 
-            <td>
-              ${entry.type}
-            </td>
+          <td>
+            ${escapeHtml(
+              row.type
+            )}
+          </td>
 
-            <td>
-              ${escapeHtml(
-                entry.method
-              )}
-            </td>
+          <td>
+            ${escapeHtml(
+              row.method
+            )}
+          </td>
 
-            <td>
-              ${escapeHtml(
-                entry.reference
-              )}
-            </td>
+          <td>
+            ${escapeHtml(
+              row.reference
+            )}
+          </td>
 
-            <td>
-              <strong>
-                ${money(
-                  entry.amount
-                )}
-              </strong>
-            </td>
+          <td>
 
-          </tr>
+            <strong>
+              ${money(row.amount)}
+            </strong>
 
-        `
-      )
-      .join("");
+          </td>
+
+        </tr>
+
+      `
+    ).join("");
 
 }
 
 
 /* =====================================================
-   MEMBER REPORT
+   MEMBER TABLE
 ===================================================== */
 
 function renderMembers() {
@@ -912,12 +979,9 @@ function renderMembers() {
     $("memberRows");
 
 
-  const members =
-    currentSummary
-      .memberStatus;
-
-
-  if (!members.length) {
+  if (
+    !currentReport.memberReport.length
+  ) {
 
     tbody.innerHTML = `
 
@@ -937,24 +1001,25 @@ function renderMembers() {
 
 
   tbody.innerHTML =
-    members
+    currentReport.memberReport
       .map(
         member => `
 
           <tr>
 
             <td>
+
               <strong>
                 ${escapeHtml(
                   member.name
                 )}
               </strong>
+
             </td>
 
             <td>
               ${escapeHtml(
-                member.member_number ||
-                "—"
+                member.member_number
               )}
             </td>
 
@@ -965,11 +1030,13 @@ function renderMembers() {
             </td>
 
             <td>
+
               <strong>
                 ${money(
                   member.paid
                 )}
               </strong>
+
             </td>
 
             <td>
@@ -979,9 +1046,11 @@ function renderMembers() {
             </td>
 
             <td>
+
               <strong>
                 ${member.contributionStatus}
               </strong>
+
             </td>
 
           </tr>
@@ -994,7 +1063,7 @@ function renderMembers() {
 
 
 /* =====================================================
-   EXPENSE REPORT
+   EXPENSE TABLE
 ===================================================== */
 
 function renderExpenses() {
@@ -1003,19 +1072,16 @@ function renderExpenses() {
     $("expenseRows");
 
 
-  const expenses =
-    currentSummary
-      .expenses;
-
-
-  if (!expenses.length) {
+  if (
+    !currentReport.expenses.length
+  ) {
 
     tbody.innerHTML = `
 
       <tr>
 
         <td colspan="5">
-          No expenses recorded.
+          No expenses recorded for this month.
         </td>
 
       </tr>
@@ -1028,7 +1094,7 @@ function renderExpenses() {
 
 
   tbody.innerHTML =
-    expenses
+    currentReport.expenses
       .map(
         expense => `
 
@@ -1048,24 +1114,31 @@ function renderExpenses() {
 
             <td>
               ${escapeHtml(
-                expense.category ||
-                "other"
+                expense.category
               )}
             </td>
 
             <td>
+
               <strong>
                 ${money(
                   expense.amount
                 )}
               </strong>
+
             </td>
 
             <td>
-              ${String(
-                expense.approval_status ||
-                "pending"
-              ).toUpperCase()}
+
+              <strong>
+                ${escapeHtml(
+                  String(
+                    expense.approval_status ||
+                    ""
+                  ).toUpperCase()
+                )}
+              </strong>
+
             </td>
 
           </tr>
@@ -1078,15 +1151,15 @@ function renderExpenses() {
 
 
 /* =====================================================
-   PRINT REPORT
+   PRINT
 ===================================================== */
 
 function printReport() {
 
-  if (!currentSummary) {
+  if (!currentReport) {
 
     alert(
-      "Load a report first."
+      "Please load a report first."
     );
 
     return;
@@ -1094,12 +1167,31 @@ function printReport() {
   }
 
 
-  const s =
-    currentSummary;
+  const r =
+    currentReport;
 
 
-  const memberRows =
-    s.memberStatus
+  const printWindow =
+    window.open(
+      "",
+      "_blank",
+      "width=1000,height=800"
+    );
+
+
+  if (!printWindow) {
+
+    alert(
+      "Please allow pop-ups to print the report."
+    );
+
+    return;
+
+  }
+
+
+  const members =
+    r.memberReport
       .map(
         member => `
 
@@ -1113,8 +1205,7 @@ function printReport() {
 
             <td>
               ${escapeHtml(
-                member.member_number ||
-                "—"
+                member.member_number
               )}
             </td>
 
@@ -1147,8 +1238,8 @@ function printReport() {
       .join("");
 
 
-  const expenseRows =
-    s.expenses
+  const expenses =
+    r.expenses
       .map(
         expense => `
 
@@ -1168,8 +1259,7 @@ function printReport() {
 
             <td>
               ${escapeHtml(
-                expense.category ||
-                "other"
+                expense.category
               )}
             </td>
 
@@ -1180,10 +1270,12 @@ function printReport() {
             </td>
 
             <td>
-              ${String(
-                expense.approval_status ||
-                "pending"
-              ).toUpperCase()}
+              ${escapeHtml(
+                String(
+                  expense.approval_status ||
+                  ""
+                ).toUpperCase()
+              )}
             </td>
 
           </tr>
@@ -1191,25 +1283,6 @@ function printReport() {
         `
       )
       .join("");
-
-
-  const printWindow =
-    window.open(
-      "",
-      "_blank",
-      "width=1000,height=800"
-    );
-
-
-  if (!printWindow) {
-
-    alert(
-      "Please allow pop-ups to print the report."
-    );
-
-    return;
-
-  }
 
 
   printWindow.document.write(`
@@ -1222,11 +1295,9 @@ function printReport() {
 
       <title>
         ${escapeHtml(
-          s.group.name
+          r.group.name
         )}
-        — ${formatMonth(
-          currentMonth
-        )}
+        — Monthly Report
       </title>
 
 
@@ -1239,7 +1310,7 @@ function printReport() {
             sans-serif;
 
           padding:
-            35px;
+            30px;
 
           color:
             #111;
@@ -1249,16 +1320,8 @@ function printReport() {
 
         h1 {
 
-          margin:
-            0 0 5px;
-
-        }
-
-
-        h2 {
-
-          margin-top:
-            30px;
+          margin-bottom:
+            5px;
 
         }
 
@@ -1311,7 +1374,7 @@ function printReport() {
             bold;
 
           margin-top:
-            6px;
+            7px;
 
         }
 
@@ -1348,21 +1411,15 @@ function printReport() {
         th {
 
           background:
-            #f4f4f4;
+            #f5f5f5;
 
         }
 
 
-        .footer {
+        h2 {
 
           margin-top:
-            35px;
-
-          color:
-            #666;
-
-          font-size:
-            12px;
+            30px;
 
         }
 
@@ -1388,7 +1445,7 @@ function printReport() {
 
       <h1>
         ${escapeHtml(
-          s.group.name
+          r.group.name
         )}
       </h1>
 
@@ -1403,6 +1460,7 @@ function printReport() {
       </div>
 
 
+
       <div class="summary">
 
 
@@ -1411,9 +1469,7 @@ function printReport() {
           Opening Balance
 
           <div class="value">
-            ${money(
-              s.opening
-            )}
+            ${money(r.opening)}
           </div>
 
         </div>
@@ -1424,9 +1480,7 @@ function printReport() {
           Expected Contributions
 
           <div class="value">
-            ${money(
-              s.expected
-            )}
+            ${money(r.expected)}
           </div>
 
         </div>
@@ -1437,9 +1491,7 @@ function printReport() {
           Contributions Collected
 
           <div class="value">
-            ${money(
-              s.collected
-            )}
+            ${money(r.collected)}
           </div>
 
         </div>
@@ -1450,9 +1502,7 @@ function printReport() {
           Outstanding
 
           <div class="value">
-            ${money(
-              s.outstanding
-            )}
+            ${money(r.outstanding)}
           </div>
 
         </div>
@@ -1463,9 +1513,7 @@ function printReport() {
           Approved Expenses
 
           <div class="value">
-            ${money(
-              s.approvedExpenses
-            )}
+            ${money(r.approvedExpenses)}
           </div>
 
         </div>
@@ -1476,14 +1524,14 @@ function printReport() {
           Closing Balance
 
           <div class="value">
-            ${money(
-              s.closing
-            )}
+            ${money(r.closing)}
           </div>
 
         </div>
 
+
       </div>
+
 
 
       <h2>
@@ -1494,7 +1542,7 @@ function printReport() {
       <p>
         Active Members:
         <strong>
-          ${s.members.length}
+          ${r.members.length}
         </strong>
       </p>
 
@@ -1502,7 +1550,7 @@ function printReport() {
       <p>
         Members Paid:
         <strong>
-          ${s.paidMembers}
+          ${r.paidMembers}
         </strong>
       </p>
 
@@ -1510,7 +1558,7 @@ function printReport() {
       <p>
         Partial Payments:
         <strong>
-          ${s.partialMembers}
+          ${r.partialMembers}
         </strong>
       </p>
 
@@ -1518,7 +1566,7 @@ function printReport() {
       <p>
         Outstanding Members:
         <strong>
-          ${s.outstandingMembers}
+          ${r.outstandingMembers}
         </strong>
       </p>
 
@@ -1526,9 +1574,7 @@ function printReport() {
       <p>
         Collection Rate:
         <strong>
-          ${s.collectionRate.toFixed(
-            1
-          )}%
+          ${r.collectionRate.toFixed(1)}%
         </strong>
       </p>
 
@@ -1537,11 +1583,11 @@ function printReport() {
         Period Status:
         <strong>
           ${String(
-            s.period?.status ||
-            "open"
+            r.period.status
           ).toUpperCase()}
         </strong>
       </p>
+
 
 
       <h2>
@@ -1555,29 +1601,17 @@ function printReport() {
 
           <tr>
 
-            <th>
-              Member
-            </th>
+            <th>Member</th>
 
-            <th>
-              Member No.
-            </th>
+            <th>Member No.</th>
 
-            <th>
-              Expected
-            </th>
+            <th>Expected</th>
 
-            <th>
-              Paid
-            </th>
+            <th>Paid</th>
 
-            <th>
-              Outstanding
-            </th>
+            <th>Outstanding</th>
 
-            <th>
-              Status
-            </th>
+            <th>Status</th>
 
           </tr>
 
@@ -1586,11 +1620,12 @@ function printReport() {
 
         <tbody>
 
-          ${memberRows}
+          ${members}
 
         </tbody>
 
       </table>
+
 
 
       <h2>
@@ -1604,25 +1639,15 @@ function printReport() {
 
           <tr>
 
-            <th>
-              Date
-            </th>
+            <th>Date</th>
 
-            <th>
-              Description
-            </th>
+            <th>Description</th>
 
-            <th>
-              Category
-            </th>
+            <th>Category</th>
 
-            <th>
-              Amount
-            </th>
+            <th>Amount</th>
 
-            <th>
-              Status
-            </th>
+            <th>Status</th>
 
           </tr>
 
@@ -1631,32 +1656,22 @@ function printReport() {
 
         <tbody>
 
-          ${expenseRows}
+          ${expenses}
 
         </tbody>
 
       </table>
 
 
-      <div class="footer">
-
-        Generated by CHAMA LIVE
-
-        —
-        ${new Date().toLocaleString(
-          "en-KE"
-        )}
-
-      </div>
-
 
       <script>
 
-        window.onload = function () {
+        window.onload =
+          function() {
 
-          window.print();
+            window.print();
 
-        };
+          };
 
       <\/script>
 
@@ -1712,16 +1727,13 @@ function money(value) {
 
 
 /* =====================================================
-   FORMAT DATE
+   DATE
 ===================================================== */
 
 function formatDate(value) {
 
-  if (!value) {
-
+  if (!value)
     return "—";
-
-  }
 
 
   const date =
@@ -1757,16 +1769,13 @@ function formatDate(value) {
 
 
 /* =====================================================
-   FORMAT MONTH
+   MONTH
 ===================================================== */
 
 function formatMonth(month) {
 
-  if (!month) {
-
+  if (!month)
     return "";
-
-  }
 
 
   const parts =
@@ -1774,15 +1783,11 @@ function formatMonth(month) {
 
 
   const year =
-    Number(
-      parts[0]
-    );
+    Number(parts[0]);
 
 
   const monthNumber =
-    Number(
-      parts[1]
-    );
+    Number(parts[1]);
 
 
   const date =
@@ -1818,15 +1823,11 @@ function nextMonth(month) {
 
 
   let year =
-    Number(
-      parts[0]
-    );
+    Number(parts[0]);
 
 
   let monthNumber =
-    Number(
-      parts[1]
-    );
+    Number(parts[1]);
 
 
   monthNumber++;
@@ -1862,22 +1863,27 @@ function escapeHtml(value) {
   return String(
     value ?? ""
   )
+
     .replaceAll(
       "&",
       "&amp;"
     )
+
     .replaceAll(
       "<",
       "&lt;"
     )
+
     .replaceAll(
       ">",
       "&gt;"
     )
+
     .replaceAll(
       '"',
       "&quot;"
     )
+
     .replaceAll(
       "'",
       "&#039;"
@@ -1916,15 +1922,13 @@ function clearError() {
     $("error");
 
 
-  if (!element) {
-
+  if (!element)
     return;
-
-  }
 
 
   element.hidden =
     true;
+
 
   element.textContent =
     "";
@@ -1932,13 +1936,10 @@ function clearError() {
 }
 
 
-/* =====================================================
-   SHOW ERROR
-===================================================== */
-
 function showError(error) {
 
   console.error(
+    "Reports error:",
     error
   );
 
