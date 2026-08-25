@@ -3,11 +3,18 @@
 
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
 
   <title>Contributions — CHAMA LIVE</title>
 
-  <link rel="stylesheet" href="css/app.css">
+  <link
+    rel="stylesheet"
+    href="css/app.css"
+  >
 </head>
 
 <body>
@@ -18,7 +25,11 @@
     CHAMA <span>LIVE</span>
   </div>
 
-  <button class="btn btn-secondary" id="logout" type="button">
+  <button
+    class="btn btn-secondary"
+    id="logout"
+    type="button"
+  >
     Sign out
   </button>
 
@@ -31,13 +42,36 @@
 
     <nav class="nav">
 
-      <a href="dashboard.html">Dashboard</a>
-      <a href="members.html">Members</a>
-      <a class="active" href="contributions.html">Contributions</a>
-      <a href="expenses.html">Expenses</a>
-      <a href="meetings.html">Meetings</a>
-      <a href="reports.html">Reports</a>
-      <a href="group-management.html">Group Management</a>
+      <a href="dashboard.html">
+        Dashboard
+      </a>
+
+      <a href="members.html">
+        Members
+      </a>
+
+      <a
+        class="active"
+        href="contributions.html"
+      >
+        Contributions
+      </a>
+
+      <a href="expenses.html">
+        Expenses
+      </a>
+
+      <a href="meetings.html">
+        Meetings
+      </a>
+
+      <a href="reports.html">
+        Reports
+      </a>
+
+      <a href="group-management.html">
+        Group Management
+      </a>
 
     </nav>
 
@@ -50,10 +84,12 @@
 
       <div>
 
-        <h1>Contributions</h1>
+        <h1>
+          Contributions
+        </h1>
 
         <p class="muted">
-          Record and manage group contributions.
+          Record and track member contributions.
         </p>
 
       </div>
@@ -61,14 +97,18 @@
     </div>
 
 
+    <!-- STATUS -->
+
     <div
       id="status"
       class="card"
       style="margin-bottom:20px;"
     >
-      Starting Contributions...
+      Loading contributions...
     </div>
 
+
+    <!-- ERROR -->
 
     <div
       id="error"
@@ -78,139 +118,218 @@
     ></div>
 
 
+    <!-- CONTRIBUTION FORM -->
+
     <section class="card">
 
-      <h2>Record Contribution</h2>
+      <h2>
+        Record Contribution
+      </h2>
 
-      <div class="form">
+      <br>
 
-        <div class="field">
+      <form id="contributionForm">
 
-          <label for="member">
-            Member
-          </label>
+        <div class="grid grid-2">
 
-          <select id="member">
+          <!-- MEMBER -->
 
-            <option value="">
-              Loading members...
-            </option>
+          <div>
 
-          </select>
+            <label
+              for="member"
+              class="muted"
+            >
+              Member
+            </label>
+
+            <select
+              id="member"
+              required
+            >
+
+              <option value="">
+                Select member
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <!-- AMOUNT -->
+
+          <div>
+
+            <label
+              for="amount"
+              class="muted"
+            >
+              Amount
+            </label>
+
+            <input
+              id="amount"
+              type="number"
+              min="1"
+              step="0.01"
+              required
+              placeholder="200"
+            >
+
+          </div>
+
+
+          <!-- DATE -->
+
+          <div>
+
+            <label
+              for="contributionDate"
+              class="muted"
+            >
+              Contribution Date
+            </label>
+
+            <input
+              id="contributionDate"
+              type="date"
+              required
+            >
+
+          </div>
+
+
+          <!-- TYPE -->
+
+          <div>
+
+            <label
+              for="contributionType"
+              class="muted"
+            >
+              Contribution Type
+            </label>
+
+            <select
+              id="contributionType"
+              required
+            >
+
+              <option value="monthly">
+                Monthly
+              </option>
+
+              <option value="registration">
+                Registration
+              </option>
+
+              <option value="welfare">
+                Welfare
+              </option>
+
+              <option value="special">
+                Special
+              </option>
+
+              <option value="other">
+                Other
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <!-- PAYMENT METHOD -->
+
+          <div>
+
+            <label
+              for="paymentMethod"
+              class="muted"
+            >
+              Payment Method
+            </label>
+
+            <select
+              id="paymentMethod"
+              required
+            >
+
+              <option value="mpesa">
+                M-Pesa
+              </option>
+
+              <option value="cash">
+                Cash
+              </option>
+
+              <option value="bank">
+                Bank
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <!-- MPESA REFERENCE -->
+
+          <div id="mpesaReferenceWrap">
+
+            <label
+              for="mpesaReference"
+              class="muted"
+            >
+              M-Pesa Reference
+            </label>
+
+            <input
+              id="mpesaReference"
+              type="text"
+              placeholder="e.g. QWE123XYZ"
+            >
+
+          </div>
 
         </div>
 
 
-        <div class="field">
-
-          <label for="amount">
-            Amount (KSh)
-          </label>
-
-          <input
-            id="amount"
-            type="number"
-            min="1"
-            step="1"
-            value="200"
-          >
-
-        </div>
-
-
-        <div class="field">
-
-          <label for="type">
-            Contribution Type
-          </label>
-
-          <select id="type">
-
-            <option value="monthly">
-              Monthly
-            </option>
-
-            <option value="registration">
-              Registration
-            </option>
-
-            <option value="welfare">
-              Welfare
-            </option>
-
-            <option value="fundraising">
-              Fundraising
-            </option>
-
-            <option value="other">
-              Other
-            </option>
-
-          </select>
-
-        </div>
-
-
-        <div class="field">
-
-          <label for="month">
-            Month
-          </label>
-
-          <input id="month" type="month">
-
-        </div>
-
-
-        <div class="field">
-
-          <label for="method">
-            Payment Method
-          </label>
-
-          <select id="method">
-
-            <option value="M-Pesa">M-Pesa</option>
-            <option value="Cash">Cash</option>
-            <option value="Bank">Bank</option>
-            <option value="Other">Other</option>
-
-          </select>
-
-        </div>
-
-
-        <div class="field">
-
-          <label for="reference">
-            M-Pesa Reference
-          </label>
-
-          <input
-            id="reference"
-            type="text"
-            placeholder="e.g. TEST-202"
-          >
-
-        </div>
+        <br>
 
 
         <button
-          class="btn btn-primary"
+          class="btn"
           id="saveContribution"
-          type="button"
+          type="submit"
         >
           Record Contribution
         </button>
 
-      </div>
+      </form>
 
     </section>
 
 
+    <br>
+
+
+    <!-- MEMBER STATUS -->
+
     <section class="card">
 
-      <h2>Contribution Ledger</h2>
+      <h2>
+        Monthly Contribution Status
+      </h2>
+
+      <p class="muted">
+        Expected monthly contribution:
+        <strong id="monthlyExpected">
+          KSh 0
+        </strong>
+      </p>
+
 
       <div class="table-wrap">
 
@@ -219,22 +338,85 @@
           <thead>
 
             <tr>
-              <th>Date</th>
+
               <th>Member</th>
-              <th>Amount</th>
-              <th>Type</th>
-              <th>Method</th>
-              <th>M-Pesa Ref</th>
+
+              <th>Expected</th>
+
+              <th>Paid</th>
+
+              <th>Outstanding</th>
+
+              <th>Status</th>
+
             </tr>
 
           </thead>
 
-          <tbody id="rows">
+
+          <tbody id="memberStatusRows">
 
             <tr>
+
+              <td colspan="5">
+                Loading...
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+
+    <br>
+
+
+    <!-- CONTRIBUTION LEDGER -->
+
+    <section class="card">
+
+      <h2>
+        Contribution Ledger
+      </h2>
+
+      <div class="table-wrap">
+
+        <table class="table">
+
+          <thead>
+
+            <tr>
+
+              <th>Date</th>
+
+              <th>Member</th>
+
+              <th>Amount</th>
+
+              <th>Type</th>
+
+              <th>Method</th>
+
+              <th>Reference</th>
+
+            </tr>
+
+          </thead>
+
+
+          <tbody id="contributionRows">
+
+            <tr>
+
               <td colspan="6">
                 Loading...
               </td>
+
             </tr>
 
           </tbody>
@@ -252,718 +434,11 @@
 
 <script type="module">
 
-import { supabase } from "./js/supabase.js";
+  import { boot } from "./js/layout.js";
 
+  await boot();
 
-/* =====================================================
-   ELEMENTS
-===================================================== */
-
-const statusBox =
-  document.getElementById("status");
-
-const errorBox =
-  document.getElementById("error");
-
-const memberSelect =
-  document.getElementById("member");
-
-const amountInput =
-  document.getElementById("amount");
-
-const typeSelect =
-  document.getElementById("type");
-
-const monthInput =
-  document.getElementById("month");
-
-const methodSelect =
-  document.getElementById("method");
-
-const referenceInput =
-  document.getElementById("reference");
-
-const saveButton =
-  document.getElementById("saveContribution");
-
-const rows =
-  document.getElementById("rows");
-
-
-/* =====================================================
-   STATUS
-===================================================== */
-
-function status(message) {
-
-  statusBox.textContent =
-    message;
-
-}
-
-
-/* =====================================================
-   ERROR
-===================================================== */
-
-function showError(error) {
-
-  const message =
-    error?.message ||
-    String(error);
-
-  errorBox.textContent =
-    "Error: " + message;
-
-  errorBox.hidden =
-    false;
-
-  status(
-    "Something went wrong."
-  );
-
-}
-
-
-/* =====================================================
-   ESCAPE
-===================================================== */
-
-function escapeHtml(value) {
-
-  return String(value)
-
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-
-}
-
-
-/* =====================================================
-   GET LOGGED IN USER
-===================================================== */
-
-async function getUser() {
-
-  const result =
-    await supabase.auth.getUser();
-
-  if (result.error) {
-    throw result.error;
-  }
-
-  if (!result.data?.user) {
-
-    window.location.href =
-      "login.html";
-
-    return null;
-
-  }
-
-  return result.data.user;
-
-}
-
-
-/* =====================================================
-   GET CURRENT MEMBER
-===================================================== */
-
-async function getCurrentMember() {
-
-  const user =
-    await getUser();
-
-  if (!user) {
-    return null;
-  }
-
-
-  status(
-    "Finding your member record..."
-  );
-
-
-  const result =
-    await supabase
-
-      .from("members")
-
-      .select(
-        "id,name,user_id,group_id"
-      )
-
-      .eq(
-        "user_id",
-        user.id
-      )
-
-      .limit(1);
-
-
-  if (result.error) {
-    throw result.error;
-  }
-
-
-  const members =
-    result.data || [];
-
-
-  if (members.length === 0) {
-
-    throw new Error(
-      "No member record is linked to your login."
-    );
-
-  }
-
-
-  const member =
-    members[0];
-
-
-  if (!member.group_id) {
-
-    throw new Error(
-      "Your member record has no group."
-    );
-
-  }
-
-
-  return member;
-
-}
-
-
-/* =====================================================
-   GET GROUP ID
-===================================================== */
-
-async function getGroupId() {
-
-  const member =
-    await getCurrentMember();
-
-  return member.group_id;
-
-}
-
-
-/* =====================================================
-   LOAD MEMBERS
-===================================================== */
-
-async function loadMembers() {
-
-  const groupId =
-    await getGroupId();
-
-
-  status(
-    "Loading members..."
-  );
-
-
-  const result =
-    await supabase
-
-      .from("members")
-
-      .select(
-        "id,name"
-      )
-
-      .eq(
-        "group_id",
-        groupId
-      )
-
-      .order(
-        "name",
-        {
-          ascending: true
-        }
-      );
-
-
-  if (result.error) {
-    throw result.error;
-  }
-
-
-  const members =
-    result.data || [];
-
-
-  memberSelect.innerHTML =
-    '<option value="">Select member</option>';
-
-
-  members.forEach(
-    function(member) {
-
-      const option =
-        document.createElement("option");
-
-      option.value =
-        member.id;
-
-      option.textContent =
-        member.name;
-
-      memberSelect.appendChild(
-        option
-      );
-
-    }
-  );
-
-
-  if (members.length === 0) {
-
-    throw new Error(
-      "No members found in this group."
-    );
-
-  }
-
-
-  status(
-    members.length +
-    " member(s) loaded."
-  );
-
-}
-
-
-/* =====================================================
-   LOAD CONTRIBUTIONS
-===================================================== */
-
-async function loadContributions() {
-
-  const groupId =
-    await getGroupId();
-
-
-  status(
-    "Loading contribution ledger..."
-  );
-
-
-  const result =
-    await supabase
-
-      .from("contributions")
-
-      .select(
-        "id,contribution_date,amount,contribution_type,payment_method,reference,member_id"
-      )
-
-      .eq(
-        "group_id",
-        groupId
-      )
-
-      .order(
-        "contribution_date",
-        {
-          ascending: false
-        }
-      );
-
-
-  if (result.error) {
-    throw result.error;
-  }
-
-
-  const contributions =
-    result.data || [];
-
-
-  if (contributions.length === 0) {
-
-    rows.innerHTML = `
-      <tr>
-        <td colspan="6">
-          No contributions yet.
-        </td>
-      </tr>
-    `;
-
-    status(
-      "No contributions found."
-    );
-
-    return;
-
-  }
-
-
-  /* GET MEMBER NAMES */
-
-  const memberIds = [
-    ...new Set(
-      contributions
-        .map(
-          item => item.member_id
-        )
-        .filter(Boolean)
-    )
-  ];
-
-
-  const memberNames = {};
-
-
-  if (memberIds.length > 0) {
-
-    const memberResult =
-      await supabase
-
-        .from("members")
-
-        .select("id,name")
-
-        .in(
-          "id",
-          memberIds
-        );
-
-
-    if (memberResult.error) {
-      throw memberResult.error;
-    }
-
-
-    (
-      memberResult.data || []
-    ).forEach(
-      member => {
-
-        memberNames[
-          member.id
-        ] =
-          member.name;
-
-      }
-    );
-
-  }
-
-
-  rows.innerHTML =
-    contributions
-      .map(
-        item => {
-
-          return `
-
-            <tr>
-
-              <td>
-                ${escapeHtml(
-                  item.contribution_date || "—"
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  memberNames[item.member_id] || "—"
-                )}
-              </td>
-
-              <td>
-                KSh ${Number(
-                  item.amount || 0
-                ).toLocaleString("en-KE")}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  item.contribution_type || "—"
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  item.payment_method || "—"
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  item.reference || "—"
-                )}
-              </td>
-
-            </tr>
-
-          `;
-
-        }
-      )
-      .join("");
-
-
-  status(
-    contributions.length +
-    " contribution(s) loaded."
-  );
-
-}
-
-
-/* =====================================================
-   SAVE CONTRIBUTION
-===================================================== */
-
-async function saveContribution() {
-
-  errorBox.hidden =
-    true;
-
-
-  const memberId =
-    memberSelect.value;
-
-  const amount =
-    Number(
-      amountInput.value
-    );
-
-  const type =
-    typeSelect.value;
-
-  const month =
-    monthInput.value;
-
-  const method =
-    methodSelect.value;
-
-  const reference =
-    referenceInput.value.trim();
-
-
-  try {
-
-    if (!memberId) {
-
-      throw new Error(
-        "Please select a member."
-      );
-
-    }
-
-
-    if (
-      !amount ||
-      amount <= 0
-    ) {
-
-      throw new Error(
-        "Please enter a valid amount."
-      );
-
-    }
-
-
-    if (!month) {
-
-      throw new Error(
-        "Please select the contribution month."
-      );
-
-    }
-
-
-    const groupId =
-      await getGroupId();
-
-
-    saveButton.disabled =
-      true;
-
-    saveButton.textContent =
-      "Saving...";
-
-
-    status(
-      "Saving contribution..."
-    );
-
-
-    /*
-     * IMPORTANT:
-     *
-     * recorded_by is NOT included.
-     *
-     * Your database says:
-     *
-     * contributions.recorded_by
-     * -> members.id
-     *
-     * NOT auth.users.id.
-     */
-
-
-    const result =
-      await supabase
-
-        .from("contributions")
-
-        .insert({
-
-          group_id:
-            groupId,
-
-          member_id:
-            memberId,
-
-          amount:
-            amount,
-
-          contribution_type:
-            type,
-
-          month:
-            month,
-
-          payment_method:
-            method,
-
-          reference:
-            reference || null,
-
-          contribution_date:
-            new Date()
-              .toISOString()
-              .slice(0,10)
-
-        });
-
-
-    if (result.error) {
-      throw result.error;
-    }
-
-
-    amountInput.value =
-      "200";
-
-    referenceInput.value =
-      "";
-
-
-    status(
-      "Contribution recorded successfully."
-    );
-
-
-    alert(
-      "Contribution recorded successfully."
-    );
-
-
-    await loadContributions();
-
-  }
-
-  catch(error) {
-
-    showError(error);
-
-  }
-
-  finally {
-
-    saveButton.disabled =
-      false;
-
-    saveButton.textContent =
-      "Record Contribution";
-
-  }
-
-}
-
-
-/* =====================================================
-   LOGOUT
-===================================================== */
-
-document
-  .getElementById("logout")
-  .addEventListener(
-    "click",
-    async function() {
-
-      await supabase.auth.signOut();
-
-      window.location.href =
-        "login.html";
-
-    }
-  );
-
-
-/* =====================================================
-   START
-===================================================== */
-
-async function start() {
-
-  try {
-
-    status(
-      "Starting Contributions..."
-    );
-
-
-    await getUser();
-
-
-    monthInput.value =
-      new Date()
-        .toISOString()
-        .slice(0,7);
-
-
-    await loadMembers();
-
-    await loadContributions();
-
-  }
-
-  catch(error) {
-
-    showError(error);
-
-  }
-
-}
-
-
-/* =====================================================
-   BUTTON
-===================================================== */
-
-saveButton.addEventListener(
-  "click",
-  saveContribution
-);
-
-
-/* START */
-
-start();
+  import "./js/contributions.js";
 
 </script>
 
