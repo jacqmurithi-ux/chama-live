@@ -3,17 +3,11 @@
 
 <head>
   <meta charset="utf-8">
-  <meta
-    name="viewport"
-    content="width=device-width,initial-scale=1"
-  >
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <title>Members — CHAMA LIVE</title>
 
-  <link
-    rel="stylesheet"
-    href="css/app.css"
-  >
+  <link rel="stylesheet" href="css/app.css">
 </head>
 
 <body>
@@ -83,12 +77,10 @@
 
       <div>
 
-        <h1>
-          Members
-        </h1>
+        <h1>Members</h1>
 
         <p class="muted">
-          Record and manage group members.
+          Manage members and view their contribution status.
         </p>
 
       </div>
@@ -96,18 +88,14 @@
     </div>
 
 
-    <!-- STATUS -->
-
     <div
       id="status"
       class="card"
       style="margin-bottom:20px;"
     >
-      Starting Members...
+      Loading members...
     </div>
 
-
-    <!-- ERROR -->
 
     <div
       id="error"
@@ -117,72 +105,104 @@
     ></div>
 
 
+    <!-- METRICS -->
+
+    <div class="grid grid-3">
+
+      <div class="card">
+
+        <div class="muted">
+          Total Members
+        </div>
+
+        <div
+          class="metric"
+          id="totalMembers"
+        >
+          0
+        </div>
+
+      </div>
+
+
+      <div class="card">
+
+        <div class="muted">
+          Active Members
+        </div>
+
+        <div
+          class="metric"
+          id="activeMembers"
+        >
+          0
+        </div>
+
+      </div>
+
+
+      <div class="card">
+
+        <div class="muted">
+          Inactive Members
+        </div>
+
+        <div
+          class="metric"
+          id="inactiveMembers"
+        >
+          0
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <br>
+
+
     <!-- ADD MEMBER -->
 
     <section class="card">
 
-      <h2>
-        Add Member
-      </h2>
+      <h2>Add Member</h2>
 
+      <form id="memberForm">
 
-      <div class="form">
+        <div class="form-group">
 
-
-        <!-- NAME -->
-
-        <div class="field">
-
-          <label for="name">
+          <label for="memberName">
             Full Name
           </label>
 
           <input
-            id="name"
+            id="memberName"
             type="text"
-            placeholder="e.g. John Mwangi"
+            required
+            placeholder="Member name"
           >
 
         </div>
 
 
-        <!-- PHONE -->
+        <div class="form-group">
 
-        <div class="field">
-
-          <label for="phone">
-            Phone
+          <label for="memberNumber">
+            Member Number
           </label>
 
           <input
-            id="phone"
-            type="tel"
-            placeholder="e.g. 0712345678"
+            id="memberNumber"
+            type="text"
+            required
+            placeholder="e.g. TU-001"
           >
 
         </div>
 
 
-        <!-- EMAIL -->
-
-        <div class="field">
-
-          <label for="email">
-            Email
-          </label>
-
-          <input
-            id="email"
-            type="email"
-            placeholder="e.g. member@example.com"
-          >
-
-        </div>
-
-
-        <!-- MEMBERSHIP NUMBER -->
-
-        <div class="field">
+        <div class="form-group">
 
           <label for="membershipNumber">
             Membership Number
@@ -191,22 +211,45 @@
           <input
             id="membershipNumber"
             type="text"
-            inputmode="numeric"
-            maxlength="4"
-            pattern="[0-9]{4}"
-            placeholder="Optional — e.g. 0001"
+            required
+            placeholder="Membership number"
           >
-
-          <small class="muted">
-            Leave blank to generate the next number automatically.
-          </small>
 
         </div>
 
 
-        <!-- ROLE -->
+        <div class="form-group">
 
-        <div class="field">
+          <label for="phone">
+            Phone
+          </label>
+
+          <input
+            id="phone"
+            type="tel"
+            required
+            placeholder="Phone number"
+          >
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label for="email">
+            Email
+          </label>
+
+          <input
+            id="email"
+            type="email"
+            placeholder="Email address"
+          >
+
+        </div>
+
+
+        <div class="form-group">
 
           <label for="role">
             Role
@@ -218,8 +261,8 @@
               Member
             </option>
 
-            <option value="admin">
-              Admin
+            <option value="chairperson">
+              Chairperson
             </option>
 
             <option value="secretary">
@@ -230,14 +273,16 @@
               Treasurer
             </option>
 
+            <option value="official">
+              Official
+            </option>
+
           </select>
 
         </div>
 
 
-        <!-- JOIN DATE -->
-
-        <div class="field">
+        <div class="form-group">
 
           <label for="joinDate">
             Join Date
@@ -251,51 +296,62 @@
         </div>
 
 
-        <!-- STATUS -->
-
-        <div class="field">
-
-          <label for="memberStatus">
-            Status
-          </label>
-
-          <select id="memberStatus">
-
-            <option value="active">
-              Active
-            </option>
-
-            <option value="inactive">
-              Inactive
-            </option>
-
-          </select>
-
-        </div>
-
-
-        <!-- SAVE -->
-
         <button
-          class="btn btn-primary"
+          class="btn"
           id="saveMember"
-          type="button"
+          type="submit"
         >
           Add Member
         </button>
 
-      </div>
+      </form>
 
     </section>
+
+
+    <br>
 
 
     <!-- MEMBER LEDGER -->
 
     <section class="card">
 
-      <h2>
-        Member Register
-      </h2>
+      <h2>Member Register</h2>
+
+
+      <div
+        style="
+          display:flex;
+          gap:10px;
+          flex-wrap:wrap;
+          margin-bottom:20px;
+        "
+      >
+
+        <select id="statusFilter">
+
+          <option value="all">
+            All Members
+          </option>
+
+          <option value="active">
+            Active
+          </option>
+
+          <option value="inactive">
+            Inactive
+          </option>
+
+        </select>
+
+
+        <input
+          id="searchMember"
+          type="search"
+          placeholder="Search member..."
+        >
+
+      </div>
 
 
       <div class="table-wrap">
@@ -306,44 +362,26 @@
 
             <tr>
 
-              <th>
-                Member No.
-              </th>
-
-              <th>
-                Name
-              </th>
-
-              <th>
-                Phone
-              </th>
-
-              <th>
-                Email
-              </th>
-
-              <th>
-                Role
-              </th>
-
-              <th>
-                Join Date
-              </th>
-
-              <th>
-                Status
-              </th>
+              <th>Name</th>
+              <th>Member No.</th>
+              <th>Phone</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Monthly</th>
+              <th>Paid</th>
+              <th>Outstanding</th>
+              <th>Actions</th>
 
             </tr>
 
           </thead>
 
 
-          <tbody id="rows">
+          <tbody id="memberRows">
 
             <tr>
 
-              <td colspan="7">
+              <td colspan="9">
                 Loading...
               </td>
 
@@ -358,6 +396,90 @@
     </section>
 
 
+    <br>
+
+
+    <!-- MEMBER DETAILS -->
+
+    <section
+      class="card"
+      id="detailsCard"
+      hidden
+    >
+
+      <h2>Member Details</h2>
+
+      <div id="memberDetails"></div>
+
+      <br>
+
+      <h3>Contribution History</h3>
+
+      <div class="table-wrap">
+
+        <table class="table">
+
+          <thead>
+
+            <tr>
+
+              <th>Date</th>
+              <th>Amount</th>
+              <th>Type</th>
+              <th>Method</th>
+              <th>Reference</th>
+
+            </tr>
+
+          </thead>
+
+          <tbody id="contributionHistory">
+
+            <tr>
+
+              <td colspan="5">
+                Select a member.
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+      <br>
+
+      <div
+        style="
+          display:flex;
+          gap:10px;
+          flex-wrap:wrap;
+        "
+      >
+
+        <button
+          class="btn btn-secondary"
+          id="editMember"
+          type="button"
+        >
+          Edit Member
+        </button>
+
+
+        <button
+          class="btn btn-secondary"
+          id="toggleMember"
+          type="button"
+        >
+          Deactivate Member
+        </button>
+
+      </div>
+
+    </section>
+
   </main>
 
 </div>
@@ -365,905 +487,13 @@
 
 <script type="module">
 
-import { supabase } from "./js/supabase.js";
+  import {
+    boot
+  } from "./js/layout.js";
 
-import {
-  getCurrentGroupId
-} from "./js/app.js";
+  await boot();
 
-
-/* =====================================================
-   ELEMENTS
-===================================================== */
-
-const statusBox =
-  document.getElementById("status");
-
-const errorBox =
-  document.getElementById("error");
-
-const nameInput =
-  document.getElementById("name");
-
-const phoneInput =
-  document.getElementById("phone");
-
-const emailInput =
-  document.getElementById("email");
-
-const membershipNumberInput =
-  document.getElementById("membershipNumber");
-
-const roleSelect =
-  document.getElementById("role");
-
-const joinDateInput =
-  document.getElementById("joinDate");
-
-const memberStatusSelect =
-  document.getElementById("memberStatus");
-
-const saveButton =
-  document.getElementById("saveMember");
-
-const rows =
-  document.getElementById("rows");
-
-const logoutButton =
-  document.getElementById("logout");
-
-
-/* =====================================================
-   STATUS
-===================================================== */
-
-function setStatus(message) {
-
-  statusBox.textContent =
-    message;
-
-}
-
-
-/* =====================================================
-   ERROR
-===================================================== */
-
-function showError(error) {
-
-  console.error(
-    "CHAMA LIVE members:",
-    error
-  );
-
-  const message =
-    error?.message ||
-    String(error);
-
-  errorBox.textContent =
-    "Error: " + message;
-
-  errorBox.hidden =
-    false;
-
-  setStatus(
-    "Something went wrong."
-  );
-
-}
-
-
-/* =====================================================
-   CLEAR ERROR
-===================================================== */
-
-function clearError() {
-
-  errorBox.textContent =
-    "";
-
-  errorBox.hidden =
-    true;
-
-}
-
-
-/* =====================================================
-   ESCAPE HTML
-===================================================== */
-
-function escapeHtml(value) {
-
-  return String(value)
-
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
-
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
-
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
-
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
-
-}
-
-
-/* =====================================================
-   CHECK LOGIN
-===================================================== */
-
-async function checkLogin() {
-
-  const result =
-    await supabase.auth.getSession();
-
-
-  if (result.error) {
-
-    throw result.error;
-
-  }
-
-
-  if (!result.data?.session) {
-
-    window.location.href =
-      "login.html";
-
-    return false;
-
-  }
-
-
-  return true;
-
-}
-
-
-/* =====================================================
-   GENERATE NEXT MEMBERSHIP NUMBER
-===================================================== */
-
-async function generateMembershipNumber(groupId) {
-
-  const result =
-    await supabase
-
-      .from("members")
-
-      .select(
-        "membership_number"
-      )
-
-      .eq(
-        "group_id",
-        groupId
-      )
-
-      .order(
-        "membership_number",
-        {
-          ascending: true
-        }
-      );
-
-
-  if (result.error) {
-
-    throw result.error;
-
-  }
-
-
-  const usedNumbers =
-    new Set(
-
-      (result.data || [])
-
-        .map(
-          row =>
-            String(
-              row.membership_number || ""
-            )
-        )
-
-    );
-
-
-  /*
-   * Database requires exactly
-   * four numeric characters.
-   *
-   * 0001
-   * 0002
-   * 0003
-   * etc.
-   */
-
-  for (
-    let number = 1;
-    number <= 9999;
-    number++
-  ) {
-
-    const candidate =
-      String(number)
-        .padStart(
-          4,
-          "0"
-        );
-
-
-    if (
-      !usedNumbers.has(
-        candidate
-      )
-    ) {
-
-      return candidate;
-
-    }
-
-  }
-
-
-  throw new Error(
-    "No available membership numbers remain."
-  );
-
-}
-
-
-/* =====================================================
-   VALIDATE CUSTOM MEMBERSHIP NUMBER
-===================================================== */
-
-function validateMembershipNumber(value) {
-
-  if (!value) {
-
-    return true;
-
-  }
-
-
-  return /^[0-9]{4}$/.test(
-    value
-  );
-
-}
-
-
-/* =====================================================
-   CHECK WHETHER NUMBER ALREADY EXISTS
-===================================================== */
-
-async function membershipNumberExists(
-  groupId,
-  membershipNumber
-) {
-
-  const result =
-    await supabase
-
-      .from("members")
-
-      .select(
-        "id"
-      )
-
-      .eq(
-        "group_id",
-        groupId
-      )
-
-      .eq(
-        "membership_number",
-        membershipNumber
-      )
-      
-      .limit(1);
-
-
-  if (result.error) {
-
-    throw result.error;
-
-  }
-
-
-  return (
-    result.data &&
-    result.data.length > 0
-  );
-
-}
-
-
-/* =====================================================
-   LOAD MEMBERS
-===================================================== */
-
-async function loadMembers() {
-
-  clearError();
-
-
-  setStatus(
-    "Finding your group..."
-  );
-
-
-  const groupId =
-    await getCurrentGroupId();
-
-
-  if (!groupId) {
-
-    throw new Error(
-      "No group is linked to this account."
-    );
-
-  }
-
-
-  setStatus(
-    "Loading members..."
-  );
-
-
-  const result =
-    await supabase
-
-      .from("members")
-
-      .select(
-        "id,member_number,membership_number,name,phone,email,role,join_date,status,onboarding_status"
-      )
-
-      .eq(
-        "group_id",
-        groupId
-      )
-
-      .order(
-        "membership_number",
-        {
-          ascending: true
-        }
-      );
-
-
-  if (result.error) {
-
-    throw result.error;
-
-  }
-
-
-  const members =
-    result.data || [];
-
-
-  if (
-    members.length === 0
-  ) {
-
-    rows.innerHTML = `
-
-      <tr>
-
-        <td colspan="7">
-          No members yet.
-        </td>
-
-      </tr>
-
-    `;
-
-
-    setStatus(
-      "No members found."
-    );
-
-
-    return;
-
-  }
-
-
-  rows.innerHTML =
-
-    members
-
-      .map(
-        function(member) {
-
-          const memberNumber =
-            member.membership_number ||
-            member.member_number ||
-            "—";
-
-
-          return `
-
-            <tr>
-
-              <td>
-                ${escapeHtml(
-                  memberNumber
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  member.name ||
-                  "—"
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  member.phone ||
-                  "—"
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  member.email ||
-                  "—"
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  member.role ||
-                  "member"
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  member.join_date ||
-                  "—"
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  member.status ||
-                  "—"
-                )}
-              </td>
-
-            </tr>
-
-          `;
-
-        }
-      )
-
-      .join("");
-
-
-  setStatus(
-    members.length +
-    " member(s) loaded."
-  );
-
-}
-
-
-/* =====================================================
-   SAVE MEMBER
-===================================================== */
-
-async function saveMember() {
-
-  clearError();
-
-
-  const originalText =
-    saveButton.textContent;
-
-
-  try {
-
-    const name =
-      nameInput.value.trim();
-
-    const phone =
-      phoneInput.value.trim();
-
-    const email =
-      emailInput.value.trim();
-
-    let membershipNumber =
-      membershipNumberInput.value.trim();
-
-    const role =
-      roleSelect.value;
-
-    const joinDate =
-      joinDateInput.value;
-
-    const memberStatus =
-      memberStatusSelect.value;
-
-
-    /* ===============================================
-       VALIDATION
-    =============================================== */
-
-    if (!name) {
-
-      throw new Error(
-        "Please enter the member's name."
-      );
-
-    }
-
-
-    if (!phone) {
-
-      throw new Error(
-        "Please enter the member's phone number."
-      );
-
-    }
-
-
-    if (!joinDate) {
-
-      throw new Error(
-        "Please select the join date."
-      );
-
-    }
-
-
-    if (
-      membershipNumber &&
-      !validateMembershipNumber(
-        membershipNumber
-      )
-    ) {
-
-      throw new Error(
-        "Membership Number must contain exactly 4 digits. Example: 0001."
-      );
-
-    }
-
-
-    /* ===============================================
-       GET GROUP
-    =============================================== */
-
-    const groupId =
-      await getCurrentGroupId();
-
-
-    if (!groupId) {
-
-      throw new Error(
-        "No group is linked to this account."
-      );
-
-    }
-
-
-    /* ===============================================
-       GENERATE NUMBER IF EMPTY
-    =============================================== */
-
-    if (!membershipNumber) {
-
-      setStatus(
-        "Generating membership number..."
-      );
-
-
-      membershipNumber =
-        await generateMembershipNumber(
-          groupId
-        );
-
-    }
-
-
-    /* ===============================================
-       CHECK DUPLICATE
-    =============================================== */
-
-    const exists =
-      await membershipNumberExists(
-        groupId,
-        membershipNumber
-      );
-
-
-    if (exists) {
-
-      throw new Error(
-        "Membership number " +
-        membershipNumber +
-        " is already being used by another member."
-      );
-
-    }
-
-
-    /* ===============================================
-       SAVE
-    =============================================== */
-
-    saveButton.disabled =
-      true;
-
-    saveButton.textContent =
-      "Saving...";
-
-
-    setStatus(
-      "Saving member " +
-      membershipNumber +
-      "..."
-    );
-
-
-    /*
-     * IMPORTANT
-     *
-     * membership_number MUST be
-     * exactly four digits.
-     *
-     * member_number is also set
-     * to the same value so the
-     * two fields stay synchronized.
-     *
-     * We deliberately do NOT set:
-     *
-     * user_id
-     * auth_user_id
-     *
-     * because this member does
-     * not necessarily have a login.
-     */
-
-
-    const result =
-      await supabase
-
-        .from("members")
-
-        .insert({
-
-          group_id:
-            groupId,
-
-          member_number:
-            membershipNumber,
-
-          membership_number:
-            membershipNumber,
-
-          name:
-            name,
-
-          phone:
-            phone,
-
-          email:
-            email ||
-            null,
-
-          role:
-            role,
-
-          join_date:
-            joinDate,
-
-          status:
-            memberStatus,
-
-          onboarding_status:
-            "active"
-
-        });
-
-
-    if (result.error) {
-
-      throw result.error;
-
-    }
-
-
-    /* ===============================================
-       CLEAR FORM
-    =============================================== */
-
-    nameInput.value =
-      "";
-
-    phoneInput.value =
-      "";
-
-    emailInput.value =
-      "";
-
-    membershipNumberInput.value =
-      "";
-
-    roleSelect.value =
-      "member";
-
-    memberStatusSelect.value =
-      "active";
-
-
-    clearError();
-
-
-    setStatus(
-      "Member " +
-      membershipNumber +
-      " added successfully."
-    );
-
-
-    alert(
-      "Member added successfully.\n\n" +
-      "Membership Number: " +
-      membershipNumber
-    );
-
-
-    /* ===============================================
-       REFRESH REGISTER
-    =============================================== */
-
-    await loadMembers();
-
-  }
-
-  catch(error) {
-
-    showError(
-      error
-    );
-
-  }
-
-  finally {
-
-    saveButton.disabled =
-      false;
-
-    saveButton.textContent =
-      originalText;
-
-  }
-
-}
-
-
-/* =====================================================
-   LOGOUT
-===================================================== */
-
-logoutButton.addEventListener(
-  "click",
-  async function() {
-
-    try {
-
-      await supabase.auth.signOut();
-
-      window.location.href =
-        "login.html";
-
-    }
-
-    catch(error) {
-
-      showError(
-        error
-      );
-
-    }
-
-  }
-);
-
-
-/* =====================================================
-   SAVE BUTTON
-===================================================== */
-
-saveButton.addEventListener(
-  "click",
-  saveMember
-);
-
-
-/* =====================================================
-   START
-===================================================== */
-
-async function start() {
-
-  try {
-
-    clearError();
-
-    setStatus(
-      "Starting Members..."
-    );
-
-
-    const loggedIn =
-      await checkLogin();
-
-
-    if (!loggedIn) {
-
-      return;
-
-    }
-
-
-    /* DEFAULT JOIN DATE */
-
-    joinDateInput.value =
-      new Date()
-        .toISOString()
-        .slice(
-          0,
-          10
-        );
-
-
-    /* LOAD MEMBERS */
-
-    await loadMembers();
-
-  }
-
-  catch(error) {
-
-    showError(
-      error
-    );
-
-  }
-
-}
-
-
-/* =====================================================
-   START APPLICATION
-===================================================== */
-
-start();
+  import "./js/members.js";
 
 </script>
 
