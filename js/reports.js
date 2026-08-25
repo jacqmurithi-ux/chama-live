@@ -1,24 +1,46 @@
 import { supabase } from "./supabase.js";
 
+/* =======================================================
+   ELEMENTS
+======================================================= */
+
 const statusEl = document.getElementById("status");
 const errorEl = document.getElementById("error");
 
-const activeMembersEl = document.getElementById("activeMembers");
-const totalMembersEl = document.getElementById("totalMembers");
-const contributionsEl = document.getElementById("contributions");
-const approvedExpensesEl = document.getElementById("approvedExpenses");
-const pendingExpensesEl = document.getElementById("pendingExpenses");
-const currentBalanceEl = document.getElementById("currentBalance");
+const activeMembersEl =
+  document.getElementById("activeMembers");
 
-const openingEl = document.getElementById("opening");
-const contributions2El = document.getElementById("contributions2");
-const expenses2El = document.getElementById("expenses2");
-const balanceEl = document.getElementById("balance");
+const totalMembersEl =
+  document.getElementById("totalMembers");
 
-const contributionRowsEl =
+const contributionsEl =
+  document.getElementById("contributions");
+
+const approvedExpensesEl =
+  document.getElementById("approvedExpenses");
+
+const pendingExpensesEl =
+  document.getElementById("pendingExpenses");
+
+const currentBalanceEl =
+  document.getElementById("currentBalance");
+
+const openingEl =
+  document.getElementById("opening");
+
+const contributions2El =
+  document.getElementById("contributions2");
+
+const expenses2El =
+  document.getElementById("expenses2");
+
+const balanceEl =
+  document.getElementById("balance");
+
+const contributionRows =
   document.getElementById("contributionRows");
 
-const expenseRowsEl =
+const expenseRows =
   document.getElementById("expenseRows");
 
 const upcomingMeetingsEl =
@@ -31,48 +53,72 @@ const cancelledMeetingsEl =
   document.getElementById("cancelledMeetings");
 
 
-/* -------------------------------------------------------
+/* =======================================================
+   STATE
+======================================================= */
+
+let groupId = null;
+
+let group = null;
+let members = [];
+let contributions = [];
+let expenses = [];
+let meetings = [];
+
+
+/* =======================================================
    HELPERS
-------------------------------------------------------- */
+======================================================= */
 
 function money(value) {
-  const amount = Number(value || 0);
 
   return new Intl.NumberFormat("en-KE", {
     style: "currency",
     currency: "KES",
     minimumFractionDigits: 0,
     maximumFractionDigits: 2
-  }).format(amount);
-}
-
-
-function number(value) {
-  return new Intl.NumberFormat("en-KE").format(
+  }).format(
     Number(value || 0)
   );
+
 }
 
 
 function formatDate(value) {
-  if (!value) return "—";
 
-  const date = new Date(value);
+  if (!value) {
+    return "—";
+  }
 
-  if (Number.isNaN(date.getTime())) {
+  const date =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
     return value;
   }
 
-  return date.toLocaleDateString("en-KE", {
-    year: "numeric",
-    month: "short",
-    day: "numeric"
-  });
+  return date.toLocaleDateString(
+    "en-KE",
+    {
+      year: "numeric",
+      month: "short",
+      day: "numeric"
+    }
+  );
+
 }
 
 
 function escapeHtml(value) {
-  if (value === null || value === undefined) {
+
+  if (
+    value === null ||
+    value === undefined
+  ) {
     return "";
   }
 
@@ -81,331 +127,515 @@ function escapeHtml(value) {
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
+
 }
 
 
-function showError(message) {
-  console.error(message);
+/* =======================================================
+   ERROR
+======================================================= */
+
+function showError(error) {
+
+  console.error(
+    "Reports error:",
+    error
+  );
 
   errorEl.textContent =
-    message?.message ||
-    String(message) ||
+    error?.message ||
     "Unable to load reports.";
 
   errorEl.hidden = false;
 
-  statusEl.textContent = "Unable to load reports.";
+  statusEl.textContent =
+    "Unable to load reports.";
+
 }
 
 
-function setLoading() {
-  errorEl.hidden = true;
-  statusEl.textContent = "Loading reports...";
-}
-
-
-/* -------------------------------------------------------
-   GET CURRENT GROUP
-------------------------------------------------------- */
+/* =======================================================
+   GET GROUP
+======================================================= */
 
 async function getGroupId() {
-  const { data, error } = await supabase.rpc("my_group_id");
+
+  const {
+    data,
+    error
+  } = await supabase.rpc(
+    "my_group_id"
+  );
 
   if (error) {
     throw error;
   }
 
   if (!data) {
+
     throw new Error(
       "No group is associated with your account."
     );
+
   }
 
   return data;
+
 }
 
 
-/* -------------------------------------------------------
-   GET GROUP OPENING BALANCE
-------------------------------------------------------- */
+/* =======================================================
+   LOAD GROUP
+======================================================= */
 
-async function loadGroup(groupId) {
-  const { data, error } = await supabase
+async function loadGroup() {
+
+  const {
+    data,
+    error
+  } = await supabase
     .from("groups")
-    .select("opening_balance")
-    .eq("id", groupId)
+    .select(`
+      id,
+      name,
+      monthly_contribution,
+      opening_balance
+    `)
+    .eq(
+      "id",
+      groupId
+    )
     .single();
 
   if (error) {
     throw error;
   }
 
-  return {
-    openingBalance: Number(data?.opening_balance || 0)
-  };
+  group =
+    data;
+
 }
 
 
-/* -------------------------------------------------------
-   MEMBERS
-------------------------------------------------------- */
+/* =======================================================
+   LOAD MEMBERS
+======================================================= */
 
-async function loadMembers(groupId) {
-  const { data, error } = await supabase
+async function loadMembers() {
+
+  const {
+    data,
+    error
+  } = await supabase
     .from("members")
-    .select("id, status")
-    .eq("group_id", groupId);
+    .select(`
+      id,
+      name,
+      status
+    `)
+    .eq(
+      "group_id",
+      groupId
+    );
 
   if (error) {
     throw error;
   }
 
-  const members = data || [];
+  members =
+    data || [];
 
-  const total = members.length;
-
-  const active = members.filter(
-    member =>
-      String(member.status || "").toLowerCase() === "active"
-  ).length;
-
-  return {
-    total,
-    active
-  };
 }
 
 
-/* -------------------------------------------------------
-   CONTRIBUTIONS
-------------------------------------------------------- */
+/* =======================================================
+   LOAD CONTRIBUTIONS
+======================================================= */
 
-async function loadContributions(groupId) {
-  const { data, error } = await supabase
+async function loadContributions() {
+
+  const {
+    data,
+    error
+  } = await supabase
     .from("contributions")
     .select(`
       id,
+      group_id,
       member_id,
       amount,
-      contribution_date
+      contribution_type,
+      month,
+      payment_method,
+      reference,
+      contribution_date,
+      mpesa_reference,
+      created_at
     `)
-    .eq("group_id", groupId)
-    .order("contribution_date", {
-      ascending: false
-    });
-
-  if (error) {
-    throw error;
-  }
-
-  return data || [];
-}
-
-
-/* -------------------------------------------------------
-   CONTRIBUTION MEMBER NAMES
-------------------------------------------------------- */
-
-async function loadMemberNames(groupId, contributions) {
-  const memberIds = [
-    ...new Set(
-      contributions
-        .map(item => item.member_id)
-        .filter(Boolean)
+    .eq(
+      "group_id",
+      groupId
     )
-  ];
-
-  if (!memberIds.length) {
-    return {};
-  }
-
-  const { data, error } = await supabase
-    .from("members")
-    .select("id, name")
-    .eq("group_id", groupId)
-    .in("id", memberIds);
+    .order(
+      "contribution_date",
+      {
+        ascending: false
+      }
+    )
+    .order(
+      "created_at",
+      {
+        ascending: false
+      }
+    );
 
   if (error) {
     throw error;
   }
 
-  const lookup = {};
+  contributions =
+    data || [];
 
-  (data || []).forEach(member => {
-    lookup[member.id] = member.name;
-  });
-
-  return lookup;
 }
 
 
-/* -------------------------------------------------------
-   EXPENSES
-------------------------------------------------------- */
+/* =======================================================
+   LOAD EXPENSES
+======================================================= */
 
-async function loadExpenses(groupId) {
-  const { data, error } = await supabase
+async function loadExpenses() {
+
+  const {
+    data,
+    error
+  } = await supabase
     .from("expenses")
     .select(`
       id,
-      amount,
-      date,
+      group_id,
       description,
       category,
-      approval_status
+      amount,
+      date,
+      approval_status,
+      created_at
     `)
-    .eq("group_id", groupId)
-    .order("date", {
-      ascending: false
-    });
+    .eq(
+      "group_id",
+      groupId
+    )
+    .order(
+      "date",
+      {
+        ascending: false
+      }
+    )
+    .order(
+      "created_at",
+      {
+        ascending: false
+      }
+    );
 
   if (error) {
     throw error;
   }
 
-  return data || [];
+  expenses =
+    data || [];
+
 }
 
 
-/* -------------------------------------------------------
-   MEETINGS
-------------------------------------------------------- */
+/* =======================================================
+   LOAD MEETINGS
+======================================================= */
 
-async function loadMeetings(groupId) {
-  const { data, error } = await supabase
+async function loadMeetings() {
+
+  const {
+    data,
+    error
+  } = await supabase
     .from("meetings")
     .select(`
       id,
-      date,
+      group_id,
       title,
+      date,
       venue,
-      status
+      status,
+      created_at
     `)
-    .eq("group_id", groupId)
-    .order("date", {
-      ascending: true
-    });
+    .eq(
+      "group_id",
+      groupId
+    )
+    .order(
+      "date",
+      {
+        ascending: true
+      }
+    );
 
   if (error) {
     throw error;
   }
 
-  return data || [];
+  meetings =
+    data || [];
+
 }
 
 
-/* -------------------------------------------------------
-   CALCULATE FINANCIALS
-------------------------------------------------------- */
+/* =======================================================
+   TOTAL CONTRIBUTIONS
+======================================================= */
 
-function calculateFinancials(
-  openingBalance,
-  contributions,
-  expenses
-) {
-  const totalContributions = contributions.reduce(
-    (total, item) =>
-      total + Number(item.amount || 0),
+function getTotalContributions() {
+
+  return contributions.reduce(
+    (
+      total,
+      item
+    ) =>
+      total +
+      Number(
+        item.amount || 0
+      ),
     0
   );
 
-  const approvedExpenses = expenses
-    .filter(
-      item =>
-        String(item.approval_status || "")
-          .toLowerCase() === "approved"
-    )
-    .reduce(
-      (total, item) =>
-        total + Number(item.amount || 0),
-      0
-    );
-
-  const pendingExpenses = expenses
-    .filter(
-      item =>
-        String(item.approval_status || "")
-          .toLowerCase() === "pending"
-    )
-    .reduce(
-      (total, item) =>
-        total + Number(item.amount || 0),
-      0
-    );
-
-  const currentBalance =
-    openingBalance +
-    totalContributions -
-    approvedExpenses;
-
-  return {
-    totalContributions,
-    approvedExpenses,
-    pendingExpenses,
-    currentBalance
-  };
 }
 
 
-/* -------------------------------------------------------
-   RENDER MEMBERS
-------------------------------------------------------- */
+/* =======================================================
+   APPROVED EXPENSES
+======================================================= */
 
-function renderMembers(memberStats) {
+function getApprovedExpenses() {
+
+  return expenses
+    .filter(
+      expense =>
+        String(
+          expense.approval_status ||
+          ""
+        ).toLowerCase() ===
+        "approved"
+    )
+    .reduce(
+      (
+        total,
+        expense
+      ) =>
+        total +
+        Number(
+          expense.amount || 0
+        ),
+      0
+    );
+
+}
+
+
+/* =======================================================
+   PENDING EXPENSES
+======================================================= */
+
+function getPendingExpenses() {
+
+  return expenses
+    .filter(
+      expense =>
+        String(
+          expense.approval_status ||
+          ""
+        ).toLowerCase() ===
+        "pending"
+    )
+    .reduce(
+      (
+        total,
+        expense
+      ) =>
+        total +
+        Number(
+          expense.amount || 0
+        ),
+      0
+    );
+
+}
+
+
+/* =======================================================
+   ACTIVE MEMBERS
+======================================================= */
+
+function getActiveMembers() {
+
+  return members.filter(
+    member =>
+      String(
+        member.status || ""
+      ).toLowerCase() ===
+      "active"
+  );
+
+}
+
+
+/* =======================================================
+   CURRENT BALANCE
+======================================================= */
+
+function getCurrentBalance() {
+
+  const opening =
+    Number(
+      group?.opening_balance ||
+      0
+    );
+
+  const contributionsTotal =
+    getTotalContributions();
+
+  const approvedExpenses =
+    getApprovedExpenses();
+
+  return (
+    opening +
+    contributionsTotal -
+    approvedExpenses
+  );
+
+}
+
+
+/* =======================================================
+   RENDER MAIN METRICS
+======================================================= */
+
+function renderMetrics() {
+
+  const active =
+    getActiveMembers();
+
+  const total =
+    members.length;
+
+  const contributionTotal =
+    getTotalContributions();
+
+  const approved =
+    getApprovedExpenses();
+
+  const pending =
+    getPendingExpenses();
+
+  const opening =
+    Number(
+      group?.opening_balance ||
+      0
+    );
+
+  const balance =
+    opening +
+    contributionTotal -
+    approved;
+
+
   activeMembersEl.textContent =
-    number(memberStats.active);
+    active.length;
 
   totalMembersEl.textContent =
-    number(memberStats.total);
-}
+    total;
 
-
-/* -------------------------------------------------------
-   RENDER FINANCIALS
-------------------------------------------------------- */
-
-function renderFinancials(
-  openingBalance,
-  financials
-) {
   contributionsEl.textContent =
-    money(financials.totalContributions);
+    money(
+      contributionTotal
+    );
 
   approvedExpensesEl.textContent =
-    money(financials.approvedExpenses);
+    money(
+      approved
+    );
 
   pendingExpensesEl.textContent =
-    money(financials.pendingExpenses);
+    money(
+      pending
+    );
 
   currentBalanceEl.textContent =
-    money(financials.currentBalance);
+    money(
+      balance
+    );
 
+
+  /* Financial position */
 
   openingEl.textContent =
-    money(openingBalance);
+    money(
+      opening
+    );
 
   contributions2El.textContent =
-    money(financials.totalContributions);
+    money(
+      contributionTotal
+    );
 
   expenses2El.textContent =
-    money(financials.approvedExpenses);
+    money(
+      approved
+    );
 
   balanceEl.textContent =
-    money(financials.currentBalance);
+    money(
+      balance
+    );
+
 }
 
 
-/* -------------------------------------------------------
-   RENDER CONTRIBUTIONS
-------------------------------------------------------- */
+/* =======================================================
+   MEMBER NAME
+======================================================= */
 
-function renderContributions(
-  contributions,
-  memberNames
+function getMemberName(
+  memberId
 ) {
-  if (!contributions.length) {
-    contributionRowsEl.innerHTML = `
+
+  const member =
+    members.find(
+      item =>
+        item.id ===
+        memberId
+    );
+
+  return (
+    member?.name ||
+    "Unknown member"
+  );
+
+}
+
+
+/* =======================================================
+   RENDER CONTRIBUTIONS
+======================================================= */
+
+function renderContributions() {
+
+  if (
+    !contributions.length
+  ) {
+
+    contributionRows.innerHTML = `
       <tr>
         <td colspan="6">
           No contributions recorded yet.
@@ -414,72 +644,98 @@ function renderContributions(
     `;
 
     return;
+
   }
 
 
-  /*
-    Your current contributions schema contains:
-      contribution_date
-      member_id
-      amount
-
-    Type, Method and Reference are not selected because
-    they are not part of the schema previously established.
-  */
-
-  contributionRowsEl.innerHTML =
+  contributionRows.innerHTML =
     contributions
-      .slice(0, 10)
-      .map(item => {
-        const memberName =
-          memberNames[item.member_id] ||
-          "Unknown member";
+      .slice(0, 20)
+      .map(
+        item => {
 
-        return `
-          <tr>
+          const date =
+            item.contribution_date ||
+            item.created_at ||
+            (
+              item.month
+                ? `${item.month}-01`
+                : null
+            );
 
-            <td>
-              ${escapeHtml(
-                formatDate(item.contribution_date)
-              )}
-            </td>
 
-            <td>
-              ${escapeHtml(memberName)}
-            </td>
+          const reference =
+            item.mpesa_reference ||
+            item.reference ||
+            "—";
 
-            <td>
-              <strong>
-                ${escapeHtml(money(item.amount))}
-              </strong>
-            </td>
 
-            <td>
-              —
-            </td>
+          return `
+            <tr>
 
-            <td>
-              —
-            </td>
+              <td>
+                ${escapeHtml(
+                  formatDate(date)
+                )}
+              </td>
 
-            <td>
-              —
-            </td>
+              <td>
+                ${escapeHtml(
+                  getMemberName(
+                    item.member_id
+                  )
+                )}
+              </td>
 
-          </tr>
-        `;
-      })
+              <td>
+                <strong>
+                  ${escapeHtml(
+                    money(item.amount)
+                  )}
+                </strong>
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  item.contribution_type ||
+                  "—"
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  item.payment_method ||
+                  "—"
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  reference
+                )}
+              </td>
+
+            </tr>
+          `;
+
+        }
+      )
       .join("");
+
 }
 
 
-/* -------------------------------------------------------
+/* =======================================================
    RENDER EXPENSES
-------------------------------------------------------- */
+======================================================= */
 
-function renderExpenses(expenses) {
-  if (!expenses.length) {
-    expenseRowsEl.innerHTML = `
+function renderExpenses() {
+
+  if (
+    !expenses.length
+  ) {
+
+    expenseRows.innerHTML = `
       <tr>
         <td colspan="5">
           No expenses recorded yet.
@@ -488,216 +744,186 @@ function renderExpenses(expenses) {
     `;
 
     return;
+
   }
 
 
-  expenseRowsEl.innerHTML =
+  expenseRows.innerHTML =
     expenses
-      .slice(0, 10)
-      .map(item => {
-        const status =
-          String(
-            item.approval_status || "pending"
-          ).toLowerCase();
+      .slice(0, 20)
+      .map(
+        expense => {
 
-        return `
-          <tr>
+          return `
+            <tr>
 
-            <td>
-              ${escapeHtml(
-                formatDate(item.date)
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                item.description || "—"
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                item.category || "—"
-              )}
-            </td>
-
-            <td>
-              <strong>
+              <td>
                 ${escapeHtml(
-                  money(item.amount)
+                  formatDate(
+                    expense.date
+                  )
                 )}
-              </strong>
-            </td>
+              </td>
 
-            <td>
-              ${escapeHtml(
-                item.approval_status || "—"
-              )}
-            </td>
+              <td>
+                ${escapeHtml(
+                  expense.description
+                )}
+              </td>
 
-          </tr>
-        `;
-      })
+              <td>
+                ${escapeHtml(
+                  expense.category
+                )}
+              </td>
+
+              <td>
+                <strong>
+                  ${escapeHtml(
+                    money(
+                      expense.amount
+                    )
+                  )}
+                </strong>
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  expense.approval_status
+                )}
+              </td>
+
+            </tr>
+          `;
+
+        }
+      )
       .join("");
+
 }
 
 
-/* -------------------------------------------------------
-   RENDER MEETINGS
-------------------------------------------------------- */
+/* =======================================================
+   MEETINGS SUMMARY
+======================================================= */
 
-function renderMeetings(meetings) {
-  const today = new Date();
+function renderMeetings() {
 
-  today.setHours(0, 0, 0, 0);
-
-
-  let upcoming = 0;
-  let completed = 0;
-  let cancelled = 0;
-
-
-  meetings.forEach(meeting => {
-    const status =
-      String(meeting.status || "")
-        .toLowerCase()
-        .trim();
+  const upcoming =
+    meetings.filter(
+      meeting =>
+        String(
+          meeting.status || ""
+        ).toLowerCase() ===
+        "upcoming"
+    ).length;
 
 
-    if (
-      status === "cancelled" ||
-      status === "canceled"
-    ) {
-      cancelled++;
-      return;
-    }
+  const completed =
+    meetings.filter(
+      meeting =>
+        String(
+          meeting.status || ""
+        ).toLowerCase() ===
+        "completed"
+    ).length;
 
 
-    if (
-      status === "completed" ||
-      status === "complete"
-    ) {
-      completed++;
-      return;
-    }
-
-
-    const meetingDate =
-      new Date(meeting.date);
-
-    if (
-      !Number.isNaN(
-        meetingDate.getTime()
-      ) &&
-      meetingDate >= today
-    ) {
-      upcoming++;
-    }
-  });
+  const cancelled =
+    meetings.filter(
+      meeting =>
+        String(
+          meeting.status || ""
+        ).toLowerCase() ===
+        "cancelled"
+    ).length;
 
 
   upcomingMeetingsEl.textContent =
-    number(upcoming);
+    upcoming;
 
   completedMeetingsEl.textContent =
-    number(completed);
+    completed;
 
   cancelledMeetingsEl.textContent =
-    number(cancelled);
+    cancelled;
+
 }
 
 
-/* -------------------------------------------------------
-   MAIN
-------------------------------------------------------- */
+/* =======================================================
+   INITIALIZE
+======================================================= */
 
-async function loadReports() {
+async function init() {
+
   try {
-    setLoading();
+
+    errorEl.hidden =
+      true;
+
+    statusEl.textContent =
+      "Loading reports...";
 
 
     /*
-      Get the group belonging to the
-      currently authenticated user.
+      Get current user's group.
     */
-    const groupId =
+
+    groupId =
       await getGroupId();
 
 
     /*
-      Load all report data.
-      These requests can run in parallel.
+      Load everything from Supabase.
     */
-    const [
-      group,
-      memberStats,
-      contributions,
-      expenses,
-      meetings
-    ] = await Promise.all([
-      loadGroup(groupId),
-      loadMembers(groupId),
-      loadContributions(groupId),
-      loadExpenses(groupId),
-      loadMeetings(groupId)
+
+    await Promise.all([
+      loadGroup(),
+      loadMembers(),
+      loadContributions(),
+      loadExpenses(),
+      loadMeetings()
     ]);
 
 
     /*
-      Get names for contribution member IDs.
+      Render report.
     */
-    const memberNames =
-      await loadMemberNames(
-        groupId,
-        contributions
-      );
+
+    renderMetrics();
+
+    renderContributions();
+
+    renderExpenses();
+
+    renderMeetings();
 
 
     /*
-      Calculate totals.
+      Timestamp.
     */
-    const financials =
-      calculateFinancials(
-        group.openingBalance,
-        contributions,
-        expenses
-      );
 
+    const now =
+      new Date();
 
-    /*
-      Render everything.
-    */
-    renderMembers(memberStats);
-
-    renderFinancials(
-      group.openingBalance,
-      financials
-    );
-
-    renderContributions(
-      contributions,
-      memberNames
-    );
-
-    renderExpenses(expenses);
-
-    renderMeetings(meetings);
-
-
-    /*
-      Finished successfully.
-    */
     statusEl.textContent =
-      `Reports updated • ${new Date().toLocaleString("en-KE")}`;
+      `Reports updated • ${now.toLocaleString(
+        "en-KE"
+      )}`;
+
 
   } catch (error) {
+
     showError(error);
+
   }
+
 }
 
 
-/* -------------------------------------------------------
+/* =======================================================
    START
-------------------------------------------------------- */
+======================================================= */
 
-loadReports();
+init();
