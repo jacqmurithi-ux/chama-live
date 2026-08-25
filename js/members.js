@@ -1,412 +1,352 @@
 import { supabase } from "./supabase.js";
 import { getMyMember } from "./auth.js";
 
-
 const $ = (id) =>
-  document.getElementById(id);
+document.getElementById(id);
 
-
-let currentUser = null;
-let currentGroupId = null;
-let allMembers = [];
-let editingMemberId = null;
-
+let currentMember = null;
+let groupId = null;
+let members = [];
+let editingId = null;
+let inviteMember = null;
 
 /* =====================================================
-   INIT
+INIT
 ===================================================== */
 
 async function init() {
 
-  try {
+try {
 
-    const member =
-      await getMyMember();
-
-    if (!member) {
-      throw new Error(
-        "Unable to identify your group."
-      );
-    }
+```
+currentMember =
+  await getMyMember();
 
 
-    currentUser = member;
-    currentGroupId = member.group_id;
+if (!currentMember) {
 
-
-    setupEvents();
-
-    await loadMembers();
-
-
-  } catch (error) {
-
-    showError(error);
-
-  }
+  throw new Error(
+    "Unable to identify your member account."
+  );
 
 }
 
 
+groupId =
+  currentMember.group_id;
+
+
+setupEvents();
+
+configurePermissions();
+
+setToday();
+
+await loadMembers();
+```
+
+} catch (error) {
+
+```
+showError(error);
+```
+
+}
+
+}
+
 /* =====================================================
-   EVENTS
+EVENTS
 ===================================================== */
 
 function setupEvents() {
 
-  $("addMemberBtn")
-    ?.addEventListener(
-      "click",
-      openAddMember
-    );
+$("addMemberBtn")
+?.addEventListener(
+"click",
+openAddForm
+);
 
+$("cancelMember")
+?.addEventListener(
+"click",
+closeForm
+);
 
-  $("closeModal")
-    ?.addEventListener(
-      "click",
-      closeModal
-    );
+$("memberForm")
+?.addEventListener(
+"submit",
+saveMember
+);
 
+$("searchMembers")
+?.addEventListener(
+"input",
+renderMembers
+);
 
-  $("cancelMember")
-    ?.addEventListener(
-      "click",
-      closeModal
-    );
+$("generateInvite")
+?.addEventListener(
+"click",
+generateInvite
+);
 
+$("logout")
+?.addEventListener(
+"click",
+async () => {
 
-  $("memberForm")
-    ?.addEventListener(
-      "submit",
-      saveMember
-    );
+```
+    await supabase.auth.signOut();
 
+    window.location.href =
+      "login.html";
 
-  $("search")
-    ?.addEventListener(
-      "input",
-      renderMembers
-    );
-
-
-  $("roleFilter")
-    ?.addEventListener(
-      "change",
-      renderMembers
-    );
-
-
-  $("statusFilter")
-    ?.addEventListener(
-      "change",
-      renderMembers
-    );
-
-
-  $("memberModal")
-    ?.addEventListener(
-      "click",
-      event => {
-
-        if (
-          event.target ===
-          $("memberModal")
-        ) {
-
-          closeModal();
-
-        }
-
-      }
-    );
+  }
+);
+```
 
 }
 
+/* =====================================================
+PERMISSIONS
+===================================================== */
+
+function configurePermissions() {
+
+const role =
+String(
+currentMember.role || ""
+).toLowerCase();
+
+const canManage =
+role === "admin" ||
+role === "chairperson";
+
+$("addMemberBtn").hidden =
+!canManage;
+
+if (!canManage) {
+
+```
+$("memberFormCard").hidden =
+  true;
+```
+
+}
+
+}
 
 /* =====================================================
-   LOAD MEMBERS
+LOAD MEMBERS
 ===================================================== */
 
 async function loadMembers() {
 
-  clearError();
+clearError();
 
-  setStatus(
-    "Loading members..."
-  );
+setStatus(
+"Loading members..."
+);
 
+const {
+data,
+error
+} = await supabase
 
-  const {
-    data,
-    error
-  } = await supabase
+```
+.from("members")
 
-    .from("members")
+.select(`
+  id,
+  group_id,
+  member_number,
+  membership_number,
+  name,
+  phone,
+  email,
+  role,
+  join_date,
+  status,
+  onboarding_status,
+  invited_at,
+  activated_at,
+  auth_user_id
+`)
 
-    .select(`
-      id,
-      group_id,
-      user_id,
-      auth_user_id,
-      member_number,
-      name,
-      phone,
-      email,
-      role,
-      join_date,
-      status,
-      created_at
-    `)
+.eq(
+  "group_id",
+  groupId
+)
 
-    .eq(
-      "group_id",
-      currentGroupId
-    )
-
-    .order(
-      "name",
-      {
-        ascending: true
-      }
-    );
-
-
-  if (error) {
-
-    /*
-      Some installations may not yet have
-      auth_user_id. Retry without it.
-    */
-
-    if (
-      error.message?.includes(
-        "auth_user_id"
-      )
-    ) {
-
-      const retry =
-        await supabase
-
-          .from("members")
-
-          .select(`
-            id,
-            group_id,
-            user_id,
-            member_number,
-            name,
-            phone,
-            email,
-            role,
-            join_date,
-            status,
-            created_at
-          `)
-
-          .eq(
-            "group_id",
-            currentGroupId
-          )
-
-          .order(
-            "name",
-            {
-              ascending: true
-            }
-          );
-
-
-      if (retry.error) {
-
-        throw retry.error;
-
-      }
-
-
-      allMembers =
-        retry.data || [];
-
-    } else {
-
-      throw error;
-
-    }
-
-  } else {
-
-    allMembers =
-      data || [];
-
+.order(
+  "name",
+  {
+    ascending: true
   }
+);
+```
 
+if (error) {
 
-  renderMembers();
-
-  updateStatistics();
-
-
-  setStatus(
-    `Members loaded • ${new Date().toLocaleString(
-      "en-KE"
-    )}`
-  );
+```
+throw error;
+```
 
 }
 
+members =
+data || [];
+
+renderSummary();
+
+renderMembers();
+
+setStatus(
+`Members loaded • ${new Date().toLocaleString("en-KE")}`
+);
+
+}
 
 /* =====================================================
-   RENDER
+SUMMARY
+===================================================== */
+
+function renderSummary() {
+
+const total =
+members.length;
+
+const active =
+members.filter(
+member =>
+member.status ===
+"active"
+).length;
+
+const pending =
+members.filter(
+member =>
+!member.auth_user_id ||
+member.onboarding_status ===
+"pending"
+).length;
+
+$("totalMembers").textContent =
+total;
+
+$("activeMembers").textContent =
+active;
+
+$("pendingMembers").textContent =
+pending;
+
+}
+
+/* =====================================================
+RENDER MEMBERS
 ===================================================== */
 
 function renderMembers() {
 
-  const tbody =
-    $("memberRows");
+const tbody =
+$("memberRows");
 
-  if (!tbody) {
-    return;
-  }
+const search =
+String(
+$("searchMembers")?.value || ""
+)
+.trim()
+.toLowerCase();
 
+const filtered =
+members.filter(
+member => {
 
-  const search =
-    (
-      $("search")?.value ||
-      ""
-    )
-      .trim()
-      .toLowerCase();
+```
+    if (!search) {
 
+      return true;
 
-  const role =
-    $("roleFilter")?.value ||
-    "";
-
-
-  const status =
-    $("statusFilter")?.value ||
-    "";
+    }
 
 
-  const filtered =
-    allMembers.filter(
-      member => {
+    return [
 
-        const searchable =
-          [
-            member.name,
-            member.member_number,
-            member.phone,
-            member.email
-          ]
-            .filter(Boolean)
-            .join(" ")
-            .toLowerCase();
+      member.name,
 
+      member.member_number,
 
-        if (
-          search &&
-          !searchable.includes(search)
-        ) {
+      member.membership_number,
 
-          return false;
+      member.phone,
 
-        }
+      member.email,
 
+      member.role
 
-        if (
-          role &&
-          member.role !== role
-        ) {
+    ]
 
-          return false;
+      .filter(Boolean)
 
-        }
-
-
-        if (
-          status &&
-          member.status !== status
-        ) {
-
-          return false;
-
-        }
-
-
-        return true;
-
-      }
-    );
-
-
-  if (!filtered.length) {
-
-    tbody.innerHTML = `
-
-      <tr>
-
-        <td colspan="8">
-
-          No members found.
-
-        </td>
-
-      </tr>
-
-    `;
-
-    return;
+      .some(
+        value =>
+          String(value)
+            .toLowerCase()
+            .includes(search)
+      );
 
   }
+);
+```
 
+if (!filtered.length) {
 
-  tbody.innerHTML =
-    filtered
-      .map(
-        member =>
-          memberRow(member)
-      )
-      .join("");
+```
+tbody.innerHTML = `
+
+  <tr>
+
+    <td colspan="7">
+
+      No members found.
+
+    </td>
+
+  </tr>
+
+`;
+
+return;
+```
 
 }
 
+const canManage =
+isManager();
 
-/* =====================================================
-   MEMBER ROW
-===================================================== */
+tbody.innerHTML =
+filtered.map(
+member => `
 
-function memberRow(member) {
-
-  const loginEnabled =
-    Boolean(
-      member.auth_user_id ||
-      member.user_id
-    );
-
-
-  return `
-
+```
     <tr>
 
       <td>
 
         <strong>
-          ${escapeHtml(
-            member.member_number ||
-            "—"
-          )}
+          ${escapeHtml(member.name)}
         </strong>
 
-      </td>
-
-
-      <td>
-
-        <strong>
-          ${escapeHtml(
-            member.name
-          )}
-        </strong>
+        ${
+          member.email
+            ? `
+              <div class="muted">
+                ${escapeHtml(member.email)}
+              </div>
+            `
+            : ""
+        }
 
       </td>
 
@@ -414,7 +354,8 @@ function memberRow(member) {
       <td>
 
         ${escapeHtml(
-          member.phone ||
+          member.member_number ||
+          member.membership_number ||
           "—"
         )}
 
@@ -424,8 +365,7 @@ function memberRow(member) {
       <td>
 
         ${escapeHtml(
-          member.email ||
-          "—"
+          member.phone || "—"
         )}
 
       </td>
@@ -433,27 +373,30 @@ function memberRow(member) {
 
       <td>
 
-        <span>
+        <strong>
+
           ${escapeHtml(
-            formatRole(
-              member.role
-            )
+            roleLabel(member.role)
           )}
-        </span>
+
+        </strong>
 
       </td>
 
 
       <td>
 
-        <strong>
-          ${escapeHtml(
-            String(
-              member.status ||
-              "active"
-            ).toUpperCase()
-          )}
-        </strong>
+        ${accountStatus(member)}
+
+      </td>
+
+
+      <td>
+
+        ${statusLabel(
+          member.status,
+          member.onboarding_status
+        )}
 
       </td>
 
@@ -461,497 +404,456 @@ function memberRow(member) {
       <td>
 
         ${
-          loginEnabled
-
-            ? `<strong>ENABLED</strong>`
-
-            : `<span class="muted">
-                NOT ENABLED
-              </span>`
+          canManage
+            ? actionButtons(member)
+            : "—"
         }
-
-      </td>
-
-
-      <td>
-
-        <div
-          style="
-            display:flex;
-            gap:6px;
-            flex-wrap:wrap;
-          "
-        >
-
-          <button
-            class="btn btn-secondary"
-            type="button"
-            data-action="edit"
-            data-id="${member.id}"
-          >
-            Edit
-          </button>
-
-
-          ${
-            member.status === "active"
-
-              ? `
-                <button
-                  class="btn btn-secondary"
-                  type="button"
-                  data-action="deactivate"
-                  data-id="${member.id}"
-                >
-                  Deactivate
-                </button>
-              `
-
-              : `
-                <button
-                  class="btn btn-secondary"
-                  type="button"
-                  data-action="activate"
-                  data-id="${member.id}"
-                >
-                  Activate
-                </button>
-              `
-          }
-
-
-          ${
-            !loginEnabled
-
-              ? `
-                <button
-                  class="btn btn-primary"
-                  type="button"
-                  data-action="login"
-                  data-id="${member.id}"
-                >
-                  Enable Login
-                </button>
-              `
-
-              : ""
-          }
-
-        </div>
 
       </td>
 
     </tr>
 
-  `;
+  `
+).join("");
+```
 
 }
 
-
 /* =====================================================
-   TABLE ACTIONS
+ACTION BUTTONS
 ===================================================== */
 
-document.addEventListener(
-  "click",
-  async event => {
+function actionButtons(member) {
 
-    const button =
-      event.target.closest(
-        "[data-action]"
-      );
+const isSelf =
+member.auth_user_id &&
+currentMember.auth_user_id ===
+member.auth_user_id;
 
+let buttons = `
 
-    if (!button) {
-      return;
-    }
+```
+<button
+  class="btn btn-secondary"
+  type="button"
+  data-action="edit"
+  data-id="${member.id}"
+>
+  Edit
+</button>
+```
 
+`;
 
-    const action =
-      button.dataset.action;
+if (
+member.email &&
+!member.auth_user_id
+) {
 
+```
+buttons += `
 
-    const id =
-      button.dataset.id;
+  <button
+    class="btn btn-primary"
+    type="button"
+    data-action="invite"
+    data-id="${member.id}"
+  >
+    Activate Login
+  </button>
 
+`;
+```
 
-    const member =
-      allMembers.find(
-        item =>
-          String(item.id) ===
-          String(id)
-      );
+}
 
+if (
+member.status === "active" &&
+!isSelf
+) {
 
-    if (!member) {
-      return;
-    }
+```
+buttons += `
 
+  <button
+    class="btn btn-secondary"
+    type="button"
+    data-action="toggle"
+    data-id="${member.id}"
+  >
+    Deactivate
+  </button>
 
-    if (action === "edit") {
+`;
+```
 
-      openEditMember(member);
+} else if (
+member.status === "inactive"
+) {
 
-    }
+```
+buttons += `
 
+  <button
+    class="btn btn-secondary"
+    type="button"
+    data-action="toggle"
+    data-id="${member.id}"
+  >
+    Activate
+  </button>
 
-    if (action === "activate") {
+`;
+```
 
-      await changeStatus(
-        member,
-        "active"
-      );
+}
 
-    }
+return `
 
+```
+<div
+  style="
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+  "
+>
 
-    if (action === "deactivate") {
+  ${buttons}
 
-      await changeStatus(
-        member,
-        "inactive"
-      );
+</div>
+```
 
-    }
+`;
 
+}
 
-    if (action === "login") {
+/* =====================================================
+ACCOUNT STATUS
+===================================================== */
 
-      enableLogin(member);
+function accountStatus(member) {
 
-    }
+if (
+member.auth_user_id &&
+member.onboarding_status ===
+"active"
+) {
 
-  }
+```
+return `
+
+  <strong>
+    ACTIVE LOGIN
+  </strong>
+
+`;
+```
+
+}
+
+if (
+member.onboarding_status ===
+"suspended"
+) {
+
+```
+return `
+  <strong>
+    SUSPENDED
+  </strong>
+`;
+```
+
+}
+
+return `
+
+```
+<span class="muted">
+  PENDING ACTIVATION
+</span>
+```
+
+`;
+
+}
+
+/* =====================================================
+STATUS
+===================================================== */
+
+function statusLabel(
+status,
+onboardingStatus
+) {
+
+if (
+onboardingStatus ===
+"suspended"
+) {
+
+```
+return "SUSPENDED";
+```
+
+}
+
+return String(
+status || "active"
+).toUpperCase();
+
+}
+
+/* =====================================================
+ROLE LABEL
+===================================================== */
+
+function roleLabel(role) {
+
+const labels = {
+
+```
+admin:
+  "Admin",
+
+chairperson:
+  "Chairperson",
+
+treasurer:
+  "Treasurer",
+
+secretary:
+  "Secretary",
+
+member:
+  "Member"
+```
+
+};
+
+return labels[
+String(role || "")
+.toLowerCase()
+] ||
+"Member";
+
+}
+
+/* =====================================================
+ADD FORM
+===================================================== */
+
+function openAddForm() {
+
+if (!isManager()) {
+
+```
+return;
+```
+
+}
+
+editingId =
+null;
+
+$("formTitle").textContent =
+"Add Member";
+
+$("memberForm").reset();
+
+$("memberId").value =
+"";
+
+setToday();
+
+$("memberFormCard").hidden =
+false;
+
+$("inviteCard").hidden =
+true;
+
+window.scrollTo({
+top:
+$("memberFormCard")
+.offsetTop -
+20,
+
+```
+behavior:
+  "smooth"
+```
+
+});
+
+}
+
+/* =====================================================
+EDIT FORM
+===================================================== */
+
+function editMember(member) {
+
+if (!isManager()) {
+
+```
+return;
+```
+
+}
+
+editingId =
+member.id;
+
+$("formTitle").textContent =
+"Edit Member";
+
+$("memberId").value =
+member.id;
+
+$("name").value =
+member.name || "";
+
+$("memberNumber").value =
+member.member_number || "";
+
+$("membershipNumber").value =
+member.membership_number || "";
+
+$("phone").value =
+member.phone || "";
+
+$("email").value =
+member.email || "";
+
+$("role").value =
+member.role || "member";
+
+$("joinDate").value =
+member.join_date ||
+"";
+
+$("memberFormCard").hidden =
+false;
+
+$("inviteCard").hidden =
+true;
+
+window.scrollTo({
+top:
+$("memberFormCard")
+.offsetTop -
+20,
+
+```
+behavior:
+  "smooth"
+```
+
+});
+
+}
+
+/* =====================================================
+SAVE MEMBER
+===================================================== */
+
+async function saveMember(
+event
+) {
+
+event.preventDefault();
+
+if (!isManager()) {
+
+```
+showError(
+  "Only an admin or chairperson can manage members."
+);
+
+return;
+```
+
+}
+
+const payload = {
+
+```
+p_group_id:
+  groupId,
+
+p_name:
+  $("name").value.trim(),
+
+p_member_number:
+  $("memberNumber").value.trim(),
+
+p_membership_number:
+  $("membershipNumber").value.trim(),
+
+p_phone:
+  $("phone").value.trim(),
+
+p_email:
+  $("email").value.trim() ||
+  null,
+
+p_role:
+  $("role").value,
+
+p_join_date:
+  $("joinDate").value ||
+  new Date()
+    .toISOString()
+    .slice(0, 10)
+```
+
+};
+
+try {
+
+```
+clearError();
+
+setStatus(
+  editingId
+    ? "Updating member..."
+    : "Creating member..."
 );
 
 
-/* =====================================================
-   ADD MEMBER
-===================================================== */
-
-function openAddMember() {
-
-  editingMemberId =
-    null;
-
-
-  $("modalTitle").textContent =
-    "Add Member";
-
-
-  $("memberForm").reset();
-
-
-  $("memberId").value =
-    "";
-
-
-  $("joinDate").value =
-    today();
-
-
-  $("role").value =
-    "member";
-
-
-  $("memberStatus").value =
-    "active";
-
-
-  $("saveMember").textContent =
-    "Save Member";
-
-
-  openModal();
-
-}
-
-
-/* =====================================================
-   EDIT MEMBER
-===================================================== */
-
-function openEditMember(member) {
-
-  editingMemberId =
-    member.id;
-
-
-  $("modalTitle").textContent =
-    "Edit Member";
-
-
-  $("memberId").value =
-    member.id;
-
-
-  $("memberNumber").value =
-    member.member_number ||
-    "";
-
-
-  $("name").value =
-    member.name ||
-    "";
-
-
-  $("phone").value =
-    member.phone ||
-    "";
-
-
-  $("email").value =
-    member.email ||
-    "";
-
-
-  $("role").value =
-    member.role ||
-    "member";
-
-
-  $("joinDate").value =
-    member.join_date ||
-    today();
-
-
-  $("memberStatus").value =
-    member.status ||
-    "active";
-
-
-  $("saveMember").textContent =
-    "Update Member";
-
-
-  openModal();
-
-}
-
-
-/* =====================================================
-   SAVE MEMBER
-===================================================== */
-
-async function saveMember(event) {
-
-  event.preventDefault();
-
-  clearError();
-
-
-  const memberNumber =
-    $("memberNumber").value
-      .trim();
-
-
-  const name =
-    $("name").value
-      .trim();
-
-
-  const phone =
-    $("phone").value
-      .trim();
-
-
-  const email =
-    $("email").value
-      .trim();
-
-
-  const role =
-    $("role").value;
-
-
-  const joinDate =
-    $("joinDate").value;
-
-
-  const status =
-    $("memberStatus").value;
-
-
-  if (!memberNumber) {
-
-    showError(
-      new Error(
-        "Member number is required."
-      )
-    );
-
-    return;
-
-  }
-
-
-  if (!name) {
-
-    showError(
-      new Error(
-        "Member name is required."
-      )
-    );
-
-    return;
-
-  }
-
-
-  if (!phone) {
-
-    showError(
-      new Error(
-        "Phone number is required."
-      )
-    );
-
-    return;
-
-  }
-
-
-  if (!joinDate) {
-
-    showError(
-      new Error(
-        "Join date is required."
-      )
-    );
-
-    return;
-
-  }
-
-
-  const payload = {
-
-    group_id:
-      currentGroupId,
-
-    member_number:
-      memberNumber,
-
-    name:
-      name,
-
-    phone:
-      phone,
-
-    email:
-      email || null,
-
-    role:
-      role,
-
-    join_date:
-      joinDate,
-
-    status:
-      status
-
-  };
-
-
-  setStatus(
-    editingMemberId
-      ? "Updating member..."
-      : "Creating member..."
+if (!editingId) {
+
+  const {
+    data,
+    error
+  } = await supabase.rpc(
+    "add_group_member",
+    payload
   );
 
 
-  let result;
+  if (error) {
 
-
-  if (editingMemberId) {
-
-    result =
-      await supabase
-
-        .from("members")
-
-        .update(payload)
-
-        .eq(
-          "id",
-          editingMemberId
-        )
-
-        .eq(
-          "group_id",
-          currentGroupId );
-
-  } else {
-
-    result =
-      await supabase
-
-        .from("members")
-
-        .insert(
-          payload
-        );
+    throw error;
 
   }
 
 
-  if (result.error) {
+  if (!data) {
 
-    showError(
-      result.error
+    throw new Error(
+      "Member was not created."
     );
 
-    return;
-
   }
 
 
-  closeModal();
-
-  await loadMembers();
-
-
-  setStatus(
-    editingMemberId
-      ? "Member updated successfully."
-      : "Member added successfully."
+  showSuccess(
+    "Member added successfully. You can now activate their login."
   );
 
-
-  editingMemberId =
-    null;
-
-}
-
-
-/* =====================================================
-   STATUS CHANGE
-===================================================== */
-
-async function changeStatus(
-  member,
-  newStatus
-) {
-
-  const action =
-    newStatus === "active"
-      ? "activate"
-      : "deactivate";
-
-
-  const confirmed =
-    window.confirm(
-      `Are you sure you want to ${action} ${member.name}?`
-    );
-
-
-  if (!confirmed) {
-    return;
-  }
-
-
-  clearError();
-
+} else {
 
   const {
     error
@@ -960,306 +862,582 @@ async function changeStatus(
     .from("members")
 
     .update({
-      status:
-        newStatus
+
+      name:
+        payload.p_name,
+
+      member_number:
+        payload.p_member_number,
+
+      membership_number:
+        payload.p_membership_number,
+
+      phone:
+        payload.p_phone,
+
+      email:
+        payload.p_email,
+
+      role:
+        payload.p_role,
+
+      join_date:
+        payload.p_join_date
+
     })
 
     .eq(
       "id",
-      member.id
+      editingId
     )
 
     .eq(
       "group_id",
-      currentGroupId
+      groupId
     );
 
 
   if (error) {
 
-    showError(error);
-
-    return;
+    throw error;
 
   }
 
 
-  await loadMembers();
-
-}
-
-
-/* =====================================================
-   ENABLE LOGIN
-===================================================== */
-
-function enableLogin(member) {
-
-  /*
-    We deliberately do not create an Auth
-    password here.
-
-    The next stage will use a secure invitation/
-    account-activation process.
-
-    For now this validates that the member has
-    the information required for login.
-  */
-
-
-  if (!member.email) {
-
-    alert(
-      "This member needs an email address before login can be enabled."
-    );
-
-    openEditMember(member);
-
-    return;
-
-  }
-
-
-  alert(
-    `Login setup for ${member.name} will be activated through the secure member invitation process.`
+  showSuccess(
+    "Member updated successfully."
   );
 
 }
 
 
-/* =====================================================
-   STATISTICS
-===================================================== */
+closeForm();
 
-function updateStatistics() {
+await loadMembers();
+```
 
-  const total =
-    allMembers.length;
+} catch (error) {
 
-
-  const active =
-    allMembers.filter(
-      member =>
-        member.status ===
-        "active"
-    ).length;
-
-
-  const login =
-    allMembers.filter(
-      member =>
-        Boolean(
-          member.auth_user_id ||
-          member.user_id
-        )
-    ).length;
-
-
-  $("totalMembers").textContent =
-    total;
-
-
-  $("activeMembers").textContent =
-    active;
-
-
-  $("loginMembers").textContent =
-    login;
+```
+showError(error);
+```
 
 }
 
+}
 
 /* =====================================================
-   MODAL
+TOGGLE STATUS
 ===================================================== */
 
-function openModal() {
+async function toggleMember(
+member
+) {
 
-  $("memberModal").hidden =
-    false;
+if (!isManager()) {
+
+```
+return;
+```
 
 }
 
+const newStatus =
+member.status ===
+"active"
+? "inactive"
+: "active";
 
-function closeModal() {
+const message =
+newStatus ===
+"inactive"
 
-  $("memberModal").hidden =
-    true;
+```
+  ? `Deactivate ${member.name}?`
 
-  editingMemberId =
-    null;
+  : `Activate ${member.name}?`;
+```
 
-}
+if (!confirm(message)) {
 
-
-/* =====================================================
-   DATE
-===================================================== */
-
-function today() {
-
-  const date =
-    new Date();
-
-
-  return `${date.getFullYear()}-${String(
-    date.getMonth() + 1
-  ).padStart(
-    2,
-    "0"
-  )}-${String(
-    date.getDate()
-  ).padStart(
-    2,
-    "0"
-  )}`;
+```
+return;
+```
 
 }
 
+try {
 
-/* =====================================================
-   ROLE
-===================================================== */
+```
+const {
+  error
+} = await supabase
 
-function formatRole(role) {
+  .from("members")
 
-  if (!role) {
-    return "Member";
-  }
+  .update({
 
+    status:
+      newStatus
 
-  return String(role)
-    .replaceAll(
-      "_",
-      " "
-    )
-    .replace(
-      /\b\w/g,
-      letter =>
-        letter.toUpperCase()
-    );
+  })
 
-}
-
-
-/* =====================================================
-   ESCAPE HTML
-===================================================== */
-
-function escapeHtml(value) {
-
-  return String(
-    value ?? ""
+  .eq(
+    "id",
+    member.id
   )
 
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
+  .eq(
+    "group_id",
+    groupId
+  );
 
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
 
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
+if (error) {
 
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
+  throw error;
 
 }
 
 
+await loadMembers();
+```
+
+} catch (error) {
+
+```
+showError(error);
+```
+
+}
+
+}
+
 /* =====================================================
-   STATUS
+INVITE
 ===================================================== */
 
-function setStatus(message) {
+function openInvite(
+member
+) {
 
-  const element =
-    $("status");
+if (!isManager()) {
+
+```
+return;
+```
+
+}
+
+if (!member.email) {
+
+```
+showError(
+  "Add the member's email address before activating login."
+);
+
+return;
+```
+
+}
+
+inviteMember =
+member;
+
+$("inviteMemberName")
+.textContent =
+member.name;
+
+$("inviteMemberEmail")
+.textContent =
+member.email;
+
+$("inviteResult").hidden =
+true;
+
+$("inviteCard").hidden =
+false;
+
+window.scrollTo({
+top:
+$("inviteCard")
+.offsetTop -
+20,
+
+```
+behavior:
+  "smooth"
+```
+
+});
+
+}
+
+/* =====================================================
+GENERATE INVITE
+===================================================== */
+
+async function generateInvite() {
+
+if (
+!inviteMember ||
+!isManager()
+) {
+
+```
+return;
+```
+
+}
+
+try {
+
+```
+clearError();
 
 
-  if (element) {
+$("generateInvite").disabled =
+  true;
 
-    element.textContent =
-      message;
 
+$("generateInvite").textContent =
+  "Generating...";
+
+
+const {
+  data,
+  error
+} = await supabase.rpc(
+  "create_group_invite",
+  {
+    p_group_id:
+      groupId,
+
+    p_email:
+      inviteMember.email,
+
+    p_role:
+      inviteMember.role
   }
+);
+
+
+if (error) {
+
+  throw error;
 
 }
 
 
+const invite =
+  Array.isArray(data)
+    ? data[0]
+    : data;
+
+
+if (
+  !invite ||
+  !invite.code
+) {
+
+  throw new Error(
+    "The access code was not generated."
+  );
+
+}
+
+
+$("inviteCode")
+  .textContent =
+  invite.code;
+
+
+$("inviteResult").hidden =
+  false;
+
+
+showSuccess(
+  `Access code generated for ${inviteMember.name}.`
+);
+```
+
+} catch (error) {
+
+```
+showError(error);
+```
+
+} finally {
+
+```
+$("generateInvite").disabled =
+  false;
+
+
+$("generateInvite").textContent =
+  "Generate Access Code";
+```
+
+}
+
+}
+
 /* =====================================================
-   ERROR
+FORM CLOSE
 ===================================================== */
+
+function closeForm() {
+
+editingId =
+null;
+
+$("memberFormCard").hidden =
+true;
+
+$("memberForm").reset();
+
+}
+
+/* =====================================================
+HELPERS
+===================================================== */
+
+function isManager() {
+
+const role =
+String(
+currentMember?.role ||
+""
+).toLowerCase();
+
+return (
+role === "admin" ||
+role === "chairperson"
+);
+
+}
+
+function setToday() {
+
+const input =
+$("joinDate");
+
+if (
+input &&
+!input.value
+) {
+
+```
+input.value =
+  new Date()
+    .toISOString()
+    .slice(0, 10);
+```
+
+}
+
+}
+
+function setStatus(
+message
+) {
+
+const element =
+$("status");
+
+if (element) {
+
+```
+element.textContent =
+  message;
+```
+
+}
+
+}
 
 function clearError() {
 
-  const element =
-    $("error");
+const element =
+$("error");
 
+if (!element) {
 
-  if (!element) {
-    return;
-  }
-
-
-  element.hidden =
-    true;
-
-  element.textContent =
-    "";
+```
+return;
+```
 
 }
 
+element.hidden =
+true;
 
-function showError(error) {
-
-  console.error(
-    error
-  );
-
-
-  const message =
-    error?.message ||
-    "Unable to complete the operation.";
-
-
-  const element =
-    $("error");
-
-
-  if (element) {
-
-    element.hidden =
-      false;
-
-    element.textContent =
-      message;
-
-  }
-
-
-  setStatus(
-    "Unable to complete operation."
-  );
+element.textContent =
+"";
 
 }
 
+function showError(
+error
+) {
+
+console.error(error);
+
+const message =
+error?.message ||
+"Unable to complete the operation.";
+
+const element =
+$("error");
+
+if (element) {
+
+```
+element.hidden =
+  false;
+
+element.textContent =
+  message;
+```
+
+}
+
+setStatus(
+"Operation failed."
+);
+
+}
+
+function showSuccess(
+message
+) {
+
+clearError();
+
+setStatus(
+message
+);
+
+}
+
+function escapeHtml(
+value
+) {
+
+return String(
+value ?? ""
+)
+
+```
+.replaceAll(
+  "&",
+  "&amp;"
+)
+
+.replaceAll(
+  "<",
+  "&lt;"
+)
+
+.replaceAll(
+  ">",
+  "&gt;"
+)
+
+.replaceAll(
+  '"',
+  "&quot;"
+)
+
+.replaceAll(
+  "'",
+  "&#039;"
+);
+```
+
+}
 
 /* =====================================================
-   START
+TABLE ACTION DELEGATION
+===================================================== */
+
+$("memberRows")
+?.addEventListener(
+"click",
+event => {
+
+```
+  const button =
+    event.target.closest(
+      "button[data-action]"
+    );
+
+
+  if (!button) {
+
+    return;
+
+  }
+
+
+  const id =
+    button.dataset.id;
+
+
+  const member =
+    members.find(
+      item =>
+        item.id === id
+    );
+
+
+  if (!member) {
+
+    return;
+
+  }
+
+
+  const action =
+    button.dataset.action;
+
+
+  if (
+    action ===
+    "edit"
+  ) {
+
+    editMember(member);
+
+  }
+
+
+  if (
+    action ===
+    "toggle"
+  ) {
+
+    toggleMember(member);
+
+  }
+
+
+  if (
+    action ===
+    "invite"
+  ) {
+
+    openInvite(member);
+
+  }
+
+}
+```
+
+);
+
+/* =====================================================
+START
 ===================================================== */
 
 init();
