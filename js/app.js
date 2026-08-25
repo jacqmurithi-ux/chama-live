@@ -12,32 +12,28 @@ export async function getCurrentGroupId() {
     error: sessionError
   } = await supabase.auth.getSession();
 
-
   if (sessionError) {
     throw sessionError;
   }
 
+  const user =
+    sessionData?.session?.user;
 
-  if (!sessionData?.session) {
-    throw new Error("You are not logged in.");
+  if (!user) {
+    throw new Error(
+      "You are not logged in."
+    );
   }
 
-
-  /*
-   * Use the existing Supabase RPC.
-   *
-   * Database function:
-   * my_group_id()
-   *
-   * It returns the group_id for auth.uid().
-   */
 
   const {
     data,
     error
-  } = await supabase.rpc(
-    "my_group_id"
-  );
+  } = await supabase
+    .from("members")
+    .select("group_id")
+    .eq("user_id", user.id)
+    .limit(1);
 
 
   if (error) {
@@ -45,14 +41,21 @@ export async function getCurrentGroupId() {
   }
 
 
-  if (!data) {
+  if (!data || data.length === 0) {
     throw new Error(
-      "No group is linked to your account."
+      "No group is linked to this account."
     );
   }
 
 
-  return data;
+  if (!data[0].group_id) {
+    throw new Error(
+      "Your member record has no group."
+    );
+  }
+
+
+  return data[0].group_id;
 }
 
 
@@ -87,7 +90,6 @@ export function setText(
 
   const element =
     document.querySelector(selector);
-
 
   if (element) {
 
