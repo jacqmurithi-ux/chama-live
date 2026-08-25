@@ -1,66 +1,65 @@
 import { supabase } from "./supabase.js";
 
-
 /* =====================================================
-   GET CURRENT GROUP
+   GET CURRENT GROUP ID
 ===================================================== */
 
 export async function getCurrentGroupId() {
 
   const {
-    data: {
-      user
-    },
-    error: userError
-  } = await supabase.auth.getUser();
+    data: sessionData,
+    error: sessionError
+  } = await supabase.auth.getSession();
 
-
-  if (userError) {
-    throw userError;
+  if (sessionError) {
+    throw sessionError;
   }
 
-
-  if (!user) {
+  if (!sessionData?.session?.user) {
     throw new Error("You are not logged in.");
   }
 
+  const userId =
+    sessionData.session.user.id;
 
-  /*
-   * Get the member record belonging
-   * to the logged-in user.
-   */
+
+  /* -----------------------------------------------
+     Find the member belonging to this login
+  ------------------------------------------------ */
 
   const {
-    data: member,
+    data: members,
     error: memberError
   } = await supabase
     .from("members")
-    .select("group_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
+    .select("id, group_id, name")
+    .eq("user_id", userId)
+    .limit(1);
 
   if (memberError) {
     throw memberError;
   }
 
 
-  if (!member) {
+  if (!members || members.length === 0) {
     throw new Error(
-      "No member record is linked to this account."
+      "Your account is not linked to a member. Add your user ID to the member record."
     );
   }
 
 
+  const member =
+    members[0];
+
+
   if (!member.group_id) {
     throw new Error(
-      "Your member record has no group."
+      "Your member record has no group linked to it."
     );
   }
 
 
   return member.group_id;
-
 }
 
 
@@ -68,21 +67,15 @@ export async function getCurrentGroupId() {
    MONEY
 ===================================================== */
 
-export function money(value) {
-
-  const amount =
-    Number(value || 0);
-
+export function money(amount) {
 
   return (
     "KSh " +
-    amount.toLocaleString(
-      "en-KE",
-      {
+    Number(amount || 0)
+      .toLocaleString("en-KE", {
         minimumFractionDigits: 0,
         maximumFractionDigits: 2
-      }
-    )
+      })
   );
 
 }
@@ -92,27 +85,15 @@ export function money(value) {
    SET TEXT
 ===================================================== */
 
-export function setText(
-  selector,
-  value
-) {
+export function setText(selector, value) {
 
   const element =
-    document.querySelector(
-      selector
-    );
+    document.querySelector(selector);
 
-
-  if (!element) {
-    throw new Error(
-      "Element not found: " +
-      selector
-    );
+  if (element) {
+    element.textContent =
+      value ?? "—";
   }
-
-
-  element.textContent =
-    value ?? "—";
 
 }
 
@@ -128,21 +109,17 @@ export function showError(error) {
     error
   );
 
-
   const message =
     error?.message ||
     String(error);
 
-
-  /*
-   * Try the standard error container.
-   */
-
   const errorElement =
     document.querySelector(
       "[data-error]"
+    ) ||
+    document.querySelector(
+      "#error"
     );
-
 
   if (errorElement) {
 
@@ -153,56 +130,5 @@ export function showError(error) {
       false;
 
   }
-
-
-  /*
-   * Also support #error.
-   */
-
-  const errorBox =
-    document.querySelector(
-      "#error"
-    );
-
-
-  if (
-    errorBox &&
-    errorBox !== errorElement
-  ) {
-
-    errorBox.textContent =
-      "Error: " + message;
-
-    errorBox.hidden =
-      false;
-
-  }
-
-}
-
-
-/* =====================================================
-   CLEAR ERROR
-===================================================== */
-
-export function clearError() {
-
-  const elements =
-    document.querySelectorAll(
-      "[data-error], #error"
-    );
-
-
-  elements.forEach(
-    function (element) {
-
-      element.textContent =
-        "";
-
-      element.hidden =
-        true;
-
-    }
-  );
 
 }
