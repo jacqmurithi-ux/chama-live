@@ -1,26 +1,18 @@
 import { supabase } from "./supabase.js";
 import { getMyMember } from "./auth.js";
 
-
 /* =====================================================
    HELPERS
 ===================================================== */
 
 const $ = (id) => document.getElementById(id);
 
-
 let groupId = null;
 let currentMonth = "";
 let currentPeriod = null;
 let currentSummary = null;
 let memberStatus = [];
-
-
-/* =====================================================
-   START
-===================================================== */
-
-document.addEventListener("DOMContentLoaded", init);
+let currentMember = null;
 
 
 /* =====================================================
@@ -28,33 +20,14 @@ document.addEventListener("DOMContentLoaded", init);
 ===================================================== */
 
 async function init() {
-
   try {
+    currentMember = await getMyMember();
 
-    const session = await requireSession();
-
-    if (!session) {
-      return;
+    if (!currentMember) {
+      throw new Error("Unable to identify your group.");
     }
 
-
-    const member = await getMyMember();
-
-    if (!member) {
-
-      throw new Error(
-        "Unable to identify your group."
-      );
-
-    }
-
-
-    groupId = member.group_id;
-
-
-    /*
-     * Current month
-     */
+    groupId = currentMember.group_id;
 
     const today = new Date();
 
@@ -63,141 +36,108 @@ async function init() {
         today.getMonth() + 1
       ).padStart(2, "0")}`;
 
-
     const monthInput = $("month");
 
     if (!monthInput) {
-
       throw new Error(
         "Monthly Closing page is missing the month selector."
       );
-
     }
 
-
     monthInput.value = currentMonth;
-
-
-    /*
-     * Month selector
-     */
 
     monthInput.addEventListener(
       "change",
       async () => {
+        const selected = monthInput.value;
 
-        if (!monthInput.value) {
-          return;
-        }
+        if (!selected) return;
 
-        currentMonth =
-          monthInput.value;
+        currentMonth = selected;
 
         await loadMonth();
-
       }
     );
 
+    const closeButton = $("closeMonth");
 
-    /*
-     * Buttons
-     */
+    if (closeButton) {
+      closeButton.addEventListener(
+        "click",
+        closeMonth
+      );
+    }
 
-    $("closeMonth")?.addEventListener(
-      "click",
-      closeMonth
-    );
+    const reopenButton = $("reopenMonth");
 
+    if (reopenButton) {
+      reopenButton.addEventListener(
+        "click",
+        reopenMonth
+      );
+    }
 
-    $("reopenMonth")?.addEventListener(
-      "click",
-      reopenMonth
-    );
+    const printButton = $("printReport");
 
+    if (printButton) {
+      printButton.addEventListener(
+        "click",
+        printReport
+      );
+    }
 
-    $("printReport")?.addEventListener(
-      "click",
-      printReport
-    );
-
-
-    $("logout")?.addEventListener(
-      "click",
-      signOut
-    );
-
-
-    /*
-     * Load financial data
-     */
+    updatePermissionUI();
 
     await loadMonth();
 
-
   } catch (error) {
-
-    console.error(error);
-
     showError(error);
-
   }
-
 }
 
 
 /* =====================================================
-   AUTH SESSION
+   ROLE / PERMISSION
 ===================================================== */
 
-async function requireSession() {
-
-  const {
-    data,
-    error
-  } = await supabase.auth.getSession();
-
-
-  if (error) {
-
-    throw error;
-
-  }
-
-
-  if (!data?.session) {
-
-    window.location.href =
-      "login.html";
-
-    return null;
-
-  }
-
-
-  return data.session;
-
+function getRole() {
+  return String(
+    currentMember?.role || ""
+  ).toLowerCase().trim();
 }
 
 
-/* =====================================================
-   SIGN OUT
-===================================================== */
+function canManageClosing() {
+  const role = getRole();
 
-async function signOut() {
+  return (
+    role === "admin" ||
+    role === "treasurer"
+  );
+}
 
-  try {
 
-    await supabase.auth.signOut();
+function updatePermissionUI() {
+  const canManage =
+    canManageClosing();
 
-    window.location.href =
-      "login.html";
+  const closeButton =
+    $("closeMonth");
 
-  } catch (error) {
+  const reopenButton =
+    $("reopenMonth");
 
-    showError(error);
-
+  if (closeButton) {
+    closeButton.hidden =
+      !canManage ||
+      currentPeriod?.status === "closed";
   }
 
+  if (reopenButton) {
+    reopenButton.hidden =
+      !canManage ||
+      currentPeriod?.status !== "closed";
+  }
 }
 
 
@@ -206,9 +146,7 @@ async function signOut() {
 ===================================================== */
 
 async function loadMonth() {
-
   clearError();
-
 
   setStatus(
     `Loading ${formatMonth(
@@ -216,13 +154,11 @@ async function loadMonth() {
     )}...`
   );
 
-
   try {
 
-
-    /* =================================================
-       GROUP
-    ================================================= */
+    /* -----------------------------------------------
+       LOAD GROUP
+    ------------------------------------------------ */
 
     const {
       data: group,
@@ -238,17 +174,14 @@ async function loadMonth() {
       .eq("id", groupId)
       .single();
 
-
     if (groupError) {
-
       throw groupError;
-
     }
 
 
-    /* =================================================
-       FINANCIAL PERIOD
-    ================================================= */
+    /* -----------------------------------------------
+       LOAD FINANCIAL PERIOD
+    ------------------------------------------------ */
 
     let {
       data: period,
@@ -260,25 +193,35 @@ async function loadMonth() {
       .eq("month", currentMonth)
       .maybeSingle();
 
-
     if (periodError) {
-
       throw periodError;
-
     }
 
 
-    /*
-     * Create financial period if missing.
-     */
+    /* -----------------------------------------------
+       CREATE PERIOD IF MISSING
+    ------------------------------------------------ */
 
     if (!period) {
+
+      /*
+       * Only Treasurer/Admin should create a period.
+       *
+       * If this user cannot manage closing, don't attempt
+       * an INSERT because RLS will correctly reject it.
+       */
+
+      if (!canManageClosing()) {
+
+        throw new Error(
+          "This financial period has not been created yet. A Treasurer or Admin must open it first."
+        );
+      }
 
       const openingBalance =
         await calculateOpeningBalance(
           group
         );
-
 
       const {
         data: createdPeriod,
@@ -286,44 +229,29 @@ async function loadMonth() {
       } = await supabase
         .from("financial_periods")
         .insert({
-
-          group_id:
-            groupId,
-
-          month:
-            currentMonth,
-
+          group_id: groupId,
+          month: currentMonth,
           opening_balance:
             openingBalance,
-
-          status:
-            "open"
-
+          status: "open"
         })
         .select()
         .single();
 
-
       if (createError) {
-
         throw createError;
-
       }
 
-
-      period =
-        createdPeriod;
-
+      period = createdPeriod;
     }
 
 
-    currentPeriod =
-      period;
+    currentPeriod = period;
 
 
-    /* =================================================
-       MEMBERS
-    ================================================= */
+    /* -----------------------------------------------
+       LOAD ACTIVE MEMBERS
+    ------------------------------------------------ */
 
     const {
       data: members,
@@ -340,17 +268,14 @@ async function loadMonth() {
       .eq("status", "active")
       .order("name");
 
-
     if (membersError) {
-
       throw membersError;
-
     }
 
 
-    /* =================================================
-       CONTRIBUTIONS
-    ================================================= */
+    /* -----------------------------------------------
+       LOAD CONTRIBUTIONS
+    ------------------------------------------------ */
 
     const {
       data: contributions,
@@ -371,17 +296,14 @@ async function loadMonth() {
       .eq("group_id", groupId)
       .eq("month", currentMonth);
 
-
     if (contributionError) {
-
       throw contributionError;
-
     }
 
 
-    /* =================================================
-       EXPENSES
-    ================================================= */
+    /* -----------------------------------------------
+       LOAD EXPENSES
+    ------------------------------------------------ */
 
     const {
       data: expenses,
@@ -406,40 +328,33 @@ async function loadMonth() {
         nextMonth(currentMonth)
       );
 
-
     if (expenseError) {
-
       throw expenseError;
-
     }
 
 
-    /* =================================================
-       MEMBER STATUS
-    ================================================= */
+    /* -----------------------------------------------
+       MEMBER CONTRIBUTION STATUS
+    ------------------------------------------------ */
 
     const monthlyContribution =
       Number(
         group.monthly_contribution || 0
       );
 
-
     memberStatus =
       (members || []).map(
-        member => {
+        (member) => {
 
           const paid =
             (contributions || [])
               .filter(
-                contribution =>
+                (contribution) =>
                   contribution.member_id ===
                   member.id
               )
               .reduce(
-                (
-                  sum,
-                  contribution
-                ) =>
+                (sum, contribution) =>
                   sum +
                   Number(
                     contribution.amount || 0
@@ -447,10 +362,8 @@ async function loadMonth() {
                 0
               );
 
-
           const expected =
             monthlyContribution;
-
 
           const outstanding =
             Math.max(
@@ -458,70 +371,46 @@ async function loadMonth() {
               0
             );
 
-
           let status =
             "OUTSTANDING";
-
 
           if (
             expected > 0 &&
             paid >= expected
           ) {
-
-            status =
-              "PAID";
-
+            status = "PAID";
           } else if (
             paid > 0
           ) {
-
-            status =
-              "PARTIAL";
-
+            status = "PARTIAL";
           }
 
-
           return {
-
             ...member,
-
             expected,
-
             paid,
-
             outstanding,
-
             contributionStatus:
               status
-
           };
-
         }
       );
 
 
-    /* =================================================
-       TOTALS
-    ================================================= */
+    /* -----------------------------------------------
+       FINANCIAL TOTALS
+    ------------------------------------------------ */
 
     const expected =
       memberStatus.reduce(
-        (
-          sum,
-          member
-        ) =>
-          sum +
-          member.expected,
+        (sum, member) =>
+          sum + member.expected,
         0
       );
 
-
     const collected =
       (contributions || []).reduce(
-        (
-          sum,
-          contribution
-        ) =>
+        (sum, contribution) =>
           sum +
           Number(
             contribution.amount || 0
@@ -529,110 +418,90 @@ async function loadMonth() {
         0
       );
 
-
     const outstanding =
       Math.max(
-        expected -
-        collected,
+        expected - collected,
         0
       );
-
 
     const approvedExpenses =
       (expenses || [])
         .filter(
-          expense =>
+          (expense) =>
             expense.approval_status ===
             "approved"
         )
         .reduce(
-          (
-            sum,
-            expense
-          ) =>
+          (sum, expense) =>
             sum +
             Number(
               expense.amount || 0
             ),
           0
         );
-
 
     const pendingExpenses =
       (expenses || [])
         .filter(
-          expense =>
+          (expense) =>
             expense.approval_status ===
             "pending"
         )
         .reduce(
-          (
-            sum,
-            expense
-          ) =>
+          (sum, expense) =>
             sum +
             Number(
               expense.amount || 0
             ),
           0
         );
-
 
     const rejectedExpenses =
       (expenses || [])
         .filter(
-          expense =>
+          (expense) =>
             expense.approval_status ===
             "rejected"
         )
         .reduce(
-          (
-            sum,
-            expense
-          ) =>
+          (sum, expense) =>
             sum +
             Number(
               expense.amount || 0
             ),
           0
         );
-
 
     const opening =
       Number(
         period.opening_balance || 0
       );
 
-
     const closing =
       opening +
       collected -
       approvedExpenses;
 
-
     const paidMembers =
       memberStatus.filter(
-        member =>
+        (member) =>
           member.contributionStatus ===
           "PAID"
       ).length;
 
-
     const partialMembers =
       memberStatus.filter(
-        member =>
+        (member) =>
           member.contributionStatus ===
           "PARTIAL"
       ).length;
 
-
     const outstandingMembers =
       memberStatus.filter(
-        member =>
+        (member) =>
           member.contributionStatus ===
           "OUTSTANDING"
       ).length;
-
 
     const collectionRate =
       expected > 0
@@ -643,55 +512,42 @@ async function loadMonth() {
         : 0;
 
 
-    /* =================================================
-       SUMMARY
-    ================================================= */
+    /* -----------------------------------------------
+       SAVE SUMMARY
+    ------------------------------------------------ */
 
     currentSummary = {
 
       group,
-
       period,
-
-      members:
-        members || [],
-
+      members: members || [],
       contributions:
         contributions || [],
-
       expenses:
         expenses || [],
 
       expected,
-
       collected,
-
       outstanding,
 
       approvedExpenses,
-
       pendingExpenses,
-
       rejectedExpenses,
 
       opening,
-
       closing,
 
       paidMembers,
-
       partialMembers,
-
       outstandingMembers,
 
       collectionRate
-
     };
 
 
-    /* =================================================
+    /* -----------------------------------------------
        RENDER
-    ================================================= */
+    ------------------------------------------------ */
 
     renderSummary();
 
@@ -699,34 +555,32 @@ async function loadMonth() {
 
     updateActions();
 
-
     setStatus(
-      `Monthly financials loaded • ${new Date().toLocaleString("en-KE")}`
+      `Monthly financials loaded • ${
+        new Date().toLocaleString(
+          "en-KE"
+        )
+      }`
     );
-
 
   } catch (error) {
-
-    console.error(
-      "Monthly closing error:",
-      error
-    );
 
     showError(error);
 
   }
-
 }
 
 
 /* =====================================================
-   OPENING BALANCE
+   CALCULATE OPENING BALANCE
 ===================================================== */
 
-async function calculateOpeningBalance(group) {
+async function calculateOpeningBalance(
+  group
+) {
 
   const {
-    data,
+    data: previousPeriods,
     error
   } = await supabase
     .from("financial_periods")
@@ -749,31 +603,27 @@ async function calculateOpeningBalance(group) {
     )
     .limit(1);
 
-
   if (error) {
-
     throw error;
-
   }
 
-
   if (
-    data &&
-    data.length > 0 &&
-    data[0].closing_balance !== null
+    previousPeriods &&
+    previousPeriods.length > 0 &&
+    previousPeriods[0]
+      .closing_balance !== null
   ) {
 
     return Number(
-      data[0].closing_balance
+      previousPeriods[0]
+        .closing_balance
     );
 
   }
 
-
   return Number(
     group.opening_balance || 0
   );
-
 }
 
 
@@ -786,89 +636,109 @@ function renderSummary() {
   const s =
     currentSummary;
 
+  if (!s) return;
 
-  $("openingBalance").textContent =
-    money(s.opening);
+  setText(
+    "openingBalance",
+    money(s.opening)
+  );
 
+  setText(
+    "expected",
+    money(s.expected)
+  );
 
-  $("expected").textContent =
-    money(s.expected);
+  setText(
+    "collected",
+    money(s.collected)
+  );
 
+  setText(
+    "outstanding",
+    money(s.outstanding)
+  );
 
-  $("collected").textContent =
-    money(s.collected);
+  setText(
+    "approvedExpenses",
+    money(s.approvedExpenses)
+  );
 
+  setText(
+    "closingBalance",
+    money(s.closing)
+  );
 
-  $("outstanding").textContent =
-    money(s.outstanding);
+  setText(
+    "opening2",
+    money(s.opening)
+  );
 
+  setText(
+    "contributions2",
+    money(s.collected)
+  );
 
-  $("approvedExpenses").textContent =
-    money(s.approvedExpenses);
+  setText(
+    "expenses2",
+    money(s.approvedExpenses)
+  );
 
+  setText(
+    "balance2",
+    money(s.closing)
+  );
 
-  $("closingBalance").textContent =
-    money(s.closing);
+  setText(
+    "memberCount",
+    s.members.length
+  );
 
+  setText(
+    "membersPaid",
+    s.paidMembers
+  );
 
-  $("opening2").textContent =
-    money(s.opening);
+  setText(
+    "membersPartial",
+    s.partialMembers
+  );
 
+  setText(
+    "membersOutstanding",
+    s.outstandingMembers
+  );
 
-  $("contributions2").textContent =
-    money(s.collected);
+  setText(
+    "collectionRate",
+    `${s.collectionRate.toFixed(1)}%`
+  );
 
+  setText(
+    "approved2",
+    money(s.approvedExpenses)
+  );
 
-  $("expenses2").textContent =
-    money(s.approvedExpenses);
+  setText(
+    "pendingExpenses",
+    money(s.pendingExpenses)
+  );
 
+  setText(
+    "rejectedExpenses",
+    money(s.rejectedExpenses)
+  );
 
-  $("balance2").textContent =
-    money(s.closing);
-
-
-  $("memberCount").textContent =
-    s.members.length;
-
-
-  $("membersPaid").textContent =
-    s.paidMembers;
-
-
-  $("membersPartial").textContent =
-    s.partialMembers;
-
-
-  $("membersOutstanding").textContent =
-    s.outstandingMembers;
-
-
-  $("collectionRate").textContent =
-    `${s.collectionRate.toFixed(1)}%`;
-
-
-  $("approved2").textContent =
-    money(s.approvedExpenses);
-
-
-  $("pendingExpenses").textContent =
-    money(s.pendingExpenses);
-
-
-  $("rejectedExpenses").textContent =
-    money(s.rejectedExpenses);
-
-
-  $("periodStatus").textContent =
+  setText(
+    "periodStatus",
     String(
       s.period.status || "open"
-    ).toUpperCase();
-
+    ).toUpperCase()
+  );
 }
 
 
 /* =====================================================
-   MEMBER TABLE
+   RENDER MEMBER TABLE
 ===================================================== */
 
 function renderMembers() {
@@ -876,13 +746,11 @@ function renderMembers() {
   const tbody =
     $("memberRows");
 
+  if (!tbody) return;
 
-  if (!tbody) {
-    return;
-  }
-
-
-  if (!memberStatus.length) {
+  if (
+    !memberStatus.length
+  ) {
 
     tbody.innerHTML = `
       <tr>
@@ -893,15 +761,12 @@ function renderMembers() {
     `;
 
     return;
-
   }
-
 
   tbody.innerHTML =
     memberStatus
       .map(
-        member => `
-
+        (member) => `
           <tr>
 
             <td>
@@ -941,11 +806,72 @@ function renderMembers() {
             </td>
 
           </tr>
-
         `
       )
       .join("");
+}
 
+
+/* =====================================================
+   BUTTON STATE
+===================================================== */
+
+function updateActions() {
+
+  const closed =
+    currentPeriod?.status ===
+    "closed";
+
+  const canManage =
+    canManageClosing();
+
+  const closeButton =
+    $("closeMonth");
+
+  const reopenButton =
+    $("reopenMonth");
+
+  if (closeButton) {
+
+    closeButton.hidden =
+      !canManage || closed;
+  }
+
+  if (reopenButton) {
+
+    reopenButton.hidden =
+      !canManage || !closed;
+  }
+
+  updatePermissionMessage();
+}
+
+
+function updatePermissionMessage() {
+
+  const existing =
+    $("closingPermission");
+
+  if (!existing) return;
+
+  if (!canManageClosing()) {
+
+    existing.textContent =
+      "Only the Treasurer or Admin can close or reopen a financial month.";
+
+  } else if (
+    currentPeriod?.status ===
+    "closed"
+  ) {
+
+    existing.textContent =
+      "This financial period is closed.";
+
+  } else {
+
+    existing.textContent =
+      "This financial period is open.";
+  }
 }
 
 
@@ -955,15 +881,21 @@ function renderMembers() {
 
 async function closeMonth() {
 
+  if (!canManageClosing()) {
+
+    alert(
+      "Only the Treasurer or Admin can close the month."
+    );
+
+    return;
+  }
+
   if (
     !currentPeriod ||
     !currentSummary
   ) {
-
     return;
-
   }
-
 
   if (
     currentPeriod.status ===
@@ -975,7 +907,6 @@ async function closeMonth() {
     );
 
     return;
-
   }
 
 
@@ -1009,9 +940,8 @@ async function closeMonth() {
         )
       }\n\n` +
 
-      `Continue?`
+      `Once closed, the period will be locked.\n\nContinue?`
     );
-
 
   if (!confirmed) {
     return;
@@ -1027,43 +957,56 @@ async function closeMonth() {
     } =
       await supabase.auth.getUser();
 
+    if (!user) {
+      throw new Error(
+        "Your session has expired. Please sign in again."
+      );
+    }
+
 
     const {
       data,
       error
-    } = await supabase
-      .from("financial_periods")
-      .update({
+    } =
+      await supabase
+        .from(
+          "financial_periods"
+        )
+        .update({
 
-        status:
-          "closed",
+          status:
+            "closed",
 
-        closing_balance:
-          currentSummary.closing,
+          closing_balance:
+            currentSummary.closing,
 
-        closed_at:
-          new Date().toISOString(),
+          closed_at:
+            new Date().toISOString(),
 
-        closed_by:
-          user?.id || null
+          closed_by:
+            user.id
 
-      })
-      .eq(
-        "id",
-        currentPeriod.id
-      )
-      .eq(
-        "status",
-        "open"
-      )
-      .select()
-      .single();
+        })
+        .eq(
+          "id",
+          currentPeriod.id
+        )
+        .eq(
+          "status",
+          "open"
+        )
+        .select()
+        .single();
 
 
     if (error) {
-
       throw error;
+    }
 
+    if (!data) {
+      throw new Error(
+        "The financial period could not be closed."
+      );
     }
 
 
@@ -1080,13 +1023,11 @@ async function closeMonth() {
 
     await loadMonth();
 
-
   } catch (error) {
 
     showError(error);
 
   }
-
 }
 
 
@@ -1096,10 +1037,18 @@ async function closeMonth() {
 
 async function reopenMonth() {
 
-  if (!currentPeriod) {
+  if (!canManageClosing()) {
+
+    alert(
+      "Only the Treasurer or Admin can reopen the month."
+    );
+
     return;
   }
 
+  if (!currentPeriod) {
+    return;
+  }
 
   if (
     currentPeriod.status !==
@@ -1111,7 +1060,6 @@ async function reopenMonth() {
     );
 
     return;
-
   }
 
 
@@ -1119,9 +1067,10 @@ async function reopenMonth() {
     confirm(
       `Reopen ${formatMonth(
         currentMonth
-      )}?\n\nThis will allow the month to be updated again.`
-    );
+      )}?\n\n` +
 
+      `This will allow the financial period to be updated again.\n\nContinue?`
+    );
 
   if (!confirmed) {
     return;
@@ -1133,39 +1082,46 @@ async function reopenMonth() {
     const {
       data,
       error
-    } = await supabase
-      .from("financial_periods")
-      .update({
+    } =
+      await supabase
+        .from(
+          "financial_periods"
+        )
+        .update({
 
-        status:
-          "open",
+          status:
+            "open",
 
-        closing_balance:
-          null,
+          closing_balance:
+            null,
 
-        closed_at:
-          null,
+          closed_at:
+            null,
 
-        closed_by:
-          null
+          closed_by:
+            null
 
-      })
-      .eq(
-        "id",
-        currentPeriod.id
-      )
-      .eq(
-        "status",
-        "closed"
-      )
-      .select()
-      .single();
+        })
+        .eq(
+          "id",
+          currentPeriod.id
+        )
+        .eq(
+          "status",
+          "closed"
+        )
+        .select()
+        .single();
 
 
     if (error) {
-
       throw error;
+    }
 
+    if (!data) {
+      throw new Error(
+        "The financial period could not be reopened."
+      );
     }
 
 
@@ -1182,42 +1138,11 @@ async function reopenMonth() {
 
     await loadMonth();
 
-
   } catch (error) {
 
     showError(error);
 
   }
-
-}
-
-
-/* =====================================================
-   BUTTON STATE
-===================================================== */
-
-function updateActions() {
-
-  const closed =
-    currentPeriod?.status ===
-    "closed";
-
-
-  if ($("closeMonth")) {
-
-    $("closeMonth").hidden =
-      closed;
-
-  }
-
-
-  if ($("reopenMonth")) {
-
-    $("reopenMonth").hidden =
-      !closed;
-
-  }
-
 }
 
 
@@ -1231,16 +1156,13 @@ function printReport() {
     return;
   }
 
-
   const s =
     currentSummary;
-
 
   const memberRows =
     memberStatus
       .map(
-        member => `
-
+        (member) => `
           <tr>
 
             <td>
@@ -1274,7 +1196,6 @@ function printReport() {
             </td>
 
           </tr>
-
         `
       )
       .join("");
@@ -1295,7 +1216,6 @@ function printReport() {
     );
 
     return;
-
   }
 
 
@@ -1311,12 +1231,10 @@ function printReport() {
         ${escapeHtml(
           s.group.name
         )}
-        —
-        ${formatMonth(
+        — ${formatMonth(
           currentMonth
         )}
       </title>
-
 
       <style>
 
@@ -1419,7 +1337,6 @@ function printReport() {
 
     </head>
 
-
     <body>
 
       <h1>
@@ -1427,7 +1344,6 @@ function printReport() {
           s.group.name
         )}
       </h1>
-
 
       <div class="muted">
 
@@ -1442,50 +1358,92 @@ function printReport() {
       <div class="summary">
 
         <div class="box">
-          Opening Balance
-          <div class="value">
-            ${money(s.opening)}
+
+          <div>
+            Opening Balance
           </div>
+
+          <div class="value">
+            ${money(
+              s.opening
+            )}
+          </div>
+
         </div>
 
 
         <div class="box">
-          Expected Contributions
-          <div class="value">
-            ${money(s.expected)}
+
+          <div>
+            Expected Contributions
           </div>
+
+          <div class="value">
+            ${money(
+              s.expected
+            )}
+          </div>
+
         </div>
 
 
         <div class="box">
-          Collected Contributions
-          <div class="value">
-            ${money(s.collected)}
+
+          <div>
+            Collected Contributions
           </div>
+
+          <div class="value">
+            ${money(
+              s.collected
+            )}
+          </div>
+
         </div>
 
 
         <div class="box">
-          Outstanding
-          <div class="value">
-            ${money(s.outstanding)}
+
+          <div>
+            Outstanding
           </div>
+
+          <div class="value">
+            ${money(
+              s.outstanding
+            )}
+          </div>
+
         </div>
 
 
         <div class="box">
-          Approved Expenses
-          <div class="value">
-            ${money(s.approvedExpenses)}
+
+          <div>
+            Approved Expenses
           </div>
+
+          <div class="value">
+            ${money(
+              s.approvedExpenses
+            )}
+          </div>
+
         </div>
 
 
         <div class="box">
-          Closing Balance
-          <div class="value">
-            ${money(s.closing)}
+
+          <div>
+            Closing Balance
           </div>
+
+          <div class="value">
+            ${money(
+              s.closing
+            )}
+          </div>
+
         </div>
 
       </div>
@@ -1502,15 +1460,25 @@ function printReport() {
 
           <tr>
 
-            <th>Member</th>
+            <th>
+              Member
+            </th>
 
-            <th>Expected</th>
+            <th>
+              Expected
+            </th>
 
-            <th>Paid</th>
+            <th>
+              Paid
+            </th>
 
-            <th>Outstanding</th>
+            <th>
+              Outstanding
+            </th>
 
-            <th>Status</th>
+            <th>
+              Status
+            </th>
 
           </tr>
 
@@ -1526,11 +1494,14 @@ function printReport() {
       </table>
 
 
-      <p>
+      <p style="margin-top:30px;">
 
         Collection rate:
+
         <strong>
-          ${s.collectionRate.toFixed(1)}%
+          ${s.collectionRate.toFixed(
+            1
+          )}%
         </strong>
 
       </p>
@@ -1539,11 +1510,23 @@ function printReport() {
       <p>
 
         Period status:
+
         <strong>
           ${String(
             s.period.status
           ).toUpperCase()}
         </strong>
+
+      </p>
+
+
+      <p>
+
+        Generated:
+
+        ${new Date().toLocaleString(
+          "en-KE"
+        )}
 
       </p>
 
@@ -1556,16 +1539,13 @@ function printReport() {
 
       <\/script>
 
-
     </body>
 
     </html>
 
   `);
 
-
   printWindow.document.close();
-
 }
 
 
@@ -1577,7 +1557,6 @@ function money(value) {
 
   const number =
     Number(value || 0);
-
 
   const formatted =
     Math.abs(number)
@@ -1592,16 +1571,13 @@ function money(value) {
         }
       );
 
-
   if (number < 0) {
 
     return `-KSh ${formatted}`;
 
   }
 
-
   return `KSh ${formatted}`;
-
 }
 
 
@@ -1615,18 +1591,14 @@ function formatMonth(month) {
     return "";
   }
 
-
   const parts =
     month.split("-");
-
 
   const year =
     Number(parts[0]);
 
-
   const monthNumber =
     Number(parts[1]);
-
 
   const date =
     new Date(
@@ -1634,7 +1606,6 @@ function formatMonth(month) {
       monthNumber - 1,
       1
     );
-
 
   return date.toLocaleDateString(
     "en-KE",
@@ -1646,7 +1617,6 @@ function formatMonth(month) {
         "numeric"
     }
   );
-
 }
 
 
@@ -1659,17 +1629,13 @@ function nextMonth(month) {
   const parts =
     month.split("-");
 
-
   let year =
     Number(parts[0]);
-
 
   let monthNumber =
     Number(parts[1]);
 
-
   monthNumber++;
-
 
   if (
     monthNumber === 13
@@ -1678,9 +1644,7 @@ function nextMonth(month) {
     monthNumber = 1;
 
     year++;
-
   }
-
 
   return (
     `${year}-${String(
@@ -1690,7 +1654,6 @@ function nextMonth(month) {
       "0"
     )}-01`
   );
-
 }
 
 
@@ -1723,7 +1686,25 @@ function escapeHtml(value) {
       "'",
       "&#039;"
     );
+}
 
+
+/* =====================================================
+   SET TEXT SAFELY
+===================================================== */
+
+function setText(
+  id,
+  value
+) {
+
+  const element =
+    $(id);
+
+  if (element) {
+    element.textContent =
+      value;
+  }
 }
 
 
@@ -1736,14 +1717,10 @@ function setStatus(message) {
   const element =
     $("status");
 
-
   if (element) {
-
     element.textContent =
       message;
-
   }
-
 }
 
 
@@ -1756,38 +1733,35 @@ function clearError() {
   const element =
     $("error");
 
-
   if (!element) {
     return;
   }
 
-
   element.hidden =
     true;
 
-
   element.textContent =
     "";
-
 }
 
+
+/* =====================================================
+   SHOW ERROR
+===================================================== */
 
 function showError(error) {
 
   console.error(
-    "CHAMA LIVE:",
+    "Monthly Closing Error:",
     error
   );
-
 
   const message =
     error?.message ||
     "Unable to load monthly financials.";
 
-
   const element =
     $("error");
-
 
   if (element) {
 
@@ -1796,12 +1770,16 @@ function showError(error) {
 
     element.textContent =
       message;
-
   }
-
 
   setStatus(
     "Unable to load monthly financials."
   );
-
 }
+
+
+/* =====================================================
+   START
+===================================================== */
+
+init();
