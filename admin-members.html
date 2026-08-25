@@ -1,341 +1,451 @@
-<!doctype html>
+import { supabase } from "./supabase.js";
 
-<html lang="en">
+const $ = (id) =>
+document.getElementById(id);
 
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+const form =
+$("memberForm");
 
-  <title>Members — CHAMA LIVE</title>
+const submitButton =
+$("submitButton");
 
-  <link rel="stylesheet" href="css/app.css">
+const status =
+$("status");
 
-  <style>
-    .member-actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
+const errorBox =
+$("error");
 
-    .status-badge {
-      display: inline-block;
-      padding: 5px 9px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 700;
-    }
+const successCard =
+$("successCard");
 
-    .status-active {
-      background: #dcfce7;
-      color: #166534;
-    }
+const addAnother =
+$("addAnother");
 
-    .status-pending {
-      background: #fef3c7;
-      color: #92400e;
-    }
+/* =====================================================
+STATUS
+===================================================== */
 
-    .status-invited {
-      background: #dbeafe;
-      color: #1e40af;
-    }
+function setStatus(message) {
 
-    .status-disabled {
-      background: #fee2e2;
-      color: #991b1b;
-    }
+if (status) {
+status.textContent =
+message;
+}
 
-    .role-badge {
-      font-weight: 700;
-      text-transform: capitalize;
-    }
+}
 
-    .empty-state {
-      text-align: center;
-      padding: 30px;
-      color: #666;
-    }
+/* =====================================================
+ERROR
+===================================================== */
 
-    .loading {
-      opacity: .65;
-      pointer-events: none;
-    }
-  </style>
+function clearError() {
 
-</head>
+if (!errorBox) {
+return;
+}
 
-<body>
+errorBox.hidden =
+true;
 
-<header class="topbar">
+errorBox.textContent =
+"";
 
-  <div class="brand">
-    CHAMA <span>LIVE</span>
-  </div>
+}
 
-<button
-class="btn btn-secondary"
-id="logout"
-type="button"
+function showError(message) {
 
->
+console.error(message);
+
+if (errorBox) {
 
 ```
-Sign out
+errorBox.hidden =
+  false;
+
+errorBox.textContent =
+  message;
 ```
 
-  </button>
+}
 
-</header>
+}
 
-<div class="layout">
+/* =====================================================
+LOADING
+===================================================== */
 
-  <aside class="sidebar">
+function setLoading(loading) {
 
-```
-<nav class="nav">
+if (!submitButton) {
+return;
+}
 
-  <a href="dashboard.html">
-    Dashboard
-  </a>
+submitButton.disabled =
+loading;
 
-  <a href="members.html" class="active">
-    Members
-  </a>
+submitButton.textContent =
+loading
+? "Adding Member..."
+: "Add Member";
 
-  <a href="contributions.html">
-    Contributions
-  </a>
+}
 
-  <a href="expenses.html">
-    Expenses
-  </a>
+/* =====================================================
+ROLE LABEL
+===================================================== */
 
-  <a href="meetings.html">
-    Meetings
-  </a>
+function roleLabel(role) {
 
-  <a href="reports.html">
-    Reports
-  </a>
-
-  <a href="monthly-closing.html">
-    Monthly Closing
-  </a>
-
-  <a href="group-management.html">
-    Group Management
-  </a>
-
-</nav>
-```
-
-  </aside>
-
-  <main class="main">
+const labels = {
 
 ```
-<div class="page-head">
+member:
+  "Member",
 
-  <div>
+secretary:
+  "Secretary",
 
-    <h1>
-      Members
-    </h1>
-
-    <p class="muted">
-      Manage members and their CHAMA LIVE
-      login access.
-    </p>
-
-  </div>
-
-  <div class="member-actions">
-
-    <button
-      class="btn btn-secondary"
-      id="refreshMembers"
-      type="button"
-    >
-      Refresh
-    </button>
-
-    <a
-      href="member-add.html"
-      class="btn btn-primary"
-    >
-      Add Member
-    </a>
-
-  </div>
-
-</div>
-
-
-<div
-  id="status"
-  class="card"
-  style="margin-bottom:20px;"
->
-  Loading members...
-</div>
-
-
-<div
-  id="error"
-  class="error"
-  hidden
-  style="margin-bottom:20px;"
-></div>
-
-
-<section class="card">
-
-  <h2>
-    Group Members
-  </h2>
-
-  <p class="muted">
-    Members must first be added to the group.
-    An administrator or chairperson can then
-    activate their login account.
-  </p>
-
-
-  <div class="table-wrap">
-
-    <table class="table">
-
-      <thead>
-
-        <tr>
-
-          <th>
-            Member
-          </th>
-
-          <th>
-            Member No.
-          </th>
-
-          <th>
-            Phone
-          </th>
-
-          <th>
-            Email
-          </th>
-
-          <th>
-            Role
-          </th>
-
-          <th>
-            Login Status
-          </th>
-
-          <th>
-            Action
-          </th>
-
-        </tr>
-
-      </thead>
-
-
-      <tbody id="memberRows">
-
-        <tr>
-
-          <td colspan="7">
-            Loading...
-          </td>
-
-        </tr>
-
-      </tbody>
-
-    </table>
-
-  </div>
-
-</section>
-
-
-<br>
-
-
-<section class="card">
-
-  <h2>
-    Login Access
-  </h2>
-
-  <p class="muted">
-    Adding a member does not automatically
-    create login access. The administrator or
-    chairperson must invite the member after
-    confirming their email address and role.
-  </p>
-
-  <div class="grid grid-3">
-
-    <div>
-
-      <strong>
-        Pending
-      </strong>
-
-      <p class="muted">
-        Member exists but has no login.
-      </p>
-
-    </div>
-
-    <div>
-
-      <strong>
-        Invited
-      </strong>
-
-      <p class="muted">
-        Login invitation has been sent.
-      </p>
-
-    </div>
-
-    <div>
-
-      <strong>
-        Active
-      </strong>
-
-      <p class="muted">
-        Member can log in.
-      </p>
-
-    </div>
-
-  </div>
-
-</section>
+treasurer:
+  "Treasurer"
 ```
 
-  </main>
+};
 
-</div>
+return (
+labels[role] ||
+role
+);
 
-<script type="module">
+}
 
-  import {
-    boot
-  } from "./js/layout.js";
+/* =====================================================
+RESET
+===================================================== */
 
-  await boot();
+function resetForm() {
 
-  import "./js/admin-members.js";
+if (form) {
+form.reset();
+}
 
-</script>
+const role =
+$("role");
 
-</body>
+if (role) {
+role.value =
+"member";
+}
 
-</html>
+if (successCard) {
+successCard.hidden =
+true;
+}
+
+clearError();
+
+setStatus(
+"Enter the member's details below."
+);
+
+}
+
+/* =====================================================
+SUBMIT
+===================================================== */
+
+async function submitMember(event) {
+
+event.preventDefault();
+
+clearError();
+
+if (!form) {
+return;
+}
+
+const name =
+$("name")?.value.trim();
+
+const email =
+$("email")?.value.trim().toLowerCase();
+
+const phone =
+$("phone")?.value.trim();
+
+const role =
+$("role")?.value;
+
+if (!name) {
+
+```
+showError(
+  "Please enter the member's full name."
+);
+
+$("name")?.focus();
+
+return;
+```
+
+}
+
+if (!email) {
+
+```
+showError(
+  "Please enter the member's email address."
+);
+
+$("email")?.focus();
+
+return;
+```
+
+}
+
+if (!isValidEmail(email)) {
+
+```
+showError(
+  "Please enter a valid email address."
+);
+
+$("email")?.focus();
+
+return;
+```
+
+}
+
+if (
+![
+"member",
+"secretary",
+"treasurer"
+].includes(role)
+) {
+
+```
+showError(
+  "Please select a valid group role."
+);
+
+return;
+```
+
+}
+
+setLoading(true);
+
+setStatus(
+"Creating member record and sending invitation..."
+);
+
+try {
+
+```
+/* -----------------------------------------------
+   Confirm current login
+------------------------------------------------ */
+
+const {
+  data: {
+    session
+  },
+  error: sessionError
+} =
+  await supabase.auth.getSession();
+
+if (sessionError) {
+  throw sessionError;
+}
+
+if (!session) {
+
+  window.location.href =
+    "login.html";
+
+  return;
+
+}
+
+
+/* -----------------------------------------------
+   Call Edge Function
+------------------------------------------------ */
+
+const {
+  data,
+  error
+} =
+  await supabase.functions.invoke(
+    "admin-add-member",
+    {
+      body: {
+
+        name,
+
+        email,
+
+        phone,
+
+        role
+
+      }
+
+    }
+  );
+
+
+if (error) {
+
+  console.error(
+    "Edge function error:",
+    error
+  );
+
+  throw new Error(
+    error.message ||
+    "Unable to add member."
+  );
+
+}
+
+
+/* -----------------------------------------------
+   Backend error
+------------------------------------------------ */
+
+if (
+  data?.error
+) {
+
+  throw new Error(
+    data.error
+  );
+
+}
+
+
+if (
+  !data?.success
+) {
+
+  throw new Error(
+    "The member could not be added."
+  );
+
+}
+
+
+/* -----------------------------------------------
+   Success
+------------------------------------------------ */
+
+const member =
+  data.member || {};
+
+$("successMemberNumber").textContent =
+  member.membership_number ||
+  member.member_number ||
+  "—";
+
+$("successRole").textContent =
+  roleLabel(
+    member.role ||
+    role
+  );
+
+$("successEmail").textContent =
+  member.email ||
+  email;
+
+if (successCard) {
+  successCard.hidden =
+    false;
+}
+
+setStatus(
+  data.message ||
+  "Member added successfully."
+);
+
+form.reset();
+
+$("role").value =
+  "member";
+
+window.scrollTo({
+  top: 0,
+  behavior: "smooth"
+});
+```
+
+} catch (error) {
+
+```
+console.error(
+  error
+);
+
+showError(
+  error?.message ||
+  "Unable to add member. Please try again."
+);
+
+setStatus(
+  "Member could not be added."
+);
+```
+
+} finally {
+
+```
+setLoading(false);
+```
+
+}
+
+}
+
+/* =====================================================
+EMAIL VALIDATION
+===================================================== */
+
+function isValidEmail(email) {
+
+return /^[^\s@]+@[^\s@]+.[^\s@]+$/
+.test(email);
+
+}
+
+/* =====================================================
+EVENTS
+===================================================== */
+
+if (form) {
+
+form.addEventListener(
+"submit",
+submitMember
+);
+
+}
+
+if (addAnother) {
+
+addAnother.addEventListener(
+"click",
+() => {
+
+```
+  resetForm();
+
+  $("name")?.focus();
+
+}
+```
+
+);
+
+}
