@@ -1,3 +1,4 @@
+```html
 <!doctype html>
 <html lang="en">
 
@@ -12,654 +13,534 @@
 
 <body>
 
-  <!-- TOP BAR -->
-  <header class="topbar">
+<header class="topbar">
 
-    <div class="brand">
-      CHAMA <span>LIVE</span>
+  <div class="brand">
+    CHAMA <span>LIVE</span>
+  </div>
+
+  <button
+    class="btn btn-secondary"
+    id="logout"
+    type="button"
+  >
+    Sign out
+  </button>
+
+</header>
+
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+
+    <nav class="nav">
+
+      <a href="dashboard.html">
+        Dashboard
+      </a>
+
+      <a href="members.html">
+        Members
+      </a>
+
+      <a href="contributions.html">
+        Contributions
+      </a>
+
+      <a href="expenses.html">
+        Expenses
+      </a>
+
+      <a href="meetings.html">
+        Meetings
+      </a>
+
+      <a
+        href="reports.html"
+        class="active"
+      >
+        Reports
+      </a>
+
+      <a href="monthly-closing.html">
+        Monthly Closing
+      </a>
+
+      <a href="group-management.html">
+        Group Management
+      </a>
+
+    </nav>
+
+  </aside>
+
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- PAGE HEADER -->
+    <div class="page-head">
+
+      <div>
+
+        <h1>
+          Reports
+        </h1>
+
+        <p class="muted">
+          View your group's financial and
+          member contribution reports.
+        </p>
+
+      </div>
+
+
+      <!-- MONTH PICKER -->
+      <div>
+
+        <label
+          for="month"
+          class="muted"
+        >
+          Financial Month
+        </label>
+
+        <br>
+
+        <input
+          type="month"
+          id="month"
+          aria-label="Select financial month"
+        >
+
+        <button
+          class="btn btn-primary"
+          id="loadReport"
+          type="button"
+          style="margin-top:8px;"
+        >
+          Load Report
+        </button>
+
+      </div>
+
     </div>
 
-    <button
-      class="btn btn-secondary"
-      id="logout"
-      type="button"
+
+    <!-- STATUS -->
+    <div
+      id="status"
+      class="card"
+      style="margin-bottom:20px;"
     >
-      Sign out
-    </button>
-
-  </header>
+      Loading report...
+    </div>
 
 
-  <!-- PAGE LAYOUT -->
-  <div class="layout">
+    <!-- ERROR -->
+    <div
+      id="error"
+      class="error"
+      hidden
+      style="margin-bottom:20px;"
+    ></div>
 
 
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
+    <!-- FINANCIAL SUMMARY -->
+    <section class="card">
 
-      <nav class="nav">
+      <h2>
+        Financial Summary
+      </h2>
 
-        <a href="dashboard.html">
-          Dashboard
-        </a>
+      <div class="grid grid-3">
 
-        <a href="members.html">
-          Members
-        </a>
+        <div>
+          <div class="muted">
+            Opening Balance
+          </div>
 
-        <a href="contributions.html">
-          Contributions
-        </a>
+          <div
+            class="metric"
+            id="openingBalance"
+          >
+            KSh 0.00
+          </div>
+        </div>
 
-        <a href="expenses.html">
-          Expenses
-        </a>
 
-        <a href="meetings.html">
-          Meetings
-        </a>
+        <div>
+          <div class="muted">
+            Expected Contributions
+          </div>
+
+          <div
+            class="metric"
+            id="expected"
+          >
+            KSh 0.00
+          </div>
+        </div>
+
+
+        <div>
+          <div class="muted">
+            Contributions Collected
+          </div>
+
+          <div
+            class="metric"
+            id="collected"
+          >
+            KSh 0.00
+          </div>
+        </div>
+
+
+        <div>
+          <div class="muted">
+            Outstanding
+          </div>
+
+          <div
+            class="metric"
+            id="outstanding"
+          >
+            KSh 0.00
+          </div>
+        </div>
+
+
+        <div>
+          <div class="muted">
+            Approved Expenses
+          </div>
+
+          <div
+            class="metric"
+            id="approvedExpenses"
+          >
+            KSh 0.00
+          </div>
+        </div>
+
+
+        <div>
+          <div class="muted">
+            Closing Balance
+          </div>
+
+          <div
+            class="metric"
+            id="closingBalance"
+          >
+            KSh 0.00
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <br>
+
+
+    <!-- CONTRIBUTION STATISTICS -->
+    <section class="card">
+
+      <h2>
+        Contribution Statistics
+      </h2>
+
+      <div class="grid grid-3">
+
+        <div>
+          <div class="muted">
+            Active Members
+          </div>
+
+          <strong id="activeMembers">
+            0
+          </strong>
+        </div>
+
+
+        <div>
+          <div class="muted">
+            Members Paid
+          </div>
+
+          <strong id="membersPaid">
+            0
+          </strong>
+        </div>
+
+
+        <div>
+          <div class="muted">
+            Partial Payments
+          </div>
+
+          <strong id="membersPartial">
+            0
+          </strong>
+        </div>
+
+
+        <div>
+          <div class="muted">
+            Outstanding Members
+          </div>
+
+          <strong id="membersOutstanding">
+            0
+          </strong>
+        </div>
+
+
+        <div>
+          <div class="muted">
+            Collection Rate
+          </div>
+
+          <strong id="collectionRate">
+            0%
+          </strong>
+        </div>
+
+
+        <div>
+          <div class="muted">
+            Period Status
+          </div>
+
+          <strong id="periodStatus">
+            OPEN
+          </strong>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <br>
+
+
+    <!-- CASHBOOK -->
+    <section class="card">
+
+      <h2>
+        Cashbook
+      </h2>
+
+      <p class="muted">
+        All contributions and approved expenses
+        recorded during the selected month.
+      </p>
+
+
+      <div class="table-wrap">
+
+        <table class="table">
+
+          <thead>
+
+            <tr>
+              <th>Date</th>
+              <th>Description</th>
+              <th>Type</th>
+              <th>Method</th>
+              <th>Reference</th>
+              <th>Amount</th>
+            </tr>
+
+          </thead>
+
+
+          <tbody id="cashbookRows">
+
+            <tr>
+              <td colspan="6">
+                Loading...
+              </td>
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+
+    <br>
+
+
+    <!-- MEMBER REPORT -->
+    <section class="card">
+
+      <h2>
+        Member Contribution Report
+      </h2>
+
+      <p class="muted">
+        Monthly contribution status for all
+        active members.
+      </p>
+
+
+      <div class="table-wrap">
+
+        <table class="table">
+
+          <thead>
+
+            <tr>
+              <th>Member</th>
+              <th>Member No.</th>
+              <th>Expected</th>
+              <th>Paid</th>
+              <th>Outstanding</th>
+              <th>Status</th>
+            </tr>
+
+          </thead>
+
+
+          <tbody id="memberRows">
+
+            <tr>
+              <td colspan="6">
+                Loading...
+              </td>
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+
+    <br>
+
+
+    <!-- EXPENSE REPORT -->
+    <section class="card">
+
+      <h2>
+        Expense Report
+      </h2>
+
+      <p class="muted">
+        Expenses recorded during the selected
+        financial month.
+      </p>
+
+
+      <div class="table-wrap">
+
+        <table class="table">
+
+          <thead>
+
+            <tr>
+              <th>Date</th>
+              <th>Description</th>
+              <th>Category</th>
+              <th>Amount</th>
+              <th>Status</th>
+            </tr>
+
+          </thead>
+
+
+          <tbody id="expenseRows">
+
+            <tr>
+              <td colspan="5">
+                Loading...
+              </td>
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+
+    <br>
+
+
+    <!-- REPORT ACTIONS -->
+    <section class="card">
+
+      <h2>
+        Report Actions
+      </h2>
+
+      <p class="muted">
+        Print the complete monthly financial
+        report.
+      </p>
+
+
+      <div
+        style="
+          display:flex;
+          gap:10px;
+          flex-wrap:wrap;
+        "
+      >
+
+        <button
+          class="btn btn-primary"
+          id="printReport"
+          type="button"
+        >
+          Print Report
+        </button>
+
 
         <a
-          href="reports.html"
-          class="active"
+          href="monthly-closing.html"
+          class="btn btn-secondary"
         >
-          Reports
-        </a>
-
-        <a href="monthly-closing.html">
           Monthly Closing
         </a>
 
-        <a href="group-management.html">
-          Group Management
-        </a>
-
-      </nav>
-
-    </aside>
-
-
-    <!-- MAIN CONTENT -->
-    <main class="main">
-
-
-      <!-- PAGE HEADER -->
-      <div class="page-head">
-
-        <div>
-
-          <h1>
-            Reports
-          </h1>
-
-          <p class="muted">
-            View your group's financial and
-            member contribution reports.
-          </p>
-
-        </div>
-
-
-        <!-- MONTH SELECTOR -->
-        <div>
-
-          <label
-            for="month"
-            class="muted"
-          >
-            Financial Month
-          </label>
-
-          <br>
-
-          <input
-            type="month"
-            id="month"
-          >
-
-          <button
-            class="btn btn-primary"
-            id="loadReport"
-            type="button"
-            style="margin-top:8px;"
-          >
-            Load Report
-          </button>
-
-        </div>
-
       </div>
 
+    </section>
 
-      <!-- STATUS -->
-      <div
-        id="status"
-        class="card"
-        style="margin-bottom:20px;"
-      >
-        Loading report...
-      </div>
+  </main>
 
+</div>
 
-      <!-- ERROR -->
-      <div
-        id="error"
-        class="error"
-        hidden
-        style="margin-bottom:20px;"
-      ></div>
 
+<!-- APPLICATION BOOT -->
+<script type="module">
 
-      <!-- =========================================
-           FINANCIAL SUMMARY
-      ========================================== -->
-      <section class="card">
+  import {
+    boot
+  } from "./js/layout.js";
 
-        <h2>
-          Financial Summary
-        </h2>
+  await boot();
 
-        <div class="grid grid-3">
+  import "./js/reports.js";
 
-
-          <!-- OPENING -->
-          <div>
-
-            <div class="muted">
-              Opening Balance
-            </div>
-
-            <div
-              class="metric"
-              id="openingBalance"
-            >
-              KSh 0.00
-            </div>
-
-          </div>
-
-
-          <!-- EXPECTED -->
-          <div>
-
-            <div class="muted">
-              Expected Contributions
-            </div>
-
-            <div
-              class="metric"
-              id="expected"
-            >
-              KSh 0.00
-            </div>
-
-          </div>
-
-
-          <!-- COLLECTED -->
-          <div>
-
-            <div class="muted">
-              Contributions Collected
-            </div>
-
-            <div
-              class="metric"
-              id="collected"
-            >
-              KSh 0.00
-            </div>
-
-          </div>
-
-
-          <!-- OUTSTANDING -->
-          <div>
-
-            <div class="muted">
-              Outstanding
-            </div>
-
-            <div
-              class="metric"
-              id="outstanding"
-            >
-              KSh 0.00
-            </div>
-
-          </div>
-
-
-          <!-- EXPENSES -->
-          <div>
-
-            <div class="muted">
-              Approved Expenses
-            </div>
-
-            <div
-              class="metric"
-              id="approvedExpenses"
-            >
-              KSh 0.00
-            </div>
-
-          </div>
-
-
-          <!-- CLOSING -->
-          <div>
-
-            <div class="muted">
-              Closing Balance
-            </div>
-
-            <div
-              class="metric"
-              id="closingBalance"
-            >
-              KSh 0.00
-            </div>
-
-          </div>
-
-        </div>
-
-      </section>
-
-
-      <br>
-
-
-      <!-- =========================================
-           CONTRIBUTION STATISTICS
-      ========================================== -->
-      <section class="card">
-
-        <h2>
-          Contribution Statistics
-        </h2>
-
-        <div class="grid grid-3">
-
-
-          <!-- ACTIVE MEMBERS -->
-          <div>
-
-            <div class="muted">
-              Active Members
-            </div>
-
-            <strong id="activeMembers">
-              0
-            </strong>
-
-          </div>
-
-
-          <!-- PAID -->
-          <div>
-
-            <div class="muted">
-              Members Paid
-            </div>
-
-            <strong id="membersPaid">
-              0
-            </strong>
-
-          </div>
-
-
-          <!-- PARTIAL -->
-          <div>
-
-            <div class="muted">
-              Partial Payments
-            </div>
-
-            <strong id="membersPartial">
-              0
-            </strong>
-
-          </div>
-
-
-          <!-- OUTSTANDING MEMBERS -->
-          <div>
-
-            <div class="muted">
-              Outstanding Members
-            </div>
-
-            <strong id="membersOutstanding">
-              0
-            </strong>
-
-          </div>
-
-
-          <!-- COLLECTION RATE -->
-          <div>
-
-            <div class="muted">
-              Collection Rate
-            </div>
-
-            <strong id="collectionRate">
-              0%
-            </strong>
-
-          </div>
-
-
-          <!-- PERIOD STATUS -->
-          <div>
-
-            <div class="muted">
-              Period Status
-            </div>
-
-            <strong id="periodStatus">
-              OPEN
-            </strong>
-
-          </div>
-
-        </div>
-
-      </section>
-
-
-      <br>
-
-
-      <!-- =========================================
-           CASHBOOK
-      ========================================== -->
-      <section class="card">
-
-        <h2>
-          Cashbook
-        </h2>
-
-        <p class="muted">
-          All contributions and approved expenses
-          recorded during the selected month.
-        </p>
-
-
-        <div class="table-wrap">
-
-          <table class="table">
-
-            <thead>
-
-              <tr>
-
-                <th>
-                  Date
-                </th>
-
-                <th>
-                  Description
-                </th>
-
-                <th>
-                  Type
-                </th>
-
-                <th>
-                  Method
-                </th>
-
-                <th>
-                  Reference
-                </th>
-
-                <th>
-                  Amount
-                </th>
-
-              </tr>
-
-            </thead>
-
-
-            <tbody id="cashbookRows">
-
-              <tr>
-
-                <td colspan="6">
-                  Loading...
-                </td>
-
-              </tr>
-
-            </tbody>
-
-          </table>
-
-        </div>
-
-      </section>
-
-
-      <br>
-
-
-      <!-- =========================================
-           MEMBER CONTRIBUTION REPORT
-      ========================================== -->
-      <section class="card">
-
-        <h2>
-          Member Contribution Report
-        </h2>
-
-        <p class="muted">
-          Monthly contribution status for all
-          active members.
-        </p>
-
-
-        <div class="table-wrap">
-
-          <table class="table">
-
-            <thead>
-
-              <tr>
-
-                <th>
-                  Member
-                </th>
-
-                <th>
-                  Member No.
-                </th>
-
-                <th>
-                  Expected
-                </th>
-
-                <th>
-                  Paid
-                </th>
-
-                <th>
-                  Outstanding
-                </th>
-
-                <th>
-                  Status
-                </th>
-
-              </tr>
-
-            </thead>
-
-
-            <tbody id="memberRows">
-
-              <tr>
-
-                <td colspan="6">
-                  Loading...
-                </td>
-
-              </tr>
-
-            </tbody>
-
-          </table>
-
-        </div>
-
-      </section>
-
-
-      <br>
-
-
-      <!-- =========================================
-           EXPENSE REPORT
-      ========================================== -->
-      <section class="card">
-
-        <h2>
-          Expense Report
-        </h2>
-
-        <p class="muted">
-          Expenses recorded during the selected
-          financial month.
-        </p>
-
-
-        <div class="table-wrap">
-
-          <table class="table">
-
-            <thead>
-
-              <tr>
-
-                <th>
-                  Date
-                </th>
-
-                <th>
-                  Description
-                </th>
-
-                <th>
-                  Category
-                </th>
-
-                <th>
-                  Amount
-                </th>
-
-                <th>
-                  Status
-                </th>
-
-              </tr>
-
-            </thead>
-
-
-            <tbody id="expenseRows">
-
-              <tr>
-
-                <td colspan="5">
-                  Loading...
-                </td>
-
-              </tr>
-
-            </tbody>
-
-          </table>
-
-        </div>
-
-      </section>
-
-
-      <br>
-
-
-      <!-- =========================================
-           REPORT ACTIONS
-      ========================================== -->
-      <section class="card">
-
-        <h2>
-          Report Actions
-        </h2>
-
-        <p class="muted">
-          Print the complete monthly financial
-          report.
-        </p>
-
-
-        <div
-          style="
-            display:flex;
-            gap:10px;
-            flex-wrap:wrap;
-          "
-        >
-
-
-          <!-- PRINT -->
-          <button
-            class="btn btn-primary"
-            id="printReport"
-            type="button"
-          >
-            Print Report
-          </button>
-
-
-          <!-- MONTHLY CLOSING -->
-          <a
-            href="monthly-closing.html"
-            class="btn btn-secondary"
-          >
-            Monthly Closing
-          </a>
-
-        </div>
-
-      </section>
-
-
-    </main>
-
-  </div>
-
-
-  <!-- =========================================
-       APPLICATION BOOT
-  ========================================== -->
-  <script type="module">
-
-    import {
-      boot
-    } from "./js/layout.js";
-
-    await boot();
-
-    import "./js/reports.js";
-
-  </script>
-
+</script>
 
 </body>
-
 </html>
+```
