@@ -258,27 +258,21 @@ Sign out
       <thead>
 
         <tr>
-
           <th>Date</th>
-
           <th>Description</th>
-
           <th>Category</th>
-
           <th>Amount</th>
-
           <th>Status</th>
-
+          <th>Recorded By</th>
         </tr>
 
       </thead>
-
 
       <tbody id="rows">
 
         <tr>
 
-          <td colspan="5">
+          <td colspan="6">
             Loading...
           </td>
 
@@ -348,8 +342,7 @@ const logoutButton =
 
 function setStatus(message) {
 
-  statusBox.textContent =
-    message;
+  statusBox.textContent = message;
 
 }
 
@@ -372,8 +365,7 @@ function showPageError(error) {
   errorBox.textContent =
     "Error: " + message;
 
-  errorBox.hidden =
-    false;
+  errorBox.hidden = false;
 
   setStatus(
     "Something went wrong."
@@ -388,11 +380,9 @@ function showPageError(error) {
 
 function clearError() {
 
-  errorBox.textContent =
-    "";
+  errorBox.textContent = "";
 
-  errorBox.hidden =
-    true;
+  errorBox.hidden = true;
 
 }
 
@@ -405,59 +395,17 @@ function escapeHtml(value) {
 
   return String(value)
 
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
+    .replaceAll("&", "&amp;")
 
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
+    .replaceAll("<", "&lt;")
 
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
+    .replaceAll(">", "&gt;")
 
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
+    .replaceAll('"', "&quot;")
 
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
+    .replaceAll("'", "&#039;");
 
 }
-
-
-/* =====================================================
-   LOGOUT
-===================================================== */
-
-logoutButton.addEventListener(
-  "click",
-  async function () {
-
-    try {
-
-      await supabase.auth.signOut();
-
-      window.location.href =
-        "login.html";
-
-    }
-
-    catch (error) {
-
-      showPageError(error);
-
-    }
-
-  }
-);
 
 
 /* =====================================================
@@ -466,21 +414,12 @@ logoutButton.addEventListener(
 
 async function checkLogin() {
 
-  setStatus(
-    "Checking login..."
-  );
-
-
   const result =
     await supabase.auth.getSession();
 
-
   if (result.error) {
-
     throw result.error;
-
   }
-
 
   if (!result.data.session) {
 
@@ -491,8 +430,86 @@ async function checkLogin() {
 
   }
 
-
   return true;
+
+}
+
+
+/* =====================================================
+   GET CURRENT MEMBER
+===================================================== */
+
+async function getCurrentMember() {
+
+  const result =
+    await supabase.auth.getUser();
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  const user =
+    result.data?.user;
+
+  if (!user) {
+
+    window.location.href =
+      "login.html";
+
+    return null;
+
+  }
+
+
+  const memberResult =
+    await supabase
+
+      .from("members")
+
+      .select(
+        "id,name,user_id,group_id"
+      )
+
+      .eq(
+        "user_id",
+        user.id
+      )
+
+      .limit(1);
+
+
+  if (memberResult.error) {
+    throw memberResult.error;
+  }
+
+
+  const members =
+    memberResult.data || [];
+
+
+  if (members.length === 0) {
+
+    throw new Error(
+      "No member record is linked to your login."
+    );
+
+  }
+
+
+  const member =
+    members[0];
+
+
+  if (!member.group_id) {
+
+    throw new Error(
+      "Your member record has no group."
+    );
+
+  }
+
+
+  return member;
 
 }
 
@@ -506,7 +523,7 @@ async function loadExpenses() {
   clearError();
 
   setStatus(
-    "Finding your group..."
+    "Loading expense ledger..."
   );
 
 
@@ -523,32 +540,20 @@ async function loadExpenses() {
   }
 
 
-  setStatus(
-    "Loading expense ledger..."
-  );
-
-
-  /*
-   * IMPORTANT:
-   *
-   * These column names match the actual
-   * public.expenses table:
-   *
-   * date
-   * description
-   * category
-   * amount
-   * approval_status
-   */
-
   const result =
     await supabase
 
       .from("expenses")
 
-      .select(
-        "id,date,description,category,amount,approval_status"
-      )
+      .select(`
+        id,
+        date,
+        description,
+        category,
+        amount,
+        approval_status,
+        recorded_by
+      `)
 
       .eq(
         "group_id",
@@ -564,9 +569,7 @@ async function loadExpenses() {
 
 
   if (result.error) {
-
     throw result.error;
-
   }
 
 
@@ -574,18 +577,15 @@ async function loadExpenses() {
     result.data || [];
 
 
-  if (
-    expenses.length === 0
-  ) {
+  if (expenses.length === 0) {
 
     rows.innerHTML = `
       <tr>
-        <td colspan="5">
+        <td colspan="6">
           No expenses yet.
         </td>
       </tr>
     `;
-
 
     setStatus(
       "No expenses found."
@@ -596,12 +596,84 @@ async function loadExpenses() {
   }
 
 
+  /* =================================================
+     GET RECORDER MEMBER IDS
+  ================================================= */
+
+  const recorderIds = [
+    ...new Set(
+
+      expenses
+
+        .map(
+          expense =>
+            expense.recorded_by
+        )
+
+        .filter(Boolean)
+
+    )
+  ];
+
+
+  const recorderNames = {};
+
+
+  if (recorderIds.length > 0) {
+
+    const membersResult =
+      await supabase
+
+        .from("members")
+
+        .select(
+          "id,name"
+        )
+
+        .in(
+          "id",
+          recorderIds
+        );
+
+
+    if (membersResult.error) {
+      throw membersResult.error;
+    }
+
+
+    (
+      membersResult.data || []
+    ).forEach(
+      member => {
+
+        recorderNames[
+          member.id
+        ] =
+          member.name;
+
+      }
+    );
+
+  }
+
+
+  /* =================================================
+     DISPLAY LEDGER
+  ================================================= */
+
   rows.innerHTML =
 
     expenses
 
       .map(
-        function (expense) {
+        expense => {
+
+          const recorder =
+            recorderNames[
+              expense.recorded_by
+            ] ||
+            "—";
+
 
           return `
 
@@ -641,6 +713,12 @@ async function loadExpenses() {
                 )}
               </td>
 
+              <td>
+                ${escapeHtml(
+                  recorder
+                )}
+              </td>
+
             </tr>
 
           `;
@@ -673,6 +751,28 @@ async function saveExpense() {
 
 
   try {
+
+    /* ================================================
+       GET CURRENT MEMBER
+    ================================================ */
+
+    setStatus(
+      "Checking member..."
+    );
+
+
+    const member =
+      await getCurrentMember();
+
+
+    if (!member) {
+      return;
+    }
+
+
+    /* ================================================
+       FORM VALUES
+    ================================================ */
 
     const description =
       descriptionInput.value.trim();
@@ -731,28 +831,18 @@ async function saveExpense() {
 
 
     /* ================================================
-       GET GROUP
+       GROUP
     ================================================ */
 
     const groupId =
-      await getCurrentGroupId();
-
-
-    if (!groupId) {
-
-      throw new Error(
-        "No group is linked to this account."
-      );
-
-    }
+      member.group_id;
 
 
     /* ================================================
        SAVE
     ================================================ */
 
-    saveButton.disabled =
-      true;
+    saveButton.disabled = true;
 
     saveButton.textContent =
       "Saving...";
@@ -761,22 +851,6 @@ async function saveExpense() {
     setStatus(
       "Saving expense..."
     );
-
-
-    /*
-     * IMPORTANT:
-     *
-     * Do NOT send:
-     *
-     * expense_date
-     * status
-     * payment_method
-     * reference
-     * recorded_by
-     *
-     * because those columns do not match
-     * the current database schema.
-     */
 
 
     const result =
@@ -801,6 +875,9 @@ async function saveExpense() {
           date:
             expenseDate,
 
+          recorded_by:
+            member.id,
+
           approval_status:
             approvalStatus
 
@@ -808,9 +885,7 @@ async function saveExpense() {
 
 
     if (result.error) {
-
       throw result.error;
-
     }
 
 
@@ -849,9 +924,7 @@ async function saveExpense() {
 
   catch (error) {
 
-    showPageError(
-      error
-    );
+    showPageError(error);
 
   }
 
@@ -869,7 +942,34 @@ async function saveExpense() {
 
 
 /* =====================================================
-   BUTTON
+   LOGOUT
+===================================================== */
+
+logoutButton.addEventListener(
+  "click",
+  async function () {
+
+    try {
+
+      await supabase.auth.signOut();
+
+      window.location.href =
+        "login.html";
+
+    }
+
+    catch (error) {
+
+      showPageError(error);
+
+    }
+
+  }
+);
+
+
+/* =====================================================
+   SAVE BUTTON
 ===================================================== */
 
 saveButton.addEventListener(
@@ -898,13 +998,11 @@ async function start() {
 
 
     if (!loggedIn) {
-
       return;
-
     }
 
 
-    /* CURRENT DATE */
+    /* SET TODAY */
 
     dateInput.value =
       new Date()
@@ -923,9 +1021,7 @@ async function start() {
 
   catch (error) {
 
-    showPageError(
-      error
-    );
+    showPageError(error);
 
   }
 
@@ -933,7 +1029,7 @@ async function start() {
 
 
 /* =====================================================
-   RUN
+   START APPLICATION
 ===================================================== */
 
 start();
