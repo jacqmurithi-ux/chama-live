@@ -63,19 +63,16 @@ const memberDetails =
   document.getElementById("memberDetails");
 
 const contributionHistory =
-  document.getElementById(
-    "contributionHistory"
-  );
+  document.getElementById("contributionHistory");
+
+const statementMemberButton =
+  document.getElementById("statementMember");
 
 const editMemberButton =
-  document.getElementById(
-    "editMember"
-  );
+  document.getElementById("editMember");
 
 const toggleMemberButton =
-  document.getElementById(
-    "toggleMember"
-  );
+  document.getElementById("toggleMember");
 
 
 /* =====================================================
@@ -154,6 +151,22 @@ function currentMonth() {
 }
 
 
+function currentMonthLabel() {
+
+  const date =
+    new Date();
+
+  return date.toLocaleDateString(
+    "en-KE",
+    {
+      year: "numeric",
+      month: "long"
+    }
+  );
+
+}
+
+
 function escapeHtml(value) {
 
   if (
@@ -191,7 +204,7 @@ function showError(error) {
 
 
 /* =====================================================
-   GROUP
+   GET GROUP
 ===================================================== */
 
 async function getGroupId() {
@@ -232,7 +245,7 @@ async function loadGroupSettings() {
   } = await supabase
     .from("groups")
     .select(
-      "id, monthly_contribution"
+      "id, name, monthly_contribution"
     )
     .eq(
       "id",
@@ -335,7 +348,6 @@ async function loadContributions() {
       }
     );
 
-
   if (error) {
     throw error;
   }
@@ -347,7 +359,7 @@ async function loadContributions() {
 
 
 /* =====================================================
-   MEMBER MONTHLY PAYMENT
+   MONTHLY MEMBER STATUS
 ===================================================== */
 
 function getMemberPaid(
@@ -416,7 +428,14 @@ function getMemberStatus(
 
 
   if (
-    expected > 0 &&
+    expected <= 0
+  ) {
+
+    status =
+      "NO TARGET";
+
+  }
+  else if (
     paid >= expected
   ) {
 
@@ -510,7 +529,7 @@ function renderMetrics() {
 
 
 /* =====================================================
-   FILTER
+   FILTER MEMBERS
 ===================================================== */
 
 function filteredMembers() {
@@ -960,7 +979,7 @@ async function selectMember(
 
     <h3>
       ${escapeHtml(
-        currentMonth()
+        currentMonthLabel()
       )}
     </h3>
 
@@ -1129,6 +1148,801 @@ function renderContributionHistory() {
 
 
 /* =====================================================
+   MEMBER STATEMENT
+===================================================== */
+
+function openMemberStatement() {
+
+  if (
+    !selectedMember
+  ) {
+
+    showError(
+      new Error(
+        "Please select a member first."
+      )
+    );
+
+    return;
+
+  }
+
+
+  const monthly =
+    getMemberStatus(
+      selectedMember.id
+    );
+
+
+  const total =
+    getMemberTotal(
+      selectedMember.id
+    );
+
+
+  const history =
+    contributions
+      .filter(
+        contribution =>
+          contribution.member_id ===
+          selectedMember.id
+      )
+      .sort(
+        (a, b) => {
+
+          const dateA =
+            new Date(
+              a.contribution_date ||
+              a.created_at
+            );
+
+          const dateB =
+            new Date(
+              b.contribution_date ||
+              b.created_at
+            );
+
+          return dateB - dateA;
+
+        }
+      );
+
+
+  const rows =
+    history.length
+
+      ? history.map(
+          contribution => {
+
+            const reference =
+              contribution.mpesa_reference ||
+              contribution.reference ||
+              "—";
+
+
+            return `
+              <tr>
+
+                <td>
+                  ${escapeHtml(
+                    formatDate(
+                      contribution.contribution_date ||
+                      contribution.created_at
+                    )
+                  )}
+                </td>
+
+                <td>
+                  <strong>
+                    KSh ${money(
+                      contribution.amount
+                    )}
+                  </strong>
+                </td>
+
+                <td>
+                  ${escapeHtml(
+                    contribution.contribution_type ||
+                    "—"
+                  )}
+                </td>
+
+                <td>
+                  ${escapeHtml(
+                    contribution.payment_method ||
+                    "—"
+                  )}
+                </td>
+
+                <td>
+                  ${escapeHtml(
+                    reference
+                  )}
+                </td>
+
+              </tr>
+            `;
+
+          }
+        ).join("")
+
+      : `
+        <tr>
+          <td colspan="5">
+            No contributions recorded.
+          </td>
+        </tr>
+      `;
+
+
+  const statementWindow =
+    window.open(
+      "",
+      "_blank"
+    );
+
+
+  if (!statementWindow) {
+
+    showError(
+      new Error(
+        "The statement window was blocked. Please allow pop-ups for CHAMA LIVE."
+      )
+    );
+
+    return;
+
+  }
+
+
+  statementWindow.document.write(`
+
+<!doctype html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="utf-8">
+
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1"
+>
+
+<title>
+Member Statement -
+${escapeHtml(
+  selectedMember.name
+)}
+</title>
+
+
+<style>
+
+* {
+  box-sizing: border-box;
+}
+
+
+body {
+
+  margin: 0;
+
+  padding: 30px;
+
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+
+  color: #111;
+
+  background: #fff;
+
+}
+
+
+.statement {
+
+  max-width: 900px;
+
+  margin: auto;
+
+}
+
+
+.header {
+
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: flex-start;
+
+  border-bottom:
+    2px solid #111;
+
+  padding-bottom: 20px;
+
+  margin-bottom: 25px;
+
+}
+
+
+.brand {
+
+  font-size: 24px;
+
+  font-weight: 700;
+
+}
+
+
+.muted {
+
+  color: #666;
+
+}
+
+
+h1 {
+
+  margin: 0 0 6px;
+
+  font-size: 28px;
+
+}
+
+
+h2 {
+
+  margin-top: 30px;
+
+}
+
+
+.member-info {
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, 1fr);
+
+  gap: 12px;
+
+  margin-bottom: 25px;
+
+}
+
+
+.info {
+
+  border:
+    1px solid #ddd;
+
+  padding: 12px;
+
+  border-radius: 6px;
+
+}
+
+
+.label {
+
+  font-size: 12px;
+
+  color: #666;
+
+  margin-bottom: 4px;
+
+}
+
+
+.value {
+
+  font-weight: 600;
+
+}
+
+
+.summary {
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, 1fr);
+
+  gap: 12px;
+
+}
+
+
+.metric {
+
+  border:
+    1px solid #ddd;
+
+  padding: 18px;
+
+  border-radius: 6px;
+
+}
+
+
+.metric-label {
+
+  color: #666;
+
+  font-size: 13px;
+
+}
+
+
+.metric-value {
+
+  font-size: 20px;
+
+  font-weight: 700;
+
+  margin-top: 6px;
+
+}
+
+
+table {
+
+  width: 100%;
+
+  border-collapse:
+    collapse;
+
+  margin-top: 15px;
+
+}
+
+
+th,
+td {
+
+  border-bottom:
+    1px solid #ddd;
+
+  padding: 10px;
+
+  text-align: left;
+
+}
+
+
+th {
+
+  background: #f5f5f5;
+
+}
+
+
+.footer {
+
+  margin-top: 40px;
+
+  padding-top: 15px;
+
+  border-top:
+    1px solid #ddd;
+
+  color: #666;
+
+  font-size: 13px;
+
+}
+
+
+.actions {
+
+  max-width: 900px;
+
+  margin:
+    0 auto 20px;
+
+  display: flex;
+
+  gap: 10px;
+
+}
+
+
+.actions button {
+
+  padding:
+    10px 16px;
+
+  border:
+    1px solid #ccc;
+
+  border-radius: 5px;
+
+  background: #111;
+
+  color: white;
+
+  cursor: pointer;
+
+}
+
+
+@media print {
+
+  body {
+    padding: 0;
+  }
+
+  .actions {
+    display: none;
+  }
+
+}
+
+
+@media(max-width:700px) {
+
+  .member-info,
+  .summary {
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<div class="actions">
+
+  <button
+    onclick="window.print()"
+  >
+    Print Statement
+  </button>
+
+
+  <button
+    onclick="window.close()"
+  >
+    Close
+  </button>
+
+</div>
+
+
+<div class="statement">
+
+
+  <div class="header">
+
+    <div>
+
+      <div class="brand">
+        CHAMA LIVE
+      </div>
+
+      <div class="muted">
+        Member Financial Statement
+      </div>
+
+    </div>
+
+
+    <div class="muted">
+
+      Generated:
+      ${escapeHtml(
+        new Date().toLocaleString(
+          "en-KE"
+        )
+      )}
+
+    </div>
+
+  </div>
+
+
+  <h1>
+
+    ${escapeHtml(
+      selectedMember.name
+    )}
+
+  </h1>
+
+
+  <div class="member-info">
+
+
+    <div class="info">
+
+      <div class="label">
+        Member Number
+      </div>
+
+      <div class="value">
+
+        ${escapeHtml(
+          selectedMember.member_number
+        )}
+
+      </div>
+
+    </div>
+
+
+    <div class="info">
+
+      <div class="label">
+        Membership Number
+      </div>
+
+      <div class="value">
+
+        ${escapeHtml(
+          selectedMember.membership_number
+        )}
+
+      </div>
+
+    </div>
+
+
+    <div class="info">
+
+      <div class="label">
+        Phone
+      </div>
+
+      <div class="value">
+
+        ${escapeHtml(
+          selectedMember.phone
+        )}
+
+      </div>
+
+    </div>
+
+
+    <div class="info">
+
+      <div class="label">
+        Role
+      </div>
+
+      <div class="value">
+
+        ${escapeHtml(
+          selectedMember.role
+        )}
+
+      </div>
+
+    </div>
+
+
+    <div class="info">
+
+      <div class="label">
+        Join Date
+      </div>
+
+      <div class="value">
+
+        ${escapeHtml(
+          formatDate(
+            selectedMember.join_date
+          )
+        )}
+
+      </div>
+
+    </div>
+
+
+    <div class="info">
+
+      <div class="label">
+        Status
+      </div>
+
+      <div class="value">
+
+        ${escapeHtml(
+          selectedMember.status
+        )}
+
+      </div>
+
+    </div>
+
+
+  </div>
+
+
+  <h2>
+
+    ${escapeHtml(
+      currentMonthLabel()
+    )}
+
+    Contribution Summary
+
+  </h2>
+
+
+  <div class="summary">
+
+
+    <div class="metric">
+
+      <div class="metric-label">
+        Expected
+      </div>
+
+      <div class="metric-value">
+
+        KSh ${money(
+          monthly.expected
+        )}
+
+      </div>
+
+    </div>
+
+
+    <div class="metric">
+
+      <div class="metric-label">
+        Paid
+      </div>
+
+      <div class="metric-value">
+
+        KSh ${money(
+          monthly.paid
+        )}
+
+      </div>
+
+    </div>
+
+
+    <div class="metric">
+
+      <div class="metric-label">
+        Outstanding
+      </div>
+
+      <div class="metric-value">
+
+        KSh ${money(
+          monthly.outstanding
+        )}
+
+      </div>
+
+    </div>
+
+
+    <div class="metric">
+
+      <div class="metric-label">
+        Status
+      </div>
+
+      <div class="metric-value">
+
+        ${escapeHtml(
+          monthly.status
+        )}
+
+      </div>
+
+    </div>
+
+
+  </div>
+
+
+  <h2>
+    Contribution History
+  </h2>
+
+
+  <table>
+
+    <thead>
+
+      <tr>
+
+        <th>
+          Date
+        </th>
+
+        <th>
+          Amount
+        </th>
+
+        <th>
+          Type
+        </th>
+
+        <th>
+          Method
+        </th>
+
+        <th>
+          Reference
+        </th>
+
+      </tr>
+
+    </thead>
+
+
+    <tbody>
+
+      ${rows}
+
+    </tbody>
+
+  </table>
+
+
+  <h2>
+    Total Contributions
+  </h2>
+
+
+  <p>
+
+    <strong>
+      KSh ${money(
+        total
+      )}
+    </strong>
+
+  </p>
+
+
+  <div class="footer">
+
+    This statement was generated
+    from CHAMA LIVE.
+
+  </div>
+
+
+</div>
+
+
+</body>
+
+</html>
+
+  `);
+
+
+  statementWindow.document.close();
+
+}
+
+
+/* =====================================================
    EDIT MEMBER
 ===================================================== */
 
@@ -1137,7 +1951,9 @@ async function editSelectedMember() {
   if (
     !selectedMember
   ) {
+
     return;
+
   }
 
 
@@ -1151,7 +1967,9 @@ async function editSelectedMember() {
   if (
     name === null
   ) {
+
     return;
+
   }
 
 
@@ -1165,7 +1983,9 @@ async function editSelectedMember() {
   if (
     phoneValue === null
   ) {
+
     return;
+
   }
 
 
@@ -1180,7 +2000,9 @@ async function editSelectedMember() {
   if (
     emailValue === null
   ) {
+
     return;
+
   }
 
 
@@ -1194,7 +2016,9 @@ async function editSelectedMember() {
   if (
     roleValue === null
   ) {
+
     return;
+
   }
 
 
@@ -1240,6 +2064,10 @@ async function editSelectedMember() {
     }
 
 
+    const selectedId =
+      selectedMember.id;
+
+
     await loadMembers();
 
 
@@ -1252,13 +2080,19 @@ async function editSelectedMember() {
       members.find(
         member =>
           member.id ===
-          selectedMember.id
+          selectedId
       );
 
 
-    await selectMember(
-      selectedMember.id
-    );
+    if (
+      selectedMember
+    ) {
+
+      await selectMember(
+        selectedMember.id
+      );
+
+    }
 
 
     statusEl.textContent =
@@ -1285,7 +2119,9 @@ async function toggleMember() {
   if (
     !selectedMember
   ) {
+
     return;
+
   }
 
 
@@ -1296,8 +2132,7 @@ async function toggleMember() {
 
 
   const newStatus =
-    currentStatus ===
-    "active"
+    currentStatus === "active"
       ? "inactive"
       : "active";
 
@@ -1333,6 +2168,10 @@ async function toggleMember() {
     }
 
 
+    const selectedId =
+      selectedMember.id;
+
+
     await loadMembers();
 
 
@@ -1345,19 +2184,26 @@ async function toggleMember() {
       members.find(
         member =>
           member.id ===
-          selectedMember.id
+          selectedId
       );
 
 
-    await selectMember(
-      selectedMember.id
-    );
+    if (
+      selectedMember
+    ) {
+
+      await selectMember(
+        selectedMember.id
+      );
+
+    }
 
 
     statusEl.textContent =
-      `Member ${newStatus === "active"
-        ? "activated"
-        : "deactivated"
+      `Member ${
+        newStatus === "active"
+          ? "activated"
+          : "deactivated"
       } successfully.`;
 
   }
@@ -1463,6 +2309,12 @@ statusFilter.addEventListener(
 searchMember.addEventListener(
   "input",
   renderMembers
+);
+
+
+statementMemberButton.addEventListener(
+  "click",
+  openMemberStatement
 );
 
 
