@@ -1,920 +1,901 @@
 import { supabase } from "./supabase.js";
 import { getCurrentGroupId } from "./app.js";
 
-
 /* =====================================================
-   ELEMENTS
+ELEMENTS
 ===================================================== */
 
-const membersEl =
-  document.getElementById("members");
+const statusBox =
+document.getElementById("status");
+
+const errorBox =
+document.getElementById("error");
+
+const activeMembersEl =
+document.getElementById("activeMembers");
 
 const totalMembersEl =
-  document.getElementById("totalMembers");
+document.getElementById("totalMembers");
 
 const contributionsEl =
-  document.getElementById("contributions");
+document.getElementById("contributions");
 
-const expensesEl =
-  document.getElementById("expenses");
+const approvedExpensesEl =
+document.getElementById("approvedExpenses");
 
 const pendingExpensesEl =
-  document.getElementById("pendingExpenses");
+document.getElementById("pendingExpenses");
 
-const balanceEl =
-  document.getElementById("balance");
+const currentBalanceEl =
+document.getElementById("currentBalance");
 
 const openingEl =
-  document.getElementById("opening");
+document.getElementById("opening");
 
-const c2El =
-  document.getElementById("c2");
+const contributions2El =
+document.getElementById("contributions2");
 
-const e2El =
-  document.getElementById("e2");
+const expenses2El =
+document.getElementById("expenses2");
 
-const errorEl =
-  document.querySelector("[data-error]") ||
-  document.getElementById("error");
+const balanceEl =
+document.getElementById("balance");
+
+const contributionRows =
+document.getElementById("contributionRows");
+
+const expenseRows =
+document.getElementById("expenseRows");
+
+const upcomingMeetingsEl =
+document.getElementById("upcomingMeetings");
+
+const completedMeetingsEl =
+document.getElementById("completedMeetings");
+
+const cancelledMeetingsEl =
+document.getElementById("cancelledMeetings");
 
 const logoutButton =
-  document.getElementById("logout");
-
+document.getElementById("logout");
 
 /* =====================================================
-   MONEY
+MONEY
 ===================================================== */
 
-function money(amount) {
+function money(value) {
 
-  return (
-    "KSh " +
-    Number(amount || 0).toLocaleString(
-      "en-KE",
-      {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2
-      }
-    )
-  );
+return (
+"KSh " +
+Number(value || 0).toLocaleString(
+"en-KE",
+{
+minimumFractionDigits: 0,
+maximumFractionDigits: 2
+}
+)
+);
 
 }
 
-
 /* =====================================================
-   ESCAPE HTML
+ESCAPE HTML
 ===================================================== */
 
 function escapeHtml(value) {
 
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+return String(value ?? "")
+.replaceAll("&", "&")
+.replaceAll("<", "<")
+.replaceAll(">", ">")
+.replaceAll('"', """)
+.replaceAll("'", "'");
 
 }
 
-
 /* =====================================================
-   ERROR
+ERROR
 ===================================================== */
 
 function showError(error) {
 
-  console.error(
-    "CHAMA LIVE reports:",
-    error
-  );
+console.error(
+"CHAMA LIVE reports:",
+error
+);
 
-  const message =
-    error?.message ||
-    String(error);
+const message =
+error?.message ||
+String(error);
 
-  if (errorEl) {
+if (errorBox) {
 
-    errorEl.textContent =
-      "Error: " + message;
+```
+errorBox.textContent =
+  "Error: " + message;
 
-    errorEl.hidden =
-      false;
-
-  }
+errorBox.hidden =
+  false;
+```
 
 }
 
+if (statusBox) {
+
+```
+statusBox.textContent =
+  "Something went wrong.";
+```
+
+}
+
+}
 
 /* =====================================================
-   CLEAR ERROR
+CLEAR ERROR
 ===================================================== */
 
 function clearError() {
 
-  if (!errorEl) {
-    return;
-  }
+if (!errorBox) {
+return;
+}
 
-  errorEl.textContent =
-    "";
+errorBox.textContent = "";
 
-  errorEl.hidden =
-    true;
+errorBox.hidden = true;
 
 }
 
-
 /* =====================================================
-   LOAD REPORTS
+LOAD MEMBERS
 ===================================================== */
 
-async function loadReports() {
+async function loadMembers(groupId) {
 
-  clearError();
+const result =
+await supabase
+.from("members")
+.select(
+"id,name,status"
+)
+.eq(
+"group_id",
+groupId
+);
 
+if (result.error) {
 
-  /* ===================================================
-     GROUP
-  =================================================== */
+```
+throw result.error;
+```
 
-  const groupId =
-    await getCurrentGroupId();
+}
 
+const members =
+result.data || [];
 
-  if (!groupId) {
+const active =
+members.filter(
+member =>
+String(
+member.status || ""
+).toLowerCase() ===
+"active"
+).length;
 
-    throw new Error(
-      "No group is linked to this account."
-    );
+if (activeMembersEl) {
 
-  }
+```
+activeMembersEl.textContent =
+  active;
+```
 
+}
 
-  /* ===================================================
-     MEMBERS
-  =================================================== */
+if (totalMembersEl) {
 
-  const membersResult =
-    await supabase
-      .from("members")
-      .select(
-        "id,name,status"
-      )
-      .eq(
-        "group_id",
-        groupId
-      );
+```
+totalMembersEl.textContent =
+  members.length;
+```
 
+}
 
-  if (membersResult.error) {
-    throw membersResult.error;
-  }
+/* Create a member lookup */
 
+const memberMap = new Map();
 
-  const members =
-    membersResult.data || [];
+members.forEach(
+member => {
 
+```
+  memberMap.set(
+    member.id,
+    member.name
+  );
 
-  /* ===================================================
-     CONTRIBUTIONS
-     
-     ACTUAL DATABASE COLUMNS:
-     
-     id
-     group_id
-     member_id
-     amount
-     contribution_type
-     month
-     payment_method
-     reference
-     recorded_by
-     created_at
-     goal_id
-     contribution_date
-     notes
-  =================================================== */
+}
+```
 
-  const contributionsResult =
-    await supabase
-      .from("contributions")
-      .select(`
-        id,
-        group_id,
+);
+
+return memberMap;
+
+}
+
+/* =====================================================
+LOAD CONTRIBUTIONS
+===================================================== */
+
+async function loadContributions(
+groupId,
+memberMap
+) {
+
+/*
+
+* IMPORTANT:
+*
+* There is NO:
+*
+* contributions.date
+*
+* We use:
+*
+* contributions.contribution_date
+  */
+
+const result =
+await supabase
+.from("contributions")
+.select(`         id,
         member_id,
         amount,
         contribution_type,
         month,
         payment_method,
         reference,
-        contribution_date,
-        notes,
-        members (
-          name
-        )
+        contribution_date
       `)
-      .eq(
-        "group_id",
-        groupId
-      )
-      .order(
-        "contribution_date",
-        {
-          ascending: false
-        }
-      );
+.eq(
+"group_id",
+groupId
+)
+.order(
+"contribution_date",
+{
+ascending: false
+}
+);
+
+if (result.error) {
+
+```
+throw result.error;
+```
+
+}
+
+const rows =
+result.data || [];
+
+/* ===================================================
+TOTAL
+=================================================== */
+
+const total =
+rows.reduce(
+(sum, row) =>
+sum +
+Number(
+row.amount || 0
+),
+0
+);
+
+if (contributionsEl) {
+
+```
+contributionsEl.textContent =
+  money(total);
+```
+
+}
+
+if (contributions2El) {
+
+```
+contributions2El.textContent =
+  money(total);
+```
+
+}
+
+/* ===================================================
+TABLE
+=================================================== */
+
+if (!contributionRows) {
+
+```
+return total;
+```
+
+}
+
+if (rows.length === 0) {
+
+```
+contributionRows.innerHTML = `
+  <tr>
+    <td colspan="6">
+      No contributions yet.
+    </td>
+  </tr>
+`;
+
+return total;
+```
+
+}
+
+contributionRows.innerHTML =
+rows
+.slice(0, 10)
+.map(
+row => {
+
+```
+      const memberName =
+        memberMap.get(
+          row.member_id
+        ) ||
+        "Unknown";
 
 
-  if (contributionsResult.error) {
-
-    throw contributionsResult.error;
-
-  }
-
-
-  const contributions =
-    contributionsResult.data || [];
+      const displayDate =
+        row.contribution_date ||
+        row.month ||
+        "—";
 
 
-  /* ===================================================
-     EXPENSES
-     
-     ACTUAL DATABASE COLUMNS:
-     
-     id
-     group_id
-     description
-     category
-     amount
-     date
-     recorded_by
-     receipt_url
-     approval_status
-     created_at
-  =================================================== */
+      return `
+        <tr>
 
-  const expensesResult =
-    await supabase
-      .from("expenses")
-      .select(`
-        id,
-        group_id,
+          <td>
+            ${escapeHtml(
+              displayDate
+            )}
+          </td>
+
+          <td>
+            ${escapeHtml(
+              memberName
+            )}
+          </td>
+
+          <td>
+            ${money(
+              row.amount
+            )}
+          </td>
+
+          <td>
+            ${escapeHtml(
+              row.contribution_type ||
+              "—"
+            )}
+          </td>
+
+          <td>
+            ${escapeHtml(
+              row.payment_method ||
+              "—"
+            )}
+          </td>
+
+          <td>
+            ${escapeHtml(
+              row.reference ||
+              "—"
+            )}
+          </td>
+
+        </tr>
+      `;
+
+    }
+  )
+  .join("");
+```
+
+return total;
+
+}
+
+/* =====================================================
+LOAD EXPENSES
+===================================================== */
+
+async function loadExpenses(groupId) {
+
+/*
+
+* expenses.date is valid.
+  */
+
+const result =
+await supabase
+.from("expenses")
+.select(`         id,
+        date,
         description,
         category,
         amount,
-        date,
         approval_status
       `)
-      .eq(
-        "group_id",
-        groupId
-      )
-      .order(
-        "date",
-        {
-          ascending: false
-        }
-      );
+.eq(
+"group_id",
+groupId
+)
+.order(
+"date",
+{
+ascending: false
+}
+);
 
+if (result.error) {
 
-  if (expensesResult.error) {
+```
+throw result.error;
+```
 
-    throw expensesResult.error;
+}
 
-  }
+const rows =
+result.data || [];
 
+/* ===================================================
+APPROVED
+=================================================== */
 
-  const expenses =
-    expensesResult.data || [];
+const approved =
+rows
+.filter(
+row =>
+String(
+row.approval_status || ""
+).toLowerCase() ===
+"approved"
+)
+.reduce(
+(sum, row) =>
+sum +
+Number(
+row.amount || 0
+),
+0
+);
 
+/* ===================================================
+PENDING
+=================================================== */
 
-  /* ===================================================
-     MEETINGS
-     
-     ACTUAL DATABASE COLUMNS:
-     
-     id
-     group_id
-     title
-     date
-     venue
-     agenda
-     minutes
-     resolution
-     status
-     created_at
-  =================================================== */
+const pending =
+rows
+.filter(
+row =>
+String(
+row.approval_status || ""
+).toLowerCase() ===
+"pending"
+)
+.reduce(
+(sum, row) =>
+sum +
+Number(
+row.amount || 0
+),
+0
+);
 
-  const meetingsResult =
-    await supabase
-      .from("meetings")
-      .select(`
-        id,
-        title,
+if (approvedExpensesEl) {
+
+```
+approvedExpensesEl.textContent =
+  money(approved);
+```
+
+}
+
+if (pendingExpensesEl) {
+
+```
+pendingExpensesEl.textContent =
+  money(pending);
+```
+
+}
+
+if (expenses2El) {
+
+```
+expenses2El.textContent =
+  money(approved);
+```
+
+}
+
+/* ===================================================
+TABLE
+=================================================== */
+
+if (!expenseRows) {
+
+```
+return approved;
+```
+
+}
+
+if (rows.length === 0) {
+
+```
+expenseRows.innerHTML = `
+  <tr>
+    <td colspan="5">
+      No expenses yet.
+    </td>
+  </tr>
+`;
+
+return approved;
+```
+
+}
+
+expenseRows.innerHTML =
+rows
+.slice(0, 10)
+.map(
+row => {
+
+```
+      return `
+        <tr>
+
+          <td>
+            ${escapeHtml(
+              row.date ||
+              "—"
+            )}
+          </td>
+
+          <td>
+            ${escapeHtml(
+              row.description ||
+              "—"
+            )}
+          </td>
+
+          <td>
+            ${escapeHtml(
+              row.category ||
+              "—"
+            )}
+          </td>
+
+          <td>
+            ${money(
+              row.amount
+            )}
+          </td>
+
+          <td>
+            ${escapeHtml(
+              row.approval_status ||
+              "—"
+            )}
+          </td>
+
+        </tr>
+      `;
+
+    }
+  )
+  .join("");
+```
+
+return approved;
+
+}
+
+/* =====================================================
+LOAD MEETINGS
+===================================================== */
+
+async function loadMeetings(groupId) {
+
+const result =
+await supabase
+.from("meetings")
+.select(`         id,
         date,
-        venue,
         status
       `)
-      .eq(
-        "group_id",
-        groupId
-      )
-      .order(
-        "date",
-        {
-          ascending: false
-        }
-      );
-
-
-  if (meetingsResult.error) {
-
-    throw meetingsResult.error;
-
-  }
-
-
-  const meetings =
-    meetingsResult.data || [];
-
-
-  /* ===================================================
-     OPENING BALANCE
-  =================================================== */
-
-  const openingBalance = 0;
-
-
-  /* ===================================================
-     MEMBER TOTALS
-  =================================================== */
-
-  const totalMembers =
-    members.length;
-
-
-  const activeMembers =
-    members.filter(
-      member =>
-        String(
-          member.status || ""
-        ).toLowerCase() ===
-        "active"
-    ).length;
-
-
-  /* ===================================================
-     CONTRIBUTION TOTAL
-  =================================================== */
-
-  const contributionTotal =
-    contributions.reduce(
-      function(total, contribution) {
-
-        return (
-          total +
-          Number(
-            contribution.amount || 0
-          )
-        );
-
-      },
-      0
-    );
-
-
-  /* ===================================================
-     APPROVED EXPENSES
-  =================================================== */
-
-  const approvedExpenses =
-    expenses.filter(
-      expense =>
-        String(
-          expense.approval_status || ""
-        ).toLowerCase() ===
-        "approved"
-    );
-
-
-  const approvedExpenseTotal =
-    approvedExpenses.reduce(
-      function(total, expense) {
-
-        return (
-          total +
-          Number(
-            expense.amount || 0
-          )
-        );
-
-      },
-      0
-    );
-
-
-  /* ===================================================
-     PENDING EXPENSES
-  =================================================== */
-
-  const pendingExpenses =
-    expenses.filter(
-      expense =>
-        String(
-          expense.approval_status || ""
-        ).toLowerCase() ===
-        "pending"
-    );
-
-
-  const pendingExpenseTotal =
-    pendingExpenses.reduce(
-      function(total, expense) {
-
-        return (
-          total +
-          Number(
-            expense.amount || 0
-          )
-        );
-
-      },
-      0
-    );
-
-
-  /* ===================================================
-     CURRENT BALANCE
-  =================================================== */
-
-  const currentBalance =
-    openingBalance +
-    contributionTotal -
-    approvedExpenseTotal;
-
-
-  /* ===================================================
-     UPDATE MEMBERS
-  =================================================== */
-
-  if (membersEl) {
-
-    membersEl.textContent =
-      activeMembers;
-
-  }
-
-
-  if (totalMembersEl) {
-
-    totalMembersEl.textContent =
-      totalMembers;
-
-  }
-
-
-  /* ===================================================
-     UPDATE CONTRIBUTIONS
-  =================================================== */
-
-  if (contributionsEl) {
-
-    contributionsEl.textContent =
-      money(
-        contributionTotal
-      );
-
-  }
-
-
-  /* ===================================================
-     UPDATE EXPENSES
-  =================================================== */
-
-  if (expensesEl) {
-
-    expensesEl.textContent =
-      money(
-        approvedExpenseTotal
-      );
-
-  }
-
-
-  if (pendingExpensesEl) {
-
-    pendingExpensesEl.textContent =
-      money(
-        pendingExpenseTotal
-      );
-
-  }
-
-
-  /* ===================================================
-     FINANCIAL POSITION
-  =================================================== */
-
-  if (openingEl) {
-
-    openingEl.textContent =
-      money(
-        openingBalance
-      );
-
-  }
-
-
-  if (c2El) {
-
-    c2El.textContent =
-      money(
-        contributionTotal
-      );
-
-  }
-
-
-  if (e2El) {
-
-    e2El.textContent =
-      money(
-        approvedExpenseTotal
-      );
-
-  }
-
-
-  if (balanceEl) {
-
-    balanceEl.textContent =
-      money(
-        currentBalance
-      );
-
-  }
-
-
-  /* ===================================================
-     RECENT CONTRIBUTIONS
-  =================================================== */
-
-  renderRecentContributions(
-    contributions
-  );
-
-
-  /* ===================================================
-     RECENT EXPENSES
-  =================================================== */
-
-  renderRecentExpenses(
-    expenses
-  );
-
-
-  /* ===================================================
-     MEETINGS
-  =================================================== */
-
-  renderMeetingsSummary(
-    meetings
-  );
+.eq(
+"group_id",
+groupId
+);
+
+if (result.error) {
+
+```
+throw result.error;
+```
 
 }
 
+const meetings =
+result.data || [];
+
+const upcoming =
+meetings.filter(
+meeting =>
+String(
+meeting.status || ""
+).toLowerCase() ===
+"upcoming"
+).length;
+
+const completed =
+meetings.filter(
+meeting =>
+String(
+meeting.status || ""
+).toLowerCase() ===
+"completed"
+).length;
+
+const cancelled =
+meetings.filter(
+meeting =>
+String(
+meeting.status || ""
+).toLowerCase() ===
+"cancelled"
+).length;
+
+if (upcomingMeetingsEl) {
+
+```
+upcomingMeetingsEl.textContent =
+  upcoming;
+```
+
+}
+
+if (completedMeetingsEl) {
+
+```
+completedMeetingsEl.textContent =
+  completed;
+```
+
+}
+
+if (cancelledMeetingsEl) {
+
+```
+cancelledMeetingsEl.textContent =
+  cancelled;
+```
+
+}
+
+}
 
 /* =====================================================
-   RECENT CONTRIBUTIONS
+LOAD REPORT
 ===================================================== */
 
-function renderRecentContributions(
-  contributions
-) {
+async function loadReports() {
 
-  const table =
-    document.querySelector(
-      "#recentContributions tbody"
-    );
+clearError();
 
+if (statusBox) {
 
-  if (!table) {
-    return;
-  }
-
-
-  const recent =
-    contributions.slice(
-      0,
-      10
-    );
-
-
-  if (recent.length === 0) {
-
-    table.innerHTML = `
-      <tr>
-        <td colspan="6">
-          No contributions yet.
-        </td>
-      </tr>
-    `;
-
-    return;
-
-  }
-
-
-  table.innerHTML =
-    recent
-      .map(
-        function(contribution) {
-
-          const memberName =
-            contribution.members?.name ||
-            "Unknown";
-
-
-          return `
-            <tr>
-
-              <td>
-                ${escapeHtml(
-                  contribution.contribution_date ||
-                  "—"
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  memberName
-                )}
-              </td>
-
-              <td>
-                ${money(
-                  contribution.amount
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  contribution.contribution_type ||
-                  "—"
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  contribution.payment_method ||
-                  "—"
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  contribution.reference ||
-                  "—"
-                )}
-              </td>
-
-            </tr>
-          `;
-
-        }
-      )
-      .join("");
+```
+statusBox.textContent =
+  "Finding your group...";
+```
 
 }
 
+const groupId =
+await getCurrentGroupId();
 
-/* =====================================================
-   RECENT EXPENSES
-===================================================== */
+if (!groupId) {
 
-function renderRecentExpenses(
-  expenses
-) {
-
-  const table =
-    document.querySelector(
-      "#recentExpenses tbody"
-    );
-
-
-  if (!table) {
-    return;
-  }
-
-
-  const recent =
-    expenses.slice(
-      0,
-      10
-    );
-
-
-  if (recent.length === 0) {
-
-    table.innerHTML = `
-      <tr>
-        <td colspan="5">
-          No expenses yet.
-        </td>
-      </tr>
-    `;
-
-    return;
-
-  }
-
-
-  table.innerHTML =
-    recent
-      .map(
-        function(expense) {
-
-          return `
-            <tr>
-
-              <td>
-                ${escapeHtml(
-                  expense.date ||
-                  "—"
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  expense.description ||
-                  "—"
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  expense.category ||
-                  "—"
-                )}
-              </td>
-
-              <td>
-                ${money(
-                  expense.amount
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  expense.approval_status ||
-                  "—"
-                )}
-              </td>
-
-            </tr>
-          `;
-
-        }
-      )
-      .join("");
+```
+throw new Error(
+  "No group is linked to this account."
+);
+```
 
 }
 
+if (statusBox) {
 
-/* =====================================================
-   MEETINGS SUMMARY
-===================================================== */
-
-function renderMeetingsSummary(
-  meetings
-) {
-
-  const upcoming =
-    meetings.filter(
-      meeting =>
-        String(
-          meeting.status || ""
-        ).toLowerCase() ===
-        "upcoming"
-    ).length;
-
-
-  const completed =
-    meetings.filter(
-      meeting =>
-        String(
-          meeting.status || ""
-        ).toLowerCase() ===
-        "completed"
-    ).length;
-
-
-  const cancelled =
-    meetings.filter(
-      meeting =>
-        String(
-          meeting.status || ""
-        ).toLowerCase() ===
-        "cancelled"
-    ).length;
-
-
-  const upcomingEl =
-    document.getElementById(
-      "upcoming"
-    );
-
-  const completedEl =
-    document.getElementById(
-      "completed"
-    );
-
-  const cancelledEl =
-    document.getElementById(
-      "cancelled"
-    );
-
-
-  if (upcomingEl) {
-
-    upcomingEl.textContent =
-      upcoming;
-
-  }
-
-
-  if (completedEl) {
-
-    completedEl.textContent =
-      completed;
-
-  }
-
-
-  if (cancelledEl) {
-
-    cancelledEl.textContent =
-      cancelled;
-
-  }
+```
+statusBox.textContent =
+  "Loading live report...";
+```
 
 }
 
+/* ===================================================
+MEMBERS FIRST
+=================================================== */
+
+const memberMap =
+await loadMembers(
+groupId
+);
+
+/* ===================================================
+LOAD FINANCIAL DATA
+=================================================== */
+
+const contributionTotal =
+await loadContributions(
+groupId,
+memberMap
+);
+
+const approvedExpenseTotal =
+await loadExpenses(
+groupId
+);
+
+/* ===================================================
+MEETINGS
+=================================================== */
+
+await loadMeetings(
+groupId
+);
+
+/* ===================================================
+BALANCE
+=================================================== */
+
+const openingBalance = 0;
+
+const closingBalance =
+openingBalance +
+contributionTotal -
+approvedExpenseTotal;
+
+if (openingEl) {
+
+```
+openingEl.textContent =
+  money(
+    openingBalance
+  );
+```
+
+}
+
+if (balanceEl) {
+
+```
+balanceEl.textContent =
+  money(
+    closingBalance
+  );
+```
+
+}
+
+if (currentBalanceEl) {
+
+```
+currentBalanceEl.textContent =
+  money(
+    closingBalance
+  );
+```
+
+}
+
+if (statusBox) {
+
+```
+statusBox.textContent =
+  "Report updated successfully.";
+```
+
+}
+
+}
 
 /* =====================================================
-   LOGOUT
+LOGOUT
 ===================================================== */
 
 if (logoutButton) {
 
-  logoutButton.addEventListener(
-    "click",
-    async function() {
+logoutButton.addEventListener(
+"click",
+async () => {
 
-      try {
+```
+  try {
 
-        await supabase.auth.signOut();
+    await supabase.auth.signOut();
 
-        window.location.href =
-          "login.html";
+    window.location.href =
+      "login.html";
 
-      }
+  }
 
-      catch(error) {
+  catch (error) {
 
-        showError(error);
+    showError(error);
 
-      }
+  }
 
-    }
-  );
+}
+```
+
+);
 
 }
 
-
 /* =====================================================
-   START
+START
 ===================================================== */
 
 async function start() {
 
-  try {
+try {
 
-    clearError();
-
-    await loadReports();
-
+```
+const {
+  data: {
+    session
   }
+} =
+  await supabase.auth.getSession();
 
-  catch(error) {
 
-    showError(
-      error
-    );
+if (!session) {
 
-  }
+  window.location.href =
+    "login.html";
+
+  return;
 
 }
 
+
+await loadReports();
+```
+
+}
+
+catch (error) {
+
+```
+showError(error);
+```
+
+}
+
+}
 
 start();
