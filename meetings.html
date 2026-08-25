@@ -1,17 +1,25 @@
-```html
 <!doctype html>
 <html lang="en">
 
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
 
   <title>Meetings — CHAMA LIVE</title>
 
-  <link rel="stylesheet" href="css/app.css">
+  <link
+    rel="stylesheet"
+    href="css/app.css"
+  >
 </head>
 
+
 <body>
+
 
 <header class="topbar">
 
@@ -30,40 +38,78 @@
 </header>
 
 
+
 <div class="layout">
+
+
+  <!-- ==================================================
+       SIDEBAR
+  =================================================== -->
 
   <aside class="sidebar">
 
     <nav class="nav">
 
-      <a href="dashboard.html">Dashboard</a>
-      <a href="members.html">Members</a>
-      <a href="contributions.html">Contributions</a>
-      <a href="expenses.html">Expenses</a>
-      <a class="active" href="meetings.html">Meetings</a>
-      <a href="reports.html">Reports</a>
-      <a href="group-management.html">Group Management</a>
+      <a href="dashboard.html">
+        Dashboard
+      </a>
+
+      <a href="members.html">
+        Members
+      </a>
+
+      <a href="contributions.html">
+        Contributions
+      </a>
+
+      <a href="expenses.html">
+        Expenses
+      </a>
+
+      <a
+        class="active"
+        href="meetings.html"
+      >
+        Meetings
+      </a>
+
+      <a href="reports.html">
+        Reports
+      </a>
+
+      <a href="group-management.html">
+        Group Management
+      </a>
 
     </nav>
 
   </aside>
 
 
+
+  <!-- ==================================================
+       MAIN
+  =================================================== -->
+
   <main class="main">
+
 
     <div class="page-head">
 
       <div>
 
-        <h1>Meetings</h1>
+        <h1>
+          Meetings
+        </h1>
 
         <p class="muted">
-          Schedule and manage group meetings.
+          Plan, record and manage group meetings.
         </p>
 
       </div>
 
     </div>
+
 
 
     <!-- STATUS -->
@@ -73,8 +119,9 @@
       class="card"
       style="margin-bottom:20px;"
     >
-      Starting Meetings...
+      Loading meetings...
     </div>
+
 
 
     <!-- ERROR -->
@@ -87,15 +134,86 @@
     ></div>
 
 
-    <!-- RECORD MEETING -->
+
+    <!-- ==================================================
+         METRICS
+    =================================================== -->
+
+    <div class="grid grid-3">
+
+
+      <div class="card">
+
+        <div class="muted">
+          Upcoming
+        </div>
+
+        <div
+          class="metric"
+          id="upcomingCount"
+        >
+          0
+        </div>
+
+      </div>
+
+
+
+      <div class="card">
+
+        <div class="muted">
+          Completed
+        </div>
+
+        <div
+          class="metric"
+          id="completedCount"
+        >
+          0
+        </div>
+
+      </div>
+
+
+
+      <div class="card">
+
+        <div class="muted">
+          Cancelled
+        </div>
+
+        <div
+          class="metric"
+          id="cancelledCount"
+        >
+          0
+        </div>
+
+      </div>
+
+    </div>
+
+
+
+    <br>
+
+
+
+    <!-- ==================================================
+         CREATE MEETING
+    =================================================== -->
 
     <section class="card">
 
-      <h2>Record Meeting</h2>
+      <h2>
+        Schedule Meeting
+      </h2>
 
-      <div class="form">
 
-        <div class="field">
+      <form id="meetingForm">
+
+
+        <div class="form-group">
 
           <label for="title">
             Meeting Title
@@ -104,13 +222,15 @@
           <input
             id="title"
             type="text"
+            required
             placeholder="e.g. Monthly Chama Meeting"
           >
 
         </div>
 
 
-        <div class="field">
+
+        <div class="form-group">
 
           <label for="meetingDate">
             Date
@@ -119,12 +239,14 @@
           <input
             id="meetingDate"
             type="date"
+            required
           >
 
         </div>
 
 
-        <div class="field">
+
+        <div class="form-group">
 
           <label for="venue">
             Venue
@@ -133,13 +255,14 @@
           <input
             id="venue"
             type="text"
-            placeholder="e.g. Timau Social Hall"
+            placeholder="e.g. Timau"
           >
 
         </div>
 
 
-        <div class="field">
+
+        <div class="form-group">
 
           <label for="agenda">
             Agenda
@@ -147,56 +270,76 @@
 
           <textarea
             id="agenda"
-            rows="5"
-            placeholder="Enter one agenda item per line"
+            rows="4"
+            placeholder="Enter meeting agenda..."
           ></textarea>
 
         </div>
 
 
-        <div class="field">
-
-          <label for="meetingStatus">
-            Status
-          </label>
-
-          <select id="meetingStatus">
-
-            <option value="upcoming">
-              Upcoming
-            </option>
-
-            <option value="completed">
-              Completed
-            </option>
-
-            <option value="cancelled">
-              Cancelled
-            </option>
-
-          </select>
-
-        </div>
-
 
         <button
-          class="btn btn-primary"
+          class="btn"
           id="saveMeeting"
-          type="button"
+          type="submit"
         >
-          Record Meeting
+          Schedule Meeting
         </button>
 
-      </div>
+
+      </form>
 
     </section>
 
 
-    <!-- MEETING LEDGER -->
+
+    <br>
+
+
+
+    <!-- ==================================================
+         MEETING LEDGER
+    =================================================== -->
 
     <section class="card">
 
-      <h2>Meeting Ledger</h2>
+      <h2>
+        Meeting Records
+      </h2>
+
+
+      <div
+        style="
+          display:flex;
+          gap:10px;
+          flex-wrap:wrap;
+          margin-bottom:20px;
+        "
+      >
+
+        <select id="statusFilter">
+
+          <option value="all">
+            All Meetings
+          </option>
+
+          <option value="upcoming">
+            Upcoming
+          </option>
+
+          <option value="completed">
+            Completed
+          </option>
+
+          <option value="cancelled">
+            Cancelled
+          </option>
+
+        </select>
+
+      </div>
+
+
 
       <div class="table-wrap">
 
@@ -205,21 +348,40 @@
           <thead>
 
             <tr>
-              <th>Date</th>
-              <th>Title</th>
-              <th>Venue</th>
-              <th>Status</th>
-              <th>Agenda</th>
+
+              <th>
+                Date
+              </th>
+
+              <th>
+                Meeting
+              </th>
+
+              <th>
+                Venue
+              </th>
+
+              <th>
+                Status
+              </th>
+
+              <th>
+                Actions
+              </th>
+
             </tr>
 
           </thead>
 
-          <tbody id="rows">
+
+          <tbody id="meetingRows">
 
             <tr>
+
               <td colspan="5">
                 Loading...
               </td>
+
             </tr>
 
           </tbody>
@@ -230,672 +392,142 @@
 
     </section>
 
+
+
+    <br>
+
+
+
+    <!-- ==================================================
+         MEETING DETAILS
+    =================================================== -->
+
+    <section
+      class="card"
+      id="detailsCard"
+      hidden
+    >
+
+      <h2>
+        Meeting Details
+      </h2>
+
+
+      <div id="meetingDetails"></div>
+
+
+      <br>
+
+
+      <div
+        style="
+          display:flex;
+          gap:10px;
+          flex-wrap:wrap;
+        "
+      >
+
+        <button
+          class="btn btn-secondary"
+          id="editMeeting"
+          type="button"
+        >
+          Edit Meeting
+        </button>
+
+
+        <button
+          class="btn btn-secondary"
+          id="completeMeeting"
+          type="button"
+        >
+          Mark Completed
+        </button>
+
+
+        <button
+          class="btn btn-secondary"
+          id="cancelMeeting"
+          type="button"
+        >
+          Cancel Meeting
+        </button>
+
+
+        <button
+          class="btn btn-secondary"
+          id="deleteMeeting"
+          type="button"
+        >
+          Delete Meeting
+        </button>
+
+      </div>
+
+
+      <br>
+
+
+      <div class="form-group">
+
+        <label for="minutes">
+          Minutes
+        </label>
+
+        <textarea
+          id="minutes"
+          rows="6"
+          placeholder="Enter meeting minutes..."
+        ></textarea>
+
+      </div>
+
+
+      <div class="form-group">
+
+        <label for="resolution">
+          Resolutions
+        </label>
+
+        <textarea
+          id="resolution"
+          rows="6"
+          placeholder="Enter resolutions..."
+        ></textarea>
+
+      </div>
+
+
+      <button
+        class="btn"
+        id="saveMinutes"
+        type="button"
+      >
+        Save Minutes & Resolutions
+      </button>
+
+    </section>
+
+
   </main>
 
 </div>
 
 
+
 <script type="module">
 
-import { supabase } from "./js/supabase.js";
+  import {
+    boot
+  } from "./js/layout.js";
 
-import {
-  getCurrentGroupId
-} from "./js/app.js";
+  await boot();
 
-
-/* =====================================================
-   ELEMENTS
-===================================================== */
-
-const statusBox =
-  document.getElementById("status");
-
-const errorBox =
-  document.getElementById("error");
-
-const titleInput =
-  document.getElementById("title");
-
-const dateInput =
-  document.getElementById("meetingDate");
-
-const venueInput =
-  document.getElementById("venue");
-
-const agendaInput =
-  document.getElementById("agenda");
-
-const meetingStatusSelect =
-  document.getElementById("meetingStatus");
-
-const saveButton =
-  document.getElementById("saveMeeting");
-
-const rows =
-  document.getElementById("rows");
-
-const logoutButton =
-  document.getElementById("logout");
-
-
-/* =====================================================
-   STATUS
-===================================================== */
-
-function setStatus(message) {
-
-  statusBox.textContent =
-    message;
-
-}
-
-
-/* =====================================================
-   ERROR
-===================================================== */
-
-function showError(error) {
-
-  console.error(
-    "CHAMA LIVE meetings:",
-    error
-  );
-
-  const message =
-    error?.message ||
-    String(error);
-
-  errorBox.textContent =
-    "Error: " + message;
-
-  errorBox.hidden =
-    false;
-
-  setStatus(
-    "Something went wrong."
-  );
-
-}
-
-
-/* =====================================================
-   CLEAR ERROR
-===================================================== */
-
-function clearError() {
-
-  errorBox.textContent =
-    "";
-
-  errorBox.hidden =
-    true;
-
-}
-
-
-/* =====================================================
-   ESCAPE HTML
-===================================================== */
-
-function escapeHtml(value) {
-
-  return String(value)
-
-    .replaceAll("&", "&amp;")
-
-    .replaceAll("<", "&lt;")
-
-    .replaceAll(">", "&gt;")
-
-    .replaceAll('"', "&quot;")
-
-    .replaceAll("'", "&#039;");
-
-}
-
-
-/* =====================================================
-   CHECK LOGIN
-===================================================== */
-
-async function checkLogin() {
-
-  const result =
-    await supabase.auth.getSession();
-
-
-  if (result.error) {
-
-    throw result.error;
-
-  }
-
-
-  if (!result.data?.session) {
-
-    window.location.href =
-      "login.html";
-
-    return false;
-
-  }
-
-
-  return true;
-
-}
-
-
-/* =====================================================
-   LOAD MEETINGS
-===================================================== */
-
-async function loadMeetings() {
-
-  setStatus(
-    "Finding your group..."
-  );
-
-
-  const groupId =
-    await getCurrentGroupId();
-
-
-  if (!groupId) {
-
-    throw new Error(
-      "No group is linked to this account."
-    );
-
-  }
-
-
-  setStatus(
-    "Loading meetings..."
-  );
-
-
-  /*
-   * ACTUAL DATABASE COLUMNS:
-   *
-   * id
-   * group_id
-   * title
-   * date
-   * venue
-   * agenda
-   * minutes
-   * resolution
-   * status
-   * created_at
-   *
-   * IMPORTANT:
-   * There is NO meeting_date column.
-   */
-
-
-  const result =
-    await supabase
-
-      .from("meetings")
-
-      .select(
-        "id,title,date,venue,agenda,status"
-      )
-
-      .eq(
-        "group_id",
-        groupId
-      )
-
-      .order(
-        "date",
-        {
-          ascending: false
-        }
-      );
-
-
-  if (result.error) {
-
-    throw result.error;
-
-  }
-
-
-  const meetings =
-    result.data || [];
-
-
-  if (
-    meetings.length === 0
-  ) {
-
-    rows.innerHTML = `
-      <tr>
-        <td colspan="5">
-          No meetings yet.
-        </td>
-      </tr>
-    `;
-
-    setStatus(
-      "No meetings found."
-    );
-
-    return;
-
-  }
-
-
-  rows.innerHTML =
-
-    meetings
-
-      .map(
-        function(meeting) {
-
-          let agenda = "—";
-
-
-          if (
-            Array.isArray(
-              meeting.agenda
-            )
-          ) {
-
-            agenda =
-              meeting.agenda
-                .filter(Boolean)
-                .join(", ");
-
-            if (!agenda) {
-              agenda = "—";
-            }
-
-          }
-
-          else if (
-            meeting.agenda
-          ) {
-
-            agenda =
-              String(
-                meeting.agenda
-              );
-
-          }
-
-
-          return `
-
-            <tr>
-
-              <td>
-                ${escapeHtml(
-                  meeting.date || "—"
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  meeting.title || "—"
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  meeting.venue || "—"
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  meeting.status || "—"
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  agenda
-                )}
-              </td>
-
-            </tr>
-
-          `;
-
-        }
-      )
-
-      .join("");
-
-
-  setStatus(
-    meetings.length +
-    " meeting(s) loaded."
-  );
-
-}
-
-
-/* =====================================================
-   SAVE MEETING
-===================================================== */
-
-async function saveMeeting() {
-
-  clearError();
-
-
-  const originalText =
-    saveButton.textContent;
-
-
-  try {
-
-    const title =
-      titleInput.value.trim();
-
-    const meetingDate =
-      dateInput.value;
-
-    const venue =
-      venueInput.value.trim();
-
-    const agendaText =
-      agendaInput.value.trim();
-
-    const status =
-      meetingStatusSelect.value;
-
-
-    /* VALIDATION */
-
-    if (!title) {
-
-      throw new Error(
-        "Please enter the meeting title."
-      );
-
-    }
-
-
-    if (!meetingDate) {
-
-      throw new Error(
-        "Please select the meeting date."
-      );
-
-    }
-
-
-    /* GET GROUP */
-
-    const groupId =
-      await getCurrentGroupId();
-
-
-    if (!groupId) {
-
-      throw new Error(
-        "No group is linked to this account."
-      );
-
-    }
-
-
-    /*
-     * PostgreSQL column "agenda"
-     * is TEXT[].
-     *
-     * Convert:
-     *
-     * Meeting
-     * Treasurer report
-     * Welfare
-     *
-     * into:
-     *
-     * ["Meeting","Treasurer report","Welfare"]
-     */
-
-    const agenda =
-      agendaText
-
-        ? agendaText
-            .split(/\r?\n/)
-            .map(
-              item =>
-                item.trim()
-            )
-            .filter(Boolean)
-
-        : [];
-
-
-    saveButton.disabled =
-      true;
-
-    saveButton.textContent =
-      "Saving...";
-
-
-    setStatus(
-      "Saving meeting..."
-    );
-
-
-    /*
-     * IMPORTANT:
-     *
-     * Use the real database
-     * column names.
-     *
-     * date
-     * agenda
-     * status
-     *
-     * Do NOT use:
-     *
-     * meeting_date
-     * expense_date
-     */
-
-
-    const result =
-      await supabase
-
-        .from("meetings")
-
-        .insert({
-
-          group_id:
-            groupId,
-
-          title:
-            title,
-
-          date:
-            meetingDate,
-
-          venue:
-            venue || null,
-
-          agenda:
-            agenda,
-
-          status:
-            status
-
-        });
-
-
-    if (result.error) {
-
-      throw result.error;
-
-    }
-
-
-    /* CLEAR FORM */
-
-    titleInput.value =
-      "";
-
-    venueInput.value =
-      "";
-
-    agendaInput.value =
-      "";
-
-    meetingStatusSelect.value =
-      "upcoming";
-
-
-    clearError();
-
-
-    setStatus(
-      "Meeting recorded successfully."
-    );
-
-
-    alert(
-      "Meeting recorded successfully."
-    );
-
-
-    /* REFRESH LEDGER */
-
-    await loadMeetings();
-
-  }
-
-  catch(error) {
-
-    showError(
-      error
-    );
-
-  }
-
-  finally {
-
-    saveButton.disabled =
-      false;
-
-    saveButton.textContent =
-      originalText;
-
-  }
-
-}
-
-
-/* =====================================================
-   LOGOUT
-===================================================== */
-
-logoutButton.addEventListener(
-  "click",
-  async function() {
-
-    try {
-
-      await supabase.auth.signOut();
-
-      window.location.href =
-        "login.html";
-
-    }
-
-    catch(error) {
-
-      showError(
-        error
-      );
-
-    }
-
-  }
-);
-
-
-/* =====================================================
-   SAVE BUTTON
-===================================================== */
-
-saveButton.addEventListener(
-  "click",
-  saveMeeting
-);
-
-
-/* =====================================================
-   START
-===================================================== */
-
-async function start() {
-
-  try {
-
-    clearError();
-
-    setStatus(
-      "Starting Meetings..."
-    );
-
-
-    const loggedIn =
-      await checkLogin();
-
-
-    if (!loggedIn) {
-
-      return;
-
-    }
-
-
-    /* DEFAULT DATE */
-
-    dateInput.value =
-      new Date()
-        .toISOString()
-        .slice(
-          0,
-          10
-        );
-
-
-    /* LOAD MEETINGS */
-
-    await loadMeetings();
-
-  }
-
-  catch(error) {
-
-    showError(
-      error
-    );
-
-  }
-
-}
-
-
-/* =====================================================
-   START APPLICATION
-===================================================== */
-
-start();
+  import "./js/meetings.js";
 
 </script>
+
 
 </body>
 
 </html>
-```
