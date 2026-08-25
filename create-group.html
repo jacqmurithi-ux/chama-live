@@ -1,87 +1,59 @@
-```html
 <!doctype html>
+
 <html lang="en">
 
 <head>
   <meta charset="utf-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1"
-  >
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <title>Create Group — CHAMA LIVE</title>
 
-  <link
-    rel="stylesheet"
-    href="css/app.css"
-  >
+  <link rel="stylesheet" href="css/app.css">
 
   <style>
-    .onboarding-page {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 30px 15px;
+    .onboarding-wrap {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 20px;
     }
 
-    .onboarding-container {
-      width: 100%;
-      max-width: 850px;
-    }
-
-    .onboarding-header {
-      text-align: center;
-      margin-bottom: 25px;
-    }
-
-    .onboarding-header h1 {
-      margin-bottom: 8px;
-    }
-
-    .steps {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      margin-bottom: 25px;
-      flex-wrap: wrap;
-    }
-
-    .step {
-      padding: 8px 14px;
-      border-radius: 20px;
-      background: #f1f1f1;
-      font-size: 13px;
-    }
-
-    .step.active {
-      font-weight: 700;
+    .onboarding-card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 30px;
+      box-shadow: 0 8px 30px rgba(0,0,0,.08);
     }
 
     .form-section {
-      margin-bottom: 28px;
+      margin-top: 30px;
+      padding-top: 25px;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .form-section:first-child {
+      margin-top: 0;
+      padding-top: 0;
+      border-top: 0;
     }
 
     .form-section h2 {
-      margin-bottom: 5px;
+      margin-bottom: 6px;
     }
 
-    .form-section-description {
-      margin-bottom: 18px;
-      color: #666;
+    .form-section p {
+      margin-top: 0;
     }
 
     .form-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 16px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
     }
 
     .form-group {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 7px;
     }
 
     .form-group.full {
@@ -90,41 +62,66 @@
 
     .form-group label {
       font-weight: 600;
-      font-size: 14px;
     }
 
     .form-group input,
-    .form-group select {
+    .form-group select,
+    .form-group textarea {
       width: 100%;
       box-sizing: border-box;
+      padding: 11px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font: inherit;
     }
 
-    .password-note {
-      font-size: 12px;
-      color: #666;
-      margin-top: 3px;
+    .form-group textarea {
+      min-height: 100px;
+      resize: vertical;
     }
 
-    .actions {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 25px;
+    .required {
+      color: #dc2626;
+    }
+
+    .help {
+      font-size: 13px;
+      color: #6b7280;
     }
 
     .success-box {
-      text-align: center;
-      padding: 25px;
+      background: #ecfdf5;
+      border: 1px solid #10b981;
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 20px;
     }
 
-    .success-icon {
-      font-size: 45px;
-      margin-bottom: 10px;
+    .success-code {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: 4px;
+      margin: 12px 0;
+    }
+
+    .error-box {
+      background: #fef2f2;
+      border: 1px solid #ef4444;
+      color: #991b1b;
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 20px;
     }
 
     .hidden {
       display: none !important;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 30px;
     }
 
     @media (max-width: 700px) {
@@ -135,487 +132,457 @@
       .form-group.full {
         grid-column: auto;
       }
+
+      .onboarding-card {
+        padding: 20px;
+      }
     }
   </style>
-</head>
 
+</head>
 
 <body>
 
-<div class="onboarding-page">
+<header class="topbar">
 
-  <div class="onboarding-container">
+  <div class="brand">
+    CHAMA <span>LIVE</span>
+  </div>
 
-    <!-- HEADER -->
+<a
+href="login.html"
+class="btn btn-secondary"
 
-    <div class="onboarding-header">
+>
 
-      <div class="brand">
-        CHAMA <span>LIVE</span>
-      </div>
+```
+Member Login
+```
 
-      <h1>
-        Create Your Group
-      </h1>
+  </a>
 
-      <p class="muted">
-        Set up your group and become its first administrator.
-      </p>
+</header>
 
-    </div>
+<main class="onboarding-wrap">
 
+  <div class="onboarding-card">
 
-    <!-- STEPS -->
+```
+<div class="page-head">
 
-    <div class="steps">
+  <div>
 
-      <div class="step active">
-        1. Group Details
-      </div>
+    <h1>
+      Create Your Group Account
+    </h1>
 
-      <div class="step active">
-        2. Administrator
-      </div>
-
-      <div class="step">
-        3. Add Members
-      </div>
-
-    </div>
-
-
-    <!-- ERROR -->
-
-    <div
-      id="error"
-      class="error"
-      hidden
-      style="margin-bottom:20px;"
-    ></div>
-
-
-    <!-- SUCCESS -->
-
-    <section
-      id="success"
-      class="card success-box hidden"
-    >
-
-      <div class="success-icon">
-        ✓
-      </div>
-
-      <h2>
-        Group Created Successfully
-      </h2>
-
-      <p id="successMessage">
-        Your CHAMA LIVE group has been created.
-      </p>
-
-      <p class="muted">
-        You are now the administrator of this group.
-      </p>
-
-      <button
-        id="continueButton"
-        class="btn btn-primary"
-        type="button"
-      >
-        Continue to Dashboard
-      </button>
-
-    </section>
-
-
-    <!-- FORM -->
-
-    <form
-      id="createGroupForm"
-      class="card"
-      novalidate
-    >
-
-      <!-- GROUP DETAILS -->
-
-      <div class="form-section">
-
-        <h2>
-          Group Details
-        </h2>
-
-        <p class="form-section-description">
-          Tell us about the group you want to manage.
-        </p>
-
-
-        <div class="form-grid">
-
-          <div class="form-group full">
-
-            <label for="groupName">
-              Group Name *
-            </label>
-
-            <input
-              type="text"
-              id="groupName"
-              name="groupName"
-              placeholder="e.g. Timau Welfare Group"
-              autocomplete="organization"
-              required
-            >
-
-          </div>
-
-
-          <div class="form-group">
-
-            <label for="groupType">
-              Group Type *
-            </label>
-
-            <select
-              id="groupType"
-              name="groupType"
-              required
-            >
-
-              <option value="">
-                Select group type
-              </option>
-
-              <option value="chama">
-                Chama
-              </option>
-
-              <option value="welfare">
-                Welfare Group
-              </option>
-
-              <option value="investment">
-                Investment Group
-              </option>
-
-              <option value="cbo">
-                CBO
-              </option>
-
-              <option value="self_help">
-                Self Help Group
-              </option>
-
-              <option value="other">
-                Other
-              </option>
-
-            </select>
-
-          </div>
-
-
-          <div class="form-group">
-
-            <label for="registrationNumber">
-              Registration Number
-            </label>
-
-            <input
-              type="text"
-              id="registrationNumber"
-              name="registrationNumber"
-              placeholder="Optional"
-            >
-
-          </div>
-
-
-          <div class="form-group">
-
-            <label for="location">
-              Location
-            </label>
-
-            <input
-              type="text"
-              id="location"
-              name="location"
-              placeholder="e.g. Timau, Meru"
-            >
-
-          </div>
-
-
-          <div class="form-group">
-
-            <label for="groupPhone">
-              Group Phone
-            </label>
-
-            <input
-              type="tel"
-              id="groupPhone"
-              name="groupPhone"
-              placeholder="07XXXXXXXX"
-            >
-
-          </div>
-
-
-          <div class="form-group">
-
-            <label for="meetingDay">
-              Meeting Day
-            </label>
-
-            <select
-              id="meetingDay"
-              name="meetingDay"
-            >
-
-              <option value="">
-                Select day
-              </option>
-
-              <option value="Monday">
-                Monday
-              </option>
-
-              <option value="Tuesday">
-                Tuesday
-              </option>
-
-              <option value="Wednesday">
-                Wednesday
-              </option>
-
-              <option value="Thursday">
-                Thursday
-              </option>
-
-              <option value="Friday">
-                Friday
-              </option>
-
-              <option value="Saturday">
-                Saturday
-              </option>
-
-              <option value="Sunday">
-                Sunday
-              </option>
-
-            </select>
-
-          </div>
-
-
-          <div class="form-group">
-
-            <label for="monthlyContribution">
-              Monthly Contribution (KSh) *
-            </label>
-
-            <input
-              type="number"
-              id="monthlyContribution"
-              name="monthlyContribution"
-              min="0"
-              step="1"
-              placeholder="200"
-              required
-            >
-
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <hr>
-
-
-      <!-- ADMIN DETAILS -->
-
-      <div class="form-section">
-
-        <h2>
-          Administrator Details
-        </h2>
-
-        <p class="form-section-description">
-          You will become the first administrator of this group.
-        </p>
-
-
-        <div class="form-grid">
-
-          <div class="form-group full">
-
-            <label for="adminName">
-              Full Name *
-            </label>
-
-            <input
-              type="text"
-              id="adminName"
-              name="adminName"
-              placeholder="Your full name"
-              autocomplete="name"
-              required
-            >
-
-          </div>
-
-
-          <div class="form-group">
-
-            <label for="memberNumber">
-              Member Number *
-            </label>
-
-            <input
-              type="text"
-              id="memberNumber"
-              name="memberNumber"
-              placeholder="e.g. 0001"
-              required
-            >
-
-          </div>
-
-
-          <div class="form-group">
-
-            <label for="adminPhone">
-              Phone Number *
-            </label>
-
-            <input
-              type="tel"
-              id="adminPhone"
-              name="adminPhone"
-              placeholder="07XXXXXXXX"
-              autocomplete="tel"
-              required
-            >
-
-          </div>
-
-
-          <div class="form-group full">
-
-            <label for="adminEmail">
-              Email Address *
-            </label>
-
-            <input
-              type="email"
-              id="adminEmail"
-              name="adminEmail"
-              placeholder="you@example.com"
-              autocomplete="email"
-              required
-            >
-
-          </div>
-
-
-          <div class="form-group">
-
-            <label for="password">
-              Password *
-            </label>
-
-            <input
-              type="password"
-              id="password"
-              name="password"
-              minlength="8"
-              autocomplete="new-password"
-              placeholder="At least 8 characters"
-              required
-            >
-
-            <div class="password-note">
-              Use at least 8 characters.
-            </div>
-
-          </div>
-
-
-          <div class="form-group">
-
-            <label for="confirmPassword">
-              Confirm Password *
-            </label>
-
-            <input
-              type="password"
-              id="confirmPassword"
-              name="confirmPassword"
-              minlength="8"
-              autocomplete="new-password"
-              placeholder="Repeat password"
-              required
-            >
-
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <!-- AGREEMENT -->
-
-      <div class="form-group">
-
-        <label>
-
-          <input
-            type="checkbox"
-            id="agreement"
-            required
-          >
-
-          I confirm that I am authorized to create
-          this group account.
-
-        </label>
-
-      </div>
-
-
-      <!-- ACTIONS -->
-
-      <div class="actions">
-
-        <a
-          href="login.html"
-          class="btn btn-secondary"
-        >
-          Already have an account?
-        </a>
-
-
-        <button
-          id="createGroupButton"
-          class="btn btn-primary"
-          type="submit"
-        >
-          Create Group Account
-        </button>
-
-      </div>
-
-    </form>
+    <p class="muted">
+      Register your group and create the first
+      administrator account.
+    </p>
 
   </div>
 
 </div>
 
+
+<div
+  id="error"
+  class="error-box hidden"
+></div>
+
+
+<div
+  id="success"
+  class="success-box hidden"
+>
+
+  <h2>
+    Group Created Successfully
+  </h2>
+
+  <p>
+    Your group has been registered.
+    Save the access code below.
+  </p>
+
+  <div
+    id="successGroup"
+    class="muted"
+  ></div>
+
+  <div
+    id="accessCode"
+    class="success-code"
+  ></div>
+
+  <p>
+    Use this code together with the
+    administrator email to activate the
+    administrator account.
+  </p>
+
+  <div class="actions">
+
+    <a
+      id="activateLink"
+      href="activate-account.html"
+      class="btn btn-primary"
+    >
+      Activate Administrator Account
+    </a>
+
+    <button
+      type="button"
+      id="copyCode"
+      class="btn btn-secondary"
+    >
+      Copy Access Code
+    </button>
+
+    <a
+      href="login.html"
+      class="btn btn-secondary"
+    >
+      Go to Login
+    </a>
+
+  </div>
+
+</div>
+
+
+<form
+  id="createGroupForm"
+>
+
+  <!-- GROUP DETAILS -->
+
+  <section class="form-section">
+
+    <h2>
+      Group Details
+    </h2>
+
+    <p class="muted">
+      Enter the basic information about your
+      group.
+    </p>
+
+
+    <div class="form-grid">
+
+      <div class="form-group full">
+
+        <label for="group_name">
+          Group Name
+          <span class="required">*</span>
+        </label>
+
+        <input
+          id="group_name"
+          name="group_name"
+          type="text"
+          required
+          maxlength="150"
+          placeholder="e.g. Timau Welfare Group"
+        >
+
+      </div>
+
+
+      <div class="form-group">
+
+        <label for="registration_number">
+          Registration Number
+        </label>
+
+        <input
+          id="registration_number"
+          name="registration_number"
+          type="text"
+          maxlength="100"
+          placeholder="Optional"
+        >
+
+      </div>
+
+
+      <div class="form-group">
+
+        <label for="category">
+          Group Category
+        </label>
+
+        <select
+          id="category"
+          name="category"
+        >
+
+          <option value="welfare">
+            Welfare Group
+          </option>
+
+          <option value="chama">
+            Chama
+          </option>
+
+          <option value="investment">
+            Investment Group
+          </option>
+
+          <option value="sacco">
+            SACCO
+          </option>
+
+          <option value="church">
+            Church Group
+          </option>
+
+          <option value="youth">
+            Youth Group
+          </option>
+
+          <option value="sports">
+            Sports Group
+          </option>
+
+          <option value="cbo">
+            CBO
+          </option>
+
+          <option value="other" selected>
+            Other
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <div class="form-group">
+
+        <label for="group_phone">
+          Group Phone
+        </label>
+
+        <input
+          id="group_phone"
+          name="group_phone"
+          type="tel"
+          placeholder="e.g. 0712345678"
+        >
+
+      </div>
+
+
+      <div class="form-group">
+
+        <label for="group_email">
+          Group Email
+        </label>
+
+        <input
+          id="group_email"
+          name="group_email"
+          type="email"
+          placeholder="group@example.com"
+        >
+
+      </div>
+
+
+      <div class="form-group">
+
+        <label for="country">
+          Country
+        </label>
+
+        <input
+          id="country"
+          name="country"
+          type="text"
+          value="Kenya"
+        >
+
+      </div>
+
+
+      <div class="form-group">
+
+        <label for="monthly_contribution">
+          Monthly Contribution
+        </label>
+
+        <input
+          id="monthly_contribution"
+          name="monthly_contribution"
+          type="number"
+          min="0"
+          step="0.01"
+          value="0"
+        >
+
+        <span class="help">
+          Amount each active member is expected
+          to contribute monthly.
+        </span>
+
+      </div>
+
+
+      <div class="form-group">
+
+        <label for="opening_balance">
+          Opening Balance
+        </label>
+
+        <input
+          id="opening_balance"
+          name="opening_balance"
+          type="number"
+          min="0"
+          step="0.01"
+          value="0"
+        >
+
+        <span class="help">
+          Current cash/bank balance before
+          starting CHAMA LIVE.
+        </span>
+
+      </div>
+
+
+      <div class="form-group full">
+
+        <label for="description">
+          Group Description
+        </label>
+
+        <textarea
+          id="description"
+          name="description"
+          placeholder="Brief description of the group"
+        ></textarea>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- ADMIN DETAILS -->
+
+  <section class="form-section">
+
+    <h2>
+      Administrator / Chairperson
+    </h2>
+
+    <p class="muted">
+      This person becomes the first administrator
+      of the group.
+    </p>
+
+
+    <div class="form-grid">
+
+      <div class="form-group full">
+
+        <label for="name">
+          Full Name
+          <span class="required">*</span>
+        </label>
+
+        <input
+          id="name"
+          name="name"
+          type="text"
+          required
+          maxlength="150"
+          placeholder="Administrator full name"
+        >
+
+      </div>
+
+
+      <div class="form-group">
+
+        <label for="phone">
+          Phone Number
+          <span class="required">*</span>
+        </label>
+
+        <input
+          id="phone"
+          name="phone"
+          type="tel"
+          required
+          maxlength="30"
+          placeholder="e.g. 0712345678"
+        >
+
+      </div>
+
+
+      <div class="form-group">
+
+        <label for="email">
+          Email Address
+          <span class="required">*</span>
+        </label>
+
+        <input
+          id="email"
+          name="email"
+          type="email"
+          required
+          maxlength="200"
+          placeholder="admin@example.com"
+        >
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- SUBMIT -->
+
+  <div class="actions">
+
+    <button
+      id="createButton"
+      class="btn btn-primary"
+      type="submit"
+    >
+      Create Group Account
+    </button>
+
+    <a
+      href="login.html"
+      class="btn btn-secondary"
+    >
+      Cancel
+    </a>
+
+  </div>
+
+  <p
+    id="status"
+    class="muted"
+    style="margin-top:15px;"
+  ></p>
+
+</form>
+```
+
+  </div>
+
+</main>
 
 <script type="module">
 
@@ -624,6 +591,4 @@
 </script>
 
 </body>
-
 </html>
-```
