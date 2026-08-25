@@ -184,7 +184,7 @@
             id="memberName"
             type="text"
             required
-            placeholder="Member name"
+            placeholder="Full name"
           >
 
         </div>
@@ -232,7 +232,7 @@
             id="phone"
             type="tel"
             required
-            placeholder="Phone number"
+            placeholder="0712345678"
           >
 
         </div>
@@ -247,7 +247,7 @@
           <input
             id="email"
             type="email"
-            placeholder="Email address"
+            placeholder="member@example.com"
           >
 
         </div>
@@ -367,21 +367,13 @@
             <tr>
 
               <th>Name</th>
-
               <th>Member No.</th>
-
               <th>Phone</th>
-
               <th>Role</th>
-
               <th>Status</th>
-
               <th>Monthly</th>
-
               <th>Paid</th>
-
               <th>Outstanding</th>
-
               <th>Actions</th>
 
             </tr>
@@ -411,7 +403,7 @@
     <br>
 
 
-    <!-- MEMBER DETAILS -->
+    <!-- MEMBER ACCOUNT -->
 
     <section
       class="card"
@@ -419,13 +411,245 @@
       hidden
     >
 
-      <h2>Member Details</h2>
+      <div
+        style="
+          display:flex;
+          justify-content:space-between;
+          align-items:flex-start;
+          gap:20px;
+          flex-wrap:wrap;
+        "
+      >
 
-      <div id="memberDetails"></div>
+        <div>
+
+          <h2 id="detailsTitle">
+            Member Account
+          </h2>
+
+          <p
+            class="muted"
+            id="detailsSubtitle"
+          >
+            Member financial account
+          </p>
+
+        </div>
+
+
+        <div>
+
+          <span
+            id="memberStatusBadge"
+            style="
+              display:inline-block;
+              padding:6px 12px;
+              border-radius:999px;
+              font-weight:600;
+              background:#eee;
+            "
+          >
+            ACTIVE
+          </span>
+
+        </div>
+
+      </div>
+
+
+      <hr>
+
+
+      <!-- MEMBER INFORMATION -->
+
+      <div class="grid grid-3">
+
+        <div>
+
+          <div class="muted">
+            Member Number
+          </div>
+
+          <strong id="detailMemberNumber">
+            —
+          </strong>
+
+        </div>
+
+
+        <div>
+
+          <div class="muted">
+            Membership Number
+          </div>
+
+          <strong id="detailMembershipNumber">
+            —
+          </strong>
+
+        </div>
+
+
+        <div>
+
+          <div class="muted">
+            Phone
+          </div>
+
+          <strong id="detailPhone">
+            —
+          </strong>
+
+        </div>
+
+
+        <div>
+
+          <div class="muted">
+            Email
+          </div>
+
+          <strong id="detailEmail">
+            —
+          </strong>
+
+        </div>
+
+
+        <div>
+
+          <div class="muted">
+            Role
+          </div>
+
+          <strong id="detailRole">
+            —
+          </strong>
+
+        </div>
+
+
+        <div>
+
+          <div class="muted">
+            Join Date
+          </div>
+
+          <strong id="detailJoinDate">
+            —
+          </strong>
+
+        </div>
+
+      </div>
 
 
       <br>
 
+
+      <!-- MONTHLY SUMMARY -->
+
+      <h3>
+        Monthly Contribution
+      </h3>
+
+
+      <div class="grid grid-3">
+
+        <div class="card">
+
+          <div class="muted">
+            Expected
+          </div>
+
+          <div
+            class="metric"
+            id="detailExpected"
+          >
+            KSh 0
+          </div>
+
+        </div>
+
+
+        <div class="card">
+
+          <div class="muted">
+            Paid
+          </div>
+
+          <div
+            class="metric"
+            id="detailPaid"
+          >
+            KSh 0
+          </div>
+
+        </div>
+
+
+        <div class="card">
+
+          <div class="muted">
+            Outstanding
+          </div>
+
+          <div
+            class="metric"
+            id="detailOutstanding"
+          >
+            KSh 0
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div
+        class="card"
+        style="margin-top:15px;"
+      >
+
+        <div class="muted">
+          Monthly Status
+        </div>
+
+        <strong
+          id="detailMonthlyStatus"
+        >
+          OUTSTANDING
+        </strong>
+
+      </div>
+
+
+      <br>
+
+
+      <!-- LIFETIME -->
+
+      <h3>
+        Lifetime Contributions
+      </h3>
+
+
+      <div class="card">
+
+        <div
+          class="metric"
+          id="detailLifetime"
+        >
+          KSh 0
+        </div>
+
+      </div>
+
+
+      <br>
+
+
+      <!-- CONTRIBUTION HISTORY -->
 
       <h3>
         Contribution History
@@ -441,13 +665,9 @@
             <tr>
 
               <th>Date</th>
-
               <th>Amount</th>
-
               <th>Type</th>
-
               <th>Method</th>
-
               <th>Reference</th>
 
             </tr>
@@ -460,7 +680,7 @@
             <tr>
 
               <td colspan="5">
-                Select a member.
+                No contributions recorded.
               </td>
 
             </tr>
@@ -475,6 +695,8 @@
       <br>
 
 
+      <!-- ACTIONS -->
+
       <div
         style="
           display:flex;
@@ -485,19 +707,19 @@
 
         <button
           class="btn"
-          id="statementMember"
-          type="button"
-        >
-          View Statement
-        </button>
-
-
-        <button
-          class="btn btn-secondary"
           id="editMember"
           type="button"
         >
           Edit Member
+        </button>
+
+
+        <button
+          class="btn"
+          id="statementMember"
+          type="button"
+        >
+          Print Statement
         </button>
 
 
@@ -514,6 +736,243 @@
     </section>
 
   </main>
+
+</div>
+
+
+<!-- =====================================================
+     EDIT MEMBER MODAL
+===================================================== -->
+
+<div
+  id="editModal"
+  hidden
+  style="
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.5);
+    z-index:9999;
+    padding:20px;
+    overflow:auto;
+  "
+>
+
+  <div
+    class="card"
+    style="
+      max-width:650px;
+      margin:40px auto;
+    "
+  >
+
+    <div
+      style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+      "
+    >
+
+      <h2>
+        Edit Member
+      </h2>
+
+
+      <button
+        type="button"
+        class="btn btn-secondary"
+        id="closeEditModal"
+      >
+        Close
+      </button>
+
+    </div>
+
+
+    <hr>
+
+
+    <form id="editMemberForm">
+
+
+      <div class="form-group">
+
+        <label for="editName">
+          Full Name
+        </label>
+
+        <input
+          id="editName"
+          type="text"
+          required
+        >
+
+      </div>
+
+
+      <div class="form-group">
+
+        <label for="editMemberNumber">
+          Member Number
+        </label>
+
+        <input
+          id="editMemberNumber"
+          type="text"
+          required
+        >
+
+      </div>
+
+
+      <div class="form-group">
+
+        <label for="editMembershipNumber">
+          Membership Number
+        </label>
+
+        <input
+          id="editMembershipNumber"
+          type="text"
+          required
+        >
+
+      </div>
+
+
+      <div class="form-group">
+
+        <label for="editPhone">
+          Phone
+        </label>
+
+        <input
+          id="editPhone"
+          type="tel"
+          required
+        >
+
+      </div>
+
+
+      <div class="form-group">
+
+        <label for="editEmail">
+          Email
+        </label>
+
+        <input
+          id="editEmail"
+          type="email"
+        >
+
+      </div>
+
+
+      <div class="form-group">
+
+        <label for="editRole">
+          Role
+        </label>
+
+        <select id="editRole">
+
+          <option value="member">
+            Member
+          </option>
+
+          <option value="chairperson">
+            Chairperson
+          </option>
+
+          <option value="secretary">
+            Secretary
+          </option>
+
+          <option value="treasurer">
+            Treasurer
+          </option>
+
+          <option value="official">
+            Official
+          </option>
+
+          <option value="admin">
+            Admin
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <div class="form-group">
+
+        <label for="editJoinDate">
+          Join Date
+        </label>
+
+        <input
+          id="editJoinDate"
+          type="date"
+        >
+
+      </div>
+
+
+      <div class="form-group">
+
+        <label for="editStatus">
+          Status
+        </label>
+
+        <select id="editStatus">
+
+          <option value="active">
+            Active
+          </option>
+
+          <option value="inactive">
+            Inactive
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <div
+        style="
+          display:flex;
+          gap:10px;
+          justify-content:flex-end;
+          margin-top:20px;
+        "
+      >
+
+        <button
+          type="button"
+          class="btn btn-secondary"
+          id="cancelEdit"
+        >
+          Cancel
+        </button>
+
+
+        <button
+          type="submit"
+          class="btn"
+          id="saveEdit"
+        >
+          Save Changes
+        </button>
+
+      </div>
+
+
+    </form>
+
+  </div>
 
 </div>
 
