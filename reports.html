@@ -5,44 +5,85 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+
   <title>Reports — CHAMA LIVE</title>
+
   <link rel="stylesheet" href="css/app.css">
 </head>
 
 <body>
 
 <header class="topbar">
-  <div class="brand">CHAMA <span>LIVE</span></div>
-  <button class="btn btn-secondary" id="logout" type="button">
-    Sign out
-  </button>
+
+  <div class="brand">
+    CHAMA <span>LIVE</span>
+  </div>
+
+<button
+ class="btn btn-secondary"
+ id="logout"
+ type="button">
+Sign out </button>
+
 </header>
 
 <div class="layout">
 
   <aside class="sidebar">
-    <nav class="nav">
-      <a href="dashboard.html">Dashboard</a>
-      <a href="members.html">Members</a>
-      <a href="contributions.html">Contributions</a>
-      <a href="expenses.html">Expenses</a>
-      <a href="meetings.html">Meetings</a>
-      <a class="active" href="reports.html">Reports</a>
-      <a href="group-management.html">Group Management</a>
-    </nav>
+
+```
+<nav class="nav">
+
+  <a href="dashboard.html">
+    Dashboard
+  </a>
+
+  <a href="members.html">
+    Members
+  </a>
+
+  <a href="contributions.html">
+    Contributions
+  </a>
+
+  <a href="expenses.html">
+    Expenses
+  </a>
+
+  <a href="meetings.html">
+    Meetings
+  </a>
+
+  <a class="active" href="reports.html">
+    Reports
+  </a>
+
+  <a href="group-management.html">
+    Group Management
+  </a>
+
+</nav>
+```
+
   </aside>
 
   <main class="main">
 
 ```
 <div class="page-head">
+
   <div>
+
     <h1>Reports</h1>
+
     <p class="muted">
       Live financial and management summary.
     </p>
+
   </div>
+
 </div>
+
 
 <!-- STATUS -->
 
@@ -54,6 +95,7 @@
   Loading reports...
 </div>
 
+
 <!-- ERROR -->
 
 <div
@@ -63,100 +105,184 @@
   style="margin-bottom:20px;"
 ></div>
 
-<!-- FINANCIAL METRICS -->
+
+<!-- METRICS -->
 
 <div class="grid grid-3">
 
   <div class="card">
-    <div class="muted">Active Members</div>
-    <div class="metric" id="activeMembers">—</div>
+
+    <div class="muted">
+      Active Members
+    </div>
+
+    <div
+      class="metric"
+      id="activeMembers">
+      —
+    </div>
+
   </div>
 
-  <div class="card">
-    <div class="muted">Total Members</div>
-    <div class="metric" id="totalMembers">—</div>
-  </div>
 
   <div class="card">
-    <div class="muted">Contributions</div>
-    <div class="metric" id="contributions">—</div>
+
+    <div class="muted">
+      Total Members
+    </div>
+
+    <div
+      class="metric"
+      id="totalMembers">
+      —
+    </div>
+
   </div>
 
-  <div class="card">
-    <div class="muted">Approved Expenses</div>
-    <div class="metric" id="approvedExpenses">—</div>
-  </div>
 
   <div class="card">
-    <div class="muted">Pending Expenses</div>
-    <div class="metric" id="pendingExpenses">—</div>
+
+    <div class="muted">
+      Contributions
+    </div>
+
+    <div
+      class="metric"
+      id="contributions">
+      —
+    </div>
+
   </div>
 
+
   <div class="card">
-    <div class="muted">Current Balance</div>
-    <div class="metric" id="currentBalance">—</div>
+
+    <div class="muted">
+      Approved Expenses
+    </div>
+
+    <div
+      class="metric"
+      id="approvedExpenses">
+      —
+    </div>
+
+  </div>
+
+
+  <div class="card">
+
+    <div class="muted">
+      Pending Expenses
+    </div>
+
+    <div
+      class="metric"
+      id="pendingExpenses">
+      —
+    </div>
+
+  </div>
+
+
+  <div class="card">
+
+    <div class="muted">
+      Current Balance
+    </div>
+
+    <div
+      class="metric"
+      id="currentBalance">
+      —
+    </div>
+
   </div>
 
 </div>
 
+
 <br>
+
 
 <!-- FINANCIAL POSITION -->
 
 <section class="card">
 
-  <h2>Financial Position</h2>
+  <h2>
+    Financial Position
+  </h2>
 
   <p>
     Opening balance:
-    <strong id="opening">KSh 0</strong>
+    <strong id="opening">
+      KSh 0
+    </strong>
   </p>
 
   <p>
     Contributions:
-    <strong id="contributions2">KSh 0</strong>
+    <strong id="contributions2">
+      KSh 0
+    </strong>
   </p>
 
   <p>
     Approved expenses:
-    <strong id="expenses2">KSh 0</strong>
+    <strong id="expenses2">
+      KSh 0
+    </strong>
   </p>
 
   <p>
     Closing balance:
-    <strong id="balance">KSh 0</strong>
+    <strong id="balance">
+      KSh 0
+    </strong>
   </p>
 
 </section>
 
+
 <br>
+
 
 <!-- RECENT CONTRIBUTIONS -->
 
 <section class="card">
 
-  <h2>Recent Contributions</h2>
+  <h2>
+    Recent Contributions
+  </h2>
 
   <div class="table-wrap">
 
     <table class="table">
 
       <thead>
+
         <tr>
           <th>Date</th>
           <th>Member</th>
           <th>Amount</th>
+          <th>Type</th>
           <th>Method</th>
           <th>Reference</th>
         </tr>
+
       </thead>
 
+
       <tbody id="contributionRows">
+
         <tr>
-          <td colspan="5">
+
+          <td colspan="6">
             Loading...
           </td>
+
         </tr>
+
       </tbody>
 
     </table>
@@ -165,19 +291,24 @@
 
 </section>
 
+
 <br>
+
 
 <!-- RECENT EXPENSES -->
 
 <section class="card">
 
-  <h2>Recent Expenses</h2>
+  <h2>
+    Recent Expenses
+  </h2>
 
   <div class="table-wrap">
 
     <table class="table">
 
       <thead>
+
         <tr>
           <th>Date</th>
           <th>Description</th>
@@ -185,14 +316,20 @@
           <th>Amount</th>
           <th>Status</th>
         </tr>
+
       </thead>
 
+
       <tbody id="expenseRows">
+
         <tr>
+
           <td colspan="5">
             Loading...
           </td>
+
         </tr>
+
       </tbody>
 
     </table>
@@ -201,29 +338,56 @@
 
 </section>
 
+
 <br>
+
 
 <!-- MEETINGS -->
 
 <section class="card">
 
-  <h2>Meetings Summary</h2>
+  <h2>
+    Meetings Summary
+  </h2>
 
   <div class="grid grid-3">
 
     <div>
-      <div class="muted">Upcoming</div>
-      <strong id="upcomingMeetings">—</strong>
+
+      <div class="muted">
+        Upcoming
+      </div>
+
+      <strong id="upcomingMeetings">
+        —
+      </strong>
+
     </div>
 
-    <div>
-      <div class="muted">Completed</div>
-      <strong id="completedMeetings">—</strong>
-    </div>
 
     <div>
-      <div class="muted">Cancelled</div>
-      <strong id="cancelledMeetings">—</strong>
+
+      <div class="muted">
+        Completed
+      </div>
+
+      <strong id="completedMeetings">
+        —
+      </strong>
+
+    </div>
+
+
+    <div>
+
+      <div class="muted">
+        Cancelled
+      </div>
+
+      <strong id="cancelledMeetings">
+        —
+      </strong>
+
     </div>
 
   </div>
@@ -235,639 +399,9 @@
 
 </div>
 
-<script type="module">
+<!-- ONLY ONE REPORTS SCRIPT -->
 
-import { supabase } from "./js/supabase.js";
-
-import {
-  getCurrentGroupId
-} from "./js/app.js";
-
-
-/* =====================================================
-   ELEMENTS
-===================================================== */
-
-const statusBox =
-  document.getElementById("status");
-
-const errorBox =
-  document.getElementById("error");
-
-const activeMembers =
-  document.getElementById("activeMembers");
-
-const totalMembers =
-  document.getElementById("totalMembers");
-
-const contributions =
-  document.getElementById("contributions");
-
-const approvedExpenses =
-  document.getElementById("approvedExpenses");
-
-const pendingExpenses =
-  document.getElementById("pendingExpenses");
-
-const currentBalance =
-  document.getElementById("currentBalance");
-
-const opening =
-  document.getElementById("opening");
-
-const contributions2 =
-  document.getElementById("contributions2");
-
-const expenses2 =
-  document.getElementById("expenses2");
-
-const balance =
-  document.getElementById("balance");
-
-const contributionRows =
-  document.getElementById("contributionRows");
-
-const expenseRows =
-  document.getElementById("expenseRows");
-
-const upcomingMeetings =
-  document.getElementById("upcomingMeetings");
-
-const completedMeetings =
-  document.getElementById("completedMeetings");
-
-const cancelledMeetings =
-  document.getElementById("cancelledMeetings");
-
-const logoutButton =
-  document.getElementById("logout");
-
-
-/* =====================================================
-   HELPERS
-===================================================== */
-
-function money(value) {
-
-  return (
-    "KSh " +
-    Number(value || 0).toLocaleString(
-      "en-KE",
-      {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2
-      }
-    )
-  );
-
-}
-
-
-function escapeHtml(value) {
-
-  return String(value ?? "")
-
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-
-}
-
-
-function showError(error) {
-
-  console.error(
-    "CHAMA LIVE reports:",
-    error
-  );
-
-  const message =
-    error?.message ||
-    String(error);
-
-  errorBox.textContent =
-    "Error: " + message;
-
-  errorBox.hidden =
-    false;
-
-  statusBox.textContent =
-    "Something went wrong.";
-
-}
-
-
-function clearError() {
-
-  errorBox.textContent = "";
-
-  errorBox.hidden = true;
-
-}
-
-
-/* =====================================================
-   LOAD MEMBERS
-===================================================== */
-
-async function loadMemberReport(groupId) {
-
-  const result =
-    await supabase
-      .from("members")
-      .select("id,status")
-      .eq("group_id", groupId);
-
-  if (result.error) {
-    throw result.error;
-  }
-
-  const members =
-    result.data || [];
-
-  const active =
-    members.filter(
-      member =>
-        String(member.status || "")
-          .toLowerCase() === "active"
-    ).length;
-
-  activeMembers.textContent =
-    active;
-
-  totalMembers.textContent =
-    members.length;
-
-}
-
-
-/* =====================================================
-   LOAD CONTRIBUTIONS
-===================================================== */
-
-async function loadContributionReport(groupId) {
-
-  const result =
-    await supabase
-      .from("contributions")
-      .select("*")
-      .eq("group_id", groupId)
-      .order("date", {
-        ascending: false
-      })
-      .limit(10);
-
-  if (result.error) {
-    throw result.error;
-  }
-
-  const contributionData =
-    result.data || [];
-
-  let total = 0;
-
-  contributionData.forEach(
-    contribution => {
-
-      total += Number(
-        contribution.amount || 0
-      );
-
-    }
-  );
-
-  /*
-   * Also fetch the complete contribution
-   * total so the report is not limited
-   * to the 10 recent records.
-   */
-
-  const totalResult =
-    await supabase
-      .from("contributions")
-      .select("amount")
-      .eq("group_id", groupId);
-
-  if (totalResult.error) {
-    throw totalResult.error;
-  }
-
-  total =
-    (totalResult.data || [])
-      .reduce(
-        (sum, row) =>
-          sum + Number(row.amount || 0),
-        0
-      );
-
-  contributions.textContent =
-    money(total);
-
-  contributions2.textContent =
-    money(total);
-
-
-  if (contributionData.length === 0) {
-
-    contributionRows.innerHTML = `
-      <tr>
-        <td colspan="5">
-          No contributions yet.
-        </td>
-      </tr>
-    `;
-
-    return total;
-
-  }
-
-
-  contributionRows.innerHTML =
-    contributionData
-      .map(
-        contribution => {
-
-          const member =
-            contribution.member_name ||
-            contribution.name ||
-            contribution.member ||
-            "—";
-
-          const method =
-            contribution.method ||
-            contribution.payment_method ||
-            "—";
-
-          const reference =
-            contribution.reference ||
-            contribution.mpesa_ref ||
-            contribution.mpesa_reference ||
-            "—";
-
-          return `
-            <tr>
-
-              <td>
-                ${escapeHtml(
-                  contribution.date ||
-                  contribution.contribution_date ||
-                  "—"
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(member)}
-              </td>
-
-              <td>
-                ${money(
-                  contribution.amount
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(method)}
-              </td>
-
-              <td>
-                ${escapeHtml(reference)}
-              </td>
-
-            </tr>
-          `;
-
-        }
-      )
-      .join("");
-
-  return total;
-
-}
-
-
-/* =====================================================
-   LOAD EXPENSES
-===================================================== */
-
-async function loadExpenseReport(groupId) {
-
-  const result =
-    await supabase
-      .from("expenses")
-      .select(
-        "id,date,description,category,amount,approval_status"
-      )
-      .eq("group_id", groupId)
-      .order("date", {
-        ascending: false
-      })
-      .limit(10);
-
-  if (result.error) {
-    throw result.error;
-  }
-
-  const recentExpenses =
-    result.data || [];
-
-
-  const allResult =
-    await supabase
-      .from("expenses")
-      .select("amount,approval_status")
-      .eq("group_id", groupId);
-
-  if (allResult.error) {
-    throw allResult.error;
-  }
-
-
-  const allExpenses =
-    allResult.data || [];
-
-
-  const approved =
-    allExpenses
-      .filter(
-        expense =>
-          String(
-            expense.approval_status || ""
-          ).toLowerCase() === "approved"
-      )
-      .reduce(
-        (sum, expense) =>
-          sum +
-          Number(
-            expense.amount || 0
-          ),
-        0
-      );
-
-
-  const pending =
-    allExpenses
-      .filter(
-        expense =>
-          String(
-            expense.approval_status || ""
-          ).toLowerCase() === "pending"
-      )
-      .reduce(
-        (sum, expense) =>
-          sum +
-          Number(
-            expense.amount || 0
-          ),
-        0
-      );
-
-
-  approvedExpenses.textContent =
-    money(approved);
-
-  pendingExpenses.textContent =
-    money(pending);
-
-  expenses2.textContent =
-    money(approved);
-
-
-  if (recentExpenses.length === 0) {
-
-    expenseRows.innerHTML = `
-      <tr>
-        <td colspan="5">
-          No expenses yet.
-        </td>
-      </tr>
-    `;
-
-    return approved;
-
-  }
-
-
-  expenseRows.innerHTML =
-    recentExpenses
-      .map(
-        expense => {
-
-          return `
-            <tr>
-
-              <td>
-                ${escapeHtml(
-                  expense.date ||
-                  "—"
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  expense.description ||
-                  "—"
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  expense.category ||
-                  "—"
-                )}
-              </td>
-
-              <td>
-                ${money(
-                  expense.amount
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  expense.approval_status ||
-                  "—"
-                )}
-              </td>
-
-            </tr>
-          `;
-
-        }
-      )
-      .join("");
-
-  return approved;
-
-}
-
-
-/* =====================================================
-   LOAD MEETINGS
-===================================================== */
-
-async function loadMeetingReport(groupId) {
-
-  const result =
-    await supabase
-      .from("meetings")
-      .select("date,status")
-      .eq("group_id", groupId);
-
-  if (result.error) {
-    throw result.error;
-  }
-
-  const meetings =
-    result.data || [];
-
-
-  upcomingMeetings.textContent =
-    meetings.filter(
-      meeting =>
-        String(meeting.status || "")
-          .toLowerCase() === "upcoming"
-    ).length;
-
-
-  completedMeetings.textContent =
-    meetings.filter(
-      meeting =>
-        String(meeting.status || "")
-          .toLowerCase() === "completed"
-    ).length;
-
-
-  cancelledMeetings.textContent =
-    meetings.filter(
-      meeting =>
-        String(meeting.status || "")
-          .toLowerCase() === "cancelled"
-    ).length;
-
-}
-
-
-/* =====================================================
-   MAIN REPORT
-===================================================== */
-
-async function loadReports() {
-
-  clearError();
-
-  statusBox.textContent =
-    "Finding your group...";
-
-
-  const groupId =
-    await getCurrentGroupId();
-
-
-  if (!groupId) {
-
-    throw new Error(
-      "No group is linked to this account."
-    );
-
-  }
-
-
-  statusBox.textContent =
-    "Loading live report...";
-
-
-  const results =
-    await Promise.all([
-      loadMemberReport(groupId),
-      loadContributionReport(groupId),
-      loadExpenseReport(groupId),
-      loadMeetingReport(groupId)
-    ]);
-
-
-  const contributionTotal =
-    results[1];
-
-  const approvedExpenseTotal =
-    results[2];
-
-
-  const closingBalance =
-    contributionTotal -
-    approvedExpenseTotal;
-
-
-  opening.textContent =
-    money(0);
-
-  balance.textContent =
-    money(closingBalance);
-
-  currentBalance.textContent =
-    money(closingBalance);
-
-
-  statusBox.textContent =
-    "Report updated successfully.";
-
-}
-
-
-/* =====================================================
-   LOGOUT
-===================================================== */
-
-logoutButton.addEventListener(
-  "click",
-  async function() {
-
-    try {
-
-      await supabase.auth.signOut();
-
-      window.location.href =
-        "login.html";
-
-    }
-
-    catch(error) {
-
-      showError(error);
-
-    }
-
-  }
-);
-
-
-/* =====================================================
-   START
-===================================================== */
-
-async function start() {
-
-  try {
-
-    await supabase.auth.getSession();
-
-    await loadReports();
-
-  }
-
-  catch(error) {
-
-    showError(error);
-
-  }
-
-}
-
-
-start();
-
-</script>
+<script type="module" src="./js/reports.js"></script>
 
 </body>
 
