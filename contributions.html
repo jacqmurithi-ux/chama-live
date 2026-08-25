@@ -95,8 +95,6 @@
       <div class="form">
 
 
-        <!-- MEMBER -->
-
         <div class="field">
 
           <label for="member">
@@ -114,8 +112,6 @@
         </div>
 
 
-        <!-- AMOUNT -->
-
         <div class="field">
 
           <label for="amount">
@@ -128,13 +124,10 @@
             min="1"
             step="1"
             value="200"
-            placeholder="200"
           >
 
         </div>
 
-
-        <!-- TYPE -->
 
         <div class="field">
 
@@ -169,8 +162,6 @@
         </div>
 
 
-        <!-- MONTH -->
-
         <div class="field">
 
           <label for="month">
@@ -184,8 +175,6 @@
 
         </div>
 
-
-        <!-- METHOD -->
 
         <div class="field">
 
@@ -216,8 +205,6 @@
         </div>
 
 
-        <!-- REFERENCE -->
-
         <div class="field">
 
           <label for="reference">
@@ -233,8 +220,6 @@
         </div>
 
 
-        <!-- SAVE -->
-
         <button
           class="btn btn-primary"
           id="saveContribution"
@@ -242,7 +227,6 @@
         >
           Record Contribution
         </button>
-
 
       </div>
 
@@ -262,23 +246,15 @@
           <thead>
 
             <tr>
-
               <th>Date</th>
-
               <th>Member</th>
-
               <th>Amount</th>
-
               <th>Type</th>
-
               <th>Method</th>
-
               <th>M-Pesa Ref</th>
-
             </tr>
 
           </thead>
-
 
           <tbody id="rows">
 
@@ -298,7 +274,6 @@
 
     </section>
 
-
   </main>
 
 </div>
@@ -306,16 +281,7 @@
 
 <script type="module">
 
-/* =====================================================
-   SUPABASE
-===================================================== */
-
 import { supabase } from "./js/supabase.js";
-
-
-/* =====================================================
-   APP HELPERS
-===================================================== */
 
 import {
   getCurrentGroupId,
@@ -377,16 +343,16 @@ function setStatus(message) {
    ERROR
 ===================================================== */
 
-function showError(error) {
+function showPageError(error) {
+
+  const message =
+    error?.message ||
+    String(error);
 
   console.error(
     "CHAMA LIVE:",
     error
   );
-
-  const message =
-    error?.message ||
-    String(error);
 
   errorBox.textContent =
     "Error: " + message;
@@ -402,52 +368,17 @@ function showError(error) {
 
 
 /* =====================================================
-   CLEAR ERROR
-===================================================== */
-
-function clearError() {
-
-  errorBox.textContent =
-    "";
-
-  errorBox.hidden =
-    true;
-
-}
-
-
-/* =====================================================
    ESCAPE HTML
 ===================================================== */
 
 function escapeHtml(value) {
 
   return String(value)
-
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
-
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
-
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
-
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 
 }
 
@@ -460,18 +391,10 @@ logoutButton.addEventListener(
   "click",
   async function () {
 
-    try {
+    await supabase.auth.signOut();
 
-      await supabase.auth.signOut();
-
-      window.location.href =
-        "login.html";
-
-    } catch (error) {
-
-      showError(error);
-
-    }
+    window.location.href =
+      "login.html";
 
   }
 );
@@ -487,19 +410,17 @@ async function checkLogin() {
     "Checking login..."
   );
 
-
-  const result =
+  const {
+    data,
+    error
+  } =
     await supabase.auth.getSession();
 
-
-  if (result.error) {
-
-    throw result.error;
-
+  if (error) {
+    throw error;
   }
 
-
-  if (!result.data.session) {
+  if (!data.session) {
 
     window.location.href =
       "login.html";
@@ -508,11 +429,9 @@ async function checkLogin() {
 
   }
 
-
   setStatus(
     "Login confirmed."
   );
-
 
   return true;
 
@@ -529,10 +448,8 @@ async function loadMembers() {
     "Finding your group..."
   );
 
-
   const groupId =
     await getCurrentGroupId();
-
 
   if (!groupId) {
 
@@ -542,73 +459,47 @@ async function loadMembers() {
 
   }
 
-
   setStatus(
     "Group found. Loading members..."
   );
 
 
-  const result =
+  const {
+    data,
+    error
+  } =
     await supabase
-
       .from("members")
-
-      .select(
-        "id,name"
-      )
-
-      .eq(
-        "group_id",
-        groupId
-      )
-
-      .order(
-        "name",
-        {
-          ascending: true
-        }
-      );
+      .select("id,name")
+      .eq("group_id", groupId)
+      .order("name", {
+        ascending: true
+      });
 
 
-  if (result.error) {
-
-    throw result.error;
-
+  if (error) {
+    throw error;
   }
 
 
   const members =
-    result.data || [];
+    data || [];
 
 
   memberSelect.innerHTML =
-    "";
+    '<option value="">Select member</option>';
 
 
-  if (
-    members.length === 0
-  ) {
+  if (members.length === 0) {
 
     memberSelect.innerHTML =
-      `
-        <option value="">
-          No members found
-        </option>
-      `;
+      '<option value="">No members found</option>';
 
     throw new Error(
       "No members were found in this group."
     );
 
   }
-
-
-  memberSelect.innerHTML =
-    `
-      <option value="">
-        Select member
-      </option>
-    `;
 
 
   members.forEach(
@@ -635,7 +526,7 @@ async function loadMembers() {
 
   setStatus(
     members.length +
-    " member(s) loaded."
+    " member(s) loaded. Loading contributions..."
   );
 
 }
@@ -665,20 +556,19 @@ async function loadContributions() {
   }
 
 
-  const result =
+  const {
+    data,
+    error
+  } =
     await supabase
-
       .from("contributions")
-
       .select(
         "contribution_date,amount,contribution_type,payment_method,reference,member_id"
       )
-
       .eq(
         "group_id",
         groupId
       )
-
       .order(
         "contribution_date",
         {
@@ -687,34 +577,24 @@ async function loadContributions() {
       );
 
 
-  if (result.error) {
-
-    throw result.error;
-
+  if (error) {
+    throw error;
   }
 
 
   const contributions =
-    result.data || [];
+    data || [];
 
 
-  if (
-    contributions.length === 0
-  ) {
+  if (contributions.length === 0) {
 
-    rows.innerHTML =
-      `
-        <tr>
-
-          <td colspan="6">
-
-            No contributions yet.
-
-          </td>
-
-        </tr>
-      `;
-
+    rows.innerHTML = `
+      <tr>
+        <td colspan="6">
+          No contributions yet.
+        </td>
+      </tr>
+    `;
 
     setStatus(
       "No contributions found."
@@ -725,67 +605,47 @@ async function loadContributions() {
   }
 
 
-  /* ================================================
-     GET MEMBER IDS
-  ================================================ */
+  /* MEMBER IDS */
 
   const memberIds = [
     ...new Set(
-
       contributions
-
         .map(
           function (item) {
-
             return item.member_id;
-
           }
         )
-
         .filter(Boolean)
-
     )
   ];
 
 
-  /* ================================================
-     GET MEMBER NAMES
-  ================================================ */
+  /* MEMBER NAMES */
 
   const memberNames = {};
 
 
-  if (
-    memberIds.length > 0
-  ) {
+  if (memberIds.length > 0) {
 
-    const memberResult =
+    const {
+      data: members,
+      error: memberError
+    } =
       await supabase
-
         .from("members")
-
-        .select(
-          "id,name"
-        )
-
+        .select("id,name")
         .in(
           "id",
           memberIds
         );
 
 
-    if (
-      memberResult.error
-    ) {
-
-      throw memberResult.error;
-
+    if (memberError) {
+      throw memberError;
     }
 
 
-    (
-      memberResult.data || []
-    ).forEach(
+    (members || []).forEach(
       function (member) {
 
         memberNames[
@@ -799,88 +659,66 @@ async function loadContributions() {
   }
 
 
-  /* ================================================
-     DISPLAY LEDGER
-  ================================================ */
+  /* DISPLAY */
 
   rows.innerHTML =
-
     contributions
-
       .map(
         function (item) {
 
-          const date =
-            item.contribution_date ||
-            "—";
-
-
-          const member =
-            memberNames[
-              item.member_id
-            ] ||
-            "—";
-
-
-          const amount =
-            money(
-              Number(
-                item.amount ||
-                0
-              )
-            );
-
-
-          const type =
-            item.contribution_type ||
-            "—";
-
-
-          const method =
-            item.payment_method ||
-            "—";
-
-
-          const reference =
-            item.reference ||
-            "—";
-
-
           return `
-
             <tr>
 
               <td>
-                ${escapeHtml(date)}
+                ${escapeHtml(
+                  item.contribution_date ||
+                  "—"
+                )}
               </td>
 
               <td>
-                ${escapeHtml(member)}
+                ${escapeHtml(
+                  memberNames[
+                    item.member_id
+                  ] ||
+                  "—"
+                )}
               </td>
 
               <td>
-                ${amount}
+                ${money(
+                  Number(
+                    item.amount || 0
+                  )
+                )}
               </td>
 
               <td>
-                ${escapeHtml(type)}
+                ${escapeHtml(
+                  item.contribution_type ||
+                  "—"
+                )}
               </td>
 
               <td>
-                ${escapeHtml(method)}
+                ${escapeHtml(
+                  item.payment_method ||
+                  "—"
+                )}
               </td>
 
               <td>
-                ${escapeHtml(reference)}
+                ${escapeHtml(
+                  item.reference ||
+                  "—"
+                )}
               </td>
 
             </tr>
-
           `;
 
         }
       )
-
       .join("");
 
 
@@ -898,8 +736,8 @@ async function loadContributions() {
 
 async function saveContribution() {
 
-  clearError();
-
+  errorBox.hidden =
+    true;
 
   const originalText =
     saveButton.textContent;
@@ -907,39 +745,26 @@ async function saveContribution() {
 
   try {
 
-    /* ================================================
-       FORM VALUES
-    ================================================ */
-
     const memberId =
       memberSelect.value;
-
 
     const amount =
       Number(
         amountInput.value
       );
 
-
     const type =
       typeSelect.value;
-
 
     const month =
       monthInput.value;
 
-
     const method =
       methodSelect.value;
-
 
     const reference =
       referenceInput.value.trim();
 
-
-    /* ================================================
-       VALIDATION
-    ================================================ */
 
     if (!memberId) {
 
@@ -950,10 +775,7 @@ async function saveContribution() {
     }
 
 
-    if (
-      !amount ||
-      amount <= 0
-    ) {
+    if (!amount || amount <= 0) {
 
       throw new Error(
         "Please enter a valid amount."
@@ -971,10 +793,6 @@ async function saveContribution() {
     }
 
 
-    /* ================================================
-       GET GROUP
-    ================================================ */
-
     const groupId =
       await getCurrentGroupId();
 
@@ -988,30 +806,17 @@ async function saveContribution() {
     }
 
 
-    /* ================================================
-       GET USER
-    ================================================ */
-
-    const userResult =
+    const {
+      data: userData,
+      error: userError
+    } =
       await supabase.auth.getUser();
 
 
-    if (
-      userResult.error
-    ) {
-
-      throw userResult.error;
-
+    if (userError) {
+      throw userError;
     }
 
-
-    const user =
-      userResult.data.user;
-
-
-    /* ================================================
-       SAVE
-    ================================================ */
 
     saveButton.disabled =
       true;
@@ -1025,11 +830,11 @@ async function saveContribution() {
     );
 
 
-    const result =
+    const {
+      error
+    } =
       await supabase
-
         .from("contributions")
-
         .insert({
 
           group_id:
@@ -1055,30 +860,21 @@ async function saveContribution() {
             null,
 
           recorded_by:
-            user?.id ||
+            userData.user?.id ||
             null,
 
           contribution_date:
             new Date()
               .toISOString()
-              .slice(
-                0,
-                10
-              )
+              .slice(0, 10)
 
         });
 
 
-    if (result.error) {
-
-      throw result.error;
-
+    if (error) {
+      throw error;
     }
 
-
-    /* ================================================
-       CLEAR FORM
-    ================================================ */
 
     amountInput.value =
       "200";
@@ -1097,16 +893,13 @@ async function saveContribution() {
     );
 
 
-    /* ================================================
-       REFRESH LEDGER
-    ================================================ */
-
     await loadContributions();
-
 
   } catch (error) {
 
-    showError(error);
+    showPageError(
+      error
+    );
 
   } finally {
 
@@ -1122,7 +915,7 @@ async function saveContribution() {
 
 
 /* =====================================================
-   BUTTON EVENT
+   BUTTON
 ===================================================== */
 
 saveButton.addEventListener(
@@ -1132,80 +925,59 @@ saveButton.addEventListener(
 
 
 /* =====================================================
-   START APPLICATION
+   START
 ===================================================== */
 
 async function start() {
 
   try {
 
-    clearError();
-
-
     setStatus(
       "Starting Contributions..."
     );
 
-
-    /* ================================================
-       LOGIN
-    ================================================ */
 
     const loggedIn =
       await checkLogin();
 
 
     if (!loggedIn) {
-
       return;
-
     }
 
 
-    /* ================================================
-       CURRENT MONTH
-    ================================================ */
+    /* CURRENT MONTH */
 
     monthInput.value =
       new Date()
         .toISOString()
-        .slice(
-          0,
-          7
-        );
+        .slice(0, 7);
 
 
-    /* ================================================
-       MEMBERS
-    ================================================ */
+    /* MEMBERS */
 
     await loadMembers();
 
 
-    /* ================================================
-       CONTRIBUTIONS
-    ================================================ */
+    /* LEDGER */
 
     await loadContributions();
 
 
   } catch (error) {
 
-    showError(error);
+    showPageError(
+      error
+    );
 
   }
 
 }
 
 
-/* =====================================================
-   RUN
-===================================================== */
-
 start();
 
 </script>
 
 </body>
-
 </html>
