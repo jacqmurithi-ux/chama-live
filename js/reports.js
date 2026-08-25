@@ -8,41 +8,20 @@ ELEMENTS
 const statusBox = document.getElementById("status");
 const errorBox = document.getElementById("error");
 
-const activeMembersEl =
-document.getElementById("activeMembers");
+const activeMembersEl = document.getElementById("activeMembers");
+const totalMembersEl = document.getElementById("totalMembers");
+const contributionsEl = document.getElementById("contributions");
+const approvedExpensesEl = document.getElementById("approvedExpenses");
+const pendingExpensesEl = document.getElementById("pendingExpenses");
+const currentBalanceEl = document.getElementById("currentBalance");
 
-const totalMembersEl =
-document.getElementById("totalMembers");
+const openingEl = document.getElementById("opening");
+const contributions2El = document.getElementById("contributions2");
+const expenses2El = document.getElementById("expenses2");
+const balanceEl = document.getElementById("balance");
 
-const contributionsEl =
-document.getElementById("contributions");
-
-const approvedExpensesEl =
-document.getElementById("approvedExpenses");
-
-const pendingExpensesEl =
-document.getElementById("pendingExpenses");
-
-const currentBalanceEl =
-document.getElementById("currentBalance");
-
-const openingEl =
-document.getElementById("opening");
-
-const contributions2El =
-document.getElementById("contributions2");
-
-const expenses2El =
-document.getElementById("expenses2");
-
-const balanceEl =
-document.getElementById("balance");
-
-const contributionRows =
-document.getElementById("contributionRows");
-
-const expenseRows =
-document.getElementById("expenseRows");
+const contributionRows = document.getElementById("contributionRows");
+const expenseRows = document.getElementById("expenseRows");
 
 const upcomingMeetingsEl =
 document.getElementById("upcomingMeetings");
@@ -61,26 +40,24 @@ MONEY
 ===================================================== */
 
 function money(value) {
-return (
-"KSh " +
-Number(value || 0).toLocaleString("en-KE", {
+const number = Number(value || 0);
+
+return "KSh " + number.toLocaleString("en-KE", {
 minimumFractionDigits: 0,
 maximumFractionDigits: 2
-})
-);
+});
 }
 
 /* =====================================================
-ESCAPE HTML
+SAFE TEXT
 ===================================================== */
 
-function escapeHtml(value) {
-return String(value ?? "")
-.replaceAll("&", "&")
-.replaceAll("<", "<")
-.replaceAll(">", ">")
-.replaceAll('"', """)
-.replaceAll("'", "'");
+function safe(value) {
+if (value === null || value === undefined) {
+return "";
+}
+
+return String(value);
 }
 
 /* =====================================================
@@ -88,27 +65,20 @@ ERROR
 ===================================================== */
 
 function showError(error) {
-
-console.error(
-"CHAMA LIVE Reports:",
-error
-);
+console.error("CHAMA LIVE Reports:", error);
 
 const message =
-error?.message ||
-String(error);
+error && error.message
+? error.message
+: String(error);
 
 if (errorBox) {
-errorBox.textContent =
-"Error: " + message;
-
+errorBox.textContent = "Error: " + message;
 errorBox.hidden = false;
-
 }
 
 if (statusBox) {
-statusBox.textContent =
-"Something went wrong.";
+statusBox.textContent = "Something went wrong.";
 }
 }
 
@@ -117,13 +87,10 @@ CLEAR ERROR
 ===================================================== */
 
 function clearError() {
-
-if (!errorBox) {
-return;
-}
-
+if (errorBox) {
 errorBox.textContent = "";
 errorBox.hidden = true;
+}
 }
 
 /* =====================================================
@@ -132,8 +99,7 @@ LOAD MEMBERS
 
 async function loadMembers(groupId) {
 
-const result =
-await supabase
+const result = await supabase
 .from("members")
 .select("id,name,status")
 .eq("group_id", groupId);
@@ -142,31 +108,30 @@ if (result.error) {
 throw result.error;
 }
 
-const members =
-result.data || [];
+const members = result.data || [];
 
-const active =
-members.filter(
-member =>
-String(member.status || "")
-.toLowerCase() === "active"
-).length;
+let activeCount = 0;
+
+members.forEach(function(member) {
+if (
+String(member.status || "").toLowerCase() === "active"
+) {
+activeCount++;
+}
+});
 
 if (activeMembersEl) {
-activeMembersEl.textContent =
-active;
+activeMembersEl.textContent = activeCount;
 }
 
 if (totalMembersEl) {
-totalMembersEl.textContent =
-members.length;
+totalMembersEl.textContent = members.length;
 }
 
 const memberMap = {};
 
-members.forEach(member => {
-memberMap[member.id] =
-member.name || "Unknown";
+members.forEach(function(member) {
+memberMap[member.id] = member.name || "Unknown";
 });
 
 return memberMap;
@@ -176,36 +141,28 @@ return memberMap;
 LOAD CONTRIBUTIONS
 ===================================================== */
 
-async function loadContributions(
-groupId,
-memberMap
-) {
+async function loadContributions(groupId, memberMap) {
 
 /*
-Actual contributions columns:
-
-id
-group_id
-member_id
-amount
-contribution_type
-month
-payment_method
-reference
-recorded_by
-created_at
-goal_id
-contribution_date
-notes
-
 IMPORTANT:
-There is NO contributions.date
+
+```
+The contributions table DOES NOT have:
+
+date
+
+It has:
+
+contribution_date
+```
+
 */
 
-const result =
-await supabase
+const result = await supabase
 .from("contributions")
-.select( id, member_id, amount, contribution_type, month, payment_method, reference, contribution_date )
+.select(
+"id,member_id,amount,contribution_type,month,payment_method,reference,contribution_date"
+)
 .eq("group_id", groupId)
 .order("contribution_date", {
 ascending: false
@@ -215,116 +172,107 @@ if (result.error) {
 throw result.error;
 }
 
-const contributions =
-result.data || [];
+const rows = result.data || [];
+
+let total = 0;
+
+rows.forEach(function(row) {
+total += Number(row.amount || 0);
+});
 
 /* ===================================================
-TOTAL CONTRIBUTIONS
+TOTAL
 =================================================== */
 
-const total =
-contributions.reduce(
-(sum, contribution) =>
-sum +
-Number(
-contribution.amount || 0
-),
-0
-);
-
 if (contributionsEl) {
-contributionsEl.textContent =
-money(total);
+contributionsEl.textContent = money(total);
 }
 
 if (contributions2El) {
-contributions2El.textContent =
-money(total);
+contributions2El.textContent = money(total);
 }
 
 /* ===================================================
-CONTRIBUTION TABLE
+TABLE
 =================================================== */
 
 if (!contributionRows) {
 return total;
 }
 
-if (contributions.length === 0) {
+if (rows.length === 0) {
 
+```
 contributionRows.innerHTML =
-  `
-  <tr>
-    <td colspan="6">
-      No contributions yet.
-    </td>
-  </tr>
-  `;
+  "<tr>" +
+  "<td colspan=\"6\">No contributions yet.</td>" +
+  "</tr>";
 
 return total;
+```
 
 }
 
-const recent =
-contributions.slice(0, 10);
+const recent = rows.slice(0, 10);
 
-contributionRows.innerHTML =
-recent
-.map(contribution => {
+let html = "";
 
-    const memberName =
-      memberMap[
-        contribution.member_id
-      ] || "Unknown";
+recent.forEach(function(row) {
 
+```
+const memberName =
+  memberMap[row.member_id] || "Unknown";
 
-    const displayDate =
-      contribution.contribution_date ||
-      contribution.month ||
-      "—";
+const date =
+  row.contribution_date ||
+  row.month ||
+  "—";
 
+const type =
+  row.contribution_type ||
+  "—";
 
-    return `
-      <tr>
+const method =
+  row.payment_method ||
+  "—";
 
-        <td>
-          ${escapeHtml(displayDate)}
-        </td>
+const reference =
+  row.reference ||
+  "—";
 
-        <td>
-          ${escapeHtml(memberName)}
-        </td>
+html +=
+  "<tr>" +
 
-        <td>
-          ${money(contribution.amount)}
-        </td>
+  "<td>" +
+  safe(date) +
+  "</td>" +
 
-        <td>
-          ${escapeHtml(
-            contribution.contribution_type ||
-            "—"
-          )}
-        </td>
+  "<td>" +
+  safe(memberName) +
+  "</td>" +
 
-        <td>
-          ${escapeHtml(
-            contribution.payment_method ||
-            "—"
-          )}
-        </td>
+  "<td>" +
+  money(row.amount) +
+  "</td>" +
 
-        <td>
-          ${escapeHtml(
-            contribution.reference ||
-            "—"
-          )}
-        </td>
+  "<td>" +
+  safe(type) +
+  "</td>" +
 
-      </tr>
-    `;
+  "<td>" +
+  safe(method) +
+  "</td>" +
 
-  })
-  .join("");
+  "<td>" +
+  safe(reference) +
+  "</td>" +
+
+  "</tr>";
+```
+
+});
+
+contributionRows.innerHTML = html;
 
 return total;
 }
@@ -335,22 +283,11 @@ LOAD EXPENSES
 
 async function loadExpenses(groupId) {
 
-/*
-Actual expenses columns include:
-
-id
-group_id
-description
-category
-amount
-date
-approval_status
-*/
-
-const result =
-await supabase
+const result = await supabase
 .from("expenses")
-.select( id, date, description, category, amount, approval_status )
+.select(
+"id,date,description,category,amount,approval_status"
+)
 .eq("group_id", groupId)
 .order("date", {
 ascending: false
@@ -360,52 +297,34 @@ if (result.error) {
 throw result.error;
 }
 
-const expenses =
-result.data || [];
+const rows = result.data || [];
+
+let approvedTotal = 0;
+let pendingTotal = 0;
+
+rows.forEach(function(row) {
+
+```
+const status =
+  String(row.approval_status || "").toLowerCase();
+
+const amount =
+  Number(row.amount || 0);
+
+if (status === "approved") {
+  approvedTotal += amount;
+}
+
+if (status === "pending") {
+  pendingTotal += amount;
+}
+```
+
+});
 
 /* ===================================================
-APPROVED EXPENSES
+METRICS
 =================================================== */
-
-const approved =
-expenses.filter(
-expense =>
-String(
-expense.approval_status || ""
-).toLowerCase() === "approved"
-);
-
-const approvedTotal =
-approved.reduce(
-(sum, expense) =>
-sum +
-Number(
-expense.amount || 0
-),
-0
-);
-
-/* ===================================================
-PENDING EXPENSES
-=================================================== */
-
-const pending =
-expenses.filter(
-expense =>
-String(
-expense.approval_status || ""
-).toLowerCase() === "pending"
-);
-
-const pendingTotal =
-pending.reduce(
-(sum, expense) =>
-sum +
-Number(
-expense.amount || 0
-),
-0
-);
 
 if (approvedExpensesEl) {
 approvedExpensesEl.textContent =
@@ -423,71 +342,62 @@ money(approvedTotal);
 }
 
 /* ===================================================
-EXPENSE TABLE
+TABLE
 =================================================== */
 
 if (!expenseRows) {
 return approvedTotal;
 }
 
-if (expenses.length === 0) {
+if (rows.length === 0) {
 
+```
 expenseRows.innerHTML =
-  `
-  <tr>
-    <td colspan="5">
-      No expenses yet.
-    </td>
-  </tr>
-  `;
+  "<tr>" +
+  "<td colspan=\"5\">No expenses yet.</td>" +
+  "</tr>";
 
 return approvedTotal;
+```
 
 }
 
-const recent =
-expenses.slice(0, 10);
+const recent = rows.slice(0, 10);
 
-expenseRows.innerHTML =
-recent
-.map(expense => {
+let html = "";
 
-    return `
-      <tr>
+recent.forEach(function(row) {
 
-        <td>
-          ${escapeHtml(
-            expense.date || "—"
-          )}
-        </td>
+```
+html +=
+  "<tr>" +
 
-        <td>
-          ${escapeHtml(
-            expense.description || "—"
-          )}
-        </td>
+  "<td>" +
+  safe(row.date || "—") +
+  "</td>" +
 
-        <td>
-          ${escapeHtml(
-            expense.category || "—"
-          )}
-        </td>
+  "<td>" +
+  safe(row.description || "—") +
+  "</td>" +
 
-        <td>
-          ${money(expense.amount)}
-        </td>
+  "<td>" +
+  safe(row.category || "—") +
+  "</td>" +
 
-        <td>
-          ${escapeHtml(
-            expense.approval_status || "—"
-          )}
-        </td>
+  "<td>" +
+  money(row.amount) +
+  "</td>" +
 
-      </tr>
-    `;
+  "<td>" +
+  safe(row.approval_status || "—") +
+  "</td>" +
 
-  })
-  .join("");
+  "</tr>";
+```
+
+});
+
+expenseRows.innerHTML = html;
 
 return approvedTotal;
 }
@@ -498,73 +408,57 @@ LOAD MEETINGS
 
 async function loadMeetings(groupId) {
 
-const result =
-await supabase
+const result = await supabase
 .from("meetings")
-.select( id, date, status )
+.select("id,date,status")
 .eq("group_id", groupId);
 
 if (result.error) {
 throw result.error;
 }
 
-const meetings =
-result.data || [];
+const meetings = result.data || [];
 
-/* ===================================================
-UPCOMING
-=================================================== */
+let upcoming = 0;
+let completed = 0;
+let cancelled = 0;
 
-const upcoming =
-meetings.filter(
-meeting =>
-String(
-meeting.status || ""
-).toLowerCase() === "upcoming"
-).length;
+meetings.forEach(function(meeting) {
 
-/* ===================================================
-COMPLETED
-=================================================== */
+```
+const status =
+  String(meeting.status || "").toLowerCase();
 
-const completed =
-meetings.filter(
-meeting =>
-String(
-meeting.status || ""
-).toLowerCase() === "completed"
-).length;
+if (status === "upcoming") {
+  upcoming++;
+}
 
-/* ===================================================
-CANCELLED
-=================================================== */
+if (status === "completed") {
+  completed++;
+}
 
-const cancelled =
-meetings.filter(
-meeting =>
-String(
-meeting.status || ""
-).toLowerCase() === "cancelled"
-).length;
+if (status === "cancelled") {
+  cancelled++;
+}
+```
+
+});
 
 if (upcomingMeetingsEl) {
-upcomingMeetingsEl.textContent =
-upcoming;
+upcomingMeetingsEl.textContent = upcoming;
 }
 
 if (completedMeetingsEl) {
-completedMeetingsEl.textContent =
-completed;
+completedMeetingsEl.textContent = completed;
 }
 
 if (cancelledMeetingsEl) {
-cancelledMeetingsEl.textContent =
-cancelled;
+cancelledMeetingsEl.textContent = cancelled;
 }
 }
 
 /* =====================================================
-LOAD REPORTS
+MAIN REPORT
 ===================================================== */
 
 async function loadReports() {
@@ -580,11 +474,9 @@ const groupId =
 await getCurrentGroupId();
 
 if (!groupId) {
-
 throw new Error(
-  "No group is linked to this account."
+"No group is linked to this account."
 );
-
 }
 
 if (statusBox) {
@@ -623,23 +515,15 @@ MEETINGS
 await loadMeetings(groupId);
 
 /* ===================================================
-OPENING BALANCE
+BALANCE
 =================================================== */
 
 const openingBalance = 0;
-
-/* ===================================================
-CLOSING BALANCE
-=================================================== */
 
 const closingBalance =
 openingBalance +
 contributionTotal -
 approvedExpenseTotal;
-
-/* ===================================================
-UPDATE FINANCIAL POSITION
-=================================================== */
 
 if (openingEl) {
 openingEl.textContent =
@@ -656,10 +540,6 @@ currentBalanceEl.textContent =
 money(closingBalance);
 }
 
-/* ===================================================
-SUCCESS
-=================================================== */
-
 if (statusBox) {
 statusBox.textContent =
 "Report updated successfully.";
@@ -674,8 +554,9 @@ if (logoutButton) {
 
 logoutButton.addEventListener(
 "click",
-async () => {
+async function() {
 
+```
   try {
 
     await supabase.auth.signOut();
@@ -690,6 +571,7 @@ async () => {
   }
 
 }
+```
 
 );
 
@@ -703,14 +585,13 @@ async function start() {
 
 try {
 
+```
 const sessionResult =
   await supabase.auth.getSession();
-
 
 if (sessionResult.error) {
   throw sessionResult.error;
 }
-
 
 if (!sessionResult.data.session) {
 
@@ -720,15 +601,16 @@ if (!sessionResult.data.session) {
   return;
 }
 
-
 await loadReports();
+```
 
 } catch (error) {
 
+```
 showError(error);
+```
 
 }
-
 }
 
 start();
