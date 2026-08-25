@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,116 +8,12 @@
   <title>Members — CHAMA LIVE</title>
 
   <link rel="stylesheet" href="css/app.css">
-
-  <style>
-    .member-account {
-      margin-top: 24px;
-    }
-
-    .member-account-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
-      margin-top: 20px;
-    }
-
-    .account-item {
-      padding: 14px;
-      border: 1px solid #e5e7eb;
-      border-radius: 10px;
-    }
-
-    .account-item .muted {
-      margin-bottom: 5px;
-    }
-
-    .account-value {
-      font-weight: 700;
-    }
-
-    .account-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 24px;
-    }
-
-    .status-pill {
-      display: inline-block;
-      padding: 4px 9px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-
-    .status-active {
-      background: #dcfce7;
-      color: #166534;
-    }
-
-    .status-inactive {
-      background: #fee2e2;
-      color: #991b1b;
-    }
-
-    .status-paid {
-      color: #166534;
-      font-weight: 700;
-    }
-
-    .status-outstanding {
-      color: #b45309;
-      font-weight: 700;
-    }
-
-    .edit-panel {
-      display: none;
-      margin-top: 24px;
-    }
-
-    .edit-panel.show {
-      display: block;
-    }
-
-    .form-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 16px;
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .form-group.full {
-      grid-column: 1 / -1;
-    }
-
-    .form-group input,
-    .form-group select {
-      width: 100%;
-      box-sizing: border-box;
-    }
-
-    .history-table {
-      margin-top: 20px;
-    }
-
-    @media (max-width: 800px) {
-      .member-account-grid,
-      .form-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
 </head>
 
 <body>
 
 <header class="topbar">
+
   <div class="brand">
     CHAMA <span>LIVE</span>
   </div>
@@ -128,6 +25,7 @@
   >
     Sign out
   </button>
+
 </header>
 
 
@@ -137,7 +35,9 @@
 
     <nav class="nav">
 
-      <a href="dashboard.html">Dashboard</a>
+      <a href="dashboard.html">
+        Dashboard
+      </a>
 
       <a class="active" href="members.html">
         Members
@@ -169,6 +69,8 @@
 
 
   <main class="main">
+
+    <!-- PAGE HEADER -->
 
     <div class="page-head">
 
@@ -206,7 +108,7 @@
     ></div>
 
 
-    <!-- MEMBER COUNTS -->
+    <!-- SUMMARY -->
 
     <div class="grid grid-3">
 
@@ -271,18 +173,18 @@
         Add Member
       </h2>
 
-      <form id="addMemberForm">
+      <form id="memberForm">
 
-        <div class="form-grid">
+        <div class="grid grid-3">
 
-          <div class="form-group">
+          <div>
 
-            <label for="memberName">
+            <label for="name">
               Full Name
             </label>
 
             <input
-              id="memberName"
+              id="name"
               name="name"
               type="text"
               required
@@ -291,14 +193,14 @@
           </div>
 
 
-          <div class="form-group">
+          <div>
 
-            <label for="memberNumber">
+            <label for="member_number">
               Member Number
             </label>
 
             <input
-              id="memberNumber"
+              id="member_number"
               name="member_number"
               type="text"
               required
@@ -307,14 +209,14 @@
           </div>
 
 
-          <div class="form-group">
+          <div>
 
-            <label for="membershipNumber">
+            <label for="membership_number">
               Membership Number
             </label>
 
             <input
-              id="membershipNumber"
+              id="membership_number"
               name="membership_number"
               type="text"
               required
@@ -323,14 +225,14 @@
           </div>
 
 
-          <div class="form-group">
+          <div>
 
-            <label for="memberPhone">
+            <label for="phone">
               Phone
             </label>
 
             <input
-              id="memberPhone"
+              id="phone"
               name="phone"
               type="text"
               required
@@ -339,14 +241,14 @@
           </div>
 
 
-          <div class="form-group">
+          <div>
 
-            <label for="memberEmail">
+            <label for="email">
               Email
             </label>
 
             <input
-              id="memberEmail"
+              id="email"
               name="email"
               type="email"
             >
@@ -354,16 +256,15 @@
           </div>
 
 
-          <div class="form-group">
+          <div>
 
-            <label for="memberRole">
+            <label for="role">
               Role
             </label>
 
             <select
-              id="memberRole"
+              id="role"
               name="role"
-              required
             >
 
               <option value="member">
@@ -395,14 +296,14 @@
           </div>
 
 
-          <div class="form-group">
+          <div>
 
-            <label for="memberJoinDate">
+            <label for="join_date">
               Join Date
             </label>
 
             <input
-              id="memberJoinDate"
+              id="join_date"
               name="join_date"
               type="date"
               required
@@ -415,8 +316,9 @@
 
         <br>
 
+
         <button
-          class="btn btn-primary"
+          class="btn"
           type="submit"
         >
           Add Member
@@ -439,23 +341,34 @@
       </h2>
 
 
-      <div style="margin-bottom:16px;">
+      <div
+        class="filters"
+        style="margin-bottom:15px;"
+      >
 
-        <select id="memberFilter">
+        <button
+          class="btn btn-secondary member-filter active"
+          data-filter="all"
+          type="button"
+        >
+          All Members
+        </button>
 
-          <option value="all">
-            All Members
-          </option>
+        <button
+          class="btn btn-secondary member-filter"
+          data-filter="active"
+          type="button"
+        >
+          Active
+        </button>
 
-          <option value="active">
-            Active
-          </option>
-
-          <option value="inactive">
-            Inactive
-          </option>
-
-        </select>
+        <button
+          class="btn btn-secondary member-filter"
+          data-filter="inactive"
+          type="button"
+        >
+          Inactive
+        </button>
 
       </div>
 
@@ -502,260 +415,296 @@
     </section>
 
 
+    <br>
+
+
     <!-- MEMBER ACCOUNT -->
 
     <section
+      class="card"
       id="memberAccount"
-      class="card member-account"
       hidden
     >
 
-      <h2>
-        Member Account
-      </h2>
+      <div
+        style="
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          gap:15px;
+          flex-wrap:wrap;
+        "
+      >
 
-      <p class="muted">
-        Member financial account
-      </p>
+        <div>
+
+          <h2>
+            Member Account
+          </h2>
+
+          <p class="muted">
+            Member financial account
+          </p>
+
+        </div>
 
 
-      <div id="accountStatus"></div>
+        <strong
+          id="accountStatus"
+        >
+          ACTIVE
+        </strong>
+
+      </div>
 
 
       <hr>
 
 
-      <div class="member-account-grid">
+      <!-- MEMBER DETAILS -->
 
-        <div class="account-item">
+      <div class="grid grid-3">
+
+        <div>
 
           <div class="muted">
             Member Number
           </div>
 
-          <div
-            class="account-value"
-            id="accountMemberNumber"
-          >
+          <strong id="accountMemberNumber">
             —
-          </div>
+          </strong>
 
         </div>
 
 
-        <div class="account-item">
+        <div>
 
           <div class="muted">
             Membership Number
           </div>
 
-          <div
-            class="account-value"
-            id="accountMembershipNumber"
-          >
+          <strong id="accountMembershipNumber">
             —
-          </div>
+          </strong>
 
         </div>
 
 
-        <div class="account-item">
+        <div>
 
           <div class="muted">
             Phone
           </div>
 
-          <div
-            class="account-value"
-            id="accountPhone"
-          >
+          <strong id="accountPhone">
             —
-          </div>
+          </strong>
 
         </div>
 
 
-        <div class="account-item">
+        <div>
 
           <div class="muted">
             Email
           </div>
 
-          <div
-            class="account-value"
-            id="accountEmail"
-          >
+          <strong id="accountEmail">
             —
-          </div>
+          </strong>
 
         </div>
 
 
-        <div class="account-item">
+        <div>
 
           <div class="muted">
             Role
           </div>
 
-          <div
-            class="account-value"
-            id="accountRole"
-          >
+          <strong id="accountRole">
             —
-          </div>
+          </strong>
 
         </div>
 
 
-        <div class="account-item">
+        <div>
 
           <div class="muted">
             Join Date
           </div>
 
-          <div
-            class="account-value"
-            id="accountJoinDate"
-          >
+          <strong id="accountJoinDate">
             —
-          </div>
+          </strong>
 
         </div>
 
       </div>
 
 
-      <h3 style="margin-top:28px;">
-        Monthly Contribution
-      </h3>
+      <br>
 
 
-      <div class="member-account-grid">
+      <!-- MONTHLY CONTRIBUTION -->
 
-        <div class="account-item">
+      <section>
 
-          <div class="muted">
-            Expected
+        <h3>
+          Monthly Contribution
+        </h3>
+
+
+        <div class="grid grid-3">
+
+          <div>
+
+            <div class="muted">
+              Expected
+            </div>
+
+            <strong id="accountExpected">
+              KSh 0
+            </strong>
+
           </div>
 
-          <div
-            class="account-value"
-            id="accountExpected"
-          >
-            KSh 0
+
+          <div>
+
+            <div class="muted">
+              Paid
+            </div>
+
+            <strong id="accountPaid">
+              KSh 0
+            </strong>
+
+          </div>
+
+
+          <div>
+
+            <div class="muted">
+              Outstanding
+            </div>
+
+            <strong id="accountOutstanding">
+              KSh 0
+            </strong>
+
           </div>
 
         </div>
 
 
-        <div class="account-item">
-
-          <div class="muted">
-            Paid
-          </div>
-
-          <div
-            class="account-value"
-            id="accountPaid"
-          >
-            KSh 0
-          </div>
-
-        </div>
+        <br>
 
 
-        <div class="account-item">
-
-          <div class="muted">
-            Outstanding
-          </div>
-
-          <div
-            class="account-value"
-            id="accountOutstanding"
-          >
-            KSh 0
-          </div>
-
-        </div>
-
-
-        <div class="account-item">
+        <div>
 
           <div class="muted">
             Monthly Status
           </div>
 
-          <div
-            class="account-value"
-            id="accountMonthlyStatus"
-          >
+          <strong id="accountMonthlyStatus">
             OUTSTANDING
-          </div>
+          </strong>
 
         </div>
 
-      </div>
+      </section>
 
 
-      <h3 style="margin-top:28px;">
-        Lifetime Contributions
-      </h3>
+      <br>
+
+
+      <!-- LIFETIME -->
+
+      <section>
+
+        <h3>
+          Lifetime Contributions
+        </h3>
+
+        <div
+          class="metric"
+          id="accountLifetime"
+        >
+          KSh 0
+        </div>
+
+      </section>
+
+
+      <br>
+
+
+      <!-- HISTORY -->
+
+      <section>
+
+        <h3>
+          Contribution History
+        </h3>
+
+
+        <div class="table-wrap">
+
+          <table class="table">
+
+            <thead>
+
+              <tr>
+
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Type</th>
+                <th>Method</th>
+                <th>Reference</th>
+
+              </tr>
+
+            </thead>
+
+
+            <tbody id="accountContributionRows">
+
+              <tr>
+
+                <td colspan="5">
+                  No contributions recorded.
+                </td>
+
+              </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </section>
+
+
+      <br>
+
+
+      <!-- ACTIONS -->
 
       <div
-        class="metric"
-        id="accountLifetime"
+        style="
+          display:flex;
+          gap:10px;
+          flex-wrap:wrap;
+        "
       >
-        KSh 0
-      </div>
-
-
-      <h3 style="margin-top:28px;">
-        Contribution History
-      </h3>
-
-
-      <div class="table-wrap history-table">
-
-        <table class="table">
-
-          <thead>
-
-            <tr>
-
-              <th>Date</th>
-              <th>Amount</th>
-              <th>Type</th>
-              <th>Method</th>
-              <th>Reference</th>
-
-            </tr>
-
-          </thead>
-
-
-          <tbody id="accountContributionRows">
-
-            <tr>
-
-              <td colspan="5">
-                No contributions recorded.
-              </td>
-
-            </tr>
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-
-      <div class="account-actions">
 
         <button
-          class="btn btn-primary"
-          id="editMemberBtn"
+          class="btn"
+          id="editMember"
           type="button"
         >
           Edit Member
@@ -764,7 +713,7 @@
 
         <button
           class="btn btn-secondary"
-          id="printStatementBtn"
+          id="printStatement"
           type="button"
         >
           Print Statement
@@ -773,7 +722,7 @@
 
         <button
           class="btn btn-secondary"
-          id="toggleMemberBtn"
+          id="deactivateMember"
           type="button"
         >
           Deactivate Member
@@ -781,174 +730,182 @@
 
       </div>
 
-
-      <!-- EDIT MEMBER -->
-
-      <div
-        id="editPanel"
-        class="edit-panel"
-      >
-
-        <hr>
-
-        <h3>
-          Edit Member
-        </h3>
-
-        <form id="editMemberForm">
-
-          <div class="form-grid">
-
-            <div class="form-group">
-
-              <label for="editName">
-                Full Name
-              </label>
-
-              <input
-                id="editName"
-                type="text"
-                required
-              >
-
-            </div>
+    </section>
 
 
-            <div class="form-group">
-
-              <label for="editMemberNumber">
-                Member Number
-              </label>
-
-              <input
-                id="editMemberNumber"
-                type="text"
-                required
-              >
-
-            </div>
+    <br>
 
 
-            <div class="form-group">
+    <!-- EDIT MEMBER -->
 
-              <label for="editMembershipNumber">
-                Membership Number
-              </label>
+    <section
+      class="card"
+      id="editPanel"
+      hidden
+    >
 
-              <input
-                id="editMembershipNumber"
-                type="text"
-                required
-              >
+      <h2>
+        Edit Member
+      </h2>
 
-            </div>
+      <form id="editMemberForm">
 
-
-            <div class="form-group">
-
-              <label for="editPhone">
-                Phone
-              </label>
-
-              <input
-                id="editPhone"
-                type="text"
-                required
-              >
-
-            </div>
+        <input
+          type="hidden"
+          id="editId"
+        >
 
 
-            <div class="form-group">
+        <div class="grid grid-3">
 
-              <label for="editEmail">
-                Email
-              </label>
+          <div>
 
-              <input
-                id="editEmail"
-                type="email"
-              >
+            <label for="editName">
+              Full Name
+            </label>
 
-            </div>
-
-
-            <div class="form-group">
-
-              <label for="editRole">
-                Role
-              </label>
-
-              <select id="editRole">
-
-                <option value="member">
-                  Member
-                </option>
-
-                <option value="chairperson">
-                  Chairperson
-                </option>
-
-                <option value="secretary">
-                  Secretary
-                </option>
-
-                <option value="treasurer">
-                  Treasurer
-                </option>
-
-                <option value="official">
-                  Official
-                </option>
-
-                <option value="admin">
-                  Admin
-                </option>
-
-              </select>
-
-            </div>
-
-
-            <div class="form-group">
-
-              <label for="editJoinDate">
-                Join Date
-              </label>
-
-              <input
-                id="editJoinDate"
-                type="date"
-                required
-              >
-
-            </div>
+            <input
+              id="editName"
+              type="text"
+              required
+            >
 
           </div>
 
 
-          <br>
+          <div>
+
+            <label for="editMemberNumber">
+              Member Number
+            </label>
+
+            <input
+              id="editMemberNumber"
+              type="text"
+              required
+            >
+
+          </div>
 
 
-          <button
-            class="btn btn-primary"
-            type="submit"
-          >
-            Save Changes
-          </button>
+          <div>
+
+            <label for="editMembershipNumber">
+              Membership Number
+            </label>
+
+            <input
+              id="editMembershipNumber"
+              type="text"
+              required
+            >
+
+          </div>
 
 
-          <button
-            class="btn btn-secondary"
-            id="cancelEditBtn"
-            type="button"
-          >
-            Cancel
-          </button>
+          <div>
 
-        </form>
+            <label for="editPhone">
+              Phone
+            </label>
 
-      </div>
+            <input
+              id="editPhone"
+              type="text"
+              required
+            >
+
+          </div>
+
+
+          <div>
+
+            <label for="editEmail">
+              Email
+            </label>
+
+            <input
+              id="editEmail"
+              type="email"
+            >
+
+          </div>
+
+
+          <div>
+
+            <label for="editRole">
+              Role
+            </label>
+
+            <select id="editRole">
+
+              <option value="member">
+                Member
+              </option>
+
+              <option value="chairperson">
+                Chairperson
+              </option>
+
+              <option value="secretary">
+                Secretary
+              </option>
+
+              <option value="treasurer">
+                Treasurer
+              </option>
+
+              <option value="official">
+                Official
+              </option>
+
+              <option value="admin">
+                Admin
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div>
+
+            <label for="editJoinDate">
+              Join Date
+            </label>
+
+            <input
+              id="editJoinDate"
+              type="date"
+              required
+            >
+
+          </div>
+
+        </div>
+
+
+        <br>
+
+
+        <button
+          class="btn"
+          type="submit"
+        >
+          Save Changes
+        </button>
+
+
+        <button
+          class="btn btn-secondary"
+          id="cancelEdit"
+          type="button"
+        >
+          Cancel
+        </button>
+
+      </form>
 
     </section>
 
@@ -968,4 +925,5 @@
 </script>
 
 </body>
+
 </html>
