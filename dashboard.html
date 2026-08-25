@@ -1,1 +1,601 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dashboard — CHAMA LIVE</title><link rel="stylesheet" href="css/app.css"></head><body><header class="topbar"><div class="brand">CHAMA <span>LIVE</span></div><button class="btn btn-secondary" id="logout">Sign out</button></header><div class="layout"><aside class="sidebar"><nav class="nav"><a class="active" href="dashboard.html">Dashboard</a><a class="" href="members.html">Members</a><a class="" href="contributions.html">Contributions</a><a class="" href="expenses.html">Expenses</a><a class="" href="meetings.html">Meetings</a><a class="" href="reports.html">Reports</a><a class="" href="group-management.html">Group Management</a></nav></aside><main class="main"><div class="page-head"><div><h1>Dashboard</h1><p class="muted" id="group-name">Loading group…</p></div></div><div class="grid grid-4"><div class="card"><div class="muted">Active Members</div><div class="metric" id="members">—</div></div><div class="card"><div class="muted">Contributions</div><div class="metric" id="contributions">—</div></div><div class="card"><div class="muted">Approved Expenses</div><div class="metric" id="expenses">—</div></div><div class="card"><div class="muted">Balance</div><div class="metric" id="balance">—</div></div></div><br><div class="grid grid-2"><section class="card"><h2>This month</h2><p>Contributions: <strong id="month-contributions">—</strong></p><p>Approved expenses: <strong id="month-expenses">—</strong></p></section><section class="card"><h2>Quick actions</h2><div class="actions"><a class="btn btn-primary" href="members.html">Members</a><a class="btn btn-secondary" href="contributions.html">Contributions</a><a class="btn btn-secondary" href="expenses.html">Expenses</a></div></section></div><div class="error" data-error hidden></div></main></div><script type="module">import {boot} from './js/layout.js';await boot();import "./js/dashboard.js";</script></body></html>
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>Dashboard — CHAMA LIVE</title>
+
+  <link
+    rel="stylesheet"
+    href="css/app.css"
+  >
+</head>
+
+
+<body>
+
+
+<header class="topbar">
+
+  <div class="brand">
+    CHAMA <span>LIVE</span>
+  </div>
+
+  <button
+    class="btn btn-secondary"
+    id="logout"
+    type="button"
+  >
+    Sign out
+  </button>
+
+</header>
+
+
+<div class="layout">
+
+
+  <!-- =====================================================
+       SIDEBAR
+  ====================================================== -->
+
+  <aside class="sidebar">
+
+    <nav class="nav">
+
+      <a
+        class="active"
+        href="dashboard.html"
+      >
+        Dashboard
+      </a>
+
+      <a href="members.html">
+        Members
+      </a>
+
+      <a href="contributions.html">
+        Contributions
+      </a>
+
+      <a href="expenses.html">
+        Expenses
+      </a>
+
+      <a href="meetings.html">
+        Meetings
+      </a>
+
+      <a href="reports.html">
+        Reports
+      </a>
+
+      <a href="group-management.html">
+        Group Management
+      </a>
+
+    </nav>
+
+  </aside>
+
+
+  <!-- =====================================================
+       MAIN
+  ====================================================== -->
+
+  <main class="main">
+
+
+    <!-- PAGE HEADER -->
+
+    <div class="page-head">
+
+      <div>
+
+        <h1>
+          Dashboard
+        </h1>
+
+        <p class="muted">
+          Your group's live financial overview.
+        </p>
+
+      </div>
+
+    </div>
+
+
+    <!-- ===================================================
+         STATUS
+    ==================================================== -->
+
+    <div
+      id="status"
+      class="card"
+      style="margin-bottom:20px;"
+    >
+      Loading dashboard...
+    </div>
+
+
+    <!-- ===================================================
+         ERROR
+    ==================================================== -->
+
+    <div
+      id="error"
+      class="error"
+      hidden
+      style="margin-bottom:20px;"
+    ></div>
+
+
+    <!-- ===================================================
+         MAIN METRICS
+    ==================================================== -->
+
+    <div class="grid grid-3">
+
+
+      <!-- MEMBERS -->
+
+      <div class="card">
+
+        <div class="muted">
+          Members
+        </div>
+
+        <div
+          class="metric"
+          id="membersCount"
+        >
+          —
+        </div>
+
+        <div class="muted">
+          <span id="activeMembers">
+            —
+          </span>
+          active
+        </div>
+
+      </div>
+
+
+      <!-- EXPECTED -->
+
+      <div class="card">
+
+        <div class="muted">
+          Monthly Expected
+        </div>
+
+        <div
+          class="metric"
+          id="monthlyExpected"
+        >
+          —
+        </div>
+
+      </div>
+
+
+      <!-- COLLECTED -->
+
+      <div class="card">
+
+        <div class="muted">
+          Monthly Collected
+        </div>
+
+        <div
+          class="metric"
+          id="monthlyCollected"
+        >
+          —
+        </div>
+
+      </div>
+
+
+      <!-- OUTSTANDING -->
+
+      <div class="card">
+
+        <div class="muted">
+          Outstanding
+        </div>
+
+        <div
+          class="metric"
+          id="monthlyOutstanding"
+        >
+          —
+        </div>
+
+      </div>
+
+
+      <!-- COLLECTION RATE -->
+
+      <div class="card">
+
+        <div class="muted">
+          Collection Rate
+        </div>
+
+        <div
+          class="metric"
+          id="collectionRate"
+        >
+          —
+        </div>
+
+      </div>
+
+
+      <!-- BALANCE -->
+
+      <div class="card">
+
+        <div class="muted">
+          Current Balance
+        </div>
+
+        <div
+          class="metric"
+          id="currentBalance"
+        >
+          —
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <br>
+
+
+    <!-- ===================================================
+         CONTRIBUTION PROGRESS
+    ==================================================== -->
+
+    <section class="card">
+
+      <h2>
+        Monthly Contribution Progress
+      </h2>
+
+      <p
+        class="muted"
+        id="progressMonth"
+      >
+        Current month
+      </p>
+
+
+      <div
+        style="
+          width:100%;
+          height:18px;
+          background:#e5e7eb;
+          border-radius:999px;
+          overflow:hidden;
+          margin:16px 0;
+        "
+      >
+
+        <div
+          id="progressBar"
+          style="
+            width:0%;
+            height:100%;
+            border-radius:999px;
+            background:currentColor;
+            transition:width .3s ease;
+          "
+        ></div>
+
+      </div>
+
+
+      <div
+        style="
+          display:flex;
+          justify-content:space-between;
+          gap:15px;
+          flex-wrap:wrap;
+        "
+      >
+
+        <span id="progressText">
+          KSh 0 / KSh 0
+        </span>
+
+        <strong id="progressPercentage">
+          0%
+        </strong>
+
+      </div>
+
+    </section>
+
+
+    <br>
+
+
+    <!-- ===================================================
+         PAYMENT STATUS
+    ==================================================== -->
+
+    <section class="card">
+
+      <h2>
+        Member Contribution Status
+      </h2>
+
+      <p class="muted">
+        Members who still have a monthly contribution balance.
+      </p>
+
+
+      <div class="table-wrap">
+
+        <table class="table">
+
+          <thead>
+
+            <tr>
+
+              <th>
+                Member
+              </th>
+
+              <th>
+                Expected
+              </th>
+
+              <th>
+                Paid
+              </th>
+
+              <th>
+                Outstanding
+              </th>
+
+              <th>
+                Status
+              </th>
+
+            </tr>
+
+          </thead>
+
+
+          <tbody id="memberStatusRows">
+
+            <tr>
+
+              <td colspan="5">
+                Loading...
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+
+    <br>
+
+
+    <!-- ===================================================
+         RECENT ACTIVITY
+    ==================================================== -->
+
+    <div class="grid grid-2">
+
+
+      <!-- RECENT CONTRIBUTIONS -->
+
+      <section class="card">
+
+        <h2>
+          Recent Contributions
+        </h2>
+
+
+        <div class="table-wrap">
+
+          <table class="table">
+
+            <thead>
+
+              <tr>
+
+                <th>
+                  Member
+                </th>
+
+                <th>
+                  Amount
+                </th>
+
+                <th>
+                  Date
+                </th>
+
+              </tr>
+
+            </thead>
+
+
+            <tbody id="recentContributionRows">
+
+              <tr>
+
+                <td colspan="3">
+                  Loading...
+                </td>
+
+              </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </section>
+
+
+      <!-- RECENT EXPENSES -->
+
+      <section class="card">
+
+        <h2>
+          Recent Expenses
+        </h2>
+
+
+        <div class="table-wrap">
+
+          <table class="table">
+
+            <thead>
+
+              <tr>
+
+                <th>
+                  Description
+                </th>
+
+                <th>
+                  Amount
+                </th>
+
+                <th>
+                  Status
+                </th>
+
+              </tr>
+
+            </thead>
+
+
+            <tbody id="recentExpenseRows">
+
+              <tr>
+
+                <td colspan="3">
+                  Loading...
+                </td>
+
+              </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </section>
+
+    </div>
+
+
+    <br>
+
+
+    <!-- ===================================================
+         UPCOMING MEETINGS
+    ==================================================== -->
+
+    <section class="card">
+
+      <h2>
+        Upcoming Meetings
+      </h2>
+
+
+      <div class="table-wrap">
+
+        <table class="table">
+
+          <thead>
+
+            <tr>
+
+              <th>
+                Date
+              </th>
+
+              <th>
+                Meeting
+              </th>
+
+              <th>
+                Venue
+              </th>
+
+              <th>
+                Status
+              </th>
+
+            </tr>
+
+          </thead>
+
+
+          <tbody id="upcomingMeetingRows">
+
+            <tr>
+
+              <td colspan="4">
+                Loading...
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+
+  </main>
+
+</div>
+
+
+<script type="module">
+
+  import {
+    boot
+  } from "./js/layout.js";
+
+  await boot();
+
+  import "./js/dashboard.js";
+
+</script>
+
+
+</body>
+
+</html>
