@@ -1,247 +1,208 @@
-<!doctype html>
-<html lang="en">
-
-<head>
-  <meta charset="utf-8">
-  <meta
-    name="viewport"
-    content="width=device-width,initial-scale=1"
-  >
-
-  <title>Group Management — CHAMA LIVE</title>
-
-  <link
-    rel="stylesheet"
-    href="css/app.css"
-  >
-</head>
-
-<body>
-
-<header class="topbar">
-
-  <div class="brand">
-    CHAMA <span>LIVE</span>
-  </div>
-
-  <button
-    class="btn btn-secondary"
-    id="logout"
-  >
-    Sign out
-  </button>
-
-</header>
+import { supabase } from "./supabase.js";
 
 
-<div class="layout">
+/* =====================================================
+   GET CURRENT GROUP
+===================================================== */
 
-  <aside class="sidebar">
+export async function getCurrentGroupId() {
 
-    <nav class="nav">
-
-      <a href="dashboard.html">
-        Dashboard
-      </a>
-
-      <a href="members.html">
-        Members
-      </a>
-
-      <a href="contributions.html">
-        Contributions
-      </a>
-
-      <a href="expenses.html">
-        Expenses
-      </a>
-
-      <a href="meetings.html">
-        Meetings
-      </a>
-
-      <a href="reports.html">
-        Reports
-      </a>
-
-      <a
-        class="active"
-        href="group-management.html"
-      >
-        Group Management
-      </a>
-
-    </nav>
-
-  </aside>
+  const {
+    data: {
+      user
+    },
+    error: userError
+  } = await supabase.auth.getUser();
 
 
-  <main class="main">
-
-    <div class="page-head">
-
-      <div>
-
-        <h1>
-          Group Management
-        </h1>
-
-        <p class="muted">
-          Current group profile.
-        </p>
-
-      </div>
-
-    </div>
+  if (userError) {
+    throw userError;
+  }
 
 
-    <section class="card">
-
-      <p>
-        Group:
-        <strong id="name">
-          Loading…
-        </strong>
-      </p>
-
-      <p>
-        Opening balance:
-        <strong id="opening">
-          —
-        </strong>
-      </p>
-
-      <p>
-        Monthly contribution:
-        <strong id="monthly">
-          —
-        </strong>
-      </p>
-
-    </section>
-
-
-    <div
-      class="error"
-      data-error
-      hidden
-    ></div>
-
-  </main>
-
-</div>
-
-
-<script type="module">
-
-  import { boot } from "./js/layout.js";
-
-  import { supabase } from "./js/supabase.js";
-
-  import {
-    getCurrentGroupId,
-    money,
-    setText,
-    showError
-  } from "./js/app.js";
+  if (!user) {
+    throw new Error("You are not logged in.");
+  }
 
 
   /*
-   * Start authentication and layout
+   * Get the member record belonging
+   * to the logged-in user.
    */
-  await boot();
+
+  const {
+    data: member,
+    error: memberError
+  } = await supabase
+    .from("members")
+    .select("group_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+
+  if (memberError) {
+    throw memberError;
+  }
+
+
+  if (!member) {
+    throw new Error(
+      "No member record is linked to this account."
+    );
+  }
+
+
+  if (!member.group_id) {
+    throw new Error(
+      "Your member record has no group."
+    );
+  }
+
+
+  return member.group_id;
+
+}
+
+
+/* =====================================================
+   MONEY
+===================================================== */
+
+export function money(value) {
+
+  const amount =
+    Number(value || 0);
+
+
+  return (
+    "KSh " +
+    amount.toLocaleString(
+      "en-KE",
+      {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      }
+    )
+  );
+
+}
+
+
+/* =====================================================
+   SET TEXT
+===================================================== */
+
+export function setText(
+  selector,
+  value
+) {
+
+  const element =
+    document.querySelector(
+      selector
+    );
+
+
+  if (!element) {
+    throw new Error(
+      "Element not found: " +
+      selector
+    );
+  }
+
+
+  element.textContent =
+    value ?? "—";
+
+}
+
+
+/* =====================================================
+   SHOW ERROR
+===================================================== */
+
+export function showError(error) {
+
+  console.error(
+    "CHAMA LIVE:",
+    error
+  );
+
+
+  const message =
+    error?.message ||
+    String(error);
 
 
   /*
-   * Load the current group
+   * Try the standard error container.
    */
-  async function loadGroup() {
 
-    try {
-
-      const groupId =
-        await getCurrentGroupId();
-
-
-      if (!groupId) {
-
-        throw new Error(
-          "No group is linked to this account."
-        );
-
-      }
+  const errorElement =
+    document.querySelector(
+      "[data-error]"
+    );
 
 
-      const {
-        data,
-        error
-      } = await supabase
-        .from("groups")
-        .select(
-          "name, opening_balance, monthly_contribution"
-        )
-        .eq("id", groupId)
-        .single();
+  if (errorElement) {
 
+    errorElement.textContent =
+      "Error: " + message;
 
-      if (error) {
-        throw error;
-      }
-
-
-      if (!data) {
-
-        throw new Error(
-          "Group information could not be found."
-        );
-
-      }
-
-
-      setText(
-        "#name",
-        data.name ?? "—"
-      );
-
-
-      setText(
-        "#opening",
-        money(
-          Number(
-            data.opening_balance || 0
-          )
-        )
-      );
-
-
-      setText(
-        "#monthly",
-        money(
-          Number(
-            data.monthly_contribution || 0
-          )
-        )
-      );
-
-    }
-
-    catch (error) {
-
-      console.error(
-        "CHAMA LIVE group management error:",
-        error
-      );
-
-      showError(error);
-
-    }
+    errorElement.hidden =
+      false;
 
   }
 
 
-  loadGroup();
+  /*
+   * Also support #error.
+   */
 
-</script>
+  const errorBox =
+    document.querySelector(
+      "#error"
+    );
 
-</body>
-</html>
+
+  if (
+    errorBox &&
+    errorBox !== errorElement
+  ) {
+
+    errorBox.textContent =
+      "Error: " + message;
+
+    errorBox.hidden =
+      false;
+
+  }
+
+}
+
+
+/* =====================================================
+   CLEAR ERROR
+===================================================== */
+
+export function clearError() {
+
+  const elements =
+    document.querySelectorAll(
+      "[data-error], #error"
+    );
+
+
+  elements.forEach(
+    function (element) {
+
+      element.textContent =
+        "";
+
+      element.hidden =
+        true;
+
+    }
+  );
+
+}
