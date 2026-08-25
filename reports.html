@@ -4,16 +4,23 @@
 
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
 
   <title>Reports — CHAMA LIVE</title>
 
-  <link rel="stylesheet" href="css/app.css">
+  <link
+    rel="stylesheet"
+    href="css/app.css"
+  >
 </head>
 
 <body>
 
 <header class="topbar">
+
   <div class="brand">
     CHAMA <span>LIVE</span>
   </div>
@@ -25,26 +32,47 @@
   >
     Sign out
   </button>
+
 </header>
 
 
 <div class="layout">
 
+
+  <!-- =====================================================
+       SIDEBAR
+  ====================================================== -->
+
   <aside class="sidebar">
 
     <nav class="nav">
 
-      <a href="dashboard.html">Dashboard</a>
+      <a href="dashboard.html">
+        Dashboard
+      </a>
 
-      <a href="members.html">Members</a>
+      <a href="members.html">
+        Members
+      </a>
 
-      <a href="contributions.html">Contributions</a>
+      <a href="contributions.html">
+        Contributions
+      </a>
 
-      <a href="expenses.html">Expenses</a>
+      <a href="expenses.html">
+        Expenses
+      </a>
 
-      <a href="meetings.html">Meetings</a>
+      <a href="meetings.html">
+        Meetings
+      </a>
 
-      <a class="active" href="reports.html">Reports</a>
+      <a
+        class="active"
+        href="reports.html"
+      >
+        Reports
+      </a>
 
       <a href="group-management.html">
         Group Management
@@ -55,13 +83,22 @@
   </aside>
 
 
+  <!-- =====================================================
+       MAIN
+  ====================================================== -->
+
   <main class="main">
+
+
+    <!-- PAGE HEADER -->
 
     <div class="page-head">
 
       <div>
 
-        <h1>Reports</h1>
+        <h1>
+          Reports
+        </h1>
 
         <p class="muted">
           Live financial and management summary.
@@ -72,7 +109,9 @@
     </div>
 
 
-    <!-- STATUS -->
+    <!-- ===================================================
+         STATUS
+    ==================================================== -->
 
     <div
       id="status"
@@ -83,7 +122,9 @@
     </div>
 
 
-    <!-- ERROR -->
+    <!-- ===================================================
+         ERROR
+    ==================================================== -->
 
     <div
       id="error"
@@ -93,9 +134,14 @@
     ></div>
 
 
-    <!-- FINANCIAL METRICS -->
+    <!-- ===================================================
+         FINANCIAL METRICS
+    ==================================================== -->
 
     <div class="grid grid-3">
+
+
+      <!-- ACTIVE MEMBERS -->
 
       <div class="card">
 
@@ -113,6 +159,8 @@
       </div>
 
 
+      <!-- TOTAL MEMBERS -->
+
       <div class="card">
 
         <div class="muted">
@@ -128,6 +176,8 @@
 
       </div>
 
+
+      <!-- CONTRIBUTIONS -->
 
       <div class="card">
 
@@ -145,6 +195,8 @@
       </div>
 
 
+      <!-- APPROVED EXPENSES -->
+
       <div class="card">
 
         <div class="muted">
@@ -161,6 +213,8 @@
       </div>
 
 
+      <!-- PENDING EXPENSES -->
+
       <div class="card">
 
         <div class="muted">
@@ -176,6 +230,8 @@
 
       </div>
 
+
+      <!-- CURRENT BALANCE -->
 
       <div class="card">
 
@@ -198,7 +254,136 @@
     <br>
 
 
-    <!-- FINANCIAL POSITION -->
+    <!-- ===================================================
+         MONTHLY CONTRIBUTION SUMMARY
+    ==================================================== -->
+
+    <section class="card">
+
+      <h2>
+        Monthly Contribution Summary
+      </h2>
+
+      <p
+        class="muted"
+        id="reportMonth"
+      >
+        Current month
+      </p>
+
+
+      <div class="grid grid-3">
+
+
+        <!-- EXPECTED -->
+
+        <div>
+
+          <div class="muted">
+            Expected
+          </div>
+
+          <div
+            class="metric"
+            id="monthlyExpected"
+          >
+            —
+          </div>
+
+        </div>
+
+
+        <!-- COLLECTED -->
+
+        <div>
+
+          <div class="muted">
+            Collected
+          </div>
+
+          <div
+            class="metric"
+            id="monthlyCollected"
+          >
+            —
+          </div>
+
+        </div>
+
+
+        <!-- OUTSTANDING -->
+
+        <div>
+
+          <div class="muted">
+            Outstanding
+          </div>
+
+          <div
+            class="metric"
+            id="monthlyOutstanding"
+          >
+            —
+          </div>
+
+        </div>
+
+
+        <!-- MEMBERS PAID -->
+
+        <div>
+
+          <div class="muted">
+            Members Paid
+          </div>
+
+          <strong id="membersPaid">
+            —
+          </strong>
+
+        </div>
+
+
+        <!-- PARTIAL -->
+
+        <div>
+
+          <div class="muted">
+            Partial
+          </div>
+
+          <strong id="membersPartial">
+            —
+          </strong>
+
+        </div>
+
+
+        <!-- COLLECTION RATE -->
+
+        <div>
+
+          <div class="muted">
+            Collection Rate
+          </div>
+
+          <strong id="collectionRate">
+            —
+          </strong>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <br>
+
+
+    <!-- ===================================================
+         FINANCIAL POSITION
+    ==================================================== -->
 
     <section class="card">
 
@@ -207,31 +392,46 @@
       </h2>
 
       <p>
+
         Opening balance:
+
         <strong id="opening">
           KSh 0
         </strong>
+
       </p>
 
+
       <p>
+
         Contributions:
+
         <strong id="contributions2">
           KSh 0
         </strong>
+
       </p>
 
+
       <p>
+
         Approved expenses:
+
         <strong id="expenses2">
           KSh 0
         </strong>
+
       </p>
 
+
       <p>
+
         Closing balance:
+
         <strong id="balance">
           KSh 0
         </strong>
+
       </p>
 
     </section>
@@ -240,13 +440,16 @@
     <br>
 
 
-    <!-- RECENT CONTRIBUTIONS -->
+    <!-- ===================================================
+         RECENT CONTRIBUTIONS
+    ==================================================== -->
 
     <section class="card">
 
       <h2>
         Recent Contributions
       </h2>
+
 
       <div class="table-wrap">
 
@@ -256,12 +459,29 @@
 
             <tr>
 
-              <th>Date</th>
-              <th>Member</th>
-              <th>Amount</th>
-              <th>Type</th>
-              <th>Method</th>
-              <th>Reference</th>
+              <th>
+                Date
+              </th>
+
+              <th>
+                Member
+              </th>
+
+              <th>
+                Amount
+              </th>
+
+              <th>
+                Type
+              </th>
+
+              <th>
+                Method
+              </th>
+
+              <th>
+                Reference
+              </th>
 
             </tr>
 
@@ -290,13 +510,16 @@
     <br>
 
 
-    <!-- RECENT EXPENSES -->
+    <!-- ===================================================
+         RECENT EXPENSES
+    ==================================================== -->
 
     <section class="card">
 
       <h2>
         Recent Expenses
       </h2>
+
 
       <div class="table-wrap">
 
@@ -306,11 +529,25 @@
 
             <tr>
 
-              <th>Date</th>
-              <th>Description</th>
-              <th>Category</th>
-              <th>Amount</th>
-              <th>Status</th>
+              <th>
+                Date
+              </th>
+
+              <th>
+                Description
+              </th>
+
+              <th>
+                Category
+              </th>
+
+              <th>
+                Amount
+              </th>
+
+              <th>
+                Status
+              </th>
 
             </tr>
 
@@ -339,7 +576,9 @@
     <br>
 
 
-    <!-- MEETINGS -->
+    <!-- ===================================================
+         MEETINGS SUMMARY
+    ==================================================== -->
 
     <section class="card">
 
@@ -347,7 +586,11 @@
         Meetings Summary
       </h2>
 
+
       <div class="grid grid-3">
+
+
+        <!-- UPCOMING -->
 
         <div>
 
@@ -362,6 +605,8 @@
         </div>
 
 
+        <!-- COMPLETED -->
+
         <div>
 
           <div class="muted">
@@ -374,6 +619,8 @@
 
         </div>
 
+
+        <!-- CANCELLED -->
 
         <div>
 
@@ -396,9 +643,14 @@
 </div>
 
 
+<!-- =====================================================
+     JAVASCRIPT
+====================================================== -->
+
 <script type="module">
 
-  import { boot } from "./js/layout.js";
+  import { boot }
+    from "./js/layout.js";
 
   await boot();
 
@@ -406,7 +658,7 @@
 
 </script>
 
+
 </body>
 
 </html>
-
