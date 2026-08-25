@@ -1,13 +1,12 @@
+
 <!doctype html>
 <html lang="en">
 
 <head>
-
   <meta charset="utf-8">
-
   <meta
     name="viewport"
-    content="width=device-width,initial-scale=1"
+    content="width=device-width, initial-scale=1"
   >
 
   <title>Group Management — CHAMA LIVE</title>
@@ -16,12 +15,9 @@
     rel="stylesheet"
     href="css/app.css"
   >
-
 </head>
 
-
 <body>
-
 
 <header class="topbar">
 
@@ -32,6 +28,7 @@
   <button
     class="btn btn-secondary"
     id="logout"
+    type="button"
   >
     Sign out
   </button>
@@ -40,7 +37,6 @@
 
 
 <div class="layout">
-
 
   <aside class="sidebar">
 
@@ -84,7 +80,6 @@
 
   <main class="main">
 
-
     <div class="page-head">
 
       <div>
@@ -94,7 +89,7 @@
         </h1>
 
         <p class="muted">
-          Current group profile.
+          Manage your group's profile and financial settings.
         </p>
 
       </div>
@@ -102,234 +97,206 @@
     </div>
 
 
+    <!-- STATUS -->
+
+    <div
+      id="status"
+      class="card"
+      style="margin-bottom:20px;"
+    >
+      Loading group settings...
+    </div>
+
+
+    <!-- ERROR -->
+
+    <div
+      id="error"
+      class="error"
+      hidden
+      style="margin-bottom:20px;"
+    ></div>
+
+
+    <!-- GROUP PROFILE -->
+
     <section class="card">
 
+      <h2>
+        Group Profile
+      </h2>
 
-      <p>
+      <br>
 
-        Group:
+      <form id="groupForm">
 
-        <strong id="name">
-          Loading…
-        </strong>
+        <div class="grid grid-2">
 
-      </p>
+          <!-- GROUP NAME -->
+
+          <div>
+
+            <label
+              for="groupName"
+              class="muted"
+            >
+              Group Name
+            </label>
+
+            <input
+              id="groupName"
+              name="groupName"
+              type="text"
+              required
+              autocomplete="organization"
+              placeholder="Enter group name"
+            >
+
+          </div>
 
 
-      <p>
+          <!-- OPENING BALANCE -->
 
-        Opening balance:
+          <div>
 
-        <strong id="opening">
-          —
-        </strong>
+            <label
+              for="openingBalance"
+              class="muted"
+            >
+              Opening Balance
+            </label>
 
-      </p>
+            <input
+              id="openingBalance"
+              name="openingBalance"
+              type="number"
+              min="0"
+              step="0.01"
+              required
+              placeholder="0.00"
+            >
+
+          </div>
 
 
-      <p>
+          <!-- MONTHLY CONTRIBUTION -->
 
-        Monthly contribution:
+          <div>
 
-        <strong id="monthly">
-          —
-        </strong>
+            <label
+              for="monthlyContribution"
+              class="muted"
+            >
+              Monthly Contribution
+            </label>
 
-      </p>
+            <input
+              id="monthlyContribution"
+              name="monthlyContribution"
+              type="number"
+              min="0"
+              step="0.01"
+              required
+              placeholder="0.00"
+            >
 
+          </div>
+
+        </div>
+
+
+        <br>
+
+
+        <div>
+
+          <button
+            class="btn"
+            id="saveButton"
+            type="submit"
+          >
+            Save Changes
+          </button>
+
+        </div>
+
+      </form>
 
     </section>
 
 
-    <div
-      class="error"
-      data-error
-      hidden
-    ></div>
+    <br>
 
+
+    <!-- CURRENT SETTINGS -->
+
+    <section class="card">
+
+      <h2>
+        Current Settings
+      </h2>
+
+      <br>
+
+      <div class="grid grid-3">
+
+        <div>
+
+          <div class="muted">
+            Group
+          </div>
+
+          <strong id="currentGroupName">
+            —
+          </strong>
+
+        </div>
+
+
+        <div>
+
+          <div class="muted">
+            Opening Balance
+          </div>
+
+          <strong id="currentOpeningBalance">
+            KSh 0.00
+          </strong>
+
+        </div>
+
+
+        <div>
+
+          <div class="muted">
+            Monthly Contribution
+          </div>
+
+          <strong id="currentMonthlyContribution">
+            KSh 0.00
+          </strong>
+
+        </div>
+
+      </div>
+
+    </section>
 
   </main>
-
 
 </div>
 
 
 <script type="module">
 
-import { supabase } from "./js/supabase.js";
+  import { boot } from "./js/layout.js";
 
+  await boot();
 
-const errorBox =
-  document.querySelector("[data-error]");
-
-
-function showError(error) {
-
-  console.error(
-    "CHAMA LIVE group management error:",
-    error
-  );
-
-  errorBox.textContent =
-    error?.message ||
-    "Unable to load group information.";
-
-  errorBox.hidden = false;
-}
-
-
-function money(value) {
-
-  return new Intl.NumberFormat(
-    "en-KE",
-    {
-      style: "currency",
-      currency: "KES",
-      minimumFractionDigits: 2
-    }
-  ).format(Number(value) || 0);
-
-}
-
-
-async function getCurrentGroupId() {
-
-  const {
-    data: { user },
-    error: userError
-  } = await supabase.auth.getUser();
-
-
-  if (userError) {
-    throw userError;
-  }
-
-
-  if (!user) {
-
-    window.location.href =
-      "./login.html";
-
-    return null;
-  }
-
-
-  const {
-    data: member,
-    error
-  } = await supabase
-    .from("members")
-    .select("group_id")
-    .eq("auth_user_id", user.id)
-    .maybeSingle();
-
-
-  if (error) {
-    throw error;
-  }
-
-
-  if (!member) {
-
-    throw new Error(
-      "Your account is not linked to a group."
-    );
-
-  }
-
-
-  return member.group_id;
-
-}
-
-
-async function loadGroup() {
-
-  try {
-
-
-    const groupId =
-      await getCurrentGroupId();
-
-
-    if (!groupId) {
-
-      throw new Error(
-        "No group is linked to this account."
-      );
-
-    }
-
-
-    const {
-      data,
-      error
-    } = await supabase
-      .from("groups")
-      .select(
-        "name, opening_balance, monthly_contribution"
-      )
-      .eq("id", groupId)
-      .single();
-
-
-    if (error) {
-      throw error;
-    }
-
-
-    if (!data) {
-
-      throw new Error(
-        "Group information could not be found."
-      );
-
-    }
-
-
-    document.querySelector("#name")
-      .textContent =
-      data.name ?? "—";
-
-
-    document.querySelector("#opening")
-      .textContent =
-      money(data.opening_balance);
-
-
-    document.querySelector("#monthly")
-      .textContent =
-      money(data.monthly_contribution);
-
-
-  } catch (error) {
-
-    showError(error);
-
-  }
-
-}
-
-
-document
-  .querySelector("#logout")
-  .addEventListener(
-    "click",
-    async () => {
-
-      await supabase.auth.signOut();
-
-      window.location.href =
-        "./login.html";
-
-    }
-  );
-
-
-loadGroup();
+  import "./js/group-management.js";
 
 </script>
 
-
 </body>
+
 </html>
