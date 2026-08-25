@@ -1,3 +1,5 @@
+
+```javascript
 import { supabase } from "./supabase.js";
 import { getCurrentGroupId } from "./app.js";
 
@@ -115,9 +117,11 @@ function clearError() {
     return;
   }
 
-  errorEl.textContent = "";
+  errorEl.textContent =
+    "";
 
-  errorEl.hidden = true;
+  errorEl.hidden =
+    true;
 
 }
 
@@ -132,7 +136,7 @@ async function loadReports() {
 
 
   /* ===================================================
-     CURRENT GROUP
+     GROUP
   =================================================== */
 
   const groupId =
@@ -177,8 +181,17 @@ async function loadReports() {
      CONTRIBUTIONS
 
      IMPORTANT:
-     USE contribution_date
-     NOT date
+
+     Your contributions table has:
+
+     group_id
+     member_id
+     amount
+     contribution_type
+     month
+     payment_method
+
+     THERE IS NO contributions.date
   =================================================== */
 
   const contributionsResult =
@@ -186,11 +199,12 @@ async function loadReports() {
       .from("contributions")
       .select(`
         id,
-        contribution_date,
-        amount,
-        payment_method,
-        reference,
+        group_id,
         member_id,
+        amount,
+        contribution_type,
+        month,
+        payment_method,
         members (
           name
         )
@@ -198,12 +212,6 @@ async function loadReports() {
       .eq(
         "group_id",
         groupId
-      )
-      .order(
-        "contribution_date",
-        {
-          ascending: false
-        }
       );
 
 
@@ -219,8 +227,13 @@ async function loadReports() {
   /* ===================================================
      EXPENSES
 
-     ACTUAL DATABASE COLUMNS:
+     Known columns:
 
+     id
+     group_id
+     description
+     category
+     amount
      date
      approval_status
   =================================================== */
@@ -230,10 +243,11 @@ async function loadReports() {
       .from("expenses")
       .select(`
         id,
-        date,
+        group_id,
         description,
         category,
         amount,
+        date,
         approval_status
       `)
       .eq(
@@ -312,20 +326,18 @@ async function loadReports() {
       member =>
         String(
           member.status || ""
-        ).toLowerCase() === "active"
+        ).toLowerCase() ===
+        "active"
     ).length;
 
 
   /* ===================================================
-     CONTRIBUTIONS TOTAL
+     CONTRIBUTION TOTAL
   =================================================== */
 
   const contributionTotal =
     contributions.reduce(
-      (
-        total,
-        contribution
-      ) => {
+      function(total, contribution) {
 
         return (
           total +
@@ -348,16 +360,14 @@ async function loadReports() {
       expense =>
         String(
           expense.approval_status || ""
-        ).toLowerCase() === "approved"
+        ).toLowerCase() ===
+        "approved"
     );
 
 
   const approvedExpenseTotal =
     approvedExpenses.reduce(
-      (
-        total,
-        expense
-      ) => {
+      function(total, expense) {
 
         return (
           total +
@@ -380,16 +390,14 @@ async function loadReports() {
       expense =>
         String(
           expense.approval_status || ""
-        ).toLowerCase() === "pending"
+        ).toLowerCase() ===
+        "pending"
     );
 
 
   const pendingExpenseTotal =
     pendingExpenses.reduce(
-      (
-        total,
-        expense
-      ) => {
+      function(total, expense) {
 
         return (
           total +
@@ -516,16 +524,26 @@ async function loadReports() {
 
 
   /* ===================================================
-     TABLES
+     RECENT CONTRIBUTIONS
   =================================================== */
 
   renderRecentContributions(
     contributions
   );
 
+
+  /* ===================================================
+     RECENT EXPENSES
+  =================================================== */
+
   renderRecentExpenses(
     expenses
   );
+
+
+  /* ===================================================
+     MEETING SUMMARY
+  =================================================== */
 
   renderMeetingsSummary(
     meetings
@@ -578,11 +596,23 @@ function renderRecentContributions(
   table.innerHTML =
     recent
       .map(
-        contribution => {
+        function(contribution) {
 
           const memberName =
             contribution.members?.name ||
             "Unknown";
+
+
+          /*
+           * Your table has no date column.
+           *
+           * We display the contribution
+           * month instead.
+           */
+
+          const displayDate =
+            contribution.month ||
+            "—";
 
 
           return `
@@ -590,8 +620,7 @@ function renderRecentContributions(
 
               <td>
                 ${escapeHtml(
-                  contribution.contribution_date ||
-                  "—"
+                  displayDate
                 )}
               </td>
 
@@ -609,14 +638,14 @@ function renderRecentContributions(
 
               <td>
                 ${escapeHtml(
-                  contribution.payment_method ||
+                  contribution.contribution_type ||
                   "—"
                 )}
               </td>
 
               <td>
                 ${escapeHtml(
-                  contribution.reference ||
+                  contribution.payment_method ||
                   "—"
                 )}
               </td>
@@ -675,7 +704,7 @@ function renderRecentExpenses(
   table.innerHTML =
     recent
       .map(
-        expense => {
+        function(expense) {
 
           return `
             <tr>
@@ -737,7 +766,8 @@ function renderMeetingsSummary(
       meeting =>
         String(
           meeting.status || ""
-        ).toLowerCase() === "upcoming"
+        ).toLowerCase() ===
+        "upcoming"
     ).length;
 
 
@@ -746,7 +776,8 @@ function renderMeetingsSummary(
       meeting =>
         String(
           meeting.status || ""
-        ).toLowerCase() === "completed"
+        ).toLowerCase() ===
+        "completed"
     ).length;
 
 
@@ -755,7 +786,8 @@ function renderMeetingsSummary(
       meeting =>
         String(
           meeting.status || ""
-        ).toLowerCase() === "cancelled"
+        ).toLowerCase() ===
+        "cancelled"
     ).length;
 
 
@@ -776,20 +808,26 @@ function renderMeetingsSummary(
 
 
   if (upcomingEl) {
+
     upcomingEl.textContent =
       upcoming;
+
   }
 
 
   if (completedEl) {
+
     completedEl.textContent =
       completed;
+
   }
 
 
   if (cancelledEl) {
+
     cancelledEl.textContent =
       cancelled;
+
   }
 
 }
@@ -803,7 +841,7 @@ if (logoutButton) {
 
   logoutButton.addEventListener(
     "click",
-    async () => {
+    async function() {
 
       try {
 
@@ -852,3 +890,4 @@ async function start() {
 
 
 start();
+```
