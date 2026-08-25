@@ -1,403 +1,164 @@
 import {
-  getAuthContext,
-  getDisplayName,
-  getRoleLabel,
+  requireMember,
+  logout,
   normalizeRole,
-  isAdmin,
-  isGroupLeader,
-  canManageMembers,
-  canRecordContributions,
-  canManageExpenses,
-  canCloseMonth,
-  signOut
+  roleLabel
 } from "./auth.js";
 
 
 /*
 =====================================================
- CHAMA LIVE LAYOUT + RBAC
+ CHAMA LIVE — LAYOUT + RBAC
 =====================================================
 */
 
 
-/* =====================================================
-   CURRENT AUTH CONTEXT
-===================================================== */
-
-let authContext = null;
+let currentMember = null;
 
 
 /* =====================================================
-   PAGE NAME
+   NAVIGATION RULES
 ===================================================== */
 
-function currentPage() {
+const NAV_RULES = {
 
-  const path =
-    window.location.pathname;
+  "dashboard.html": [
+    "admin",
+    "chairperson",
+    "treasurer",
+    "secretary",
+    "member"
+  ],
 
+  "members.html": [
+    "admin",
+    "chairperson",
+    "secretary",
+    "treasurer",
+    "member"
+  ],
 
-  const file =
-    path.split("/").pop();
+  "contributions.html": [
+    "admin",
+    "chairperson",
+    "treasurer",
+    "secretary",
+    "member"
+  ],
 
+  "expenses.html": [
+    "admin",
+    "chairperson",
+    "treasurer",
+    "secretary",
+    "member"
+  ],
 
-  return file ||
-    "index.html";
-}
+  "meetings.html": [
+    "admin",
+    "chairperson",
+    "secretary",
+    "treasurer",
+    "member"
+  ],
+
+  "reports.html": [
+    "admin",
+    "chairperson",
+    "treasurer",
+    "secretary",
+    "member"
+  ],
+
+  "monthly-closing.html": [
+    "admin",
+    "chairperson",
+    "treasurer"
+  ],
+
+  "group-management.html": [
+    "admin",
+    "chairperson"
+  ]
+
+};
 
 
 /* =====================================================
-   GET NAV LINKS
+   INIT
 ===================================================== */
 
-function getNavLinks() {
+export async function boot() {
 
-  return [
-    {
-      selector:
-        'a[href="dashboard.html"]',
+  try {
 
-      permission:
-        () => true
-    },
+    /*
+     * Authenticate and obtain member.
+     */
 
-    {
-      selector:
-        'a[href="members.html"]',
+    currentMember =
+      await requireMember();
 
-      permission:
-        member =>
-          canManageMembers(member)
-    },
 
-    {
-      selector:
-        'a[href="contributions.html"]',
-
-      permission:
-        member =>
-          canRecordContributions(member)
-    },
-
-    {
-      selector:
-        'a[href="expenses.html"]',
-
-      permission:
-        member =>
-          canManageExpenses(member)
-    },
-
-    {
-      selector:
-        'a[href="meetings.html"]',
-
-      permission:
-        () => true
-    },
-
-    {
-      selector:
-        'a[href="reports.html"]',
-
-      permission:
-        () => true
-    },
-
-    {
-      selector:
-        'a[href="monthly-closing.html"]',
-
-      permission:
-        member =>
-          canCloseMonth(member)
-    },
-
-    {
-      selector:
-        'a[href="group-management.html"]',
-
-      permission:
-        member =>
-          isAdmin(member)
+    if (!currentMember) {
+      return null;
     }
-  ];
-}
 
 
-/* =====================================================
-   APPLY NAVIGATION RBAC
-===================================================== */
+    /*
+     * Setup logout.
+     */
 
-function applyNavigationRBAC() {
-
-  if (!authContext?.member) {
-
-    return;
-  }
+    setupLogout();
 
 
-  const member =
-    authContext.member;
+    /*
+     * Setup user information.
+     */
+
+    renderUser();
 
 
-  getNavLinks()
-    .forEach(
-      item => {
+    /*
+     * Apply RBAC to navigation.
+     */
 
-        const link =
-          document.querySelector(
-            item.selector
-          );
+    applyNavigationRBAC();
 
 
-        if (!link) {
+    /*
+     * Highlight current page.
+     */
 
-          return;
-        }
-
-
-        const allowed =
-          item.permission(
-            member
-          );
+    highlightCurrentPage();
 
 
-        if (!allowed) {
+    /*
+     * Protect current page.
+     */
 
-          /*
-           Completely hide unauthorized
-           navigation items.
-          */
-
-          link.style.display =
-            "none";
-        }
-        else {
-
-          link.style.display =
-            "";
-        }
-
-      }
-    );
-}
+    protectCurrentPage();
 
 
-/* =====================================================
-   ACTIVE NAVIGATION
-===================================================== */
+    return currentMember;
 
-function applyActiveNavigation() {
+  } catch (error) {
 
-  const page =
-    currentPage();
-
-
-  document
-    .querySelectorAll(
-      ".nav a"
-    )
-    .forEach(
-      link => {
-
-        const href =
-          link.getAttribute(
-            "href"
-          );
-
-
-        if (!href) {
-
-          return;
-        }
-
-
-        const linkPage =
-          href.split("/").pop();
-
-
-        if (
-          linkPage === page
-        ) {
-
-          link.classList.add(
-            "active"
-          );
-        }
-        else {
-
-          link.classList.remove(
-            "active"
-          );
-        }
-
-      }
-    );
-}
-
-
-/* =====================================================
-   CREATE USER PANEL
-===================================================== */
-
-function createUserPanel() {
-
-  const existing =
-    document.getElementById(
-      "currentUserPanel"
+    console.error(
+      "Layout boot error:",
+      error
     );
 
 
-  if (existing) {
-
-    return existing;
-  }
-
-
-  const topbar =
-    document.querySelector(
-      ".topbar"
+    showFatalError(
+      error
     );
 
-
-  if (!topbar) {
 
     return null;
-  }
-
-
-  const panel =
-    document.createElement(
-      "div"
-    );
-
-
-  panel.id =
-    "currentUserPanel";
-
-
-  panel.style.display =
-    "flex";
-
-
-  panel.style.alignItems =
-    "center";
-
-
-  panel.style.gap =
-    "10px";
-
-
-  panel.style.marginLeft =
-    "auto";
-
-
-  panel.style.marginRight =
-    "15px";
-
-
-  panel.style.fontSize =
-    "14px";
-
-
-  panel.innerHTML = `
-
-    <div
-      id="currentUserName"
-      style="font-weight:600;"
-    >
-      User
-    </div>
-
-    <div
-      id="currentUserRole"
-      class="muted"
-      style="font-size:12px;"
-    >
-      Member
-    </div>
-
-  `;
-
-
-  const logout =
-    document.getElementById(
-      "logout"
-    );
-
-
-  if (logout) {
-
-    topbar.insertBefore(
-      panel,
-      logout
-    );
 
   }
-  else {
 
-    topbar.appendChild(
-      panel
-    );
-  }
-
-
-  return panel;
-}
-
-
-/* =====================================================
-   RENDER USER INFO
-===================================================== */
-
-function renderUserInfo() {
-
-  if (!authContext) {
-
-    return;
-  }
-
-
-  const panel =
-    createUserPanel();
-
-
-  if (!panel) {
-
-    return;
-  }
-
-
-  const nameElement =
-    document.getElementById(
-      "currentUserName"
-    );
-
-
-  const roleElement =
-    document.getElementById(
-      "currentUserRole"
-    );
-
-
-  if (nameElement) {
-
-    nameElement.textContent =
-      getDisplayName(
-        authContext.user,
-        authContext.member
-      );
-  }
-
-
-  if (roleElement) {
-
-    roleElement.textContent =
-      getRoleLabel(
-        authContext.role
-      );
-  }
 }
 
 
@@ -414,25 +175,23 @@ function setupLogout() {
 
 
   if (!button) {
-
     return;
   }
 
 
   /*
-   Prevent duplicate listeners.
-  */
+   * Prevent duplicate handlers.
+   */
 
   if (
-    button.dataset.authBound ===
+    button.dataset.bound ===
     "true"
   ) {
-
     return;
   }
 
 
-  button.dataset.authBound =
+  button.dataset.bound =
     "true";
 
 
@@ -443,124 +202,227 @@ function setupLogout() {
       button.disabled =
         true;
 
-
       button.textContent =
         "Signing out...";
 
 
       try {
 
-        await signOut(
-          "login.html"
-        );
+        await logout();
 
-      }
-      catch (error) {
+      } catch (error) {
 
         console.error(
           error
         );
 
-
         button.disabled =
           false;
-
 
         button.textContent =
           "Sign out";
 
-
         alert(
           "Unable to sign out. Please try again."
         );
+
       }
 
     }
   );
+
 }
 
 
 /* =====================================================
-   ADD GROUP NAME
+   RENDER USER
 ===================================================== */
 
-function renderGroupName() {
+function renderUser() {
 
-  const group =
-    authContext?.group;
-
-
-  if (!group) {
-
-    return;
-  }
-
-
-  /*
-   If a group-name element already exists,
-   populate it.
-  */
-
-  const elements =
-    document.querySelectorAll(
-      "[data-group-name]"
-    );
-
-
-  elements.forEach(
-    element => {
-
-      element.textContent =
-        group.name || "My Group";
-
-    }
-  );
-}
-
-
-/* =====================================================
-   ROLE BADGES
-===================================================== */
-
-function renderRoleElements() {
-
-  if (
-    !authContext?.member
-  ) {
-
+  if (!currentMember) {
     return;
   }
 
 
   const role =
     normalizeRole(
-      authContext.member.role
+      currentMember.role
     );
 
 
+  /*
+   * Optional elements supported
+   * by different pages.
+   */
+
+  const nameElements =
+    document.querySelectorAll(
+      "[data-user-name]"
+    );
+
+
+  nameElements.forEach(
+    element => {
+
+      element.textContent =
+        currentMember.name ||
+        "Member";
+
+    }
+  );
+
+
+  const roleElements =
+    document.querySelectorAll(
+      "[data-user-role]"
+    );
+
+
+  roleElements.forEach(
+    element => {
+
+      element.textContent =
+        roleLabel(role);
+
+    }
+  );
+
+
+  const memberNumberElements =
+    document.querySelectorAll(
+      "[data-member-number]"
+    );
+
+
+  memberNumberElements.forEach(
+    element => {
+
+      element.textContent =
+        currentMember.member_number ||
+        "—";
+
+    }
+  );
+
+
+  const groupElements =
+    document.querySelectorAll(
+      "[data-group-id]"
+    );
+
+
+  groupElements.forEach(
+    element => {
+
+      element.textContent =
+        currentMember.group_id ||
+        "—";
+
+    }
+  );
+
+
+  /*
+   * Body-level role attribute.
+   * Useful for CSS.
+   */
+
+  document.body.dataset.role =
+    role;
+
+}
+
+
+/* =====================================================
+   APPLY NAVIGATION RBAC
+===================================================== */
+
+function applyNavigationRBAC() {
+
+  if (!currentMember) {
+    return;
+  }
+
+
+  const role =
+    normalizeRole(
+      currentMember.role
+    );
+
+
+  /*
+   * Every normal link.
+   */
+
   document
     .querySelectorAll(
-      "[data-user-role]"
+      ".nav a"
     )
     .forEach(
-      element => {
+      link => {
 
-        element.textContent =
-          getRoleLabel(
-            role
+        const href =
+          getPageName(
+            link.getAttribute(
+              "href"
+            )
           );
+
+
+        if (!href) {
+          return;
+        }
+
+
+        const allowed =
+          NAV_RULES[href];
+
+
+        /*
+         * If the page isn't defined
+         * in NAV_RULES, leave it alone.
+         */
+
+        if (!allowed) {
+          return;
+        }
+
+
+        const canAccess =
+          allowed.includes(role);
+
+
+        if (!canAccess) {
+
+          /*
+           * Hide instead of removing
+           * so layout remains stable.
+           */
+
+          link.hidden =
+            true;
+
+          link.setAttribute(
+            "aria-hidden",
+            "true"
+          );
+
+        }
 
       }
     );
 
 
   /*
-   Elements can declare:
-
-   data-role="admin"
-
-   data-role="admin,chairperson"
-  */
+   * Generic RBAC attributes.
+   *
+   * Example:
+   *
+   * <button
+   *   data-role="admin,chairperson">
+   * </button>
+   */
 
   document
     .querySelectorAll(
@@ -569,315 +431,367 @@ function renderRoleElements() {
     .forEach(
       element => {
 
-        const required =
-          element
-            .dataset
-            .role
+        const allowed =
+          element.dataset.role
             .split(",")
             .map(
-              value =>
-                normalizeRole(
-                  value
-                )
-            );
+              normalizeRole
+            )
+            .filter(Boolean);
 
 
-        const allowed =
-          required.includes(
-            role
-          );
+        const allowedForUser =
+          allowed.includes(role);
 
 
-        element.style.display =
-          allowed
-            ? ""
-            : "none";
+        if (
+          !allowedForUser
+        ) {
+
+          element.hidden =
+            true;
+
+        }
 
       }
     );
+
+
+  /*
+   * Minimum role.
+   *
+   * Example:
+   *
+   * data-min-role="treasurer"
+   *
+   * Note: this is UI-level convenience,
+   * not database security.
+   */
+
+  document
+    .querySelectorAll(
+      "[data-min-role]"
+    )
+    .forEach(
+      element => {
+
+        const minimum =
+          normalizeRole(
+            element.dataset.minRole
+          );
+
+
+        const allowed =
+          hasMinimumRole(
+            role,
+            minimum
+          );
+
+
+        if (!allowed) {
+
+          element.hidden =
+            true;
+
+        }
+
+      }
+    );
+
 }
 
 
 /* =====================================================
-   REQUIRE PAGE ACCESS
+   MINIMUM ROLE
 ===================================================== */
 
-async function protectPage() {
+function hasMinimumRole(
+  currentRole,
+  minimumRole
+) {
 
-  const page =
-    currentPage();
+  const levels = {
 
+    member: 10,
 
-  /*
-   Public pages.
-  */
+    secretary: 60,
 
-  const publicPages = [
+    treasurer: 60,
 
-    "",
+    chairperson: 80,
 
-    "index.html",
-
-    "login.html",
-
-    "create-group.html",
-
-    "forgot-password.html",
-
-    "reset-password.html"
-
-  ];
-
-
-  if (
-    publicPages.includes(
-      page
-    )
-  ) {
-
-    return true;
-  }
-
-
-  /*
-   All other pages require
-   authentication + member record.
-  */
-
-  if (
-    !authContext
-      ?.authenticated
-  ) {
-
-    window.location.href =
-      "login.html";
-
-    return false;
-  }
-
-
-  if (
-    !authContext.member
-  ) {
-
-    alert(
-      "Your account is not linked to a CHAMA LIVE member record."
-    );
-
-
-    await signOut(
-      "login.html"
-    );
-
-
-    return false;
-  }
-
-
-  /*
-   Page-specific RBAC.
-  */
-
-  const member =
-    authContext.member;
-
-
-  const rules = {
-
-    "members.html":
-      () =>
-        canManageMembers(
-          member
-        ),
-
-    "contributions.html":
-      () =>
-        canRecordContributions(
-          member
-        ),
-
-    "expenses.html":
-      () =>
-        canManageExpenses(
-          member
-        ),
-
-    "monthly-closing.html":
-      () =>
-        canCloseMonth(
-          member
-        ),
-
-    "group-management.html":
-      () =>
-        isAdmin(
-          member
-        )
+    admin: 100
 
   };
 
 
-  const rule =
-    rules[page];
+  const current =
+    levels[
+      normalizeRole(
+        currentRole
+      )
+    ] || 0;
+
+
+  const minimum =
+    levels[
+      normalizeRole(
+        minimumRole
+      )
+    ] || 0;
+
+
+  return (
+    current >=
+    minimum
+  );
+
+}
+
+
+/* =====================================================
+   PROTECT CURRENT PAGE
+===================================================== */
+
+function protectCurrentPage() {
+
+  const page =
+    getCurrentPage();
+
+
+  const allowed =
+    NAV_RULES[page];
+
+
+  /*
+   * Unknown pages aren't blocked.
+   */
+
+  if (!allowed) {
+    return;
+  }
+
+
+  const role =
+    normalizeRole(
+      currentMember.role
+    );
 
 
   if (
-    rule &&
-    !rule()
+    allowed.includes(role)
   ) {
 
-    alert(
-      "You do not have permission to access this page."
-    );
+    return;
 
-
-    window.location.href =
-      "dashboard.html";
-
-
-    return false;
   }
 
 
-  return true;
+  /*
+   * User somehow opened a URL they
+   * shouldn't access.
+   */
+
+  console.warn(
+    `RBAC blocked ${page} for role ${role}`
+  );
+
+
+  window.location.href =
+    "dashboard.html";
+
 }
 
 
 /* =====================================================
-   BOOT
+   ACTIVE NAV
 ===================================================== */
 
-export async function boot() {
+function highlightCurrentPage() {
 
-  try {
-
-    /*
-     Load authenticated context.
-    */
-
-    authContext =
-      await getAuthContext();
+  const current =
+    getCurrentPage();
 
 
-    /*
-     Protect page before rendering
-     private information.
-    */
+  document
+    .querySelectorAll(
+      ".nav a"
+    )
+    .forEach(
+      link => {
 
-    const allowed =
-      await protectPage();
-
-
-    if (!allowed) {
-
-      return null;
-    }
-
-
-    /*
-     Public pages don't need
-     the remaining layout work.
-    */
-
-    if (
-      !authContext
-        ?.authenticated
-    ) {
-
-      return authContext;
-    }
+        const href =
+          getPageName(
+            link.getAttribute(
+              "href"
+            )
+          );
 
 
-    /*
-     Render layout.
-    */
+        if (
+          href ===
+          current
+        ) {
 
-    renderUserInfo();
+          link.classList.add(
+            "active"
+          );
 
-    renderGroupName();
+        } else {
 
-    renderRoleElements();
+          link.classList.remove(
+            "active"
+          );
 
-    applyNavigationRBAC();
+        }
 
-    applyActiveNavigation();
-
-    setupLogout();
-
-
-    /*
-     Make context available to
-     other scripts.
-    */
-
-    window.CHAMA_AUTH =
-      authContext;
-
-
-    return authContext;
-
-  }
-  catch (error) {
-
-    console.error(
-      "CHAMA LIVE boot error:",
-      error
+      }
     );
 
-
-    const page =
-      currentPage();
+}
 
 
-    if (
-      page !== "login.html" &&
-      page !== "create-group.html"
-    ) {
+/* =====================================================
+   GET CURRENT PAGE
+===================================================== */
 
-      window.location.href =
-        "login.html";
+function getCurrentPage() {
 
-      return null;
-    }
+  return (
+    window.location.pathname
+      .split("/")
+      .pop() ||
+    "index.html"
+  );
+
+}
 
 
+/* =====================================================
+   GET PAGE NAME FROM HREF
+===================================================== */
+
+function getPageName(
+  href
+) {
+
+  if (!href) {
     return null;
   }
+
+
+  /*
+   * Ignore external links.
+   */
+
+  if (
+    href.startsWith(
+      "http://"
+    ) ||
+    href.startsWith(
+      "https://"
+    ) ||
+    href.startsWith(
+      "//"
+    )
+  ) {
+
+    return null;
+
+  }
+
+
+  /*
+   * Remove query string.
+   */
+
+  const clean =
+    href.split("?")[0]
+      .split("#")[0];
+
+
+  return clean
+    .split("/")
+    .pop();
+
 }
 
 
 /* =====================================================
-   EXPORT CURRENT CONTEXT
+   FATAL ERROR
 ===================================================== */
 
-export function getAuthContextCached() {
+function showFatalError(
+  error
+) {
 
-  return authContext;
+  console.error(
+    error
+  );
+
+
+  const message =
+    error?.message ||
+    "Unable to initialize your account.";
+
+
+  /*
+   * Don't expose raw database
+   * errors in production.
+   */
+
+  const safeMessage =
+    message.includes(
+      "JWT"
+    )
+      ? "Your session has expired. Please sign in again."
+      : "Unable to load your account. Please sign in again.";
+
+
+  const existing =
+    document.getElementById(
+      "error"
+    );
+
+
+  if (existing) {
+
+    existing.hidden =
+      false;
+
+    existing.textContent =
+      safeMessage;
+
+  } else {
+
+    alert(
+      safeMessage
+    );
+
+  }
+
 }
 
 
 /* =====================================================
-   AUTO-BOOT OPTION
+   EXPORT CURRENT MEMBER
 ===================================================== */
 
-/*
- We intentionally DO NOT automatically call boot()
- here.
+export function getLayoutMember() {
 
- Each private HTML page should use:
+  return currentMember;
 
- <script type="module">
+}
 
-   import {
-     boot
-   } from "./js/layout.js";
 
-   await boot();
+/* =====================================================
+   EXPORT CURRENT ROLE
+===================================================== */
 
-   import "./js/reports.js";
+export function getLayoutRole() {
 
- </script>
+  return normalizeRole(
+    currentMember?.role
+  );
 
- This prevents layout.js and page scripts
- from racing each other.
-*/
+}
