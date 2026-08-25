@@ -1,1 +1,251 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Activate Account — CHAMA LIVE</title><link rel="stylesheet" href="css/app.css"></head><body><main class="auth"><section class="card auth-card"><h1>Activate account</h1><p class="muted">Use the invitation link sent by your group administrator. Supabase will complete the authentication step.</p><a class="btn btn-primary" href="login.html">Continue to login</a></section></main></body></html>
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>Activate Account — CHAMA LIVE</title>
+
+  <link
+    rel="stylesheet"
+    href="css/app.css"
+  >
+</head>
+
+<body>
+
+<div
+  style="
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  "
+>
+
+  <div
+    class="card"
+    style="
+      width:100%;
+      max-width:480px;
+    "
+  >
+
+    <div
+      style="
+        text-align:center;
+        margin-bottom:25px;
+      "
+    >
+
+      <div class="brand">
+        CHAMA <span>LIVE</span>
+      </div>
+
+      <h1>
+        Activate Your Account
+      </h1>
+
+      <p class="muted">
+        Your group administrator has already
+        registered your member details.
+        Use those details to activate your login.
+      </p>
+
+    </div>
+
+
+    <!-- ERROR -->
+
+    <div
+      id="error"
+      class="error"
+      hidden
+      style="margin-bottom:15px;"
+    ></div>
+
+
+    <!-- SUCCESS -->
+
+    <div
+      id="success"
+      hidden
+      style="
+        padding:12px;
+        border-radius:8px;
+        margin-bottom:15px;
+        background:#e8f7ed;
+      "
+    ></div>
+
+
+    <form id="activateForm">
+
+
+      <!-- MEMBER NUMBER -->
+
+      <div
+        style="margin-bottom:18px;"
+      >
+
+        <label
+          for="membershipNumber"
+        >
+          Membership Number
+        </label>
+
+        <input
+          id="membershipNumber"
+          name="membershipNumber"
+          type="text"
+          required
+          autocomplete="off"
+          placeholder="e.g. 0004"
+          style="width:100%;"
+        >
+
+      </div>
+
+
+      <!-- EMAIL -->
+
+      <div
+        style="margin-bottom:18px;"
+      >
+
+        <label
+          for="email"
+        >
+          Registered Email
+        </label>
+
+        <input
+          id="email"
+          name="email"
+          type="email"
+          required
+          autocomplete="email"
+          placeholder="Enter the email registered by your group"
+          style="width:100%;"
+        >
+
+      </div>
+
+
+      <hr
+        style="
+          margin:25px 0;
+          opacity:.2;
+        "
+      >
+
+
+      <h3>
+        Create Login Password
+      </h3>
+
+
+      <!-- PASSWORD -->
+
+      <div
+        style="margin-bottom:18px;"
+      >
+
+        <label
+          for="password"
+        >
+          Password
+        </label>
+
+        <input
+          id="password"
+          name="password"
+          type="password"
+          required
+          minlength="8"
+          autocomplete="new-password"
+          placeholder="Minimum 8 characters"
+          style="width:100%;"
+        >
+
+      </div>
+
+
+      <!-- CONFIRM PASSWORD -->
+
+      <div
+        style="margin-bottom:20px;"
+      >
+
+        <label
+          for="confirmPassword"
+        >
+          Confirm Password
+        </label>
+
+        <input
+          id="confirmPassword"
+          name="confirmPassword"
+          type="password"
+          required
+          minlength="8"
+          autocomplete="new-password"
+          placeholder="Repeat your password"
+          style="width:100%;"
+        >
+
+      </div>
+
+
+      <!-- SUBMIT -->
+
+      <button
+        id="activateButton"
+        class="btn btn-primary"
+        type="submit"
+        style="width:100%;"
+      >
+        Activate Account
+      </button>
+
+
+    </form>
+
+
+    <div
+      style="
+        text-align:center;
+        margin-top:20px;
+      "
+    >
+
+      <span class="muted">
+        Already have an account?
+      </span>
+
+      <a href="login.html">
+        Sign in
+      </a>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<script type="module">
+
+  import "./js/activate-account.js";
+
+</script>
+
+</body>
+
+</html>
