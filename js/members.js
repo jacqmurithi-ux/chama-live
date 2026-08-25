@@ -1,128 +1,31 @@
 import { supabase } from "./supabase.js";
-import { getMyMember } from "./auth.js";
 
 
-/* =========================================================
-   STATE
-========================================================= */
+// ============================================================
+// STATE
+// ============================================================
 
-let currentUser = null;
-let currentGroup = null;
+let currentGroupId = null;
 let members = [];
 let selectedMember = null;
-let selectedContributions = [];
-
 let monthlyContribution = 0;
 
 
-/* =========================================================
-   DOM HELPERS
-========================================================= */
+// ============================================================
+// DOM HELPERS
+// ============================================================
 
 const $ = (id) => document.getElementById(id);
 
 
-function escapeHtml(value) {
-
-  if (value === null || value === undefined) {
-    return "";
-  }
-
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
-
-function money(value) {
-
-  const amount = Number(value || 0);
-
-  return "KSh " + amount.toLocaleString("en-KE", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2
-  });
-}
-
-
-function formatDate(dateValue) {
-
-  if (!dateValue) {
-    return "—";
-  }
-
-  const date = new Date(dateValue + "T00:00:00");
-
-  if (Number.isNaN(date.getTime())) {
-    return dateValue;
-  }
-
-  return date.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric"
-  });
-}
-
-
-function todayString() {
-
-  const date = new Date();
-
-  const year = date.getFullYear();
-
-  const month = String(
-    date.getMonth() + 1
-  ).padStart(2, "0");
-
-  const day = String(
-    date.getDate()
-  ).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-}
-
-
-function currentMonth() {
-
-  const date = new Date();
-
-  const year = date.getFullYear();
-
-  const month = String(
-    date.getMonth() + 1
-  ).padStart(2, "0");
-
-  return `${year}-${month}`;
-}
-
-
-function showStatus(message, type = "normal") {
+function setStatus(message) {
 
   const el = $("status");
 
-  if (!el) return;
-
-  el.hidden = false;
-
-  if (type === "success") {
-
-    el.className = "success";
-
-  } else if (type === "error") {
-
-    el.className = "error-box";
-
-  } else {
-
-    el.className = "card";
-
+  if (el) {
+    el.textContent = message;
   }
 
-  el.textContent = message;
 }
 
 
@@ -133,8 +36,8 @@ function showError(message) {
   if (!el) return;
 
   el.hidden = false;
-
   el.textContent = message;
+
 }
 
 
@@ -145,115 +48,168 @@ function clearError() {
   if (!el) return;
 
   el.hidden = true;
-
   el.textContent = "";
+
 }
 
 
-/* =========================================================
-   INITIALISE
-========================================================= */
+function money(value) {
 
-async function init() {
+  const amount = Number(value || 0);
 
-  try {
+  return new Intl.NumberFormat("en-KE", {
+    style: "currency",
+    currency: "KES",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  }).format(amount);
 
-    clearError();
-
-    showStatus("Loading members...");
+}
 
 
-    /*
-      Existing application helper.
+function dateText(value) {
 
-      getMyMember() returns the currently logged-in
-      user's member record, including group_id.
-    */
+  if (!value) return "—";
 
-    currentUser = await getMyMember();
+  const date = new Date(value + "T00:00:00");
 
-    if (!currentUser) {
-      throw new Error(
-        "Unable to identify the current member."
-      );
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
+  });
+
+}
+
+
+function escapeHtml(value) {
+
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
+}
+
+
+// ============================================================
+// AUTH / GROUP
+// ============================================================
+
+async function getCurrentUser() {
+
+  const {
+    data,
+    error
+  } = await supabase.auth.getUser();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data?.user) {
+    window.location.href = "login.html";
+    return null;
+  }
+
+  return data.user;
+}
+
+
+async function getMyGroup(user) {
+
+  /*
+    We first try to identify the member connected to the
+    logged-in account.
+
+    Your members table has both user_id and auth_user_id,
+    so we support either one.
+  */
+
+  let result = await supabase
+    .from("members")
+    .select("group_id")
+    .or(
+      `user_id.eq.${user.id},auth_user_id.eq.${user.id}`
+    )
+    .limit(1)
+    .maybeSingle();
+
+  if (!result.error && result.data?.group_id) {
+    return result.data.group_id;
+  }
+
+
+  /*
+    Fallback: if the application already has a
+    get_my_member RPC, use it.
+  */
+
+  const rpc = await supabase.rpc("get_my_member");
+
+  if (!rpc.error && rpc.data) {
+
+    const row = Array.isArray(rpc.data)
+      ? rpc.data[0]
+      : rpc.data;
+
+    if (row?.group_id) {
+      return row.group_id;
     }
-
-
-    const groupId = currentUser.group_id;
-
-    if (!groupId) {
-      throw new Error(
-        "Your member account is not connected to a group."
-      );
-    }
-
-
-    /* Load group settings */
-
-    const {
-      data: group,
-      error: groupError
-    } = await supabase
-      .from("groups")
-      .select(`
-        id,
-        name,
-        monthly_contribution,
-        opening_balance
-      `)
-      .eq("id", groupId)
-      .single();
-
-
-    if (groupError) {
-      throw groupError;
-    }
-
-
-    currentGroup = group;
-
-    monthlyContribution =
-      Number(group.monthly_contribution || 0);
-
-
-    /* Load members */
-
-    await loadMembers(groupId);
-
-
-    /* Form defaults */
-
-    $("joinDate").value = todayString();
-
-
-    showStatus(
-      `Members loaded • ${new Date().toLocaleString("en-GB")}`
-    );
-
-
-  } catch (error) {
-
-    console.error(error);
-
-    showStatus(
-      "Unable to load members.",
-      "error"
-    );
-
-    showError(
-      error.message || "An unexpected error occurred."
-    );
 
   }
 
+
+  throw new Error(
+    "Unable to determine your group. Make sure your account is linked to a member record."
+  );
+
 }
 
 
-/* =========================================================
-   LOAD MEMBERS
-========================================================= */
+// ============================================================
+// LOAD GROUP SETTINGS
+// ============================================================
 
-async function loadMembers(groupId) {
+async function loadGroupSettings() {
+
+  const {
+    data,
+    error
+  } = await supabase
+    .from("groups")
+    .select(
+      "id,name,monthly_contribution,opening_balance"
+    )
+    .eq("id", currentGroupId)
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  monthlyContribution =
+    Number(data?.monthly_contribution || 0);
+
+}
+
+
+// ============================================================
+// LOAD MEMBERS
+// ============================================================
+
+async function loadMembers() {
+
+  clearError();
+
+  setStatus("Loading members...");
+
 
   const {
     data,
@@ -264,21 +220,18 @@ async function loadMembers(groupId) {
       id,
       group_id,
       user_id,
+      auth_user_id,
       member_number,
+      membership_number,
       name,
       phone,
+      email,
       role,
       join_date,
       status,
-      email,
-      membership_number,
-      onboarding_status,
-      invited_at,
-      activated_at,
-      auth_user_id,
       created_at
     `)
-    .eq("group_id", groupId)
+    .eq("group_id", currentGroupId)
     .order("name", {
       ascending: true
     });
@@ -294,23 +247,48 @@ async function loadMembers(groupId) {
 
   await renderMembers();
 
+
+  $("totalMembers").textContent =
+    members.length;
+
+
+  $("activeMembers").textContent =
+    members.filter(
+      member => member.status === "active"
+    ).length;
+
+
+  $("inactiveMembers").textContent =
+    members.filter(
+      member => member.status !== "active"
+    ).length;
+
+
+  setStatus(
+    `Members loaded • ${new Date().toLocaleString("en-KE")}`
+  );
+
 }
 
 
-/* =========================================================
-   MEMBER CONTRIBUTION TOTALS
-========================================================= */
+// ============================================================
+// GET MONTHLY CONTRIBUTIONS
+// ============================================================
 
-async function getContributionTotals() {
+async function getCurrentMonth() {
 
-  if (!members.length) {
-    return {};
-  }
+  const now = new Date();
+
+  return `${now.getFullYear()}-${String(
+    now.getMonth() + 1
+  ).padStart(2, "0")}`;
+
+}
 
 
-  const memberIds = members.map(
-    member => member.id
-  );
+async function getContributionSummary() {
+
+  const month = await getCurrentMonth();
 
 
   const {
@@ -319,13 +297,17 @@ async function getContributionTotals() {
   } = await supabase
     .from("contributions")
     .select(`
+      id,
       member_id,
       amount,
       contribution_type,
       month,
+      payment_method,
+      reference,
+      mpesa_reference,
       contribution_date
     `)
-    .in("member_id", memberIds);
+    .eq("group_id", currentGroupId);
 
 
   if (error) {
@@ -333,101 +315,81 @@ async function getContributionTotals() {
   }
 
 
-  const totals = {};
+  const rows = data || [];
 
 
-  for (const member of members) {
-
-    totals[member.id] = {
-      lifetime: 0,
-      currentMonth: 0
-    };
-
-  }
+  const monthlyRows = rows.filter(
+    row =>
+      row.month === month &&
+      row.contribution_type === "monthly"
+  );
 
 
-  for (const row of data || []) {
+  const paidByMember = {};
+
+
+  for (const row of monthlyRows) {
 
     const memberId = row.member_id;
 
-    if (!totals[memberId]) {
-
-      totals[memberId] = {
-        lifetime: 0,
-        currentMonth: 0
-      };
-
+    if (!paidByMember[memberId]) {
+      paidByMember[memberId] = 0;
     }
 
-
-    const amount = Number(row.amount || 0);
-
-
-    totals[memberId].lifetime += amount;
-
-
-    if (
-      row.month === currentMonth()
-    ) {
-
-      totals[memberId].currentMonth += amount;
-
-    }
+    paidByMember[memberId] +=
+      Number(row.amount || 0);
 
   }
 
 
-  return totals;
+  return {
+    rows,
+    monthlyRows,
+    paidByMember,
+    month
+  };
 
 }
 
 
-/* =========================================================
-   RENDER MEMBER REGISTER
-========================================================= */
+// ============================================================
+// RENDER MEMBER TABLE
+// ============================================================
 
 async function renderMembers() {
 
-  const rows = $("memberRows");
+  const tbody = $("memberRows");
 
-  if (!rows) return;
-
-
-  if (!members.length) {
-
-    rows.innerHTML = `
-      <tr>
-        <td colspan="9">
-          No members found.
-        </td>
-      </tr>
-    `;
-
-    updateMemberMetrics();
-
-    return;
-
-  }
-
-
-  const totals =
-    await getContributionTotals();
+  if (!tbody) return;
 
 
   const filter =
     $("memberFilter")?.value || "all";
 
 
-  let visibleMembers =
-    members;
+  const {
+    paidByMember
+  } = await getContributionSummary();
 
 
-  if (filter !== "all") {
+  let visibleMembers = [...members];
+
+
+  if (filter === "active") {
 
     visibleMembers =
-      members.filter(
-        member =>
-          member.status === filter
+      visibleMembers.filter(
+        member => member.status === "active"
+      );
+
+  }
+
+
+  if (filter === "inactive") {
+
+    visibleMembers =
+      visibleMembers.filter(
+        member => member.status !== "active"
       );
 
   }
@@ -435,62 +397,37 @@ async function renderMembers() {
 
   if (!visibleMembers.length) {
 
-    rows.innerHTML = `
+    tbody.innerHTML = `
       <tr>
         <td colspan="9">
-          No ${escapeHtml(filter)} members found.
+          No members found.
         </td>
       </tr>
     `;
-
-    updateMemberMetrics();
 
     return;
 
   }
 
 
-  rows.innerHTML =
+  tbody.innerHTML =
     visibleMembers.map(member => {
 
-      const memberTotals =
-        totals[member.id] || {
-          lifetime: 0,
-          currentMonth: 0
-        };
-
-
       const paid =
-        memberTotals.currentMonth;
-
+        Number(
+          paidByMember[member.id] || 0
+        );
 
       const expected =
-        monthlyContribution;
-
+        member.status === "active"
+          ? monthlyContribution
+          : 0;
 
       const outstanding =
         Math.max(
           expected - paid,
           0
         );
-
-
-      const status =
-        paid >= expected && expected > 0
-          ? "PAID"
-          : "OUTSTANDING";
-
-
-      const statusClass =
-        status === "PAID"
-          ? "badge badge-paid"
-          : "badge badge-outstanding";
-
-
-      const memberStatusClass =
-        member.status === "active"
-          ? "account-status status-active"
-          : "account-status status-inactive";
 
 
       return `
@@ -515,9 +452,9 @@ async function renderMembers() {
           </td>
 
           <td>
-            <span class="${memberStatusClass}">
+            <strong>
               ${escapeHtml(member.status)}
-            </span>
+            </strong>
           </td>
 
           <td>
@@ -537,7 +474,7 @@ async function renderMembers() {
             <button
               type="button"
               class="btn btn-secondary view-member"
-              data-id="${escapeHtml(member.id)}"
+              data-id="${member.id}"
             >
               View
             </button>
@@ -550,139 +487,52 @@ async function renderMembers() {
     }).join("");
 
 
-  document
+  tbody
     .querySelectorAll(".view-member")
     .forEach(button => {
 
       button.addEventListener(
         "click",
         () => {
-
-          const memberId =
-            button.dataset.id;
-
-          openMemberAccount(memberId);
-
+          selectMember(button.dataset.id);
         }
       );
 
     });
 
-
-  updateMemberMetrics();
-
 }
 
 
-/* =========================================================
-   MEMBER METRICS
-========================================================= */
+// ============================================================
+// SELECT MEMBER
+// ============================================================
 
-function updateMemberMetrics() {
+async function selectMember(memberId) {
 
-  const total =
-    members.length;
-
-
-  const active =
-    members.filter(
-      member =>
-        member.status === "active"
-    ).length;
+  clearError();
 
 
-  const inactive =
-    members.filter(
-      member =>
-        member.status === "inactive"
-    ).length;
-
-
-  $("totalMembers").textContent =
-    total;
-
-
-  $("activeMembers").textContent =
-    active;
-
-
-  $("inactiveMembers").textContent =
-    inactive;
-
-}
-
-
-/* =========================================================
-   OPEN MEMBER ACCOUNT
-========================================================= */
-
-async function openMemberAccount(memberId) {
-
-  try {
-
-    clearError();
-
-    showStatus("Loading member account...");
-
-
-    const member =
-      members.find(
-        item => item.id === memberId
-      );
-
-
-    if (!member) {
-      throw new Error(
-        "Member could not be found."
-      );
-    }
-
-
-    selectedMember =
-      member;
-
-
-    $("memberAccount").hidden =
-      false;
-
-
-    renderMemberDetails(member);
-
-
-    await loadMemberContributions(member.id);
-
-
-    $("memberAccount")
-      .scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
-
-
-    showStatus(
-      `Member account loaded • ${member.name}`
+  const member =
+    members.find(
+      item => item.id === memberId
     );
 
 
-  } catch (error) {
-
-    console.error(error);
-
-    showError(
-      error.message ||
-      "Unable to load member account."
-    );
-
+  if (!member) {
+    showError("Member not found.");
+    return;
   }
 
-}
+
+  selectedMember = member;
 
 
-/* =========================================================
-   MEMBER DETAILS
-========================================================= */
+  $("memberAccount").hidden = false;
 
-function renderMemberDetails(member) {
+
+  $("accountStatus").textContent =
+    String(member.status || "").toUpperCase();
+
 
   $("accountMemberNumber").textContent =
     member.member_number || "—";
@@ -705,50 +555,25 @@ function renderMemberDetails(member) {
 
 
   $("accountJoinDate").textContent =
-    formatDate(member.join_date);
+    dateText(member.join_date);
 
 
-  const status =
-    $("accountStatus");
+  await loadMemberAccount(member);
 
 
-  status.textContent =
-    member.status || "—";
-
-
-  status.className =
-    member.status === "active"
-      ? "account-status status-active"
-      : "account-status status-inactive";
-
-
-  const toggleButton =
-    $("toggleMemberBtn");
-
-
-  if (member.status === "active") {
-
-    toggleButton.textContent =
-      "Deactivate Member";
-
-  } else {
-
-    toggleButton.textContent =
-      "Reactivate Member";
-
-  }
-
-
-  populateEditForm(member);
+  $("memberAccount").scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
 
 }
 
 
-/* =========================================================
-   LOAD MEMBER CONTRIBUTIONS
-========================================================= */
+// ============================================================
+// MEMBER ACCOUNT
+// ============================================================
 
-async function loadMemberContributions(memberId) {
+async function loadMemberAccount(member) {
 
   const {
     data,
@@ -757,20 +582,18 @@ async function loadMemberContributions(memberId) {
     .from("contributions")
     .select(`
       id,
-      group_id,
-      member_id,
       amount,
       contribution_type,
       month,
       payment_method,
       reference,
-      created_at,
-      contribution_date,
       mpesa_reference,
-      notes
+      contribution_date,
+      notes,
+      created_at
     `)
-    .eq("group_id", currentGroup.id)
-    .eq("member_id", memberId)
+    .eq("group_id", currentGroupId)
+    .eq("member_id", member.id)
     .order("contribution_date", {
       ascending: false
     })
@@ -784,116 +607,100 @@ async function loadMemberContributions(memberId) {
   }
 
 
-  selectedContributions =
-    data || [];
+  const contributions = data || [];
 
 
-  renderContributionHistory(
-    selectedContributions
-  );
+  const month =
+    await getCurrentMonth();
 
 
-  calculateMemberFinancials(
-    selectedContributions
-  );
-
-}
-
-
-/* =========================================================
-   MEMBER FINANCIALS
-========================================================= */
-
-function calculateMemberFinancials(contributions) {
-
-  let lifetime = 0;
-
-  let currentMonthPaid = 0;
-
-
-  for (const contribution of contributions) {
-
-    const amount =
-      Number(contribution.amount || 0);
-
-
-    lifetime += amount;
-
-
-    if (
-      contribution.month ===
-      currentMonth()
-    ) {
-
-      currentMonthPaid +=
-        amount;
-
-    }
-
-  }
+  const monthlyPaid =
+    contributions
+      .filter(row =>
+        row.month === month &&
+        row.contribution_type === "monthly"
+      )
+      .reduce(
+        (total, row) =>
+          total + Number(row.amount || 0),
+        0
+      );
 
 
   const expected =
-    monthlyContribution;
+    member.status === "active"
+      ? monthlyContribution
+      : 0;
 
 
   const outstanding =
     Math.max(
-      expected - currentMonthPaid,
+      expected - monthlyPaid,
       0
     );
 
 
-  const status =
-    currentMonthPaid >= expected &&
-    expected > 0
-      ? "PAID"
-      : "OUTSTANDING";
+  const lifetime =
+    contributions.reduce(
+      (total, row) =>
+        total + Number(row.amount || 0),
+      0
+    );
 
 
-  $("monthlyExpected").textContent =
+  $("accountExpected").textContent =
     money(expected);
 
 
-  $("monthlyPaid").textContent =
-    money(currentMonthPaid);
+  $("accountPaid").textContent =
+    money(monthlyPaid);
 
 
-  $("monthlyOutstanding").textContent =
+  $("accountOutstanding").textContent =
     money(outstanding);
 
 
-  $("monthlyStatus").textContent =
-    status;
+  $("accountMonthlyStatus").textContent =
+    monthlyPaid >= expected && expected > 0
+      ? "PAID"
+      : monthlyPaid > 0
+        ? "PARTIAL"
+        : "OUTSTANDING";
 
 
-  $("monthlyStatus").className =
-    status === "PAID"
-      ? "badge badge-paid"
-      : "badge badge-outstanding";
-
-
-  $("lifetimeContributions").textContent =
+  $("accountLifetime").textContent =
     money(lifetime);
+
+
+  renderContributionHistory(
+    contributions
+  );
+
+
+  $("toggleMemberBtn").textContent =
+    member.status === "active"
+      ? "Deactivate Member"
+      : "Activate Member";
 
 }
 
 
-/* =========================================================
-   CONTRIBUTION HISTORY
-========================================================= */
+// ============================================================
+// CONTRIBUTION HISTORY
+// ============================================================
 
-function renderContributionHistory(
-  contributions
-) {
+function renderContributionHistory(rows) {
 
-  const rows =
-    $("historyRows");
+  const tbody =
+    $("accountContributionRows");
 
 
-  if (!contributions.length) {
+  if (!tbody) return;
 
-    rows.innerHTML = `
+
+  if (!rows.length) {
+
+    tbody.innerHTML = `
       <tr>
         <td colspan="5">
           No contributions recorded.
@@ -906,8 +713,8 @@ function renderContributionHistory(
   }
 
 
-  rows.innerHTML =
-    contributions.map(row => {
+  tbody.innerHTML =
+    rows.map(row => {
 
       const reference =
         row.mpesa_reference ||
@@ -919,9 +726,7 @@ function renderContributionHistory(
         <tr>
 
           <td>
-            ${formatDate(
-              row.contribution_date
-            )}
+            ${dateText(row.contribution_date)}
           </td>
 
           <td>
@@ -954,79 +759,63 @@ function renderContributionHistory(
 }
 
 
-/* =========================================================
-   ADD MEMBER
-========================================================= */
+// ============================================================
+// ADD MEMBER
+// ============================================================
 
 async function addMember(event) {
 
   event.preventDefault();
 
+  clearError();
+
+
+  const button =
+    $("addMemberBtn");
+
+
+  button.disabled = true;
+  button.textContent = "Adding...";
+
+
   try {
 
-    clearError();
-
-
-    const form =
-      event.currentTarget;
-
-
-    const formData =
-      new FormData(form);
-
-
     const name =
-      String(
-        formData.get("name") || ""
-      ).trim();
+      $("name").value.trim();
 
 
     const memberNumber =
-      String(
-        formData.get("member_number") || ""
-      ).trim();
+      $("member_number").value.trim();
 
 
     const membershipNumber =
-      String(
-        formData.get("membership_number") || ""
-      ).trim();
+      $("membership_number").value.trim();
 
 
     const phone =
-      String(
-        formData.get("phone") || ""
-      ).trim();
+      $("phone").value.trim();
 
 
     const email =
-      String(
-        formData.get("email") || ""
-      ).trim();
+      $("email").value.trim() || null;
 
 
     const role =
-      String(
-        formData.get("role") || "member"
-      );
+      $("role").value;
 
 
     const joinDate =
-      formData.get("join_date") ||
-      todayString();
+      $("join_date").value ||
+      new Date().toISOString().slice(0, 10);
 
 
     if (!name) {
-      throw new Error(
-        "Full name is required."
-      );
+      throw new Error("Full name is required.");
     }
 
 
     if (!memberNumber) {
-      throw new Error(
-        "Member number is required."
-      );
+      throw new Error("Member number is required.");
     }
 
 
@@ -1038,35 +827,25 @@ async function addMember(event) {
 
 
     if (!phone) {
-      throw new Error(
-        "Phone number is required."
-      );
+      throw new Error("Phone number is required.");
     }
 
 
-    showStatus("Adding member...");
-
-
     const {
-      data,
       error
     } = await supabase
       .from("members")
       .insert({
-        group_id: currentGroup.id,
+        group_id: currentGroupId,
         member_number: memberNumber,
+        membership_number: membershipNumber,
         name,
         phone,
+        email,
         role,
         join_date: joinDate,
-        status: "active",
-        email: email || null,
-        membership_number:
-          membershipNumber,
-        onboarding_status: "pending"
-      })
-      .select()
-      .single();
+        status: "active"
+      });
 
 
     if (error) {
@@ -1074,209 +853,154 @@ async function addMember(event) {
     }
 
 
-    form.reset();
-
-    $("joinDate").value =
-      todayString();
+    $("memberForm").reset();
 
 
-    await loadMembers(
-      currentGroup.id
+    $("join_date").value =
+      new Date().toISOString().slice(0, 10);
+
+
+    setStatus(
+      "Member added successfully."
     );
 
 
-    showStatus(
-      `Member "${data.name}" added successfully.`,
-      "success"
-    );
+    await loadMembers();
 
 
   } catch (error) {
 
     console.error(error);
 
-    showStatus(
-      "Unable to add member.",
-      "error"
-    );
-
     showError(
-      error.message ||
+      error?.message ||
       "Unable to add member."
     );
+
+  } finally {
+
+    button.disabled = false;
+    button.textContent = "Add Member";
 
   }
 
 }
 
 
-/* =========================================================
-   POPULATE EDIT FORM
-========================================================= */
+// ============================================================
+// EDIT MEMBER
+// ============================================================
 
-function populateEditForm(member) {
-
-  $("editName").value =
-    member.name || "";
-
-
-  $("editMemberNumber").value =
-    member.member_number || "";
-
-
-  $("editMembershipNumber").value =
-    member.membership_number || "";
-
-
-  $("editPhone").value =
-    member.phone || "";
-
-
-  $("editEmail").value =
-    member.email || "";
-
-
-  $("editRole").value =
-    member.role || "member";
-
-
-  $("editJoinDate").value =
-    member.join_date || "";
-
-}
-
-
-/* =========================================================
-   SHOW EDIT PANEL
-========================================================= */
-
-function showEditPanel() {
+function openEditMember() {
 
   if (!selectedMember) {
+    showError("Select a member first.");
     return;
   }
 
 
-  populateEditForm(
-    selectedMember
-  );
+  const member = selectedMember;
 
 
-  $("editPanel")
-    .classList.add("show");
+  $("edit_id").value =
+    member.id;
 
 
-  $("editPanel")
-    .scrollIntoView({
-      behavior: "smooth",
-      block: "nearest"
-    });
+  $("edit_name").value =
+    member.name || "";
+
+
+  $("edit_member_number").value =
+    member.member_number || "";
+
+
+  $("edit_membership_number").value =
+    member.membership_number || "";
+
+
+  $("edit_phone").value =
+    member.phone || "";
+
+
+  $("edit_email").value =
+    member.email || "";
+
+
+  $("edit_role").value =
+    member.role || "member";
+
+
+  $("edit_join_date").value =
+    member.join_date || "";
+
+
+  $("editMemberSection").hidden = false;
+
+
+  $("editMemberSection").scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
 
 }
 
 
-/* =========================================================
-   HIDE EDIT PANEL
-========================================================= */
+// ============================================================
+// SAVE EDIT
+// ============================================================
 
-function hideEditPanel() {
-
-  $("editPanel")
-    .classList.remove("show");
-
-}
-
-
-/* =========================================================
-   UPDATE MEMBER
-========================================================= */
-
-async function updateMember(event) {
+async function saveMember(event) {
 
   event.preventDefault();
 
+  clearError();
 
-  if (!selectedMember) {
+
+  const id =
+    $("edit_id").value;
+
+
+  if (!id) {
+    showError("No member selected.");
     return;
   }
 
 
   try {
 
-    clearError();
-
-    showStatus("Saving member changes...");
-
-
-    const updatedMember = {
+    const updates = {
 
       name:
-        $("editName").value.trim(),
+        $("edit_name").value.trim(),
 
       member_number:
-        $("editMemberNumber")
-          .value.trim(),
+        $("edit_member_number").value.trim(),
 
       membership_number:
-        $("editMembershipNumber")
-          .value.trim(),
+        $("edit_membership_number").value.trim(),
 
       phone:
-        $("editPhone")
-          .value.trim(),
+        $("edit_phone").value.trim(),
 
       email:
-        $("editEmail")
-          .value.trim() || null,
+        $("edit_email").value.trim() || null,
 
       role:
-        $("editRole").value,
+        $("edit_role").value,
 
       join_date:
-        $("editJoinDate").value ||
-        selectedMember.join_date
+        $("edit_join_date").value
 
     };
 
 
-    if (!updatedMember.name) {
-      throw new Error(
-        "Full name is required."
-      );
-    }
-
-
-    if (!updatedMember.member_number) {
-      throw new Error(
-        "Member number is required."
-      );
-    }
-
-
-    if (!updatedMember.membership_number) {
-      throw new Error(
-        "Membership number is required."
-      );
-    }
-
-
-    if (!updatedMember.phone) {
-      throw new Error(
-        "Phone number is required."
-      );
-    }
-
-
     const {
-      data,
       error
     } = await supabase
       .from("members")
-      .update(updatedMember)
-      .eq("id", selectedMember.id)
-      .eq("group_id", currentGroup.id)
-      .select()
-      .single();
+      .update(updates)
+      .eq("id", id)
+      .eq("group_id", currentGroupId);
 
 
     if (error) {
@@ -1284,84 +1008,26 @@ async function updateMember(event) {
     }
 
 
-    selectedMember =
-      data;
-
-
-    const index =
-      members.findIndex(
-        member =>
-          member.id === data.id
-      );
-
-
-    if (index !== -1) {
-
-      members[index] =
-        data;
-
-    }
-
-
-    renderMemberDetails(
-      selectedMember
+    setStatus(
+      "Member updated successfully."
     );
 
 
-    await loadMembers(
-      currentGroup.id
-    );
+    $("editMemberSection").hidden = true;
 
 
-    /*
-      Re-select the updated member
-      because loadMembers may have
-      refreshed the members array.
-    */
-
-    const refreshedMember =
-      members.find(
-        member =>
-          member.id === data.id
-      );
+    await loadMembers();
 
 
-    if (refreshedMember) {
-
-      selectedMember =
-        refreshedMember;
-
-      renderMemberDetails(
-        refreshedMember
-      );
-
-      await loadMemberContributions(
-        refreshedMember.id
-      );
-
-    }
-
-
-    hideEditPanel();
-
-
-    showStatus(
-      "Member details updated successfully.",
-      "success"
-    );
+    await selectMember(id);
 
 
   } catch (error) {
 
     console.error(error);
 
-    showStatus(
-      "Unable to save member changes.",
-      "error"
-    );
-
     showError(
-      error.message ||
+      error?.message ||
       "Unable to update member."
     );
 
@@ -1370,13 +1036,14 @@ async function updateMember(event) {
 }
 
 
-/* =========================================================
-   DEACTIVATE / REACTIVATE
-========================================================= */
+// ============================================================
+// ACTIVATE / DEACTIVATE
+// ============================================================
 
 async function toggleMemberStatus() {
 
   if (!selectedMember) {
+    showError("Select a member first.");
     return;
   }
 
@@ -1394,7 +1061,7 @@ async function toggleMemberStatus() {
   const action =
     isActive
       ? "deactivate"
-      : "reactivate";
+      : "activate";
 
 
   const confirmed =
@@ -1410,17 +1077,7 @@ async function toggleMemberStatus() {
 
   try {
 
-    clearError();
-
-    showStatus(
-      isActive
-        ? "Deactivating member..."
-        : "Reactivating member..."
-    );
-
-
     const {
-      data,
       error
     } = await supabase
       .from("members")
@@ -1428,9 +1085,7 @@ async function toggleMemberStatus() {
         status: newStatus
       })
       .eq("id", selectedMember.id)
-      .eq("group_id", currentGroup.id)
-      .select()
-      .single();
+      .eq("group_id", currentGroupId);
 
 
     if (error) {
@@ -1438,40 +1093,16 @@ async function toggleMemberStatus() {
     }
 
 
-    selectedMember =
-      data;
-
-
-    const index =
-      members.findIndex(
-        member =>
-          member.id === data.id
-      );
-
-
-    if (index !== -1) {
-
-      members[index] =
-        data;
-
-    }
-
-
-    renderMemberDetails(
-      selectedMember
+    setStatus(
+      `Member ${action}d successfully.`
     );
 
 
-    await loadMembers(
-      currentGroup.id
-    );
+    await loadMembers();
 
 
-    showStatus(
-      isActive
-        ? `${selectedMember.name} has been deactivated.`
-        : `${selectedMember.name} has been reactivated.`,
-      "success"
+    await selectMember(
+      selectedMember.id
     );
 
 
@@ -1479,14 +1110,9 @@ async function toggleMemberStatus() {
 
     console.error(error);
 
-    showStatus(
-      "Unable to change member status.",
-      "error"
-    );
-
     showError(
-      error.message ||
-      "Unable to update member status."
+      error?.message ||
+      `Unable to ${action} member.`
     );
 
   }
@@ -1494,245 +1120,258 @@ async function toggleMemberStatus() {
 }
 
 
-/* =========================================================
-   PRINT STATEMENT
-========================================================= */
+// ============================================================
+// PRINT STATEMENT
+// ============================================================
 
-function preparePrintStatement() {
+function printStatement() {
 
   if (!selectedMember) {
+    showError("Select a member first.");
     return;
   }
 
 
-  let lifetime = 0;
-
-  let paidThisMonth = 0;
-
-
-  for (
-    const contribution
-    of selectedContributions
-  ) {
-
-    const amount =
-      Number(
-        contribution.amount || 0
-      );
+  const member =
+    selectedMember;
 
 
-    lifetime += amount;
+  const history =
+    $("accountContributionRows")
+      ?.innerHTML || "";
 
 
-    if (
-      contribution.month ===
-      currentMonth()
-    ) {
+  const html = `
 
-      paidThisMonth +=
-        amount;
+<!doctype html>
 
-    }
+<html>
 
+<head>
+
+<meta charset="utf-8">
+
+<title>
+Member Statement - ${escapeHtml(member.name)}
+</title>
+
+<style>
+
+body {
+  font-family: Arial, sans-serif;
+  margin: 40px;
+  color: #111;
+}
+
+h1 {
+  margin-bottom: 5px;
+}
+
+.muted {
+  color: #666;
+}
+
+.info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin: 25px 0;
+}
+
+.box {
+  border: 1px solid #ddd;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+th,
+td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-align: left;
+}
+
+th {
+  background: #f5f5f5;
+}
+
+@media print {
+
+  body {
+    margin: 20px;
   }
 
+}
 
-  const expected =
-    monthlyContribution;
+</style>
+
+</head>
+
+<body>
+
+<h1>CHAMA LIVE</h1>
+
+<div class="muted">
+Member Contribution Statement
+</div>
+
+<hr>
+
+<div class="info">
+
+<div class="box">
+<strong>Name</strong><br>
+${escapeHtml(member.name)}
+</div>
+
+<div class="box">
+<strong>Status</strong><br>
+${escapeHtml(member.status)}
+</div>
+
+<div class="box">
+<strong>Member Number</strong><br>
+${escapeHtml(member.member_number)}
+</div>
+
+<div class="box">
+<strong>Membership Number</strong><br>
+${escapeHtml(member.membership_number)}
+</div>
+
+<div class="box">
+<strong>Phone</strong><br>
+${escapeHtml(member.phone)}
+</div>
+
+<div class="box">
+<strong>Role</strong><br>
+${escapeHtml(member.role)}
+</div>
+
+</div>
+
+<h2>
+Monthly Contribution
+</h2>
+
+<div class="info">
+
+<div class="box">
+<strong>Expected</strong><br>
+${$("accountExpected")?.textContent || "KSh 0"}
+</div>
+
+<div class="box">
+<strong>Paid</strong><br>
+${$("accountPaid")?.textContent || "KSh 0"}
+</div>
+
+<div class="box">
+<strong>Outstanding</strong><br>
+${$("accountOutstanding")?.textContent || "KSh 0"}
+</div>
+
+<div class="box">
+<strong>Status</strong><br>
+${$("accountMonthlyStatus")?.textContent || "OUTSTANDING"}
+</div>
+
+</div>
+
+<h2>
+Contribution History
+</h2>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Date</th>
+<th>Amount</th>
+<th>Type</th>
+<th>Method</th>
+<th>Reference</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+${history}
+
+</tbody>
+
+</table>
+
+<br>
+
+<p>
+Generated:
+${new Date().toLocaleString("en-KE")}
+</p>
+
+<script>
+window.onload = function() {
+  window.print();
+};
+</script>
+
+</body>
+
+</html>
+`;
 
 
-  const outstanding =
-    Math.max(
-      expected - paidThisMonth,
-      0
+  const printWindow =
+    window.open(
+      "",
+      "_blank",
+      "width=900,height=700"
     );
 
 
-  $("printGroupName").textContent =
-    currentGroup?.name ||
-    "CHAMA LIVE";
+  if (!printWindow) {
 
+    showError(
+      "Your browser blocked the print window. Please allow pop-ups."
+    );
 
-  $("printName").textContent =
-    selectedMember.name || "—";
-
-
-  $("printMemberNumber").textContent =
-    selectedMember.member_number ||
-    "—";
-
-
-  $("printMembershipNumber").textContent =
-    selectedMember.membership_number ||
-    "—";
-
-
-  $("printPhone").textContent =
-    selectedMember.phone ||
-    "—";
-
-
-  $("printEmail").textContent =
-    selectedMember.email ||
-    "—";
-
-
-  $("printStatus").textContent =
-    selectedMember.status ||
-    "—";
-
-
-  $("printExpected").textContent =
-    money(expected);
-
-
-  $("printPaid").textContent =
-    money(paidThisMonth);
-
-
-  $("printOutstanding").textContent =
-    money(outstanding);
-
-
-  $("printLifetime").textContent =
-    money(lifetime);
-
-
-  $("printDate").textContent =
-    `Statement date: ${new Date().toLocaleDateString(
-      "en-GB",
-      {
-        day: "2-digit",
-        month: "short",
-        year: "numeric"
-      }
-    )}`;
-
-
-  const rows =
-    $("printHistoryRows");
-
-
-  if (!selectedContributions.length) {
-
-    rows.innerHTML = `
-      <tr>
-        <td
-          colspan="5"
-          style="
-            border:1px solid #000;
-            padding:7px;
-          "
-        >
-          No contributions recorded.
-        </td>
-      </tr>
-    `;
-
-  } else {
-
-    rows.innerHTML =
-      selectedContributions
-        .map(row => {
-
-          const reference =
-            row.mpesa_reference ||
-            row.reference ||
-            "—";
-
-
-          return `
-            <tr>
-
-              <td
-                style="
-                  border:1px solid #000;
-                  padding:7px;
-                "
-              >
-                ${escapeHtml(
-                  formatDate(
-                    row.contribution_date
-                  )
-                )}
-              </td>
-
-              <td
-                style="
-                  border:1px solid #000;
-                  padding:7px;
-                  text-align:right;
-                "
-              >
-                ${escapeHtml(
-                  money(row.amount)
-                )}
-              </td>
-
-              <td
-                style="
-                  border:1px solid #000;
-                  padding:7px;
-                "
-              >
-                ${escapeHtml(
-                  row.contribution_type ||
-                  "—"
-                )}
-              </td>
-
-              <td
-                style="
-                  border:1px solid #000;
-                  padding:7px;
-                "
-              >
-                ${escapeHtml(
-                  row.payment_method ||
-                  "—"
-                )}
-              </td>
-
-              <td
-                style="
-                  border:1px solid #000;
-                  padding:7px;
-                "
-              >
-                ${escapeHtml(reference)}
-              </td>
-
-            </tr>
-          `;
-
-        })
-        .join("");
+    return;
 
   }
 
 
-  window.print();
+  printWindow.document.open();
+
+  printWindow.document.write(html);
+
+  printWindow.document.close();
 
 }
 
 
-/* =========================================================
-   EVENT LISTENERS
-========================================================= */
+// ============================================================
+// EVENTS
+// ============================================================
 
-function setupEvents() {
+function bindEvents() {
 
-
-  /* Add member */
-
-  $("addMemberForm")
+  $("memberForm")
     ?.addEventListener(
       "submit",
       addMember
     );
 
-
-  /* Filter */
 
   $("memberFilter")
     ?.addEventListener(
@@ -1748,7 +1387,8 @@ function setupEvents() {
           console.error(error);
 
           showError(
-            error.message
+            error?.message ||
+            "Unable to filter members."
           );
 
         }
@@ -1757,43 +1397,19 @@ function setupEvents() {
     );
 
 
-  /* Edit */
-
   $("editMemberBtn")
     ?.addEventListener(
       "click",
-      showEditPanel
+      openEditMember
     );
 
-
-  /* Cancel edit */
-
-  $("cancelEditBtn")
-    ?.addEventListener(
-      "click",
-      hideEditPanel
-    );
-
-
-  /* Save edit */
-
-  $("editMemberForm")
-    ?.addEventListener(
-      "submit",
-      updateMember
-    );
-
-
-  /* Print */
 
   $("printStatementBtn")
     ?.addEventListener(
       "click",
-      preparePrintStatement
+      printStatement
     );
 
-
-  /* Activate / deactivate */
 
   $("toggleMemberBtn")
     ?.addEventListener(
@@ -1801,13 +1417,93 @@ function setupEvents() {
       toggleMemberStatus
     );
 
+
+  $("editMemberForm")
+    ?.addEventListener(
+      "submit",
+      saveMember
+    );
+
+
+  $("cancelEditBtn")
+    ?.addEventListener(
+      "click",
+      () => {
+
+        $("editMemberSection").hidden =
+          true;
+
+      }
+    );
+
 }
 
 
-/* =========================================================
-   START
-========================================================= */
+// ============================================================
+// INITIALISE
+// ============================================================
 
-setupEvents();
+async function init() {
 
-await init();
+  try {
+
+    clearError();
+
+
+    const user =
+      await getCurrentUser();
+
+
+    if (!user) {
+      return;
+    }
+
+
+    currentGroupId =
+      await getMyGroup(user);
+
+
+    await loadGroupSettings();
+
+
+    const today =
+      new Date()
+        .toISOString()
+        .slice(0, 10);
+
+
+    if ($("join_date")) {
+      $("join_date").value = today;
+    }
+
+
+    bindEvents();
+
+
+    await loadMembers();
+
+
+  } catch (error) {
+
+    console.error(
+      "Members initialization error:",
+      error
+    );
+
+
+    setStatus(
+      "Unable to load members."
+    );
+
+
+    showError(
+      error?.message ||
+      "Unable to load members. Check your Supabase connection and RLS policies."
+    );
+
+  }
+
+}
+
+
+init();
