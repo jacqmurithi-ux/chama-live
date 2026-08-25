@@ -3,23 +3,14 @@
 
 <head>
   <meta charset="utf-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1"
-  >
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <title>Reports — CHAMA LIVE</title>
 
-  <link
-    rel="stylesheet"
-    href="css/app.css"
-  >
+  <link rel="stylesheet" href="css/app.css">
 </head>
 
-
 <body>
-
 
 <header class="topbar">
 
@@ -38,9 +29,7 @@
 </header>
 
 
-
 <div class="layout">
-
 
   <!-- SIDEBAR -->
 
@@ -68,10 +57,7 @@
         Meetings
       </a>
 
-      <a
-        href="reports.html"
-        class="active"
-      >
+      <a href="reports.html" class="active">
         Reports
       </a>
 
@@ -88,13 +74,11 @@
   </aside>
 
 
-
   <!-- MAIN -->
 
   <main class="main">
 
-
-    <!-- PAGE HEADER -->
+    <!-- HEADER -->
 
     <div class="page-head">
 
@@ -118,7 +102,7 @@
           for="month"
           class="muted"
         >
-          Month
+          Financial Month
         </label>
 
         <br>
@@ -132,6 +116,7 @@
           class="btn btn-primary"
           id="loadReport"
           type="button"
+          style="margin-top:8px;"
         >
           Load Report
         </button>
@@ -139,7 +124,6 @@
       </div>
 
     </div>
-
 
 
     <!-- STATUS -->
@@ -153,7 +137,6 @@
     </div>
 
 
-
     <!-- ERROR -->
 
     <div
@@ -162,7 +145,6 @@
       hidden
       style="margin-bottom:20px;"
     ></div>
-
 
 
     <!-- FINANCIAL SUMMARY -->
@@ -272,15 +254,12 @@
 
         </div>
 
-
       </div>
 
     </section>
 
 
-
     <br>
-
 
 
     <!-- CONTRIBUTION STATISTICS -->
@@ -372,15 +351,12 @@
 
         </div>
 
-
       </div>
 
     </section>
 
 
-
     <br>
-
 
 
     <!-- CASHBOOK -->
@@ -390,6 +366,11 @@
       <h2>
         Cashbook
       </h2>
+
+      <p class="muted">
+        All contributions and approved expenses
+        recorded during the selected month.
+      </p>
 
 
       <div class="table-wrap">
@@ -448,9 +429,7 @@
     </section>
 
 
-
     <br>
-
 
 
     <!-- MEMBER REPORT -->
@@ -518,9 +497,7 @@
     </section>
 
 
-
     <br>
-
 
 
     <!-- EXPENSE REPORT -->
@@ -584,12 +561,10 @@
     </section>
 
 
-
     <br>
 
 
-
-    <!-- ACTIONS -->
+    <!-- REPORT ACTIONS -->
 
     <section class="card">
 
@@ -598,7 +573,8 @@
       </h2>
 
       <p class="muted">
-        Print the complete monthly financial report.
+        Print the complete monthly financial
+        report.
       </p>
 
 
@@ -630,11 +606,9 @@
 
     </section>
 
-
   </main>
 
 </div>
-
 
 
 <script type="module">
@@ -648,7 +622,6 @@
   import "./js/reports.js";
 
 </script>
-
 
 </body>
 
