@@ -1,4 +1,3 @@
-```html
 <!doctype html>
 <html lang="en">
 
@@ -192,8 +191,15 @@
           <input
             id="membershipNumber"
             type="text"
-            placeholder="Optional"
+            inputmode="numeric"
+            maxlength="4"
+            pattern="[0-9]{4}"
+            placeholder="Optional — e.g. 0001"
           >
+
+          <small class="muted">
+            Leave blank to generate the next number automatically.
+          </small>
 
         </div>
 
@@ -531,22 +537,161 @@ async function checkLogin() {
 
 
 /* =====================================================
-   GENERATE MEMBER NUMBER
+   GENERATE NEXT MEMBERSHIP NUMBER
 ===================================================== */
 
-function generateMemberNumber() {
+async function generateMembershipNumber(groupId) {
 
-  const random =
-    Math.random()
-      .toString(36)
-      .substring(
-        2,
-        8
+  const result =
+    await supabase
+
+      .from("members")
+
+      .select(
+        "membership_number"
       )
-      .toUpperCase();
+
+      .eq(
+        "group_id",
+        groupId
+      )
+
+      .order(
+        "membership_number",
+        {
+          ascending: true
+        }
+      );
 
 
-  return "MBR-" + random;
+  if (result.error) {
+
+    throw result.error;
+
+  }
+
+
+  const usedNumbers =
+    new Set(
+
+      (result.data || [])
+
+        .map(
+          row =>
+            String(
+              row.membership_number || ""
+            )
+        )
+
+    );
+
+
+  /*
+   * Database requires exactly
+   * four numeric characters.
+   *
+   * 0001
+   * 0002
+   * 0003
+   * etc.
+   */
+
+  for (
+    let number = 1;
+    number <= 9999;
+    number++
+  ) {
+
+    const candidate =
+      String(number)
+        .padStart(
+          4,
+          "0"
+        );
+
+
+    if (
+      !usedNumbers.has(
+        candidate
+      )
+    ) {
+
+      return candidate;
+
+    }
+
+  }
+
+
+  throw new Error(
+    "No available membership numbers remain."
+  );
+
+}
+
+
+/* =====================================================
+   VALIDATE CUSTOM MEMBERSHIP NUMBER
+===================================================== */
+
+function validateMembershipNumber(value) {
+
+  if (!value) {
+
+    return true;
+
+  }
+
+
+  return /^[0-9]{4}$/.test(
+    value
+  );
+
+}
+
+
+/* =====================================================
+   CHECK WHETHER NUMBER ALREADY EXISTS
+===================================================== */
+
+async function membershipNumberExists(
+  groupId,
+  membershipNumber
+) {
+
+  const result =
+    await supabase
+
+      .from("members")
+
+      .select(
+        "id"
+      )
+
+      .eq(
+        "group_id",
+        groupId
+      )
+
+      .eq(
+        "membership_number",
+        membershipNumber
+      )
+      
+      .limit(1);
+
+
+  if (result.error) {
+
+    throw result.error;
+
+  }
+
+
+  return (
+    result.data &&
+    result.data.length > 0
+  );
 
 }
 
@@ -598,7 +743,7 @@ async function loadMembers() {
       )
 
       .order(
-        "name",
+        "membership_number",
         {
           ascending: true
         }
@@ -651,8 +796,8 @@ async function loadMembers() {
         function(member) {
 
           const memberNumber =
-            member.member_number ||
             member.membership_number ||
+            member.member_number ||
             "—";
 
 
@@ -750,7 +895,7 @@ async function saveMember() {
     const email =
       emailInput.value.trim();
 
-    const membershipNumber =
+    let membershipNumber =
       membershipNumberInput.value.trim();
 
     const role =
@@ -763,7 +908,9 @@ async function saveMember() {
       memberStatusSelect.value;
 
 
-    /* VALIDATION */
+    /* ===============================================
+       VALIDATION
+    =============================================== */
 
     if (!name) {
 
@@ -792,7 +939,23 @@ async function saveMember() {
     }
 
 
-    /* GROUP */
+    if (
+      membershipNumber &&
+      !validateMembershipNumber(
+        membershipNumber
+      )
+    ) {
+
+      throw new Error(
+        "Membership Number must contain exactly 4 digits. Example: 0001."
+      );
+
+    }
+
+
+    /* ===============================================
+       GET GROUP
+    =============================================== */
 
     const groupId =
       await getCurrentGroupId();
@@ -807,6 +970,51 @@ async function saveMember() {
     }
 
 
+    /* ===============================================
+       GENERATE NUMBER IF EMPTY
+    =============================================== */
+
+    if (!membershipNumber) {
+
+      setStatus(
+        "Generating membership number..."
+      );
+
+
+      membershipNumber =
+        await generateMembershipNumber(
+          groupId
+        );
+
+    }
+
+
+    /* ===============================================
+       CHECK DUPLICATE
+    =============================================== */
+
+    const exists =
+      await membershipNumberExists(
+        groupId,
+        membershipNumber
+      );
+
+
+    if (exists) {
+
+      throw new Error(
+        "Membership number " +
+        membershipNumber +
+        " is already being used by another member."
+      );
+
+    }
+
+
+    /* ===============================================
+       SAVE
+    =============================================== */
+
     saveButton.disabled =
       true;
 
@@ -815,26 +1023,30 @@ async function saveMember() {
 
 
     setStatus(
-      "Saving member..."
+      "Saving member " +
+      membershipNumber +
+      "..."
     );
 
 
     /*
-     * IMPORTANT:
+     * IMPORTANT
      *
-     * We DO NOT send:
+     * membership_number MUST be
+     * exactly four digits.
+     *
+     * member_number is also set
+     * to the same value so the
+     * two fields stay synchronized.
+     *
+     * We deliberately do NOT set:
      *
      * user_id
      * auth_user_id
      *
-     * Those fields are only populated
-     * when the member is connected to
-     * a login account.
+     * because this member does
+     * not necessarily have a login.
      */
-
-
-    const generatedNumber =
-      generateMemberNumber();
 
 
     const result =
@@ -848,7 +1060,10 @@ async function saveMember() {
             groupId,
 
           member_number:
-            generatedNumber,
+            membershipNumber,
+
+          membership_number:
+            membershipNumber,
 
           name:
             name,
@@ -869,10 +1084,6 @@ async function saveMember() {
           status:
             memberStatus,
 
-          membership_number:
-            membershipNumber ||
-            generatedNumber,
-
           onboarding_status:
             "active"
 
@@ -886,7 +1097,9 @@ async function saveMember() {
     }
 
 
-    /* CLEAR FORM */
+    /* ===============================================
+       CLEAR FORM
+    =============================================== */
 
     nameInput.value =
       "";
@@ -911,14 +1124,22 @@ async function saveMember() {
 
 
     setStatus(
-      "Member added successfully."
+      "Member " +
+      membershipNumber +
+      " added successfully."
     );
 
 
     alert(
-      "Member added successfully."
+      "Member added successfully.\n\n" +
+      "Membership Number: " +
+      membershipNumber
     );
 
+
+    /* ===============================================
+       REFRESH REGISTER
+    =============================================== */
 
     await loadMembers();
 
@@ -1021,7 +1242,7 @@ async function start() {
         );
 
 
-    /* LOAD */
+    /* LOAD MEMBERS */
 
     await loadMembers();
 
@@ -1038,7 +1259,9 @@ async function start() {
 }
 
 
-/* START APPLICATION */
+/* =====================================================
+   START APPLICATION
+===================================================== */
 
 start();
 
@@ -1047,4 +1270,3 @@ start();
 </body>
 
 </html>
-```
