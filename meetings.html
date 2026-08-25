@@ -95,9 +95,6 @@
 
       <div class="form">
 
-
-        <!-- TITLE -->
-
         <div class="field">
 
           <label for="title">
@@ -113,8 +110,6 @@
         </div>
 
 
-        <!-- DATE -->
-
         <div class="field">
 
           <label for="meetingDate">
@@ -128,8 +123,6 @@
 
         </div>
 
-
-        <!-- VENUE -->
 
         <div class="field">
 
@@ -146,8 +139,6 @@
         </div>
 
 
-        <!-- AGENDA -->
-
         <div class="field">
 
           <label for="agenda">
@@ -156,14 +147,12 @@
 
           <textarea
             id="agenda"
-            rows="4"
-            placeholder="Enter agenda items, one per line"
+            rows="5"
+            placeholder="Enter one agenda item per line"
           ></textarea>
 
         </div>
 
-
-        <!-- STATUS -->
 
         <div class="field">
 
@@ -189,8 +178,6 @@
 
         </div>
 
-
-        <!-- SAVE -->
 
         <button
           class="btn btn-primary"
@@ -218,13 +205,11 @@
           <thead>
 
             <tr>
-
               <th>Date</th>
               <th>Title</th>
               <th>Venue</th>
               <th>Status</th>
               <th>Agenda</th>
-
             </tr>
 
           </thead>
@@ -232,11 +217,9 @@
           <tbody id="rows">
 
             <tr>
-
               <td colspan="5">
                 Loading...
               </td>
-
             </tr>
 
           </tbody>
@@ -246,7 +229,6 @@
       </div>
 
     </section>
-
 
   </main>
 
@@ -360,30 +342,15 @@ function escapeHtml(value) {
 
   return String(value)
 
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
+    .replaceAll("&", "&amp;")
 
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
+    .replaceAll("<", "&lt;")
 
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
+    .replaceAll(">", "&gt;")
 
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
+    .replaceAll('"', "&quot;")
 
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
+    .replaceAll("'", "&#039;");
 
 }
 
@@ -450,14 +417,23 @@ async function loadMeetings() {
 
 
   /*
-   * IMPORTANT:
+   * ACTUAL DATABASE COLUMNS:
    *
-   * Database column is:
-   *
+   * id
+   * group_id
+   * title
    * date
+   * venue
+   * agenda
+   * minutes
+   * resolution
+   * status
+   * created_at
    *
-   * NOT meeting_date.
+   * IMPORTANT:
+   * There is NO meeting_date column.
    */
+
 
   const result =
     await supabase
@@ -520,17 +496,36 @@ async function loadMeetings() {
       .map(
         function(meeting) {
 
-          const agenda =
+          let agenda = "—";
+
+
+          if (
             Array.isArray(
               meeting.agenda
             )
-              ? meeting.agenda.join(
-                  ", "
-                )
-              : (
-                  meeting.agenda ||
-                  "—"
-                );
+          ) {
+
+            agenda =
+              meeting.agenda
+                .filter(Boolean)
+                .join(", ");
+
+            if (!agenda) {
+              agenda = "—";
+            }
+
+          }
+
+          else if (
+            meeting.agenda
+          ) {
+
+            agenda =
+              String(
+                meeting.agenda
+              );
+
+          }
 
 
           return `
@@ -539,29 +534,25 @@ async function loadMeetings() {
 
               <td>
                 ${escapeHtml(
-                  meeting.date ||
-                  "—"
+                  meeting.date || "—"
                 )}
               </td>
 
               <td>
                 ${escapeHtml(
-                  meeting.title ||
-                  "—"
+                  meeting.title || "—"
                 )}
               </td>
 
               <td>
                 ${escapeHtml(
-                  meeting.venue ||
-                  "—"
+                  meeting.venue || "—"
                 )}
               </td>
 
               <td>
                 ${escapeHtml(
-                  meeting.status ||
-                  "—"
+                  meeting.status || "—"
                 )}
               </td>
 
@@ -656,21 +647,31 @@ async function saveMeeting() {
 
 
     /*
-     * Convert the textarea into
-     * PostgreSQL text[] format.
+     * PostgreSQL column "agenda"
+     * is TEXT[].
      *
-     * One agenda item per line.
+     * Convert:
+     *
+     * Meeting
+     * Treasurer report
+     * Welfare
+     *
+     * into:
+     *
+     * ["Meeting","Treasurer report","Welfare"]
      */
 
     const agenda =
       agendaText
+
         ? agendaText
-            .split("\n")
+            .split(/\r?\n/)
             .map(
               item =>
                 item.trim()
             )
             .filter(Boolean)
+
         : [];
 
 
@@ -689,15 +690,19 @@ async function saveMeeting() {
     /*
      * IMPORTANT:
      *
-     * We use the ACTUAL database
+     * Use the real database
      * column names.
      *
      * date
      * agenda
      * status
      *
-     * There is NO recorded_by column.
+     * Do NOT use:
+     *
+     * meeting_date
+     * expense_date
      */
+
 
     const result =
       await supabase
@@ -716,8 +721,7 @@ async function saveMeeting() {
             meetingDate,
 
           venue:
-            venue ||
-            null,
+            venue || null,
 
           agenda:
             agenda,
@@ -763,10 +767,9 @@ async function saveMeeting() {
     );
 
 
-    /* REFRESH */
+    /* REFRESH LEDGER */
 
     await loadMeetings();
-
 
   }
 
@@ -856,7 +859,7 @@ async function start() {
     }
 
 
-    /* DEFAULT TODAY */
+    /* DEFAULT DATE */
 
     dateInput.value =
       new Date()
@@ -867,7 +870,7 @@ async function start() {
         );
 
 
-    /* LOAD */
+    /* LOAD MEETINGS */
 
     await loadMeetings();
 
