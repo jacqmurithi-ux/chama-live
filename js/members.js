@@ -56,23 +56,163 @@ const activeMembers =
 const inactiveMembers =
   document.getElementById("inactiveMembers");
 
+
+/* MEMBER DETAILS */
+
 const detailsCard =
   document.getElementById("detailsCard");
 
-const memberDetails =
-  document.getElementById("memberDetails");
+const detailsTitle =
+  document.getElementById("detailsTitle");
+
+const detailsSubtitle =
+  document.getElementById("detailsSubtitle");
+
+const memberStatusBadge =
+  document.getElementById("memberStatusBadge");
+
+const detailMemberNumber =
+  document.getElementById(
+    "detailMemberNumber"
+  );
+
+const detailMembershipNumber =
+  document.getElementById(
+    "detailMembershipNumber"
+  );
+
+const detailPhone =
+  document.getElementById(
+    "detailPhone"
+  );
+
+const detailEmail =
+  document.getElementById(
+    "detailEmail"
+  );
+
+const detailRole =
+  document.getElementById(
+    "detailRole"
+  );
+
+const detailJoinDate =
+  document.getElementById(
+    "detailJoinDate"
+  );
+
+const detailExpected =
+  document.getElementById(
+    "detailExpected"
+  );
+
+const detailPaid =
+  document.getElementById(
+    "detailPaid"
+  );
+
+const detailOutstanding =
+  document.getElementById(
+    "detailOutstanding"
+  );
+
+const detailMonthlyStatus =
+  document.getElementById(
+    "detailMonthlyStatus"
+  );
+
+const detailLifetime =
+  document.getElementById(
+    "detailLifetime"
+  );
 
 const contributionHistory =
-  document.getElementById("contributionHistory");
-
-const statementMemberButton =
-  document.getElementById("statementMember");
+  document.getElementById(
+    "contributionHistory"
+  );
 
 const editMemberButton =
-  document.getElementById("editMember");
+  document.getElementById(
+    "editMember"
+  );
+
+const statementMemberButton =
+  document.getElementById(
+    "statementMember"
+  );
 
 const toggleMemberButton =
-  document.getElementById("toggleMember");
+  document.getElementById(
+    "toggleMember"
+  );
+
+
+/* EDIT MODAL */
+
+const editModal =
+  document.getElementById(
+    "editModal"
+  );
+
+const editMemberForm =
+  document.getElementById(
+    "editMemberForm"
+  );
+
+const closeEditModal =
+  document.getElementById(
+    "closeEditModal"
+  );
+
+const cancelEdit =
+  document.getElementById(
+    "cancelEdit"
+  );
+
+const saveEdit =
+  document.getElementById(
+    "saveEdit"
+  );
+
+const editName =
+  document.getElementById(
+    "editName"
+  );
+
+const editMemberNumber =
+  document.getElementById(
+    "editMemberNumber"
+  );
+
+const editMembershipNumber =
+  document.getElementById(
+    "editMembershipNumber"
+  );
+
+const editPhone =
+  document.getElementById(
+    "editPhone"
+  );
+
+const editEmail =
+  document.getElementById(
+    "editEmail"
+  );
+
+const editRole =
+  document.getElementById(
+    "editRole"
+  );
+
+const editJoinDate =
+  document.getElementById(
+    "editJoinDate"
+  );
+
+const editStatus =
+  document.getElementById(
+    "editStatus"
+  );
 
 
 /* =====================================================
@@ -96,10 +236,9 @@ let selectedMember = null;
 
 function money(value) {
 
-  const number =
-    Number(value || 0);
-
-  return number.toLocaleString(
+  return Number(
+    value || 0
+  ).toLocaleString(
     "en-KE",
     {
       minimumFractionDigits: 0,
@@ -144,19 +283,20 @@ function currentMonth() {
   const date =
     new Date();
 
-  return `${date.getFullYear()}-${String(
-    date.getMonth() + 1
-  ).padStart(2, "0")}`;
+  return (
+    date.getFullYear() +
+    "-" +
+    String(
+      date.getMonth() + 1
+    ).padStart(2, "0")
+  );
 
 }
 
 
 function currentMonthLabel() {
 
-  const date =
-    new Date();
-
-  return date.toLocaleDateString(
+  return new Date().toLocaleDateString(
     "en-KE",
     {
       year: "numeric",
@@ -177,11 +317,26 @@ function escapeHtml(value) {
   }
 
   return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
 
 }
 
@@ -195,7 +350,7 @@ function showError(error) {
 
   errorEl.textContent =
     error?.message ||
-    "Unable to load members.";
+    "Unable to process request.";
 
   errorEl.hidden =
     false;
@@ -203,11 +358,27 @@ function showError(error) {
 }
 
 
+function clearError() {
+
+  errorEl.hidden =
+    true;
+
+  errorEl.textContent =
+    "";
+
+}
+
+
 /* =====================================================
-   GET GROUP
+   GROUP
 ===================================================== */
 
 async function getGroupId() {
+
+  /*
+   * Uses the same group RPC already used
+   * by the CHAMA LIVE application.
+   */
 
   const {
     data,
@@ -234,7 +405,7 @@ async function getGroupId() {
 
 
 /* =====================================================
-   LOAD GROUP SETTINGS
+   GROUP SETTINGS
 ===================================================== */
 
 async function loadGroupSettings() {
@@ -245,7 +416,7 @@ async function loadGroupSettings() {
   } = await supabase
     .from("groups")
     .select(
-      "id, name, monthly_contribution"
+      "id,name,monthly_contribution"
     )
     .eq(
       "id",
@@ -359,7 +530,7 @@ async function loadContributions() {
 
 
 /* =====================================================
-   MONTHLY MEMBER STATUS
+   MEMBER CONTRIBUTION CALCULATIONS
 ===================================================== */
 
 function getMemberPaid(
@@ -372,32 +543,44 @@ function getMemberPaid(
 
   return contributions
     .filter(
-      contribution =>
+      contribution => {
 
-        contribution.member_id ===
-        memberId &&
+        return (
 
-        String(
-          contribution.month
-        ) ===
-        month &&
+          contribution.member_id ===
+          memberId &&
 
-        String(
-          contribution.contribution_type ||
-          ""
-        ).toLowerCase() ===
-        "monthly"
+          String(
+            contribution.month ||
+            ""
+          ) ===
+          month &&
+
+          String(
+            contribution.contribution_type ||
+            ""
+          ).toLowerCase() ===
+          "monthly"
+
+        );
+
+      }
     )
     .reduce(
       (
         total,
         contribution
-      ) =>
-        total +
-        Number(
-          contribution.amount ||
-          0
-        ),
+      ) => {
+
+        return (
+          total +
+          Number(
+            contribution.amount ||
+            0
+          )
+        );
+
+      },
       0
     );
 
@@ -463,10 +646,6 @@ function getMemberStatus(
 }
 
 
-/* =====================================================
-   TOTAL CONTRIBUTIONS
-===================================================== */
-
 function getMemberTotal(
   memberId
 ) {
@@ -481,12 +660,17 @@ function getMemberTotal(
       (
         total,
         contribution
-      ) =>
-        total +
-        Number(
-          contribution.amount ||
-          0
-        ),
+      ) => {
+
+        return (
+          total +
+          Number(
+            contribution.amount ||
+            0
+          )
+        );
+
+      },
       0
     );
 
@@ -529,7 +713,7 @@ function renderMetrics() {
 
 
 /* =====================================================
-   FILTER MEMBERS
+   FILTER
 ===================================================== */
 
 function filteredMembers() {
@@ -556,26 +740,27 @@ function filteredMembers() {
 
       const searchMatch =
         !search ||
+
         String(
           member.name ||
           ""
         )
-        .toLowerCase()
-        .includes(search) ||
+          .toLowerCase()
+          .includes(search) ||
 
         String(
           member.member_number ||
           ""
         )
-        .toLowerCase()
-        .includes(search) ||
+          .toLowerCase()
+          .includes(search) ||
 
         String(
           member.phone ||
           ""
         )
-        .toLowerCase()
-        .includes(search);
+          .toLowerCase()
+          .includes(search);
 
 
       return (
@@ -590,7 +775,7 @@ function filteredMembers() {
 
 
 /* =====================================================
-   RENDER MEMBERS
+   RENDER REGISTER
 ===================================================== */
 
 function renderMembers() {
@@ -707,206 +892,26 @@ function renderMembers() {
 
 
 /* =====================================================
-   ADD MEMBER
+   SHOW MEMBER ACCOUNT
 ===================================================== */
 
-async function addMember(
-  event
-) {
-
-  event.preventDefault();
-
-
-  try {
-
-    errorEl.hidden =
-      true;
-
-
-    const name =
-      memberName.value.trim();
-
-    const memberNo =
-      memberNumber.value.trim();
-
-    const membershipNo =
-      membershipNumber.value.trim();
-
-    const memberPhone =
-      phone.value.trim();
-
-    const memberEmail =
-      email.value.trim();
-
-    const memberRole =
-      role.value;
-
-    const memberJoinDate =
-      joinDate.value ||
-      new Date()
-        .toISOString()
-        .slice(0, 10);
-
-
-    if (!name) {
-
-      throw new Error(
-        "Please enter the member name."
-      );
-
-    }
-
-
-    if (!memberNo) {
-
-      throw new Error(
-        "Please enter the member number."
-      );
-
-    }
-
-
-    if (!membershipNo) {
-
-      throw new Error(
-        "Please enter the membership number."
-      );
-
-    }
-
-
-    if (!memberPhone) {
-
-      throw new Error(
-        "Please enter the phone number."
-      );
-
-    }
-
-
-    saveMember.disabled =
-      true;
-
-    saveMember.textContent =
-      "Adding...";
-
-
-    const {
-      error
-    } = await supabase
-      .from("members")
-      .insert({
-
-        group_id:
-          groupId,
-
-        member_number:
-          memberNo,
-
-        name:
-          name,
-
-        phone:
-          memberPhone,
-
-        role:
-          memberRole,
-
-        join_date:
-          memberJoinDate,
-
-        status:
-          "active",
-
-        email:
-          memberEmail ||
-          null,
-
-        membership_number:
-          membershipNo,
-
-        onboarding_status:
-          "pending"
-
-      });
-
-
-    if (error) {
-      throw error;
-    }
-
-
-    memberForm.reset();
-
-    setDefaultDate();
-
-
-    await loadMembers();
-
-
-    renderMetrics();
-
-    renderMembers();
-
-
-    statusEl.textContent =
-      "Member added successfully.";
-
-  }
-  catch (error) {
-
-    showError(
-      error
-    );
-
-  }
-  finally {
-
-    saveMember.disabled =
-      false;
-
-    saveMember.textContent =
-      "Add Member";
-
-  }
-
-}
-
-
-/* =====================================================
-   SELECT MEMBER
-===================================================== */
-
-async function selectMember(
-  id
+function showMemberDetails(
+  member
 ) {
 
   selectedMember =
-    members.find(
-      member =>
-        member.id ===
-        id
-    );
-
-
-  if (
-    !selectedMember
-  ) {
-
-    return;
-
-  }
+    member;
 
 
   const monthly =
     getMemberStatus(
-      selectedMember.id
+      member.id
     );
 
 
-  const total =
+  const lifetime =
     getMemberTotal(
-      selectedMember.id
+      member.id
     );
 
 
@@ -914,137 +919,94 @@ async function selectMember(
     false;
 
 
-  memberDetails.innerHTML = `
+  detailsTitle.textContent =
+    member.name;
 
-    <p>
-      <strong>Name:</strong>
-      ${escapeHtml(
-        selectedMember.name
-      )}
-    </p>
 
-    <p>
-      <strong>Member Number:</strong>
-      ${escapeHtml(
-        selectedMember.member_number
-      )}
-    </p>
+  detailsSubtitle.textContent =
+    `Member account • ${member.member_number}`;
 
-    <p>
-      <strong>Membership Number:</strong>
-      ${escapeHtml(
-        selectedMember.membership_number
-      )}
-    </p>
 
-    <p>
-      <strong>Phone:</strong>
-      ${escapeHtml(
-        selectedMember.phone
-      )}
-    </p>
+  memberStatusBadge.textContent =
+    String(
+      member.status
+    ).toUpperCase();
 
-    <p>
-      <strong>Email:</strong>
-      ${escapeHtml(
-        selectedMember.email ||
-        "—"
-      )}
-    </p>
 
-    <p>
-      <strong>Role:</strong>
-      ${escapeHtml(
-        selectedMember.role
-      )}
-    </p>
+  detailMemberNumber.textContent =
+    member.member_number ||
+    "—";
 
-    <p>
-      <strong>Join Date:</strong>
-      ${escapeHtml(
-        formatDate(
-          selectedMember.join_date
-        )
-      )}
-    </p>
 
-    <p>
-      <strong>Status:</strong>
-      ${escapeHtml(
-        selectedMember.status
-      )}
-    </p>
+  detailMembershipNumber.textContent =
+    member.membership_number ||
+    "—";
 
-    <hr>
 
-    <h3>
-      ${escapeHtml(
-        currentMonthLabel()
-      )}
-    </h3>
+  detailPhone.textContent =
+    member.phone ||
+    "—";
 
-    <p>
-      Expected:
-      <strong>
-        KSh ${money(
-          monthly.expected
-        )}
-      </strong>
-    </p>
 
-    <p>
-      Paid:
-      <strong>
-        KSh ${money(
-          monthly.paid
-        )}
-      </strong>
-    </p>
+  detailEmail.textContent =
+    member.email ||
+    "—";
 
-    <p>
-      Outstanding:
-      <strong>
-        KSh ${money(
-          monthly.outstanding
-        )}
-      </strong>
-    </p>
 
-    <p>
-      Status:
-      <strong>
-        ${escapeHtml(
-          monthly.status
-        )}
-      </strong>
-    </p>
+  detailRole.textContent =
+    member.role ||
+    "—";
 
-    <p>
-      Total Contributions:
-      <strong>
-        KSh ${money(
-          total
-        )}
-      </strong>
-    </p>
 
-  `;
+  detailJoinDate.textContent =
+    formatDate(
+      member.join_date
+    );
+
+
+  detailExpected.textContent =
+    `KSh ${money(
+      monthly.expected
+    )}`;
+
+
+  detailPaid.textContent =
+    `KSh ${money(
+      monthly.paid
+    )}`;
+
+
+  detailOutstanding.textContent =
+    `KSh ${money(
+      monthly.outstanding
+    )}`;
+
+
+  detailMonthlyStatus.textContent =
+    monthly.status;
+
+
+  detailLifetime.textContent =
+    `KSh ${money(
+      lifetime
+    )}`;
+
+
+  toggleMemberButton.textContent =
+    String(
+      member.status
+    ).toLowerCase() === "active"
+      ? "Deactivate Member"
+      : "Activate Member";
 
 
   renderContributionHistory();
 
 
-  const isActive =
-    String(
-      selectedMember.status
-    ).toLowerCase() ===
-    "active";
-
-
-  toggleMemberButton.textContent =
-    isActive
-      ? "Deactivate Member"
-      : "Activate Member";
+  detailsCard.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
 
 }
 
@@ -1055,19 +1017,37 @@ async function selectMember(
 
 function renderContributionHistory() {
 
-  if (
-    !selectedMember
-  ) {
+  if (!selectedMember) {
     return;
   }
 
 
   const history =
-    contributions.filter(
-      contribution =>
-        contribution.member_id ===
-        selectedMember.id
-    );
+    contributions
+      .filter(
+        contribution =>
+          contribution.member_id ===
+          selectedMember.id
+      )
+      .sort(
+        (a, b) => {
+
+          const dateA =
+            new Date(
+              a.contribution_date ||
+              a.created_at
+            );
+
+          const dateB =
+            new Date(
+              b.contribution_date ||
+              b.created_at
+            );
+
+          return dateB - dateA;
+
+        }
+      );
 
 
   if (!history.length) {
@@ -1148,18 +1128,165 @@ function renderContributionHistory() {
 
 
 /* =====================================================
-   MEMBER STATEMENT
+   ADD MEMBER
 ===================================================== */
 
-function openMemberStatement() {
+async function addMember(
+  event
+) {
 
-  if (
-    !selectedMember
-  ) {
+  event.preventDefault();
+
+  clearError();
+
+
+  try {
+
+    saveMember.disabled =
+      true;
+
+    saveMember.textContent =
+      "Adding...";
+
+
+    const name =
+      memberName.value.trim();
+
+    const memberNo =
+      memberNumber.value.trim();
+
+    const membershipNo =
+      membershipNumber.value.trim();
+
+    const memberPhone =
+      phone.value.trim();
+
+    const memberEmail =
+      email.value.trim();
+
+    const memberRole =
+      role.value;
+
+    const memberJoinDate =
+      joinDate.value ||
+      new Date()
+        .toISOString()
+        .slice(0, 10);
+
+
+    if (!name) {
+      throw new Error(
+        "Full name is required."
+      );
+    }
+
+    if (!memberNo) {
+      throw new Error(
+        "Member number is required."
+      );
+    }
+
+    if (!membershipNo) {
+      throw new Error(
+        "Membership number is required."
+      );
+    }
+
+    if (!memberPhone) {
+      throw new Error(
+        "Phone number is required."
+      );
+    }
+
+
+    const {
+      error
+    } = await supabase
+      .from("members")
+      .insert({
+
+        group_id:
+          groupId,
+
+        member_number:
+          memberNo,
+
+        name:
+          name,
+
+        phone:
+          memberPhone,
+
+        role:
+          memberRole,
+
+        join_date:
+          memberJoinDate,
+
+        status:
+          "active",
+
+        email:
+          memberEmail ||
+          null,
+
+        membership_number:
+          membershipNo,
+
+        onboarding_status:
+          "pending"
+
+      });
+
+
+    if (error) {
+      throw error;
+    }
+
+
+    memberForm.reset();
+
+    setDefaultDate();
+
+
+    await refresh();
+
+
+    statusEl.textContent =
+      "Member added successfully.";
+
+  }
+  catch (error) {
+
+    showError(
+      error
+    );
+
+  }
+  finally {
+
+    saveMember.disabled =
+      false;
+
+    saveMember.textContent =
+      "Add Member";
+
+  }
+
+}
+
+
+/* =====================================================
+   OPEN EDIT MODAL
+===================================================== */
+
+function openEditModal() {
+
+  if (!selectedMember) {
 
     showError(
       new Error(
-        "Please select a member first."
+        "Select a member first."
       )
     );
 
@@ -1168,15 +1295,415 @@ function openMemberStatement() {
   }
 
 
-  const monthly =
-    getMemberStatus(
-      selectedMember.id
+  clearError();
+
+
+  editName.value =
+    selectedMember.name ||
+    "";
+
+
+  editMemberNumber.value =
+    selectedMember.member_number ||
+    "";
+
+
+  editMembershipNumber.value =
+    selectedMember.membership_number ||
+    "";
+
+
+  editPhone.value =
+    selectedMember.phone ||
+    "";
+
+
+  editEmail.value =
+    selectedMember.email ||
+    "";
+
+
+  editRole.value =
+    selectedMember.role ||
+    "member";
+
+
+  editJoinDate.value =
+    selectedMember.join_date ||
+    "";
+
+
+  editStatus.value =
+    selectedMember.status ||
+    "active";
+
+
+  editModal.hidden =
+    false;
+
+
+  document.body.style.overflow =
+    "hidden";
+
+
+  setTimeout(
+    () => {
+      editName.focus();
+    },
+    50
+  );
+
+}
+
+
+/* =====================================================
+   CLOSE EDIT MODAL
+===================================================== */
+
+function closeEdit() {
+
+  editModal.hidden =
+    true;
+
+  document.body.style.overflow =
+    "";
+
+}
+
+
+/* =====================================================
+   SAVE EDITED MEMBER
+===================================================== */
+
+async function saveEditedMember(
+  event
+) {
+
+  event.preventDefault();
+
+  clearError();
+
+
+  if (!selectedMember) {
+    return;
+  }
+
+
+  try {
+
+    saveEdit.disabled =
+      true;
+
+    saveEdit.textContent =
+      "Saving...";
+
+
+    const updates = {
+
+      name:
+        editName.value.trim(),
+
+      member_number:
+        editMemberNumber.value.trim(),
+
+      membership_number:
+        editMembershipNumber.value.trim(),
+
+      phone:
+        editPhone.value.trim(),
+
+      email:
+        editEmail.value.trim() ||
+        null,
+
+      role:
+        editRole.value,
+
+      join_date:
+        editJoinDate.value ||
+        null,
+
+      status:
+        editStatus.value
+
+    };
+
+
+    if (!updates.name) {
+
+      throw new Error(
+        "Full name is required."
+      );
+
+    }
+
+
+    if (!updates.member_number) {
+
+      throw new Error(
+        "Member number is required."
+      );
+
+    }
+
+
+    if (!updates.membership_number) {
+
+      throw new Error(
+        "Membership number is required."
+      );
+
+    }
+
+
+    if (!updates.phone) {
+
+      throw new Error(
+        "Phone number is required."
+      );
+
+    }
+
+
+    const {
+      error
+    } = await supabase
+      .from("members")
+      .update(
+        updates
+      )
+      .eq(
+        "id",
+        selectedMember.id
+      )
+      .eq(
+        "group_id",
+        groupId
+      );
+
+
+    if (error) {
+      throw error;
+    }
+
+
+    const memberId =
+      selectedMember.id;
+
+
+    closeEdit();
+
+
+    await refresh();
+
+
+    const updatedMember =
+      members.find(
+        member =>
+          member.id ===
+          memberId
+      );
+
+
+    if (updatedMember) {
+
+      showMemberDetails(
+        updatedMember
+      );
+
+    }
+
+
+    statusEl.textContent =
+      "Member updated successfully.";
+
+  }
+  catch (error) {
+
+    showError(
+      error
+    );
+
+  }
+  finally {
+
+    saveEdit.disabled =
+      false;
+
+    saveEdit.textContent =
+      "Save Changes";
+
+  }
+
+}
+
+
+/* =====================================================
+   ACTIVATE / DEACTIVATE
+===================================================== */
+
+async function toggleMember() {
+
+  if (!selectedMember) {
+
+    showError(
+      new Error(
+        "Select a member first."
+      )
+    );
+
+    return;
+
+  }
+
+
+  const active =
+    String(
+      selectedMember.status
+    ).toLowerCase() ===
+    "active";
+
+
+  const newStatus =
+    active
+      ? "inactive"
+      : "active";
+
+
+  const action =
+    active
+      ? "deactivate"
+      : "activate";
+
+
+  const confirmed =
+    window.confirm(
+      `Are you sure you want to ${action} ${selectedMember.name}?`
     );
 
 
-  const total =
+  if (!confirmed) {
+    return;
+  }
+
+
+  try {
+
+    clearError();
+
+
+    toggleMemberButton.disabled =
+      true;
+
+
+    toggleMemberButton.textContent =
+      active
+        ? "Deactivating..."
+        : "Activating...";
+
+
+    const {
+      error
+    } = await supabase
+      .from("members")
+      .update({
+        status:
+          newStatus
+      })
+      .eq(
+        "id",
+        selectedMember.id
+      )
+      .eq(
+        "group_id",
+        groupId
+      );
+
+
+    if (error) {
+      throw error;
+    }
+
+
+    const memberId =
+      selectedMember.id;
+
+
+    await refresh();
+
+
+    const updatedMember =
+      members.find(
+        member =>
+          member.id ===
+          memberId
+      );
+
+
+    if (updatedMember) {
+
+      showMemberDetails(
+        updatedMember
+      );
+
+    }
+
+
+    statusEl.textContent =
+      `Member ${
+        active
+          ? "deactivated"
+          : "activated"
+      } successfully.`;
+
+  }
+  catch (error) {
+
+    showError(
+      error
+    );
+
+  }
+  finally {
+
+    toggleMemberButton.disabled =
+      false;
+
+  }
+
+}
+
+
+/* =====================================================
+   PRINT MEMBER STATEMENT
+===================================================== */
+
+function printStatement() {
+
+  if (!selectedMember) {
+
+    showError(
+      new Error(
+        "Select a member first."
+      )
+    );
+
+    return;
+
+  }
+
+
+  const member =
+    selectedMember;
+
+  const monthly =
+    getMemberStatus(
+      member.id
+    );
+
+  const lifetime =
     getMemberTotal(
-      selectedMember.id
+      member.id
     );
 
 
@@ -1185,24 +1712,19 @@ function openMemberStatement() {
       .filter(
         contribution =>
           contribution.member_id ===
-          selectedMember.id
+          member.id
       )
       .sort(
         (a, b) => {
 
-          const dateA =
-            new Date(
-              a.contribution_date ||
-              a.created_at
-            );
-
-          const dateB =
-            new Date(
-              b.contribution_date ||
-              b.created_at
-            );
-
-          return dateB - dateA;
+          return new Date(
+            b.contribution_date ||
+            b.created_at
+          ) -
+          new Date(
+            a.contribution_date ||
+            a.created_at
+          );
 
         }
       );
@@ -1221,6 +1743,7 @@ function openMemberStatement() {
 
 
             return `
+
               <tr>
 
                 <td>
@@ -1233,11 +1756,9 @@ function openMemberStatement() {
                 </td>
 
                 <td>
-                  <strong>
-                    KSh ${money(
-                      contribution.amount
-                    )}
-                  </strong>
+                  KSh ${money(
+                    contribution.amount
+                  )}
                 </td>
 
                 <td>
@@ -1261,32 +1782,37 @@ function openMemberStatement() {
                 </td>
 
               </tr>
+
             `;
 
           }
         ).join("")
 
       : `
-        <tr>
-          <td colspan="5">
-            No contributions recorded.
-          </td>
-        </tr>
-      `;
+
+          <tr>
+
+            <td colspan="5">
+              No contributions recorded.
+            </td>
+
+          </tr>
+
+        `;
 
 
-  const statementWindow =
+  const printWindow =
     window.open(
       "",
       "_blank"
     );
 
 
-  if (!statementWindow) {
+  if (!printWindow) {
 
     showError(
       new Error(
-        "The statement window was blocked. Please allow pop-ups for CHAMA LIVE."
+        "Please allow pop-ups to print the statement."
       )
     );
 
@@ -1295,209 +1821,133 @@ function openMemberStatement() {
   }
 
 
-  statementWindow.document.write(`
+  printWindow.document.write(`
 
 <!doctype html>
 
-<html lang="en">
+<html>
 
 <head>
 
 <meta charset="utf-8">
 
-<meta
-  name="viewport"
-  content="width=device-width,initial-scale=1"
->
-
 <title>
-Member Statement -
-${escapeHtml(
-  selectedMember.name
+Member Statement - ${escapeHtml(
+  member.name
 )}
 </title>
 
 
 <style>
 
-* {
-  box-sizing: border-box;
-}
-
-
 body {
-
-  margin: 0;
-
-  padding: 30px;
 
   font-family:
     Arial,
     Helvetica,
     sans-serif;
 
-  color: #111;
+  margin:40px;
 
-  background: #fff;
-
-}
-
-
-.statement {
-
-  max-width: 900px;
-
-  margin: auto;
+  color:#111;
 
 }
 
 
 .header {
 
-  display: flex;
+  display:flex;
 
-  justify-content: space-between;
-
-  align-items: flex-start;
+  justify-content:space-between;
 
   border-bottom:
     2px solid #111;
 
-  padding-bottom: 20px;
+  padding-bottom:20px;
 
-  margin-bottom: 25px;
+  margin-bottom:30px;
 
 }
 
 
-.brand {
+.logo {
 
-  font-size: 24px;
+  font-size:25px;
 
-  font-weight: 700;
+  font-weight:bold;
 
 }
 
 
 .muted {
 
-  color: #666;
-
-}
-
-
-h1 {
-
-  margin: 0 0 6px;
-
-  font-size: 28px;
-
-}
-
-
-h2 {
-
-  margin-top: 30px;
-
-}
-
-
-.member-info {
-
-  display: grid;
-
-  grid-template-columns:
-    repeat(2, 1fr);
-
-  gap: 12px;
-
-  margin-bottom: 25px;
+  color:#666;
 
 }
 
 
 .info {
 
+  display:grid;
+
+  grid-template-columns:
+    repeat(2,1fr);
+
+  gap:15px;
+
+}
+
+
+.box {
+
   border:
     1px solid #ddd;
 
-  padding: 12px;
-
-  border-radius: 6px;
-
-}
-
-
-.label {
-
-  font-size: 12px;
-
-  color: #666;
-
-  margin-bottom: 4px;
-
-}
-
-
-.value {
-
-  font-weight: 600;
+  padding:15px;
 
 }
 
 
 .summary {
 
-  display: grid;
+  display:grid;
 
   grid-template-columns:
-    repeat(4, 1fr);
+    repeat(4,1fr);
 
-  gap: 12px;
+  gap:15px;
 
-}
-
-
-.metric {
-
-  border:
-    1px solid #ddd;
-
-  padding: 18px;
-
-  border-radius: 6px;
+  margin-top:20px;
 
 }
 
 
-.metric-label {
+.summary .box {
 
-  color: #666;
-
-  font-size: 13px;
+  text-align:center;
 
 }
 
 
-.metric-value {
+.amount {
 
-  font-size: 20px;
+  font-size:20px;
 
-  font-weight: 700;
+  font-weight:bold;
 
-  margin-top: 6px;
+  margin-top:7px;
 
 }
 
 
 table {
 
-  width: 100%;
+  width:100%;
 
   border-collapse:
     collapse;
 
-  margin-top: 15px;
+  margin-top:20px;
 
 }
 
@@ -1508,65 +1958,32 @@ td {
   border-bottom:
     1px solid #ddd;
 
-  padding: 10px;
+  padding:10px;
 
-  text-align: left;
+  text-align:left;
 
 }
 
 
 th {
 
-  background: #f5f5f5;
+  background:#f3f3f3;
 
 }
 
 
 .footer {
 
-  margin-top: 40px;
+  margin-top:40px;
 
-  padding-top: 15px;
+  padding-top:15px;
 
   border-top:
     1px solid #ddd;
 
-  color: #666;
+  font-size:12px;
 
-  font-size: 13px;
-
-}
-
-
-.actions {
-
-  max-width: 900px;
-
-  margin:
-    0 auto 20px;
-
-  display: flex;
-
-  gap: 10px;
-
-}
-
-
-.actions button {
-
-  padding:
-    10px 16px;
-
-  border:
-    1px solid #ccc;
-
-  border-radius: 5px;
-
-  background: #111;
-
-  color: white;
-
-  cursor: pointer;
+  color:#666;
 
 }
 
@@ -1574,27 +1991,11 @@ th {
 @media print {
 
   body {
-    padding: 0;
-  }
-
-  .actions {
-    display: none;
+    margin:20px;
   }
 
 }
 
-
-@media(max-width:700px) {
-
-  .member-info,
-  .summary {
-
-    grid-template-columns:
-      1fr;
-
-  }
-
-}
 
 </style>
 
@@ -1604,330 +2005,277 @@ th {
 <body>
 
 
-<div class="actions">
+<div class="header">
 
-  <button
-    onclick="window.print()"
-  >
-    Print Statement
-  </button>
+  <div>
+
+    <div class="logo">
+      CHAMA LIVE
+    </div>
+
+    <div class="muted">
+      Member Financial Statement
+    </div>
+
+  </div>
 
 
-  <button
-    onclick="window.close()"
-  >
-    Close
-  </button>
+  <div class="muted">
+
+    Generated:
+    ${escapeHtml(
+      new Date().toLocaleString(
+        "en-KE"
+      )
+    )}
+
+  </div>
 
 </div>
 
 
-<div class="statement">
+<h1>
+${escapeHtml(
+  member.name
+)}
+</h1>
 
 
-  <div class="header">
+<div class="info">
 
-    <div>
 
-      <div class="brand">
-        CHAMA LIVE
-      </div>
-
-      <div class="muted">
-        Member Financial Statement
-      </div>
-
-    </div>
-
+  <div class="box">
 
     <div class="muted">
-
-      Generated:
-      ${escapeHtml(
-        new Date().toLocaleString(
-          "en-KE"
-        )
-      )}
-
+      Member Number
     </div>
-
-  </div>
-
-
-  <h1>
-
-    ${escapeHtml(
-      selectedMember.name
-    )}
-
-  </h1>
-
-
-  <div class="member-info">
-
-
-    <div class="info">
-
-      <div class="label">
-        Member Number
-      </div>
-
-      <div class="value">
-
-        ${escapeHtml(
-          selectedMember.member_number
-        )}
-
-      </div>
-
-    </div>
-
-
-    <div class="info">
-
-      <div class="label">
-        Membership Number
-      </div>
-
-      <div class="value">
-
-        ${escapeHtml(
-          selectedMember.membership_number
-        )}
-
-      </div>
-
-    </div>
-
-
-    <div class="info">
-
-      <div class="label">
-        Phone
-      </div>
-
-      <div class="value">
-
-        ${escapeHtml(
-          selectedMember.phone
-        )}
-
-      </div>
-
-    </div>
-
-
-    <div class="info">
-
-      <div class="label">
-        Role
-      </div>
-
-      <div class="value">
-
-        ${escapeHtml(
-          selectedMember.role
-        )}
-
-      </div>
-
-    </div>
-
-
-    <div class="info">
-
-      <div class="label">
-        Join Date
-      </div>
-
-      <div class="value">
-
-        ${escapeHtml(
-          formatDate(
-            selectedMember.join_date
-          )
-        )}
-
-      </div>
-
-    </div>
-
-
-    <div class="info">
-
-      <div class="label">
-        Status
-      </div>
-
-      <div class="value">
-
-        ${escapeHtml(
-          selectedMember.status
-        )}
-
-      </div>
-
-    </div>
-
-
-  </div>
-
-
-  <h2>
-
-    ${escapeHtml(
-      currentMonthLabel()
-    )}
-
-    Contribution Summary
-
-  </h2>
-
-
-  <div class="summary">
-
-
-    <div class="metric">
-
-      <div class="metric-label">
-        Expected
-      </div>
-
-      <div class="metric-value">
-
-        KSh ${money(
-          monthly.expected
-        )}
-
-      </div>
-
-    </div>
-
-
-    <div class="metric">
-
-      <div class="metric-label">
-        Paid
-      </div>
-
-      <div class="metric-value">
-
-        KSh ${money(
-          monthly.paid
-        )}
-
-      </div>
-
-    </div>
-
-
-    <div class="metric">
-
-      <div class="metric-label">
-        Outstanding
-      </div>
-
-      <div class="metric-value">
-
-        KSh ${money(
-          monthly.outstanding
-        )}
-
-      </div>
-
-    </div>
-
-
-    <div class="metric">
-
-      <div class="metric-label">
-        Status
-      </div>
-
-      <div class="metric-value">
-
-        ${escapeHtml(
-          monthly.status
-        )}
-
-      </div>
-
-    </div>
-
-
-  </div>
-
-
-  <h2>
-    Contribution History
-  </h2>
-
-
-  <table>
-
-    <thead>
-
-      <tr>
-
-        <th>
-          Date
-        </th>
-
-        <th>
-          Amount
-        </th>
-
-        <th>
-          Type
-        </th>
-
-        <th>
-          Method
-        </th>
-
-        <th>
-          Reference
-        </th>
-
-      </tr>
-
-    </thead>
-
-
-    <tbody>
-
-      ${rows}
-
-    </tbody>
-
-  </table>
-
-
-  <h2>
-    Total Contributions
-  </h2>
-
-
-  <p>
 
     <strong>
-      KSh ${money(
-        total
+      ${escapeHtml(
+        member.member_number
       )}
     </strong>
 
-  </p>
+  </div>
 
 
-  <div class="footer">
+  <div class="box">
 
-    This statement was generated
-    from CHAMA LIVE.
+    <div class="muted">
+      Membership Number
+    </div>
+
+    <strong>
+      ${escapeHtml(
+        member.membership_number
+      )}
+    </strong>
+
+  </div>
+
+
+  <div class="box">
+
+    <div class="muted">
+      Phone
+    </div>
+
+    <strong>
+      ${escapeHtml(
+        member.phone
+      )}
+    </strong>
+
+  </div>
+
+
+  <div class="box">
+
+    <div class="muted">
+      Role
+    </div>
+
+    <strong>
+      ${escapeHtml(
+        member.role
+      )}
+    </strong>
+
+  </div>
+
+
+  <div class="box">
+
+    <div class="muted">
+      Join Date
+    </div>
+
+    <strong>
+      ${escapeHtml(
+        formatDate(
+          member.join_date
+        )
+      )}
+    </strong>
+
+  </div>
+
+
+  <div class="box">
+
+    <div class="muted">
+      Status
+    </div>
+
+    <strong>
+      ${escapeHtml(
+        member.status
+      ).toUpperCase()}
+    </strong>
 
   </div>
 
 
 </div>
+
+
+<h2>
+${escapeHtml(
+  currentMonthLabel()
+)}
+Contribution Summary
+</h2>
+
+
+<div class="summary">
+
+
+  <div class="box">
+
+    <div class="muted">
+      Expected
+    </div>
+
+    <div class="amount">
+      KSh ${money(
+        monthly.expected
+      )}
+    </div>
+
+  </div>
+
+
+  <div class="box">
+
+    <div class="muted">
+      Paid
+    </div>
+
+    <div class="amount">
+      KSh ${money(
+        monthly.paid
+      )}
+    </div>
+
+  </div>
+
+
+  <div class="box">
+
+    <div class="muted">
+      Outstanding
+    </div>
+
+    <div class="amount">
+      KSh ${money(
+        monthly.outstanding
+      )}
+    </div>
+
+  </div>
+
+
+  <div class="box">
+
+    <div class="muted">
+      Status
+    </div>
+
+    <div class="amount">
+      ${escapeHtml(
+        monthly.status
+      )}
+    </div>
+
+  </div>
+
+
+</div>
+
+
+<h2>
+Contribution History
+</h2>
+
+
+<table>
+
+<thead>
+
+<tr>
+
+  <th>Date</th>
+  <th>Amount</th>
+  <th>Type</th>
+  <th>Method</th>
+  <th>Reference</th>
+
+</tr>
+
+</thead>
+
+
+<tbody>
+
+${rows}
+
+</tbody>
+
+</table>
+
+
+<h2>
+Lifetime Contributions
+</h2>
+
+
+<p>
+
+  <strong>
+    KSh ${money(
+      lifetime
+    )}
+  </strong>
+
+</p>
+
+
+<div class="footer">
+
+  CHAMA LIVE — Member financial statement.
+
+</div>
+
+
+<script>
+
+window.onload = function() {
+
+  window.print();
+
+};
+
+</script>
 
 
 </body>
@@ -1937,173 +2285,65 @@ th {
   `);
 
 
-  statementWindow.document.close();
+  printWindow.document.close();
 
 }
 
 
 /* =====================================================
-   EDIT MEMBER
+   DEFAULT DATE
 ===================================================== */
 
-async function editSelectedMember() {
+function setDefaultDate() {
 
-  if (
-    !selectedMember
-  ) {
-
-    return;
-
-  }
+  const date =
+    new Date();
 
 
-  const name =
-    window.prompt(
-      "Member name:",
-      selectedMember.name
-    );
-
-
-  if (
-    name === null
-  ) {
-
-    return;
-
-  }
-
-
-  const phoneValue =
-    window.prompt(
-      "Phone:",
-      selectedMember.phone
-    );
-
-
-  if (
-    phoneValue === null
-  ) {
-
-    return;
-
-  }
-
-
-  const emailValue =
-    window.prompt(
-      "Email:",
-      selectedMember.email ||
-      ""
-    );
-
-
-  if (
-    emailValue === null
-  ) {
-
-    return;
-
-  }
-
-
-  const roleValue =
-    window.prompt(
-      "Role:",
-      selectedMember.role
-    );
-
-
-  if (
-    roleValue === null
-  ) {
-
-    return;
-
-  }
-
-
-  try {
-
-    errorEl.hidden =
-      true;
-
-
-    const {
-      error
-    } = await supabase
-      .from("members")
-      .update({
-
-        name:
-          name.trim(),
-
-        phone:
-          phoneValue.trim(),
-
-        email:
-          emailValue.trim() ||
-          null,
-
-        role:
-          roleValue.trim() ||
-          "member"
-
-      })
-      .eq(
-        "id",
-        selectedMember.id
-      )
-      .eq(
-        "group_id",
-        groupId
+  joinDate.value =
+    date.toISOString()
+      .slice(
+        0,
+        10
       );
 
-
-    if (error) {
-      throw error;
-    }
+}
 
 
-    const selectedId =
-      selectedMember.id;
+/* =====================================================
+   REFRESH
+===================================================== */
+
+async function refresh() {
+
+  await loadGroupSettings();
+
+  await loadMembers();
+
+  await loadContributions();
 
 
-    await loadMembers();
+  renderMetrics();
+
+  renderMembers();
 
 
-    renderMetrics();
+  if (selectedMember) {
 
-    renderMembers();
-
-
-    selectedMember =
+    const updated =
       members.find(
         member =>
           member.id ===
-          selectedId
+          selectedMember.id
       );
 
 
-    if (
-      selectedMember
-    ) {
+    if (updated) {
 
-      await selectMember(
-        selectedMember.id
-      );
+      selectedMember =
+        updated;
 
     }
-
-
-    statusEl.textContent =
-      "Member updated successfully.";
-
-  }
-  catch (error) {
-
-    showError(
-      error
-    );
 
   }
 
@@ -2111,115 +2351,7 @@ async function editSelectedMember() {
 
 
 /* =====================================================
-   ACTIVATE / DEACTIVATE
-===================================================== */
-
-async function toggleMember() {
-
-  if (
-    !selectedMember
-  ) {
-
-    return;
-
-  }
-
-
-  const currentStatus =
-    String(
-      selectedMember.status
-    ).toLowerCase();
-
-
-  const newStatus =
-    currentStatus === "active"
-      ? "inactive"
-      : "active";
-
-
-  try {
-
-    errorEl.hidden =
-      true;
-
-
-    const {
-      error
-    } = await supabase
-      .from("members")
-      .update({
-
-        status:
-          newStatus
-
-      })
-      .eq(
-        "id",
-        selectedMember.id
-      )
-      .eq(
-        "group_id",
-        groupId
-      );
-
-
-    if (error) {
-      throw error;
-    }
-
-
-    const selectedId =
-      selectedMember.id;
-
-
-    await loadMembers();
-
-
-    renderMetrics();
-
-    renderMembers();
-
-
-    selectedMember =
-      members.find(
-        member =>
-          member.id ===
-          selectedId
-      );
-
-
-    if (
-      selectedMember
-    ) {
-
-      await selectMember(
-        selectedMember.id
-      );
-
-    }
-
-
-    statusEl.textContent =
-      `Member ${
-        newStatus === "active"
-          ? "activated"
-          : "deactivated"
-      } successfully.`;
-
-  }
-  catch (error) {
-
-    showError(
-      error
-    );
-
-  }
-
-}
-
-
-/* =====================================================
-   TABLE CLICK
+   TABLE EVENTS
 ===================================================== */
 
 memberRows.addEventListener(
@@ -2242,52 +2374,26 @@ memberRows.addEventListener(
       "view"
     ) {
 
-      selectMember(
-        button.dataset.id
-      );
+      const member =
+        members.find(
+          item =>
+            item.id ===
+            button.dataset.id
+        );
+
+
+      if (member) {
+
+        showMemberDetails(
+          member
+        );
+
+      }
 
     }
 
   }
 );
-
-
-/* =====================================================
-   DEFAULT DATE
-===================================================== */
-
-function setDefaultDate() {
-
-  const date =
-    new Date();
-
-
-  const year =
-    date.getFullYear();
-
-
-  const month =
-    String(
-      date.getMonth() + 1
-    ).padStart(
-      2,
-      "0"
-    );
-
-
-  const day =
-    String(
-      date.getDate()
-    ).padStart(
-      2,
-      "0"
-    );
-
-
-  joinDate.value =
-    `${year}-${month}-${day}`;
-
-}
 
 
 /* =====================================================
@@ -2312,21 +2418,74 @@ searchMember.addEventListener(
 );
 
 
-statementMemberButton.addEventListener(
+editMemberButton.addEventListener(
   "click",
-  openMemberStatement
+  openEditModal
 );
 
 
-editMemberButton.addEventListener(
+statementMemberButton.addEventListener(
   "click",
-  editSelectedMember
+  printStatement
 );
 
 
 toggleMemberButton.addEventListener(
   "click",
   toggleMember
+);
+
+
+editMemberForm.addEventListener(
+  "submit",
+  saveEditedMember
+);
+
+
+closeEditModal.addEventListener(
+  "click",
+  closeEdit
+);
+
+
+cancelEdit.addEventListener(
+  "click",
+  closeEdit
+);
+
+
+editModal.addEventListener(
+  "click",
+  event => {
+
+    if (
+      event.target ===
+      editModal
+    ) {
+
+      closeEdit();
+
+    }
+
+  }
+);
+
+
+document.addEventListener(
+  "keydown",
+  event => {
+
+    if (
+      event.key ===
+      "Escape" &&
+      !editModal.hidden
+    ) {
+
+      closeEdit();
+
+    }
+
+  }
 );
 
 
@@ -2338,8 +2497,7 @@ async function init() {
 
   try {
 
-    errorEl.hidden =
-      true;
+    clearError();
 
 
     statusEl.textContent =
