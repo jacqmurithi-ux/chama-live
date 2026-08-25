@@ -1,10 +1,10 @@
+```html
 <!doctype html>
-
 <html lang="en">
 
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <title>Reports — CHAMA LIVE</title>
 
@@ -14,395 +14,399 @@
 <body>
 
 <header class="topbar">
-
   <div class="brand">
     CHAMA <span>LIVE</span>
   </div>
 
-<button
- class="btn btn-secondary"
- id="logout"
- type="button">
-Sign out </button>
-
+  <button
+    class="btn btn-secondary"
+    id="logout"
+    type="button"
+  >
+    Sign out
+  </button>
 </header>
+
 
 <div class="layout">
 
   <aside class="sidebar">
 
-```
-<nav class="nav">
+    <nav class="nav">
 
-  <a href="dashboard.html">
-    Dashboard
-  </a>
+      <a href="dashboard.html">Dashboard</a>
 
-  <a href="members.html">
-    Members
-  </a>
+      <a href="members.html">Members</a>
 
-  <a href="contributions.html">
-    Contributions
-  </a>
+      <a href="contributions.html">Contributions</a>
 
-  <a href="expenses.html">
-    Expenses
-  </a>
+      <a href="expenses.html">Expenses</a>
 
-  <a href="meetings.html">
-    Meetings
-  </a>
+      <a href="meetings.html">Meetings</a>
 
-  <a class="active" href="reports.html">
-    Reports
-  </a>
+      <a class="active" href="reports.html">Reports</a>
 
-  <a href="group-management.html">
-    Group Management
-  </a>
+      <a href="group-management.html">
+        Group Management
+      </a>
 
-</nav>
-```
+    </nav>
 
   </aside>
 
+
   <main class="main">
 
-```
-<div class="page-head">
+    <div class="page-head">
 
-  <div>
+      <div>
 
-    <h1>Reports</h1>
+        <h1>Reports</h1>
 
-    <p class="muted">
-      Live financial and management summary.
-    </p>
+        <p class="muted">
+          Live financial and management summary.
+        </p>
 
-  </div>
-
-</div>
-
-
-<!-- STATUS -->
-
-<div
-  id="status"
-  class="card"
-  style="margin-bottom:20px;"
->
-  Loading reports...
-</div>
-
-
-<!-- ERROR -->
-
-<div
-  id="error"
-  class="error"
-  hidden
-  style="margin-bottom:20px;"
-></div>
-
-
-<!-- METRICS -->
-
-<div class="grid grid-3">
-
-  <div class="card">
-
-    <div class="muted">
-      Active Members
-    </div>
-
-    <div
-      class="metric"
-      id="activeMembers">
-      —
-    </div>
-
-  </div>
-
-
-  <div class="card">
-
-    <div class="muted">
-      Total Members
-    </div>
-
-    <div
-      class="metric"
-      id="totalMembers">
-      —
-    </div>
-
-  </div>
-
-
-  <div class="card">
-
-    <div class="muted">
-      Contributions
-    </div>
-
-    <div
-      class="metric"
-      id="contributions">
-      —
-    </div>
-
-  </div>
-
-
-  <div class="card">
-
-    <div class="muted">
-      Approved Expenses
-    </div>
-
-    <div
-      class="metric"
-      id="approvedExpenses">
-      —
-    </div>
-
-  </div>
-
-
-  <div class="card">
-
-    <div class="muted">
-      Pending Expenses
-    </div>
-
-    <div
-      class="metric"
-      id="pendingExpenses">
-      —
-    </div>
-
-  </div>
-
-
-  <div class="card">
-
-    <div class="muted">
-      Current Balance
-    </div>
-
-    <div
-      class="metric"
-      id="currentBalance">
-      —
-    </div>
-
-  </div>
-
-</div>
-
-
-<br>
-
-
-<!-- FINANCIAL POSITION -->
-
-<section class="card">
-
-  <h2>
-    Financial Position
-  </h2>
-
-  <p>
-    Opening balance:
-    <strong id="opening">
-      KSh 0
-    </strong>
-  </p>
-
-  <p>
-    Contributions:
-    <strong id="contributions2">
-      KSh 0
-    </strong>
-  </p>
-
-  <p>
-    Approved expenses:
-    <strong id="expenses2">
-      KSh 0
-    </strong>
-  </p>
-
-  <p>
-    Closing balance:
-    <strong id="balance">
-      KSh 0
-    </strong>
-  </p>
-
-</section>
-
-
-<br>
-
-
-<!-- RECENT CONTRIBUTIONS -->
-
-<section class="card">
-
-  <h2>
-    Recent Contributions
-  </h2>
-
-  <div class="table-wrap">
-
-    <table class="table">
-
-      <thead>
-
-        <tr>
-          <th>Date</th>
-          <th>Member</th>
-          <th>Amount</th>
-          <th>Type</th>
-          <th>Method</th>
-          <th>Reference</th>
-        </tr>
-
-      </thead>
-
-
-      <tbody id="contributionRows">
-
-        <tr>
-
-          <td colspan="6">
-            Loading...
-          </td>
-
-        </tr>
-
-      </tbody>
-
-    </table>
-
-  </div>
-
-</section>
-
-
-<br>
-
-
-<!-- RECENT EXPENSES -->
-
-<section class="card">
-
-  <h2>
-    Recent Expenses
-  </h2>
-
-  <div class="table-wrap">
-
-    <table class="table">
-
-      <thead>
-
-        <tr>
-          <th>Date</th>
-          <th>Description</th>
-          <th>Category</th>
-          <th>Amount</th>
-          <th>Status</th>
-        </tr>
-
-      </thead>
-
-
-      <tbody id="expenseRows">
-
-        <tr>
-
-          <td colspan="5">
-            Loading...
-          </td>
-
-        </tr>
-
-      </tbody>
-
-    </table>
-
-  </div>
-
-</section>
-
-
-<br>
-
-
-<!-- MEETINGS -->
-
-<section class="card">
-
-  <h2>
-    Meetings Summary
-  </h2>
-
-  <div class="grid grid-3">
-
-    <div>
-
-      <div class="muted">
-        Upcoming
       </div>
 
-      <strong id="upcomingMeetings">
-        —
-      </strong>
-
     </div>
 
 
-    <div>
+    <!-- STATUS -->
 
-      <div class="muted">
-        Completed
+    <div
+      id="status"
+      class="card"
+      style="margin-bottom:20px;"
+    >
+      Loading reports...
+    </div>
+
+
+    <!-- ERROR -->
+
+    <div
+      id="error"
+      class="error"
+      hidden
+      style="margin-bottom:20px;"
+    ></div>
+
+
+    <!-- FINANCIAL METRICS -->
+
+    <div class="grid grid-3">
+
+      <div class="card">
+
+        <div class="muted">
+          Active Members
+        </div>
+
+        <div
+          class="metric"
+          id="activeMembers"
+        >
+          —
+        </div>
+
       </div>
 
-      <strong id="completedMeetings">
-        —
-      </strong>
 
-    </div>
+      <div class="card">
 
+        <div class="muted">
+          Total Members
+        </div>
 
-    <div>
+        <div
+          class="metric"
+          id="totalMembers"
+        >
+          —
+        </div>
 
-      <div class="muted">
-        Cancelled
       </div>
 
-      <strong id="cancelledMeetings">
-        —
-      </strong>
+
+      <div class="card">
+
+        <div class="muted">
+          Contributions
+        </div>
+
+        <div
+          class="metric"
+          id="contributions"
+        >
+          —
+        </div>
+
+      </div>
+
+
+      <div class="card">
+
+        <div class="muted">
+          Approved Expenses
+        </div>
+
+        <div
+          class="metric"
+          id="approvedExpenses"
+        >
+          —
+        </div>
+
+      </div>
+
+
+      <div class="card">
+
+        <div class="muted">
+          Pending Expenses
+        </div>
+
+        <div
+          class="metric"
+          id="pendingExpenses"
+        >
+          —
+        </div>
+
+      </div>
+
+
+      <div class="card">
+
+        <div class="muted">
+          Current Balance
+        </div>
+
+        <div
+          class="metric"
+          id="currentBalance"
+        >
+          —
+        </div>
+
+      </div>
 
     </div>
 
-  </div>
 
-</section>
-```
+    <br>
+
+
+    <!-- FINANCIAL POSITION -->
+
+    <section class="card">
+
+      <h2>
+        Financial Position
+      </h2>
+
+      <p>
+        Opening balance:
+        <strong id="opening">
+          KSh 0
+        </strong>
+      </p>
+
+      <p>
+        Contributions:
+        <strong id="contributions2">
+          KSh 0
+        </strong>
+      </p>
+
+      <p>
+        Approved expenses:
+        <strong id="expenses2">
+          KSh 0
+        </strong>
+      </p>
+
+      <p>
+        Closing balance:
+        <strong id="balance">
+          KSh 0
+        </strong>
+      </p>
+
+    </section>
+
+
+    <br>
+
+
+    <!-- RECENT CONTRIBUTIONS -->
+
+    <section class="card">
+
+      <h2>
+        Recent Contributions
+      </h2>
+
+      <div class="table-wrap">
+
+        <table class="table">
+
+          <thead>
+
+            <tr>
+
+              <th>Date</th>
+              <th>Member</th>
+              <th>Amount</th>
+              <th>Type</th>
+              <th>Method</th>
+              <th>Reference</th>
+
+            </tr>
+
+          </thead>
+
+
+          <tbody id="contributionRows">
+
+            <tr>
+
+              <td colspan="6">
+                Loading...
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+
+    <br>
+
+
+    <!-- RECENT EXPENSES -->
+
+    <section class="card">
+
+      <h2>
+        Recent Expenses
+      </h2>
+
+      <div class="table-wrap">
+
+        <table class="table">
+
+          <thead>
+
+            <tr>
+
+              <th>Date</th>
+              <th>Description</th>
+              <th>Category</th>
+              <th>Amount</th>
+              <th>Status</th>
+
+            </tr>
+
+          </thead>
+
+
+          <tbody id="expenseRows">
+
+            <tr>
+
+              <td colspan="5">
+                Loading...
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+
+    <br>
+
+
+    <!-- MEETINGS -->
+
+    <section class="card">
+
+      <h2>
+        Meetings Summary
+      </h2>
+
+      <div class="grid grid-3">
+
+        <div>
+
+          <div class="muted">
+            Upcoming
+          </div>
+
+          <strong id="upcomingMeetings">
+            —
+          </strong>
+
+        </div>
+
+
+        <div>
+
+          <div class="muted">
+            Completed
+          </div>
+
+          <strong id="completedMeetings">
+            —
+          </strong>
+
+        </div>
+
+
+        <div>
+
+          <div class="muted">
+            Cancelled
+          </div>
+
+          <strong id="cancelledMeetings">
+            —
+          </strong>
+
+        </div>
+
+      </div>
+
+    </section>
 
   </main>
 
 </div>
 
-<!-- ONLY ONE REPORTS SCRIPT -->
 
-<script type="module" src="./js/reports.js"></script>
+<script type="module">
+
+  import { boot } from "./js/layout.js";
+
+  await boot();
+
+  import "./js/reports.js";
+
+</script>
 
 </body>
 
 </html>
+```
