@@ -3,6 +3,7 @@
 
 <head>
   <meta charset="utf-8">
+
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1"
@@ -87,9 +88,6 @@
   <!-- MAIN -->
 
   <main class="main">
-
-
-    <!-- PAGE HEADER -->
 
     <div class="page-head">
 
@@ -255,7 +253,7 @@
     <br>
 
 
-    <!-- MONTHLY CONTRIBUTION SUMMARY -->
+    <!-- CONTRIBUTION SUMMARY -->
 
     <section class="card">
 
@@ -264,7 +262,6 @@
       </h2>
 
       <div class="grid grid-3">
-
 
         <div>
 
@@ -343,7 +340,6 @@
 
         </div>
 
-
       </div>
 
     </section>
@@ -406,7 +402,6 @@
 
       <div class="grid grid-3">
 
-
         <div>
 
           <div class="muted">
@@ -445,7 +440,6 @@
 
         </div>
 
-
       </div>
 
     </section>
@@ -454,7 +448,7 @@
     <br>
 
 
-    <!-- MONTH ACTIONS -->
+    <!-- ACTIONS -->
 
     <section class="card">
 
@@ -467,7 +461,6 @@
         financial position. Contributions and
         expenses are not deleted.
       </p>
-
 
       <div
         style="
@@ -520,7 +513,6 @@
         Member Contribution Status
       </h2>
 
-
       <div class="table-wrap">
 
         <table class="table">
@@ -529,30 +521,19 @@
 
             <tr>
 
-              <th>
-                Member
-              </th>
+              <th>Member</th>
 
-              <th>
-                Expected
-              </th>
+              <th>Expected</th>
 
-              <th>
-                Paid
-              </th>
+              <th>Paid</th>
 
-              <th>
-                Outstanding
-              </th>
+              <th>Outstanding</th>
 
-              <th>
-                Status
-              </th>
+              <th>Status</th>
 
             </tr>
 
           </thead>
-
 
           <tbody id="memberRows">
 
@@ -580,13 +561,11 @@
 
 <script type="module">
 
-  import {
-    boot
-  } from "./js/layout.js";
+  import { boot } from "./js/layout.js";
 
   await boot();
 
-  import "./js/monthly-closing.js";
+  await import("./js/monthly-closing.js");
 
 </script>
 
