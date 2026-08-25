@@ -1,56 +1,140 @@
 import { supabase } from "./supabase.js";
 
+
 /* =======================================================
    ELEMENTS
 ======================================================= */
 
-const statusEl = document.getElementById("status");
-const errorEl = document.getElementById("error");
+const statusEl =
+  document.getElementById("status");
+
+const errorEl =
+  document.getElementById("error");
+
+
+/* Financial metrics */
 
 const activeMembersEl =
-  document.getElementById("activeMembers");
+  document.getElementById(
+    "activeMembers"
+  );
 
 const totalMembersEl =
-  document.getElementById("totalMembers");
+  document.getElementById(
+    "totalMembers"
+  );
 
 const contributionsEl =
-  document.getElementById("contributions");
+  document.getElementById(
+    "contributions"
+  );
 
 const approvedExpensesEl =
-  document.getElementById("approvedExpenses");
+  document.getElementById(
+    "approvedExpenses"
+  );
 
 const pendingExpensesEl =
-  document.getElementById("pendingExpenses");
+  document.getElementById(
+    "pendingExpenses"
+  );
 
 const currentBalanceEl =
-  document.getElementById("currentBalance");
+  document.getElementById(
+    "currentBalance"
+  );
+
+
+/* Financial position */
 
 const openingEl =
-  document.getElementById("opening");
+  document.getElementById(
+    "opening"
+  );
 
 const contributions2El =
-  document.getElementById("contributions2");
+  document.getElementById(
+    "contributions2"
+  );
 
 const expenses2El =
-  document.getElementById("expenses2");
+  document.getElementById(
+    "expenses2"
+  );
 
 const balanceEl =
-  document.getElementById("balance");
+  document.getElementById(
+    "balance"
+  );
+
+
+/* Monthly summary */
+
+const reportMonthEl =
+  document.getElementById(
+    "reportMonth"
+  );
+
+const monthlyExpectedEl =
+  document.getElementById(
+    "monthlyExpected"
+  );
+
+const monthlyCollectedEl =
+  document.getElementById(
+    "monthlyCollected"
+  );
+
+const monthlyOutstandingEl =
+  document.getElementById(
+    "monthlyOutstanding"
+  );
+
+const membersPaidEl =
+  document.getElementById(
+    "membersPaid"
+  );
+
+const membersPartialEl =
+  document.getElementById(
+    "membersPartial"
+  );
+
+const collectionRateEl =
+  document.getElementById(
+    "collectionRate"
+  );
+
+
+/* Tables */
 
 const contributionRows =
-  document.getElementById("contributionRows");
+  document.getElementById(
+    "contributionRows"
+  );
 
 const expenseRows =
-  document.getElementById("expenseRows");
+  document.getElementById(
+    "expenseRows"
+  );
+
+
+/* Meetings */
 
 const upcomingMeetingsEl =
-  document.getElementById("upcomingMeetings");
+  document.getElementById(
+    "upcomingMeetings"
+  );
 
 const completedMeetingsEl =
-  document.getElementById("completedMeetings");
+  document.getElementById(
+    "completedMeetings"
+  );
 
 const cancelledMeetingsEl =
-  document.getElementById("cancelledMeetings");
+  document.getElementById(
+    "cancelledMeetings"
+  );
 
 
 /* =======================================================
@@ -60,9 +144,13 @@ const cancelledMeetingsEl =
 let groupId = null;
 
 let group = null;
+
 let members = [];
+
 let contributions = [];
+
 let expenses = [];
+
 let meetings = [];
 
 
@@ -72,12 +160,15 @@ let meetings = [];
 
 function money(value) {
 
-  return new Intl.NumberFormat("en-KE", {
-    style: "currency",
-    currency: "KES",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2
-  }).format(
+  return new Intl.NumberFormat(
+    "en-KE",
+    {
+      style: "currency",
+      currency: "KES",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    }
+  ).format(
     Number(value || 0)
   );
 
@@ -123,10 +214,22 @@ function escapeHtml(value) {
   }
 
   return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
     .replaceAll(
       "'",
       "&#039;"
@@ -136,13 +239,13 @@ function escapeHtml(value) {
 
 
 /* =======================================================
-   ERROR
+   ERROR HANDLING
 ======================================================= */
 
 function showError(error) {
 
   console.error(
-    "Reports error:",
+    "CHAMA LIVE Reports Error:",
     error
   );
 
@@ -159,7 +262,7 @@ function showError(error) {
 
 
 /* =======================================================
-   GET GROUP
+   GET CURRENT USER GROUP
 ======================================================= */
 
 async function getGroupId() {
@@ -393,6 +496,23 @@ async function loadMeetings() {
 
 
 /* =======================================================
+   ACTIVE MEMBERS
+======================================================= */
+
+function getActiveMembers() {
+
+  return members.filter(
+    member =>
+      String(
+        member.status || ""
+      ).toLowerCase() ===
+      "active"
+  );
+
+}
+
+
+/* =======================================================
    TOTAL CONTRIBUTIONS
 ======================================================= */
 
@@ -423,8 +543,7 @@ function getApprovedExpenses() {
     .filter(
       expense =>
         String(
-          expense.approval_status ||
-          ""
+          expense.approval_status || ""
         ).toLowerCase() ===
         "approved"
     )
@@ -453,8 +572,7 @@ function getPendingExpenses() {
     .filter(
       expense =>
         String(
-          expense.approval_status ||
-          ""
+          expense.approval_status || ""
         ).toLowerCase() ===
         "pending"
     )
@@ -469,23 +587,6 @@ function getPendingExpenses() {
         ),
       0
     );
-
-}
-
-
-/* =======================================================
-   ACTIVE MEMBERS
-======================================================= */
-
-function getActiveMembers() {
-
-  return members.filter(
-    member =>
-      String(
-        member.status || ""
-      ).toLowerCase() ===
-      "active"
-  );
 
 }
 
@@ -518,24 +619,24 @@ function getCurrentBalance() {
 
 
 /* =======================================================
-   RENDER MAIN METRICS
+   RENDER FINANCIAL METRICS
 ======================================================= */
 
 function renderMetrics() {
 
-  const active =
+  const activeMembers =
     getActiveMembers();
 
-  const total =
+  const totalMembers =
     members.length;
 
   const contributionTotal =
     getTotalContributions();
 
-  const approved =
+  const approvedExpenses =
     getApprovedExpenses();
 
-  const pending =
+  const pendingExpenses =
     getPendingExpenses();
 
   const opening =
@@ -545,16 +646,14 @@ function renderMetrics() {
     );
 
   const balance =
-    opening +
-    contributionTotal -
-    approved;
+    getCurrentBalance();
 
 
   activeMembersEl.textContent =
-    active.length;
+    activeMembers.length;
 
   totalMembersEl.textContent =
-    total;
+    totalMembers;
 
   contributionsEl.textContent =
     money(
@@ -563,12 +662,12 @@ function renderMetrics() {
 
   approvedExpensesEl.textContent =
     money(
-      approved
+      approvedExpenses
     );
 
   pendingExpensesEl.textContent =
     money(
-      pending
+      pendingExpenses
     );
 
   currentBalanceEl.textContent =
@@ -577,7 +676,7 @@ function renderMetrics() {
     );
 
 
-  /* Financial position */
+  /* Financial Position */
 
   openingEl.textContent =
     money(
@@ -591,7 +690,7 @@ function renderMetrics() {
 
   expenses2El.textContent =
     money(
-      approved
+      approvedExpenses
     );
 
   balanceEl.textContent =
@@ -603,7 +702,7 @@ function renderMetrics() {
 
 
 /* =======================================================
-   MEMBER NAME
+   GET MEMBER NAME
 ======================================================= */
 
 function getMemberName(
@@ -626,7 +725,7 @@ function getMemberName(
 
 
 /* =======================================================
-   RENDER CONTRIBUTIONS
+   RENDER CONTRIBUTION LEDGER
 ======================================================= */
 
 function renderContributions() {
@@ -690,7 +789,9 @@ function renderContributions() {
               <td>
                 <strong>
                   ${escapeHtml(
-                    money(item.amount)
+                    money(
+                      item.amount
+                    )
                   )}
                 </strong>
               </td>
@@ -804,6 +905,229 @@ function renderExpenses() {
 
 
 /* =======================================================
+   MONTHLY CONTRIBUTION SUMMARY
+======================================================= */
+
+function renderMonthlyContributionSummary() {
+
+  const activeMembers =
+    getActiveMembers();
+
+
+  const expectedPerMember =
+    Number(
+      group?.monthly_contribution ||
+      0
+    );
+
+
+  /* Current month */
+
+  const now =
+    new Date();
+
+
+  const currentMonth =
+    `${now.getFullYear()}-${String(
+      now.getMonth() + 1
+    ).padStart(2, "0")}`;
+
+
+  const monthName =
+    now.toLocaleDateString(
+      "en-KE",
+      {
+        month: "long",
+        year: "numeric"
+      }
+    );
+
+
+  /*
+    Expected contribution.
+
+    Example:
+
+    3 members × KSh 200
+    = KSh 600
+  */
+
+  const expected =
+    expectedPerMember *
+    activeMembers.length;
+
+
+  /*
+    Only monthly contributions
+    for the current month.
+  */
+
+  const monthlyContributions =
+    contributions.filter(
+      item => {
+
+        return (
+
+          String(
+            item.contribution_type ||
+            ""
+          ).toLowerCase() ===
+          "monthly"
+
+          &&
+
+          String(
+            item.month ||
+            ""
+          ) ===
+          currentMonth
+
+        );
+
+      }
+    );
+
+
+  /*
+    Total collected.
+  */
+
+  const collected =
+    monthlyContributions.reduce(
+      (
+        total,
+        item
+      ) =>
+        total +
+        Number(
+          item.amount || 0
+        ),
+      0
+    );
+
+
+  /*
+    Outstanding.
+
+    Never display a negative
+    outstanding amount.
+  */
+
+  const outstanding =
+    Math.max(
+      expected -
+      collected,
+      0
+    );
+
+
+  /*
+    Member statuses.
+  */
+
+  let paidCount = 0;
+
+  let partialCount = 0;
+
+
+  activeMembers.forEach(
+    member => {
+
+      const paid =
+        monthlyContributions
+          .filter(
+            item =>
+              item.member_id ===
+              member.id
+          )
+          .reduce(
+            (
+              total,
+              item
+            ) =>
+              total +
+              Number(
+                item.amount || 0
+              ),
+            0
+          );
+
+
+      if (
+        expectedPerMember > 0 &&
+        paid >=
+          expectedPerMember
+      ) {
+
+        paidCount++;
+
+      }
+      else if (
+        paid > 0
+      ) {
+
+        partialCount++;
+
+      }
+
+    }
+  );
+
+
+  /*
+    Collection rate.
+  */
+
+  const collectionRate =
+    expected > 0
+      ? (
+          collected /
+          expected
+        ) * 100
+      : 0;
+
+
+  /*
+    Update UI.
+  */
+
+  reportMonthEl.textContent =
+    monthName;
+
+
+  monthlyExpectedEl.textContent =
+    money(
+      expected
+    );
+
+
+  monthlyCollectedEl.textContent =
+    money(
+      collected
+    );
+
+
+  monthlyOutstandingEl.textContent =
+    money(
+      outstanding
+    );
+
+
+  membersPaidEl.textContent =
+    `${paidCount} / ${activeMembers.length}`;
+
+
+  membersPartialEl.textContent =
+    partialCount;
+
+
+  collectionRateEl.textContent =
+    `${collectionRate.toFixed(1)}%`;
+
+}
+
+
+/* =======================================================
    MEETINGS SUMMARY
 ======================================================= */
 
@@ -862,12 +1186,15 @@ async function init() {
     errorEl.hidden =
       true;
 
+    errorEl.textContent =
+      "";
+
     statusEl.textContent =
       "Loading reports...";
 
 
     /*
-      Get current user's group.
+      Get current group.
     */
 
     groupId =
@@ -875,15 +1202,21 @@ async function init() {
 
 
     /*
-      Load everything from Supabase.
+      Load all live data.
     */
 
     await Promise.all([
+
       loadGroup(),
+
       loadMembers(),
+
       loadContributions(),
+
       loadExpenses(),
+
       loadMeetings()
+
     ]);
 
 
@@ -892,6 +1225,8 @@ async function init() {
     */
 
     renderMetrics();
+
+    renderMonthlyContributionSummary();
 
     renderContributions();
 
@@ -907,15 +1242,19 @@ async function init() {
     const now =
       new Date();
 
+
     statusEl.textContent =
       `Reports updated • ${now.toLocaleString(
         "en-KE"
       )}`;
 
 
-  } catch (error) {
+  }
+  catch (error) {
 
-    showError(error);
+    showError(
+      error
+    );
 
   }
 
