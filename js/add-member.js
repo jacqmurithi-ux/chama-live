@@ -1,20 +1,12 @@
 import { supabase } from "./supabase.js";
-import {
-  getMyMember,
-  hasRole
-} from "./auth.js";
+import { getMyMember } from "./auth.js";
 
-
-/* =====================================================
-   HELPERS
-===================================================== */
 
 const $ = (id) =>
   document.getElementById(id);
 
 
 let currentMember = null;
-
 let groupId = null;
 
 
@@ -26,38 +18,54 @@ async function init() {
 
   try {
 
-    currentMember =
-      await getMyMember(
-        true
-      );
+    setStatus("Checking your permissions...");
 
+    const member =
+      await getMyMember();
 
-    if (!currentMember) {
-
+    if (!member) {
       throw new Error(
-        "Unable to identify your account."
+        "You must be logged in."
       );
+    }
 
+    currentMember =
+      member;
+
+    groupId =
+      member.group_id;
+
+    if (!groupId) {
+      throw new Error(
+        "Your account is not linked to a group."
+      );
     }
 
 
     /*
-     * Only Admin and Chairperson
-     * may add members.
-     */
+      Support both existing account-linking
+      fields used by CHAMA LIVE.
+    */
+
+    const role =
+      String(
+        member.role || ""
+      )
+        .trim()
+        .toLowerCase();
+
 
     if (
-      !hasRole(
-        currentMember,
-        [
-          "admin",
-          "chairperson"
-        ]
-      )
+      role !== "admin" &&
+      role !== "chairperson"
     ) {
 
-      window.location.replace(
-        "dashboard.html"
+      showError(
+        "Access denied. Only a group admin or chairperson can add members."
+      );
+
+      setStatus(
+        "You do not have permission to add members."
       );
 
       return;
@@ -65,74 +73,40 @@ async function init() {
     }
 
 
-    groupId =
-      currentMember.group_id;
-
-
     /*
-     * Default join date.
-     */
+      Default join date
+    */
 
-    const joinDate =
-      $("join_date");
+    const today =
+      new Date();
 
-
-    if (joinDate) {
-
-      const today =
-        new Date();
-
-
-      joinDate.value =
-        `${today.getFullYear()}-${String(
-          today.getMonth() + 1
-        ).padStart(2, "0")}-${String(
-          today.getDate()
-        ).padStart(2, "0")}`;
-
-    }
+    const todayString =
+      `${today.getFullYear()}-${String(
+        today.getMonth() + 1
+      ).padStart(2, "0")}-${String(
+        today.getDate()
+      ).padStart(2, "0")}`;
 
 
-    /*
-     * Load group.
-     */
-
-    await loadGroup();
+    $("joinDate").value =
+      todayString;
 
 
-    /*
-     * Form.
-     */
-
-    $("memberForm")
-      .addEventListener(
-        "submit",
-        handleSubmit
-      );
+    $("memberFormCard").hidden =
+      false;
 
 
-    /*
-     * Membership number:
-     * automatically trim spaces.
-     */
-
-    $("membership_number")
-      .addEventListener(
-        "blur",
-        event => {
-
-          event.target.value =
-            event.target.value
-              .trim();
-
-        }
-      );
+    setStatus(
+      "You can add members to this group."
+    );
 
 
   } catch (error) {
 
-    showError(
-      error
+    showError(error);
+
+    setStatus(
+      "Unable to load member onboarding."
     );
 
   }
@@ -141,61 +115,139 @@ async function init() {
 
 
 /* =====================================================
-   LOAD GROUP
+   SUBMIT
 ===================================================== */
 
-async function loadGroup() {
+async function submitMember(event) {
 
-  const {
-    data,
-    error
-  } = await supabase
+  event.preventDefault();
 
-    .from("groups")
-
-    .select(`
-      id,
-      name
-    `)
-
-    .eq(
-      "id",
-      groupId
-    )
-
-    .single();
+  clearError();
 
 
-  if (error) {
+  if (!groupId) {
 
-    throw error;
+    showError(
+      "Your group could not be identified."
+    );
+
+    return;
 
   }
 
 
-  $("groupName")
-    .textContent =
-    data.name;
-
-}
-
-
-/* =====================================================
-   SUBMIT
-===================================================== */
-
-async function handleSubmit(
-  event
-) {
-
-  event.preventDefault();
-
-
-  clearMessages();
-
-
   const button =
     $("saveMember");
+
+
+  const name =
+    $("name").value.trim();
+
+  const memberNumber =
+    $("memberNumber").value.trim();
+
+  const membershipNumber =
+    $("membershipNumber").value.trim();
+
+  const phone =
+    $("phone").value.trim();
+
+  const email =
+    $("email").value.trim();
+
+  const joinDate =
+    $("joinDate").value;
+
+  const role =
+    $("role").value;
+
+
+  /* =================================================
+     VALIDATION
+  ================================================= */
+
+  if (!name) {
+
+    showError(
+      "Please enter the member's full name."
+    );
+
+    $("name").focus();
+
+    return;
+
+  }
+
+
+  if (!memberNumber) {
+
+    showError(
+      "Please enter the member number."
+    );
+
+    $("memberNumber").focus();
+
+    return;
+
+  }
+
+
+  if (!membershipNumber) {
+
+    showError(
+      "Please enter the membership number."
+    );
+
+    $("membershipNumber").focus();
+
+    return;
+
+  }
+
+
+  if (!phone) {
+
+    showError(
+      "Please enter the member's phone number."
+    );
+
+    $("phone").focus();
+
+    return;
+
+  }
+
+
+  if (!joinDate) {
+
+    showError(
+      "Please select the join date."
+    );
+
+    $("joinDate").focus();
+
+    return;
+
+  }
+
+
+  const validRoles = [
+    "member",
+    "secretary",
+    "treasurer",
+    "chairperson"
+  ];
+
+
+  if (!validRoles.includes(role)) {
+
+    showError(
+      "Invalid member role."
+    );
+
+    return;
+
+  }
 
 
   button.disabled =
@@ -207,355 +259,138 @@ async function handleSubmit(
 
   try {
 
-    const name =
-      $("name")
-        .value
-        .trim();
+    /*
+      The database RPC performs the
+      actual RBAC verification.
 
+      This is important because frontend
+      permission checks alone are not secure.
+    */
 
-    const membershipNumber =
-      $("membership_number")
-        .value
-        .trim();
+    const {
+      data,
+      error
+    } =
+      await supabase.rpc(
+        "add_group_member",
+        {
+          p_group_id:
+            groupId,
 
+          p_name:
+            name,
 
-    const phone =
-      $("phone")
-        .value
-        .trim();
+          p_member_number:
+            memberNumber,
 
+          p_membership_number:
+            membershipNumber,
 
-    const email =
-      $("email")
-        .value
-        .trim()
-        .toLowerCase();
+          p_phone:
+            phone,
 
+          p_email:
+            email || null,
 
-    const role =
-      $("role")
-        .value;
+          p_role:
+            role,
 
-
-    const joinDate =
-      $("join_date")
-        .value;
-
-
-    /* =================================================
-       VALIDATION
-    ================================================= */
-
-    if (!name) {
-
-      throw new Error(
-        "Please enter the member's full name."
+          p_join_date:
+            joinDate
+        }
       );
 
+
+    if (error) {
+      throw error;
     }
 
 
-    if (!membershipNumber) {
+    if (!data) {
 
       throw new Error(
-        "Please enter the membership number."
-      );
-
-    }
-
-
-    if (!phone) {
-
-      throw new Error(
-        "Please enter the member's phone number."
-      );
-
-    }
-
-
-    const allowedRoles = [
-      "member",
-      "secretary",
-      "treasurer",
-      "chairperson"
-    ];
-
-
-    if (
-      !allowedRoles.includes(
-        role
-      )
-    ) {
-
-      throw new Error(
-        "Invalid member role."
+        "Member was not created."
       );
 
     }
 
 
     /*
-     * Admin/chairperson cannot create
-     * another admin account from this form.
-     *
-     * The first group administrator is created
-     * through group onboarding.
-     */
+      Successful onboarding
+    */
 
-    if (
-      role === "admin"
-    ) {
+    $("memberFormCard").hidden =
+      true;
 
-      throw new Error(
-        "Admin accounts can only be created through group onboarding."
-      );
+    $("successCard").hidden =
+      false;
 
-    }
-
-
-    /* =================================================
-       CHECK DUPLICATE MEMBERSHIP NUMBER
-    ================================================= */
-
-    const {
-      data: existingNumber,
-      error: numberError
-    } = await supabase
-
-      .from("members")
-
-      .select(
-        "id,name"
-      )
-
-      .eq(
-        "group_id",
-        groupId
-      )
-
-      .eq(
-        "membership_number",
-        membershipNumber
-      )
-
-      .maybeSingle();
-
-
-    if (numberError) {
-
-      throw numberError;
-
-    }
-
-
-    if (existingNumber) {
-
-      throw new Error(
-        `Membership number ${membershipNumber} already exists for ${existingNumber.name}.`
-      );
-
-    }
-
-
-    /* =================================================
-       CHECK DUPLICATE MEMBER NUMBER
-    ================================================= */
-
-    const {
-      data: existingMemberNumber,
-      error: memberNumberError
-    } = await supabase
-
-      .from("members")
-
-      .select(
-        "id,name"
-      )
-
-      .eq(
-        "group_id",
-        groupId
-      )
-
-      .eq(
-        "member_number",
-        membershipNumber
-      )
-
-      .maybeSingle();
-
-
-    if (memberNumberError) {
-
-      throw memberNumberError;
-
-    }
-
-
-    /*
-     * Keep the legacy member_number populated
-     * because the existing reports use it.
-     */
-
-    if (
-      existingMemberNumber
-    ) {
-
-      throw new Error(
-        `Member number ${membershipNumber} already exists for ${existingMemberNumber.name}.`
-      );
-
-    }
-
-
-    /* =================================================
-       CHECK EMAIL
-    ================================================= */
-
-    if (email) {
-
-      const {
-        data: existingEmail,
-        error: emailError
-      } = await supabase
-
-        .from("members")
-
-        .select(
-          "id,name"
-        )
-
-        .eq(
-          "group_id",
-          groupId
-        )
-
-        .ilike(
-          "email",
-          email
-        )
-        .maybeSingle();
-
-
-      if (emailError) {
-
-        throw emailError;
-
-      }
-
-
-      if (existingEmail) {
-
-        throw new Error(
-          `This email is already assigned to ${existingEmail.name}.`
-        );
-
-      }
-
-    }
-
-
-    /* =================================================
-       CREATE MEMBER
-    ================================================= */
-
-    const {
-      data: newMember,
-      error: insertError
-    } = await supabase
-
-      .from("members")
-
-      .insert({
-
-        group_id:
-          groupId,
-
-        member_number:
-          membershipNumber,
-
-        membership_number:
-          membershipNumber,
-
-        name:
-          name,
-
-        phone:
-          phone,
-
-        email:
-          email || null,
-
-        role:
-          role,
-
-        join_date:
-          joinDate || null,
-
-        status:
-          "active",
-
-        onboarding_status:
-          "pending"
-
-      })
-
-      .select(`
-        id,
-        group_id,
-        member_number,
-        membership_number,
-        name,
-        phone,
-        email,
-        role,
-        join_date,
-        status,
-        onboarding_status,
-        created_at
-      `)
-
-      .single();
-
-
-    if (insertError) {
-
-      throw insertError;
-
-    }
-
-
-    /* =================================================
-       SUCCESS
-    ================================================= */
-
-    showSuccess(
-      newMember
+    setStatus(
+      `${name} was added successfully.`
     );
 
 
-    $("memberForm")
-      .reset();
-
-
     /*
-     * Restore today's date.
-     */
+      Reset form for Add Another
+    */
 
-    if (joinDate) {
+    $("memberForm").reset();
 
-      $("join_date")
-        .value =
-        joinDate;
+    const today =
+      new Date();
 
-    }
+    $("joinDate").value =
+      `${today.getFullYear()}-${String(
+        today.getMonth() + 1
+      ).padStart(2, "0")}-${String(
+        today.getDate()
+      ).padStart(2, "0")}`;
 
 
   } catch (error) {
 
-    showError(
+    console.error(
+      "Add member error:",
       error
     );
+
+
+    let message =
+      error?.message ||
+      "Unable to add member.";
+
+
+    /*
+      Make database errors
+      easier for the user to understand.
+    */
+
+    if (
+      message.includes(
+        "already exists"
+      )
+    ) {
+
+      message =
+        "That member number or membership number already exists in this group.";
+
+    }
+
+
+    if (
+      message.includes(
+        "Only a group admin"
+      )
+    ) {
+
+      message =
+        "Only a group admin or chairperson can add members.";
+
+    }
+
+
+    showError(message);
+
 
   } finally {
 
@@ -571,66 +406,51 @@ async function handleSubmit(
 
 
 /* =====================================================
-   SUCCESS
+   ADD ANOTHER
 ===================================================== */
 
-function showSuccess(
-  member
-) {
+function addAnother() {
 
-  const element =
-    $("success");
+  $("successCard").hidden =
+    true;
 
-
-  element.hidden =
+  $("memberFormCard").hidden =
     false;
 
+  $("memberForm").reset();
 
-  element.innerHTML = `
 
-    <strong>
-      Member added successfully.
-    </strong>
+  const today =
+    new Date();
 
-    <p style="margin-bottom:0;">
+  $("joinDate").value =
+    `${today.getFullYear()}-${String(
+      today.getMonth() + 1
+    ).padStart(2, "0")}-${String(
+      today.getDate()
+    ).padStart(2, "0")}`;
 
-      ${escapeHtml(
-        member.name
-      )}
 
-      has been added as
+  $("name").focus();
 
-      <strong>
-        ${formatRole(
-          member.role
-        )}
-      </strong>
+}
 
-      with membership number
 
-      <strong>
-        ${escapeHtml(
-          member.membership_number
-        )}
-      </strong>.
+/* =====================================================
+   STATUS
+===================================================== */
 
-      <br><br>
+function setStatus(message) {
 
-      Account status:
+  const element =
+    $("status");
 
-      <strong>
-        PENDING
-      </strong>
+  if (element) {
 
-      <br>
+    element.textContent =
+      message;
 
-      The member must activate their
-      CHAMA LIVE account before they can
-      log in.
-
-    </p>
-
-  `;
+  }
 
 }
 
@@ -639,67 +459,49 @@ function showSuccess(
    ERROR
 ===================================================== */
 
-function showError(
-  error
-) {
+function clearError() {
+
+  const element =
+    $("error");
+
+  if (!element) {
+    return;
+  }
+
+  element.hidden =
+    true;
+
+  element.textContent =
+    "";
+
+}
+
+
+function showError(error) {
 
   console.error(
     error
   );
 
 
+  const message =
+    typeof error === "string"
+      ? error
+      : error?.message ||
+        "Something went wrong.";
+
+
   const element =
     $("error");
 
 
-  element.hidden =
-    false;
+  if (element) {
 
+    element.hidden =
+      false;
 
-  element.textContent =
-    error?.message ||
-    "Unable to add member.";
-
-
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth"
-  });
-
-}
-
-
-/* =====================================================
-   CLEAR MESSAGES
-===================================================== */
-
-function clearMessages() {
-
-  const error =
-    $("error");
-
-  const success =
-    $("success");
-
-
-  if (error) {
-
-    error.hidden =
-      true;
-
-    error.textContent =
-      "";
-
-  }
-
-
-  if (success) {
-
-    success.hidden =
-      true;
-
-    success.innerHTML =
-      "";
+    element.textContent =
+      message;
 
   }
 
@@ -707,67 +509,21 @@ function clearMessages() {
 
 
 /* =====================================================
-   ROLE FORMAT
+   EVENTS
 ===================================================== */
 
-function formatRole(
-  role
-) {
-
-  return String(
-    role || ""
-  )
-    .replaceAll(
-      "_",
-      " "
-    )
-    .replace(
-      /\b\w/g,
-      char =>
-        char.toUpperCase()
-    );
-
-}
+$("memberForm")
+  .addEventListener(
+    "submit",
+    submitMember
+  );
 
 
-/* =====================================================
-   ESCAPE HTML
-===================================================== */
-
-function escapeHtml(
-  value
-) {
-
-  return String(
-    value ?? ""
-  )
-
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
-
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
-
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
-
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
-
-}
+$("addAnother")
+  .addEventListener(
+    "click",
+    addAnother
+  );
 
 
 /* =====================================================
