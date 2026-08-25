@@ -1,0 +1,497 @@
+```html
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Members — CHAMA LIVE</title>
+
+  <link rel="stylesheet" href="css/app.css">
+
+  <style>
+    .member-form {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group.full {
+      grid-column: 1 / -1;
+    }
+
+    .form-group label {
+      font-weight: 600;
+    }
+
+    .form-group input,
+    .form-group select {
+      padding: 11px;
+      border: 1px solid #d1d5db;
+      border-radius: 7px;
+      font-size: 14px;
+      box-sizing: border-box;
+      width: 100%;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 9px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .status-active {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .status-inactive {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .role-badge {
+      display: inline-block;
+      padding: 4px 9px;
+      border-radius: 20px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .message {
+      padding: 12px 15px;
+      border-radius: 8px;
+      margin-bottom: 18px;
+      display: none;
+    }
+
+    .message.error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .message.success {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    @media (max-width: 700px) {
+      .member-form {
+        grid-template-columns: 1fr;
+      }
+
+      .form-group.full {
+        grid-column: auto;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header class="topbar">
+
+  <div class="brand">
+    CHAMA <span>LIVE</span>
+  </div>
+
+  <button
+    class="btn btn-secondary"
+    id="logout"
+    type="button"
+  >
+    Sign out
+  </button>
+
+</header>
+
+
+<div class="layout">
+
+  <aside class="sidebar">
+
+    <nav class="nav">
+
+      <a href="dashboard.html">
+        Dashboard
+      </a>
+
+      <a
+        href="admin-members.html"
+        class="active"
+      >
+        Members
+      </a>
+
+      <a href="contributions.html">
+        Contributions
+      </a>
+
+      <a href="expenses.html">
+        Expenses
+      </a>
+
+      <a href="meetings.html">
+        Meetings
+      </a>
+
+      <a href="reports.html">
+        Reports
+      </a>
+
+      <a href="monthly-closing.html">
+        Monthly Closing
+      </a>
+
+      <a href="group-management.html">
+        Group Management
+      </a>
+
+    </nav>
+
+  </aside>
+
+
+  <main class="main">
+
+    <div class="page-head">
+
+      <div>
+
+        <h1>
+          Members
+        </h1>
+
+        <p class="muted">
+          Add and manage members of your group.
+        </p>
+
+      </div>
+
+    </div>
+
+
+    <div
+      id="error"
+      class="message error"
+    ></div>
+
+
+    <div
+      id="success"
+      class="message success"
+    ></div>
+
+
+    <!-- ADD MEMBER -->
+
+    <section class="card">
+
+      <h2>
+        Add Member
+      </h2>
+
+      <p class="muted">
+        Add the member's details and assign
+        their group role before they receive
+        login access.
+      </p>
+
+
+      <form id="memberForm">
+
+        <div class="member-form">
+
+
+          <div class="form-group">
+
+            <label for="memberNumber">
+              Member Number
+            </label>
+
+            <input
+              id="memberNumber"
+              type="text"
+              placeholder="e.g. 1506"
+              required
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="name">
+              Full Name
+            </label>
+
+            <input
+              id="name"
+              type="text"
+              placeholder="Member full name"
+              required
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="phone">
+              Phone
+            </label>
+
+            <input
+              id="phone"
+              type="tel"
+              placeholder="07XXXXXXXX"
+              required
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="email">
+              Email
+            </label>
+
+            <input
+              id="email"
+              type="email"
+              placeholder="member@example.com"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="role">
+              Group Role
+            </label>
+
+            <select id="role">
+
+              <option value="member">
+                Member
+              </option>
+
+              <option value="secretary">
+                Secretary
+              </option>
+
+              <option value="treasurer">
+                Treasurer
+              </option>
+
+              <option value="welfare">
+                Welfare Officer
+              </option>
+
+              <option value="marketing">
+                Marketing
+              </option>
+
+              <option value="chairperson">
+                Chairperson
+              </option>
+
+              <option value="admin">
+                Admin
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="status">
+              Status
+            </label>
+
+            <select id="status">
+
+              <option value="active">
+                Active
+              </option>
+
+              <option value="inactive">
+                Inactive
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <div class="actions">
+
+              <button
+                class="btn btn-primary"
+                type="submit"
+                id="saveMember"
+              >
+                Add Member
+              </button>
+
+              <button
+                class="btn btn-secondary"
+                type="reset"
+              >
+                Clear
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </form>
+
+    </section>
+
+
+    <br>
+
+
+    <!-- MEMBER LIST -->
+
+    <section class="card">
+
+      <div
+        style="
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          gap:15px;
+          flex-wrap:wrap;
+        "
+      >
+
+        <div>
+
+          <h2>
+            Group Members
+          </h2>
+
+          <p class="muted">
+            Members already registered in the
+            group.
+          </p>
+
+        </div>
+
+
+        <input
+          id="search"
+          type="search"
+          placeholder="Search members..."
+          style="
+            padding:10px;
+            border:1px solid #d1d5db;
+            border-radius:7px;
+          "
+        >
+
+      </div>
+
+
+      <div class="table-wrap">
+
+        <table class="table">
+
+          <thead>
+
+            <tr>
+
+              <th>
+                Member No.
+              </th>
+
+              <th>
+                Name
+              </th>
+
+              <th>
+                Phone
+              </th>
+
+              <th>
+                Email
+              </th>
+
+              <th>
+                Role
+              </th>
+
+              <th>
+                Status
+              </th>
+
+              <th>
+                Login
+              </th>
+
+            </tr>
+
+          </thead>
+
+
+          <tbody id="memberRows">
+
+            <tr>
+
+              <td colspan="7">
+                Loading members...
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+  </main>
+
+</div>
+
+
+<script type="module">
+
+  import "./js/admin-members.js";
+
+</script>
+
+</body>
+
+</html>
+```
