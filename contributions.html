@@ -18,7 +18,10 @@
     CHAMA <span>LIVE</span>
   </div>
 
-  <button class="btn btn-secondary" id="logout">
+  <button
+    class="btn btn-secondary"
+    id="logout"
+  >
     Sign out
   </button>
 
@@ -31,29 +34,22 @@
 
     <nav class="nav">
 
-      <a href="dashboard.html">
-        Dashboard
-      </a>
+      <a href="dashboard.html">Dashboard</a>
 
-      <a href="members.html">
-        Members
-      </a>
+      <a href="members.html">Members</a>
 
-      <a class="active" href="contributions.html">
+      <a
+        class="active"
+        href="contributions.html"
+      >
         Contributions
       </a>
 
-      <a href="expenses.html">
-        Expenses
-      </a>
+      <a href="expenses.html">Expenses</a>
 
-      <a href="meetings.html">
-        Meetings
-      </a>
+      <a href="meetings.html">Meetings</a>
 
-      <a href="reports.html">
-        Reports
-      </a>
+      <a href="reports.html">Reports</a>
 
       <a href="group-management.html">
         Group Management
@@ -66,13 +62,14 @@
 
   <main class="main">
 
+
+    <!-- PAGE HEADER -->
+
     <div class="page-head">
 
       <div>
 
-        <h1>
-          Contributions
-        </h1>
+        <h1>Contributions</h1>
 
         <p class="muted">
           Record and manage group contributions.
@@ -83,16 +80,11 @@
     </div>
 
 
-    <!-- =========================
-         RECORD CONTRIBUTION
-    ========================== -->
+    <!-- RECORD CONTRIBUTION -->
 
     <section class="card">
 
-      <h2>
-        Record Contribution
-      </h2>
-
+      <h2>Record Contribution</h2>
 
       <div class="form">
 
@@ -129,6 +121,7 @@
             type="number"
             min="1"
             step="1"
+            value="200"
             placeholder="200"
           >
 
@@ -228,7 +221,7 @@
           <input
             id="reference"
             type="text"
-            placeholder="e.g. SH12ABC345"
+            placeholder="e.g. TEST-201"
           >
 
         </div>
@@ -244,15 +237,12 @@
           Record Contribution
         </button>
 
-
       </div>
 
     </section>
 
 
-    <!-- =========================
-         ERROR
-    ========================== -->
+    <!-- ERROR -->
 
     <div
       class="error"
@@ -261,16 +251,11 @@
     ></div>
 
 
-    <!-- =========================
-         CONTRIBUTION LEDGER
-    ========================== -->
+    <!-- LEDGER -->
 
     <section class="card">
 
-      <h2>
-        Contribution Ledger
-      </h2>
-
+      <h2>Contribution Ledger</h2>
 
       <div class="table-wrap">
 
@@ -280,29 +265,17 @@
 
             <tr>
 
-              <th>
-                Date
-              </th>
+              <th>Date</th>
 
-              <th>
-                Member
-              </th>
+              <th>Member</th>
 
-              <th>
-                Amount
-              </th>
+              <th>Amount</th>
 
-              <th>
-                Type
-              </th>
+              <th>Type</th>
 
-              <th>
-                Method
-              </th>
+              <th>Method</th>
 
-              <th>
-                M-Pesa Ref
-              </th>
+              <th>M-Pesa Ref</th>
 
             </tr>
 
@@ -333,9 +306,6 @@
 </div>
 
 
-<!-- =========================
-     JAVASCRIPT
-========================== -->
 
 <script type="module">
 
@@ -350,111 +320,40 @@ import {
 import { supabase } from "./js/supabase.js";
 
 
-/* =========================
-   START
-========================= */
+
+/* =========================================
+   START APP
+========================================= */
 
 await boot();
 
 
-/* =========================
-   ELEMENTS
-========================= */
 
-const memberSelect =
-  document.querySelector("#member");
-
-const amountInput =
-  document.querySelector("#amount");
-
-const typeSelect =
-  document.querySelector("#type");
+/* =========================================
+   CURRENT MONTH
+========================================= */
 
 const monthInput =
   document.querySelector("#month");
 
-const methodSelect =
-  document.querySelector("#method");
-
-const referenceInput =
-  document.querySelector("#reference");
-
-const saveButton =
-  document.querySelector("#saveContribution");
-
-const rows =
-  document.querySelector("#rows");
-
-
-/* =========================
-   CHECK ELEMENTS
-========================= */
-
-if (!memberSelect) {
-  throw new Error("Missing #member");
-}
-
-if (!amountInput) {
-  throw new Error("Missing #amount");
-}
-
-if (!typeSelect) {
-  throw new Error("Missing #type");
-}
-
-if (!monthInput) {
-  throw new Error("Missing #month");
-}
-
-if (!methodSelect) {
-  throw new Error("Missing #method");
-}
-
-if (!referenceInput) {
-  throw new Error("Missing #reference");
-}
-
-if (!saveButton) {
-  throw new Error("Missing #saveContribution");
-}
-
-if (!rows) {
-  throw new Error("Missing #rows");
-}
-
-
-/* =========================
-   CURRENT MONTH
-========================= */
-
 monthInput.value =
-  new Date()
-    .toISOString()
-    .slice(0, 7);
+  new Date().toISOString().slice(0, 7);
 
 
-/* =========================
+
+/* =========================================
    LOAD MEMBERS
-========================= */
+========================================= */
 
 async function loadMembers() {
 
+  const select =
+    document.querySelector("#member");
+
   try {
-
-    console.log(
-      "CHAMA LIVE: loading members..."
-    );
-
 
     const groupId =
       await getCurrentGroupId();
-
-
-    console.log(
-      "CHAMA LIVE group:",
-      groupId
-    );
-
 
     if (!groupId) {
 
@@ -469,11 +368,10 @@ async function loadMembers() {
       await supabase
         .from("members")
         .select("id,name")
-        .eq(
-          "group_id",
-          groupId
-        )
-        .order("name");
+        .eq("group_id", groupId)
+        .order("name", {
+          ascending: true
+        });
 
 
     if (result.error) {
@@ -485,19 +383,13 @@ async function loadMembers() {
       result.data || [];
 
 
-    console.log(
-      "CHAMA LIVE members:",
-      members
-    );
-
-
-    memberSelect.innerHTML =
+    select.innerHTML =
       '<option value="">Select member</option>';
 
 
     if (members.length === 0) {
 
-      memberSelect.innerHTML =
+      select.innerHTML =
         '<option value="">No members found</option>';
 
       return;
@@ -505,43 +397,32 @@ async function loadMembers() {
     }
 
 
-    members.forEach(
-      function(member) {
+    members.forEach(member => {
 
-        const option =
-          document.createElement(
-            "option"
-          );
+      const option =
+        document.createElement("option");
 
+      option.value =
+        member.id;
 
-        option.value =
-          member.id;
+      option.textContent =
+        member.name;
 
+      select.appendChild(option);
 
-        option.textContent =
-          member.name;
-
-
-        memberSelect.appendChild(
-          option
-        );
-
-      }
-    );
+    });
 
 
   } catch (error) {
 
     console.error(
-      "CHAMA LIVE members error:",
+      "LOAD MEMBERS ERROR:",
       error
     );
 
-
-    memberSelect.innerHTML =
+    select.innerHTML =
       '<option value="">Unable to load members</option>';
 
-
     showError(error);
 
   }
@@ -549,277 +430,43 @@ async function loadMembers() {
 }
 
 
-/* =========================
-   LOAD CONTRIBUTIONS
-========================= */
 
-async function loadContributions() {
-
-  try {
-
-    console.log(
-      "CHAMA LIVE: loading contributions..."
-    );
-
-
-    const groupId =
-      await getCurrentGroupId();
-
-
-    if (!groupId) {
-
-      throw new Error(
-        "No group is linked to this account."
-      );
-
-    }
-
-
-    const result =
-      await supabase
-        .from("contributions")
-        .select(
-          "contribution_date,amount,contribution_type,payment_method,reference,member_id"
-        )
-        .eq(
-          "group_id",
-          groupId
-        )
-        .order(
-          "contribution_date",
-          {
-            ascending: false
-          }
-        );
-
-
-    if (result.error) {
-      throw result.error;
-    }
-
-
-    const contributions =
-      result.data || [];
-
-
-    console.log(
-      "CHAMA LIVE contributions:",
-      contributions
-    );
-
-
-    if (
-      contributions.length === 0
-    ) {
-
-      rows.innerHTML = `
-        <tr>
-          <td colspan="6">
-            No contributions yet.
-          </td>
-        </tr>
-      `;
-
-      return;
-
-    }
-
-
-    const memberIds = [
-      ...new Set(
-        contributions
-          .map(
-            function(item) {
-
-              return item.member_id;
-
-            }
-          )
-          .filter(Boolean)
-      )
-    ];
-
-
-    const memberNames = {};
-
-
-    if (
-      memberIds.length > 0
-    ) {
-
-      const memberResult =
-        await supabase
-          .from("members")
-          .select("id,name")
-          .in(
-            "id",
-            memberIds
-          );
-
-
-      if (
-        memberResult.error
-      ) {
-
-        throw memberResult.error;
-
-      }
-
-
-      (
-        memberResult.data || []
-      ).forEach(
-        function(member) {
-
-          memberNames[
-            member.id
-          ] =
-            member.name;
-
-        }
-      );
-
-    }
-
-
-    rows.innerHTML =
-      contributions
-        .map(
-          function(item) {
-
-            const date =
-              item.contribution_date ||
-              "—";
-
-
-            const member =
-              memberNames[
-                item.member_id
-              ] ||
-              "—";
-
-
-            const amount =
-              money(
-                Number(
-                  item.amount || 0
-                )
-              );
-
-
-            const type =
-              item.contribution_type ||
-              "—";
-
-
-            const method =
-              item.payment_method ||
-              "—";
-
-
-            const reference =
-              item.reference ||
-              "—";
-
-
-            return `
-
-              <tr>
-
-                <td>
-                  ${escapeHtml(date)}
-                </td>
-
-                <td>
-                  ${escapeHtml(member)}
-                </td>
-
-                <td>
-                  ${escapeHtml(amount)}
-                </td>
-
-                <td>
-                  ${escapeHtml(type)}
-                </td>
-
-                <td>
-                  ${escapeHtml(method)}
-                </td>
-
-                <td>
-                  ${escapeHtml(reference)}
-                </td>
-
-              </tr>
-
-            `;
-
-          }
-        )
-        .join("");
-
-
-  } catch (error) {
-
-    console.error(
-      "CHAMA LIVE contributions error:",
-      error
-    );
-
-
-    rows.innerHTML = `
-
-      <tr>
-
-        <td colspan="6">
-          Unable to load contributions.
-        </td>
-
-      </tr>
-
-    `;
-
-
-    showError(error);
-
-  }
-
-}
-
-
-/* =========================
+/* =========================================
    SAVE CONTRIBUTION
-========================= */
+========================================= */
 
 async function saveContribution() {
+
+  const button =
+    document.querySelector("#saveContribution");
 
   try {
 
     const memberId =
-      memberSelect.value;
-
+      document.querySelector("#member").value;
 
     const amount =
       Number(
-        amountInput.value
+        document.querySelector("#amount").value
       );
 
-
     const type =
-      typeSelect.value;
-
+      document.querySelector("#type").value;
 
     const month =
-      monthInput.value;
-
+      document.querySelector("#month").value;
 
     const method =
-      methodSelect.value;
-
+      document.querySelector("#method").value;
 
     const reference =
-      referenceInput.value.trim();
+      document
+        .querySelector("#reference")
+        .value
+        .trim();
 
+
+    /* VALIDATION */
 
     if (!memberId) {
 
@@ -830,10 +477,7 @@ async function saveContribution() {
     }
 
 
-    if (
-      !amount ||
-      amount <= 0
-    ) {
+    if (!amount || amount <= 0) {
 
       throw new Error(
         "Please enter a valid amount."
@@ -851,13 +495,13 @@ async function saveContribution() {
     }
 
 
-    saveButton.disabled =
-      true;
+    button.disabled = true;
+
+    button.textContent =
+      "Saving…";
 
 
-    saveButton.textContent =
-      "Saving...";
-
+    /* GROUP */
 
     const groupId =
       await getCurrentGroupId();
@@ -872,15 +516,18 @@ async function saveContribution() {
     }
 
 
+    /* USER */
+
     const userResult =
       await supabase.auth.getUser();
-
 
     const user =
       userResult.data.user;
 
 
-    const result =
+    /* INSERT */
+
+    const insertResult =
       await supabase
         .from("contributions")
         .insert({
@@ -904,8 +551,7 @@ async function saveContribution() {
             method,
 
           reference:
-            reference ||
-            null,
+            reference || null,
 
           recorded_by:
             user
@@ -920,9 +566,20 @@ async function saveContribution() {
         });
 
 
-    if (result.error) {
-      throw result.error;
+    if (insertResult.error) {
+
+      throw insertResult.error;
+
     }
+
+
+    /* CLEAR */
+
+    document.querySelector("#amount").value =
+      "200";
+
+    document.querySelector("#reference").value =
+      "";
 
 
     alert(
@@ -930,12 +587,7 @@ async function saveContribution() {
     );
 
 
-    amountInput.value =
-      "";
-
-    referenceInput.value =
-      "";
-
+    /* RELOAD */
 
     await loadContributions();
 
@@ -943,21 +595,18 @@ async function saveContribution() {
   } catch (error) {
 
     console.error(
-      "CHAMA LIVE save contribution error:",
+      "SAVE CONTRIBUTION ERROR:",
       error
     );
 
-
     showError(error);
-
 
   } finally {
 
-    saveButton.disabled =
+    button.disabled =
       false;
 
-
-    saveButton.textContent =
+    button.textContent =
       "Record Contribution";
 
   }
@@ -965,9 +614,271 @@ async function saveContribution() {
 }
 
 
-/* =========================
+
+/* =========================================
+   LOAD CONTRIBUTIONS
+========================================= */
+
+async function loadContributions() {
+
+  const rows =
+    document.querySelector("#rows");
+
+
+  if (!rows) {
+
+    console.error(
+      "ERROR: #rows does not exist."
+    );
+
+    return;
+
+  }
+
+
+  try {
+
+    rows.innerHTML = `
+      <tr>
+        <td colspan="6">
+          Loading…
+        </td>
+      </tr>
+    `;
+
+
+    const groupId =
+      await getCurrentGroupId();
+
+
+    if (!groupId) {
+
+      throw new Error(
+        "No group is linked to this account."
+      );
+
+    }
+
+
+    /*
+      IMPORTANT:
+
+      These are ONLY columns that
+      exist in your contributions table.
+    */
+
+    const result =
+      await supabase
+        .from("contributions")
+        .select(
+          "contribution_date,amount,contribution_type,payment_method,reference,member_id"
+        )
+        .eq(
+          "group_id",
+          groupId
+        )
+        .order(
+          "contribution_date",
+          {
+            ascending: false
+          }
+        );
+
+
+    if (result.error) {
+
+      throw result.error;
+
+    }
+
+
+    const contributions =
+      result.data || [];
+
+
+    /* NO RECORDS */
+
+    if (
+      contributions.length === 0
+    ) {
+
+      rows.innerHTML = `
+        <tr>
+          <td colspan="6">
+            No contributions yet.
+          </td>
+        </tr>
+      `;
+
+      return;
+
+    }
+
+
+    /* MEMBER IDS */
+
+    const memberIds = [
+      ...new Set(
+        contributions
+          .map(
+            item =>
+              item.member_id
+          )
+          .filter(Boolean)
+      )
+    ];
+
+
+    /* MEMBER NAMES */
+
+    const memberNames = {};
+
+
+    if (
+      memberIds.length > 0
+    ) {
+
+      const memberResult =
+        await supabase
+          .from("members")
+          .select(
+            "id,name"
+          )
+          .in(
+            "id",
+            memberIds
+          );
+
+
+      if (
+        memberResult.error
+      ) {
+
+        throw memberResult.error;
+
+      }
+
+
+      (
+        memberResult.data || []
+      ).forEach(member => {
+
+        memberNames[
+          member.id
+        ] =
+          member.name;
+
+      });
+
+    }
+
+
+    /* BUILD TABLE */
+
+    rows.innerHTML =
+      contributions
+        .map(item => {
+
+          const date =
+            item.contribution_date
+              || "—";
+
+          const member =
+            memberNames[
+              item.member_id
+            ]
+              || "—";
+
+          const amount =
+            money(
+              Number(
+                item.amount || 0
+              )
+            );
+
+          const type =
+            item.contribution_type
+              || "—";
+
+          const method =
+            item.payment_method
+              || "—";
+
+          const reference =
+            item.reference
+              || "—";
+
+
+          return `
+
+            <tr>
+
+              <td>
+                ${escapeHtml(date)}
+              </td>
+
+              <td>
+                ${escapeHtml(member)}
+              </td>
+
+              <td>
+                ${escapeHtml(amount)}
+              </td>
+
+              <td>
+                ${escapeHtml(type)}
+              </td>
+
+              <td>
+                ${escapeHtml(method)}
+              </td>
+
+              <td>
+                ${escapeHtml(reference)}
+              </td>
+
+            </tr>
+
+          `;
+
+        })
+        .join("");
+
+
+  } catch (error) {
+
+    console.error(
+      "LOAD CONTRIBUTIONS ERROR:",
+      error
+    );
+
+
+    rows.innerHTML = `
+
+      <tr>
+
+        <td colspan="6">
+
+          Unable to load contributions.
+
+        </td>
+
+      </tr>
+
+    `;
+
+
+    showError(error);
+
+  }
+
+}
+
+
+
+/* =========================================
    ESCAPE HTML
-========================= */
+========================================= */
 
 function escapeHtml(value) {
 
@@ -1001,19 +912,23 @@ function escapeHtml(value) {
 }
 
 
-/* =========================
+
+/* =========================================
    BUTTON
-========================= */
+========================================= */
 
-saveButton.addEventListener(
-  "click",
-  saveContribution
-);
+document
+  .querySelector("#saveContribution")
+  .addEventListener(
+    "click",
+    saveContribution
+  );
 
 
-/* =========================
-   LOAD PAGE
-========================= */
+
+/* =========================================
+   INITIAL LOAD
+========================================= */
 
 await loadMembers();
 
@@ -1023,5 +938,4 @@ await loadContributions();
 
 </body>
 
-        </html>
-        
+</html>
