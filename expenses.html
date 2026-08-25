@@ -1,14 +1,20 @@
 <!doctype html>
-
 <html lang="en">
 
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
 
   <title>Expenses — CHAMA LIVE</title>
 
-  <link rel="stylesheet" href="css/app.css">
+  <link
+    rel="stylesheet"
+    href="css/app.css"
+  >
 </head>
 
 <body>
@@ -19,1022 +25,479 @@
     CHAMA <span>LIVE</span>
   </div>
 
-<button
-class="btn btn-secondary"
-id="logout"
-type="button"
-
->
-
-```
-Sign out
-```
-
+  <button
+    class="btn btn-secondary"
+    id="logout"
+    type="button"
+  >
+    Sign out
   </button>
 
 </header>
 
+
 <div class="layout">
+
+
+  <!-- SIDEBAR -->
 
   <aside class="sidebar">
 
-```
-<nav class="nav">
+    <nav class="nav">
 
-  <a href="dashboard.html">Dashboard</a>
+      <a href="dashboard.html">
+        Dashboard
+      </a>
 
-  <a href="members.html">Members</a>
+      <a href="members.html">
+        Members
+      </a>
 
-  <a href="contributions.html">Contributions</a>
+      <a href="contributions.html">
+        Contributions
+      </a>
 
-  <a class="active" href="expenses.html">Expenses</a>
+      <a
+        class="active"
+        href="expenses.html"
+      >
+        Expenses
+      </a>
 
-  <a href="meetings.html">Meetings</a>
+      <a href="meetings.html">
+        Meetings
+      </a>
 
-  <a href="reports.html">Reports</a>
+      <a href="reports.html">
+        Reports
+      </a>
 
-  <a href="group-management.html">Group Management</a>
+      <a href="group-management.html">
+        Group Management
+      </a>
 
-</nav>
-```
+    </nav>
 
   </aside>
 
+
+  <!-- MAIN -->
+
   <main class="main">
 
-```
-<div class="page-head">
 
-  <div>
+    <div class="page-head">
 
-    <h1>Expenses</h1>
+      <div>
 
-    <p class="muted">
-      Record and manage group expenses.
-    </p>
+        <h1>
+          Expenses
+        </h1>
 
-  </div>
+        <p class="muted">
+          Record, review and manage group expenses.
+        </p>
 
-</div>
-
-
-<!-- STATUS -->
-
-<div
-  id="status"
-  class="card"
-  style="margin-bottom:20px;"
->
-  Starting Expenses...
-</div>
-
-
-<!-- ERROR -->
-
-<div
-  id="error"
-  class="error"
-  hidden
-  style="margin-bottom:20px;"
-></div>
-
-
-<!-- RECORD EXPENSE -->
-
-<section class="card">
-
-  <h2>Record Expense</h2>
-
-  <div class="form">
-
-
-    <!-- DESCRIPTION -->
-
-    <div class="field">
-
-      <label for="description">
-        Description
-      </label>
-
-      <input
-        id="description"
-        type="text"
-        placeholder="e.g. Meeting catering"
-      >
+      </div>
 
     </div>
 
 
-    <!-- CATEGORY -->
+    <!-- STATUS -->
 
-    <div class="field">
-
-      <label for="category">
-        Category
-      </label>
-
-      <select id="category">
-
-        <option value="food">
-          Food
-        </option>
-
-        <option value="transport">
-          Transport
-        </option>
-
-        <option value="meeting">
-          Meeting
-        </option>
-
-        <option value="welfare">
-          Welfare
-        </option>
-
-        <option value="office">
-          Office
-        </option>
-
-        <option value="utilities">
-          Utilities
-        </option>
-
-        <option value="other">
-          Other
-        </option>
-
-      </select>
-
-    </div>
-
-
-    <!-- AMOUNT -->
-
-    <div class="field">
-
-      <label for="amount">
-        Amount (KSh)
-      </label>
-
-      <input
-        id="amount"
-        type="number"
-        min="1"
-        step="1"
-        placeholder="1000"
-      >
-
-    </div>
-
-
-    <!-- DATE -->
-
-    <div class="field">
-
-      <label for="expenseDate">
-        Date
-      </label>
-
-      <input
-        id="expenseDate"
-        type="date"
-      >
-
-    </div>
-
-
-    <!-- APPROVAL STATUS -->
-
-    <div class="field">
-
-      <label for="expenseStatus">
-        Status
-      </label>
-
-      <select id="expenseStatus">
-
-        <option value="approved">
-          Approved
-        </option>
-
-        <option value="pending">
-          Pending
-        </option>
-
-        <option value="rejected">
-          Rejected
-        </option>
-
-      </select>
-
-    </div>
-
-
-    <!-- SAVE -->
-
-    <button
-      class="btn btn-primary"
-      id="saveExpense"
-      type="button"
+    <div
+      id="status"
+      class="card"
+      style="margin-bottom:20px;"
     >
-      Record Expense
-    </button>
-
-  </div>
-
-</section>
+      Loading expenses...
+    </div>
 
 
-<!-- LEDGER -->
+    <!-- ERROR -->
 
-<section class="card">
+    <div
+      id="error"
+      class="error"
+      hidden
+      style="margin-bottom:20px;"
+    ></div>
 
-  <h2>Expense Ledger</h2>
 
-  <div class="table-wrap">
+    <!-- METRICS -->
 
-    <table class="table">
+    <div class="grid grid-3">
 
-      <thead>
+      <div class="card">
 
-        <tr>
-          <th>Date</th>
-          <th>Description</th>
-          <th>Category</th>
-          <th>Amount</th>
-          <th>Status</th>
-          <th>Recorded By</th>
-        </tr>
+        <div class="muted">
+          Approved Expenses
+        </div>
 
-      </thead>
+        <div
+          class="metric"
+          id="approvedTotal"
+        >
+          Ksh 0
+        </div>
 
-      <tbody id="rows">
+      </div>
 
-        <tr>
 
-          <td colspan="6">
-            Loading...
-          </td>
+      <div class="card">
 
-        </tr>
+        <div class="muted">
+          Pending Expenses
+        </div>
 
-      </tbody>
+        <div
+          class="metric"
+          id="pendingTotal"
+        >
+          Ksh 0
+        </div>
 
-    </table>
+      </div>
 
-  </div>
 
-</section>
-```
+      <div class="card">
+
+        <div class="muted">
+          Rejected Expenses
+        </div>
+
+        <div
+          class="metric"
+          id="rejectedTotal"
+        >
+          Ksh 0
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <br>
+
+
+    <!-- RECORD EXPENSE -->
+
+    <section class="card">
+
+      <h2>
+        Record Expense
+      </h2>
+
+      <form id="expenseForm">
+
+
+        <!-- DESCRIPTION -->
+
+        <div class="form-group">
+
+          <label for="description">
+            Description
+          </label>
+
+          <input
+            id="description"
+            name="description"
+            type="text"
+            required
+            placeholder="e.g. Meeting catering"
+          >
+
+        </div>
+
+
+        <!-- CATEGORY -->
+
+        <div class="form-group">
+
+          <label for="category">
+            Category
+          </label>
+
+          <select
+            id="category"
+            name="category"
+            required
+          >
+
+            <option value="">
+              Select category
+            </option>
+
+            <option value="meeting">
+              Meeting
+            </option>
+
+            <option value="welfare">
+              Welfare
+            </option>
+
+            <option value="transport">
+              Transport
+            </option>
+
+            <option value="food">
+              Food
+            </option>
+
+            <option value="supplies">
+              Supplies
+            </option>
+
+            <option value="bank_charges">
+              Bank Charges
+            </option>
+
+            <option value="other">
+              Other
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <!-- AMOUNT -->
+
+        <div class="form-group">
+
+          <label for="amount">
+            Amount
+          </label>
+
+          <input
+            id="amount"
+            name="amount"
+            type="number"
+            min="0.01"
+            step="0.01"
+            required
+            placeholder="0.00"
+          >
+
+        </div>
+
+
+        <!-- DATE -->
+
+        <div class="form-group">
+
+          <label for="expenseDate">
+            Expense Date
+          </label>
+
+          <input
+            id="expenseDate"
+            name="date"
+            type="date"
+            required
+          >
+
+        </div>
+
+
+        <!-- RECEIPT -->
+
+        <div class="form-group">
+
+          <label for="receiptUrl">
+            Receipt / Reference
+          </label>
+
+          <input
+            id="receiptUrl"
+            name="receipt_url"
+            type="text"
+            placeholder="Receipt number or document reference"
+          >
+
+        </div>
+
+
+        <br>
+
+
+        <button
+          class="btn"
+          id="saveExpense"
+          type="submit"
+        >
+          Record Expense
+        </button>
+
+
+      </form>
+
+    </section>
+
+
+    <br>
+
+
+    <!-- FILTER -->
+
+    <section class="card">
+
+      <h2>
+        Expense Ledger
+      </h2>
+
+
+      <div
+        style="
+          display:flex;
+          gap:10px;
+          flex-wrap:wrap;
+          margin-bottom:20px;
+        "
+      >
+
+        <select
+          id="statusFilter"
+        >
+
+          <option value="all">
+            All Expenses
+          </option>
+
+          <option value="pending">
+            Pending
+          </option>
+
+          <option value="approved">
+            Approved
+          </option>
+
+          <option value="rejected">
+            Rejected
+          </option>
+
+        </select>
+
+
+        <select
+          id="categoryFilter"
+        >
+
+          <option value="all">
+            All Categories
+          </option>
+
+          <option value="meeting">
+            Meeting
+          </option>
+
+          <option value="welfare">
+            Welfare
+          </option>
+
+          <option value="transport">
+            Transport
+          </option>
+
+          <option value="food">
+            Food
+          </option>
+
+          <option value="supplies">
+            Supplies
+          </option>
+
+          <option value="bank_charges">
+            Bank Charges
+          </option>
+
+          <option value="other">
+            Other
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <div class="table-wrap">
+
+        <table class="table">
+
+          <thead>
+
+            <tr>
+
+              <th>
+                Date
+              </th>
+
+              <th>
+                Description
+              </th>
+
+              <th>
+                Category
+              </th>
+
+              <th>
+                Amount
+              </th>
+
+              <th>
+                Status
+              </th>
+
+              <th>
+                Receipt
+              </th>
+
+              <th>
+                Actions
+              </th>
+
+            </tr>
+
+          </thead>
+
+
+          <tbody id="expenseRows">
+
+            <tr>
+
+              <td colspan="7">
+                Loading...
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
 
   </main>
 
 </div>
 
+
 <script type="module">
 
-import { supabase } from "./js/supabase.js";
+  import {
+    boot
+  } from "./js/layout.js";
 
-import {
-  getCurrentGroupId,
-  money
-} from "./js/app.js";
+  await boot();
 
-
-/* =====================================================
-   ELEMENTS
-===================================================== */
-
-const statusBox =
-  document.getElementById("status");
-
-const errorBox =
-  document.getElementById("error");
-
-const descriptionInput =
-  document.getElementById("description");
-
-const categorySelect =
-  document.getElementById("category");
-
-const amountInput =
-  document.getElementById("amount");
-
-const dateInput =
-  document.getElementById("expenseDate");
-
-const expenseStatusSelect =
-  document.getElementById("expenseStatus");
-
-const saveButton =
-  document.getElementById("saveExpense");
-
-const rows =
-  document.getElementById("rows");
-
-const logoutButton =
-  document.getElementById("logout");
-
-
-/* =====================================================
-   STATUS
-===================================================== */
-
-function setStatus(message) {
-
-  statusBox.textContent = message;
-
-}
-
-
-/* =====================================================
-   ERROR
-===================================================== */
-
-function showPageError(error) {
-
-  console.error(
-    "CHAMA LIVE EXPENSES:",
-    error
-  );
-
-  const message =
-    error?.message ||
-    String(error);
-
-  errorBox.textContent =
-    "Error: " + message;
-
-  errorBox.hidden = false;
-
-  setStatus(
-    "Something went wrong."
-  );
-
-}
-
-
-/* =====================================================
-   CLEAR ERROR
-===================================================== */
-
-function clearError() {
-
-  errorBox.textContent = "";
-
-  errorBox.hidden = true;
-
-}
-
-
-/* =====================================================
-   ESCAPE HTML
-===================================================== */
-
-function escapeHtml(value) {
-
-  return String(value)
-
-    .replaceAll("&", "&amp;")
-
-    .replaceAll("<", "&lt;")
-
-    .replaceAll(">", "&gt;")
-
-    .replaceAll('"', "&quot;")
-
-    .replaceAll("'", "&#039;");
-
-}
-
-
-/* =====================================================
-   CHECK LOGIN
-===================================================== */
-
-async function checkLogin() {
-
-  const result =
-    await supabase.auth.getSession();
-
-  if (result.error) {
-    throw result.error;
-  }
-
-  if (!result.data.session) {
-
-    window.location.href =
-      "login.html";
-
-    return false;
-
-  }
-
-  return true;
-
-}
-
-
-/* =====================================================
-   GET CURRENT MEMBER
-===================================================== */
-
-async function getCurrentMember() {
-
-  const result =
-    await supabase.auth.getUser();
-
-  if (result.error) {
-    throw result.error;
-  }
-
-  const user =
-    result.data?.user;
-
-  if (!user) {
-
-    window.location.href =
-      "login.html";
-
-    return null;
-
-  }
-
-
-  const memberResult =
-    await supabase
-
-      .from("members")
-
-      .select(
-        "id,name,user_id,group_id"
-      )
-
-      .eq(
-        "user_id",
-        user.id
-      )
-
-      .limit(1);
-
-
-  if (memberResult.error) {
-    throw memberResult.error;
-  }
-
-
-  const members =
-    memberResult.data || [];
-
-
-  if (members.length === 0) {
-
-    throw new Error(
-      "No member record is linked to your login."
-    );
-
-  }
-
-
-  const member =
-    members[0];
-
-
-  if (!member.group_id) {
-
-    throw new Error(
-      "Your member record has no group."
-    );
-
-  }
-
-
-  return member;
-
-}
-
-
-/* =====================================================
-   LOAD EXPENSES
-===================================================== */
-
-async function loadExpenses() {
-
-  clearError();
-
-  setStatus(
-    "Loading expense ledger..."
-  );
-
-
-  const groupId =
-    await getCurrentGroupId();
-
-
-  if (!groupId) {
-
-    throw new Error(
-      "No group is linked to this account."
-    );
-
-  }
-
-
-  const result =
-    await supabase
-
-      .from("expenses")
-
-      .select(`
-        id,
-        date,
-        description,
-        category,
-        amount,
-        approval_status,
-        recorded_by
-      `)
-
-      .eq(
-        "group_id",
-        groupId
-      )
-
-      .order(
-        "date",
-        {
-          ascending: false
-        }
-      );
-
-
-  if (result.error) {
-    throw result.error;
-  }
-
-
-  const expenses =
-    result.data || [];
-
-
-  if (expenses.length === 0) {
-
-    rows.innerHTML = `
-      <tr>
-        <td colspan="6">
-          No expenses yet.
-        </td>
-      </tr>
-    `;
-
-    setStatus(
-      "No expenses found."
-    );
-
-    return;
-
-  }
-
-
-  /* =================================================
-     GET RECORDER MEMBER IDS
-  ================================================= */
-
-  const recorderIds = [
-    ...new Set(
-
-      expenses
-
-        .map(
-          expense =>
-            expense.recorded_by
-        )
-
-        .filter(Boolean)
-
-    )
-  ];
-
-
-  const recorderNames = {};
-
-
-  if (recorderIds.length > 0) {
-
-    const membersResult =
-      await supabase
-
-        .from("members")
-
-        .select(
-          "id,name"
-        )
-
-        .in(
-          "id",
-          recorderIds
-        );
-
-
-    if (membersResult.error) {
-      throw membersResult.error;
-    }
-
-
-    (
-      membersResult.data || []
-    ).forEach(
-      member => {
-
-        recorderNames[
-          member.id
-        ] =
-          member.name;
-
-      }
-    );
-
-  }
-
-
-  /* =================================================
-     DISPLAY LEDGER
-  ================================================= */
-
-  rows.innerHTML =
-
-    expenses
-
-      .map(
-        expense => {
-
-          const recorder =
-            recorderNames[
-              expense.recorded_by
-            ] ||
-            "—";
-
-
-          return `
-
-            <tr>
-
-              <td>
-                ${escapeHtml(
-                  expense.date || "—"
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  expense.description || "—"
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  expense.category || "—"
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  money(
-                    Number(
-                      expense.amount || 0
-                    )
-                  )
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  expense.approval_status || "—"
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  recorder
-                )}
-              </td>
-
-            </tr>
-
-          `;
-
-        }
-      )
-
-      .join("");
-
-
-  setStatus(
-    expenses.length +
-    " expense(s) loaded."
-  );
-
-}
-
-
-/* =====================================================
-   SAVE EXPENSE
-===================================================== */
-
-async function saveExpense() {
-
-  clearError();
-
-
-  const originalText =
-    saveButton.textContent;
-
-
-  try {
-
-    /* ================================================
-       GET CURRENT MEMBER
-    ================================================ */
-
-    setStatus(
-      "Checking member..."
-    );
-
-
-    const member =
-      await getCurrentMember();
-
-
-    if (!member) {
-      return;
-    }
-
-
-    /* ================================================
-       FORM VALUES
-    ================================================ */
-
-    const description =
-      descriptionInput.value.trim();
-
-
-    const category =
-      categorySelect.value;
-
-
-    const amount =
-      Number(
-        amountInput.value
-      );
-
-
-    const expenseDate =
-      dateInput.value;
-
-
-    const approvalStatus =
-      expenseStatusSelect.value;
-
-
-    /* ================================================
-       VALIDATION
-    ================================================ */
-
-    if (!description) {
-
-      throw new Error(
-        "Please enter an expense description."
-      );
-
-    }
-
-
-    if (
-      !amount ||
-      amount <= 0
-    ) {
-
-      throw new Error(
-        "Please enter a valid expense amount."
-      );
-
-    }
-
-
-    if (!expenseDate) {
-
-      throw new Error(
-        "Please select the expense date."
-      );
-
-    }
-
-
-    /* ================================================
-       GROUP
-    ================================================ */
-
-    const groupId =
-      member.group_id;
-
-
-    /* ================================================
-       SAVE
-    ================================================ */
-
-    saveButton.disabled = true;
-
-    saveButton.textContent =
-      "Saving...";
-
-
-    setStatus(
-      "Saving expense..."
-    );
-
-
-    const result =
-      await supabase
-
-        .from("expenses")
-
-        .insert({
-
-          group_id:
-            groupId,
-
-          description:
-            description,
-
-          category:
-            category,
-
-          amount:
-            amount,
-
-          date:
-            expenseDate,
-
-          recorded_by:
-            member.id,
-
-          approval_status:
-            approvalStatus
-
-        });
-
-
-    if (result.error) {
-      throw result.error;
-    }
-
-
-    /* ================================================
-       CLEAR FORM
-    ================================================ */
-
-    descriptionInput.value =
-      "";
-
-    amountInput.value =
-      "";
-
-
-    /* ================================================
-       SUCCESS
-    ================================================ */
-
-    setStatus(
-      "Expense recorded successfully."
-    );
-
-
-    alert(
-      "Expense recorded successfully."
-    );
-
-
-    /* ================================================
-       REFRESH
-    ================================================ */
-
-    await loadExpenses();
-
-  }
-
-  catch (error) {
-
-    showPageError(error);
-
-  }
-
-  finally {
-
-    saveButton.disabled =
-      false;
-
-    saveButton.textContent =
-      originalText;
-
-  }
-
-}
-
-
-/* =====================================================
-   LOGOUT
-===================================================== */
-
-logoutButton.addEventListener(
-  "click",
-  async function () {
-
-    try {
-
-      await supabase.auth.signOut();
-
-      window.location.href =
-        "login.html";
-
-    }
-
-    catch (error) {
-
-      showPageError(error);
-
-    }
-
-  }
-);
-
-
-/* =====================================================
-   SAVE BUTTON
-===================================================== */
-
-saveButton.addEventListener(
-  "click",
-  saveExpense
-);
-
-
-/* =====================================================
-   START
-===================================================== */
-
-async function start() {
-
-  try {
-
-    clearError();
-
-    setStatus(
-      "Starting Expenses..."
-    );
-
-
-    const loggedIn =
-      await checkLogin();
-
-
-    if (!loggedIn) {
-      return;
-    }
-
-
-    /* SET TODAY */
-
-    dateInput.value =
-      new Date()
-        .toISOString()
-        .slice(
-          0,
-          10
-        );
-
-
-    /* LOAD LEDGER */
-
-    await loadExpenses();
-
-  }
-
-  catch (error) {
-
-    showPageError(error);
-
-  }
-
-}
-
-
-/* =====================================================
-   START APPLICATION
-===================================================== */
-
-start();
+  import "./js/expenses.js";
 
 </script>
+
 
 </body>
 
