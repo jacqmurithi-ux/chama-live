@@ -1,5 +1,7 @@
 <!doctype html>
+
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,376 +14,309 @@
 <body>
 
 <header class="topbar">
+
   <div class="brand">
     CHAMA <span>LIVE</span>
   </div>
 
-  <button
-    class="btn btn-secondary"
-    id="logout"
-    type="button"
-  >
-    Sign out
-  </button>
-</header>
+<button
+class="btn btn-secondary"
+id="logout"
+type="button"
 
+>
+
+```
+Sign out
+```
+
+  </button>
+
+</header>
 
 <div class="layout">
 
   <aside class="sidebar">
 
-    <nav class="nav">
+```
+<nav class="nav">
 
-      <a href="dashboard.html">Dashboard</a>
+  <a href="dashboard.html">
+    Dashboard
+  </a>
 
-      <a href="members.html" class="active">
-        Members
-      </a>
+  <a href="members.html" class="active">
+    Members
+  </a>
 
-      <a href="contributions.html">
-        Contributions
-      </a>
+  <a href="contributions.html">
+    Contributions
+  </a>
 
-      <a href="expenses.html">
-        Expenses
-      </a>
+  <a href="expenses.html">
+    Expenses
+  </a>
 
-      <a href="meetings.html">
-        Meetings
-      </a>
+  <a href="meetings.html">
+    Meetings
+  </a>
 
-      <a href="reports.html">
-        Reports
-      </a>
+  <a href="reports.html">
+    Reports
+  </a>
 
-      <a href="monthly-closing.html">
-        Monthly Closing
-      </a>
+  <a href="monthly-closing.html">
+    Monthly Closing
+  </a>
 
-      <a href="group-management.html">
-        Group Management
-      </a>
+  <a href="group-management.html">
+    Group Management
+  </a>
 
-    </nav>
+</nav>
+```
 
   </aside>
 
-
   <main class="main">
 
-    <div class="page-head">
-
-      <div>
-        <h1>Members</h1>
-
-        <p class="muted">
-          Manage your group's members and their roles.
-        </p>
-      </div>
-
-      <button
-        class="btn btn-primary"
-        id="addMemberBtn"
-        type="button"
-      >
-        + Add Member
-      </button>
-
-    </div>
-
-
-    <div
-      id="status"
-      class="card"
-      style="margin-bottom:20px;"
-    >
-      Loading members...
-    </div>
-
-
-    <div
-      id="error"
-      class="error"
-      hidden
-      style="margin-bottom:20px;"
-    ></div>
-
-
-    <!-- MEMBER STATISTICS -->
-
-    <section class="card">
-
-      <div class="grid grid-3">
-
-        <div>
-          <div class="muted">
-            Total Members
-          </div>
-
-          <div class="metric" id="totalMembers">
-            0
-          </div>
-        </div>
-
-
-        <div>
-          <div class="muted">
-            Active Members
-          </div>
-
-          <div class="metric" id="activeMembers">
-            0
-          </div>
-        </div>
-
-
-        <div>
-          <div class="muted">
-            Members With Login
-          </div>
-
-          <div class="metric" id="loginMembers">
-            0
-          </div>
-        </div>
-
-      </div>
-
-    </section>
-
-
-    <br>
-
-
-    <!-- SEARCH -->
-
-    <section class="card">
-
-      <div
-        style="
-          display:flex;
-          gap:10px;
-          flex-wrap:wrap;
-          align-items:center;
-        "
-      >
-
-        <input
-          type="search"
-          id="search"
-          placeholder="Search member name, number or phone..."
-          style="flex:1;min-width:240px;"
-        >
-
-        <select id="roleFilter">
-
-          <option value="">
-            All Roles
-          </option>
-
-          <option value="admin">
-            Admin
-          </option>
-
-          <option value="chairperson">
-            Chairperson
-          </option>
-
-          <option value="treasurer">
-            Treasurer
-          </option>
-
-          <option value="secretary">
-            Secretary
-          </option>
-
-          <option value="member">
-            Member
-          </option>
-
-        </select>
-
-
-        <select id="statusFilter">
-
-          <option value="">
-            All Status
-          </option>
-
-          <option value="active">
-            Active
-          </option>
-
-          <option value="inactive">
-            Inactive
-          </option>
-
-        </select>
-
-      </div>
-
-    </section>
-
-
-    <br>
-
-
-    <!-- MEMBERS -->
-
-    <section class="card">
-
-      <h2>
-        Group Members
-      </h2>
-
-      <div class="table-wrap">
-
-        <table class="table">
-
-          <thead>
-
-            <tr>
-
-              <th>
-                Member No.
-              </th>
-
-              <th>
-                Member
-              </th>
-
-              <th>
-                Phone
-              </th>
-
-              <th>
-                Email
-              </th>
-
-              <th>
-                Role
-              </th>
-
-              <th>
-                Status
-              </th>
-
-              <th>
-                Login
-              </th>
-
-              <th>
-                Actions
-              </th>
-
-            </tr>
-
-          </thead>
-
-
-          <tbody id="memberRows">
-
-            <tr>
-
-              <td colspan="8">
-                Loading...
-              </td>
-
-            </tr>
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-    </section>
-
-  </main>
+```
+<div class="page-head">
+
+  <div>
+
+    <h1>
+      Members
+    </h1>
+
+    <p class="muted">
+      Manage your group's members,
+      roles and account access.
+    </p>
+
+  </div>
+
+
+  <button
+    class="btn btn-primary"
+    id="addMemberBtn"
+    type="button"
+    hidden
+  >
+    + Add Member
+  </button>
 
 </div>
 
 
-<!-- MEMBER MODAL -->
+<div
+  id="status"
+  class="card"
+  style="margin-bottom:20px;"
+>
+  Loading members...
+</div>
+
 
 <div
-  id="memberModal"
+  id="error"
+  class="error"
   hidden
-  style="
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,.55);
-    z-index:1000;
-    padding:20px;
-    overflow:auto;
-  "
->
+  style="margin-bottom:20px;"
+></div>
 
-  <div
-    class="card"
-    style="
-      max-width:650px;
-      margin:40px auto;
-    "
-  >
 
-    <div
-      style="
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        gap:10px;
-      "
-    >
+<!-- MEMBER SUMMARY -->
 
-      <div>
+<section class="card">
 
-        <h2 id="modalTitle">
-          Add Member
-        </h2>
+  <h2>
+    Member Summary
+  </h2>
 
-        <p class="muted">
-          Enter the member's details.
-        </p>
+  <div class="grid grid-3">
 
+    <div>
+
+      <div class="muted">
+        Total Members
       </div>
 
-      <button
-        class="btn btn-secondary"
-        id="closeModal"
-        type="button"
+      <div
+        class="metric"
+        id="totalMembers"
       >
-        ×
-      </button>
+        0
+      </div>
 
     </div>
 
 
-    <form id="memberForm">
+    <div>
 
-      <input
-        type="hidden"
-        id="memberId"
-      >
-
-
-      <div style="margin-top:15px;">
-
-        <label for="memberNumber">
-          Member Number
-        </label>
-
-        <input
-          id="memberNumber"
-          type="text"
-          required
-          placeholder="e.g. 1506"
-        >
-
+      <div class="muted">
+        Active
       </div>
 
+      <div
+        class="metric"
+        id="activeMembers"
+      >
+        0
+      </div>
 
-      <div style="margin-top:15px;">
+    </div>
+
+
+    <div>
+
+      <div class="muted">
+        Pending Login
+      </div>
+
+      <div
+        class="metric"
+        id="pendingMembers"
+      >
+        0
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+<br>
+
+
+<!-- MEMBERS TABLE -->
+
+<section class="card">
+
+  <div
+    style="
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:15px;
+      flex-wrap:wrap;
+      margin-bottom:15px;
+    "
+  >
+
+    <div>
+
+      <h2 style="margin-bottom:4px;">
+        Member Register
+      </h2>
+
+      <p class="muted">
+        All members registered in your group.
+      </p>
+
+    </div>
+
+
+    <input
+      type="search"
+      id="searchMembers"
+      placeholder="Search members..."
+      style="min-width:220px;"
+    >
+
+  </div>
+
+
+  <div class="table-wrap">
+
+    <table class="table">
+
+      <thead>
+
+        <tr>
+
+          <th>
+            Member
+          </th>
+
+          <th>
+            Member No.
+          </th>
+
+          <th>
+            Phone
+          </th>
+
+          <th>
+            Role
+          </th>
+
+          <th>
+            Account
+          </th>
+
+          <th>
+            Status
+          </th>
+
+          <th>
+            Actions
+          </th>
+
+        </tr>
+
+      </thead>
+
+
+      <tbody id="memberRows">
+
+        <tr>
+
+          <td colspan="7">
+            Loading...
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</section>
+
+
+<br>
+
+
+<!-- ADD / EDIT MEMBER -->
+
+<section
+  class="card"
+  id="memberFormCard"
+  hidden
+>
+
+  <h2 id="formTitle">
+    Add Member
+  </h2>
+
+
+  <form id="memberForm">
+
+    <input
+      type="hidden"
+      id="memberId"
+    >
+
+
+    <div class="grid grid-3">
+
+
+      <div>
 
         <label for="name">
           Full Name
@@ -389,31 +324,67 @@
 
         <input
           id="name"
+          name="name"
           type="text"
           required
-          placeholder="Member full name"
         >
 
       </div>
 
 
-      <div style="margin-top:15px;">
+      <div>
+
+        <label for="memberNumber">
+          Member Number
+        </label>
+
+        <input
+          id="memberNumber"
+          name="memberNumber"
+          type="text"
+          required
+        >
+
+      </div>
+
+
+      <div>
+
+        <label for="membershipNumber">
+          Membership Number
+        </label>
+
+        <input
+          id="membershipNumber"
+          name="membershipNumber"
+          type="text"
+          inputmode="numeric"
+          maxlength="4"
+          pattern="[0-9]{4}"
+          placeholder="e.g. 1506"
+          required
+        >
+
+      </div>
+
+
+      <div>
 
         <label for="phone">
-          Phone Number
+          Phone
         </label>
 
         <input
           id="phone"
+          name="phone"
           type="tel"
           required
-          placeholder="07XXXXXXXX"
         >
 
       </div>
 
 
-      <div style="margin-top:15px;">
+      <div>
 
         <label for="email">
           Email
@@ -421,20 +392,25 @@
 
         <input
           id="email"
+          name="email"
           type="email"
-          placeholder="member@example.com"
+          placeholder="Optional"
         >
 
       </div>
 
 
-      <div style="margin-top:15px;">
+      <div>
 
         <label for="role">
           Role
         </label>
 
-        <select id="role" required>
+        <select
+          id="role"
+          name="role"
+          required
+        >
 
           <option value="member">
             Member
@@ -461,7 +437,7 @@
       </div>
 
 
-      <div style="margin-top:15px;">
+      <div>
 
         <label for="joinDate">
           Join Date
@@ -469,67 +445,147 @@
 
         <input
           id="joinDate"
+          name="joinDate"
           type="date"
-          required
         >
 
       </div>
 
 
-      <div style="margin-top:15px;">
-
-        <label for="memberStatus">
-          Status
-        </label>
-
-        <select id="memberStatus">
-
-          <option value="active">
-            Active
-          </option>
-
-          <option value="inactive">
-            Inactive
-          </option>
-
-        </select>
-
-      </div>
+    </div>
 
 
-      <div
-        style="
-          display:flex;
-          gap:10px;
-          justify-content:flex-end;
-          margin-top:25px;
-        "
+    <div
+      style="
+        display:flex;
+        gap:10px;
+        flex-wrap:wrap;
+        margin-top:20px;
+      "
+    >
+
+      <button
+        class="btn btn-primary"
+        id="saveMember"
+        type="submit"
       >
+        Save Member
+      </button>
 
-        <button
-          type="button"
-          class="btn btn-secondary"
-          id="cancelMember"
-        >
-          Cancel
-        </button>
 
-        <button
-          type="submit"
-          class="btn btn-primary"
-          id="saveMember"
-        >
-          Save Member
-        </button>
+      <button
+        class="btn btn-secondary"
+        id="cancelMember"
+        type="button"
+      >
+        Cancel
+      </button>
 
+    </div>
+
+  </form>
+
+</section>
+
+
+<br>
+
+
+<!-- INVITE -->
+
+<section
+  class="card"
+  id="inviteCard"
+  hidden
+>
+
+  <h2>
+    Member Login Invitation
+  </h2>
+
+  <p class="muted">
+    Generate a one-time access code for this
+    member. The member can use it to activate
+    their CHAMA LIVE account.
+  </p>
+
+
+  <div
+    style="
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:end;
+    "
+  >
+
+    <div>
+
+      <div class="muted">
+        Member
       </div>
 
-    </form>
+      <strong id="inviteMemberName">
+        —
+      </strong>
+
+    </div>
+
+
+    <div>
+
+      <div class="muted">
+        Email
+      </div>
+
+      <strong id="inviteMemberEmail">
+        —
+      </strong>
+
+    </div>
+
+
+    <button
+      class="btn btn-primary"
+      id="generateInvite"
+      type="button"
+    >
+      Generate Access Code
+    </button>
 
   </div>
 
-</div>
 
+  <div
+    id="inviteResult"
+    hidden
+    style="margin-top:20px;"
+  >
+
+    <div class="muted">
+      One-time Access Code
+    </div>
+
+    <div
+      id="inviteCode"
+      class="metric"
+    >
+      —
+    </div>
+
+    <p class="muted">
+      Give this code to the member securely.
+      Do not post it publicly.
+    </p>
+
+  </div>
+
+</section>
+```
+
+  </main>
+
+</div>
 
 <script type="module">
 
@@ -544,4 +600,5 @@
 </script>
 
 </body>
+
 </html>
