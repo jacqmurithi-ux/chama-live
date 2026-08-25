@@ -1,27 +1,15 @@
 <!doctype html>
 <html lang="en">
-
 <head>
-
   <meta charset="utf-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1"
-  >
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <title>Add Member — CHAMA LIVE</title>
 
-  <link
-    rel="stylesheet"
-    href="css/app.css"
-  >
-
+  <link rel="stylesheet" href="css/app.css">
 </head>
 
-
 <body>
-
 
 <header class="topbar">
 
@@ -29,127 +17,63 @@
     CHAMA <span>LIVE</span>
   </div>
 
-  <div
-    class="user-info"
-    style="
-      display:flex;
-      align-items:center;
-      gap:12px;
-    "
+  <button
+    class="btn btn-secondary"
+    id="logout"
+    type="button"
   >
-
-    <div>
-
-      <strong id="currentUser">
-        User
-      </strong>
-
-      <div
-        class="muted"
-        id="currentRole"
-      >
-        —
-      </div>
-
-    </div>
-
-    <button
-      class="btn btn-secondary"
-      id="logout"
-      type="button"
-    >
-      Sign out
-    </button>
-
-  </div>
+    Sign out
+  </button>
 
 </header>
 
 
-
 <div class="layout">
-
-
-  <!-- SIDEBAR -->
 
   <aside class="sidebar">
 
     <nav class="nav">
 
-      <a href="dashboard.html">
-        Dashboard
-      </a>
-
-      <a
-        href="members.html"
-        class="active"
-      >
-        Members
-      </a>
-
-      <a href="contributions.html">
-        Contributions
-      </a>
-
-      <a href="expenses.html">
-        Expenses
-      </a>
-
-      <a href="meetings.html">
-        Meetings
-      </a>
-
-      <a href="reports.html">
-        Reports
-      </a>
-
-      <a href="monthly-closing.html">
-        Monthly Closing
-      </a>
-
-      <a href="group-management.html">
-        Group Management
-      </a>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="members.html" class="active">Members</a>
+      <a href="contributions.html">Contributions</a>
+      <a href="expenses.html">Expenses</a>
+      <a href="meetings.html">Meetings</a>
+      <a href="reports.html">Reports</a>
+      <a href="monthly-closing.html">Monthly Closing</a>
+      <a href="group-management.html">Group Management</a>
 
     </nav>
 
   </aside>
 
 
-
-  <!-- MAIN -->
-
   <main class="main">
-
 
     <div class="page-head">
 
       <div>
 
-        <h1>
-          Add Member
-        </h1>
+        <h1>Add Member</h1>
 
         <p class="muted">
-          Add a member to your group before
-          they create their CHAMA LIVE login.
+          Add a member to your group and assign
+          their system role.
         </p>
-
-      </div>
-
-      <div>
-
-        <strong id="groupName">
-          Loading group...
-        </strong>
 
       </div>
 
     </div>
 
 
+    <div
+      id="status"
+      class="card"
+      style="margin-bottom:20px;"
+    >
+      Checking your permissions...
+    </div>
 
-    <!-- ERROR -->
 
     <div
       id="error"
@@ -159,56 +83,30 @@
     ></div>
 
 
-
-    <!-- SUCCESS -->
-
-    <div
-      id="success"
+    <section
+      id="memberFormCard"
       class="card"
       hidden
-      style="margin-bottom:20px;"
-    ></div>
+    >
 
-
-
-    <!-- FORM -->
-
-    <section class="card">
-
-      <h2>
-        Member Details
-      </h2>
+      <h2>Member Details</h2>
 
       <p class="muted">
-        These details become the member's official
-        record in CHAMA LIVE.
+        The member will be created as
+        <strong>Pending Activation</strong>.
+        They can activate their login later.
       </p>
 
 
-      <form
-        id="memberForm"
-        autocomplete="off"
-      >
+      <form id="memberForm">
 
 
-        <!-- NAME -->
-
-        <div
-          style="
-            display:grid;
-            grid-template-columns:
-              repeat(auto-fit,minmax(250px,1fr));
-            gap:16px;
-          "
-        >
+        <div class="grid grid-2">
 
 
           <div>
 
-            <label
-              for="name"
-              class="muted"
-            >
+            <label for="name">
               Full Name
             </label>
 
@@ -217,51 +115,50 @@
               name="name"
               type="text"
               required
-              maxlength="150"
-              placeholder="e.g. Jackson Kinoti"
+              autocomplete="name"
+              placeholder="Full member name"
             >
 
           </div>
 
 
+          <div>
 
-          <!-- MEMBERSHIP NUMBER -->
+            <label for="memberNumber">
+              Member Number
+            </label>
+
+            <input
+              id="memberNumber"
+              name="memberNumber"
+              type="text"
+              required
+              placeholder="e.g. 1506"
+            >
+
+          </div>
+
 
           <div>
 
-            <label
-              for="membership_number"
-              class="muted"
-            >
+            <label for="membershipNumber">
               Membership Number
             </label>
 
             <input
-              id="membership_number"
-              name="membership_number"
+              id="membershipNumber"
+              name="membershipNumber"
               type="text"
               required
-              maxlength="50"
-              placeholder="e.g. 1506"
+              placeholder="e.g. M-1506"
             >
-
-            <small class="muted">
-              This will be used when activating
-              the member's account.
-            </small>
 
           </div>
 
 
-
-          <!-- PHONE -->
-
           <div>
 
-            <label
-              for="phone"
-              class="muted"
-            >
+            <label for="phone">
               Phone Number
             </label>
 
@@ -270,51 +167,50 @@
               name="phone"
               type="tel"
               required
-              maxlength="30"
-              placeholder="e.g. 0712345678"
+              autocomplete="tel"
+              placeholder="07XXXXXXXX"
             >
 
           </div>
 
 
-
-          <!-- EMAIL -->
-
           <div>
 
-            <label
-              for="email"
-              class="muted"
-            >
-              Email Address
+            <label for="email">
+              Email
             </label>
 
             <input
               id="email"
               name="email"
               type="email"
-              maxlength="255"
+              autocomplete="email"
               placeholder="member@example.com"
             >
-
-            <small class="muted">
-              Optional for now. Useful for account
-              activation and notifications.
-            </small>
 
           </div>
 
 
+          <div>
 
-          <!-- ROLE -->
+            <label for="joinDate">
+              Join Date
+            </label>
+
+            <input
+              id="joinDate"
+              name="joinDate"
+              type="date"
+              required
+            >
+
+          </div>
+
 
           <div>
 
-            <label
-              for="role"
-              class="muted"
-            >
-              Group Role
+            <label for="role">
+              System Role
             </label>
 
             <select
@@ -341,32 +237,6 @@
 
             </select>
 
-            <small class="muted">
-              The role determines what the member
-              can access after login.
-            </small>
-
-          </div>
-
-
-
-          <!-- JOIN DATE -->
-
-          <div>
-
-            <label
-              for="join_date"
-              class="muted"
-            >
-              Join Date
-            </label>
-
-            <input
-              id="join_date"
-              name="join_date"
-              type="date"
-            >
-
           </div>
 
         </div>
@@ -374,32 +244,6 @@
 
         <br>
 
-
-        <!-- STATUS -->
-
-        <div class="card">
-
-          <strong>
-            Account status
-          </strong>
-
-          <p class="muted">
-
-            The member will initially be added as
-            <strong>Pending</strong>.
-
-            They will not have login access until
-            their account is activated.
-
-          </p>
-
-        </div>
-
-
-        <br>
-
-
-        <!-- BUTTONS -->
 
         <div
           style="
@@ -433,82 +277,59 @@
     </section>
 
 
+    <section
+      id="successCard"
+      class="card"
+      hidden
+      style="margin-top:20px;"
+    >
 
-    <br>
+      <h2>Member Added Successfully</h2>
 
+      <p>
+        The member has been added to your group.
+      </p>
 
+      <p>
+        Account status:
+        <strong>Pending Activation</strong>
+      </p>
 
-    <!-- PROCESS EXPLANATION -->
+      <div
+        style="
+          display:flex;
+          gap:10px;
+          flex-wrap:wrap;
+        "
+      >
 
-    <section class="card">
+        <a
+          href="members.html"
+          class="btn btn-primary"
+        >
+          View Members
+        </a>
 
-      <h2>
-        How member login works
-      </h2>
+        <button
+          id="addAnother"
+          class="btn btn-secondary"
+          type="button"
+        >
+          Add Another Member
+        </button>
 
-      <ol>
-
-        <li>
-          Admin or Chairperson adds the member.
-        </li>
-
-        <li>
-          The member record is created with
-          <strong>Pending</strong> status.
-        </li>
-
-        <li>
-          The member uses their membership number
-          to activate their account.
-        </li>
-
-        <li>
-          They create their email/password login.
-        </li>
-
-        <li>
-          CHAMA LIVE links their Auth account to
-          their existing member record.
-        </li>
-
-        <li>
-          Their predefined role controls the
-          dashboard they can access.
-        </li>
-
-      </ol>
+      </div>
 
     </section>
-
 
   </main>
 
 </div>
 
 
-
 <script type="module">
-
-  import {
-    boot
-  } from "./js/layout.js";
-
-
-  const member =
-    await boot();
-
-
-  if (member) {
-
-    await import(
-      "./js/add-member.js"
-    );
-
-  }
-
+  import "./js/add-member.js";
 </script>
 
-
 </body>
-
 </html>
