@@ -1,255 +1,238 @@
+```javascript
 import { supabase } from "./supabase.js";
 import { getCurrentGroupId } from "./app.js";
 
+
 /* =====================================================
-ELEMENTS
+   ELEMENTS
 ===================================================== */
 
 const statusBox =
-document.getElementById("status");
+  document.getElementById("status");
 
 const errorBox =
-document.getElementById("error");
+  document.getElementById("error");
 
 const activeMembersEl =
-document.getElementById("activeMembers");
+  document.getElementById("activeMembers");
 
 const totalMembersEl =
-document.getElementById("totalMembers");
+  document.getElementById("totalMembers");
 
 const contributionsEl =
-document.getElementById("contributions");
+  document.getElementById("contributions");
 
 const approvedExpensesEl =
-document.getElementById("approvedExpenses");
+  document.getElementById("approvedExpenses");
 
 const pendingExpensesEl =
-document.getElementById("pendingExpenses");
+  document.getElementById("pendingExpenses");
 
 const currentBalanceEl =
-document.getElementById("currentBalance");
+  document.getElementById("currentBalance");
 
 const openingEl =
-document.getElementById("opening");
+  document.getElementById("opening");
 
 const contributions2El =
-document.getElementById("contributions2");
+  document.getElementById("contributions2");
 
 const expenses2El =
-document.getElementById("expenses2");
+  document.getElementById("expenses2");
 
 const balanceEl =
-document.getElementById("balance");
+  document.getElementById("balance");
 
 const contributionRows =
-document.getElementById("contributionRows");
+  document.getElementById("contributionRows");
 
 const expenseRows =
-document.getElementById("expenseRows");
+  document.getElementById("expenseRows");
 
 const upcomingMeetingsEl =
-document.getElementById("upcomingMeetings");
+  document.getElementById("upcomingMeetings");
 
 const completedMeetingsEl =
-document.getElementById("completedMeetings");
+  document.getElementById("completedMeetings");
 
 const cancelledMeetingsEl =
-document.getElementById("cancelledMeetings");
+  document.getElementById("cancelledMeetings");
 
 const logoutButton =
-document.getElementById("logout");
+  document.getElementById("logout");
+
 
 /* =====================================================
-MONEY
+   MONEY
 ===================================================== */
 
 function money(value) {
 
-return (
-"KSh " +
-Number(value || 0).toLocaleString(
-"en-KE",
-{
-minimumFractionDigits: 0,
-maximumFractionDigits: 2
-}
-)
-);
+  return (
+    "KSh " +
+    Number(value || 0).toLocaleString(
+      "en-KE",
+      {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      }
+    )
+  );
 
 }
+
 
 /* =====================================================
-ESCAPE HTML
+   ESCAPE HTML
 ===================================================== */
 
 function escapeHtml(value) {
 
-return String(value ?? "")
-.replaceAll("&", "&")
-.replaceAll("<", "<")
-.replaceAll(">", ">")
-.replaceAll('"', """)
-.replaceAll("'", "'");
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 
 }
 
+
 /* =====================================================
-ERROR
+   ERROR
 ===================================================== */
 
 function showError(error) {
 
-console.error(
-"CHAMA LIVE reports:",
-error
-);
+  console.error(
+    "CHAMA LIVE Reports:",
+    error
+  );
 
-const message =
-error?.message ||
-String(error);
+  const message =
+    error?.message ||
+    String(error);
 
-if (errorBox) {
+  errorBox.textContent =
+    "Error: " + message;
 
-```
-errorBox.textContent =
-  "Error: " + message;
+  errorBox.hidden = false;
 
-errorBox.hidden =
-  false;
-```
+  statusBox.textContent =
+    "Something went wrong.";
 
 }
 
-if (statusBox) {
-
-```
-statusBox.textContent =
-  "Something went wrong.";
-```
-
-}
-
-}
 
 /* =====================================================
-CLEAR ERROR
+   CLEAR ERROR
 ===================================================== */
 
 function clearError() {
 
-if (!errorBox) {
-return;
-}
+  errorBox.textContent = "";
 
-errorBox.textContent = "";
-
-errorBox.hidden = true;
+  errorBox.hidden = true;
 
 }
+
 
 /* =====================================================
-LOAD MEMBERS
+   LOAD MEMBERS
 ===================================================== */
 
 async function loadMembers(groupId) {
 
-const result =
-await supabase
-.from("members")
-.select(
-"id,name,status"
-)
-.eq(
-"group_id",
-groupId
-);
+  const result =
+    await supabase
+      .from("members")
+      .select(
+        "id,name,status"
+      )
+      .eq(
+        "group_id",
+        groupId
+      );
 
-if (result.error) {
 
-```
-throw result.error;
-```
+  if (result.error) {
 
-}
+    throw result.error;
 
-const members =
-result.data || [];
+  }
 
-const active =
-members.filter(
-member =>
-String(
-member.status || ""
-).toLowerCase() ===
-"active"
-).length;
 
-if (activeMembersEl) {
+  const members =
+    result.data || [];
 
-```
-activeMembersEl.textContent =
-  active;
-```
 
-}
+  const active =
+    members.filter(
+      member =>
+        String(
+          member.status || ""
+        ).toLowerCase() ===
+        "active"
+    ).length;
 
-if (totalMembersEl) {
 
-```
-totalMembersEl.textContent =
-  members.length;
-```
+  activeMembersEl.textContent =
+    active;
 
-}
 
-/* Create a member lookup */
+  totalMembersEl.textContent =
+    members.length;
 
-const memberMap = new Map();
 
-members.forEach(
-member => {
+  /*
+   * Create a lookup table so we don't
+   * depend on a Supabase relationship.
+   */
 
-```
-  memberMap.set(
-    member.id,
-    member.name
+  const memberMap = {};
+
+
+  members.forEach(
+    member => {
+
+      memberMap[member.id] =
+        member.name || "Unknown";
+
+    }
   );
 
-}
-```
 
-);
-
-return memberMap;
+  return memberMap;
 
 }
+
 
 /* =====================================================
-LOAD CONTRIBUTIONS
+   LOAD CONTRIBUTIONS
 ===================================================== */
 
 async function loadContributions(
-groupId,
-memberMap
+  groupId,
+  memberMap
 ) {
 
-/*
+  /*
+   * IMPORTANT
+   *
+   * We use:
+   *
+   * contribution_date
+   *
+   * NOT:
+   *
+   * date
+   */
 
-* IMPORTANT:
-*
-* There is NO:
-*
-* contributions.date
-*
-* We use:
-*
-* contributions.contribution_date
-  */
-
-const result =
-await supabase
-.from("contributions")
-.select(`         id,
+  const result =
+    await supabase
+      .from("contributions")
+      .select(`
+        id,
         member_id,
         amount,
         contribution_type,
@@ -258,644 +241,529 @@ await supabase
         reference,
         contribution_date
       `)
-.eq(
-"group_id",
-groupId
-)
-.order(
-"contribution_date",
-{
-ascending: false
-}
-);
-
-if (result.error) {
-
-```
-throw result.error;
-```
-
-}
-
-const rows =
-result.data || [];
-
-/* ===================================================
-TOTAL
-=================================================== */
-
-const total =
-rows.reduce(
-(sum, row) =>
-sum +
-Number(
-row.amount || 0
-),
-0
-);
-
-if (contributionsEl) {
-
-```
-contributionsEl.textContent =
-  money(total);
-```
-
-}
-
-if (contributions2El) {
-
-```
-contributions2El.textContent =
-  money(total);
-```
-
-}
-
-/* ===================================================
-TABLE
-=================================================== */
-
-if (!contributionRows) {
-
-```
-return total;
-```
-
-}
-
-if (rows.length === 0) {
-
-```
-contributionRows.innerHTML = `
-  <tr>
-    <td colspan="6">
-      No contributions yet.
-    </td>
-  </tr>
-`;
-
-return total;
-```
-
-}
-
-contributionRows.innerHTML =
-rows
-.slice(0, 10)
-.map(
-row => {
-
-```
-      const memberName =
-        memberMap.get(
-          row.member_id
-        ) ||
-        "Unknown";
+      .eq(
+        "group_id",
+        groupId
+      )
+      .order(
+        "contribution_date",
+        {
+          ascending: false
+        }
+      );
 
 
-      const displayDate =
-        row.contribution_date ||
-        row.month ||
-        "—";
+  if (result.error) {
+
+    throw result.error;
+
+  }
 
 
-      return `
-        <tr>
+  const contributions =
+    result.data || [];
 
-          <td>
-            ${escapeHtml(
-              displayDate
-            )}
-          </td>
 
-          <td>
-            ${escapeHtml(
-              memberName
-            )}
-          </td>
+  const total =
+    contributions.reduce(
+      (sum, contribution) =>
+        sum +
+        Number(
+          contribution.amount || 0
+        ),
+      0
+    );
 
-          <td>
-            ${money(
-              row.amount
-            )}
-          </td>
 
-          <td>
-            ${escapeHtml(
-              row.contribution_type ||
-              "—"
-            )}
-          </td>
+  contributionsEl.textContent =
+    money(total);
 
-          <td>
-            ${escapeHtml(
-              row.payment_method ||
-              "—"
-            )}
-          </td>
 
-          <td>
-            ${escapeHtml(
-              row.reference ||
-              "—"
-            )}
-          </td>
+  contributions2El.textContent =
+    money(total);
 
-        </tr>
-      `;
 
-    }
-  )
-  .join("");
-```
+  /* ===================================================
+     TABLE
+  =================================================== */
 
-return total;
+  if (
+    contributions.length === 0
+  ) {
+
+    contributionRows.innerHTML = `
+      <tr>
+        <td colspan="6">
+          No contributions yet.
+        </td>
+      </tr>
+    `;
+
+    return total;
+
+  }
+
+
+  contributionRows.innerHTML =
+    contributions
+      .slice(0, 10)
+      .map(
+        contribution => {
+
+          const memberName =
+            memberMap[
+              contribution.member_id
+            ] ||
+            "Unknown";
+
+
+          const displayDate =
+            contribution.contribution_date ||
+            contribution.month ||
+            "—";
+
+
+          return `
+            <tr>
+
+              <td>
+                ${escapeHtml(
+                  displayDate
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  memberName
+                )}
+              </td>
+
+              <td>
+                ${money(
+                  contribution.amount
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  contribution.contribution_type ||
+                  "—"
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  contribution.payment_method ||
+                  "—"
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  contribution.reference ||
+                  "—"
+                )}
+              </td>
+
+            </tr>
+          `;
+
+        }
+      )
+      .join("");
+
+
+  return total;
 
 }
+
 
 /* =====================================================
-LOAD EXPENSES
+   LOAD EXPENSES
 ===================================================== */
 
 async function loadExpenses(groupId) {
 
-/*
-
-* expenses.date is valid.
-  */
-
-const result =
-await supabase
-.from("expenses")
-.select(`         id,
+  const result =
+    await supabase
+      .from("expenses")
+      .select(`
+        id,
         date,
         description,
         category,
         amount,
         approval_status
       `)
-.eq(
-"group_id",
-groupId
-)
-.order(
-"date",
-{
-ascending: false
-}
-);
+      .eq(
+        "group_id",
+        groupId
+      )
+      .order(
+        "date",
+        {
+          ascending: false
+        }
+      );
 
-if (result.error) {
 
-```
-throw result.error;
-```
+  if (result.error) {
 
-}
+    throw result.error;
 
-const rows =
-result.data || [];
+  }
 
-/* ===================================================
-APPROVED
-=================================================== */
 
-const approved =
-rows
-.filter(
-row =>
-String(
-row.approval_status || ""
-).toLowerCase() ===
-"approved"
-)
-.reduce(
-(sum, row) =>
-sum +
-Number(
-row.amount || 0
-),
-0
-);
+  const expenses =
+    result.data || [];
 
-/* ===================================================
-PENDING
-=================================================== */
 
-const pending =
-rows
-.filter(
-row =>
-String(
-row.approval_status || ""
-).toLowerCase() ===
-"pending"
-)
-.reduce(
-(sum, row) =>
-sum +
-Number(
-row.amount || 0
-),
-0
-);
+  const approved =
+    expenses
+      .filter(
+        expense =>
+          String(
+            expense.approval_status || ""
+          ).toLowerCase() ===
+          "approved"
+      );
 
-if (approvedExpensesEl) {
 
-```
-approvedExpensesEl.textContent =
-  money(approved);
-```
+  const pending =
+    expenses
+      .filter(
+        expense =>
+          String(
+            expense.approval_status || ""
+          ).toLowerCase() ===
+          "pending"
+      );
 
-}
 
-if (pendingExpensesEl) {
+  const approvedTotal =
+    approved.reduce(
+      (sum, expense) =>
+        sum +
+        Number(
+          expense.amount || 0
+        ),
+      0
+    );
 
-```
-pendingExpensesEl.textContent =
-  money(pending);
-```
 
-}
+  const pendingTotal =
+    pending.reduce(
+      (sum, expense) =>
+        sum +
+        Number(
+          expense.amount || 0
+        ),
+      0
+    );
 
-if (expenses2El) {
 
-```
-expenses2El.textContent =
-  money(approved);
-```
+  approvedExpensesEl.textContent =
+    money(approvedTotal);
 
-}
 
-/* ===================================================
-TABLE
-=================================================== */
+  pendingExpensesEl.textContent =
+    money(pendingTotal);
 
-if (!expenseRows) {
 
-```
-return approved;
-```
+  expenses2El.textContent =
+    money(approvedTotal);
 
-}
 
-if (rows.length === 0) {
+  /* ===================================================
+     TABLE
+  =================================================== */
 
-```
-expenseRows.innerHTML = `
-  <tr>
-    <td colspan="5">
-      No expenses yet.
-    </td>
-  </tr>
-`;
+  if (
+    expenses.length === 0
+  ) {
 
-return approved;
-```
+    expenseRows.innerHTML = `
+      <tr>
+        <td colspan="5">
+          No expenses yet.
+        </td>
+      </tr>
+    `;
 
-}
+    return approvedTotal;
 
-expenseRows.innerHTML =
-rows
-.slice(0, 10)
-.map(
-row => {
+  }
 
-```
-      return `
-        <tr>
 
-          <td>
-            ${escapeHtml(
-              row.date ||
-              "—"
-            )}
-          </td>
+  expenseRows.innerHTML =
+    expenses
+      .slice(0, 10)
+      .map(
+        expense => {
 
-          <td>
-            ${escapeHtml(
-              row.description ||
-              "—"
-            )}
-          </td>
+          return `
+            <tr>
 
-          <td>
-            ${escapeHtml(
-              row.category ||
-              "—"
-            )}
-          </td>
+              <td>
+                ${escapeHtml(
+                  expense.date ||
+                  "—"
+                )}
+              </td>
 
-          <td>
-            ${money(
-              row.amount
-            )}
-          </td>
+              <td>
+                ${escapeHtml(
+                  expense.description ||
+                  "—"
+                )}
+              </td>
 
-          <td>
-            ${escapeHtml(
-              row.approval_status ||
-              "—"
-            )}
-          </td>
+              <td>
+                ${escapeHtml(
+                  expense.category ||
+                  "—"
+                )}
+              </td>
 
-        </tr>
-      `;
+              <td>
+                ${money(
+                  expense.amount
+                )}
+              </td>
 
-    }
-  )
-  .join("");
-```
+              <td>
+                ${escapeHtml(
+                  expense.approval_status ||
+                  "—"
+                )}
+              </td>
 
-return approved;
+            </tr>
+          `;
+
+        }
+      )
+      .join("");
+
+
+  return approvedTotal;
 
 }
+
 
 /* =====================================================
-LOAD MEETINGS
+   LOAD MEETINGS
 ===================================================== */
 
 async function loadMeetings(groupId) {
 
-const result =
-await supabase
-.from("meetings")
-.select(`         id,
+  const result =
+    await supabase
+      .from("meetings")
+      .select(`
+        id,
         date,
         status
       `)
-.eq(
-"group_id",
-groupId
-);
+      .eq(
+        "group_id",
+        groupId
+      );
 
-if (result.error) {
 
-```
-throw result.error;
-```
+  if (result.error) {
 
-}
+    throw result.error;
 
-const meetings =
-result.data || [];
+  }
 
-const upcoming =
-meetings.filter(
-meeting =>
-String(
-meeting.status || ""
-).toLowerCase() ===
-"upcoming"
-).length;
 
-const completed =
-meetings.filter(
-meeting =>
-String(
-meeting.status || ""
-).toLowerCase() ===
-"completed"
-).length;
+  const meetings =
+    result.data || [];
 
-const cancelled =
-meetings.filter(
-meeting =>
-String(
-meeting.status || ""
-).toLowerCase() ===
-"cancelled"
-).length;
 
-if (upcomingMeetingsEl) {
+  upcomingMeetingsEl.textContent =
+    meetings.filter(
+      meeting =>
+        String(
+          meeting.status || ""
+        ).toLowerCase() ===
+        "upcoming"
+    ).length;
 
-```
-upcomingMeetingsEl.textContent =
-  upcoming;
-```
+
+  completedMeetingsEl.textContent =
+    meetings.filter(
+      meeting =>
+        String(
+          meeting.status || ""
+        ).toLowerCase() ===
+        "completed"
+    ).length;
+
+
+  cancelledMeetingsEl.textContent =
+    meetings.filter(
+      meeting =>
+        String(
+          meeting.status || ""
+        ).toLowerCase() ===
+        "cancelled"
+    ).length;
 
 }
 
-if (completedMeetingsEl) {
-
-```
-completedMeetingsEl.textContent =
-  completed;
-```
-
-}
-
-if (cancelledMeetingsEl) {
-
-```
-cancelledMeetingsEl.textContent =
-  cancelled;
-```
-
-}
-
-}
 
 /* =====================================================
-LOAD REPORT
+   LOAD REPORTS
 ===================================================== */
 
 async function loadReports() {
 
-clearError();
+  clearError();
 
-if (statusBox) {
 
-```
-statusBox.textContent =
-  "Finding your group...";
-```
+  statusBox.textContent =
+    "Finding your group...";
 
-}
 
-const groupId =
-await getCurrentGroupId();
+  const groupId =
+    await getCurrentGroupId();
 
-if (!groupId) {
 
-```
-throw new Error(
-  "No group is linked to this account."
-);
-```
+  if (!groupId) {
 
-}
+    throw new Error(
+      "No group is linked to this account."
+    );
 
-if (statusBox) {
+  }
 
-```
-statusBox.textContent =
-  "Loading live report...";
-```
 
-}
+  statusBox.textContent =
+    "Loading live report...";
 
-/* ===================================================
-MEMBERS FIRST
-=================================================== */
 
-const memberMap =
-await loadMembers(
-groupId
-);
+  /*
+   * Members first because we use their
+   * IDs to display contribution names.
+   */
 
-/* ===================================================
-LOAD FINANCIAL DATA
-=================================================== */
+  const memberMap =
+    await loadMembers(
+      groupId
+    );
 
-const contributionTotal =
-await loadContributions(
-groupId,
-memberMap
-);
 
-const approvedExpenseTotal =
-await loadExpenses(
-groupId
-);
+  const contributionTotal =
+    await loadContributions(
+      groupId,
+      memberMap
+    );
 
-/* ===================================================
-MEETINGS
-=================================================== */
 
-await loadMeetings(
-groupId
-);
+  const approvedExpenseTotal =
+    await loadExpenses(
+      groupId
+    );
 
-/* ===================================================
-BALANCE
-=================================================== */
 
-const openingBalance = 0;
-
-const closingBalance =
-openingBalance +
-contributionTotal -
-approvedExpenseTotal;
-
-if (openingEl) {
-
-```
-openingEl.textContent =
-  money(
-    openingBalance
+  await loadMeetings(
+    groupId
   );
-```
+
+
+  /* ===================================================
+     FINANCIAL POSITION
+  =================================================== */
+
+  const openingBalance = 0;
+
+
+  const closingBalance =
+    openingBalance +
+    contributionTotal -
+    approvedExpenseTotal;
+
+
+  openingEl.textContent =
+    money(
+      openingBalance
+    );
+
+
+  balanceEl.textContent =
+    money(
+      closingBalance
+    );
+
+
+  currentBalanceEl.textContent =
+    money(
+      closingBalance
+    );
+
+
+  statusBox.textContent =
+    "Report updated successfully.";
 
 }
 
-if (balanceEl) {
-
-```
-balanceEl.textContent =
-  money(
-    closingBalance
-  );
-```
-
-}
-
-if (currentBalanceEl) {
-
-```
-currentBalanceEl.textContent =
-  money(
-    closingBalance
-  );
-```
-
-}
-
-if (statusBox) {
-
-```
-statusBox.textContent =
-  "Report updated successfully.";
-```
-
-}
-
-}
 
 /* =====================================================
-LOGOUT
+   LOGOUT
 ===================================================== */
 
 if (logoutButton) {
 
-logoutButton.addEventListener(
-"click",
-async () => {
+  logoutButton.addEventListener(
+    "click",
+    async () => {
 
-```
+      try {
+
+        await supabase.auth.signOut();
+
+        window.location.href =
+          "login.html";
+
+      }
+
+      catch(error) {
+
+        showError(error);
+
+      }
+
+    }
+  );
+
+}
+
+
+/* =====================================================
+   START
+===================================================== */
+
+async function start() {
+
   try {
 
-    await supabase.auth.signOut();
+    await supabase.auth.getSession();
 
-    window.location.href =
-      "login.html";
+    await loadReports();
 
   }
 
-  catch (error) {
+  catch(error) {
 
     showError(error);
 
   }
 
 }
-```
 
-);
-
-}
-
-/* =====================================================
-START
-===================================================== */
-
-async function start() {
-
-try {
-
-```
-const {
-  data: {
-    session
-  }
-} =
-  await supabase.auth.getSession();
-
-
-if (!session) {
-
-  window.location.href =
-    "login.html";
-
-  return;
-
-}
-
-
-await loadReports();
-```
-
-}
-
-catch (error) {
-
-```
-showError(error);
-```
-
-}
-
-}
 
 start();
+```
+
