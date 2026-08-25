@@ -1,263 +1,266 @@
 import {
-  supabase
-} from "./supabase.js";
-
-import {
   requireAuth,
-  getAuthContext,
-  logout,
-  canManageGroup,
-  canManageFinance,
-  canManageRecords,
-  roleLabel
+  getMyMember,
+  getMyGroup,
+  getMyRole,
+  roleLabel,
+  logout
 } from "./auth.js";
 
 
-/*
-=====================================================
- CHAMA LIVE LAYOUT + RBAC
-=====================================================
-*/
-
-
-/* =====================================================
-   PAGE DEFINITIONS
-===================================================== */
-
-const NAV_ITEMS = [
-
-  {
-    href:
-      "dashboard.html",
-
-    label:
-      "Dashboard",
-
-    roles:
-      null
-
-  },
-
-  {
-    href:
-      "members.html",
-
-    label:
-      "Members",
-
-    roles:
-      null
-
-  },
-
-  {
-    href:
-      "contributions.html",
-
-    label:
-      "Contributions",
-
-    roles:
-      null
-
-  },
-
-  {
-    href:
-      "expenses.html",
-
-    label:
-      "Expenses",
-
-    roles:
-      null
-
-  },
-
-  {
-    href:
-      "meetings.html",
-
-    label:
-      "Meetings",
-
-    roles:
-      null
-
-  },
-
-  {
-    href:
-      "reports.html",
-
-    label:
-      "Reports",
-
-    roles:
-      null
-
-  },
-
-  {
-    href:
-      "monthly-closing.html",
-
-    label:
-      "Monthly Closing",
-
-    roles:
-      [
-        "admin",
-        "chairperson",
-        "treasurer"
-      ]
-
-  },
-
-  {
-    href:
-      "group-management.html",
-
-    label:
-      "Group Management",
-
-    roles:
-      [
-        "admin",
-        "chairperson"
-      ]
-
-  }
-
-];
-
-
-/* =====================================================
-   INIT
-===================================================== */
-
-export async function boot() {
-
-  try {
-
-    /*
-     * Require a real authenticated user.
-     */
-
-    const user =
-      await requireAuth(
-        true
-      );
-
-
-    if (!user) {
-      return null;
-    }
-
-
-    /*
-     * Load database member record.
-     */
-
-    const context =
-      await getAuthContext();
-
-
-    if (!context) {
-
-      console.error(
-        "No member context."
-      );
-
-      return null;
-    }
-
-
-    /*
-     * Render user information.
-     */
-
-    renderUser(
-      context
-    );
-
-
-    /*
-     * Apply RBAC navigation.
-     */
-
-    await applyNavigation(
-      context
-    );
-
-
-    /*
-     * Connect logout.
-     */
-
-    setupLogout();
-
-
-    /*
-     * Protect the current page.
-     */
-
-    protectCurrentPage(
-      context
-    );
-
-
-    /*
-     * Listen for logout/session changes.
-     */
-
-    setupAuthListener();
-
-
-    return context;
-
-  } catch (error) {
-
-    console.error(
-      "Layout boot error:",
-      error
-    );
-
-    return null;
-
-  }
+/* =========================================================
+   ROLE PERMISSIONS
+========================================================= */
+
+const permissions = {
+
+  admin: [
+    "dashboard",
+    "members",
+    "contributions",
+    "expenses",
+    "meetings",
+    "reports",
+    "monthly-closing",
+    "group-management"
+  ],
+
+  chairperson: [
+    "dashboard",
+    "members",
+    "contributions",
+    "expenses",
+    "meetings",
+    "reports",
+    "monthly-closing",
+    "group-management"
+  ],
+
+  treasurer: [
+    "dashboard",
+    "members",
+    "contributions",
+    "expenses",
+    "meetings",
+    "reports",
+    "monthly-closing"
+  ],
+
+  secretary: [
+    "dashboard",
+    "members",
+    "contributions",
+    "expenses",
+    "meetings",
+    "reports"
+  ],
+
+  member: [
+    "dashboard",
+    "contributions",
+    "meetings",
+    "reports"
+  ]
+
+};
+
+
+/* =========================================================
+   PAGE → PERMISSION
+========================================================= */
+
+const pagePermissions = {
+
+  "dashboard.html":
+    "dashboard",
+
+  "members.html":
+    "members",
+
+  "contributions.html":
+    "contributions",
+
+  "expenses.html":
+    "expenses",
+
+  "meetings.html":
+    "meetings",
+
+  "reports.html":
+    "reports",
+
+  "monthly-closing.html":
+    "monthly-closing",
+
+  "group-management.html":
+    "group-management"
+
+};
+
+
+/* =========================================================
+   GET CURRENT PAGE
+========================================================= */
+
+function getCurrentPage() {
+
+  return (
+    window.location.pathname
+      .split("/")
+      .pop()
+      .toLowerCase()
+  );
 
 }
 
 
-/* =====================================================
-   USER DISPLAY
-===================================================== */
+/* =========================================================
+   CHECK PAGE ACCESS
+========================================================= */
 
-function renderUser(
-  context
+function canAccessPage(
+  role,
+  page
 ) {
 
-  const {
-    user,
-    member
-  } = context;
+  const permission =
+    pagePermissions[page];
+
+  if (!permission) {
+    return true;
+  }
+
+  const allowedPages =
+    permissions[role] || [];
+
+  return allowedPages.includes(
+    permission
+  );
+
+}
 
 
-  const name =
-    member.name ||
-    user.email ||
-    "User";
+/* =========================================================
+   PROTECT PAGE
+========================================================= */
+
+async function protectPage(
+  role
+) {
+
+  const page =
+    getCurrentPage();
+
+  if (
+    page === "" ||
+    page === "index.html" ||
+    page === "login.html" ||
+    page === "create-group.html"
+  ) {
+
+    return true;
+
+  }
 
 
-  const role =
-    roleLabel(
-      member.role
+  if (
+    !canAccessPage(
+      role,
+      page
+    )
+  ) {
+
+    console.warn(
+      `RBAC blocked ${page} for ${role}`
+    );
+
+    window.location.href =
+      "dashboard.html";
+
+    return false;
+  }
+
+  return true;
+}
+
+
+/* =========================================================
+   APPLY NAVIGATION RBAC
+========================================================= */
+
+function applyNavigationRBAC(
+  role
+) {
+
+  const allowedPages =
+    permissions[role] || [];
+
+
+  const links =
+    document.querySelectorAll(
+      ".nav a"
     );
 
 
+  links.forEach(
+    link => {
+
+      const href =
+        link
+          .getAttribute("href");
+
+      if (!href) {
+        return;
+      }
+
+
+      const page =
+        href
+          .split("/")
+          .pop()
+          .toLowerCase();
+
+
+      const permission =
+        pagePermissions[page];
+
+
+      if (
+        permission &&
+        !allowedPages.includes(
+          permission
+        )
+      ) {
+
+        link.style.display =
+          "none";
+
+        link.setAttribute(
+          "aria-hidden",
+          "true"
+        );
+
+      }
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   SHOW USER INFORMATION
+========================================================= */
+
+function renderUser(
+  member,
+  group,
+  role
+) {
+
   /*
-   * Optional elements.
+   * Existing dashboard elements
+   * can use these IDs if present.
    */
 
   const nameElements =
@@ -270,7 +273,8 @@ function renderUser(
     element => {
 
       element.textContent =
-        name;
+        member?.name ||
+        "User";
 
     }
   );
@@ -286,346 +290,79 @@ function renderUser(
     element => {
 
       element.textContent =
-        role;
+        roleLabel(role);
 
     }
   );
 
 
-  const emailElements =
+  const groupElements =
     document.querySelectorAll(
-      "[data-user-email]"
+      "[data-group-name]"
     );
 
 
-  emailElements.forEach(
+  groupElements.forEach(
     element => {
 
       element.textContent =
-        user.email ||
-        member.email ||
-        "";
+        group?.name ||
+        "My Group";
 
     }
   );
 
 
   /*
-   * Add body attributes so CSS can use them.
+   * Optional common IDs.
    */
 
-  document.body.dataset.role =
-    context.role;
-
-  document.body.dataset.groupId =
-    context.groupId;
-
-}
-
-
-/* =====================================================
-   NAVIGATION
-===================================================== */
-
-async function applyNavigation(
-  context
-) {
-
-  const nav =
-    document.querySelector(
-      ".nav"
+  const userName =
+    document.getElementById(
+      "userName"
     );
 
+  if (userName) {
 
-  if (!nav) {
-    return;
-  }
-
-
-  const currentPage =
-    getCurrentPage();
-
-
-  nav.innerHTML =
-    "";
-
-
-  for (
-    const item
-    of NAV_ITEMS
-  ) {
-
-    /*
-     * No roles means every authenticated
-     * group member can see the page.
-     */
-
-    if (
-      item.roles &&
-      !item.roles.includes(
-        context.role
-      )
-    ) {
-
-      continue;
-
-    }
-
-
-    const link =
-      document.createElement(
-        "a"
-      );
-
-
-    link.href =
-      item.href;
-
-
-    link.textContent =
-      item.label;
-
-
-    if (
-      normalizePath(
-        item.href
-      ) ===
-      normalizePath(
-        currentPage
-      )
-    ) {
-
-      link.classList.add(
-        "active"
-      );
-
-    }
-
-
-    nav.appendChild(
-      link
-    );
+    userName.textContent =
+      member?.name ||
+      "User";
 
   }
 
 
-  /*
-   * Optional admin-only elements elsewhere
-   * in the page.
-   */
-
-  applyRoleVisibility(
-    context
-  );
-
-}
-
-
-/* =====================================================
-   ROLE-BASED ELEMENT VISIBILITY
-===================================================== */
-
-function applyRoleVisibility(
-  context
-) {
-
-  document
-    .querySelectorAll(
-      "[data-role]"
-    )
-    .forEach(
-      element => {
-
-        const roles =
-          element
-            .dataset
-            .role
-            .split(",")
-            .map(
-              value =>
-                value
-                  .trim()
-                  .toLowerCase()
-            );
-
-
-        if (
-          roles.includes(
-            context.role
-          )
-        ) {
-
-          element.hidden =
-            false;
-
-        } else {
-
-          element.hidden =
-            true;
-
-        }
-
-      }
+  const userRole =
+    document.getElementById(
+      "userRole"
     );
 
+  if (userRole) {
 
-  /*
-   * Admin-only.
-   */
+    userRole.textContent =
+      roleLabel(role);
 
-  document
-    .querySelectorAll(
-      "[data-admin-only]"
-    )
-    .forEach(
-      element => {
-
-        element.hidden =
-          context.role !==
-          "admin";
-
-      }
-    );
-
-
-  /*
-   * Group management.
-   */
-
-  document
-    .querySelectorAll(
-      "[data-management-only]"
-    )
-    .forEach(
-      element => {
-
-        element.hidden =
-          ![
-            "admin",
-            "chairperson"
-          ].includes(
-            context.role
-          );
-
-      }
-    );
-
-
-  /*
-   * Finance.
-   */
-
-  document
-    .querySelectorAll(
-      "[data-finance-only]"
-    )
-    .forEach(
-      element => {
-
-        element.hidden =
-          ![
-            "admin",
-            "chairperson",
-            "treasurer"
-          ].includes(
-            context.role
-          );
-
-      }
-    );
-
-
-  /*
-   * Secretary / treasurer / management.
-   */
-
-  document
-    .querySelectorAll(
-      "[data-record-management-only]"
-    )
-    .forEach(
-      element => {
-
-        element.hidden =
-          ![
-            "admin",
-            "chairperson",
-            "secretary",
-            "treasurer"
-          ].includes(
-            context.role
-          );
-
-      }
-    );
-
-}
-
-
-/* =====================================================
-   CURRENT PAGE PROTECTION
-===================================================== */
-
-function protectCurrentPage(
-  context
-) {
-
-  const page =
-    normalizePath(
-      getCurrentPage()
-    );
-
-
-  const item =
-    NAV_ITEMS.find(
-      navigationItem =>
-        normalizePath(
-          navigationItem.href
-        ) === page
-    );
-
-
-  /*
-   * Unknown pages are allowed because they may
-   * be special pages such as profile/settings.
-   */
-
-  if (!item) {
-    return;
   }
 
 
-  /*
-   * Authenticated member pages.
-   */
-
-  if (!item.roles) {
-    return;
-  }
-
-
-  /*
-   * Role restricted page.
-   */
-
-  if (
-    !item.roles.includes(
-      context.role
-    )
-  ) {
-
-    window.location.replace(
-      "dashboard.html"
+  const groupName =
+    document.getElementById(
+      "groupName"
     );
+
+  if (groupName) {
+
+    groupName.textContent =
+      group?.name ||
+      "My Group";
 
   }
 
 }
 
 
-/* =====================================================
-   LOGOUT
-===================================================== */
+/* =========================================================
+   LOGOUT BUTTON
+========================================================= */
 
 function setupLogout() {
 
@@ -638,24 +375,6 @@ function setupLogout() {
   buttons.forEach(
     button => {
 
-      /*
-       * Prevent duplicate listeners.
-       */
-
-      if (
-        button.dataset.logoutReady ===
-        "true"
-      ) {
-
-        return;
-
-      }
-
-
-      button.dataset.logoutReady =
-        "true";
-
-
       button.addEventListener(
         "click",
         async () => {
@@ -666,7 +385,6 @@ function setupLogout() {
           button.textContent =
             "Signing out...";
 
-
           try {
 
             await logout();
@@ -674,7 +392,6 @@ function setupLogout() {
           } catch (error) {
 
             console.error(
-              "Logout failed:",
               error
             );
 
@@ -685,8 +402,7 @@ function setupLogout() {
               "Sign out";
 
             alert(
-              error.message ||
-              "Unable to sign out."
+              "Unable to sign out. Please try again."
             );
 
           }
@@ -700,84 +416,191 @@ function setupLogout() {
 }
 
 
-/* =====================================================
-   AUTH STATE LISTENER
-===================================================== */
+/* =========================================================
+   BOOT
+========================================================= */
 
-function setupAuthListener() {
+export async function boot() {
 
-  supabase.auth.onAuthStateChange(
-    (
-      event,
-      session
-    ) => {
+  try {
 
-      if (
-        event ===
-        "SIGNED_OUT"
-      ) {
+    /*
+     * Require login.
+     */
 
-        window.location.href =
-          "login.html";
+    const session =
+      await requireAuth();
 
-      }
-
+    if (!session) {
+      return null;
     }
-  );
+
+
+    /*
+     * Load member.
+     */
+
+    const member =
+      await getMyMember();
+
+
+    if (!member) {
+
+      console.error(
+        "Authenticated user has no member record."
+      );
+
+      alert(
+        "Your account has not been added to a group yet."
+      );
+
+      await logout();
+
+      return null;
+    }
+
+
+    /*
+     * Load group.
+     */
+
+    const group =
+      await getMyGroup();
+
+
+    if (!group) {
+
+      console.error(
+        "Member has no valid group."
+      );
+
+      alert(
+        "Your group account could not be found."
+      );
+
+      await logout();
+
+      return null;
+    }
+
+
+    /*
+     * Determine role.
+     */
+
+    const role =
+      (
+        await getMyRole()
+      ) || "member";
+
+
+    /*
+     * Protect current page.
+     */
+
+    const allowed =
+      await protectPage(
+        role
+      );
+
+    if (!allowed) {
+      return null;
+    }
+
+
+    /*
+     * Navigation.
+     */
+
+    applyNavigationRBAC(
+      role
+    );
+
+
+    /*
+     * User information.
+     */
+
+    renderUser(
+      member,
+      group,
+      role
+    );
+
+
+    /*
+     * Logout.
+     */
+
+    setupLogout();
+
+
+    /*
+     * Add useful data attributes
+     * to the document.
+     */
+
+    document.body.dataset.role =
+      role;
+
+    document.body.dataset.groupId =
+      member.group_id;
+
+    document.body.dataset.memberId =
+      member.id;
+
+
+    return {
+      session,
+      member,
+      group,
+      role
+    };
+
+
+  } catch (error) {
+
+    console.error(
+      "Layout boot error:",
+      error
+    );
+
+    const message =
+      error?.message ||
+      "Unable to load your account.";
+
+    alert(message);
+
+    return null;
+  }
 
 }
 
 
-/* =====================================================
-   CURRENT PAGE
-===================================================== */
+/* =========================================================
+   ROLE ACCESS HELPER
+========================================================= */
 
-function getCurrentPage() {
-
-  const pathname =
-    window.location.pathname;
-
-
-  const parts =
-    pathname.split("/");
-
-
-  return (
-    parts[
-      parts.length - 1
-    ] ||
-    "dashboard.html"
-  );
-
-}
-
-
-/* =====================================================
-   NORMALIZE PATH
-===================================================== */
-
-function normalizePath(
-  value
+export function hasPermission(
+  role,
+  permission
 ) {
 
-  return String(
-    value || ""
-  )
-    .split("?")[0]
-    .split("#")[0]
-    .replace(
-      /^\/+/,
-      ""
-    )
-    .toLowerCase();
+  const allowed =
+    permissions[role] || [];
+
+  return allowed.includes(
+    permission
+  );
 
 }
 
 
-/* =====================================================
-   ROLE HELPER EXPORTS
-===================================================== */
+/* =========================================================
+   EXPORT PERMISSIONS
+========================================================= */
 
 export {
-  applyRoleVisibility
+  permissions,
+  pagePermissions
 };
