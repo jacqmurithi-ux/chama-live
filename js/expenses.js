@@ -1,21 +1,177 @@
 import { supabase } from "./supabase.js";
 
-import {
-  getCurrentGroupId,
-  money
-} from "./app.js";
-
 
 /* =====================================================
    ELEMENTS
 ===================================================== */
 
-const rows =
-  document.querySelector("#rows");
+const statusEl =
+  document.getElementById(
+    "status"
+  );
 
-const errorBox =
-  document.querySelector("[data-error]") ||
-  document.querySelector("#error");
+const errorEl =
+  document.getElementById(
+    "error"
+  );
+
+const form =
+  document.getElementById(
+    "expenseForm"
+  );
+
+const descriptionInput =
+  document.getElementById(
+    "description"
+  );
+
+const categoryInput =
+  document.getElementById(
+    "category"
+  );
+
+const amountInput =
+  document.getElementById(
+    "amount"
+  );
+
+const dateInput =
+  document.getElementById(
+    "expenseDate"
+  );
+
+const receiptInput =
+  document.getElementById(
+    "receiptUrl"
+  );
+
+const saveButton =
+  document.getElementById(
+    "saveExpense"
+  );
+
+const statusFilter =
+  document.getElementById(
+    "statusFilter"
+  );
+
+const categoryFilter =
+  document.getElementById(
+    "categoryFilter"
+  );
+
+const expenseRows =
+  document.getElementById(
+    "expenseRows"
+  );
+
+const approvedTotalEl =
+  document.getElementById(
+    "approvedTotal"
+  );
+
+const pendingTotalEl =
+  document.getElementById(
+    "pendingTotal"
+  );
+
+const rejectedTotalEl =
+  document.getElementById(
+    "rejectedTotal"
+  );
+
+
+/* =====================================================
+   STATE
+===================================================== */
+
+let groupId = null;
+
+let expenses = [];
+
+
+/* =====================================================
+   HELPERS
+===================================================== */
+
+function money(value) {
+
+  return new Intl.NumberFormat(
+    "en-KE",
+    {
+      style: "currency",
+      currency: "KES",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    }
+  ).format(
+    Number(value || 0)
+  );
+
+}
+
+
+function formatDate(value) {
+
+  if (!value) {
+    return "—";
+  }
+
+  const date =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return value;
+  }
+
+  return date.toLocaleDateString(
+    "en-KE",
+    {
+      year: "numeric",
+      month: "short",
+      day: "numeric"
+    }
+  );
+
+}
+
+
+function escapeHtml(value) {
+
+  if (
+    value === null ||
+    value === undefined
+  ) {
+    return "";
+  }
+
+  return String(value)
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
+
+}
 
 
 /* =====================================================
@@ -25,35 +181,46 @@ const errorBox =
 function showError(error) {
 
   console.error(
-    "CHAMA LIVE expenses error:",
+    "Expenses error:",
     error
   );
 
-  if (errorBox) {
+  errorEl.textContent =
+    error?.message ||
+    "Unable to load expenses.";
 
-    errorBox.textContent =
-      "Error: " +
-      (error?.message || String(error));
-
-    errorBox.hidden = false;
-
-  }
+  errorEl.hidden =
+    false;
 
 }
 
 
 /* =====================================================
-   ESCAPE HTML
+   GET GROUP
 ===================================================== */
 
-function escapeHtml(value) {
+async function getGroupId() {
 
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+  const {
+    data,
+    error
+  } = await supabase.rpc(
+    "my_group_id"
+  );
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+
+    throw new Error(
+      "No group is associated with your account."
+    );
+
+  }
+
+  return data;
 
 }
 
@@ -64,101 +231,563 @@ function escapeHtml(value) {
 
 async function loadExpenses() {
 
+  const {
+    data,
+    error
+  } = await supabase
+    .from("expenses")
+    .select(`
+      id,
+      group_id,
+      description,
+      category,
+      amount,
+      date,
+      recorded_by,
+      receipt_url,
+      approval_status,
+      created_at
+    `)
+    .eq(
+      "group_id",
+      groupId
+    )
+    .order(
+      "date",
+      {
+        ascending: false
+      }
+    )
+    .order(
+      "created_at",
+      {
+        ascending: false
+      }
+    );
+
+  if (error) {
+    throw error;
+  }
+
+  expenses =
+    data || [];
+
+}
+
+
+/* =====================================================
+   RENDER METRICS
+===================================================== */
+
+function renderMetrics() {
+
+  let approved = 0;
+
+  let pending = 0;
+
+  let rejected = 0;
+
+
+  expenses.forEach(
+    expense => {
+
+      const amount =
+        Number(
+          expense.amount ||
+          0
+        );
+
+      const status =
+        String(
+          expense.approval_status ||
+          "pending"
+        ).toLowerCase();
+
+
+      if (
+        status ===
+        "approved"
+      ) {
+
+        approved +=
+          amount;
+
+      }
+      else if (
+        status ===
+        "rejected"
+      ) {
+
+        rejected +=
+          amount;
+
+      }
+      else {
+
+        pending +=
+          amount;
+
+      }
+
+    }
+  );
+
+
+  approvedTotalEl.textContent =
+    money(
+      approved
+    );
+
+  pendingTotalEl.textContent =
+    money(
+      pending
+    );
+
+  rejectedTotalEl.textContent =
+    money(
+      rejected
+    );
+
+}
+
+
+/* =====================================================
+   FILTER EXPENSES
+===================================================== */
+
+function getFilteredExpenses() {
+
+  const selectedStatus =
+    String(
+      statusFilter.value
+    ).toLowerCase();
+
+
+  const selectedCategory =
+    String(
+      categoryFilter.value
+    ).toLowerCase();
+
+
+  return expenses.filter(
+    expense => {
+
+      const status =
+        String(
+          expense.approval_status ||
+          "pending"
+        ).toLowerCase();
+
+
+      const category =
+        String(
+          expense.category ||
+          "other"
+        ).toLowerCase();
+
+
+      const statusMatches =
+        selectedStatus ===
+        "all" ||
+        status ===
+        selectedStatus;
+
+
+      const categoryMatches =
+        selectedCategory ===
+        "all" ||
+        category ===
+        selectedCategory;
+
+
+      return (
+        statusMatches &&
+        categoryMatches
+      );
+
+    }
+  );
+
+}
+
+
+/* =====================================================
+   RENDER LEDGER
+===================================================== */
+
+function renderExpenses() {
+
+  const filtered =
+    getFilteredExpenses();
+
+
+  if (
+    !filtered.length
+  ) {
+
+    expenseRows.innerHTML = `
+      <tr>
+        <td colspan="7">
+          No expenses found.
+        </td>
+      </tr>
+    `;
+
+    return;
+
+  }
+
+
+  expenseRows.innerHTML =
+    filtered.map(
+      expense => {
+
+        const status =
+          String(
+            expense.approval_status ||
+            "pending"
+          ).toLowerCase();
+
+
+        const receipt =
+          expense.receipt_url
+            ? escapeHtml(
+                expense.receipt_url
+              )
+            : "—";
+
+
+        let actions = "";
+
+
+        /*
+          Pending expense:
+          Show Approve and Reject.
+        */
+
+        if (
+          status ===
+          "pending"
+        ) {
+
+          actions = `
+
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-action="approve"
+              data-id="${escapeHtml(
+                expense.id
+              )}"
+            >
+              Approve
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-action="reject"
+              data-id="${escapeHtml(
+                expense.id
+              )}"
+            >
+              Reject
+            </button>
+
+          `;
+
+        }
+
+
+        /*
+          Approved expense:
+          Show Reject option.
+        */
+
+        else if (
+          status ===
+          "approved"
+        ) {
+
+          actions = `
+
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-action="reject"
+              data-id="${escapeHtml(
+                expense.id
+              )}"
+            >
+              Reject
+            </button>
+
+          `;
+
+        }
+
+
+        /*
+          Rejected expense:
+          Allow restoring to pending.
+        */
+
+        else if (
+          status ===
+          "rejected"
+        ) {
+
+          actions = `
+
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-action="pending"
+              data-id="${escapeHtml(
+                expense.id
+              )}"
+            >
+              Restore
+            </button>
+
+          `;
+
+        }
+
+
+        /*
+          Delete button.
+        */
+
+        actions += `
+
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-action="delete"
+            data-id="${escapeHtml(
+              expense.id
+            )}"
+          >
+            Delete
+          </button>
+
+        `;
+
+
+        return `
+
+          <tr>
+
+            <td>
+              ${escapeHtml(
+                formatDate(
+                  expense.date
+                )
+              )}
+            </td>
+
+            <td>
+              <strong>
+                ${escapeHtml(
+                  expense.description
+                )}
+              </strong>
+            </td>
+
+            <td>
+              ${escapeHtml(
+                expense.category
+              )}
+            </td>
+
+            <td>
+              <strong>
+                ${escapeHtml(
+                  money(
+                    expense.amount
+                  )
+                )}
+              </strong>
+            </td>
+
+            <td>
+              <strong>
+                ${escapeHtml(
+                  status
+                )}
+              </strong>
+            </td>
+
+            <td>
+              ${receipt}
+            </td>
+
+            <td>
+              <div
+                style="
+                  display:flex;
+                  gap:6px;
+                  flex-wrap:wrap;
+                "
+              >
+                ${actions}
+              </div>
+            </td>
+
+          </tr>
+
+        `;
+
+      }
+    )
+    .join("");
+
+}
+
+
+/* =====================================================
+   CREATE EXPENSE
+===================================================== */
+
+async function createExpense(
+  event
+) {
+
+  event.preventDefault();
+
+
   try {
 
-    if (!rows) {
+    errorEl.hidden =
+      true;
+
+
+    const description =
+      descriptionInput.value.trim();
+
+    const category =
+      categoryInput.value;
+
+    const amount =
+      Number(
+        amountInput.value
+      );
+
+    const date =
+      dateInput.value;
+
+    const receiptUrl =
+      receiptInput.value.trim();
+
+
+    if (!description) {
 
       throw new Error(
-        "Expense table not found."
+        "Please enter an expense description."
       );
 
     }
 
 
-    rows.innerHTML =
-      `
-        <tr>
-          <td colspan="7">
-            Loading expenses...
-          </td>
-        </tr>
-      `;
+    if (!category) {
+
+      throw new Error(
+        "Please select an expense category."
+      );
+
+    }
 
 
-    /* ================================================
-       LOGIN
-    ================================================ */
+    if (
+      !amount ||
+      amount <= 0
+    ) {
+
+      throw new Error(
+        "Please enter a valid amount."
+      );
+
+    }
+
+
+    if (!date) {
+
+      throw new Error(
+        "Please select the expense date."
+      );
+
+    }
+
+
+    saveButton.disabled =
+      true;
+
+    saveButton.textContent =
+      "Saving...";
+
+
+    /*
+      Get current authenticated user.
+    */
 
     const {
-      data: sessionData,
-      error: sessionError
+      data: {
+        user
+      }
     } =
-      await supabase.auth.getSession();
+      await supabase.auth.getUser();
 
 
-    if (sessionError) {
-      throw sessionError;
-    }
-
-
-    if (!sessionData?.session) {
-
-      window.location.href =
-        "login.html";
-
-      return;
-
-    }
-
-
-    /* ================================================
-       GROUP
-    ================================================ */
-
-    const groupId =
-      await getCurrentGroupId();
-
-
-    if (!groupId) {
+    if (!user) {
 
       throw new Error(
-        "No group is linked to this account."
+        "Your session has expired. Please sign in again."
       );
 
     }
 
 
-    /* ================================================
-       GET EXPENSES
+    /*
+      Insert into existing
+      expenses table.
 
-       IMPORTANT:
-       Your database column is `date`.
-       NOT `expense_date`.
-    ================================================ */
+      New expenses are ALWAYS
+      pending.
+    */
 
     const {
-      data,
       error
-    } =
-      await supabase
+    } = await supabase
+      .from("expenses")
+      .insert({
 
-        .from("expenses")
+        group_id:
+          groupId,
 
-        .select(
-          "id,date,description,category,amount,approval_status,payment_method,reference"
-        )
+        description:
+          description,
 
-        .eq(
-          "group_id",
-          groupId
-        )
+        category:
+          category,
 
-        .order(
-          "date",
-          {
-            ascending: false
-          }
-        );
+        amount:
+          amount,
+
+        date:
+          date,
+
+        recorded_by:
+          user.id,
+
+        receipt_url:
+          receiptUrl ||
+          null,
+
+        approval_status:
+          "pending"
+
+      });
 
 
     if (error) {
@@ -166,114 +795,431 @@ async function loadExpenses() {
     }
 
 
-    const expenses =
-      data || [];
+    /*
+      Reset form.
+    */
+
+    form.reset();
+
+    setDefaultDate();
 
 
-    /* ================================================
-       NO EXPENSES
-    ================================================ */
+    /*
+      Reload.
+    */
+
+    await loadExpenses();
+
+    renderMetrics();
+
+    renderExpenses();
+
+
+    statusEl.textContent =
+      "Expense recorded successfully.";
+
+
+  }
+  catch (error) {
+
+    showError(
+      error
+    );
+
+  }
+  finally {
+
+    saveButton.disabled =
+      false;
+
+    saveButton.textContent =
+      "Record Expense";
+
+  }
+
+}
+
+
+/* =====================================================
+   UPDATE STATUS
+===================================================== */
+
+async function updateExpenseStatus(
+  id,
+  newStatus
+) {
+
+  try {
+
+    errorEl.hidden =
+      true;
+
+
+    const allowedStatuses = [
+      "pending",
+      "approved",
+      "rejected"
+    ];
+
 
     if (
-      expenses.length === 0
+      !allowedStatuses.includes(
+        newStatus
+      )
     ) {
 
-      rows.innerHTML =
-        `
-          <tr>
-            <td colspan="7">
-              No expenses yet.
-            </td>
-          </tr>
-        `;
-
-      return;
+      throw new Error(
+        "Invalid expense status."
+      );
 
     }
 
 
-    /* ================================================
-       DISPLAY
-    ================================================ */
+    const {
+      error
+    } = await supabase
+      .from("expenses")
+      .update({
 
-    rows.innerHTML =
+        approval_status:
+          newStatus
 
-      expenses
-        .map(
-          function (expense) {
-
-            return `
-
-              <tr>
-
-                <td>
-                  ${escapeHtml(
-                    expense.date || "—"
-                  )}
-                </td>
-
-                <td>
-                  ${escapeHtml(
-                    expense.description || "—"
-                  )}
-                </td>
-
-                <td>
-                  ${escapeHtml(
-                    expense.category || "—"
-                  )}
-                </td>
-
-                <td>
-                  ${money(
-                    Number(
-                      expense.amount || 0
-                    )
-                  )}
-                </td>
-
-                <td>
-                  ${escapeHtml(
-                    expense.approval_status || "—"
-                  )}
-                </td>
-
-                <td>
-                  ${escapeHtml(
-                    expense.payment_method || "—"
-                  )}
-                </td>
-
-                <td>
-                  ${escapeHtml(
-                    expense.reference || "—"
-                  )}
-                </td>
-
-              </tr>
-
-            `;
-
-          }
-        )
-        .join("");
+      })
+      .eq(
+        "id",
+        id
+      )
+      .eq(
+        "group_id",
+        groupId
+      );
 
 
-  } catch (error) {
+    if (error) {
+      throw error;
+    }
 
-    showError(error);
 
-    rows.innerHTML =
-      `
-        <tr>
-          <td colspan="7" style="color:red">
-            ERROR:
-            ${escapeHtml(
-              error?.message || String(error)
-            )}
-          </td>
-        </tr>
-      `;
+    await loadExpenses();
+
+    renderMetrics();
+
+    renderExpenses();
+
+
+    statusEl.textContent =
+      `Expense marked ${newStatus}.`;
+
+
+  }
+  catch (error) {
+
+    showError(
+      error
+    );
+
+  }
+
+}
+
+
+/* =====================================================
+   DELETE EXPENSE
+===================================================== */
+
+async function deleteExpense(
+  id
+) {
+
+  try {
+
+    errorEl.hidden =
+      true;
+
+
+    const confirmed =
+      window.confirm(
+        "Are you sure you want to delete this expense?"
+      );
+
+
+    if (!confirmed) {
+      return;
+    }
+
+
+    const {
+      error
+    } = await supabase
+      .from("expenses")
+      .delete()
+      .eq(
+        "id",
+        id
+      )
+      .eq(
+        "group_id",
+        groupId
+      );
+
+
+    if (error) {
+      throw error;
+    }
+
+
+    await loadExpenses();
+
+    renderMetrics();
+
+    renderExpenses();
+
+
+    statusEl.textContent =
+      "Expense deleted successfully.";
+
+
+  }
+  catch (error) {
+
+    showError(
+      error
+    );
+
+  }
+
+}
+
+
+/* =====================================================
+   ACTION HANDLER
+===================================================== */
+
+async function handleExpenseAction(
+  event
+) {
+
+  const button =
+    event.target.closest(
+      "button[data-action]"
+    );
+
+
+  if (!button) {
+    return;
+  }
+
+
+  const action =
+    button.dataset.action;
+
+  const id =
+    button.dataset.id;
+
+
+  if (!id) {
+    return;
+  }
+
+
+  /*
+    Approve.
+  */
+
+  if (
+    action ===
+    "approve"
+  ) {
+
+    await updateExpenseStatus(
+      id,
+      "approved"
+    );
+
+    return;
+
+  }
+
+
+  /*
+    Reject.
+  */
+
+  if (
+    action ===
+    "reject"
+  ) {
+
+    await updateExpenseStatus(
+      id,
+      "rejected"
+    );
+
+    return;
+
+  }
+
+
+  /*
+    Restore to pending.
+  */
+
+  if (
+    action ===
+    "pending"
+  ) {
+
+    await updateExpenseStatus(
+      id,
+      "pending"
+    );
+
+    return;
+
+  }
+
+
+  /*
+    Delete.
+  */
+
+  if (
+    action ===
+    "delete"
+  ) {
+
+    await deleteExpense(
+      id
+    );
+
+  }
+
+}
+
+
+/* =====================================================
+   DEFAULT DATE
+===================================================== */
+
+function setDefaultDate() {
+
+  const now =
+    new Date();
+
+
+  const year =
+    now.getFullYear();
+
+
+  const month =
+    String(
+      now.getMonth() + 1
+    ).padStart(
+      2,
+      "0"
+    );
+
+
+  const day =
+    String(
+      now.getDate()
+    ).padStart(
+      2,
+      "0"
+    );
+
+
+  dateInput.value =
+    `${year}-${month}-${day}`;
+
+}
+
+
+/* =====================================================
+   FILTER EVENTS
+===================================================== */
+
+statusFilter.addEventListener(
+  "change",
+  renderExpenses
+);
+
+
+categoryFilter.addEventListener(
+  "change",
+  renderExpenses
+);
+
+
+form.addEventListener(
+  "submit",
+  createExpense
+);
+
+
+expenseRows.addEventListener(
+  "click",
+  handleExpenseAction
+);
+
+
+/* =====================================================
+   INITIALIZE
+===================================================== */
+
+async function init() {
+
+  try {
+
+    errorEl.hidden =
+      true;
+
+    statusEl.textContent =
+      "Loading expenses...";
+
+
+    setDefaultDate();
+
+
+    /*
+      Get group.
+    */
+
+    groupId =
+      await getGroupId();
+
+
+    /*
+      Load expenses.
+    */
+
+    await loadExpenses();
+
+
+    /*
+      Render.
+    */
+
+    renderMetrics();
+
+    renderExpenses();
+
+
+    statusEl.textContent =
+      `Expenses loaded • ${new Date().toLocaleString(
+        "en-KE"
+      )}`;
+
+
+  }
+  catch (error) {
+
+    showError(
+      error
+    );
+
+    statusEl.textContent =
+      "Unable to load expenses.";
 
   }
 
@@ -284,4 +1230,4 @@ async function loadExpenses() {
    START
 ===================================================== */
 
-loadExpenses();
+init();
