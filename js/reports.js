@@ -1,673 +1,1977 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Reports — CHAMA LIVE</title>
+import { supabase } from "./supabase.js";
+import { getMyMember } from "./auth.js";
 
-  <link rel="stylesheet" href="css/app.css">
 
-  <style>
-    .report-controls {
-      display:flex;
-      gap:12px;
-      align-items:end;
-      flex-wrap:wrap;
+/* =====================================================
+   HELPERS
+===================================================== */
+
+const $ = (id) =>
+  document.getElementById(id);
+
+
+let groupId = null;
+let currentMonth = "";
+let currentSummary = null;
+
+
+/* =====================================================
+   INITIALISE
+===================================================== */
+
+async function init() {
+
+  try {
+
+    const member =
+      await getMyMember();
+
+    if (!member) {
+
+      throw new Error(
+        "Unable to identify your group."
+      );
+
     }
 
-    .report-controls label {
-      display:flex;
-      flex-direction:column;
-      gap:6px;
+
+    groupId =
+      member.group_id;
+
+
+    /* -----------------------------------------------
+       CURRENT MONTH
+    ------------------------------------------------ */
+
+    const today =
+      new Date();
+
+    currentMonth =
+      `${today.getFullYear()}-${String(
+        today.getMonth() + 1
+      ).padStart(2, "0")}`;
+
+
+    const monthInput =
+      $("month");
+
+
+    if (!monthInput) {
+
+      throw new Error(
+        "Month selector was not found."
+      );
+
     }
 
-    .report-grid {
-      display:grid;
-      grid-template-columns:repeat(3,1fr);
-      gap:16px;
+
+    monthInput.value =
+      currentMonth;
+
+
+    /* -----------------------------------------------
+       EVENTS
+    ------------------------------------------------ */
+
+    $("loadReport")
+      ?.addEventListener(
+        "click",
+        loadReport
+      );
+
+
+    monthInput
+      .addEventListener(
+        "change",
+        async () => {
+
+          if (
+            monthInput.value
+          ) {
+
+            currentMonth =
+              monthInput.value;
+
+            await loadReport();
+
+          }
+
+        }
+      );
+
+
+    $("printReport")
+      ?.addEventListener(
+        "click",
+        printReport
+      );
+
+
+    /* -----------------------------------------------
+       LOAD
+    ------------------------------------------------ */
+
+    await loadReport();
+
+
+  } catch (error) {
+
+    showError(error);
+
+  }
+
+}
+
+
+/* =====================================================
+   LOAD REPORT
+===================================================== */
+
+async function loadReport() {
+
+  clearError();
+
+
+  setStatus(
+    `Loading ${formatMonth(
+      currentMonth
+    )} report...`
+  );
+
+
+  try {
+
+
+    /* ===============================================
+       GROUP
+    =============================================== */
+
+    const {
+      data: group,
+      error: groupError
+    } =
+      await supabase
+        .from("groups")
+        .select(`
+          id,
+          name,
+          monthly_contribution,
+          opening_balance
+        `)
+        .eq(
+          "id",
+          groupId
+        )
+        .single();
+
+
+    if (groupError) {
+
+      throw groupError;
+
     }
 
-    .report-card {
-      padding:20px;
-      border:1px solid #e5e7eb;
-      border-radius:12px;
-      background:#fff;
+
+    /* ===============================================
+       FINANCIAL PERIOD
+    =============================================== */
+
+    const {
+      data: period,
+      error: periodError
+    } =
+      await supabase
+        .from("financial_periods")
+        .select("*")
+        .eq(
+          "group_id",
+          groupId
+        )
+        .eq(
+          "month",
+          currentMonth
+        )
+        .maybeSingle();
+
+
+    if (periodError) {
+
+      throw periodError;
+
     }
 
-    .report-card .value {
-      font-size:24px;
-      font-weight:700;
-      margin-top:8px;
+
+    /* ===============================================
+       MEMBERS
+    =============================================== */
+
+    const {
+      data: members,
+      error: membersError
+    } =
+      await supabase
+        .from("members")
+        .select(`
+          id,
+          name,
+          member_number,
+          status
+        `)
+        .eq(
+          "group_id",
+          groupId
+        )
+        .eq(
+          "status",
+          "active"
+        )
+        .order(
+          "name"
+        );
+
+
+    if (membersError) {
+
+      throw membersError;
+
     }
 
-    .table-wrap {
-      overflow-x:auto;
+
+    /* ===============================================
+       CONTRIBUTIONS
+    =============================================== */
+
+    const {
+      data: contributions,
+      error: contributionsError
+    } =
+      await supabase
+        .from("contributions")
+        .select(`
+          id,
+          member_id,
+          amount,
+          contribution_type,
+          month,
+          payment_method,
+          reference,
+          mpesa_reference,
+          contribution_date,
+          created_at,
+          notes
+        `)
+        .eq(
+          "group_id",
+          groupId
+        )
+        .eq(
+          "month",
+          currentMonth
+        )
+        .order(
+          "contribution_date",
+          {
+            ascending: true
+          }
+        );
+
+
+    if (contributionsError) {
+
+      throw contributionsError;
+
     }
 
-    .status-paid {
-      font-weight:700;
+
+    /* ===============================================
+       EXPENSES
+    =============================================== */
+
+    const {
+      data: expenses,
+      error: expensesError
+    } =
+      await supabase
+        .from("expenses")
+        .select(`
+          id,
+          description,
+          category,
+          amount,
+          date,
+          approval_status
+        `)
+        .eq(
+          "group_id",
+          groupId
+        )
+        .gte(
+          "date",
+          `${currentMonth}-01`
+        )
+        .lt(
+          "date",
+          nextMonth(
+            currentMonth
+          )
+        )
+        .order(
+          "date",
+          {
+            ascending: true
+          }
+        );
+
+
+    if (expensesError) {
+
+      throw expensesError;
+
     }
 
-    .status-outstanding {
-      font-weight:700;
-    }
 
-    .status-partial {
-      font-weight:700;
-    }
+    /* ===============================================
+       MONTHLY CONTRIBUTION
+    =============================================== */
 
-    .report-actions {
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      margin-top:15px;
-    }
+    const monthlyContribution =
+      Number(
+        group.monthly_contribution || 0
+      );
 
-    @media(max-width:800px) {
-      .report-grid {
-        grid-template-columns:1fr;
-      }
-    }
 
-    @media print {
-      .sidebar,
-      .topbar,
-      .report-controls,
-      .report-actions,
-      #status,
-      #error {
-        display:none !important;
-      }
+    /* ===============================================
+       MEMBER STATUS
+    =============================================== */
 
-      .main {
-        margin:0 !important;
-        width:100% !important;
-      }
+    const memberStatus =
+      (members || []).map(
+        member => {
 
-      .card,
-      .report-card {
-        break-inside:avoid;
-      }
-    }
-  </style>
-</head>
+          const paid =
+            (contributions || [])
+              .filter(
+                contribution =>
+                  contribution.member_id ===
+                  member.id
+              )
+              .reduce(
+                (
+                  total,
+                  contribution
+                ) =>
+                  total +
+                  Number(
+                    contribution.amount || 0
+                  ),
+                0
+              );
 
-<body>
 
-<header class="topbar">
+          const expected =
+            monthlyContribution;
 
-  <div class="brand">
-    CHAMA <span>LIVE</span>
-  </div>
 
-  <button
-    class="btn btn-secondary"
-    id="logout"
-    type="button"
-  >
-    Sign out
-  </button>
+          const outstanding =
+            Math.max(
+              expected - paid,
+              0
+            );
 
-</header>
 
-<div class="layout">
+          let status =
+            "OUTSTANDING";
 
-  <aside class="sidebar">
 
-    <nav class="nav">
+          if (
+            expected > 0 &&
+            paid >= expected
+          ) {
 
-      <a href="dashboard.html">
-        Dashboard
-      </a>
+            status =
+              "PAID";
 
-      <a href="members.html">
-        Members
-      </a>
+          } else if (
+            paid > 0
+          ) {
 
-      <a href="contributions.html">
-        Contributions
-      </a>
+            status =
+              "PARTIAL";
 
-      <a href="expenses.html">
-        Expenses
-      </a>
+          }
 
-      <a href="meetings.html">
-        Meetings
-      </a>
 
-      <a
-        href="reports.html"
-        class="active"
-      >
-        Reports
-      </a>
+          return {
 
-      <a href="monthly-closing.html">
-        Monthly Closing
-      </a>
+            ...member,
 
-      <a href="group-management.html">
-        Group Management
-      </a>
+            expected,
 
-    </nav>
+            paid,
 
-  </aside>
+            outstanding,
 
-  <main class="main">
+            contributionStatus:
+              status
 
-    <div class="page-head">
+          };
 
-      <div>
+        }
+      );
 
-        <h1>
-          Reports
-        </h1>
 
-        <p class="muted">
-          View your group's financial and
-          member contribution reports.
-        </p>
+    /* ===============================================
+       TOTALS
+    =============================================== */
+
+    const expected =
+      memberStatus.reduce(
+        (
+          total,
+          member
+        ) =>
+          total +
+          member.expected,
+        0
+      );
+
+
+    const collected =
+      (contributions || [])
+        .reduce(
+          (
+            total,
+            contribution
+          ) =>
+            total +
+            Number(
+              contribution.amount || 0
+            ),
+          0
+        );
+
+
+    const outstanding =
+      Math.max(
+        expected -
+        collected,
+        0
+      );
+
+
+    const approvedExpenses =
+      (expenses || [])
+        .filter(
+          expense =>
+            expense.approval_status ===
+            "approved"
+        )
+        .reduce(
+          (
+            total,
+            expense
+          ) =>
+            total +
+            Number(
+              expense.amount || 0
+            ),
+          0
+        );
+
+
+    const opening =
+      Number(
+        period?.opening_balance ??
+        group.opening_balance ??
+        0
+      );
+
+
+    const closing =
+      period?.status === "closed" &&
+      period?.closing_balance !== null
+        ? Number(
+            period.closing_balance
+          )
+        : opening +
+          collected -
+          approvedExpenses;
+
+
+    const paidMembers =
+      memberStatus.filter(
+        member =>
+          member.contributionStatus ===
+          "PAID"
+      ).length;
+
+
+    const partialMembers =
+      memberStatus.filter(
+        member =>
+          member.contributionStatus ===
+          "PARTIAL"
+      ).length;
+
+
+    const outstandingMembers =
+      memberStatus.filter(
+        member =>
+          member.contributionStatus ===
+          "OUTSTANDING"
+      ).length;
+
+
+    const collectionRate =
+      expected > 0
+        ? (
+            collected /
+            expected
+          ) * 100
+        : 0;
+
+
+    const pendingExpenses =
+      (expenses || [])
+        .filter(
+          expense =>
+            expense.approval_status ===
+            "pending"
+        )
+        .reduce(
+          (
+            total,
+            expense
+          ) =>
+            total +
+            Number(
+              expense.amount || 0
+            ),
+          0
+        );
+
+
+    const rejectedExpenses =
+      (expenses || [])
+        .filter(
+          expense =>
+            expense.approval_status ===
+            "rejected"
+        )
+        .reduce(
+          (
+            total,
+            expense
+          ) =>
+            total +
+            Number(
+              expense.amount || 0
+            ),
+          0
+        );
+
+
+    /* ===============================================
+       SAVE REPORT
+    =============================================== */
+
+    currentSummary = {
+
+      group,
+
+      period,
+
+      members:
+
+        members || [],
+
+      contributions:
+
+        contributions || [],
+
+      expenses:
+
+        expenses || [],
+
+      memberStatus,
+
+      expected,
+
+      collected,
+
+      outstanding,
+
+      approvedExpenses,
+
+      pendingExpenses,
+
+      rejectedExpenses,
+
+      opening,
+
+      closing,
+
+      paidMembers,
+
+      partialMembers,
+
+      outstandingMembers,
+
+      collectionRate
+
+    };
+
+
+    /* ===============================================
+       RENDER
+    =============================================== */
+
+    renderSummary();
+
+    renderCashbook();
+
+    renderMembers();
+
+    renderExpenses();
+
+
+    setStatus(
+      `Report loaded • ${formatMonth(
+        currentMonth
+      )} • ${new Date().toLocaleString(
+        "en-KE"
+      )}`
+    );
+
+
+  } catch (error) {
+
+    showError(error);
+
+  }
+
+}
+
+
+/* =====================================================
+   RENDER SUMMARY
+===================================================== */
+
+function renderSummary() {
+
+  const s =
+    currentSummary;
+
+
+  $("openingBalance").textContent =
+    money(
+      s.opening
+    );
+
+
+  $("expected").textContent =
+    money(
+      s.expected
+    );
+
+
+  $("collected").textContent =
+    money(
+      s.collected
+    );
+
+
+  $("outstanding").textContent =
+    money(
+      s.outstanding
+    );
+
+
+  $("approvedExpenses").textContent =
+    money(
+      s.approvedExpenses
+    );
+
+
+  $("closingBalance").textContent =
+    money(
+      s.closing
+    );
+
+
+  $("activeMembers").textContent =
+    s.members.length;
+
+
+  $("membersPaid").textContent =
+    s.paidMembers;
+
+
+  $("membersPartial").textContent =
+    s.partialMembers;
+
+
+  $("membersOutstanding").textContent =
+    s.outstandingMembers;
+
+
+  $("collectionRate").textContent =
+    `${s.collectionRate.toFixed(
+      1
+    )}%`;
+
+
+  $("periodStatus").textContent =
+    String(
+      s.period?.status ||
+      "open"
+    ).toUpperCase();
+
+}
+
+
+/* =====================================================
+   CASHBOOK
+===================================================== */
+
+function renderCashbook() {
+
+  const tbody =
+    $("cashbookRows");
+
+
+  const contributions =
+    currentSummary
+      .contributions
+      .map(
+        contribution => ({
+
+          date:
+            contribution.contribution_date ||
+            contribution.created_at,
+
+          description:
+            contribution.contribution_type ||
+            "Contribution",
+
+          type:
+            "Contribution",
+
+          method:
+            contribution.payment_method ||
+            "—",
+
+          reference:
+            contribution.mpesa_reference ||
+            contribution.reference ||
+            "—",
+
+          amount:
+            Number(
+              contribution.amount || 0
+            ),
+
+          sort:
+            1
+
+        })
+      );
+
+
+  const expenses =
+    currentSummary
+      .expenses
+      .filter(
+        expense =>
+          expense.approval_status ===
+          "approved"
+      )
+      .map(
+        expense => ({
+
+          date:
+            expense.date,
+
+          description:
+            expense.description,
+
+          type:
+            "Expense",
+
+          method:
+            "—",
+
+          reference:
+            "—",
+
+          amount:
+            -Number(
+              expense.amount || 0
+            ),
+
+          sort:
+            2
+
+        })
+      );
+
+
+  const entries =
+    [
+      ...contributions,
+      ...expenses
+    ]
+      .sort(
+        (
+          a,
+          b
+        ) =>
+          new Date(a.date) -
+          new Date(b.date)
+      );
+
+
+  if (!entries.length) {
+
+    tbody.innerHTML = `
+
+      <tr>
+
+        <td colspan="6">
+          No cashbook entries recorded.
+        </td>
+
+      </tr>
+
+    `;
+
+    return;
+
+  }
+
+
+  tbody.innerHTML =
+    entries
+      .map(
+        entry => `
+
+          <tr>
+
+            <td>
+              ${formatDate(
+                entry.date
+              )}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                entry.description
+              )}
+            </td>
+
+            <td>
+              ${entry.type}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                entry.method
+              )}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                entry.reference
+              )}
+            </td>
+
+            <td>
+              <strong>
+                ${money(
+                  entry.amount
+                )}
+              </strong>
+            </td>
+
+          </tr>
+
+        `
+      )
+      .join("");
+
+}
+
+
+/* =====================================================
+   MEMBER REPORT
+===================================================== */
+
+function renderMembers() {
+
+  const tbody =
+    $("memberRows");
+
+
+  const members =
+    currentSummary
+      .memberStatus;
+
+
+  if (!members.length) {
+
+    tbody.innerHTML = `
+
+      <tr>
+
+        <td colspan="6">
+          No active members found.
+        </td>
+
+      </tr>
+
+    `;
+
+    return;
+
+  }
+
+
+  tbody.innerHTML =
+    members
+      .map(
+        member => `
+
+          <tr>
+
+            <td>
+              <strong>
+                ${escapeHtml(
+                  member.name
+                )}
+              </strong>
+            </td>
+
+            <td>
+              ${escapeHtml(
+                member.member_number ||
+                "—"
+              )}
+            </td>
+
+            <td>
+              ${money(
+                member.expected
+              )}
+            </td>
+
+            <td>
+              <strong>
+                ${money(
+                  member.paid
+                )}
+              </strong>
+            </td>
+
+            <td>
+              ${money(
+                member.outstanding
+              )}
+            </td>
+
+            <td>
+              <strong>
+                ${member.contributionStatus}
+              </strong>
+            </td>
+
+          </tr>
+
+        `
+      )
+      .join("");
+
+}
+
+
+/* =====================================================
+   EXPENSE REPORT
+===================================================== */
+
+function renderExpenses() {
+
+  const tbody =
+    $("expenseRows");
+
+
+  const expenses =
+    currentSummary
+      .expenses;
+
+
+  if (!expenses.length) {
+
+    tbody.innerHTML = `
+
+      <tr>
+
+        <td colspan="5">
+          No expenses recorded.
+        </td>
+
+      </tr>
+
+    `;
+
+    return;
+
+  }
+
+
+  tbody.innerHTML =
+    expenses
+      .map(
+        expense => `
+
+          <tr>
+
+            <td>
+              ${formatDate(
+                expense.date
+              )}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                expense.description
+              )}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                expense.category ||
+                "other"
+              )}
+            </td>
+
+            <td>
+              <strong>
+                ${money(
+                  expense.amount
+                )}
+              </strong>
+            </td>
+
+            <td>
+              ${String(
+                expense.approval_status ||
+                "pending"
+              ).toUpperCase()}
+            </td>
+
+          </tr>
+
+        `
+      )
+      .join("");
+
+}
+
+
+/* =====================================================
+   PRINT REPORT
+===================================================== */
+
+function printReport() {
+
+  if (!currentSummary) {
+
+    alert(
+      "Load a report first."
+    );
+
+    return;
+
+  }
+
+
+  const s =
+    currentSummary;
+
+
+  const memberRows =
+    s.memberStatus
+      .map(
+        member => `
+
+          <tr>
+
+            <td>
+              ${escapeHtml(
+                member.name
+              )}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                member.member_number ||
+                "—"
+              )}
+            </td>
+
+            <td>
+              ${money(
+                member.expected
+              )}
+            </td>
+
+            <td>
+              ${money(
+                member.paid
+              )}
+            </td>
+
+            <td>
+              ${money(
+                member.outstanding
+              )}
+            </td>
+
+            <td>
+              ${member.contributionStatus}
+            </td>
+
+          </tr>
+
+        `
+      )
+      .join("");
+
+
+  const expenseRows =
+    s.expenses
+      .map(
+        expense => `
+
+          <tr>
+
+            <td>
+              ${formatDate(
+                expense.date
+              )}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                expense.description
+              )}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                expense.category ||
+                "other"
+              )}
+            </td>
+
+            <td>
+              ${money(
+                expense.amount
+              )}
+            </td>
+
+            <td>
+              ${String(
+                expense.approval_status ||
+                "pending"
+              ).toUpperCase()}
+            </td>
+
+          </tr>
+
+        `
+      )
+      .join("");
+
+
+  const printWindow =
+    window.open(
+      "",
+      "_blank",
+      "width=1000,height=800"
+    );
+
+
+  if (!printWindow) {
+
+    alert(
+      "Please allow pop-ups to print the report."
+    );
+
+    return;
+
+  }
+
+
+  printWindow.document.write(`
+
+    <!doctype html>
+
+    <html>
+
+    <head>
+
+      <title>
+        ${escapeHtml(
+          s.group.name
+        )}
+        — ${formatMonth(
+          currentMonth
+        )}
+      </title>
+
+
+      <style>
+
+        body {
+
+          font-family:
+            Arial,
+            sans-serif;
+
+          padding:
+            35px;
+
+          color:
+            #111;
+
+        }
+
+
+        h1 {
+
+          margin:
+            0 0 5px;
+
+        }
+
+
+        h2 {
+
+          margin-top:
+            30px;
+
+        }
+
+
+        .muted {
+
+          color:
+            #666;
+
+        }
+
+
+        .summary {
+
+          display:
+            grid;
+
+          grid-template-columns:
+            repeat(3, 1fr);
+
+          gap:
+            12px;
+
+          margin:
+            25px 0;
+
+        }
+
+
+        .box {
+
+          border:
+            1px solid #ddd;
+
+          padding:
+            15px;
+
+          border-radius:
+            8px;
+
+        }
+
+
+        .value {
+
+          font-size:
+            20px;
+
+          font-weight:
+            bold;
+
+          margin-top:
+            6px;
+
+        }
+
+
+        table {
+
+          width:
+            100%;
+
+          border-collapse:
+            collapse;
+
+          margin-top:
+            15px;
+
+        }
+
+
+        th,
+        td {
+
+          border:
+            1px solid #ddd;
+
+          padding:
+            8px;
+
+          text-align:
+            left;
+
+        }
+
+
+        th {
+
+          background:
+            #f4f4f4;
+
+        }
+
+
+        .footer {
+
+          margin-top:
+            35px;
+
+          color:
+            #666;
+
+          font-size:
+            12px;
+
+        }
+
+
+        @media print {
+
+          body {
+
+            padding:
+              10px;
+
+          }
+
+        }
+
+      </style>
+
+    </head>
+
+
+    <body>
+
+
+      <h1>
+        ${escapeHtml(
+          s.group.name
+        )}
+      </h1>
+
+
+      <div class="muted">
+
+        Monthly Financial Report —
+        ${formatMonth(
+          currentMonth
+        )}
 
       </div>
 
-      <div class="report-controls">
 
-        <label>
-
-          <span class="muted">
-            Month
-          </span>
-
-          <input
-            type="month"
-            id="month"
-          >
-
-        </label>
-
-        <button
-          class="btn btn-primary"
-          id="loadReport"
-          type="button"
-        >
-          Load Report
-        </button>
-
-      </div>
-
-    </div>
-
-    <div
-      id="status"
-      class="card"
-      style="margin-bottom:20px;"
-    >
-      Loading report...
-    </div>
-
-    <div
-      id="error"
-      class="error"
-      hidden
-      style="margin-bottom:20px;"
-    ></div>
+      <div class="summary">
 
 
-    <!-- FINANCIAL SUMMARY -->
+        <div class="box">
 
-    <section class="card">
+          Opening Balance
 
-      <h2>
-        Financial Summary
-      </h2>
-
-      <div class="report-grid">
-
-        <div class="report-card">
-
-          <div class="muted">
-            Opening Balance
-          </div>
-
-          <div
-            class="value"
-            id="openingBalance"
-          >
-            KSh 0.00
+          <div class="value">
+            ${money(
+              s.opening
+            )}
           </div>
 
         </div>
 
-        <div class="report-card">
 
-          <div class="muted">
-            Expected Contributions
-          </div>
+        <div class="box">
 
-          <div
-            class="value"
-            id="expected"
-          >
-            KSh 0.00
-          </div>
+          Expected Contributions
 
-        </div>
-
-        <div class="report-card">
-
-          <div class="muted">
-            Contributions Collected
-          </div>
-
-          <div
-            class="value"
-            id="collected"
-          >
-            KSh 0.00
+          <div class="value">
+            ${money(
+              s.expected
+            )}
           </div>
 
         </div>
 
-        <div class="report-card">
 
-          <div class="muted">
-            Outstanding
-          </div>
+        <div class="box">
 
-          <div
-            class="value"
-            id="outstanding"
-          >
-            KSh 0.00
-          </div>
+          Contributions Collected
 
-        </div>
-
-        <div class="report-card">
-
-          <div class="muted">
-            Approved Expenses
-          </div>
-
-          <div
-            class="value"
-            id="expenses"
-          >
-            KSh 0.00
+          <div class="value">
+            ${money(
+              s.collected
+            )}
           </div>
 
         </div>
 
-        <div class="report-card">
 
-          <div class="muted">
-            Closing Balance
+        <div class="box">
+
+          Outstanding
+
+          <div class="value">
+            ${money(
+              s.outstanding
+            )}
           </div>
 
-          <div
-            class="value"
-            id="closingBalance"
-          >
-            KSh 0.00
+        </div>
+
+
+        <div class="box">
+
+          Approved Expenses
+
+          <div class="value">
+            ${money(
+              s.approvedExpenses
+            )}
+          </div>
+
+        </div>
+
+
+        <div class="box">
+
+          Closing Balance
+
+          <div class="value">
+            ${money(
+              s.closing
+            )}
           </div>
 
         </div>
 
       </div>
 
-    </section>
-
-    <br>
-
-
-    <!-- CONTRIBUTION STATISTICS -->
-
-    <section class="card">
 
       <h2>
         Contribution Statistics
       </h2>
 
-      <div class="report-grid">
 
-        <div class="report-card">
-
-          <div class="muted">
-            Active Members
-          </div>
-
-          <div
-            class="value"
-            id="memberCount"
-          >
-            0
-          </div>
-
-        </div>
-
-        <div class="report-card">
-
-          <div class="muted">
-            Members Paid
-          </div>
-
-          <div
-            class="value"
-            id="paidMembers"
-          >
-            0
-          </div>
-
-        </div>
-
-        <div class="report-card">
-
-          <div class="muted">
-            Partial Payments
-          </div>
-
-          <div
-            class="value"
-            id="partialMembers"
-          >
-            0
-          </div>
-
-        </div>
-
-        <div class="report-card">
-
-          <div class="muted">
-            Outstanding Members
-          </div>
-
-          <div
-            class="value"
-            id="outstandingMembers"
-          >
-            0
-          </div>
-
-        </div>
-
-        <div class="report-card">
-
-          <div class="muted">
-            Collection Rate
-          </div>
-
-          <div
-            class="value"
-            id="collectionRate"
-          >
-            0%
-          </div>
-
-        </div>
-
-        <div class="report-card">
-
-          <div class="muted">
-            Period Status
-          </div>
-
-          <div
-            class="value"
-            id="periodStatus"
-          >
-            OPEN
-          </div>
-
-        </div>
-
-      </div>
-
-    </section>
-
-    <br>
+      <p>
+        Active Members:
+        <strong>
+          ${s.members.length}
+        </strong>
+      </p>
 
 
-    <!-- CASHBOOK -->
-
-    <section class="card">
-
-      <h2>
-        Cashbook
-      </h2>
-
-      <div class="table-wrap">
-
-        <table class="table">
-
-          <thead>
-
-            <tr>
-
-              <th>
-                Date
-              </th>
-
-              <th>
-                Description
-              </th>
-
-              <th>
-                Type
-              </th>
-
-              <th>
-                Method
-              </th>
-
-              <th>
-                Reference
-              </th>
-
-              <th>
-                Amount
-              </th>
-
-            </tr>
-
-          </thead>
-
-          <tbody id="cashbookRows">
-
-            <tr>
-              <td colspan="6">
-                Loading...
-              </td>
-            </tr>
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-    </section>
-
-    <br>
+      <p>
+        Members Paid:
+        <strong>
+          ${s.paidMembers}
+        </strong>
+      </p>
 
 
-    <!-- MEMBER CONTRIBUTIONS -->
+      <p>
+        Partial Payments:
+        <strong>
+          ${s.partialMembers}
+        </strong>
+      </p>
 
-    <section class="card">
+
+      <p>
+        Outstanding Members:
+        <strong>
+          ${s.outstandingMembers}
+        </strong>
+      </p>
+
+
+      <p>
+        Collection Rate:
+        <strong>
+          ${s.collectionRate.toFixed(
+            1
+          )}%
+        </strong>
+      </p>
+
+
+      <p>
+        Period Status:
+        <strong>
+          ${String(
+            s.period?.status ||
+            "open"
+          ).toUpperCase()}
+        </strong>
+      </p>
+
 
       <h2>
         Member Contribution Report
       </h2>
 
-      <div class="table-wrap">
 
-        <table class="table">
+      <table>
 
-          <thead>
+        <thead>
 
-            <tr>
+          <tr>
 
-              <th>
-                Member
-              </th>
+            <th>
+              Member
+            </th>
 
-              <th>
-                Member No.
-              </th>
+            <th>
+              Member No.
+            </th>
 
-              <th>
-                Expected
-              </th>
+            <th>
+              Expected
+            </th>
 
-              <th>
-                Paid
-              </th>
+            <th>
+              Paid
+            </th>
 
-              <th>
-                Outstanding
-              </th>
+            <th>
+              Outstanding
+            </th>
 
-              <th>
-                Status
-              </th>
+            <th>
+              Status
+            </th>
 
-            </tr>
+          </tr>
 
-          </thead>
-
-          <tbody id="memberRows">
-
-            <tr>
-
-              <td colspan="6">
-                Loading...
-              </td>
-
-            </tr>
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-    </section>
-
-    <br>
+        </thead>
 
 
-    <!-- EXPENSE REPORT -->
+        <tbody>
 
-    <section class="card">
+          ${memberRows}
+
+        </tbody>
+
+      </table>
+
 
       <h2>
         Expense Report
       </h2>
 
-      <div class="table-wrap">
 
-        <table class="table">
+      <table>
 
-          <thead>
+        <thead>
 
-            <tr>
+          <tr>
 
-              <th>
-                Date
-              </th>
+            <th>
+              Date
+            </th>
 
-              <th>
-                Description
-              </th>
+            <th>
+              Description
+            </th>
 
-              <th>
-                Category
-              </th>
+            <th>
+              Category
+            </th>
 
-              <th>
-                Amount
-              </th>
+            <th>
+              Amount
+            </th>
 
-              <th>
-                Status
-              </th>
+            <th>
+              Status
+            </th>
 
-            </tr>
+          </tr>
 
-          </thead>
-
-          <tbody id="expenseRows">
-
-            <tr>
-
-              <td colspan="5">
-                Loading...
-              </td>
-
-            </tr>
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-    </section>
-
-    <br>
+        </thead>
 
 
-    <!-- ACTIONS -->
+        <tbody>
 
-    <section class="card">
+          ${expenseRows}
 
-      <h2>
-        Report Actions
-      </h2>
+        </tbody>
 
-      <p class="muted">
-        Print the complete monthly financial report.
-      </p>
+      </table>
 
-      <div class="report-actions">
 
-        <button
-          class="btn btn-primary"
-          id="printReport"
-          type="button"
-        >
-          Print Report
-        </button>
+      <div class="footer">
 
-        <button
-          class="btn btn-secondary"
-          id="monthlyClosing"
-          type="button"
-        >
-          Monthly Closing
-        </button>
+        Generated by CHAMA LIVE
+
+        —
+        ${new Date().toLocaleString(
+          "en-KE"
+        )}
 
       </div>
 
-    </section>
 
-  </main>
+      <script>
 
-</div>
+        window.onload = function () {
+
+          window.print();
+
+        };
+
+      <\/script>
 
 
-<script type="module">
+    </body>
 
-  import {
-    boot
-  } from "./js/layout.js";
+    </html>
 
-  await boot();
+  `);
 
-  import "./js/reports.js";
 
-</script>
+  printWindow.document.close();
 
-</body>
-</html>
+}
+
+
+/* =====================================================
+   MONEY
+===================================================== */
+
+function money(value) {
+
+  const number =
+    Number(
+      value || 0
+    );
+
+
+  const formatted =
+    Math.abs(number)
+      .toLocaleString(
+        "en-KE",
+        {
+          minimumFractionDigits:
+            2,
+
+          maximumFractionDigits:
+            2
+        }
+      );
+
+
+  if (number < 0) {
+
+    return `-KSh ${formatted}`;
+
+  }
+
+
+  return `KSh ${formatted}`;
+
+}
+
+
+/* =====================================================
+   FORMAT DATE
+===================================================== */
+
+function formatDate(value) {
+
+  if (!value) {
+
+    return "—";
+
+  }
+
+
+  const date =
+    new Date(value);
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+
+    return String(value);
+
+  }
+
+
+  return date.toLocaleDateString(
+    "en-KE",
+    {
+      day:
+        "2-digit",
+
+      month:
+        "short",
+
+      year:
+        "numeric"
+    }
+  );
+
+}
+
+
+/* =====================================================
+   FORMAT MONTH
+===================================================== */
+
+function formatMonth(month) {
+
+  if (!month) {
+
+    return "";
+
+  }
+
+
+  const parts =
+    month.split("-");
+
+
+  const year =
+    Number(
+      parts[0]
+    );
+
+
+  const monthNumber =
+    Number(
+      parts[1]
+    );
+
+
+  const date =
+    new Date(
+      year,
+      monthNumber - 1,
+      1
+    );
+
+
+  return date.toLocaleDateString(
+    "en-KE",
+    {
+      month:
+        "long",
+
+      year:
+        "numeric"
+    }
+  );
+
+}
+
+
+/* =====================================================
+   NEXT MONTH
+===================================================== */
+
+function nextMonth(month) {
+
+  const parts =
+    month.split("-");
+
+
+  let year =
+    Number(
+      parts[0]
+    );
+
+
+  let monthNumber =
+    Number(
+      parts[1]
+    );
+
+
+  monthNumber++;
+
+
+  if (
+    monthNumber === 13
+  ) {
+
+    monthNumber = 1;
+
+    year++;
+
+  }
+
+
+  return `${year}-${String(
+    monthNumber
+  ).padStart(
+    2,
+    "0"
+  )}-01`;
+
+}
+
+
+/* =====================================================
+   ESCAPE HTML
+===================================================== */
+
+function escapeHtml(value) {
+
+  return String(
+    value ?? ""
+  )
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
+
+}
+
+
+/* =====================================================
+   STATUS
+===================================================== */
+
+function setStatus(message) {
+
+  const element =
+    $("status");
+
+
+  if (element) {
+
+    element.textContent =
+      message;
+
+  }
+
+}
+
+
+/* =====================================================
+   ERROR
+===================================================== */
+
+function clearError() {
+
+  const element =
+    $("error");
+
+
+  if (!element) {
+
+    return;
+
+  }
+
+
+  element.hidden =
+    true;
+
+  element.textContent =
+    "";
+
+}
+
+
+/* =====================================================
+   SHOW ERROR
+===================================================== */
+
+function showError(error) {
+
+  console.error(
+    error
+  );
+
+
+  const message =
+    error?.message ||
+    "Unable to load report.";
+
+
+  const element =
+    $("error");
+
+
+  if (element) {
+
+    element.hidden =
+      false;
+
+    element.textContent =
+      message;
+
+  }
+
+
+  setStatus(
+    "Unable to load report."
+  );
+
+}
+
+
+/* =====================================================
+   START
+===================================================== */
+
+init();
