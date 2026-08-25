@@ -1,14 +1,11 @@
 import { supabase } from "./supabase.js";
 import { getMyMember } from "./auth.js";
 
-
 /* =====================================================
    HELPERS
 ===================================================== */
 
-const $ = (id) =>
-  document.getElementById(id);
-
+const $ = (id) => document.getElementById(id);
 
 let groupId = null;
 let currentMonth = "";
@@ -22,99 +19,62 @@ let memberStatus = [];
 ===================================================== */
 
 async function init() {
-
   try {
-
-    const member =
-      await getMyMember();
+    const member = await getMyMember();
 
     if (!member) {
-
-      throw new Error(
-        "Unable to identify your group."
-      );
-
+      throw new Error("Unable to identify your group.");
     }
 
+    groupId = member.group_id;
 
-    groupId =
-      member.group_id;
-
-
-    /*
-     * Set current month
-     */
-
-    const today =
-      new Date();
+    const today = new Date();
 
     currentMonth =
       `${today.getFullYear()}-${String(
         today.getMonth() + 1
       ).padStart(2, "0")}`;
 
+    const monthInput = $("month");
 
-    $("month").value =
-      currentMonth;
+    if (!monthInput) {
+      throw new Error(
+        "Monthly Closing page is missing the month selector."
+      );
+    }
 
+    monthInput.value = currentMonth;
 
-    /*
-     * Month selector
-     */
+    monthInput.addEventListener("change", async () => {
+      const selected = monthInput.value;
 
-    $("month").addEventListener(
-      "change",
-      async () => {
+      if (!selected) return;
 
-        const selected =
-          $("month").value;
+      currentMonth = selected;
 
-        if (!selected) return;
+      await loadMonth();
+    });
 
-        currentMonth =
-          selected;
-
-        await loadMonth();
-
-      }
-    );
-
-
-    /*
-     * Buttons
-     */
-
-    $("closeMonth").addEventListener(
+    $("closeMonth")?.addEventListener(
       "click",
       closeMonth
     );
 
-
-    $("reopenMonth").addEventListener(
+    $("reopenMonth")?.addEventListener(
       "click",
       reopenMonth
     );
 
-
-    $("printReport").addEventListener(
+    $("printReport")?.addEventListener(
       "click",
       printReport
     );
 
-
-    /*
-     * Load
-     */
-
     await loadMonth();
 
-
   } catch (error) {
-
     showError(error);
-
   }
-
 }
 
 
@@ -123,22 +83,16 @@ async function init() {
 ===================================================== */
 
 async function loadMonth() {
-
   clearError();
 
-
   setStatus(
-    `Loading ${formatMonth(
-      currentMonth
-    )}...`
+    `Loading ${formatMonth(currentMonth)}...`
   );
-
 
   try {
 
-
     /* -----------------------------------------------
-       LOAD GROUP
+       GROUP
     ------------------------------------------------ */
 
     const {
@@ -155,16 +109,13 @@ async function loadMonth() {
       .eq("id", groupId)
       .single();
 
-
     if (groupError) {
-
       throw groupError;
-
     }
 
 
     /* -----------------------------------------------
-       LOAD FINANCIAL PERIOD
+       FINANCIAL PERIOD
     ------------------------------------------------ */
 
     let {
@@ -177,26 +128,19 @@ async function loadMonth() {
       .eq("month", currentMonth)
       .maybeSingle();
 
-
     if (periodError) {
-
       throw periodError;
-
     }
 
 
-    /*
-     * Create period automatically if missing
-     */
+    /* -----------------------------------------------
+       CREATE PERIOD IF MISSING
+    ------------------------------------------------ */
 
     if (!period) {
 
-
       const openingBalance =
-        await calculateOpeningBalance(
-          group
-        );
-
+        await calculateOpeningBalance(group);
 
       const {
         data: createdPeriod,
@@ -204,43 +148,26 @@ async function loadMonth() {
       } = await supabase
         .from("financial_periods")
         .insert({
-
-          group_id:
-            groupId,
-
-          month:
-            currentMonth,
-
-          opening_balance:
-            openingBalance,
-
-          status:
-            "open"
-
+          group_id: groupId,
+          month: currentMonth,
+          opening_balance: openingBalance,
+          status: "open"
         })
         .select()
         .single();
 
-
       if (createError) {
-
         throw createError;
-
       }
 
-
-      period =
-        createdPeriod;
-
+      period = createdPeriod;
     }
 
-
-    currentPeriod =
-      period;
+    currentPeriod = period;
 
 
     /* -----------------------------------------------
-       LOAD ACTIVE MEMBERS
+       ACTIVE MEMBERS
     ------------------------------------------------ */
 
     const {
@@ -258,16 +185,13 @@ async function loadMonth() {
       .eq("status", "active")
       .order("name");
 
-
     if (membersError) {
-
       throw membersError;
-
     }
 
 
     /* -----------------------------------------------
-       LOAD CONTRIBUTIONS
+       CONTRIBUTIONS
     ------------------------------------------------ */
 
     const {
@@ -289,16 +213,13 @@ async function loadMonth() {
       .eq("group_id", groupId)
       .eq("month", currentMonth);
 
-
     if (contributionError) {
-
       throw contributionError;
-
     }
 
 
     /* -----------------------------------------------
-       LOAD EXPENSES
+       EXPENSES
     ------------------------------------------------ */
 
     const {
@@ -324,16 +245,13 @@ async function loadMonth() {
         nextMonth(currentMonth)
       );
 
-
     if (expenseError) {
-
       throw expenseError;
-
     }
 
 
     /* -----------------------------------------------
-       MEMBER CONTRIBUTION STATUS
+       MEMBER STATUS
     ------------------------------------------------ */
 
     const monthlyContribution =
@@ -341,79 +259,56 @@ async function loadMonth() {
         group.monthly_contribution || 0
       );
 
+    memberStatus = members.map((member) => {
 
-    memberStatus =
-      members.map(
-        member => {
+      const paid =
+        contributions
+          .filter(
+            (contribution) =>
+              contribution.member_id ===
+              member.id
+          )
+          .reduce(
+            (sum, contribution) =>
+              sum +
+              Number(
+                contribution.amount || 0
+              ),
+            0
+          );
 
+      const expected =
+        monthlyContribution;
 
-          const paid =
-            contributions
-              .filter(
-                contribution =>
-                  contribution.member_id ===
-                  member.id
-              )
-              .reduce(
-                (sum, contribution) =>
-                  sum +
-                  Number(
-                    contribution.amount || 0
-                  ),
-                0
-              );
+      const outstanding =
+        Math.max(
+          expected - paid,
+          0
+        );
 
+      let status =
+        "OUTSTANDING";
 
-          const expected =
-            monthlyContribution;
+      if (
+        expected > 0 &&
+        paid >= expected
+      ) {
+        status = "PAID";
 
+      } else if (
+        paid > 0
+      ) {
+        status = "PARTIAL";
+      }
 
-          const outstanding =
-            Math.max(
-              expected - paid,
-              0
-            );
-
-
-          let status =
-            "OUTSTANDING";
-
-
-          if (
-            expected > 0 &&
-            paid >= expected
-          ) {
-
-            status =
-              "PAID";
-
-          } else if (
-            paid > 0
-          ) {
-
-            status =
-              "PARTIAL";
-
-          }
-
-
-          return {
-
-            ...member,
-
-            expected,
-
-            paid,
-
-            outstanding,
-
-            contributionStatus:
-              status
-
-          };
-
-        }
-      );
+      return {
+        ...member,
+        expected,
+        paid,
+        outstanding,
+        contributionStatus: status
+      };
+    });
 
 
     /* -----------------------------------------------
@@ -423,11 +318,9 @@ async function loadMonth() {
     const expected =
       memberStatus.reduce(
         (sum, member) =>
-          sum +
-          member.expected,
+          sum + member.expected,
         0
       );
-
 
     const collected =
       contributions.reduce(
@@ -439,19 +332,16 @@ async function loadMonth() {
         0
       );
 
-
     const outstanding =
       Math.max(
-        expected -
-        collected,
+        expected - collected,
         0
       );
-
 
     const approvedExpenses =
       expenses
         .filter(
-          expense =>
+          (expense) =>
             expense.approval_status ===
             "approved"
         )
@@ -464,11 +354,10 @@ async function loadMonth() {
           0
         );
 
-
     const pendingExpenses =
       expenses
         .filter(
-          expense =>
+          (expense) =>
             expense.approval_status ===
             "pending"
         )
@@ -481,11 +370,10 @@ async function loadMonth() {
           0
         );
 
-
     const rejectedExpenses =
       expenses
         .filter(
-          expense =>
+          (expense) =>
             expense.approval_status ===
             "rejected"
         )
@@ -498,92 +386,65 @@ async function loadMonth() {
           0
         );
 
-
     const opening =
       Number(
         period.opening_balance || 0
       );
-
 
     const closing =
       opening +
       collected -
       approvedExpenses;
 
-
     const paidMembers =
       memberStatus.filter(
-        member =>
+        (member) =>
           member.contributionStatus ===
           "PAID"
       ).length;
 
-
     const partialMembers =
       memberStatus.filter(
-        member =>
+        (member) =>
           member.contributionStatus ===
           "PARTIAL"
       ).length;
 
-
     const outstandingMembers =
       memberStatus.filter(
-        member =>
+        (member) =>
           member.contributionStatus ===
           "OUTSTANDING"
       ).length;
 
-
     const collectionRate =
       expected > 0
-        ? (
-            collected /
-            expected
-          ) * 100
+        ? (collected / expected) * 100
         : 0;
 
 
     /* -----------------------------------------------
-       SAVE CURRENT SUMMARY
+       CURRENT SUMMARY
     ------------------------------------------------ */
 
     currentSummary = {
-
       group,
-
       period,
-
       members,
-
       contributions,
-
       expenses,
-
       expected,
-
       collected,
-
       outstanding,
-
       approvedExpenses,
-
       pendingExpenses,
-
       rejectedExpenses,
-
       opening,
-
       closing,
-
       paidMembers,
-
       partialMembers,
-
       outstandingMembers,
-
       collectionRate
-
     };
 
 
@@ -597,37 +458,23 @@ async function loadMonth() {
 
     updateActions();
 
-
     setStatus(
       `Monthly financials loaded • ${
-        new Date().toLocaleString(
-          "en-KE"
-        )
+        new Date().toLocaleString("en-KE")
       }`
     );
 
-
   } catch (error) {
-
     showError(error);
-
   }
-
 }
 
 
 /* =====================================================
-   CALCULATE OPENING BALANCE
+   OPENING BALANCE
 ===================================================== */
 
-async function calculateOpeningBalance(
-  group
-) {
-
-
-  /*
-   * Look for latest closed month.
-   */
+async function calculateOpeningBalance(group) {
 
   const {
     data: previousPeriods,
@@ -641,50 +488,29 @@ async function calculateOpeningBalance(
     `)
     .eq("group_id", groupId)
     .eq("status", "closed")
-    .lt(
-      "month",
-      currentMonth
-    )
-    .order(
-      "month",
-      {
-        ascending: false
-      }
-    )
+    .lt("month", currentMonth)
+    .order("month", {
+      ascending: false
+    })
     .limit(1);
 
-
   if (error) {
-
     throw error;
-
   }
-
 
   if (
     previousPeriods &&
     previousPeriods.length > 0 &&
-    previousPeriods[0].closing_balance !==
-      null
+    previousPeriods[0].closing_balance !== null
   ) {
-
     return Number(
-      previousPeriods[0]
-        .closing_balance
+      previousPeriods[0].closing_balance
     );
-
   }
-
-
-  /*
-   * First month:
-   * use group's opening balance.
-   */
 
   return Number(
     group.opening_balance || 0
   );
-
 }
 
 
@@ -694,92 +520,71 @@ async function calculateOpeningBalance(
 
 function renderSummary() {
 
-  const s =
-    currentSummary;
-
+  const s = currentSummary;
 
   $("openingBalance").textContent =
     money(s.opening);
 
-
   $("expected").textContent =
     money(s.expected);
-
 
   $("collected").textContent =
     money(s.collected);
 
-
   $("outstanding").textContent =
     money(s.outstanding);
-
 
   $("approvedExpenses").textContent =
     money(s.approvedExpenses);
 
-
   $("closingBalance").textContent =
     money(s.closing);
-
 
   $("opening2").textContent =
     money(s.opening);
 
-
   $("contributions2").textContent =
     money(s.collected);
-
 
   $("expenses2").textContent =
     money(s.approvedExpenses);
 
-
   $("balance2").textContent =
     money(s.closing);
-
 
   $("memberCount").textContent =
     s.members.length;
 
-
   $("membersPaid").textContent =
     s.paidMembers;
-
 
   $("membersPartial").textContent =
     s.partialMembers;
 
-
   $("membersOutstanding").textContent =
     s.outstandingMembers;
-
 
   $("collectionRate").textContent =
     `${s.collectionRate.toFixed(1)}%`;
 
-
   $("approved2").textContent =
     money(s.approvedExpenses);
-
 
   $("pendingExpenses").textContent =
     money(s.pendingExpenses);
 
-
   $("rejectedExpenses").textContent =
     money(s.rejectedExpenses);
-
 
   $("periodStatus").textContent =
     String(
       s.period.status || "open"
     ).toUpperCase();
-
 }
 
 
 /* =====================================================
-   RENDER MEMBER TABLE
+   MEMBER TABLE
 ===================================================== */
 
 function renderMembers() {
@@ -787,10 +592,9 @@ function renderMembers() {
   const tbody =
     $("memberRows");
 
+  if (!tbody) return;
 
-  if (
-    !memberStatus.length
-  ) {
+  if (!memberStatus.length) {
 
     tbody.innerHTML = `
       <tr>
@@ -801,59 +605,46 @@ function renderMembers() {
     `;
 
     return;
-
   }
-
 
   tbody.innerHTML =
     memberStatus
       .map(
-        member => `
-
+        (member) => `
           <tr>
 
             <td>
               <strong>
+                ${escapeHtml(member.name)}
+              </strong>
+            </td>
+
+            <td>
+              ${money(member.expected)}
+            </td>
+
+            <td>
+              <strong>
+                ${money(member.paid)}
+              </strong>
+            </td>
+
+            <td>
+              ${money(member.outstanding)}
+            </td>
+
+            <td>
+              <strong>
                 ${escapeHtml(
-                  member.name
-                )}
-              </strong>
-            </td>
-
-            <td>
-              ${money(
-                member.expected
-              )}
-            </td>
-
-            <td>
-              <strong>
-                ${money(
-                  member.paid
-                )}
-              </strong>
-            </td>
-
-            <td>
-              ${money(
-                member.outstanding
-              )}
-            </td>
-
-            <td>
-              <strong>
-                ${
                   member.contributionStatus
-                }
+                )}
               </strong>
             </td>
 
           </tr>
-
         `
       )
       .join("");
-
 }
 
 
@@ -867,11 +658,8 @@ async function closeMonth() {
     !currentPeriod ||
     !currentSummary
   ) {
-
     return;
-
   }
-
 
   if (
     currentPeriod.status ===
@@ -883,53 +671,29 @@ async function closeMonth() {
     );
 
     return;
-
   }
-
 
   const confirmed =
     confirm(
-      `Close ${formatMonth(
-        currentMonth
-      )}?\n\n` +
-
-      `Opening balance: ${
-        money(
-          currentSummary.opening
-        )
-      }\n` +
-
-      `Contributions: ${
-        money(
-          currentSummary.collected
-        )
-      }\n` +
-
-      `Approved expenses: ${
-        money(
-          currentSummary.approvedExpenses
-        )
-      }\n` +
-
-      `Closing balance: ${
-        money(
-          currentSummary.closing
-        )
-      }\n\n` +
-
+      `Close ${formatMonth(currentMonth)}?\n\n` +
+      `Opening balance: ${money(
+        currentSummary.opening
+      )}\n` +
+      `Contributions: ${money(
+        currentSummary.collected
+      )}\n` +
+      `Approved expenses: ${money(
+        currentSummary.approvedExpenses
+      )}\n` +
+      `Closing balance: ${money(
+        currentSummary.closing
+      )}\n\n` +
       `Continue?`
     );
 
-
-  if (!confirmed) {
-
-    return;
-
-  }
-
+  if (!confirmed) return;
 
   try {
-
 
     const {
       data: {
@@ -938,29 +702,20 @@ async function closeMonth() {
     } =
       await supabase.auth.getUser();
 
-
     const {
       data,
       error
     } =
       await supabase
-        .from(
-          "financial_periods"
-        )
+        .from("financial_periods")
         .update({
-
-          status:
-            "closed",
-
+          status: "closed",
           closing_balance:
             currentSummary.closing,
-
           closed_at:
             new Date().toISOString(),
-
           closed_by:
             user?.id || null
-
         })
         .eq(
           "id",
@@ -973,17 +728,11 @@ async function closeMonth() {
         .select()
         .single();
 
-
     if (error) {
-
       throw error;
-
     }
 
-
-    currentPeriod =
-      data;
-
+    currentPeriod = data;
 
     alert(
       `${formatMonth(
@@ -991,16 +740,11 @@ async function closeMonth() {
       )} has been closed successfully.`
     );
 
-
     await loadMonth();
 
-
   } catch (error) {
-
     showError(error);
-
   }
-
 }
 
 
@@ -1010,12 +754,7 @@ async function closeMonth() {
 
 async function reopenMonth() {
 
-  if (!currentPeriod) {
-
-    return;
-
-  }
-
+  if (!currentPeriod) return;
 
   if (
     currentPeriod.status !==
@@ -1027,50 +766,30 @@ async function reopenMonth() {
     );
 
     return;
-
   }
-
 
   const confirmed =
     confirm(
       `Reopen ${formatMonth(
         currentMonth
-      )}?\n\n` +
-
-      `This will allow the month to be `
-      + `updated again.`
+      )}?\n\nThis will allow the month to be updated again.`
     );
 
-
-  if (!confirmed) {
-
-    return;
-
-  }
-
+  if (!confirmed) return;
 
   try {
-
 
     const {
       data,
       error
     } =
       await supabase
-        .from(
-          "financial_periods"
-        )
+        .from("financial_periods")
         .update({
-
-          status:
-            "open",
-
-          closed_at:
-            null,
-
-          closed_by:
-            null
-
+          status: "open",
+          closed_at: null,
+          closed_by: null,
+          closing_balance: null
         })
         .eq(
           "id",
@@ -1083,17 +802,11 @@ async function reopenMonth() {
         .select()
         .single();
 
-
     if (error) {
-
       throw error;
-
     }
 
-
-    currentPeriod =
-      data;
-
+    currentPeriod = data;
 
     alert(
       `${formatMonth(
@@ -1101,16 +814,11 @@ async function reopenMonth() {
       )} has been reopened.`
     );
 
-
     await loadMonth();
 
-
   } catch (error) {
-
     showError(error);
-
   }
-
 }
 
 
@@ -1124,79 +832,47 @@ function updateActions() {
     currentPeriod?.status ===
     "closed";
 
+  if ($("closeMonth")) {
+    $("closeMonth").hidden =
+      closed;
+  }
 
-  $("closeMonth").hidden =
-    closed;
-
-
-  $("reopenMonth").hidden =
-    !closed;
-
+  if ($("reopenMonth")) {
+    $("reopenMonth").hidden =
+      !closed;
+  }
 }
 
 
 /* =====================================================
-   PRINT MONTHLY REPORT
+   PRINT REPORT
 ===================================================== */
 
 function printReport() {
 
-  if (
-    !currentSummary
-  ) {
-
+  if (!currentSummary) {
     return;
-
   }
-
 
   const s =
     currentSummary;
 
-
   const memberRows =
     memberStatus
       .map(
-        member => `
-
+        (member) => `
           <tr>
-
-            <td>
-              ${escapeHtml(
-                member.name
-              )}
-            </td>
-
-            <td>
-              ${money(
-                member.expected
-              )}
-            </td>
-
-            <td>
-              ${money(
-                member.paid
-              )}
-            </td>
-
-            <td>
-              ${money(
-                member.outstanding
-              )}
-            </td>
-
-            <td>
-              ${
-                member.contributionStatus
-              }
-            </td>
-
+            <td>${escapeHtml(member.name)}</td>
+            <td>${money(member.expected)}</td>
+            <td>${money(member.paid)}</td>
+            <td>${money(member.outstanding)}</td>
+            <td>${escapeHtml(
+              member.contributionStatus
+            )}</td>
           </tr>
-
         `
       )
       .join("");
-
 
   const printWindow =
     window.open(
@@ -1205,7 +881,6 @@ function printReport() {
       "width=900,height=700"
     );
 
-
   if (!printWindow) {
 
     alert(
@@ -1213,403 +888,226 @@ function printReport() {
     );
 
     return;
-
   }
 
-
   printWindow.document.write(`
+<!doctype html>
+<html>
+<head>
+
+<title>
+${escapeHtml(s.group.name)}
+- ${formatMonth(currentMonth)}
+</title>
+
+<style>
+
+body {
+  font-family: Arial, sans-serif;
+  padding: 40px;
+  color: #111;
+}
+
+h1 {
+  margin-bottom: 4px;
+}
+
+.muted {
+  color: #666;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns:
+    repeat(3, 1fr);
+  gap: 12px;
+  margin: 25px 0;
+}
+
+.box {
+  border: 1px solid #ddd;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.value {
+  font-size: 20px;
+  font-weight: bold;
+  margin-top: 6px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+th,
+td {
+  border: 1px solid #ddd;
+  padding: 9px;
+  text-align: left;
+}
+
+th {
+  background: #f5f5f5;
+}
+
+@media print {
+
+  body {
+    padding: 15px;
+  }
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>
+${escapeHtml(s.group.name)}
+</h1>
+
+<div class="muted">
+Monthly Financial Report —
+${formatMonth(currentMonth)}
+</div>
+
+<div class="summary">
+
+<div class="box">
+<div>Opening Balance</div>
+<div class="value">
+${money(s.opening)}
+</div>
+</div>
+
+<div class="box">
+<div>Expected Contributions</div>
+<div class="value">
+${money(s.expected)}
+</div>
+</div>
+
+<div class="box">
+<div>Collected Contributions</div>
+<div class="value">
+${money(s.collected)}
+</div>
+</div>
 
-    <!doctype html>
+<div class="box">
+<div>Outstanding</div>
+<div class="value">
+${money(s.outstanding)}
+</div>
+</div>
 
-    <html>
+<div class="box">
+<div>Approved Expenses</div>
+<div class="value">
+${money(s.approvedExpenses)}
+</div>
+</div>
 
-    <head>
+<div class="box">
+<div>Closing Balance</div>
+<div class="value">
+${money(s.closing)}
+</div>
+</div>
 
-      <title>
-        ${escapeHtml(
-          s.group.name
-        )}
-        —
-        ${formatMonth(
-          currentMonth
-        )}
-      </title>
+</div>
 
+<h2>
+Member Contribution Status
+</h2>
 
-      <style>
+<table>
 
-        body {
+<thead>
 
-          font-family:
-            Arial,
-            sans-serif;
+<tr>
+<th>Member</th>
+<th>Expected</th>
+<th>Paid</th>
+<th>Outstanding</th>
+<th>Status</th>
+</tr>
 
-          padding:
-            40px;
+</thead>
 
-          color:
-            #111;
+<tbody>
 
-        }
+${memberRows}
 
+</tbody>
 
-        h1 {
+</table>
 
-          margin-bottom:
-            4px;
+<p style="margin-top:30px">
 
-        }
+Collection rate:
+<strong>
+${s.collectionRate.toFixed(1)}%
+</strong>
 
+</p>
 
-        .muted {
+<p>
 
-          color:
-            #666;
+Period status:
+<strong>
+${String(
+  s.period.status
+).toUpperCase()}
+</strong>
 
-        }
+</p>
 
+<script>
 
-        .summary {
+window.onload = function() {
+  window.print();
+};
 
-          display:
-            grid;
+<\/script>
 
-          grid-template-columns:
-            repeat(3, 1fr);
-
-          gap:
-            12px;
-
-          margin:
-            25px 0;
-
-        }
-
-
-        .box {
-
-          border:
-            1px solid #ddd;
-
-          padding:
-            15px;
-
-          border-radius:
-            8px;
-
-        }
-
-
-        .value {
-
-          font-size:
-            20px;
-
-          font-weight:
-            bold;
-
-          margin-top:
-            6px;
-
-        }
-
-
-        table {
-
-          width:
-            100%;
-
-          border-collapse:
-            collapse;
-
-          margin-top:
-            20px;
-
-        }
-
-
-        th,
-        td {
-
-          border:
-            1px solid #ddd;
-
-          padding:
-            9px;
-
-          text-align:
-            left;
-
-        }
-
-
-        th {
-
-          background:
-            #f5f5f5;
-
-        }
-
-
-        @media print {
-
-          body {
-
-            padding:
-              15px;
-
-          }
-
-        }
-
-      </style>
-
-    </head>
-
-
-    <body>
-
-
-      <h1>
-        ${escapeHtml(
-          s.group.name
-        )}
-      </h1>
-
-
-      <div class="muted">
-
-        Monthly Financial Report —
-        ${formatMonth(
-          currentMonth
-        )}
-
-      </div>
-
-
-      <div class="summary">
-
-
-        <div class="box">
-
-          <div>
-            Opening Balance
-          </div>
-
-          <div class="value">
-            ${money(
-              s.opening
-            )}
-          </div>
-
-        </div>
-
-
-        <div class="box">
-
-          <div>
-            Expected Contributions
-          </div>
-
-          <div class="value">
-            ${money(
-              s.expected
-            )}
-          </div>
-
-        </div>
-
-
-        <div class="box">
-
-          <div>
-            Collected Contributions
-          </div>
-
-          <div class="value">
-            ${money(
-              s.collected
-            )}
-          </div>
-
-        </div>
-
-
-        <div class="box">
-
-          <div>
-            Outstanding
-          </div>
-
-          <div class="value">
-            ${money(
-              s.outstanding
-            )}
-          </div>
-
-        </div>
-
-
-        <div class="box">
-
-          <div>
-            Approved Expenses
-          </div>
-
-          <div class="value">
-            ${money(
-              s.approvedExpenses
-            )}
-          </div>
-
-        </div>
-
-
-        <div class="box">
-
-          <div>
-            Closing Balance
-          </div>
-
-          <div class="value">
-            ${money(
-              s.closing
-            )}
-          </div>
-
-        </div>
-
-
-      </div>
-
-
-      <h2>
-        Member Contribution Status
-      </h2>
-
-
-      <table>
-
-        <thead>
-
-          <tr>
-
-            <th>
-              Member
-            </th>
-
-            <th>
-              Expected
-            </th>
-
-            <th>
-              Paid
-            </th>
-
-            <th>
-              Outstanding
-            </th>
-
-            <th>
-              Status
-            </th>
-
-          </tr>
-
-        </thead>
-
-
-        <tbody>
-
-          ${memberRows}
-
-        </tbody>
-
-      </table>
-
-
-      <p style="margin-top:30px;">
-
-        Collection rate:
-
-        <strong>
-          ${s.collectionRate.toFixed(
-            1
-          )}%
-        </strong>
-
-      </p>
-
-
-      <p>
-
-        Period status:
-
-        <strong>
-          ${String(
-            s.period.status
-          ).toUpperCase()}
-        </strong>
-
-      </p>
-
-
-      <script>
-
-        window.onload = function() {
-          window.print();
-        };
-
-      <\/script>
-
-
-    </body>
-
-    </html>
-
-  `);
-
+</body>
+</html>
+`);
 
   printWindow.document.close();
-
 }
 
 
 /* =====================================================
-   MONEY FORMAT
+   MONEY
 ===================================================== */
 
 function money(value) {
 
   const number =
-    Number(
-      value || 0
-    );
-
+    Number(value || 0);
 
   const formatted =
     Math.abs(number)
       .toLocaleString(
         "en-KE",
         {
-          minimumFractionDigits:
-            2,
-
-          maximumFractionDigits:
-            2
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
         }
       );
 
-
   if (number < 0) {
-
     return `-KSh ${formatted}`;
-
   }
 
-
   return `KSh ${formatted}`;
-
 }
 
 
@@ -1619,24 +1117,16 @@ function money(value) {
 
 function formatMonth(month) {
 
-  if (!month) {
-
-    return "";
-
-  }
-
+  if (!month) return "";
 
   const parts =
     month.split("-");
 
-
   const year =
     Number(parts[0]);
 
-
   const monthNumber =
     Number(parts[1]);
-
 
   const date =
     new Date(
@@ -1645,18 +1135,13 @@ function formatMonth(month) {
       1
     );
 
-
   return date.toLocaleDateString(
     "en-KE",
     {
-      month:
-        "long",
-
-      year:
-        "numeric"
+      month: "long",
+      year: "numeric"
     }
   );
-
 }
 
 
@@ -1669,39 +1154,24 @@ function nextMonth(month) {
   const parts =
     month.split("-");
 
-
   let year =
     Number(parts[0]);
-
 
   let monthNumber =
     Number(parts[1]);
 
-
   monthNumber++;
 
-
-  if (
-    monthNumber === 13
-  ) {
-
-    monthNumber =
-      1;
-
+  if (monthNumber === 13) {
+    monthNumber = 1;
     year++;
-
   }
-
 
   return (
     `${year}-${String(
       monthNumber
-    ).padStart(
-      2,
-      "0"
-    )}-01`
+    ).padStart(2, "0")}-01`
   );
-
 }
 
 
@@ -1711,30 +1181,12 @@ function nextMonth(month) {
 
 function escapeHtml(value) {
 
-  return String(
-    value ?? ""
-  )
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
-
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 
@@ -1747,14 +1199,10 @@ function setStatus(message) {
   const element =
     $("status");
 
-
   if (element) {
-
     element.textContent =
       message;
-
   }
-
 }
 
 
@@ -1767,58 +1215,35 @@ function clearError() {
   const element =
     $("error");
 
+  if (!element) return;
 
-  if (!element) {
-
-    return;
-
-  }
-
-
-  element.hidden =
-    true;
-
-  element.textContent =
-    "";
-
+  element.hidden = true;
+  element.textContent = "";
 }
 
 
-/* =====================================================
-   SHOW ERROR
-===================================================== */
-
 function showError(error) {
 
-  console.error(
-    error
-  );
-
+  console.error(error);
 
   const message =
     error?.message ||
     "Unable to load monthly financials.";
 
-
   const element =
     $("error");
 
-
   if (element) {
 
-    element.hidden =
-      false;
+    element.hidden = false;
 
     element.textContent =
       message;
-
   }
-
 
   setStatus(
     "Unable to load monthly financials."
   );
-
 }
 
 
