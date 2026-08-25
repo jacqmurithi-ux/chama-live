@@ -1,180 +1,123 @@
-```javascript
 import { supabase } from "./supabase.js";
 import { getMyMember } from "./auth.js";
 
-
-/* =====================================================
-   HELPERS
-===================================================== */
-
 const $ = (id) =>
-  document.getElementById(id);
-
+document.getElementById(id);
 
 let currentMember = null;
-
-let groupId = null;
-
 let members = [];
 
-
 /* =====================================================
-   INIT
+INIT
 ===================================================== */
 
 async function init() {
 
-  try {
+try {
 
-    const member =
-      await getMyMember();
+```
+currentMember =
+  await getMyMember();
 
+if (!currentMember) {
 
-    if (!member) {
-
-      throw new Error(
-        "Unable to identify your member account."
-      );
-
-    }
-
-
-    currentMember =
-      Array.isArray(member)
-        ? member[0]
-        : member;
-
-
-    if (!currentMember) {
-
-      throw new Error(
-        "Member profile not found."
-      );
-
-    }
-
-
-    groupId =
-      currentMember.group_id;
-
-
-    if (!groupId) {
-
-      throw new Error(
-        "Your account is not linked to a group."
-      );
-
-    }
-
-
-    /*
-     * Security check.
-     *
-     * The UI check is only for user experience.
-     * RLS must also enforce this permission.
-     */
-
-    const role =
-      String(
-        currentMember.role || ""
-      ).toLowerCase();
-
-
-    const allowedRoles = [
-      "admin",
-      "chairperson"
-    ];
-
-
-    if (
-      !allowedRoles.includes(role)
-    ) {
-
-      showError(
-        "Only the group administrator or chairperson can manage members."
-      );
-
-      $("memberForm").style.display =
-        "none";
-
-      return;
-
-    }
-
-
-    await loadMembers();
-
-
-    $("memberForm")
-      .addEventListener(
-        "submit",
-        addMember
-      );
-
-
-    $("search")
-      .addEventListener(
-        "input",
-        renderMembers
-      );
-
-
-    $("logout")
-      ?.addEventListener(
-        "click",
-        logout
-      );
-
-
-  } catch (error) {
-
-    console.error(
-      "Member management error:",
-      error
-    );
-
-    showError(
-      error?.message ||
-      "Unable to load member management."
-    );
-
-  }
+  throw new Error(
+    "Unable to identify your member account."
+  );
 
 }
 
 
+/*
+ * This is only a UI check.
+ * The Edge Function must perform the
+ * real authorization check.
+ */
+
+const allowedRoles = [
+  "admin",
+  "chairperson"
+];
+
+if (
+  !allowedRoles.includes(
+    String(currentMember.role || "").toLowerCase()
+  )
+) {
+
+  throw new Error(
+    "Only an administrator or chairperson can manage login access."
+  );
+
+}
+
+
+const refreshButton =
+  $("refreshMembers");
+
+if (refreshButton) {
+
+  refreshButton.addEventListener(
+    "click",
+    loadMembers
+  );
+
+}
+
+
+await loadMembers();
+```
+
+} catch (error) {
+
+```
+showError(error);
+```
+
+}
+
+}
+
 /* =====================================================
-   LOAD MEMBERS
+LOAD MEMBERS
 ===================================================== */
 
 async function loadMembers() {
 
-  clearMessages();
+clearError();
 
+setStatus(
+"Loading members..."
+);
 
-  const {
-    data,
-    error
-  } = await supabase
+try {
+
+```
+const { data, error } =
+  await supabase
 
     .from("members")
 
     .select(`
       id,
+      group_id,
       member_number,
+      membership_number,
       name,
       phone,
       email,
       role,
       status,
+      onboarding_status,
+      invited_at,
+      activated_at,
       auth_user_id,
-      join_date,
       created_at
     `)
 
     .eq(
       "group_id",
-      groupId
+      currentMember.group_id
     )
 
     .order(
@@ -185,568 +128,628 @@ async function loadMembers() {
     );
 
 
-  if (error) {
+if (error) {
 
-    throw error;
-
-  }
-
-
-  members =
-    data || [];
-
-
-  renderMembers();
+  throw error;
 
 }
 
 
-/* =====================================================
-   ADD MEMBER
-===================================================== */
+members =
+  data || [];
 
-async function addMember(event) {
 
-  event.preventDefault();
+renderMembers();
 
-  clearMessages();
 
+setStatus(
+  `${members.length} member${members.length === 1 ? "" : "s"} loaded • ${new Date().toLocaleString("en-KE")}`
+);
+```
 
-  const button =
-    $("saveMember");
+} catch (error) {
 
-
-  button.disabled =
-    true;
-
-  button.textContent =
-    "Adding member...";
-
-
-  try {
-
-    const memberNumber =
-      $("memberNumber")
-        .value
-        .trim();
-
-
-    const name =
-      $("name")
-        .value
-        .trim();
-
-
-    const phone =
-      $("phone")
-        .value
-        .trim();
-
-
-    const email =
-      $("email")
-        .value
-        .trim()
-        .toLowerCase();
-
-
-    const role =
-      $("role")
-        .value;
-
-
-    const status =
-      $("status")
-        .value;
-
-
-    if (
-      !memberNumber ||
-      !name ||
-      !phone
-    ) {
-
-      throw new Error(
-        "Member number, name and phone are required."
-      );
-
-    }
-
-
-    /*
-     * Prevent duplicate member numbers
-     * inside the current group.
-     */
-
-    const {
-      data: duplicate,
-      error: duplicateError
-    } = await supabase
-
-      .from("members")
-
-      .select("id")
-
-      .eq(
-        "group_id",
-        groupId
-      )
-
-      .eq(
-        "member_number",
-        memberNumber
-      )
-      .limit(1);
-
-
-    if (duplicateError) {
-
-      throw duplicateError;
-
-    }
-
-
-    if (
-      duplicate &&
-      duplicate.length
-    ) {
-
-      throw new Error(
-        `Member number ${memberNumber} already exists.`
-      );
-
-    }
-
-
-    /*
-     * Insert member profile.
-     *
-     * auth_user_id remains NULL until
-     * the member activates their login.
-     */
-
-    const {
-      data,
-      error
-    } = await supabase
-
-      .from("members")
-
-      .insert({
-
-        group_id:
-          groupId,
-
-        member_number:
-          memberNumber,
-
-        name,
-
-        phone,
-
-        email:
-          email || null,
-
-        role,
-
-        status,
-
-        auth_user_id:
-          null
-
-      })
-
-      .select()
-
-      .single();
-
-
-    if (error) {
-
-      throw error;
-
-    }
-
-
-    console.log(
-      "Member created:",
-      data
-    );
-
-
-    /*
-     * Reset form.
-     */
-
-    $("memberForm")
-      .reset();
-
-
-    /*
-     * Reload list.
-     */
-
-    await loadMembers();
-
-
-    showSuccess(
-      "Member added successfully. The member can now be invited to activate their login."
-    );
-
-
-  } catch (error) {
-
-    console.error(
-      "Add member error:",
-      error
-    );
-
-
-    showError(
-      error?.message ||
-      "Unable to add member."
-    );
-
-
-  } finally {
-
-    button.disabled =
-      false;
-
-    button.textContent =
-      "Add Member";
-
-  }
+```
+showError(error);
+```
 
 }
 
+}
 
 /* =====================================================
-   RENDER MEMBERS
+RENDER
 ===================================================== */
 
 function renderMembers() {
 
-  const tbody =
-    $("memberRows");
+const tbody =
+$("memberRows");
+
+if (!tbody) {
+
+```
+return;
+```
+
+}
+
+if (!members.length) {
+
+```
+tbody.innerHTML = `
+
+  <tr>
+
+    <td
+      colspan="7"
+      class="empty-state"
+    >
+
+      No members have been added
+      to this group yet.
+
+    </td>
+
+  </tr>
+
+`;
+
+return;
+```
+
+}
+
+tbody.innerHTML =
+members.map(
+member =>
+renderMemberRow(member)
+).join("");
+
+document
+.querySelectorAll("[data-invite-member]")
+.forEach(button => {
+
+```
+  button.addEventListener(
+    "click",
+    () => {
+
+      const memberId =
+        button.dataset.inviteMember;
+
+      inviteMember(
+        memberId
+      );
+
+    }
+  );
+
+});
+```
+
+}
+
+/* =====================================================
+MEMBER ROW
+===================================================== */
+
+function renderMemberRow(member) {
+
+const onboarding =
+String(
+member.onboarding_status ||
+"pending"
+).toLowerCase();
+
+const hasAuth =
+Boolean(
+member.auth_user_id
+);
+
+let loginStatus =
+"PENDING";
+
+let statusClass =
+"status-pending";
+
+if (
+onboarding === "active" ||
+member.activated_at ||
+hasAuth
+) {
+
+```
+loginStatus =
+  "ACTIVE";
+
+statusClass =
+  "status-active";
+```
+
+} else if (
+onboarding === "invited"
+) {
+
+```
+loginStatus =
+  "INVITED";
+
+statusClass =
+  "status-invited";
+```
+
+} else if (
+onboarding === "disabled"
+) {
+
+```
+loginStatus =
+  "DISABLED";
+
+statusClass =
+  "status-disabled";
+```
+
+}
+
+const email =
+member.email ||
+"No email";
+
+const memberNumber =
+member.member_number ||
+member.membership_number ||
+"—";
+
+let action = "";
+
+if (
+loginStatus === "ACTIVE"
+) {
+
+```
+action = `
+
+  <span class="muted">
+    Login active
+  </span>
+
+`;
+```
+
+} else if (
+loginStatus === "INVITED"
+) {
+
+```
+action = `
+
+  <button
+    type="button"
+    class="btn btn-secondary"
+    data-invite-member="${escapeHtml(member.id)}"
+  >
+    Resend Invite
+  </button>
+
+`;
+```
+
+} else {
+
+```
+action = `
+
+  <button
+    type="button"
+    class="btn btn-primary"
+    data-invite-member="${escapeHtml(member.id)}"
+  >
+    Send Login Invite
+  </button>
+
+`;
+```
+
+}
+
+return `
+
+```
+<tr>
+
+  <td>
+
+    <strong>
+      ${escapeHtml(member.name)}
+    </strong>
+
+  </td>
 
 
-  const search =
-    $("search")
-      ?.value
-      ?.trim()
-      ?.toLowerCase() ||
-      "";
+  <td>
+
+    ${escapeHtml(memberNumber)}
+
+  </td>
 
 
-  const filtered =
-    members.filter(
-      member => {
+  <td>
 
-        const text =
-          [
-            member.member_number,
-            member.name,
-            member.phone,
-            member.email,
-            member.role,
-            member.status
-          ]
-            .filter(Boolean)
-            .join(" ")
-            .toLowerCase();
+    ${escapeHtml(
+      member.phone || "—"
+    )}
+
+  </td>
 
 
-        return text.includes(
-          search
-        );
+  <td>
+
+    ${escapeHtml(email)}
+
+  </td>
+
+
+  <td>
+
+    <span class="role-badge">
+
+      ${escapeHtml(
+        member.role || "member"
+      )}
+
+    </span>
+
+  </td>
+
+
+  <td>
+
+    <span
+      class="status-badge ${statusClass}"
+    >
+
+      ${loginStatus}
+
+    </span>
+
+  </td>
+
+
+  <td>
+
+    ${action}
+
+  </td>
+
+</tr>
+```
+
+`;
+
+}
+
+/* =====================================================
+INVITE MEMBER
+===================================================== */
+
+async function inviteMember(
+memberId
+) {
+
+const member =
+members.find(
+item =>
+item.id === memberId
+);
+
+if (!member) {
+
+```
+alert(
+  "Member could not be found."
+);
+
+return;
+```
+
+}
+
+if (!member.email) {
+
+```
+alert(
+  `No email address is recorded for ${member.name}. Add the member's email address first.`
+);
+
+return;
+```
+
+}
+
+const confirmed =
+window.confirm(
+`Send a CHAMA LIVE login invitation to ${member.name} at ${member.email}?`
+);
+
+if (!confirmed) {
+
+```
+return;
+```
+
+}
+
+setStatus(
+`Sending login invitation to ${member.name}...`
+);
+
+disableInviteButtons(
+true
+);
+
+try {
+
+```
+/*
+ * supabase.functions.invoke()
+ * automatically sends the authenticated
+ * user's session credentials.
+ */
+
+const {
+  data,
+  error
+} = await supabase.functions.invoke(
+  "invite-member",
+  {
+    body: {
+      member_id: member.id
+    }
+  }
+);
+
+
+if (error) {
+
+  let message =
+    error.message ||
+    "Unable to send invitation.";
+
+  /*
+   * FunctionsHttpError can expose the
+   * server's JSON error response.
+   */
+
+  try {
+
+    if (
+      error.context &&
+      typeof error.context.json === "function"
+    ) {
+
+      const details =
+        await error.context.json();
+
+      if (
+        details?.error
+      ) {
+
+        message =
+          details.error;
 
       }
-    );
 
+    }
 
-  if (!filtered.length) {
+  } catch (_) {
 
-    tbody.innerHTML = `
-
-      <tr>
-
-        <td colspan="7">
-
-          No members found.
-
-        </td>
-
-      </tr>
-
-    `;
-
-    return;
+    // Keep original error.
 
   }
 
 
-  tbody.innerHTML =
-    filtered
-      .map(
-        member => {
-
-          const loginStatus =
-            member.auth_user_id
-              ? "ACTIVE LOGIN"
-              : "NOT ACTIVATED";
-
-
-          const statusClass =
-            member.status === "active"
-              ? "status-active"
-              : "status-inactive";
-
-
-          return `
-
-            <tr>
-
-              <td>
-
-                <strong>
-                  ${escapeHtml(
-                    member.member_number ||
-                    "—"
-                  )}
-                </strong>
-
-              </td>
-
-
-              <td>
-
-                <strong>
-                  ${escapeHtml(
-                    member.name
-                  )}
-                </strong>
-
-              </td>
-
-
-              <td>
-
-                ${escapeHtml(
-                  member.phone ||
-                  "—"
-                )}
-
-              </td>
-
-
-              <td>
-
-                ${escapeHtml(
-                  member.email ||
-                  "—"
-                )}
-
-              </td>
-
-
-              <td>
-
-                <span class="role-badge">
-
-                  ${escapeHtml(
-                    member.role ||
-                    "member"
-                  )}
-
-                </span>
-
-              </td>
-
-
-              <td>
-
-                <span
-                  class="status-badge ${statusClass}"
-                >
-
-                  ${escapeHtml(
-                    String(
-                      member.status ||
-                      "active"
-                    ).toUpperCase()
-                  )}
-
-                </span>
-
-              </td>
-
-
-              <td>
-
-                <span
-                  class="status-badge ${
-                    member.auth_user_id
-                      ? "status-active"
-                      : "status-inactive"
-                  }"
-                >
-
-                  ${loginStatus}
-
-                </span>
-
-              </td>
-
-            </tr>
-
-          `;
-
-        }
-      )
-      .join("");
+  throw new Error(
+    message
+  );
 
 }
 
 
-/* =====================================================
-   LOGOUT
-===================================================== */
+if (
+  data?.error
+) {
 
-async function logout() {
-
-  await supabase.auth.signOut();
-
-  window.location.href =
-    "login.html";
+  throw new Error(
+    data.error
+  );
 
 }
 
 
-/* =====================================================
-   ESCAPE HTML
-===================================================== */
+alert(
+  `Login invitation sent to ${member.email}.`
+);
 
-function escapeHtml(value) {
 
-  return String(
-    value ?? ""
-  )
+await loadMembers();
+```
 
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
+} catch (error) {
 
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
+```
+console.error(
+  "Invite member error:",
+  error
+);
 
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
 
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
+showError(
+  error
+);
+```
 
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
+} finally {
+
+```
+disableInviteButtons(
+  false
+);
+```
 
 }
 
+}
 
 /* =====================================================
-   ERROR
+DISABLE BUTTONS
 ===================================================== */
 
-function showError(message) {
+function disableInviteButtons(
+disabled
+) {
 
-  const box =
-    $("error");
+document
+.querySelectorAll(
+"[data-invite-member]"
+)
+.forEach(
+button => {
 
-
-  if (!box) {
-
-    alert(message);
-
-    return;
+```
+    button.disabled =
+      disabled;
 
   }
-
-
-  box.textContent =
-    message;
-
-  box.style.display =
-    "block";
-
-
-  $("success")
-    .style.display =
-    "none";
+);
+```
 
 }
 
-
 /* =====================================================
-   SUCCESS
+STATUS
 ===================================================== */
 
-function showSuccess(message) {
+function setStatus(
+message
+) {
 
-  const box =
-    $("success");
+const element =
+$("status");
 
+if (element) {
 
-  if (!box) {
-
-    alert(message);
-
-    return;
-
-  }
-
-
-  box.textContent =
-    message;
-
-  box.style.display =
-    "block";
-
-
-  $("error")
-    .style.display =
-    "none";
+```
+element.textContent =
+  message;
+```
 
 }
 
+}
 
 /* =====================================================
-   CLEAR MESSAGES
+ERROR
 ===================================================== */
 
-function clearMessages() {
+function clearError() {
 
-  $("error")
-    .style.display =
-    "none";
+const element =
+$("error");
 
-  $("success")
-    .style.display =
-    "none";
+if (!element) {
+
+```
+return;
+```
 
 }
 
+element.hidden =
+true;
+
+element.textContent =
+"";
+
+}
+
+function showError(
+error
+) {
+
+console.error(
+error
+);
+
+const message =
+error?.message ||
+"Unable to load members.";
+
+const element =
+$("error");
+
+if (element) {
+
+```
+element.hidden =
+  false;
+
+element.textContent =
+  message;
+```
+
+}
+
+setStatus(
+"Unable to complete the request."
+);
+
+}
 
 /* =====================================================
-   START
+ESCAPE HTML
+===================================================== */
+
+function escapeHtml(
+value
+) {
+
+return String(
+value ?? ""
+)
+
+```
+.replaceAll(
+  "&",
+  "&amp;"
+)
+
+.replaceAll(
+  "<",
+  "&lt;"
+)
+
+.replaceAll(
+  ">",
+  "&gt;"
+)
+
+.replaceAll(
+  '"',
+  "&quot;"
+)
+
+.replaceAll(
+  "'",
+  "&#039;"
+);
+```
+
+}
+
+/* =====================================================
+START
 ===================================================== */
 
 init();
-```
