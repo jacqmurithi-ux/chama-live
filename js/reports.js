@@ -1,6 +1,7 @@
 import { supabase } from "./supabase.js";
 import { getCurrentGroupId } from "./app.js";
 
+
 /* =====================================================
    ELEMENTS
 ===================================================== */
@@ -36,6 +37,9 @@ const errorEl =
   document.querySelector("[data-error]") ||
   document.getElementById("error");
 
+const logoutButton =
+  document.getElementById("logout");
+
 
 /* =====================================================
    MONEY
@@ -66,9 +70,13 @@ function escapeHtml(value) {
   return String(value ?? "")
 
     .replaceAll("&", "&amp;")
+
     .replaceAll("<", "&lt;")
+
     .replaceAll(">", "&gt;")
+
     .replaceAll('"', "&quot;")
+
     .replaceAll("'", "&#039;");
 
 }
@@ -85,9 +93,11 @@ function showError(error) {
     error
   );
 
+
   const message =
     error?.message ||
     String(error);
+
 
   if (errorEl) {
 
@@ -112,6 +122,7 @@ function clearError() {
     return;
   }
 
+
   errorEl.textContent =
     "";
 
@@ -122,7 +133,7 @@ function clearError() {
 
 
 /* =====================================================
-   LOAD REPORT
+   LOAD REPORTS
 ===================================================== */
 
 async function loadReports() {
@@ -131,7 +142,7 @@ async function loadReports() {
 
 
   /* ===================================================
-     GROUP
+     GET CURRENT GROUP
   =================================================== */
 
   const groupId =
@@ -148,45 +159,11 @@ async function loadReports() {
 
 
   /* ===================================================
-     LOAD ALL DATA
+     LOAD MEMBERS
   =================================================== */
 
-  const [
-
-    groupResult,
-
-    membersResult,
-
-    contributionsResult,
-
-    expensesResult,
-
-    meetingsResult
-
-  ] = await Promise.all([
-
-
-    /* GROUP */
-
-    supabase
-
-      .from("groups")
-
-      .select(
-        "id,name,opening_balance"
-      )
-
-      .eq(
-        "id",
-        groupId
-      )
-
-      .maybeSingle(),
-
-
-    /* MEMBERS */
-
-    supabase
+  const membersResult =
+    await supabase
 
       .from("members")
 
@@ -197,24 +174,44 @@ async function loadReports() {
       .eq(
         "group_id",
         groupId
-      ),
+      );
 
 
-    /* CONTRIBUTIONS */
+  if (membersResult.error) {
 
-    supabase
+    throw membersResult.error;
+
+  }
+
+
+  const members =
+    membersResult.data || [];
+
+
+  /* ===================================================
+     LOAD CONTRIBUTIONS
+
+     IMPORTANT:
+     The database column is:
+
+     contribution_date
+
+     NOT:
+
+     date
+  =================================================== */
+
+  const contributionsResult =
+    await supabase
 
       .from("contributions")
 
       .select(`
         id,
+        contribution_date,
         amount,
-        contribution_type,
-        month,
         payment_method,
         reference,
-        contribution_date,
-        created_at,
         member_id,
         members (
           name
@@ -231,12 +228,31 @@ async function loadReports() {
         {
           ascending: false
         }
-      ),
+      );
 
 
-    /* EXPENSES */
+  if (contributionsResult.error) {
 
-    supabase
+    throw contributionsResult.error;
+
+  }
+
+
+  const contributions =
+    contributionsResult.data || [];
+
+
+  /* ===================================================
+     LOAD EXPENSES
+
+     Actual database columns:
+
+     date
+     approval_status
+  =================================================== */
+
+  const expensesResult =
+    await supabase
 
       .from("expenses")
 
@@ -259,12 +275,26 @@ async function loadReports() {
         {
           ascending: false
         }
-      ),
+      );
 
 
-    /* MEETINGS */
+  if (expensesResult.error) {
 
-    supabase
+    throw expensesResult.error;
+
+  }
+
+
+  const expenses =
+    expensesResult.data || [];
+
+
+  /* ===================================================
+     LOAD MEETINGS
+  =================================================== */
+
+  const meetingsResult =
+    await supabase
 
       .from("meetings")
 
@@ -286,54 +316,32 @@ async function loadReports() {
         {
           ascending: false
         }
-      )
+      );
 
-  ]);
-
-
-  /* ===================================================
-     CHECK ERRORS
-  =================================================== */
-
-  if (groupResult.error) {
-    throw groupResult.error;
-  }
-
-  if (membersResult.error) {
-    throw membersResult.error;
-  }
-
-  if (contributionsResult.error) {
-    throw contributionsResult.error;
-  }
-
-  if (expensesResult.error) {
-    throw expensesResult.error;
-  }
 
   if (meetingsResult.error) {
+
     throw meetingsResult.error;
+
   }
 
-
-  /* ===================================================
-     DATA
-  =================================================== */
-
-  const group =
-    groupResult.data;
-
-  const members =
-    membersResult.data || [];
-
-  const contributions =
-    contributionsResult.data || [];
-
-  const expenses =
-    expensesResult.data || [];
 
   const meetings =
     meetingsResult.data || [];
+
+
+  /* ===================================================
+     LOAD GROUP
+
+     We deliberately do NOT request
+     opening_balance because your
+     known groups schema may not contain it.
+
+     Opening balance therefore defaults
+     to KSh 0.
+  =================================================== */
+
+  const openingBalance = 0;
 
 
   /* ===================================================
@@ -342,6 +350,7 @@ async function loadReports() {
 
   const totalMembers =
     members.length;
+
 
   const activeMembers =
     members.filter(
@@ -373,7 +382,7 @@ async function loadReports() {
 
 
   /* ===================================================
-     EXPENSE TOTALS
+     APPROVED EXPENSES
   =================================================== */
 
   const approvedExpenses =
@@ -381,16 +390,8 @@ async function loadReports() {
       expense =>
         String(
           expense.approval_status || ""
-        ).toLowerCase() === "approved"
-    );
-
-
-  const pendingExpenses =
-    expenses.filter(
-      expense =>
-        String(
-          expense.approval_status || ""
-        ).toLowerCase() === "pending"
+        ).toLowerCase() ===
+        "approved"
     );
 
 
@@ -407,6 +408,20 @@ async function loadReports() {
 
       },
       0
+    );
+
+
+  /* ===================================================
+     PENDING EXPENSES
+  =================================================== */
+
+  const pendingExpenses =
+    expenses.filter(
+      expense =>
+        String(
+          expense.approval_status || ""
+        ).toLowerCase() ===
+        "pending"
     );
 
 
@@ -427,16 +442,6 @@ async function loadReports() {
 
 
   /* ===================================================
-     OPENING BALANCE
-  =================================================== */
-
-  const openingBalance =
-    Number(
-      group?.opening_balance || 0
-    );
-
-
-  /* ===================================================
      CURRENT BALANCE
   =================================================== */
 
@@ -447,7 +452,7 @@ async function loadReports() {
 
 
   /* ===================================================
-     TOP METRICS
+     UPDATE MEMBER METRICS
   =================================================== */
 
   if (membersEl) {
@@ -466,6 +471,10 @@ async function loadReports() {
   }
 
 
+  /* ===================================================
+     UPDATE CONTRIBUTIONS
+  =================================================== */
+
   if (contributionsEl) {
 
     contributionsEl.textContent =
@@ -475,6 +484,10 @@ async function loadReports() {
 
   }
 
+
+  /* ===================================================
+     UPDATE EXPENSES
+  =================================================== */
 
   if (expensesEl) {
 
@@ -613,7 +626,7 @@ function renderRecentContributions(
   table.innerHTML =
     recent
       .map(
-        contribution => {
+        function(contribution) {
 
           const memberName =
             contribution.members?.name ||
@@ -621,7 +634,6 @@ function renderRecentContributions(
 
 
           return `
-
             <tr>
 
               <td>
@@ -658,7 +670,6 @@ function renderRecentContributions(
               </td>
 
             </tr>
-
           `;
 
         }
@@ -712,10 +723,9 @@ function renderRecentExpenses(
   table.innerHTML =
     recent
       .map(
-        expense => {
+        function(expense) {
 
           return `
-
             <tr>
 
               <td>
@@ -753,7 +763,6 @@ function renderRecentExpenses(
               </td>
 
             </tr>
-
           `;
 
         }
@@ -774,21 +783,30 @@ function renderMeetingsSummary(
   const upcoming =
     meetings.filter(
       meeting =>
-        meeting.status === "upcoming"
+        String(
+          meeting.status || ""
+        ).toLowerCase() ===
+        "upcoming"
     ).length;
 
 
   const completed =
     meetings.filter(
       meeting =>
-        meeting.status === "completed"
+        String(
+          meeting.status || ""
+        ).toLowerCase() ===
+        "completed"
     ).length;
 
 
   const cancelled =
     meetings.filter(
       meeting =>
-        meeting.status === "cancelled"
+        String(
+          meeting.status || ""
+        ).toLowerCase() ===
+        "cancelled"
     ).length;
 
 
@@ -838,22 +856,26 @@ function renderMeetingsSummary(
    LOGOUT
 ===================================================== */
 
-const logout =
-  document.getElementById(
-    "logout"
-  );
+if (logoutButton) {
 
-
-if (logout) {
-
-  logout.addEventListener(
+  logoutButton.addEventListener(
     "click",
     async function() {
 
-      await supabase.auth.signOut();
+      try {
 
-      window.location.href =
-        "login.html";
+        await supabase.auth.signOut();
+
+        window.location.href =
+          "login.html";
+
+      }
+
+      catch(error) {
+
+        showError(error);
+
+      }
 
     }
   );
