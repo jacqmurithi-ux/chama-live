@@ -68,15 +68,10 @@ function money(amount) {
 function escapeHtml(value) {
 
   return String(value ?? "")
-
     .replaceAll("&", "&amp;")
-
     .replaceAll("<", "&lt;")
-
     .replaceAll(">", "&gt;")
-
     .replaceAll('"', "&quot;")
-
     .replaceAll("'", "&#039;");
 
 }
@@ -93,11 +88,9 @@ function showError(error) {
     error
   );
 
-
   const message =
     error?.message ||
     String(error);
-
 
   if (errorEl) {
 
@@ -122,12 +115,9 @@ function clearError() {
     return;
   }
 
+  errorEl.textContent = "";
 
-  errorEl.textContent =
-    "";
-
-  errorEl.hidden =
-    true;
+  errorEl.hidden = true;
 
 }
 
@@ -142,7 +132,7 @@ async function loadReports() {
 
 
   /* ===================================================
-     GET CURRENT GROUP
+     CURRENT GROUP
   =================================================== */
 
   const groupId =
@@ -159,18 +149,15 @@ async function loadReports() {
 
 
   /* ===================================================
-     LOAD MEMBERS
+     MEMBERS
   =================================================== */
 
   const membersResult =
     await supabase
-
       .from("members")
-
       .select(
         "id,name,status"
       )
-
       .eq(
         "group_id",
         groupId
@@ -178,9 +165,7 @@ async function loadReports() {
 
 
   if (membersResult.error) {
-
     throw membersResult.error;
-
   }
 
 
@@ -189,23 +174,16 @@ async function loadReports() {
 
 
   /* ===================================================
-     LOAD CONTRIBUTIONS
+     CONTRIBUTIONS
 
      IMPORTANT:
-     The database column is:
-
-     contribution_date
-
-     NOT:
-
-     date
+     USE contribution_date
+     NOT date
   =================================================== */
 
   const contributionsResult =
     await supabase
-
       .from("contributions")
-
       .select(`
         id,
         contribution_date,
@@ -217,12 +195,10 @@ async function loadReports() {
           name
         )
       `)
-
       .eq(
         "group_id",
         groupId
       )
-
       .order(
         "contribution_date",
         {
@@ -232,9 +208,7 @@ async function loadReports() {
 
 
   if (contributionsResult.error) {
-
     throw contributionsResult.error;
-
   }
 
 
@@ -243,9 +217,9 @@ async function loadReports() {
 
 
   /* ===================================================
-     LOAD EXPENSES
+     EXPENSES
 
-     Actual database columns:
+     ACTUAL DATABASE COLUMNS:
 
      date
      approval_status
@@ -253,9 +227,7 @@ async function loadReports() {
 
   const expensesResult =
     await supabase
-
       .from("expenses")
-
       .select(`
         id,
         date,
@@ -264,12 +236,10 @@ async function loadReports() {
         amount,
         approval_status
       `)
-
       .eq(
         "group_id",
         groupId
       )
-
       .order(
         "date",
         {
@@ -279,9 +249,7 @@ async function loadReports() {
 
 
   if (expensesResult.error) {
-
     throw expensesResult.error;
-
   }
 
 
@@ -290,14 +258,12 @@ async function loadReports() {
 
 
   /* ===================================================
-     LOAD MEETINGS
+     MEETINGS
   =================================================== */
 
   const meetingsResult =
     await supabase
-
       .from("meetings")
-
       .select(`
         id,
         title,
@@ -305,12 +271,10 @@ async function loadReports() {
         venue,
         status
       `)
-
       .eq(
         "group_id",
         groupId
       )
-
       .order(
         "date",
         {
@@ -320,9 +284,7 @@ async function loadReports() {
 
 
   if (meetingsResult.error) {
-
     throw meetingsResult.error;
-
   }
 
 
@@ -331,14 +293,7 @@ async function loadReports() {
 
 
   /* ===================================================
-     LOAD GROUP
-
-     We deliberately do NOT request
-     opening_balance because your
-     known groups schema may not contain it.
-
-     Opening balance therefore defaults
-     to KSh 0.
+     OPENING BALANCE
   =================================================== */
 
   const openingBalance = 0;
@@ -362,12 +317,15 @@ async function loadReports() {
 
 
   /* ===================================================
-     CONTRIBUTION TOTAL
+     CONTRIBUTIONS TOTAL
   =================================================== */
 
   const contributionTotal =
     contributions.reduce(
-      function(total, contribution) {
+      (
+        total,
+        contribution
+      ) => {
 
         return (
           total +
@@ -390,14 +348,16 @@ async function loadReports() {
       expense =>
         String(
           expense.approval_status || ""
-        ).toLowerCase() ===
-        "approved"
+        ).toLowerCase() === "approved"
     );
 
 
   const approvedExpenseTotal =
     approvedExpenses.reduce(
-      function(total, expense) {
+      (
+        total,
+        expense
+      ) => {
 
         return (
           total +
@@ -420,14 +380,16 @@ async function loadReports() {
       expense =>
         String(
           expense.approval_status || ""
-        ).toLowerCase() ===
-        "pending"
+        ).toLowerCase() === "pending"
     );
 
 
   const pendingExpenseTotal =
     pendingExpenses.reduce(
-      function(total, expense) {
+      (
+        total,
+        expense
+      ) => {
 
         return (
           total +
@@ -452,7 +414,7 @@ async function loadReports() {
 
 
   /* ===================================================
-     UPDATE MEMBER METRICS
+     UPDATE MEMBERS
   =================================================== */
 
   if (membersEl) {
@@ -554,26 +516,16 @@ async function loadReports() {
 
 
   /* ===================================================
-     RECENT CONTRIBUTIONS
+     TABLES
   =================================================== */
 
   renderRecentContributions(
     contributions
   );
 
-
-  /* ===================================================
-     RECENT EXPENSES
-  =================================================== */
-
   renderRecentExpenses(
     expenses
   );
-
-
-  /* ===================================================
-     MEETINGS
-  =================================================== */
 
   renderMeetingsSummary(
     meetings
@@ -626,7 +578,7 @@ function renderRecentContributions(
   table.innerHTML =
     recent
       .map(
-        function(contribution) {
+        contribution => {
 
           const memberName =
             contribution.members?.name ||
@@ -723,7 +675,7 @@ function renderRecentExpenses(
   table.innerHTML =
     recent
       .map(
-        function(expense) {
+        expense => {
 
           return `
             <tr>
@@ -785,8 +737,7 @@ function renderMeetingsSummary(
       meeting =>
         String(
           meeting.status || ""
-        ).toLowerCase() ===
-        "upcoming"
+        ).toLowerCase() === "upcoming"
     ).length;
 
 
@@ -795,8 +746,7 @@ function renderMeetingsSummary(
       meeting =>
         String(
           meeting.status || ""
-        ).toLowerCase() ===
-        "completed"
+        ).toLowerCase() === "completed"
     ).length;
 
 
@@ -805,8 +755,7 @@ function renderMeetingsSummary(
       meeting =>
         String(
           meeting.status || ""
-        ).toLowerCase() ===
-        "cancelled"
+        ).toLowerCase() === "cancelled"
     ).length;
 
 
@@ -827,26 +776,20 @@ function renderMeetingsSummary(
 
 
   if (upcomingEl) {
-
     upcomingEl.textContent =
       upcoming;
-
   }
 
 
   if (completedEl) {
-
     completedEl.textContent =
       completed;
-
   }
 
 
   if (cancelledEl) {
-
     cancelledEl.textContent =
       cancelled;
-
   }
 
 }
@@ -860,7 +803,7 @@ if (logoutButton) {
 
   logoutButton.addEventListener(
     "click",
-    async function() {
+    async () => {
 
       try {
 
@@ -873,7 +816,9 @@ if (logoutButton) {
 
       catch(error) {
 
-        showError(error);
+        showError(
+          error
+        );
 
       }
 
