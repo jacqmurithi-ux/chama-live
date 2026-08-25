@@ -1,28 +1,18 @@
 
 import { supabase } from "./supabase.js";
 
-
 /* =======================================================
    ELEMENTS
 ======================================================= */
 
-const statusEl =
-  document.getElementById("status");
+const statusEl = document.getElementById("status");
+const errorEl = document.getElementById("error");
 
-const errorEl =
-  document.getElementById("error");
+const form = document.getElementById("contributionForm");
 
-const form =
-  document.getElementById("contributionForm");
-
-const memberSelect =
-  document.getElementById("member");
-
-const amountInput =
-  document.getElementById("amount");
-
-const dateInput =
-  document.getElementById("contributionDate");
+const memberSelect = document.getElementById("member");
+const amountInput = document.getElementById("amount");
+const dateInput = document.getElementById("contributionDate");
 
 const typeSelect =
   document.getElementById("contributionType");
@@ -54,11 +44,8 @@ const contributionRows =
 ======================================================= */
 
 let groupId = null;
-
 let members = [];
-
 let contributions = [];
-
 let monthlyContribution = 0;
 
 
@@ -68,17 +55,32 @@ let monthlyContribution = 0;
 
 function money(value) {
 
-  return new Intl.NumberFormat(
-    "en-KE",
-    {
-      style: "currency",
-      currency: "KES",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2
-    }
-  ).format(
-    Number(value || 0)
-  );
+  return new Intl.NumberFormat("en-KE", {
+    style: "currency",
+    currency: "KES",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  }).format(Number(value || 0));
+
+}
+
+
+function todayString() {
+
+  const now = new Date();
+
+  const year =
+    now.getFullYear();
+
+  const month =
+    String(now.getMonth() + 1)
+      .padStart(2, "0");
+
+  const day =
+    String(now.getDate())
+      .padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
 
 }
 
@@ -89,25 +91,17 @@ function formatDate(value) {
     return "—";
   }
 
-  const date =
-    new Date(value);
+  const date = new Date(value);
 
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
+  if (Number.isNaN(date.getTime())) {
     return value;
   }
 
-  return date.toLocaleDateString(
-    "en-KE",
-    {
-      year: "numeric",
-      month: "short",
-      day: "numeric"
-    }
-  );
+  return date.toLocaleDateString("en-KE", {
+    year: "numeric",
+    month: "short",
+    day: "numeric"
+  });
 
 }
 
@@ -126,40 +120,10 @@ function escapeHtml(value) {
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
+    .replaceAll("'", "&#039;");
 
 }
 
-
-function todayString() {
-
-  const now =
-    new Date();
-
-  const year =
-    now.getFullYear();
-
-  const month =
-    String(
-      now.getMonth() + 1
-    ).padStart(2, "0");
-
-  const day =
-    String(
-      now.getDate()
-    ).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-
-}
-
-
-/* =======================================================
-   STATUS / ERROR
-======================================================= */
 
 function showError(error) {
 
@@ -183,7 +147,6 @@ function showError(error) {
 function clearError() {
 
   errorEl.hidden = true;
-
   errorEl.textContent = "";
 
 }
@@ -202,11 +165,9 @@ async function getGroupId() {
     "my_group_id"
   );
 
-
   if (error) {
     throw error;
   }
-
 
   if (!data) {
 
@@ -215,7 +176,6 @@ async function getGroupId() {
     );
 
   }
-
 
   return data;
 
@@ -233,41 +193,30 @@ async function loadGroup() {
     error
   } = await supabase
     .from("groups")
-    .select(
-      "monthly_contribution"
-    )
-    .eq(
-      "id",
-      groupId
-    )
+    .select(`
+      monthly_contribution
+    `)
+    .eq("id", groupId)
     .single();
-
 
   if (error) {
     throw error;
   }
-
 
   monthlyContribution =
     Number(
       data?.monthly_contribution || 0
     );
 
-
   monthlyExpected.textContent =
-    money(
-      monthlyContribution
-    );
-
+    money(monthlyContribution);
 
   /*
-    Automatically suggest the group's
-    monthly contribution.
+    Automatically fill the group's
+    configured monthly contribution.
   */
 
-  if (
-    monthlyContribution > 0
-  ) {
+  if (monthlyContribution > 0) {
 
     amountInput.value =
       monthlyContribution;
@@ -293,32 +242,22 @@ async function loadMembers() {
       name,
       status
     `)
-    .eq(
-      "group_id",
-      groupId
-    )
-    .order(
-      "name",
-      {
-        ascending: true
-      }
-    );
-
+    .eq("group_id", groupId)
+    .order("name", {
+      ascending: true
+    });
 
   if (error) {
     throw error;
   }
-
 
   members =
     (data || []).filter(
       member =>
         String(
           member.status || ""
-        ).toLowerCase() ===
-        "active"
+        ).toLowerCase() === "active"
     );
-
 
   memberSelect.innerHTML = `
     <option value="">
@@ -326,42 +265,31 @@ async function loadMembers() {
     </option>
   `;
 
+  members.forEach(member => {
 
-  members.forEach(
-    member => {
+    const option =
+      document.createElement("option");
 
-      const option =
-        document.createElement(
-          "option"
-        );
+    option.value =
+      member.id;
 
-      option.value =
-        member.id;
+    option.textContent =
+      member.name;
 
-      option.textContent =
-        member.name;
+    memberSelect.appendChild(option);
 
-      memberSelect.appendChild(
-        option
-      );
-
-    }
-  );
+  });
 
 }
 
 
 /* =======================================================
    LOAD CONTRIBUTIONS
+
+   EXACT DATABASE COLUMNS
 ======================================================= */
 
 async function loadContributions() {
-
-  /*
-    IMPORTANT:
-    These are the actual column names
-    from your live contributions table.
-  */
 
   const {
     data,
@@ -370,31 +298,31 @@ async function loadContributions() {
     .from("contributions")
     .select(`
       id,
-      groupid,
-      memberid,
+      group_id,
+      member_id,
       amount,
-      contribution,
+      contribution_type,
       month,
-      paymentmethod,
+      payment_method,
+      reference,
+      recorded_by,
+      created_at,
+      goal_id,
       contribution_date,
+      notes,
       mpesa_reference
     `)
-    .eq(
-      "groupid",
-      groupId
-    )
-    .order(
-      "contribution_date",
-      {
-        ascending: false
-      }
-    );
-
+    .eq("group_id", groupId)
+    .order("contribution_date", {
+      ascending: false
+    })
+    .order("created_at", {
+      ascending: false
+    });
 
   if (error) {
     throw error;
   }
-
 
   contributions =
     data || [];
@@ -406,17 +334,13 @@ async function loadContributions() {
    MEMBER NAME
 ======================================================= */
 
-function getMemberName(
-  memberId
-) {
+function getMemberName(memberId) {
 
   const member =
     members.find(
       item =>
-        item.id ===
-        memberId
+        item.id === memberId
     );
-
 
   return (
     member?.name ||
@@ -432,9 +356,7 @@ function getMemberName(
 
 function renderLedger() {
 
-  if (
-    !contributions.length
-  ) {
+  if (!contributions.length) {
 
     contributionRows.innerHTML = `
       <tr>
@@ -445,106 +367,97 @@ function renderLedger() {
     `;
 
     return;
-
   }
-
 
   contributionRows.innerHTML =
     contributions
       .slice(0, 50)
-      .map(
-        item => {
+      .map(item => {
 
-          /*
-            Existing records use:
-            contribution = monthly
-            paymentmethod = M-Pesa
-          */
+        /*
+          Use contribution_date.
+          Fall back to created_at.
+          Finally fall back to month.
+        */
 
-          const type =
-            item.contribution ||
-            "—";
+        const date =
+          item.contribution_date ||
+          item.created_at ||
+          (
+            item.month
+              ? `${item.month}-01`
+              : null
+          );
 
-          const method =
-            item.paymentmethod ||
-            "—";
+        /*
+          Your database has both reference
+          and mpesa_reference.
 
-          const reference =
-            item.mpesa_reference ||
-            "—";
+          For M-Pesa, prefer mpesa_reference.
+          Otherwise show reference.
+        */
 
+        const reference =
+          item.mpesa_reference ||
+          item.reference ||
+          "—";
 
-          /*
-            Older records may not have
-            contribution_date yet.
+        return `
+          <tr>
 
-            Fall back to month.
-          */
+            <td>
+              ${escapeHtml(
+                formatDate(date)
+              )}
+            </td>
 
-          const date =
-            item.contribution_date ||
-            (
-              item.month
-                ? `${item.month}-01`
-                : null
-            );
+            <td>
+              ${escapeHtml(
+                getMemberName(
+                  item.member_id
+                )
+              )}
+            </td>
 
-
-          return `
-            <tr>
-
-              <td>
+            <td>
+              <strong>
                 ${escapeHtml(
-                  formatDate(date)
+                  money(item.amount)
                 )}
-              </td>
+              </strong>
+            </td>
 
-              <td>
-                ${escapeHtml(
-                  getMemberName(
-                    item.memberid
-                  )
-                )}
-              </td>
+            <td>
+              ${escapeHtml(
+                item.contribution_type ||
+                "—"
+              )}
+            </td>
 
-              <td>
-                <strong>
-                  ${escapeHtml(
-                    money(item.amount)
-                  )}
-                </strong>
-              </td>
+            <td>
+              ${escapeHtml(
+                item.payment_method ||
+                "—"
+              )}
+            </td>
 
-              <td>
-                ${escapeHtml(
-                  type
-                )}
-              </td>
+            <td>
+              ${escapeHtml(
+                reference
+              )}
+            </td>
 
-              <td>
-                ${escapeHtml(
-                  method
-                )}
-              </td>
+          </tr>
+        `;
 
-              <td>
-                ${escapeHtml(
-                  reference
-                )}
-              </td>
-
-            </tr>
-          `;
-
-        }
-      )
+      })
       .join("");
 
 }
 
 
 /* =======================================================
-   MONTHLY CONTRIBUTION STATUS
+   MONTHLY MEMBER STATUS
 ======================================================= */
 
 function renderMemberStatus() {
@@ -560,20 +473,16 @@ function renderMemberStatus() {
     `;
 
     return;
-
   }
-
 
   /*
     Current month.
 
     Example:
-
     2026-08
   */
 
-  const now =
-    new Date();
+  const now = new Date();
 
   const currentMonth =
     `${now.getFullYear()}-${String(
@@ -583,184 +492,144 @@ function renderMemberStatus() {
 
   memberStatusRows.innerHTML =
     members
-      .map(
-        member => {
+      .map(member => {
 
-          /*
-            Find all monthly contributions
-            for this member in the current
-            month.
-          */
+        /*
+          Add together all monthly payments
+          made by this member this month.
 
-          const paid =
-            contributions
-              .filter(
-                item => {
+          This allows partial payments.
 
-                  if (
-                    item.memberid !==
-                    member.id
-                  ) {
-                    return false;
-                  }
+          Example:
 
+          Payment 1 = 100
+          Payment 2 = 100
 
-                  /*
-                    Contribution type.
-                  */
+          Paid = 200
+          Outstanding = 0
+        */
 
-                  const type =
-                    String(
-                      item.contribution ||
-                      ""
-                    ).toLowerCase();
+        const paid =
+          contributions
+            .filter(item => {
 
+              if (
+                item.member_id !==
+                member.id
+              ) {
+                return false;
+              }
 
-                  if (
-                    type !==
-                    "monthly"
-                  ) {
-                    return false;
-                  }
+              const type =
+                String(
+                  item.contribution_type ||
+                  ""
+                ).toLowerCase();
 
+              if (
+                type !== "monthly"
+              ) {
+                return false;
+              }
 
-                  /*
-                    Primary month field.
-                  */
-
-                  if (
-                    item.month
-                  ) {
-
-                    return String(
-                      item.month
-                    ) ===
-                    currentMonth;
-
-                  }
-
-
-                  /*
-                    Fallback to date.
-                  */
-
-                  if (
-                    item.contribution_date
-                  ) {
-
-                    return String(
-                      item.contribution_date
-                    ).startsWith(
-                      currentMonth
-                    );
-
-                  }
-
-
-                  return false;
-
-                }
-              )
-              .reduce(
-                (
-                  total,
-                  item
-                ) =>
-                  total +
-                  Number(
-                    item.amount || 0
-                  ),
-                0
+              return (
+                String(
+                  item.month || ""
+                ) === currentMonth
               );
 
-
-          /*
-            Expected monthly amount
-            comes from groups.
-          */
-
-          const expected =
-            monthlyContribution;
-
-
-          const outstanding =
-            Math.max(
-              expected -
-              paid,
+            })
+            .reduce(
+              (
+                total,
+                item
+              ) =>
+                total +
+                Number(
+                  item.amount || 0
+                ),
               0
             );
 
 
-          let status =
-            "OUTSTANDING";
+        const expected =
+          monthlyContribution;
 
 
-          if (
-            expected <= 0
-          ) {
-
-            status =
-              "NOT SET";
-
-          }
-          else if (
-            paid >= expected
-          ) {
-
-            status =
-              "PAID";
-
-          }
-          else if (
-            paid > 0
-          ) {
-
-            status =
-              "PARTIAL";
-
-          }
+        const outstanding =
+          Math.max(
+            expected - paid,
+            0
+          );
 
 
-          return `
-            <tr>
+        let status =
+          "OUTSTANDING";
 
-              <td>
-                ${escapeHtml(
-                  member.name
-                )}
-              </td>
 
-              <td>
-                ${escapeHtml(
-                  money(expected)
-                )}
-              </td>
+        if (expected <= 0) {
 
-              <td>
-                ${escapeHtml(
-                  money(paid)
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  money(outstanding)
-                )}
-              </td>
-
-              <td>
-                <strong>
-                  ${escapeHtml(
-                    status
-                  )}
-                </strong>
-              </td>
-
-            </tr>
-          `;
+          status =
+            "NOT SET";
 
         }
-      )
+        else if (
+          paid >= expected
+        ) {
+
+          status =
+            "PAID";
+
+        }
+        else if (
+          paid > 0
+        ) {
+
+          status =
+            "PARTIAL";
+
+        }
+
+
+        return `
+          <tr>
+
+            <td>
+              ${escapeHtml(
+                member.name
+              )}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                money(expected)
+              )}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                money(paid)
+              )}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                money(outstanding)
+              )}
+            </td>
+
+            <td>
+              <strong>
+                ${escapeHtml(
+                  status
+                )}
+              </strong>
+            </td>
+
+          </tr>
+        `;
+
+      })
       .join("");
 
 }
@@ -774,7 +643,6 @@ function updatePaymentMethod() {
 
   const method =
     methodSelect.value;
-
 
   if (
     method === "M-Pesa"
@@ -807,9 +675,7 @@ function updatePaymentMethod() {
    RECORD CONTRIBUTION
 ======================================================= */
 
-async function recordContribution(
-  event
-) {
+async function recordContribution(event) {
 
   event.preventDefault();
 
@@ -849,7 +715,6 @@ async function recordContribution(
     errorEl.hidden = false;
 
     return;
-
   }
 
 
@@ -859,18 +724,15 @@ async function recordContribution(
   ) {
 
     errorEl.textContent =
-      "Please enter a valid contribution amount.";
+      "Please enter a valid amount.";
 
     errorEl.hidden = false;
 
     return;
-
   }
 
 
-  if (
-    !contributionDate
-  ) {
+  if (!contributionDate) {
 
     errorEl.textContent =
       "Please select the contribution date.";
@@ -878,13 +740,10 @@ async function recordContribution(
     errorEl.hidden = false;
 
     return;
-
   }
 
 
-  if (
-    !contributionType
-  ) {
+  if (!contributionType) {
 
     errorEl.textContent =
       "Please select the contribution type.";
@@ -892,13 +751,10 @@ async function recordContribution(
     errorEl.hidden = false;
 
     return;
-
   }
 
 
-  if (
-    !paymentMethod
-  ) {
+  if (!paymentMethod) {
 
     errorEl.textContent =
       "Please select the payment method.";
@@ -906,13 +762,11 @@ async function recordContribution(
     errorEl.hidden = false;
 
     return;
-
   }
 
 
   if (
-    paymentMethod ===
-      "M-Pesa" &&
+    paymentMethod === "M-Pesa" &&
     !reference
   ) {
 
@@ -922,12 +776,19 @@ async function recordContribution(
     errorEl.hidden = false;
 
     return;
-
   }
 
 
   /* -----------------------------------------------------
-     PREVENT DUPLICATE MONTHLY PAYMENT
+     MONTH
+  ----------------------------------------------------- */
+
+  const month =
+    contributionDate.slice(0, 7);
+
+
+  /* -----------------------------------------------------
+     WARN ABOUT EXISTING MONTHLY PAYMENT
   ----------------------------------------------------- */
 
   if (
@@ -935,54 +796,36 @@ async function recordContribution(
     "monthly"
   ) {
 
-    const selectedMonth =
-      contributionDate
-        .slice(0, 7);
+    const existing =
+      contributions.some(item => {
+
+        return (
+          item.member_id ===
+            memberId &&
+
+          String(
+            item.contribution_type ||
+            ""
+          ).toLowerCase() ===
+            "monthly" &&
+
+          String(
+            item.month || ""
+          ) ===
+            month
+        );
+
+      });
 
 
-    const alreadyPaid =
-      contributions.some(
-        item => {
-
-          return (
-            item.memberid ===
-              memberId &&
-
-            String(
-              item.contribution ||
-              ""
-            ).toLowerCase() ===
-              "monthly" &&
-
-            String(
-              item.month || ""
-            ) ===
-              selectedMonth
-          );
-
-        }
-      );
-
-
-    /*
-      We don't completely block it because
-      a member may make a partial payment
-      followed by another payment.
-
-      So only display a warning.
-    */
-
-    if (
-      alreadyPaid
-    ) {
+    if (existing) {
 
       const proceed =
         window.confirm(
           "This member already has a monthly contribution for " +
-          selectedMonth +
-          ". Continue and record another payment?"
+          month +
+          ". Continue with another payment?"
         );
-
 
       if (!proceed) {
         return;
@@ -994,7 +837,7 @@ async function recordContribution(
 
 
   /* -----------------------------------------------------
-     BUTTON
+     SAVE
   ----------------------------------------------------- */
 
   saveButton.disabled =
@@ -1010,58 +853,58 @@ async function recordContribution(
   try {
 
     /*
-      Month is stored as:
-
-      2026-08
-
-      matching your existing database.
-    */
-
-    const month =
-      contributionDate
-        .slice(0, 7);
-
-
-    /*
-      EXACT EXISTING COLUMN NAMES
+      EXACT MATCH TO YOUR DATABASE.
     */
 
     const contributionData = {
 
-      groupid:
+      group_id:
         groupId,
 
-      memberid:
+      member_id:
         memberId,
 
       amount:
         amount,
 
-      contribution:
+      contribution_type:
         contributionType,
 
       month:
         month,
 
-      paymentmethod:
-        paymentMethod
+      payment_method:
+        paymentMethod,
+
+      contribution_date:
+        contributionDate,
+
+      mpesa_reference:
+        paymentMethod === "M-Pesa"
+          ? reference
+          : null,
+
+      /*
+        Keep reference synchronized
+        for compatibility with your
+        existing reference field.
+      */
+
+      reference:
+        reference || null
 
     };
 
 
     /*
-      Add the new fields only if
-      they exist in the database.
+      recorded_by is intentionally not
+      supplied here because we don't want
+      to guess the authenticated user's ID.
+
+      If your RLS/database trigger handles
+      it automatically, it will continue
+      doing so.
     */
-
-    contributionData.contribution_date =
-      contributionDate;
-
-    contributionData.mpesa_reference =
-      paymentMethod ===
-        "M-Pesa"
-        ? reference
-        : null;
 
 
     const {
@@ -1079,7 +922,7 @@ async function recordContribution(
 
 
     /* ---------------------------------------------------
-       RELOAD DATA
+       RELOAD
     --------------------------------------------------- */
 
     await loadContributions();
@@ -1091,7 +934,7 @@ async function recordContribution(
 
 
     /* ---------------------------------------------------
-       RESET FORM
+       RESET
     --------------------------------------------------- */
 
     form.reset();
@@ -1158,7 +1001,7 @@ async function init() {
 
 
     /*
-      Get user's group.
+      1. Find user's group.
     */
 
     groupId =
@@ -1166,11 +1009,9 @@ async function init() {
 
 
     /*
-      Load:
-
-      1. Group settings
-      2. Members
-      3. Contributions
+      2. Load group settings.
+      3. Load members.
+      4. Load contributions.
     */
 
     await Promise.all([
@@ -1181,16 +1022,24 @@ async function init() {
 
 
     /*
-      Set default form values.
+      Default date.
     */
 
     dateInput.value =
       todayString();
 
 
+    /*
+      Default contribution type.
+    */
+
     typeSelect.value =
       "monthly";
 
+
+    /*
+      Default payment method.
+    */
 
     methodSelect.value =
       "M-Pesa";
@@ -1200,7 +1049,7 @@ async function init() {
 
 
     /*
-      Render.
+      Render everything.
     */
 
     renderLedger();
@@ -1210,7 +1059,6 @@ async function init() {
 
     statusEl.textContent =
       "Contributions loaded.";
-
 
   } catch (error) {
 
