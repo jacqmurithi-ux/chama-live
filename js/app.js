@@ -1,5 +1,6 @@
 import { supabase } from "./supabase.js";
 
+
 /* =====================================================
    GET CURRENT GROUP ID
 ===================================================== */
@@ -11,55 +12,47 @@ export async function getCurrentGroupId() {
     error: sessionError
   } = await supabase.auth.getSession();
 
+
   if (sessionError) {
     throw sessionError;
   }
 
-  if (!sessionData?.session?.user) {
+
+  if (!sessionData?.session) {
     throw new Error("You are not logged in.");
   }
 
-  const userId =
-    sessionData.session.user.id;
 
-
-  /* -----------------------------------------------
-     Find the member belonging to this login
-  ------------------------------------------------ */
+  /*
+   * Use the existing Supabase RPC.
+   *
+   * Database function:
+   * my_group_id()
+   *
+   * It returns the group_id for auth.uid().
+   */
 
   const {
-    data: members,
-    error: memberError
-  } = await supabase
-    .from("members")
-    .select("id, group_id, name")
-    .eq("user_id", userId)
-    .limit(1);
+    data,
+    error
+  } = await supabase.rpc(
+    "my_group_id"
+  );
 
-  if (memberError) {
-    throw memberError;
+
+  if (error) {
+    throw error;
   }
 
 
-  if (!members || members.length === 0) {
+  if (!data) {
     throw new Error(
-      "Your account is not linked to a member. Add your user ID to the member record."
+      "No group is linked to your account."
     );
   }
 
 
-  const member =
-    members[0];
-
-
-  if (!member.group_id) {
-    throw new Error(
-      "Your member record has no group linked to it."
-    );
-  }
-
-
-  return member.group_id;
+  return data;
 }
 
 
@@ -71,11 +64,13 @@ export function money(amount) {
 
   return (
     "KSh " +
-    Number(amount || 0)
-      .toLocaleString("en-KE", {
+    Number(amount || 0).toLocaleString(
+      "en-KE",
+      {
         minimumFractionDigits: 0,
         maximumFractionDigits: 2
-      })
+      }
+    )
   );
 
 }
@@ -85,14 +80,20 @@ export function money(amount) {
    SET TEXT
 ===================================================== */
 
-export function setText(selector, value) {
+export function setText(
+  selector,
+  value
+) {
 
   const element =
     document.querySelector(selector);
 
+
   if (element) {
+
     element.textContent =
       value ?? "—";
+
   }
 
 }
@@ -109,9 +110,11 @@ export function showError(error) {
     error
   );
 
+
   const message =
     error?.message ||
     String(error);
+
 
   const errorElement =
     document.querySelector(
@@ -120,6 +123,7 @@ export function showError(error) {
     document.querySelector(
       "#error"
     );
+
 
   if (errorElement) {
 
