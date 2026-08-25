@@ -38,7 +38,6 @@
 
 <div class="layout">
 
-
   <!-- SIDEBAR -->
 
   <aside class="sidebar">
@@ -150,7 +149,6 @@
     <!-- FINANCIAL SUMMARY -->
 
     <div class="grid grid-3">
-
 
       <div class="card">
 
@@ -462,6 +460,7 @@
         expenses are not deleted.
       </p>
 
+
       <div
         style="
           display:flex;
@@ -535,6 +534,7 @@
 
           </thead>
 
+
           <tbody id="memberRows">
 
             <tr>
@@ -553,22 +553,19 @@
 
     </section>
 
-
   </main>
 
 </div>
 
 
+<!-- IMPORTANT:
+     Do NOT import layout.js here.
+     Monthly Closing handles its own authentication.
+-->
+
 <script type="module">
-
-  import { boot } from "./js/layout.js";
-
-  await boot();
-
-  await import("./js/monthly-closing.js");
-
+  import "./js/monthly-closing.js";
 </script>
 
 </body>
-
 </html>
