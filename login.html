@@ -1,4 +1,3 @@
-```html
 <!doctype html>
 <html lang="en">
 
@@ -9,119 +8,36 @@
   <title>Login — CHAMA LIVE</title>
 
   <link rel="stylesheet" href="css/app.css">
-
-  <style>
-    body {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #f5f7fa;
-    }
-
-    .login-container {
-      width: 100%;
-      max-width: 430px;
-      padding: 20px;
-    }
-
-    .login-card {
-      background: white;
-      border-radius: 14px;
-      padding: 32px;
-      box-shadow: 0 8px 30px rgba(0,0,0,.08);
-    }
-
-    .login-brand {
-      text-align: center;
-      margin-bottom: 25px;
-    }
-
-    .login-brand h1 {
-      margin: 0;
-      font-size: 28px;
-    }
-
-    .login-brand span {
-      color: #2563eb;
-    }
-
-    .login-brand p {
-      margin-top: 8px;
-    }
-
-    .form-group {
-      margin-bottom: 18px;
-    }
-
-    .form-group label {
-      display: block;
-      margin-bottom: 7px;
-      font-weight: 600;
-    }
-
-    .form-group input {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 12px;
-      border: 1px solid #d1d5db;
-      border-radius: 8px;
-      font-size: 15px;
-    }
-
-    .login-button {
-      width: 100%;
-      margin-top: 5px;
-    }
-
-    .error-message {
-      background: #fee2e2;
-      color: #991b1b;
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 18px;
-      display: none;
-    }
-
-    .success-message {
-      background: #dcfce7;
-      color: #166534;
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 18px;
-      display: none;
-    }
-
-    .links {
-      text-align: center;
-      margin-top: 22px;
-    }
-
-    .links a {
-      text-decoration: none;
-    }
-
-    .loading {
-      opacity: .7;
-      pointer-events: none;
-    }
-  </style>
 </head>
 
 <body>
 
-<div class="login-container">
+<main
+  style="
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  "
+>
 
-  <div class="login-card">
+  <section
+    class="card"
+    style="
+      width:100%;
+      max-width:420px;
+    "
+  >
 
-    <div class="login-brand">
+    <div style="text-align:center;margin-bottom:25px;">
 
       <h1>
         CHAMA <span>LIVE</span>
       </h1>
 
       <p class="muted">
-        Group management made simple.
+        Sign in to your group account
       </p>
 
     </div>
@@ -129,22 +45,18 @@
 
     <div
       id="error"
-      class="error-message"
-    ></div>
-
-
-    <div
-      id="success"
-      class="success-message"
+      class="error"
+      hidden
+      style="margin-bottom:15px;"
     ></div>
 
 
     <form id="loginForm">
 
-      <div class="form-group">
+      <div style="margin-bottom:15px;">
 
         <label for="email">
-          Email
+          Email address
         </label>
 
         <input
@@ -152,14 +64,14 @@
           id="email"
           name="email"
           autocomplete="email"
-          placeholder="Enter your email"
           required
+          style="width:100%;"
         >
 
       </div>
 
 
-      <div class="form-group">
+      <div style="margin-bottom:20px;">
 
         <label for="password">
           Password
@@ -170,189 +82,116 @@
           id="password"
           name="password"
           autocomplete="current-password"
-          placeholder="Enter your password"
           required
+          style="width:100%;"
         >
 
       </div>
 
 
       <button
+        class="btn btn-primary"
         type="submit"
         id="loginButton"
-        class="btn btn-primary login-button"
+        style="width:100%;"
       >
-        Sign In
+        Sign in
       </button>
 
     </form>
 
 
-    <div class="links">
+    <div
+      id="status"
+      class="muted"
+      style="
+        text-align:center;
+        margin-top:15px;
+      "
+    ></div>
 
-      <p>
-        Don't have a group account?
-      </p>
 
-      <a href="create-group.html">
-        Create a Group Account
-      </a>
+    <hr style="margin:25px 0;">
 
-    </div>
 
-  </div>
+    <p
+      class="muted"
+      style="text-align:center;"
+    >
+      Don't have a group account?
+    </p>
 
-</div>
+
+    <a
+      href="create-group.html"
+      class="btn btn-secondary"
+      style="
+        display:block;
+        text-align:center;
+      "
+    >
+      Create Group Account
+    </a>
+
+  </section>
+
+</main>
 
 
 <script type="module">
 
-  import { supabase } from "./js/supabase.js";
+  import {
+    supabase
+  } from "./js/supabase.js";
+
+  import {
+    getMyMember,
+    getMyGroup,
+    clearAuthCache
+  } from "./js/auth.js";
+
 
   const form =
-    document.getElementById("loginForm");
+    document.getElementById(
+      "loginForm"
+    );
 
   const button =
-    document.getElementById("loginButton");
+    document.getElementById(
+      "loginButton"
+    );
 
-  const errorBox =
-    document.getElementById("error");
+  const errorElement =
+    document.getElementById(
+      "error"
+    );
 
-  const successBox =
-    document.getElementById("success");
-
-
-  function showError(message) {
-
-    errorBox.textContent = message;
-
-    errorBox.style.display = "block";
-
-    successBox.style.display = "none";
-
-  }
-
-
-  function showSuccess(message) {
-
-    successBox.textContent = message;
-
-    successBox.style.display = "block";
-
-    errorBox.style.display = "none";
-
-  }
-
-
-  function clearMessages() {
-
-    errorBox.style.display = "none";
-
-    successBox.style.display = "none";
-
-  }
-
-
-  async function redirectUser() {
-
-    /*
-     * Get the logged-in member.
-     */
-
-    const {
-      data: member,
-      error
-    } = await supabase.rpc(
-      "get_my_member"
+  const statusElement =
+    document.getElementById(
+      "status"
     );
 
 
-    if (error) {
+  function showError(
+    message
+  ) {
 
-      throw error;
+    errorElement.hidden =
+      false;
 
-    }
+    errorElement.textContent =
+      message;
 
-
-    if (!member) {
-
-      await supabase.auth.signOut();
-
-      throw new Error(
-        "Your account is not linked to a group. Please contact your group administrator."
-      );
-
-    }
+  }
 
 
-    /*
-     * Some RPC functions return
-     * one row as an array.
-     */
+  function clearError() {
 
-    const userMember =
-      Array.isArray(member)
-        ? member[0]
-        : member;
+    errorElement.hidden =
+      true;
 
-
-    if (!userMember) {
-
-      await supabase.auth.signOut();
-
-      throw new Error(
-        "No member profile was found for this account."
-      );
-
-    }
-
-
-    const role =
-      String(
-        userMember.role || "member"
-      ).toLowerCase();
-
-
-    /*
-     * Admin / chairperson
-     */
-
-    if (
-      role === "admin" ||
-      role === "chairperson"
-    ) {
-
-      window.location.href =
-        "dashboard.html";
-
-      return;
-
-    }
-
-
-    /*
-     * Treasurer / secretary
-     */
-
-    if (
-      role === "treasurer" ||
-      role === "secretary"
-    ) {
-
-      window.location.href =
-        "dashboard.html";
-
-      return;
-
-    }
-
-
-    /*
-     * Ordinary member
-     */
-
-    window.location.href =
-      "member-dashboard.html";
+    errorElement.textContent =
+      "";
 
   }
 
@@ -363,14 +202,16 @@
 
       event.preventDefault();
 
-      clearMessages();
+      clearError();
 
 
       const email =
         document
           .getElementById("email")
           .value
-          .trim();
+          .trim()
+          .toLowerCase();
+
 
       const password =
         document
@@ -378,61 +219,124 @@
           .value;
 
 
-      if (!email || !password) {
-
-        showError(
-          "Please enter your email and password."
-        );
-
-        return;
-
-      }
-
-
-      button.disabled = true;
-
-      button.classList.add("loading");
+      button.disabled =
+        true;
 
       button.textContent =
         "Signing in...";
 
 
+      statusElement.textContent =
+        "";
+
+
       try {
+
+        /*
+         * Sign in with Supabase Auth.
+         */
 
         const {
           data,
           error
-        } = await supabase.auth.signInWithPassword({
-
-          email,
-
-          password
-
-        });
+        } =
+          await supabase.auth.signInWithPassword({
+            email,
+            password
+          });
 
 
         if (error) {
-
           throw error;
-
         }
 
 
-        if (!data.session) {
+        if (!data?.session) {
 
           throw new Error(
-            "Login failed. No active session was created."
+            "Login succeeded but no session was created."
           );
 
         }
 
 
-        showSuccess(
-          "Login successful. Opening your dashboard..."
-        );
+        /*
+         * Clear cached auth information.
+         */
+
+        clearAuthCache();
 
 
-        await redirectUser();
+        statusElement.textContent =
+          "Checking your group account...";
+
+
+        /*
+         * Find the member record.
+         */
+
+        const member =
+          await getMyMember();
+
+
+        if (!member) {
+
+          await supabase.auth.signOut();
+
+          throw new Error(
+            "Your login is not linked to a group member record. Please contact your group administrator."
+          );
+
+        }
+
+
+        /*
+         * Check group.
+         */
+
+        const group =
+          await getMyGroup();
+
+
+        if (!group) {
+
+          await supabase.auth.signOut();
+
+          throw new Error(
+            "Your member account is not linked to a valid group."
+          );
+
+        }
+
+
+        /*
+         * Check member status.
+         */
+
+        if (
+          member.status &&
+          member.status !== "active"
+        ) {
+
+          await supabase.auth.signOut();
+
+          throw new Error(
+            "Your group membership is currently inactive. Please contact your administrator."
+          );
+
+        }
+
+
+        /*
+         * Successful login.
+         */
+
+        statusElement.textContent =
+          `Welcome ${member.name}. Redirecting...`;
+
+
+        window.location.href =
+          "dashboard.html";
 
 
       } catch (error) {
@@ -443,77 +347,27 @@
         );
 
 
-        let message =
+        showError(
           error?.message ||
-          "Unable to sign in.";
-
-
-        if (
-          message
-            .toLowerCase()
-            .includes("invalid login credentials")
-        ) {
-
-          message =
-            "Incorrect email or password.";
-
-        }
-
-
-        showError(message);
-
-
-        button.disabled = false;
-
-        button.classList.remove(
-          "loading"
+          "Unable to sign in."
         );
 
+
+        button.disabled =
+          false;
+
         button.textContent =
-          "Sign In";
+          "Sign in";
+
+        statusElement.textContent =
+          "";
 
       }
 
     }
   );
 
-
-  /*
-   * If already logged in,
-   * don't show the login page again.
-   */
-
-  async function checkExistingSession() {
-
-    const {
-      data
-    } = await supabase.auth.getSession();
-
-
-    if (
-      data &&
-      data.session
-    ) {
-
-      try {
-
-        await redirectUser();
-
-      } catch (error) {
-
-        console.error(error);
-
-      }
-
-    }
-
-  }
-
-
-  checkExistingSession();
-
 </script>
 
 </body>
 </html>
-```
