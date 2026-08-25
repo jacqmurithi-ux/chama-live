@@ -1,1 +1,629 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Create Group — CHAMA LIVE</title><link rel="stylesheet" href="css/app.css"></head><body><main class="auth"><section class="card auth-card"><h1>Create your group</h1><p class="muted">Start managing your chama digitally.</p><div class="form"><div class="field"><label for="name">Group name</label><input id="name" required></div><div class="field"><label for="monthly">Monthly contribution</label><input id="monthly" type="number" min="0" step="0.01"></div><div class="field"><label for="opening">Opening balance</label><input id="opening" type="number" min="0" step="0.01" value="0"></div><button class="btn btn-primary" id="create">Create group</button><div class="error" data-error hidden></div></div></section></main><script type="module">import {supabase} from './js/supabase.js';import {requireAuth,showError} from './js/app.js';await requireAuth();document.querySelector('#create').onclick=async()=>{try{const name=document.querySelector('#name').value.trim();if(!name)throw new Error('Group name is required.');const {error}=await supabase.rpc('create_group',{p_name:name});if(error)throw error;location.href='dashboard.html'}catch(error){showError(error)}};</script></body></html>
+```html
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>Create Group — CHAMA LIVE</title>
+
+  <link
+    rel="stylesheet"
+    href="css/app.css"
+  >
+
+  <style>
+    .onboarding-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 30px 15px;
+    }
+
+    .onboarding-container {
+      width: 100%;
+      max-width: 850px;
+    }
+
+    .onboarding-header {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    .onboarding-header h1 {
+      margin-bottom: 8px;
+    }
+
+    .steps {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 25px;
+      flex-wrap: wrap;
+    }
+
+    .step {
+      padding: 8px 14px;
+      border-radius: 20px;
+      background: #f1f1f1;
+      font-size: 13px;
+    }
+
+    .step.active {
+      font-weight: 700;
+    }
+
+    .form-section {
+      margin-bottom: 28px;
+    }
+
+    .form-section h2 {
+      margin-bottom: 5px;
+    }
+
+    .form-section-description {
+      margin-bottom: 18px;
+      color: #666;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group.full {
+      grid-column: 1 / -1;
+    }
+
+    .form-group label {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .password-note {
+      font-size: 12px;
+      color: #666;
+      margin-top: 3px;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 25px;
+    }
+
+    .success-box {
+      text-align: center;
+      padding: 25px;
+    }
+
+    .success-icon {
+      font-size: 45px;
+      margin-bottom: 10px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 700px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .form-group.full {
+        grid-column: auto;
+      }
+    }
+  </style>
+</head>
+
+
+<body>
+
+<div class="onboarding-page">
+
+  <div class="onboarding-container">
+
+    <!-- HEADER -->
+
+    <div class="onboarding-header">
+
+      <div class="brand">
+        CHAMA <span>LIVE</span>
+      </div>
+
+      <h1>
+        Create Your Group
+      </h1>
+
+      <p class="muted">
+        Set up your group and become its first administrator.
+      </p>
+
+    </div>
+
+
+    <!-- STEPS -->
+
+    <div class="steps">
+
+      <div class="step active">
+        1. Group Details
+      </div>
+
+      <div class="step active">
+        2. Administrator
+      </div>
+
+      <div class="step">
+        3. Add Members
+      </div>
+
+    </div>
+
+
+    <!-- ERROR -->
+
+    <div
+      id="error"
+      class="error"
+      hidden
+      style="margin-bottom:20px;"
+    ></div>
+
+
+    <!-- SUCCESS -->
+
+    <section
+      id="success"
+      class="card success-box hidden"
+    >
+
+      <div class="success-icon">
+        ✓
+      </div>
+
+      <h2>
+        Group Created Successfully
+      </h2>
+
+      <p id="successMessage">
+        Your CHAMA LIVE group has been created.
+      </p>
+
+      <p class="muted">
+        You are now the administrator of this group.
+      </p>
+
+      <button
+        id="continueButton"
+        class="btn btn-primary"
+        type="button"
+      >
+        Continue to Dashboard
+      </button>
+
+    </section>
+
+
+    <!-- FORM -->
+
+    <form
+      id="createGroupForm"
+      class="card"
+      novalidate
+    >
+
+      <!-- GROUP DETAILS -->
+
+      <div class="form-section">
+
+        <h2>
+          Group Details
+        </h2>
+
+        <p class="form-section-description">
+          Tell us about the group you want to manage.
+        </p>
+
+
+        <div class="form-grid">
+
+          <div class="form-group full">
+
+            <label for="groupName">
+              Group Name *
+            </label>
+
+            <input
+              type="text"
+              id="groupName"
+              name="groupName"
+              placeholder="e.g. Timau Welfare Group"
+              autocomplete="organization"
+              required
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="groupType">
+              Group Type *
+            </label>
+
+            <select
+              id="groupType"
+              name="groupType"
+              required
+            >
+
+              <option value="">
+                Select group type
+              </option>
+
+              <option value="chama">
+                Chama
+              </option>
+
+              <option value="welfare">
+                Welfare Group
+              </option>
+
+              <option value="investment">
+                Investment Group
+              </option>
+
+              <option value="cbo">
+                CBO
+              </option>
+
+              <option value="self_help">
+                Self Help Group
+              </option>
+
+              <option value="other">
+                Other
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="registrationNumber">
+              Registration Number
+            </label>
+
+            <input
+              type="text"
+              id="registrationNumber"
+              name="registrationNumber"
+              placeholder="Optional"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="location">
+              Location
+            </label>
+
+            <input
+              type="text"
+              id="location"
+              name="location"
+              placeholder="e.g. Timau, Meru"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="groupPhone">
+              Group Phone
+            </label>
+
+            <input
+              type="tel"
+              id="groupPhone"
+              name="groupPhone"
+              placeholder="07XXXXXXXX"
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="meetingDay">
+              Meeting Day
+            </label>
+
+            <select
+              id="meetingDay"
+              name="meetingDay"
+            >
+
+              <option value="">
+                Select day
+              </option>
+
+              <option value="Monday">
+                Monday
+              </option>
+
+              <option value="Tuesday">
+                Tuesday
+              </option>
+
+              <option value="Wednesday">
+                Wednesday
+              </option>
+
+              <option value="Thursday">
+                Thursday
+              </option>
+
+              <option value="Friday">
+                Friday
+              </option>
+
+              <option value="Saturday">
+                Saturday
+              </option>
+
+              <option value="Sunday">
+                Sunday
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="monthlyContribution">
+              Monthly Contribution (KSh) *
+            </label>
+
+            <input
+              type="number"
+              id="monthlyContribution"
+              name="monthlyContribution"
+              min="0"
+              step="1"
+              placeholder="200"
+              required
+            >
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <hr>
+
+
+      <!-- ADMIN DETAILS -->
+
+      <div class="form-section">
+
+        <h2>
+          Administrator Details
+        </h2>
+
+        <p class="form-section-description">
+          You will become the first administrator of this group.
+        </p>
+
+
+        <div class="form-grid">
+
+          <div class="form-group full">
+
+            <label for="adminName">
+              Full Name *
+            </label>
+
+            <input
+              type="text"
+              id="adminName"
+              name="adminName"
+              placeholder="Your full name"
+              autocomplete="name"
+              required
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="memberNumber">
+              Member Number *
+            </label>
+
+            <input
+              type="text"
+              id="memberNumber"
+              name="memberNumber"
+              placeholder="e.g. 0001"
+              required
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="adminPhone">
+              Phone Number *
+            </label>
+
+            <input
+              type="tel"
+              id="adminPhone"
+              name="adminPhone"
+              placeholder="07XXXXXXXX"
+              autocomplete="tel"
+              required
+            >
+
+          </div>
+
+
+          <div class="form-group full">
+
+            <label for="adminEmail">
+              Email Address *
+            </label>
+
+            <input
+              type="email"
+              id="adminEmail"
+              name="adminEmail"
+              placeholder="you@example.com"
+              autocomplete="email"
+              required
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="password">
+              Password *
+            </label>
+
+            <input
+              type="password"
+              id="password"
+              name="password"
+              minlength="8"
+              autocomplete="new-password"
+              placeholder="At least 8 characters"
+              required
+            >
+
+            <div class="password-note">
+              Use at least 8 characters.
+            </div>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="confirmPassword">
+              Confirm Password *
+            </label>
+
+            <input
+              type="password"
+              id="confirmPassword"
+              name="confirmPassword"
+              minlength="8"
+              autocomplete="new-password"
+              placeholder="Repeat password"
+              required
+            >
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- AGREEMENT -->
+
+      <div class="form-group">
+
+        <label>
+
+          <input
+            type="checkbox"
+            id="agreement"
+            required
+          >
+
+          I confirm that I am authorized to create
+          this group account.
+
+        </label>
+
+      </div>
+
+
+      <!-- ACTIONS -->
+
+      <div class="actions">
+
+        <a
+          href="login.html"
+          class="btn btn-secondary"
+        >
+          Already have an account?
+        </a>
+
+
+        <button
+          id="createGroupButton"
+          class="btn btn-primary"
+          type="submit"
+        >
+          Create Group Account
+        </button>
+
+      </div>
+
+    </form>
+
+  </div>
+
+</div>
+
+
+<script type="module">
+
+  import "./js/create-group.js";
+
+</script>
+
+</body>
+
+</html>
+```
