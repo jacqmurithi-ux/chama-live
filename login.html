@@ -1,123 +1,519 @@
+```html
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <title>Login — CHAMA LIVE</title>
+
   <link rel="stylesheet" href="css/app.css">
+
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f5f7fa;
+    }
+
+    .login-container {
+      width: 100%;
+      max-width: 430px;
+      padding: 20px;
+    }
+
+    .login-card {
+      background: white;
+      border-radius: 14px;
+      padding: 32px;
+      box-shadow: 0 8px 30px rgba(0,0,0,.08);
+    }
+
+    .login-brand {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    .login-brand h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    .login-brand span {
+      color: #2563eb;
+    }
+
+    .login-brand p {
+      margin-top: 8px;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 7px;
+      font-weight: 600;
+    }
+
+    .form-group input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 15px;
+    }
+
+    .login-button {
+      width: 100%;
+      margin-top: 5px;
+    }
+
+    .error-message {
+      background: #fee2e2;
+      color: #991b1b;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 18px;
+      display: none;
+    }
+
+    .success-message {
+      background: #dcfce7;
+      color: #166534;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 18px;
+      display: none;
+    }
+
+    .links {
+      text-align: center;
+      margin-top: 22px;
+    }
+
+    .links a {
+      text-decoration: none;
+    }
+
+    .loading {
+      opacity: .7;
+      pointer-events: none;
+    }
+  </style>
 </head>
 
 <body>
 
-<main class="auth">
-  <section class="card auth-card">
+<div class="login-container">
 
-    <h1>CHAMA LIVE</h1>
+  <div class="login-card">
 
-    <p class="muted">
-      Sign in to manage your group.
-    </p>
+    <div class="login-brand">
 
-    <div class="form">
+      <h1>
+        CHAMA <span>LIVE</span>
+      </h1>
 
-      <div class="field">
-        <label for="email">Email</label>
-        <input
-          id="email"
-          type="email"
-          autocomplete="email"
-          required
-        >
-      </div>
-
-      <div class="field">
-        <label for="password">Password</label>
-        <input
-          id="password"
-          type="password"
-          autocomplete="current-password"
-          required
-        >
-      </div>
-
-      <button
-        class="btn btn-primary"
-        id="login"
-        type="button"
-      >
-        Sign in
-      </button>
-
-      <div
-        class="error"
-        id="error"
-        hidden
-      ></div>
+      <p class="muted">
+        Group management made simple.
+      </p>
 
     </div>
 
-  </section>
-</main>
+
+    <div
+      id="error"
+      class="error-message"
+    ></div>
+
+
+    <div
+      id="success"
+      class="success-message"
+    ></div>
+
+
+    <form id="loginForm">
+
+      <div class="form-group">
+
+        <label for="email">
+          Email
+        </label>
+
+        <input
+          type="email"
+          id="email"
+          name="email"
+          autocomplete="email"
+          placeholder="Enter your email"
+          required
+        >
+
+      </div>
+
+
+      <div class="form-group">
+
+        <label for="password">
+          Password
+        </label>
+
+        <input
+          type="password"
+          id="password"
+          name="password"
+          autocomplete="current-password"
+          placeholder="Enter your password"
+          required
+        >
+
+      </div>
+
+
+      <button
+        type="submit"
+        id="loginButton"
+        class="btn btn-primary login-button"
+      >
+        Sign In
+      </button>
+
+    </form>
+
+
+    <div class="links">
+
+      <p>
+        Don't have a group account?
+      </p>
+
+      <a href="create-group.html">
+        Create a Group Account
+      </a>
+
+    </div>
+
+  </div>
+
+</div>
+
 
 <script type="module">
 
-import { supabase } from "./js/supabase.js";
+  import { supabase } from "./js/supabase.js";
 
-const loginButton = document.getElementById("login");
-const errorBox = document.getElementById("error");
+  const form =
+    document.getElementById("loginForm");
 
-loginButton.addEventListener("click", async () => {
+  const button =
+    document.getElementById("loginButton");
 
-  errorBox.hidden = true;
-  errorBox.textContent = "";
+  const errorBox =
+    document.getElementById("error");
 
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value;
+  const successBox =
+    document.getElementById("success");
 
-  if (!email || !password) {
-    errorBox.textContent = "Please enter your email and password.";
-    errorBox.hidden = false;
-    return;
+
+  function showError(message) {
+
+    errorBox.textContent = message;
+
+    errorBox.style.display = "block";
+
+    successBox.style.display = "none";
+
   }
 
-  loginButton.disabled = true;
-  loginButton.textContent = "Signing in...";
 
-  try {
+  function showSuccess(message) {
 
-    const { data, error } =
-      await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+    successBox.textContent = message;
+
+    successBox.style.display = "block";
+
+    errorBox.style.display = "none";
+
+  }
+
+
+  function clearMessages() {
+
+    errorBox.style.display = "none";
+
+    successBox.style.display = "none";
+
+  }
+
+
+  async function redirectUser() {
+
+    /*
+     * Get the logged-in member.
+     */
+
+    const {
+      data: member,
+      error
+    } = await supabase.rpc(
+      "get_my_member"
+    );
+
 
     if (error) {
+
       throw error;
+
     }
 
-    console.log("Login successful:", data);
 
-    window.location.href = "./dashboard.html";
+    if (!member) {
 
-  } catch (error) {
+      await supabase.auth.signOut();
 
-    console.error("Login error:", error);
+      throw new Error(
+        "Your account is not linked to a group. Please contact your group administrator."
+      );
 
-    errorBox.textContent =
-      error.message || "Unable to sign in.";
+    }
 
-    errorBox.hidden = false;
 
-  } finally {
+    /*
+     * Some RPC functions return
+     * one row as an array.
+     */
 
-    loginButton.disabled = false;
-    loginButton.textContent = "Sign in";
+    const userMember =
+      Array.isArray(member)
+        ? member[0]
+        : member;
+
+
+    if (!userMember) {
+
+      await supabase.auth.signOut();
+
+      throw new Error(
+        "No member profile was found for this account."
+      );
+
+    }
+
+
+    const role =
+      String(
+        userMember.role || "member"
+      ).toLowerCase();
+
+
+    /*
+     * Admin / chairperson
+     */
+
+    if (
+      role === "admin" ||
+      role === "chairperson"
+    ) {
+
+      window.location.href =
+        "dashboard.html";
+
+      return;
+
+    }
+
+
+    /*
+     * Treasurer / secretary
+     */
+
+    if (
+      role === "treasurer" ||
+      role === "secretary"
+    ) {
+
+      window.location.href =
+        "dashboard.html";
+
+      return;
+
+    }
+
+
+    /*
+     * Ordinary member
+     */
+
+    window.location.href =
+      "member-dashboard.html";
 
   }
 
-});
+
+  form.addEventListener(
+    "submit",
+    async event => {
+
+      event.preventDefault();
+
+      clearMessages();
+
+
+      const email =
+        document
+          .getElementById("email")
+          .value
+          .trim();
+
+      const password =
+        document
+          .getElementById("password")
+          .value;
+
+
+      if (!email || !password) {
+
+        showError(
+          "Please enter your email and password."
+        );
+
+        return;
+
+      }
+
+
+      button.disabled = true;
+
+      button.classList.add("loading");
+
+      button.textContent =
+        "Signing in...";
+
+
+      try {
+
+        const {
+          data,
+          error
+        } = await supabase.auth.signInWithPassword({
+
+          email,
+
+          password
+
+        });
+
+
+        if (error) {
+
+          throw error;
+
+        }
+
+
+        if (!data.session) {
+
+          throw new Error(
+            "Login failed. No active session was created."
+          );
+
+        }
+
+
+        showSuccess(
+          "Login successful. Opening your dashboard..."
+        );
+
+
+        await redirectUser();
+
+
+      } catch (error) {
+
+        console.error(
+          "Login error:",
+          error
+        );
+
+
+        let message =
+          error?.message ||
+          "Unable to sign in.";
+
+
+        if (
+          message
+            .toLowerCase()
+            .includes("invalid login credentials")
+        ) {
+
+          message =
+            "Incorrect email or password.";
+
+        }
+
+
+        showError(message);
+
+
+        button.disabled = false;
+
+        button.classList.remove(
+          "loading"
+        );
+
+        button.textContent =
+          "Sign In";
+
+      }
+
+    }
+  );
+
+
+  /*
+   * If already logged in,
+   * don't show the login page again.
+   */
+
+  async function checkExistingSession() {
+
+    const {
+      data
+    } = await supabase.auth.getSession();
+
+
+    if (
+      data &&
+      data.session
+    ) {
+
+      try {
+
+        await redirectUser();
+
+      } catch (error) {
+
+        console.error(error);
+
+      }
+
+    }
+
+  }
+
+
+  checkExistingSession();
 
 </script>
 
 </body>
 </html>
+```
