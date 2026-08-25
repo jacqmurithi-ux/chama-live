@@ -2,8 +2,7 @@ import { supabase } from "./supabase.js";
 
 import {
   getCurrentGroupId,
-  money,
-  showError
+  money
 } from "./app.js";
 
 
@@ -13,6 +12,50 @@ import {
 
 const rows =
   document.querySelector("#rows");
+
+const errorBox =
+  document.querySelector("[data-error]") ||
+  document.querySelector("#error");
+
+
+/* =====================================================
+   ERROR
+===================================================== */
+
+function showError(error) {
+
+  console.error(
+    "CHAMA LIVE expenses error:",
+    error
+  );
+
+  if (errorBox) {
+
+    errorBox.textContent =
+      "Error: " +
+      (error?.message || String(error));
+
+    errorBox.hidden = false;
+
+  }
+
+}
+
+
+/* =====================================================
+   ESCAPE HTML
+===================================================== */
+
+function escapeHtml(value) {
+
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
+}
 
 
 /* =====================================================
@@ -24,19 +67,27 @@ async function loadExpenses() {
   try {
 
     if (!rows) {
+
       throw new Error(
-        "Expenses table not found."
+        "Expense table not found."
       );
+
     }
 
 
     rows.innerHTML =
-      "<tr><td colspan='5'>Loading expenses...</td></tr>";
+      `
+        <tr>
+          <td colspan="7">
+            Loading expenses...
+          </td>
+        </tr>
+      `;
 
 
-    /* -----------------------------------------------
+    /* ================================================
        LOGIN
-    ------------------------------------------------ */
+    ================================================ */
 
     const {
       data: sessionData,
@@ -50,7 +101,7 @@ async function loadExpenses() {
     }
 
 
-    if (!sessionData.session) {
+    if (!sessionData?.session) {
 
       window.location.href =
         "login.html";
@@ -60,9 +111,9 @@ async function loadExpenses() {
     }
 
 
-    /* -----------------------------------------------
-       CURRENT GROUP
-    ------------------------------------------------ */
+    /* ================================================
+       GROUP
+    ================================================ */
 
     const groupId =
       await getCurrentGroupId();
@@ -77,13 +128,13 @@ async function loadExpenses() {
     }
 
 
-    /* -----------------------------------------------
-       LOAD EXPENSES
-       
+    /* ================================================
+       GET EXPENSES
+
        IMPORTANT:
-       The database column is "date",
-       NOT "expense_date".
-    ------------------------------------------------ */
+       Your database column is `date`.
+       NOT `expense_date`.
+    ================================================ */
 
     const {
       data,
@@ -94,7 +145,7 @@ async function loadExpenses() {
         .from("expenses")
 
         .select(
-          "id, group_id, description, category, amount, date, approval_status, payment_method, reference, created_at"
+          "id,date,description,category,amount,approval_status,payment_method,reference"
         )
 
         .eq(
@@ -110,13 +161,6 @@ async function loadExpenses() {
         );
 
 
-    console.log(
-      "CHAMA LIVE expenses:",
-      data,
-      error
-    );
-
-
     if (error) {
       throw error;
     }
@@ -126,16 +170,18 @@ async function loadExpenses() {
       data || [];
 
 
-    /* -----------------------------------------------
-       EMPTY
-    ------------------------------------------------ */
+    /* ================================================
+       NO EXPENSES
+    ================================================ */
 
-    if (expenses.length === 0) {
+    if (
+      expenses.length === 0
+    ) {
 
       rows.innerHTML =
         `
           <tr>
-            <td colspan="5">
+            <td colspan="7">
               No expenses yet.
             </td>
           </tr>
@@ -146,9 +192,9 @@ async function loadExpenses() {
     }
 
 
-    /* -----------------------------------------------
+    /* ================================================
        DISPLAY
-    ------------------------------------------------ */
+    ================================================ */
 
     rows.innerHTML =
 
@@ -156,63 +202,52 @@ async function loadExpenses() {
         .map(
           function (expense) {
 
-            const date =
-              expense.date ||
-              "—";
-
-
-            const description =
-              escapeHtml(
-                expense.description ||
-                "—"
-              );
-
-
-            const category =
-              escapeHtml(
-                expense.category ||
-                "other"
-              );
-
-
-            const amount =
-              money(
-                Number(
-                  expense.amount ||
-                  0
-                )
-              );
-
-
-            const status =
-              escapeHtml(
-                expense.approval_status ||
-                "pending"
-              );
-
-
             return `
 
               <tr>
 
                 <td>
-                  ${escapeHtml(date)}
+                  ${escapeHtml(
+                    expense.date || "—"
+                  )}
                 </td>
 
                 <td>
-                  ${description}
+                  ${escapeHtml(
+                    expense.description || "—"
+                  )}
                 </td>
 
                 <td>
-                  ${category}
+                  ${escapeHtml(
+                    expense.category || "—"
+                  )}
                 </td>
 
                 <td>
-                  ${amount}
+                  ${money(
+                    Number(
+                      expense.amount || 0
+                    )
+                  )}
                 </td>
 
                 <td>
-                  ${status}
+                  ${escapeHtml(
+                    expense.approval_status || "—"
+                  )}
+                </td>
+
+                <td>
+                  ${escapeHtml(
+                    expense.payment_method || "—"
+                  )}
+                </td>
+
+                <td>
+                  ${escapeHtml(
+                    expense.reference || "—"
+                  )}
                 </td>
 
               </tr>
@@ -221,79 +256,26 @@ async function loadExpenses() {
 
           }
         )
-
         .join("");
 
 
-  }
+  } catch (error) {
 
-  catch (error) {
-
-    console.error(
-      "CHAMA LIVE expenses error:",
-      error
-    );
-
+    showError(error);
 
     rows.innerHTML =
       `
         <tr>
-
-          <td
-            colspan="5"
-            style="color:red"
-          >
+          <td colspan="7" style="color:red">
             ERROR:
             ${escapeHtml(
-              error?.message ||
-              String(error)
+              error?.message || String(error)
             )}
-
           </td>
-
         </tr>
       `;
 
-
-    showError(error);
-
   }
-
-}
-
-
-/* =====================================================
-   ESCAPE HTML
-===================================================== */
-
-function escapeHtml(value) {
-
-  return String(value)
-
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
-
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
-
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
-
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
 
 }
 
