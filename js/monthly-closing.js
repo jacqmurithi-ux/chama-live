@@ -3,8 +3,11 @@ import { getMyMember } from "./auth.js";
 
 
 /* =====================================================
-   STATE
+   HELPERS
 ===================================================== */
+
+const $ = (id) => document.getElementById(id);
+
 
 let groupId = null;
 let currentMonth = "";
@@ -14,93 +17,81 @@ let memberStatus = [];
 
 
 /* =====================================================
-   DOM
+   START
 ===================================================== */
 
-const $ = (id) =>
-  document.getElementById(id);
+document.addEventListener("DOMContentLoaded", init);
 
 
 /* =====================================================
-   INIT
+   INITIALISE
 ===================================================== */
 
 async function init() {
 
   try {
 
-    setStatus(
-      "Starting Monthly Closing..."
-    );
+    const session = await requireSession();
+
+    if (!session) {
+      return;
+    }
 
 
-    /* -----------------------------------------------
-       GET CURRENT MEMBER
-    ------------------------------------------------ */
-
-    const member =
-      await getMyMember();
+    const member = await getMyMember();
 
     if (!member) {
 
       throw new Error(
-        "You are not logged in or your member account could not be found."
+        "Unable to identify your group."
       );
 
     }
 
 
-    groupId =
-      member.group_id;
-
-    if (!groupId) {
-
-      throw new Error(
-        "Your member account does not have a group_id."
-      );
-
-    }
+    groupId = member.group_id;
 
 
-    /* -----------------------------------------------
-       CURRENT MONTH
-    ------------------------------------------------ */
+    /*
+     * Current month
+     */
 
-    const now =
-      new Date();
+    const today = new Date();
 
     currentMonth =
-      `${now.getFullYear()}-${String(
-        now.getMonth() + 1
+      `${today.getFullYear()}-${String(
+        today.getMonth() + 1
       ).padStart(2, "0")}`;
 
 
-    const month =
-      $("month");
+    const monthInput = $("month");
 
-    if (!month) {
+    if (!monthInput) {
 
       throw new Error(
-        "The month input #month is missing from monthly-closing.html."
+        "Monthly Closing page is missing the month selector."
       );
 
     }
 
 
-    month.value =
-      currentMonth;
+    monthInput.value = currentMonth;
 
 
-    month.addEventListener(
+    /*
+     * Month selector
+     */
+
+    monthInput.addEventListener(
       "change",
       async () => {
 
-        if (!month.value) {
+        if (!monthInput.value) {
           return;
         }
 
         currentMonth =
-          month.value;
+          monthInput.value;
 
         await loadMonth();
 
@@ -108,44 +99,102 @@ async function init() {
     );
 
 
-    /* -----------------------------------------------
-       BUTTONS
-    ------------------------------------------------ */
+    /*
+     * Buttons
+     */
 
-    $("closeMonth")
-      ?.addEventListener(
-        "click",
-        closeMonth
-      );
-
-
-    $("reopenMonth")
-      ?.addEventListener(
-        "click",
-        reopenMonth
-      );
+    $("closeMonth")?.addEventListener(
+      "click",
+      closeMonth
+    );
 
 
-    $("printReport")
-      ?.addEventListener(
-        "click",
-        printReport
-      );
+    $("reopenMonth")?.addEventListener(
+      "click",
+      reopenMonth
+    );
 
 
-    /* -----------------------------------------------
-       LOAD
-    ------------------------------------------------ */
+    $("printReport")?.addEventListener(
+      "click",
+      printReport
+    );
+
+
+    $("logout")?.addEventListener(
+      "click",
+      signOut
+    );
+
+
+    /*
+     * Load financial data
+     */
 
     await loadMonth();
 
 
   } catch (error) {
 
-    showError(
-      "Initialisation failed",
-      error
-    );
+    console.error(error);
+
+    showError(error);
+
+  }
+
+}
+
+
+/* =====================================================
+   AUTH SESSION
+===================================================== */
+
+async function requireSession() {
+
+  const {
+    data,
+    error
+  } = await supabase.auth.getSession();
+
+
+  if (error) {
+
+    throw error;
+
+  }
+
+
+  if (!data?.session) {
+
+    window.location.href =
+      "login.html";
+
+    return null;
+
+  }
+
+
+  return data.session;
+
+}
+
+
+/* =====================================================
+   SIGN OUT
+===================================================== */
+
+async function signOut() {
+
+  try {
+
+    await supabase.auth.signOut();
+
+    window.location.href =
+      "login.html";
+
+  } catch (error) {
+
+    showError(error);
 
   }
 
@@ -160,6 +209,7 @@ async function loadMonth() {
 
   clearError();
 
+
   setStatus(
     `Loading ${formatMonth(
       currentMonth
@@ -170,140 +220,99 @@ async function loadMonth() {
   try {
 
 
-    /* ===============================================
+    /* =================================================
        GROUP
-    =============================================== */
-
-    setStatus(
-      "Loading group..."
-    );
+    ================================================= */
 
     const {
       data: group,
       error: groupError
-    } =
-      await supabase
-        .from("groups")
-        .select(`
-          id,
-          name,
-          monthly_contribution,
-          opening_balance
-        `)
-        .eq(
-          "id",
-          groupId
-        )
-        .single();
+    } = await supabase
+      .from("groups")
+      .select(`
+        id,
+        name,
+        monthly_contribution,
+        opening_balance
+      `)
+      .eq("id", groupId)
+      .single();
 
 
     if (groupError) {
 
-      throw new Error(
-        `Groups query failed: ${groupError.message}`
-      );
+      throw groupError;
 
     }
 
 
-    if (!group) {
-
-      throw new Error(
-        "No group record was found."
-      );
-
-    }
-
-
-    /* ===============================================
+    /* =================================================
        FINANCIAL PERIOD
-    =============================================== */
-
-    setStatus(
-      "Loading financial period..."
-    );
-
+    ================================================= */
 
     let {
       data: period,
       error: periodError
-    } =
-      await supabase
-        .from("financial_periods")
-        .select("*")
-        .eq(
-          "group_id",
-          groupId
-        )
-        .eq(
-          "month",
-          currentMonth
-        )
-        .maybeSingle();
+    } = await supabase
+      .from("financial_periods")
+      .select("*")
+      .eq("group_id", groupId)
+      .eq("month", currentMonth)
+      .maybeSingle();
 
 
     if (periodError) {
 
-      throw new Error(
-        `Financial period query failed: ${periodError.message}`
-      );
+      throw periodError;
 
     }
 
 
-    /* ===============================================
-       CREATE PERIOD IF MISSING
-    =============================================== */
+    /*
+     * Create financial period if missing.
+     */
 
     if (!period) {
 
-      setStatus(
-        `Creating ${formatMonth(
-          currentMonth
-        )} financial period...`
-      );
-
-
-      const opening =
+      const openingBalance =
         await calculateOpeningBalance(
           group
         );
 
 
       const {
-        data: created,
+        data: createdPeriod,
         error: createError
-      } =
-        await supabase
-          .from("financial_periods")
-          .insert({
-            group_id:
-              groupId,
+      } = await supabase
+        .from("financial_periods")
+        .insert({
 
-            month:
-              currentMonth,
+          group_id:
+            groupId,
 
-            opening_balance:
-              opening,
+          month:
+            currentMonth,
 
-            status:
-              "open"
-          })
-          .select()
-          .single();
+          opening_balance:
+            openingBalance,
+
+          status:
+            "open"
+
+        })
+        .select()
+        .single();
 
 
       if (createError) {
 
-        throw new Error(
-          `Could not create financial period: ${createError.message}`
-        );
+        throw createError;
 
       }
 
 
       period =
-        created;
+        createdPeriod;
 
     }
 
@@ -312,145 +321,102 @@ async function loadMonth() {
       period;
 
 
-    /* ===============================================
+    /* =================================================
        MEMBERS
-    =============================================== */
-
-    setStatus(
-      "Loading members..."
-    );
-
+    ================================================= */
 
     const {
       data: members,
       error: membersError
-    } =
-      await supabase
-        .from("members")
-        .select(`
-          id,
-          name,
-          member_number,
-          status
-        `)
-        .eq(
-          "group_id",
-          groupId
-        )
-        .eq(
-          "status",
-          "active"
-        )
-        .order(
-          "name"
-        );
+    } = await supabase
+      .from("members")
+      .select(`
+        id,
+        name,
+        member_number,
+        status
+      `)
+      .eq("group_id", groupId)
+      .eq("status", "active")
+      .order("name");
 
 
     if (membersError) {
 
-      throw new Error(
-        `Members query failed: ${membersError.message}`
-      );
+      throw membersError;
 
     }
 
 
-    /* ===============================================
+    /* =================================================
        CONTRIBUTIONS
-    =============================================== */
-
-    setStatus(
-      "Loading contributions..."
-    );
-
+    ================================================= */
 
     const {
       data: contributions,
       error: contributionError
-    } =
-      await supabase
-        .from("contributions")
-        .select(`
-          id,
-          member_id,
-          amount,
-          contribution_type,
-          month,
-          payment_method,
-          reference,
-          mpesa_reference,
-          contribution_date
-        `)
-        .eq(
-          "group_id",
-          groupId
-        )
-        .eq(
-          "month",
-          currentMonth
-        );
+    } = await supabase
+      .from("contributions")
+      .select(`
+        id,
+        member_id,
+        amount,
+        contribution_type,
+        month,
+        payment_method,
+        reference,
+        mpesa_reference,
+        contribution_date
+      `)
+      .eq("group_id", groupId)
+      .eq("month", currentMonth);
 
 
     if (contributionError) {
 
-      throw new Error(
-        `Contributions query failed: ${contributionError.message}`
-      );
+      throw contributionError;
 
     }
 
 
-    /* ===============================================
+    /* =================================================
        EXPENSES
-    =============================================== */
-
-    setStatus(
-      "Loading expenses..."
-    );
-
+    ================================================= */
 
     const {
       data: expenses,
       error: expenseError
-    } =
-      await supabase
-        .from("expenses")
-        .select(`
-          id,
-          description,
-          category,
-          amount,
-          date,
-          approval_status
-        `)
-        .eq(
-          "group_id",
-          groupId
-        )
-        .gte(
-          "date",
-          `${currentMonth}-01`
-        )
-        .lt(
-          "date",
-          nextMonth(
-            currentMonth
-          )
-        );
+    } = await supabase
+      .from("expenses")
+      .select(`
+        id,
+        description,
+        category,
+        amount,
+        date,
+        approval_status
+      `)
+      .eq("group_id", groupId)
+      .gte(
+        "date",
+        `${currentMonth}-01`
+      )
+      .lt(
+        "date",
+        nextMonth(currentMonth)
+      );
 
 
     if (expenseError) {
 
-      throw new Error(
-        `Expenses query failed: ${expenseError.message}`
-      );
+      throw expenseError;
 
     }
 
 
-    /* ===============================================
+    /* =================================================
        MEMBER STATUS
-    =============================================== */
+    ================================================= */
 
     const monthlyContribution =
       Number(
@@ -459,107 +425,109 @@ async function loadMonth() {
 
 
     memberStatus =
-      (members || [])
-        .map(
-          (member) => {
+      (members || []).map(
+        member => {
 
-            const paid =
-              (contributions || [])
-                .filter(
-                  (item) =>
-                    item.member_id ===
-                    member.id
-                )
-                .reduce(
-                  (
-                    total,
-                    item
-                  ) =>
-                    total +
-                    Number(
-                      item.amount || 0
-                    ),
-                  0
-                );
-
-
-            const expected =
-              monthlyContribution;
-
-
-            const outstanding =
-              Math.max(
-                expected -
-                paid,
+          const paid =
+            (contributions || [])
+              .filter(
+                contribution =>
+                  contribution.member_id ===
+                  member.id
+              )
+              .reduce(
+                (
+                  sum,
+                  contribution
+                ) =>
+                  sum +
+                  Number(
+                    contribution.amount || 0
+                  ),
                 0
               );
 
 
-            let status =
-              "OUTSTANDING";
+          const expected =
+            monthlyContribution;
 
 
-            if (
-              expected > 0 &&
-              paid >= expected
-            ) {
-
-              status =
-                "PAID";
-
-            } else if (
-              paid > 0
-            ) {
-
-              status =
-                "PARTIAL";
-
-            }
+          const outstanding =
+            Math.max(
+              expected - paid,
+              0
+            );
 
 
-            return {
+          let status =
+            "OUTSTANDING";
 
-              ...member,
 
-              expected,
+          if (
+            expected > 0 &&
+            paid >= expected
+          ) {
 
-              paid,
+            status =
+              "PAID";
 
-              outstanding,
+          } else if (
+            paid > 0
+          ) {
 
-              contributionStatus:
-                status
-
-            };
+            status =
+              "PARTIAL";
 
           }
-        );
 
 
-    /* ===============================================
+          return {
+
+            ...member,
+
+            expected,
+
+            paid,
+
+            outstanding,
+
+            contributionStatus:
+              status
+
+          };
+
+        }
+      );
+
+
+    /* =================================================
        TOTALS
-    =============================================== */
+    ================================================= */
 
     const expected =
-      memberStatus
-        .reduce(
-          (total, member) =>
-            total +
-            member.expected,
-          0
-        );
+      memberStatus.reduce(
+        (
+          sum,
+          member
+        ) =>
+          sum +
+          member.expected,
+        0
+      );
 
 
     const collected =
-      (contributions || [])
-        .reduce(
-          (total, item) =>
-            total +
-            Number(
-              item.amount || 0
-            ),
-          0
-        );
+      (contributions || []).reduce(
+        (
+          sum,
+          contribution
+        ) =>
+          sum +
+          Number(
+            contribution.amount || 0
+          ),
+        0
+      );
 
 
     const outstanding =
@@ -573,17 +541,18 @@ async function loadMonth() {
     const approvedExpenses =
       (expenses || [])
         .filter(
-          (item) =>
-            String(
-              item.approval_status
-            ).toLowerCase() ===
+          expense =>
+            expense.approval_status ===
             "approved"
         )
         .reduce(
-          (total, item) =>
-            total +
+          (
+            sum,
+            expense
+          ) =>
+            sum +
             Number(
-              item.amount || 0
+              expense.amount || 0
             ),
           0
         );
@@ -592,17 +561,18 @@ async function loadMonth() {
     const pendingExpenses =
       (expenses || [])
         .filter(
-          (item) =>
-            String(
-              item.approval_status
-            ).toLowerCase() ===
+          expense =>
+            expense.approval_status ===
             "pending"
         )
         .reduce(
-          (total, item) =>
-            total +
+          (
+            sum,
+            expense
+          ) =>
+            sum +
             Number(
-              item.amount || 0
+              expense.amount || 0
             ),
           0
         );
@@ -611,17 +581,18 @@ async function loadMonth() {
     const rejectedExpenses =
       (expenses || [])
         .filter(
-          (item) =>
-            String(
-              item.approval_status
-            ).toLowerCase() ===
+          expense =>
+            expense.approval_status ===
             "rejected"
         )
         .reduce(
-          (total, item) =>
-            total +
+          (
+            sum,
+            expense
+          ) =>
+            sum +
             Number(
-              item.amount || 0
+              expense.amount || 0
             ),
           0
         );
@@ -640,33 +611,27 @@ async function loadMonth() {
 
 
     const paidMembers =
-      memberStatus
-        .filter(
-          (member) =>
-            member.contributionStatus ===
-            "PAID"
-        )
-        .length;
+      memberStatus.filter(
+        member =>
+          member.contributionStatus ===
+          "PAID"
+      ).length;
 
 
     const partialMembers =
-      memberStatus
-        .filter(
-          (member) =>
-            member.contributionStatus ===
-            "PARTIAL"
-        )
-        .length;
+      memberStatus.filter(
+        member =>
+          member.contributionStatus ===
+          "PARTIAL"
+      ).length;
 
 
     const outstandingMembers =
-      memberStatus
-        .filter(
-          (member) =>
-            member.contributionStatus ===
-            "OUTSTANDING"
-        )
-        .length;
+      memberStatus.filter(
+        member =>
+          member.contributionStatus ===
+          "OUTSTANDING"
+      ).length;
 
 
     const collectionRate =
@@ -677,6 +642,10 @@ async function loadMonth() {
           ) * 100
         : 0;
 
+
+    /* =================================================
+       SUMMARY
+    ================================================= */
 
     currentSummary = {
 
@@ -720,9 +689,9 @@ async function loadMonth() {
     };
 
 
-    /* ===============================================
+    /* =================================================
        RENDER
-    =============================================== */
+    ================================================= */
 
     renderSummary();
 
@@ -732,19 +701,18 @@ async function loadMonth() {
 
 
     setStatus(
-      `Monthly financials loaded • ${
-        new Date()
-          .toLocaleString("en-KE")
-      }`
+      `Monthly financials loaded • ${new Date().toLocaleString("en-KE")}`
     );
 
 
   } catch (error) {
 
-    showError(
-      "Monthly Closing failed",
+    console.error(
+      "Monthly closing error:",
       error
     );
+
+    showError(error);
 
   }
 
@@ -755,57 +723,44 @@ async function loadMonth() {
    OPENING BALANCE
 ===================================================== */
 
-async function calculateOpeningBalance(
-  group
-) {
+async function calculateOpeningBalance(group) {
 
   const {
     data,
     error
-  } =
-    await supabase
-      .from("financial_periods")
-      .select(`
-        month,
-        closing_balance,
-        status
-      `)
-      .eq(
-        "group_id",
-        groupId
-      )
-      .eq(
-        "status",
-        "closed"
-      )
-      .lt(
-        "month",
-        currentMonth
-      )
-      .order(
-        "month",
-        {
-          ascending:
-            false
-        }
-      )
-      .limit(1);
+  } = await supabase
+    .from("financial_periods")
+    .select(`
+      month,
+      closing_balance,
+      status
+    `)
+    .eq("group_id", groupId)
+    .eq("status", "closed")
+    .lt(
+      "month",
+      currentMonth
+    )
+    .order(
+      "month",
+      {
+        ascending: false
+      }
+    )
+    .limit(1);
 
 
   if (error) {
 
-    throw new Error(
-      `Previous period query failed: ${error.message}`
-    );
+    throw error;
 
   }
 
 
   if (
     data &&
-    data.length &&
-    data[0].closing_balance !==
-      null
+    data.length > 0 &&
+    data[0].closing_balance !== null
   ) {
 
     return Number(
@@ -832,114 +787,82 @@ function renderSummary() {
     currentSummary;
 
 
-  setText(
-    "openingBalance",
-    money(s.opening)
-  );
-
-  setText(
-    "expected",
-    money(s.expected)
-  );
-
-  setText(
-    "collected",
-    money(s.collected)
-  );
-
-  setText(
-    "outstanding",
-    money(s.outstanding)
-  );
-
-  setText(
-    "approvedExpenses",
-    money(s.approvedExpenses)
-  );
-
-  setText(
-    "closingBalance",
-    money(s.closing)
-  );
+  $("openingBalance").textContent =
+    money(s.opening);
 
 
-  setText(
-    "opening2",
-    money(s.opening)
-  );
-
-  setText(
-    "contributions2",
-    money(s.collected)
-  );
-
-  setText(
-    "expenses2",
-    money(s.approvedExpenses)
-  );
-
-  setText(
-    "balance2",
-    money(s.closing)
-  );
+  $("expected").textContent =
+    money(s.expected);
 
 
-  setText(
-    "memberCount",
-    s.members.length
-  );
+  $("collected").textContent =
+    money(s.collected);
 
-  setText(
-    "membersPaid",
-    s.paidMembers
-  );
 
-  setText(
-    "membersPartial",
-    s.partialMembers
-  );
+  $("outstanding").textContent =
+    money(s.outstanding);
 
-  setText(
-    "membersOutstanding",
-    s.outstandingMembers
-  );
 
-  setText(
-    "collectionRate",
-    `${s.collectionRate.toFixed(
-      1
-    )}%`
-  );
+  $("approvedExpenses").textContent =
+    money(s.approvedExpenses);
 
-  setText(
-    "periodStatus",
+
+  $("closingBalance").textContent =
+    money(s.closing);
+
+
+  $("opening2").textContent =
+    money(s.opening);
+
+
+  $("contributions2").textContent =
+    money(s.collected);
+
+
+  $("expenses2").textContent =
+    money(s.approvedExpenses);
+
+
+  $("balance2").textContent =
+    money(s.closing);
+
+
+  $("memberCount").textContent =
+    s.members.length;
+
+
+  $("membersPaid").textContent =
+    s.paidMembers;
+
+
+  $("membersPartial").textContent =
+    s.partialMembers;
+
+
+  $("membersOutstanding").textContent =
+    s.outstandingMembers;
+
+
+  $("collectionRate").textContent =
+    `${s.collectionRate.toFixed(1)}%`;
+
+
+  $("approved2").textContent =
+    money(s.approvedExpenses);
+
+
+  $("pendingExpenses").textContent =
+    money(s.pendingExpenses);
+
+
+  $("rejectedExpenses").textContent =
+    money(s.rejectedExpenses);
+
+
+  $("periodStatus").textContent =
     String(
-      s.period.status ||
-      "open"
-    ).toUpperCase()
-  );
-
-
-  setText(
-    "approved2",
-    money(
-      s.approvedExpenses
-    )
-  );
-
-  setText(
-    "pendingExpenses",
-    money(
-      s.pendingExpenses
-    )
-  );
-
-  setText(
-    "rejectedExpenses",
-    money(
-      s.rejectedExpenses
-    )
-  );
+      s.period.status || "open"
+    ).toUpperCase();
 
 }
 
@@ -953,12 +876,13 @@ function renderMembers() {
   const tbody =
     $("memberRows");
 
-  if (!tbody) return;
+
+  if (!tbody) {
+    return;
+  }
 
 
-  if (
-    !memberStatus.length
-  ) {
+  if (!memberStatus.length) {
 
     tbody.innerHTML = `
       <tr>
@@ -976,7 +900,8 @@ function renderMembers() {
   tbody.innerHTML =
     memberStatus
       .map(
-        (member) => `
+        member => `
+
           <tr>
 
             <td>
@@ -1016,6 +941,7 @@ function renderMembers() {
             </td>
 
           </tr>
+
         `
       )
       .join("");
@@ -1033,10 +959,6 @@ async function closeMonth() {
     !currentPeriod ||
     !currentSummary
   ) {
-
-    alert(
-      "Monthly financials are not loaded yet."
-    );
 
     return;
 
@@ -1057,10 +979,6 @@ async function closeMonth() {
   }
 
 
-  const s =
-    currentSummary;
-
-
   const confirmed =
     confirm(
       `Close ${formatMonth(
@@ -1068,19 +986,27 @@ async function closeMonth() {
       )}?\n\n` +
 
       `Opening balance: ${
-        money(s.opening)
+        money(
+          currentSummary.opening
+        )
       }\n` +
 
       `Contributions: ${
-        money(s.collected)
+        money(
+          currentSummary.collected
+        )
       }\n` +
 
       `Approved expenses: ${
-        money(s.approvedExpenses)
+        money(
+          currentSummary.approvedExpenses
+        )
       }\n` +
 
       `Closing balance: ${
-        money(s.closing)
+        money(
+          currentSummary.closing
+        )
       }\n\n` +
 
       `Continue?`
@@ -1094,71 +1020,49 @@ async function closeMonth() {
 
   try {
 
-    setStatus(
-      "Closing financial period..."
-    );
-
-
     const {
       data: {
         user
       }
     } =
-      await supabase
-        .auth
-        .getUser();
+      await supabase.auth.getUser();
 
 
     const {
       data,
       error
-    } =
-      await supabase
-        .from(
-          "financial_periods"
-        )
-        .update({
+    } = await supabase
+      .from("financial_periods")
+      .update({
 
-          status:
-            "closed",
+        status:
+          "closed",
 
-          closing_balance:
-            s.closing,
+        closing_balance:
+          currentSummary.closing,
 
-          closed_at:
-            new Date()
-              .toISOString(),
+        closed_at:
+          new Date().toISOString(),
 
-          closed_by:
-            user?.id || null
+        closed_by:
+          user?.id || null
 
-        })
-        .eq(
-          "id",
-          currentPeriod.id
-        )
-        .eq(
-          "status",
-          "open"
-        )
-        .select()
-        .single();
+      })
+      .eq(
+        "id",
+        currentPeriod.id
+      )
+      .eq(
+        "status",
+        "open"
+      )
+      .select()
+      .single();
 
 
     if (error) {
 
-      throw new Error(
-        `Close failed: ${error.message}`
-      );
-
-    }
-
-
-    if (!data) {
-
-      throw new Error(
-        "Close failed: Supabase updated 0 rows. Check the financial_periods UPDATE policy."
-      );
+      throw error;
 
     }
 
@@ -1179,10 +1083,7 @@ async function closeMonth() {
 
   } catch (error) {
 
-    showError(
-      "Unable to close month",
-      error
-    );
+    showError(error);
 
   }
 
@@ -1229,60 +1130,41 @@ async function reopenMonth() {
 
   try {
 
-    setStatus(
-      "Reopening financial period..."
-    );
-
-
     const {
       data,
       error
-    } =
-      await supabase
-        .from(
-          "financial_periods"
-        )
-        .update({
+    } = await supabase
+      .from("financial_periods")
+      .update({
 
-          status:
-            "open",
+        status:
+          "open",
 
-          closed_at:
-            null,
+        closing_balance:
+          null,
 
-          closed_by:
-            null,
+        closed_at:
+          null,
 
-          closing_balance:
-            null
+        closed_by:
+          null
 
-        })
-        .eq(
-          "id",
-          currentPeriod.id
-        )
-        .eq(
-          "status",
-          "closed"
-        )
-        .select()
-        .single();
+      })
+      .eq(
+        "id",
+        currentPeriod.id
+      )
+      .eq(
+        "status",
+        "closed"
+      )
+      .select()
+      .single();
 
 
     if (error) {
 
-      throw new Error(
-        `Reopen failed: ${error.message}`
-      );
-
-    }
-
-
-    if (!data) {
-
-      throw new Error(
-        "Reopen failed: Supabase updated 0 rows."
-      );
+      throw error;
 
     }
 
@@ -1303,10 +1185,7 @@ async function reopenMonth() {
 
   } catch (error) {
 
-    showError(
-      "Unable to reopen month",
-      error
-    );
+    showError(error);
 
   }
 
@@ -1314,7 +1193,7 @@ async function reopenMonth() {
 
 
 /* =====================================================
-   BUTTONS
+   BUTTON STATE
 ===================================================== */
 
 function updateActions() {
@@ -1324,24 +1203,17 @@ function updateActions() {
     "closed";
 
 
-  const close =
-    $("closeMonth");
+  if ($("closeMonth")) {
 
-  const reopen =
-    $("reopenMonth");
-
-
-  if (close) {
-
-    close.hidden =
+    $("closeMonth").hidden =
       closed;
 
   }
 
 
-  if (reopen) {
+  if ($("reopenMonth")) {
 
-    reopen.hidden =
+    $("reopenMonth").hidden =
       !closed;
 
   }
@@ -1350,19 +1222,13 @@ function updateActions() {
 
 
 /* =====================================================
-   PRINT
+   PRINT REPORT
 ===================================================== */
 
 function printReport() {
 
   if (!currentSummary) {
-
-    alert(
-      "Load the monthly financials first."
-    );
-
     return;
-
   }
 
 
@@ -1370,11 +1236,13 @@ function printReport() {
     currentSummary;
 
 
-  const rows =
+  const memberRows =
     memberStatus
       .map(
-        (member) => `
+        member => `
+
           <tr>
+
             <td>
               ${escapeHtml(
                 member.name
@@ -1404,13 +1272,15 @@ function printReport() {
                 member.contributionStatus
               )}
             </td>
+
           </tr>
+
         `
       )
       .join("");
 
 
-  const win =
+  const printWindow =
     window.open(
       "",
       "_blank",
@@ -1418,7 +1288,7 @@ function printReport() {
     );
 
 
-  if (!win) {
+  if (!printWindow) {
 
     alert(
       "Please allow pop-ups to print the report."
@@ -1429,238 +1299,279 @@ function printReport() {
   }
 
 
-  win.document.write(`
+  printWindow.document.write(`
 
-<!doctype html>
+    <!doctype html>
 
-<html>
+    <html>
 
-<head>
+    <head>
 
-<title>
-${escapeHtml(
-  s.group.name
-)}
- — ${formatMonth(
-  currentMonth
-)}
-</title>
-
-<style>
-
-body {
-  font-family: Arial, sans-serif;
-  padding: 35px;
-  color: #111;
-}
-
-h1 {
-  margin-bottom: 5px;
-}
-
-.muted {
-  color: #666;
-}
-
-.summary {
-  display: grid;
-  grid-template-columns:
-    repeat(3, 1fr);
-  gap: 12px;
-  margin: 25px 0;
-}
-
-.box {
-  border: 1px solid #ddd;
-  padding: 15px;
-  border-radius: 8px;
-}
-
-.value {
-  font-size: 20px;
-  font-weight: bold;
-  margin-top: 6px;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-}
-
-th,
-td {
-  border: 1px solid #ddd;
-  padding: 9px;
-  text-align: left;
-}
-
-th {
-  background: #f5f5f5;
-}
-
-</style>
-
-</head>
-
-<body>
-
-<h1>
-${escapeHtml(
-  s.group.name
-)}
-</h1>
-
-<p class="muted">
-Monthly Financial Report —
-${formatMonth(
-  currentMonth
-)}
-</p>
+      <title>
+        ${escapeHtml(
+          s.group.name
+        )}
+        —
+        ${formatMonth(
+          currentMonth
+        )}
+      </title>
 
 
-<div class="summary">
+      <style>
 
-<div class="box">
-Opening Balance
-<div class="value">
-${money(s.opening)}
-</div>
-</div>
+        body {
+          font-family:
+            Arial,
+            sans-serif;
 
+          padding:
+            40px;
 
-<div class="box">
-Expected Contributions
-<div class="value">
-${money(s.expected)}
-</div>
-</div>
+          color:
+            #111;
+        }
 
+        h1 {
+          margin-bottom:
+            4px;
+        }
 
-<div class="box">
-Collected Contributions
-<div class="value">
-${money(s.collected)}
-</div>
-</div>
+        .muted {
+          color:
+            #666;
+        }
 
+        .summary {
+          display:
+            grid;
 
-<div class="box">
-Outstanding
-<div class="value">
-${money(s.outstanding)}
-</div>
-</div>
+          grid-template-columns:
+            repeat(3, 1fr);
 
+          gap:
+            12px;
 
-<div class="box">
-Approved Expenses
-<div class="value">
-${money(
-  s.approvedExpenses
-)}
-</div>
-</div>
+          margin:
+            25px 0;
+        }
 
+        .box {
+          border:
+            1px solid #ddd;
 
-<div class="box">
-Closing Balance
-<div class="value">
-${money(s.closing)}
-</div>
-</div>
+          padding:
+            15px;
 
-</div>
+          border-radius:
+            8px;
+        }
 
+        .value {
+          font-size:
+            20px;
 
-<h2>
-Member Contribution Status
-</h2>
+          font-weight:
+            bold;
 
+          margin-top:
+            6px;
+        }
 
-<table>
+        table {
+          width:
+            100%;
 
-<thead>
+          border-collapse:
+            collapse;
 
-<tr>
-<th>Member</th>
-<th>Expected</th>
-<th>Paid</th>
-<th>Outstanding</th>
-<th>Status</th>
-</tr>
+          margin-top:
+            20px;
+        }
 
-</thead>
+        th,
+        td {
+          border:
+            1px solid #ddd;
 
+          padding:
+            9px;
 
-<tbody>
+          text-align:
+            left;
+        }
 
-${rows}
+        th {
+          background:
+            #f5f5f5;
+        }
 
-</tbody>
+        @media print {
 
-</table>
+          body {
+            padding:
+              15px;
+          }
 
+        }
 
-<p>
-Collection rate:
-<strong>
-${s.collectionRate.toFixed(1)}%
-</strong>
-</p>
+      </style>
 
-
-<p>
-Period status:
-<strong>
-${String(
-  s.period.status
-).toUpperCase()}
-</strong>
-</p>
-
-
-<script>
-
-window.onload = function() {
-  window.print();
-};
-
-<\/script>
-
-</body>
-
-</html>
-
-`);
+    </head>
 
 
-  win.document.close();
+    <body>
+
+      <h1>
+        ${escapeHtml(
+          s.group.name
+        )}
+      </h1>
+
+
+      <div class="muted">
+
+        Monthly Financial Report —
+        ${formatMonth(
+          currentMonth
+        )}
+
+      </div>
+
+
+      <div class="summary">
+
+        <div class="box">
+          Opening Balance
+          <div class="value">
+            ${money(s.opening)}
+          </div>
+        </div>
+
+
+        <div class="box">
+          Expected Contributions
+          <div class="value">
+            ${money(s.expected)}
+          </div>
+        </div>
+
+
+        <div class="box">
+          Collected Contributions
+          <div class="value">
+            ${money(s.collected)}
+          </div>
+        </div>
+
+
+        <div class="box">
+          Outstanding
+          <div class="value">
+            ${money(s.outstanding)}
+          </div>
+        </div>
+
+
+        <div class="box">
+          Approved Expenses
+          <div class="value">
+            ${money(s.approvedExpenses)}
+          </div>
+        </div>
+
+
+        <div class="box">
+          Closing Balance
+          <div class="value">
+            ${money(s.closing)}
+          </div>
+        </div>
+
+      </div>
+
+
+      <h2>
+        Member Contribution Status
+      </h2>
+
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            <th>Member</th>
+
+            <th>Expected</th>
+
+            <th>Paid</th>
+
+            <th>Outstanding</th>
+
+            <th>Status</th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+          ${memberRows}
+
+        </tbody>
+
+      </table>
+
+
+      <p>
+
+        Collection rate:
+        <strong>
+          ${s.collectionRate.toFixed(1)}%
+        </strong>
+
+      </p>
+
+
+      <p>
+
+        Period status:
+        <strong>
+          ${String(
+            s.period.status
+          ).toUpperCase()}
+        </strong>
+
+      </p>
+
+
+      <script>
+
+        window.onload = function() {
+          window.print();
+        };
+
+      <\/script>
+
+
+    </body>
+
+    </html>
+
+  `);
+
+
+  printWindow.document.close();
 
 }
 
 
 /* =====================================================
-   HELPERS
+   MONEY
 ===================================================== */
-
-function setText(
-  id,
-  value
-) {
-
-  const element =
-    $(id);
-
-  if (element) {
-
-    element.textContent =
-      value;
-
-  }
-
-}
-
 
 function money(value) {
 
@@ -1682,16 +1593,23 @@ function money(value) {
       );
 
 
-  return number < 0
-    ? `-KSh ${formatted}`
-    : `KSh ${formatted}`;
+  if (number < 0) {
+
+    return `-KSh ${formatted}`;
+
+  }
+
+
+  return `KSh ${formatted}`;
 
 }
 
 
-function formatMonth(
-  month
-) {
+/* =====================================================
+   FORMAT MONTH
+===================================================== */
+
+function formatMonth(month) {
 
   if (!month) {
     return "";
@@ -1710,11 +1628,15 @@ function formatMonth(
     Number(parts[1]);
 
 
-  return new Date(
-    year,
-    monthNumber - 1,
-    1
-  ).toLocaleDateString(
+  const date =
+    new Date(
+      year,
+      monthNumber - 1,
+      1
+    );
+
+
+  return date.toLocaleDateString(
     "en-KE",
     {
       month:
@@ -1728,9 +1650,11 @@ function formatMonth(
 }
 
 
-function nextMonth(
-  month
-) {
+/* =====================================================
+   NEXT MONTH
+===================================================== */
+
+function nextMonth(month) {
 
   const parts =
     month.split("-");
@@ -1748,12 +1672,10 @@ function nextMonth(
 
 
   if (
-    monthNumber ===
-    13
+    monthNumber === 13
   ) {
 
-    monthNumber =
-      1;
+    monthNumber = 1;
 
     year++;
 
@@ -1772,9 +1694,11 @@ function nextMonth(
 }
 
 
-function escapeHtml(
-  value
-) {
+/* =====================================================
+   ESCAPE HTML
+===================================================== */
+
+function escapeHtml(value) {
 
   return String(
     value ?? ""
@@ -1803,12 +1727,15 @@ function escapeHtml(
 }
 
 
-function setStatus(
-  message
-) {
+/* =====================================================
+   STATUS
+===================================================== */
+
+function setStatus(message) {
 
   const element =
     $("status");
+
 
   if (element) {
 
@@ -1820,10 +1747,15 @@ function setStatus(
 }
 
 
+/* =====================================================
+   ERROR
+===================================================== */
+
 function clearError() {
 
   const element =
     $("error");
+
 
   if (!element) {
     return;
@@ -1833,27 +1765,24 @@ function clearError() {
   element.hidden =
     true;
 
+
   element.textContent =
     "";
 
 }
 
 
-function showError(
-  title,
-  error
-) {
+function showError(error) {
 
   console.error(
-    title,
+    "CHAMA LIVE:",
     error
   );
 
 
   const message =
     error?.message ||
-    String(error) ||
-    "Unknown error";
+    "Unable to load monthly financials.";
 
 
   const element =
@@ -1865,26 +1794,14 @@ function showError(
     element.hidden =
       false;
 
-    element.innerHTML = `
-      <strong>
-        ${escapeHtml(title)}
-      </strong>
-      <br>
-      ${escapeHtml(message)}
-    `;
+    element.textContent =
+      message;
 
   }
 
 
   setStatus(
-    title
+    "Unable to load monthly financials."
   );
 
 }
-
-
-/* =====================================================
-   START
-===================================================== */
-
-init();
