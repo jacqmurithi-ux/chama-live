@@ -7,11 +7,8 @@ import { getCurrentGroupId } from "./app.js";
    ELEMENTS
 ===================================================== */
 
-const statusBox =
-  document.getElementById("status");
-
-const errorBox =
-  document.getElementById("error");
+const statusBox = document.getElementById("status");
+const errorBox = document.getElementById("error");
 
 const activeMembersEl =
   document.getElementById("activeMembers");
@@ -67,18 +64,13 @@ const logoutButton =
 ===================================================== */
 
 function money(value) {
-
   return (
     "KSh " +
-    Number(value || 0).toLocaleString(
-      "en-KE",
-      {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2
-      }
-    )
+    Number(value || 0).toLocaleString("en-KE", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    })
   );
-
 }
 
 
@@ -87,14 +79,12 @@ function money(value) {
 ===================================================== */
 
 function escapeHtml(value) {
-
   return String(value ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
-
 }
 
 
@@ -113,14 +103,17 @@ function showError(error) {
     error?.message ||
     String(error);
 
-  errorBox.textContent =
-    "Error: " + message;
+  if (errorBox) {
+    errorBox.textContent =
+      "Error: " + message;
 
-  errorBox.hidden = false;
+    errorBox.hidden = false;
+  }
 
-  statusBox.textContent =
-    "Something went wrong.";
-
+  if (statusBox) {
+    statusBox.textContent =
+      "Something went wrong.";
+  }
 }
 
 
@@ -130,10 +123,12 @@ function showError(error) {
 
 function clearError() {
 
+  if (!errorBox) {
+    return;
+  }
+
   errorBox.textContent = "";
-
   errorBox.hidden = true;
-
 }
 
 
@@ -146,64 +141,41 @@ async function loadMembers(groupId) {
   const result =
     await supabase
       .from("members")
-      .select(
-        "id,name,status"
-      )
-      .eq(
-        "group_id",
-        groupId
-      );
-
+      .select("id,name,status")
+      .eq("group_id", groupId);
 
   if (result.error) {
-
     throw result.error;
-
   }
-
 
   const members =
     result.data || [];
 
-
   const active =
     members.filter(
       member =>
-        String(
-          member.status || ""
-        ).toLowerCase() ===
-        "active"
+        String(member.status || "")
+          .toLowerCase() === "active"
     ).length;
 
+  if (activeMembersEl) {
+    activeMembersEl.textContent =
+      active;
+  }
 
-  activeMembersEl.textContent =
-    active;
-
-
-  totalMembersEl.textContent =
-    members.length;
-
-
-  /*
-   * Create a lookup table so we don't
-   * depend on a Supabase relationship.
-   */
+  if (totalMembersEl) {
+    totalMembersEl.textContent =
+      members.length;
+  }
 
   const memberMap = {};
 
-
-  members.forEach(
-    member => {
-
-      memberMap[member.id] =
-        member.name || "Unknown";
-
-    }
-  );
-
+  members.forEach(member => {
+    memberMap[member.id] =
+      member.name || "Unknown";
+  });
 
   return memberMap;
-
 }
 
 
@@ -217,16 +189,16 @@ async function loadContributions(
 ) {
 
   /*
-   * IMPORTANT
-   *
-   * We use:
-   *
-   * contribution_date
-   *
-   * NOT:
-   *
-   * date
-   */
+   IMPORTANT:
+
+   The actual database column is:
+
+   contribution_date
+
+   NOT:
+
+   date
+  */
 
   const result =
     await supabase
@@ -241,28 +213,22 @@ async function loadContributions(
         reference,
         contribution_date
       `)
-      .eq(
-        "group_id",
-        groupId
-      )
-      .order(
-        "contribution_date",
-        {
-          ascending: false
-        }
-      );
-
+      .eq("group_id", groupId)
+      .order("contribution_date", {
+        ascending: false
+      });
 
   if (result.error) {
-
     throw result.error;
-
   }
-
 
   const contributions =
     result.data || [];
 
+
+  /* ===================================================
+     TOTAL
+  =================================================== */
 
   const total =
     contributions.reduce(
@@ -275,106 +241,103 @@ async function loadContributions(
     );
 
 
-  contributionsEl.textContent =
-    money(total);
+  if (contributionsEl) {
+    contributionsEl.textContent =
+      money(total);
+  }
 
-
-  contributions2El.textContent =
-    money(total);
+  if (contributions2El) {
+    contributions2El.textContent =
+      money(total);
+  }
 
 
   /* ===================================================
      TABLE
   =================================================== */
 
-  if (
-    contributions.length === 0
-  ) {
+  if (!contributionRows) {
+    return total;
+  }
 
-    contributionRows.innerHTML = `
+  if (contributions.length === 0) {
+
+    contributionRows.innerHTML =
+      `
       <tr>
         <td colspan="6">
           No contributions yet.
         </td>
       </tr>
-    `;
+      `;
 
     return total;
-
   }
 
 
+  const recent =
+    contributions.slice(0, 10);
+
+
   contributionRows.innerHTML =
-    contributions
-      .slice(0, 10)
-      .map(
-        contribution => {
+    recent
+      .map(contribution => {
 
-          const memberName =
-            memberMap[
-              contribution.member_id
-            ] ||
-            "Unknown";
+        const memberName =
+          memberMap[
+            contribution.member_id
+          ] || "Unknown";
 
 
-          const displayDate =
-            contribution.contribution_date ||
-            contribution.month ||
-            "—";
+        const displayDate =
+          contribution.contribution_date ||
+          contribution.month ||
+          "—";
 
 
-          return `
-            <tr>
+        return `
+          <tr>
 
-              <td>
-                ${escapeHtml(
-                  displayDate
-                )}
-              </td>
+            <td>
+              ${escapeHtml(displayDate)}
+            </td>
 
-              <td>
-                ${escapeHtml(
-                  memberName
-                )}
-              </td>
+            <td>
+              ${escapeHtml(memberName)}
+            </td>
 
-              <td>
-                ${money(
-                  contribution.amount
-                )}
-              </td>
+            <td>
+              ${money(contribution.amount)}
+            </td>
 
-              <td>
-                ${escapeHtml(
-                  contribution.contribution_type ||
-                  "—"
-                )}
-              </td>
+            <td>
+              ${escapeHtml(
+                contribution.contribution_type ||
+                "—"
+              )}
+            </td>
 
-              <td>
-                ${escapeHtml(
-                  contribution.payment_method ||
-                  "—"
-                )}
-              </td>
+            <td>
+              ${escapeHtml(
+                contribution.payment_method ||
+                "—"
+              )}
+            </td>
 
-              <td>
-                ${escapeHtml(
-                  contribution.reference ||
-                  "—"
-                )}
-              </td>
+            <td>
+              ${escapeHtml(
+                contribution.reference ||
+                "—"
+              )}
+            </td>
 
-            </tr>
-          `;
+          </tr>
+        `;
 
-        }
-      )
+      })
       .join("");
 
-
   return total;
-
 }
 
 
@@ -395,49 +358,30 @@ async function loadExpenses(groupId) {
         amount,
         approval_status
       `)
-      .eq(
-        "group_id",
-        groupId
-      )
-      .order(
-        "date",
-        {
-          ascending: false
-        }
-      );
-
+      .eq("group_id", groupId)
+      .order("date", {
+        ascending: false
+      });
 
   if (result.error) {
-
     throw result.error;
-
   }
-
 
   const expenses =
     result.data || [];
 
 
+  /* ===================================================
+     APPROVED
+  =================================================== */
+
   const approved =
-    expenses
-      .filter(
-        expense =>
-          String(
-            expense.approval_status || ""
-          ).toLowerCase() ===
-          "approved"
-      );
-
-
-  const pending =
-    expenses
-      .filter(
-        expense =>
-          String(
-            expense.approval_status || ""
-          ).toLowerCase() ===
-          "pending"
-      );
+    expenses.filter(
+      expense =>
+        String(
+          expense.approval_status || ""
+        ).toLowerCase() === "approved"
+    );
 
 
   const approvedTotal =
@@ -448,6 +392,19 @@ async function loadExpenses(groupId) {
           expense.amount || 0
         ),
       0
+    );
+
+
+  /* ===================================================
+     PENDING
+  =================================================== */
+
+  const pending =
+    expenses.filter(
+      expense =>
+        String(
+          expense.approval_status || ""
+        ).toLowerCase() === "pending"
     );
 
 
@@ -462,92 +419,92 @@ async function loadExpenses(groupId) {
     );
 
 
-  approvedExpensesEl.textContent =
-    money(approvedTotal);
+  if (approvedExpensesEl) {
+    approvedExpensesEl.textContent =
+      money(approvedTotal);
+  }
 
+  if (pendingExpensesEl) {
+    pendingExpensesEl.textContent =
+      money(pendingTotal);
+  }
 
-  pendingExpensesEl.textContent =
-    money(pendingTotal);
-
-
-  expenses2El.textContent =
-    money(approvedTotal);
+  if (expenses2El) {
+    expenses2El.textContent =
+      money(approvedTotal);
+  }
 
 
   /* ===================================================
      TABLE
   =================================================== */
 
-  if (
-    expenses.length === 0
-  ) {
+  if (!expenseRows) {
+    return approvedTotal;
+  }
 
-    expenseRows.innerHTML = `
+
+  if (expenses.length === 0) {
+
+    expenseRows.innerHTML =
+      `
       <tr>
         <td colspan="5">
           No expenses yet.
         </td>
       </tr>
-    `;
+      `;
 
     return approvedTotal;
-
   }
 
 
+  const recent =
+    expenses.slice(0, 10);
+
+
   expenseRows.innerHTML =
-    expenses
-      .slice(0, 10)
-      .map(
-        expense => {
+    recent
+      .map(expense => {
 
-          return `
-            <tr>
+        return `
+          <tr>
 
-              <td>
-                ${escapeHtml(
-                  expense.date ||
-                  "—"
-                )}
-              </td>
+            <td>
+              ${escapeHtml(
+                expense.date || "—"
+              )}
+            </td>
 
-              <td>
-                ${escapeHtml(
-                  expense.description ||
-                  "—"
-                )}
-              </td>
+            <td>
+              ${escapeHtml(
+                expense.description || "—"
+              )}
+            </td>
 
-              <td>
-                ${escapeHtml(
-                  expense.category ||
-                  "—"
-                )}
-              </td>
+            <td>
+              ${escapeHtml(
+                expense.category || "—"
+              )}
+            </td>
 
-              <td>
-                ${money(
-                  expense.amount
-                )}
-              </td>
+            <td>
+              ${money(expense.amount)}
+            </td>
 
-              <td>
-                ${escapeHtml(
-                  expense.approval_status ||
-                  "—"
-                )}
-              </td>
+            <td>
+              ${escapeHtml(
+                expense.approval_status || "—"
+              )}
+            </td>
 
-            </tr>
-          `;
+          </tr>
+        `;
 
-        }
-      )
+      })
       .join("");
 
-
   return approvedTotal;
-
 }
 
 
@@ -560,57 +517,58 @@ async function loadMeetings(groupId) {
   const result =
     await supabase
       .from("meetings")
-      .select(`
-        id,
-        date,
-        status
-      `)
-      .eq(
-        "group_id",
-        groupId
-      );
-
+      .select("id,date,status")
+      .eq("group_id", groupId);
 
   if (result.error) {
-
     throw result.error;
-
   }
-
 
   const meetings =
     result.data || [];
 
 
-  upcomingMeetingsEl.textContent =
+  const upcoming =
     meetings.filter(
       meeting =>
         String(
           meeting.status || ""
-        ).toLowerCase() ===
-        "upcoming"
+        ).toLowerCase() === "upcoming"
     ).length;
 
 
-  completedMeetingsEl.textContent =
+  const completed =
     meetings.filter(
       meeting =>
         String(
           meeting.status || ""
-        ).toLowerCase() ===
-        "completed"
+        ).toLowerCase() === "completed"
     ).length;
 
 
-  cancelledMeetingsEl.textContent =
+  const cancelled =
     meetings.filter(
       meeting =>
         String(
           meeting.status || ""
-        ).toLowerCase() ===
-        "cancelled"
+        ).toLowerCase() === "cancelled"
     ).length;
 
+
+  if (upcomingMeetingsEl) {
+    upcomingMeetingsEl.textContent =
+      upcoming;
+  }
+
+  if (completedMeetingsEl) {
+    completedMeetingsEl.textContent =
+      completed;
+  }
+
+  if (cancelledMeetingsEl) {
+    cancelledMeetingsEl.textContent =
+      cancelled;
+  }
 }
 
 
@@ -623,8 +581,10 @@ async function loadReports() {
   clearError();
 
 
-  statusBox.textContent =
-    "Finding your group...";
+  if (statusBox) {
+    statusBox.textContent =
+      "Finding your group...";
+  }
 
 
   const groupId =
@@ -640,20 +600,23 @@ async function loadReports() {
   }
 
 
-  statusBox.textContent =
-    "Loading live report...";
+  if (statusBox) {
+    statusBox.textContent =
+      "Loading live report...";
+  }
 
 
   /*
-   * Members first because we use their
-   * IDs to display contribution names.
+   * Load members first.
    */
 
   const memberMap =
-    await loadMembers(
-      groupId
-    );
+    await loadMembers(groupId);
 
+
+  /*
+   * Load contributions.
+   */
 
   const contributionTotal =
     await loadContributions(
@@ -662,23 +625,32 @@ async function loadReports() {
     );
 
 
+  /*
+   * Load expenses.
+   */
+
   const approvedExpenseTotal =
-    await loadExpenses(
-      groupId
-    );
+    await loadExpenses(groupId);
 
 
-  await loadMeetings(
-    groupId
-  );
+  /*
+   * Load meetings.
+   */
+
+  await loadMeetings(groupId);
 
 
-  /* ===================================================
-     FINANCIAL POSITION
-  =================================================== */
+  /*
+   * Opening balance currently
+   * defaults to zero.
+   */
 
   const openingBalance = 0;
 
+
+  /*
+   * Calculate closing balance.
+   */
 
   const closingBalance =
     openingBalance +
@@ -686,27 +658,26 @@ async function loadReports() {
     approvedExpenseTotal;
 
 
-  openingEl.textContent =
-    money(
-      openingBalance
-    );
+  if (openingEl) {
+    openingEl.textContent =
+      money(openingBalance);
+  }
+
+  if (balanceEl) {
+    balanceEl.textContent =
+      money(closingBalance);
+  }
+
+  if (currentBalanceEl) {
+    currentBalanceEl.textContent =
+      money(closingBalance);
+  }
 
 
-  balanceEl.textContent =
-    money(
-      closingBalance
-    );
-
-
-  currentBalanceEl.textContent =
-    money(
-      closingBalance
-    );
-
-
-  statusBox.textContent =
-    "Report updated successfully.";
-
+  if (statusBox) {
+    statusBox.textContent =
+      "Report updated successfully.";
+  }
 }
 
 
@@ -727,9 +698,7 @@ if (logoutButton) {
         window.location.href =
           "login.html";
 
-      }
-
-      catch(error) {
+      } catch (error) {
 
         showError(error);
 
@@ -749,13 +718,34 @@ async function start() {
 
   try {
 
-    await supabase.auth.getSession();
+    const sessionResult =
+      await supabase.auth.getSession();
+
+
+    if (
+      sessionResult.error
+    ) {
+
+      throw sessionResult.error;
+
+    }
+
+
+    if (
+      !sessionResult.data.session
+    ) {
+
+      window.location.href =
+        "login.html";
+
+      return;
+
+    }
+
 
     await loadReports();
 
-  }
-
-  catch(error) {
+  } catch (error) {
 
     showError(error);
 
@@ -766,4 +756,3 @@ async function start() {
 
 start();
 ```
-
