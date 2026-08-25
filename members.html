@@ -88,6 +88,8 @@
     </div>
 
 
+    <!-- STATUS -->
+
     <div
       id="status"
       class="card"
@@ -96,6 +98,8 @@
       Loading members...
     </div>
 
+
+    <!-- ERROR -->
 
     <div
       id="error"
@@ -196,7 +200,7 @@
             id="memberNumber"
             type="text"
             required
-            placeholder="e.g. TU-001"
+            placeholder="e.g. 1506"
           >
 
         </div>
@@ -312,7 +316,7 @@
     <br>
 
 
-    <!-- MEMBER LEDGER -->
+    <!-- MEMBER REGISTER -->
 
     <section class="card">
 
@@ -363,13 +367,21 @@
             <tr>
 
               <th>Name</th>
+
               <th>Member No.</th>
+
               <th>Phone</th>
+
               <th>Role</th>
+
               <th>Status</th>
+
               <th>Monthly</th>
+
               <th>Paid</th>
+
               <th>Outstanding</th>
+
               <th>Actions</th>
 
             </tr>
@@ -411,9 +423,14 @@
 
       <div id="memberDetails"></div>
 
+
       <br>
 
-      <h3>Contribution History</h3>
+
+      <h3>
+        Contribution History
+      </h3>
+
 
       <div class="table-wrap">
 
@@ -424,14 +441,19 @@
             <tr>
 
               <th>Date</th>
+
               <th>Amount</th>
+
               <th>Type</th>
+
               <th>Method</th>
+
               <th>Reference</th>
 
             </tr>
 
           </thead>
+
 
           <tbody id="contributionHistory">
 
@@ -449,7 +471,9 @@
 
       </div>
 
+
       <br>
+
 
       <div
         style="
@@ -458,6 +482,15 @@
           flex-wrap:wrap;
         "
       >
+
+        <button
+          class="btn"
+          id="statementMember"
+          type="button"
+        >
+          View Statement
+        </button>
+
 
         <button
           class="btn btn-secondary"
