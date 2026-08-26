@@ -1,3 +1,4 @@
+
 import { supabase } from "./supabase.js";
 
 console.log("CHAMA LIVE: signup.js loaded");
@@ -188,7 +189,7 @@ async function signup(event) {
 
     showError(
       new Error(
-        "Please enter a password with at least 6 characters."
+        "Password must contain at least 6 characters."
       )
     );
 
@@ -281,12 +282,14 @@ async function signup(event) {
 
 
     /*
-     * IMPORTANT:
+     * We do NOT use sessionStorage.
      *
-     * The group information is temporarily
-     * stored in Supabase Auth metadata.
+     * We do NOT send group_id.
      *
-     * Password is NEVER stored in metadata.
+     * The temporary onboarding information
+     * is stored in Supabase Auth user metadata.
+     *
+     * Password is NOT stored there.
      */
 
     const {
@@ -342,9 +345,7 @@ async function signup(event) {
 
 
     if (authError) {
-
       throw authError;
-
     }
 
 
@@ -367,6 +368,12 @@ async function signup(event) {
     );
 
 
+    console.log(
+      "CHAMA LIVE CONFIRMATION URL:",
+      CONFIRM_URL
+    );
+
+
     /* ===================================================
        CHECK SESSION
     =================================================== */
@@ -379,9 +386,7 @@ async function signup(event) {
 
 
     if (sessionError) {
-
       throw sessionError;
-
     }
 
 
@@ -396,7 +401,7 @@ async function signup(event) {
     if (!session) {
 
       setStatus(
-        "✓ Account created. Please check your email and click the confirmation link to finish creating your group."
+        "✓ Account created successfully. Please check your email and click the confirmation link to finish setting up your group."
       );
 
 
@@ -416,23 +421,13 @@ async function signup(event) {
 
 
     /* ===================================================
-       EMAIL CONFIRMATION NOT REQUIRED
+       NO EMAIL CONFIRMATION REQUIRED
     =================================================== */
 
     setStatus(
       "Account created. Setting up your group..."
     );
 
-
-    /*
-     * If email confirmation is disabled,
-     * we already have a session.
-     *
-     * Send the user to confirm.html.
-     *
-     * confirm.html will complete the
-     * exact same onboarding process.
-     */
 
     window.location.href =
       CONFIRM_URL;
