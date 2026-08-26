@@ -1,4 +1,5 @@
 
+```html
 <!doctype html>
 <html lang="en">
 
@@ -8,7 +9,7 @@
 
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1"
+    content="width=device-width,initial-scale=1"
   >
 
   <title>Members — CHAMA LIVE</title>
@@ -23,17 +24,11 @@
 
 <body>
 
-
-<!-- =====================================================
-     TOP BAR
-====================================================== -->
-
 <header class="topbar">
 
   <div class="brand">
     CHAMA <span>LIVE</span>
   </div>
-
 
   <button
     class="btn btn-secondary"
@@ -46,17 +41,7 @@
 </header>
 
 
-
-<!-- =====================================================
-     MAIN
-====================================================== -->
-
 <main class="container">
-
-
-  <!-- ===================================================
-       PAGE HEADER
-  ==================================================== -->
 
   <div
     style="
@@ -71,9 +56,7 @@
 
     <div>
 
-      <h1>
-        Members
-      </h1>
+      <h1>Members</h1>
 
       <p class="muted">
         Manage members of your group.
@@ -93,11 +76,6 @@
   </div>
 
 
-
-  <!-- ===================================================
-       STATUS
-  ==================================================== -->
-
   <div
     id="status"
     class="card"
@@ -107,11 +85,6 @@
   </div>
 
 
-
-  <!-- ===================================================
-       ERROR
-  ==================================================== -->
-
   <div
     id="error"
     class="error"
@@ -119,11 +92,6 @@
     style="margin-bottom:20px;"
   ></div>
 
-
-
-  <!-- ===================================================
-       SUCCESS
-  ==================================================== -->
 
   <div
     id="success"
@@ -133,10 +101,50 @@
   ></div>
 
 
+  <!-- SEARCH -->
 
-  <!-- ===================================================
-       ADD MEMBER FORM
-  ==================================================== -->
+  <section
+    class="card"
+    style="margin-bottom:20px;"
+  >
+
+    <div
+      style="
+        display:flex;
+        justify-content:space-between;
+        gap:15px;
+        align-items:center;
+        flex-wrap:wrap;
+      "
+    >
+
+      <div>
+
+        <strong id="memberCount">
+          Loading...
+        </strong>
+
+      </div>
+
+
+      <input
+        id="search"
+        type="search"
+        placeholder="Search members..."
+        autocomplete="off"
+        style="
+          min-width:250px;
+          max-width:400px;
+          width:100%;
+        "
+      >
+
+    </div>
+
+  </section>
+
+
+  <!-- MEMBER FORM -->
 
   <section
     id="memberFormCard"
@@ -145,26 +153,17 @@
     style="margin-bottom:25px;"
   >
 
-    <h2>
+    <h2 id="formTitle">
       Add Member
     </h2>
 
 
     <p class="muted">
-
-      Create the member record first.
-      The member can activate their online
-      account using their membership number
-      and email address.
-
+      Create or update a member record.
     </p>
 
 
-
     <form id="memberForm">
-
-
-      <!-- MEMBER NUMBER -->
 
       <div style="margin-bottom:15px;">
 
@@ -183,9 +182,6 @@
       </div>
 
 
-
-      <!-- MEMBERSHIP NUMBER -->
-
       <div style="margin-bottom:15px;">
 
         <label for="membershipNumber">
@@ -195,16 +191,12 @@
         <input
           id="membershipNumber"
           name="membershipNumber"
-          required
           autocomplete="off"
           style="width:100%;"
         >
 
       </div>
 
-
-
-      <!-- NAME -->
 
       <div style="margin-bottom:15px;">
 
@@ -222,9 +214,6 @@
 
       </div>
 
-
-
-      <!-- PHONE -->
 
       <div style="margin-bottom:15px;">
 
@@ -244,9 +233,6 @@
       </div>
 
 
-
-      <!-- EMAIL -->
-
       <div style="margin-bottom:15px;">
 
         <label for="email">
@@ -261,27 +247,14 @@
           style="width:100%;"
         >
 
-        <p
-          class="muted"
-          style="font-size:13px;"
-        >
-          If the member wants online access,
-          use the same email they will use
-          for CHAMA LIVE.
-        </p>
-
       </div>
 
 
-
-      <!-- ROLE -->
-
-      <div style="margin-bottom:20px;">
+      <div style="margin-bottom:15px;">
 
         <label for="role">
           Role
         </label>
-
 
         <select
           id="role"
@@ -314,8 +287,46 @@
       </div>
 
 
+      <div style="margin-bottom:15px;">
 
-      <!-- FORM BUTTONS -->
+        <label for="joinDate">
+          Join Date
+        </label>
+
+        <input
+          id="joinDate"
+          name="joinDate"
+          type="date"
+          style="width:100%;"
+        >
+
+      </div>
+
+
+      <div style="margin-bottom:20px;">
+
+        <label for="status">
+          Status
+        </label>
+
+        <select
+          id="status"
+          name="status"
+          style="width:100%;"
+        >
+
+          <option value="active">
+            Active
+          </option>
+
+          <option value="inactive">
+            Inactive
+          </option>
+
+        </select>
+
+      </div>
+
 
       <div
         style="
@@ -330,7 +341,7 @@
           id="saveMember"
           class="btn btn-primary"
         >
-          Add Member
+          Save Member
         </button>
 
 
@@ -344,24 +355,18 @@
 
       </div>
 
-
     </form>
 
   </section>
 
 
-
-  <!-- ===================================================
-       MEMBER LIST
-  ==================================================== -->
+  <!-- MEMBERS -->
 
   <section class="card">
-
 
     <h2>
       Group Members
     </h2>
-
 
     <p class="muted">
       Members registered in your group.
@@ -375,58 +380,41 @@
       "
     >
 
-
       <table class="table">
-
 
         <thead>
 
           <tr>
 
-            <th>
-              Member No.
-            </th>
+            <th>Member No.</th>
 
-            <th>
-              Membership No.
-            </th>
+            <th>Membership No.</th>
 
-            <th>
-              Name
-            </th>
+            <th>Name</th>
 
-            <th>
-              Phone
-            </th>
+            <th>Phone</th>
 
-            <th>
-              Email
-            </th>
+            <th>Email</th>
 
-            <th>
-              Role
-            </th>
+            <th>Role</th>
 
-            <th>
-              Account
-            </th>
+            <th>Account</th>
 
-            <th>
-              Status
-            </th>
+            <th>Status</th>
+
+            <th>Actions</th>
 
           </tr>
 
         </thead>
 
 
-
-        <tbody id="membersBody">
+        <tbody id="memberRows">
 
           <tr>
 
             <td
-              colspan="8"
+              colspan="9"
               class="muted"
             >
               Loading...
@@ -436,34 +424,25 @@
 
         </tbody>
 
-
       </table>
-
 
     </div>
 
-
   </section>
-
 
 </main>
 
 
-
-<!-- =====================================================
-     PAGE JAVASCRIPT
-====================================================== -->
-
-
 <script type="module">
 
-  import { boot } from "./js/layout.js";
+  import { boot }
+    from "./js/layout.js";
 
   boot();
 
 </script>
 
-
 </body>
 
 </html>
+```
