@@ -530,17 +530,11 @@
 
 <!-- APPLICATION BOOT -->
 <script type="module">
-
-  import {
-    boot
-  } from "./js/layout.js";
-
-  await boot();
-
+  import { boot } from "./js/layout.js";
   import "./js/reports.js";
 
+  boot();
 </script>
-
 </body>
 </html>
 ```
