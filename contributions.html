@@ -1,3 +1,4 @@
+```html
 <!doctype html>
 <html lang="en">
 
@@ -68,9 +69,11 @@
       <a href="reports.html">
         Reports
       </a>
-<a href="monthly-closing.html">
-  Monthly Closing
-</a>
+
+      <a href="monthly-closing.html">
+        Monthly Closing
+      </a>
+
       <a href="group-management.html">
         Group Management
       </a>
@@ -302,7 +305,7 @@
 
 
         <button
-          class="btn"
+          class="btn btn-primary"
           id="saveContribution"
           type="submit"
         >
@@ -326,10 +329,13 @@
       </h2>
 
       <p class="muted">
+
         Expected monthly contribution:
+
         <strong id="monthlyExpected">
           KSh 0
         </strong>
+
       </p>
 
 
@@ -341,15 +347,25 @@
 
             <tr>
 
-              <th>Member</th>
+              <th>
+                Member
+              </th>
 
-              <th>Expected</th>
+              <th>
+                Expected
+              </th>
 
-              <th>Paid</th>
+              <th>
+                Paid
+              </th>
 
-              <th>Outstanding</th>
+              <th>
+                Outstanding
+              </th>
 
-              <th>Status</th>
+              <th>
+                Status
+              </th>
 
             </tr>
 
@@ -386,6 +402,7 @@
         Contribution Ledger
       </h2>
 
+
       <div class="table-wrap">
 
         <table class="table">
@@ -394,17 +411,29 @@
 
             <tr>
 
-              <th>Date</th>
+              <th>
+                Date
+              </th>
 
-              <th>Member</th>
+              <th>
+                Member
+              </th>
 
-              <th>Amount</th>
+              <th>
+                Amount
+              </th>
 
-              <th>Type</th>
+              <th>
+                Type
+              </th>
 
-              <th>Method</th>
+              <th>
+                Method
+              </th>
 
-              <th>Reference</th>
+              <th>
+                Reference
+              </th>
 
             </tr>
 
@@ -434,16 +463,42 @@
 </div>
 
 
+<!-- =====================================================
+     JAVASCRIPT
+====================================================== -->
+
 <script type="module">
 
-  import { boot } from "./js/layout.js";
+  /*
+   * Load both modules normally.
+   *
+   * Do NOT use:
+   *
+   * await boot();
+   * import "./js/contributions.js";
+   *
+   * because that can prevent the page module
+   * from initializing correctly.
+   */
 
-  await boot();
+  import {
+    boot
+  } from "./js/layout.js";
+
 
   import "./js/contributions.js";
 
+
+  /*
+   * Start authentication and common layout.
+   */
+
+  boot();
+
 </script>
+
 
 </body>
 
 </html>
+```
