@@ -154,7 +154,7 @@
 
 
     <!-- =====================================================
-         SEARCH
+         SEARCH MEMBERS
     ====================================================== -->
 
     <div
@@ -262,6 +262,7 @@
 
             <input
               id="memberNumber"
+              name="memberNumber"
               type="text"
               placeholder="e.g. 1506"
               required
@@ -281,6 +282,7 @@
 
             <input
               id="memberName"
+              name="memberName"
               type="text"
               placeholder="Member full name"
               required
@@ -300,6 +302,7 @@
 
             <input
               id="memberPhone"
+              name="memberPhone"
               type="tel"
               placeholder="0712345678"
               required
@@ -319,6 +322,7 @@
 
             <input
               id="memberEmail"
+              name="memberEmail"
               type="email"
               placeholder="member@example.com"
             >
@@ -335,7 +339,10 @@
               Role
             </label>
 
-            <select id="memberRole">
+            <select
+              id="memberRole"
+              name="memberRole"
+            >
 
               <option value="member">
                 Member
@@ -371,7 +378,10 @@
               Status
             </label>
 
-            <select id="memberStatus">
+            <select
+              id="memberStatus"
+              name="memberStatus"
+            >
 
               <option value="active">
                 Active
@@ -545,15 +555,19 @@
 
 <!-- =========================================================
      VIEW MEMBER MODAL
-
+     
      IMPORTANT:
-     hidden keeps this completely invisible when page loads.
+     NO aria-hidden="true" HERE.
+     
+     The JavaScript controls hidden/display and focus.
 ========================================================= -->
 
 <div
   id="memberModal"
   hidden
-  aria-hidden="true"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="viewMemberName"
   style="
     position:fixed;
     inset:0;
@@ -569,9 +583,6 @@
 
   <section
     class="card"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="viewMemberName"
     style="
       width:100%;
       max-width:500px;
