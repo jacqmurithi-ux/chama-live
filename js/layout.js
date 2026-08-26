@@ -1,21 +1,3 @@
-```javascript
-/* =========================================================
-   CHAMA LIVE
-   js/layout.js
-
-   DEPENDENCY ORDER:
-
-   supabase.js
-        ↓
-   auth.js
-        ↓
-   layout.js
-        ↓
-   page scripts
-   (members.js, dashboard.js, etc.)
-
-========================================================= */
-
 import {
   supabase,
   requireAuth,
@@ -26,45 +8,18 @@ import {
 
 
 /* =========================================================
-   STATE
+   ELEMENTS
 ========================================================= */
 
-let currentSession = null;
-let currentMember = null;
-let currentGroup = null;
+const logoutButton = document.getElementById("logout");
 
 
 /* =========================================================
-   PAGE SCRIPT MAP
+   STATE
 ========================================================= */
 
-const PAGE_SCRIPTS = {
-
-  dashboard:
-    "./dashboard.js",
-
-  members:
-    "./members.js",
-
-  contributions:
-    "./contributions.js",
-
-  expenses:
-    "./expenses.js",
-
-  meetings:
-    "./meetings.js",
-
-  reports:
-    "./reports.js",
-
-  "group-management":
-    "./group-management.js",
-
-  "monthly-closing":
-    "./monthly-closing.js"
-
-};
+let currentMember = null;
+let currentGroup = null;
 
 
 /* =========================================================
@@ -75,54 +30,32 @@ export async function boot() {
 
   try {
 
-    console.log(
-      "CHAMA LIVE: layout booting..."
-    );
+    const session = await requireAuth();
 
-
-    /* -----------------------------------------
-       AUTHENTICATION
-    ----------------------------------------- */
-
-    currentSession =
-      await requireAuth();
-
-
-    if (!currentSession) {
+    if (!session) {
       return;
     }
 
 
-    /* -----------------------------------------
-       LOAD MEMBER
-    ----------------------------------------- */
-
-    currentMember =
-      await getMyMember();
-
+    currentMember = await getMyMember();
 
     if (!currentMember) {
 
       console.error(
-        "No member record found for logged-in user."
+        "No member record found for this account."
       );
 
       showGlobalError(
-        "Your account is not linked to a group member record."
+        "Your account is authenticated, but no member record was found."
       );
 
       return;
     }
 
 
-    /* -----------------------------------------
-       LOAD GROUP
-    ----------------------------------------- */
-
     try {
 
-      currentGroup =
-        await getMyGroup();
+      currentGroup = await getMyGroup();
 
     } catch (groupError) {
 
@@ -131,75 +64,30 @@ export async function boot() {
         groupError
       );
 
-      /*
-       * Some older databases may not yet have
-       * the get_my_group RPC.
-       *
-       * We can still obtain the group ID from
-       * the member record.
-       */
-
-      if (currentMember.group_id) {
-
-        const {
-          data,
-          error
-        } =
-          await supabase
-            .from("groups")
-            .select("*")
-            .eq(
-              "id",
-              currentMember.group_id
-            )
-            .maybeSingle();
-
-
-        if (!error) {
-          currentGroup = data;
-        }
-
-      }
+      currentGroup = null;
 
     }
 
 
-    /* -----------------------------------------
-       DISPLAY USER / GROUP
-    ----------------------------------------- */
+    displayUser();
 
-    updateLayout();
-
-
-    /* -----------------------------------------
-       LOGOUT
-    ----------------------------------------- */
+    displayGroup();
 
     setupLogout();
 
-
-    /* -----------------------------------------
-       LOAD PAGE SCRIPT
-    ----------------------------------------- */
-
-    await loadPageScript();
-
-
-    console.log(
-      "CHAMA LIVE: layout ready."
-    );
+    loadPageScript();
 
 
   } catch (error) {
 
     console.error(
-      "LAYOUT BOOT ERROR:",
+      "Layout boot error:",
       error
     );
 
-
     showGlobalError(
-      friendlyError(error)
+      error?.message ||
+      "Unable to load the application."
     );
 
   }
@@ -208,94 +96,84 @@ export async function boot() {
 
 
 /* =========================================================
-   UPDATE LAYOUT
+   DISPLAY USER
 ========================================================= */
 
-function updateLayout() {
+function displayUser() {
 
-  const memberName =
+  const userName =
     currentMember?.name ||
-    currentSession?.user?.email ||
     "Member";
 
 
+  document
+    .querySelectorAll(
+      "[data-user-name]"
+    )
+    .forEach(
+      element => {
+
+        element.textContent =
+          userName;
+
+      }
+    );
+
+
+  document
+    .querySelectorAll(
+      ".welcome-name"
+    )
+    .forEach(
+      element => {
+
+        element.textContent =
+          userName;
+
+      }
+    );
+
+}
+
+
+/* =========================================================
+   DISPLAY GROUP
+========================================================= */
+
+function displayGroup() {
+
   const groupName =
     currentGroup?.name ||
-    currentGroup?.group_name ||
+    currentMember?.group_name ||
     "Your Group";
 
 
-  /*
-   * Possible elements on different pages.
-   * Missing elements are simply ignored.
-   */
-
-  setText(
-    "memberName",
-    memberName
-  );
-
-
-  setText(
-    "welcomeName",
-    memberName
-  );
-
-
-  setText(
-    "userName",
-    memberName
-  );
-
-
-  setText(
-    "groupName",
-    groupName
-  );
-
-
-  setText(
-    "groupTitle",
-    groupName
-  );
-
-
-  setText(
-    "currentGroup",
-    groupName
-  );
-
-
-  /*
-   * Role
-   */
-
-  setText(
-    "memberRole",
-    formatRole(
-      currentMember?.role
+  document
+    .querySelectorAll(
+      "[data-group-name]"
     )
-  );
+    .forEach(
+      element => {
+
+        element.textContent =
+          groupName;
+
+      }
+    );
 
 
-  setText(
-    "userRole",
-    formatRole(
-      currentMember?.role
+  document
+    .querySelectorAll(
+      ".group-name"
     )
-  );
+    .forEach(
+      element => {
 
+        element.textContent =
+          groupName;
 
-  /*
-   * Member number
-   */
-
-  setText(
-    "memberNumber",
-    currentMember?.membership_number ||
-    currentMember?.member_number ||
-    "—"
-  );
+      }
+    );
 
 }
 
@@ -306,77 +184,40 @@ function updateLayout() {
 
 function setupLogout() {
 
-  const logoutButtons =
-    document.querySelectorAll(
-      "#logout, [data-action='logout']"
-    );
+  if (!logoutButton) {
+    return;
+  }
 
 
-  logoutButtons.forEach(
-    button => {
+  logoutButton.addEventListener(
+    "click",
+    async () => {
 
-      /*
-       * Prevent duplicate listeners.
-       */
+      logoutButton.disabled =
+        true;
 
-      if (
-        button.dataset.logoutReady === "true"
-      ) {
-        return;
+      logoutButton.textContent =
+        "Signing out...";
+
+
+      try {
+
+        await signOut();
+
+      } catch (error) {
+
+        console.error(
+          "Logout error:",
+          error
+        );
+
+        logoutButton.disabled =
+          false;
+
+        logoutButton.textContent =
+          "Sign out";
+
       }
-
-
-      button.dataset.logoutReady =
-        "true";
-
-
-      button.addEventListener(
-        "click",
-        async event => {
-
-          event.preventDefault();
-
-
-          button.disabled =
-            true;
-
-
-          const originalText =
-            button.textContent;
-
-
-          button.textContent =
-            "Signing out...";
-
-
-          try {
-
-            await signOut();
-
-          } catch (error) {
-
-            console.error(
-              "Logout error:",
-              error
-            );
-
-
-            button.disabled =
-              false;
-
-
-            button.textContent =
-              originalText;
-
-
-            showGlobalError(
-              friendlyError(error)
-            );
-
-          }
-
-        }
-      );
 
     }
   );
@@ -385,38 +226,107 @@ function setupLogout() {
 
 
 /* =========================================================
-   LOAD PAGE SCRIPT
+   PAGE SCRIPT
 ========================================================= */
 
 async function loadPageScript() {
 
-  /*
-   * Determine current page.
-   */
-
-  const page =
-    getCurrentPage();
+  const path =
+    window.location.pathname
+      .toLowerCase();
 
 
-  console.log(
-    "Current page:",
-    page
-  );
+  let script = null;
 
 
-  const script =
-    PAGE_SCRIPTS[page];
+  if (
+    path.endsWith(
+      "/dashboard.html"
+    ) ||
+    path.endsWith(
+      "/"
+    )
+  ) {
+
+    script =
+      "./dashboard.js";
+
+  }
 
 
-  /*
-   * No page-specific script required.
-   */
+  else if (
+    path.endsWith(
+      "/members.html"
+    )
+  ) {
 
-  if (!script) {
+    script =
+      "./members.js";
 
-    console.log(
-      `No page script registered for "${page}".`
-    );
+  }
+
+
+  else if (
+    path.endsWith(
+      "/contributions.html"
+    )
+  ) {
+
+    script =
+      "./contributions.js";
+
+  }
+
+
+  else if (
+    path.endsWith(
+      "/expenses.html"
+    )
+  ) {
+
+    script =
+      "./expenses.js";
+
+  }
+
+
+  else if (
+    path.endsWith(
+      "/meetings.html"
+    )
+  ) {
+
+    script =
+      "./meetings.js";
+
+  }
+
+
+  else if (
+    path.endsWith(
+      "/reports.html"
+    )
+  ) {
+
+    script =
+      "./reports.js";
+
+  }
+
+
+  else if (
+    path.endsWith(
+      "/group-management.html"
+    )
+  ) {
+
+    script =
+      "./group-management.js";
+
+  }
+
+
+  else {
 
     return;
 
@@ -425,25 +335,12 @@ async function loadPageScript() {
 
   try {
 
-    /*
-     * Dynamic import.
-     *
-     * IMPORTANT:
-     *
-     * Page scripts must be located in:
-     *
-     * js/members.js
-     * js/dashboard.js
-     * etc.
-     */
-
-    await import(script);
-
-
-    console.log(
-      `Loaded page script: ${script}`
+    await import(
+      `./${script.replace(
+        "./",
+        ""
+      )}`
     );
-
 
   } catch (error) {
 
@@ -452,139 +349,11 @@ async function loadPageScript() {
       error
     );
 
-
     showGlobalError(
-      `Unable to load this page. Check ${script} for an error.`
+      `Unable to load page module. Check ${script}.`
     );
 
   }
-
-}
-
-
-/* =========================================================
-   DETECT CURRENT PAGE
-========================================================= */
-
-function getCurrentPage() {
-
-  /*
-   * First look for explicit data-page.
-   *
-   * Example:
-   *
-   * <body data-page="members">
-   */
-
-  const bodyPage =
-    document.body?.dataset?.page;
-
-
-  if (bodyPage) {
-
-    return bodyPage
-      .trim()
-      .toLowerCase();
-
-  }
-
-
-  /*
-   * Otherwise determine page from filename.
-   */
-
-  let filename =
-    window.location.pathname
-      .split("/")
-      .pop();
-
-
-  /*
-   * Remove query/hash if present.
-   */
-
-  filename =
-    filename
-      .split("?")[0]
-      .split("#")[0];
-
-
-  /*
-   * Remove .html
-   */
-
-  filename =
-    filename.replace(
-      /\.html$/i,
-      ""
-    );
-
-
-  /*
-   * index.html = dashboard
-   */
-
-  if (
-    !filename ||
-    filename === "index"
-  ) {
-
-    return "dashboard";
-
-  }
-
-
-  return filename
-    .trim()
-    .toLowerCase();
-
-}
-
-
-/* =========================================================
-   TEXT HELPER
-========================================================= */
-
-function setText(
-  id,
-  value
-) {
-
-  const element =
-    document.getElementById(id);
-
-
-  if (!element) {
-    return;
-  }
-
-
-  element.textContent =
-    value ?? "";
-
-}
-
-
-/* =========================================================
-   ROLE FORMAT
-========================================================= */
-
-function formatRole(
-  role
-) {
-
-  return String(
-    role || "member"
-  )
-    .replaceAll(
-      "_",
-      " "
-    )
-    .replace(
-      /\b\w/g,
-      character =>
-        character.toUpperCase()
-    );
 
 }
 
@@ -597,189 +366,53 @@ function showGlobalError(
   message
 ) {
 
-  /*
-   * Use existing error element if available.
-   */
-
-  const existing =
+  let errorBox =
     document.getElementById(
-      "error"
+      "layoutError"
     );
 
 
-  if (existing) {
+  if (!errorBox) {
 
-    existing.hidden =
-      false;
+    errorBox =
+      document.createElement(
+        "div"
+      );
 
-    existing.textContent =
-      message;
+    errorBox.id =
+      "layoutError";
 
-    return;
-
-  }
-
-
-  /*
-   * Otherwise create a simple error box.
-   */
-
-  const box =
-    document.createElement(
-      "div"
-    );
+    errorBox.className =
+      "error";
 
 
-  box.style.cssText = `
-    position:fixed;
-    top:20px;
-    left:20px;
-    right:20px;
-    z-index:99999;
-    padding:15px;
-    border-radius:8px;
-    background:#fee2e2;
-    color:#991b1b;
-    border:1px solid #fecaca;
-    font-family:Arial,sans-serif;
-  `;
+    const main =
+      document.querySelector(
+        "main"
+      );
 
 
-  box.textContent =
-    message;
+    if (main) {
 
+      main.prepend(
+        errorBox
+      );
 
-  document.body.prepend(
-    box
-  );
+    } else {
 
-}
-
-
-/* =========================================================
-   FRIENDLY ERROR
-========================================================= */
-
-function friendlyError(
-  error
-) {
-
-  if (!error) {
-
-    return "Something went wrong.";
-
-  }
-
-
-  const message =
-    error.message ||
-    String(error);
-
-
-  const lower =
-    message.toLowerCase();
-
-
-  if (
-    lower.includes(
-      "failed to fetch"
-    )
-  ) {
-
-    return (
-      "Unable to connect to the server. " +
-      "Please check your internet connection."
-    );
-
-  }
-
-
-  if (
-    lower.includes(
-      "row-level security"
-    )
-  ) {
-
-    return (
-      "You do not have permission to access this information."
-    );
-
-  }
-
-
-  if (
-    lower.includes(
-      "jwt"
-    ) ||
-    lower.includes(
-      "not authenticated"
-    )
-  ) {
-
-    return (
-      "Your session has expired. Please sign in again."
-    );
-
-  }
-
-
-  return message;
-
-}
-
-
-/* =========================================================
-   AUTH STATE LISTENER
-========================================================= */
-
-supabase.auth.onAuthStateChange(
-  (
-    event,
-    session
-  ) => {
-
-    console.log(
-      "Auth state:",
-      event
-    );
-
-
-    currentSession =
-      session || null;
-
-
-    if (
-      event === "SIGNED_OUT"
-    ) {
-
-      currentMember =
-        null;
-
-      currentGroup =
-        null;
-
-
-      /*
-       * Only redirect if we are not already
-       * on the login page.
-       */
-
-      const page =
-        getCurrentPage();
-
-
-      if (
-        page !== "login"
-      ) {
-
-        window.location.replace(
-          "./login.html"
-        );
-
-      }
+      document.body.prepend(
+        errorBox
+      );
 
     }
 
   }
-);
-```
+
+
+  errorBox.hidden =
+    false;
+
+  errorBox.textContent =
+    message;
+
+}
