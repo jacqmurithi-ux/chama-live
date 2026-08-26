@@ -1,3 +1,4 @@
+```javascript
 import { supabase } from "./supabase.js";
 
 
@@ -15,9 +16,11 @@ let sessionCache = null;
 ========================================================= */
 
 export function clearAuthCache() {
+
   memberCache = null;
   groupCache = null;
   sessionCache = null;
+
 }
 
 
@@ -32,14 +35,18 @@ export async function getSession() {
     error
   } = await supabase.auth.getSession();
 
+
   if (error) {
     throw error;
   }
 
+
   sessionCache =
     data?.session || null;
 
+
   return sessionCache;
+
 }
 
 
@@ -52,6 +59,7 @@ export async function requireAuth() {
   const session =
     await getSession();
 
+
   if (!session) {
 
     window.location.replace(
@@ -59,9 +67,12 @@ export async function requireAuth() {
     );
 
     return null;
+
   }
 
+
   return session;
+
 }
 
 
@@ -76,11 +87,14 @@ export async function getCurrentUser() {
     error
   } = await supabase.auth.getUser();
 
+
   if (error) {
     throw error;
   }
 
+
   return data?.user || null;
+
 }
 
 
@@ -96,7 +110,9 @@ export async function getMyMember(
     memberCache &&
     !forceRefresh
   ) {
+
     return memberCache;
+
   }
 
 
@@ -110,31 +126,30 @@ export async function getMyMember(
 
 
   if (error) {
+
     console.error(
       "get_my_member error:",
       error
     );
 
     throw error;
+
   }
 
 
-  /*
-   * RPC RETURNS members
-   *
-   * Depending on Supabase response
-   * it can arrive as an object or
-   * single-element array.
-   */
-
-  let member = data;
+  let member =
+    data;
 
 
-  if (Array.isArray(data)) {
+  if (
+    Array.isArray(data)
+  ) {
+
     member =
       data.length
         ? data[0]
         : null;
+
   }
 
 
@@ -143,6 +158,7 @@ export async function getMyMember(
 
 
   return memberCache;
+
 }
 
 
@@ -158,7 +174,9 @@ export async function getMyGroup(
     groupCache &&
     !forceRefresh
   ) {
+
     return groupCache;
+
   }
 
 
@@ -172,23 +190,30 @@ export async function getMyGroup(
 
 
   if (error) {
+
     console.error(
       "get_my_group error:",
       error
     );
 
     throw error;
+
   }
 
 
-  let group = data;
+  let group =
+    data;
 
 
-  if (Array.isArray(data)) {
+  if (
+    Array.isArray(data)
+  ) {
+
     group =
       data.length
         ? data[0]
         : null;
+
   }
 
 
@@ -197,6 +222,7 @@ export async function getMyGroup(
 
 
   return groupCache;
+
 }
 
 
@@ -214,13 +240,11 @@ export async function getMyGroupId() {
     member &&
     member.group_id
   ) {
+
     return member.group_id;
+
   }
 
-
-  /*
-   * Fallback to database RPC.
-   */
 
   const {
     data,
@@ -237,6 +261,7 @@ export async function getMyGroupId() {
 
 
   return data || null;
+
 }
 
 
@@ -263,15 +288,13 @@ export async function requireMember() {
 
     await signOut();
 
-    window.location.replace(
-      "./login.html"
-    );
-
     return null;
+
   }
 
 
   return member;
+
 }
 
 
@@ -300,32 +323,127 @@ export async function requireGroup() {
       "Authenticated member has no valid group."
     );
 
+
     await signOut();
 
-    window.location.replace(
-      "./login.html"
-    );
-
     return null;
+
   }
 
 
   return group;
+
 }
 
 
 /* =========================================================
-   ROLE
+   GET ROLE
 ========================================================= */
 
 export function getRole(
-  member
+  member = null
 ) {
 
+  /*
+   * If no member is supplied,
+   * use the cached member.
+   */
+
+  const source =
+    member ||
+    memberCache;
+
+
   return String(
-    member?.role ||
+    source?.role ||
     "member"
-  ).toLowerCase();
+  )
+    .trim()
+    .toLowerCase();
+
+}
+
+
+/* =========================================================
+   HAS ROLE
+========================================================= */
+
+export function hasRole(
+  member,
+  requiredRole
+) {
+
+  /*
+   * Support:
+   *
+   * hasRole(member, "admin")
+   *
+   * hasRole(member, ["admin", "treasurer"])
+   *
+   * hasRole("admin")
+   *
+   * hasRole(["admin", "treasurer"])
+   */
+
+  let actualMember =
+    member;
+
+  let required =
+    requiredRole;
+
+
+  /*
+   * If only one argument is supplied,
+   * assume it is the required role and
+   * use the cached member.
+   */
+
+  if (
+    requiredRole === undefined
+  ) {
+
+    required =
+      member;
+
+    actualMember =
+      memberCache;
+
+  }
+
+
+  const role =
+    getRole(
+      actualMember
+    );
+
+
+  if (
+    Array.isArray(required)
+  ) {
+
+    return required
+      .map(
+        value =>
+          String(value)
+            .trim()
+            .toLowerCase()
+      )
+      .includes(
+        role
+      );
+
+  }
+
+
+  return (
+    role ===
+    String(
+      required ||
+      "member"
+    )
+      .trim()
+      .toLowerCase()
+  );
 
 }
 
@@ -335,11 +453,13 @@ export function getRole(
 ========================================================= */
 
 export function isAdmin(
-  member
+  member = null
 ) {
 
   const role =
-    getRole(member);
+    getRole(
+      member
+    );
 
 
   return [
@@ -348,7 +468,9 @@ export function isAdmin(
     "chairperson",
     "secretary",
     "treasurer"
-  ].includes(role);
+  ].includes(
+    role
+  );
 
 }
 
@@ -358,11 +480,13 @@ export function isAdmin(
 ========================================================= */
 
 export function isManager(
-  member
+  member = null
 ) {
 
   const role =
-    getRole(member);
+    getRole(
+      member
+    );
 
 
   return [
@@ -372,56 +496,214 @@ export function isManager(
     "secretary",
     "treasurer",
     "manager"
-  ].includes(role);
+  ].includes(
+    role
+  );
 
 }
 
 
 /* =========================================================
-   PERMISSION CHECK
+   GROUP MANAGEMENT
 ========================================================= */
 
 export function canManageGroup(
-  member
+  member = null
 ) {
 
-  return isAdmin(member);
+  return isAdmin(
+    member
+  );
 
 }
 
+
+/* =========================================================
+   MEMBER MANAGEMENT
+========================================================= */
 
 export function canManageMembers(
-  member
+  member = null
 ) {
 
-  return isManager(member);
+  return isManager(
+    member
+  );
 
 }
 
+
+/* =========================================================
+   CONTRIBUTION PERMISSION
+========================================================= */
 
 export function canRecordContributions(
-  member
+  member = null
 ) {
 
-  return isManager(member);
+  return isManager(
+    member
+  );
 
 }
 
+
+/* =========================================================
+   EXPENSE PERMISSION
+========================================================= */
 
 export function canRecordExpenses(
-  member
+  member = null
 ) {
 
-  return isManager(member);
+  return isManager(
+    member
+  );
 
 }
 
 
+/* =========================================================
+   MEETING PERMISSION
+========================================================= */
+
 export function canManageMeetings(
-  member
+  member = null
 ) {
 
-  return isManager(member);
+  return isManager(
+    member
+  );
+
+}
+
+
+/* =========================================================
+   ADD GROUP MEMBER
+========================================================= */
+
+export async function addGroupMember({
+  groupId,
+  name,
+  memberNumber,
+  membershipNumber,
+  phone,
+  email,
+  role = "member",
+  joinDate = null
+}) {
+
+  if (!groupId) {
+
+    throw new Error(
+      "Group ID is required."
+    );
+
+  }
+
+
+  if (!name) {
+
+    throw new Error(
+      "Member name is required."
+    );
+
+  }
+
+
+  if (!memberNumber) {
+
+    throw new Error(
+      "Member number is required."
+    );
+
+  }
+
+
+  if (!membershipNumber) {
+
+    throw new Error(
+      "Membership number is required."
+    );
+
+  }
+
+
+  if (!phone) {
+
+    throw new Error(
+      "Phone number is required."
+    );
+
+  }
+
+
+  const payload = {
+
+    group_id:
+      groupId,
+
+    member_number:
+      memberNumber,
+
+    membership_number:
+      membershipNumber,
+
+    name:
+      name,
+
+    phone:
+      phone,
+
+    email:
+      email || null,
+
+    role:
+      role || "member",
+
+    join_date:
+      joinDate ||
+      new Date()
+        .toISOString()
+        .slice(
+          0,
+          10
+        ),
+
+    status:
+      "active"
+
+  };
+
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from(
+        "members"
+      )
+      .insert(
+        payload
+      )
+      .select()
+      .single();
+
+
+  if (error) {
+
+    console.error(
+      "addGroupMember error:",
+      error
+    );
+
+    throw error;
+
+  }
+
+
+  return data;
 
 }
 
@@ -449,19 +731,20 @@ export async function signOut() {
   window.location.replace(
     "./login.html"
   );
+
 }
 
 
-/*
- * Alias used by older pages.
- */
+/* =========================================================
+   LOGOUT ALIAS
+========================================================= */
 
 export const logout =
   signOut;
 
 
 /* =========================================================
-   SUPABASE AUTH LISTENER
+   AUTH STATE LISTENER
 ========================================================= */
 
 supabase.auth.onAuthStateChange(
@@ -474,20 +757,19 @@ supabase.auth.onAuthStateChange(
       session || null;
 
 
-    /*
-     * Clear member/group data when
-     * the user signs out.
-     */
-
     if (
       event ===
       "SIGNED_OUT"
     ) {
 
-      memberCache = null;
-      groupCache = null;
+      memberCache =
+        null;
+
+      groupCache =
+        null;
 
     }
 
   }
 );
+```
