@@ -468,33 +468,9 @@
 ====================================================== -->
 
 <script type="module">
-
-  /*
-   * Load both modules normally.
-   *
-   * Do NOT use:
-   *
-   * await boot();
-   * import "./js/contributions.js";
-   *
-   * because that can prevent the page module
-   * from initializing correctly.
-   */
-
-  import {
-    boot
-  } from "./js/layout.js";
-
-
+  import { boot } from "./js/layout.js";
   import "./js/contributions.js";
-
-
-  /*
-   * Start authentication and common layout.
-   */
-
   boot();
-
 </script>
 
 
