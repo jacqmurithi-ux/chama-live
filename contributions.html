@@ -137,6 +137,7 @@
 
         <div class="grid grid-2">
 
+
           <!-- MEMBER -->
 
           <div>
@@ -262,16 +263,21 @@
               required
             >
 
-              <option value="mpesa">
+              <!-- IMPORTANT:
+                   Values MUST match the
+                   database CHECK constraint.
+              -->
+
+              <option value="M-Pesa">
                 M-Pesa
               </option>
 
-              <option value="cash">
+              <option value="Cash">
                 Cash
               </option>
 
-              <option value="bank">
-                Bank
+              <option value="Bank transfer">
+                Bank transfer
               </option>
 
             </select>
@@ -293,8 +299,14 @@
             <input
               id="mpesaReference"
               type="text"
+              maxlength="100"
+              autocomplete="off"
               placeholder="e.g. QWE123XYZ"
             >
+
+            <small class="muted">
+              Required when payment method is M-Pesa.
+            </small>
 
           </div>
 
@@ -479,4 +491,3 @@
 </body>
 
 </html>
-
