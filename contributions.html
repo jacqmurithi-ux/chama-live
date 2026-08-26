@@ -3,6 +3,7 @@
 <html lang="en">
 
 <head>
+
   <meta charset="utf-8">
 
   <meta
@@ -16,9 +17,12 @@
     rel="stylesheet"
     href="css/app.css"
   >
+
 </head>
 
+
 <body>
+
 
 <header class="topbar">
 
@@ -37,7 +41,13 @@
 </header>
 
 
+
 <div class="layout">
+
+
+  <!-- =====================================================
+       SIDEBAR
+  ====================================================== -->
 
   <aside class="sidebar">
 
@@ -83,7 +93,15 @@
   </aside>
 
 
+
+  <!-- =====================================================
+       MAIN
+  ====================================================== -->
+
   <main class="main">
+
+
+    <!-- PAGE HEADER -->
 
     <div class="page-head">
 
@@ -102,7 +120,10 @@
     </div>
 
 
-    <!-- STATUS -->
+
+    <!-- =====================================================
+         STATUS
+    ====================================================== -->
 
     <div
       id="status"
@@ -113,7 +134,10 @@
     </div>
 
 
-    <!-- ERROR -->
+
+    <!-- =====================================================
+         ERROR
+    ====================================================== -->
 
     <div
       id="error"
@@ -123,7 +147,10 @@
     ></div>
 
 
-    <!-- CONTRIBUTION FORM -->
+
+    <!-- =====================================================
+         RECORD CONTRIBUTION
+    ====================================================== -->
 
     <section class="card">
 
@@ -133,7 +160,9 @@
 
       <br>
 
+
       <form id="contributionForm">
+
 
         <div class="grid grid-2">
 
@@ -163,6 +192,7 @@
           </div>
 
 
+
           <!-- AMOUNT -->
 
           <div>
@@ -186,6 +216,7 @@
           </div>
 
 
+
           <!-- DATE -->
 
           <div>
@@ -204,6 +235,7 @@
             >
 
           </div>
+
 
 
           <!-- TYPE -->
@@ -247,6 +279,7 @@
           </div>
 
 
+
           <!-- PAYMENT METHOD -->
 
           <div>
@@ -263,9 +296,10 @@
               required
             >
 
-              <!-- IMPORTANT:
-                   These values MUST match
-                   contributions_payment_method_check
+              <!--
+                IMPORTANT:
+                These values must match the
+                database CHECK constraint.
               -->
 
               <option value="M-Pesa">
@@ -285,6 +319,7 @@
           </div>
 
 
+
           <!-- MPESA REFERENCE -->
 
           <div id="mpesaReferenceWrap">
@@ -300,10 +335,12 @@
               id="mpesaReference"
               type="text"
               maxlength="100"
+              autocomplete="off"
               placeholder="e.g. QWE123XYZ"
             >
 
           </div>
+
 
         </div>
 
@@ -319,21 +356,27 @@
           Record Contribution
         </button>
 
+
       </form>
 
     </section>
 
 
+
     <br>
 
 
-    <!-- MEMBER STATUS -->
+
+    <!-- =====================================================
+         MONTHLY MEMBER STATUS
+    ====================================================== -->
 
     <section class="card">
 
       <h2>
         Monthly Contribution Status
       </h2>
+
 
       <p class="muted">
 
@@ -344,6 +387,7 @@
         </strong>
 
       </p>
+
 
 
       <div class="table-wrap">
@@ -398,10 +442,14 @@
     </section>
 
 
+
     <br>
 
 
-    <!-- CONTRIBUTION LEDGER -->
+
+    <!-- =====================================================
+         CONTRIBUTION LEDGER
+    ====================================================== -->
 
     <section class="card">
 
@@ -465,14 +513,23 @@
 
     </section>
 
+
   </main>
+
 
 </div>
 
 
+
+<!-- =====================================================
+     PAGE BOOT
+====================================================== -->
+
 <script type="module">
 
-  import { boot } from "./js/layout.js";
+  import {
+    boot
+  } from "./js/layout.js";
 
   boot();
 
