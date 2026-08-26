@@ -1,7 +1,6 @@
-
 import { supabase } from "./supabase.js";
 
-const BASE_URL =
+export const BASE_URL =
   "https://jacqmurithi-ux.github.io/chama-live";
 
 
@@ -9,7 +8,18 @@ let cachedMember = null;
 
 
 /* =====================================================
-   SESSION
+   CLEAR CACHE
+===================================================== */
+
+export function clearAuthCache() {
+
+  cachedMember = null;
+
+}
+
+
+/* =====================================================
+   GET SESSION
 ===================================================== */
 
 export async function getSession() {
@@ -23,12 +33,13 @@ export async function getSession() {
     throw error;
   }
 
-  return data.session;
+  return data.session || null;
+
 }
 
 
 /* =====================================================
-   CURRENT MEMBER
+   GET CURRENT MEMBER
 ===================================================== */
 
 export async function getMyMember(
@@ -39,7 +50,9 @@ export async function getMyMember(
     cachedMember &&
     !force
   ) {
+
     return cachedMember;
+
   }
 
 
@@ -48,7 +61,9 @@ export async function getMyMember(
 
 
   if (!session) {
+
     return null;
+
   }
 
 
@@ -64,7 +79,7 @@ export async function getMyMember(
   if (error) {
 
     console.error(
-      "get_my_member:",
+      "get_my_member error:",
       error
     );
 
@@ -73,18 +88,36 @@ export async function getMyMember(
   }
 
 
-  cachedMember =
+  /*
+   * RPC may return:
+   *
+   * object
+   * OR
+   * array containing one object
+   */
+
+  if (
     Array.isArray(data)
-      ? data[0] || null
-      : data || null;
+  ) {
+
+    cachedMember =
+      data[0] || null;
+
+  } else {
+
+    cachedMember =
+      data || null;
+
+  }
 
 
   return cachedMember;
+
 }
 
 
 /* =====================================================
-   ROLE
+   GET ROLE
 ===================================================== */
 
 export async function getMyRole() {
@@ -101,7 +134,7 @@ export async function getMyRole() {
 
 
 /* =====================================================
-   GROUP
+   GET GROUP
 ===================================================== */
 
 export async function getMyGroupId() {
@@ -109,8 +142,11 @@ export async function getMyGroupId() {
   const member =
     await getMyMember();
 
-  return member?.group_id ||
-    null;
+  return (
+    member?.group_id ||
+    null
+  );
+
 }
 
 
@@ -119,14 +155,14 @@ export async function getMyGroupId() {
 ===================================================== */
 
 export async function hasRole(
-  roles = []
+  allowedRoles = []
 ) {
 
   const role =
     await getMyRole();
 
 
-  return roles
+  return allowedRoles
     .map(
       item =>
         String(
@@ -183,6 +219,21 @@ export async function isTreasurer() {
 
 
 /* =====================================================
+   SECRETARY
+===================================================== */
+
+export async function isSecretary() {
+
+  return await hasRole([
+    "admin",
+    "chairperson",
+    "secretary"
+  ]);
+
+}
+
+
+/* =====================================================
    REQUIRE AUTH
 ===================================================== */
 
@@ -209,6 +260,11 @@ export async function requireAuth() {
 
   if (!member) {
 
+    console.error(
+      "Authenticated user has no member record."
+    );
+
+
     await supabase.auth.signOut();
 
 
@@ -232,7 +288,7 @@ export async function requireAuth() {
 ===================================================== */
 
 export async function requireRole(
-  roles = []
+  allowedRoles = []
 ) {
 
   const session =
@@ -240,13 +296,15 @@ export async function requireRole(
 
 
   if (!session) {
+
     return null;
+
   }
 
 
   const allowed =
     await hasRole(
-      roles
+      allowedRoles
     );
 
 
@@ -283,7 +341,7 @@ export async function claimMemberAccount(
   if (!session) {
 
     throw new Error(
-      "Please sign in before activating your member account."
+      "Authentication required. Please sign in first."
     );
 
   }
@@ -299,19 +357,23 @@ export async function claimMemberAccount(
         p_membership_number:
           String(
             membershipNumber
-          ).trim(),
+          )
+            .trim(),
 
         p_email:
           String(
             email
-          ).trim()
-          .toLowerCase()
+          )
+            .trim()
+            .toLowerCase()
       }
     );
 
 
   if (error) {
+
     throw error;
+
   }
 
 
@@ -325,7 +387,7 @@ export async function claimMemberAccount(
 
 
 /* =====================================================
-   REFRESH
+   REFRESH MEMBER
 ===================================================== */
 
 export async function refreshMyMember() {
@@ -358,7 +420,9 @@ export async function logout() {
 
 
   if (error) {
+
     throw error;
+
   }
 
 
@@ -370,7 +434,7 @@ export async function logout() {
 
 
 /* =====================================================
-   AUTH LISTENER
+   AUTH STATE
 ===================================================== */
 
 export function listenToAuthChanges(
@@ -403,13 +467,9 @@ export function listenToAuthChanges(
 
 
 /* =====================================================
-   EXPORT
+   EXPORT SUPABASE
 ===================================================== */
 
 export {
   supabase
-};
-
-export {
-  BASE_URL
 };
