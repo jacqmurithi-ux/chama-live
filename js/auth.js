@@ -1,33 +1,67 @@
 import { supabase } from "./supabase.js";
 
 
-/* =========================================================
-   SESSION
-========================================================= */
+/* =====================================================
+   GET CURRENT USER
+===================================================== */
+
+export async function getCurrentUser() {
+
+  const {
+    data,
+    error
+  } = await supabase.auth.getUser();
+
+
+  if (error) {
+    throw error;
+  }
+
+
+  if (!data?.user) {
+
+    throw new Error(
+      "You are not logged in."
+    );
+
+  }
+
+
+  return data.user;
+}
+
+
+/* =====================================================
+   GET SESSION
+===================================================== */
 
 export async function getSession() {
 
   const {
     data,
     error
-  } = await supabase.auth.getSession();
+  } =
+    await supabase.auth.getSession();
+
 
   if (error) {
     throw error;
   }
 
-  return data.session || null;
+
+  return data?.session || null;
 }
 
 
-/* =========================================================
+/* =====================================================
    REQUIRE AUTH
-========================================================= */
+===================================================== */
 
 export async function requireAuth() {
 
   const session =
     await getSession();
+
 
   if (!session) {
 
@@ -38,13 +72,14 @@ export async function requireAuth() {
     return null;
   }
 
+
   return session;
 }
 
 
-/* =========================================================
+/* =====================================================
    SIGN IN
-========================================================= */
+===================================================== */
 
 export async function signIn(
   email,
@@ -56,16 +91,22 @@ export async function signIn(
       .trim()
       .toLowerCase();
 
+
   if (!cleanEmail) {
+
     throw new Error(
-      "Please enter your email address."
+      "Enter your email address."
     );
+
   }
 
+
   if (!password) {
+
     throw new Error(
-      "Please enter your password."
+      "Enter your password."
     );
+
   }
 
 
@@ -74,36 +115,46 @@ export async function signIn(
     error
   } =
     await supabase.auth.signInWithPassword({
-      email: cleanEmail,
-      password
+
+      email:
+        cleanEmail,
+
+      password:
+        password
+
     });
 
 
   if (error) {
+
+    console.error(
+      "Supabase sign-in error:",
+      error
+    );
+
     throw error;
   }
 
 
-  if (!data?.session) {
+  if (
+    !data?.user ||
+    !data?.session
+  ) {
 
     throw new Error(
-      "Login succeeded but no session was created."
+      "Login succeeded but no active session was created."
     );
+
   }
-
-
-  console.log(
-    "CHAMA LIVE: Authentication successful."
-  );
 
 
   return data;
 }
 
 
-/* =========================================================
+/* =====================================================
    SIGN OUT
-========================================================= */
+===================================================== */
 
 export async function signOut() {
 
@@ -112,9 +163,11 @@ export async function signOut() {
   } =
     await supabase.auth.signOut();
 
+
   if (error) {
     throw error;
   }
+
 
   window.location.replace(
     "./login.html"
@@ -122,123 +175,222 @@ export async function signOut() {
 }
 
 
-/* =========================================================
-   GET MY MEMBER
-========================================================= */
+/* =====================================================
+   GET CURRENT MEMBER
+===================================================== */
+
+export async function getCurrentMember() {
+
+  const user =
+    await getCurrentUser();
+
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("members")
+      .select(`
+        id,
+        group_id,
+        user_id,
+        member_number,
+        membership_number,
+        name,
+        phone,
+        email,
+        role,
+        join_date,
+        status,
+        onboarding_status,
+        invited_at,
+        activated_at,
+        auth_user_id,
+        created_at
+      `)
+      .eq(
+        "user_id",
+        user.id
+      )
+      .order(
+        "created_at",
+        {
+          ascending: true
+        }
+      )
+      .limit(1);
+
+
+  if (error) {
+
+    console.error(
+      "getCurrentMember error:",
+      error
+    );
+
+    throw error;
+  }
+
+
+  if (
+    !data ||
+    data.length === 0
+  ) {
+
+    throw new Error(
+      "No member record is linked to this account."
+    );
+
+  }
+
+
+  const member =
+    data[0];
+
+
+  if (!member.group_id) {
+
+    throw new Error(
+      "Your member record has no group."
+    );
+
+  }
+
+
+  return member;
+}
+
+
+/* =====================================================
+   ALIAS
+   Used by existing pages
+===================================================== */
 
 export async function getMyMember() {
 
+  return await getCurrentMember();
+
+}
+
+
+/* =====================================================
+   GET CURRENT GROUP ID
+===================================================== */
+
+export async function getCurrentGroupId() {
+
+  const member =
+    await getCurrentMember();
+
+
+  return member.group_id;
+
+}
+
+
+/* =====================================================
+   GET CURRENT GROUP
+===================================================== */
+
+export async function getCurrentGroup() {
+
+  const groupId =
+    await getCurrentGroupId();
+
+
   const {
     data,
     error
   } =
-    await supabase.rpc(
-      "get_my_member"
-    );
+    await supabase
+      .from("groups")
+      .select(`
+        id,
+        name,
+        category,
+        monthly_contribution,
+        opening_balance,
+        description,
+        country,
+        access_code
+      `)
+      .eq(
+        "id",
+        groupId
+      )
+      .limit(1);
 
 
   if (error) {
 
     console.error(
-      "get_my_member:",
+      "getCurrentGroup error:",
       error
     );
 
-    throw new Error(
-      "Unable to load member account: " +
-      error.message
-    );
+    throw error;
   }
-
-
-  console.log(
-    "CHAMA LIVE MEMBER:",
-    data
-  );
 
 
   if (
-    data === null ||
-    data === undefined
+    !data ||
+    data.length === 0
   ) {
-    return null;
+
+    throw new Error(
+      "Group information could not be found."
+    );
+
   }
 
 
-  if (Array.isArray(data)) {
-    return data[0] || null;
-  }
-
-
-  return data;
+  return data[0];
 }
 
 
-/* =========================================================
-   GET MY GROUP
-========================================================= */
+/* =====================================================
+   ALIAS
+   Used by existing pages
+===================================================== */
 
 export async function getMyGroup() {
 
-  const {
-    data,
-    error
-  } =
-    await supabase.rpc(
-      "get_my_group"
-    );
+  return await getCurrentGroup();
 
-
-  if (error) {
-
-    console.error(
-      "get_my_group:",
-      error
-    );
-
-    throw new Error(
-      "Unable to load group: " +
-      error.message
-    );
-  }
-
-
-  console.log(
-    "CHAMA LIVE GROUP:",
-    data
-  );
-
-
-  if (
-    data === null ||
-    data === undefined
-  ) {
-    return null;
-  }
-
-
-  if (Array.isArray(data)) {
-    return data[0] || null;
-  }
-
-
-  return data;
 }
 
 
-/* =========================================================
+/* =====================================================
    GET MY GROUPS
-========================================================= */
+===================================================== */
 
 export async function getMyGroups() {
+
+  const groupId =
+    await getCurrentGroupId();
+
 
   const {
     data,
     error
   } =
-    await supabase.rpc(
-      "get_my_groups"
-    );
+    await supabase
+      .from("groups")
+      .select(`
+        id,
+        name,
+        category,
+        monthly_contribution,
+        opening_balance,
+        description,
+        country,
+        access_code
+      `)
+      .eq(
+        "id",
+        groupId
+      );
 
 
   if (error) {
@@ -250,25 +402,117 @@ export async function getMyGroups() {
 }
 
 
-/* =========================================================
-   GET MY GROUP ID
-========================================================= */
+/* =====================================================
+   MONEY
+===================================================== */
 
-export async function getMyGroupId() {
+export function money(amount) {
 
-  const {
-    data,
-    error
-  } =
-    await supabase.rpc(
-      "my_group_id"
+  return (
+    "KSh " +
+    Number(
+      amount || 0
+    ).toLocaleString(
+      "en-KE",
+      {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      }
+    )
+  );
+
+}
+
+
+/* =====================================================
+   SET TEXT
+===================================================== */
+
+export function setText(
+  selector,
+  value
+) {
+
+  const element =
+    document.querySelector(
+      selector
     );
 
 
-  if (error) {
-    throw error;
+  if (element) {
+
+    element.textContent =
+      value ?? "—";
+
   }
 
+}
 
-  return data || null;
+
+/* =====================================================
+   SHOW ERROR
+===================================================== */
+
+export function showError(
+  error
+) {
+
+  const message =
+    error?.message ||
+    String(error);
+
+
+  console.error(
+    "CHAMA LIVE:",
+    error
+  );
+
+
+  const errorElement =
+    document.querySelector(
+      "[data-error]"
+    ) ||
+    document.querySelector(
+      "#error"
+    );
+
+
+  if (errorElement) {
+
+    errorElement.textContent =
+      "Error: " + message;
+
+    errorElement.hidden =
+      false;
+
+  }
+
+}
+
+
+/* =====================================================
+   CLEAR ERROR
+===================================================== */
+
+export function clearError() {
+
+  const errorElement =
+    document.querySelector(
+      "[data-error]"
+    ) ||
+    document.querySelector(
+      "#error"
+    );
+
+
+  if (errorElement) {
+
+    errorElement.textContent =
+      "";
+
+    errorElement.hidden =
+      true;
+
+  }
+
 }
