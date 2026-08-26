@@ -1,7 +1,9 @@
+```html
 <!doctype html>
 <html lang="en">
 
 <head>
+
   <meta charset="utf-8">
 
   <meta
@@ -15,7 +17,9 @@
     rel="stylesheet"
     href="css/app.css"
   >
+
 </head>
+
 
 <body>
 
@@ -25,462 +29,764 @@
     CHAMA <span>LIVE</span>
   </div>
 
-  <div
-    style="
-      display:flex;
-      align-items:center;
-      gap:15px;
-    "
+  <button
+    class="btn btn-secondary"
+    id="logout"
   >
-
-    <div
-      id="currentUser"
-      class="muted"
-    ></div>
-
-    <button
-      class="btn btn-secondary"
-      id="logout"
-      type="button"
-    >
-      Sign out
-    </button>
-
-  </div>
+    Sign out
+  </button>
 
 </header>
 
 
-<div class="layout">
+<main class="container">
 
-  <aside class="sidebar">
+  <div
+    style="
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:15px;
+      margin-bottom:25px;
+      flex-wrap:wrap;
+    "
+  >
 
-    <nav class="nav">
+    <div>
 
-      <a href="dashboard.html">
-        Dashboard
-      </a>
+      <h1>Members</h1>
 
-      <a
-        href="members.html"
-        class="active"
-      >
-        Members
-      </a>
-
-      <a href="contributions.html">
-        Contributions
-      </a>
-
-      <a href="expenses.html">
-        Expenses
-      </a>
-
-      <a href="meetings.html">
-        Meetings
-      </a>
-
-      <a href="reports.html">
-        Reports
-      </a>
-
-      <a href="monthly-closing.html">
-        Monthly Closing
-      </a>
-
-      <a href="group-management.html">
-        Group Management
-      </a>
-
-    </nav>
-
-  </aside>
-
-
-  <main class="main">
-
-    <div class="page-head">
-
-      <div>
-
-        <h1>
-          Members
-        </h1>
-
-        <p class="muted">
-          Manage your group's members and roles.
-        </p>
-
-      </div>
-
-      <button
-        id="addMemberButton"
-        class="btn btn-primary"
-        type="button"
-      >
-        + Add Member
-      </button>
+      <p class="muted">
+        Manage members of your group.
+      </p>
 
     </div>
 
 
-    <div
-      id="error"
-      class="error"
-      hidden
-      style="margin-bottom:20px;"
-    ></div>
-
-
-    <div
-      id="success"
-      hidden
-      style="
-        padding:12px;
-        margin-bottom:20px;
-        border-radius:8px;
-        background:#e8f7ed;
-      "
-    ></div>
-
-
-    <!-- MEMBER FORM -->
-
-    <section
-      id="memberFormCard"
-      class="card"
-      hidden
-      style="margin-bottom:20px;"
+    <button
+      id="addMemberButton"
+      class="btn btn-primary"
     >
+      + Add Member
+    </button>
 
-      <h2 id="formTitle">
-        Add Member
-      </h2>
+  </div>
 
 
-      <form id="memberForm">
+  <div
+    id="message"
+    class="error"
+    hidden
+    style="margin-bottom:20px;"
+  ></div>
+
+
+  <div
+    id="success"
+    class="card"
+    hidden
+    style="margin-bottom:20px;"
+  ></div>
+
+
+  <!-- ADD MEMBER -->
+
+  <section
+    id="memberFormCard"
+    class="card"
+    hidden
+    style="margin-bottom:25px;"
+  >
+
+    <h2>Add Member</h2>
+
+    <p class="muted">
+      Add the member to the group first.
+      They can activate their login account later.
+    </p>
+
+
+    <form id="memberForm">
+
+
+      <div style="margin-bottom:15px;">
+
+        <label for="name">
+          Full name
+        </label>
 
         <input
-          type="hidden"
-          id="memberId"
+          id="name"
+          required
+          style="width:100%;"
         >
 
-
-        <div class="grid grid-3">
-
-
-          <!-- NAME -->
-
-          <div>
-
-            <label for="name">
-              Full Name
-            </label>
-
-            <input
-              id="name"
-              type="text"
-              required
-              placeholder="Full name"
-              style="width:100%;"
-            >
-
-          </div>
+      </div>
 
 
-          <!-- MEMBER NUMBER -->
+      <div style="margin-bottom:15px;">
 
-          <div>
+        <label for="phone">
+          Phone number
+        </label>
 
-            <label for="memberNumber">
-              Member Number
-            </label>
-
-            <input
-              id="memberNumber"
-              type="text"
-              required
-              placeholder="e.g. 0004"
-              style="width:100%;"
-            >
-
-          </div>
-
-
-          <!-- PHONE -->
-
-          <div>
-
-            <label for="phone">
-              Phone
-            </label>
-
-            <input
-              id="phone"
-              type="tel"
-              required
-              placeholder="07XXXXXXXX"
-              style="width:100%;"
-            >
-
-          </div>
-
-
-          <!-- EMAIL -->
-
-          <div>
-
-            <label for="email">
-              Email
-            </label>
-
-            <input
-              id="email"
-              type="email"
-              placeholder="member@example.com"
-              style="width:100%;"
-            >
-
-          </div>
-
-
-          <!-- ROLE -->
-
-          <div>
-
-            <label for="role">
-              Role
-            </label>
-
-            <select
-              id="role"
-              required
-              style="width:100%;"
-            >
-
-              <option value="member">
-                Member
-              </option>
-
-              <option value="secretary">
-                Secretary
-              </option>
-
-              <option value="treasurer">
-                Treasurer
-              </option>
-
-              <option value="chairperson">
-                Chairperson
-              </option>
-
-              <option value="admin">
-                Admin
-              </option>
-
-            </select>
-
-          </div>
-
-
-          <!-- JOIN DATE -->
-
-          <div>
-
-            <label for="joinDate">
-              Join Date
-            </label>
-
-            <input
-              id="joinDate"
-              type="date"
-              style="width:100%;"
-            >
-
-          </div>
-
-
-          <!-- STATUS -->
-
-          <div>
-
-            <label for="status">
-              Status
-            </label>
-
-            <select
-              id="status"
-              style="width:100%;"
-            >
-
-              <option value="active">
-                Active
-              </option>
-
-              <option value="inactive">
-                Inactive
-              </option>
-
-            </select>
-
-          </div>
-
-        </div>
-
-
-        <br>
-
-
-        <div
-          style="
-            display:flex;
-            gap:10px;
-            flex-wrap:wrap;
-          "
+        <input
+          id="phone"
+          type="tel"
+          required
+          style="width:100%;"
         >
 
-          <button
-            class="btn btn-primary"
-            id="saveMember"
-            type="submit"
-          >
-            Save Member
-          </button>
-
-          <button
-            class="btn btn-secondary"
-            id="cancelMember"
-            type="button"
-          >
-            Cancel
-          </button>
-
-        </div>
-
-      </form>
-
-    </section>
+      </div>
 
 
-    <!-- MEMBERS -->
+      <div style="margin-bottom:15px;">
 
-    <section class="card">
+        <label for="email">
+          Email address
+        </label>
+
+        <input
+          id="email"
+          type="email"
+          style="width:100%;"
+        >
+
+        <small class="muted">
+          Required if the member will activate online.
+        </small>
+
+      </div>
+
+
+      <div style="margin-bottom:15px;">
+
+        <label for="memberNumber">
+          Member Number
+        </label>
+
+        <input
+          id="memberNumber"
+          required
+          style="width:100%;"
+        >
+
+      </div>
+
+
+      <div style="margin-bottom:15px;">
+
+        <label for="membershipNumber">
+          Membership Number
+        </label>
+
+        <input
+          id="membershipNumber"
+          required
+          style="width:100%;"
+        >
+
+      </div>
+
+
+      <div style="margin-bottom:20px;">
+
+        <label for="role">
+          Role
+        </label>
+
+        <select
+          id="role"
+          required
+          style="width:100%;"
+        >
+
+          <option value="member">
+            Member
+          </option>
+
+          <option value="secretary">
+            Secretary
+          </option>
+
+          <option value="treasurer">
+            Treasurer
+          </option>
+
+          <option value="chairperson">
+            Chairperson
+          </option>
+
+          <option value="admin">
+            Admin
+          </option>
+
+        </select>
+
+      </div>
+
 
       <div
         style="
           display:flex;
-          justify-content:space-between;
-          align-items:center;
-          gap:15px;
-          flex-wrap:wrap;
-          margin-bottom:15px;
+          gap:10px;
         "
       >
 
-        <div>
-
-          <h2>
-            Group Members
-          </h2>
-
-          <p
-            class="muted"
-            id="memberCount"
-          >
-            Loading...
-          </p>
-
-        </div>
-
-
-        <input
-          id="search"
-          type="search"
-          placeholder="Search members..."
-          style="
-            max-width:280px;
-            width:100%;
-          "
+        <button
+          type="submit"
+          id="saveMember"
+          class="btn btn-primary"
         >
+          Add Member
+        </button>
+
+        <button
+          type="button"
+          id="cancelMember"
+          class="btn btn-secondary"
+        >
+          Cancel
+        </button>
 
       </div>
 
 
-      <div class="table-wrap">
+    </form>
 
-        <table class="table">
-
-          <thead>
-
-            <tr>
-
-              <th>
-                Member
-              </th>
-
-              <th>
-                Member No.
-              </th>
-
-              <th>
-                Phone
-              </th>
-
-              <th>
-                Role
-              </th>
-
-              <th>
-                Status
-              </th>
-
-              <th>
-                Account
-              </th>
-
-              <th>
-                Actions
-              </th>
-
-            </tr>
-
-          </thead>
+  </section>
 
 
-          <tbody id="memberRows">
+  <!-- MEMBERS -->
 
-            <tr>
+  <section class="card">
 
-              <td colspan="7">
-                Loading...
-              </td>
+    <h2>Group Members</h2>
 
-            </tr>
+    <div
+      style="
+        overflow-x:auto;
+        margin-top:15px;
+      "
+    >
 
-          </tbody>
+      <table>
 
-        </table>
+        <thead>
 
-      </div>
+          <tr>
 
-    </section>
+            <th>Member No.</th>
 
-  </main>
+            <th>Name</th>
 
-</div>
+            <th>Phone</th>
+
+            <th>Email</th>
+
+            <th>Role</th>
+
+            <th>Login</th>
+
+            <th>Status</th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody id="membersBody">
+
+          <tr>
+
+            <td
+              colspan="7"
+              class="muted"
+            >
+              Loading...
+
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </section>
+
+</main>
 
 
 <script type="module">
 
   import {
-    boot
-  } from "./js/layout.js";
+    supabase,
+    requireAuth,
+    getMyMember,
+    getMyGroup,
+    getMyGroupId,
+    getMyRole,
+    logout
+  } from "./js/auth.js";
 
-  await boot();
 
-  import "./js/members.js";
+  const addButton =
+    document.getElementById(
+      "addMemberButton"
+    );
+
+  const formCard =
+    document.getElementById(
+      "memberFormCard"
+    );
+
+  const form =
+    document.getElementById(
+      "memberForm"
+    );
+
+  const cancelButton =
+    document.getElementById(
+      "cancelMember"
+    );
+
+  const saveButton =
+    document.getElementById(
+      "saveMember"
+    );
+
+  const body =
+    document.getElementById(
+      "membersBody"
+    );
+
+  const message =
+    document.getElementById(
+      "message"
+    );
+
+  const success =
+    document.getElementById(
+      "success"
+    );
+
+
+
+  function showError(text) {
+
+    message.hidden = false;
+
+    message.textContent = text;
+
+    success.hidden = true;
+
+  }
+
+
+  function showSuccess(text) {
+
+    success.hidden = false;
+
+    success.textContent = text;
+
+    message.hidden = true;
+
+  }
+
+
+  function clearMessages() {
+
+    message.hidden = true;
+
+    success.hidden = true;
+
+  }
+
+
+
+  function escapeHtml(value) {
+
+    return String(
+      value ?? ""
+    )
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+
+  }
+
+
+
+  async function boot() {
+
+    try {
+
+      await requireAuth();
+
+
+      const member =
+        await getMyMember();
+
+
+      if (!member) {
+        return;
+      }
+
+
+      const role =
+        String(
+          member.role || "member"
+        ).toLowerCase();
+
+
+      /*
+       * Frontend protection.
+       * Database RPC also enforces this.
+       */
+
+      if (
+        ![
+          "admin",
+          "chairperson"
+        ].includes(role)
+      ) {
+
+        addButton.remove();
+
+      }
+
+
+      await loadMembers();
+
+
+    } catch (error) {
+
+      console.error(error);
+
+      showError(
+        error.message ||
+        "Unable to load members."
+      );
+
+    }
+
+  }
+
+
+
+  async function loadMembers() {
+
+    const groupId =
+      await getMyGroupId();
+
+
+    if (!groupId) {
+
+      throw new Error(
+        "Your account is not linked to a group."
+      );
+
+    }
+
+
+    const {
+      data,
+      error
+    } =
+      await supabase
+        .from("members")
+        .select(`
+          id,
+          member_number,
+          membership_number,
+          name,
+          phone,
+          email,
+          role,
+          status,
+          onboarding_status
+        `)
+        .eq(
+          "group_id",
+          groupId
+        )
+        .order(
+          "created_at",
+          {
+            ascending: true
+          }
+        );
+
+
+    if (error) {
+      throw error;
+    }
+
+
+    if (!data?.length) {
+
+      body.innerHTML = `
+        <tr>
+          <td colspan="7" class="muted">
+            No members found.
+          </td>
+        </tr>
+      `;
+
+      return;
+
+    }
+
+
+    body.innerHTML =
+      data.map(
+        member => `
+
+          <tr>
+
+            <td>
+              ${escapeHtml(
+                member.membership_number ||
+                member.member_number
+              )}
+            </td>
+
+            <td>
+              <strong>
+                ${escapeHtml(member.name)}
+              </strong>
+            </td>
+
+            <td>
+              ${escapeHtml(member.phone)}
+            </td>
+
+            <td>
+              ${escapeHtml(member.email || "—")}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                member.role
+              )}
+            </td>
+
+            <td>
+              ${
+                member.auth_user_id
+                  ? "Active"
+                  : "Not activated"
+              }
+            </td>
+
+            <td>
+              ${escapeHtml(
+                member.onboarding_status ||
+                member.status
+              )}
+            </td>
+
+          </tr>
+
+        `
+      ).join("");
+
+  }
+
+
+
+  addButton.addEventListener(
+    "click",
+    () => {
+
+      clearMessages();
+
+      form.reset();
+
+      formCard.hidden =
+        false;
+
+      window.scrollTo({
+        top: formCard.offsetTop - 20,
+        behavior: "smooth"
+      });
+
+    }
+  );
+
+
+
+  cancelButton.addEventListener(
+    "click",
+    () => {
+
+      formCard.hidden =
+        true;
+
+      form.reset();
+
+    }
+  );
+
+
+
+  form.addEventListener(
+    "submit",
+    async event => {
+
+      event.preventDefault();
+
+      clearMessages();
+
+
+      const groupId =
+        await getMyGroupId();
+
+
+      if (!groupId) {
+
+        showError(
+          "Your account is not linked to a group."
+        );
+
+        return;
+
+      }
+
+
+      const payload = {
+
+        p_group_id:
+          groupId,
+
+        p_name:
+          document
+            .getElementById("name")
+            .value
+            .trim(),
+
+        p_member_number:
+          document
+            .getElementById("memberNumber")
+            .value
+            .trim(),
+
+        p_membership_number:
+          document
+            .getElementById("membershipNumber")
+            .value
+            .trim(),
+
+        p_phone:
+          document
+            .getElementById("phone")
+            .value
+            .trim(),
+
+        p_email:
+          document
+            .getElementById("email")
+            .value
+            .trim()
+            .toLowerCase() || null,
+
+        p_role:
+          document
+            .getElementById("role")
+            .value,
+
+        p_join_date:
+          new Date()
+            .toISOString()
+            .slice(0,10)
+
+      };
+
+
+      saveButton.disabled =
+        true;
+
+      saveButton.textContent =
+        "Adding member...";
+
+
+      try {
+
+        const {
+          error
+        } =
+          await supabase.rpc(
+            "add_group_member",
+            payload
+          );
+
+
+        if (error) {
+          throw error;
+        }
+
+
+        showSuccess(
+          `${payload.p_name} has been added successfully.`
+        );
+
+
+        form.reset();
+
+        formCard.hidden =
+          true;
+
+
+        await loadMembers();
+
+
+      } catch (error) {
+
+        console.error(
+          "Add member:",
+          error
+        );
+
+
+        showError(
+          error.message ||
+          "Unable to add member."
+        );
+
+      } finally {
+
+        saveButton.disabled =
+          false;
+
+        saveButton.textContent =
+          "Add Member";
+
+      }
+
+    }
+  );
+
+
+
+  document
+    .getElementById("logout")
+    .addEventListener(
+      "click",
+      logout
+    );
+
+
+
+  boot();
 
 </script>
 
+
 </body>
 </html>
+```
