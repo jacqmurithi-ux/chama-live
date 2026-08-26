@@ -454,37 +454,12 @@
      PAGE JAVASCRIPT
 ====================================================== -->
 
+
 <script type="module">
-
-  import {
-    boot
-  } from "./js/layout.js";
-
-
-  /*
-   * First authenticate and initialize
-   * the common CHAMA LIVE layout.
-   */
-
-  const context =
-    await boot();
-
-
-  /*
-   * Only load Members functionality
-   * after authentication succeeds.
-   */
-
-  if (context) {
-
-    await import(
-      "./js/members.js"
-    );
-
-  }
-
+  import { boot } from "./js/layout.js";
+  import "./js/members.js";
+  boot();
 </script>
-
 
 
 </body>
