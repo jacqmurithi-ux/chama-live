@@ -1,251 +1,337 @@
-import supabase from "./supabase.js";
+import {
+  supabase
+} from "./supabase.js";
+
 
 /* =========================================================
    CHAMA LIVE — DASHBOARD
+========================================================= */
+
+
+/* =========================================================
+   HELPERS
 ========================================================= */
 
 function byId(id) {
   return document.getElementById(id);
 }
 
+
 function money(value) {
-  return Number(value || 0).toLocaleString("en-KE", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  });
+
+  return Number(
+    value || 0
+  ).toLocaleString(
+    "en-KE",
+    {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    }
+  );
 }
+
 
 function formatDate(value) {
-  if (!value) return "—";
 
-  return new Date(value).toLocaleDateString("en-KE", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric"
-  });
+  if (!value) {
+    return "—";
+  }
+
+  return new Date(
+    value
+  ).toLocaleDateString(
+    "en-KE",
+    {
+      day: "2-digit",
+      month: "short",
+      year: "numeric"
+    }
+  );
 }
 
+
 function escapeHtml(value) {
-  if (value === null || value === undefined) {
+
+  if (
+    value === null ||
+    value === undefined
+  ) {
     return "";
   }
 
   return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
 }
 
 
 /* =========================================================
-   CURRENT MEMBER
+   GET MEMBER
 ========================================================= */
 
-async function getCurrentMember() {
+async function getMember() {
 
   const {
     data,
     error
-  } = await supabase.rpc("get_my_member");
+  } =
+    await supabase.rpc(
+      "get_my_member"
+    );
+
 
   if (error) {
     throw error;
   }
 
+
   if (Array.isArray(data)) {
     return data[0] || null;
   }
+
 
   return data || null;
 }
 
 
 /* =========================================================
-   GROUP
+   GET GROUP
 ========================================================= */
 
-async function getCurrentGroup() {
+async function getGroup() {
 
   const {
     data,
     error
-  } = await supabase.rpc("get_my_group");
+  } =
+    await supabase.rpc(
+      "get_my_group"
+    );
+
 
   if (error) {
     throw error;
   }
 
+
   if (Array.isArray(data)) {
     return data[0] || null;
   }
+
 
   return data || null;
 }
 
 
 /* =========================================================
-   MEMBERS
+   LOAD MEMBERS
 ========================================================= */
 
-async function loadMembers(groupId) {
+async function loadMembers(
+  groupId
+) {
 
   const {
     data,
     error
-  } = await supabase
-    .from("members")
-    .select(`
-      id,
-      group_id,
-      member_number,
-      membership_number,
-      name,
-      phone,
-      email,
-      role,
-      join_date,
-      status
-    `)
-    .eq("group_id", groupId)
-    .order("created_at", {
-      ascending: false
-    });
+  } =
+    await supabase
+      .from("members")
+      .select(`
+        id,
+        group_id,
+        member_number,
+        membership_number,
+        name,
+        phone,
+        email,
+        role,
+        join_date,
+        status
+      `)
+      .eq(
+        "group_id",
+        groupId
+      );
+
 
   if (error) {
     throw error;
   }
+
 
   return data || [];
 }
 
 
 /* =========================================================
-   CONTRIBUTIONS
+   LOAD CONTRIBUTIONS
 ========================================================= */
 
-async function loadContributions(groupId) {
+async function loadContributions(
+  groupId
+) {
 
   const {
     data,
     error
-  } = await supabase
-    .from("contributions")
-    .select(`
-      id,
-      group_id,
-      member_id,
-      amount,
-      contribution_type,
-      month,
-      payment_method,
-      reference,
-      mpesa_reference,
-      contribution_date,
-      notes,
-      created_at
-    `)
-    .eq("group_id", groupId)
-    .order("contribution_date", {
-      ascending: false
-    });
+  } =
+    await supabase
+      .from("contributions")
+      .select(`
+        id,
+        group_id,
+        member_id,
+        amount,
+        contribution_type,
+        month,
+        payment_method,
+        reference,
+        mpesa_reference,
+        contribution_date,
+        notes,
+        created_at
+      `)
+      .eq(
+        "group_id",
+        groupId
+      )
+      .order(
+        "contribution_date",
+        {
+          ascending: false
+        }
+      );
+
 
   if (error) {
     throw error;
   }
+
 
   return data || [];
 }
 
 
 /* =========================================================
-   EXPENSES
+   LOAD EXPENSES
 ========================================================= */
 
-async function loadExpenses(groupId) {
+async function loadExpenses(
+  groupId
+) {
+
+  /*
+   * IMPORTANT:
+   * The real database column is:
+   *
+   * expenses.date
+   *
+   * NOT:
+   *
+   * expenses.expense_date
+   */
 
   const {
     data,
     error
-  } = await supabase
-    .from("expenses")
-    .select(`
-      id,
-      group_id,
-      description,
-      category,
-      amount,
-      date,
-      approval_status,
-      created_at
-    `)
-    .eq("group_id", groupId)
-    .order("date", {
-      ascending: false
-    });
+  } =
+    await supabase
+      .from("expenses")
+      .select(`
+        id,
+        group_id,
+        description,
+        category,
+        amount,
+        date,
+        approval_status,
+        created_at
+      `)
+      .eq(
+        "group_id",
+        groupId
+      )
+      .order(
+        "date",
+        {
+          ascending: false
+        }
+      );
+
 
   if (error) {
     throw error;
   }
+
 
   return data || [];
 }
 
 
 /* =========================================================
-   MEETINGS
+   LOAD MEETINGS
 ========================================================= */
 
-async function loadMeetings(groupId) {
+async function loadMeetings(
+  groupId
+) {
 
   const {
     data,
     error
-  } = await supabase
-    .from("meetings")
-    .select(`
-      id,
-      group_id,
-      title,
-      date,
-      venue,
-      status
-    `)
-    .eq("group_id", groupId)
-    .order("date", {
-      ascending: true
-    });
+  } =
+    await supabase
+      .from("meetings")
+      .select(`
+        id,
+        group_id,
+        title,
+        date,
+        venue,
+        status
+      `)
+      .eq(
+        "group_id",
+        groupId
+      )
+      .order(
+        "date",
+        {
+          ascending: true
+        }
+      );
+
 
   if (error) {
     throw error;
   }
+
 
   return data || [];
 }
 
 
 /* =========================================================
-   MEMBER NAME MAP
-========================================================= */
-
-function createMemberMap(members) {
-
-  const map = {};
-
-  members.forEach(member => {
-
-    map[member.id] =
-      member.name || "Member";
-
-  });
-
-  return map;
-}
-
-
-/* =========================================================
-   DISPLAY SUMMARY
+   SUMMARY
 ========================================================= */
 
 function displaySummary(
@@ -264,27 +350,37 @@ function displaySummary(
 
   const totalContributions =
     contributions.reduce(
-      (sum, row) =>
-        sum + Number(row.amount || 0),
+      (
+        total,
+        contribution
+      ) =>
+        total +
+        Number(
+          contribution.amount || 0
+        ),
       0
     );
 
 
-  /*
-   * Only approved expenses are included
-   * in the current balance.
-   */
-
   const approvedExpenses =
     expenses
       .filter(
-        row =>
-          row.approval_status ===
+        expense =>
+          String(
+            expense.approval_status ||
+            ""
+          ).toLowerCase() ===
           "approved"
       )
       .reduce(
-        (sum, row) =>
-          sum + Number(row.amount || 0),
+        (
+          total,
+          expense
+        ) =>
+          total +
+          Number(
+            expense.amount || 0
+          ),
         0
       );
 
@@ -295,7 +391,7 @@ function displaySummary(
     );
 
 
-  const currentBalance =
+  const balance =
     openingBalance +
     totalContributions -
     approvedExpenses;
@@ -310,6 +406,18 @@ function displaySummary(
   const monthlyExpected =
     activeMembers *
     monthlyContribution;
+
+
+  const collectionRate =
+    monthlyExpected > 0
+      ? Math.min(
+          100,
+          (
+            totalContributions /
+            monthlyExpected
+          ) * 100
+        )
+      : 0;
 
 
   /* -------------------------------------------------------
@@ -333,8 +441,12 @@ function displaySummary(
     byId("monthlyExpected");
 
   if (expectedBox) {
+
     expectedBox.textContent =
-      `KSh ${money(monthlyExpected)}`;
+      `KSh ${money(
+        monthlyExpected
+      )}`;
+
   }
 
 
@@ -346,8 +458,48 @@ function displaySummary(
     byId("monthlyCollected");
 
   if (collectedBox) {
+
     collectedBox.textContent =
-      `KSh ${money(totalContributions)}`;
+      `KSh ${money(
+        totalContributions
+      )}`;
+
+  }
+
+
+  /* -------------------------------------------------------
+     OUTSTANDING
+  ------------------------------------------------------- */
+
+  const outstandingBox =
+    byId("outstanding");
+
+  if (outstandingBox) {
+
+    outstandingBox.textContent =
+      `KSh ${money(
+        Math.max(
+          0,
+          monthlyExpected -
+          totalContributions
+        )
+      )}`;
+
+  }
+
+
+  /* -------------------------------------------------------
+     COLLECTION RATE
+  ------------------------------------------------------- */
+
+  const rateBox =
+    byId("collectionRate");
+
+  if (rateBox) {
+
+    rateBox.textContent =
+      `${collectionRate.toFixed(0)}%`;
+
   }
 
 
@@ -359,33 +511,12 @@ function displaySummary(
     byId("currentBalance");
 
   if (balanceBox) {
+
     balanceBox.textContent =
-      `KSh ${money(currentBalance)}`;
-  }
+      `KSh ${money(
+        balance
+      )}`;
 
-
-  /* -------------------------------------------------------
-     COLLECTION RATE
-  ------------------------------------------------------- */
-
-  const collectionRate =
-    monthlyExpected > 0
-      ? Math.min(
-          100,
-          (
-            totalContributions /
-            monthlyExpected
-          ) * 100
-        )
-      : 0;
-
-
-  const rateBox =
-    byId("collectionRate");
-
-  if (rateBox) {
-    rateBox.textContent =
-      `${collectionRate.toFixed(0)}%`;
   }
 
 
@@ -397,8 +528,14 @@ function displaySummary(
     byId("progressAmount");
 
   if (progressAmount) {
+
     progressAmount.textContent =
-      `KSh ${money(totalContributions)} / KSh ${money(monthlyExpected)}`;
+      `KSh ${money(
+        totalContributions
+      )} / KSh ${money(
+        monthlyExpected
+      )}`;
+
   }
 
 
@@ -406,8 +543,10 @@ function displaySummary(
     byId("progressPercent");
 
   if (progressPercent) {
+
     progressPercent.textContent =
       `${collectionRate.toFixed(0)}%`;
+
   }
 
 }
@@ -426,6 +565,7 @@ function displayRecentContributions(
     document.querySelector(
       "#recentContributions tbody"
     );
+
 
   if (!body) {
     return;
@@ -446,42 +586,59 @@ function displayRecentContributions(
   }
 
 
-  const memberMap =
-    createMemberMap(members);
+  const memberMap = {};
+
+
+  members.forEach(
+    member => {
+
+      memberMap[
+        member.id
+      ] =
+        member.name ||
+        "Member";
+
+    }
+  );
 
 
   body.innerHTML =
     contributions
       .slice(0, 5)
-      .map(row => {
+      .map(
+        contribution => {
 
-        const memberName =
-          memberMap[row.member_id] ||
-          "Member";
+          return `
+            <tr>
 
+              <td>
+                ${escapeHtml(
+                  memberMap[
+                    contribution.member_id
+                  ] ||
+                  "Member"
+                )}
+              </td>
 
-        return `
-          <tr>
+              <td>
+                KSh ${money(
+                  contribution.amount
+                )}
+              </td>
 
-            <td>
-              ${escapeHtml(memberName)}
-            </td>
+              <td>
+                ${formatDate(
+                  contribution.contribution_date
+                )}
+              </td>
 
-            <td>
-              KSh ${money(row.amount)}
-            </td>
+            </tr>
+          `;
 
-            <td>
-              ${formatDate(
-                row.contribution_date
-              )}
-            </td>
-
-          </tr>
-        `;
-
-      })
+        }
+      )
       .join("");
+
 }
 
 
@@ -497,6 +654,7 @@ function displayRecentExpenses(
     document.querySelector(
       "#recentExpenses tbody"
     );
+
 
   if (!body) {
     return;
@@ -520,32 +678,39 @@ function displayRecentExpenses(
   body.innerHTML =
     expenses
       .slice(0, 5)
-      .map(row => {
+      .map(
+        expense => {
 
-        return `
-          <tr>
+          return `
+            <tr>
 
-            <td>
-              ${escapeHtml(
-                row.description
-              )}
-            </td>
+              <td>
+                ${escapeHtml(
+                  expense.description ||
+                  "Expense"
+                )}
+              </td>
 
-            <td>
-              KSh ${money(row.amount)}
-            </td>
+              <td>
+                KSh ${money(
+                  expense.amount
+                )}
+              </td>
 
-            <td>
-              ${escapeHtml(
-                row.approval_status
-              )}
-            </td>
+              <td>
+                ${escapeHtml(
+                  expense.approval_status ||
+                  "Recorded"
+                )}
+              </td>
 
-          </tr>
-        `;
+            </tr>
+          `;
 
-      })
+        }
+      )
       .join("");
+
 }
 
 
@@ -561,6 +726,7 @@ function displayMeetings(
     document.querySelector(
       "#upcomingMeetings tbody"
     );
+
 
   if (!body) {
     return;
@@ -584,36 +750,46 @@ function displayMeetings(
   body.innerHTML =
     meetings
       .slice(0, 5)
-      .map(row => {
+      .map(
+        meeting => {
 
-        return `
-          <tr>
+          return `
+            <tr>
 
-            <td>
-              ${formatDate(row.date)}
-            </td>
+              <td>
+                ${formatDate(
+                  meeting.date
+                )}
+              </td>
 
-            <td>
-              ${escapeHtml(row.title)}
-            </td>
+              <td>
+                ${escapeHtml(
+                  meeting.title ||
+                  "Meeting"
+                )}
+              </td>
 
-            <td>
-              ${escapeHtml(
-                row.venue || "—"
-              )}
-            </td>
+              <td>
+                ${escapeHtml(
+                  meeting.venue ||
+                  "—"
+                )}
+              </td>
 
-            <td>
-              ${escapeHtml(
-                row.status || "upcoming"
-              )}
-            </td>
+              <td>
+                ${escapeHtml(
+                  meeting.status ||
+                  "upcoming"
+                )}
+              </td>
 
-          </tr>
-        `;
+            </tr>
+          `;
 
-      })
+        }
+      )
       .join("");
+
 }
 
 
@@ -632,6 +808,7 @@ function displayMemberStatus(
       "#memberContributionStatus tbody"
     );
 
+
   if (!body) {
     return;
   }
@@ -649,81 +826,14 @@ function displayMemberStatus(
       .slice(0, 7);
 
 
-  body.innerHTML =
-    members
-      .filter(
-        member =>
-          member.status === "active"
-      )
-      .map(member => {
-
-        const paid =
-          contributions
-            .filter(
-              contribution =>
-                contribution.member_id ===
-                  member.id &&
-                contribution.month ===
-                  currentMonth
-            )
-            .reduce(
-              (sum, contribution) =>
-                sum +
-                Number(
-                  contribution.amount || 0
-                ),
-              0
-            );
+  const activeMembers =
+    members.filter(
+      member =>
+        member.status === "active"
+    );
 
 
-        const outstanding =
-          Math.max(
-            0,
-            monthlyAmount - paid
-          );
-
-
-        const status =
-          outstanding <= 0
-            ? "Paid"
-            : paid > 0
-              ? "Partial"
-              : "Outstanding";
-
-
-        return `
-          <tr>
-
-            <td>
-              ${escapeHtml(
-                member.name
-              )}
-            </td>
-
-            <td>
-              KSh ${money(monthlyAmount)}
-            </td>
-
-            <td>
-              KSh ${money(paid)}
-            </td>
-
-            <td>
-              KSh ${money(outstanding)}
-            </td>
-
-            <td>
-              ${status}
-            </td>
-
-          </tr>
-        `;
-
-      })
-      .join("");
-
-
-  if (!body.innerHTML) {
+  if (!activeMembers.length) {
 
     body.innerHTML = `
       <tr>
@@ -733,13 +843,115 @@ function displayMemberStatus(
       </tr>
     `;
 
+    return;
   }
+
+
+  body.innerHTML =
+    activeMembers
+      .map(
+        member => {
+
+          const paid =
+            contributions
+              .filter(
+                contribution => {
+
+                  return (
+                    contribution.member_id ===
+                      member.id &&
+                    contribution.month ===
+                      currentMonth
+                  );
+
+                }
+              )
+              .reduce(
+                (
+                  total,
+                  contribution
+                ) =>
+                  total +
+                  Number(
+                    contribution.amount || 0
+                  ),
+                0
+              );
+
+
+          const outstanding =
+            Math.max(
+              0,
+              monthlyAmount -
+              paid
+            );
+
+
+          let status =
+            "Outstanding";
+
+
+          if (
+            outstanding <= 0 &&
+            monthlyAmount > 0
+          ) {
+
+            status =
+              "Paid";
+
+          } else if (
+            paid > 0
+          ) {
+
+            status =
+              "Partial";
+
+          }
+
+
+          return `
+            <tr>
+
+              <td>
+                ${escapeHtml(
+                  member.name
+                )}
+              </td>
+
+              <td>
+                KSh ${money(
+                  monthlyAmount
+                )}
+              </td>
+
+              <td>
+                KSh ${money(
+                  paid
+                )}
+              </td>
+
+              <td>
+                KSh ${money(
+                  outstanding
+                )}
+              </td>
+
+              <td>
+                ${status}
+              </td>
+
+            </tr>
+          `;
+
+        }
+      )
+      .join("");
 
 }
 
 
 /* =========================================================
-   MAIN
+   MAIN DASHBOARD
 ========================================================= */
 
 async function loadDashboard() {
@@ -756,7 +968,7 @@ async function loadDashboard() {
   try {
 
     const member =
-      await getCurrentMember();
+      await getMember();
 
 
     if (!member) {
@@ -771,7 +983,7 @@ async function loadDashboard() {
     if (!member.group_id) {
 
       throw new Error(
-        "Your account is not linked to a group."
+        "Your member account has no group."
       );
 
     }
@@ -790,15 +1002,23 @@ async function loadDashboard() {
     ] =
       await Promise.all([
 
-        getCurrentGroup(),
+        getGroup(),
 
-        loadMembers(groupId),
+        loadMembers(
+          groupId
+        ),
 
-        loadContributions(groupId),
+        loadContributions(
+          groupId
+        ),
 
-        loadExpenses(groupId),
+        loadExpenses(
+          groupId
+        ),
 
-        loadMeetings(groupId)
+        loadMeetings(
+          groupId
+        )
 
       ]);
 
@@ -835,21 +1055,14 @@ async function loadDashboard() {
 
 
     console.log(
-      "CHAMA LIVE dashboard ready.",
-      {
-        group,
-        members,
-        contributions,
-        expenses,
-        meetings
-      }
+      "CHAMA LIVE: dashboard ready."
     );
 
 
   } catch (error) {
 
     console.error(
-      "Dashboard error:",
+      "CHAMA LIVE dashboard error:",
       error
     );
 
@@ -866,6 +1079,7 @@ async function loadDashboard() {
     }
 
   }
+
 }
 
 
