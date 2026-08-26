@@ -1,7 +1,4 @@
-import {
-  supabase
-} from "./supabase.js";
-
+```javascript
 import {
   requireAuth,
   getMyMember,
@@ -11,7 +8,7 @@ import {
 
 
 /* =========================================================
-   HELPERS
+   HELPER
 ========================================================= */
 
 function $(id) {
@@ -19,117 +16,18 @@ function $(id) {
 }
 
 
+/* =========================================================
+   CURRENT PAGE
+========================================================= */
+
 function currentPage() {
 
-  const path =
-    window.location.pathname;
-
   const file =
-    path.split("/").pop();
+    window.location.pathname
+      .split("/")
+      .pop();
 
   return file || "dashboard.html";
-}
-
-
-/* =========================================================
-   GROUP DISPLAY
-========================================================= */
-
-async function loadGroupInfo() {
-
-  try {
-
-    const group =
-      await getMyGroup();
-
-
-    if (!group) {
-      return null;
-    }
-
-
-    /*
-     * Optional group name elements.
-     */
-
-    const elements =
-      document.querySelectorAll(
-        "[data-group-name]"
-      );
-
-
-    elements.forEach(
-      element => {
-
-        element.textContent =
-          group.name ||
-          "Your Group";
-
-      }
-    );
-
-
-    return group;
-
-  } catch (error) {
-
-    console.error(
-      "Unable to load group:",
-      error
-    );
-
-    return null;
-
-  }
-}
-
-
-/* =========================================================
-   MEMBER DISPLAY
-========================================================= */
-
-async function loadMemberInfo() {
-
-  try {
-
-    const member =
-      await getMyMember();
-
-
-    if (!member) {
-      return null;
-    }
-
-
-    const elements =
-      document.querySelectorAll(
-        "[data-member-name]"
-      );
-
-
-    elements.forEach(
-      element => {
-
-        element.textContent =
-          member.name ||
-          "Member";
-
-      }
-    );
-
-
-    return member;
-
-  } catch (error) {
-
-    console.error(
-      "Unable to load member:",
-      error
-    );
-
-    return null;
-
-  }
 }
 
 
@@ -144,42 +42,36 @@ function highlightCurrentPage() {
 
 
   document
-    .querySelectorAll(
-      ".nav a"
-    )
-    .forEach(
-      link => {
+    .querySelectorAll(".nav a")
+    .forEach(link => {
 
-        const href =
-          link
-            .getAttribute(
-              "href"
-            );
+      const href =
+        link.getAttribute("href");
 
 
-        if (!href) {
-          return;
-        }
-
-
-        const linkPage =
-          href
-            .split("/")
-            .pop();
-
-
-        link.classList.toggle(
-          "active",
-          linkPage === page
-        );
-
+      if (!href) {
+        return;
       }
-    );
+
+
+      const linkPage =
+        href
+          .split("/")
+          .pop()
+          .split("?")[0];
+
+
+      link.classList.toggle(
+        "active",
+        linkPage === page
+      );
+
+    });
 }
 
 
 /* =========================================================
-   LOGOUT BUTTON
+   LOGOUT
 ========================================================= */
 
 function setupLogout() {
@@ -194,7 +86,7 @@ function setupLogout() {
 
 
   /*
-   * Prevent duplicate listeners.
+   * Prevent duplicate event listeners.
    */
 
   if (
@@ -216,8 +108,21 @@ function setupLogout() {
       event.preventDefault();
 
 
+      if (
+        button.dataset.loggingOut ===
+        "true"
+      ) {
+        return;
+      }
+
+
+      button.dataset.loggingOut =
+        "true";
+
+
       button.disabled =
         true;
+
 
       button.textContent =
         "Signing out...";
@@ -230,13 +135,18 @@ function setupLogout() {
       } catch (error) {
 
         console.error(
-          "Sign out failed:",
+          "Sign out error:",
           error
         );
 
 
         button.disabled =
           false;
+
+
+        button.dataset.loggingOut =
+          "false";
+
 
         button.textContent =
           "Sign out";
@@ -251,6 +161,82 @@ function setupLogout() {
 
     }
   );
+
+}
+
+
+/* =========================================================
+   MEMBER DISPLAY
+========================================================= */
+
+function displayMember(
+  member
+) {
+
+  if (!member) {
+    return;
+  }
+
+
+  document
+    .querySelectorAll(
+      "[data-member-name]"
+    )
+    .forEach(
+      element => {
+
+        element.textContent =
+          member.name ||
+          "Member";
+
+      }
+    );
+
+
+  document
+    .querySelectorAll(
+      "[data-member-role]"
+    )
+    .forEach(
+      element => {
+
+        element.textContent =
+          member.role ||
+          "member";
+
+      }
+    );
+
+}
+
+
+/* =========================================================
+   GROUP DISPLAY
+========================================================= */
+
+function displayGroup(
+  group
+) {
+
+  if (!group) {
+    return;
+  }
+
+
+  document
+    .querySelectorAll(
+      "[data-group-name]"
+    )
+    .forEach(
+      element => {
+
+        element.textContent =
+          group.name ||
+          "Your Group";
+
+      }
+    );
+
 }
 
 
@@ -271,7 +257,9 @@ function applyRBAC(
     String(
       member.role ||
       "member"
-    ).toLowerCase();
+    )
+      .trim()
+      .toLowerCase();
 
 
   const adminRoles = [
@@ -301,13 +289,6 @@ function applyRBAC(
     );
 
 
-  /*
-   * Elements can declare:
-   *
-   * data-role="admin"
-   * data-role="manager"
-   */
-
   document
     .querySelectorAll(
       "[data-role]"
@@ -317,8 +298,11 @@ function applyRBAC(
 
         const required =
           String(
-            element.dataset.role
-          ).toLowerCase();
+            element.dataset.role ||
+            ""
+          )
+            .trim()
+            .toLowerCase();
 
 
         if (
@@ -344,6 +328,27 @@ function applyRBAC(
 
       }
     );
+
+}
+
+
+/* =========================================================
+   SAFE STATUS
+========================================================= */
+
+function setStatus(
+  message
+) {
+
+  const status =
+    $("status");
+
+
+  if (status) {
+    status.textContent =
+      message;
+  }
+
 }
 
 
@@ -353,129 +358,160 @@ function applyRBAC(
 
 export async function boot() {
 
+  /*
+   * ALWAYS install the logout button
+   * and navigation first.
+   *
+   * These must not depend on Supabase RPCs.
+   */
+
+  highlightCurrentPage();
+
+  setupLogout();
+
+
+  /*
+   * Then check authentication.
+   */
+
+  let session;
+
   try {
 
-    /*
-     * Authenticate first.
-     */
-
-    const session =
+    session =
       await requireAuth();
 
+  } catch (error) {
 
-    if (!session) {
-      return null;
-    }
+    console.error(
+      "Authentication boot error:",
+      error
+    );
 
 
-    /*
-     * Get member.
-     */
+    setStatus(
+      "Authentication error."
+    );
 
-    const member =
+
+    return null;
+  }
+
+
+  if (!session) {
+    return null;
+  }
+
+
+  /*
+   * Get member.
+   *
+   * Failure here should NOT prevent
+   * the page itself from loading.
+   */
+
+  let member =
+    null;
+
+
+  try {
+
+    member =
       await getMyMember();
 
+  } catch (error) {
 
-    if (!member) {
+    console.error(
+      "Member loading error:",
+      error
+    );
 
-      console.error(
-        "No member record found for authenticated user."
-      );
-
-
-      await signOut();
-
-      return null;
-    }
+  }
 
 
-    /*
-     * Get group.
-     */
+  /*
+   * Apply RBAC if member exists.
+   */
 
-    const group =
-      await getMyGroup();
+  if (member) {
 
+    displayMember(
+      member
+    );
 
-    if (!group) {
-
-      console.error(
-        "No group found for authenticated member."
-      );
-
-
-      await signOut();
-
-      return null;
-    }
-
-
-    /*
-     * UI.
-     */
-
-    highlightCurrentPage();
-
-    setupLogout();
 
     applyRBAC(
       member
     );
 
-
-    await loadMemberInfo();
-
-    await loadGroupInfo();
+  }
 
 
-    /*
-     * Return useful information
-     * to page scripts if needed.
-     */
+  /*
+   * Get group.
+   *
+   * Again, don't block the page.
+   */
 
-    return {
-      session,
-      member,
-      group
-    };
+  let group =
+    null;
 
+
+  try {
+
+    group =
+      await getMyGroup();
 
   } catch (error) {
 
     console.error(
-      "CHAMA LIVE boot error:",
+      "Group loading error:",
       error
     );
 
-
-    const status =
-      $("status");
-
-
-    if (status) {
-
-      status.textContent =
-        "Unable to initialize your account.";
-
-    }
-
-
-    const errorElement =
-      $("error");
-
-
-    if (errorElement) {
-
-      errorElement.hidden =
-        false;
-
-      errorElement.textContent =
-        error?.message ||
-        "Unable to initialize application.";
-
-    }
-
-
-    return null;
   }
+
+
+  if (group) {
+
+    displayGroup(
+      group
+    );
+
+  }
+
+
+  /*
+   * Don't show "loading dashboard"
+   * forever simply because group
+   * metadata failed.
+   */
+
+  const status =
+    $("status");
+
+
+  if (
+    status &&
+    status.textContent ===
+    "Loading dashboard..."
+  ) {
+
+    status.textContent =
+      "";
+
+  }
+
+
+  /*
+   * Return information to page scripts.
+   */
+
+  return {
+    session,
+    member,
+    group
+  };
+
 }
+```
