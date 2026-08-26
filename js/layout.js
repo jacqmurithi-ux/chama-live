@@ -1,4 +1,3 @@
-```javascript
 import {
   requireAuth,
   getMyMember,
@@ -6,10 +5,6 @@ import {
   signOut
 } from "./auth.js";
 
-
-/* =========================================================
-   HELPER
-========================================================= */
 
 function $(id) {
   return document.getElementById(id);
@@ -22,108 +17,13 @@ function $(id) {
 
 function currentPage() {
 
-  const path =
-    window.location.pathname || "";
+  const file =
+    window.location.pathname
+      .split("/")
+      .pop()
+      .toLowerCase();
 
-  const parts =
-    path.split("/");
-
-  return (
-    parts[parts.length - 1] ||
-    "dashboard.html"
-  );
-}
-
-
-/* =========================================================
-   SHOW ERROR
-========================================================= */
-
-function showBootError(message) {
-
-  const error =
-    $("error");
-
-  if (error) {
-
-    error.hidden = false;
-
-    error.textContent =
-      message;
-
-  }
-
-  const status =
-    $("status");
-
-  if (status) {
-
-    status.textContent =
-      "Unable to load this page.";
-
-  }
-
-}
-
-
-/* =========================================================
-   GROUP DISPLAY
-========================================================= */
-
-function displayGroup(group) {
-
-  if (!group) {
-    return;
-  }
-
-  const groupName =
-    group.name ||
-    group.group_name ||
-    "Your Group";
-
-  document
-    .querySelectorAll(
-      "[data-group-name]"
-    )
-    .forEach(
-      element => {
-
-        element.textContent =
-          groupName;
-
-      }
-    );
-
-}
-
-
-/* =========================================================
-   MEMBER DISPLAY
-========================================================= */
-
-function displayMember(member) {
-
-  if (!member) {
-    return;
-  }
-
-  const memberName =
-    member.name ||
-    "Member";
-
-  document
-    .querySelectorAll(
-      "[data-member-name]"
-    )
-    .forEach(
-      element => {
-
-        element.textContent =
-          memberName;
-
-      }
-    );
-
+  return file || "dashboard.html";
 }
 
 
@@ -137,33 +37,28 @@ function highlightCurrentPage() {
     currentPage();
 
   document
-    .querySelectorAll(
-      ".nav a"
-    )
-    .forEach(
-      link => {
+    .querySelectorAll(".nav a")
+    .forEach(link => {
 
-        const href =
-          link.getAttribute(
-            "href"
-          );
+      const href =
+        link.getAttribute("href");
 
-        if (!href) {
-          return;
-        }
-
-        const linkPage =
-          href
-            .split("/")
-            .pop();
-
-        link.classList.toggle(
-          "active",
-          linkPage === page
-        );
-
+      if (!href) {
+        return;
       }
-    );
+
+      const linkPage =
+        href
+          .split("/")
+          .pop()
+          .toLowerCase();
+
+      link.classList.toggle(
+        "active",
+        linkPage === page
+      );
+
+    });
 
 }
 
@@ -181,24 +76,14 @@ function setupLogout() {
     return;
   }
 
-
-  /*
-   * Prevent installing the listener twice.
-   */
-
   if (
-    button.dataset.logoutReady ===
-    "true"
+    button.dataset.logoutReady === "true"
   ) {
-
     return;
-
   }
-
 
   button.dataset.logoutReady =
     "true";
-
 
   button.addEventListener(
     "click",
@@ -206,12 +91,10 @@ function setupLogout() {
 
       event.preventDefault();
 
-      button.disabled =
-        true;
+      button.disabled = true;
 
       button.textContent =
         "Signing out...";
-
 
       try {
 
@@ -224,8 +107,7 @@ function setupLogout() {
           error
         );
 
-        button.disabled =
-          false;
+        button.disabled = false;
 
         button.textContent =
           "Sign out";
@@ -244,10 +126,58 @@ function setupLogout() {
 
 
 /* =========================================================
-   ROLE ACCESS
+   MEMBER DISPLAY
 ========================================================= */
 
-function applyRBAC(member) {
+function displayMember(
+  member
+) {
+
+  document
+    .querySelectorAll(
+      "[data-member-name]"
+    )
+    .forEach(element => {
+
+      element.textContent =
+        member?.name ||
+        "Member";
+
+    });
+
+}
+
+
+/* =========================================================
+   GROUP DISPLAY
+========================================================= */
+
+function displayGroup(
+  group
+) {
+
+  document
+    .querySelectorAll(
+      "[data-group-name]"
+    )
+    .forEach(element => {
+
+      element.textContent =
+        group?.name ||
+        "Your Group";
+
+    });
+
+}
+
+
+/* =========================================================
+   RBAC
+========================================================= */
+
+function applyRBAC(
+  member
+) {
 
   if (!member) {
     return;
@@ -255,8 +185,7 @@ function applyRBAC(member) {
 
   const role =
     String(
-      member.role ||
-      "member"
+      member.role || "member"
     )
       .trim()
       .toLowerCase();
@@ -272,96 +201,151 @@ function applyRBAC(member) {
 
 
   const managerRoles = [
-    "admin",
-    "administrator",
-    "chairperson",
-    "secretary",
-    "treasurer",
+    ...adminRoles,
     "manager"
   ];
 
 
   const isAdmin =
-    adminRoles.includes(
-      role
-    );
+    adminRoles.includes(role);
 
 
   const isManager =
-    managerRoles.includes(
-      role
-    );
+    managerRoles.includes(role);
 
 
   document
-    .querySelectorAll(
-      "[data-role]"
-    )
-    .forEach(
-      element => {
+    .querySelectorAll("[data-role]")
+    .forEach(element => {
 
-        const requiredRole =
-          String(
-            element.dataset.role ||
-            ""
-          )
-            .trim()
-            .toLowerCase();
+      const required =
+        String(
+          element.dataset.role
+        )
+          .trim()
+          .toLowerCase();
 
 
-        if (
-          requiredRole ===
-          "admin"
-        ) {
+      if (
+        required === "admin"
+      ) {
 
-          element.hidden =
-            !isAdmin;
-
-        }
-
-
-        if (
-          requiredRole ===
-          "manager"
-        ) {
-
-          element.hidden =
-            !isManager;
-
-        }
+        element.hidden =
+          !isAdmin;
 
       }
-    );
+
+
+      if (
+        required === "manager"
+      ) {
+
+        element.hidden =
+          !isManager;
+
+      }
+
+    });
 
 }
 
 
 /* =========================================================
-   BOOT APPLICATION
+   LOAD PAGE SCRIPT
+========================================================= */
+
+async function loadPageScript() {
+
+  const page =
+    currentPage();
+
+
+  const scripts = {
+
+    "dashboard.html":
+      "./dashboard.js",
+
+    "members.html":
+      "./members.js",
+
+    "contributions.html":
+      "./contributions.js",
+
+    "expenses.html":
+      "./expenses.js",
+
+    "meetings.html":
+      "./meetings.js",
+
+    "reports.html":
+      "./reports.js",
+
+    "monthly-closing.html":
+      "./monthly-closing.js",
+
+    "group-management.html":
+      "./group-management.js"
+
+  };
+
+
+  const script =
+    scripts[page];
+
+
+  if (!script) {
+    return;
+  }
+
+
+  try {
+
+    await import(script);
+
+  } catch (error) {
+
+    console.error(
+      `Unable to load ${script}:`,
+      error
+    );
+
+
+    const errorBox =
+      $("error");
+
+
+    if (errorBox) {
+
+      errorBox.hidden =
+        false;
+
+      errorBox.textContent =
+        error?.message ||
+        `Unable to load ${page} JavaScript.`;
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   BOOT
 ========================================================= */
 
 export async function boot() {
 
   try {
 
-    /*
-     * 1. Check Supabase session.
-     */
-
     const session =
       await requireAuth();
 
 
     if (!session) {
-
       return null;
-
     }
 
-
-    /*
-     * 2. Get logged-in member.
-     */
 
     const member =
       await getMyMember();
@@ -370,15 +354,11 @@ export async function boot() {
     if (!member) {
 
       throw new Error(
-        "Your login is not linked to a member record."
+        "Your authenticated account is not linked to an active member record."
       );
 
     }
 
-
-    /*
-     * 3. Get the member's group.
-     */
 
     const group =
       await getMyGroup();
@@ -387,15 +367,21 @@ export async function boot() {
     if (!group) {
 
       throw new Error(
-        "Your account is not linked to a valid group."
+        "Your member account is not linked to an active group."
       );
 
     }
 
 
-    /*
-     * 4. Update common interface.
-     */
+    displayMember(
+      member
+    );
+
+
+    displayGroup(
+      group
+    );
+
 
     highlightCurrentPage();
 
@@ -405,33 +391,26 @@ export async function boot() {
       member
     );
 
-    displayMember(
-      member
-    );
-
-    displayGroup(
-      group
-    );
-
-
-    /*
-     * 5. Update status message.
-     */
 
     const status =
       $("status");
 
+
     if (status) {
 
       status.textContent =
-        "";
+        `Welcome, ${member.name || "Member"}.`;
 
     }
 
 
     /*
-     * 6. Return information to page scripts.
+     * Now load the page-specific
+     * JavaScript.
      */
+
+    await loadPageScript();
+
 
     return {
       session,
@@ -448,55 +427,32 @@ export async function boot() {
     );
 
 
-    /*
-     * If authentication/session is invalid,
-     * send the user back to login.
-     */
-
-    const message =
-      String(
-        error?.message ||
-        ""
-      );
+    const status =
+      $("status");
 
 
-    if (
-      message.toLowerCase().includes(
-        "not authenticated"
-      ) ||
-      message.toLowerCase().includes(
-        "no session"
-      ) ||
-      message.toLowerCase().includes(
-        "session"
-      )
-    ) {
+    if (status) {
 
-      try {
-
-        await signOut();
-
-      } catch (_) {
-
-        window.location.href =
-          "login.html";
-
-      }
-
-      return null;
+      status.textContent =
+        "Unable to initialize your account.";
 
     }
 
 
-    /*
-     * Display error without breaking
-     * the rest of the page.
-     */
+    const errorBox =
+      $("error");
 
-    showBootError(
-      message ||
-      "Unable to initialize the application."
-    );
+
+    if (errorBox) {
+
+      errorBox.hidden =
+        false;
+
+      errorBox.textContent =
+        error?.message ||
+        "Unable to initialize application.";
+
+    }
 
 
     return null;
@@ -504,4 +460,3 @@ export async function boot() {
   }
 
 }
-```
