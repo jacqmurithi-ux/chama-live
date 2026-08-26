@@ -7,47 +7,26 @@ console.log("CHAMA LIVE: contributions.js loaded");
    ELEMENTS
 ======================================================= */
 
-const statusEl =
-  document.getElementById("status");
+const statusEl = document.getElementById("status");
+const errorEl = document.getElementById("error");
 
-const errorEl =
-  document.getElementById("error");
+const form = document.getElementById("contributionForm");
 
-const form =
-  document.getElementById("contributionForm");
+const memberSelect = document.getElementById("member");
+const amountInput = document.getElementById("amount");
+const dateInput = document.getElementById("contributionDate");
 
-const memberSelect =
-  document.getElementById("member");
+const typeSelect = document.getElementById("contributionType");
+const methodSelect = document.getElementById("paymentMethod");
 
-const amountInput =
-  document.getElementById("amount");
+const mpesaReference = document.getElementById("mpesaReference");
+const mpesaReferenceWrap = document.getElementById("mpesaReferenceWrap");
 
-const dateInput =
-  document.getElementById("contributionDate");
+const saveButton = document.getElementById("saveContribution");
 
-const typeSelect =
-  document.getElementById("contributionType");
-
-const methodSelect =
-  document.getElementById("paymentMethod");
-
-const mpesaReference =
-  document.getElementById("mpesaReference");
-
-const mpesaReferenceWrap =
-  document.getElementById("mpesaReferenceWrap");
-
-const saveButton =
-  document.getElementById("saveContribution");
-
-const monthlyExpected =
-  document.getElementById("monthlyExpected");
-
-const memberStatusRows =
-  document.getElementById("memberStatusRows");
-
-const contributionRows =
-  document.getElementById("contributionRows");
+const monthlyExpected = document.getElementById("monthlyExpected");
+const memberStatusRows = document.getElementById("memberStatusRows");
+const contributionRows = document.getElementById("contributionRows");
 
 
 /* =======================================================
@@ -55,36 +34,25 @@ const contributionRows =
 ======================================================= */
 
 let groupId = null;
-
 let members = [];
-
 let contributions = [];
-
 let monthlyContribution = 0;
 
 
 /* =======================================================
-   PAYMENT METHOD VALUES
+   CONSTANTS
 ======================================================= */
 
 /*
  * IMPORTANT:
- *
- * These values must match the database CHECK constraint.
- *
- * Database values:
- *
- * mpesa
- * cash
- * bank_transfer
- *
- * User-friendly labels are handled separately.
+ * These values must match the PostgreSQL
+ * contributions_payment_method_check constraint.
  */
 
 const PAYMENT_METHODS = {
-  mpesa: "M-Pesa",
-  cash: "Cash",
-  bank_transfer: "Bank transfer"
+  MPESA: "M-Pesa",
+  CASH: "Cash",
+  BANK: "Bank transfer"
 };
 
 
@@ -99,9 +67,7 @@ function money(value) {
     currency: "KES",
     minimumFractionDigits: 0,
     maximumFractionDigits: 2
-  }).format(
-    Number(value || 0)
-  );
+  }).format(Number(value || 0));
 
 }
 
@@ -112,15 +78,8 @@ function todayString() {
 
   return [
     now.getFullYear(),
-
-    String(
-      now.getMonth() + 1
-    ).padStart(2, "0"),
-
-    String(
-      now.getDate()
-    ).padStart(2, "0")
-
+    String(now.getMonth() + 1).padStart(2, "0"),
+    String(now.getDate()).padStart(2, "0")
   ].join("-");
 
 }
@@ -139,18 +98,7 @@ function getCurrentMonth() {
 
 function getContributionMonth(item) {
 
-  /*
-   * Primary:
-   * contribution_date
-   *
-   * Fallback:
-   * month
-   *
-   * Final fallback:
-   * created_at
-   */
-
-  if (item?.contribution_date) {
+  if (item.contribution_date) {
 
     return String(
       item.contribution_date
@@ -158,8 +106,7 @@ function getContributionMonth(item) {
 
   }
 
-
-  if (item?.month) {
+  if (item.month) {
 
     return String(
       item.month
@@ -167,15 +114,13 @@ function getContributionMonth(item) {
 
   }
 
-
-  if (item?.created_at) {
+  if (item.created_at) {
 
     return String(
       item.created_at
     ).slice(0, 7);
 
   }
-
 
   return "";
 
@@ -185,26 +130,14 @@ function getContributionMonth(item) {
 function formatDate(value) {
 
   if (!value) {
-
     return "—";
-
   }
 
+  const date = new Date(value);
 
-  const date =
-    new Date(value);
-
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-
-    return String(value);
-
+  if (Number.isNaN(date.getTime())) {
+    return value;
   }
-
 
   return date.toLocaleDateString(
     "en-KE",
@@ -221,26 +154,11 @@ function formatDate(value) {
 function escapeHtml(value) {
 
   return String(value ?? "")
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 
 }
 
@@ -256,40 +174,15 @@ function showError(error) {
     error
   );
 
-
   if (errorEl) {
 
-    let message =
+    errorEl.textContent =
       error?.message ||
       "Something went wrong.";
 
-
-    /*
-     * Make the common payment-method
-     * constraint error easier to understand.
-     */
-
-    if (
-      String(message)
-        .includes(
-          "contributions_payment_method_check"
-        )
-    ) {
-
-      message =
-        "The selected payment method is not accepted by the database. Please use M-Pesa, Cash, or Bank transfer.";
-
-    }
-
-
-    errorEl.textContent =
-      message;
-
-    errorEl.hidden =
-      false;
+    errorEl.hidden = false;
 
   }
-
 
   if (statusEl) {
 
@@ -304,17 +197,11 @@ function showError(error) {
 function clearError() {
 
   if (!errorEl) {
-
     return;
-
   }
 
-
-  errorEl.hidden =
-    true;
-
-  errorEl.textContent =
-    "";
+  errorEl.hidden = true;
+  errorEl.textContent = "";
 
 }
 
@@ -328,18 +215,11 @@ async function getGroupId() {
   const {
     data,
     error
-  } =
-    await supabase.rpc(
-      "my_group_id"
-    );
-
+  } = await supabase.rpc("my_group_id");
 
   if (error) {
-
     throw error;
-
   }
-
 
   if (!data) {
 
@@ -348,7 +228,6 @@ async function getGroupId() {
     );
 
   }
-
 
   return data;
 
@@ -364,25 +243,15 @@ async function loadGroup() {
   const {
     data,
     error
-  } =
-    await supabase
-      .from("groups")
-      .select(
-        "monthly_contribution"
-      )
-      .eq(
-        "id",
-        groupId
-      )
-      .single();
-
+  } = await supabase
+    .from("groups")
+    .select("monthly_contribution")
+    .eq("id", groupId)
+    .single();
 
   if (error) {
-
     throw error;
-
   }
-
 
   monthlyContribution =
     Number(
@@ -393,16 +262,13 @@ async function loadGroup() {
   if (monthlyExpected) {
 
     monthlyExpected.textContent =
-      money(
-        monthlyContribution
-      );
+      money(monthlyContribution);
 
   }
 
 
   /*
-   * Automatically suggest the
-   * configured monthly contribution.
+   * Pre-fill the normal monthly amount.
    */
 
   if (
@@ -427,54 +293,45 @@ async function loadMembers() {
   const {
     data,
     error
-  } =
-    await supabase
-      .from("members")
-      .select(`
-        id,
-        name,
-        status
-      `)
-      .eq(
-        "group_id",
-        groupId
-      )
-      .order(
-        "name",
-        {
-          ascending: true
-        }
-      );
-
+  } = await supabase
+    .from("members")
+    .select(`
+      id,
+      name,
+      status
+    `)
+    .eq(
+      "group_id",
+      groupId
+    )
+    .order(
+      "name",
+      {
+        ascending: true
+      }
+    );
 
   if (error) {
-
     throw error;
-
   }
 
 
   /*
-   * Only active members can
-   * receive new contributions.
+   * Only active members can receive
+   * new contribution records.
    */
 
   members =
-    (data || [])
-      .filter(
-        member =>
-          String(
-            member.status ||
-            "active"
-          ).toLowerCase() ===
-          "active"
-      );
+    (data || []).filter(
+      member =>
+        String(
+          member.status || "active"
+        ).toLowerCase() === "active"
+    );
 
 
   if (!memberSelect) {
-
     return;
-
   }
 
 
@@ -489,18 +346,13 @@ async function loadMembers() {
     member => {
 
       const option =
-        document.createElement(
-          "option"
-        );
-
+        document.createElement("option");
 
       option.value =
         member.id;
 
-
       option.textContent =
         member.name;
-
 
       memberSelect.appendChild(
         option
@@ -521,49 +373,44 @@ async function loadContributions() {
   const {
     data,
     error
-  } =
-    await supabase
-      .from("contributions")
-      .select(`
-        id,
-        group_id,
-        member_id,
-        amount,
-        contribution_type,
-        month,
-        payment_method,
-        reference,
-        recorded_by,
-        created_at,
-        goal_id,
-        contribution_date,
-        notes,
-        mpesa_reference
-      `)
-      .eq(
-        "group_id",
-        groupId
-      )
-      .order(
-        "contribution_date",
-        {
-          ascending: false
-        }
-      )
-      .order(
-        "created_at",
-        {
-          ascending: false
-        }
-      );
-
+  } = await supabase
+    .from("contributions")
+    .select(`
+      id,
+      group_id,
+      member_id,
+      amount,
+      contribution_type,
+      month,
+      payment_method,
+      reference,
+      recorded_by,
+      created_at,
+      goal_id,
+      contribution_date,
+      notes,
+      mpesa_reference
+    `)
+    .eq(
+      "group_id",
+      groupId
+    )
+    .order(
+      "contribution_date",
+      {
+        ascending: false
+      }
+    )
+    .order(
+      "created_at",
+      {
+        ascending: false
+      }
+    );
 
   if (error) {
-
     throw error;
-
   }
-
 
   contributions =
     data || [];
@@ -575,9 +422,7 @@ async function loadContributions() {
    MEMBER NAME
 ======================================================= */
 
-function getMemberName(
-  memberId
-) {
+function getMemberName(memberId) {
 
   const member =
     members.find(
@@ -585,7 +430,6 @@ function getMemberName(
         String(item.id) ===
         String(memberId)
     );
-
 
   return (
     member?.name ||
@@ -596,26 +440,103 @@ function getMemberName(
 
 
 /* =======================================================
-   PAYMENT METHOD LABEL
+   PAYMENT METHOD NORMALIZATION
 ======================================================= */
 
-function getPaymentMethodLabel(
-  value
-) {
+/*
+ * Handles older records that may contain
+ * lowercase values such as "mpesa", "cash",
+ * or "bank".
+ *
+ * New records always use the exact database
+ * values defined above.
+ */
 
-  const normalized =
-    String(
-      value || ""
-    ).toLowerCase().trim();
+function normalizePaymentMethod(value) {
+
+  const method =
+    String(value || "")
+      .trim()
+      .toLowerCase();
 
 
-  return (
-    PAYMENT_METHODS[
-      normalized
-    ] ||
-    value ||
-    "—"
-  );
+  if (
+    method === "m-pesa" ||
+    method === "mpesa" ||
+    method === "m_pesa"
+  ) {
+
+    return PAYMENT_METHODS.MPESA;
+
+  }
+
+
+  if (method === "cash") {
+
+    return PAYMENT_METHODS.CASH;
+
+  }
+
+
+  if (
+    method === "bank" ||
+    method === "bank transfer" ||
+    method === "bank_transfer"
+  ) {
+
+    return PAYMENT_METHODS.BANK;
+
+  }
+
+
+  return value || "—";
+
+}
+
+
+/* =======================================================
+   UPDATE PAYMENT METHOD UI
+======================================================= */
+
+function updatePaymentMethod() {
+
+  if (
+    !methodSelect ||
+    !mpesaReference ||
+    !mpesaReferenceWrap
+  ) {
+
+    return;
+
+  }
+
+
+  const method =
+    normalizePaymentMethod(
+      methodSelect.value
+    );
+
+
+  const isMpesa =
+    method === PAYMENT_METHODS.MPESA;
+
+
+  mpesaReferenceWrap.style.display =
+    isMpesa
+      ? ""
+      : "none";
+
+
+  mpesaReference.required =
+    isMpesa;
+
+
+  if (!isMpesa) {
+
+    mpesaReference.value =
+      "";
+
+  }
 
 }
 
@@ -627,9 +548,7 @@ function getPaymentMethodLabel(
 function renderLedger() {
 
   if (!contributionRows) {
-
     return;
-
   }
 
 
@@ -670,8 +589,8 @@ function renderLedger() {
             "—";
 
 
-          const method =
-            getPaymentMethodLabel(
+          const paymentMethod =
+            normalizePaymentMethod(
               item.payment_method
             );
 
@@ -710,7 +629,7 @@ function renderLedger() {
 
               <td>
                 ${escapeHtml(
-                  method
+                  paymentMethod
                 )}
               </td>
 
@@ -731,15 +650,13 @@ function renderLedger() {
 
 
 /* =======================================================
-   MEMBER STATUS
+   MONTHLY STATUS
 ======================================================= */
 
 function renderMemberStatus() {
 
   if (!memberStatusRows) {
-
     return;
-
   }
 
 
@@ -769,8 +686,7 @@ function renderMemberStatus() {
 
           /*
            * Only MONTHLY contributions
-           * count toward the monthly
-           * contribution requirement.
+           * count toward monthly status.
            */
 
           const paid =
@@ -800,8 +716,7 @@ function renderMemberStatus() {
 
 
                   if (
-                    type !==
-                    "monthly"
+                    type !== "monthly"
                   ) {
 
                     return false;
@@ -835,6 +750,14 @@ function renderMemberStatus() {
             monthlyContribution;
 
 
+          /*
+           * IMPORTANT:
+           *
+           * Do NOT show negative outstanding.
+           * If paid exceeds expected,
+           * outstanding remains zero.
+           */
+
           const outstanding =
             Math.max(
               expected - paid,
@@ -843,40 +766,33 @@ function renderMemberStatus() {
 
 
           /*
-           * Determine status.
+           * OVERPAID is specifically
+           * detected before PAID.
            */
 
           let status =
             "OUTSTANDING";
 
 
-          if (
-            expected <= 0
-          ) {
+          if (expected <= 0) {
 
             status =
               "NOT SET";
 
           }
-          else if (
-            paid > expected
-          ) {
+          else if (paid > expected) {
 
             status =
               "OVERPAID";
 
           }
-          else if (
-            paid === expected
-          ) {
+          else if (paid === expected) {
 
             status =
               "PAID";
 
           }
-          else if (
-            paid > 0
-          ) {
+          else if (paid > 0) {
 
             status =
               "PARTIAL";
@@ -930,67 +846,10 @@ function renderMemberStatus() {
 
 
 /* =======================================================
-   PAYMENT METHOD UI
-======================================================= */
-
-function updatePaymentMethod() {
-
-  if (
-    !methodSelect ||
-    !mpesaReference ||
-    !mpesaReferenceWrap
-  ) {
-
-    return;
-
-  }
-
-
-  /*
-   * HTML values should be:
-   *
-   * mpesa
-   * cash
-   * bank_transfer
-   */
-
-  const method =
-    String(
-      methodSelect.value || ""
-    ).toLowerCase();
-
-
-  const isMpesa =
-    method === "mpesa";
-
-
-  mpesaReferenceWrap.style.display =
-    isMpesa
-      ? ""
-      : "none";
-
-
-  mpesaReference.required =
-    isMpesa;
-
-
-  if (!isMpesa) {
-
-    mpesaReference.value =
-      "";
-
-  }
-
-}
-
-
-/* =======================================================
    RECORD CONTRIBUTION
 ======================================================= */
 
-async function recordContribution(
-  event
-) {
+async function recordContribution(event) {
 
   event.preventDefault();
 
@@ -1016,19 +875,14 @@ async function recordContribution(
 
 
   /*
-   * IMPORTANT:
-   *
-   * This returns database values:
-   *
-   * mpesa
-   * cash
-   * bank_transfer
+   * Normalize the selected method
+   * before sending it to Supabase.
    */
 
   const paymentMethod =
-    String(
-      methodSelect?.value || ""
-    ).toLowerCase();
+    normalizePaymentMethod(
+      methodSelect?.value
+    );
 
 
   const reference =
@@ -1036,9 +890,9 @@ async function recordContribution(
       .trim() || "";
 
 
-  /* ---------------------------------------------------
+  /* -----------------------------------------------------
      VALIDATION
-  --------------------------------------------------- */
+  ----------------------------------------------------- */
 
   if (!memberId) {
 
@@ -1053,10 +907,7 @@ async function recordContribution(
   }
 
 
-  if (
-    !amount ||
-    amount <= 0
-  ) {
+  if (!amount || amount <= 0) {
 
     showError(
       new Error(
@@ -1109,34 +960,12 @@ async function recordContribution(
 
 
   /*
-   * Ensure the method is one of
-   * the supported database values.
+   * Only M-Pesa requires a reference.
    */
 
   if (
-    !Object.prototype.hasOwnProperty.call(
-      PAYMENT_METHODS,
-      paymentMethod
-    )
-  ) {
-
-    showError(
-      new Error(
-        "Invalid payment method. Please select M-Pesa, Cash, or Bank transfer."
-      )
-    );
-
-    return;
-
-  }
-
-
-  /*
-   * M-Pesa requires a reference.
-   */
-
-  if (
-    paymentMethod === "mpesa" &&
+    paymentMethod ===
+      PAYMENT_METHODS.MPESA &&
     !reference
   ) {
 
@@ -1158,9 +987,9 @@ async function recordContribution(
     );
 
 
-  /* ---------------------------------------------------
+  /* -----------------------------------------------------
      DUPLICATE MONTHLY PAYMENT WARNING
-  --------------------------------------------------- */
+  ----------------------------------------------------- */
 
   if (
     String(
@@ -1176,20 +1005,17 @@ async function recordContribution(
           String(
             item.member_id
           ) ===
-          String(
-            memberId
-          ) &&
+            String(memberId) &&
 
           String(
             item.contribution_type ||
             ""
           ).toLowerCase() ===
-          "monthly" &&
+            "monthly" &&
 
           getContributionMonth(
             item
-          ) ===
-          month
+          ) === month
       );
 
 
@@ -1197,15 +1023,22 @@ async function recordContribution(
 
       const proceed =
         window.confirm(
+
           `This member already has a monthly contribution for ${month}.\n\n` +
-          `This will be recorded as an additional payment. Continue?`
+
+          `You can still record another payment. ` +
+
+          `If the total exceeds the monthly amount, ` +
+
+          `the member will be marked OVERPAID.\n\n` +
+
+          `Continue?`
+
         );
 
 
       if (!proceed) {
-
         return;
-
       }
 
     }
@@ -1213,9 +1046,9 @@ async function recordContribution(
   }
 
 
-  /* ---------------------------------------------------
+  /* -----------------------------------------------------
      BUTTON STATE
-  --------------------------------------------------- */
+  ----------------------------------------------------- */
 
   if (saveButton) {
 
@@ -1236,9 +1069,9 @@ async function recordContribution(
   }
 
 
-  /* ---------------------------------------------------
+  /* -----------------------------------------------------
      INSERT
-  --------------------------------------------------- */
+  ----------------------------------------------------- */
 
   try {
 
@@ -1259,14 +1092,24 @@ async function recordContribution(
       month:
         month,
 
+      /*
+       * CRITICAL:
+       * Send exact database value.
+       */
       payment_method:
         paymentMethod,
 
       contribution_date:
         contributionDate,
 
+      /*
+       * M-Pesa reference is only
+       * stored for M-Pesa payments.
+       */
+
       mpesa_reference:
-        paymentMethod === "mpesa"
+        paymentMethod ===
+          PAYMENT_METHODS.MPESA
           ? reference
           : null,
 
@@ -1277,7 +1120,7 @@ async function recordContribution(
 
 
     console.log(
-      "CHAMA LIVE: Recording contribution:",
+      "CHAMA LIVE: Saving contribution",
       contributionData
     );
 
@@ -1293,26 +1136,25 @@ async function recordContribution(
 
 
     if (error) {
-
       throw error;
-
     }
 
 
-    /* -------------------------------------------------
-       REFRESH DATA
-    ------------------------------------------------- */
+    /* ---------------------------------------------------
+       RELOAD DATA
+    --------------------------------------------------- */
 
     await loadContributions();
+
 
     renderLedger();
 
     renderMemberStatus();
 
 
-    /* -------------------------------------------------
+    /* ---------------------------------------------------
        RESET FORM
-    ------------------------------------------------- */
+    --------------------------------------------------- */
 
     form?.reset();
 
@@ -1336,7 +1178,7 @@ async function recordContribution(
     if (methodSelect) {
 
       methodSelect.value =
-        "mpesa";
+        PAYMENT_METHODS.MPESA;
 
     }
 
@@ -1355,9 +1197,8 @@ async function recordContribution(
     }
 
 
-    /* -------------------------------------------------
-       SUCCESS
-    ------------------------------------------------- */
+    clearError();
+
 
     if (statusEl) {
 
@@ -1367,19 +1208,13 @@ async function recordContribution(
     }
 
 
-    console.log(
-      "CHAMA LIVE: Contribution recorded successfully."
-    );
-
-  }
-  catch (error) {
+  } catch (error) {
 
     showError(
       error
     );
 
-  }
-  finally {
+  } finally {
 
     if (saveButton) {
 
@@ -1415,29 +1250,28 @@ async function init() {
     }
 
 
-    console.log(
-      "CHAMA LIVE: Getting current group..."
-    );
-
+    /*
+     * Get the authenticated user's group.
+     */
 
     groupId =
       await getGroupId();
 
 
     console.log(
-      "CHAMA LIVE GROUP:",
+      "CHAMA LIVE GROUP ID:",
       groupId
     );
 
 
+    /*
+     * Load all required data.
+     */
+
     await Promise.all([
-
       loadGroup(),
-
       loadMembers(),
-
       loadContributions()
-
     ]);
 
 
@@ -1467,12 +1301,15 @@ async function init() {
 
     /*
      * Default payment method.
+     *
+     * IMPORTANT:
+     * This is "M-Pesa", NOT "mpesa".
      */
 
     if (methodSelect) {
 
       methodSelect.value =
-        "mpesa";
+        PAYMENT_METHODS.MPESA;
 
     }
 
@@ -1497,8 +1334,8 @@ async function init() {
       "CHAMA LIVE: Contributions ready."
     );
 
-  }
-  catch (error) {
+
+  } catch (error) {
 
     showError(
       error
