@@ -1,9 +1,7 @@
-
 <!doctype html>
 <html lang="en">
 
 <head>
-
   <meta charset="utf-8">
 
   <meta
@@ -15,441 +13,452 @@
 
   <link
     rel="stylesheet"
-    href="css/app.css"
+    href="./css/app.css"
   >
-
 </head>
 
 
 <body>
 
+  <main
+    style="
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    "
+  >
+
+    <section
+      class="card"
+      style="
+        width:100%;
+        max-width:420px;
+      "
+    >
+
+      <!-- BRAND -->
+      <div
+        style="
+          text-align:center;
+          margin-bottom:25px;
+        "
+      >
+
+        <h1>
+          CHAMA <span>LIVE</span>
+        </h1>
+
+        <p class="muted">
+          Sign in to your group account
+        </p>
+
+      </div>
+
+
+      <!-- ERROR -->
+      <div
+        id="error"
+        class="error"
+        hidden
+        style="margin-bottom:15px;"
+      ></div>
+
+
+      <!-- SUCCESS -->
+      <div
+        id="success"
+        style="
+          display:none;
+          margin-bottom:15px;
+          padding:12px;
+          border-radius:8px;
+          background:#dcfce7;
+          color:#166534;
+        "
+      ></div>
+
+
+      <!-- LOGIN FORM -->
+      <form id="loginForm">
+
+        <!-- EMAIL -->
+        <div style="margin-bottom:15px;">
+
+          <label for="email">
+            Email address
+          </label>
+
+          <input
+            type="email"
+            id="email"
+            name="email"
+            autocomplete="email"
+            required
+            style="width:100%;"
+          >
+
+        </div>
+
+
+        <!-- PASSWORD -->
+        <div style="margin-bottom:20px;">
+
+          <label for="password">
+            Password
+          </label>
+
+          <input
+            type="password"
+            id="password"
+            name="password"
+            autocomplete="current-password"
+            required
+            style="width:100%;"
+          >
+
+        </div>
 
-<main
-  style="
-    min-height:100vh;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:20px;
-  "
->
 
+        <!-- LOGIN BUTTON -->
+        <button
+          class="btn btn-primary"
+          type="submit"
+          id="loginButton"
+          style="width:100%;"
+        >
+          Sign in
+        </button>
 
-<section
-  class="card"
-  style="
-    width:100%;
-    max-width:420px;
-  "
->
+      </form>
 
 
-<div
-  style="
-    text-align:center;
-    margin-bottom:25px;
-  "
->
+      <!-- STATUS -->
+      <div
+        id="status"
+        class="muted"
+        style="
+          text-align:center;
+          margin-top:15px;
+        "
+      ></div>
 
-  <h1>
-    CHAMA <span>LIVE</span>
-  </h1>
 
-  <p class="muted">
-    Sign in to your group account
-  </p>
+      <hr style="margin:25px 0;">
 
-</div>
 
+      <!-- CREATE ACCOUNT -->
+      <p
+        class="muted"
+        style="text-align:center;"
+      >
+        Don't have a group account?
+      </p>
 
 
-<div
-  id="error"
-  class="error"
-  hidden
-  style="margin-bottom:15px;"
-></div>
+      <a
+        href="./create-group.html"
+        class="btn btn-secondary"
+        style="
+          display:block;
+          text-align:center;
+        "
+      >
+        Create Group Account
+      </a>
 
+    </section>
 
+  </main>
 
-<div
-  id="success"
-  style="
-    display:none;
-    margin-bottom:15px;
-    padding:12px;
-    border-radius:8px;
-    background:#dcfce7;
-    color:#166534;
-  "
-></div>
 
+  <!-- =====================================================
+       LOGIN JAVASCRIPT
+  ====================================================== -->
 
+  <script type="module">
 
-<form id="loginForm">
+    import {
+      signIn,
+      getMyMember,
+      getMyGroup
+    } from "./js/auth.js";
 
 
-<div style="margin-bottom:15px;">
+    /* =====================================================
+       ELEMENTS
+    ===================================================== */
 
-<label for="email">
-Email address
-</label>
+    const form =
+      document.getElementById("loginForm");
 
-<input
-  type="email"
-  id="email"
-  autocomplete="email"
-  required
-  style="width:100%;"
->
+    const emailInput =
+      document.getElementById("email");
 
-</div>
+    const passwordInput =
+      document.getElementById("password");
 
+    const button =
+      document.getElementById("loginButton");
 
+    const errorBox =
+      document.getElementById("error");
 
-<div style="margin-bottom:20px;">
+    const successBox =
+      document.getElementById("success");
 
-<label for="password">
-Password
-</label>
+    const statusBox =
+      document.getElementById("status");
 
-<input
-  type="password"
-  id="password"
-  autocomplete="current-password"
-  required
-  style="width:100%;"
->
 
-</div>
+    /* =====================================================
+       SHOW ERROR
+    ===================================================== */
 
+    function showError(message) {
 
+      errorBox.hidden = false;
 
-<button
-  class="btn btn-primary"
-  type="submit"
-  id="loginButton"
-  style="width:100%;"
->
-Sign in
-</button>
+      errorBox.textContent =
+        message || "Unable to sign in.";
 
-
-</form>
-
-
-
-<div
-  id="status"
-  class="muted"
-  style="
-    text-align:center;
-    margin-top:15px;
-  "
-></div>
-
-
-
-<hr style="margin:25px 0;">
-
-
-
-<p
-  class="muted"
-  style="text-align:center;"
->
-Don't have a group account?
-</p>
-
-
-
-<a
-  href="create-group.html"
-  class="btn btn-secondary"
-  style="
-    display:block;
-    text-align:center;
-  "
->
-Create Group Account
-</a>
-
-
-</section>
-
-
-</main>
-
-```html
-<script type="module">
-
-import {
-  signIn,
-  getMyMember,
-  getMyGroup
-} from "./js/auth.js";
-
-
-/* =====================================================
-   ELEMENTS
-===================================================== */
-
-const form =
-  document.getElementById(
-    "loginForm"
-  );
-
-
-const emailInput =
-  document.getElementById(
-    "email"
-  );
-
-
-const passwordInput =
-  document.getElementById(
-    "password"
-  );
-
-
-const button =
-  document.getElementById(
-    "loginButton"
-  );
-
-
-const errorBox =
-  document.getElementById(
-    "error"
-  );
-
-
-const statusBox =
-  document.getElementById(
-    "status"
-  );
-
-
-const successBox =
-  document.getElementById(
-    "success"
-  );
-
-
-/* =====================================================
-   ERROR
-===================================================== */
-
-function showError(message) {
-
-  errorBox.hidden = false;
-
-  errorBox.textContent =
-    message || "Unable to sign in.";
-}
-
-
-function clearError() {
-
-  errorBox.hidden = true;
-
-  errorBox.textContent = "";
-}
-
-
-/* =====================================================
-   LOGIN
-===================================================== */
-
-form.addEventListener(
-  "submit",
-  async event => {
-
-    event.preventDefault();
-
-    clearError();
-
-    successBox.style.display =
-      "none";
-
-    statusBox.textContent =
-      "";
-
-
-    const email =
-      emailInput.value
-        .trim()
-        .toLowerCase();
-
-
-    const password =
-      passwordInput.value;
-
-
-    if (!email || !password) {
-
-      showError(
-        "Enter your email and password."
-      );
-
-      return;
     }
 
 
-    button.disabled = true;
+    /* =====================================================
+       CLEAR ERROR
+    ===================================================== */
 
-    button.textContent =
-      "Signing in...";
+    function clearError() {
 
-    statusBox.textContent =
-      "Connecting to CHAMA LIVE...";
+      errorBox.hidden = true;
 
+      errorBox.textContent = "";
 
-    try {
-
-      /* ===============================================
-         SIGN IN
-      =============================================== */
-
-      await signIn(
-        email,
-        password
-      );
-
-
-      statusBox.textContent =
-        "Login successful. Checking your member account...";
-
-
-      /* ===============================================
-         CHECK MEMBER
-      =============================================== */
-
-      const member =
-        await getMyMember();
-
-
-      if (!member) {
-
-        throw new Error(
-          "Your login worked, but your account is not linked to an active CHAMA member account."
-        );
-      }
-
-
-      console.log(
-        "CHAMA LIVE MEMBER:",
-        member
-      );
-
-
-      statusBox.textContent =
-        "Member account found. Checking your group...";
-
-
-      /* ===============================================
-         CHECK GROUP
-      =============================================== */
-
-      const group =
-        await getMyGroup();
-
-
-      if (!group) {
-
-        throw new Error(
-          "Your member account was found, but it is not linked to an active group."
-        );
-      }
-
-
-      console.log(
-        "CHAMA LIVE GROUP:",
-        group
-      );
-
-
-      /* ===============================================
-         SUCCESS
-      =============================================== */
-
-      const memberName =
-        member.name ||
-        member.full_name ||
-        "Member";
-
-
-      const groupName =
-        group.name ||
-        group.group_name ||
-        "CHAMA";
-
-
-      successBox.textContent =
-        `Welcome ${memberName}. ${groupName} is ready. Redirecting...`;
-
-
-      successBox.style.display =
-        "block";
-
-
-      statusBox.textContent =
-        "";
-
-
-      button.textContent =
-        "Success";
-
-
-      /*
-       * Give the browser a moment to persist
-       * the Supabase session before navigation.
-       */
-
-      await new Promise(
-        resolve =>
-          setTimeout(
-            resolve,
-            300
-          )
-      );
-
-
-      window.location.replace(
-        "./dashboard.html"
-      );
-
-
-    } catch (error) {
-
-      console.error(
-        "CHAMA LOGIN FAILED:",
-        error
-      );
-
-
-      showError(
-        error?.message ||
-        "Unable to sign in."
-      );
-
-
-      statusBox.textContent =
-        "";
-
-
-      button.disabled =
-        false;
-
-
-      button.textContent =
-        "Sign in";
     }
 
-  }
-);
 
-</script>
-```
+    /* =====================================================
+       LOGIN
+    ===================================================== */
+
+    form.addEventListener(
+      "submit",
+      async function(event) {
+
+        event.preventDefault();
 
 
+        clearError();
+
+
+        successBox.style.display =
+          "none";
+
+
+        statusBox.textContent =
+          "";
+
+
+        const email =
+          emailInput.value
+            .trim()
+            .toLowerCase();
+
+
+        const password =
+          passwordInput.value;
+
+
+        if (!email) {
+
+          showError(
+            "Please enter your email address."
+          );
+
+          emailInput.focus();
+
+          return;
+
+        }
+
+
+        if (!password) {
+
+          showError(
+            "Please enter your password."
+          );
+
+          passwordInput.focus();
+
+          return;
+
+        }
+
+
+        button.disabled = true;
+
+        button.textContent =
+          "Signing in...";
+
+
+        statusBox.textContent =
+          "Connecting to CHAMA LIVE...";
+
+
+        try {
+
+          /* =============================================
+             SUPABASE AUTH
+          ============================================= */
+
+          await signIn(
+            email,
+            password
+          );
+
+
+          statusBox.textContent =
+            "Login successful. Loading your account...";
+
+
+          /* =============================================
+             MEMBER
+          ============================================= */
+
+          const member =
+            await getMyMember();
+
+
+          console.log(
+            "CHAMA LIVE MEMBER:",
+            member
+          );
+
+
+          if (!member) {
+
+            throw new Error(
+              "Login successful, but no active member account is linked to this login."
+            );
+
+          }
+
+
+          statusBox.textContent =
+            "Member account found. Loading group...";
+
+
+          /* =============================================
+             GROUP
+          ============================================= */
+
+          const group =
+            await getMyGroup();
+
+
+          console.log(
+            "CHAMA LIVE GROUP:",
+            group
+          );
+
+
+          if (!group) {
+
+            throw new Error(
+              "Your member account is not linked to an active group."
+            );
+
+          }
+
+
+          /* =============================================
+             SUCCESS
+          ============================================= */
+
+          const memberName =
+            member.name ||
+            member.full_name ||
+            "Member";
+
+
+          const groupName =
+            group.name ||
+            group.group_name ||
+            "CHAMA";
+
+
+          successBox.textContent =
+            `Welcome ${memberName}. ${groupName} is ready.`;
+
+          successBox.style.display =
+            "block";
+
+
+          statusBox.textContent =
+            "Opening dashboard...";
+
+
+          button.textContent =
+            "Success";
+
+
+          /* =============================================
+             REDIRECT
+          ============================================= */
+
+          await new Promise(
+            function(resolve) {
+
+              setTimeout(
+                resolve,
+                500
+              );
+
+            }
+          );
+
+
+          window.location.replace(
+            "./dashboard.html"
+          );
+
+        }
+
+
+        catch (error) {
+
+          console.error(
+            "CHAMA LOGIN FAILED:",
+            error
+          );
+
+
+          showError(
+            error?.message ||
+            "Unable to sign in."
+          );
+
+
+          statusBox.textContent =
+            "";
+
+
+          button.disabled =
+            false;
+
+
+          button.textContent =
+            "Sign in";
+
+        }
+
+      }
+    );
+
+  </script>
+
+</body>
+
+</html>
