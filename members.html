@@ -1,3 +1,4 @@
+```html
 <!doctype html>
 <html lang="en">
 
@@ -62,7 +63,7 @@
     </h1>
 
     <p class="muted">
-      Manage your group members.
+      Manage members of your group.
     </p>
 
   </div>
@@ -96,7 +97,9 @@
 
 
 
-<!-- ADD MEMBER -->
+<!-- ==================================================
+     ADD MEMBER
+=================================================== -->
 
 <section
   id="memberFormCard"
@@ -112,7 +115,9 @@
 
 
 <p class="muted">
-  Add a new member to your group.
+  Create the member record first. The member can
+  activate their online account using their
+  membership number and email address.
 </p>
 
 
@@ -129,6 +134,24 @@ Member Number
 <input
   id="memberNumber"
   required
+  autocomplete="off"
+  style="width:100%;"
+>
+
+</div>
+
+
+
+<div style="margin-bottom:15px;">
+
+<label for="membershipNumber">
+Membership Number
+</label>
+
+<input
+  id="membershipNumber"
+  required
+  autocomplete="off"
   style="width:100%;"
 >
 
@@ -145,6 +168,7 @@ Full Name
 <input
   id="name"
   required
+  autocomplete="name"
   style="width:100%;"
 >
 
@@ -162,6 +186,7 @@ Phone Number
   id="phone"
   type="tel"
   required
+  autocomplete="tel"
   style="width:100%;"
 >
 
@@ -178,8 +203,17 @@ Email Address
 <input
   id="email"
   type="email"
+  autocomplete="email"
   style="width:100%;"
 >
+
+<p
+  class="muted"
+  style="font-size:13px;"
+>
+If the member wants online access, use the
+same email they will use for CHAMA LIVE.
+</p>
 
 </div>
 
@@ -227,6 +261,7 @@ Admin
   style="
     display:flex;
     gap:10px;
+    flex-wrap:wrap;
   "
 >
 
@@ -257,7 +292,9 @@ Cancel
 
 
 
-<!-- MEMBERS TABLE -->
+<!-- ==================================================
+     MEMBER LIST
+=================================================== -->
 
 <section class="card">
 
@@ -286,6 +323,10 @@ Member No.
 </th>
 
 <th>
+Membership No.
+</th>
+
+<th>
 Name
 </th>
 
@@ -302,6 +343,10 @@ Role
 </th>
 
 <th>
+Account
+</th>
+
+<th>
 Status
 </th>
 
@@ -315,7 +360,7 @@ Status
 <tr>
 
 <td
-  colspan="6"
+  colspan="8"
   class="muted"
 >
 Loading...
@@ -341,6 +386,7 @@ Loading...
 
 <script type="module">
 
+
 import {
   supabase
 } from "./js/supabase.js";
@@ -351,6 +397,7 @@ import {
   getMyMember,
   getMyGroupId,
   canManageGroup,
+  addGroupMember,
   logout
 } from "./js/auth.js";
 
@@ -405,6 +452,10 @@ const successBox =
 
 
 
+/* =====================================================
+   ESCAPE HTML
+===================================================== */
+
 function escapeHtml(
   value
 ) {
@@ -437,15 +488,19 @@ function escapeHtml(
 
 
 
+/* =====================================================
+   MESSAGES
+===================================================== */
+
 function showError(
-  message
+  text
 ) {
 
   errorBox.hidden =
     false;
 
   errorBox.textContent =
-    message;
+    text;
 
   successBox.hidden =
     true;
@@ -453,16 +508,15 @@ function showError(
 }
 
 
-
 function showSuccess(
-  message
+  text
 ) {
 
   successBox.hidden =
     false;
 
   successBox.textContent =
-    message;
+    text;
 
   errorBox.hidden =
     true;
@@ -470,6 +524,22 @@ function showSuccess(
 }
 
 
+
+function clearMessages() {
+
+  errorBox.hidden =
+    true;
+
+  successBox.hidden =
+    true;
+
+}
+
+
+
+/* =====================================================
+   LOAD MEMBERS
+===================================================== */
 
 async function loadMembers() {
 
@@ -494,12 +564,20 @@ async function loadMembers() {
       .from("members")
       .select(`
         id,
+        group_id,
+        user_id,
+        auth_user_id,
         member_number,
+        membership_number,
         name,
         phone,
         email,
         role,
-        status
+        join_date,
+        status,
+        onboarding_status,
+        created_at,
+        activated_at
       `)
       .eq(
         "group_id",
@@ -521,14 +599,18 @@ async function loadMembers() {
   if (!data?.length) {
 
     body.innerHTML = `
+
       <tr>
+
         <td
-          colspan="6"
+          colspan="8"
           class="muted"
         >
           No members found.
         </td>
+
       </tr>
+
     `;
 
     return;
@@ -538,56 +620,91 @@ async function loadMembers() {
 
   body.innerHTML =
     data.map(
-      member => `
+      member => {
 
-        <tr>
 
-          <td>
-            ${escapeHtml(
-              member.member_number
-            )}
-          </td>
+        const activated =
+          !!(
+            member.user_id ||
+            member.auth_user_id
+          );
 
-          <td>
-            <strong>
+
+        const accountStatus =
+          activated
+            ? "Active"
+            : "Not activated";
+
+
+        return `
+
+          <tr>
+
+            <td>
               ${escapeHtml(
-                member.name
+                member.member_number
               )}
-            </strong>
-          </td>
+            </td>
 
-          <td>
-            ${escapeHtml(
-              member.phone
-            )}
-          </td>
+            <td>
+              ${escapeHtml(
+                member.membership_number
+              )}
+            </td>
 
-          <td>
-            ${escapeHtml(
-              member.email || "—"
-            )}
-          </td>
+            <td>
+              <strong>
+                ${escapeHtml(
+                  member.name
+                )}
+              </strong>
+            </td>
 
-          <td>
-            ${escapeHtml(
-              member.role
-            )}
-          </td>
+            <td>
+              ${escapeHtml(
+                member.phone
+              )}
+            </td>
 
-          <td>
-            ${escapeHtml(
-              member.status
-            )}
-          </td>
+            <td>
+              ${escapeHtml(
+                member.email ||
+                "—"
+              )}
+            </td>
 
-        </tr>
+            <td>
+              ${escapeHtml(
+                member.role
+              )}
+            </td>
 
-      `
+            <td>
+              ${accountStatus}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                member.onboarding_status ||
+                member.status ||
+                "—"
+              )}
+            </td>
+
+          </tr>
+
+        `;
+
+      }
     ).join("");
 
 }
 
 
+
+/* =====================================================
+   BOOT
+===================================================== */
 
 async function boot() {
 
@@ -623,8 +740,10 @@ async function boot() {
   } catch (error) {
 
     console.error(
+      "Members boot:",
       error
     );
+
 
     showError(
       error.message ||
@@ -637,25 +756,35 @@ async function boot() {
 
 
 
+/* =====================================================
+   OPEN FORM
+===================================================== */
+
 addButton.addEventListener(
   "click",
   () => {
 
+    clearMessages();
+
     form.reset();
-
-    errorBox.hidden =
-      true;
-
-    successBox.hidden =
-      true;
 
     formCard.hidden =
       false;
+
+
+    formCard.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
 
   }
 );
 
 
+
+/* =====================================================
+   CANCEL
+===================================================== */
 
 cancelButton.addEventListener(
   "click",
@@ -671,6 +800,10 @@ cancelButton.addEventListener(
 
 
 
+/* =====================================================
+   ADD MEMBER
+===================================================== */
+
 form.addEventListener(
   "submit",
   async event => {
@@ -678,21 +811,18 @@ form.addEventListener(
     event.preventDefault();
 
 
-    errorBox.hidden =
-      true;
-
-    successBox.hidden =
-      true;
+    clearMessages();
 
 
     saveButton.disabled =
       true;
 
     saveButton.textContent =
-      "Adding...";
+      "Adding member...";
 
 
     try {
+
 
       const groupId =
         await getMyGroupId();
@@ -701,7 +831,7 @@ form.addEventListener(
       if (!groupId) {
 
         throw new Error(
-          "No group was found for your account."
+          "Your account is not linked to a group."
         );
 
       }
@@ -711,6 +841,15 @@ form.addEventListener(
         document
           .getElementById(
             "memberNumber"
+          )
+          .value
+          .trim();
+
+
+      const membershipNumber =
+        document
+          .getElementById(
+            "membershipNumber"
           )
           .value
           .trim();
@@ -752,58 +891,71 @@ form.addEventListener(
           .value;
 
 
-      /*
-       * Database RPC.
-       *
-       * This is preferable to allowing
-       * the browser to decide which
-       * group a new member belongs to.
-       */
+      if (!memberNumber) {
 
-      const {
-        data,
-        error
-      } =
-        await supabase.rpc(
-          "add_group_member",
-          {
-            p_group_id:
-              groupId,
-
-            p_member_number:
-              memberNumber,
-
-            p_name:
-              name,
-
-            p_phone:
-              phone,
-
-            p_email:
-              email || null,
-
-            p_role:
-              role,
-
-            p_join_date:
-              new Date()
-                .toISOString()
-                .slice(
-                  0,
-                  10
-                )
-          }
+        throw new Error(
+          "Member number is required."
         );
 
-
-      if (error) {
-        throw error;
       }
 
 
-      console.log(
-        "Member created:",
-        data
+      if (!membershipNumber) {
+
+        throw new Error(
+          "Membership number is required."
+        );
+
+      }
+
+
+      if (!name) {
+
+        throw new Error(
+          "Member name is required."
+        );
+
+      }
+
+
+      if (!phone) {
+
+        throw new Error(
+          "Phone number is required."
+        );
+
+      }
+
+
+      await addGroupMember({
+
+        groupId,
+
+        name,
+
+        memberNumber,
+
+        membershipNumber,
+
+        phone,
+
+        email,
+
+        role,
+
+        joinDate:
+          new Date()
+            .toISOString()
+            .slice(
+              0,
+              10
+            )
+
+      });
+
+
+      showSuccess(
+        `${name} has been added successfully.`
       );
 
 
@@ -813,18 +965,13 @@ form.addEventListener(
         true;
 
 
-      showSuccess(
-        `${name} has been added successfully.`
-      );
-
-
       await loadMembers();
 
 
     } catch (error) {
 
       console.error(
-        "ADD MEMBER ERROR:",
+        "Add member:",
         error
       );
 
@@ -850,6 +997,10 @@ form.addEventListener(
 
 
 
+/* =====================================================
+   LOGOUT
+===================================================== */
+
 document
   .getElementById(
     "logout"
@@ -861,6 +1012,10 @@ document
 
 
 
+/* =====================================================
+   START
+===================================================== */
+
 boot();
 
 </script>
@@ -869,3 +1024,4 @@ boot();
 </body>
 
 </html>
+```
