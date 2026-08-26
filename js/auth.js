@@ -1,20 +1,13 @@
+```javascript
 import { supabase } from "./supabase.js";
 
-/*
- * Re-export Supabase so other modules can use:
- *
- * import { supabase, getMyMember, hasRole } from "./auth.js";
- */
-export { supabase };
-
-
 /* =========================================================
-   CACHE
+   AUTH CACHE
 ========================================================= */
 
-let sessionCache = null;
 let memberCache = null;
 let groupCache = null;
+let sessionCache = null;
 
 
 /* =========================================================
@@ -22,20 +15,17 @@ let groupCache = null;
 ========================================================= */
 
 export function clearAuthCache() {
-
-  sessionCache = null;
   memberCache = null;
   groupCache = null;
-
+  sessionCache = null;
 }
 
 
 /* =========================================================
-   SESSION
+   GET SESSION
 ========================================================= */
 
 export async function getSession() {
-
   if (sessionCache) {
     return sessionCache;
   }
@@ -46,11 +36,11 @@ export async function getSession() {
   } = await supabase.auth.getSession();
 
   if (error) {
+    console.error("getSession error:", error);
     throw error;
   }
 
-  sessionCache =
-    data?.session || null;
+  sessionCache = data?.session || null;
 
   return sessionCache;
 }
@@ -61,16 +51,10 @@ export async function getSession() {
 ========================================================= */
 
 export async function requireAuth() {
-
-  const session =
-    await getSession();
+  const session = await getSession();
 
   if (!session) {
-
-    window.location.replace(
-      "./login.html"
-    );
-
+    window.location.replace("./login.html");
     return null;
   }
 
@@ -83,13 +67,13 @@ export async function requireAuth() {
 ========================================================= */
 
 export async function getCurrentUser() {
-
   const {
     data,
     error
   } = await supabase.auth.getUser();
 
   if (error) {
+    console.error("getCurrentUser error:", error);
     throw error;
   }
 
@@ -98,127 +82,88 @@ export async function getCurrentUser() {
 
 
 /* =========================================================
-   MY MEMBER
+   GET MY MEMBER
 ========================================================= */
 
-export async function getMyMember(
-  forceRefresh = false
-) {
+export async function getMyMember(forceRefresh = false) {
 
-  if (
-    memberCache &&
-    !forceRefresh
-  ) {
+  if (memberCache && !forceRefresh) {
     return memberCache;
   }
 
   const {
     data,
     error
-  } = await supabase.rpc(
-    "get_my_member"
-  );
+  } = await supabase.rpc("get_my_member");
 
   if (error) {
-
-    console.error(
-      "get_my_member:",
-      error
-    );
-
+    console.error("get_my_member error:", error);
     throw error;
   }
 
   let member = data;
 
   if (Array.isArray(data)) {
-
-    member =
-      data.length
-        ? data[0]
-        : null;
+    member = data.length > 0 ? data[0] : null;
   }
 
-  memberCache =
-    member || null;
+  memberCache = member || null;
 
   return memberCache;
 }
 
 
 /* =========================================================
-   MY GROUP
+   GET MY GROUP
 ========================================================= */
 
-export async function getMyGroup(
-  forceRefresh = false
-) {
+export async function getMyGroup(forceRefresh = false) {
 
-  if (
-    groupCache &&
-    !forceRefresh
-  ) {
+  if (groupCache && !forceRefresh) {
     return groupCache;
   }
 
   const {
     data,
     error
-  } = await supabase.rpc(
-    "get_my_group"
-  );
+  } = await supabase.rpc("get_my_group");
 
   if (error) {
-
-    console.error(
-      "get_my_group:",
-      error
-    );
-
+    console.error("get_my_group error:", error);
     throw error;
   }
 
   let group = data;
 
   if (Array.isArray(data)) {
-
-    group =
-      data.length
-        ? data[0]
-        : null;
+    group = data.length > 0 ? data[0] : null;
   }
 
-  groupCache =
-    group || null;
+  groupCache = group || null;
 
   return groupCache;
 }
 
 
 /* =========================================================
-   MY GROUP ID
+   GET MY GROUP ID
 ========================================================= */
 
 export async function getMyGroupId() {
 
-  const member =
-    await getMyMember();
+  const member = await getMyMember();
 
-  if (
-    member &&
-    member.group_id
-  ) {
+  if (member?.group_id) {
     return member.group_id;
   }
 
   const {
     data,
     error
-  } = await supabase.rpc(
-    "my_group_id"
-  );
+  } = await supabase.rpc("my_group_id");
 
   if (error) {
+    console.error("my_group_id error:", error);
     throw error;
   }
 
@@ -232,22 +177,16 @@ export async function getMyGroupId() {
 
 export async function requireMember() {
 
-  const session =
-    await requireAuth();
+  const session = await requireAuth();
 
   if (!session) {
     return null;
   }
 
-  const member =
-    await getMyMember();
+  const member = await getMyMember();
 
   if (!member) {
-
-    console.error(
-      "No member record found for authenticated user."
-    );
-
+    await signOut();
     return null;
   }
 
@@ -261,22 +200,20 @@ export async function requireMember() {
 
 export async function requireGroup() {
 
-  const member =
-    await requireMember();
+  const member = await requireMember();
 
   if (!member) {
     return null;
   }
 
-  const group =
-    await getMyGroup();
+  const group = await getMyGroup();
 
   if (!group) {
-
     console.error(
-      "No group found for authenticated member."
+      "Authenticated member has no valid group."
     );
 
+    await signOut();
     return null;
   }
 
@@ -285,20 +222,15 @@ export async function requireGroup() {
 
 
 /* =========================================================
-   ROLE
+   GET ROLE
 ========================================================= */
 
-export function getRole(
-  member = null
-) {
+export function getRole(member = null) {
 
-  const source =
-    member ||
-    memberCache;
+  const source = member || memberCache;
 
   return String(
-    source?.role ||
-    "member"
+    source?.role || "member"
   )
     .trim()
     .toLowerCase();
@@ -314,63 +246,35 @@ export function hasRole(
   requiredRole
 ) {
 
-  let actualMember =
-    member;
-
-  let required =
-    requiredRole;
-
+  let actualMember = member;
+  let required = requiredRole;
 
   /*
-   * Supports:
-   *
-   * hasRole(member, "admin")
-   * hasRole(member, ["admin", "secretary"])
    * hasRole("admin")
    * hasRole(["admin", "secretary"])
    */
 
-  if (
-    requiredRole === undefined
-  ) {
-
-    required =
-      member;
-
-    actualMember =
-      memberCache;
+  if (requiredRole === undefined) {
+    required = member;
+    actualMember = memberCache;
   }
 
+  const role = getRole(actualMember);
 
-  const role =
-    getRole(
-      actualMember
-    );
-
-
-  if (
-    Array.isArray(required)
-  ) {
+  if (Array.isArray(required)) {
 
     return required
-      .map(
-        value =>
-          String(value)
-            .trim()
-            .toLowerCase()
+      .map(value =>
+        String(value)
+          .trim()
+          .toLowerCase()
       )
-      .includes(
-        role
-      );
+      .includes(role);
   }
-
 
   return (
     role ===
-    String(
-      required ||
-      "member"
-    )
+    String(required || "member")
       .trim()
       .toLowerCase()
   );
@@ -381,9 +285,7 @@ export function hasRole(
    ADMIN
 ========================================================= */
 
-export function isAdmin(
-  member = null
-) {
+export function isAdmin(member = null) {
 
   return [
     "admin",
@@ -401,9 +303,7 @@ export function isAdmin(
    MANAGER
 ========================================================= */
 
-export function isManager(
-  member = null
-) {
+export function isManager(member = null) {
 
   return [
     "admin",
@@ -422,42 +322,27 @@ export function isManager(
    PERMISSIONS
 ========================================================= */
 
-export function canManageGroup(
-  member = null
-) {
-
+export function canManageGroup(member = null) {
   return isAdmin(member);
 }
 
 
-export function canManageMembers(
-  member = null
-) {
-
+export function canManageMembers(member = null) {
   return isManager(member);
 }
 
 
-export function canRecordContributions(
-  member = null
-) {
-
+export function canRecordContributions(member = null) {
   return isManager(member);
 }
 
 
-export function canRecordExpenses(
-  member = null
-) {
-
+export function canRecordExpenses(member = null) {
   return isManager(member);
 }
 
 
-export function canManageMeetings(
-  member = null
-) {
-
+export function canManageMeetings(member = null) {
   return isManager(member);
 }
 
@@ -478,72 +363,44 @@ export async function addGroupMember({
 }) {
 
   if (!groupId) {
-    throw new Error(
-      "Group ID is required."
-    );
+    throw new Error("Group ID is required.");
   }
 
   if (!name) {
-    throw new Error(
-      "Member name is required."
-    );
+    throw new Error("Member name is required.");
   }
 
   if (!memberNumber) {
-    throw new Error(
-      "Member number is required."
-    );
-  }
-
-  if (!membershipNumber) {
-    throw new Error(
-      "Membership number is required."
-    );
+    throw new Error("Member number is required.");
   }
 
   if (!phone) {
-    throw new Error(
-      "Phone number is required."
-    );
+    throw new Error("Phone number is required.");
   }
 
-
   const payload = {
-
-    group_id:
-      groupId,
-
-    member_number:
-      memberNumber,
-
-    membership_number:
-      membershipNumber,
-
-    name:
-      name,
-
-    phone:
-      phone,
-
-    email:
-      email || null,
-
-    role:
-      role || "member",
-
+    group_id: groupId,
+    member_number: memberNumber,
+    name,
+    phone,
+    email: email || null,
+    role: role || "member",
     join_date:
       joinDate ||
-      new Date()
-        .toISOString()
-        .slice(0, 10),
-
-    status:
-      "active",
-
-    onboarding_status:
-      "pending"
+      new Date().toISOString().slice(0, 10),
+    status: "active"
   };
 
+  /*
+   * Only include membership_number if supplied.
+   * This avoids failure if the database does not
+   * contain that column.
+   */
+
+  if (membershipNumber) {
+    payload.membership_number =
+      membershipNumber;
+  }
 
   const {
     data,
@@ -554,16 +411,16 @@ export async function addGroupMember({
     .select()
     .single();
 
-
   if (error) {
-
     console.error(
-      "addGroupMember:",
+      "addGroupMember error:",
       error
     );
 
     throw error;
   }
+
+  clearAuthCache();
 
   return data;
 }
@@ -582,12 +439,11 @@ export async function signOut() {
   } = await supabase.auth.signOut();
 
   if (error) {
+    console.error("signOut error:", error);
     throw error;
   }
 
-  window.location.replace(
-    "./login.html"
-  );
+  window.location.replace("./login.html");
 }
 
 
@@ -595,30 +451,27 @@ export async function signOut() {
    LOGOUT ALIAS
 ========================================================= */
 
-export const logout =
-  signOut;
+export const logout = signOut;
 
 
 /* =========================================================
-   AUTH STATE
+   AUTH STATE LISTENER
 ========================================================= */
 
 supabase.auth.onAuthStateChange(
-  (
-    event,
-    session
-  ) => {
+  (event, session) => {
 
     sessionCache =
       session || null;
 
     if (
-      event ===
-      "SIGNED_OUT"
+      event === "SIGNED_OUT"
     ) {
 
       memberCache = null;
       groupCache = null;
+      sessionCache = null;
     }
   }
 );
+```
