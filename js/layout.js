@@ -1,21 +1,13 @@
 import {
-  supabase,
   requireAuth,
   getMyMember,
   logout
 } from "./auth.js";
 
 
-/* =====================================================
-   CHAMA LIVE LAYOUT + RBAC
-===================================================== */
+let currentMember =
+  null;
 
-let currentMember = null;
-
-
-/* =====================================================
-   ROLE PERMISSIONS
-===================================================== */
 
 const permissions = {
 
@@ -75,10 +67,6 @@ const permissions = {
 };
 
 
-/* =====================================================
-   INIT
-===================================================== */
-
 export async function boot() {
 
   try {
@@ -86,37 +74,40 @@ export async function boot() {
     const session =
       await requireAuth();
 
+
     if (!session) {
       return null;
     }
 
+
     currentMember =
       await getMyMember();
+
 
     if (!currentMember) {
       return null;
     }
 
+
     applyUserDetails();
 
-    applyNavigationPermissions();
+    applyNavigation();
 
     setupLogout();
 
+
     return currentMember;
 
-  } catch (error) {
+
+  } catch (err) {
 
     console.error(
-      "Layout boot error:",
-      error
-    );
-
-    showLayoutError(
-      error
+      "Layout:",
+      err
     );
 
     return null;
+
   }
 
 }
@@ -128,89 +119,44 @@ export async function boot() {
 
 function applyUserDetails() {
 
-  if (!currentMember) {
-    return;
-  }
+  const name =
+    currentMember?.name ||
+    "Member";
+
 
   const role =
-    String(
-      currentMember.role ||
-      "member"
-    ).toLowerCase();
+    formatRole(
+      currentMember?.role
+    );
 
 
-  /* ---------------------------------------------
-     Common selectors
-  --------------------------------------------- */
+  document
+    .querySelectorAll(
+      "#currentUser, #userName, #memberName, [data-user-name]"
+    )
+    .forEach(
+      element => {
 
-  const selectors = [
+        element.textContent =
+          name;
 
-    "#currentUser",
-
-    "#userName",
-
-    "#memberName",
-
-    "#loggedInMember",
-
-    "[data-user-name]"
-
-  ];
+      }
+    );
 
 
-  selectors.forEach(
-    selector => {
+  document
+    .querySelectorAll(
+      "#currentRole, #userRole, #memberRole, [data-user-role]"
+    )
+    .forEach(
+      element => {
 
-      document
-        .querySelectorAll(selector)
-        .forEach(element => {
+        element.textContent =
+          role;
 
-          element.textContent =
-            currentMember.name ||
-            "Member";
+      }
+    );
 
-        });
-
-    }
-  );
-
-
-  /* ---------------------------------------------
-     Role
-  --------------------------------------------- */
-
-  const roleSelectors = [
-
-    "#currentRole",
-
-    "#userRole",
-
-    "#memberRole",
-
-    "[data-user-role]"
-
-  ];
-
-
-  roleSelectors.forEach(
-    selector => {
-
-      document
-        .querySelectorAll(selector)
-        .forEach(element => {
-
-          element.textContent =
-            formatRole(role);
-
-        });
-
-    }
-  );
-
-
-  /* ---------------------------------------------
-     Member number
-  --------------------------------------------- */
 
   document
     .querySelectorAll(
@@ -220,167 +166,76 @@ function applyUserDetails() {
       element => {
 
         element.textContent =
-          currentMember.membership_number ||
-          currentMember.member_number ||
+          currentMember
+            ?.membership_number ||
+          currentMember
+            ?.member_number ||
           "—";
 
       }
     );
 
-
-  /* ---------------------------------------------
-     Group ID
-  --------------------------------------------- */
-
-  document
-    .querySelectorAll(
-      "[data-group-id]"
-    )
-    .forEach(
-      element => {
-
-        element.textContent =
-          currentMember.group_id ||
-          "";
-
-      }
-    );
-
 }
 
 
 /* =====================================================
-   NAVIGATION RBAC
+   NAVIGATION
 ===================================================== */
 
-function applyNavigationPermissions() {
-
-  if (!currentMember) {
-    return;
-  }
+function applyNavigation() {
 
   const role =
     String(
-      currentMember.role ||
+      currentMember?.role ||
       "member"
     ).toLowerCase();
 
 
-  const links =
-    document.querySelectorAll(
+  document
+    .querySelectorAll(
       ".nav a"
-    );
+    )
+    .forEach(
+      link => {
+
+        const href =
+          link.getAttribute(
+            "href"
+          );
 
 
-  links.forEach(
-    link => {
-
-      const href =
-        link.getAttribute(
-          "href"
-        );
-
-      if (!href) {
-        return;
-      }
+        if (!href) {
+          return;
+        }
 
 
-      const page =
-        getPageName(
+        const page =
           href
-        );
+            .split("/")
+            .pop()
+            .replace(
+              ".html",
+              ""
+            );
 
 
-      if (!page) {
-        return;
-      }
+        const allowed =
+          permissions[page];
 
 
-      const allowedRoles =
-        permissions[page];
+        if (
+          allowed &&
+          !allowed.includes(
+            role
+          )
+        ) {
 
+          link.remove();
 
-      if (!allowedRoles) {
-        return;
-      }
-
-
-      const allowed =
-        allowedRoles.includes(
-          role
-        );
-
-
-      if (!allowed) {
-
-        link.remove();
+        }
 
       }
-
-    }
-  );
-
-}
-
-
-/* =====================================================
-   CURRENT PAGE
-===================================================== */
-
-function getPageName(
-  href
-) {
-
-  try {
-
-    const url =
-      new URL(
-        href,
-        window.location.href
-      );
-
-    let pathname =
-      url.pathname;
-
-    pathname =
-      pathname
-        .split("/")
-        .pop()
-        .toLowerCase();
-
-
-    if (
-      pathname === "" ||
-      pathname === "/"
-    ) {
-
-      return "dashboard";
-
-    }
-
-
-    if (
-      pathname.endsWith(
-        ".html"
-      )
-    ) {
-
-      pathname =
-        pathname.slice(
-          0,
-          -5
-        );
-
-    }
-
-
-    return pathname;
-
-  } catch {
-
-    return null;
-
-  }
+    );
 
 }
 
@@ -391,61 +246,56 @@ function getPageName(
 
 function setupLogout() {
 
-  const logoutButtons =
-    document.querySelectorAll(
+  document
+    .querySelectorAll(
       "#logout, [data-action='logout']"
-    );
+    )
+    .forEach(
+      button => {
 
+        button.addEventListener(
+          "click",
+          async event => {
 
-  logoutButtons.forEach(
-    button => {
+            event.preventDefault();
 
-      button.addEventListener(
-        "click",
-        async event => {
-
-          event.preventDefault();
-
-          button.disabled =
-            true;
-
-          button.textContent =
-            "Signing out...";
-
-          try {
-
-            await logout();
-
-          } catch (error) {
-
-            console.error(
-              error
-            );
 
             button.disabled =
-              false;
+              true;
 
             button.textContent =
-              "Sign out";
+              "Signing out...";
 
-            alert(
-              error.message ||
-              "Unable to sign out."
-            );
+
+            try {
+
+              await logout();
+
+            } catch (err) {
+
+              console.error(
+                err
+              );
+
+              button.disabled =
+                false;
+
+              button.textContent =
+                "Sign out";
+
+            }
 
           }
+        );
 
-        }
-      );
-
-    }
-  );
+      }
+    );
 
 }
 
 
 /* =====================================================
-   ROLE FORMAT
+   HELPERS
 ===================================================== */
 
 function formatRole(
@@ -468,58 +318,12 @@ function formatRole(
 }
 
 
-/* =====================================================
-   LAYOUT ERROR
-===================================================== */
-
-function showLayoutError(
-  error
-) {
-
-  console.error(
-    error
-  );
-
-  const element =
-    document.querySelector(
-      "#error"
-    );
-
-
-  if (element) {
-
-    element.hidden =
-      false;
-
-    element.textContent =
-      error?.message ||
-      "Unable to load your account.";
-
-    return;
-
-  }
-
-
-  /* Do not redirect here if the
-     auth module already handled it. */
-
-}
-
-
-/* =====================================================
-   GET CURRENT MEMBER
-===================================================== */
-
 export function getCurrentMember() {
 
   return currentMember;
 
 }
 
-
-/* =====================================================
-   GET CURRENT ROLE
-===================================================== */
 
 export function getCurrentRole() {
 
@@ -531,29 +335,19 @@ export function getCurrentRole() {
 }
 
 
-/* =====================================================
-   SIMPLE FRONTEND ROLE CHECK
-===================================================== */
-
 export function canAccess(
   page
 ) {
 
-  const role =
-    getCurrentRole();
-
   return (
-    permissions[page] || []
+    permissions[page] ||
+    []
   ).includes(
-    role
+    getCurrentRole()
   );
 
 }
 
-
-/* =====================================================
-   EXPOSE PERMISSIONS
-===================================================== */
 
 export {
   permissions
