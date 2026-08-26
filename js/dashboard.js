@@ -1,75 +1,41 @@
-import {
-  supabase
-} from "./supabase.js";
-
+import supabase from "./supabase.js";
 
 /* =========================================================
    CHAMA LIVE — DASHBOARD
 ========================================================= */
 
-
-/* =========================================================
-   HELPERS
-========================================================= */
-
 function byId(id) {
-
   return document.getElementById(id);
-
 }
-
 
 function money(value) {
-
-  const amount =
-    Number(value || 0);
-
-
-  return amount.toLocaleString(
-    "en-KE",
-    {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }
-  );
-
+  return Number(value || 0).toLocaleString("en-KE", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
 }
 
+function formatDate(value) {
+  if (!value) return "—";
+
+  return new Date(value).toLocaleDateString("en-KE", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
+  });
+}
 
 function escapeHtml(value) {
-
-  if (
-    value === null ||
-    value === undefined
-  ) {
-
+  if (value === null || value === undefined) {
     return "";
-
   }
 
-
   return String(value)
-    .replace(
-      /&/g,
-      "&amp;"
-    )
-    .replace(
-      /</g,
-      "&lt;"
-    )
-    .replace(
-      />/g,
-      "&gt;"
-    )
-    .replace(
-      /"/g,
-      "&quot;"
-    )
-    .replace(
-      /'/g,
-      "&#039;"
-    );
-
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 
@@ -82,172 +48,698 @@ async function getCurrentMember() {
   const {
     data,
     error
-  } =
-    await supabase.rpc(
-      "get_my_member"
+  } = await supabase.rpc("get_my_member");
+
+  if (error) {
+    throw error;
+  }
+
+  if (Array.isArray(data)) {
+    return data[0] || null;
+  }
+
+  return data || null;
+}
+
+
+/* =========================================================
+   GROUP
+========================================================= */
+
+async function getCurrentGroup() {
+
+  const {
+    data,
+    error
+  } = await supabase.rpc("get_my_group");
+
+  if (error) {
+    throw error;
+  }
+
+  if (Array.isArray(data)) {
+    return data[0] || null;
+  }
+
+  return data || null;
+}
+
+
+/* =========================================================
+   MEMBERS
+========================================================= */
+
+async function loadMembers(groupId) {
+
+  const {
+    data,
+    error
+  } = await supabase
+    .from("members")
+    .select(`
+      id,
+      group_id,
+      member_number,
+      membership_number,
+      name,
+      phone,
+      email,
+      role,
+      join_date,
+      status
+    `)
+    .eq("group_id", groupId)
+    .order("created_at", {
+      ascending: false
+    });
+
+  if (error) {
+    throw error;
+  }
+
+  return data || [];
+}
+
+
+/* =========================================================
+   CONTRIBUTIONS
+========================================================= */
+
+async function loadContributions(groupId) {
+
+  const {
+    data,
+    error
+  } = await supabase
+    .from("contributions")
+    .select(`
+      id,
+      group_id,
+      member_id,
+      amount,
+      contribution_type,
+      month,
+      payment_method,
+      reference,
+      mpesa_reference,
+      contribution_date,
+      notes,
+      created_at
+    `)
+    .eq("group_id", groupId)
+    .order("contribution_date", {
+      ascending: false
+    });
+
+  if (error) {
+    throw error;
+  }
+
+  return data || [];
+}
+
+
+/* =========================================================
+   EXPENSES
+========================================================= */
+
+async function loadExpenses(groupId) {
+
+  const {
+    data,
+    error
+  } = await supabase
+    .from("expenses")
+    .select(`
+      id,
+      group_id,
+      description,
+      category,
+      amount,
+      date,
+      approval_status,
+      created_at
+    `)
+    .eq("group_id", groupId)
+    .order("date", {
+      ascending: false
+    });
+
+  if (error) {
+    throw error;
+  }
+
+  return data || [];
+}
+
+
+/* =========================================================
+   MEETINGS
+========================================================= */
+
+async function loadMeetings(groupId) {
+
+  const {
+    data,
+    error
+  } = await supabase
+    .from("meetings")
+    .select(`
+      id,
+      group_id,
+      title,
+      date,
+      venue,
+      status
+    `)
+    .eq("group_id", groupId)
+    .order("date", {
+      ascending: true
+    });
+
+  if (error) {
+    throw error;
+  }
+
+  return data || [];
+}
+
+
+/* =========================================================
+   MEMBER NAME MAP
+========================================================= */
+
+function createMemberMap(members) {
+
+  const map = {};
+
+  members.forEach(member => {
+
+    map[member.id] =
+      member.name || "Member";
+
+  });
+
+  return map;
+}
+
+
+/* =========================================================
+   DISPLAY SUMMARY
+========================================================= */
+
+function displaySummary(
+  members,
+  contributions,
+  expenses,
+  group
+) {
+
+  const activeMembers =
+    members.filter(
+      member =>
+        member.status === "active"
+    ).length;
+
+
+  const totalContributions =
+    contributions.reduce(
+      (sum, row) =>
+        sum + Number(row.amount || 0),
+      0
     );
 
 
-  if (error) {
-    throw error;
-  }
-
-
-  if (Array.isArray(data)) {
-
-    return data[0] || null;
-
-  }
-
-
-  return data || null;
-
-}
-
-
-/* =========================================================
-   LOAD MEMBERS
-========================================================= */
-
-async function loadMembers(
-  groupId
-) {
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("members")
-      .select(
-        "id,name,status,member_number"
-      )
-      .eq(
-        "group_id",
-        groupId
-      );
-
-
-  if (error) {
-    throw error;
-  }
-
-
-  return data || [];
-
-}
-
-
-/* =========================================================
-   LOAD CONTRIBUTIONS
-========================================================= */
-
-async function loadContributions(
-  groupId
-) {
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("contributions")
-      .select("*")
-      .eq(
-        "group_id",
-        groupId
-      );
-
-
-  if (error) {
-    throw error;
-  }
-
-
-  return data || [];
-
-}
-
-
-/* =========================================================
-   LOAD EXPENSES
-========================================================= */
-
-async function loadExpenses(
-  groupId
-) {
-
   /*
-   * IMPORTANT:
-   *
-   * Do NOT specify expense_date.
-   *
-   * We use select("*") because the database
-   * schema has a different expense date field.
+   * Only approved expenses are included
+   * in the current balance.
    */
 
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("expenses")
-      .select("*")
-      .eq(
-        "group_id",
-        groupId
+  const approvedExpenses =
+    expenses
+      .filter(
+        row =>
+          row.approval_status ===
+          "approved"
+      )
+      .reduce(
+        (sum, row) =>
+          sum + Number(row.amount || 0),
+        0
       );
 
 
-  if (error) {
-    throw error;
+  const openingBalance =
+    Number(
+      group?.opening_balance || 0
+    );
+
+
+  const currentBalance =
+    openingBalance +
+    totalContributions -
+    approvedExpenses;
+
+
+  const monthlyContribution =
+    Number(
+      group?.monthly_contribution || 0
+    );
+
+
+  const monthlyExpected =
+    activeMembers *
+    monthlyContribution;
+
+
+  /* -------------------------------------------------------
+     ACTIVE MEMBERS
+  ------------------------------------------------------- */
+
+  const activeBox =
+    byId("activeMembers");
+
+  if (activeBox) {
+    activeBox.textContent =
+      activeMembers;
   }
 
 
-  return data || [];
+  /* -------------------------------------------------------
+     MONTHLY EXPECTED
+  ------------------------------------------------------- */
+
+  const expectedBox =
+    byId("monthlyExpected");
+
+  if (expectedBox) {
+    expectedBox.textContent =
+      `KSh ${money(monthlyExpected)}`;
+  }
+
+
+  /* -------------------------------------------------------
+     MONTHLY COLLECTED
+  ------------------------------------------------------- */
+
+  const collectedBox =
+    byId("monthlyCollected");
+
+  if (collectedBox) {
+    collectedBox.textContent =
+      `KSh ${money(totalContributions)}`;
+  }
+
+
+  /* -------------------------------------------------------
+     CURRENT BALANCE
+  ------------------------------------------------------- */
+
+  const balanceBox =
+    byId("currentBalance");
+
+  if (balanceBox) {
+    balanceBox.textContent =
+      `KSh ${money(currentBalance)}`;
+  }
+
+
+  /* -------------------------------------------------------
+     COLLECTION RATE
+  ------------------------------------------------------- */
+
+  const collectionRate =
+    monthlyExpected > 0
+      ? Math.min(
+          100,
+          (
+            totalContributions /
+            monthlyExpected
+          ) * 100
+        )
+      : 0;
+
+
+  const rateBox =
+    byId("collectionRate");
+
+  if (rateBox) {
+    rateBox.textContent =
+      `${collectionRate.toFixed(0)}%`;
+  }
+
+
+  /* -------------------------------------------------------
+     PROGRESS
+  ------------------------------------------------------- */
+
+  const progressAmount =
+    byId("progressAmount");
+
+  if (progressAmount) {
+    progressAmount.textContent =
+      `KSh ${money(totalContributions)} / KSh ${money(monthlyExpected)}`;
+  }
+
+
+  const progressPercent =
+    byId("progressPercent");
+
+  if (progressPercent) {
+    progressPercent.textContent =
+      `${collectionRate.toFixed(0)}%`;
+  }
 
 }
 
 
 /* =========================================================
-   GET AMOUNT
+   RECENT CONTRIBUTIONS
 ========================================================= */
 
-function getAmount(
-  row
+function displayRecentContributions(
+  contributions,
+  members
 ) {
 
-  return Number(
-    row?.amount ||
-    row?.total ||
-    row?.value ||
-    0
-  );
+  const body =
+    document.querySelector(
+      "#recentContributions tbody"
+    );
 
+  if (!body) {
+    return;
+  }
+
+
+  if (!contributions.length) {
+
+    body.innerHTML = `
+      <tr>
+        <td colspan="3">
+          No contributions yet.
+        </td>
+      </tr>
+    `;
+
+    return;
+  }
+
+
+  const memberMap =
+    createMemberMap(members);
+
+
+  body.innerHTML =
+    contributions
+      .slice(0, 5)
+      .map(row => {
+
+        const memberName =
+          memberMap[row.member_id] ||
+          "Member";
+
+
+        return `
+          <tr>
+
+            <td>
+              ${escapeHtml(memberName)}
+            </td>
+
+            <td>
+              KSh ${money(row.amount)}
+            </td>
+
+            <td>
+              ${formatDate(
+                row.contribution_date
+              )}
+            </td>
+
+          </tr>
+        `;
+
+      })
+      .join("");
 }
 
 
 /* =========================================================
-   GET DATE
+   RECENT EXPENSES
 ========================================================= */
 
-function getDate(
-  row
+function displayRecentExpenses(
+  expenses
 ) {
 
-  return (
-    row?.date ||
-    row?.expense_date ||
-    row?.transaction_date ||
-    row?.created_at ||
-    null
-  );
+  const body =
+    document.querySelector(
+      "#recentExpenses tbody"
+    );
+
+  if (!body) {
+    return;
+  }
+
+
+  if (!expenses.length) {
+
+    body.innerHTML = `
+      <tr>
+        <td colspan="3">
+          No expenses yet.
+        </td>
+      </tr>
+    `;
+
+    return;
+  }
+
+
+  body.innerHTML =
+    expenses
+      .slice(0, 5)
+      .map(row => {
+
+        return `
+          <tr>
+
+            <td>
+              ${escapeHtml(
+                row.description
+              )}
+            </td>
+
+            <td>
+              KSh ${money(row.amount)}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                row.approval_status
+              )}
+            </td>
+
+          </tr>
+        `;
+
+      })
+      .join("");
+}
+
+
+/* =========================================================
+   UPCOMING MEETINGS
+========================================================= */
+
+function displayMeetings(
+  meetings
+) {
+
+  const body =
+    document.querySelector(
+      "#upcomingMeetings tbody"
+    );
+
+  if (!body) {
+    return;
+  }
+
+
+  if (!meetings.length) {
+
+    body.innerHTML = `
+      <tr>
+        <td colspan="4">
+          No upcoming meetings.
+        </td>
+      </tr>
+    `;
+
+    return;
+  }
+
+
+  body.innerHTML =
+    meetings
+      .slice(0, 5)
+      .map(row => {
+
+        return `
+          <tr>
+
+            <td>
+              ${formatDate(row.date)}
+            </td>
+
+            <td>
+              ${escapeHtml(row.title)}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                row.venue || "—"
+              )}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                row.status || "upcoming"
+              )}
+            </td>
+
+          </tr>
+        `;
+
+      })
+      .join("");
+}
+
+
+/* =========================================================
+   MEMBER CONTRIBUTION STATUS
+========================================================= */
+
+function displayMemberStatus(
+  members,
+  contributions,
+  group
+) {
+
+  const body =
+    document.querySelector(
+      "#memberContributionStatus tbody"
+    );
+
+  if (!body) {
+    return;
+  }
+
+
+  const monthlyAmount =
+    Number(
+      group?.monthly_contribution || 0
+    );
+
+
+  const currentMonth =
+    new Date()
+      .toISOString()
+      .slice(0, 7);
+
+
+  body.innerHTML =
+    members
+      .filter(
+        member =>
+          member.status === "active"
+      )
+      .map(member => {
+
+        const paid =
+          contributions
+            .filter(
+              contribution =>
+                contribution.member_id ===
+                  member.id &&
+                contribution.month ===
+                  currentMonth
+            )
+            .reduce(
+              (sum, contribution) =>
+                sum +
+                Number(
+                  contribution.amount || 0
+                ),
+              0
+            );
+
+
+        const outstanding =
+          Math.max(
+            0,
+            monthlyAmount - paid
+          );
+
+
+        const status =
+          outstanding <= 0
+            ? "Paid"
+            : paid > 0
+              ? "Partial"
+              : "Outstanding";
+
+
+        return `
+          <tr>
+
+            <td>
+              ${escapeHtml(
+                member.name
+              )}
+            </td>
+
+            <td>
+              KSh ${money(monthlyAmount)}
+            </td>
+
+            <td>
+              KSh ${money(paid)}
+            </td>
+
+            <td>
+              KSh ${money(outstanding)}
+            </td>
+
+            <td>
+              ${status}
+            </td>
+
+          </tr>
+        `;
+
+      })
+      .join("");
+
+
+  if (!body.innerHTML) {
+
+    body.innerHTML = `
+      <tr>
+        <td colspan="5">
+          No active members.
+        </td>
+      </tr>
+    `;
+
+  }
 
 }
 
 
 /* =========================================================
-   DASHBOARD
+   MAIN
 ========================================================= */
 
 async function loadDashboard() {
@@ -276,11 +768,7 @@ async function loadDashboard() {
     }
 
 
-    const groupId =
-      member.group_id;
-
-
-    if (!groupId) {
+    if (!member.group_id) {
 
       throw new Error(
         "Your account is not linked to a group."
@@ -289,305 +777,71 @@ async function loadDashboard() {
     }
 
 
-    /* =====================================================
-       DATA
-    ===================================================== */
+    const groupId =
+      member.group_id;
+
 
     const [
+      group,
       members,
       contributions,
-      expenses
+      expenses,
+      meetings
     ] =
       await Promise.all([
 
-        loadMembers(
-          groupId
-        ),
+        getCurrentGroup(),
 
-        loadContributions(
-          groupId
-        ),
+        loadMembers(groupId),
 
-        loadExpenses(
-          groupId
-        )
+        loadContributions(groupId),
+
+        loadExpenses(groupId),
+
+        loadMeetings(groupId)
 
       ]);
 
 
-    /* =====================================================
-       TOTALS
-    ===================================================== */
+    displaySummary(
+      members,
+      contributions,
+      expenses,
+      group
+    );
 
-    const activeMembers =
-      members.filter(
-        member =>
-          member.status ===
-          "active"
-      ).length;
 
+    displayRecentContributions(
+      contributions,
+      members
+    );
 
-    const totalContributions =
-      contributions.reduce(
-        (
-          total,
-          row
-        ) =>
-          total +
-          getAmount(row),
-        0
-      );
 
+    displayRecentExpenses(
+      expenses
+    );
 
-    const totalExpenses =
-      expenses.reduce(
-        (
-          total,
-          row
-        ) =>
-          total +
-          getAmount(row),
-        0
-      );
 
+    displayMeetings(
+      meetings
+    );
 
-    const balance =
-      totalContributions -
-      totalExpenses;
 
-
-    /* =====================================================
-       DISPLAY
-    ===================================================== */
-
-    const membersBox =
-      byId("activeMembers");
-
-
-    if (membersBox) {
-
-      membersBox.textContent =
-        activeMembers;
-
-    }
-
-
-    const collectedBox =
-      byId("monthlyCollected");
-
-
-    if (collectedBox) {
-
-      collectedBox.textContent =
-        `KSh ${money(
-          totalContributions
-        )}`;
-
-    }
-
-
-    const balanceBox =
-      byId("currentBalance");
-
-
-    if (balanceBox) {
-
-      balanceBox.textContent =
-        `KSh ${money(
-          balance
-        )}`;
-
-    }
-
-
-    /* =====================================================
-       RECENT CONTRIBUTIONS
-    ===================================================== */
-
-    const contributionBody =
-      document.querySelector(
-        "#recentContributions tbody"
-      );
-
-
-    if (contributionBody) {
-
-      const recent =
-        contributions
-          .slice()
-          .sort(
-            (
-              a,
-              b
-            ) =>
-              new Date(
-                b.created_at ||
-                b.date ||
-                0
-              ) -
-              new Date(
-                a.created_at ||
-                a.date ||
-                0
-              )
-          )
-          .slice(
-            0,
-            5
-          );
-
-
-      if (!recent.length) {
-
-        contributionBody.innerHTML = `
-          <tr>
-            <td colspan="3">
-              No contributions yet.
-            </td>
-          </tr>
-        `;
-
-      } else {
-
-        contributionBody.innerHTML =
-          recent
-            .map(
-              row => `
-
-                <tr>
-
-                  <td>
-                    ${escapeHtml(
-                      row.member_name ||
-                      row.name ||
-                      "Member"
-                    )}
-                  </td>
-
-                  <td>
-                    KSh ${money(
-                      getAmount(row)
-                    )}
-                  </td>
-
-                  <td>
-                    ${escapeHtml(
-                      getDate(row)
-                        ? new Date(
-                            getDate(row)
-                          ).toLocaleDateString()
-                        : "—"
-                    )}
-                  </td>
-
-                </tr>
-
-              `
-            )
-            .join("");
-
-      }
-
-    }
-
-
-    /* =====================================================
-       RECENT EXPENSES
-    ===================================================== */
-
-    const expenseBody =
-      document.querySelector(
-        "#recentExpenses tbody"
-      );
-
-
-    if (expenseBody) {
-
-      const recent =
-        expenses
-          .slice()
-          .sort(
-            (
-              a,
-              b
-            ) =>
-              new Date(
-                b.created_at ||
-                b.date ||
-                0
-              ) -
-              new Date(
-                a.created_at ||
-                a.date ||
-                0
-              )
-          )
-          .slice(
-            0,
-            5
-          );
-
-
-      if (!recent.length) {
-
-        expenseBody.innerHTML = `
-          <tr>
-            <td colspan="3">
-              No expenses yet.
-            </td>
-          </tr>
-        `;
-
-      } else {
-
-        expenseBody.innerHTML =
-          recent
-            .map(
-              row => `
-
-                <tr>
-
-                  <td>
-                    ${escapeHtml(
-                      row.description ||
-                      row.title ||
-                      "Expense"
-                    )}
-                  </td>
-
-                  <td>
-                    KSh ${money(
-                      getAmount(row)
-                    )}
-                  </td>
-
-                  <td>
-                    ${escapeHtml(
-                      row.status ||
-                      "Recorded"
-                    )}
-                  </td>
-
-                </tr>
-
-              `
-            )
-            .join("");
-
-      }
-
-    }
+    displayMemberStatus(
+      members,
+      contributions,
+      group
+    );
 
 
     console.log(
-      "CHAMA LIVE dashboard data:",
+      "CHAMA LIVE dashboard ready.",
       {
+        group,
         members,
         contributions,
         expenses,
-        totalContributions,
-        totalExpenses,
-        balance
+        meetings
       }
     );
 
@@ -605,7 +859,6 @@ async function loadDashboard() {
       errorBox.hidden =
         false;
 
-
       errorBox.textContent =
         error?.message ||
         "Unable to load dashboard.";
@@ -613,7 +866,6 @@ async function loadDashboard() {
     }
 
   }
-
 }
 
 
