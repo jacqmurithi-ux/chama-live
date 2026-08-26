@@ -3,8 +3,8 @@ import { supabase } from "./supabase.js";
 export const BASE_URL =
   "https://jacqmurithi-ux.github.io/chama-live";
 
-
 let cachedMember = null;
+let cachedGroup = null;
 
 
 /* =====================================================
@@ -12,14 +12,13 @@ let cachedMember = null;
 ===================================================== */
 
 export function clearAuthCache() {
-
   cachedMember = null;
-
+  cachedGroup = null;
 }
 
 
 /* =====================================================
-   GET SESSION
+   SESSION
 ===================================================== */
 
 export async function getSession() {
@@ -34,36 +33,96 @@ export async function getSession() {
   }
 
   return data.session || null;
-
 }
 
 
 /* =====================================================
-   GET CURRENT MEMBER
+   CURRENT MEMBER
 ===================================================== */
 
-export async function getMyMember(
-  force = false
-) {
+export async function getMyMember(force = false) {
 
-  if (
-    cachedMember &&
-    !force
-  ) {
-
+  if (cachedMember && !force) {
     return cachedMember;
+  }
+
+  const session = await getSession();
+
+  if (!session) {
+    return null;
+  }
+
+  const {
+    data,
+    error
+  } = await supabase.rpc(
+    "get_my_member"
+  );
+
+  if (error) {
+    console.error(
+      "get_my_member:",
+      error
+    );
+
+    throw error;
+  }
+
+  if (Array.isArray(data)) {
+    cachedMember =
+      data[0] || null;
+  } else {
+    cachedMember =
+      data || null;
+  }
+
+  return cachedMember;
+}
+
+
+/* =====================================================
+   CURRENT MEMBER - ALIASES
+===================================================== */
+
+export async function getCurrentMember() {
+  return await getMyMember();
+}
+
+
+/* =====================================================
+   CURRENT GROUP
+===================================================== */
+
+export async function getMyGroup() {
+
+  if (cachedGroup) {
+    return cachedGroup;
+  }
+
+  const member =
+    await getMyMember();
+
+  if (!member) {
+    return null;
+  }
+
+  /*
+   * If get_my_member already returns
+   * group information, use it.
+   */
+
+  if (member.group) {
+
+    cachedGroup =
+      member.group;
+
+    return cachedGroup;
 
   }
 
 
-  const session =
-    await getSession();
-
-
-  if (!session) {
-
+  if (!member.group_id) {
     return null;
-
   }
 
 
@@ -71,15 +130,20 @@ export async function getMyMember(
     data,
     error
   } =
-    await supabase.rpc(
-      "get_my_member"
-    );
+    await supabase
+      .from("groups")
+      .select("*")
+      .eq(
+        "id",
+        member.group_id
+      )
+      .single();
 
 
   if (error) {
 
     console.error(
-      "get_my_member error:",
+      "getMyGroup:",
       error
     );
 
@@ -88,53 +152,16 @@ export async function getMyMember(
   }
 
 
-  /*
-   * RPC may return:
-   *
-   * object
-   * OR
-   * array containing one object
-   */
-
-  if (
-    Array.isArray(data)
-  ) {
-
-    cachedMember =
-      data[0] || null;
-
-  } else {
-
-    cachedMember =
-      data || null;
-
-  }
+  cachedGroup =
+    data;
 
 
-  return cachedMember;
-
+  return cachedGroup;
 }
 
 
 /* =====================================================
-   GET ROLE
-===================================================== */
-
-export async function getMyRole() {
-
-  const member =
-    await getMyMember();
-
-  return String(
-    member?.role ||
-    "member"
-  ).toLowerCase();
-
-}
-
-
-/* =====================================================
-   GET GROUP
+   GROUP ID
 ===================================================== */
 
 export async function getMyGroupId() {
@@ -146,7 +173,22 @@ export async function getMyGroupId() {
     member?.group_id ||
     null
   );
+}
 
+
+/* =====================================================
+   ROLE
+===================================================== */
+
+export async function getMyRole() {
+
+  const member =
+    await getMyMember();
+
+  return String(
+    member?.role ||
+    "member"
+  ).toLowerCase();
 }
 
 
@@ -161,7 +203,6 @@ export async function hasRole(
   const role =
     await getMyRole();
 
-
   return allowedRoles
     .map(
       item =>
@@ -172,7 +213,6 @@ export async function hasRole(
     .includes(
       role
     );
-
 }
 
 
@@ -185,7 +225,6 @@ export async function isAdmin() {
   return await hasRole([
     "admin"
   ]);
-
 }
 
 
@@ -199,7 +238,6 @@ export async function isChairperson() {
     "admin",
     "chairperson"
   ]);
-
 }
 
 
@@ -214,7 +252,6 @@ export async function isTreasurer() {
     "chairperson",
     "treasurer"
   ]);
-
 }
 
 
@@ -229,7 +266,6 @@ export async function isSecretary() {
     "chairperson",
     "secretary"
   ]);
-
 }
 
 
@@ -242,7 +278,6 @@ export async function requireAuth() {
   const session =
     await getSession();
 
-
   if (!session) {
 
     window.location.replace(
@@ -250,7 +285,6 @@ export async function requireAuth() {
     );
 
     return null;
-
   }
 
 
@@ -261,25 +295,20 @@ export async function requireAuth() {
   if (!member) {
 
     console.error(
-      "Authenticated user has no member record."
+      "No member record found for authenticated user."
     );
 
-
     await supabase.auth.signOut();
-
 
     window.location.replace(
       `${BASE_URL}/login.html?error=no-member`
     );
 
-
     return null;
-
   }
 
 
   return session;
-
 }
 
 
@@ -294,19 +323,14 @@ export async function requireRole(
   const session =
     await requireAuth();
 
-
   if (!session) {
-
     return null;
-
   }
-
 
   const allowed =
     await hasRole(
       allowedRoles
     );
-
 
   if (!allowed) {
 
@@ -314,14 +338,10 @@ export async function requireRole(
       `${BASE_URL}/dashboard.html?error=forbidden`
     );
 
-
     return null;
-
   }
 
-
   return session;
-
 }
 
 
@@ -341,7 +361,7 @@ export async function claimMemberAccount(
   if (!session) {
 
     throw new Error(
-      "Authentication required. Please sign in first."
+      "Authentication required."
     );
 
   }
@@ -371,18 +391,14 @@ export async function claimMemberAccount(
 
 
   if (error) {
-
     throw error;
-
   }
 
 
-  cachedMember =
-    null;
+  clearAuthCache();
 
 
   return data;
-
 }
 
 
@@ -392,14 +408,11 @@ export async function claimMemberAccount(
 
 export async function refreshMyMember() {
 
-  cachedMember =
-    null;
-
+  clearAuthCache();
 
   return await getMyMember(
     true
   );
-
 }
 
 
@@ -409,8 +422,7 @@ export async function refreshMyMember() {
 
 export async function logout() {
 
-  cachedMember =
-    null;
+  clearAuthCache();
 
 
   const {
@@ -420,21 +432,18 @@ export async function logout() {
 
 
   if (error) {
-
     throw error;
-
   }
 
 
   window.location.replace(
     `${BASE_URL}/login.html`
   );
-
 }
 
 
 /* =====================================================
-   AUTH STATE
+   AUTH STATE LISTENER
 ===================================================== */
 
 export function listenToAuthChanges(
@@ -447,8 +456,7 @@ export function listenToAuthChanges(
       session
     ) => {
 
-      cachedMember =
-        null;
+      clearAuthCache();
 
 
       if (callback) {
@@ -462,12 +470,11 @@ export function listenToAuthChanges(
 
     }
   );
-
 }
 
 
 /* =====================================================
-   EXPORT SUPABASE
+   SUPABASE EXPORT
 ===================================================== */
 
 export {
