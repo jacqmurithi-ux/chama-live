@@ -1,28 +1,32 @@
-```html
+
 <!doctype html>
 <html lang="en">
 
 <head>
 
-<meta charset="utf-8">
+  <meta charset="utf-8">
 
-<meta
-  name="viewport"
-  content="width=device-width, initial-scale=1"
->
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
 
-<title>Members — CHAMA LIVE</title>
+  <title>Members — CHAMA LIVE</title>
 
-<link
-  rel="stylesheet"
-  href="css/app.css"
->
+  <link
+    rel="stylesheet"
+    href="css/app.css"
+  >
 
 </head>
 
 
 <body>
 
+
+<!-- =====================================================
+     TOP BAR
+====================================================== -->
 
 <header class="topbar">
 
@@ -34,6 +38,7 @@
   <button
     class="btn btn-secondary"
     id="logout"
+    type="button"
   >
     Sign out
   </button>
@@ -42,986 +47,446 @@
 
 
 
+<!-- =====================================================
+     MAIN
+====================================================== -->
+
 <main class="container">
 
 
-<div
-  style="
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    gap:15px;
-    flex-wrap:wrap;
-    margin-bottom:25px;
-  "
->
+  <!-- ===================================================
+       PAGE HEADER
+  ==================================================== -->
 
-  <div>
+  <div
+    style="
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:15px;
+      flex-wrap:wrap;
+      margin-bottom:25px;
+    "
+  >
 
-    <h1>
-      Members
-    </h1>
+    <div>
 
-    <p class="muted">
-      Manage members of your group.
-    </p>
+      <h1>
+        Members
+      </h1>
+
+      <p class="muted">
+        Manage members of your group.
+      </p>
+
+    </div>
+
+
+    <button
+      id="addMemberButton"
+      class="btn btn-primary"
+      type="button"
+    >
+      + Add Member
+    </button>
 
   </div>
 
 
-  <button
-    id="addMemberButton"
-    class="btn btn-primary"
+
+  <!-- ===================================================
+       STATUS
+  ==================================================== -->
+
+  <div
+    id="status"
+    class="card"
+    style="margin-bottom:20px;"
   >
-    + Add Member
-  </button>
+    Loading members...
+  </div>
 
-</div>
 
 
+  <!-- ===================================================
+       ERROR
+  ==================================================== -->
 
-<div
-  id="error"
-  class="error"
-  hidden
-  style="margin-bottom:20px;"
-></div>
+  <div
+    id="error"
+    class="error"
+    hidden
+    style="margin-bottom:20px;"
+  ></div>
 
 
-<div
-  id="success"
-  class="card"
-  hidden
-  style="margin-bottom:20px;"
-></div>
 
+  <!-- ===================================================
+       SUCCESS
+  ==================================================== -->
 
+  <div
+    id="success"
+    class="card"
+    hidden
+    style="margin-bottom:20px;"
+  ></div>
 
-<!-- ==================================================
-     ADD MEMBER
-=================================================== -->
 
-<section
-  id="memberFormCard"
-  class="card"
-  hidden
-  style="margin-bottom:25px;"
->
 
+  <!-- ===================================================
+       ADD MEMBER FORM
+  ==================================================== -->
 
-<h2>
-  Add Member
-</h2>
+  <section
+    id="memberFormCard"
+    class="card"
+    hidden
+    style="margin-bottom:25px;"
+  >
 
+    <h2>
+      Add Member
+    </h2>
 
-<p class="muted">
-  Create the member record first. The member can
-  activate their online account using their
-  membership number and email address.
-</p>
 
+    <p class="muted">
 
+      Create the member record first.
+      The member can activate their online
+      account using their membership number
+      and email address.
 
-<form id="memberForm">
+    </p>
 
 
-<div style="margin-bottom:15px;">
 
-<label for="memberNumber">
-Member Number
-</label>
+    <form id="memberForm">
 
-<input
-  id="memberNumber"
-  required
-  autocomplete="off"
-  style="width:100%;"
->
 
-</div>
+      <!-- MEMBER NUMBER -->
 
+      <div style="margin-bottom:15px;">
 
+        <label for="memberNumber">
+          Member Number
+        </label>
 
-<div style="margin-bottom:15px;">
+        <input
+          id="memberNumber"
+          name="memberNumber"
+          required
+          autocomplete="off"
+          style="width:100%;"
+        >
 
-<label for="membershipNumber">
-Membership Number
-</label>
+      </div>
 
-<input
-  id="membershipNumber"
-  required
-  autocomplete="off"
-  style="width:100%;"
->
 
-</div>
 
+      <!-- MEMBERSHIP NUMBER -->
 
+      <div style="margin-bottom:15px;">
 
-<div style="margin-bottom:15px;">
+        <label for="membershipNumber">
+          Membership Number
+        </label>
 
-<label for="name">
-Full Name
-</label>
+        <input
+          id="membershipNumber"
+          name="membershipNumber"
+          required
+          autocomplete="off"
+          style="width:100%;"
+        >
 
-<input
-  id="name"
-  required
-  autocomplete="name"
-  style="width:100%;"
->
+      </div>
 
-</div>
 
 
+      <!-- NAME -->
 
-<div style="margin-bottom:15px;">
+      <div style="margin-bottom:15px;">
 
-<label for="phone">
-Phone Number
-</label>
+        <label for="name">
+          Full Name
+        </label>
 
-<input
-  id="phone"
-  type="tel"
-  required
-  autocomplete="tel"
-  style="width:100%;"
->
+        <input
+          id="name"
+          name="name"
+          required
+          autocomplete="name"
+          style="width:100%;"
+        >
 
-</div>
+      </div>
 
 
 
-<div style="margin-bottom:15px;">
+      <!-- PHONE -->
 
-<label for="email">
-Email Address
-</label>
+      <div style="margin-bottom:15px;">
 
-<input
-  id="email"
-  type="email"
-  autocomplete="email"
-  style="width:100%;"
->
+        <label for="phone">
+          Phone Number
+        </label>
 
-<p
-  class="muted"
-  style="font-size:13px;"
->
-If the member wants online access, use the
-same email they will use for CHAMA LIVE.
-</p>
+        <input
+          id="phone"
+          name="phone"
+          type="tel"
+          required
+          autocomplete="tel"
+          style="width:100%;"
+        >
 
-</div>
+      </div>
 
 
 
-<div style="margin-bottom:20px;">
+      <!-- EMAIL -->
 
-<label for="role">
-Role
-</label>
+      <div style="margin-bottom:15px;">
 
+        <label for="email">
+          Email Address
+        </label>
 
-<select
-  id="role"
-  style="width:100%;"
->
+        <input
+          id="email"
+          name="email"
+          type="email"
+          autocomplete="email"
+          style="width:100%;"
+        >
 
-<option value="member">
-Member
-</option>
+        <p
+          class="muted"
+          style="font-size:13px;"
+        >
+          If the member wants online access,
+          use the same email they will use
+          for CHAMA LIVE.
+        </p>
 
-<option value="secretary">
-Secretary
-</option>
+      </div>
 
-<option value="treasurer">
-Treasurer
-</option>
 
-<option value="chairperson">
-Chairperson
-</option>
 
-<option value="admin">
-Admin
-</option>
+      <!-- ROLE -->
 
-</select>
+      <div style="margin-bottom:20px;">
 
-</div>
+        <label for="role">
+          Role
+        </label>
 
 
+        <select
+          id="role"
+          name="role"
+          style="width:100%;"
+        >
 
-<div
-  style="
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
-  "
->
+          <option value="member">
+            Member
+          </option>
 
-<button
-  type="submit"
-  id="saveMember"
-  class="btn btn-primary"
->
-Add Member
-</button>
+          <option value="secretary">
+            Secretary
+          </option>
 
+          <option value="treasurer">
+            Treasurer
+          </option>
 
-<button
-  type="button"
-  id="cancelMember"
-  class="btn btn-secondary"
->
-Cancel
-</button>
+          <option value="chairperson">
+            Chairperson
+          </option>
 
-</div>
+          <option value="admin">
+            Admin
+          </option>
 
+        </select>
 
-</form>
+      </div>
 
 
-</section>
 
+      <!-- FORM BUTTONS -->
 
+      <div
+        style="
+          display:flex;
+          gap:10px;
+          flex-wrap:wrap;
+        "
+      >
 
-<!-- ==================================================
-     MEMBER LIST
-=================================================== -->
+        <button
+          type="submit"
+          id="saveMember"
+          class="btn btn-primary"
+        >
+          Add Member
+        </button>
 
-<section class="card">
 
+        <button
+          type="button"
+          id="cancelMember"
+          class="btn btn-secondary"
+        >
+          Cancel
+        </button>
 
-<h2>
-Group Members
-</h2>
+      </div>
 
 
-<div
-  style="
-    overflow-x:auto;
-    margin-top:15px;
-  "
->
+    </form>
 
+  </section>
 
-<table>
 
-<thead>
 
-<tr>
+  <!-- ===================================================
+       MEMBER LIST
+  ==================================================== -->
 
-<th>
-Member No.
-</th>
+  <section class="card">
 
-<th>
-Membership No.
-</th>
 
-<th>
-Name
-</th>
+    <h2>
+      Group Members
+    </h2>
 
-<th>
-Phone
-</th>
 
-<th>
-Email
-</th>
+    <p class="muted">
+      Members registered in your group.
+    </p>
 
-<th>
-Role
-</th>
 
-<th>
-Account
-</th>
+    <div
+      style="
+        overflow-x:auto;
+        margin-top:15px;
+      "
+    >
 
-<th>
-Status
-</th>
 
-</tr>
+      <table class="table">
 
-</thead>
 
+        <thead>
 
-<tbody id="membersBody">
+          <tr>
 
-<tr>
+            <th>
+              Member No.
+            </th>
 
-<td
-  colspan="8"
-  class="muted"
->
-Loading...
-</td>
+            <th>
+              Membership No.
+            </th>
 
-</tr>
+            <th>
+              Name
+            </th>
 
-</tbody>
+            <th>
+              Phone
+            </th>
 
+            <th>
+              Email
+            </th>
 
-</table>
+            <th>
+              Role
+            </th>
 
+            <th>
+              Account
+            </th>
 
-</div>
+            <th>
+              Status
+            </th>
 
+          </tr>
 
-</section>
+        </thead>
+
+
+
+        <tbody id="membersBody">
+
+          <tr>
+
+            <td
+              colspan="8"
+              class="muted"
+            >
+              Loading...
+            </td>
+
+          </tr>
+
+        </tbody>
+
+
+      </table>
+
+
+    </div>
+
+
+  </section>
 
 
 </main>
 
 
 
+<!-- =====================================================
+     PAGE JAVASCRIPT
+====================================================== -->
+
 <script type="module">
 
-
-import {
-  supabase
-} from "./js/supabase.js";
-
-
-import {
-  requireAuth,
-  getMyMember,
-  getMyGroupId,
-  canManageGroup,
-  addGroupMember,
-  logout
-} from "./js/auth.js";
+  import {
+    boot
+  } from "./js/layout.js";
 
 
+  /*
+   * First authenticate and initialize
+   * the common CHAMA LIVE layout.
+   */
 
-const addButton =
-  document.getElementById(
-    "addMemberButton"
-  );
-
-
-const formCard =
-  document.getElementById(
-    "memberFormCard"
-  );
+  const context =
+    await boot();
 
 
-const form =
-  document.getElementById(
-    "memberForm"
-  );
+  /*
+   * Only load Members functionality
+   * after authentication succeeds.
+   */
 
+  if (context) {
 
-const cancelButton =
-  document.getElementById(
-    "cancelMember"
-  );
-
-
-const saveButton =
-  document.getElementById(
-    "saveMember"
-  );
-
-
-const body =
-  document.getElementById(
-    "membersBody"
-  );
-
-
-const errorBox =
-  document.getElementById(
-    "error"
-  );
-
-
-const successBox =
-  document.getElementById(
-    "success"
-  );
-
-
-
-/* =====================================================
-   ESCAPE HTML
-===================================================== */
-
-function escapeHtml(
-  value
-) {
-
-  return String(
-    value ?? ""
-  )
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
-
-}
-
-
-
-/* =====================================================
-   MESSAGES
-===================================================== */
-
-function showError(
-  text
-) {
-
-  errorBox.hidden =
-    false;
-
-  errorBox.textContent =
-    text;
-
-  successBox.hidden =
-    true;
-
-}
-
-
-function showSuccess(
-  text
-) {
-
-  successBox.hidden =
-    false;
-
-  successBox.textContent =
-    text;
-
-  errorBox.hidden =
-    true;
-
-}
-
-
-
-function clearMessages() {
-
-  errorBox.hidden =
-    true;
-
-  successBox.hidden =
-    true;
-
-}
-
-
-
-/* =====================================================
-   LOAD MEMBERS
-===================================================== */
-
-async function loadMembers() {
-
-  const groupId =
-    await getMyGroupId();
-
-
-  if (!groupId) {
-
-    throw new Error(
-      "Your account is not linked to a group."
+    await import(
+      "./js/members.js"
     );
 
   }
-
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("members")
-      .select(`
-        id,
-        group_id,
-        user_id,
-        auth_user_id,
-        member_number,
-        membership_number,
-        name,
-        phone,
-        email,
-        role,
-        join_date,
-        status,
-        onboarding_status,
-        created_at,
-        activated_at
-      `)
-      .eq(
-        "group_id",
-        groupId
-      )
-      .order(
-        "created_at",
-        {
-          ascending: true
-        }
-      );
-
-
-  if (error) {
-    throw error;
-  }
-
-
-  if (!data?.length) {
-
-    body.innerHTML = `
-
-      <tr>
-
-        <td
-          colspan="8"
-          class="muted"
-        >
-          No members found.
-        </td>
-
-      </tr>
-
-    `;
-
-    return;
-
-  }
-
-
-  body.innerHTML =
-    data.map(
-      member => {
-
-
-        const activated =
-          !!(
-            member.user_id ||
-            member.auth_user_id
-          );
-
-
-        const accountStatus =
-          activated
-            ? "Active"
-            : "Not activated";
-
-
-        return `
-
-          <tr>
-
-            <td>
-              ${escapeHtml(
-                member.member_number
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                member.membership_number
-              )}
-            </td>
-
-            <td>
-              <strong>
-                ${escapeHtml(
-                  member.name
-                )}
-              </strong>
-            </td>
-
-            <td>
-              ${escapeHtml(
-                member.phone
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                member.email ||
-                "—"
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                member.role
-              )}
-            </td>
-
-            <td>
-              ${accountStatus}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                member.onboarding_status ||
-                member.status ||
-                "—"
-              )}
-            </td>
-
-          </tr>
-
-        `;
-
-      }
-    ).join("");
-
-}
-
-
-
-/* =====================================================
-   BOOT
-===================================================== */
-
-async function boot() {
-
-  try {
-
-    await requireAuth();
-
-
-    const member =
-      await getMyMember();
-
-
-    if (!member) {
-      return;
-    }
-
-
-    const manager =
-      await canManageGroup();
-
-
-    if (!manager) {
-
-      addButton.hidden =
-        true;
-
-    }
-
-
-    await loadMembers();
-
-
-  } catch (error) {
-
-    console.error(
-      "Members boot:",
-      error
-    );
-
-
-    showError(
-      error.message ||
-      "Unable to load members."
-    );
-
-  }
-
-}
-
-
-
-/* =====================================================
-   OPEN FORM
-===================================================== */
-
-addButton.addEventListener(
-  "click",
-  () => {
-
-    clearMessages();
-
-    form.reset();
-
-    formCard.hidden =
-      false;
-
-
-    formCard.scrollIntoView({
-      behavior: "smooth",
-      block: "start"
-    });
-
-  }
-);
-
-
-
-/* =====================================================
-   CANCEL
-===================================================== */
-
-cancelButton.addEventListener(
-  "click",
-  () => {
-
-    form.reset();
-
-    formCard.hidden =
-      true;
-
-  }
-);
-
-
-
-/* =====================================================
-   ADD MEMBER
-===================================================== */
-
-form.addEventListener(
-  "submit",
-  async event => {
-
-    event.preventDefault();
-
-
-    clearMessages();
-
-
-    saveButton.disabled =
-      true;
-
-    saveButton.textContent =
-      "Adding member...";
-
-
-    try {
-
-
-      const groupId =
-        await getMyGroupId();
-
-
-      if (!groupId) {
-
-        throw new Error(
-          "Your account is not linked to a group."
-        );
-
-      }
-
-
-      const memberNumber =
-        document
-          .getElementById(
-            "memberNumber"
-          )
-          .value
-          .trim();
-
-
-      const membershipNumber =
-        document
-          .getElementById(
-            "membershipNumber"
-          )
-          .value
-          .trim();
-
-
-      const name =
-        document
-          .getElementById(
-            "name"
-          )
-          .value
-          .trim();
-
-
-      const phone =
-        document
-          .getElementById(
-            "phone"
-          )
-          .value
-          .trim();
-
-
-      const email =
-        document
-          .getElementById(
-            "email"
-          )
-          .value
-          .trim()
-          .toLowerCase();
-
-
-      const role =
-        document
-          .getElementById(
-            "role"
-          )
-          .value;
-
-
-      if (!memberNumber) {
-
-        throw new Error(
-          "Member number is required."
-        );
-
-      }
-
-
-      if (!membershipNumber) {
-
-        throw new Error(
-          "Membership number is required."
-        );
-
-      }
-
-
-      if (!name) {
-
-        throw new Error(
-          "Member name is required."
-        );
-
-      }
-
-
-      if (!phone) {
-
-        throw new Error(
-          "Phone number is required."
-        );
-
-      }
-
-
-      await addGroupMember({
-
-        groupId,
-
-        name,
-
-        memberNumber,
-
-        membershipNumber,
-
-        phone,
-
-        email,
-
-        role,
-
-        joinDate:
-          new Date()
-            .toISOString()
-            .slice(
-              0,
-              10
-            )
-
-      });
-
-
-      showSuccess(
-        `${name} has been added successfully.`
-      );
-
-
-      form.reset();
-
-      formCard.hidden =
-        true;
-
-
-      await loadMembers();
-
-
-    } catch (error) {
-
-      console.error(
-        "Add member:",
-        error
-      );
-
-
-      showError(
-        error.message ||
-        "Unable to add member."
-      );
-
-
-    } finally {
-
-      saveButton.disabled =
-        false;
-
-      saveButton.textContent =
-        "Add Member";
-
-    }
-
-  }
-);
-
-
-
-/* =====================================================
-   LOGOUT
-===================================================== */
-
-document
-  .getElementById(
-    "logout"
-  )
-  .addEventListener(
-    "click",
-    logout
-  );
-
-
-
-/* =====================================================
-   START
-===================================================== */
-
-boot();
 
 </script>
+
 
 
 </body>
 
 </html>
-```
