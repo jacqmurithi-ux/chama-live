@@ -4,7 +4,8 @@
    File: /js/supabase.js
 ========================================================= */
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient }
+  from "https://esm.sh/@supabase/supabase-js@2";
 
 
 /* =========================================================
@@ -19,7 +20,7 @@ const SUPABASE_ANON_KEY =
 
 
 /* =========================================================
-   CLIENT
+   SUPABASE CLIENT
 ========================================================= */
 
 export const supabase =
@@ -37,7 +38,7 @@ export const supabase =
 
 
 /* =========================================================
-   CONNECTION TEST
+   TEST CONNECTION
 ========================================================= */
 
 export async function testSupabaseConnection() {
