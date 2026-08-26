@@ -6,60 +6,122 @@ import {
 } from "./auth.js";
 
 
-function $(id) {
-  return document.getElementById(id);
-}
-
-
 /* =========================================================
-   CURRENT PAGE
+   BOOT
 ========================================================= */
 
-function currentPage() {
+export async function boot() {
 
-  const file =
-    window.location.pathname
-      .split("/")
-      .pop()
-      .toLowerCase();
+  try {
 
-  return file || "dashboard.html";
-}
+    const session =
+      await requireAuth();
+
+    if (!session) {
+      return;
+    }
 
 
-/* =========================================================
-   ACTIVE NAVIGATION
-========================================================= */
+    const member =
+      await getMyMember();
 
-function highlightCurrentPage() {
 
-  const page =
-    currentPage();
+    if (!member) {
 
-  document
-    .querySelectorAll(".nav a")
-    .forEach(link => {
-
-      const href =
-        link.getAttribute("href");
-
-      if (!href) {
-        return;
-      }
-
-      const linkPage =
-        href
-          .split("/")
-          .pop()
-          .toLowerCase();
-
-      link.classList.toggle(
-        "active",
-        linkPage === page
+      showLayoutError(
+        "Your account is authenticated, but no member record was found."
       );
 
-    });
+      return;
+    }
 
+
+    let group = null;
+
+    try {
+
+      group =
+        await getMyGroup();
+
+    } catch (error) {
+
+      console.warn(
+        "Unable to load group:",
+        error
+      );
+    }
+
+
+    renderUser(
+      member,
+      group
+    );
+
+
+    setupLogout();
+
+
+    await loadPageScript();
+
+  } catch (error) {
+
+    console.error(
+      "LAYOUT ERROR:",
+      error
+    );
+
+    showLayoutError(
+      error.message ||
+      "Unable to load the application."
+    );
+  }
+}
+
+
+/* =========================================================
+   USER DISPLAY
+========================================================= */
+
+function renderUser(
+  member,
+  group
+) {
+
+  const welcome =
+    document.getElementById(
+      "welcome"
+    );
+
+  if (welcome) {
+
+    welcome.textContent =
+      `Welcome, ${member.name || "Member"}.`;
+  }
+
+
+  const memberName =
+    document.getElementById(
+      "memberName"
+    );
+
+  if (memberName) {
+
+    memberName.textContent =
+      member.name || "";
+  }
+
+
+  const groupName =
+    document.getElementById(
+      "groupName"
+    );
+
+  if (groupName) {
+
+    groupName.textContent =
+      group?.name ||
+      "CHAMA LIVE";
+  }
 }
 
 
@@ -70,28 +132,21 @@ function highlightCurrentPage() {
 function setupLogout() {
 
   const button =
-    $("logout");
+    document.getElementById(
+      "logout"
+    );
 
   if (!button) {
     return;
   }
 
-  if (
-    button.dataset.logoutReady === "true"
-  ) {
-    return;
-  }
-
-  button.dataset.logoutReady =
-    "true";
 
   button.addEventListener(
     "click",
-    async event => {
+    async () => {
 
-      event.preventDefault();
-
-      button.disabled = true;
+      button.disabled =
+        true;
 
       button.textContent =
         "Signing out...";
@@ -103,150 +158,18 @@ function setupLogout() {
       } catch (error) {
 
         console.error(
-          "Sign out error:",
+          "Logout error:",
           error
         );
 
-        button.disabled = false;
+        button.disabled =
+          false;
 
         button.textContent =
           "Sign out";
-
-        alert(
-          error?.message ||
-          "Unable to sign out."
-        );
-
       }
-
     }
   );
-
-}
-
-
-/* =========================================================
-   MEMBER DISPLAY
-========================================================= */
-
-function displayMember(
-  member
-) {
-
-  document
-    .querySelectorAll(
-      "[data-member-name]"
-    )
-    .forEach(element => {
-
-      element.textContent =
-        member?.name ||
-        "Member";
-
-    });
-
-}
-
-
-/* =========================================================
-   GROUP DISPLAY
-========================================================= */
-
-function displayGroup(
-  group
-) {
-
-  document
-    .querySelectorAll(
-      "[data-group-name]"
-    )
-    .forEach(element => {
-
-      element.textContent =
-        group?.name ||
-        "Your Group";
-
-    });
-
-}
-
-
-/* =========================================================
-   RBAC
-========================================================= */
-
-function applyRBAC(
-  member
-) {
-
-  if (!member) {
-    return;
-  }
-
-  const role =
-    String(
-      member.role || "member"
-    )
-      .trim()
-      .toLowerCase();
-
-
-  const adminRoles = [
-    "admin",
-    "administrator",
-    "chairperson",
-    "secretary",
-    "treasurer"
-  ];
-
-
-  const managerRoles = [
-    ...adminRoles,
-    "manager"
-  ];
-
-
-  const isAdmin =
-    adminRoles.includes(role);
-
-
-  const isManager =
-    managerRoles.includes(role);
-
-
-  document
-    .querySelectorAll("[data-role]")
-    .forEach(element => {
-
-      const required =
-        String(
-          element.dataset.role
-        )
-          .trim()
-          .toLowerCase();
-
-
-      if (
-        required === "admin"
-      ) {
-
-        element.hidden =
-          !isAdmin;
-
-      }
-
-
-      if (
-        required === "manager"
-      ) {
-
-        element.hidden =
-          !isManager;
-
-      }
-
-    });
-
 }
 
 
@@ -256,8 +179,11 @@ function applyRBAC(
 
 async function loadPageScript() {
 
-  const page =
-    currentPage();
+  const path =
+    window.location.pathname
+      .split("/")
+      .pop()
+      .toLowerCase();
 
 
   const scripts = {
@@ -280,17 +206,19 @@ async function loadPageScript() {
     "reports.html":
       "./reports.js",
 
-    "monthly-closing.html":
-      "./monthly-closing.js",
-
     "group-management.html":
-      "./group-management.js"
+      "./group-management.js",
 
+    "create-group.html":
+      "./create-group.js",
+
+    "activate-account.html":
+      "./activate-account.js"
   };
 
 
   const script =
-    scripts[page];
+    scripts[path];
 
 
   if (!script) {
@@ -300,7 +228,9 @@ async function loadPageScript() {
 
   try {
 
-    await import(script);
+    await import(
+      `./${script.replace("./", "")}`
+    );
 
   } catch (error) {
 
@@ -309,154 +239,49 @@ async function loadPageScript() {
       error
     );
 
-
-    const errorBox =
-      $("error");
-
-
-    if (errorBox) {
-
-      errorBox.hidden =
-        false;
-
-      errorBox.textContent =
-        error?.message ||
-        `Unable to load ${page} JavaScript.`;
-
-    }
-
+    showLayoutError(
+      `Unable to load page script: ${script}`
+    );
   }
-
 }
 
 
 /* =========================================================
-   BOOT
+   ERROR
 ========================================================= */
 
-export async function boot() {
+function showLayoutError(
+  message
+) {
 
-  try {
-
-    const session =
-      await requireAuth();
-
-
-    if (!session) {
-      return null;
-    }
+  let box =
+    document.getElementById(
+      "layoutError"
+    );
 
 
-    const member =
-      await getMyMember();
+  if (!box) {
 
-
-    if (!member) {
-
-      throw new Error(
-        "Your authenticated account is not linked to an active member record."
+    box =
+      document.createElement(
+        "div"
       );
 
-    }
+    box.id =
+      "layoutError";
 
+    box.className =
+      "error";
 
-    const group =
-      await getMyGroup();
-
-
-    if (!group) {
-
-      throw new Error(
-        "Your member account is not linked to an active group."
-      );
-
-    }
-
-
-    displayMember(
-      member
-    );
-
-
-    displayGroup(
-      group
-    );
-
-
-    highlightCurrentPage();
-
-    setupLogout();
-
-    applyRBAC(
-      member
-    );
-
-
-    const status =
-      $("status");
-
-
-    if (status) {
-
-      status.textContent =
-        `Welcome, ${member.name || "Member"}.`;
-
-    }
-
-
-    /*
-     * Now load the page-specific
-     * JavaScript.
-     */
-
-    await loadPageScript();
-
-
-    return {
-      session,
-      member,
-      group
-    };
-
-
-  } catch (error) {
-
-    console.error(
-      "CHAMA LIVE boot error:",
-      error
-    );
-
-
-    const status =
-      $("status");
-
-
-    if (status) {
-
-      status.textContent =
-        "Unable to initialize your account.";
-
-    }
-
-
-    const errorBox =
-      $("error");
-
-
-    if (errorBox) {
-
-      errorBox.hidden =
-        false;
-
-      errorBox.textContent =
-        error?.message ||
-        "Unable to initialize application.";
-
-    }
-
-
-    return null;
-
+    document
+      .body
+      .prepend(box);
   }
 
+
+  box.hidden =
+    false;
+
+  box.textContent =
+    message;
 }
