@@ -93,6 +93,10 @@
   <main class="main">
 
 
+    <!-- =====================================================
+         PAGE HEADER
+    ====================================================== -->
+
     <div class="page-head">
 
       <div>
@@ -120,6 +124,10 @@
 
 
 
+    <!-- =====================================================
+         STATUS
+    ====================================================== -->
+
     <div
       id="status"
       class="card"
@@ -129,6 +137,10 @@
     </div>
 
 
+
+    <!-- =====================================================
+         ERROR
+    ====================================================== -->
 
     <div
       id="error"
@@ -140,7 +152,32 @@
 
 
     <!-- =====================================================
-         ADD MEMBER PANEL
+         SEARCH MEMBERS
+    ====================================================== -->
+
+    <div
+      style="
+        margin:20px 0;
+      "
+    >
+
+      <input
+        type="search"
+        id="memberSearch"
+        placeholder="Search by name, member number, phone or email..."
+        aria-label="Search members"
+        style="
+          width:100%;
+          box-sizing:border-box;
+        "
+      >
+
+    </div>
+
+
+
+    <!-- =====================================================
+         ADD / EDIT MEMBER PANEL
     ====================================================== -->
 
     <section
@@ -149,6 +186,7 @@
       hidden
       style="margin-bottom:20px;"
     >
+
 
       <div
         style="
@@ -162,11 +200,14 @@
 
         <div>
 
-          <h2>
+          <h2 id="memberFormTitle">
             Add Member
           </h2>
 
-          <p class="muted">
+          <p
+            class="muted"
+            id="memberFormDescription"
+          >
             Register a new member in your group.
           </p>
 
@@ -185,6 +226,8 @@
 
 
 
+      <!-- FORM MESSAGE -->
+
       <div
         id="formMessage"
         style="
@@ -197,11 +240,15 @@
 
 
 
+      <!-- MEMBER FORM -->
+
       <form id="addMemberForm">
 
 
         <div class="grid grid-2">
 
+
+          <!-- MEMBER NUMBER -->
 
           <div>
 
@@ -220,6 +267,8 @@
 
 
 
+          <!-- FULL NAME -->
+
           <div>
 
             <label for="memberName">
@@ -236,6 +285,8 @@
           </div>
 
 
+
+          <!-- PHONE -->
 
           <div>
 
@@ -254,6 +305,8 @@
 
 
 
+          <!-- EMAIL -->
+
           <div>
 
             <label for="memberEmail">
@@ -269,6 +322,8 @@
           </div>
 
 
+
+          <!-- ROLE -->
 
           <div>
 
@@ -303,15 +358,42 @@
           </div>
 
 
+
+          <!-- STATUS -->
+
+          <div>
+
+            <label for="memberStatus">
+              Account Status
+            </label>
+
+            <select id="memberStatus">
+
+              <option value="active">
+                Active
+              </option>
+
+              <option value="inactive">
+                Inactive
+              </option>
+
+            </select>
+
+          </div>
+
+
         </div>
 
 
+
+        <!-- FORM BUTTONS -->
 
         <div
           style="
             display:flex;
             gap:10px;
             margin-top:20px;
+            flex-wrap:wrap;
           "
         >
 
@@ -371,9 +453,11 @@
 
     <section class="card">
 
+
       <h2>
         Group Members
       </h2>
+
 
       <p class="muted">
         Members registered in your group.
@@ -384,6 +468,7 @@
       <div class="table-wrap">
 
         <table class="table">
+
 
           <thead>
 
@@ -426,6 +511,7 @@
           </thead>
 
 
+
           <tbody id="memberRows">
 
             <tr>
@@ -438,9 +524,11 @@
 
           </tbody>
 
+
         </table>
 
       </div>
+
 
     </section>
 
@@ -451,11 +539,165 @@
 
 
 
+<!-- =========================================================
+     VIEW MEMBER MODAL
+========================================================= -->
+
+<div
+  id="memberModal"
+  hidden
+  style="
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.5);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:1000;
+  "
+>
+
+  <section
+    class="card"
+    style="
+      width:100%;
+      max-width:500px;
+      max-height:90vh;
+      overflow:auto;
+    "
+  >
+
+
+    <div
+      style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap:15px;
+      "
+    >
+
+      <h2 id="viewMemberName">
+        Member
+      </h2>
+
+
+      <button
+        class="btn btn-secondary"
+        id="closeMemberModal"
+        type="button"
+      >
+        Close
+      </button>
+
+    </div>
+
+
+
+    <hr>
+
+
+
+    <p>
+
+      <strong>
+        Member Number:
+      </strong>
+
+      <span id="viewMemberNumber">
+        —
+      </span>
+
+    </p>
+
+
+
+    <p>
+
+      <strong>
+        Phone:
+      </strong>
+
+      <span id="viewMemberPhone">
+        —
+      </span>
+
+    </p>
+
+
+
+    <p>
+
+      <strong>
+        Email:
+      </strong>
+
+      <span id="viewMemberEmail">
+        —
+      </span>
+
+    </p>
+
+
+
+    <p>
+
+      <strong>
+        Role:
+      </strong>
+
+      <span id="viewMemberRole">
+        —
+      </span>
+
+    </p>
+
+
+
+    <p>
+
+      <strong>
+        Status:
+      </strong>
+
+      <span id="viewMemberStatus">
+        —
+      </span>
+
+    </p>
+
+
+
+    <p>
+
+      <strong>
+        Join Date:
+      </strong>
+
+      <span id="viewMemberJoinDate">
+        —
+      </span>
+
+    </p>
+
+
+  </section>
+
+</div>
+
+
+
+<!-- =========================================================
+     LAYOUT BOOT
+========================================================= -->
+
 <script type="module">
 
   import {
     boot
   } from "./js/layout.js";
+
 
   boot();
 
