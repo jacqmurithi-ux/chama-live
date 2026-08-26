@@ -1,16 +1,14 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-import "./config.js";
+const SUPABASE_URL =
+  "https://ptktftwyltxmtcodyzoa.supabase.co";
 
-const { supabaseUrl, supabaseAnonKey } = window.CHAMA_CONFIG;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error("CHAMA LIVE Supabase configuration is missing.");
-}
+const SUPABASE_PUBLISHABLE_KEY =
+  "sb_publishable_Nfuc0Xj1LuSU-qJmSXpH5A_GSTMvmSS";
 
 export const supabase = createClient(
-  supabaseUrl,
-  supabaseAnonKey,
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY,
   {
     auth: {
       persistSession: true,
@@ -19,4 +17,3 @@ export const supabase = createClient(
     }
   }
 );
-
