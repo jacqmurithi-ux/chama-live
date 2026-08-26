@@ -8,7 +8,7 @@ let cachedGroup = null;
 
 
 /* =====================================================
-   CLEAR CACHE
+   CACHE
 ===================================================== */
 
 export function clearAuthCache() {
@@ -32,65 +32,61 @@ export async function getSession() {
     throw error;
   }
 
-  return data.session || null;
+  return data?.session || null;
 }
 
 
 /* =====================================================
-   CURRENT MEMBER
+   MEMBER
 ===================================================== */
 
-export async function getMyMember(force = false) {
+export async function getMyMember(
+  force = false
+) {
 
-  if (cachedMember && !force) {
+  if (
+    cachedMember &&
+    !force
+  ) {
     return cachedMember;
   }
 
-  const session = await getSession();
+
+  const session =
+    await getSession();
+
 
   if (!session) {
     return null;
   }
 
+
   const {
     data,
     error
-  } = await supabase.rpc(
-    "get_my_member"
-  );
-
-  if (error) {
-    console.error(
-      "get_my_member:",
-      error
+  } =
+    await supabase.rpc(
+      "get_my_member"
     );
 
+
+  if (error) {
     throw error;
   }
 
-  if (Array.isArray(data)) {
-    cachedMember =
-      data[0] || null;
-  } else {
-    cachedMember =
-      data || null;
-  }
+
+  cachedMember =
+    Array.isArray(data)
+      ? data[0] || null
+      : data || null;
+
 
   return cachedMember;
 }
 
 
 /* =====================================================
-   CURRENT MEMBER - ALIASES
-===================================================== */
-
-export async function getCurrentMember() {
-  return await getMyMember();
-}
-
-
-/* =====================================================
-   CURRENT GROUP
+   GROUP
 ===================================================== */
 
 export async function getMyGroup() {
@@ -99,16 +95,19 @@ export async function getMyGroup() {
     return cachedGroup;
   }
 
+
   const member =
     await getMyMember();
+
 
   if (!member) {
     return null;
   }
 
+
   /*
-   * If get_my_member already returns
-   * group information, use it.
+   * Some versions of get_my_member
+   * may already return group data.
    */
 
   if (member.group) {
@@ -141,14 +140,7 @@ export async function getMyGroup() {
 
 
   if (error) {
-
-    console.error(
-      "getMyGroup:",
-      error
-    );
-
     throw error;
-
   }
 
 
@@ -197,75 +189,23 @@ export async function getMyRole() {
 ===================================================== */
 
 export async function hasRole(
-  allowedRoles = []
+  roles = []
 ) {
 
   const role =
     await getMyRole();
 
-  return allowedRoles
+
+  return roles
     .map(
-      item =>
+      value =>
         String(
-          item
+          value
         ).toLowerCase()
     )
     .includes(
       role
     );
-}
-
-
-/* =====================================================
-   ADMIN
-===================================================== */
-
-export async function isAdmin() {
-
-  return await hasRole([
-    "admin"
-  ]);
-}
-
-
-/* =====================================================
-   CHAIRPERSON
-===================================================== */
-
-export async function isChairperson() {
-
-  return await hasRole([
-    "admin",
-    "chairperson"
-  ]);
-}
-
-
-/* =====================================================
-   TREASURER
-===================================================== */
-
-export async function isTreasurer() {
-
-  return await hasRole([
-    "admin",
-    "chairperson",
-    "treasurer"
-  ]);
-}
-
-
-/* =====================================================
-   SECRETARY
-===================================================== */
-
-export async function isSecretary() {
-
-  return await hasRole([
-    "admin",
-    "chairperson",
-    "secretary"
-  ]);
 }
 
 
@@ -277,6 +217,7 @@ export async function requireAuth() {
 
   const session =
     await getSession();
+
 
   if (!session) {
 
@@ -293,10 +234,6 @@ export async function requireAuth() {
 
 
   if (!member) {
-
-    console.error(
-      "No member record found for authenticated user."
-    );
 
     await supabase.auth.signOut();
 
@@ -317,22 +254,21 @@ export async function requireAuth() {
 ===================================================== */
 
 export async function requireRole(
-  allowedRoles = []
+  roles = []
 ) {
 
   const session =
     await requireAuth();
 
+
   if (!session) {
     return null;
   }
 
-  const allowed =
-    await hasRole(
-      allowedRoles
-    );
 
-  if (!allowed) {
+  if (
+    !(await hasRole(roles))
+  ) {
 
     window.location.replace(
       `${BASE_URL}/dashboard.html?error=forbidden`
@@ -341,12 +277,13 @@ export async function requireRole(
     return null;
   }
 
+
   return session;
 }
 
 
 /* =====================================================
-   CLAIM MEMBER ACCOUNT
+   CLAIM MEMBER
 ===================================================== */
 
 export async function claimMemberAccount(
@@ -377,15 +314,13 @@ export async function claimMemberAccount(
         p_membership_number:
           String(
             membershipNumber
-          )
-            .trim(),
+          ).trim(),
 
         p_email:
           String(
             email
-          )
-            .trim()
-            .toLowerCase()
+          ).trim()
+          .toLowerCase()
       }
     );
 
@@ -403,16 +338,14 @@ export async function claimMemberAccount(
 
 
 /* =====================================================
-   REFRESH MEMBER
+   REFRESH
 ===================================================== */
 
 export async function refreshMyMember() {
 
   clearAuthCache();
 
-  return await getMyMember(
-    true
-  );
+  return await getMyMember(true);
 }
 
 
@@ -423,7 +356,6 @@ export async function refreshMyMember() {
 export async function logout() {
 
   clearAuthCache();
-
 
   const {
     error
@@ -443,7 +375,7 @@ export async function logout() {
 
 
 /* =====================================================
-   AUTH STATE LISTENER
+   AUTH LISTENER
 ===================================================== */
 
 export function listenToAuthChanges(
@@ -457,7 +389,6 @@ export function listenToAuthChanges(
     ) => {
 
       clearAuthCache();
-
 
       if (callback) {
 
@@ -474,7 +405,42 @@ export function listenToAuthChanges(
 
 
 /* =====================================================
-   SUPABASE EXPORT
+   ROLE HELPERS
+===================================================== */
+
+export async function isAdmin() {
+  return await hasRole(["admin"]);
+}
+
+
+export async function isChairperson() {
+  return await hasRole([
+    "admin",
+    "chairperson"
+  ]);
+}
+
+
+export async function isTreasurer() {
+  return await hasRole([
+    "admin",
+    "chairperson",
+    "treasurer"
+  ]);
+}
+
+
+export async function isSecretary() {
+  return await hasRole([
+    "admin",
+    "chairperson",
+    "secretary"
+  ]);
+}
+
+
+/* =====================================================
+   SUPABASE
 ===================================================== */
 
 export {
