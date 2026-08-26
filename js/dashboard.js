@@ -1,212 +1,264 @@
 ```javascript
+import { supabase } from "./supabase.js";
 import {
-  supabase,
   requireAuth,
   getMyMember,
   getMyGroup,
-  getMyGroupId,
-  logout
+  getMyGroupId
 } from "./auth.js";
 
 
-/* =====================================================
-   ELEMENTS
-===================================================== */
+/* =========================================================
+   DOM HELPERS
+========================================================= */
 
-const $ = (id) =>
-  document.getElementById(id);
+const $ = (id) => document.getElementById(id);
 
 
-/* =====================================================
-   FORMAT MONEY
-===================================================== */
+function setText(id, value) {
+  const element = $(id);
 
-function money(value) {
-
-  const amount =
-    Number(value || 0);
-
-  return (
-    "KSh " +
-    amount.toLocaleString(
-      "en-KE",
-      {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2
-      }
-    )
-  );
-
+  if (element) {
+    element.textContent = value;
+  }
 }
 
 
-/* =====================================================
-   FORMAT DATE
-===================================================== */
+function showError(message) {
+  const error = $("error");
 
-function formatDate(value) {
-
-  if (!value) {
-    return "—";
+  if (error) {
+    error.hidden = false;
+    error.textContent = message;
   }
 
-  const date =
-    new Date(value);
+  const status = $("status");
 
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
+  if (status) {
+    status.textContent = "Dashboard could not be loaded.";
   }
-
-
-  return date.toLocaleDateString(
-    "en-GB",
-    {
-      day: "2-digit",
-      month: "short",
-      year: "numeric"
-    }
-  );
-
 }
 
 
-/* =====================================================
-   ESCAPE HTML
-===================================================== */
+function clearError() {
+  const error = $("error");
+
+  if (error) {
+    error.hidden = true;
+    error.textContent = "";
+  }
+}
+
+
+/* =========================================================
+   HTML ESCAPE
+========================================================= */
 
 function escapeHtml(value) {
-
   return String(value ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
-
 }
 
 
-/* =====================================================
+/* =========================================================
+   MONEY
+========================================================= */
+
+function money(value) {
+  const number = Number(value || 0);
+
+  return `KSh ${number.toLocaleString("en-KE", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  })}`;
+}
+
+
+/* =========================================================
+   DATE
+========================================================= */
+
+function formatDate(value) {
+  if (!value) {
+    return "—";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  return date.toLocaleDateString("en-KE", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
+  });
+}
+
+
+/* =========================================================
    CURRENT MONTH
-===================================================== */
+========================================================= */
 
-function currentMonth() {
+function getCurrentMonth() {
+  const now = new Date();
 
-  const now =
-    new Date();
-
-  return (
-    now.getFullYear() +
-    "-" +
-    String(
-      now.getMonth() + 1
-    ).padStart(2, "0")
-  );
-
+  return `${now.getFullYear()}-${String(
+    now.getMonth() + 1
+  ).padStart(2, "0")}`;
 }
 
 
-/* =====================================================
-   MONTH LABEL
-===================================================== */
+function getCurrentMonthLabel() {
+  return new Date().toLocaleDateString("en-KE", {
+    month: "long",
+    year: "numeric"
+  });
+}
 
-function monthLabel() {
 
-  return new Date()
-    .toLocaleDateString(
-      "en-KE",
-      {
-        month: "long",
-        year: "numeric"
-      }
+/* =========================================================
+   DATE/MONTH MATCHING
+========================================================= */
+
+function contributionBelongsToCurrentMonth(contribution) {
+  const currentMonth = getCurrentMonth();
+
+  /*
+   * Preferred column:
+   * contributions.month
+   *
+   * Expected format:
+   * YYYY-MM
+   */
+
+  if (contribution.month) {
+    const month = String(
+      contribution.month
+    ).slice(0, 7);
+
+    if (month === currentMonth) {
+      return true;
+    }
+  }
+
+
+  /*
+   * Fallback:
+   * contribution_date
+   */
+
+  if (contribution.contribution_date) {
+    const dateMonth = String(
+      contribution.contribution_date
+    ).slice(0, 7);
+
+    if (dateMonth === currentMonth) {
+      return true;
+    }
+  }
+
+
+  /*
+   * Final fallback:
+   * created_at
+   */
+
+  if (contribution.created_at) {
+    const createdMonth = String(
+      contribution.created_at
+    ).slice(0, 7);
+
+    if (createdMonth === currentMonth) {
+      return true;
+    }
+  }
+
+
+  return false;
+}
+
+
+/* =========================================================
+   LOAD GROUP
+========================================================= */
+
+async function loadGroup(groupId) {
+
+  /*
+   * First use the existing secure RPC.
+   */
+
+  try {
+
+    const group =
+      await getMyGroup(true);
+
+    if (group) {
+      return group;
+    }
+
+  } catch (error) {
+
+    console.warn(
+      "getMyGroup RPC failed:",
+      error
     );
 
-}
-
-
-/* =====================================================
-   SET TEXT
-===================================================== */
-
-function setText(
-  id,
-  value
-) {
-
-  const element =
-    $(id);
-
-  if (element) {
-    element.textContent =
-      value;
-  }
-
-}
-
-
-/* =====================================================
-   ERROR
-===================================================== */
-
-function showError(
-  message
-) {
-
-  const element =
-    $("dashboardError");
-
-
-  if (!element) {
-
-    console.error(
-      message
-    );
-
-    return;
-
   }
 
 
-  element.hidden =
-    false;
+  /*
+   * Fallback to direct group query.
+   */
 
-  element.textContent =
-    message;
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("groups")
+      .select(`
+        id,
+        name,
+        registration_number,
+        phone,
+        email,
+        monthly_contribution,
+        opening_balance,
+        created_at,
+        category,
+        description,
+        access_code,
+        country
+      `)
+      .eq(
+        "id",
+        groupId
+      )
+      .maybeSingle();
 
-}
 
-
-/* =====================================================
-   HIDE ERROR
-===================================================== */
-
-function clearError() {
-
-  const element =
-    $("dashboardError");
-
-
-  if (element) {
-
-    element.hidden =
-      true;
-
-    element.textContent =
-      "";
-
+  if (error) {
+    throw error;
   }
 
+
+  return data;
+
 }
 
 
-/* =====================================================
+/* =========================================================
    LOAD MEMBERS
-===================================================== */
+========================================================= */
 
-async function loadMembers(
-  groupId
-) {
+async function loadMembers(groupId) {
 
   const {
     data,
@@ -217,11 +269,19 @@ async function loadMembers(
       .select(`
         id,
         group_id,
+        user_id,
+        auth_user_id,
+        member_number,
+        membership_number,
         name,
+        phone,
+        email,
         role,
-        status,
         join_date,
-        email
+        status,
+        onboarding_status,
+        created_at,
+        activated_at
       `)
       .eq(
         "group_id",
@@ -245,13 +305,11 @@ async function loadMembers(
 }
 
 
-/* =====================================================
+/* =========================================================
    LOAD CONTRIBUTIONS
-===================================================== */
+========================================================= */
 
-async function loadContributions(
-  groupId
-) {
+async function loadContributions(groupId) {
 
   const {
     data,
@@ -268,8 +326,12 @@ async function loadContributions(
         month,
         payment_method,
         reference,
+        mpesa_reference,
+        recorded_by,
+        created_at,
+        goal_id,
         contribution_date,
-        created_at
+        notes
       `)
       .eq(
         "group_id",
@@ -299,13 +361,11 @@ async function loadContributions(
 }
 
 
-/* =====================================================
+/* =========================================================
    LOAD EXPENSES
-===================================================== */
+========================================================= */
 
-async function loadExpenses(
-  groupId
-) {
+async function loadExpenses(groupId) {
 
   const {
     data,
@@ -320,6 +380,8 @@ async function loadExpenses(
         category,
         amount,
         date,
+        recorded_by,
+        receipt_url,
         approval_status,
         created_at
       `)
@@ -351,13 +413,20 @@ async function loadExpenses(
 }
 
 
-/* =====================================================
+/* =========================================================
    LOAD MEETINGS
-===================================================== */
+========================================================= */
 
-async function loadMeetings(
-  groupId
-) {
+async function loadMeetings(groupId) {
+
+  const today =
+    new Date()
+      .toISOString()
+      .slice(
+        0,
+        10
+      );
+
 
   const {
     data,
@@ -371,6 +440,9 @@ async function loadMeetings(
         title,
         date,
         venue,
+        agenda,
+        minutes,
+        resolution,
         status,
         created_at
       `)
@@ -380,9 +452,7 @@ async function loadMeetings(
       )
       .gte(
         "date",
-        new Date()
-          .toISOString()
-          .slice(0, 10)
+        today
       )
       .order(
         "date",
@@ -403,131 +473,96 @@ async function loadMeetings(
 }
 
 
-/* =====================================================
-   MEMBER COUNT
-===================================================== */
+/* =========================================================
+   MEMBER METRICS
+========================================================= */
 
-function updateMemberCard(
-  members
-) {
+function updateMemberMetrics(members) {
 
-  const active =
+  /*
+   * The dashboard should count active members.
+   */
+
+  const activeMembers =
     members.filter(
       member =>
         String(
           member.status || ""
-        ).toLowerCase() ===
-        "active"
+        ).toLowerCase() === "active"
     );
 
 
   setText(
-    "memberCount",
-    active.length
+    "membersCount",
+    members.length
   );
 
 
   setText(
-    "memberActive",
-    `${active.length} active`
+    "activeMembers",
+    activeMembers.length
   );
 
 }
 
 
-/* =====================================================
-   CONTRIBUTION CALCULATIONS
-===================================================== */
+/* =========================================================
+   FINANCIAL CALCULATIONS
+========================================================= */
 
-function calculateContributionTotals(
+function calculateFinancials(
   members,
   contributions,
+  expenses,
   group
 ) {
 
   const monthlyContribution =
     Number(
-      group?.monthly_contribution ||
-      0
+      group?.monthly_contribution || 0
     );
 
 
-  const expected =
+  /*
+   * Active members × monthly contribution
+   */
+
+  const activeMembers =
     members.filter(
       member =>
         String(
           member.status || ""
-        ).toLowerCase() ===
-        "active"
-    ).length *
-    monthlyContribution;
-
-
-  const month =
-    currentMonth();
-
-
-  /*
-   * contributions.month may be stored as
-   * YYYY-MM, while contribution_date is a date.
-   *
-   * We support both.
-   */
-
-  const monthly =
-    contributions.filter(
-      contribution => {
-
-        if (
-          contribution.month ===
-          month
-        ) {
-
-          return true;
-
-        }
-
-
-        if (
-          contribution.contribution_date
-        ) {
-
-          return String(
-            contribution.contribution_date
-          ).slice(0, 7) ===
-            month;
-
-        }
-
-
-        if (
-          contribution.created_at
-        ) {
-
-          return String(
-            contribution.created_at
-          ).slice(0, 7) ===
-            month;
-
-        }
-
-
-        return false;
-
-      }
+        ).toLowerCase() === "active"
     );
 
 
-  const collected =
-    monthly.reduce(
+  const monthlyExpected =
+    activeMembers.length *
+    monthlyContribution;
+
+
+  /*
+   * Current month contributions.
+   */
+
+  const currentMonthContributions =
+    contributions.filter(
+      contribution =>
+        contributionBelongsToCurrentMonth(
+          contribution
+        )
+    );
+
+
+  const monthlyCollected =
+    currentMonthContributions.reduce(
       (
         total,
         contribution
       ) =>
         total +
         Number(
-          contribution.amount ||
-          0
+          contribution.amount || 0
         ),
       0
     );
@@ -535,81 +570,25 @@ function calculateContributionTotals(
 
   const outstanding =
     Math.max(
-      expected -
-      collected,
+      monthlyExpected -
+      monthlyCollected,
       0
     );
 
 
-  const rate =
-    expected > 0
+  const collectionRate =
+    monthlyExpected > 0
       ? (
-          collected /
-          expected
+          monthlyCollected /
+          monthlyExpected
         ) *
         100
       : 0;
 
 
-  return {
-    expected,
-    collected,
-    outstanding,
-    rate
-  };
-
-}
-
-
-/* =====================================================
-   EXPENSE TOTAL
-===================================================== */
-
-function calculateApprovedExpenses(
-  expenses
-) {
-
-  return expenses
-    .filter(
-      expense =>
-        String(
-          expense.approval_status ||
-          ""
-        ).toLowerCase() ===
-        "approved"
-    )
-    .reduce(
-      (
-        total,
-        expense
-      ) =>
-        total +
-        Number(
-          expense.amount ||
-          0
-        ),
-      0
-    );
-
-}
-
-
-/* =====================================================
-   CURRENT BALANCE
-===================================================== */
-
-function calculateBalance(
-  group,
-  contributions,
-  expenses
-) {
-
-  const openingBalance =
-    Number(
-      group?.opening_balance ||
-      0
-    );
-
+  /*
+   * Total contributions ever recorded.
+   */
 
   const totalContributions =
     contributions.reduce(
@@ -619,41 +598,85 @@ function calculateBalance(
       ) =>
         total +
         Number(
-          contribution.amount ||
-          0
+          contribution.amount || 0
         ),
       0
     );
 
 
+  /*
+   * Approved expenses only.
+   */
+
   const approvedExpenses =
-    calculateApprovedExpenses(
-      expenses
+    expenses
+      .filter(
+        expense =>
+          String(
+            expense.approval_status || ""
+          ).toLowerCase() ===
+          "approved"
+      )
+      .reduce(
+        (
+          total,
+          expense
+        ) =>
+          total +
+          Number(
+            expense.amount || 0
+          ),
+        0
+      );
+
+
+  /*
+   * Opening balance.
+   */
+
+  const openingBalance =
+    Number(
+      group?.opening_balance || 0
     );
 
 
-  return (
+  /*
+   * Current balance.
+   */
+
+  const currentBalance =
     openingBalance +
     totalContributions -
-    approvedExpenses
-  );
+    approvedExpenses;
+
+
+  return {
+    monthlyContribution,
+    monthlyExpected,
+    monthlyCollected,
+    outstanding,
+    collectionRate,
+    totalContributions,
+    approvedExpenses,
+    openingBalance,
+    currentBalance
+  };
 
 }
 
 
-/* =====================================================
+/* =========================================================
    UPDATE FINANCIAL CARDS
-===================================================== */
+========================================================= */
 
 function updateFinancialCards(
-  totals,
-  balance
+  financials
 ) {
 
   setText(
     "monthlyExpected",
     money(
-      totals.expected
+      financials.monthlyExpected
     )
   );
 
@@ -661,7 +684,7 @@ function updateFinancialCards(
   setText(
     "monthlyCollected",
     money(
-      totals.collected
+      financials.monthlyCollected
     )
   );
 
@@ -669,65 +692,74 @@ function updateFinancialCards(
   setText(
     "monthlyOutstanding",
     money(
-      totals.outstanding
+      financials.outstanding
     )
   );
 
 
   setText(
     "collectionRate",
-    `${totals.rate.toFixed(1)}%`
+    `${financials.collectionRate.toFixed(1)}%`
   );
 
 
   setText(
     "currentBalance",
-    money(balance)
+    money(
+      financials.currentBalance
+    )
+  );
+
+
+  /*
+   * Contribution progress.
+   */
+
+  setText(
+    "progressMonth",
+    getCurrentMonthLabel()
   );
 
 
   setText(
-    "progressAmount",
+    "progressText",
     `${money(
-      totals.collected
+      financials.monthlyCollected
     )} / ${money(
-      totals.expected
+      financials.monthlyExpected
     )}`
   );
 
 
   setText(
-    "progressPercent",
-    `${totals.rate.toFixed(1)}%`
+    "progressPercentage",
+    `${financials.collectionRate.toFixed(1)}%`
   );
 
 
-  const progress =
+  const progressBar =
     $("progressBar");
 
 
-  if (progress) {
+  if (progressBar) {
 
-    progress.style.width =
+    progressBar.style.width =
       `${Math.min(
-        totals.rate,
+        Math.max(
+          financials.collectionRate,
+          0
+        ),
         100
       )}%`;
 
   }
 
-
-  setText(
-    "currentMonth",
-    monthLabel()
-  );
-
 }
 
 
-/* =====================================================
-   MEMBER CONTRIBUTION STATUS
-===================================================== */
+/* =========================================================
+   MEMBER PAYMENT STATUS
+========================================================= */
 
 function renderMemberStatus(
   members,
@@ -735,86 +767,71 @@ function renderMemberStatus(
   group
 ) {
 
-  const container =
-    $("memberContributionBody");
+  const tbody =
+    $("memberStatusRows");
 
 
-  if (!container) {
+  if (!tbody) {
     return;
   }
 
 
   const monthlyContribution =
     Number(
-      group?.monthly_contribution ||
-      0
+      group?.monthly_contribution || 0
     );
 
 
-  const month =
-    currentMonth();
-
-
-  const monthly =
+  const currentMonthContributions =
     contributions.filter(
-      contribution => {
-
-        if (
-          contribution.month ===
-          month
-        ) {
-
-          return true;
-
-        }
-
-
-        if (
-          contribution.contribution_date
-        ) {
-
-          return String(
-            contribution.contribution_date
-          ).slice(0, 7) ===
-            month;
-
-        }
-
-
-        return false;
-
-      }
+      contribution =>
+        contributionBelongsToCurrentMonth(
+          contribution
+        )
     );
 
 
-  const paidByMember =
-    {};
+  /*
+   * Build a map:
+   *
+   * member ID -> amount paid
+   */
+
+  const paidMap =
+    new Map();
 
 
-  monthly.forEach(
-    contribution => {
+  for (
+    const contribution
+    of currentMonthContributions
+  ) {
 
-      const id =
-        contribution.member_id;
-
-
-      if (!id) {
-        return;
-      }
+    const memberId =
+      contribution.member_id;
 
 
-      paidByMember[id] =
-        (
-          paidByMember[id] ||
-          0
-        ) +
-        Number(
-          contribution.amount ||
-          0
-        );
-
+    if (!memberId) {
+      continue;
     }
-  );
+
+
+    const existing =
+      Number(
+        paidMap.get(
+          memberId
+        ) || 0
+      );
+
+
+    paidMap.set(
+      memberId,
+      existing +
+      Number(
+        contribution.amount || 0
+      )
+    );
+
+  }
 
 
   const activeMembers =
@@ -829,16 +846,12 @@ function renderMemberStatus(
 
   if (!activeMembers.length) {
 
-    container.innerHTML = `
+    tbody.innerHTML = `
 
       <tr>
 
-        <td
-          colspan="4"
-          class="muted"
-        >
+        <td colspan="5">
           No active members.
-
         </td>
 
       </tr>
@@ -850,17 +863,16 @@ function renderMemberStatus(
   }
 
 
-  container.innerHTML =
+  tbody.innerHTML =
     activeMembers
       .map(
         member => {
 
           const paid =
             Number(
-              paidByMember[
+              paidMap.get(
                 member.id
-              ] ||
-              0
+              ) || 0
             );
 
 
@@ -923,20 +935,20 @@ function renderMemberStatus(
 }
 
 
-/* =====================================================
+/* =========================================================
    RECENT CONTRIBUTIONS
-===================================================== */
+========================================================= */
 
 function renderRecentContributions(
   contributions,
   members
 ) {
 
-  const container =
-    $("recentContributionsBody");
+  const tbody =
+    $("recentContributionRows");
 
 
-  if (!container) {
+  if (!tbody) {
     return;
   }
 
@@ -953,25 +965,20 @@ function renderRecentContributions(
 
 
   const recent =
-    contributions
-      .slice(
-        0,
-        5
-      );
+    contributions.slice(
+      0,
+      5
+    );
 
 
   if (!recent.length) {
 
-    container.innerHTML = `
+    tbody.innerHTML = `
 
       <tr>
 
-        <td
-          colspan="3"
-          class="muted"
-        >
+        <td colspan="3">
           No contributions recorded.
-
         </td>
 
       </tr>
@@ -983,12 +990,12 @@ function renderRecentContributions(
   }
 
 
-  container.innerHTML =
+  tbody.innerHTML =
     recent
       .map(
         contribution => {
 
-          const name =
+          const memberName =
             memberMap.get(
               contribution.member_id
             ) ||
@@ -1006,7 +1013,7 @@ function renderRecentContributions(
 
               <td>
                 ${escapeHtml(
-                  name
+                  memberName
                 )}
               </td>
 
@@ -1035,43 +1042,38 @@ function renderRecentContributions(
 }
 
 
-/* =====================================================
+/* =========================================================
    RECENT EXPENSES
-===================================================== */
+========================================================= */
 
 function renderRecentExpenses(
   expenses
 ) {
 
-  const container =
-    $("recentExpensesBody");
+  const tbody =
+    $("recentExpenseRows");
 
 
-  if (!container) {
+  if (!tbody) {
     return;
   }
 
 
   const recent =
-    expenses
-      .slice(
-        0,
-        5
-      );
+    expenses.slice(
+      0,
+      5
+    );
 
 
   if (!recent.length) {
 
-    container.innerHTML = `
+    tbody.innerHTML = `
 
       <tr>
 
-        <td
-          colspan="3"
-          class="muted"
-        >
+        <td colspan="3">
           No expenses recorded.
-
         </td>
 
       </tr>
@@ -1083,7 +1085,7 @@ function renderRecentExpenses(
   }
 
 
-  container.innerHTML =
+  tbody.innerHTML =
     recent
       .map(
         expense => {
@@ -1124,35 +1126,31 @@ function renderRecentExpenses(
 }
 
 
-/* =====================================================
+/* =========================================================
    UPCOMING MEETINGS
-===================================================== */
+========================================================= */
 
-function renderMeetings(
+function renderUpcomingMeetings(
   meetings
 ) {
 
-  const container =
-    $("upcomingMeetingsBody");
+  const tbody =
+    $("upcomingMeetingRows");
 
 
-  if (!container) {
+  if (!tbody) {
     return;
   }
 
 
   if (!meetings.length) {
 
-    container.innerHTML = `
+    tbody.innerHTML = `
 
       <tr>
 
-        <td
-          colspan="4"
-          class="muted"
-        >
+        <td colspan="4">
           No upcoming meetings.
-
         </td>
 
       </tr>
@@ -1164,7 +1162,7 @@ function renderMeetings(
   }
 
 
-  container.innerHTML =
+  tbody.innerHTML =
     meetings
       .map(
         meeting => {
@@ -1212,30 +1210,9 @@ function renderMeetings(
 }
 
 
-/* =====================================================
-   UPDATE GROUP NAME
-===================================================== */
-
-function updateGroupHeader(
-  group
-) {
-
-  const name =
-    group?.name ||
-    "Your Group";
-
-
-  setText(
-    "groupName",
-    name
-  );
-
-}
-
-
-/* =====================================================
-   LOAD DASHBOARD
-===================================================== */
+/* =========================================================
+   MAIN DASHBOARD
+========================================================= */
 
 async function loadDashboard() {
 
@@ -1243,16 +1220,15 @@ async function loadDashboard() {
 
 
   setText(
-    "dashboardStatus",
+    "status",
     "Loading dashboard..."
   );
 
 
   try {
 
-
     /*
-     * Authentication
+     * 1. Authentication
      */
 
     const session =
@@ -1265,13 +1241,11 @@ async function loadDashboard() {
 
 
     /*
-     * Member
+     * 2. Current member
      */
 
     const member =
-      await getMyMember(
-        true
-      );
+      await getMyMember(true);
 
 
     if (!member) {
@@ -1284,7 +1258,7 @@ async function loadDashboard() {
 
 
     /*
-     * Group ID
+     * 3. Group ID
      */
 
     const groupId =
@@ -1302,12 +1276,12 @@ async function loadDashboard() {
 
 
     /*
-     * Group
+     * 4. Load group
      */
 
     const group =
-      await getMyGroup(
-        true
+      await loadGroup(
+        groupId
       );
 
 
@@ -1321,7 +1295,7 @@ async function loadDashboard() {
 
 
     /*
-     * Load data in parallel.
+     * 5. Load all dashboard data.
      */
 
     const [
@@ -1352,59 +1326,38 @@ async function loadDashboard() {
 
 
     /*
-     * Header
+     * 6. Member card
      */
 
-    updateGroupHeader(
-      group
-    );
-
-
-    /*
-     * Members
-     */
-
-    updateMemberCard(
+    updateMemberMetrics(
       members
     );
 
 
     /*
-     * Monthly totals
+     * 7. Financial calculations
      */
 
-    const totals =
-      calculateContributionTotals(
+    const financials =
+      calculateFinancials(
         members,
         contributions,
+        expenses,
         group
       );
 
 
     /*
-     * Balance
-     */
-
-    const balance =
-      calculateBalance(
-        group,
-        contributions,
-        expenses
-      );
-
-
-    /*
-     * Cards
+     * 8. Financial cards
      */
 
     updateFinancialCards(
-      totals,
-      balance
+      financials
     );
 
 
     /*
-     * Tables
+     * 9. Tables
      */
 
     renderMemberStatus(
@@ -1425,29 +1378,27 @@ async function loadDashboard() {
     );
 
 
-    renderMeetings(
+    renderUpcomingMeetings(
       meetings
     );
 
 
     /*
-     * Last updated
+     * 10. Success status
      */
 
     setText(
-      "dashboardStatus",
-      `Dashboard updated • ${
-        new Date().toLocaleString(
-          "en-KE"
-        )
-      }`
+      "status",
+      `Dashboard updated • ${new Date().toLocaleString(
+        "en-KE"
+      )}`
     );
 
 
   } catch (error) {
 
     console.error(
-      "DASHBOARD ERROR:",
+      "CHAMA LIVE DASHBOARD ERROR:",
       error
     );
 
@@ -1457,53 +1408,14 @@ async function loadDashboard() {
       "Unable to load dashboard."
     );
 
-
-    setText(
-      "dashboardStatus",
-      "Dashboard could not be loaded."
-    );
-
   }
 
 }
 
 
-/* =====================================================
-   LOGOUT
-===================================================== */
-
-const logoutButton =
-  $("logout");
-
-
-if (logoutButton) {
-
-  logoutButton.addEventListener(
-    "click",
-    async () => {
-
-      try {
-
-        await logout();
-
-      } catch (error) {
-
-        console.error(
-          "Logout:",
-          error
-        );
-
-      }
-
-    }
-  );
-
-}
-
-
-/* =====================================================
+/* =========================================================
    START
-===================================================== */
+========================================================= */
 
 loadDashboard();
 ```
