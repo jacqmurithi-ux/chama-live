@@ -1,16 +1,28 @@
+```html
 <!doctype html>
 <html lang="en">
 
 <head>
+
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
 
   <title>Login — CHAMA LIVE</title>
 
-  <link rel="stylesheet" href="css/app.css">
+  <link
+    rel="stylesheet"
+    href="css/app.css"
+  >
+
 </head>
 
+
 <body>
+
 
 <main
   style="
@@ -22,6 +34,7 @@
   "
 >
 
+
   <section
     class="card"
     style="
@@ -30,7 +43,13 @@
     "
   >
 
-    <div style="text-align:center;margin-bottom:25px;">
+
+    <div
+      style="
+        text-align:center;
+        margin-bottom:25px;
+      "
+    >
 
       <h1>
         CHAMA <span>LIVE</span>
@@ -43,6 +62,8 @@
     </div>
 
 
+    <!-- ERROR -->
+
     <div
       id="error"
       class="error"
@@ -51,7 +72,13 @@
     ></div>
 
 
-    <form id="loginForm">
+    <!-- LOGIN FORM -->
+
+    <form
+      id="loginForm"
+      autocomplete="on"
+    >
+
 
       <div style="margin-bottom:15px;">
 
@@ -63,7 +90,7 @@
           type="email"
           id="email"
           name="email"
-          autocomplete="email"
+          autocomplete="username"
           required
           style="width:100%;"
         >
@@ -98,8 +125,11 @@
         Sign in
       </button>
 
+
     </form>
 
+
+    <!-- STATUS -->
 
     <div
       id="status"
@@ -111,7 +141,9 @@
     ></div>
 
 
-    <hr style="margin:25px 0;">
+    <hr
+      style="margin:25px 0;"
+    >
 
 
     <p
@@ -133,9 +165,12 @@
       Create Group Account
     </a>
 
+
   </section>
 
+
 </main>
+
 
 
 <script type="module">
@@ -144,6 +179,7 @@
     supabase
   } from "./js/supabase.js";
 
+
   import {
     getMyMember,
     getMyGroup,
@@ -151,26 +187,69 @@
   } from "./js/auth.js";
 
 
+
+  /* =====================================================
+     ELEMENTS
+  ===================================================== */
+
   const form =
     document.getElementById(
       "loginForm"
     );
+
+
+  const emailInput =
+    document.getElementById(
+      "email"
+    );
+
+
+  const passwordInput =
+    document.getElementById(
+      "password"
+    );
+
 
   const button =
     document.getElementById(
       "loginButton"
     );
 
+
   const errorElement =
     document.getElementById(
       "error"
     );
+
 
   const statusElement =
     document.getElementById(
       "status"
     );
 
+
+
+  /* =====================================================
+     REMOVE PASSWORD / EMAIL FROM URL
+  ===================================================== */
+
+  if (
+    window.location.search
+  ) {
+
+    window.history.replaceState(
+      {},
+      document.title,
+      window.location.pathname
+    );
+
+  }
+
+
+
+  /* =====================================================
+     ERROR
+  ===================================================== */
 
   function showError(
     message
@@ -185,6 +264,7 @@
   }
 
 
+
   function clearError() {
 
     errorElement.hidden =
@@ -196,27 +276,126 @@
   }
 
 
+
+  /* =====================================================
+     CHECK EXISTING SESSION
+  ===================================================== */
+
+  async function checkExistingSession() {
+
+    try {
+
+      const {
+        data
+      } =
+        await supabase.auth.getSession();
+
+
+      if (
+        !data?.session
+      ) {
+
+        return;
+
+      }
+
+
+      /*
+       * We already have a session.
+       * Check whether it is linked
+       * to a member account.
+       */
+
+      clearAuthCache();
+
+
+      const member =
+        await getMyMember();
+
+
+      if (!member) {
+
+        return;
+
+      }
+
+
+      if (
+        member.status &&
+        member.status !== "active"
+      ) {
+
+        return;
+
+      }
+
+
+      window.location.replace(
+        "dashboard.html"
+      );
+
+
+    } catch (error) {
+
+      console.error(
+        "Existing session check:",
+        error
+      );
+
+    }
+
+  }
+
+
+
+  checkExistingSession();
+
+
+
+  /* =====================================================
+     LOGIN
+  ===================================================== */
+
   form.addEventListener(
     "submit",
     async event => {
 
       event.preventDefault();
 
+
       clearError();
 
 
       const email =
-        document
-          .getElementById("email")
-          .value
+        emailInput.value
           .trim()
           .toLowerCase();
 
 
       const password =
-        document
-          .getElementById("password")
-          .value;
+        passwordInput.value;
+
+
+      if (!email) {
+
+        showError(
+          "Please enter your email address."
+        );
+
+        return;
+
+      }
+
+
+      if (!password) {
+
+        showError(
+          "Please enter your password."
+        );
+
+        return;
+
+      }
 
 
       button.disabled =
@@ -232,26 +411,36 @@
 
       try {
 
-        /*
-         * Sign in with Supabase Auth.
-         */
+        /* ---------------------------------------------
+           SIGN IN
+        --------------------------------------------- */
 
         const {
           data,
           error
         } =
-          await supabase.auth.signInWithPassword({
-            email,
-            password
-          });
+          await supabase.auth
+            .signInWithPassword({
+
+              email:
+                email,
+
+              password:
+                password
+
+            });
 
 
         if (error) {
+
           throw error;
+
         }
 
 
-        if (!data?.session) {
+        if (
+          !data?.session
+        ) {
 
           throw new Error(
             "Login succeeded but no session was created."
@@ -260,9 +449,9 @@
         }
 
 
-        /*
-         * Clear cached auth information.
-         */
+        /* ---------------------------------------------
+           CLEAR OLD CACHE
+        --------------------------------------------- */
 
         clearAuthCache();
 
@@ -271,12 +460,14 @@
           "Checking your group account...";
 
 
-        /*
-         * Find the member record.
-         */
+        /* ---------------------------------------------
+           GET MEMBER
+        --------------------------------------------- */
 
         const member =
-          await getMyMember();
+          await getMyMember(
+            true
+          );
 
 
         if (!member) {
@@ -284,15 +475,37 @@
           await supabase.auth.signOut();
 
           throw new Error(
-            "Your login is not linked to a group member record. Please contact your group administrator."
+            "This login is not linked to a group member account. Please contact your group administrator."
           );
 
         }
 
 
-        /*
-         * Check group.
-         */
+        /* ---------------------------------------------
+           MEMBER STATUS
+        --------------------------------------------- */
+
+        if (
+          member.status &&
+          member.status !== "active"
+        ) {
+
+          await supabase.auth.signOut();
+
+          throw new Error(
+            "Your membership is currently inactive. Please contact your group administrator."
+          );
+
+        }
+
+
+        /* ---------------------------------------------
+           GET GROUP
+        --------------------------------------------- */
+
+        statusElement.textContent =
+          "Loading your group...";
+
 
         const group =
           await getMyGroup();
@@ -303,53 +516,68 @@
           await supabase.auth.signOut();
 
           throw new Error(
-            "Your member account is not linked to a valid group."
+            "Your account is not linked to a valid group."
           );
 
         }
 
 
-        /*
-         * Check member status.
-         */
-
-        if (
-          member.status &&
-          member.status !== "active"
-        ) {
-
-          await supabase.auth.signOut();
-
-          throw new Error(
-            "Your group membership is currently inactive. Please contact your administrator."
-          );
-
-        }
-
-
-        /*
-         * Successful login.
-         */
+        /* ---------------------------------------------
+           SUCCESS
+        --------------------------------------------- */
 
         statusElement.textContent =
-          `Welcome ${member.name}. Redirecting...`;
+          `Welcome ${member.name || "Member"}. Redirecting...`;
 
 
-        window.location.href =
-          "dashboard.html";
+        window.location.replace(
+          "dashboard.html"
+        );
 
 
       } catch (error) {
 
         console.error(
-          "Login error:",
+          "LOGIN ERROR:",
           error
         );
 
 
-        showError(
+        let message =
           error?.message ||
-          "Unable to sign in."
+          "Unable to sign in.";
+
+
+        const lower =
+          message.toLowerCase();
+
+
+        if (
+          lower.includes(
+            "invalid login credentials"
+          )
+        ) {
+
+          message =
+            "Incorrect email or password.";
+
+        }
+
+
+        if (
+          lower.includes(
+            "email not confirmed"
+          )
+        ) {
+
+          message =
+            "Please confirm your email address before signing in.";
+
+        }
+
+
+        showError(
+          message
         );
 
 
@@ -358,6 +586,7 @@
 
         button.textContent =
           "Sign in";
+
 
         statusElement.textContent =
           "";
@@ -369,5 +598,8 @@
 
 </script>
 
+
 </body>
+
 </html>
+```
