@@ -64,25 +64,25 @@ let monthlyContribution = 0;
 
 
 /* =======================================================
-   VALID PAYMENT METHODS
+   DATABASE PAYMENT METHODS
 ======================================================= */
 
 /*
- * These values MUST match the Supabase database
- * constraint exactly.
+ * These values MUST match the PostgreSQL
+ * contributions_payment_method_check constraint.
  *
- * contributions_payment_method_check:
+ * Current database constraint:
  *
  * M-Pesa
  * Cash
  * Bank transfer
  */
 
-const PAYMENT_METHODS = [
-  "M-Pesa",
-  "Cash",
-  "Bank transfer"
-];
+const PAYMENT_METHODS = {
+  MPESA: "M-Pesa",
+  CASH: "Cash",
+  BANK: "Bank transfer"
+};
 
 
 /* =======================================================
@@ -108,8 +108,7 @@ function money(value) {
 
 function todayString() {
 
-  const now =
-    new Date();
+  const now = new Date();
 
   return [
     now.getFullYear(),
@@ -129,8 +128,7 @@ function todayString() {
 
 function getCurrentMonth() {
 
-  const now =
-    new Date();
+  const now = new Date();
 
   return `${now.getFullYear()}-${String(
     now.getMonth() + 1
@@ -141,9 +139,13 @@ function getCurrentMonth() {
 
 function getContributionMonth(item) {
 
-  if (
-    item.contribution_date
-  ) {
+  /*
+   * contribution_date is primary.
+   * month is fallback.
+   * created_at is final fallback.
+   */
+
+  if (item.contribution_date) {
 
     return String(
       item.contribution_date
@@ -178,9 +180,7 @@ function getContributionMonth(item) {
 function formatDate(value) {
 
   if (!value) {
-
     return "—";
-
   }
 
 
@@ -213,30 +213,23 @@ function formatDate(value) {
 
 function escapeHtml(value) {
 
-  return String(
-    value ?? ""
-  )
-
+  return String(value ?? "")
     .replaceAll(
       "&",
       "&amp;"
     )
-
     .replaceAll(
       "<",
       "&lt;"
     )
-
     .replaceAll(
       ">",
       "&gt;"
     )
-
     .replaceAll(
       '"',
       "&quot;"
     )
-
     .replaceAll(
       "'",
       "&#039;"
@@ -246,7 +239,7 @@ function escapeHtml(value) {
 
 
 /* =======================================================
-   STATUS / ERRORS
+   ERROR
 ======================================================= */
 
 function showError(error) {
@@ -257,38 +250,13 @@ function showError(error) {
   );
 
 
-  let message =
-    error?.message ||
-    "Something went wrong.";
-
-
-  /*
-   * Give the user a clearer message if the database
-   * rejects a payment method.
-   */
-
-  if (
-    error?.code === "23514" &&
-    String(
-      error?.message || ""
-    ).includes(
-      "contributions_payment_method_check"
-    )
-  ) {
-
-    message =
-      "Invalid payment method. Please select M-Pesa, Cash, or Bank transfer.";
-
-  }
-
-
   if (errorEl) {
 
     errorEl.textContent =
-      message;
+      error?.message ||
+      "Something went wrong.";
 
-    errorEl.hidden =
-      false;
+    errorEl.hidden = false;
 
   }
 
@@ -306,17 +274,13 @@ function showError(error) {
 function clearError() {
 
   if (!errorEl) {
-
     return;
-
   }
 
 
-  errorEl.hidden =
-    true;
+  errorEl.hidden = true;
 
-  errorEl.textContent =
-    "";
+  errorEl.textContent = "";
 
 }
 
@@ -368,18 +332,14 @@ async function loadGroup() {
     error
   } =
     await supabase
-
       .from("groups")
-
       .select(
         "monthly_contribution"
       )
-
       .eq(
         "id",
         groupId
       )
-
       .single();
 
 
@@ -430,20 +390,16 @@ async function loadMembers() {
     error
   } =
     await supabase
-
       .from("members")
-
       .select(`
         id,
         name,
         status
       `)
-
       .eq(
         "group_id",
         groupId
       )
-
       .order(
         "name",
         {
@@ -459,11 +415,6 @@ async function loadMembers() {
   }
 
 
-  /*
-   * Only active members can receive new
-   * contribution records.
-   */
-
   members =
     (data || [])
       .filter(
@@ -477,9 +428,7 @@ async function loadMembers() {
 
 
   if (!memberSelect) {
-
     return;
-
   }
 
 
@@ -528,9 +477,7 @@ async function loadContributions() {
     error
   } =
     await supabase
-
       .from("contributions")
-
       .select(`
         id,
         group_id,
@@ -547,19 +494,16 @@ async function loadContributions() {
         notes,
         mpesa_reference
       `)
-
       .eq(
         "group_id",
         groupId
       )
-
       .order(
         "contribution_date",
         {
           ascending: false
         }
       )
-
       .order(
         "created_at",
         {
@@ -612,9 +556,7 @@ function getMemberName(
 function renderLedger() {
 
   if (!contributionRows) {
-
     return;
-
   }
 
 
@@ -635,12 +577,7 @@ function renderLedger() {
 
   contributionRows.innerHTML =
     contributions
-
-      .slice(
-        0,
-        100
-      )
-
+      .slice(0, 100)
       .map(
         item => {
 
@@ -710,7 +647,6 @@ function renderLedger() {
 
         }
       )
-
       .join("");
 
 }
@@ -723,9 +659,7 @@ function renderLedger() {
 function renderMemberStatus() {
 
   if (!memberStatusRows) {
-
     return;
-
   }
 
 
@@ -750,18 +684,16 @@ function renderMemberStatus() {
 
   memberStatusRows.innerHTML =
     members
-
       .map(
         member => {
 
           /*
-           * Only MONTHLY contributions count toward
-           * monthly contribution status.
+           * Only monthly contributions
+           * count toward monthly status.
            */
 
           const paid =
             contributions
-
               .filter(
                 item => {
 
@@ -805,7 +737,6 @@ function renderMemberStatus() {
 
                 }
               )
-
               .reduce(
                 (
                   total,
@@ -902,7 +833,6 @@ function renderMemberStatus() {
 
         }
       )
-
       .join("");
 
 }
@@ -931,13 +861,13 @@ function updatePaymentMethod() {
 
   /*
    * IMPORTANT:
-   *
-   * The database uses "M-Pesa",
+   * Supabase stores "M-Pesa",
    * not "mpesa".
    */
 
   const isMpesa =
-    method === "M-Pesa";
+    method ===
+    PAYMENT_METHODS.MPESA;
 
 
   mpesaReferenceWrap.style.display =
@@ -952,25 +882,9 @@ function updatePaymentMethod() {
 
   if (!isMpesa) {
 
-    mpesaReference.value =
-      "";
+    mpesaReference.value = "";
 
   }
-
-}
-
-
-/* =======================================================
-   VALIDATE PAYMENT METHOD
-======================================================= */
-
-function validatePaymentMethod(
-  paymentMethod
-) {
-
-  return PAYMENT_METHODS.includes(
-    paymentMethod
-  );
 
 }
 
@@ -1006,14 +920,6 @@ async function recordContribution(
     typeSelect?.value;
 
 
-  /*
-   * This now returns:
-   *
-   * M-Pesa
-   * Cash
-   * Bank transfer
-   */
-
   const paymentMethod =
     methodSelect?.value;
 
@@ -1024,7 +930,7 @@ async function recordContribution(
 
 
   /* -----------------------------------------------------
-     BASIC VALIDATION
+     VALIDATION
   ----------------------------------------------------- */
 
   if (!memberId) {
@@ -1082,9 +988,7 @@ async function recordContribution(
   }
 
 
-  if (
-    !paymentMethod
-  ) {
+  if (!paymentMethod) {
 
     showError(
       new Error(
@@ -1097,19 +1001,27 @@ async function recordContribution(
   }
 
 
-  /* -----------------------------------------------------
-     PAYMENT METHOD VALIDATION
-  ----------------------------------------------------- */
+  /*
+   * Ensure frontend can NEVER send
+   * an invalid payment method.
+   */
+
+  const validPaymentMethods = [
+    PAYMENT_METHODS.MPESA,
+    PAYMENT_METHODS.CASH,
+    PAYMENT_METHODS.BANK
+  ];
+
 
   if (
-    !validatePaymentMethod(
+    !validPaymentMethods.includes(
       paymentMethod
     )
   ) {
 
     showError(
       new Error(
-        "Invalid payment method. Please select M-Pesa, Cash, or Bank transfer."
+        "Invalid payment method selected."
       )
     );
 
@@ -1118,12 +1030,9 @@ async function recordContribution(
   }
 
 
-  /* -----------------------------------------------------
-     MPESA REFERENCE
-  ----------------------------------------------------- */
-
   if (
-    paymentMethod === "M-Pesa" &&
+    paymentMethod ===
+      PAYMENT_METHODS.MPESA &&
     !reference
   ) {
 
@@ -1138,6 +1047,10 @@ async function recordContribution(
   }
 
 
+  /* -----------------------------------------------------
+     MONTH
+  ----------------------------------------------------- */
+
   const month =
     contributionDate.slice(
       0,
@@ -1146,7 +1059,7 @@ async function recordContribution(
 
 
   /* -----------------------------------------------------
-     DUPLICATE MONTHLY PAYMENT CHECK
+     DUPLICATE MONTHLY PAYMENT WARNING
   ----------------------------------------------------- */
 
   if (
@@ -1165,17 +1078,13 @@ async function recordContribution(
           ) ===
           String(
             memberId
-          )
-
-          &&
+          ) &&
 
           String(
             item.contribution_type ||
             ""
           ).toLowerCase() ===
-          "monthly"
-
-          &&
+          "monthly" &&
 
           getContributionMonth(
             item
@@ -1194,9 +1103,7 @@ async function recordContribution(
 
 
       if (!proceed) {
-
         return;
-
       }
 
     }
@@ -1205,7 +1112,7 @@ async function recordContribution(
 
 
   /* -----------------------------------------------------
-     DISABLE BUTTON
+     BUTTON STATE
   ----------------------------------------------------- */
 
   if (saveButton) {
@@ -1227,13 +1134,16 @@ async function recordContribution(
   }
 
 
+  /* -----------------------------------------------------
+     INSERT
+  ----------------------------------------------------- */
+
   try {
 
     /*
      * IMPORTANT:
-     *
-     * payment_method is now sent exactly as
-     * required by Supabase.
+     * payment_method is sent using the
+     * exact value required by PostgreSQL.
      */
 
     const contributionData = {
@@ -1260,7 +1170,8 @@ async function recordContribution(
         contributionDate,
 
       mpesa_reference:
-        paymentMethod === "M-Pesa"
+        paymentMethod ===
+        PAYMENT_METHODS.MPESA
           ? reference
           : null,
 
@@ -1277,21 +1188,13 @@ async function recordContribution(
 
 
     const {
-      data,
       error
     } =
       await supabase
-
-        .from(
-          "contributions"
-        )
-
+        .from("contributions")
         .insert(
           contributionData
-        )
-
-        .select()
-        .single();
+        );
 
 
     if (error) {
@@ -1301,18 +1204,11 @@ async function recordContribution(
     }
 
 
-    console.log(
-      "CHAMA LIVE: Contribution saved:",
-      data
-    );
-
-
     /* ---------------------------------------------------
        REFRESH DATA
     --------------------------------------------------- */
 
     await loadContributions();
-
 
     renderLedger();
 
@@ -1345,7 +1241,7 @@ async function recordContribution(
     if (methodSelect) {
 
       methodSelect.value =
-        "M-Pesa";
+        PAYMENT_METHODS.MPESA;
 
     }
 
@@ -1364,6 +1260,10 @@ async function recordContribution(
     }
 
 
+    /* ---------------------------------------------------
+       SUCCESS
+    --------------------------------------------------- */
+
     if (statusEl) {
 
       statusEl.textContent =
@@ -1372,13 +1272,17 @@ async function recordContribution(
     }
 
 
-  } catch (error) {
+  }
+
+  catch (error) {
 
     showError(
       error
     );
 
-  } finally {
+  }
+
+  finally {
 
     if (saveButton) {
 
@@ -1414,9 +1318,9 @@ async function init() {
     }
 
 
-    /* ---------------------------------------------------
-       GET CURRENT GROUP
-    --------------------------------------------------- */
+    /* -----------------------------------------------
+       GET GROUP
+    ----------------------------------------------- */
 
     groupId =
       await getGroupId();
@@ -1428,9 +1332,9 @@ async function init() {
     );
 
 
-    /* ---------------------------------------------------
+    /* -----------------------------------------------
        LOAD DATA
-    --------------------------------------------------- */
+    ----------------------------------------------- */
 
     await Promise.all([
 
@@ -1443,9 +1347,9 @@ async function init() {
     ]);
 
 
-    /* ---------------------------------------------------
+    /* -----------------------------------------------
        DEFAULT DATE
-    --------------------------------------------------- */
+    ----------------------------------------------- */
 
     if (dateInput) {
 
@@ -1455,9 +1359,9 @@ async function init() {
     }
 
 
-    /* ---------------------------------------------------
+    /* -----------------------------------------------
        DEFAULT TYPE
-    --------------------------------------------------- */
+    ----------------------------------------------- */
 
     if (typeSelect) {
 
@@ -1467,18 +1371,14 @@ async function init() {
     }
 
 
-    /* ---------------------------------------------------
+    /* -----------------------------------------------
        DEFAULT PAYMENT METHOD
-    --------------------------------------------------- */
+    ----------------------------------------------- */
 
     if (methodSelect) {
 
-      /*
-       * EXACT database value.
-       */
-
       methodSelect.value =
-        "M-Pesa";
+        PAYMENT_METHODS.MPESA;
 
     }
 
@@ -1486,24 +1386,9 @@ async function init() {
     updatePaymentMethod();
 
 
-    /* ---------------------------------------------------
-       DEFAULT AMOUNT
-    --------------------------------------------------- */
-
-    if (
-      amountInput &&
-      monthlyContribution > 0
-    ) {
-
-      amountInput.value =
-        monthlyContribution;
-
-    }
-
-
-    /* ---------------------------------------------------
+    /* -----------------------------------------------
        RENDER
-    --------------------------------------------------- */
+    ----------------------------------------------- */
 
     renderLedger();
 
@@ -1522,8 +1407,9 @@ async function init() {
       "CHAMA LIVE: Contributions ready."
     );
 
+  }
 
-  } catch (error) {
+  catch (error) {
 
     showError(
       error
