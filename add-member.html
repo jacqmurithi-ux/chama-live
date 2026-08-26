@@ -1,21 +1,34 @@
 <!doctype html>
 <html lang="en">
+
 <head>
+
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>Add Member — CHAMA LIVE</title>
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
 
-  <link rel="stylesheet" href="css/app.css">
+  <title>Members — CHAMA LIVE</title>
+
+  <link
+    rel="stylesheet"
+    href="css/app.css"
+  >
+
 </head>
 
+
 <body>
+
 
 <header class="topbar">
 
   <div class="brand">
     CHAMA <span>LIVE</span>
   </div>
+
 
   <button
     class="btn btn-secondary"
@@ -28,52 +41,114 @@
 </header>
 
 
+
 <div class="layout">
+
+
+  <!-- =====================================================
+       SIDEBAR
+  ====================================================== -->
 
   <aside class="sidebar">
 
     <nav class="nav">
 
-      <a href="dashboard.html">Dashboard</a>
-      <a href="members.html" class="active">Members</a>
-      <a href="contributions.html">Contributions</a>
-      <a href="expenses.html">Expenses</a>
-      <a href="meetings.html">Meetings</a>
-      <a href="reports.html">Reports</a>
-      <a href="monthly-closing.html">Monthly Closing</a>
-      <a href="group-management.html">Group Management</a>
+      <a href="dashboard.html">
+        Dashboard
+      </a>
+
+      <a
+        href="members.html"
+        class="active"
+      >
+        Members
+      </a>
+
+      <a href="contributions.html">
+        Contributions
+      </a>
+
+      <a href="expenses.html">
+        Expenses
+      </a>
+
+      <a href="meetings.html">
+        Meetings
+      </a>
+
+      <a href="reports.html">
+        Reports
+      </a>
+
+      <a href="monthly-closing.html">
+        Monthly Closing
+      </a>
+
+      <a href="group-management.html">
+        Group Management
+      </a>
 
     </nav>
 
   </aside>
 
 
+
+  <!-- =====================================================
+       MAIN
+  ====================================================== -->
+
   <main class="main">
+
+
+    <!-- ===================================================
+         PAGE HEADER
+    ==================================================== -->
 
     <div class="page-head">
 
       <div>
 
-        <h1>Add Member</h1>
+        <h1>
+          Members
+        </h1>
 
         <p class="muted">
-          Add a member to your group and assign
-          their system role.
+          Manage members of your group.
         </p>
 
       </div>
 
+
+      <button
+        class="btn btn-primary"
+        id="addMemberButton"
+        type="button"
+      >
+        + Add Member
+      </button>
+
     </div>
 
+
+
+    <!-- ===================================================
+         STATUS
+    ==================================================== -->
 
     <div
       id="status"
       class="card"
       style="margin-bottom:20px;"
     >
-      Checking your permissions...
+      Loading members...
     </div>
 
+
+
+    <!-- ===================================================
+         ERROR
+    ==================================================== -->
 
     <div
       id="error"
@@ -83,44 +158,105 @@
     ></div>
 
 
-    <section
-      id="memberFormCard"
-      class="card"
-      hidden
+
+    <!-- ===================================================
+         SEARCH
+    ==================================================== -->
+
+    <div
+      style="
+        margin:20px 0;
+      "
     >
 
-      <h2>Member Details</h2>
+      <input
+        type="search"
+        id="memberSearch"
+        placeholder="Search by name, member number, phone or email..."
+        aria-label="Search members"
+        style="
+          width:100%;
+          box-sizing:border-box;
+        "
+      >
 
-      <p class="muted">
-        The member will be created as
-        <strong>Pending Activation</strong>.
-        They can activate their login later.
-      </p>
+    </div>
 
 
-      <form id="memberForm">
+
+    <!-- ===================================================
+         ADD / EDIT MEMBER
+    ==================================================== -->
+
+    <section
+      id="addMemberPanel"
+      class="card"
+      hidden
+      style="margin-bottom:20px;"
+    >
+
+
+      <div
+        style="
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          gap:15px;
+          margin-bottom:20px;
+        "
+      >
+
+        <div>
+
+          <h2 id="memberFormTitle">
+            Add Member
+          </h2>
+
+          <p
+            class="muted"
+            id="memberFormDescription"
+          >
+            Register a new member in your group.
+          </p>
+
+        </div>
+
+
+        <button
+          type="button"
+          class="btn btn-secondary"
+          id="closeAddMember"
+        >
+          Close
+        </button>
+
+      </div>
+
+
+
+      <!-- FORM MESSAGE -->
+
+      <div
+        id="formMessage"
+        style="
+          display:none;
+          padding:12px;
+          border-radius:8px;
+          margin-bottom:15px;
+        "
+      ></div>
+
+
+
+      <!-- FORM -->
+
+      <form id="addMemberForm">
 
 
         <div class="grid grid-2">
 
 
-          <div>
-
-            <label for="name">
-              Full Name
-            </label>
-
-            <input
-              id="name"
-              name="name"
-              type="text"
-              required
-              autocomplete="name"
-              placeholder="Full member name"
-            >
-
-          </div>
-
+          <!-- MEMBER NUMBER -->
 
           <div>
 
@@ -132,95 +268,96 @@
               id="memberNumber"
               name="memberNumber"
               type="text"
-              required
               placeholder="e.g. 1506"
+              required
             >
 
           </div>
 
 
+
+          <!-- FULL NAME -->
+
           <div>
 
-            <label for="membershipNumber">
-              Membership Number
+            <label for="memberName">
+              Full Name
             </label>
 
             <input
-              id="membershipNumber"
-              name="membershipNumber"
+              id="memberName"
+              name="memberName"
               type="text"
+              placeholder="Member full name"
               required
-              placeholder="e.g. M-1506"
             >
 
           </div>
 
 
+
+          <!-- PHONE -->
+
           <div>
 
-            <label for="phone">
+            <label for="memberPhone">
               Phone Number
             </label>
 
             <input
-              id="phone"
-              name="phone"
+              id="memberPhone"
+              name="memberPhone"
               type="tel"
+              placeholder="0712345678"
               required
-              autocomplete="tel"
-              placeholder="07XXXXXXXX"
             >
 
           </div>
 
 
+
+          <!-- EMAIL -->
+
           <div>
 
-            <label for="email">
+            <label for="memberEmail">
               Email
             </label>
 
             <input
-              id="email"
-              name="email"
+              id="memberEmail"
+              name="memberEmail"
               type="email"
-              autocomplete="email"
               placeholder="member@example.com"
             >
 
           </div>
 
 
-          <div>
 
-            <label for="joinDate">
-              Join Date
-            </label>
-
-            <input
-              id="joinDate"
-              name="joinDate"
-              type="date"
-              required
-            >
-
-          </div>
-
+          <!-- ROLE -->
 
           <div>
 
-            <label for="role">
-              System Role
+            <label for="memberRole">
+              Role
             </label>
 
             <select
-              id="role"
-              name="role"
-              required
+              id="memberRole"
+              name="memberRole"
             >
 
               <option value="member">
                 Member
+              </option>
+
+              <option value="admin">
+                Admin
+              </option>
+
+              <option value="chairperson">
+                Chairperson
               </option>
 
               <option value="secretary">
@@ -231,43 +368,69 @@
                 Treasurer
               </option>
 
-              <option value="chairperson">
-                Chairperson
+            </select>
+
+          </div>
+
+
+
+          <!-- STATUS -->
+
+          <div>
+
+            <label for="memberStatus">
+              Status
+            </label>
+
+            <select
+              id="memberStatus"
+              name="memberStatus"
+            >
+
+              <option value="active">
+                Active
+              </option>
+
+              <option value="inactive">
+                Inactive
               </option>
 
             </select>
 
           </div>
 
+
         </div>
 
 
-        <br>
 
+        <!-- BUTTONS -->
 
         <div
           style="
             display:flex;
             gap:10px;
+            margin-top:20px;
             flex-wrap:wrap;
           "
         >
 
           <button
             class="btn btn-primary"
-            id="saveMember"
             type="submit"
+            id="saveMemberButton"
           >
-            Add Member
+            Save Member
           </button>
 
 
-          <a
-            href="members.html"
+          <button
             class="btn btn-secondary"
+            type="button"
+            id="cancelAddMember"
           >
             Cancel
-          </a>
+          </button>
 
         </div>
 
@@ -277,59 +440,287 @@
     </section>
 
 
-    <section
-      id="successCard"
+
+    <!-- ===================================================
+         MEMBER COUNT
+    ==================================================== -->
+
+    <div
       class="card"
-      hidden
-      style="margin-top:20px;"
+      style="margin-bottom:20px;"
     >
 
-      <h2>Member Added Successfully</h2>
+      <div class="muted">
+        Total Members
+      </div>
 
-      <p>
-        The member has been added to your group.
+      <div
+        class="metric"
+        id="memberCount"
+      >
+        0
+      </div>
+
+    </div>
+
+
+
+    <!-- ===================================================
+         MEMBERS TABLE
+    ==================================================== -->
+
+    <section class="card">
+
+
+      <h2>
+        Group Members
+      </h2>
+
+
+      <p class="muted">
+        Members registered in your group.
       </p>
 
-      <p>
-        Account status:
-        <strong>Pending Activation</strong>
-      </p>
+
+
+      <div class="table-wrap">
+
+        <table class="table">
+
+
+          <thead>
+
+            <tr>
+
+              <th>
+                Member No.
+              </th>
+
+              <th>
+                Membership No.
+              </th>
+
+              <th>
+                Name
+              </th>
+
+              <th>
+                Phone
+              </th>
+
+              <th>
+                Email
+              </th>
+
+              <th>
+                Role
+              </th>
+
+              <th>
+                Account Status
+              </th>
+
+              <th>
+                Actions
+              </th>
+
+            </tr>
+
+          </thead>
+
+
+
+          <tbody id="memberRows">
+
+            <tr>
+
+              <td colspan="8">
+                Loading...
+              </td>
+
+            </tr>
+
+          </tbody>
+
+
+        </table>
+
+      </div>
+
+
+    </section>
+
+
+  </main>
+
+
+
+  <!-- =====================================================
+       VIEW MEMBER MODAL
+  ====================================================== -->
+
+  <div
+    id="memberModal"
+    hidden
+    style="
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.5);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      z-index:1000;
+    "
+  >
+
+
+    <section
+      class="card"
+      style="
+        width:100%;
+        max-width:500px;
+        max-height:90vh;
+        overflow:auto;
+      "
+    >
+
 
       <div
         style="
           display:flex;
-          gap:10px;
-          flex-wrap:wrap;
+          justify-content:space-between;
+          align-items:center;
+          gap:15px;
         "
       >
 
-        <a
-          href="members.html"
-          class="btn btn-primary"
-        >
-          View Members
-        </a>
+        <h2 id="viewMemberName">
+          Member
+        </h2>
+
 
         <button
-          id="addAnother"
           class="btn btn-secondary"
+          id="closeMemberModal"
           type="button"
         >
-          Add Another Member
+          Close
         </button>
 
       </div>
 
+
+
+      <hr>
+
+
+
+      <p>
+
+        <strong>
+          Member Number:
+        </strong>
+
+        <span id="viewMemberNumber">
+          —
+        </span>
+
+      </p>
+
+
+
+      <p>
+
+        <strong>
+          Phone:
+        </strong>
+
+        <span id="viewMemberPhone">
+          —
+        </span>
+
+      </p>
+
+
+
+      <p>
+
+        <strong>
+          Email:
+        </strong>
+
+        <span id="viewMemberEmail">
+          —
+        </span>
+
+      </p>
+
+
+
+      <p>
+
+        <strong>
+          Role:
+        </strong>
+
+        <span id="viewMemberRole">
+          —
+        </span>
+
+      </p>
+
+
+
+      <p>
+
+        <strong>
+          Status:
+        </strong>
+
+        <span id="viewMemberStatus">
+          —
+        </span>
+
+      </p>
+
+
+
+      <p>
+
+        <strong>
+          Join Date:
+        </strong>
+
+        <span id="viewMemberJoinDate">
+          —
+        </span>
+
+      </p>
+
+
     </section>
 
-  </main>
+  </div>
 
-</div>
 
+
+<!-- =========================================================
+     LAYOUT
+========================================================== -->
 
 <script type="module">
-  import "./js/add-member.js";
+
+  import {
+    boot
+  } from "./js/layout.js";
+
+
+  boot();
+
 </script>
 
+
 </body>
+
 </html>
