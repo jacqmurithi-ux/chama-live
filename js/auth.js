@@ -1,54 +1,85 @@
+```javascript
+/* =========================================================
+   CHAMA LIVE — AUTHENTICATION
+   File: /js/auth.js
+========================================================= */
+
 import { supabase } from "./supabase.js";
 
-/* =========================================================
-   CACHE
-========================================================= */
-
-let sessionCache = null;
-let memberCache = null;
-let groupCache = null;
-
 
 /* =========================================================
-   CLEAR CACHE
+   ERROR HELPER
 ========================================================= */
 
-export function clearAuthCache() {
-  sessionCache = null;
-  memberCache = null;
-  groupCache = null;
+function makeError(error, fallback) {
+
+  console.error(
+    "CHAMA LIVE AUTH ERROR:",
+    error
+  );
+
+  if (error instanceof Error) {
+    return error;
+  }
+
+  return new Error(
+    error?.message ||
+    error?.error_description ||
+    fallback
+  );
 }
 
 
 /* =========================================================
-   SESSION
+   GET CURRENT SESSION
 ========================================================= */
 
-export async function getSession(forceRefresh = false) {
-
-  if (sessionCache && !forceRefresh) {
-    return sessionCache;
-  }
+export async function getSession() {
 
   const {
     data,
     error
-  } = await supabase.auth.getSession();
+  } =
+    await supabase.auth.getSession();
 
   if (error) {
-    console.error("getSession:", error);
-    throw error;
+
+    throw makeError(
+      error,
+      "Unable to check your login session."
+    );
   }
 
-  sessionCache =
-    data?.session || null;
-
-  return sessionCache;
+  return data?.session || null;
 }
 
 
 /* =========================================================
-   REQUIRE AUTH
+   GET CURRENT USER
+========================================================= */
+
+export async function getUser() {
+
+  const {
+    data,
+    error
+  } =
+    await supabase.auth.getUser();
+
+  if (error) {
+
+    throw makeError(
+      error,
+      "Unable to identify the logged-in user."
+    );
+  }
+
+  return data?.user || null;
+}
+
+
+/* =========================================================
+   REQUIRE AUTHENTICATION
 ========================================================= */
 
 export async function requireAuth() {
@@ -58,9 +89,26 @@ export async function requireAuth() {
 
   if (!session) {
 
-    window.location.replace(
-      "./login.html"
+    console.warn(
+      "CHAMA LIVE: No authenticated session."
     );
+
+    const page =
+      window.location.pathname
+        .split("/")
+        .pop()
+        .toLowerCase();
+
+    /*
+     * Never redirect login.html to itself.
+     */
+
+    if (page !== "login.html") {
+
+      window.location.replace(
+        "login.html"
+      );
+    }
 
     return null;
   }
@@ -70,450 +118,36 @@ export async function requireAuth() {
 
 
 /* =========================================================
-   CURRENT USER
+   SIGN IN
 ========================================================= */
 
-export async function getCurrentUser() {
-
-  const {
-    data,
-    error
-  } = await supabase.auth.getUser();
-
-  if (error) {
-    console.error("getCurrentUser:", error);
-    throw error;
-  }
-
-  return data?.user || null;
-}
-
-
-/* =========================================================
-   MY MEMBER
-========================================================= */
-
-export async function getMyMember(
-  forceRefresh = false
+export async function signIn(
+  email,
+  password
 ) {
 
-  if (
-    memberCache &&
-    !forceRefresh
-  ) {
-    return memberCache;
-  }
-
-  const {
-    data,
-    error
-  } = await supabase.rpc(
-    "get_my_member"
-  );
-
-  if (error) {
-    console.error(
-      "get_my_member:",
-      error
-    );
-
-    throw error;
-  }
-
-  let member = data;
-
-  if (Array.isArray(data)) {
-
-    member =
-      data.length
-        ? data[0]
-        : null;
-  }
-
-  memberCache =
-    member || null;
-
-  return memberCache;
-}
-
-
-/* =========================================================
-   MY GROUP
-========================================================= */
-
-export async function getMyGroup(
-  forceRefresh = false
-) {
-
-  if (
-    groupCache &&
-    !forceRefresh
-  ) {
-    return groupCache;
-  }
-
-  const {
-    data,
-    error
-  } = await supabase.rpc(
-    "get_my_group"
-  );
-
-  if (error) {
-    console.error(
-      "get_my_group:",
-      error
-    );
-
-    throw error;
-  }
-
-  let group = data;
-
-  if (Array.isArray(data)) {
-
-    group =
-      data.length
-        ? data[0]
-        : null;
-  }
-
-  groupCache =
-    group || null;
-
-  return groupCache;
-}
-
-
-/* =========================================================
-   MY GROUP ID
-========================================================= */
-
-export async function getMyGroupId() {
-
-  const member =
-    await getMyMember();
-
-  if (member?.group_id) {
-    return member.group_id;
-  }
-
-  const {
-    data,
-    error
-  } = await supabase.rpc(
-    "my_group_id"
-  );
-
-  if (error) {
-    console.error(
-      "my_group_id:",
-      error
-    );
-
-    throw error;
-  }
-
-  return data || null;
-}
-
-
-/* =========================================================
-   REQUIRE MEMBER
-========================================================= */
-
-export async function requireMember() {
-
-  const session =
-    await requireAuth();
-
-  if (!session) {
-    return null;
-  }
-
-  const member =
-    await getMyMember();
-
-  if (!member) {
-
-    console.error(
-      "No member record found."
-    );
-
-    return null;
-  }
-
-  return member;
-}
-
-
-/* =========================================================
-   REQUIRE GROUP
-========================================================= */
-
-export async function requireGroup() {
-
-  const member =
-    await requireMember();
-
-  if (!member) {
-    return null;
-  }
-
-  const group =
-    await getMyGroup();
-
-  if (!group) {
-
-    console.error(
-      "No group found for member."
-    );
-
-    return null;
-  }
-
-  return group;
-}
-
-
-/* =========================================================
-   ROLE
-========================================================= */
-
-export function getRole(
-  member = null
-) {
-
-  const source =
-    member || memberCache;
-
-  return String(
-    source?.role || "member"
-  )
-    .trim()
-    .toLowerCase();
-}
-
-
-/* =========================================================
-   HAS ROLE
-========================================================= */
-
-export function hasRole(
-  memberOrRoles,
-  roles
-) {
-
-  let member =
-    memberOrRoles;
-
-  let requiredRoles =
-    roles;
-
-
-  /*
-   * hasRole("admin")
-   */
-
-  if (
-    roles === undefined
-  ) {
-
-    requiredRoles =
-      memberOrRoles;
-
-    member =
-      memberCache;
-  }
-
-
-  const currentRole =
-    getRole(member);
-
-
-  if (
-    Array.isArray(requiredRoles)
-  ) {
-
-    return requiredRoles
-      .map(role =>
-        String(role)
-          .trim()
-          .toLowerCase()
-      )
-      .includes(
-        currentRole
-      );
-  }
-
-
-  return (
-    currentRole ===
-    String(
-      requiredRoles || "member"
-    )
+  const cleanEmail =
+    String(email || "")
       .trim()
-      .toLowerCase()
-  );
-}
+      .toLowerCase();
+
+  const cleanPassword =
+    String(password || "");
 
 
-/* =========================================================
-   ADMIN
-========================================================= */
+  if (!cleanEmail) {
 
-export function isAdmin(
-  member = null
-) {
-
-  return [
-    "admin",
-    "administrator",
-    "chairperson",
-    "secretary",
-    "treasurer"
-  ].includes(
-    getRole(member)
-  );
-}
-
-
-/* =========================================================
-   MANAGER
-========================================================= */
-
-export function isManager(
-  member = null
-) {
-
-  return [
-    "admin",
-    "administrator",
-    "chairperson",
-    "secretary",
-    "treasurer",
-    "manager"
-  ].includes(
-    getRole(member)
-  );
-}
-
-
-/* =========================================================
-   PERMISSIONS
-========================================================= */
-
-export function canManageGroup(
-  member = null
-) {
-  return isAdmin(member);
-}
-
-
-export function canManageMembers(
-  member = null
-) {
-  return isManager(member);
-}
-
-
-export function canRecordContributions(
-  member = null
-) {
-  return isManager(member);
-}
-
-
-export function canRecordExpenses(
-  member = null
-) {
-  return isManager(member);
-}
-
-
-export function canManageMeetings(
-  member = null
-) {
-  return isManager(member);
-}
-
-
-/* =========================================================
-   ADD MEMBER
-========================================================= */
-
-export async function addGroupMember({
-  groupId,
-  name,
-  memberNumber,
-  membershipNumber,
-  phone,
-  email = null,
-  role = "member",
-  joinDate = null
-}) {
-
-  if (!groupId) {
     throw new Error(
-      "Group ID is required."
-    );
-  }
-
-  if (!name) {
-    throw new Error(
-      "Member name is required."
-    );
-  }
-
-  if (!memberNumber) {
-    throw new Error(
-      "Member number is required."
-    );
-  }
-
-  if (!phone) {
-    throw new Error(
-      "Phone number is required."
+      "Please enter your email address."
     );
   }
 
 
-  const payload = {
+  if (!cleanPassword) {
 
-    group_id:
-      groupId,
-
-    member_number:
-      memberNumber,
-
-    name:
-      name,
-
-    phone:
-      phone,
-
-    email:
-      email || null,
-
-    role:
-      role || "member",
-
-    join_date:
-      joinDate ||
-      new Date()
-        .toISOString()
-        .slice(0, 10),
-
-    status:
-      "active"
-
-  };
-
-
-  if (membershipNumber) {
-
-    payload.membership_number =
-      membershipNumber;
+    throw new Error(
+      "Please enter your password."
+    );
   }
 
 
@@ -521,25 +155,36 @@ export async function addGroupMember({
     data,
     error
   } =
-    await supabase
-      .from("members")
-      .insert(payload)
-      .select()
-      .single();
+    await supabase.auth.signInWithPassword({
+      email:
+        cleanEmail,
+
+      password:
+        cleanPassword
+    });
 
 
   if (error) {
 
-    console.error(
-      "addGroupMember:",
-      error
+    throw makeError(
+      error,
+      "Unable to sign in."
     );
-
-    throw error;
   }
 
 
-  clearAuthCache();
+  if (!data?.session) {
+
+    throw new Error(
+      "Login succeeded, but no active session was created."
+    );
+  }
+
+
+  console.log(
+    "CHAMA LIVE: Login successful."
+  );
+
 
   return data;
 }
@@ -551,56 +196,256 @@ export async function addGroupMember({
 
 export async function signOut() {
 
-  clearAuthCache();
-
   const {
     error
   } =
     await supabase.auth.signOut();
 
-  if (error) {
-    console.error(
-      "signOut:",
-      error
-    );
 
-    throw error;
+  if (error) {
+
+    throw makeError(
+      error,
+      "Unable to sign out."
+    );
   }
 
+
+  console.log(
+    "CHAMA LIVE: Signed out."
+  );
+
+
   window.location.replace(
-    "./login.html"
+    "login.html"
   );
 }
 
 
 /* =========================================================
-   LOGOUT ALIAS
+   GET MY MEMBER
 ========================================================= */
 
-export const logout =
-  signOut;
+export async function getMyMember() {
+
+  /*
+   * This matches the actual RPC in your
+   * Supabase database:
+   *
+   * public.get_my_member()
+   *
+   * It returns a members row.
+   */
+
+  const {
+    data,
+    error
+  } =
+    await supabase.rpc(
+      "get_my_member"
+    );
+
+
+  if (error) {
+
+    throw makeError(
+      error,
+      "Unable to load your member record."
+    );
+  }
+
+
+  /*
+   * The RPC returns one members row,
+   * not an array.
+   */
+
+  if (
+    !data ||
+    (
+      Array.isArray(data) &&
+      data.length === 0
+    )
+  ) {
+
+    return null;
+  }
+
+
+  /*
+   * Protect against a PostgREST response
+   * being returned as a one-item array.
+   */
+
+  if (Array.isArray(data)) {
+
+    return data[0] || null;
+  }
+
+
+  return data;
+}
 
 
 /* =========================================================
-   AUTH STATE
+   GET MY GROUP
 ========================================================= */
 
-supabase.auth.onAuthStateChange(
-  (
-    event,
-    session
-  ) => {
+export async function getMyGroup() {
 
-    sessionCache =
-      session || null;
+  /*
+   * This matches the actual RPC in your
+   * Supabase database:
+   *
+   * public.get_my_group()
+   *
+   * It returns a groups row.
+   */
 
-    if (
-      event === "SIGNED_OUT"
-    ) {
+  const {
+    data,
+    error
+  } =
+    await supabase.rpc(
+      "get_my_group"
+    );
 
-      memberCache = null;
-      groupCache = null;
-      sessionCache = null;
-    }
+
+  if (error) {
+
+    throw makeError(
+      error,
+      "Unable to load your group."
+    );
   }
-);
+
+
+  if (
+    !data ||
+    (
+      Array.isArray(data) &&
+      data.length === 0
+    )
+  ) {
+
+    return null;
+  }
+
+
+  if (Array.isArray(data)) {
+
+    return data[0] || null;
+  }
+
+
+  return data;
+}
+
+
+/* =========================================================
+   GET ALL MY GROUPS
+========================================================= */
+
+export async function getMyGroups() {
+
+  /*
+   * Matches:
+   *
+   * public.get_my_groups()
+   *
+   * Returns:
+   *
+   * group_id
+   * group_name
+   * role
+   * category
+   * monthly_contribution
+   */
+
+  const {
+    data,
+    error
+  } =
+    await supabase.rpc(
+      "get_my_groups"
+    );
+
+
+  if (error) {
+
+    throw makeError(
+      error,
+      "Unable to load your groups."
+    );
+  }
+
+
+  return data || [];
+}
+
+
+/* =========================================================
+   GET MY GROUP ID
+========================================================= */
+
+export async function getMyGroupId() {
+
+  const {
+    data,
+    error
+  } =
+    await supabase.rpc(
+      "my_group_id"
+    );
+
+
+  if (error) {
+
+    throw makeError(
+      error,
+      "Unable to determine your group."
+    );
+  }
+
+
+  return data || null;
+}
+
+
+/* =========================================================
+   AUTH STATE LISTENER
+========================================================= */
+
+export function onAuthStateChange(
+  callback
+) {
+
+  const {
+    data
+  } =
+    supabase.auth.onAuthStateChange(
+      (event, session) => {
+
+        console.log(
+          "CHAMA LIVE AUTH EVENT:",
+          event
+        );
+
+
+        if (
+          typeof callback ===
+          "function"
+        ) {
+
+          callback(
+            event,
+            session
+          );
+        }
+      }
+    );
+
+
+  return data?.subscription || null;
+}
+```
