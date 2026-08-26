@@ -1,4 +1,3 @@
-```html
 <!doctype html>
 <html lang="en">
 
@@ -35,138 +34,130 @@
 >
 
 
-  <section
-    class="card"
-    style="
-      width:100%;
-      max-width:420px;
-    "
+<section
+  class="card"
+  style="
+    width:100%;
+    max-width:420px;
+  "
+>
+
+
+<div
+  style="
+    text-align:center;
+    margin-bottom:25px;
+  "
+>
+
+  <h1>
+    CHAMA <span>LIVE</span>
+  </h1>
+
+  <p class="muted">
+    Sign in to your group account
+  </p>
+
+</div>
+
+
+<div
+  id="error"
+  class="error"
+  hidden
+  style="margin-bottom:15px;"
+></div>
+
+
+<form
+  id="loginForm"
+  autocomplete="on"
+>
+
+
+<div style="margin-bottom:15px;">
+
+  <label for="email">
+    Email address
+  </label>
+
+  <input
+    type="email"
+    id="email"
+    name="email"
+    autocomplete="username"
+    required
+    style="width:100%;"
   >
 
-
-    <div
-      style="
-        text-align:center;
-        margin-bottom:25px;
-      "
-    >
-
-      <h1>
-        CHAMA <span>LIVE</span>
-      </h1>
-
-      <p class="muted">
-        Sign in to your group account
-      </p>
-
-    </div>
+</div>
 
 
-    <!-- ERROR -->
+<div style="margin-bottom:20px;">
 
-    <div
-      id="error"
-      class="error"
-      hidden
-      style="margin-bottom:15px;"
-    ></div>
+  <label for="password">
+    Password
+  </label>
 
+  <input
+    type="password"
+    id="password"
+    name="password"
+    autocomplete="current-password"
+    required
+    style="width:100%;"
+  >
 
-    <!-- LOGIN FORM -->
-
-    <form
-      id="loginForm"
-      autocomplete="on"
-    >
-
-
-      <div style="margin-bottom:15px;">
-
-        <label for="email">
-          Email address
-        </label>
-
-        <input
-          type="email"
-          id="email"
-          name="email"
-          autocomplete="username"
-          required
-          style="width:100%;"
-        >
-
-      </div>
+</div>
 
 
-      <div style="margin-bottom:20px;">
-
-        <label for="password">
-          Password
-        </label>
-
-        <input
-          type="password"
-          id="password"
-          name="password"
-          autocomplete="current-password"
-          required
-          style="width:100%;"
-        >
-
-      </div>
+<button
+  class="btn btn-primary"
+  type="submit"
+  id="loginButton"
+  style="width:100%;"
+>
+  Sign in
+</button>
 
 
-      <button
-        class="btn btn-primary"
-        type="submit"
-        id="loginButton"
-        style="width:100%;"
-      >
-        Sign in
-      </button>
+</form>
 
 
-    </form>
+<div
+  id="status"
+  class="muted"
+  style="
+    text-align:center;
+    margin-top:15px;
+  "
+></div>
 
 
-    <!-- STATUS -->
-
-    <div
-      id="status"
-      class="muted"
-      style="
-        text-align:center;
-        margin-top:15px;
-      "
-    ></div>
+<hr style="margin:25px 0;">
 
 
-    <hr
-      style="margin:25px 0;"
-    >
+<p
+  class="muted"
+  style="text-align:center;"
+>
+  Don't have a group account?
+</p>
 
 
-    <p
-      class="muted"
-      style="text-align:center;"
-    >
-      Don't have a group account?
-    </p>
+<a
+  href="create-group.html"
+  class="btn btn-secondary"
+  style="
+    display:block;
+    text-align:center;
+  "
+>
+  Create Group Account
+</a>
 
 
-    <a
-      href="create-group.html"
-      class="btn btn-secondary"
-      style="
-        display:block;
-        text-align:center;
-      "
-    >
-      Create Group Account
-    </a>
-
-
-  </section>
+</section>
 
 
 </main>
@@ -175,159 +166,248 @@
 
 <script type="module">
 
-  import {
-    supabase
-  } from "./js/supabase.js";
+import {
+  supabase
+} from "./js/supabase.js";
 
 
-  import {
-    getMyMember,
-    getMyGroup,
-    clearAuthCache
-  } from "./js/auth.js";
-
-
-
-  /* =====================================================
-     ELEMENTS
-  ===================================================== */
-
-  const form =
-    document.getElementById(
-      "loginForm"
-    );
-
-
-  const emailInput =
-    document.getElementById(
-      "email"
-    );
-
-
-  const passwordInput =
-    document.getElementById(
-      "password"
-    );
-
-
-  const button =
-    document.getElementById(
-      "loginButton"
-    );
-
-
-  const errorElement =
-    document.getElementById(
-      "error"
-    );
-
-
-  const statusElement =
-    document.getElementById(
-      "status"
-    );
+import {
+  clearAuthCache,
+  getMyMember,
+  getMyGroup
+} from "./js/auth.js";
 
 
 
-  /* =====================================================
-     REMOVE PASSWORD / EMAIL FROM URL
-  ===================================================== */
-
-  if (
-    window.location.search
-  ) {
-
-    window.history.replaceState(
-      {},
-      document.title,
-      window.location.pathname
-    );
-
-  }
+const form =
+  document.getElementById(
+    "loginForm"
+  );
 
 
-
-  /* =====================================================
-     ERROR
-  ===================================================== */
-
-  function showError(
-    message
-  ) {
-
-    errorElement.hidden =
-      false;
-
-    errorElement.textContent =
-      message;
-
-  }
+const emailInput =
+  document.getElementById(
+    "email"
+  );
 
 
+const passwordInput =
+  document.getElementById(
+    "password"
+  );
 
-  function clearError() {
 
-    errorElement.hidden =
+const button =
+  document.getElementById(
+    "loginButton"
+  );
+
+
+const errorBox =
+  document.getElementById(
+    "error"
+  );
+
+
+const statusBox =
+  document.getElementById(
+    "status"
+  );
+
+
+
+/* =====================================================
+   URL CLEANUP
+===================================================== */
+
+if (
+  window.location.search
+) {
+
+  window.history.replaceState(
+    {},
+    document.title,
+    window.location.pathname
+  );
+
+}
+
+
+
+/* =====================================================
+   ERROR
+===================================================== */
+
+function showError(
+  message
+) {
+
+  errorBox.hidden =
+    false;
+
+  errorBox.textContent =
+    message;
+
+}
+
+
+function clearError() {
+
+  errorBox.hidden =
+    true;
+
+  errorBox.textContent =
+    "";
+
+}
+
+
+
+/* =====================================================
+   LOGIN
+===================================================== */
+
+form.addEventListener(
+  "submit",
+  async event => {
+
+    event.preventDefault();
+
+
+    clearError();
+
+
+    const email =
+      emailInput.value
+        .trim()
+        .toLowerCase();
+
+
+    const password =
+      passwordInput.value;
+
+
+    button.disabled =
       true;
 
-    errorElement.textContent =
+
+    button.textContent =
+      "Signing in...";
+
+
+    statusBox.textContent =
       "";
 
-  }
-
-
-
-  /* =====================================================
-     CHECK EXISTING SESSION
-  ===================================================== */
-
-  async function checkExistingSession() {
 
     try {
 
+
+      /*
+       * SUPABASE AUTH
+       */
+
       const {
-        data
+        data,
+        error
       } =
-        await supabase.auth.getSession();
+        await supabase.auth
+          .signInWithPassword({
+
+            email,
+
+            password
+
+          });
 
 
-      if (
-        !data?.session
-      ) {
+      if (error) {
+        throw error;
+      }
 
-        return;
+
+      if (!data?.session) {
+
+        throw new Error(
+          "No login session was created."
+        );
+
+      }
+
+
+      clearAuthCache();
+
+
+      statusBox.textContent =
+        "Loading your group...";
+
+
+      /*
+       * MEMBER
+       */
+
+      const member =
+        await getMyMember(
+          true
+        );
+
+
+      if (!member) {
+
+        await supabase.auth.signOut();
+
+        throw new Error(
+          "This email is not linked to a CHAMA LIVE member account."
+        );
 
       }
 
 
       /*
-       * We already have a session.
-       * Check whether it is linked
-       * to a member account.
+       * MEMBER STATUS
        */
-
-      clearAuthCache();
-
-
-      const member =
-        await getMyMember();
-
-
-      if (!member) {
-
-        return;
-
-      }
-
 
       if (
         member.status &&
-        member.status !== "active"
+        member.status.toLowerCase() !==
+          "active"
       ) {
 
-        return;
+        await supabase.auth.signOut();
+
+        throw new Error(
+          "Your member account is inactive. Please contact your group administrator."
+        );
 
       }
+
+
+      /*
+       * GROUP
+       */
+
+      const group =
+        await getMyGroup(
+          true
+        );
+
+
+      if (!group) {
+
+        await supabase.auth.signOut();
+
+        throw new Error(
+          "Your account is not linked to a valid group."
+        );
+
+      }
+
+
+      /*
+       * SUCCESS
+       */
+
+      statusBox.textContent =
+        `Welcome ${member.name || ""}. Redirecting...`;
 
 
       window.location.replace(
@@ -338,263 +418,62 @@
     } catch (error) {
 
       console.error(
-        "Existing session check:",
+        "LOGIN ERROR:",
         error
       );
+
+
+      let message =
+        error?.message ||
+        "Unable to sign in.";
+
+
+      const lower =
+        message.toLowerCase();
+
+
+      if (
+        lower.includes(
+          "invalid login credentials"
+        )
+      ) {
+
+        message =
+          "Incorrect email or password.";
+
+      }
+
+
+      if (
+        lower.includes(
+          "email not confirmed"
+        )
+      ) {
+
+        message =
+          "Please confirm your email address before signing in.";
+
+      }
+
+
+      showError(
+        message
+      );
+
+
+      button.disabled =
+        false;
+
+      button.textContent =
+        "Sign in";
+
+      statusBox.textContent =
+        "";
 
     }
 
   }
-
-
-
-  checkExistingSession();
-
-
-
-  /* =====================================================
-     LOGIN
-  ===================================================== */
-
-  form.addEventListener(
-    "submit",
-    async event => {
-
-      event.preventDefault();
-
-
-      clearError();
-
-
-      const email =
-        emailInput.value
-          .trim()
-          .toLowerCase();
-
-
-      const password =
-        passwordInput.value;
-
-
-      if (!email) {
-
-        showError(
-          "Please enter your email address."
-        );
-
-        return;
-
-      }
-
-
-      if (!password) {
-
-        showError(
-          "Please enter your password."
-        );
-
-        return;
-
-      }
-
-
-      button.disabled =
-        true;
-
-      button.textContent =
-        "Signing in...";
-
-
-      statusElement.textContent =
-        "";
-
-
-      try {
-
-        /* ---------------------------------------------
-           SIGN IN
-        --------------------------------------------- */
-
-        const {
-          data,
-          error
-        } =
-          await supabase.auth
-            .signInWithPassword({
-
-              email:
-                email,
-
-              password:
-                password
-
-            });
-
-
-        if (error) {
-
-          throw error;
-
-        }
-
-
-        if (
-          !data?.session
-        ) {
-
-          throw new Error(
-            "Login succeeded but no session was created."
-          );
-
-        }
-
-
-        /* ---------------------------------------------
-           CLEAR OLD CACHE
-        --------------------------------------------- */
-
-        clearAuthCache();
-
-
-        statusElement.textContent =
-          "Checking your group account...";
-
-
-        /* ---------------------------------------------
-           GET MEMBER
-        --------------------------------------------- */
-
-        const member =
-          await getMyMember(
-            true
-          );
-
-
-        if (!member) {
-
-          await supabase.auth.signOut();
-
-          throw new Error(
-            "This login is not linked to a group member account. Please contact your group administrator."
-          );
-
-        }
-
-
-        /* ---------------------------------------------
-           MEMBER STATUS
-        --------------------------------------------- */
-
-        if (
-          member.status &&
-          member.status !== "active"
-        ) {
-
-          await supabase.auth.signOut();
-
-          throw new Error(
-            "Your membership is currently inactive. Please contact your group administrator."
-          );
-
-        }
-
-
-        /* ---------------------------------------------
-           GET GROUP
-        --------------------------------------------- */
-
-        statusElement.textContent =
-          "Loading your group...";
-
-
-        const group =
-          await getMyGroup();
-
-
-        if (!group) {
-
-          await supabase.auth.signOut();
-
-          throw new Error(
-            "Your account is not linked to a valid group."
-          );
-
-        }
-
-
-        /* ---------------------------------------------
-           SUCCESS
-        --------------------------------------------- */
-
-        statusElement.textContent =
-          `Welcome ${member.name || "Member"}. Redirecting...`;
-
-
-        window.location.replace(
-          "dashboard.html"
-        );
-
-
-      } catch (error) {
-
-        console.error(
-          "LOGIN ERROR:",
-          error
-        );
-
-
-        let message =
-          error?.message ||
-          "Unable to sign in.";
-
-
-        const lower =
-          message.toLowerCase();
-
-
-        if (
-          lower.includes(
-            "invalid login credentials"
-          )
-        ) {
-
-          message =
-            "Incorrect email or password.";
-
-        }
-
-
-        if (
-          lower.includes(
-            "email not confirmed"
-          )
-        ) {
-
-          message =
-            "Please confirm your email address before signing in.";
-
-        }
-
-
-        showError(
-          message
-        );
-
-
-        button.disabled =
-          false;
-
-        button.textContent =
-          "Sign in";
-
-
-        statusElement.textContent =
-          "";
-
-      }
-
-    }
-  );
+);
 
 </script>
 
@@ -602,4 +481,3 @@
 </body>
 
 </html>
-```
