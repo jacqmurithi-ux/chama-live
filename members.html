@@ -45,6 +45,10 @@
 <div class="layout">
 
 
+  <!-- =====================================================
+       SIDEBAR
+  ====================================================== -->
+
   <aside class="sidebar">
 
     <nav class="nav">
@@ -90,12 +94,14 @@
 
 
 
+  <!-- =====================================================
+       MAIN
+  ====================================================== -->
+
   <main class="main">
 
 
-    <!-- =====================================================
-         PAGE HEADER
-    ====================================================== -->
+    <!-- PAGE HEADER -->
 
     <div class="page-head">
 
@@ -124,9 +130,7 @@
 
 
 
-    <!-- =====================================================
-         STATUS
-    ====================================================== -->
+    <!-- STATUS -->
 
     <div
       id="status"
@@ -138,9 +142,7 @@
 
 
 
-    <!-- =====================================================
-         ERROR
-    ====================================================== -->
+    <!-- ERROR -->
 
     <div
       id="error"
@@ -152,7 +154,7 @@
 
 
     <!-- =====================================================
-         SEARCH MEMBERS
+         SEARCH
     ====================================================== -->
 
     <div
@@ -240,7 +242,9 @@
 
 
 
-      <!-- MEMBER FORM -->
+      <!-- =================================================
+           MEMBER FORM
+      ================================================== -->
 
       <form id="addMemberForm">
 
@@ -364,7 +368,7 @@
           <div>
 
             <label for="memberStatus">
-              Account Status
+              Status
             </label>
 
             <select id="memberStatus">
@@ -541,16 +545,20 @@
 
 <!-- =========================================================
      VIEW MEMBER MODAL
+
+     IMPORTANT:
+     hidden keeps this completely invisible when page loads.
 ========================================================= -->
 
 <div
   id="memberModal"
   hidden
+  aria-hidden="true"
   style="
     position:fixed;
     inset:0;
     background:rgba(0,0,0,.5);
-    display:flex;
+    display:none;
     align-items:center;
     justify-content:center;
     padding:20px;
@@ -558,8 +566,12 @@
   "
 >
 
+
   <section
     class="card"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="viewMemberName"
     style="
       width:100%;
       max-width:500px;
@@ -568,6 +580,8 @@
     "
   >
 
+
+    <!-- MODAL HEADER -->
 
     <div
       style="
@@ -599,6 +613,8 @@
 
 
 
+    <!-- MEMBER NUMBER -->
+
     <p>
 
       <strong>
@@ -612,6 +628,8 @@
     </p>
 
 
+
+    <!-- PHONE -->
 
     <p>
 
@@ -627,6 +645,8 @@
 
 
 
+    <!-- EMAIL -->
+
     <p>
 
       <strong>
@@ -640,6 +660,8 @@
     </p>
 
 
+
+    <!-- ROLE -->
 
     <p>
 
@@ -655,6 +677,8 @@
 
 
 
+    <!-- STATUS -->
+
     <p>
 
       <strong>
@@ -668,6 +692,8 @@
     </p>
 
 
+
+    <!-- JOIN DATE -->
 
     <p>
 
