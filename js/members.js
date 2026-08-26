@@ -3,6 +3,11 @@ import { supabase } from "./supabase.js";
 console.log("CHAMA LIVE: members.js loaded");
 
 
+let currentGroupId = null;
+let allMembers = [];
+let editingMemberId = null;
+
+
 /* =========================================================
    HELPERS
 ========================================================= */
@@ -10,6 +15,7 @@ console.log("CHAMA LIVE: members.js loaded");
 function byId(id) {
   return document.getElementById(id);
 }
+
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -21,11 +27,33 @@ function escapeHtml(value) {
 }
 
 
+function showError(message) {
+
+  const box = byId("error");
+
+  if (!box) return;
+
+  box.hidden = false;
+  box.textContent = message;
+}
+
+
+function clearError() {
+
+  const box = byId("error");
+
+  if (!box) return;
+
+  box.hidden = true;
+  box.textContent = "";
+}
+
+
 /* =========================================================
-   USER
+   CURRENT USER
 ========================================================= */
 
-async function getUser() {
+async function getCurrentUser() {
 
   const {
     data,
@@ -73,27 +101,77 @@ async function getCurrentMember(userId) {
    LOAD MEMBERS
 ========================================================= */
 
-async function getMembers(groupId) {
+async function loadMembers() {
 
-  const {
-    data,
-    error
-  } = await supabase
-    .from("members")
-    .select("*")
-    .eq("group_id", groupId)
-    .order("created_at", {
-      ascending: true
-    });
+  clearError();
 
-  if (error) throw error;
+  const status = byId("status");
 
-  return data || [];
+  try {
+
+    if (status) {
+      status.textContent = "Loading members...";
+    }
+
+    const user = await getCurrentUser();
+
+    const currentMember =
+      await getCurrentMember(user.id);
+
+    currentGroupId =
+      currentMember.group_id;
+
+    if (!currentGroupId) {
+      throw new Error(
+        "Your account is not linked to a group."
+      );
+    }
+
+    const {
+      data,
+      error
+    } = await supabase
+      .from("members")
+      .select("*")
+      .eq("group_id", currentGroupId)
+      .order("created_at", {
+        ascending: true
+      });
+
+    if (error) throw error;
+
+    allMembers = data || [];
+
+    renderMembers(allMembers);
+
+    window.CHAMA_CURRENT_GROUP_ID =
+      currentGroupId;
+
+    if (status) {
+      status.textContent = "";
+    }
+
+  } catch (error) {
+
+    console.error(
+      "Members loading error:",
+      error
+    );
+
+    if (status) {
+      status.textContent = "";
+    }
+
+    showError(
+      error.message ||
+      "Unable to load members."
+    );
+  }
 }
 
 
 /* =========================================================
-   RENDER MEMBERS
+   RENDER
 ========================================================= */
 
 function renderMembers(members) {
@@ -101,19 +179,22 @@ function renderMembers(members) {
   const rows =
     byId("memberRows");
 
+  const count =
+    byId("memberCount");
+
   if (!rows) return;
 
-
-  byId("memberCount").textContent =
-    members.length;
-
+  if (count) {
+    count.textContent =
+      members.length;
+  }
 
   if (!members.length) {
 
     rows.innerHTML = `
       <tr>
         <td colspan="8">
-          No members registered yet.
+          No members found.
         </td>
       </tr>
     `;
@@ -125,40 +206,34 @@ function renderMembers(members) {
   rows.innerHTML =
     members.map(member => {
 
-      const memberNumber =
-        member.member_number ||
-        "—";
+      const number =
+        member.member_number || "—";
 
       const name =
-        member.name ||
-        "—";
+        member.name || "—";
 
       const phone =
-        member.phone ||
-        "—";
+        member.phone || "—";
 
       const email =
-        member.email ||
-        "—";
+        member.email || "—";
 
       const role =
-        member.role ||
-        "member";
+        member.role || "member";
 
       const status =
-        member.status ||
-        "active";
+        member.status || "active";
 
 
       return `
         <tr>
 
           <td>
-            ${escapeHtml(memberNumber)}
+            ${escapeHtml(number)}
           </td>
 
           <td>
-            ${escapeHtml(memberNumber)}
+            ${escapeHtml(number)}
           </td>
 
           <td>
@@ -191,6 +266,36 @@ function renderMembers(members) {
               View
             </button>
 
+            <button
+              type="button"
+              class="btn btn-secondary edit-member"
+              data-id="${escapeHtml(member.id)}"
+            >
+              Edit
+            </button>
+
+            ${
+              status === "active"
+              ? `
+                <button
+                  type="button"
+                  class="btn btn-secondary deactivate-member"
+                  data-id="${escapeHtml(member.id)}"
+                >
+                  Deactivate
+                </button>
+              `
+              : `
+                <button
+                  type="button"
+                  class="btn btn-secondary activate-member"
+                  data-id="${escapeHtml(member.id)}"
+                >
+                  Activate
+                </button>
+              `
+            }
+
           </td>
 
         </tr>
@@ -201,117 +306,226 @@ function renderMembers(members) {
 
 
 /* =========================================================
-   LOAD
+   SEARCH
 ========================================================= */
 
-async function loadMembers() {
+function searchMembers() {
 
-  const status =
-    byId("status");
+  const input =
+    byId("memberSearch");
 
-  try {
+  if (!input) return;
 
-    if (status) {
-      status.textContent =
-        "Loading members...";
-    }
-
-
-    const user =
-      await getUser();
+  const search =
+    input.value
+      .trim()
+      .toLowerCase();
 
 
-    const currentMember =
-      await getCurrentMember(
-        user.id
-      );
-
-
-    if (!currentMember.group_id) {
-
-      throw new Error(
-        "Your account is not linked to a group."
-      );
-
-    }
-
-
-    const members =
-      await getMembers(
-        currentMember.group_id
-      );
-
+  if (!search) {
 
     renderMembers(
-      members
+      allMembers
     );
 
-
-    window.CHAMA_CURRENT_GROUP_ID =
-      currentMember.group_id;
-
-
-    if (status) {
-      status.textContent =
-        "";
-    }
-
-
-    console.log(
-      "CHAMA LIVE MEMBERS:",
-      members
-    );
-
-  } catch (error) {
-
-    console.error(
-      "Members loading error:",
-      error
-    );
-
-
-    if (status) {
-      status.textContent =
-        "";
-    }
-
-
-    const errorBox =
-      byId("error");
-
-    if (errorBox) {
-
-      errorBox.hidden =
-        false;
-
-      errorBox.textContent =
-        error.message ||
-        "Unable to load members.";
-
-    }
-
+    return;
   }
 
+
+  const filtered =
+    allMembers.filter(member => {
+
+      return (
+
+        String(
+          member.member_number || ""
+        )
+          .toLowerCase()
+          .includes(search)
+
+        ||
+
+        String(
+          member.name || ""
+        )
+          .toLowerCase()
+          .includes(search)
+
+        ||
+
+        String(
+          member.phone || ""
+        )
+          .toLowerCase()
+          .includes(search)
+
+        ||
+
+        String(
+          member.email || ""
+        )
+          .toLowerCase()
+          .includes(search)
+
+        ||
+
+        String(
+          member.role || ""
+        )
+          .toLowerCase()
+          .includes(search)
+
+      );
+
+    });
+
+
+  renderMembers(filtered);
 }
 
 
 /* =========================================================
-   ADD MEMBER
+   ADD / EDIT PANEL
 ========================================================= */
 
-async function addMember(event) {
+function openMemberForm(member = null) {
+
+  const panel =
+    byId("addMemberPanel");
+
+  if (!panel) return;
+
+
+  panel.hidden = false;
+
+
+  const title =
+    byId("memberFormTitle");
+
+  const description =
+    byId("memberFormDescription");
+
+
+  if (member) {
+
+    editingMemberId =
+      member.id;
+
+    title.textContent =
+      "Edit Member";
+
+    description.textContent =
+      "Update this member's information.";
+
+
+    byId("memberNumber").value =
+      member.member_number || "";
+
+    byId("memberName").value =
+      member.name || "";
+
+    byId("memberPhone").value =
+      member.phone || "";
+
+    byId("memberEmail").value =
+      member.email || "";
+
+    byId("memberRole").value =
+      member.role || "member";
+
+
+    const statusField =
+      byId("memberStatus");
+
+    if (statusField) {
+      statusField.value =
+        member.status || "active";
+    }
+
+
+    byId("saveMemberButton").textContent =
+      "Update Member";
+
+  } else {
+
+    editingMemberId = null;
+
+    title.textContent =
+      "Add Member";
+
+    description.textContent =
+      "Register a new member in your group.";
+
+
+    byId("addMemberForm").reset();
+
+    byId("memberRole").value =
+      "member";
+
+
+    const statusField =
+      byId("memberStatus");
+
+    if (statusField) {
+      statusField.value =
+        "active";
+    }
+
+
+    byId("saveMemberButton").textContent =
+      "Save Member";
+  }
+
+
+  const message =
+    byId("formMessage");
+
+  if (message) {
+    message.style.display = "none";
+    message.textContent = "";
+  }
+
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+}
+
+
+/* =========================================================
+   CLOSE FORM
+========================================================= */
+
+function closeMemberForm() {
+
+  const panel =
+    byId("addMemberPanel");
+
+  if (!panel) return;
+
+  panel.hidden = true;
+
+  editingMemberId = null;
+}
+
+
+/* =========================================================
+   SAVE MEMBER
+========================================================= */
+
+async function saveMember(event) {
 
   event.preventDefault();
-
-
-  const form =
-    byId("addMemberForm");
 
   const button =
     byId("saveMemberButton");
 
-  const message =
-    byId("formMessage");
+
+  const memberNumber =
+    byId("memberNumber")
+      .value
+      .trim();
 
 
   const name =
@@ -338,16 +552,31 @@ async function addMember(event) {
       .value;
 
 
-  const memberNumber =
-    byId("memberNumber")
-      .value
-      .trim();
+  const statusField =
+    byId("memberStatus");
+
+
+  const status =
+    statusField
+      ? statusField.value
+      : "active";
+
+
+  if (!memberNumber) {
+
+    showFormMessage(
+      "Member number is required.",
+      true
+    );
+
+    return;
+  }
 
 
   if (!name) {
 
     showFormMessage(
-      "Member name is required.",
+      "Full name is required.",
       true
     );
 
@@ -366,78 +595,114 @@ async function addMember(event) {
   }
 
 
-  if (!memberNumber) {
-
-    showFormMessage(
-      "Member number is required.",
-      true
-    );
-
-    return;
-  }
-
-
-  const groupId =
-    window.CHAMA_CURRENT_GROUP_ID;
-
-
-  if (!groupId) {
-
-    showFormMessage(
-      "Group information is not available. Refresh the page and try again.",
-      true
-    );
-
-    return;
-  }
-
-
   try {
 
-    button.disabled =
-      true;
+    button.disabled = true;
 
     button.textContent =
-      "Saving...";
-
-
-    showFormMessage(
-      "Saving member...",
-      false
-    );
+      editingMemberId
+      ? "Updating..."
+      : "Saving...";
 
 
     /* -----------------------------------------------------
-       CHECK DUPLICATE MEMBER NUMBER
+       DUPLICATE MEMBER NUMBER
     ----------------------------------------------------- */
 
-    const {
-      data: existingNumber,
-      error: numberError
-    } =
-      await supabase
+    let duplicateQuery =
+      supabase
         .from("members")
         .select("id")
         .eq(
           "group_id",
-          groupId
+          currentGroupId
         )
         .eq(
           "member_number",
           memberNumber
-        )
-        .limit(1);
+        );
 
 
-    if (numberError) {
-      throw numberError;
+    if (editingMemberId) {
+
+      duplicateQuery =
+        duplicateQuery.neq(
+          "id",
+          editingMemberId
+        );
     }
 
 
-    if (existingNumber?.length) {
+    const {
+      data: duplicates,
+      error: duplicateError
+    } =
+      await duplicateQuery;
+
+
+    if (duplicateError) {
+      throw duplicateError;
+    }
+
+
+    if (duplicates?.length) {
 
       throw new Error(
-        `Member number ${memberNumber} already exists in this group.`
+        `Member number ${memberNumber} already exists.`
+      );
+    }
+
+
+    /* -----------------------------------------------------
+       UPDATE
+    ----------------------------------------------------- */
+
+    if (editingMemberId) {
+
+      const {
+        error
+      } =
+        await supabase
+          .from("members")
+          .update({
+
+            member_number:
+              memberNumber,
+
+            name:
+              name,
+
+            phone:
+              phone,
+
+            email:
+              email || null,
+
+            role:
+              role,
+
+            status:
+              status
+
+          })
+          .eq(
+            "id",
+            editingMemberId
+          )
+          .eq(
+            "group_id",
+            currentGroupId
+          );
+
+
+      if (error) {
+        throw error;
+      }
+
+
+      showFormMessage(
+        `${name} has been updated successfully.`,
+        false
       );
 
     }
@@ -447,38 +712,242 @@ async function addMember(event) {
        INSERT
     ----------------------------------------------------- */
 
+    else {
+
+      const {
+        data,
+        error
+      } =
+        await supabase
+          .from("members")
+          .insert({
+
+            group_id:
+              currentGroupId,
+
+            member_number:
+              memberNumber,
+
+            name:
+              name,
+
+            phone:
+              phone,
+
+            email:
+              email || null,
+
+            role:
+              role,
+
+            status:
+              status
+
+          })
+          .select()
+          .single();
+
+
+      if (error) {
+        throw error;
+      }
+
+
+      console.log(
+        "New member:",
+        data
+      );
+
+
+      showFormMessage(
+        `${name} has been added successfully.`,
+        false
+      );
+    }
+
+
+    await loadMembers();
+
+
+    setTimeout(
+      closeMemberForm,
+      700
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "Save member error:",
+      error
+    );
+
+
+    showFormMessage(
+      error.message ||
+      "Unable to save member.",
+      true
+    );
+
+
+  } finally {
+
+    button.disabled = false;
+
+    button.textContent =
+      editingMemberId
+      ? "Update Member"
+      : "Save Member";
+  }
+}
+
+
+/* =========================================================
+   VIEW MEMBER
+========================================================= */
+
+function viewMember(memberId) {
+
+  const member =
+    allMembers.find(
+      item =>
+        String(item.id) ===
+        String(memberId)
+    );
+
+
+  if (!member) return;
+
+
+  const modal =
+    byId("memberModal");
+
+  if (!modal) return;
+
+
+  byId("viewMemberName").textContent =
+    member.name || "—";
+
+
+  byId("viewMemberNumber").textContent =
+    member.member_number || "—";
+
+
+  byId("viewMemberPhone").textContent =
+    member.phone || "—";
+
+
+  byId("viewMemberEmail").textContent =
+    member.email || "—";
+
+
+  byId("viewMemberRole").textContent =
+    member.role || "member";
+
+
+  byId("viewMemberStatus").textContent =
+    member.status || "active";
+
+
+  byId("viewMemberJoinDate").textContent =
+    member.join_date || "—";
+
+
+  modal.hidden = false;
+}
+
+
+/* =========================================================
+   CLOSE VIEW
+========================================================= */
+
+function closeMemberModal() {
+
+  const modal =
+    byId("memberModal");
+
+  if (modal) {
+    modal.hidden = true;
+  }
+}
+
+
+/* =========================================================
+   EDIT
+========================================================= */
+
+function editMember(memberId) {
+
+  const member =
+    allMembers.find(
+      item =>
+        String(item.id) ===
+        String(memberId)
+    );
+
+
+  if (!member) return;
+
+
+  openMemberForm(
+    member
+  );
+}
+
+
+/* =========================================================
+   CHANGE STATUS
+========================================================= */
+
+async function changeMemberStatus(
+  memberId,
+  newStatus
+) {
+
+  const member =
+    allMembers.find(
+      item =>
+        String(item.id) ===
+        String(memberId)
+    );
+
+
+  if (!member) return;
+
+
+  const action =
+    newStatus === "active"
+      ? "activate"
+      : "deactivate";
+
+
+  const confirmed =
+    confirm(
+      `Are you sure you want to ${action} ${member.name}?`
+    );
+
+
+  if (!confirmed) return;
+
+
+  try {
+
     const {
-      data,
       error
     } =
       await supabase
         .from("members")
-        .insert({
-
-          group_id:
-            groupId,
-
-          member_number:
-            memberNumber,
-
-          name:
-            name,
-
-          phone:
-            phone,
-
-          email:
-            email || null,
-
-          role:
-            role || "member",
-
-          status:
-            "active"
-
+        .update({
+          status: newStatus
         })
-        .select()
-        .single();
+        .eq(
+          "id",
+          memberId
+        )
+        .eq(
+          "group_id",
+          currentGroupId
+        );
 
 
     if (error) {
@@ -486,59 +955,22 @@ async function addMember(event) {
     }
 
 
-    console.log(
-      "NEW MEMBER:",
-      data
-    );
-
-
-    showFormMessage(
-      `${name} has been added successfully.`,
-      false
-    );
-
-
-    form.reset();
-
-
     await loadMembers();
-
-
-    setTimeout(
-      () => {
-
-        closeAddMember();
-
-      },
-      1000
-    );
 
 
   } catch (error) {
 
     console.error(
-      "Add member error:",
+      "Status update error:",
       error
     );
 
 
-    showFormMessage(
+    showError(
       error.message ||
-      "Unable to add member.",
-      true
+      "Unable to update member status."
     );
-
-
-  } finally {
-
-    button.disabled =
-      false;
-
-    button.textContent =
-      "Save Member";
-
   }
-
 }
 
 
@@ -551,148 +983,35 @@ function showFormMessage(
   isError
 ) {
 
-  const element =
+  const box =
     byId("formMessage");
 
-  if (!element) return;
+  if (!box) return;
 
 
-  element.textContent =
-    message;
-
-
-  element.style.display =
+  box.style.display =
     "block";
+
+  box.textContent =
+    message;
 
 
   if (isError) {
 
-    element.style.background =
+    box.style.background =
       "#fee2e2";
 
-    element.style.color =
+    box.style.color =
       "#991b1b";
 
   } else {
 
-    element.style.background =
+    box.style.background =
       "#dcfce7";
 
-    element.style.color =
+    box.style.color =
       "#166534";
-
   }
-
-}
-
-
-/* =========================================================
-   OPEN ADD MEMBER
-========================================================= */
-
-function openAddMember() {
-
-  const panel =
-    byId("addMemberPanel");
-
-  if (!panel) return;
-
-
-  panel.hidden =
-    false;
-
-
-  byId("memberName")?.focus();
-
-
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth"
-  });
-
-}
-
-
-/* =========================================================
-   CLOSE ADD MEMBER
-========================================================= */
-
-function closeAddMember() {
-
-  const panel =
-    byId("addMemberPanel");
-
-  if (!panel) return;
-
-
-  panel.hidden =
-    true;
-
-
-  const message =
-    byId("formMessage");
-
-  if (message) {
-
-    message.textContent =
-      "";
-
-    message.style.display =
-      "none";
-
-  }
-
-}
-
-
-/* =========================================================
-   VIEW MEMBER
-========================================================= */
-
-async function viewMember(memberId) {
-
-  try {
-
-    const {
-      data,
-      error
-    } =
-      await supabase
-        .from("members")
-        .select("*")
-        .eq(
-          "id",
-          memberId
-        )
-        .single();
-
-
-    if (error) {
-      throw error;
-    }
-
-
-    alert(
-      [
-        `Name: ${data.name || "—"}`,
-        `Member No: ${data.member_number || "—"}`,
-        `Phone: ${data.phone || "—"}`,
-        `Email: ${data.email || "—"}`,
-        `Role: ${data.role || "member"}`,
-        `Status: ${data.status || "active"}`
-      ].join("\n")
-    );
-
-
-  } catch (error) {
-
-    console.error(
-      "View member error:",
-      error
-    );
-
-  }
-
 }
 
 
@@ -702,84 +1021,114 @@ async function viewMember(memberId) {
 
 function setupEvents() {
 
-  const addButton =
-    byId("addMemberButton");
-
-
-  if (addButton) {
-
-    addButton.addEventListener(
+  byId("addMemberButton")
+    ?.addEventListener(
       "click",
-      openAddMember
+      () => openMemberForm()
     );
 
-  }
 
-
-  const closeButton =
-    byId("closeAddMember");
-
-
-  if (closeButton) {
-
-    closeButton.addEventListener(
+  byId("closeAddMember")
+    ?.addEventListener(
       "click",
-      closeAddMember
+      closeMemberForm
     );
 
-  }
 
-
-  const cancelButton =
-    byId("cancelAddMember");
-
-
-  if (cancelButton) {
-
-    cancelButton.addEventListener(
+  byId("cancelAddMember")
+    ?.addEventListener(
       "click",
-      closeAddMember
+      closeMemberForm
     );
 
-  }
 
-
-  const form =
-    byId("addMemberForm");
-
-
-  if (form) {
-
-    form.addEventListener(
+  byId("addMemberForm")
+    ?.addEventListener(
       "submit",
-      addMember
+      saveMember
     );
 
-  }
+
+  byId("memberSearch")
+    ?.addEventListener(
+      "input",
+      searchMembers
+    );
+
+
+  byId("closeMemberModal")
+    ?.addEventListener(
+      "click",
+      closeMemberModal
+    );
 
 
   document.addEventListener(
     "click",
     event => {
 
-      const button =
+      const viewButton =
         event.target.closest(
           ".view-member"
         );
 
+      if (viewButton) {
 
-      if (!button) {
+        viewMember(
+          viewButton.dataset.id
+        );
+
         return;
       }
 
 
-      viewMember(
-        button.dataset.id
-      );
+      const editButton =
+        event.target.closest(
+          ".edit-member"
+        );
+
+      if (editButton) {
+
+        editMember(
+          editButton.dataset.id
+        );
+
+        return;
+      }
+
+
+      const deactivateButton =
+        event.target.closest(
+          ".deactivate-member"
+        );
+
+      if (deactivateButton) {
+
+        changeMemberStatus(
+          deactivateButton.dataset.id,
+          "inactive"
+        );
+
+        return;
+      }
+
+
+      const activateButton =
+        event.target.closest(
+          ".activate-member"
+        );
+
+      if (activateButton) {
+
+        changeMemberStatus(
+          activateButton.dataset.id,
+          "active"
+        );
+
+      }
 
     }
   );
-
 }
 
 
@@ -787,7 +1136,7 @@ function setupEvents() {
    INIT
 ========================================================= */
 
-async function init() {
+async function initMembers() {
 
   setupEvents();
 
@@ -796,14 +1145,9 @@ async function init() {
 }
 
 
-init();
+initMembers();
 
 
 export {
   initMembers
 };
-
-
-async function initMembers() {
-  await init();
-}
