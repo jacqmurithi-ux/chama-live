@@ -5,13 +5,221 @@ import {
   signOut
 } from "./auth.js";
 
-
 /* =========================================================
-   STATE
+   LAYOUT STATE
 ========================================================= */
 
 let currentMember = null;
 let currentGroup = null;
+let pageScriptLoaded = false;
+
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function byId(id) {
+  return document.getElementById(id);
+}
+
+
+/* =========================================================
+   DISPLAY USER
+========================================================= */
+
+function displayUser(member) {
+
+  const name =
+    member?.name ||
+    member?.full_name ||
+    "Member";
+
+  const elements = document.querySelectorAll(
+    "[data-user-name]"
+  );
+
+  elements.forEach(element => {
+    element.textContent = name;
+  });
+}
+
+
+/* =========================================================
+   DISPLAY GROUP
+========================================================= */
+
+function displayGroup(group) {
+
+  const name =
+    group?.name ||
+    group?.group_name ||
+    "CHAMA";
+
+  const elements = document.querySelectorAll(
+    "[data-group-name]"
+  );
+
+  elements.forEach(element => {
+    element.textContent = name;
+  });
+}
+
+
+/* =========================================================
+   LOGOUT
+========================================================= */
+
+function setupLogout() {
+
+  const logoutButton = byId("logout");
+
+  if (!logoutButton) {
+    return;
+  }
+
+  logoutButton.addEventListener(
+    "click",
+    async () => {
+
+      logoutButton.disabled = true;
+      logoutButton.textContent = "Signing out...";
+
+      try {
+
+        await signOut();
+
+      } catch (error) {
+
+        console.error(
+          "Logout error:",
+          error
+        );
+
+        logoutButton.disabled = false;
+        logoutButton.textContent = "Sign out";
+
+      }
+
+    }
+  );
+}
+
+
+/* =========================================================
+   PAGE NAME
+========================================================= */
+
+function getPageScript() {
+
+  const path =
+    window.location.pathname
+      .split("/")
+      .pop()
+      .toLowerCase();
+
+  const pageScripts = {
+
+    "dashboard.html":
+      "dashboard.js",
+
+    "members.html":
+      "members.js",
+
+    "contributions.html":
+      "contributions.js",
+
+    "expenses.html":
+      "expenses.js",
+
+    "meetings.html":
+      "meetings.js",
+
+    "reports.html":
+      "reports.js",
+
+    "group-management.html":
+      "group-management.js",
+
+    "monthly-closing.html":
+      "monthly-closing.js"
+
+  };
+
+  return pageScripts[path] || null;
+}
+
+
+/* =========================================================
+   LOAD PAGE SCRIPT
+========================================================= */
+
+async function loadPageScript() {
+
+  if (pageScriptLoaded) {
+    return;
+  }
+
+  const script =
+    getPageScript();
+
+  if (!script) {
+
+    console.log(
+      "No page-specific script for this page."
+    );
+
+    return;
+  }
+
+  console.log(
+    "Loading page script:",
+    script
+  );
+
+  try {
+
+    /*
+     * IMPORTANT:
+     *
+     * All page JS files live inside /js/
+     *
+     * Example:
+     *
+     * /js/members.js
+     */
+
+    await import(
+      `./${script}`
+    );
+
+    pageScriptLoaded = true;
+
+    console.log(
+      "Loaded page script:",
+      script
+    );
+
+  } catch (error) {
+
+    console.error(
+      `Unable to load ${script}:`,
+      error
+    );
+
+    const errorBox =
+      byId("error");
+
+    if (errorBox) {
+
+      errorBox.hidden = false;
+
+      errorBox.textContent =
+        `Unable to load ${script}. Check that /js/${script} contains JavaScript code and is committed to GitHub.`;
+
+    }
+
+  }
+}
 
 
 /* =========================================================
@@ -22,9 +230,13 @@ export async function boot() {
 
   try {
 
-    /* -----------------------------------------------------
-       REQUIRE LOGIN
-    ----------------------------------------------------- */
+    console.log(
+      "CHAMA LIVE booting..."
+    );
+
+    /*
+     * 1. Make sure the user is logged in.
+     */
 
     const session =
       await requireAuth();
@@ -34,580 +246,106 @@ export async function boot() {
     }
 
 
-    /* -----------------------------------------------------
-       GET MEMBER
-    ----------------------------------------------------- */
+    /*
+     * 2. Get member.
+     */
 
     currentMember =
       await getMyMember();
 
-
     if (!currentMember) {
 
       throw new Error(
-        "No member record was found for this account."
+        "Your account is authenticated, but no member record was found."
       );
 
     }
 
 
-    /* -----------------------------------------------------
-       GET GROUP
-    ----------------------------------------------------- */
+    /*
+     * 3. Get group.
+     */
 
     try {
 
       currentGroup =
         await getMyGroup();
 
-    } catch (error) {
+    } catch (groupError) {
 
       console.warn(
-        "Unable to load group:",
-        error
+        "getMyGroup failed:",
+        groupError
       );
 
       /*
-       * Do not stop the whole application if the
-       * group RPC is unavailable.
+       * Some database versions may not
+       * have get_my_group().
        *
-       * The member record still contains group_id.
+       * The member record still contains
+       * group_id, so allow the page to
+       * continue.
        */
 
-      currentGroup =
-        null;
+      currentGroup = {
+        id:
+          currentMember.group_id
+      };
 
     }
 
 
-    /* -----------------------------------------------------
-       DISPLAY USER
-    ----------------------------------------------------- */
+    /*
+     * 4. Display information.
+     */
 
-    displayUser();
+    displayUser(
+      currentMember
+    );
+
+    displayGroup(
+      currentGroup
+    );
 
 
-    /* -----------------------------------------------------
-       DISPLAY GROUP
-    ----------------------------------------------------- */
-
-    displayGroup();
-
-
-    /* -----------------------------------------------------
-       LOGOUT
-    ----------------------------------------------------- */
+    /*
+     * 5. Setup logout.
+     */
 
     setupLogout();
 
 
-    /* -----------------------------------------------------
-       LOAD CURRENT PAGE
-    ----------------------------------------------------- */
+    /*
+     * 6. Load page-specific JS.
+     */
 
     await loadPageScript();
 
 
-  } catch (error) {
-
-    console.error(
-      "LAYOUT BOOT ERROR:",
-      error
-    );
-
-
-    showGlobalError(
-      error?.message ||
-      "Unable to load CHAMA LIVE."
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   DISPLAY USER
-========================================================= */
-
-function displayUser() {
-
-  const name =
-    currentMember?.name ||
-    "Member";
-
-
-  /* Welcome name */
-
-  document
-    .querySelectorAll(
-      "[data-user-name]"
-    )
-    .forEach(
-      element => {
-
-        element.textContent =
-          name;
-
-      }
-    );
-
-
-  /* Other possible welcome elements */
-
-  document
-    .querySelectorAll(
-      ".welcome-name"
-    )
-    .forEach(
-      element => {
-
-        element.textContent =
-          name;
-
-      }
-    );
-
-
-  /* Generic member name */
-
-  document
-    .querySelectorAll(
-      "#memberName"
-    )
-    .forEach(
-      element => {
-
-        element.textContent =
-          name;
-
-      }
-    );
-
-}
-
-
-/* =========================================================
-   DISPLAY GROUP
-========================================================= */
-
-function displayGroup() {
-
-  const groupName =
-    currentGroup?.name ||
-    currentMember?.group_name ||
-    "Your Group";
-
-
-  document
-    .querySelectorAll(
-      "[data-group-name]"
-    )
-    .forEach(
-      element => {
-
-        element.textContent =
-          groupName;
-
-      }
-    );
-
-
-  document
-    .querySelectorAll(
-      ".group-name"
-    )
-    .forEach(
-      element => {
-
-        element.textContent =
-          groupName;
-
-      }
-    );
-
-
-  document
-    .querySelectorAll(
-      "#groupName"
-    )
-    .forEach(
-      element => {
-
-        element.textContent =
-          groupName;
-
-      }
-    );
-
-}
-
-
-/* =========================================================
-   LOGOUT
-========================================================= */
-
-function setupLogout() {
-
-  const logoutButton =
-    document.getElementById(
-      "logout"
-    );
-
-
-  if (!logoutButton) {
-
-    console.warn(
-      "Logout button not found on this page."
-    );
-
-    return;
-
-  }
-
-
-  /*
-   * Prevent duplicate listeners
-   */
-
-  if (
-    logoutButton.dataset
-      .logoutReady === "true"
-  ) {
-
-    return;
-
-  }
-
-
-  logoutButton.dataset
-    .logoutReady = "true";
-
-
-  logoutButton.addEventListener(
-    "click",
-    async () => {
-
-      try {
-
-        logoutButton.disabled =
-          true;
-
-        logoutButton.textContent =
-          "Signing out...";
-
-
-        await signOut();
-
-
-      } catch (error) {
-
-        console.error(
-          "SIGN OUT ERROR:",
-          error
-        );
-
-
-        logoutButton.disabled =
-          false;
-
-        logoutButton.textContent =
-          "Sign out";
-
-
-        showGlobalError(
-          error?.message ||
-          "Unable to sign out."
-        );
-
-      }
-
-    }
-  );
-
-}
-
-
-/* =========================================================
-   LOAD PAGE SCRIPT
-========================================================= */
-
-async function loadPageScript() {
-
-  const path =
-    window.location.pathname
-      .toLowerCase();
-
-
-  let script = null;
-
-
-  /* -------------------------------------------------------
-     DASHBOARD
-  ------------------------------------------------------- */
-
-  if (
-    path.endsWith(
-      "/dashboard.html"
-    ) ||
-    path.endsWith(
-      "/index.html"
-    ) ||
-    path.endsWith(
-      "/"
-    )
-  ) {
-
-    script =
-      "dashboard.js";
-
-  }
-
-
-  /* -------------------------------------------------------
-     MEMBERS
-  ------------------------------------------------------- */
-
-  else if (
-    path.endsWith(
-      "/members.html"
-    )
-  ) {
-
-    script =
-      "members.js";
-
-  }
-
-
-  /* -------------------------------------------------------
-     CONTRIBUTIONS
-  ------------------------------------------------------- */
-
-  else if (
-    path.endsWith(
-      "/contributions.html"
-    )
-  ) {
-
-    script =
-      "contributions.js";
-
-  }
-
-
-  /* -------------------------------------------------------
-     EXPENSES
-  ------------------------------------------------------- */
-
-  else if (
-    path.endsWith(
-      "/expenses.html"
-    )
-  ) {
-
-    script =
-      "expenses.js";
-
-  }
-
-
-  /* -------------------------------------------------------
-     MEETINGS
-  ------------------------------------------------------- */
-
-  else if (
-    path.endsWith(
-      "/meetings.html"
-    )
-  ) {
-
-    script =
-      "meetings.js";
-
-  }
-
-
-  /* -------------------------------------------------------
-     REPORTS
-  ------------------------------------------------------- */
-
-  else if (
-    path.endsWith(
-      "/reports.html"
-    )
-  ) {
-
-    script =
-      "reports.js";
-
-  }
-
-
-  /* -------------------------------------------------------
-     GROUP MANAGEMENT
-  ------------------------------------------------------- */
-
-  else if (
-    path.endsWith(
-      "/group-management.html"
-    )
-  ) {
-
-    script =
-      "group-management.js";
-
-  }
-
-
-  /* -------------------------------------------------------
-     NO PAGE SCRIPT
-  ------------------------------------------------------- */
-
-  else {
-
     console.log(
-      "No page-specific script required for:",
-      path
+      "CHAMA LIVE ready."
     );
-
-    return;
-
-  }
-
-
-  /* -------------------------------------------------------
-     IMPORT PAGE SCRIPT
-  ------------------------------------------------------- */
-
-  try {
-
-    console.log(
-      "Loading page script:",
-      script
-    );
-
-
-    await import(
-      `./${script}`
-    );
-
-
-    console.log(
-      "Page script loaded:",
-      script
-    );
-
 
   } catch (error) {
 
     console.error(
-      `Unable to load ${script}:`,
+      "CHAMA LIVE boot error:",
       error
     );
 
+    const errorBox =
+      byId("error");
 
-    showGlobalError(
-      `Unable to load ${script}. Check the browser console.`
-    );
+    if (errorBox) {
 
-  }
+      errorBox.hidden = false;
 
-}
-
-
-/* =========================================================
-   GLOBAL ERROR MESSAGE
-========================================================= */
-
-function showGlobalError(
-  message
-) {
-
-  let errorBox =
-    document.getElementById(
-      "layoutError"
-    );
-
-
-  /* -------------------------------------------------------
-     CREATE ERROR BOX
-  ------------------------------------------------------- */
-
-  if (!errorBox) {
-
-    errorBox =
-      document.createElement(
-        "div"
-      );
-
-
-    errorBox.id =
-      "layoutError";
-
-
-    errorBox.className =
-      "error";
-
-
-    errorBox.style.margin =
-      "20px 0";
-
-
-    errorBox.style.padding =
-      "15px";
-
-
-    const main =
-      document.querySelector(
-        "main"
-      );
-
-
-    if (main) {
-
-      main.prepend(
-        errorBox
-      );
-
-    } else {
-
-      document.body.prepend(
-        errorBox
-      );
+      errorBox.textContent =
+        error?.message ||
+        "Unable to load CHAMA LIVE.";
 
     }
 
   }
-
-
-  /* -------------------------------------------------------
-     SHOW ERROR
-  ------------------------------------------------------- */
-
-  errorBox.hidden =
-    false;
-
-
-  errorBox.textContent =
-    message;
-
-}
-
-
-/* =========================================================
-   EXPORT STATE
-========================================================= */
-
-export function getCurrentMember() {
-
-  return currentMember;
-
-}
-
-
-export function getCurrentGroup() {
-
-  return currentGroup;
 
 }
