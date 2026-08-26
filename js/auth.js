@@ -1,8 +1,15 @@
 import { supabase } from "./supabase.js";
 
+/*
+ * Re-export Supabase so other modules can use:
+ *
+ * import { supabase, getMyMember, hasRole } from "./auth.js";
+ */
+export { supabase };
+
 
 /* =========================================================
-   AUTH CACHE
+   CACHE
 ========================================================= */
 
 let sessionCache = null;
@@ -11,13 +18,15 @@ let groupCache = null;
 
 
 /* =========================================================
-   CACHE
+   CLEAR CACHE
 ========================================================= */
 
 export function clearAuthCache() {
+
   sessionCache = null;
   memberCache = null;
   groupCache = null;
+
 }
 
 
@@ -26,6 +35,10 @@ export function clearAuthCache() {
 ========================================================= */
 
 export async function getSession() {
+
+  if (sessionCache) {
+    return sessionCache;
+  }
 
   const {
     data,
@@ -99,15 +112,12 @@ export async function getMyMember(
     return memberCache;
   }
 
-
   const {
     data,
     error
-  } =
-    await supabase.rpc(
-      "get_my_member"
-    );
-
+  } = await supabase.rpc(
+    "get_my_member"
+  );
 
   if (error) {
 
@@ -119,13 +129,9 @@ export async function getMyMember(
     throw error;
   }
 
-
   let member = data;
 
-
-  if (
-    Array.isArray(data)
-  ) {
+  if (Array.isArray(data)) {
 
     member =
       data.length
@@ -133,10 +139,8 @@ export async function getMyMember(
         : null;
   }
 
-
   memberCache =
     member || null;
-
 
   return memberCache;
 }
@@ -157,15 +161,12 @@ export async function getMyGroup(
     return groupCache;
   }
 
-
   const {
     data,
     error
-  } =
-    await supabase.rpc(
-      "get_my_group"
-    );
-
+  } = await supabase.rpc(
+    "get_my_group"
+  );
 
   if (error) {
 
@@ -177,13 +178,9 @@ export async function getMyGroup(
     throw error;
   }
 
-
   let group = data;
 
-
-  if (
-    Array.isArray(data)
-  ) {
+  if (Array.isArray(data)) {
 
     group =
       data.length
@@ -191,10 +188,8 @@ export async function getMyGroup(
         : null;
   }
 
-
   groupCache =
     group || null;
-
 
   return groupCache;
 }
@@ -209,27 +204,23 @@ export async function getMyGroupId() {
   const member =
     await getMyMember();
 
-
   if (
-    member?.group_id
+    member &&
+    member.group_id
   ) {
     return member.group_id;
   }
 
-
   const {
     data,
     error
-  } =
-    await supabase.rpc(
-      "my_group_id"
-    );
-
+  } = await supabase.rpc(
+    "my_group_id"
+  );
 
   if (error) {
     throw error;
   }
-
 
   return data || null;
 }
@@ -248,22 +239,17 @@ export async function requireMember() {
     return null;
   }
 
-
   const member =
     await getMyMember();
-
 
   if (!member) {
 
     console.error(
-      "No member record found."
+      "No member record found for authenticated user."
     );
-
-    await signOut();
 
     return null;
   }
-
 
   return member;
 }
@@ -278,27 +264,21 @@ export async function requireGroup() {
   const member =
     await requireMember();
 
-
   if (!member) {
     return null;
   }
 
-
   const group =
     await getMyGroup();
-
 
   if (!group) {
 
     console.error(
-      "No group found."
+      "No group found for authenticated member."
     );
-
-    await signOut();
 
     return null;
   }
-
 
   return group;
 }
@@ -315,7 +295,6 @@ export function getRole(
   const source =
     member ||
     memberCache;
-
 
   return String(
     source?.role ||
@@ -343,7 +322,12 @@ export function hasRole(
 
 
   /*
+   * Supports:
+   *
+   * hasRole(member, "admin")
+   * hasRole(member, ["admin", "secretary"])
    * hasRole("admin")
+   * hasRole(["admin", "secretary"])
    */
 
   if (
@@ -479,16 +463,16 @@ export function canManageMeetings(
 
 
 /* =========================================================
-   ADD MEMBER
+   ADD GROUP MEMBER
 ========================================================= */
 
 export async function addGroupMember({
   groupId,
   name,
   memberNumber,
-  membershipNumber = null,
+  membershipNumber,
   phone,
-  email = null,
+  email,
   role = "member",
   joinDate = null
 }) {
@@ -499,13 +483,11 @@ export async function addGroupMember({
     );
   }
 
-
   if (!name) {
     throw new Error(
       "Member name is required."
     );
   }
-
 
   if (!memberNumber) {
     throw new Error(
@@ -513,6 +495,11 @@ export async function addGroupMember({
     );
   }
 
+  if (!membershipNumber) {
+    throw new Error(
+      "Membership number is required."
+    );
+  }
 
   if (!phone) {
     throw new Error(
@@ -555,25 +542,28 @@ export async function addGroupMember({
 
     onboarding_status:
       "pending"
-
   };
 
 
   const {
     data,
     error
-  } =
-    await supabase
-      .from("members")
-      .insert(payload)
-      .select()
-      .single();
+  } = await supabase
+    .from("members")
+    .insert(payload)
+    .select()
+    .single();
 
 
   if (error) {
+
+    console.error(
+      "addGroupMember:",
+      error
+    );
+
     throw error;
   }
-
 
   return data;
 }
@@ -587,17 +577,13 @@ export async function signOut() {
 
   clearAuthCache();
 
-
   const {
     error
-  } =
-    await supabase.auth.signOut();
-
+  } = await supabase.auth.signOut();
 
   if (error) {
     throw error;
   }
-
 
   window.location.replace(
     "./login.html"
@@ -626,7 +612,6 @@ supabase.auth.onAuthStateChange(
     sessionCache =
       session || null;
 
-
     if (
       event ===
       "SIGNED_OUT"
@@ -635,6 +620,5 @@ supabase.auth.onAuthStateChange(
       memberCache = null;
       groupCache = null;
     }
-
   }
 );
