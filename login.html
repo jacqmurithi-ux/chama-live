@@ -1,21 +1,22 @@
+```html
 <!doctype html>
 <html lang="en">
 
 <head>
 
-  <meta charset="utf-8">
+<meta charset="utf-8">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1"
-  >
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1"
+>
 
-  <title>Login — CHAMA LIVE</title>
+<title>Login — CHAMA LIVE</title>
 
-  <link
-    rel="stylesheet"
-    href="css/app.css"
-  >
+<link
+  rel="stylesheet"
+  href="css/app.css"
+>
 
 </head>
 
@@ -38,10 +39,14 @@
   class="card"
   style="
     width:100%;
-    max-width:420px;
+    max-width:440px;
   "
 >
 
+
+<!-- ==================================================
+     BRAND
+=================================================== -->
 
 <div
   style="
@@ -50,16 +55,25 @@
   "
 >
 
-  <h1>
-    CHAMA <span>LIVE</span>
-  </h1>
+<h1>
+CHAMA <span>LIVE</span>
+</h1>
 
-  <p class="muted">
-    Sign in to your group account
-  </p>
+
+<p
+  id="pageDescription"
+  class="muted"
+>
+Sign in to your group account
+</p>
 
 </div>
 
+
+
+<!-- ==================================================
+     ERROR
+=================================================== -->
 
 <div
   id="error"
@@ -69,46 +83,63 @@
 ></div>
 
 
+
+<!-- ==================================================
+     SUCCESS
+=================================================== -->
+
+<div
+  id="success"
+  class="card"
+  hidden
+  style="margin-bottom:15px;"
+></div>
+
+
+
+<!-- ==================================================
+     LOGIN FORM
+=================================================== -->
+
 <form
   id="loginForm"
-  autocomplete="on"
 >
 
 
 <div style="margin-bottom:15px;">
 
-  <label for="email">
-    Email address
-  </label>
+<label for="loginEmail">
+Email address
+</label>
 
-  <input
-    type="email"
-    id="email"
-    name="email"
-    autocomplete="username"
-    required
-    style="width:100%;"
-  >
+<input
+  type="email"
+  id="loginEmail"
+  autocomplete="username"
+  required
+  style="width:100%;"
+>
 
 </div>
+
 
 
 <div style="margin-bottom:20px;">
 
-  <label for="password">
-    Password
-  </label>
+<label for="loginPassword">
+Password
+</label>
 
-  <input
-    type="password"
-    id="password"
-    name="password"
-    autocomplete="current-password"
-    required
-    style="width:100%;"
-  >
+<input
+  type="password"
+  id="loginPassword"
+  autocomplete="current-password"
+  required
+  style="width:100%;"
+>
 
 </div>
+
 
 
 <button
@@ -117,12 +148,17 @@
   id="loginButton"
   style="width:100%;"
 >
-  Sign in
+Sign in
 </button>
 
 
 </form>
 
+
+
+<!-- ==================================================
+     LOGIN STATUS
+=================================================== -->
 
 <div
   id="status"
@@ -134,14 +170,175 @@
 ></div>
 
 
+
 <hr style="margin:25px 0;">
+
+
+
+<!-- ==================================================
+     ACTIVATION LINK
+=================================================== -->
+
+<div
+  id="activationPrompt"
+>
 
 
 <p
   class="muted"
   style="text-align:center;"
 >
-  Don't have a group account?
+Are you a new member whose group administrator
+has already added you?
+</p>
+
+
+<button
+  type="button"
+  id="showActivation"
+  class="btn btn-secondary"
+  style="width:100%;"
+>
+Activate Member Account
+</button>
+
+</div>
+
+
+
+<!-- ==================================================
+     ACTIVATION FORM
+=================================================== -->
+
+<form
+  id="activationForm"
+  hidden
+>
+
+
+<h2>
+Activate Member Account
+</h2>
+
+
+<p class="muted">
+
+Your group administrator must first add you
+to CHAMA LIVE.
+
+Use the same email address that your
+administrator registered for you.
+
+</p>
+
+
+
+<div style="margin-bottom:15px;">
+
+<label for="membershipNumber">
+Membership Number
+</label>
+
+<input
+  id="membershipNumber"
+  autocomplete="off"
+  style="width:100%;"
+>
+
+</div>
+
+
+
+<div style="margin-bottom:15px;">
+
+<label for="activationEmail">
+Email address
+</label>
+
+<input
+  type="email"
+  id="activationEmail"
+  autocomplete="email"
+  style="width:100%;"
+>
+
+</div>
+
+
+
+<div style="margin-bottom:15px;">
+
+<label for="activationPassword">
+Create Password
+</label>
+
+<input
+  type="password"
+  id="activationPassword"
+  minlength="8"
+  autocomplete="new-password"
+  style="width:100%;"
+>
+
+</div>
+
+
+
+<div style="margin-bottom:20px;">
+
+<label for="activationConfirm">
+Confirm Password
+</label>
+
+<input
+  type="password"
+  id="activationConfirm"
+  minlength="8"
+  autocomplete="new-password"
+  style="width:100%;"
+>
+
+</div>
+
+
+
+<button
+  class="btn btn-primary"
+  type="submit"
+  id="activationButton"
+  style="width:100%;"
+>
+Create & Activate Account
+</button>
+
+
+
+<button
+  type="button"
+  id="backToLogin"
+  class="btn btn-secondary"
+  style="
+    width:100%;
+    margin-top:10px;
+  "
+>
+Back to Sign In
+</button>
+
+
+</form>
+
+
+
+<hr style="margin:25px 0;">
+
+
+
+<p
+  class="muted"
+  style="text-align:center;"
+>
+Don't have a group account?
 </p>
 
 
@@ -153,8 +350,9 @@
     text-align:center;
   "
 >
-  Create Group Account
+Create Group Account
 </a>
+
 
 
 </section>
@@ -166,6 +364,7 @@
 
 <script type="module">
 
+
 import {
   supabase
 } from "./js/supabase.js";
@@ -174,32 +373,37 @@ import {
 import {
   clearAuthCache,
   getMyMember,
-  getMyGroup
+  getMyGroup,
+  claimMemberAccount
 } from "./js/auth.js";
 
 
 
-const form =
+/* =====================================================
+   ELEMENTS
+===================================================== */
+
+const loginForm =
   document.getElementById(
     "loginForm"
   );
 
 
-const emailInput =
+const activationForm =
   document.getElementById(
-    "email"
+    "activationForm"
   );
 
 
-const passwordInput =
-  document.getElementById(
-    "password"
-  );
-
-
-const button =
+const loginButton =
   document.getElementById(
     "loginButton"
+  );
+
+
+const activationButton =
+  document.getElementById(
+    "activationButton"
   );
 
 
@@ -209,54 +413,76 @@ const errorBox =
   );
 
 
+const successBox =
+  document.getElementById(
+    "success"
+  );
+
+
 const statusBox =
   document.getElementById(
     "status"
   );
 
 
-
-/* =====================================================
-   URL CLEANUP
-===================================================== */
-
-if (
-  window.location.search
-) {
-
-  window.history.replaceState(
-    {},
-    document.title,
-    window.location.pathname
+const activationPrompt =
+  document.getElementById(
+    "activationPrompt"
   );
 
-}
+
+const pageDescription =
+  document.getElementById(
+    "pageDescription"
+  );
 
 
 
 /* =====================================================
-   ERROR
+   MESSAGE HELPERS
 ===================================================== */
 
 function showError(
-  message
+  text
 ) {
 
   errorBox.hidden =
     false;
 
   errorBox.textContent =
-    message;
+    text;
+
+  successBox.hidden =
+    true;
 
 }
 
 
-function clearError() {
+function showSuccess(
+  text
+) {
+
+  successBox.hidden =
+    false;
+
+  successBox.textContent =
+    text;
 
   errorBox.hidden =
     true;
 
-  errorBox.textContent =
+}
+
+
+function clearMessages() {
+
+  errorBox.hidden =
+    true;
+
+  successBox.hidden =
+    true;
+
+  statusBox.textContent =
     "";
 
 }
@@ -264,47 +490,117 @@ function clearError() {
 
 
 /* =====================================================
-   LOGIN
+   SHOW ACTIVATION
 ===================================================== */
 
-form.addEventListener(
+document
+  .getElementById(
+    "showActivation"
+  )
+  .addEventListener(
+    "click",
+    () => {
+
+      clearMessages();
+
+
+      loginForm.hidden =
+        true;
+
+
+      activationPrompt.hidden =
+        true;
+
+
+      activationForm.hidden =
+        false;
+
+
+      pageDescription.textContent =
+        "Activate your member account";
+
+    }
+  );
+
+
+
+/* =====================================================
+   BACK TO LOGIN
+===================================================== */
+
+document
+  .getElementById(
+    "backToLogin"
+  )
+  .addEventListener(
+    "click",
+    () => {
+
+      clearMessages();
+
+
+      activationForm.hidden =
+        true;
+
+
+      loginForm.hidden =
+        false;
+
+
+      activationPrompt.hidden =
+        false;
+
+
+      pageDescription.textContent =
+        "Sign in to your group account";
+
+    }
+  );
+
+
+
+/* =====================================================
+   NORMAL LOGIN
+===================================================== */
+
+loginForm.addEventListener(
   "submit",
   async event => {
 
     event.preventDefault();
 
 
-    clearError();
+    clearMessages();
 
 
     const email =
-      emailInput.value
+      document
+        .getElementById(
+          "loginEmail"
+        )
+        .value
         .trim()
         .toLowerCase();
 
 
     const password =
-      passwordInput.value;
+      document
+        .getElementById(
+          "loginPassword"
+        )
+        .value;
 
 
-    button.disabled =
+    loginButton.disabled =
       true;
 
 
-    button.textContent =
+    loginButton.textContent =
       "Signing in...";
-
-
-    statusBox.textContent =
-      "";
 
 
     try {
 
-
-      /*
-       * SUPABASE AUTH
-       */
 
       const {
         data,
@@ -328,7 +624,7 @@ form.addEventListener(
       if (!data?.session) {
 
         throw new Error(
-          "No login session was created."
+          "Login succeeded but no session was created."
         );
 
       }
@@ -338,12 +634,8 @@ form.addEventListener(
 
 
       statusBox.textContent =
-        "Loading your group...";
+        "Checking your member account...";
 
-
-      /*
-       * MEMBER
-       */
 
       const member =
         await getMyMember(
@@ -351,28 +643,90 @@ form.addEventListener(
         );
 
 
+      /*
+       * If member was found normally,
+       * continue.
+       */
+
       if (!member) {
+
+        /*
+         * Check whether this browser previously
+         * started member activation.
+         */
+
+        const pendingNumber =
+          localStorage.getItem(
+            "chama_pending_membership_number"
+          );
+
+
+        if (
+          pendingNumber
+        ) {
+
+          try {
+
+            await claimMemberAccount(
+              pendingNumber,
+              email
+            );
+
+
+            localStorage.removeItem(
+              "chama_pending_membership_number"
+            );
+
+
+            clearAuthCache();
+
+          } catch (
+            claimError
+          ) {
+
+            console.warn(
+              "Automatic member claim failed:",
+              claimError
+            );
+
+          }
+
+        }
+
+      }
+
+
+      clearAuthCache();
+
+
+      const finalMember =
+        await getMyMember(
+          true
+        );
+
+
+      if (!finalMember) {
 
         await supabase.auth.signOut();
 
+
         throw new Error(
-          "This email is not linked to a CHAMA LIVE member account."
+          "This login is not linked to a CHAMA LIVE member account. If your group administrator has already added you, choose 'Activate Member Account' and enter your membership number."
         );
 
       }
 
 
-      /*
-       * MEMBER STATUS
-       */
-
       if (
-        member.status &&
-        member.status.toLowerCase() !==
+        finalMember.status &&
+        String(
+          finalMember.status
+        ).toLowerCase() !==
           "active"
       ) {
 
         await supabase.auth.signOut();
+
 
         throw new Error(
           "Your member account is inactive. Please contact your group administrator."
@@ -380,10 +734,6 @@ form.addEventListener(
 
       }
 
-
-      /*
-       * GROUP
-       */
 
       const group =
         await getMyGroup(
@@ -395,6 +745,7 @@ form.addEventListener(
 
         await supabase.auth.signOut();
 
+
         throw new Error(
           "Your account is not linked to a valid group."
         );
@@ -402,12 +753,8 @@ form.addEventListener(
       }
 
 
-      /*
-       * SUCCESS
-       */
-
       statusBox.textContent =
-        `Welcome ${member.name || ""}. Redirecting...`;
+        `Welcome ${finalMember.name || ""}. Redirecting...`;
 
 
       window.location.replace(
@@ -418,7 +765,7 @@ form.addEventListener(
     } catch (error) {
 
       console.error(
-        "LOGIN ERROR:",
+        "LOGIN:",
         error
       );
 
@@ -451,7 +798,7 @@ form.addEventListener(
       ) {
 
         message =
-          "Please confirm your email address before signing in.";
+          "Please confirm your email address, then sign in again.";
 
       }
 
@@ -461,19 +808,338 @@ form.addEventListener(
       );
 
 
-      button.disabled =
+    } finally {
+
+      loginButton.disabled =
         false;
 
-      button.textContent =
+      loginButton.textContent =
         "Sign in";
-
-      statusBox.textContent =
-        "";
 
     }
 
   }
 );
+
+
+
+/* =====================================================
+   MEMBER ACTIVATION
+===================================================== */
+
+activationForm.addEventListener(
+  "submit",
+  async event => {
+
+    event.preventDefault();
+
+
+    clearMessages();
+
+
+    const membershipNumber =
+      document
+        .getElementById(
+          "membershipNumber"
+        )
+        .value
+        .trim();
+
+
+    const email =
+      document
+        .getElementById(
+          "activationEmail"
+        )
+        .value
+        .trim()
+        .toLowerCase();
+
+
+    const password =
+      document
+        .getElementById(
+          "activationPassword"
+        )
+        .value;
+
+
+    const confirmPassword =
+      document
+        .getElementById(
+          "activationConfirm"
+        )
+        .value;
+
+
+    if (!membershipNumber) {
+
+      showError(
+        "Membership number is required."
+      );
+
+      return;
+
+    }
+
+
+    if (!email) {
+
+      showError(
+        "Email address is required."
+      );
+
+      return;
+
+    }
+
+
+    if (
+      password.length < 8
+    ) {
+
+      showError(
+        "Password must be at least 8 characters."
+      );
+
+      return;
+
+    }
+
+
+    if (
+      password !==
+      confirmPassword
+    ) {
+
+      showError(
+        "Passwords do not match."
+      );
+
+      return;
+
+    }
+
+
+    activationButton.disabled =
+      true;
+
+
+    activationButton.textContent =
+      "Creating account...";
+
+
+    try {
+
+
+      /*
+       * Remember the membership number.
+       *
+       * This allows the user to finish
+       * claiming their member record after
+       * email confirmation if Supabase requires it.
+       */
+
+      localStorage.setItem(
+        "chama_pending_membership_number",
+        membershipNumber
+      );
+
+
+      /*
+       * Create Auth account.
+       */
+
+      const {
+        data,
+        error
+      } =
+        await supabase.auth
+          .signUp({
+
+            email,
+
+            password
+
+          });
+
+
+      if (error) {
+        throw error;
+      }
+
+
+      /*
+       * Supabase may require email confirmation.
+       */
+
+      if (
+        !data?.session
+      ) {
+
+        showSuccess(
+          "Your login account has been created. Check your email and confirm your email address. Then return here and sign in using the same email and password."
+        );
+
+
+        activationButton.disabled =
+          false;
+
+        activationButton.textContent =
+          "Create & Activate Account";
+
+
+        return;
+
+      }
+
+
+      /*
+       * We have a session.
+       * Claim the administrator-created member.
+       */
+
+      await claimMemberAccount(
+        membershipNumber,
+        email
+      );
+
+
+      localStorage.removeItem(
+        "chama_pending_membership_number"
+      );
+
+
+      clearAuthCache();
+
+
+      const member =
+        await getMyMember(
+          true
+        );
+
+
+      if (!member) {
+
+        throw new Error(
+          "Account was created but the member record could not be loaded."
+        );
+
+      }
+
+
+      const group =
+        await getMyGroup(
+          true
+        );
+
+
+      if (!group) {
+
+        throw new Error(
+          "Account was activated but no group was found."
+        );
+
+      }
+
+
+      showSuccess(
+        "Account activated successfully. Redirecting..."
+      );
+
+
+      setTimeout(
+        () => {
+
+          window.location.replace(
+            "dashboard.html"
+          );
+
+        },
+        700
+      );
+
+
+    } catch (error) {
+
+      console.error(
+        "ACTIVATION:",
+        error
+      );
+
+
+      showError(
+        error.message ||
+        "Unable to activate your member account."
+      );
+
+
+    } finally {
+
+      activationButton.disabled =
+        false;
+
+      activationButton.textContent =
+        "Create & Activate Account";
+
+    }
+
+  }
+);
+
+
+
+/* =====================================================
+   CLEAN QUERY STRING
+===================================================== */
+
+if (
+  window.location.search
+) {
+
+  const params =
+    new URLSearchParams(
+      window.location.search
+    );
+
+
+  const error =
+    params.get(
+      "error"
+    );
+
+
+  if (
+    error ===
+    "no-member"
+  ) {
+
+    showError(
+      "Your login account is not linked to a member record."
+    );
+
+  }
+
+
+  if (
+    error ===
+    "forbidden"
+  ) {
+
+    showError(
+      "You do not have permission to access that page."
+    );
+
+  }
+
+
+  window.history.replaceState(
+    {},
+    document.title,
+    window.location.pathname
+  );
+
+}
 
 </script>
 
@@ -481,3 +1147,4 @@ form.addEventListener(
 </body>
 
 </html>
+```
