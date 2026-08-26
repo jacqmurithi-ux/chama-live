@@ -2,7 +2,7 @@ import { supabase } from "./supabase.js";
 
 
 /* =========================================================
-   GET CURRENT SESSION
+   SESSION
 ========================================================= */
 
 export async function getSession() {
@@ -13,7 +13,6 @@ export async function getSession() {
   } = await supabase.auth.getSession();
 
   if (error) {
-    console.error("getSession error:", error);
     throw error;
   }
 
@@ -22,12 +21,13 @@ export async function getSession() {
 
 
 /* =========================================================
-   REQUIRE AUTHENTICATION
+   REQUIRE AUTH
 ========================================================= */
 
 export async function requireAuth() {
 
-  const session = await getSession();
+  const session =
+    await getSession();
 
   if (!session) {
 
@@ -75,22 +75,16 @@ export async function signIn(
   } =
     await supabase.auth.signInWithPassword({
       email: cleanEmail,
-      password: password
+      password
     });
 
 
   if (error) {
-
-    console.error(
-      "Supabase sign-in error:",
-      error
-    );
-
     throw error;
   }
 
 
-  if (!data || !data.session) {
+  if (!data?.session) {
 
     throw new Error(
       "Login succeeded but no session was created."
@@ -118,17 +112,9 @@ export async function signOut() {
   } =
     await supabase.auth.signOut();
 
-
   if (error) {
-
-    console.error(
-      "Supabase sign-out error:",
-      error
-    );
-
     throw error;
   }
-
 
   window.location.replace(
     "./login.html"
@@ -154,19 +140,19 @@ export async function getMyMember() {
   if (error) {
 
     console.error(
-      "get_my_member error:",
+      "get_my_member:",
       error
     );
 
     throw new Error(
-      "Unable to load your member account: " +
+      "Unable to load member account: " +
       error.message
     );
   }
 
 
   console.log(
-    "CHAMA LIVE get_my_member:",
+    "CHAMA LIVE MEMBER:",
     data
   );
 
@@ -175,26 +161,12 @@ export async function getMyMember() {
     data === null ||
     data === undefined
   ) {
-
     return null;
   }
 
 
-  /*
-   * RPC may return either:
-   *
-   * { ... }
-   *
-   * or
-   *
-   * [{ ... }]
-   */
-
   if (Array.isArray(data)) {
-
-    return data.length > 0
-      ? data[0]
-      : null;
+    return data[0] || null;
   }
 
 
@@ -220,19 +192,19 @@ export async function getMyGroup() {
   if (error) {
 
     console.error(
-      "get_my_group error:",
+      "get_my_group:",
       error
     );
 
     throw new Error(
-      "Unable to load your group: " +
+      "Unable to load group: " +
       error.message
     );
   }
 
 
   console.log(
-    "CHAMA LIVE get_my_group:",
+    "CHAMA LIVE GROUP:",
     data
   );
 
@@ -241,26 +213,12 @@ export async function getMyGroup() {
     data === null ||
     data === undefined
   ) {
-
     return null;
   }
 
 
-  /*
-   * RPC may return:
-   *
-   * { ... }
-   *
-   * or
-   *
-   * [{ ... }]
-   */
-
   if (Array.isArray(data)) {
-
-    return data.length > 0
-      ? data[0]
-      : null;
+    return data[0] || null;
   }
 
 
@@ -284,12 +242,6 @@ export async function getMyGroups() {
 
 
   if (error) {
-
-    console.error(
-      "get_my_groups error:",
-      error
-    );
-
     throw error;
   }
 
@@ -314,52 +266,9 @@ export async function getMyGroupId() {
 
 
   if (error) {
-
-    console.error(
-      "my_group_id error:",
-      error
-    );
-
     throw error;
   }
 
 
   return data || null;
-}
-
-
-/* =========================================================
-   AUTH STATE CHANGE
-========================================================= */
-
-export function onAuthStateChange(
-  callback
-) {
-
-  const {
-    data
-  } =
-    supabase.auth.onAuthStateChange(
-      (event, session) => {
-
-        console.log(
-          "CHAMA LIVE auth event:",
-          event
-        );
-
-        if (
-          typeof callback === "function"
-        ) {
-
-          callback(
-            event,
-            session
-          );
-        }
-
-      }
-    );
-
-
-  return data?.subscription || null;
 }
