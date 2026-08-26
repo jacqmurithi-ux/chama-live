@@ -1,194 +1,146 @@
 import {
+  supabase
+} from "./supabase.js";
+
+import {
   requireAuth,
   getMyMember,
-  logout
+  getMyGroup,
+  signOut
 } from "./auth.js";
 
 
-let currentMember =
-  null;
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function $(id) {
+  return document.getElementById(id);
+}
 
 
-const permissions = {
+function currentPage() {
 
-  dashboard: [
-    "admin",
-    "chairperson",
-    "treasurer",
-    "secretary",
-    "member"
-  ],
+  const path =
+    window.location.pathname;
 
-  members: [
-    "admin",
-    "chairperson",
-    "secretary"
-  ],
+  const file =
+    path.split("/").pop();
 
-  contributions: [
-    "admin",
-    "chairperson",
-    "treasurer",
-    "secretary",
-    "member"
-  ],
-
-  expenses: [
-    "admin",
-    "chairperson",
-    "treasurer"
-  ],
-
-  meetings: [
-    "admin",
-    "chairperson",
-    "secretary",
-    "member"
-  ],
-
-  reports: [
-    "admin",
-    "chairperson",
-    "treasurer",
-    "secretary"
-  ],
-
-  "monthly-closing": [
-    "admin",
-    "chairperson",
-    "treasurer"
-  ],
-
-  "group-management": [
-    "admin",
-    "chairperson"
-  ]
-
-};
+  return file || "dashboard.html";
+}
 
 
-export async function boot() {
+/* =========================================================
+   GROUP DISPLAY
+========================================================= */
+
+async function loadGroupInfo() {
 
   try {
 
-    const session =
-      await requireAuth();
+    const group =
+      await getMyGroup();
 
 
-    if (!session) {
+    if (!group) {
       return null;
     }
 
 
-    currentMember =
-      await getMyMember();
+    /*
+     * Optional group name elements.
+     */
+
+    const elements =
+      document.querySelectorAll(
+        "[data-group-name]"
+      );
 
 
-    if (!currentMember) {
-      return null;
-    }
+    elements.forEach(
+      element => {
+
+        element.textContent =
+          group.name ||
+          "Your Group";
+
+      }
+    );
 
 
-    applyUserDetails();
+    return group;
 
-    applyNavigation();
-
-    setupLogout();
-
-
-    return currentMember;
-
-
-  } catch (err) {
+  } catch (error) {
 
     console.error(
-      "Layout:",
-      err
+      "Unable to load group:",
+      error
     );
 
     return null;
 
   }
-
 }
 
 
-/* =====================================================
-   USER DETAILS
-===================================================== */
+/* =========================================================
+   MEMBER DISPLAY
+========================================================= */
 
-function applyUserDetails() {
+async function loadMemberInfo() {
 
-  const name =
-    currentMember?.name ||
-    "Member";
+  try {
 
-
-  const role =
-    formatRole(
-      currentMember?.role
-    );
+    const member =
+      await getMyMember();
 
 
-  document
-    .querySelectorAll(
-      "#currentUser, #userName, #memberName, [data-user-name]"
-    )
-    .forEach(
+    if (!member) {
+      return null;
+    }
+
+
+    const elements =
+      document.querySelectorAll(
+        "[data-member-name]"
+      );
+
+
+    elements.forEach(
       element => {
 
         element.textContent =
-          name;
+          member.name ||
+          "Member";
 
       }
     );
 
 
-  document
-    .querySelectorAll(
-      "#currentRole, #userRole, #memberRole, [data-user-role]"
-    )
-    .forEach(
-      element => {
+    return member;
 
-        element.textContent =
-          role;
+  } catch (error) {
 
-      }
+    console.error(
+      "Unable to load member:",
+      error
     );
 
+    return null;
 
-  document
-    .querySelectorAll(
-      "#memberNumber, [data-member-number]"
-    )
-    .forEach(
-      element => {
-
-        element.textContent =
-          currentMember
-            ?.membership_number ||
-          currentMember
-            ?.member_number ||
-          "—";
-
-      }
-    );
-
+  }
 }
 
 
-/* =====================================================
-   NAVIGATION
-===================================================== */
+/* =========================================================
+   ACTIVE NAVIGATION
+========================================================= */
 
-function applyNavigation() {
+function highlightCurrentPage() {
 
-  const role =
-    String(
-      currentMember?.role ||
-      "member"
-    ).toLowerCase();
+  const page =
+    currentPage();
 
 
   document
@@ -199,9 +151,10 @@ function applyNavigation() {
       link => {
 
         const href =
-          link.getAttribute(
-            "href"
-          );
+          link
+            .getAttribute(
+              "href"
+            );
 
 
         if (!href) {
@@ -209,146 +162,320 @@ function applyNavigation() {
         }
 
 
-        const page =
+        const linkPage =
           href
             .split("/")
-            .pop()
-            .replace(
-              ".html",
-              ""
-            );
+            .pop();
 
 
-        const allowed =
-          permissions[page];
+        link.classList.toggle(
+          "active",
+          linkPage === page
+        );
+
+      }
+    );
+}
+
+
+/* =========================================================
+   LOGOUT BUTTON
+========================================================= */
+
+function setupLogout() {
+
+  const button =
+    $("logout");
+
+
+  if (!button) {
+    return;
+  }
+
+
+  /*
+   * Prevent duplicate listeners.
+   */
+
+  if (
+    button.dataset.logoutReady ===
+    "true"
+  ) {
+    return;
+  }
+
+
+  button.dataset.logoutReady =
+    "true";
+
+
+  button.addEventListener(
+    "click",
+    async event => {
+
+      event.preventDefault();
+
+
+      button.disabled =
+        true;
+
+      button.textContent =
+        "Signing out...";
+
+
+      try {
+
+        await signOut();
+
+      } catch (error) {
+
+        console.error(
+          "Sign out failed:",
+          error
+        );
+
+
+        button.disabled =
+          false;
+
+        button.textContent =
+          "Sign out";
+
+
+        alert(
+          error?.message ||
+          "Unable to sign out."
+        );
+
+      }
+
+    }
+  );
+}
+
+
+/* =========================================================
+   RBAC
+========================================================= */
+
+function applyRBAC(
+  member
+) {
+
+  if (!member) {
+    return;
+  }
+
+
+  const role =
+    String(
+      member.role ||
+      "member"
+    ).toLowerCase();
+
+
+  const adminRoles = [
+    "admin",
+    "administrator",
+    "chairperson",
+    "secretary",
+    "treasurer"
+  ];
+
+
+  const managerRoles = [
+    ...adminRoles,
+    "manager"
+  ];
+
+
+  const isAdmin =
+    adminRoles.includes(
+      role
+    );
+
+
+  const isManager =
+    managerRoles.includes(
+      role
+    );
+
+
+  /*
+   * Elements can declare:
+   *
+   * data-role="admin"
+   * data-role="manager"
+   */
+
+  document
+    .querySelectorAll(
+      "[data-role]"
+    )
+    .forEach(
+      element => {
+
+        const required =
+          String(
+            element.dataset.role
+          ).toLowerCase();
 
 
         if (
-          allowed &&
-          !allowed.includes(
-            role
-          )
+          required ===
+          "admin"
         ) {
 
-          link.remove();
+          element.hidden =
+            !isAdmin;
+
+        }
+
+
+        if (
+          required ===
+          "manager"
+        ) {
+
+          element.hidden =
+            !isManager;
 
         }
 
       }
     );
-
 }
 
 
-/* =====================================================
-   LOGOUT
-===================================================== */
+/* =========================================================
+   BOOT
+========================================================= */
 
-function setupLogout() {
+export async function boot() {
 
-  document
-    .querySelectorAll(
-      "#logout, [data-action='logout']"
-    )
-    .forEach(
-      button => {
+  try {
 
-        button.addEventListener(
-          "click",
-          async event => {
+    /*
+     * Authenticate first.
+     */
 
-            event.preventDefault();
+    const session =
+      await requireAuth();
 
 
-            button.disabled =
-              true;
-
-            button.textContent =
-              "Signing out...";
+    if (!session) {
+      return null;
+    }
 
 
-            try {
+    /*
+     * Get member.
+     */
 
-              await logout();
+    const member =
+      await getMyMember();
 
-            } catch (err) {
 
-              console.error(
-                err
-              );
+    if (!member) {
 
-              button.disabled =
-                false;
+      console.error(
+        "No member record found for authenticated user."
+      );
 
-              button.textContent =
-                "Sign out";
 
-            }
+      await signOut();
 
-          }
-        );
+      return null;
+    }
 
-      }
+
+    /*
+     * Get group.
+     */
+
+    const group =
+      await getMyGroup();
+
+
+    if (!group) {
+
+      console.error(
+        "No group found for authenticated member."
+      );
+
+
+      await signOut();
+
+      return null;
+    }
+
+
+    /*
+     * UI.
+     */
+
+    highlightCurrentPage();
+
+    setupLogout();
+
+    applyRBAC(
+      member
     );
 
-}
+
+    await loadMemberInfo();
+
+    await loadGroupInfo();
 
 
-/* =====================================================
-   HELPERS
-===================================================== */
+    /*
+     * Return useful information
+     * to page scripts if needed.
+     */
 
-function formatRole(
-  role
-) {
+    return {
+      session,
+      member,
+      group
+    };
 
-  return String(
-    role || "member"
-  )
-    .replaceAll(
-      "_",
-      " "
-    )
-    .replace(
-      /\b\w/g,
-      char =>
-        char.toUpperCase()
+
+  } catch (error) {
+
+    console.error(
+      "CHAMA LIVE boot error:",
+      error
     );
 
+
+    const status =
+      $("status");
+
+
+    if (status) {
+
+      status.textContent =
+        "Unable to initialize your account.";
+
+    }
+
+
+    const errorElement =
+      $("error");
+
+
+    if (errorElement) {
+
+      errorElement.hidden =
+        false;
+
+      errorElement.textContent =
+        error?.message ||
+        "Unable to initialize application.";
+
+    }
+
+
+    return null;
+  }
 }
-
-
-export function getCurrentMember() {
-
-  return currentMember;
-
-}
-
-
-export function getCurrentRole() {
-
-  return String(
-    currentMember?.role ||
-    "member"
-  ).toLowerCase();
-
-}
-
-
-export function canAccess(
-  page
-) {
-
-  return (
-    permissions[page] ||
-    []
-  ).includes(
-    getCurrentRole()
-  );
-
-}
-
-
-export {
-  permissions
-};
