@@ -1,19 +1,21 @@
 
 import { supabase } from "./supabase.js";
 
-/* =====================================================
-   CHAMA LIVE AUTH + RBAC
-===================================================== */
+const BASE_URL =
+  "https://jacqmurithi-ux.github.io/chama-live";
+
 
 let cachedMember = null;
+
 
 /* =====================================================
    SESSION
 ===================================================== */
 
 export async function getSession() {
+
   const {
-    data: { session },
+    data,
     error
   } = await supabase.auth.getSession();
 
@@ -21,7 +23,7 @@ export async function getSession() {
     throw error;
   }
 
-  return session;
+  return data.session;
 }
 
 
@@ -29,42 +31,60 @@ export async function getSession() {
    CURRENT MEMBER
 ===================================================== */
 
-export async function getMyMember(force = false) {
+export async function getMyMember(
+  force = false
+) {
 
-  if (cachedMember && !force) {
+  if (
+    cachedMember &&
+    !force
+  ) {
     return cachedMember;
   }
 
-  const session = await getSession();
+
+  const session =
+    await getSession();
+
 
   if (!session) {
     return null;
   }
 
+
   const {
     data,
     error
-  } = await supabase.rpc(
-    "get_my_member"
-  );
+  } =
+    await supabase.rpc(
+      "get_my_member"
+    );
+
 
   if (error) {
+
     console.error(
-      "get_my_member error:",
+      "get_my_member:",
       error
     );
 
     throw error;
+
   }
 
-  cachedMember = data || null;
+
+  cachedMember =
+    Array.isArray(data)
+      ? data[0] || null
+      : data || null;
+
 
   return cachedMember;
 }
 
 
 /* =====================================================
-   CURRENT ROLE
+   ROLE
 ===================================================== */
 
 export async function getMyRole() {
@@ -72,18 +92,16 @@ export async function getMyRole() {
   const member =
     await getMyMember();
 
-  if (!member) {
-    return null;
-  }
-
   return String(
-    member.role || "member"
+    member?.role ||
+    "member"
   ).toLowerCase();
+
 }
 
 
 /* =====================================================
-   GROUP ID
+   GROUP
 ===================================================== */
 
 export async function getMyGroupId() {
@@ -91,91 +109,81 @@ export async function getMyGroupId() {
   const member =
     await getMyMember();
 
-  return member?.group_id || null;
+  return member?.group_id ||
+    null;
 }
 
 
 /* =====================================================
-   ROLE CHECKS
-===================================================== */
-
-export async function isAdmin() {
-
-  return (
-    await getMyRole()
-  ) === "admin";
-
-}
-
-
-export async function isChairperson() {
-
-  const role =
-    await getMyRole();
-
-  return (
-    role === "admin" ||
-    role === "chairperson"
-  );
-
-}
-
-
-export async function isTreasurer() {
-
-  const role =
-    await getMyRole();
-
-  return (
-    role === "admin" ||
-    role === "chairperson" ||
-    role === "treasurer"
-  );
-
-}
-
-
-export async function isSecretary() {
-
-  const role =
-    await getMyRole();
-
-  return (
-    role === "admin" ||
-    role === "chairperson" ||
-    role === "secretary"
-  );
-
-}
-
-
-/* =====================================================
-   ROLE AUTHORIZATION
+   ROLE CHECK
 ===================================================== */
 
 export async function hasRole(
-  allowedRoles = []
+  roles = []
 ) {
 
   const role =
     await getMyRole();
 
-  if (!role) {
-    return false;
-  }
 
-  return allowedRoles
+  return roles
     .map(
       item =>
-        String(item).toLowerCase()
+        String(
+          item
+        ).toLowerCase()
     )
-    .includes(role);
+    .includes(
+      role
+    );
 
 }
 
 
 /* =====================================================
-   REQUIRE AUTHENTICATION
+   ADMIN
+===================================================== */
+
+export async function isAdmin() {
+
+  return await hasRole([
+    "admin"
+  ]);
+
+}
+
+
+/* =====================================================
+   CHAIRPERSON
+===================================================== */
+
+export async function isChairperson() {
+
+  return await hasRole([
+    "admin",
+    "chairperson"
+  ]);
+
+}
+
+
+/* =====================================================
+   TREASURER
+===================================================== */
+
+export async function isTreasurer() {
+
+  return await hasRole([
+    "admin",
+    "chairperson",
+    "treasurer"
+  ]);
+
+}
+
+
+/* =====================================================
+   REQUIRE AUTH
 ===================================================== */
 
 export async function requireAuth() {
@@ -183,32 +191,39 @@ export async function requireAuth() {
   const session =
     await getSession();
 
+
   if (!session) {
 
-    window.location.href =
-      "login.html";
+    window.location.replace(
+      `${BASE_URL}/login.html`
+    );
 
     return null;
+
   }
+
 
   const member =
     await getMyMember();
 
-  if (!member) {
 
-    console.warn(
-      "Authenticated user has no active member record."
-    );
+  if (!member) {
 
     await supabase.auth.signOut();
 
-    window.location.href =
-      "login.html";
+
+    window.location.replace(
+      `${BASE_URL}/login.html?error=no-member`
+    );
+
 
     return null;
+
   }
 
+
   return session;
+
 }
 
 
@@ -217,34 +232,38 @@ export async function requireAuth() {
 ===================================================== */
 
 export async function requireRole(
-  allowedRoles = []
+  roles = []
 ) {
 
   const session =
     await requireAuth();
 
+
   if (!session) {
     return null;
   }
 
+
   const allowed =
     await hasRole(
-      allowedRoles
+      roles
     );
+
 
   if (!allowed) {
 
-    alert(
-      "You do not have permission to access this page."
+    window.location.replace(
+      `${BASE_URL}/dashboard.html?error=forbidden`
     );
 
-    window.location.href =
-      "dashboard.html";
 
     return null;
+
   }
 
+
   return session;
+
 }
 
 
@@ -260,49 +279,60 @@ export async function claimMemberAccount(
   const session =
     await getSession();
 
+
   if (!session) {
 
     throw new Error(
-      "Please create your login account first."
+      "Please sign in before activating your member account."
     );
 
   }
 
+
   const {
     data,
     error
-  } = await supabase.rpc(
-    "claim_member_account",
-    {
-      p_membership_number:
-        String(
-          membershipNumber || ""
-        ).trim(),
+  } =
+    await supabase.rpc(
+      "claim_member_account",
+      {
+        p_membership_number:
+          String(
+            membershipNumber
+          ).trim(),
 
-      p_email:
-        String(
-          email || ""
-        ).trim().toLowerCase()
-    }
-  );
+        p_email:
+          String(
+            email
+          ).trim()
+          .toLowerCase()
+      }
+    );
+
 
   if (error) {
     throw error;
   }
 
-  cachedMember = null;
+
+  cachedMember =
+    null;
+
 
   return data;
+
 }
 
 
 /* =====================================================
-   REFRESH MEMBER
+   REFRESH
 ===================================================== */
 
 export async function refreshMyMember() {
 
-  cachedMember = null;
+  cachedMember =
+    null;
+
 
   return await getMyMember(
     true
@@ -317,24 +347,30 @@ export async function refreshMyMember() {
 
 export async function logout() {
 
-  cachedMember = null;
+  cachedMember =
+    null;
+
 
   const {
     error
   } =
     await supabase.auth.signOut();
 
+
   if (error) {
     throw error;
   }
 
-  window.location.href =
-    "login.html";
+
+  window.location.replace(
+    `${BASE_URL}/login.html`
+  );
+
 }
 
 
 /* =====================================================
-   AUTH STATE LISTENER
+   AUTH LISTENER
 ===================================================== */
 
 export function listenToAuthChanges(
@@ -347,7 +383,9 @@ export function listenToAuthChanges(
       session
     ) => {
 
-      cachedMember = null;
+      cachedMember =
+        null;
+
 
       if (callback) {
 
@@ -365,9 +403,13 @@ export function listenToAuthChanges(
 
 
 /* =====================================================
-   EXPORT SUPABASE
+   EXPORT
 ===================================================== */
 
 export {
   supabase
+};
+
+export {
+  BASE_URL
 };
