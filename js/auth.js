@@ -2,19 +2,12 @@
 import { supabase } from "./supabase.js";
 
 /* =========================================================
-   AUTH CACHE
+   CACHE
 ========================================================= */
 
+let sessionCache = null;
 let memberCache = null;
 let groupCache = null;
-let sessionCache = null;
-
-
-/* =========================================================
-   EXPORT SUPABASE
-========================================================= */
-
-export { supabase };
 
 
 /* =========================================================
@@ -22,9 +15,9 @@ export { supabase };
 ========================================================= */
 
 export function clearAuthCache() {
+  sessionCache = null;
   memberCache = null;
   groupCache = null;
-  sessionCache = null;
 }
 
 
@@ -32,9 +25,9 @@ export function clearAuthCache() {
    GET SESSION
 ========================================================= */
 
-export async function getSession() {
+export async function getSession(forceRefresh = false) {
 
-  if (sessionCache) {
+  if (sessionCache && !forceRefresh) {
     return sessionCache;
   }
 
@@ -107,14 +100,20 @@ export async function getMyMember(forceRefresh = false) {
   } = await supabase.rpc("get_my_member");
 
   if (error) {
-    console.error("get_my_member error:", error);
+    console.error(
+      "get_my_member error:",
+      error
+    );
+
     throw error;
   }
 
   let member = data;
 
   if (Array.isArray(data)) {
-    member = data.length > 0 ? data[0] : null;
+    member = data.length > 0
+      ? data[0]
+      : null;
   }
 
   memberCache = member || null;
@@ -139,14 +138,20 @@ export async function getMyGroup(forceRefresh = false) {
   } = await supabase.rpc("get_my_group");
 
   if (error) {
-    console.error("get_my_group error:", error);
+    console.error(
+      "get_my_group error:",
+      error
+    );
+
     throw error;
   }
 
   let group = data;
 
   if (Array.isArray(data)) {
-    group = data.length > 0 ? data[0] : null;
+    group = data.length > 0
+      ? data[0]
+      : null;
   }
 
   groupCache = group || null;
@@ -173,7 +178,11 @@ export async function getMyGroupId() {
   } = await supabase.rpc("my_group_id");
 
   if (error) {
-    console.error("my_group_id error:", error);
+    console.error(
+      "my_group_id error:",
+      error
+    );
+
     throw error;
   }
 
@@ -196,7 +205,11 @@ export async function requireMember() {
   const member = await getMyMember();
 
   if (!member) {
-    await signOut();
+
+    console.error(
+      "No member record found for authenticated user."
+    );
+
     return null;
   }
 
@@ -219,11 +232,11 @@ export async function requireGroup() {
   const group = await getMyGroup();
 
   if (!group) {
+
     console.error(
-      "Authenticated member has no valid group."
+      "Authenticated member has no group."
     );
 
-    await signOut();
     return null;
   }
 
@@ -232,12 +245,14 @@ export async function requireGroup() {
 
 
 /* =========================================================
-   GET ROLE
+   ROLE
 ========================================================= */
 
 export function getRole(member = null) {
 
-  const source = member || memberCache;
+  const source =
+    member ||
+    memberCache;
 
   return String(
     source?.role || "member"
@@ -252,39 +267,46 @@ export function getRole(member = null) {
 ========================================================= */
 
 export function hasRole(
-  member,
-  requiredRole
+  memberOrRoles,
+  roles = undefined
 ) {
 
-  let actualMember = member;
-  let required = requiredRole;
+  let member = memberOrRoles;
+  let requiredRoles = roles;
 
   /*
    * hasRole("admin")
    * hasRole(["admin", "secretary"])
    */
 
-  if (requiredRole === undefined) {
-    required = member;
-    actualMember = memberCache;
+  if (roles === undefined) {
+
+    requiredRoles =
+      memberOrRoles;
+
+    member =
+      memberCache;
   }
 
-  const role = getRole(actualMember);
+  const currentRole =
+    getRole(member);
 
-  if (Array.isArray(required)) {
+  if (Array.isArray(requiredRoles)) {
 
-    return required
-      .map(value =>
-        String(value)
+    return requiredRoles
+      .map(role =>
+        String(role)
           .trim()
           .toLowerCase()
       )
-      .includes(role);
+      .includes(currentRole);
   }
 
   return (
-    role ===
-    String(required || "member")
+    currentRole ===
+    String(
+      requiredRoles || "member"
+    )
       .trim()
       .toLowerCase()
   );
@@ -320,8 +342,7 @@ export function isManager(member = null) {
     "administrator",
     "chairperson",
     "secretary",
-    "treasurer",
-    "manager"
+    "treasurer"
   ].includes(
     getRole(member)
   );
@@ -387,13 +408,15 @@ export async function addGroupMember({
   const payload = {
     group_id: groupId,
     member_number: memberNumber,
-    name,
-    phone,
+    name: name,
+    phone: phone,
     email: email || null,
     role: role || "member",
     join_date:
       joinDate ||
-      new Date().toISOString().slice(0, 10),
+      new Date()
+        .toISOString()
+        .slice(0, 10),
     status: "active"
   };
 
@@ -461,7 +484,7 @@ export const logout = signOut;
 
 
 /* =========================================================
-   AUTH STATE LISTENER
+   AUTH STATE
 ========================================================= */
 
 supabase.auth.onAuthStateChange(
@@ -470,12 +493,21 @@ supabase.auth.onAuthStateChange(
     sessionCache =
       session || null;
 
-    if (event === "SIGNED_OUT") {
+    if (
+      event === "SIGNED_OUT"
+    ) {
 
+      sessionCache = null;
       memberCache = null;
       groupCache = null;
-      sessionCache = null;
     }
   }
 );
+
+
+/* =========================================================
+   EXPORT SUPABASE
+========================================================= */
+
+export { supabase };
 ```
