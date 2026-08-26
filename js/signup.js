@@ -14,9 +14,6 @@ const APP_URL =
 const CONFIRM_URL =
   `${APP_URL}/confirm.html`;
 
-const PENDING_KEY =
-  "chama_pending_onboarding";
-
 
 /* =======================================================
    ELEMENTS
@@ -93,72 +90,6 @@ function value(id) {
 
 
 /* =======================================================
-   SAVE PENDING ONBOARDING
-======================================================= */
-
-function savePendingOnboarding(data) {
-
-  /*
-   * IMPORTANT:
-   *
-   * We use localStorage instead of sessionStorage.
-   *
-   * The user leaves signup.html when they click
-   * the confirmation email.
-   *
-   * localStorage survives that navigation.
-   *
-   * The browser NEVER supplies group_id.
-   */
-
-  localStorage.setItem(
-    PENDING_KEY,
-    JSON.stringify(data)
-  );
-
-  console.log(
-    "CHAMA LIVE: pending onboarding saved"
-  );
-
-}
-
-
-/* =======================================================
-   GET PENDING ONBOARDING
-======================================================= */
-
-function getPendingOnboarding() {
-
-  const stored =
-    localStorage.getItem(PENDING_KEY);
-
-  if (!stored) {
-    return null;
-  }
-
-  try {
-
-    return JSON.parse(stored);
-
-  } catch (error) {
-
-    console.error(
-      "Invalid pending onboarding data:",
-      error
-    );
-
-    localStorage.removeItem(
-      PENDING_KEY
-    );
-
-    return null;
-
-  }
-
-}
-
-
-/* =======================================================
    SIGNUP
 ======================================================= */
 
@@ -168,6 +99,10 @@ async function signup(event) {
 
   clearError();
 
+
+  /* =====================================================
+     FORM VALUES
+  ===================================================== */
 
   const adminName =
     value("adminName");
@@ -179,9 +114,7 @@ async function signup(event) {
     value("email");
 
   const password =
-    document.getElementById(
-      "password"
-    )?.value || "";
+    document.getElementById("password")?.value || "";
 
   const groupName =
     value("groupName");
@@ -220,7 +153,6 @@ async function signup(event) {
     );
 
     return;
-
   }
 
 
@@ -233,7 +165,6 @@ async function signup(event) {
     );
 
     return;
-
   }
 
 
@@ -246,7 +177,6 @@ async function signup(event) {
     );
 
     return;
-
   }
 
 
@@ -259,7 +189,6 @@ async function signup(event) {
     );
 
     return;
-
   }
 
 
@@ -272,7 +201,6 @@ async function signup(event) {
     );
 
     return;
-
   }
 
 
@@ -280,19 +208,16 @@ async function signup(event) {
 
     showError(
       new Error(
-        "Please select the group category."
+        "Please select a group category."
       )
     );
 
     return;
-
   }
 
 
   if (
-    !Number.isFinite(
-      monthlyContribution
-    ) ||
+    !Number.isFinite(monthlyContribution) ||
     monthlyContribution < 0
   ) {
 
@@ -303,14 +228,11 @@ async function signup(event) {
     );
 
     return;
-
   }
 
 
   if (
-    !Number.isFinite(
-      openingBalance
-    ) ||
+    !Number.isFinite(openingBalance) ||
     openingBalance < 0
   ) {
 
@@ -321,7 +243,6 @@ async function signup(event) {
     );
 
     return;
-
   }
 
 
@@ -342,25 +263,7 @@ async function signup(event) {
   try {
 
     /* ===================================================
-       SAVE ONBOARDING DATA
-    =================================================== */
-
-    savePendingOnboarding({
-
-      adminName,
-      adminPhone,
-      email,
-      groupName,
-      category,
-      monthlyContribution,
-      openingBalance,
-      description
-
-    });
-
-
-    /* ===================================================
-       CREATE AUTH ACCOUNT
+       CREATE SUPABASE AUTH ACCOUNT
     =================================================== */
 
     setStatus(
@@ -375,12 +278,64 @@ async function signup(event) {
       await supabase.auth.signUp({
 
         email,
+
         password,
 
         options: {
 
+          /*
+           * Supabase will redirect the user
+           * here after email confirmation.
+           */
+
           emailRedirectTo:
-            CONFIRM_URL
+            CONFIRM_URL,
+
+
+          /*
+           * IMPORTANT:
+           *
+           * Store the onboarding information
+           * in Supabase Auth metadata.
+           *
+           * This survives the email redirect.
+           *
+           * We DO NOT store group_id here.
+           */
+
+          data: {
+
+            full_name:
+              adminName,
+
+            admin_name:
+              adminName,
+
+            admin_phone:
+              adminPhone,
+
+            group_name:
+              groupName,
+
+            group_category:
+              category,
+
+            monthly_contribution:
+              monthlyContribution,
+
+            opening_balance:
+              openingBalance,
+
+            group_description:
+              description || null,
+
+            country:
+              "Kenya",
+
+            onboarding_type:
+              "new_group"
+
+          }
 
         }
 
@@ -388,7 +343,9 @@ async function signup(event) {
 
 
     if (authError) {
+
       throw authError;
+
     }
 
 
@@ -411,34 +368,22 @@ async function signup(event) {
     );
 
 
-    /* ===================================================
-       SESSION CHECK
-    =================================================== */
-
-    const {
-      data: sessionData,
-      error: sessionError
-    } =
-      await supabase.auth.getSession();
-
-
-    if (sessionError) {
-      throw sessionError;
-    }
-
-
-    const session =
-      sessionData?.session;
+    console.log(
+      "CHAMA LIVE SIGNUP:",
+      authData?.session
+        ? "Session created immediately"
+        : "Email confirmation required"
+    );
 
 
     /* ===================================================
-       EMAIL CONFIRMATION REQUIRED
+       IF EMAIL CONFIRMATION IS REQUIRED
     =================================================== */
 
-    if (!session) {
+    if (!authData?.session) {
 
       setStatus(
-        "Account created successfully. Please check your email and click the confirmation link to complete your group setup."
+        "✓ Account created successfully. Please check your email and click the confirmation link to continue."
       );
 
 
@@ -451,16 +396,20 @@ async function signup(event) {
 
       }
 
+
       return;
 
     }
 
 
     /* ===================================================
-       SESSION ALREADY EXISTS
+       EMAIL CONFIRMATION NOT REQUIRED
+       CREATE GROUP IMMEDIATELY
     =================================================== */
 
-    await completeOnboarding();
+    await completeOnboarding(
+      authData.session
+    );
 
 
   } catch (error) {
@@ -490,7 +439,7 @@ async function signup(event) {
    COMPLETE ONBOARDING
 ======================================================= */
 
-async function completeOnboarding() {
+async function completeOnboarding(session) {
 
   setStatus(
     "Creating your group..."
@@ -498,7 +447,7 @@ async function completeOnboarding() {
 
 
   /* =====================================================
-     GET AUTH USER
+     GET AUTHENTICATED USER
   ===================================================== */
 
   const {
@@ -509,7 +458,9 @@ async function completeOnboarding() {
 
 
   if (userError) {
+
     throw userError;
+
   }
 
 
@@ -533,31 +484,90 @@ async function completeOnboarding() {
 
 
   /* =====================================================
-     GET PENDING DATA
+     READ ONBOARDING DATA FROM AUTH METADATA
   ===================================================== */
 
-  const onboardingData =
-    getPendingOnboarding();
+  const metadata =
+    user.user_metadata || {};
 
 
-  if (!onboardingData) {
+  console.log(
+    "CHAMA LIVE USER METADATA:",
+    metadata
+  );
+
+
+  /*
+   * Only continue if this is a new-group signup.
+   */
+
+  if (
+    metadata.onboarding_type !==
+    "new_group"
+  ) {
 
     throw new Error(
-      "Your account was confirmed, but your group setup information could not be found. Please start the group registration again."
+      "This account does not contain new-group onboarding information."
     );
 
   }
 
 
-  console.log(
-    "CHAMA LIVE PENDING ONBOARDING:",
-    onboardingData
-  );
+  const groupName =
+    metadata.group_name;
+
+  const category =
+    metadata.group_category || "other";
+
+  const monthlyContribution =
+    Number(
+      metadata.monthly_contribution || 0
+    );
+
+  const openingBalance =
+    Number(
+      metadata.opening_balance || 0
+    );
+
+  const description =
+    metadata.group_description || null;
+
+  const adminName =
+    metadata.admin_name ||
+    metadata.full_name ||
+    "";
+
+  const adminPhone =
+    metadata.admin_phone ||
+    "";
+
+
+  if (!groupName) {
+
+    throw new Error(
+      "Your account is confirmed, but the group name could not be found."
+    );
+
+  }
+
+
+  if (!adminName) {
+
+    throw new Error(
+      "Your account is confirmed, but the administrator name could not be found."
+    );
+
+  }
 
 
   /* =====================================================
      CREATE GROUP
   ===================================================== */
+
+  console.log(
+    "CHAMA LIVE: calling onboard_new_group"
+  );
+
 
   const {
     data: onboarding,
@@ -568,33 +578,33 @@ async function completeOnboarding() {
       {
 
         /*
+         * IMPORTANT:
+         *
          * NO group_id.
          *
-         * Supabase determines auth.uid()
-         * and creates the group.
+         * The database obtains auth.uid().
          */
 
         p_group_name:
-          onboardingData.groupName,
+          groupName,
 
         p_category:
-          onboardingData.category,
+          category,
 
         p_monthly_contribution:
-          onboardingData.monthlyContribution,
+          monthlyContribution,
 
         p_opening_balance:
-          onboardingData.openingBalance,
+          openingBalance,
 
         p_description:
-          onboardingData.description ||
-          null,
+          description,
 
         p_admin_name:
-          onboardingData.adminName,
+          adminName,
 
         p_admin_phone:
-          onboardingData.adminPhone,
+          adminPhone,
 
         p_country:
           "Kenya"
@@ -604,7 +614,9 @@ async function completeOnboarding() {
 
 
   if (onboardingError) {
+
     throw onboardingError;
+
   }
 
 
@@ -615,7 +627,7 @@ async function completeOnboarding() {
 
 
   /* =====================================================
-     VERIFY
+     VERIFY DATABASE RESULT
   ===================================================== */
 
   if (
@@ -644,12 +656,12 @@ async function completeOnboarding() {
   ===================================================== */
 
   console.log(
-    "CHAMA LIVE GROUP:",
+    "CHAMA LIVE GROUP CREATED:",
     onboarding.group_id
   );
 
   console.log(
-    "CHAMA LIVE MEMBER:",
+    "CHAMA LIVE MEMBER CREATED:",
     onboarding.member_id
   );
 
@@ -664,19 +676,14 @@ async function completeOnboarding() {
   );
 
 
-  /* =====================================================
-     REMOVE TEMPORARY DATA
-  ===================================================== */
-
-  localStorage.removeItem(
-    PENDING_KEY
-  );
-
-
   setStatus(
-    "✓ Account confirmed and group created. Redirecting..."
+    "✓ Your group has been created successfully. Redirecting..."
   );
 
+
+  /*
+   * Never put group_id in the URL.
+   */
 
   setTimeout(
     () => {
@@ -685,7 +692,7 @@ async function completeOnboarding() {
         `${APP_URL}/dashboard.html`;
 
     },
-    700
+    800
   );
 
 }
@@ -704,6 +711,10 @@ if (form) {
 
 }
 
+
+/* =======================================================
+   STARTUP
+======================================================= */
 
 console.log(
   "CHAMA LIVE: signup ready"
