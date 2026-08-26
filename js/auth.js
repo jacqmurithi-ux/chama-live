@@ -1,33 +1,4 @@
-```javascript
-/* =========================================================
-   CHAMA LIVE — AUTHENTICATION
-   File: /js/auth.js
-========================================================= */
-
 import { supabase } from "./supabase.js";
-
-
-/* =========================================================
-   ERROR HELPER
-========================================================= */
-
-function makeError(error, fallback) {
-
-  console.error(
-    "CHAMA LIVE AUTH ERROR:",
-    error
-  );
-
-  if (error instanceof Error) {
-    return error;
-  }
-
-  return new Error(
-    error?.message ||
-    error?.error_description ||
-    fallback
-  );
-}
 
 
 /* =========================================================
@@ -39,42 +10,14 @@ export async function getSession() {
   const {
     data,
     error
-  } =
-    await supabase.auth.getSession();
+  } = await supabase.auth.getSession();
 
   if (error) {
-
-    throw makeError(
-      error,
-      "Unable to check your login session."
-    );
+    console.error("getSession error:", error);
+    throw error;
   }
 
-  return data?.session || null;
-}
-
-
-/* =========================================================
-   GET CURRENT USER
-========================================================= */
-
-export async function getUser() {
-
-  const {
-    data,
-    error
-  } =
-    await supabase.auth.getUser();
-
-  if (error) {
-
-    throw makeError(
-      error,
-      "Unable to identify the logged-in user."
-    );
-  }
-
-  return data?.user || null;
+  return data.session || null;
 }
 
 
@@ -84,31 +27,13 @@ export async function getUser() {
 
 export async function requireAuth() {
 
-  const session =
-    await getSession();
+  const session = await getSession();
 
   if (!session) {
 
-    console.warn(
-      "CHAMA LIVE: No authenticated session."
+    window.location.replace(
+      "./login.html"
     );
-
-    const page =
-      window.location.pathname
-        .split("/")
-        .pop()
-        .toLowerCase();
-
-    /*
-     * Never redirect login.html to itself.
-     */
-
-    if (page !== "login.html") {
-
-      window.location.replace(
-        "login.html"
-      );
-    }
 
     return null;
   }
@@ -131,20 +56,13 @@ export async function signIn(
       .trim()
       .toLowerCase();
 
-  const cleanPassword =
-    String(password || "");
-
-
   if (!cleanEmail) {
-
     throw new Error(
       "Please enter your email address."
     );
   }
 
-
-  if (!cleanPassword) {
-
+  if (!password) {
     throw new Error(
       "Please enter your password."
     );
@@ -156,33 +74,32 @@ export async function signIn(
     error
   } =
     await supabase.auth.signInWithPassword({
-      email:
-        cleanEmail,
-
-      password:
-        cleanPassword
+      email: cleanEmail,
+      password: password
     });
 
 
   if (error) {
 
-    throw makeError(
-      error,
-      "Unable to sign in."
+    console.error(
+      "Supabase sign-in error:",
+      error
     );
+
+    throw error;
   }
 
 
-  if (!data?.session) {
+  if (!data || !data.session) {
 
     throw new Error(
-      "Login succeeded, but no active session was created."
+      "Login succeeded but no session was created."
     );
   }
 
 
   console.log(
-    "CHAMA LIVE: Login successful."
+    "CHAMA LIVE: Authentication successful."
   );
 
 
@@ -204,20 +121,17 @@ export async function signOut() {
 
   if (error) {
 
-    throw makeError(
-      error,
-      "Unable to sign out."
+    console.error(
+      "Supabase sign-out error:",
+      error
     );
+
+    throw error;
   }
 
 
-  console.log(
-    "CHAMA LIVE: Signed out."
-  );
-
-
   window.location.replace(
-    "login.html"
+    "./login.html"
   );
 }
 
@@ -227,15 +141,6 @@ export async function signOut() {
 ========================================================= */
 
 export async function getMyMember() {
-
-  /*
-   * This matches the actual RPC in your
-   * Supabase database:
-   *
-   * public.get_my_member()
-   *
-   * It returns a members row.
-   */
 
   const {
     data,
@@ -248,24 +153,27 @@ export async function getMyMember() {
 
   if (error) {
 
-    throw makeError(
-      error,
-      "Unable to load your member record."
+    console.error(
+      "get_my_member error:",
+      error
+    );
+
+    throw new Error(
+      "Unable to load your member account: " +
+      error.message
     );
   }
 
 
-  /*
-   * The RPC returns one members row,
-   * not an array.
-   */
+  console.log(
+    "CHAMA LIVE get_my_member:",
+    data
+  );
+
 
   if (
-    !data ||
-    (
-      Array.isArray(data) &&
-      data.length === 0
-    )
+    data === null ||
+    data === undefined
   ) {
 
     return null;
@@ -273,13 +181,20 @@ export async function getMyMember() {
 
 
   /*
-   * Protect against a PostgREST response
-   * being returned as a one-item array.
+   * RPC may return either:
+   *
+   * { ... }
+   *
+   * or
+   *
+   * [{ ... }]
    */
 
   if (Array.isArray(data)) {
 
-    return data[0] || null;
+    return data.length > 0
+      ? data[0]
+      : null;
   }
 
 
@@ -293,15 +208,6 @@ export async function getMyMember() {
 
 export async function getMyGroup() {
 
-  /*
-   * This matches the actual RPC in your
-   * Supabase database:
-   *
-   * public.get_my_group()
-   *
-   * It returns a groups row.
-   */
-
   const {
     data,
     error
@@ -313,28 +219,48 @@ export async function getMyGroup() {
 
   if (error) {
 
-    throw makeError(
-      error,
-      "Unable to load your group."
+    console.error(
+      "get_my_group error:",
+      error
+    );
+
+    throw new Error(
+      "Unable to load your group: " +
+      error.message
     );
   }
 
 
+  console.log(
+    "CHAMA LIVE get_my_group:",
+    data
+  );
+
+
   if (
-    !data ||
-    (
-      Array.isArray(data) &&
-      data.length === 0
-    )
+    data === null ||
+    data === undefined
   ) {
 
     return null;
   }
 
 
+  /*
+   * RPC may return:
+   *
+   * { ... }
+   *
+   * or
+   *
+   * [{ ... }]
+   */
+
   if (Array.isArray(data)) {
 
-    return data[0] || null;
+    return data.length > 0
+      ? data[0]
+      : null;
   }
 
 
@@ -343,24 +269,10 @@ export async function getMyGroup() {
 
 
 /* =========================================================
-   GET ALL MY GROUPS
+   GET MY GROUPS
 ========================================================= */
 
 export async function getMyGroups() {
-
-  /*
-   * Matches:
-   *
-   * public.get_my_groups()
-   *
-   * Returns:
-   *
-   * group_id
-   * group_name
-   * role
-   * category
-   * monthly_contribution
-   */
 
   const {
     data,
@@ -373,10 +285,12 @@ export async function getMyGroups() {
 
   if (error) {
 
-    throw makeError(
-      error,
-      "Unable to load your groups."
+    console.error(
+      "get_my_groups error:",
+      error
     );
+
+    throw error;
   }
 
 
@@ -401,10 +315,12 @@ export async function getMyGroupId() {
 
   if (error) {
 
-    throw makeError(
-      error,
-      "Unable to determine your group."
+    console.error(
+      "my_group_id error:",
+      error
     );
+
+    throw error;
   }
 
 
@@ -413,7 +329,7 @@ export async function getMyGroupId() {
 
 
 /* =========================================================
-   AUTH STATE LISTENER
+   AUTH STATE CHANGE
 ========================================================= */
 
 export function onAuthStateChange(
@@ -427,14 +343,12 @@ export function onAuthStateChange(
       (event, session) => {
 
         console.log(
-          "CHAMA LIVE AUTH EVENT:",
+          "CHAMA LIVE auth event:",
           event
         );
 
-
         if (
-          typeof callback ===
-          "function"
+          typeof callback === "function"
         ) {
 
           callback(
@@ -442,10 +356,10 @@ export function onAuthStateChange(
             session
           );
         }
+
       }
     );
 
 
   return data?.subscription || null;
 }
-```
