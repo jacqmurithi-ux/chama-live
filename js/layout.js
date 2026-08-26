@@ -8,7 +8,7 @@ import {
 
 
 /* =========================================================
-   HELPER
+   HELPERS
 ========================================================= */
 
 function $(id) {
@@ -16,62 +16,128 @@ function $(id) {
 }
 
 
-/* =========================================================
-   CURRENT PAGE
-========================================================= */
-
-function currentPage() {
+function pageName() {
 
   const file =
     window.location.pathname
       .split("/")
-      .pop();
+      .pop()
+      .toLowerCase();
 
   return file || "dashboard.html";
 }
 
 
 /* =========================================================
-   ACTIVE NAVIGATION
+   ERROR DISPLAY
 ========================================================= */
 
-function highlightCurrentPage() {
+function showBootError(error) {
 
-  const page =
-    currentPage();
+  console.error(
+    "CHAMA LIVE:",
+    error
+  );
 
+
+  const status =
+    $("status");
+
+
+  if (status) {
+
+    status.textContent =
+      "";
+
+  }
+
+
+  const errorBox =
+    $("error");
+
+
+  if (errorBox) {
+
+    errorBox.hidden =
+      false;
+
+    errorBox.textContent =
+      error?.message ||
+      "Unable to load this page.";
+
+  }
+
+
+  /*
+   * Replace generic loading text
+   * everywhere on the page.
+   */
 
   document
-    .querySelectorAll(".nav a")
-    .forEach(link => {
+    .querySelectorAll(
+      "[data-loading]"
+    )
+    .forEach(
+      element => {
 
-      const href =
-        link.getAttribute("href");
+        element.textContent =
+          "Unable to load.";
 
-
-      if (!href) {
-        return;
       }
+    );
 
-
-      const linkPage =
-        href
-          .split("/")
-          .pop()
-          .split("?")[0];
-
-
-      link.classList.toggle(
-        "active",
-        linkPage === page
-      );
-
-    });
 }
 
 
 /* =========================================================
-   LOGOUT
+   ACTIVE NAV
+========================================================= */
+
+function highlightNavigation() {
+
+  const current =
+    pageName();
+
+
+  document
+    .querySelectorAll(
+      ".nav a"
+    )
+    .forEach(
+      link => {
+
+        const href =
+          link.getAttribute(
+            "href"
+          );
+
+
+        if (!href) {
+          return;
+        }
+
+
+        const target =
+          href
+            .split("/")
+            .pop()
+            .split("?")[0]
+            .toLowerCase();
+
+
+        link.classList.toggle(
+          "active",
+          target === current
+        );
+
+      }
+    );
+
+}
+
+
+/* =========================================================
+   SIGN OUT
 ========================================================= */
 
 function setupLogout() {
@@ -85,19 +151,15 @@ function setupLogout() {
   }
 
 
-  /*
-   * Prevent duplicate event listeners.
-   */
-
   if (
-    button.dataset.logoutReady ===
+    button.dataset.ready ===
     "true"
   ) {
     return;
   }
 
 
-  button.dataset.logoutReady =
+  button.dataset.ready =
     "true";
 
 
@@ -106,18 +168,6 @@ function setupLogout() {
     async event => {
 
       event.preventDefault();
-
-
-      if (
-        button.dataset.loggingOut ===
-        "true"
-      ) {
-        return;
-      }
-
-
-      button.dataset.loggingOut =
-        "true";
 
 
       button.disabled =
@@ -132,6 +182,7 @@ function setupLogout() {
 
         await signOut();
 
+
       } catch (error) {
 
         console.error(
@@ -144,17 +195,12 @@ function setupLogout() {
           false;
 
 
-        button.dataset.loggingOut =
-          "false";
-
-
         button.textContent =
           "Sign out";
 
 
-        alert(
-          error?.message ||
-          "Unable to sign out."
+        showBootError(
+          error
         );
 
       }
@@ -166,7 +212,7 @@ function setupLogout() {
 
 
 /* =========================================================
-   MEMBER DISPLAY
+   DISPLAY MEMBER
 ========================================================= */
 
 function displayMember(
@@ -211,7 +257,7 @@ function displayMember(
 
 
 /* =========================================================
-   GROUP DISPLAY
+   DISPLAY GROUP
 ========================================================= */
 
 function displayGroup(
@@ -333,20 +379,102 @@ function applyRBAC(
 
 
 /* =========================================================
-   SAFE STATUS
+   PAGE JAVASCRIPT MAP
 ========================================================= */
 
-function setStatus(
-  message
-) {
+const PAGE_SCRIPTS = {
 
-  const status =
-    $("status");
+  "dashboard.html":
+    "./dashboard.js",
+
+  "members.html":
+    "./members.js",
+
+  "contributions.html":
+    "./contributions.js",
+
+  "expenses.html":
+    "./expenses.js",
+
+  "meetings.html":
+    "./meetings.js",
+
+  "reports.html":
+    "./reports.js",
+
+  "monthly-closing.html":
+    "./monthly-closing.js",
+
+  "group-management.html":
+    "./group-management.js"
+
+};
 
 
-  if (status) {
-    status.textContent =
-      message;
+/* =========================================================
+   LOAD PAGE SCRIPT
+========================================================= */
+
+async function loadPageScript() {
+
+  const page =
+    pageName();
+
+
+  const script =
+    PAGE_SCRIPTS[page];
+
+
+  if (!script) {
+
+    console.warn(
+      "No page script configured for:",
+      page
+    );
+
+    return null;
+
+  }
+
+
+  /*
+   * Dynamic import is intentional.
+   *
+   * Authentication/layout can finish first.
+   * A broken page JS file will no longer
+   * prevent Sign out and authentication
+   * from initializing.
+   */
+
+  try {
+
+    await import(
+      script +
+      "?v=20260826"
+    );
+
+
+    console.log(
+      "Loaded page script:",
+      script
+    );
+
+
+    return true;
+
+  } catch (error) {
+
+    console.error(
+      "Page script failed:",
+      script,
+      error
+    );
+
+
+    throw new Error(
+      `Failed to load ${script}. ${error?.message || error}`
+    );
+
   }
 
 }
@@ -359,22 +487,21 @@ function setStatus(
 export async function boot() {
 
   /*
-   * ALWAYS install the logout button
-   * and navigation first.
-   *
-   * These must not depend on Supabase RPCs.
+   * These must work even when a page JS
+   * has a problem.
    */
 
-  highlightCurrentPage();
+  highlightNavigation();
 
   setupLogout();
 
 
   /*
-   * Then check authentication.
+   * Authenticate.
    */
 
   let session;
+
 
   try {
 
@@ -383,18 +510,12 @@ export async function boot() {
 
   } catch (error) {
 
-    console.error(
-      "Authentication boot error:",
+    showBootError(
       error
     );
 
-
-    setStatus(
-      "Authentication error."
-    );
-
-
     return null;
+
   }
 
 
@@ -404,14 +525,10 @@ export async function boot() {
 
 
   /*
-   * Get member.
-   *
-   * Failure here should NOT prevent
-   * the page itself from loading.
+   * Member.
    */
 
-  let member =
-    null;
+  let member;
 
 
   try {
@@ -421,40 +538,36 @@ export async function boot() {
 
   } catch (error) {
 
-    console.error(
-      "Member loading error:",
-      error
+    showBootError(
+      new Error(
+        "Unable to load your member account: " +
+        error.message
+      )
     );
+
+    return null;
+
+  }
+
+
+  if (!member) {
+
+    showBootError(
+      new Error(
+        "Your login is not linked to an active member account."
+      )
+    );
+
+    return null;
 
   }
 
 
   /*
-   * Apply RBAC if member exists.
+   * Group.
    */
 
-  if (member) {
-
-    displayMember(
-      member
-    );
-
-
-    applyRBAC(
-      member
-    );
-
-  }
-
-
-  /*
-   * Get group.
-   *
-   * Again, don't block the page.
-   */
-
-  let group =
-    null;
+  let group;
 
 
   try {
@@ -464,27 +577,65 @@ export async function boot() {
 
   } catch (error) {
 
-    console.error(
-      "Group loading error:",
-      error
+    showBootError(
+      new Error(
+        "Unable to load your group: " +
+        error.message
+      )
     );
+
+    return null;
 
   }
 
 
-  if (group) {
+  if (!group) {
 
-    displayGroup(
-      group
+    showBootError(
+      new Error(
+        "Your member account is not linked to a valid group."
+      )
     );
+
+    return null;
 
   }
 
 
   /*
-   * Don't show "loading dashboard"
-   * forever simply because group
-   * metadata failed.
+   * Global UI.
+   */
+
+  displayMember(
+    member
+  );
+
+
+  displayGroup(
+    group
+  );
+
+
+  applyRBAC(
+    member
+  );
+
+
+  /*
+   * Make useful information available
+   * to page scripts.
+   */
+
+  window.CHAMA =
+    {
+      session,
+      member,
+      group
+    };
+
+
+  /*
+   * Remove generic loading status.
    */
 
   const status =
@@ -493,8 +644,12 @@ export async function boot() {
 
   if (
     status &&
-    status.textContent ===
-    "Loading dashboard..."
+    (
+      status.textContent
+        .trim()
+        .toLowerCase()
+        .includes("loading")
+    )
   ) {
 
     status.textContent =
@@ -504,8 +659,33 @@ export async function boot() {
 
 
   /*
-   * Return information to page scripts.
+   * NOW load the page-specific JS.
    */
+
+  try {
+
+    await loadPageScript();
+
+  } catch (error) {
+
+    showBootError(
+      error
+    );
+
+    return null;
+
+  }
+
+
+  console.log(
+    "CHAMA LIVE boot complete",
+    {
+      page: pageName(),
+      member,
+      group
+    }
+  );
+
 
   return {
     session,
