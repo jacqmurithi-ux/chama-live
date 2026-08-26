@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 
@@ -64,77 +65,287 @@
 
 <script type="module">
 
-  import {
-    supabase
-  } from "./js/supabase.js";
+import {
+  supabase
+} from "./js/supabase.js";
+
+
+const APP_URL =
+  "https://jacqmurithi-ux.github.io/chama-live";
+
+
+const PENDING_KEY =
+  "chama_pending_onboarding";
+
+
+const status =
+  document.getElementById("status");
+
+
+const error =
+  document.getElementById("error");
+
+
+/* =======================================================
+   COMPLETE ONBOARDING
+======================================================= */
+
+async function completeOnboarding() {
+
+  status.textContent =
+    "Creating your group...";
 
 
   /* =====================================================
-     CONFIGURATION
+     GET AUTH USER
   ===================================================== */
 
-  const APP_URL =
-    "https://jacqmurithi-ux.github.io/chama-live";
+  const {
+    data: userData,
+    error: userError
+  } =
+    await supabase.auth.getUser();
 
 
-  /* =====================================================
-     ELEMENTS
-  ===================================================== */
-
-  const status =
-    document.getElementById("status");
-
-  const error =
-    document.getElementById("error");
+  if (userError) {
+    throw userError;
+  }
 
 
-  /* =====================================================
-     HELPERS
-  ===================================================== */
+  const user =
+    userData?.user;
 
-  function setStatus(message) {
 
-    if (status) {
-      status.textContent = message;
-    }
+  if (!user) {
+
+    throw new Error(
+      "Your account was confirmed, but an authenticated session could not be established."
+    );
 
   }
 
 
-  function showError(message) {
+  console.log(
+    "CHAMA LIVE CONFIRMED USER:",
+    user.id
+  );
 
-    console.error(
-      "CHAMA LIVE confirmation error:",
-      message
+
+  /* =====================================================
+     GET PENDING ONBOARDING
+  ===================================================== */
+
+  const stored =
+    localStorage.getItem(
+      PENDING_KEY
     );
 
 
-    if (error) {
+  if (!stored) {
 
-      error.textContent =
-        message;
+    throw new Error(
+      "Your account was confirmed, but your group setup information could not be found. Please start the group registration again."
+    );
 
-      error.hidden = false;
+  }
 
-    }
+
+  let onboardingData;
+
+
+  try {
+
+    onboardingData =
+      JSON.parse(stored);
+
+  } catch {
+
+    localStorage.removeItem(
+      PENDING_KEY
+    );
+
+    throw new Error(
+      "Your saved group setup information is invalid."
+    );
+
+  }
+
+
+  if (
+    !onboardingData.groupName ||
+    !onboardingData.adminName
+  ) {
+
+    throw new Error(
+      "Your group setup information is incomplete."
+    );
+
+  }
+
+
+  console.log(
+    "CHAMA LIVE PENDING DATA:",
+    onboardingData
+  );
+
+
+  /* =====================================================
+     CALL SUPABASE ONBOARDING FUNCTION
+  ===================================================== */
+
+  const {
+    data: onboarding,
+    error: onboardingError
+  } =
+    await supabase.rpc(
+      "onboard_new_group",
+      {
+
+        /*
+         * IMPORTANT:
+         *
+         * group_id is NOT supplied.
+         */
+
+        p_group_name:
+          onboardingData.groupName,
+
+        p_category:
+          onboardingData.category,
+
+        p_monthly_contribution:
+          Number(
+            onboardingData.monthlyContribution || 0
+          ),
+
+        p_opening_balance:
+          Number(
+            onboardingData.openingBalance || 0
+          ),
+
+        p_description:
+          onboardingData.description ||
+          null,
+
+        p_admin_name:
+          onboardingData.adminName,
+
+        p_admin_phone:
+          onboardingData.adminPhone,
+
+        p_country:
+          "Kenya"
+
+      }
+    );
+
+
+  if (onboardingError) {
+    throw onboardingError;
+  }
+
+
+  console.log(
+    "CHAMA LIVE ONBOARDING RESULT:",
+    onboarding
+  );
+
+
+  /* =====================================================
+     VERIFY
+  ===================================================== */
+
+  if (
+    !onboarding ||
+    onboarding.success !== true
+  ) {
+
+    throw new Error(
+      "Group onboarding failed."
+    );
+
+  }
+
+
+  if (!onboarding.group_id) {
+
+    throw new Error(
+      "Group was created but no group ID was returned."
+    );
 
   }
 
 
   /* =====================================================
-     COMPLETE ONBOARDING
+     SUCCESS
   ===================================================== */
 
-  async function completeOnboarding() {
+  console.log(
+    "CHAMA LIVE GROUP CREATED:",
+    onboarding.group_id
+  );
 
-    /* ===================================================
-       1. CHECK SESSION
-    =================================================== */
 
-    setStatus(
-      "Checking your confirmation..."
-    );
+  console.log(
+    "CHAMA LIVE MEMBER CREATED:",
+    onboarding.member_id
+  );
 
+
+  console.log(
+    "CHAMA LIVE MEMBER NUMBER:",
+    onboarding.member_number
+  );
+
+
+  console.log(
+    "CHAMA LIVE ACCESS CODE:",
+    onboarding.access_code
+  );
+
+
+  /* =====================================================
+     REMOVE TEMPORARY DATA
+  ===================================================== */
+
+  localStorage.removeItem(
+    PENDING_KEY
+  );
+
+
+  status.textContent =
+    "✓ Account confirmed and group created successfully. Redirecting...";
+
+
+  setTimeout(
+    () => {
+
+      window.location.href =
+        `${APP_URL}/dashboard.html`;
+
+    },
+    800
+  );
+
+}
+
+
+/* =======================================================
+   INITIALIZE
+======================================================= */
+
+async function init() {
+
+  try {
+
+    status.textContent =
+      "Checking your confirmation...";
+
+
+    /*
+     * Supabase's email link should establish
+     * the authenticated session.
+     */
 
     const {
       data: sessionData,
@@ -144,380 +355,52 @@
 
 
     if (sessionError) {
-
       throw sessionError;
-
     }
 
 
-    const session =
-      sessionData?.session;
-
-
-    if (!session) {
+    if (!sessionData?.session) {
 
       throw new Error(
-        "Your confirmation session could not be established. Please request a new confirmation email."
+        "Your account was confirmed, but your confirmation session could not be established. Please sign in and try again."
       );
 
     }
 
 
     console.log(
-      "CHAMA LIVE: authenticated session found"
+      "CHAMA LIVE: confirmation session established"
     );
 
 
-    /* ===================================================
-       2. GET AUTH USER
-    =================================================== */
+    await completeOnboarding();
 
-    setStatus(
-      "Verifying your account..."
+
+  } catch (err) {
+
+    console.error(
+      "CHAMA LIVE confirmation error:",
+      err
     );
 
 
-    const {
-      data: userData,
-      error: userError
-    } =
-      await supabase.auth.getUser();
+    status.textContent =
+      "Account confirmation could not be completed.";
 
 
-    if (userError) {
+    error.textContent =
+      err?.message ||
+      "Unable to complete account confirmation.";
 
-      throw userError;
 
-    }
-
-
-    const user =
-      userData?.user;
-
-
-    if (!user) {
-
-      throw new Error(
-        "Authenticated user could not be found."
-      );
-
-    }
-
-
-    console.log(
-      "CHAMA LIVE USER:",
-      user.id
-    );
-
-
-    console.log(
-      "CHAMA LIVE EMAIL:",
-      user.email
-    );
-
-
-    /* ===================================================
-       3. GET ONBOARDING DATA
-    =================================================== */
-
-    setStatus(
-      "Loading your group setup..."
-    );
-
-
-    /*
-     * signup.js stored the onboarding
-     * information inside Supabase Auth
-     * user metadata.
-     *
-     * Password is NOT stored here.
-     */
-
-    const onboardingData =
-      user.user_metadata?.chama_onboarding;
-
-
-    if (!onboardingData) {
-
-      throw new Error(
-        "Your account was confirmed, but your group setup information could not be found. Please contact support."
-      );
-
-    }
-
-
-    console.log(
-      "CHAMA LIVE ONBOARDING DATA:",
-      onboardingData
-    );
-
-
-    /* ===================================================
-       4. VALIDATE ONBOARDING DATA
-    =================================================== */
-
-    if (
-      !onboardingData.group_name
-    ) {
-
-      throw new Error(
-        "Group name is missing from your onboarding information."
-      );
-
-    }
-
-
-    if (
-      !onboardingData.admin_name
-    ) {
-
-      throw new Error(
-        "Administrator name is missing from your onboarding information."
-      );
-
-    }
-
-
-    if (
-      !onboardingData.admin_phone
-    ) {
-
-      throw new Error(
-        "Administrator phone number is missing from your onboarding information."
-      );
-
-    }
-
-
-    /* ===================================================
-       5. CREATE GROUP
-    =================================================== */
-
-    setStatus(
-      "Email confirmed. Creating your group..."
-    );
-
-
-    /*
-     * IMPORTANT:
-     *
-     * There is NO group_id here.
-     *
-     * onboard_new_group() obtains:
-     *
-     * auth.uid()
-     *
-     * from the authenticated Supabase session.
-     *
-     * The database creates:
-     *
-     * groups
-     * members
-     * financial_periods
-     */
-
-    const {
-      data: onboarding,
-      error: onboardingError
-    } =
-      await supabase.rpc(
-        "onboard_new_group",
-        {
-
-          p_group_name:
-            onboardingData.group_name,
-
-          p_category:
-            onboardingData.category ||
-            "other",
-
-          p_monthly_contribution:
-            Number(
-              onboardingData.monthly_contribution || 0
-            ),
-
-          p_opening_balance:
-            Number(
-              onboardingData.opening_balance || 0
-            ),
-
-          p_description:
-            onboardingData.description ||
-            null,
-
-          p_admin_name:
-            onboardingData.admin_name,
-
-          p_admin_phone:
-            onboardingData.admin_phone,
-
-          p_country:
-            onboardingData.country ||
-            "Kenya"
-
-        }
-      );
-
-
-    if (onboardingError) {
-
-      throw onboardingError;
-
-    }
-
-
-    console.log(
-      "CHAMA LIVE ONBOARDING RESULT:",
-      onboarding
-    );
-
-
-    /* ===================================================
-       6. VERIFY ONBOARDING
-    =================================================== */
-
-    if (
-      !onboarding ||
-      onboarding.success !== true
-    ) {
-
-      throw new Error(
-        "Group onboarding did not complete successfully."
-      );
-
-    }
-
-
-    if (!onboarding.group_id) {
-
-      throw new Error(
-        "Group was created but no group ID was returned."
-      );
-
-    }
-
-
-    /* ===================================================
-       7. DISPLAY SUCCESS DETAILS
-    =================================================== */
-
-    console.log(
-      "CHAMA LIVE GROUP ID:",
-      onboarding.group_id
-    );
-
-
-    console.log(
-      "CHAMA LIVE MEMBER ID:",
-      onboarding.member_id
-    );
-
-
-    console.log(
-      "CHAMA LIVE MEMBER NUMBER:",
-      onboarding.member_number
-    );
-
-
-    console.log(
-      "CHAMA LIVE ACCESS CODE:",
-      onboarding.access_code
-    );
-
-
-    setStatus(
-      "✓ Your email has been confirmed and your group has been created successfully."
-    );
-
-
-    /* ===================================================
-       8. CLEAR ONBOARDING METADATA
-    =================================================== */
-
-    /*
-     * The onboarding information has now
-     * been consumed.
-     *
-     * Remove it from Auth metadata.
-     */
-
-    const {
-      error: metadataError
-    } =
-      await supabase.auth.updateUser({
-
-        data: {
-
-          chama_onboarding: null
-
-        }
-
-      });
-
-
-    if (metadataError) {
-
-      /*
-       * Do not fail onboarding just because
-       * metadata cleanup failed.
-       */
-
-      console.warn(
-        "CHAMA LIVE: Could not clear onboarding metadata:",
-        metadataError
-      );
-
-    }
-
-
-    /* ===================================================
-       9. REDIRECT
-    =================================================== */
-
-    setStatus(
-      "✓ Setup complete. Opening your dashboard..."
-    );
-
-
-    setTimeout(
-      () => {
-
-        window.location.href =
-          `${APP_URL}/dashboard.html`;
-
-      },
-      1200
-    );
+    error.hidden = false;
 
   }
 
-
-  /* =====================================================
-     START
-  ===================================================== */
-
-  completeOnboarding()
-    .catch(
-      (err) => {
-
-        console.error(
-          "CHAMA LIVE confirmation error:",
-          err
-        );
+}
 
 
-        setStatus(
-          "Account confirmation could not be completed."
-        );
-
-
-        showError(
-          err?.message ||
-          "Unable to complete account confirmation."
-        );
-
-      }
-    );
+init();
 
 </script>
 
