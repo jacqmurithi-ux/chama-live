@@ -180,14 +180,19 @@ Create Group Account
 
 </main>
 
-
-
+```html
 <script type="module">
 
 import {
-  supabase
-} from "./js/supabase.js";
+  signIn,
+  getMyMember,
+  getMyGroup
+} from "./js/auth.js";
 
+
+/* =====================================================
+   ELEMENTS
+===================================================== */
 
 const form =
   document.getElementById(
@@ -231,35 +236,25 @@ const successBox =
   );
 
 
-
 /* =====================================================
    ERROR
 ===================================================== */
 
-function showError(
-  message
-) {
+function showError(message) {
 
-  errorBox.hidden =
-    false;
+  errorBox.hidden = false;
 
   errorBox.textContent =
-    message;
-
+    message || "Unable to sign in.";
 }
-
 
 
 function clearError() {
 
-  errorBox.hidden =
-    true;
+  errorBox.hidden = true;
 
-  errorBox.textContent =
-    "";
-
+  errorBox.textContent = "";
 }
-
 
 
 /* =====================================================
@@ -272,12 +267,13 @@ form.addEventListener(
 
     event.preventDefault();
 
-
     clearError();
-
 
     successBox.style.display =
       "none";
+
+    statusBox.textContent =
+      "";
 
 
     const email =
@@ -290,10 +286,7 @@ form.addEventListener(
       passwordInput.value;
 
 
-    if (
-      !email ||
-      !password
-    ) {
+    if (!email || !password) {
 
       showError(
         "Enter your email and password."
@@ -303,181 +296,97 @@ form.addEventListener(
     }
 
 
-
-    button.disabled =
-      true;
-
+    button.disabled = true;
 
     button.textContent =
       "Signing in...";
-
 
     statusBox.textContent =
       "Connecting to CHAMA LIVE...";
 
 
-
     try {
-
 
       /* ===============================================
          SIGN IN
       =============================================== */
 
-      const {
-        data,
-        error
-      } =
-        await supabase.auth.signInWithPassword({
-          email,
-          password
-        });
-
-
-      if (error) {
-
-        console.error(
-          "Supabase login error:",
-          error
-        );
-
-        throw new Error(
-          error.message
-        );
-
-      }
-
-
-      if (
-        !data ||
-        !data.user ||
-        !data.session
-      ) {
-
-        throw new Error(
-          "Supabase did not return a valid login session."
-        );
-
-      }
-
+      await signIn(
+        email,
+        password
+      );
 
 
       statusBox.textContent =
-        "Login successful. Checking your group...";
-
+        "Login successful. Checking your member account...";
 
 
       /* ===============================================
          CHECK MEMBER
       =============================================== */
 
-      const {
-        data: member,
-        error: memberError
-      } =
-        await supabase
-          .rpc(
-            "get_my_member"
-          );
-
-
-      if (memberError) {
-
-        console.error(
-          "get_my_member error:",
-          memberError
-        );
-
-        throw new Error(
-          "Your login worked, but CHAMA LIVE could not load your member account: " +
-          memberError.message
-        );
-
-      }
-
-
-      console.log(
-        "MEMBER:",
-        member
-      );
+      const member =
+        await getMyMember();
 
 
       if (!member) {
 
         throw new Error(
-          "Your login worked, but your account is not linked to a group member."
+          "Your login worked, but your account is not linked to an active CHAMA member account."
         );
-
       }
 
+
+      console.log(
+        "CHAMA LIVE MEMBER:",
+        member
+      );
+
+
+      statusBox.textContent =
+        "Member account found. Checking your group...";
 
 
       /* ===============================================
          CHECK GROUP
       =============================================== */
 
-      const {
-        data: group,
-        error: groupError
-      } =
-        await supabase
-          .rpc(
-            "get_my_group"
-          );
-
-
-      if (groupError) {
-
-        console.error(
-          "get_my_group error:",
-          groupError
-        );
-
-        throw new Error(
-          "Your member account was found, but CHAMA LIVE could not load your group: " +
-          groupError.message
-        );
-
-      }
-
-
-      console.log(
-        "GROUP:",
-        group
-      );
+      const group =
+        await getMyGroup();
 
 
       if (!group) {
 
         throw new Error(
-          "Your account is not linked to a valid group."
+          "Your member account was found, but it is not linked to an active group."
         );
-
       }
 
+
+      console.log(
+        "CHAMA LIVE GROUP:",
+        group
+      );
 
 
       /* ===============================================
          SUCCESS
       =============================================== */
 
-      console.log(
-        "CHAMA LOGIN SUCCESS",
-        {
-          user: data.user,
-          member,
-          group
-        }
-      );
+      const memberName =
+        member.name ||
+        member.full_name ||
+        "Member";
+
+
+      const groupName =
+        group.name ||
+        group.group_name ||
+        "CHAMA";
 
 
       successBox.textContent =
-        "Welcome " +
-        (
-          member.name ||
-          "Member"
-        ) +
-        ". Redirecting...";
+        `Welcome ${memberName}. ${groupName} is ready. Redirecting...`;
 
 
       successBox.style.display =
@@ -488,9 +397,13 @@ form.addEventListener(
         "";
 
 
+      button.textContent =
+        "Success";
+
+
       /*
-       * Give Supabase a moment to persist
-       * the session in the browser.
+       * Give the browser a moment to persist
+       * the Supabase session before navigation.
        */
 
       await new Promise(
@@ -509,33 +422,10 @@ form.addEventListener(
 
     } catch (error) {
 
-
       console.error(
         "CHAMA LOGIN FAILED:",
         error
       );
-
-
-      /*
-       * If group/member verification fails,
-       * remove the partially authenticated
-       * session.
-       */
-
-      try {
-
-        await supabase.auth.signOut();
-
-      } catch (
-        signOutError
-      ) {
-
-        console.error(
-          "Cleanup sign out error:",
-          signOutError
-        );
-
-      }
 
 
       showError(
@@ -554,16 +444,12 @@ form.addEventListener(
 
       button.textContent =
         "Sign in";
-
     }
 
   }
 );
 
 </script>
+```
 
-
-</body>
-
-</html>
 
