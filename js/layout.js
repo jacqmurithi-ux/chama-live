@@ -1,17 +1,9 @@
 import {
-  supabase,
   requireAuth,
   getMyMember,
   getMyGroup,
   signOut
 } from "./auth.js";
-
-
-/* =========================================================
-   ELEMENTS
-========================================================= */
-
-const logoutButton = document.getElementById("logout");
 
 
 /* =========================================================
@@ -30,64 +22,103 @@ export async function boot() {
 
   try {
 
-    const session = await requireAuth();
+    /* -----------------------------------------------------
+       REQUIRE LOGIN
+    ----------------------------------------------------- */
+
+    const session =
+      await requireAuth();
 
     if (!session) {
       return;
     }
 
 
-    currentMember = await getMyMember();
+    /* -----------------------------------------------------
+       GET MEMBER
+    ----------------------------------------------------- */
+
+    currentMember =
+      await getMyMember();
+
 
     if (!currentMember) {
 
-      console.error(
-        "No member record found for this account."
+      throw new Error(
+        "No member record was found for this account."
       );
 
-      showGlobalError(
-        "Your account is authenticated, but no member record was found."
-      );
-
-      return;
     }
 
+
+    /* -----------------------------------------------------
+       GET GROUP
+    ----------------------------------------------------- */
 
     try {
 
-      currentGroup = await getMyGroup();
+      currentGroup =
+        await getMyGroup();
 
-    } catch (groupError) {
+    } catch (error) {
 
       console.warn(
-        "getMyGroup failed:",
-        groupError
+        "Unable to load group:",
+        error
       );
 
-      currentGroup = null;
+      /*
+       * Do not stop the whole application if the
+       * group RPC is unavailable.
+       *
+       * The member record still contains group_id.
+       */
+
+      currentGroup =
+        null;
 
     }
 
 
+    /* -----------------------------------------------------
+       DISPLAY USER
+    ----------------------------------------------------- */
+
     displayUser();
+
+
+    /* -----------------------------------------------------
+       DISPLAY GROUP
+    ----------------------------------------------------- */
 
     displayGroup();
 
+
+    /* -----------------------------------------------------
+       LOGOUT
+    ----------------------------------------------------- */
+
     setupLogout();
 
-    loadPageScript();
+
+    /* -----------------------------------------------------
+       LOAD CURRENT PAGE
+    ----------------------------------------------------- */
+
+    await loadPageScript();
 
 
   } catch (error) {
 
     console.error(
-      "Layout boot error:",
+      "LAYOUT BOOT ERROR:",
       error
     );
 
+
     showGlobalError(
       error?.message ||
-      "Unable to load the application."
+      "Unable to load CHAMA LIVE."
     );
 
   }
@@ -101,10 +132,12 @@ export async function boot() {
 
 function displayUser() {
 
-  const userName =
+  const name =
     currentMember?.name ||
     "Member";
 
+
+  /* Welcome name */
 
   document
     .querySelectorAll(
@@ -114,11 +147,13 @@ function displayUser() {
       element => {
 
         element.textContent =
-          userName;
+          name;
 
       }
     );
 
+
+  /* Other possible welcome elements */
 
   document
     .querySelectorAll(
@@ -128,7 +163,23 @@ function displayUser() {
       element => {
 
         element.textContent =
-          userName;
+          name;
+
+      }
+    );
+
+
+  /* Generic member name */
+
+  document
+    .querySelectorAll(
+      "#memberName"
+    )
+    .forEach(
+      element => {
+
+        element.textContent =
+          name;
 
       }
     );
@@ -175,6 +226,20 @@ function displayGroup() {
       }
     );
 
+
+  document
+    .querySelectorAll(
+      "#groupName"
+    )
+    .forEach(
+      element => {
+
+        element.textContent =
+          groupName;
+
+      }
+    );
+
 }
 
 
@@ -184,38 +249,76 @@ function displayGroup() {
 
 function setupLogout() {
 
+  const logoutButton =
+    document.getElementById(
+      "logout"
+    );
+
+
   if (!logoutButton) {
+
+    console.warn(
+      "Logout button not found on this page."
+    );
+
     return;
+
   }
+
+
+  /*
+   * Prevent duplicate listeners
+   */
+
+  if (
+    logoutButton.dataset
+      .logoutReady === "true"
+  ) {
+
+    return;
+
+  }
+
+
+  logoutButton.dataset
+    .logoutReady = "true";
 
 
   logoutButton.addEventListener(
     "click",
     async () => {
 
-      logoutButton.disabled =
-        true;
-
-      logoutButton.textContent =
-        "Signing out...";
-
-
       try {
 
+        logoutButton.disabled =
+          true;
+
+        logoutButton.textContent =
+          "Signing out...";
+
+
         await signOut();
+
 
       } catch (error) {
 
         console.error(
-          "Logout error:",
+          "SIGN OUT ERROR:",
           error
         );
+
 
         logoutButton.disabled =
           false;
 
         logoutButton.textContent =
           "Sign out";
+
+
+        showGlobalError(
+          error?.message ||
+          "Unable to sign out."
+        );
 
       }
 
@@ -226,7 +329,7 @@ function setupLogout() {
 
 
 /* =========================================================
-   PAGE SCRIPT
+   LOAD PAGE SCRIPT
 ========================================================= */
 
 async function loadPageScript() {
@@ -239,9 +342,16 @@ async function loadPageScript() {
   let script = null;
 
 
+  /* -------------------------------------------------------
+     DASHBOARD
+  ------------------------------------------------------- */
+
   if (
     path.endsWith(
       "/dashboard.html"
+    ) ||
+    path.endsWith(
+      "/index.html"
     ) ||
     path.endsWith(
       "/"
@@ -249,10 +359,14 @@ async function loadPageScript() {
   ) {
 
     script =
-      "./dashboard.js";
+      "dashboard.js";
 
   }
 
+
+  /* -------------------------------------------------------
+     MEMBERS
+  ------------------------------------------------------- */
 
   else if (
     path.endsWith(
@@ -261,10 +375,14 @@ async function loadPageScript() {
   ) {
 
     script =
-      "./members.js";
+      "members.js";
 
   }
 
+
+  /* -------------------------------------------------------
+     CONTRIBUTIONS
+  ------------------------------------------------------- */
 
   else if (
     path.endsWith(
@@ -273,10 +391,14 @@ async function loadPageScript() {
   ) {
 
     script =
-      "./contributions.js";
+      "contributions.js";
 
   }
 
+
+  /* -------------------------------------------------------
+     EXPENSES
+  ------------------------------------------------------- */
 
   else if (
     path.endsWith(
@@ -285,10 +407,14 @@ async function loadPageScript() {
   ) {
 
     script =
-      "./expenses.js";
+      "expenses.js";
 
   }
 
+
+  /* -------------------------------------------------------
+     MEETINGS
+  ------------------------------------------------------- */
 
   else if (
     path.endsWith(
@@ -297,10 +423,14 @@ async function loadPageScript() {
   ) {
 
     script =
-      "./meetings.js";
+      "meetings.js";
 
   }
 
+
+  /* -------------------------------------------------------
+     REPORTS
+  ------------------------------------------------------- */
 
   else if (
     path.endsWith(
@@ -309,10 +439,14 @@ async function loadPageScript() {
   ) {
 
     script =
-      "./reports.js";
+      "reports.js";
 
   }
 
+
+  /* -------------------------------------------------------
+     GROUP MANAGEMENT
+  ------------------------------------------------------- */
 
   else if (
     path.endsWith(
@@ -321,26 +455,49 @@ async function loadPageScript() {
   ) {
 
     script =
-      "./group-management.js";
+      "group-management.js";
 
   }
 
 
+  /* -------------------------------------------------------
+     NO PAGE SCRIPT
+  ------------------------------------------------------- */
+
   else {
+
+    console.log(
+      "No page-specific script required for:",
+      path
+    );
 
     return;
 
   }
 
 
+  /* -------------------------------------------------------
+     IMPORT PAGE SCRIPT
+  ------------------------------------------------------- */
+
   try {
 
-    await import(
-      `./${script.replace(
-        "./",
-        ""
-      )}`
+    console.log(
+      "Loading page script:",
+      script
     );
+
+
+    await import(
+      `./${script}`
+    );
+
+
+    console.log(
+      "Page script loaded:",
+      script
+    );
+
 
   } catch (error) {
 
@@ -349,8 +506,9 @@ async function loadPageScript() {
       error
     );
 
+
     showGlobalError(
-      `Unable to load page module. Check ${script}.`
+      `Unable to load ${script}. Check the browser console.`
     );
 
   }
@@ -359,7 +517,7 @@ async function loadPageScript() {
 
 
 /* =========================================================
-   GLOBAL ERROR
+   GLOBAL ERROR MESSAGE
 ========================================================= */
 
 function showGlobalError(
@@ -372,6 +530,10 @@ function showGlobalError(
     );
 
 
+  /* -------------------------------------------------------
+     CREATE ERROR BOX
+  ------------------------------------------------------- */
+
   if (!errorBox) {
 
     errorBox =
@@ -379,11 +541,21 @@ function showGlobalError(
         "div"
       );
 
+
     errorBox.id =
       "layoutError";
 
+
     errorBox.className =
       "error";
+
+
+    errorBox.style.margin =
+      "20px 0";
+
+
+    errorBox.style.padding =
+      "15px";
 
 
     const main =
@@ -409,10 +581,33 @@ function showGlobalError(
   }
 
 
+  /* -------------------------------------------------------
+     SHOW ERROR
+  ------------------------------------------------------- */
+
   errorBox.hidden =
     false;
 
+
   errorBox.textContent =
     message;
+
+}
+
+
+/* =========================================================
+   EXPORT STATE
+========================================================= */
+
+export function getCurrentMember() {
+
+  return currentMember;
+
+}
+
+
+export function getCurrentGroup() {
+
+  return currentGroup;
 
 }
