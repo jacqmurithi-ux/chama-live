@@ -64,24 +64,27 @@ let monthlyContribution = 0;
 
 
 /* =======================================================
-   DATABASE PAYMENT METHODS
+   PAYMENT METHOD VALUES
 ======================================================= */
 
 /*
- * These values MUST match the PostgreSQL
- * contributions_payment_method_check constraint.
+ * IMPORTANT:
  *
- * Current database constraint:
+ * These values must match the database CHECK constraint.
  *
- * M-Pesa
- * Cash
- * Bank transfer
+ * Database values:
+ *
+ * mpesa
+ * cash
+ * bank_transfer
+ *
+ * User-friendly labels are handled separately.
  */
 
 const PAYMENT_METHODS = {
-  MPESA: "M-Pesa",
-  CASH: "Cash",
-  BANK: "Bank transfer"
+  mpesa: "M-Pesa",
+  cash: "Cash",
+  bank_transfer: "Bank transfer"
 };
 
 
@@ -91,15 +94,12 @@ const PAYMENT_METHODS = {
 
 function money(value) {
 
-  return new Intl.NumberFormat(
-    "en-KE",
-    {
-      style: "currency",
-      currency: "KES",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2
-    }
-  ).format(
+  return new Intl.NumberFormat("en-KE", {
+    style: "currency",
+    currency: "KES",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  }).format(
     Number(value || 0)
   );
 
@@ -140,12 +140,17 @@ function getCurrentMonth() {
 function getContributionMonth(item) {
 
   /*
-   * contribution_date is primary.
-   * month is fallback.
-   * created_at is final fallback.
+   * Primary:
+   * contribution_date
+   *
+   * Fallback:
+   * month
+   *
+   * Final fallback:
+   * created_at
    */
 
-  if (item.contribution_date) {
+  if (item?.contribution_date) {
 
     return String(
       item.contribution_date
@@ -154,7 +159,7 @@ function getContributionMonth(item) {
   }
 
 
-  if (item.month) {
+  if (item?.month) {
 
     return String(
       item.month
@@ -163,7 +168,7 @@ function getContributionMonth(item) {
   }
 
 
-  if (item.created_at) {
+  if (item?.created_at) {
 
     return String(
       item.created_at
@@ -180,7 +185,9 @@ function getContributionMonth(item) {
 function formatDate(value) {
 
   if (!value) {
+
     return "—";
+
   }
 
 
@@ -194,7 +201,7 @@ function formatDate(value) {
     )
   ) {
 
-    return value;
+    return String(value);
 
   }
 
@@ -239,7 +246,7 @@ function escapeHtml(value) {
 
 
 /* =======================================================
-   ERROR
+   STATUS / ERROR
 ======================================================= */
 
 function showError(error) {
@@ -252,11 +259,34 @@ function showError(error) {
 
   if (errorEl) {
 
-    errorEl.textContent =
+    let message =
       error?.message ||
       "Something went wrong.";
 
-    errorEl.hidden = false;
+
+    /*
+     * Make the common payment-method
+     * constraint error easier to understand.
+     */
+
+    if (
+      String(message)
+        .includes(
+          "contributions_payment_method_check"
+        )
+    ) {
+
+      message =
+        "The selected payment method is not accepted by the database. Please use M-Pesa, Cash, or Bank transfer.";
+
+    }
+
+
+    errorEl.textContent =
+      message;
+
+    errorEl.hidden =
+      false;
 
   }
 
@@ -274,13 +304,17 @@ function showError(error) {
 function clearError() {
 
   if (!errorEl) {
+
     return;
+
   }
 
 
-  errorEl.hidden = true;
+  errorEl.hidden =
+    true;
 
-  errorEl.textContent = "";
+  errorEl.textContent =
+    "";
 
 }
 
@@ -366,6 +400,11 @@ async function loadGroup() {
   }
 
 
+  /*
+   * Automatically suggest the
+   * configured monthly contribution.
+   */
+
   if (
     amountInput &&
     monthlyContribution > 0
@@ -415,6 +454,11 @@ async function loadMembers() {
   }
 
 
+  /*
+   * Only active members can
+   * receive new contributions.
+   */
+
   members =
     (data || [])
       .filter(
@@ -428,7 +472,9 @@ async function loadMembers() {
 
 
   if (!memberSelect) {
+
     return;
+
   }
 
 
@@ -550,13 +596,40 @@ function getMemberName(
 
 
 /* =======================================================
+   PAYMENT METHOD LABEL
+======================================================= */
+
+function getPaymentMethodLabel(
+  value
+) {
+
+  const normalized =
+    String(
+      value || ""
+    ).toLowerCase().trim();
+
+
+  return (
+    PAYMENT_METHODS[
+      normalized
+    ] ||
+    value ||
+    "—"
+  );
+
+}
+
+
+/* =======================================================
    LEDGER
 ======================================================= */
 
 function renderLedger() {
 
   if (!contributionRows) {
+
     return;
+
   }
 
 
@@ -597,6 +670,12 @@ function renderLedger() {
             "—";
 
 
+          const method =
+            getPaymentMethodLabel(
+              item.payment_method
+            );
+
+
           return `
             <tr>
 
@@ -631,8 +710,7 @@ function renderLedger() {
 
               <td>
                 ${escapeHtml(
-                  item.payment_method ||
-                  "—"
+                  method
                 )}
               </td>
 
@@ -653,13 +731,15 @@ function renderLedger() {
 
 
 /* =======================================================
-   MONTHLY STATUS
+   MEMBER STATUS
 ======================================================= */
 
 function renderMemberStatus() {
 
   if (!memberStatusRows) {
+
     return;
+
   }
 
 
@@ -688,8 +768,9 @@ function renderMemberStatus() {
         member => {
 
           /*
-           * Only monthly contributions
-           * count toward monthly status.
+           * Only MONTHLY contributions
+           * count toward the monthly
+           * contribution requirement.
            */
 
           const paid =
@@ -761,6 +842,10 @@ function renderMemberStatus() {
             );
 
 
+          /*
+           * Determine status.
+           */
+
           let status =
             "OUTSTANDING";
 
@@ -773,16 +858,22 @@ function renderMemberStatus() {
               "NOT SET";
 
           }
-
           else if (
-            paid >= expected
+            paid > expected
+          ) {
+
+            status =
+              "OVERPAID";
+
+          }
+          else if (
+            paid === expected
           ) {
 
             status =
               "PAID";
 
           }
-
           else if (
             paid > 0
           ) {
@@ -839,7 +930,7 @@ function renderMemberStatus() {
 
 
 /* =======================================================
-   PAYMENT METHOD
+   PAYMENT METHOD UI
 ======================================================= */
 
 function updatePaymentMethod() {
@@ -855,19 +946,22 @@ function updatePaymentMethod() {
   }
 
 
-  const method =
-    methodSelect.value;
-
-
   /*
-   * IMPORTANT:
-   * Supabase stores "M-Pesa",
-   * not "mpesa".
+   * HTML values should be:
+   *
+   * mpesa
+   * cash
+   * bank_transfer
    */
 
+  const method =
+    String(
+      methodSelect.value || ""
+    ).toLowerCase();
+
+
   const isMpesa =
-    method ===
-    PAYMENT_METHODS.MPESA;
+    method === "mpesa";
 
 
   mpesaReferenceWrap.style.display =
@@ -882,7 +976,8 @@ function updatePaymentMethod() {
 
   if (!isMpesa) {
 
-    mpesaReference.value = "";
+    mpesaReference.value =
+      "";
 
   }
 
@@ -920,18 +1015,30 @@ async function recordContribution(
     typeSelect?.value;
 
 
+  /*
+   * IMPORTANT:
+   *
+   * This returns database values:
+   *
+   * mpesa
+   * cash
+   * bank_transfer
+   */
+
   const paymentMethod =
-    methodSelect?.value;
+    String(
+      methodSelect?.value || ""
+    ).toLowerCase();
 
 
   const reference =
-    mpesaReference?.value.trim() ||
-    "";
+    mpesaReference?.value
+      .trim() || "";
 
 
-  /* -----------------------------------------------------
+  /* ---------------------------------------------------
      VALIDATION
-  ----------------------------------------------------- */
+  --------------------------------------------------- */
 
   if (!memberId) {
 
@@ -1002,26 +1109,20 @@ async function recordContribution(
 
 
   /*
-   * Ensure frontend can NEVER send
-   * an invalid payment method.
+   * Ensure the method is one of
+   * the supported database values.
    */
 
-  const validPaymentMethods = [
-    PAYMENT_METHODS.MPESA,
-    PAYMENT_METHODS.CASH,
-    PAYMENT_METHODS.BANK
-  ];
-
-
   if (
-    !validPaymentMethods.includes(
+    !Object.prototype.hasOwnProperty.call(
+      PAYMENT_METHODS,
       paymentMethod
     )
   ) {
 
     showError(
       new Error(
-        "Invalid payment method selected."
+        "Invalid payment method. Please select M-Pesa, Cash, or Bank transfer."
       )
     );
 
@@ -1030,9 +1131,12 @@ async function recordContribution(
   }
 
 
+  /*
+   * M-Pesa requires a reference.
+   */
+
   if (
-    paymentMethod ===
-      PAYMENT_METHODS.MPESA &&
+    paymentMethod === "mpesa" &&
     !reference
   ) {
 
@@ -1047,10 +1151,6 @@ async function recordContribution(
   }
 
 
-  /* -----------------------------------------------------
-     MONTH
-  ----------------------------------------------------- */
-
   const month =
     contributionDate.slice(
       0,
@@ -1058,9 +1158,9 @@ async function recordContribution(
     );
 
 
-  /* -----------------------------------------------------
+  /* ---------------------------------------------------
      DUPLICATE MONTHLY PAYMENT WARNING
-  ----------------------------------------------------- */
+  --------------------------------------------------- */
 
   if (
     String(
@@ -1098,12 +1198,14 @@ async function recordContribution(
       const proceed =
         window.confirm(
           `This member already has a monthly contribution for ${month}.\n\n` +
-          `Continue with another payment?`
+          `This will be recorded as an additional payment. Continue?`
         );
 
 
       if (!proceed) {
+
         return;
+
       }
 
     }
@@ -1111,9 +1213,9 @@ async function recordContribution(
   }
 
 
-  /* -----------------------------------------------------
+  /* ---------------------------------------------------
      BUTTON STATE
-  ----------------------------------------------------- */
+  --------------------------------------------------- */
 
   if (saveButton) {
 
@@ -1134,17 +1236,11 @@ async function recordContribution(
   }
 
 
-  /* -----------------------------------------------------
+  /* ---------------------------------------------------
      INSERT
-  ----------------------------------------------------- */
+  --------------------------------------------------- */
 
   try {
-
-    /*
-     * IMPORTANT:
-     * payment_method is sent using the
-     * exact value required by PostgreSQL.
-     */
 
     const contributionData = {
 
@@ -1170,8 +1266,7 @@ async function recordContribution(
         contributionDate,
 
       mpesa_reference:
-        paymentMethod ===
-        PAYMENT_METHODS.MPESA
+        paymentMethod === "mpesa"
           ? reference
           : null,
 
@@ -1182,7 +1277,7 @@ async function recordContribution(
 
 
     console.log(
-      "CHAMA LIVE: Saving contribution:",
+      "CHAMA LIVE: Recording contribution:",
       contributionData
     );
 
@@ -1204,9 +1299,9 @@ async function recordContribution(
     }
 
 
-    /* ---------------------------------------------------
+    /* -------------------------------------------------
        REFRESH DATA
-    --------------------------------------------------- */
+    ------------------------------------------------- */
 
     await loadContributions();
 
@@ -1215,9 +1310,9 @@ async function recordContribution(
     renderMemberStatus();
 
 
-    /* ---------------------------------------------------
+    /* -------------------------------------------------
        RESET FORM
-    --------------------------------------------------- */
+    ------------------------------------------------- */
 
     form?.reset();
 
@@ -1241,7 +1336,7 @@ async function recordContribution(
     if (methodSelect) {
 
       methodSelect.value =
-        PAYMENT_METHODS.MPESA;
+        "mpesa";
 
     }
 
@@ -1260,9 +1355,9 @@ async function recordContribution(
     }
 
 
-    /* ---------------------------------------------------
+    /* -------------------------------------------------
        SUCCESS
-    --------------------------------------------------- */
+    ------------------------------------------------- */
 
     if (statusEl) {
 
@@ -1272,8 +1367,11 @@ async function recordContribution(
     }
 
 
-  }
+    console.log(
+      "CHAMA LIVE: Contribution recorded successfully."
+    );
 
+  }
   catch (error) {
 
     showError(
@@ -1281,7 +1379,6 @@ async function recordContribution(
     );
 
   }
-
   finally {
 
     if (saveButton) {
@@ -1318,23 +1415,20 @@ async function init() {
     }
 
 
-    /* -----------------------------------------------
-       GET GROUP
-    ----------------------------------------------- */
+    console.log(
+      "CHAMA LIVE: Getting current group..."
+    );
+
 
     groupId =
       await getGroupId();
 
 
     console.log(
-      "CHAMA LIVE GROUP ID:",
+      "CHAMA LIVE GROUP:",
       groupId
     );
 
-
-    /* -----------------------------------------------
-       LOAD DATA
-    ----------------------------------------------- */
 
     await Promise.all([
 
@@ -1347,9 +1441,9 @@ async function init() {
     ]);
 
 
-    /* -----------------------------------------------
-       DEFAULT DATE
-    ----------------------------------------------- */
+    /*
+     * Default date.
+     */
 
     if (dateInput) {
 
@@ -1359,9 +1453,9 @@ async function init() {
     }
 
 
-    /* -----------------------------------------------
-       DEFAULT TYPE
-    ----------------------------------------------- */
+    /*
+     * Default contribution type.
+     */
 
     if (typeSelect) {
 
@@ -1371,24 +1465,20 @@ async function init() {
     }
 
 
-    /* -----------------------------------------------
-       DEFAULT PAYMENT METHOD
-    ----------------------------------------------- */
+    /*
+     * Default payment method.
+     */
 
     if (methodSelect) {
 
       methodSelect.value =
-        PAYMENT_METHODS.MPESA;
+        "mpesa";
 
     }
 
 
     updatePaymentMethod();
 
-
-    /* -----------------------------------------------
-       RENDER
-    ----------------------------------------------- */
 
     renderLedger();
 
@@ -1408,7 +1498,6 @@ async function init() {
     );
 
   }
-
   catch (error) {
 
     showError(
