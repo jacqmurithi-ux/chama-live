@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>Create Account — CHAMA LIVE</title>
+
+  <link
+    rel="stylesheet"
+    href="css/app.css"
+  >
+</head>
+
+<body>
+
+<main
+  class="main"
+  style="max-width:760px;margin:40px auto;"
+>
+
+  <section class="card">
+
+    <div class="brand" style="margin-bottom:10px;">
+      CHAMA <span>LIVE</span>
+    </div>
+
+    <h1>
+      Create Your Group
+    </h1>
+
+    <p class="muted">
+      Create your CHAMA LIVE account and set up your group.
+      You will automatically become the group administrator.
+    </p>
+
+    <div
+      id="status"
+      class="card"
+      style="margin:20px 0;"
+    >
+      Enter your details below.
+    </div>
+
+    <div
+      id="error"
+      class="error"
+      hidden
+      style="margin-bottom:20px;"
+    ></div>
+
+
+    <form id="signupForm">
+
+      <h2>
+        Administrator Account
+      </h2>
+
+      <br>
+
+      <div class="grid grid-2">
+
+        <div>
+
+          <label
+            for="adminName"
+            class="muted"
+          >
+            Full Name
+          </label>
+
+          <input
+            id="adminName"
+            type="text"
+            required
+            autocomplete="name"
+            placeholder="Your full name"
+          >
+
+        </div>
+
+
+        <div>
+
+          <label
+            for="adminPhone"
+            class="muted"
+          >
+            Phone Number
+          </label>
+
+          <input
+            id="adminPhone"
+            type="tel"
+            required
+            autocomplete="tel"
+            placeholder="0712345678"
+          >
+
+        </div>
+
+
+        <div>
+
+          <label
+            for="email"
+            class="muted"
+          >
+            Email Address
+          </label>
+
+          <input
+            id="email"
+            type="email"
+            required
+            autocomplete="email"
+            placeholder="you@example.com"
+          >
+
+        </div>
+
+
+        <div>
+
+          <label
+            for="password"
+            class="muted"
+          >
+            Password
+          </label>
+
+          <input
+            id="password"
+            type="password"
+            required
+            minlength="6"
+            autocomplete="new-password"
+            placeholder="At least 6 characters"
+          >
+
+        </div>
+
+      </div>
+
+
+      <br>
+
+
+      <h2>
+        Group Details
+      </h2>
+
+      <br>
+
+
+      <div class="grid grid-2">
+
+        <div>
+
+          <label
+            for="groupName"
+            class="muted"
+          >
+            Group Name
+          </label>
+
+          <input
+            id="groupName"
+            type="text"
+            required
+            placeholder="e.g. Timau Welfare Group"
+          >
+
+        </div>
+
+
+        <div>
+
+          <label
+            for="category"
+            class="muted"
+          >
+            Group Category
+          </label>
+
+          <select
+            id="category"
+            required
+          >
+
+            <option value="">
+              Select category
+            </option>
+
+            <option value="chama">
+              Chama
+            </option>
+
+            <option value="welfare">
+              Welfare Group
+            </option>
+
+            <option value="investment">
+              Investment Group
+            </option>
+
+            <option value="self_help">
+              Self Help Group
+            </option>
+
+            <option value="cbo">
+              CBO
+            </option>
+
+            <option value="other">
+              Other
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div>
+
+          <label
+            for="monthlyContribution"
+            class="muted"
+          >
+            Monthly Contribution
+          </label>
+
+          <input
+            id="monthlyContribution"
+            type="number"
+            min="0"
+            step="0.01"
+            value="200"
+            placeholder="200"
+          >
+
+        </div>
+
+
+        <div>
+
+          <label
+            for="openingBalance"
+            class="muted"
+          >
+            Opening Balance
+          </label>
+
+          <input
+            id="openingBalance"
+            type="number"
+            min="0"
+            step="0.01"
+            value="0"
+            placeholder="0"
+          >
+
+        </div>
+
+      </div>
+
+
+      <br>
+
+
+      <div>
+
+        <label
+          for="description"
+          class="muted"
+        >
+          Group Description
+        </label>
+
+        <textarea
+          id="description"
+          rows="4"
+          placeholder="Brief description of your group"
+        ></textarea>
+
+      </div>
+
+
+      <br>
+
+
+      <button
+        class="btn btn-primary"
+        id="createAccount"
+        type="submit"
+      >
+        Create Account &amp; Group
+      </button>
+
+    </form>
+
+
+    <br>
+
+
+    <p class="muted">
+      Already have an account?
+      <a href="login.html">
+        Sign in
+      </a>
+    </p>
+
+  </section>
+
+</main>
+
+
+<script type="module">
+
+  import "./js/signup.js";
+
+</script>
+
+</body>
+
+</html>
