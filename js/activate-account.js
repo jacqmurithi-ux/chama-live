@@ -1,12 +1,9 @@
 import {
   supabase,
-  claimMemberAccount
+  claimMemberAccount,
+  BASE_URL
 } from "./auth.js";
 
-
-/* =====================================================
-   ELEMENTS
-===================================================== */
 
 const form =
   document.getElementById(
@@ -49,15 +46,12 @@ const successBox =
   );
 
 
-/* =====================================================
-   SHOW ERROR
-===================================================== */
-
-function showError(
+function error(
   message
 ) {
 
-  errorBox.hidden = false;
+  errorBox.hidden =
+    false;
 
   errorBox.textContent =
     message;
@@ -68,11 +62,7 @@ function showError(
 }
 
 
-/* =====================================================
-   SHOW SUCCESS
-===================================================== */
-
-function showSuccess(
+function success(
   message
 ) {
 
@@ -88,119 +78,73 @@ function showSuccess(
 }
 
 
-/* =====================================================
-   CLEAR MESSAGES
-===================================================== */
-
-function clearMessages() {
-
-  errorBox.hidden =
-    true;
-
-  successBox.hidden =
-    true;
-
-  errorBox.textContent =
-    "";
-
-  successBox.textContent =
-    "";
-
-}
-
-
-/* =====================================================
-   VALIDATE
-===================================================== */
-
-function validate() {
-
-  const number =
-    membershipNumber.value
-      .trim();
-
-  const userEmail =
-    email.value
-      .trim()
-      .toLowerCase();
-
-  const pass =
-    password.value;
-
-  const confirm =
-    confirmPassword.value;
-
-
-  if (!number) {
-
-    throw new Error(
-      "Enter your membership number."
-    );
-
-  }
-
-
-  if (!userEmail) {
-
-    throw new Error(
-      "Enter the email registered by your group administrator."
-    );
-
-  }
-
-
-  if (pass.length < 8) {
-
-    throw new Error(
-      "Password must contain at least 8 characters."
-    );
-
-  }
-
-
-  if (pass !== confirm) {
-
-    throw new Error(
-      "Passwords do not match."
-    );
-
-  }
-
-
-  return {
-    number,
-    userEmail,
-    pass
-  };
-
-}
-
-
-/* =====================================================
-   SUBMIT
-===================================================== */
-
 form.addEventListener(
   "submit",
   async event => {
 
     event.preventDefault();
 
-    clearMessages();
+
+    errorBox.hidden =
+      true;
+
+    successBox.hidden =
+      true;
 
 
-    let values;
+    const number =
+      membershipNumber.value
+        .trim();
+
+    const userEmail =
+      email.value
+        .trim()
+        .toLowerCase();
+
+    const pass =
+      password.value;
+
+    const confirm =
+      confirmPassword.value;
 
 
-    try {
+    if (!number) {
 
-      values =
-        validate();
+      error(
+        "Enter your membership number."
+      );
 
-    } catch (error) {
+      return;
 
-      showError(
-        error.message
+    }
+
+
+    if (!userEmail) {
+
+      error(
+        "Enter your registered email."
+      );
+
+      return;
+
+    }
+
+
+    if (pass.length < 8) {
+
+      error(
+        "Password must contain at least 8 characters."
+      );
+
+      return;
+
+    }
+
+
+    if (pass !== confirm) {
+
+      error(
+        "Passwords do not match."
       );
 
       return;
@@ -218,135 +162,99 @@ form.addEventListener(
     try {
 
       /*
-       * STEP 1
-       *
        * Create Supabase Auth account.
        */
 
       const {
         data,
-        error
+        error: signUpError
       } =
         await supabase.auth.signUp({
 
           email:
-            values.userEmail,
+            userEmail,
 
           password:
-            values.pass
+            pass,
+
+          options: {
+
+            emailRedirectTo:
+              `${BASE_URL}/dashboard.html`
+
+          }
 
         });
 
 
-      if (error) {
-        throw error;
+      if (signUpError) {
+        throw signUpError;
       }
 
 
       /*
-       * Supabase may require email
-       * confirmation.
+       * If email confirmation is required,
+       * there may be no session yet.
        */
 
-      if (!data.user) {
+      if (!data.session) {
 
-        throw new Error(
-          "Unable to create your login account."
+        success(
+          "Account created. Please check your email, confirm your account, then sign in."
         );
 
-      }
+
+        button.disabled =
+          false;
+
+        button.textContent =
+          "Activate Account";
 
 
-      /*
-       * STEP 2
-       *
-       * Link the authenticated user
-       * to the member created by
-       * the group administrator.
-       */
-
-      try {
-
-        await claimMemberAccount(
-          values.number,
-          values.userEmail
-        );
-
-      } catch (claimError) {
-
-        /*
-         * If email confirmation is enabled,
-         * the user may not have an active
-         * session yet.
-         */
-
-        if (
-          claimError.message &&
-          claimError.message
-            .toLowerCase()
-            .includes(
-              "authentication required"
-            )
-        ) {
-
-          showSuccess(
-            "Account created successfully. Check your email, confirm your account, then sign in using your new password."
-          );
-
-          button.disabled =
-            false;
-
-          button.textContent =
-            "Activate Account";
-
-          return;
-
-        }
-
-
-        throw claimError;
+        return;
 
       }
 
 
       /*
-       * STEP 3
-       *
-       * Account is now linked.
+       * Link Auth account to member.
        */
 
-      showSuccess(
-        "Account activated successfully. Redirecting to your dashboard..."
+      await claimMemberAccount(
+        number,
+        userEmail
+      );
+
+
+      success(
+        "Account activated successfully. Redirecting..."
       );
 
 
       setTimeout(
         () => {
 
-          window.location.href =
-            "dashboard.html";
+          window.location.replace(
+            `${BASE_URL}/dashboard.html`
+          );
 
         },
         1000
       );
 
 
-    } catch (error) {
+    } catch (err) {
 
       console.error(
-        "Activation error:",
-        error
+        "Activation:",
+        err
       );
 
 
       let message =
-        error?.message ||
-        "Unable to activate your account.";
+        err.message ||
+        "Unable to activate account.";
 
-
-      /*
-       * FRIENDLY SUPABASE ERRORS
-       */
 
       if (
         message
@@ -357,7 +265,7 @@ form.addEventListener(
       ) {
 
         message =
-          "An account with this email already exists. Please sign in instead.";
+          "An account with this email already exists. Please sign in.";
 
       }
 
@@ -366,31 +274,17 @@ form.addEventListener(
         message
           .toLowerCase()
           .includes(
-            "no pending member account"
+            "no pending"
           )
       ) {
 
         message =
-          "We could not find a pending member account matching that membership number and email. Check your details with your group administrator.";
+          "No pending member account was found for those details.";
 
       }
 
 
-      if (
-        message
-          .toLowerCase()
-          .includes(
-            "already linked"
-          )
-      ) {
-
-        message =
-          "This login is already linked to a member account. Please sign in.";
-
-      }
-
-
-      showError(
+      error(
         message
       );
 
