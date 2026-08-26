@@ -1,3 +1,4 @@
+
 ```html
 <!doctype html>
 <html lang="en">
@@ -24,10 +25,6 @@
 <body>
 
 
-<!-- =====================================================
-     TOP BAR
-====================================================== -->
-
 <header class="topbar">
 
   <div class="brand">
@@ -46,58 +43,40 @@
 
 
 
-<!-- =====================================================
-     APPLICATION LAYOUT
-====================================================== -->
-
 <div class="layout">
 
-
-  <!-- ===================================================
-       SIDEBAR
-  ==================================================== -->
 
   <aside class="sidebar">
 
     <nav class="nav">
 
-      <a
-        href="dashboard.html"
-        class="active"
-      >
+      <a href="dashboard.html">
         Dashboard
       </a>
-
 
       <a href="members.html">
         Members
       </a>
 
-
       <a href="contributions.html">
         Contributions
       </a>
-
 
       <a href="expenses.html">
         Expenses
       </a>
 
-
       <a href="meetings.html">
         Meetings
       </a>
-
 
       <a href="reports.html">
         Reports
       </a>
 
-
       <a href="monthly-closing.html">
         Monthly Closing
       </a>
-
 
       <a href="group-management.html">
         Group Management
@@ -109,16 +88,8 @@
 
 
 
-  <!-- ===================================================
-       MAIN CONTENT
-  ==================================================== -->
-
   <main class="main">
 
-
-    <!-- =================================================
-         PAGE HEADER
-    ================================================== -->
 
     <div class="page-head">
 
@@ -138,10 +109,6 @@
 
 
 
-    <!-- =================================================
-         STATUS
-    ================================================== -->
-
     <div
       id="status"
       class="card"
@@ -152,10 +119,6 @@
 
 
 
-    <!-- =================================================
-         ERROR
-    ================================================== -->
-
     <div
       id="error"
       class="error"
@@ -165,14 +128,8 @@
 
 
 
-    <!-- =================================================
-         FINANCIAL METRICS
-    ================================================== -->
-
     <div class="grid grid-3">
 
-
-      <!-- MEMBERS -->
 
       <div class="card">
 
@@ -201,8 +158,6 @@
 
 
 
-      <!-- MONTHLY EXPECTED -->
-
       <div class="card">
 
         <div class="muted">
@@ -219,8 +174,6 @@
       </div>
 
 
-
-      <!-- MONTHLY COLLECTED -->
 
       <div class="card">
 
@@ -239,8 +192,6 @@
 
 
 
-      <!-- OUTSTANDING -->
-
       <div class="card">
 
         <div class="muted">
@@ -258,8 +209,6 @@
 
 
 
-      <!-- COLLECTION RATE -->
-
       <div class="card">
 
         <div class="muted">
@@ -276,8 +225,6 @@
       </div>
 
 
-
-      <!-- CURRENT BALANCE -->
 
       <div class="card">
 
@@ -301,10 +248,6 @@
     <br>
 
 
-
-    <!-- =================================================
-         MONTHLY CONTRIBUTION PROGRESS
-    ================================================== -->
 
     <section class="card">
 
@@ -372,10 +315,6 @@
 
 
 
-    <!-- =================================================
-         MEMBER CONTRIBUTION STATUS
-    ================================================== -->
-
     <section class="card">
 
       <h2>
@@ -395,25 +334,11 @@
 
             <tr>
 
-              <th>
-                Member
-              </th>
-
-              <th>
-                Expected
-              </th>
-
-              <th>
-                Paid
-              </th>
-
-              <th>
-                Outstanding
-              </th>
-
-              <th>
-                Status
-              </th>
+              <th>Member</th>
+              <th>Expected</th>
+              <th>Paid</th>
+              <th>Outstanding</th>
+              <th>Status</th>
 
             </tr>
 
@@ -444,16 +369,8 @@
 
 
 
-    <!-- =================================================
-         RECENT ACTIVITY
-    ================================================== -->
-
     <div class="grid grid-2">
 
-
-      <!-- =================================================
-           RECENT CONTRIBUTIONS
-      ================================================== -->
 
       <section class="card">
 
@@ -470,17 +387,9 @@
 
               <tr>
 
-                <th>
-                  Member
-                </th>
-
-                <th>
-                  Amount
-                </th>
-
-                <th>
-                  Date
-                </th>
+                <th>Member</th>
+                <th>Amount</th>
+                <th>Date</th>
 
               </tr>
 
@@ -507,10 +416,6 @@
 
 
 
-      <!-- =================================================
-           RECENT EXPENSES
-      ================================================== -->
-
       <section class="card">
 
         <h2>
@@ -526,17 +431,9 @@
 
               <tr>
 
-                <th>
-                  Description
-                </th>
-
-                <th>
-                  Amount
-                </th>
-
-                <th>
-                  Status
-                </th>
+                <th>Description</th>
+                <th>Amount</th>
+                <th>Status</th>
 
               </tr>
 
@@ -569,10 +466,6 @@
 
 
 
-    <!-- =================================================
-         UPCOMING MEETINGS
-    ================================================== -->
-
     <section class="card">
 
       <h2>
@@ -588,21 +481,10 @@
 
             <tr>
 
-              <th>
-                Date
-              </th>
-
-              <th>
-                Meeting
-              </th>
-
-              <th>
-                Venue
-              </th>
-
-              <th>
-                Status
-              </th>
+              <th>Date</th>
+              <th>Meeting</th>
+              <th>Venue</th>
+              <th>Status</th>
 
             </tr>
 
@@ -634,29 +516,22 @@
 
 
 
-<!-- =====================================================
-     JAVASCRIPT
-====================================================== -->
-
 <script type="module">
-
-  /*
-   * IMPORTANT:
-   *
-   * Load dashboard.js independently.
-   * Do NOT use "await boot()" before importing it.
-   */
 
   import {
     boot
   } from "./js/layout.js";
 
 
-  import "./js/dashboard.js";
-
-
   /*
-   * Start authentication/layout.
+   * layout.js handles:
+   *
+   * 1. Authentication
+   * 2. Member lookup
+   * 3. Group lookup
+   * 4. Sign out
+   * 5. RBAC
+   * 6. Loading dashboard.js
    */
 
   boot();
