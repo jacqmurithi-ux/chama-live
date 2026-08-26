@@ -1,340 +1,255 @@
-import {
-  supabase
-} from "./supabase.js";
+import { supabase } from "./supabase.js";
 
 
-/* =========================================================
-   CHAMA LIVE — DASHBOARD
-========================================================= */
+console.log("CHAMA LIVE: dashboard.js loaded");
 
 
-/* =========================================================
+/* =====================================================
    HELPERS
-========================================================= */
-
-function byId(id) {
-  return document.getElementById(id);
-}
-
+===================================================== */
 
 function money(value) {
-
-  return Number(
-    value || 0
-  ).toLocaleString(
-    "en-KE",
-    {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2
-    }
-  );
+  return Number(value || 0).toLocaleString("en-KE", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  });
 }
 
 
-function formatDate(value) {
+function setValue(id, value) {
+  const element = document.getElementById(id);
 
-  if (!value) {
-    return "—";
+  if (element) {
+    element.textContent = value;
   }
-
-  return new Date(
-    value
-  ).toLocaleDateString(
-    "en-KE",
-    {
-      day: "2-digit",
-      month: "short",
-      year: "numeric"
-    }
-  );
 }
 
 
 function escapeHtml(value) {
-
-  if (
-    value === null ||
-    value === undefined
-  ) {
-    return "";
-  }
-
-  return String(value)
-    .replace(
-      /&/g,
-      "&amp;"
-    )
-    .replace(
-      /</g,
-      "&lt;"
-    )
-    .replace(
-      />/g,
-      "&gt;"
-    )
-    .replace(
-      /"/g,
-      "&quot;"
-    )
-    .replace(
-      /'/g,
-      "&#039;"
-    );
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 
-/* =========================================================
-   GET MEMBER
-========================================================= */
+function formatDate(value) {
+  if (!value) return "—";
 
-async function getMember() {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
+
+  return date.toLocaleDateString("en-KE", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
+  });
+}
+
+
+/* =====================================================
+   CURRENT USER
+===================================================== */
+
+async function getUser() {
 
   const {
     data,
     error
-  } =
-    await supabase.rpc(
-      "get_my_member"
-    );
-
+  } = await supabase.auth.getUser();
 
   if (error) {
     throw error;
   }
 
-
-  if (Array.isArray(data)) {
-    return data[0] || null;
+  if (!data?.user) {
+    throw new Error("You are not logged in.");
   }
 
-
-  return data || null;
+  return data.user;
 }
 
 
-/* =========================================================
-   GET GROUP
-========================================================= */
+/* =====================================================
+   CURRENT MEMBER
+===================================================== */
 
-async function getGroup() {
+async function getMember(userId) {
 
   const {
     data,
     error
-  } =
-    await supabase.rpc(
-      "get_my_group"
+  } = await supabase
+    .from("members")
+    .select("*")
+    .eq("user_id", userId)
+    .limit(1);
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data || data.length === 0) {
+    throw new Error(
+      "No member record is linked to this account."
     );
-
-
-  if (error) {
-    throw error;
   }
 
-
-  if (Array.isArray(data)) {
-    return data[0] || null;
-  }
-
-
-  return data || null;
+  return data[0];
 }
 
 
-/* =========================================================
-   LOAD MEMBERS
-========================================================= */
+/* =====================================================
+   CURRENT GROUP
+===================================================== */
 
-async function loadMembers(
-  groupId
-) {
+async function getGroup(groupId) {
 
   const {
     data,
     error
-  } =
-    await supabase
-      .from("members")
-      .select(`
-        id,
-        group_id,
-        member_number,
-        membership_number,
-        name,
-        phone,
-        email,
-        role,
-        join_date,
-        status
-      `)
-      .eq(
-        "group_id",
-        groupId
-      );
-
+  } = await supabase
+    .from("groups")
+    .select("*")
+    .eq("id", groupId)
+    .limit(1);
 
   if (error) {
     throw error;
   }
 
+  if (!data || data.length === 0) {
+    throw new Error(
+      "The member is not linked to a valid group."
+    );
+  }
+
+  return data[0];
+}
+
+
+/* =====================================================
+   MEMBERS
+===================================================== */
+
+async function getMembers(groupId) {
+
+  const {
+    data,
+    error
+  } = await supabase
+    .from("members")
+    .select("*")
+    .eq("group_id", groupId)
+    .order("created_at", {
+      ascending: true
+    });
+
+  if (error) {
+    throw error;
+  }
 
   return data || [];
 }
 
 
-/* =========================================================
-   LOAD CONTRIBUTIONS
-========================================================= */
+/* =====================================================
+   CONTRIBUTIONS
+===================================================== */
 
-async function loadContributions(
-  groupId
-) {
+async function getContributions(groupId) {
 
   const {
     data,
     error
-  } =
-    await supabase
-      .from("contributions")
-      .select(`
-        id,
-        group_id,
-        member_id,
-        amount,
-        contribution_type,
-        month,
-        payment_method,
-        reference,
-        mpesa_reference,
-        contribution_date,
-        notes,
-        created_at
-      `)
-      .eq(
-        "group_id",
-        groupId
-      )
-      .order(
-        "contribution_date",
-        {
-          ascending: false
-        }
-      );
-
+  } = await supabase
+    .from("contributions")
+    .select("*")
+    .eq("group_id", groupId)
+    .order("created_at", {
+      ascending: false
+    });
 
   if (error) {
     throw error;
   }
 
-
   return data || [];
 }
 
 
-/* =========================================================
-   LOAD EXPENSES
-========================================================= */
+/* =====================================================
+   EXPENSES
+===================================================== */
 
-async function loadExpenses(
-  groupId
-) {
+async function getExpenses(groupId) {
 
   /*
-   * IMPORTANT:
-   * The real database column is:
+   * IMPORTANT
    *
-   * expenses.date
+   * Do NOT use expense_date.
+   * Your database previously reported:
    *
-   * NOT:
+   * column expenses.expense_date does not exist
    *
-   * expenses.expense_date
+   * We therefore select * and read the available
+   * date field safely.
    */
 
   const {
     data,
     error
-  } =
-    await supabase
-      .from("expenses")
-      .select(`
-        id,
-        group_id,
-        description,
-        category,
-        amount,
-        date,
-        approval_status,
-        created_at
-      `)
-      .eq(
-        "group_id",
-        groupId
-      )
-      .order(
-        "date",
-        {
-          ascending: false
-        }
-      );
-
+  } = await supabase
+    .from("expenses")
+    .select("*")
+    .eq("group_id", groupId)
+    .order("created_at", {
+      ascending: false
+    });
 
   if (error) {
     throw error;
   }
 
-
   return data || [];
 }
 
 
-/* =========================================================
-   LOAD MEETINGS
-========================================================= */
+/* =====================================================
+   MEETINGS
+===================================================== */
 
-async function loadMeetings(
-  groupId
-) {
+async function getMeetings(groupId) {
 
   const {
     data,
     error
-  } =
-    await supabase
-      .from("meetings")
-      .select(`
-        id,
-        group_id,
-        title,
-        date,
-        venue,
-        status
-      `)
-      .eq(
-        "group_id",
-        groupId
-      )
-      .order(
-        "date",
-        {
-          ascending: true
-        }
-      );
-
+  } = await supabase
+    .from("meetings")
+    .select("*")
+    .eq("group_id", groupId)
+    .order("created_at", {
+      ascending: false
+    });
 
   if (error) {
     throw error;
   }
 
-
   return data || [];
 }
 
 
-/* =========================================================
+/* =====================================================
    SUMMARY
-========================================================= */
+===================================================== */
 
-function displaySummary(
+function renderSummary(
   members,
   contributions,
   expenses,
@@ -344,62 +259,59 @@ function displaySummary(
   const activeMembers =
     members.filter(
       member =>
-        member.status === "active"
+        String(member.status || "active")
+          .toLowerCase() === "active"
     ).length;
 
 
-  const totalContributions =
+  const totalCollected =
     contributions.reduce(
-      (
-        total,
-        contribution
-      ) =>
-        total +
-        Number(
-          contribution.amount || 0
-        ),
+      (sum, item) =>
+        sum + Number(item.amount || 0),
       0
     );
 
 
   const approvedExpenses =
     expenses
-      .filter(
-        expense =>
+      .filter(item => {
+
+        const status =
           String(
-            expense.approval_status ||
+            item.approval_status ||
+            item.status ||
             ""
-          ).toLowerCase() ===
-          "approved"
-      )
+          ).toLowerCase();
+
+        return (
+          status === "approved" ||
+          status === "paid" ||
+          status === "completed"
+        );
+
+      })
       .reduce(
-        (
-          total,
-          expense
-        ) =>
-          total +
-          Number(
-            expense.amount || 0
-          ),
+        (sum, item) =>
+          sum + Number(item.amount || 0),
         0
       );
 
 
   const openingBalance =
     Number(
-      group?.opening_balance || 0
+      group.opening_balance || 0
     );
 
 
-  const balance =
+  const currentBalance =
     openingBalance +
-    totalContributions -
+    totalCollected -
     approvedExpenses;
 
 
   const monthlyContribution =
     Number(
-      group?.monthly_contribution || 0
+      group.monthly_contribution || 0
     );
 
 
@@ -408,173 +320,100 @@ function displaySummary(
     monthlyContribution;
 
 
+  const outstanding =
+    Math.max(
+      0,
+      monthlyExpected -
+      totalCollected
+    );
+
+
   const collectionRate =
     monthlyExpected > 0
       ? Math.min(
           100,
           (
-            totalContributions /
+            totalCollected /
             monthlyExpected
           ) * 100
         )
       : 0;
 
 
-  /* -------------------------------------------------------
-     ACTIVE MEMBERS
-  ------------------------------------------------------- */
-
-  const activeBox =
-    byId("activeMembers");
-
-  if (activeBox) {
-    activeBox.textContent =
-      activeMembers;
-  }
+  setValue(
+    "activeMembers",
+    activeMembers
+  );
 
 
-  /* -------------------------------------------------------
-     MONTHLY EXPECTED
-  ------------------------------------------------------- */
-
-  const expectedBox =
-    byId("monthlyExpected");
-
-  if (expectedBox) {
-
-    expectedBox.textContent =
-      `KSh ${money(
-        monthlyExpected
-      )}`;
-
-  }
+  setValue(
+    "monthlyExpected",
+    `KSh ${money(monthlyExpected)}`
+  );
 
 
-  /* -------------------------------------------------------
-     MONTHLY COLLECTED
-  ------------------------------------------------------- */
-
-  const collectedBox =
-    byId("monthlyCollected");
-
-  if (collectedBox) {
-
-    collectedBox.textContent =
-      `KSh ${money(
-        totalContributions
-      )}`;
-
-  }
+  setValue(
+    "monthlyCollected",
+    `KSh ${money(totalCollected)}`
+  );
 
 
-  /* -------------------------------------------------------
-     OUTSTANDING
-  ------------------------------------------------------- */
-
-  const outstandingBox =
-    byId("outstanding");
-
-  if (outstandingBox) {
-
-    outstandingBox.textContent =
-      `KSh ${money(
-        Math.max(
-          0,
-          monthlyExpected -
-          totalContributions
-        )
-      )}`;
-
-  }
+  setValue(
+    "outstanding",
+    `KSh ${money(outstanding)}`
+  );
 
 
-  /* -------------------------------------------------------
-     COLLECTION RATE
-  ------------------------------------------------------- */
-
-  const rateBox =
-    byId("collectionRate");
-
-  if (rateBox) {
-
-    rateBox.textContent =
-      `${collectionRate.toFixed(0)}%`;
-
-  }
+  setValue(
+    "collectionRate",
+    `${collectionRate.toFixed(0)}%`
+  );
 
 
-  /* -------------------------------------------------------
-     CURRENT BALANCE
-  ------------------------------------------------------- */
-
-  const balanceBox =
-    byId("currentBalance");
-
-  if (balanceBox) {
-
-    balanceBox.textContent =
-      `KSh ${money(
-        balance
-      )}`;
-
-  }
+  setValue(
+    "currentBalance",
+    `KSh ${money(currentBalance)}`
+  );
 
 
-  /* -------------------------------------------------------
-     PROGRESS
-  ------------------------------------------------------- */
-
-  const progressAmount =
-    byId("progressAmount");
-
-  if (progressAmount) {
-
-    progressAmount.textContent =
-      `KSh ${money(
-        totalContributions
-      )} / KSh ${money(
-        monthlyExpected
-      )}`;
-
-  }
+  setValue(
+    "progressAmount",
+    `KSh ${money(totalCollected)} / KSh ${money(monthlyExpected)}`
+  );
 
 
-  const progressPercent =
-    byId("progressPercent");
-
-  if (progressPercent) {
-
-    progressPercent.textContent =
-      `${collectionRate.toFixed(0)}%`;
-
-  }
-
+  setValue(
+    "progressPercent",
+    `${collectionRate.toFixed(0)}%`
+  );
 }
 
 
-/* =========================================================
+/* =====================================================
    RECENT CONTRIBUTIONS
-========================================================= */
+===================================================== */
 
-function displayRecentContributions(
+function renderContributions(
   contributions,
   members
 ) {
 
-  const body =
+  const table =
     document.querySelector(
       "#recentContributions tbody"
     );
 
-
-  if (!body) {
+  if (!table) {
+    console.warn(
+      "recentContributions table not found"
+    );
     return;
   }
 
 
   if (!contributions.length) {
 
-    body.innerHTML = `
+    table.innerHTML = `
       <tr>
         <td colspan="3">
           No contributions yet.
@@ -588,82 +427,76 @@ function displayRecentContributions(
 
   const memberMap = {};
 
+  members.forEach(member => {
 
-  members.forEach(
-    member => {
+    memberMap[member.id] =
+      member.name ||
+      "Member";
 
-      memberMap[
-        member.id
-      ] =
-        member.name ||
-        "Member";
-
-    }
-  );
+  });
 
 
-  body.innerHTML =
+  table.innerHTML =
     contributions
       .slice(0, 5)
-      .map(
-        contribution => {
+      .map(item => {
 
-          return `
-            <tr>
+        const name =
+          memberMap[item.member_id] ||
+          "Member";
 
-              <td>
-                ${escapeHtml(
-                  memberMap[
-                    contribution.member_id
-                  ] ||
-                  "Member"
-                )}
-              </td>
 
-              <td>
-                KSh ${money(
-                  contribution.amount
-                )}
-              </td>
+        const date =
+          item.contribution_date ||
+          item.date ||
+          item.created_at;
 
-              <td>
-                ${formatDate(
-                  contribution.contribution_date
-                )}
-              </td>
 
-            </tr>
-          `;
+        return `
+          <tr>
+            <td>
+              ${escapeHtml(name)}
+            </td>
 
-        }
-      )
+            <td>
+              KSh ${money(item.amount)}
+            </td>
+
+            <td>
+              ${formatDate(date)}
+            </td>
+          </tr>
+        `;
+
+      })
       .join("");
-
 }
 
 
-/* =========================================================
+/* =====================================================
    RECENT EXPENSES
-========================================================= */
+===================================================== */
 
-function displayRecentExpenses(
+function renderExpenses(
   expenses
 ) {
 
-  const body =
+  const table =
     document.querySelector(
       "#recentExpenses tbody"
     );
 
-
-  if (!body) {
+  if (!table) {
+    console.warn(
+      "recentExpenses table not found"
+    );
     return;
   }
 
 
   if (!expenses.length) {
 
-    body.innerHTML = `
+    table.innerHTML = `
       <tr>
         <td colspan="3">
           No expenses yet.
@@ -675,67 +508,69 @@ function displayRecentExpenses(
   }
 
 
-  body.innerHTML =
+  table.innerHTML =
     expenses
       .slice(0, 5)
-      .map(
-        expense => {
+      .map(item => {
 
-          return `
-            <tr>
+        const description =
+          item.description ||
+          item.title ||
+          item.name ||
+          "Expense";
 
-              <td>
-                ${escapeHtml(
-                  expense.description ||
-                  "Expense"
-                )}
-              </td>
 
-              <td>
-                KSh ${money(
-                  expense.amount
-                )}
-              </td>
+        const status =
+          item.approval_status ||
+          item.status ||
+          "Recorded";
 
-              <td>
-                ${escapeHtml(
-                  expense.approval_status ||
-                  "Recorded"
-                )}
-              </td>
 
-            </tr>
-          `;
+        return `
+          <tr>
+            <td>
+              ${escapeHtml(description)}
+            </td>
 
-        }
-      )
+            <td>
+              KSh ${money(item.amount)}
+            </td>
+
+            <td>
+              ${escapeHtml(status)}
+            </td>
+          </tr>
+        `;
+
+      })
       .join("");
-
 }
 
 
-/* =========================================================
-   UPCOMING MEETINGS
-========================================================= */
+/* =====================================================
+   MEETINGS
+===================================================== */
 
-function displayMeetings(
+function renderMeetings(
   meetings
 ) {
 
-  const body =
+  const table =
     document.querySelector(
       "#upcomingMeetings tbody"
     );
 
-
-  if (!body) {
+  if (!table) {
+    console.warn(
+      "upcomingMeetings table not found"
+    );
     return;
   }
 
 
   if (!meetings.length) {
 
-    body.innerHTML = `
+    table.innerHTML = `
       <tr>
         <td colspan="4">
           No upcoming meetings.
@@ -747,95 +582,218 @@ function displayMeetings(
   }
 
 
-  body.innerHTML =
+  table.innerHTML =
     meetings
       .slice(0, 5)
-      .map(
-        meeting => {
+      .map(item => {
 
-          return `
-            <tr>
+        const title =
+          item.title ||
+          item.name ||
+          item.description ||
+          "Meeting";
 
-              <td>
-                ${formatDate(
-                  meeting.date
-                )}
-              </td>
 
-              <td>
-                ${escapeHtml(
-                  meeting.title ||
-                  "Meeting"
-                )}
-              </td>
+        const date =
+          item.date ||
+          item.meeting_date ||
+          item.created_at;
 
-              <td>
-                ${escapeHtml(
-                  meeting.venue ||
-                  "—"
-                )}
-              </td>
 
-              <td>
-                ${escapeHtml(
-                  meeting.status ||
-                  "upcoming"
-                )}
-              </td>
+        return `
+          <tr>
 
-            </tr>
-          `;
+            <td>
+              ${formatDate(date)}
+            </td>
 
-        }
-      )
+            <td>
+              ${escapeHtml(title)}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                item.venue ||
+                item.location ||
+                "—"
+              )}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                item.status ||
+                "Upcoming"
+              )}
+            </td>
+
+          </tr>
+        `;
+
+      })
       .join("");
-
 }
 
 
-/* =========================================================
+/* =====================================================
    MEMBER CONTRIBUTION STATUS
-========================================================= */
+===================================================== */
 
-function displayMemberStatus(
+function renderMemberStatus(
   members,
   contributions,
   group
 ) {
 
-  const body =
+  const table =
     document.querySelector(
       "#memberContributionStatus tbody"
     );
 
-
-  if (!body) {
+  if (!table) {
+    console.warn(
+      "memberContributionStatus table not found"
+    );
     return;
   }
 
 
   const monthlyAmount =
     Number(
-      group?.monthly_contribution || 0
+      group.monthly_contribution || 0
     );
+
+
+  const now =
+    new Date();
+
+
+  const currentYear =
+    now.getFullYear();
 
 
   const currentMonth =
-    new Date()
-      .toISOString()
-      .slice(0, 7);
+    now.getMonth();
 
 
-  const activeMembers =
-    members.filter(
-      member =>
-        member.status === "active"
-    );
+  table.innerHTML =
+    members
+      .filter(member =>
+        String(member.status || "active")
+          .toLowerCase() === "active"
+      )
+      .map(member => {
+
+        const paid =
+          contributions
+            .filter(item => {
+
+              if (
+                item.member_id !==
+                member.id
+              ) {
+                return false;
+              }
 
 
-  if (!activeMembers.length) {
+              const dateValue =
+                item.contribution_date ||
+                item.date ||
+                item.created_at;
 
-    body.innerHTML = `
+
+              if (!dateValue) {
+                return false;
+              }
+
+
+              const date =
+                new Date(dateValue);
+
+
+              return (
+                date.getFullYear() ===
+                  currentYear &&
+                date.getMonth() ===
+                  currentMonth
+              );
+
+            })
+            .reduce(
+              (sum, item) =>
+                sum +
+                Number(item.amount || 0),
+              0
+            );
+
+
+        const outstanding =
+          Math.max(
+            0,
+            monthlyAmount -
+            paid
+          );
+
+
+        let status =
+          "Outstanding";
+
+
+        if (
+          monthlyAmount > 0 &&
+          paid >= monthlyAmount
+        ) {
+
+          status =
+            "Paid";
+
+        } else if (
+          paid > 0
+        ) {
+
+          status =
+            "Partial";
+
+        }
+
+
+        return `
+          <tr>
+
+            <td>
+              ${escapeHtml(
+                member.name ||
+                "Member"
+              )}
+            </td>
+
+            <td>
+              KSh ${money(
+                monthlyAmount
+              )}
+            </td>
+
+            <td>
+              KSh ${money(paid)}
+            </td>
+
+            <td>
+              KSh ${money(outstanding)}
+            </td>
+
+            <td>
+              ${status}
+            </td>
+
+          </tr>
+        `;
+
+      })
+      .join("");
+
+
+  if (!table.innerHTML) {
+
+    table.innerHTML = `
       <tr>
         <td colspan="5">
           No active members.
@@ -843,158 +801,71 @@ function displayMemberStatus(
       </tr>
     `;
 
-    return;
   }
-
-
-  body.innerHTML =
-    activeMembers
-      .map(
-        member => {
-
-          const paid =
-            contributions
-              .filter(
-                contribution => {
-
-                  return (
-                    contribution.member_id ===
-                      member.id &&
-                    contribution.month ===
-                      currentMonth
-                  );
-
-                }
-              )
-              .reduce(
-                (
-                  total,
-                  contribution
-                ) =>
-                  total +
-                  Number(
-                    contribution.amount || 0
-                  ),
-                0
-              );
-
-
-          const outstanding =
-            Math.max(
-              0,
-              monthlyAmount -
-              paid
-            );
-
-
-          let status =
-            "Outstanding";
-
-
-          if (
-            outstanding <= 0 &&
-            monthlyAmount > 0
-          ) {
-
-            status =
-              "Paid";
-
-          } else if (
-            paid > 0
-          ) {
-
-            status =
-              "Partial";
-
-          }
-
-
-          return `
-            <tr>
-
-              <td>
-                ${escapeHtml(
-                  member.name
-                )}
-              </td>
-
-              <td>
-                KSh ${money(
-                  monthlyAmount
-                )}
-              </td>
-
-              <td>
-                KSh ${money(
-                  paid
-                )}
-              </td>
-
-              <td>
-                KSh ${money(
-                  outstanding
-                )}
-              </td>
-
-              <td>
-                ${status}
-              </td>
-
-            </tr>
-          `;
-
-        }
-      )
-      .join("");
-
 }
 
 
-/* =========================================================
-   MAIN DASHBOARD
-========================================================= */
+/* =====================================================
+   MAIN
+===================================================== */
 
 async function loadDashboard() {
 
-  console.log(
-    "CHAMA LIVE: dashboard.js loaded."
-  );
-
-
   const errorBox =
-    byId("error");
+    document.getElementById("error");
 
 
   try {
 
+    console.log(
+      "CHAMA LIVE: getting current user..."
+    );
+
+
+    const user =
+      await getUser();
+
+
+    console.log(
+      "CHAMA LIVE USER:",
+      user.id
+    );
+
+
     const member =
-      await getMember();
-
-
-    if (!member) {
-
-      throw new Error(
-        "No member account found."
+      await getMember(
+        user.id
       );
 
-    }
+
+    console.log(
+      "CHAMA LIVE MEMBER:",
+      member
+    );
 
 
     if (!member.group_id) {
 
       throw new Error(
-        "Your member account has no group."
+        "Your member account does not have a group_id."
       );
 
     }
 
 
-    const groupId =
-      member.group_id;
+    const group =
+      await getGroup(
+        member.group_id
+      );
+
+
+    console.log(
+      "CHAMA LIVE GROUP:",
+      group
+    );
 
 
     const [
-      group,
       members,
       contributions,
       expenses,
@@ -1002,28 +873,37 @@ async function loadDashboard() {
     ] =
       await Promise.all([
 
-        getGroup(),
-
-        loadMembers(
-          groupId
+        getMembers(
+          member.group_id
         ),
 
-        loadContributions(
-          groupId
+        getContributions(
+          member.group_id
         ),
 
-        loadExpenses(
-          groupId
+        getExpenses(
+          member.group_id
         ),
 
-        loadMeetings(
-          groupId
+        getMeetings(
+          member.group_id
         )
 
       ]);
 
 
-    displaySummary(
+    console.log(
+      "DASHBOARD DATA",
+      {
+        members,
+        contributions,
+        expenses,
+        meetings
+      }
+    );
+
+
+    renderSummary(
       members,
       contributions,
       expenses,
@@ -1031,23 +911,23 @@ async function loadDashboard() {
     );
 
 
-    displayRecentContributions(
+    renderContributions(
       contributions,
       members
     );
 
 
-    displayRecentExpenses(
+    renderExpenses(
       expenses
     );
 
 
-    displayMeetings(
+    renderMeetings(
       meetings
     );
 
 
-    displayMemberStatus(
+    renderMemberStatus(
       members,
       contributions,
       group
@@ -1055,14 +935,14 @@ async function loadDashboard() {
 
 
     console.log(
-      "CHAMA LIVE: dashboard ready."
+      "CHAMA LIVE DASHBOARD READY"
     );
 
 
   } catch (error) {
 
     console.error(
-      "CHAMA LIVE dashboard error:",
+      "CHAMA LIVE DASHBOARD ERROR:",
       error
     );
 
@@ -1083,25 +963,8 @@ async function loadDashboard() {
 }
 
 
-/* =========================================================
+/* =====================================================
    START
-========================================================= */
+===================================================== */
 
-if (
-  document.readyState ===
-  "loading"
-) {
-
-  document.addEventListener(
-    "DOMContentLoaded",
-    loadDashboard,
-    {
-      once: true
-    }
-  );
-
-} else {
-
-  loadDashboard();
-
-}
+loadDashboard();
