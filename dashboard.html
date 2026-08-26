@@ -514,29 +514,13 @@
 
 </div>
 
-
-
 <script type="module">
-
-  import {
-    boot
-  } from "./js/layout.js";
-
-
-  /*
-   * layout.js handles:
-   *
-   * 1. Authentication
-   * 2. Member lookup
-   * 3. Group lookup
-   * 4. Sign out
-   * 5. RBAC
-   * 6. Loading dashboard.js
-   */
-
+  import { boot } from "./js/layout.js";
+  import "./js/dashboard.js";
   boot();
-
 </script>
+
+
 
 
 </body>
