@@ -1,25 +1,16 @@
-import { supabase } from "./supabase.js";
+import supabase from "./supabase.js";
 
 
 /* =========================================================
    CHAMA LIVE — MEMBERS
 ========================================================= */
 
-let members = [];
-
-
-/* =========================================================
-   HELPERS
-========================================================= */
-
-function byId(id) {
-  return document.getElementById(id);
-}
-
-
 function escapeHtml(value) {
 
-  if (value === null || value === undefined) {
+  if (
+    value === null ||
+    value === undefined
+  ) {
     return "";
   }
 
@@ -32,30 +23,79 @@ function escapeHtml(value) {
 }
 
 
+function formatDate(value) {
+
+  if (!value) {
+    return "—";
+  }
+
+  return new Date(value)
+    .toLocaleDateString(
+      "en-KE",
+      {
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+      }
+    );
+}
+
+
+/* =========================================================
+   GET CURRENT MEMBER
+========================================================= */
+
+async function getCurrentMember() {
+
+  const {
+    data,
+    error
+  } =
+    await supabase.rpc(
+      "get_my_member"
+    );
+
+
+  if (error) {
+    throw error;
+  }
+
+
+  if (Array.isArray(data)) {
+    return data[0] || null;
+  }
+
+
+  return data || null;
+}
+
+
 /* =========================================================
    LOAD MEMBERS
 ========================================================= */
 
 async function loadMembers() {
 
-  const tableBody =
+  const table =
     document.querySelector(
       "#membersTable tbody"
     );
 
 
-  if (!tableBody) {
-    console.warn(
-      "Members table body not found."
+  if (!table) {
+
+    console.error(
+      "membersTable tbody not found."
     );
+
     return;
   }
 
 
-  tableBody.innerHTML = `
+  table.innerHTML = `
     <tr>
       <td colspan="8">
-        Loading...
+        Loading members...
       </td>
     </tr>
   `;
@@ -63,29 +103,8 @@ async function loadMembers() {
 
   try {
 
-    /*
-     * Get the current member first.
-     * This gives us the group_id.
-     */
-
-    const {
-      data: myMember,
-      error: memberError
-    } =
-      await supabase.rpc(
-        "get_my_member"
-      );
-
-
-    if (memberError) {
-      throw memberError;
-    }
-
-
     const currentMember =
-      Array.isArray(myMember)
-        ? myMember[0]
-        : myMember;
+      await getCurrentMember();
 
 
     if (!currentMember) {
@@ -110,10 +129,6 @@ async function loadMembers() {
     }
 
 
-    /*
-     * Load members belonging to this group.
-     */
-
     const {
       data,
       error
@@ -123,14 +138,15 @@ async function loadMembers() {
         .select(`
           id,
           group_id,
-          user_id,
           member_number,
+          membership_number,
           name,
           phone,
           email,
           role,
           join_date,
           status,
+          onboarding_status,
           created_at
         `)
         .eq(
@@ -150,59 +166,54 @@ async function loadMembers() {
     }
 
 
-    members =
-      data || [];
-
-
     renderMembers(
-      members
+      data || []
     );
 
 
   } catch (error) {
 
     console.error(
-      "Unable to load members:",
+      "Members loading error:",
       error
     );
 
 
-    tableBody.innerHTML = `
+    table.innerHTML = `
       <tr>
         <td colspan="8">
-          Unable to load members: 
+          Unable to load members:
           ${escapeHtml(error.message)}
         </td>
       </tr>
     `;
 
   }
-
 }
 
 
 /* =========================================================
-   RENDER MEMBERS
+   RENDER
 ========================================================= */
 
 function renderMembers(
-  rows
+  members
 ) {
 
-  const tableBody =
+  const table =
     document.querySelector(
       "#membersTable tbody"
     );
 
 
-  if (!tableBody) {
+  if (!table) {
     return;
   }
 
 
-  if (!rows.length) {
+  if (!members.length) {
 
-    tableBody.innerHTML = `
+    table.innerHTML = `
       <tr>
         <td colspan="8">
           No members registered yet.
@@ -214,77 +225,64 @@ function renderMembers(
   }
 
 
-  tableBody.innerHTML =
-    rows.map(
-      member => {
-
-        const status =
-          member.status ||
-          "active";
-
-
-        const role =
-          member.role ||
-          "member";
-
-
-        const joinDate =
-          member.join_date
-            ? new Date(
-                member.join_date
-              ).toLocaleDateString()
-            : "—";
-
+  table.innerHTML =
+    members
+      .map(member => {
 
         return `
           <tr>
 
             <td>
               ${escapeHtml(
-                member.member_number || "—"
+                member.member_number ||
+                "—"
               )}
             </td>
 
             <td>
               ${escapeHtml(
-                member.member_number || "—"
+                member.membership_number ||
+                "—"
               )}
             </td>
 
             <td>
               ${escapeHtml(
-                member.name || "—"
+                member.name
               )}
             </td>
 
             <td>
               ${escapeHtml(
-                member.phone || "—"
+                member.phone
               )}
             </td>
 
             <td>
               ${escapeHtml(
-                member.email || "—"
+                member.email ||
+                "—"
               )}
             </td>
 
             <td>
               ${escapeHtml(
-                role
+                member.role ||
+                "member"
               )}
             </td>
 
             <td>
               ${escapeHtml(
-                status
+                member.status ||
+                "active"
               )}
             </td>
 
             <td>
               <button
-                type="button"
                 class="btn btn-secondary"
+                type="button"
                 data-member-id="${escapeHtml(
                   member.id
                 )}"
@@ -296,15 +294,13 @@ function renderMembers(
           </tr>
         `;
 
-      }
-    )
-    .join("");
-
+      })
+      .join("");
 }
 
 
 /* =========================================================
-   INITIALIZE
+   START
 ========================================================= */
 
 export async function init() {
@@ -313,15 +309,10 @@ export async function init() {
     "CHAMA LIVE: members.js loaded."
   );
 
-
   await loadMembers();
 
 }
 
-
-/* =========================================================
-   AUTO START
-========================================================= */
 
 if (
   document.readyState ===
