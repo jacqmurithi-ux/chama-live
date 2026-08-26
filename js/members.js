@@ -26,8 +26,8 @@ function showError(message) {
   if (!errorBox) return;
 
   errorBox.hidden = false;
-  errorBox.textContent = message || "Something went wrong.";
-
+  errorBox.textContent =
+    message || "Something went wrong.";
 }
 
 
@@ -39,7 +39,6 @@ function clearError() {
 
   errorBox.hidden = true;
   errorBox.textContent = "";
-
 }
 
 
@@ -50,7 +49,6 @@ function setStatus(message) {
   if (status) {
     status.textContent = message;
   }
-
 }
 
 
@@ -110,6 +108,7 @@ async function getCurrentMember() {
   }
 
   if (!data || data.length === 0) {
+
     throw new Error(
       "Your account is not linked to a member record."
     );
@@ -136,6 +135,7 @@ async function loadMembers() {
     currentMember.group_id;
 
   if (!groupId) {
+
     throw new Error(
       "Your member account has no group."
     );
@@ -151,6 +151,7 @@ async function loadMembers() {
       group_id,
       user_id,
       member_number,
+      membership_number,
       name,
       phone,
       email,
@@ -173,7 +174,9 @@ async function loadMembers() {
   renderMembers(members);
 
   setStatus(
-    `${members.length} member${members.length === 1 ? "" : "s"} loaded.`
+    `${members.length} member${
+      members.length === 1 ? "" : "s"
+    } loaded.`
   );
 }
 
@@ -209,88 +212,99 @@ function renderMembers(list) {
     return;
   }
 
-  rows.innerHTML =
-    list.map(member => {
+  rows.innerHTML = list.map(member => {
 
-      const status =
-        String(member.status || "active").toLowerCase();
+    const status =
+      String(
+        member.status || "active"
+      ).toLowerCase();
 
-      const statusLabel =
-        status === "active"
-          ? "Active"
-          : "Inactive";
+    const statusLabel =
+      status === "active"
+        ? "Active"
+        : "Inactive";
 
-      return `
-        <tr>
+    return `
+      <tr>
 
-          <td>
-            ${escapeHTML(member.member_number || "—")}
-          </td>
+        <td>
+          ${escapeHTML(
+            member.member_number || "—"
+          )}
+        </td>
 
-          <td>
+        <td>
+          ${escapeHTML(
+            member.membership_number ||
+            member.member_number ||
+            "—"
+          )}
+        </td>
+
+        <td>
+          <strong>
             ${escapeHTML(
-              member.membership_number ||
-              member.member_number ||
-              "—"
+              member.name || "—"
             )}
-          </td>
+          </strong>
+        </td>
 
-          <td>
-            <strong>
-              ${escapeHTML(member.name || "—")}
-            </strong>
-          </td>
+        <td>
+          ${escapeHTML(
+            member.phone || "—"
+          )}
+        </td>
 
-          <td>
-            ${escapeHTML(member.phone || "—")}
-          </td>
+        <td>
+          ${escapeHTML(
+            member.email || "—"
+          )}
+        </td>
 
-          <td>
-            ${escapeHTML(member.email || "—")}
-          </td>
+        <td>
+          ${escapeHTML(
+            member.role || "member"
+          )}
+        </td>
 
-          <td>
-            ${escapeHTML(member.role || "member")}
-          </td>
+        <td>
+          ${escapeHTML(statusLabel)}
+        </td>
 
-          <td>
-            ${escapeHTML(statusLabel)}
-          </td>
+        <td>
 
-          <td>
+          <div
+            style="
+              display:flex;
+              gap:6px;
+              flex-wrap:wrap;
+            "
+          >
 
-            <div
-              style="
-                display:flex;
-                gap:6px;
-                flex-wrap:wrap;
-              "
+            <button
+              type="button"
+              class="btn btn-secondary btn-view-member"
+              data-id="${escapeHTML(member.id)}"
             >
+              View
+            </button>
 
-              <button
-                type="button"
-                class="btn btn-secondary btn-view-member"
-                data-id="${escapeHTML(member.id)}"
-              >
-                View
-              </button>
+            <button
+              type="button"
+              class="btn btn-primary btn-edit-member"
+              data-id="${escapeHTML(member.id)}"
+            >
+              Edit
+            </button>
 
-              <button
-                type="button"
-                class="btn btn-primary btn-edit-member"
-                data-id="${escapeHTML(member.id)}"
-              >
-                Edit
-              </button>
+          </div>
 
-            </div>
+        </td>
 
-          </td>
+      </tr>
+    `;
 
-        </tr>
-      `;
-
-    }).join("");
+  }).join("");
 }
 
 
@@ -352,7 +366,7 @@ function setupSearch() {
 
 
 /* =====================================================
-   ADD / EDIT PANEL
+   ADD MEMBER FORM
 ===================================================== */
 
 function openAddForm() {
@@ -378,6 +392,7 @@ function openAddForm() {
   }
 
   if (description) {
+
     description.textContent =
       "Register a new member in your group.";
   }
@@ -393,15 +408,37 @@ function openAddForm() {
     status.value = "active";
   }
 
+  const saveButton =
+    byId("saveMemberButton");
+
+  if (saveButton) {
+
+    saveButton.disabled = false;
+    saveButton.textContent =
+      "Save Member";
+  }
+
+  const formMessage =
+    byId("formMessage");
+
+  if (formMessage) {
+
+    formMessage.style.display = "none";
+    formMessage.textContent = "";
+  }
+
   panel.hidden = false;
 
   panel.scrollIntoView({
     behavior: "smooth",
     block: "start"
   });
-
 }
 
+
+/* =====================================================
+   EDIT MEMBER FORM
+===================================================== */
 
 function openEditForm(member) {
 
@@ -424,6 +461,7 @@ function openEditForm(member) {
   }
 
   if (description) {
+
     description.textContent =
       "Update this member's information.";
   }
@@ -447,31 +485,37 @@ function openEditForm(member) {
     byId("memberStatus");
 
   if (memberNumber) {
+
     memberNumber.value =
       member.member_number || "";
   }
 
   if (memberName) {
+
     memberName.value =
       member.name || "";
   }
 
   if (memberPhone) {
+
     memberPhone.value =
       member.phone || "";
   }
 
   if (memberEmail) {
+
     memberEmail.value =
       member.email || "";
   }
 
   if (memberRole) {
+
     memberRole.value =
       member.role || "member";
   }
 
   if (memberStatus) {
+
     memberStatus.value =
       member.status || "active";
   }
@@ -480,8 +524,19 @@ function openEditForm(member) {
     byId("formMessage");
 
   if (formMessage) {
+
     formMessage.style.display = "none";
     formMessage.textContent = "";
+  }
+
+  const saveButton =
+    byId("saveMemberButton");
+
+  if (saveButton) {
+
+    saveButton.disabled = false;
+    saveButton.textContent =
+      "Save Changes";
   }
 
   panel.hidden = false;
@@ -493,6 +548,10 @@ function openEditForm(member) {
 }
 
 
+/* =====================================================
+   CLOSE ADD / EDIT FORM
+===================================================== */
+
 function closeMemberForm() {
 
   editingMemberId = null;
@@ -501,9 +560,9 @@ function closeMemberForm() {
     byId("addMemberPanel");
 
   if (panel) {
+
     panel.hidden = true;
   }
-
 }
 
 
@@ -564,33 +623,42 @@ async function saveMember(event) {
     byId("memberEmail")?.value.trim();
 
   const memberRole =
-    byId("memberRole")?.value || "member";
+    byId("memberRole")?.value ||
+    "member";
 
   const memberStatus =
-    byId("memberStatus")?.value || "active";
+    byId("memberStatus")?.value ||
+    "active";
 
   if (!memberNumber) {
+
     showFormMessage(
       "Enter a member number."
     );
+
     return;
   }
 
   if (!memberName) {
+
     showFormMessage(
       "Enter the member's full name."
     );
+
     return;
   }
 
   if (!memberPhone) {
+
     showFormMessage(
       "Enter the member's phone number."
     );
+
     return;
   }
 
   if (button) {
+
     button.disabled = true;
 
     button.textContent =
@@ -608,6 +676,7 @@ async function saveMember(event) {
       currentMember.group_id;
 
     if (!groupId) {
+
       throw new Error(
         "Your account has no group."
       );
@@ -615,7 +684,7 @@ async function saveMember(event) {
 
 
     /* ===============================================
-       EDIT EXISTING MEMBER
+       EDIT
     =============================================== */
 
     if (editingMemberId) {
@@ -667,7 +736,7 @@ async function saveMember(event) {
 
 
     /* ===============================================
-       ADD NEW MEMBER
+       ADD
     =============================================== */
 
     else {
@@ -714,11 +783,11 @@ async function saveMember(event) {
         "Member added successfully.",
         true
       );
-
     }
 
 
     await loadMembers();
+
 
     setTimeout(() => {
 
@@ -749,16 +818,13 @@ async function saveMember(event) {
         editingMemberId
           ? "Save Changes"
           : "Save Member";
-
     }
-
   }
-
 }
 
 
 /* =====================================================
-   VIEW MEMBER
+   VIEW MEMBER MODAL
 ===================================================== */
 
 function openViewModal(member) {
@@ -767,6 +833,7 @@ function openViewModal(member) {
     byId("memberModal");
 
   if (!modal) return;
+
 
   const name =
     byId("viewMemberName");
@@ -789,12 +856,15 @@ function openViewModal(member) {
   const joinDate =
     byId("viewMemberJoinDate");
 
+
   if (name) {
+
     name.textContent =
       member.name || "Member";
   }
 
   if (number) {
+
     number.textContent =
       member.member_number ||
       member.membership_number ||
@@ -802,43 +872,137 @@ function openViewModal(member) {
   }
 
   if (phone) {
+
     phone.textContent =
       member.phone || "—";
   }
 
   if (email) {
+
     email.textContent =
       member.email || "—";
   }
 
   if (role) {
+
     role.textContent =
       member.role || "—";
   }
 
   if (status) {
+
     status.textContent =
       member.status || "—";
   }
 
   if (joinDate) {
+
     joinDate.textContent =
       member.join_date || "—";
   }
 
+
+  /*
+     IMPORTANT:
+     Remove aria-hidden while modal is visible.
+  */
+
+  modal.removeAttribute("aria-hidden");
+
   modal.hidden = false;
+
+  modal.style.display = "flex";
+
+
+  /*
+     Focus the close button AFTER
+     the modal is visible.
+  */
+
+  const closeButton =
+    byId("closeMemberModal");
+
+  if (closeButton) {
+
+    setTimeout(() => {
+
+      closeButton.focus();
+
+    }, 50);
+  }
 }
 
+
+/* =====================================================
+   CLOSE VIEW MODAL
+===================================================== */
 
 function closeViewModal() {
 
   const modal =
     byId("memberModal");
 
-  if (modal) {
-    modal.hidden = true;
+  if (!modal) return;
+
+
+  /*
+     Move focus OUT of modal first.
+     This fixes the browser warning:
+     "Blocked aria-hidden..."
+  */
+
+  const active =
+    document.activeElement;
+
+  if (
+    active &&
+    modal.contains(active)
+  ) {
+
+    active.blur();
   }
 
+
+  /*
+     Remove aria-hidden before hiding.
+  */
+
+  modal.removeAttribute("aria-hidden");
+
+
+  /*
+     Hide modal.
+  */
+
+  modal.hidden = true;
+
+  modal.style.display = "none";
+
+
+  /*
+     Return focus to the View button
+     if possible.
+  */
+
+  const lastViewId =
+    modal.dataset.lastViewId;
+
+  if (lastViewId) {
+
+    const button =
+      document.querySelector(
+        `.btn-view-member[data-id="${CSS.escape(lastViewId)}"]`
+      );
+
+    if (button) {
+
+      setTimeout(() => {
+
+        button.focus();
+
+      }, 0);
+    }
+  }
 }
 
 
@@ -868,7 +1032,9 @@ function setupTableActions() {
         );
 
 
-      /* VIEW */
+      /* ===============================================
+         VIEW
+      =============================================== */
 
       if (viewButton) {
 
@@ -883,6 +1049,16 @@ function setupTableActions() {
           );
 
         if (member) {
+
+          const modal =
+            byId("memberModal");
+
+          if (modal) {
+
+            modal.dataset.lastViewId =
+              String(id);
+          }
+
           openViewModal(member);
         }
 
@@ -890,7 +1066,9 @@ function setupTableActions() {
       }
 
 
-      /* EDIT */
+      /* ===============================================
+         EDIT
+      =============================================== */
 
       if (editButton) {
 
@@ -905,9 +1083,9 @@ function setupTableActions() {
           );
 
         if (member) {
+
           openEditForm(member);
         }
-
       }
 
     }
@@ -921,6 +1099,9 @@ function setupTableActions() {
 
 function setupButtons() {
 
+
+  /* ADD */
+
   const addButton =
     byId("addMemberButton");
 
@@ -930,9 +1111,10 @@ function setupButtons() {
       "click",
       openAddForm
     );
-
   }
 
+
+  /* CLOSE ADD FORM */
 
   const closeButton =
     byId("closeAddMember");
@@ -943,9 +1125,10 @@ function setupButtons() {
       "click",
       closeMemberForm
     );
-
   }
 
+
+  /* CANCEL */
 
   const cancelButton =
     byId("cancelAddMember");
@@ -956,9 +1139,10 @@ function setupButtons() {
       "click",
       closeMemberForm
     );
-
   }
 
+
+  /* FORM */
 
   const form =
     byId("addMemberForm");
@@ -969,9 +1153,10 @@ function setupButtons() {
       "submit",
       saveMember
     );
-
   }
 
+
+  /* CLOSE MODAL */
 
   const closeModal =
     byId("closeMemberModal");
@@ -982,14 +1167,23 @@ function setupButtons() {
       "click",
       closeViewModal
     );
-
   }
 
+
+  /* CLICK BACKDROP */
 
   const modal =
     byId("memberModal");
 
   if (modal) {
+
+    /*
+       Make sure modal starts hidden
+       without aria-hidden conflict.
+    */
+
+    modal.hidden = true;
+    modal.style.display = "none";
 
     modal.addEventListener(
       "click",
@@ -998,14 +1192,32 @@ function setupButtons() {
         if (
           event.target === modal
         ) {
+
           closeViewModal();
         }
 
       }
     );
 
-  }
 
+    /*
+       ESCAPE KEY
+    */
+
+    modal.addEventListener(
+      "keydown",
+      event => {
+
+        if (
+          event.key === "Escape"
+        ) {
+
+          closeViewModal();
+        }
+
+      }
+    );
+  }
 }
 
 
@@ -1040,9 +1252,7 @@ async function init() {
       error?.message ||
       "Unable to load members."
     );
-
   }
-
 }
 
 
