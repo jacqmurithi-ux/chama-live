@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>Confirm Account — CHAMA LIVE</title>
+
+  <link
+    rel="stylesheet"
+    href="css/app.css"
+  >
+
+</head>
+
+<body>
+
+<main
+  class="main"
+  style="max-width:600px;margin:60px auto;"
+>
+
+  <section class="card">
+
+    <div
+      class="brand"
+      style="margin-bottom:20px;"
+    >
+      CHAMA <span>LIVE</span>
+    </div>
+
+
+    <h1>
+      Confirming Your Account
+    </h1>
+
+
+    <p
+      id="status"
+      class="muted"
+    >
+      Please wait while we confirm your account...
+    </p>
+
+
+    <div
+      id="error"
+      class="error"
+      hidden
+      style="margin-top:20px;"
+    ></div>
+
+  </section>
+
+</main>
+
+
+<script type="module">
+
+  import {
+    supabase
+  } from "./js/supabase.js";
+
+
+  const APP_URL =
+    "https://jacqmurithi-ux.github.io/chama-live";
+
+
+  const status =
+    document.getElementById("status");
+
+
+  const error =
+    document.getElementById("error");
+
+
+  async function init() {
+
+    try {
+
+      status.textContent =
+        "Checking your confirmation...";
+
+
+      /*
+       * Supabase processes the confirmation
+       * link and establishes the session.
+       */
+
+      const {
+        data,
+        error: sessionError
+      } =
+        await supabase.auth.getSession();
+
+
+      if (sessionError) {
+
+        throw sessionError;
+
+      }
+
+
+      if (!data?.session) {
+
+        throw new Error(
+          "Your account could not be confirmed. Please try signing in."
+        );
+
+      }
+
+
+      console.log(
+        "CHAMA LIVE: email confirmed"
+      );
+
+
+      console.log(
+        "CHAMA LIVE USER:",
+        data.session.user.id
+      );
+
+
+      /*
+       * signup.js saved the group information
+       * in sessionStorage.
+       *
+       * Continue onboarding.
+       */
+
+      const pending =
+        sessionStorage.getItem(
+          "chama_pending_onboarding"
+        );
+
+
+      if (!pending) {
+
+        /*
+         * No pending onboarding.
+         *
+         * This may mean the user is an
+         * existing user rather than a
+         * new group administrator.
+         */
+
+        status.textContent =
+          "Account confirmed. Redirecting to login...";
+
+
+        setTimeout(() => {
+
+          window.location.href =
+            `${APP_URL}/login.html`;
+
+        }, 1000);
+
+
+        return;
+
+      }
+
+
+      status.textContent =
+        "Email confirmed. Creating your group...";
+
+
+      /*
+       * Call onboarding directly here.
+       *
+       * Database determines auth.uid().
+       */
+
+      const onboardingData =
+        JSON.parse(pending);
+
+
+      const {
+        data: onboarding,
+        error: onboardingError
+      } =
+        await supabase.rpc(
+          "onboard_new_group",
+          {
+
+            p_group_name:
+              onboardingData.groupName,
+
+            p_category:
+              onboardingData.category,
+
+            p_monthly_contribution:
+              onboardingData.monthlyContribution,
+
+            p_opening_balance:
+              onboardingData.openingBalance,
+
+            p_description:
+              onboardingData.description ||
+              null,
+
+            p_admin_name:
+              onboardingData.adminName,
+
+            p_admin_phone:
+              onboardingData.adminPhone,
+
+            p_country:
+              "Kenya"
+
+          }
+        );
+
+
+      if (onboardingError) {
+
+        throw onboardingError;
+
+      }
+
+
+      if (
+        !onboarding ||
+        onboarding.success !== true
+      ) {
+
+        throw new Error(
+          "Group onboarding failed."
+        );
+
+      }
+
+
+      console.log(
+        "CHAMA LIVE ONBOARDING:",
+        onboarding
+      );
+
+
+      /*
+       * Remove temporary data.
+       */
+
+      sessionStorage.removeItem(
+        "chama_pending_onboarding"
+      );
+
+
+      status.textContent =
+        "✓ Account confirmed and group created. Redirecting...";
+
+
+      setTimeout(() => {
+
+        window.location.href =
+          `${APP_URL}/dashboard.html`;
+
+      }, 1000);
+
+
+    } catch (err) {
+
+      console.error(
+        "CHAMA LIVE confirmation error:",
+        err
+      );
+
+
+      status.textContent =
+        "Account confirmation failed.";
+
+
+      error.textContent =
+        err?.message ||
+        "Unable to complete account confirmation.";
+
+
+      error.hidden = false;
+
+    }
+
+  }
+
+
+  init();
+
+</script>
+
+</body>
+
+</html>
