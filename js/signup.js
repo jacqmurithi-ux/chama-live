@@ -55,10 +55,9 @@ function showError(error) {
 
     errorEl.textContent =
       error?.message ||
-      "Unable to complete account creation.";
+      "Unable to complete signup.";
 
     errorEl.hidden = false;
-
   }
 
 }
@@ -132,7 +131,6 @@ function getFormData() {
 
 
   return {
-
     adminName,
     adminPhone,
     email,
@@ -142,17 +140,16 @@ function getFormData() {
     monthlyContribution,
     openingBalance,
     description
-
   };
 
 }
 
 
 /* =======================================================
-   VALIDATION
+   VALIDATE
 ======================================================= */
 
-function validateForm(data) {
+function validate(data) {
 
   if (!data.adminName) {
 
@@ -239,261 +236,150 @@ function validateForm(data) {
 
 
 /* =======================================================
-   CREATE SUPABASE AUTH ACCOUNT
+   CREATE GROUP
 ======================================================= */
 
-async function createAuthAccount(data) {
+async function createGroup(data) {
 
   setStatus(
-    "Creating your account..."
+    "Creating your group..."
   );
 
+
+  /*
+   * IMPORTANT:
+   *
+   * There is NO group_id here.
+   *
+   * Supabase determines:
+   *
+   * auth.uid()
+   * group_id
+   * member_id
+   * role
+   *
+   * server-side.
+   */
 
   const {
-    data: authData,
-    error: authError
-  } =
-    await supabase.auth.signUp({
+    data: result,
+    error
+  } = await supabase.rpc(
+    "onboard_new_group",
+    {
 
-      email:
-        data.email,
+      p_group_name:
+        data.groupName,
 
-      password:
-        data.password,
+      p_category:
+        data.category,
 
-      options: {
+      p_monthly_contribution:
+        data.monthlyContribution,
 
-        emailRedirectTo:
-          CONFIRM_URL,
+      p_opening_balance:
+        data.openingBalance,
 
-        data: {
+      p_description:
+        data.description || null,
 
-          full_name:
-            data.adminName,
+      p_admin_name:
+        data.adminName,
 
-          phone:
-            data.adminPhone
+      p_admin_phone:
+        data.adminPhone,
 
-        }
+      p_country:
+        "Kenya"
 
-      }
-
-    });
-
-
-  if (authError) {
-    throw authError;
-  }
+    }
+  );
 
 
-  const user =
-    authData?.user;
+  if (error) {
 
-
-  if (!user) {
-
-    throw new Error(
-      "Supabase did not return a user."
-    );
+    throw error;
 
   }
 
 
   console.log(
-    "CHAMA LIVE AUTH USER:",
-    user.id
+    "CHAMA LIVE ONBOARDING RESULT:",
+    result
   );
-
-
-  console.log(
-    "CHAMA LIVE EMAIL CONFIRMATION:",
-    authData?.session
-      ? "Not required / session available"
-      : "Required"
-  );
-
-
-  return {
-
-    user,
-
-    session:
-      authData?.session || null
-
-  };
-
-}
-
-
-/* =======================================================
-   SUBMIT GROUP APPLICATION
-======================================================= */
-
-async function submitApplication(
-  user,
-  data
-) {
-
-  setStatus(
-    "Submitting your group application..."
-  );
-
-
-  /*
-   * IMPORTANT
-   *
-   * This function ONLY submits an application.
-   *
-   * It does NOT create:
-   *
-   * - groups
-   * - members
-   * - financial_periods
-   *
-   * Group creation happens only after
-   * manual approval.
-   *
-   * The database determines the authenticated
-   * user through auth.uid().
-   *
-   * We deliberately do NOT send group_id.
-   */
-
-
-  const {
-    data: application,
-    error: applicationError
-  } =
-    await supabase.rpc(
-      "submit_group_application",
-      {
-
-        p_group_name:
-          data.groupName,
-
-        p_category:
-          data.category,
-
-        p_monthly_contribution:
-          data.monthlyContribution,
-
-        p_opening_balance:
-          data.openingBalance,
-
-        p_description:
-          data.description || null,
-
-        p_admin_name:
-          data.adminName,
-
-        p_admin_phone:
-          data.adminPhone,
-
-        p_country:
-          "Kenya"
-
-      }
-    );
-
-
-  if (applicationError) {
-
-    throw applicationError;
-
-  }
-
-
-  console.log(
-    "CHAMA LIVE GROUP APPLICATION:",
-    application
-  );
-
-
-  return application;
-
-}
-
-
-/* =======================================================
-   HANDLE SUCCESS
-======================================================= */
-
-function showApplicationSuccess() {
-
-  setStatus(
-    "✓ Application received successfully. Your account will be reviewed within 1–2 days."
-  );
-
-
-  if (errorEl) {
-
-    errorEl.textContent = "";
-
-    errorEl.hidden = true;
-
-  }
-
-
-  /*
-   * Keep the user on this page.
-   *
-   * The account/group must NOT be activated
-   * until manual review is completed.
-   */
-
-  if (createButton) {
-
-    createButton.disabled = true;
-
-    createButton.textContent =
-      "Application Submitted";
-
-  }
-
-
-  /*
-   * Optional visual message.
-   */
-
-  const message =
-    document.createElement("div");
-
-  message.className = "card";
-
-  message.style.marginTop = "20px";
-
-  message.innerHTML = `
-
-    <h3>Application received</h3>
-
-    <p class="muted">
-      Thank you for registering your group with CHAMA LIVE.
-    </p>
-
-    <p class="muted">
-      Your application is now awaiting manual review.
-      Reviews normally take 1–2 days.
-    </p>
-
-    <p class="muted">
-      After approval, you will receive a confirmation
-      email with instructions for accessing your group account.
-    </p>
-
-  `;
 
 
   if (
-    form &&
-    form.parentNode
+    !result ||
+    result.success !== true
   ) {
 
-    form.parentNode.insertBefore(
-      message,
-      form
+    throw new Error(
+      "Group onboarding did not complete successfully."
     );
 
   }
+
+
+  if (!result.group_id) {
+
+    throw new Error(
+      "Group was created but no group ID was returned."
+    );
+
+  }
+
+
+  return result;
+
+}
+
+
+/* =======================================================
+   COMPLETE ONBOARDING
+======================================================= */
+
+async function completeOnboarding(data) {
+
+  const result =
+    await createGroup(data);
+
+
+  console.log(
+    "CHAMA LIVE GROUP:",
+    result.group_id
+  );
+
+
+  console.log(
+    "CHAMA LIVE MEMBER:",
+    result.member_id
+  );
+
+
+  console.log(
+    "CHAMA LIVE MEMBER NUMBER:",
+    result.member_number
+  );
+
+
+  console.log(
+    "CHAMA LIVE ACCESS CODE:",
+    result.access_code
+  );
+
+
+  setStatus(
+    "✓ Your group has been created successfully. Redirecting..."
+  );
+
+
+  setTimeout(() => {
+
+    window.location.href =
+      `${APP_URL}/dashboard.html`;
+
+  }, 800);
 
 }
 
@@ -509,37 +395,22 @@ async function signup(event) {
   clearError();
 
 
-  let data;
+  const data =
+    getFormData();
 
-
-  /* =====================================================
-     GET DATA
-  ===================================================== */
 
   try {
 
-    data =
-      getFormData();
-
-
-    validateForm(
-      data
-    );
+    validate(data);
 
   } catch (error) {
 
-    showError(
-      error
-    );
+    showError(error);
 
     return;
 
   }
 
-
-  /* =====================================================
-     DISABLE BUTTON
-  ===================================================== */
 
   if (createButton) {
 
@@ -553,104 +424,142 @@ async function signup(event) {
 
   try {
 
-    /* ===================================================
-       STEP 1
-       CREATE AUTH USER
-    =================================================== */
+    /*
+     * IMPORTANT:
+     *
+     * We store the onboarding information
+     * inside the Auth user's metadata.
+     *
+     * This prevents the information from
+     * disappearing when the confirmation
+     * email opens in another browser tab.
+     *
+     * It is NOT used for authorization.
+     *
+     * The database still determines the
+     * user's actual group and role.
+     */
+
+    setStatus(
+      "Creating your account..."
+    );
+
 
     const {
-      user,
-      session
+      data: authData,
+      error: authError
     } =
-      await createAuthAccount(
-        data
-      );
+      await supabase.auth.signUp({
+
+        email:
+          data.email,
+
+        password:
+          data.password,
+
+        options: {
+
+          emailRedirectTo:
+            CONFIRM_URL,
+
+          data: {
+
+            chama_onboarding: true,
+
+            admin_name:
+              data.adminName,
+
+            admin_phone:
+              data.adminPhone,
+
+            group_name:
+              data.groupName,
+
+            category:
+              data.category,
+
+            monthly_contribution:
+              data.monthlyContribution,
+
+            opening_balance:
+              data.openingBalance,
+
+            description:
+              data.description || null,
+
+            country:
+              "Kenya"
+
+          }
+
+        }
+
+      });
 
 
-    /* ===================================================
-       STEP 2
-       SUBMIT APPLICATION
-    =================================================== */
+    if (authError) {
 
-    const application =
-      await submitApplication(
-        user,
-        data
-      );
+      throw authError;
+
+    }
 
 
-    /* ===================================================
-       STEP 3
-       CHECK APPLICATION RESULT
-    =================================================== */
+    const user =
+      authData?.user;
 
-    if (
-      application === null ||
-      application === undefined
-    ) {
 
-      /*
-       * A PostgreSQL function can legitimately
-       * return null depending on its definition.
-       *
-       * The absence of an error means the RPC
-       * completed successfully.
-       */
+    if (!user) {
 
-      console.log(
-        "CHAMA LIVE: application submitted"
+      throw new Error(
+        "Supabase did not return a user."
       );
 
     }
 
 
-    /* ===================================================
-       STEP 4
-       SUCCESS
-    =================================================== */
-
-    showApplicationSuccess();
+    console.log(
+      "CHAMA LIVE AUTH USER:",
+      user.id
+    );
 
 
     /*
-     * If a session exists because email confirmation
-     * is disabled, sign the user out.
-     *
-     * They should not access the dashboard before
-     * their application is approved.
+     * Email confirmation required.
      */
 
-    if (session) {
+    if (!authData.session) {
 
-      console.log(
-        "CHAMA LIVE: signing out pending applicant"
+      setStatus(
+        "Account created successfully. Please check your email and click the confirmation link to continue."
       );
 
 
-      const {
-        error: signOutError
-      } =
-        await supabase.auth.signOut();
+      if (createButton) {
 
+        createButton.disabled = false;
 
-      if (signOutError) {
-
-        console.warn(
-          "CHAMA LIVE sign-out warning:",
-          signOutError
-        );
+        createButton.textContent =
+          "Create Account & Group";
 
       }
 
+
+      return;
+
     }
+
+
+    /*
+     * Email confirmation is not required.
+     * Continue immediately.
+     */
+
+    await completeOnboarding(data);
 
 
   } catch (error) {
 
-    showError(
-      error
-    );
-
+    showError(error);
 
     setStatus(
       "Account creation failed."
@@ -672,7 +581,7 @@ async function signup(event) {
 
 
 /* =======================================================
-   EVENT LISTENER
+   EVENT
 ======================================================= */
 
 if (form) {
@@ -682,17 +591,11 @@ if (form) {
     signup
   );
 
-} else {
-
-  console.error(
-    "CHAMA LIVE: signupForm was not found."
-  );
-
 }
 
 
 /* =======================================================
-   STARTUP
+   START
 ======================================================= */
 
 console.log(
