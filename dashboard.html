@@ -17,579 +17,595 @@
     href="css/app.css"
   >
 
-  <!-- =====================================================
-       DASHBOARD VISUAL STYLES
-       Mobile navigation is controlled by layout.js
-       No app.css editing required.
-  ====================================================== -->
-
   <style>
 
     /* =====================================================
-       QUICK ACTIONS
-    ====================================================== */
+       DASHBOARD
+    ===================================================== */
 
-    .visual-actions {
+    .dashboard-header {
+      margin-bottom: 24px;
+    }
 
+    .dashboard-header h1 {
+      margin: 0 0 6px;
+    }
+
+    .dashboard-header p {
+      margin: 0;
+    }
+
+    .dashboard-metrics {
       display: grid;
-
       grid-template-columns:
         repeat(4, minmax(0, 1fr));
-
       gap: 14px;
-
       margin-bottom: 24px;
-
     }
 
-
-    .visual-action {
-
-      text-decoration: none;
-
-      color: inherit;
-
-      background:
-        var(--card-bg, #fff);
-
-      border:
-        1px solid rgba(0,0,0,.08);
-
-      border-radius: 18px;
-
-      padding: 18px 14px;
-
-      display: flex;
-
-      align-items: center;
-
-      gap: 12px;
-
-      min-height: 82px;
-
-      box-shadow:
-        0 4px 14px rgba(0,0,0,.05);
-
-      transition:
-        transform .2s ease,
-        box-shadow .2s ease;
-
+    .metric-card {
+      min-width: 0;
     }
 
-
-    .visual-action:hover {
-
-      transform:
-        translateY(-2px);
-
-      box-shadow:
-        0 8px 22px rgba(0,0,0,.09);
-
+    .metric-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #64748b;
     }
 
-
-    .visual-action-icon {
-
-      width: 48px;
-
-      height: 48px;
-
-      border-radius: 14px;
-
-      display: flex;
-
-      align-items: center;
-
-      justify-content: center;
-
+    .metric {
+      font-size: 26px;
       font-weight: 800;
-
-      font-size: 18px;
-
-      flex-shrink: 0;
-
-      background:
-        #f1f5f9;
-
+      margin: 8px 0 4px;
     }
 
-
-    .visual-action strong {
-
-      display: block;
-
-      font-size: 14px;
-
-      margin-bottom: 4px;
-
+    .muted {
+      color: #64748b;
     }
 
-
-    .visual-action small {
-
-      display: block;
-
-      font-size: 11px;
-
-      opacity: .65;
-
-      line-height: 1.3;
-
+    .eyebrow {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      color: #0f766e;
     }
-
-
-    /* =====================================================
-       DASHBOARD SECTIONS
-    ====================================================== */
 
     .dashboard-section {
-
       margin-bottom: 24px;
-
     }
 
-
-    .dashboard-section
     .section-heading {
-
-      margin-bottom: 14px;
-
+      margin-bottom: 16px;
     }
 
-
-    /* =====================================================
-       PROGRESS CARD
-    ====================================================== */
-
-    .progress-card {
-
-      margin-bottom: 24px;
-
+    .section-heading h2 {
+      margin: 4px 0;
     }
-
-
-    .progress-card
-    .section-heading {
-
-      display: flex;
-
-      align-items: center;
-
-      justify-content: space-between;
-
-      gap: 15px;
-
-    }
-
-
-    .progress-percentage {
-
-      min-width: 62px;
-
-      height: 62px;
-
-      border-radius: 50%;
-
-      display: flex;
-
-      align-items: center;
-
-      justify-content: center;
-
-      font-size: 17px;
-
-      font-weight: 800;
-
-      background:
-        #f1f5f9;
-
-      flex-shrink: 0;
-
-    }
-
 
     .progress {
-
+      width: 100%;
       height: 12px;
-
-      border-radius: 999px;
-
       overflow: hidden;
-
-      margin: 20px 0 12px;
-
-      background:
-        #e5e7eb;
-
+      border-radius: 999px;
+      background: #e5e7eb;
     }
-
 
     .progress-bar {
-
       height: 100%;
-
+      width: 0%;
       border-radius: inherit;
-
-      transition:
-        width .5s ease;
-
+      background: #0f766e;
+      transition: width .4s ease;
     }
-
 
     .progress-footer {
-
       display: flex;
-
-      align-items: center;
-
       justify-content: space-between;
-
+      align-items: center;
       gap: 10px;
-
+      margin-top: 10px;
     }
 
+    .table-wrap {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
 
-    /* =====================================================
-       MEMBER STATUS
-    ====================================================== */
+    .activity-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .activity-card {
+      min-width: 0;
+    }
+
+    .activity-card .section-heading,
+    .meetings-card .section-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 15px;
+    }
+
+    .btn-small {
+      padding: 7px 11px;
+      font-size: 11px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .meetings-card {
+      margin-bottom: 30px;
+    }
 
     .member-status-card {
-
       margin-bottom: 24px;
-
     }
 
-
-    .member-status-card
-    .section-heading {
-
-      margin-bottom: 16px;
-
+    .member-status-table table {
+      min-width: 620px;
     }
-
-
-    .member-status-table
-    td:last-child strong {
-
-      display: inline-flex;
-
-      align-items: center;
-
-      justify-content: center;
-
-      min-width: 82px;
-
-      padding: 6px 10px;
-
-      border-radius: 999px;
-
-      font-size: 11px;
-
-      font-weight: 700;
-
-      background:
-        #f1f5f9;
-
-    }
-
 
     /* =====================================================
-       MOBILE DASHBOARD
-    ====================================================== */
+       MOBILE
+    ===================================================== */
+
+    @media (max-width: 800px) {
+
+      .dashboard-metrics {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+
+      .activity-grid {
+        grid-template-columns: 1fr;
+      }
+
+    }
 
     @media (max-width: 650px) {
 
-      .visual-actions {
-
-        grid-template-columns:
-          repeat(2, minmax(0, 1fr));
-
-        gap: 10px;
-
+      .dashboard-header {
+        margin-bottom: 18px;
       }
 
-
-      .visual-action {
-
-        padding: 14px 12px;
-
-        min-height: 76px;
-
-        border-radius: 16px;
-
+      .dashboard-header h1 {
+        font-size: 23px;
       }
 
-
-      .visual-action-icon {
-
-        width: 42px;
-
-        height: 42px;
-
-        border-radius: 12px;
-
-        font-size: 16px;
-
+      .dashboard-header p {
+        font-size: 12px;
       }
-
-
-      .visual-action strong {
-
-        font-size: 13px;
-
-      }
-
-
-      .visual-action small {
-
-        font-size: 10px;
-
-      }
-
-
-      /* -------------------------------------------------
-         METRICS
-      ------------------------------------------------- */
 
       .dashboard-metrics {
-
-        display: grid;
-
-        grid-template-columns:
-          repeat(2, minmax(0, 1fr));
-
         gap: 10px;
-
       }
 
-
-      .dashboard-metrics
       .metric-card {
-
-        padding:
-          15px 13px;
-
-        min-width: 0;
-
+        padding: 14px;
         border-radius: 16px;
-
       }
 
-
-      .dashboard-metrics
       .metric-label {
-
-        font-size: 11px;
-
-        white-space: nowrap;
-
-        overflow: hidden;
-
-        text-overflow: ellipsis;
-
-      }
-
-
-      .dashboard-metrics
-      .metric {
-
-        font-size: 21px;
-
-        margin:
-          7px 0 3px;
-
-      }
-
-
-      .dashboard-metrics
-      .muted {
-
         font-size: 10px;
-
-        line-height: 1.3;
-
       }
 
-
-      .dashboard-metrics
-      .metric-dot {
-
-        width: 7px;
-
-        height: 7px;
-
-        flex-shrink: 0;
-
+      .metric {
+        font-size: 21px;
+        margin: 7px 0 3px;
       }
 
+      .metric-card .muted {
+        font-size: 10px;
+      }
 
-      /* -------------------------------------------------
-         PROGRESS
-      ------------------------------------------------- */
+      .dashboard-section {
+        margin-bottom: 18px;
+      }
 
-      .progress-card {
-
-        padding:
-          17px 14px;
-
+      .dashboard-section.card,
+      .member-status-card,
+      .activity-card,
+      .meetings-card {
+        padding: 16px 12px;
         border-radius: 17px;
-
       }
 
-
-      .progress-card h2 {
-
+      .section-heading h2 {
         font-size: 17px;
-
       }
 
-
-      .progress-card .eyebrow {
-
+      .eyebrow {
         font-size: 9px;
-
       }
 
-
-      .progress-card .muted {
-
+      .muted {
         font-size: 11px;
-
       }
-
-
-      .progress-percentage {
-
-        width: 54px;
-
-        min-width: 54px;
-
-        height: 54px;
-
-        font-size: 15px;
-
-      }
-
 
       .progress {
-
         height: 10px;
-
-        margin:
-          17px 0 11px;
-
       }
-
 
       .progress-footer {
-
-        font-size: 12px;
-
-      }
-
-
-      /* -------------------------------------------------
-         MEMBER STATUS
-      ------------------------------------------------- */
-
-      .member-status-card {
-
-        padding:
-          16px 12px;
-
-        border-radius: 17px;
-
-      }
-
-
-      .member-status-card h2 {
-
-        font-size: 17px;
-
-      }
-
-
-      .member-status-card
-      .muted {
-
         font-size: 11px;
-
       }
 
-
-      .member-status-table {
-
-        overflow-x: auto;
-
-        margin-left: -2px;
-
-        margin-right: -2px;
-
+      .activity-grid {
+        gap: 12px;
       }
 
-
-      .member-status-table table {
-
-        min-width: 620px;
-
+      .activity-card table {
+        min-width: 480px;
       }
 
+      .meetings-card table {
+        min-width: 560px;
+      }
 
       .member-status-table th,
-      .member-status-table td {
-
-        padding:
-          11px 8px;
-
+      .member-status-table td,
+      .activity-card th,
+      .activity-card td,
+      .meetings-card th,
+      .meetings-card td {
+        padding: 10px 8px;
         font-size: 11px;
-
       }
 
+    }
 
-      .member-status-table th {
+    @media (max-width: 390px) {
 
-        font-size: 10px;
-
+      .dashboard-metrics {
+        gap: 8px;
       }
 
-
-      .member-status-table
-      td:first-child {
-
-        font-weight: 700;
-
+      .metric-card {
+        padding: 12px 10px;
       }
 
+      .metric {
+        font-size: 19px;
+      }
 
-      .member-status-table
-      td:last-child strong {
+    }
 
-        min-width: 70px;
+  </style>
 
-        padding:
-              <!-- =================================================
-         MONTHLY CONTRIBUTION PROGRESS
-    ================================================== -->
+</head>
 
-    <section
-      class="card progress-card"
-    >
 
-      <div class="section-heading">
+<body>
 
-        <div>
+
+  <!-- =====================================================
+       TOP BAR
+  ====================================================== -->
+
+  <header class="topbar">
+
+    <div class="brand">
+      CHAMA <span>LIVE</span>
+    </div>
+
+
+    <div class="topbar-actions">
+
+      <span
+        data-user-name
+        class="muted"
+      >
+        Member
+      </span>
+
+
+      <button
+        id="logout"
+        class="btn btn-secondary"
+        type="button"
+      >
+        Sign out
+      </button>
+
+    </div>
+
+  </header>
+
+
+
+  <!-- =====================================================
+       APPLICATION LAYOUT
+  ====================================================== -->
+
+  <div class="layout">
+
+
+    <!-- ===================================================
+         SIDEBAR
+    ==================================================== -->
+
+    <aside class="sidebar">
+
+      <div class="sidebar-brand">
+
+        <strong>
+          CHAMA LIVE
+        </strong>
+
+
+        <small
+          data-group-name
+          class="muted"
+        >
+          CHAMA
+        </small>
+
+      </div>
+
+
+      <nav class="sidebar-nav">
+
+        <a
+          href="dashboard.html"
+          class="active"
+        >
+          Dashboard
+        </a>
+
+
+        <a href="members.html">
+          Members
+        </a>
+
+
+        <a href="contributions.html">
+          Contributions
+        </a>
+
+
+        <a href="expenses.html">
+          Expenses
+        </a>
+
+
+        <a href="meetings.html">
+          Meetings
+        </a>
+
+
+        <a href="reports.html">
+          Reports
+        </a>
+
+
+        <a href="monthly-closing.html">
+          Monthly Closing
+        </a>
+
+
+        <a href="group-management.html">
+          Group Management
+        </a>
+
+      </nav>
+
+    </aside>
+
+
+
+    <!-- ===================================================
+         MAIN CONTENT
+    ==================================================== -->
+
+    <main class="main">
+
+
+      <!-- =================================================
+           STATUS
+      ================================================== -->
+
+      <div
+        id="status"
+        class="muted"
+        style="margin-bottom:12px;"
+      >
+        Loading dashboard...
+      </div>
+
+
+      <!-- =================================================
+           ERROR
+      ================================================== -->
+
+      <div
+        id="error"
+        class="card"
+        hidden
+        style="
+          margin-bottom:20px;
+          color:#b91c1c;
+        "
+      ></div>
+
+
+
+      <!-- =================================================
+           DASHBOARD HEADER
+      ================================================== -->
+
+      <section class="dashboard-header">
+
+        <div class="eyebrow">
+          GROUP DASHBOARD
+        </div>
+
+
+        <h1>
+
+          Welcome to
+
+          <span data-group-name>
+            CHAMA
+          </span>
+
+        </h1>
+
+
+        <p class="muted">
+          Here's an overview of your group's activities.
+        </p>
+
+      </section>
+
+
+
+      <!-- =================================================
+           FINANCIAL METRICS
+      ================================================== -->
+
+      <section
+        class="dashboard-metrics"
+      >
+
+
+        <!-- ACTIVE MEMBERS -->
+
+        <div class="card metric-card">
+
+          <div class="metric-label">
+            Active Members
+          </div>
+
+
+          <div
+            id="activeMembers"
+            class="metric"
+          >
+            0
+          </div>
+
+
+          <div class="muted">
+
+            <span id="membersCount">
+              0
+            </span>
+
+            total members
+
+          </div>
+
+        </div>
+
+
+
+        <!-- MONTHLY EXPECTED -->
+
+        <div class="card metric-card">
+
+          <div class="metric-label">
+            Monthly Expected
+          </div>
+
+
+          <div
+            id="monthlyExpected"
+            class="metric"
+          >
+            KSh 0
+          </div>
+
+
+          <div class="muted">
+            Expected this month
+          </div>
+
+        </div>
+
+
+
+        <!-- MONTHLY COLLECTED -->
+
+        <div class="card metric-card">
+
+          <div class="metric-label">
+            Monthly Collected
+          </div>
+
+
+          <div
+            id="monthlyCollected"
+            class="metric"
+          >
+            KSh 0
+          </div>
+
+
+          <div class="muted">
+            Received this month
+          </div>
+
+        </div>
+
+
+
+        <!-- CURRENT BALANCE -->
+
+        <div class="card metric-card">
+
+          <div class="metric-label">
+            Current Balance
+          </div>
+
+
+          <div
+            id="currentBalance"
+            class="metric"
+          >
+            KSh 0
+          </div>
+
+
+          <div class="muted">
+            Group balance
+          </div>
+
+        </div>
+
+
+      </section>
+
+
+
+      <!-- =================================================
+           CONTRIBUTION PROGRESS
+      ================================================== -->
+
+      <section
+        class="card dashboard-section progress-card"
+      >
+
+        <div class="section-heading">
 
           <div class="eyebrow">
             THIS MONTH
           </div>
 
+
           <h2>
             Contribution Progress
           </h2>
 
+
           <p
-            class="muted"
             id="progressMonth"
+            class="muted"
           >
             Current month
           </p>
@@ -598,69 +614,74 @@
 
 
         <div
-          class="progress-percentage"
           id="progressPercentage"
+          style="
+            font-size:28px;
+            font-weight:800;
+            margin-bottom:12px;
+          "
         >
           0%
         </div>
 
-      </div>
+
+        <div class="progress">
+
+          <div
+            id="progressBar"
+            class="progress-bar"
+          ></div>
+
+        </div>
+
+
+        <div class="progress-footer">
+
+          <strong id="progressText">
+            KSh 0 / KSh 0
+          </strong>
+
+
+          <span class="muted">
+            Collection rate
+          </span>
+
+        </div>
+
+
+        <p class="muted">
+
+          Outstanding:
+
+          <strong id="monthlyOutstanding">
+            KSh 0
+          </strong>
+
+        </p>
+
+      </section>
+
 
 
       <!-- =================================================
-           PROGRESS BAR
+           MEMBER CONTRIBUTION STATUS
       ================================================== -->
 
-      <div class="progress">
+      <section
+        class="card member-status-card"
+      >
 
-        <div
-          id="progressBar"
-          class="progress-bar"
-          style="width:0%;"
-        ></div>
-
-      </div>
-
-
-      <!-- =================================================
-           PROGRESS DETAILS
-      ================================================== -->
-
-      <div class="progress-footer">
-
-        <strong id="progressText">
-          KSh 0 / KSh 0
-        </strong>
-
-        <span class="muted">
-          Monthly collection
-        </span>
-
-      </div>
-
-    </section>
-
-
-
-    <!-- =================================================
-         MEMBER CONTRIBUTION STATUS
-    ================================================== -->
-
-    <section
-      class="card member-status-card"
-    >
-
-      <div class="section-heading">
-
-        <div>
+        <div class="section-heading">
 
           <div class="eyebrow">
             MEMBER PAYMENTS
           </div>
 
+
           <h2>
             Contribution Status
           </h2>
+
 
           <p class="muted">
             See who has cleared their monthly contribution.
@@ -668,100 +689,90 @@
 
         </div>
 
-      </div>
+
+        <div
+          class="table-wrap member-status-table"
+        >
+
+          <table class="table">
+
+            <thead>
+
+              <tr>
+
+                <th>
+                  Member
+                </th>
+
+                <th>
+                  Expected
+                </th>
+
+                <th>
+                  Paid
+                </th>
+
+                <th>
+                  Outstanding
+                </th>
+
+                <th>
+                  Status
+                </th>
+
+              </tr>
+
+            </thead>
+
+
+            <tbody id="memberStatusRows">
+
+              <tr>
+
+                <td colspan="5">
+                  Loading...
+                </td>
+
+              </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </section>
+
 
 
       <!-- =================================================
-           MEMBER STATUS TABLE
+           RECENT ACTIVITY
       ================================================== -->
 
-      <div
-        class="table-wrap member-status-table"
+      <section
+        class="dashboard-section"
       >
 
-        <table class="table">
-
-          <thead>
-
-            <tr>
-
-              <th>
-                Member
-              </th>
-
-              <th>
-                Expected
-              </th>
-
-              <th>
-                Paid
-              </th>
-
-              <th>
-                Outstanding
-              </th>
-
-              <th>
-                Status
-              </th>
-
-            </tr>
-
-          </thead>
+        <div class="activity-grid">
 
 
-          <tbody
-            id="memberStatusRows"
-          >
+          <!-- =================================================
+               RECENT CONTRIBUTIONS
+          ================================================== -->
 
-            <tr>
+          <div class="card activity-card">
 
-              <td colspan="5">
-                Loading...
-              </td>
-
-            </tr>
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-    </section>
-
-
-
-    <!-- =================================================
-         RECENT ACTIVITY
-    ================================================== -->
-
-    <section
-      class="recent-activity"
-    >
-
-      <div
-        class="grid grid-2"
-      >
-
-
-        <!-- =================================================
-             RECENT CONTRIBUTIONS
-        ================================================== -->
-
-        <div class="card">
-
-          <div class="section-heading">
-
-            <div>
+            <div class="section-heading">
 
               <div class="eyebrow">
-                RECENT ACTIVITY
+                CONTRIBUTIONS
               </div>
+
 
               <h2>
                 Recent Contributions
               </h2>
+
 
               <p class="muted">
                 Latest money received.
@@ -770,80 +781,70 @@
             </div>
 
 
-            <a
-              href="contributions.html"
-              class="btn btn-secondary"
-            >
-              View all
-            </a>
+            <div class="table-wrap">
+
+              <table class="table">
+
+                <thead>
+
+                  <tr>
+
+                    <th>
+                      Member
+                    </th>
+
+                    <th>
+                      Amount
+                    </th>
+
+                    <th>
+                      Date
+                    </th>
+
+                  </tr>
+
+                </thead>
+
+
+                <tbody
+                  id="recentContributionRows"
+                >
+
+                  <tr>
+
+                    <td colspan="3">
+                      Loading...
+                    </td>
+
+                  </tr>
+
+                </tbody>
+
+              </table>
+
+            </div>
 
           </div>
 
 
-          <div class="table-wrap">
 
-            <table class="table">
+          <!-- =================================================
+               RECENT EXPENSES
+          ================================================== -->
 
-              <thead>
+          <div class="card activity-card">
 
-                <tr>
-
-                  <th>
-                    Member
-                  </th>
-
-                  <th>
-                    Amount
-                  </th>
-
-                  <th>
-                    Date
-                  </th>
-
-                </tr>
-
-              </thead>
-
-
-              <tbody
-                id="recentContributionRows"
-              >
-
-                <tr>
-
-                  <td colspan="3">
-                    Loading...
-                  </td>
-
-                </tr>
-
-              </tbody>
-
-            </table>
-
-          </div>
-
-        </div>
-
-
-
-        <!-- =================================================
-             RECENT EXPENSES
-        ================================================== -->
-
-        <div class="card">
-
-          <div class="section-heading">
-
-            <div>
+            <div class="section-heading">
 
               <div class="eyebrow">
-                RECENT ACTIVITY
+                EXPENSES
               </div>
+
 
               <h2>
                 Recent Expenses
               </h2>
+
 
               <p class="muted">
                 Latest group spending.
@@ -852,86 +853,77 @@
             </div>
 
 
-            <a
-              href="expenses.html"
-              class="btn btn-secondary"
-            >
-              View all
-            </a>
+            <div class="table-wrap">
+
+              <table class="table">
+
+                <thead>
+
+                  <tr>
+
+                    <th>
+                      Description
+                    </th>
+
+                    <th>
+                      Amount
+                    </th>
+
+                    <th>
+                      Status
+                    </th>
+
+                  </tr>
+
+                </thead>
+
+
+                <tbody
+                  id="recentExpenseRows"
+                >
+
+                  <tr>
+
+                    <td colspan="3">
+                      Loading...
+                    </td>
+
+                  </tr>
+
+                </tbody>
+
+              </table>
+
+            </div>
 
           </div>
 
-
-          <div class="table-wrap">
-
-            <table class="table">
-
-              <thead>
-
-                <tr>
-
-                  <th>
-                    Description
-                  </th>
-
-                  <th>
-                    Amount
-                  </th>
-
-                  <th>
-                    Status
-                  </th>
-
-                </tr>
-
-              </thead>
-
-
-              <tbody
-                id="recentExpenseRows"
-              >
-
-                <tr>
-
-                  <td colspan="3">
-                    Loading...
-                  </td>
-
-                </tr>
-
-              </tbody>
-
-            </table>
-
-          </div>
 
         </div>
 
-      </div>
-
-    </section>
+      </section>
 
 
 
-    <!-- =================================================
-         UPCOMING MEETINGS
-    ================================================== -->
+      <!-- =================================================
+           UPCOMING MEETINGS
+      ================================================== -->
 
-    <section
-      class="card upcoming-meetings-card"
-    >
+      <section
+        class="card meetings-card"
+      >
 
-      <div class="section-heading">
-
-        <div>
+        <div class="section-heading">
 
           <div class="eyebrow">
             ORGANISATION
           </div>
 
+
           <h2>
             Upcoming Meetings
           </h2>
+
 
           <p class="muted">
             Keep your group organised.
@@ -940,1011 +932,75 @@
         </div>
 
 
-        <a
-          href="meetings.html"
-          class="btn btn-secondary"
-        >
-          View meetings
-        </a>
+        <div class="table-wrap">
 
-      </div>
+          <table class="table">
 
+            <thead>
 
-      <div class="table-wrap">
+              <tr>
 
-        <table class="table">
+                <th>
+                  Date
+                </th>
 
-          <thead>
+                <th>
+                  Meeting
+                </th>
 
-            <tr>
+                <th>
+                  Venue
+                </th>
 
-              <th>
-                Date
-              </th>
+                <th>
+                  Status
+                </th>
 
-              <th>
-                Meeting
-              </th>
+              </tr>
 
-              <th>
-                Venue
-              </th>
-
-              <th>
-                Status
-              </th>
-
-            </tr>
-
-          </thead>
+            </thead>
 
 
-          <tbody
-            id="upcomingMeetingRows"
-          >
+            <tbody
+              id="upcomingMeetingRows"
+            >
 
-            <tr>
+              <tr>
 
-              <td colspan="4">
-                Loading...
-              </td>
+                <td colspan="4">
+                  Loading...
+                </td>
 
-            </tr>
+              </tr>
 
-          </tbody>
+            </tbody>
 
-        </table>
-
-      </div>
-
-    </section>
-
-
-  </main>
-
-</div>
-
-
-<!-- =====================================================
-     DASHBOARD PAGE SCRIPT
-===================================================== -->
-
-<script
-  type="module"
-  src="js/layout.js"
-></script>
-
-
-<script
-  type="module"
-  src="js/dashboard.js"
-></script>
-
-
-</body>
-
-</html>
-      <!-- =================================================
-     RECENT ACTIVITY — CONTINUED
-================================================== -->
-
-    <!-- =================================================
-         RECENT CONTRIBUTIONS
-    ================================================== -->
-
-    <section class="card activity-card">
-
-      <div class="section-heading">
-
-        <div>
-
-          <div class="eyebrow">
-            CONTRIBUTIONS
-          </div>
-
-          <h2>
-            Recent Contributions
-          </h2>
-
-          <p class="muted">
-            Latest money received
-          </p>
+          </table>
 
         </div>
 
-
-        <a
-          href="contributions.html"
-          class="btn btn-secondary btn-small"
-        >
-          View all
-        </a>
-
-      </div>
+      </section>
 
 
-      <div class="table-wrap">
-
-        <table class="table">
-
-          <thead>
-
-            <tr>
-
-              <th>
-                Member
-              </th>
-
-              <th>
-                Amount
-              </th>
-
-              <th>
-                Date
-              </th>
-
-            </tr>
-
-          </thead>
-
-
-          <tbody id="recentContributionRows">
-
-            <tr>
-
-              <td colspan="3">
-                Loading...
-              </td>
-
-            </tr>
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-    </section>
-
-
-
-    <!-- =================================================
-         RECENT EXPENSES
-    ================================================== -->
-
-    <section class="card activity-card">
-
-      <div class="section-heading">
-
-        <div>
-
-          <div class="eyebrow">
-            EXPENSES
-          </div>
-
-          <h2>
-            Recent Expenses
-          </h2>
-
-          <p class="muted">
-            Latest group spending
-          </p>
-
-        </div>
-
-
-        <a
-          href="expenses.html"
-          class="btn btn-secondary btn-small"
-        >
-          View all
-        </a>
-
-      </div>
-
-
-      <div class="table-wrap">
-
-        <table class="table">
-
-          <thead>
-
-            <tr>
-
-              <th>
-                Description
-              </th>
-
-              <th>
-                Amount
-              </th>
-
-              <th>
-                Status
-              </th>
-
-            </tr>
-
-          </thead>
-
-
-          <tbody id="recentExpenseRows">
-
-            <tr>
-
-              <td colspan="3">
-                Loading...
-              </td>
-
-            </tr>
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-    </section>
+    </main>
 
   </div>
 
-</section>
 
 
-
-<!-- =================================================
-     UPCOMING MEETINGS
-================================================== -->
-
-<section class="card meetings-card">
-
-  <div class="section-heading">
-
-    <div>
-
-      <div class="eyebrow">
-        CALENDAR
-      </div>
-
-      <h2>
-        Upcoming Meetings
-      </h2>
-
-      <p class="muted">
-        Keep your group organised
-      </p>
-
-    </div>
-
-
-    <a
-      href="meetings.html"
-      class="btn btn-secondary btn-small"
-    >
-      View meetings
-    </a>
-
-  </div>
-
-
-  <div class="table-wrap">
-
-    <table class="table">
-
-      <thead>
-
-        <tr>
-
-          <th>
-            Date
-          </th>
-
-          <th>
-            Meeting
-          </th>
-
-          <th>
-            Venue
-          </th>
-
-          <th>
-            Status
-          </th>
-
-        </tr>
-
-      </thead>
-
-
-      <tbody id="upcomingMeetingRows">
-
-        <tr>
-
-          <td colspan="4">
-            Loading...
-          </td>
-
-        </tr>
-
-      </tbody>
-
-    </table>
-
-  </div>
-
-</section>
-
-
-
-<!-- =================================================
-     DASHBOARD ACTIVITY MOBILE CSS
-================================================== -->
-
-<style>
-
-  .recent-activity {
-    margin-bottom: 24px;
-  }
-
-
-  .recent-activity > .grid {
-    gap: 18px;
-  }
-
-
-  .activity-card,
-  .meetings-card {
-    min-width: 0;
-  }
-
-
-  .activity-card
-  .section-heading,
-  .meetings-card
-  .section-heading {
-
-    display: flex;
-
-    align-items: flex-start;
-
-    justify-content: space-between;
-
-    gap: 15px;
-
-    margin-bottom: 16px;
-
-  }
-
-
-  .activity-card h2,
-  .meetings-card h2 {
-
-    margin-bottom: 4px;
-
-  }
-
-
-  .btn-small {
-
-    padding:
-      7px 11px;
-
-    font-size: 11px;
-
-    white-space: nowrap;
-
-    flex-shrink: 0;
-
-  }
-
-
-  .meetings-card {
-    margin-bottom: 30px;
-  }
-
-
-
-  /* =====================================================
-     MOBILE
-  ===================================================== */
-
-  @media (max-width: 650px) {
-
-    .recent-activity > .grid {
-
-      grid-template-columns:
-        1fr !important;
-
-      gap: 12px;
-
-    }
-
-
-    .activity-card,
-    .meetings-card {
-
-      padding:
-        16px 12px;
-
-      border-radius:
-        17px;
-
-    }
-
-
-    .activity-card h2,
-    .meetings-card h2 {
-
-      font-size:
-        17px;
-
-    }
-
-
-    .activity-card .eyebrow,
-    .meetings-card .eyebrow {
-
-      font-size:
-        9px;
-
-    }
-
-
-    .activity-card .muted,
-    .meetings-card .muted {
-
-      font-size:
-        11px;
-
-    }
-
-
-    .activity-card
-    .table-wrap,
-    .meetings-card
-    .table-wrap {
-
-      overflow-x:
-        auto;
-
-      -webkit-overflow-scrolling:
-        touch;
-
-    }
-
-
-    .activity-card table {
-
-      min-width:
-        480px;
-
-    }
-
-
-    .meetings-card table {
-
-      min-width:
-        620px;
-
-    }
-
-
-    .activity-card th,
-    .activity-card td,
-    .meetings-card th,
-    .meetings-card td {
-
-      padding:
-        10px 8px;
-
-      font-size:
-        11px;
-
-    }
-
-
-    .activity-card th,
-    .meetings-card th {
-
-      font-size:
-        10px;
-
-    }
-
-
-    .btn-small {
-
-      padding:
-        6px 9px;
-
-      font-size:
-        10px;
-
-    }
-
-  }
-
-
-
-  /* =====================================================
-     SMALL PHONES
-  ===================================================== */
-
-  @media (max-width: 390px) {
-
-    .activity-card,
-    .meetings-card {
-
-      padding:
-        14px 10px;
-
-    }
-
-
-    .activity-card
-    .section-heading,
-    .meetings-card
-    .section-heading {
-
-      gap:
-        8px;
-
-    }
-
-
-    .btn-small {
-
-      font-size:
-        9px;
-
-      padding:
-        6px 8px;
-
-    }
-
-  }
-
-</style>
-
-
-
-<!-- =================================================
-     DASHBOARD MOBILE QUICK ACTION POLISH
-================================================== -->
-
-<style>
-
-  @media (max-width: 650px) {
-
-    .visual-actions {
-
-      margin-top:
-        4px;
-
-      margin-bottom:
-        20px;
-
-    }
-
-
-    .visual-action {
-
-      position:
-        relative;
-
-      overflow:
-        hidden;
-
-      flex-direction:
-        column;
-
-      align-items:
-        flex-start;
-
-      justify-content:
-        center;
-
-      gap:
-        7px;
-
-      min-height:
-        112px;
-
-      padding:
-        14px;
-
-    }
-
-
-    .visual-action-icon {
-
-      width:
-        42px;
-
-      height:
-        42px;
-
-      border-radius:
-        13px;
-
-      font-size:
-        18px;
-
-    }
-
-
-    .visual-action strong {
-
-      font-size:
-        13px;
-
-    }
-
-
-    .visual-action small {
-
-      font-size:
-        10px;
-
-    }
-
-
-    .visual-action::after {
-
-      content:
-        "›";
-
-      position:
-        absolute;
-
-      right:
-        12px;
-
-      top:
-        12px;
-
-      font-size:
-        18px;
-
-      opacity:
-        .35;
-
-    }
-
-  }
-
-
-
-  @media (max-width: 390px) {
-
-    .visual-action {
-
-      min-height:
-        102px;
-
-      padding:
-        12px;
-
-    }
-
-
-    .visual-action-icon {
-
-      width:
-        38px;
-
-      height:
-        38px;
-
-      font-size:
-        16px;
-
-    }
-
-
-    .visual-action strong {
-
-      font-size:
-        12px;
-
-    }
-
-
-    .visual-action small {
-
-      font-size:
-        9px;
-
-    }
-
-  }
-
-</style>
-
-
-
-<!-- =================================================
-     PAGE FOOTER
-================================================== -->
-
-<footer
-  class="app-footer"
-  style="
-    margin-top:30px;
-    padding:20px 0;
-    text-align:center;
-  "
->
-
-  <p class="muted">
-    CHAMA LIVE
-  </p>
-
-  <p
-    class="muted"
-    style="font-size:11px;"
-  >
-    Digital group management made simple.
-  </p>
-
-</footer>
-
-
-
-<!-- =================================================
-     DASHBOARD SCRIPT
-================================================== -->
-
-<script
-  type="module"
-  src="js/layout.js"
-></script>
-
-
-<script
-  type="module"
->
-
-  import {
-    initDashboard
-  } from "./js/dashboard.js";
-
-
-  /*
-   * layout.js handles authentication,
-   * global layout and mobile navigation.
-   *
-   * dashboard.js handles dashboard data.
-   */
-
-  document.addEventListener(
-    "DOMContentLoaded",
-    async () => {
-
-      try {
-
-        await initDashboard();
-
-      } catch (error) {
-
-        console.error(
-          "Dashboard initialization error:",
-          error
-        );
-
-      }
-
-    }
-  );
-
-</script>
-
-
-</body>
-
-</html>
-<!-- =====================================================
-     FINAL DASHBOARD STYLES
-===================================================== -->
-
-<style>
-
-  /* Prevent content from hiding behind mobile navigation */
-  @media (max-width: 650px) {
-
-    body {
-      padding-bottom: 76px;
-    }
-
-
-    .main {
-      padding-bottom: 90px !important;
-    }
-
-
-    .app-footer {
-      padding-bottom: 20px;
-    }
-
-  }
-
-
-  /* ===================================================
-     MOBILE QUICK ACTIONS
-  =================================================== */
-
-  @media (max-width: 650px) {
-
-    .visual-actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-
-    .visual-action {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      justify-content: center;
-
-      min-height: 108px;
-
-      padding: 14px;
-
-      border-radius: 17px;
-
-      text-decoration: none;
-
-      background:
-        var(--card-bg, #ffffff);
-
-      border:
-        1px solid rgba(0,0,0,.07);
-
-      box-shadow:
-        0 4px 14px rgba(0,0,0,.05);
-
-      position: relative;
-    }
-
-
-    .visual-action-icon {
-      width: 42px;
-      height: 42px;
-
-      display: flex;
-      align-items: center;
-      justify-content: center;
-
-      border-radius: 13px;
-
-      background: #f1f5f9;
-
-      font-size: 18px;
-
-      margin-bottom: 7px;
-    }
-
-
-    .visual-action strong {
-      font-size: 13px;
-      line-height: 1.2;
-    }
-
-
-    .visual-action small {
-      font-size: 10px;
-      line-height: 1.3;
-      margin-top: 3px;
-    }
-
-
-    .visual-action::after {
-      content: "›";
-
-      position: absolute;
-
-      right: 11px;
-      top: 9px;
-
-      font-size: 18px;
-
-      opacity: .35;
-    }
-
-  }
-
-
-  /* ===================================================
-     SMALL PHONES
-  =================================================== */
-
-  @media (max-width: 390px) {
-
-    .visual-actions {
-      gap: 8px;
-    }
-
-
-    .visual-action {
-      min-height: 98px;
-      padding: 11px;
-    }
-
-
-    .visual-action-icon {
-      width: 38px;
-      height: 38px;
-
-      border-radius: 11px;
-
-      font-size: 16px;
-    }
-
-
-    .visual-action strong {
-      font-size: 12px;
-    }
-
-
-    .visual-action small {
-      font-size: 9px;
-    }
-
-  }
-
-</style>
-
-
-
-<!-- =====================================================
-     DASHBOARD INITIALIZATION
-===================================================== -->
-
-<script type="module">
-
-  import {
-    initDashboard
-  } from "./js/dashboard.js";
-
-
-  /*
-   * dashboard.js loads the actual dashboard data.
-   */
-
-  document.addEventListener(
-    "DOMContentLoaded",
-    async () => {
-
-      try {
-
-        await initDashboard();
-
-      } catch (error) {
-
-        console.error(
-          "CHAMA LIVE: Dashboard initialization failed:",
-          error
-        );
-
-      }
-
-    }
-  );
-
-</script>
-
-
-
-<!-- =====================================================
-     GLOBAL LAYOUT
-===================================================== -->
-
-<script
-  type="module"
-  src="./js/layout.js"
-></script>
+  <!-- =====================================================
+       CHAMA LIVE GLOBAL LAYOUT
+       
+       IMPORTANT:
+       layout.js automatically loads dashboard.js.
+       
+       Do NOT add dashboard.js separately.
+  ====================================================== -->
+
+  <script
+    type="module"
+    src="js/layout.js"
+  ></script>
 
 
 </body>
