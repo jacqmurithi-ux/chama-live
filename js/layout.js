@@ -1,3 +1,4 @@
+
 import {
   requireAuth,
   getMyMember,
@@ -21,7 +22,6 @@ console.log(
 
 let currentMember = null;
 let currentGroup = null;
-let pageScriptLoaded = false;
 
 
 /* =========================================================
@@ -36,9 +36,55 @@ function byId(id) {
 
 
 /* =========================================================
-   GLOBAL MOBILE NAVIGATION STYLES
-   Injected by layout.js.
-   No app.css editing required.
+   DISPLAY USER
+========================================================= */
+
+function displayUser(member) {
+
+  const name =
+    member?.name ||
+    member?.full_name ||
+    "Member";
+
+
+  document
+    .querySelectorAll("[data-user-name]")
+    .forEach(element => {
+
+      element.textContent = name;
+
+    });
+
+}
+
+
+/* =========================================================
+   DISPLAY GROUP
+========================================================= */
+
+function displayGroup(group) {
+
+  const name =
+    group?.name ||
+    group?.group_name ||
+    "CHAMA";
+
+
+  document
+    .querySelectorAll("[data-group-name]")
+    .forEach(element => {
+
+      element.textContent = name;
+
+    });
+
+}
+
+
+/* =========================================================
+   MOBILE NAVIGATION STYLES
+   Injected from layout.js.
+   app.css does NOT need to be edited.
 ========================================================= */
 
 function injectMobileNavigationStyles() {
@@ -48,7 +94,9 @@ function injectMobileNavigationStyles() {
       "chama-global-mobile-styles"
     )
   ) {
+
     return;
+
   }
 
 
@@ -63,7 +111,7 @@ function injectMobileNavigationStyles() {
   style.textContent = `
 
     /* =====================================================
-       MOBILE NAVIGATION — DESKTOP DEFAULT
+       DESKTOP
     ===================================================== */
 
     .mobile-bottom-nav {
@@ -72,45 +120,33 @@ function injectMobileNavigationStyles() {
 
 
     /* =====================================================
-       MOBILE DEVICES
+       MOBILE
     ===================================================== */
 
     @media (max-width: 650px) {
 
-      /* ---------------------------------------------------
-         HIDE DESKTOP SIDEBAR
-      --------------------------------------------------- */
-
+      /* Hide desktop sidebar */
       .sidebar {
         display: none !important;
       }
 
 
-      /* ---------------------------------------------------
-         HIDE HAMBURGER
-      --------------------------------------------------- */
-
+      /* Hide hamburger */
       .menu-toggle {
         display: none !important;
       }
 
 
-      /* ---------------------------------------------------
-         FULL WIDTH LAYOUT
-      --------------------------------------------------- */
-
+      /* Full-width application */
       .layout {
         display: block !important;
         width: 100% !important;
-        min-width: 0 !important;
       }
 
 
       .main {
         width: 100% !important;
         max-width: 100% !important;
-        min-width: 0 !important;
-
         margin: 0 !important;
 
         padding:
@@ -118,40 +154,28 @@ function injectMobileNavigationStyles() {
           14px
           96px
           14px !important;
-
-        box-sizing: border-box;
       }
 
 
-      /* ---------------------------------------------------
-         TOP BAR
-      --------------------------------------------------- */
-
+      /* Top bar */
       .topbar {
         width: 100%;
-
         position: sticky;
-
         top: 0;
-
         z-index: 1000;
-
-        box-sizing: border-box;
       }
 
 
-      /* ---------------------------------------------------
-         MOBILE BOTTOM NAVIGATION
-      --------------------------------------------------- */
+      /* ===================================================
+         MOBILE BOTTOM NAV
+      =================================================== */
 
       .mobile-bottom-nav {
 
         position: fixed;
 
         left: 0;
-
         right: 0;
-
         bottom: 0;
 
         z-index: 99999;
@@ -159,7 +183,7 @@ function injectMobileNavigationStyles() {
         display: grid;
 
         grid-template-columns:
-          repeat(5, minmax(0, 1fr));
+          repeat(5, 1fr);
 
         align-items: stretch;
 
@@ -173,29 +197,28 @@ function injectMobileNavigationStyles() {
             env(safe-area-inset-bottom)
           );
 
-        box-sizing: border-box;
-
         background:
-          rgba(255, 255, 255, 0.98);
+          rgba(255,255,255,.98);
 
         border-top:
           1px solid #e5e7eb;
 
         box-shadow:
           0 -5px 20px
-          rgba(0, 0, 0, 0.08);
+          rgba(0,0,0,.08);
 
         backdrop-filter:
           blur(14px);
 
         -webkit-backdrop-filter:
           blur(14px);
+
       }
 
 
-      /* ---------------------------------------------------
-         NAVIGATION ITEM
-      --------------------------------------------------- */
+      /* ===================================================
+         NAV ITEM
+      =================================================== */
 
       .mobile-nav-item {
 
@@ -218,18 +241,21 @@ function injectMobileNavigationStyles() {
         border-radius: 13px;
 
         transition:
-          background 0.2s ease,
-          color 0.2s ease,
-          transform 0.2s ease;
+          background .2s ease,
+          color .2s ease,
+          transform .2s ease;
 
-        -webkit-tap-highlight-color:
-          transparent;
       }
 
 
-      /* ---------------------------------------------------
+      .mobile-nav-item:active {
+        transform: scale(.96);
+      }
+
+
+      /* ===================================================
          ICON
-      --------------------------------------------------- */
+      =================================================== */
 
       .mobile-nav-icon {
 
@@ -240,7 +266,6 @@ function injectMobileNavigationStyles() {
         justify-content: center;
 
         width: 30px;
-
         height: 30px;
 
         font-size: 21px;
@@ -248,12 +273,13 @@ function injectMobileNavigationStyles() {
         line-height: 1;
 
         font-weight: 700;
+
       }
 
 
-      /* ---------------------------------------------------
+      /* ===================================================
          LABEL
-      --------------------------------------------------- */
+      =================================================== */
 
       .mobile-nav-label {
 
@@ -264,28 +290,29 @@ function injectMobileNavigationStyles() {
         font-weight: 600;
 
         white-space: nowrap;
+
       }
 
 
-      /* ---------------------------------------------------
+      /* ===================================================
          ACTIVE PAGE
-      --------------------------------------------------- */
+      =================================================== */
 
       .mobile-nav-item.active {
 
         color: #0f766e;
 
         background:
-          rgba(15, 118, 110, 0.09);
+          rgba(15,118,110,.09);
+
       }
 
 
-      /* ---------------------------------------------------
+      /* ===================================================
          CENTER CONTRIBUTION BUTTON
-      --------------------------------------------------- */
+      =================================================== */
 
       .mobile-nav-main {
-
         position: relative;
       }
 
@@ -294,7 +321,6 @@ function injectMobileNavigationStyles() {
       .mobile-nav-icon {
 
         width: 43px;
-
         height: 43px;
 
         margin-top: -18px;
@@ -310,9 +336,10 @@ function injectMobileNavigationStyles() {
 
         box-shadow:
           0 5px 15px
-          rgba(15, 118, 110, 0.30);
+          rgba(15,118,110,.30);
 
         font-size: 25px;
+
       }
 
 
@@ -320,26 +347,21 @@ function injectMobileNavigationStyles() {
       .mobile-nav-label {
 
         color: #0f766e;
+
       }
 
-
-      /* ---------------------------------------------------
-         ACTIVE CENTER BUTTON
-      --------------------------------------------------- */
 
       .mobile-nav-main.active
       .mobile-nav-icon {
 
         background: #115e59;
 
-        transform:
-          translateY(-1px);
       }
 
 
-      /* ---------------------------------------------------
+      /* ===================================================
          TABLES
-      --------------------------------------------------- */
+      =================================================== */
 
       .table-wrap {
 
@@ -351,12 +373,13 @@ function injectMobileNavigationStyles() {
 
         -webkit-overflow-scrolling:
           touch;
+
       }
 
 
-      /* ---------------------------------------------------
-         DASHBOARD ACTIONS
-      --------------------------------------------------- */
+      /* ===================================================
+         ACTION BUTTONS
+      =================================================== */
 
       .actions {
 
@@ -365,9 +388,10 @@ function injectMobileNavigationStyles() {
         display: grid;
 
         grid-template-columns:
-          repeat(2, minmax(0, 1fr));
+          repeat(2, minmax(0,1fr));
 
         gap: 8px;
+
       }
 
 
@@ -376,94 +400,89 @@ function injectMobileNavigationStyles() {
         width: 100%;
 
         justify-content: center;
+
       }
 
 
-      /* ---------------------------------------------------
+      /* ===================================================
          QUICK ACTIONS
-      --------------------------------------------------- */
+      =================================================== */
 
       .quick-actions {
 
         display: grid;
 
         grid-template-columns:
-          repeat(2, minmax(0, 1fr));
+          repeat(2,minmax(0,1fr));
 
         gap: 10px;
+
       }
 
 
       .quick-action {
 
         min-height: 78px;
+
       }
 
 
-      /* ---------------------------------------------------
+      /* ===================================================
          DASHBOARD METRICS
-      --------------------------------------------------- */
+      =================================================== */
 
       .dashboard-metrics {
 
         display: grid;
 
         grid-template-columns:
-          repeat(2, minmax(0, 1fr));
+          repeat(2,minmax(0,1fr));
 
         gap: 10px;
+
       }
 
 
-      /* ---------------------------------------------------
-         TWO COLUMN GRID
-      --------------------------------------------------- */
+      /* ===================================================
+         GRIDS
+      =================================================== */
 
       .grid-2 {
 
         grid-template-columns:
           1fr !important;
+
       }
 
-
-      /* ---------------------------------------------------
-         THREE COLUMN GRID
-      --------------------------------------------------- */
 
       .grid-3 {
 
         grid-template-columns:
-          repeat(2, minmax(0, 1fr));
+          repeat(2,minmax(0,1fr));
+
       }
 
 
-      /* ---------------------------------------------------
+      /* ===================================================
          PAGE HEADER
-      --------------------------------------------------- */
+      =================================================== */
 
       .page-head {
-
         width: 100%;
-
-        min-width: 0;
       }
 
 
       .page-head h1 {
-
         font-size: 26px;
       }
 
 
-      /* ---------------------------------------------------
+      /* ===================================================
          CARDS
-      --------------------------------------------------- */
+      =================================================== */
 
       .card {
-
         max-width: 100%;
-
-        min-width: 0;
       }
 
     }
@@ -476,30 +495,21 @@ function injectMobileNavigationStyles() {
     @media (max-width: 390px) {
 
       .mobile-bottom-nav {
-
         height: 68px;
-      }
-
-
-      .main {
-
-        padding-bottom:
-          90px !important;
       }
 
 
       .mobile-nav-icon {
 
         width: 27px;
-
         height: 27px;
 
         font-size: 19px;
+
       }
 
 
       .mobile-nav-label {
-
         font-size: 8px;
       }
 
@@ -508,31 +518,25 @@ function injectMobileNavigationStyles() {
       .mobile-nav-icon {
 
         width: 39px;
-
         height: 39px;
 
         font-size: 22px;
+
       }
 
 
       .quick-actions {
-
-        grid-template-columns:
-          1fr;
+        grid-template-columns: 1fr;
       }
 
 
       .dashboard-metrics {
-
-        grid-template-columns:
-          1fr;
+        grid-template-columns: 1fr;
       }
 
 
       .actions {
-
-        grid-template-columns:
-          1fr;
+        grid-template-columns: 1fr;
       }
 
     }
@@ -540,323 +544,558 @@ function injectMobileNavigationStyles() {
   `;
 
 
-  document.head.appendChild(
-    style
-  );
+  document.head.appendChild(style);
 
 
   console.log(
-    "CHAMA LIVE: mobile CSS injected."
+    "CHAMA LIVE: mobile navigation CSS injected."
   );
 
 }
+
 /* =========================================================
-   PAGE NAME / PAGE SCRIPT
+   MOBILE NAVIGATION
 ========================================================= */
 
-function getPageScript() {
+function setupMobileNavigation() {
 
-  const path =
+  /*
+   * Prevent duplicate navigation.
+   */
+
+  if (
+    document.querySelector(
+      ".mobile-bottom-nav"
+    )
+  ) {
+
+    return;
+
+  }
+
+
+  /*
+   * Create navigation.
+   */
+
+  const nav =
+    document.createElement("nav");
+
+
+  nav.className =
+    "mobile-bottom-nav";
+
+
+  nav.setAttribute(
+    "aria-label",
+    "Mobile navigation"
+  );
+
+
+  /*
+   * Five primary mobile destinations.
+   *
+   * Home
+   * Members
+   * Contributions
+   * Expenses
+   * Meetings
+   */
+
+  nav.innerHTML = `
+
+    <a
+      href="dashboard.html"
+      class="mobile-nav-item"
+      data-page="dashboard.html"
+    >
+
+      <span
+        class="mobile-nav-icon"
+        aria-hidden="true"
+      >
+        ⌂
+      </span>
+
+      <span class="mobile-nav-label">
+        Home
+      </span>
+
+    </a>
+
+
+    <a
+      href="members.html"
+      class="mobile-nav-item"
+      data-page="members.html"
+    >
+
+      <span
+        class="mobile-nav-icon"
+        aria-hidden="true"
+      >
+        ♙
+      </span>
+
+      <span class="mobile-nav-label">
+        Members
+      </span>
+
+    </a>
+
+
+    <a
+      href="contributions.html"
+      class="mobile-nav-item mobile-nav-main"
+      data-page="contributions.html"
+    >
+
+      <span
+        class="mobile-nav-icon"
+        aria-hidden="true"
+      >
+        +
+      </span>
+
+      <span class="mobile-nav-label">
+        Contribute
+      </span>
+
+    </a>
+
+
+    <a
+      href="expenses.html"
+      class="mobile-nav-item"
+      data-page="expenses.html"
+    >
+
+      <span
+        class="mobile-nav-icon"
+        aria-hidden="true"
+      >
+        −
+      </span>
+
+      <span class="mobile-nav-label">
+        Expenses
+      </span>
+
+    </a>
+
+
+    <a
+      href="meetings.html"
+      class="mobile-nav-item"
+      data-page="meetings.html"
+    >
+
+      <span
+        class="mobile-nav-icon"
+        aria-hidden="true"
+      >
+        ◷
+      </span>
+
+      <span class="mobile-nav-label">
+        Meetings
+      </span>
+
+    </a>
+
+  `;
+
+
+  /*
+   * Add navigation to body.
+   */
+
+  document.body.appendChild(nav);
+
+
+  /*
+   * Determine current page.
+   */
+
+  let currentPage =
     window.location.pathname
       .split("/")
       .pop()
       .toLowerCase();
 
 
-  const pageScripts = {
+  /*
+   * If the site is opened from
+   * the root without a filename,
+   * treat it as dashboard.
+   */
 
-    "dashboard.html":
-      "dashboard.js",
+  if (!currentPage) {
 
-    "members.html":
-      "members.js",
+    currentPage =
+      "dashboard.html";
 
-    "contributions.html":
-      "contributions.js",
-
-    "expenses.html":
-      "expenses.js",
-
-    "meetings.html":
-      "meetings.js",
-
-    "reports.html":
-      "reports.js",
-
-    "monthly-closing.html":
-      "monthly-closing.js",
-
-    "group-management.html":
-      "group-management.js"
-
-  };
+  }
 
 
-  return pageScripts[path] || null;
+  /*
+   * Highlight current page.
+   */
+
+  nav
+    .querySelectorAll(
+      ".mobile-nav-item"
+    )
+    .forEach(item => {
+
+      const page =
+        String(
+          item.dataset.page || ""
+        ).toLowerCase();
+
+
+      if (
+        page === currentPage
+      ) {
+
+        item.classList.add(
+          "active"
+        );
+
+      }
+
+    });
+
+
+  /*
+   * Give immediate visual feedback
+   * when a navigation item is tapped.
+   */
+
+  nav
+    .querySelectorAll("a")
+    .forEach(link => {
+
+      link.addEventListener(
+        "click",
+        () => {
+
+          nav
+            .querySelectorAll(
+              ".mobile-nav-item"
+            )
+            .forEach(item => {
+
+              item.classList.remove(
+                "active"
+              );
+
+            });
+
+
+          link.classList.add(
+            "active"
+          );
+
+        }
+      );
+
+    });
+
+
+  console.log(
+    "CHAMA LIVE: mobile navigation ready."
+  );
 
 }
 
 
+
 /* =========================================================
-   LOAD PAGE SCRIPT
+   LOGOUT
 ========================================================= */
 
-async function loadPageScript() {
+function setupLogout() {
 
-  if (pageScriptLoaded) {
+  const logoutButton =
+    byId("logout");
+
+
+  if (!logoutButton) {
+
+    return;
+
+  }
+
+
+  /*
+   * Prevent duplicate listeners.
+   */
+
+  if (
+    logoutButton.dataset
+      .layoutLogoutReady === "true"
+  ) {
 
     return;
 
   }
 
 
-  const script =
-    getPageScript();
+  logoutButton.dataset
+    .layoutLogoutReady = "true";
 
 
-  if (!script) {
+  logoutButton.addEventListener(
+    "click",
+    async () => {
 
-    console.log(
-      "CHAMA LIVE: No page-specific script for this page."
-    );
+      /*
+       * Prevent repeated clicks.
+       */
 
-    return;
+      logoutButton.disabled =
+        true;
 
-  }
+
+      const originalText =
+        logoutButton.textContent;
+
+
+      logoutButton.textContent =
+        "Signing out...";
+
+
+      try {
+
+        await signOut();
+
+
+      } catch (error) {
+
+        console.error(
+          "CHAMA LIVE: logout failed:",
+          error
+        );
+
+
+        logoutButton.disabled =
+          false;
+
+
+        logoutButton.textContent =
+          originalText ||
+          "Sign out";
+
+      }
+
+    }
+  );
+
 
 
   console.log(
-    "CHAMA LIVE: Loading page script:",
-    script
+    "CHAMA LIVE: logout ready."
   );
 
+      }
+/* =========================================================
+   LOAD USER / GROUP INFORMATION
+========================================================= */
+
+async function loadLayoutData() {
 
   try {
 
     /*
-     * All page-specific JavaScript files
-     * are inside the /js/ folder.
+     * Get the currently authenticated member.
      */
 
-    await import(
-      `./${script}`
-    );
+    currentMember =
+      await getMyMember();
 
 
-    pageScriptLoaded =
-      true;
+    /*
+     * A valid member must have a group.
+     */
 
+    if (
+      !currentMember ||
+      !currentMember.group_id
+    ) {
 
-    console.log(
-      "CHAMA LIVE: Page script loaded:",
-      script
-    );
-
-  } catch (error) {
-
-    console.error(
-      `CHAMA LIVE: Unable to load ${script}:`,
-      error
-    );
-
-
-    const errorBox =
-      byId("error");
-
-
-    if (errorBox) {
-
-      errorBox.hidden =
-        false;
-
-
-      errorBox.textContent =
-        `Unable to load ${script}. Check that /js/${script} exists and contains valid JavaScript.`;
-
-    }
-
-  }
-
-}
-
-
-/* =========================================================
-   BOOT
-========================================================= */
-
-export async function boot() {
-
-  try {
-
-    console.log(
-      "CHAMA LIVE: booting..."
-    );
-
-
-    /* -----------------------------------------------------
-       1. REQUIRE AUTHENTICATION
-    ----------------------------------------------------- */
-
-    const session =
-      await requireAuth();
-
-
-    if (!session) {
+      console.warn(
+        "CHAMA LIVE: No linked member/group found."
+      );
 
       return;
 
     }
 
 
-    /* -----------------------------------------------------
-       2. GET CURRENT MEMBER
-    ----------------------------------------------------- */
+    /*
+     * Get the member's group.
+     */
 
-    currentMember =
-      await getMyMember();
-
-
-    if (!currentMember) {
-
-      throw new Error(
-        "Your account is authenticated, but no member record was found."
-      );
-
-    }
+    currentGroup =
+      await getMyGroup();
 
 
-    /* -----------------------------------------------------
-       3. CHECK GROUP LINK
-    ----------------------------------------------------- */
-
-    if (
-      !currentMember.group_id
-    ) {
-
-      throw new Error(
-        "Your member account is not linked to a group."
-      );
-
-    }
-
-
-    /* -----------------------------------------------------
-       4. GET CURRENT GROUP
-    ----------------------------------------------------- */
-
-    try {
-
-      currentGroup =
-        await getMyGroup();
-
-    } catch (groupError) {
-
-      console.warn(
-        "CHAMA LIVE: getMyGroup failed:",
-        groupError
-      );
-
-
-      /*
-       * Continue using the group_id from
-       * the member record.
-       */
-
-      currentGroup = {
-
-        id:
-          currentMember.group_id
-
-      };
-
-    }
-
-
-    /* -----------------------------------------------------
-       5. DISPLAY MEMBER NAME
-    ----------------------------------------------------- */
+    /*
+     * Display information across
+     * all pages using data attributes.
+     */
 
     displayUser(
       currentMember
     );
 
 
-    /* -----------------------------------------------------
-       6. DISPLAY GROUP NAME
-    ----------------------------------------------------- */
-
     displayGroup(
       currentGroup
     );
 
 
-    /* -----------------------------------------------------
-       7. SETUP LOGOUT
-    ----------------------------------------------------- */
-
-    setupLogout();
-
-
-    /* -----------------------------------------------------
-       8. INJECT MOBILE NAVIGATION CSS
-    ----------------------------------------------------- */
-
-    injectMobileNavigationStyles();
-
-
-    /* -----------------------------------------------------
-       9. CREATE MOBILE NAVIGATION
-    ----------------------------------------------------- */
-
-    setupMobileNavigation();
-
-
-    /* -----------------------------------------------------
-       10. LOAD CURRENT PAGE SCRIPT
-    ----------------------------------------------------- */
-
-    await loadPageScript();
-
-
-    /* -----------------------------------------------------
-       READY
-    ----------------------------------------------------- */
-
     console.log(
-      "CHAMA LIVE: application ready."
+      "CHAMA LIVE: layout data loaded.",
+      {
+        member: currentMember,
+        group: currentGroup
+      }
     );
+
 
   } catch (error) {
 
     console.error(
-      "CHAMA LIVE boot error:",
+      "CHAMA LIVE: unable to load layout data:",
       error
     );
-
-
-    const errorBox =
-      byId("error");
-
-
-    if (errorBox) {
-
-      errorBox.hidden =
-        false;
-
-
-      errorBox.textContent =
-        error?.message ||
-        "Unable to load CHAMA LIVE.";
-
-    }
 
   }
 
 }
 
 
+
 /* =========================================================
-   AUTO START
+   AUTHENTICATION
+========================================================= */
+
+async function initializeAuthentication() {
+
+  try {
+
+    /*
+     * Require an authenticated user.
+     *
+     * auth.js handles the actual
+     * authentication/session check.
+     */
+
+    await requireAuth();
+
+
+    console.log(
+      "CHAMA LIVE: authentication verified."
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "CHAMA LIVE: authentication failed:",
+      error
+    );
+
+
+    /*
+     * Stop layout initialization if
+     * authentication fails.
+     */
+
+    throw error;
+
+  }
+
+}
+
+
+
+/* =========================================================
+   INITIALIZE GLOBAL LAYOUT
+========================================================= */
+
+async function initLayout() {
+
+  /*
+   * Inject mobile CSS first.
+   */
+
+  injectMobileNavigationStyles();
+
+
+  /*
+   * Make sure the user is authenticated.
+   */
+
+  await initializeAuthentication();
+
+
+  /*
+   * Load member and group information.
+   */
+
+  await loadLayoutData();
+
+
+  /*
+   * Set up logout button.
+   */
+
+  setupLogout();
+
+
+  /*
+   * Create mobile navigation.
+   */
+
+  setupMobileNavigation();
+
+
+  console.log(
+    "CHAMA LIVE: global layout initialized."
+  );
+
+}
+
+
+
+/* =========================================================
+   START LAYOUT
+========================================================= */
+
+async function startLayout() {
+
+  try {
+
+    await initLayout();
+
+  } catch (error) {
+
+    console.error(
+      "CHAMA LIVE: layout initialization error:",
+      error
+    );
+
+  }
+
+}
+
+
+
+/* =========================================================
+   DOM READY
 ========================================================= */
 
 if (
@@ -866,11 +1105,7 @@ if (
 
   document.addEventListener(
     "DOMContentLoaded",
-    () => {
-
-      boot();
-
-    },
+    startLayout,
     {
       once: true
     }
@@ -878,6 +1113,6 @@ if (
 
 } else {
 
-  boot();
+  startLayout();
 
-      }
+}
