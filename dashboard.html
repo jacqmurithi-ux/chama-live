@@ -141,6 +141,10 @@
 
       <div>
 
+        <div class="eyebrow">
+          CHAMA OVERVIEW
+        </div>
+
         <h1>
           Dashboard
         </h1>
@@ -183,7 +187,7 @@
 
     <div
       id="status"
-      class="card"
+      class="card status-card"
       style="margin-bottom:20px;"
     >
       Loading dashboard...
@@ -216,7 +220,16 @@
         href="members.html"
         class="quick-action"
       >
-        + Add Member
+
+        <span class="quick-action-icon">
+          +
+        </span>
+
+        <span>
+          <strong>Add Member</strong>
+          <small>Register a member</small>
+        </span>
+
       </a>
 
 
@@ -224,7 +237,16 @@
         href="contributions.html"
         class="quick-action"
       >
-        + Record Contribution
+
+        <span class="quick-action-icon">
+          KSh
+        </span>
+
+        <span>
+          <strong>Record Contribution</strong>
+          <small>Record member payment</small>
+        </span>
+
       </a>
 
 
@@ -232,7 +254,16 @@
         href="expenses.html"
         class="quick-action"
       >
-        + Record Expense
+
+        <span class="quick-action-icon">
+          −
+        </span>
+
+        <span>
+          <strong>Record Expense</strong>
+          <small>Add group expense</small>
+        </span>
+
       </a>
 
 
@@ -240,7 +271,16 @@
         href="meetings.html"
         class="quick-action"
       >
-        + Schedule Meeting
+
+        <span class="quick-action-icon">
+          •
+        </span>
+
+        <span>
+          <strong>Schedule Meeting</strong>
+          <small>Plan your next meeting</small>
+        </span>
+
       </a>
 
     </section>
@@ -251,14 +291,15 @@
          FINANCIAL OVERVIEW
     ================================================== -->
 
-    <div class="grid grid-3">
+    <div class="grid grid-3 dashboard-metrics">
 
 
       <!-- MEMBERS -->
 
-      <div class="card">
+      <div class="card metric-card">
 
-        <div class="muted">
+        <div class="metric-label">
+          <span class="metric-dot"></span>
           Members
         </div>
 
@@ -285,9 +326,10 @@
 
       <!-- MONTHLY EXPECTED -->
 
-      <div class="card">
+      <div class="card metric-card">
 
-        <div class="muted">
+        <div class="metric-label">
+          <span class="metric-dot expected"></span>
           Monthly Expected
         </div>
 
@@ -298,15 +340,20 @@
           —
         </div>
 
+        <div class="muted">
+          Expected this month
+        </div>
+
       </div>
 
 
 
       <!-- MONTHLY COLLECTED -->
 
-      <div class="card">
+      <div class="card metric-card metric-positive">
 
-        <div class="muted">
+        <div class="metric-label">
+          <span class="metric-dot success"></span>
           Monthly Collected
         </div>
 
@@ -317,15 +364,20 @@
           —
         </div>
 
+        <div class="muted">
+          Contributions received
+        </div>
+
       </div>
 
 
 
       <!-- OUTSTANDING -->
 
-      <div class="card">
+      <div class="card metric-card">
 
-        <div class="muted">
+        <div class="metric-label">
+          <span class="metric-dot warning"></span>
           Outstanding
         </div>
 
@@ -336,15 +388,20 @@
           —
         </div>
 
+        <div class="muted">
+          Contributions pending
+        </div>
+
       </div>
 
 
 
       <!-- COLLECTION RATE -->
 
-      <div class="card">
+      <div class="card metric-card metric-positive">
 
-        <div class="muted">
+        <div class="metric-label">
+          <span class="metric-dot success"></span>
           Collection Rate
         </div>
 
@@ -355,15 +412,20 @@
           —
         </div>
 
+        <div class="muted">
+          Monthly performance
+        </div>
+
       </div>
 
 
 
       <!-- CURRENT BALANCE -->
 
-      <div class="card">
+      <div class="card metric-card">
 
-        <div class="muted">
+        <div class="metric-label">
+          <span class="metric-dot balance"></span>
           Current Balance
         </div>
 
@@ -372,6 +434,10 @@
           id="currentBalance"
         >
           —
+        </div>
+
+        <div class="muted">
+          Current group balance
         </div>
 
       </div>
@@ -388,24 +454,37 @@
          CONTRIBUTION PROGRESS
     ================================================== -->
 
-    <section class="card">
+    <section class="card progress-card">
 
-      <h2>
-        Monthly Contribution Progress
-      </h2>
+      <div class="section-heading">
 
-      <p
-        class="muted"
-        id="progressMonth"
-      >
-        Current month
-      </p>
+        <div>
+
+          <h2>
+            Monthly Contribution Progress
+          </h2>
+
+          <p
+            class="muted"
+            id="progressMonth"
+          >
+            Current month
+          </p>
+
+        </div>
 
 
-      <div
-        class="progress"
-        style="margin:16px 0;"
-      >
+        <div
+          class="progress-percentage"
+          id="progressPercentage"
+        >
+          0%
+        </div>
+
+      </div>
+
+
+      <div class="progress">
 
         <div
           id="progressBar"
@@ -415,22 +494,15 @@
       </div>
 
 
-      <div
-        style="
-          display:flex;
-          justify-content:space-between;
-          gap:15px;
-          flex-wrap:wrap;
-        "
-      >
+      <div class="progress-footer">
 
         <span id="progressText">
           KSh 0 / KSh 0
         </span>
 
-        <strong id="progressPercentage">
-          0%
-        </strong>
+        <span class="muted">
+          Monthly collection
+        </span>
 
       </div>
 
@@ -448,13 +520,21 @@
 
     <section class="card">
 
-      <h2>
-        Member Contribution Status
-      </h2>
+      <div class="section-heading">
 
-      <p class="muted">
-        Members who still have a monthly contribution balance.
-      </p>
+        <div>
+
+          <h2>
+            Member Contribution Status
+          </h2>
+
+          <p class="muted">
+            Members who still have a monthly contribution balance.
+          </p>
+
+        </div>
+
+      </div>
 
 
       <div class="table-wrap">
@@ -525,22 +605,17 @@
 
       <section class="card">
 
-        <div
-          class="section-head"
-          style="
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            gap:10px;
-            margin-bottom:10px;
-          "
-        >
+        <div class="section-head">
 
           <div>
 
             <h2>
               Recent Contributions
             </h2>
+
+            <p class="muted">
+              Latest money received
+            </p>
 
           </div>
 
@@ -604,22 +679,17 @@
 
       <section class="card">
 
-        <div
-          class="section-head"
-          style="
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            gap:10px;
-            margin-bottom:10px;
-          "
-        >
+        <div class="section-head">
 
           <div>
 
             <h2>
               Recent Expenses
             </h2>
+
+            <p class="muted">
+              Latest group spending
+            </p>
 
           </div>
 
@@ -691,22 +761,17 @@
 
     <section class="card">
 
-      <div
-        class="section-head"
-        style="
-          display:flex;
-          justify-content:space-between;
-          align-items:center;
-          gap:10px;
-          margin-bottom:10px;
-        "
-      >
+      <div class="section-head">
 
         <div>
 
           <h2>
             Upcoming Meetings
           </h2>
+
+          <p class="muted">
+            Keep your group organised
+          </p>
 
         </div>
 
@@ -787,7 +852,7 @@
   /*
    * IMPORTANT:
    *
-   * Keep the existing application boot.
+   * Existing application boot remains unchanged.
    */
 
   boot();
@@ -990,4 +1055,4 @@
 
 </body>
 
-</html>
+          </html>
