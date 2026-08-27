@@ -1346,6 +1346,197 @@ async function refreshDashboard() {
 
 }
 
+/* =========================================================
+   LOAD DASHBOARD
+========================================================= */
+
+async function loadDashboard() {
+
+  try {
+
+    showStatus(
+      "Loading dashboard..."
+    );
+
+
+    /* -------------------------------------------------------
+       GET CURRENT MEMBER
+    ------------------------------------------------------- */
+
+    const member =
+      await getMyMember();
+
+
+    if (
+      !member?.group_id
+    ) {
+
+      throw new Error(
+        "Your member account is not linked to a group."
+      );
+
+    }
+
+
+    /* -------------------------------------------------------
+       GET CURRENT GROUP
+    ------------------------------------------------------- */
+
+    const group =
+      await getMyGroup();
+
+
+    if (
+      !group?.id
+    ) {
+
+      throw new Error(
+        "Group information could not be loaded."
+      );
+
+    }
+
+
+    console.log(
+      "CHAMA LIVE DASHBOARD:",
+      {
+        member,
+        group
+      }
+    );
+
+
+    /* -------------------------------------------------------
+       LOAD DASHBOARD DATA
+    ------------------------------------------------------- */
+
+    const [
+      members,
+      contributions,
+      expenses,
+      meetings
+    ] =
+      await Promise.all([
+
+        getMembers(
+          group.id
+        ),
+
+        getContributions(
+          group.id
+        ),
+
+        getExpenses(
+          group.id
+        ),
+
+        getMeetings(
+          group.id
+        )
+
+      ]);
+
+
+    console.log(
+      "CHAMA LIVE DASHBOARD DATA:",
+      {
+        members,
+        contributions,
+        expenses,
+        meetings
+      }
+    );
+
+
+    /* -------------------------------------------------------
+       RENDER SUMMARY
+    ------------------------------------------------------- */
+
+    renderSummary(
+      members,
+      contributions,
+      expenses,
+      group
+    );
+
+
+    /* -------------------------------------------------------
+       RENDER MEMBER STATUS
+    ------------------------------------------------------- */
+
+    renderMemberStatus(
+      members,
+      contributions,
+      group
+    );
+
+
+    /* -------------------------------------------------------
+       RENDER RECENT CONTRIBUTIONS
+    ------------------------------------------------------- */
+
+    renderRecentContributions(
+      contributions,
+      members
+    );
+
+
+    /* -------------------------------------------------------
+       RENDER RECENT EXPENSES
+    ------------------------------------------------------- */
+
+    renderRecentExpenses(
+      expenses
+    );
+
+
+    /* -------------------------------------------------------
+       RENDER MEETINGS
+    ------------------------------------------------------- */
+
+    renderUpcomingMeetings(
+      meetings
+    );
+
+
+    /* -------------------------------------------------------
+       FINISHED
+    ------------------------------------------------------- */
+
+    hideStatus();
+
+
+    console.log(
+      "CHAMA LIVE: Dashboard ready."
+    );
+
+  } catch (error) {
+
+    console.error(
+      "CHAMA LIVE DASHBOARD ERROR:",
+      error
+    );
+
+
+    showError(
+      error
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   PUBLIC INITIALIZER
+========================================================= */
+
+export async function initDashboard() {
+
+  await loadDashboard();
+
+}
+
 
 /* =========================================================
    AUTO REFRESH
@@ -1364,15 +1555,12 @@ function startAutoRefresh() {
 
   }
 
-  /*
-   * Refresh every 60 seconds.
-   */
 
   refreshTimer =
     setInterval(
-      () => {
+      async () => {
 
-        refreshDashboard();
+        await loadDashboard();
 
       },
       60000
@@ -1382,7 +1570,7 @@ function startAutoRefresh() {
 
 
 /* =========================================================
-   PAGE VISIBILITY
+   REFRESH WHEN USER RETURNS TO PAGE
 ========================================================= */
 
 document.addEventListener(
@@ -1394,7 +1582,7 @@ document.addEventListener(
       "visible"
     ) {
 
-      refreshDashboard();
+      loadDashboard();
 
     }
 
@@ -1403,14 +1591,14 @@ document.addEventListener(
 
 
 /* =========================================================
-   INITIAL LOAD
+   START DASHBOARD
 ========================================================= */
 
 await initDashboard();
 
 
 /* =========================================================
-   START REFRESH
+   START AUTO REFRESH
 ========================================================= */
 
 startAutoRefresh();
@@ -1419,4 +1607,3 @@ startAutoRefresh();
 console.log(
   "CHAMA LIVE: dashboard auto-refresh enabled."
 );
-
