@@ -335,3 +335,288 @@ export async function getCurrentMember() {
 
   return member;
 }
+/* =========================================================
+   ALIAS
+   USED BY EXISTING PAGES
+========================================================= */
+
+export async function getMyMember() {
+
+  return await getCurrentMember();
+
+}
+
+
+/* =========================================================
+   GET CURRENT GROUP ID
+========================================================= */
+
+export async function getCurrentGroupId() {
+
+  const member =
+    await getCurrentMember();
+
+
+  if (!member?.group_id) {
+
+    throw new Error(
+      "Your member account is not linked to a group."
+    );
+
+  }
+
+
+  return member.group_id;
+
+}
+
+
+/* =========================================================
+   GET CURRENT GROUP
+========================================================= */
+
+export async function getCurrentGroup() {
+
+  const groupId =
+    await getCurrentGroupId();
+
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("groups")
+      .select(`
+        id,
+        name,
+        category,
+        monthly_contribution,
+        opening_balance,
+        description,
+        country,
+        access_code
+      `)
+      .eq(
+        "id",
+        groupId
+      )
+      .limit(1);
+
+
+  if (error) {
+
+    console.error(
+      "getCurrentGroup error:",
+      error
+    );
+
+    throw error;
+
+  }
+
+
+  if (
+    !data ||
+    data.length === 0
+  ) {
+
+    throw new Error(
+      "Group information could not be found."
+    );
+
+  }
+
+
+  return data[0];
+
+}
+
+
+/* =========================================================
+   ALIAS
+   USED BY EXISTING PAGES
+========================================================= */
+
+export async function getMyGroup() {
+
+  return await getCurrentGroup();
+
+}
+
+
+/* =========================================================
+   GET MY GROUPS
+========================================================= */
+
+export async function getMyGroups() {
+
+  const groupId =
+    await getCurrentGroupId();
+
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("groups")
+      .select(`
+        id,
+        name,
+        category,
+        monthly_contribution,
+        opening_balance,
+        description,
+        country,
+        access_code
+      `)
+      .eq(
+        "id",
+        groupId
+      );
+
+
+  if (error) {
+
+    console.error(
+      "getMyGroups error:",
+      error
+    );
+
+    throw error;
+
+  }
+
+
+  return data || [];
+
+}
+
+
+/* =========================================================
+   MONEY
+========================================================= */
+
+export function money(amount) {
+
+  return (
+    "KSh " +
+    Number(
+      amount || 0
+    ).toLocaleString(
+      "en-KE",
+      {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      }
+    )
+  );
+
+}
+
+
+/* =========================================================
+   SET TEXT
+========================================================= */
+
+export function setText(
+  selector,
+  value
+) {
+
+  const element =
+    document.querySelector(
+      selector
+    );
+
+
+  if (element) {
+
+    element.textContent =
+      value ?? "—";
+
+  }
+
+}
+/* =========================================================
+   SHOW ERROR
+========================================================= */
+
+export function showError(error) {
+
+  const message =
+    error?.message ||
+    String(error) ||
+    "An unexpected error occurred.";
+
+
+  console.error(
+    "CHAMA LIVE ERROR:",
+    error
+  );
+
+
+  const errorElement =
+    document.querySelector(
+      "[data-error]"
+    ) ||
+    document.querySelector(
+      "#error"
+    );
+
+
+  if (errorElement) {
+
+    errorElement.textContent =
+      "Error: " + message;
+
+    errorElement.hidden =
+      false;
+
+  }
+
+}
+
+
+/* =========================================================
+   CLEAR ERROR
+========================================================= */
+
+export function clearError() {
+
+  const errorElement =
+    document.querySelector(
+      "[data-error]"
+    ) ||
+    document.querySelector(
+      "#error"
+    );
+
+
+  if (errorElement) {
+
+    errorElement.textContent =
+      "";
+
+    errorElement.hidden =
+      true;
+
+  }
+
+}
+
+
+/* =========================================================
+   AUTH STATE LISTENER
+========================================================= */
+
+export function onAuthStateChange(
+  callback
+) {
+
+  return supabase.auth.onAuthStateChange(
+    callback
+  );
+
+}
