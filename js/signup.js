@@ -55,7 +55,7 @@ function showError(error) {
 
     errorEl.textContent =
       error?.message ||
-      "Unable to complete signup.";
+      "Unable to complete account creation.";
 
     errorEl.hidden = false;
 
@@ -94,7 +94,7 @@ function value(id) {
 
 function getFormData() {
 
-  const data = {
+  return {
 
     adminName:
       value("adminName"),
@@ -113,7 +113,7 @@ function getFormData() {
       value("groupName"),
 
     category:
-      value("category"),
+      value("category") || "other",
 
     monthlyContribution:
       Number(
@@ -134,8 +134,6 @@ function getFormData() {
 
   };
 
-  return data;
-
 }
 
 
@@ -146,63 +144,42 @@ function getFormData() {
 function validate(data) {
 
   if (!data.adminName) {
-
     throw new Error(
       "Please enter your full name."
     );
-
   }
 
 
   if (!data.adminPhone) {
-
     throw new Error(
       "Please enter your phone number."
     );
-
   }
 
 
   if (!data.email) {
-
     throw new Error(
       "Please enter your email address."
     );
-
   }
 
 
   if (data.password.length < 6) {
-
     throw new Error(
       "Password must contain at least 6 characters."
     );
-
   }
 
 
   if (!data.groupName) {
-
     throw new Error(
       "Please enter the group name."
     );
-
-  }
-
-
-  if (!data.category) {
-
-    throw new Error(
-      "Please select a group category."
-    );
-
   }
 
 
   if (
-    !Number.isFinite(
-      data.monthlyContribution
-    ) ||
+    !Number.isFinite(data.monthlyContribution) ||
     data.monthlyContribution < 0
   ) {
 
@@ -214,9 +191,7 @@ function validate(data) {
 
 
   if (
-    !Number.isFinite(
-      data.openingBalance
-    ) ||
+    !Number.isFinite(data.openingBalance) ||
     data.openingBalance < 0
   ) {
 
@@ -230,23 +205,10 @@ function validate(data) {
 
 
 /* =======================================================
-   SAVE ONBOARDING DATA
+   SAVE LOCAL BACKUP
 ======================================================= */
 
 function savePendingOnboarding(data) {
-
-  /*
-   * Backup copy for the current browser.
-   *
-   * The Auth user metadata is also saved below.
-   *
-   * The database remains responsible for:
-   *
-   * auth.uid()
-   * group_id
-   * member_id
-   * role
-   */
 
   const pending = {
 
@@ -277,10 +239,21 @@ function savePendingOnboarding(data) {
   };
 
 
-  sessionStorage.setItem(
-    "chama_pending_onboarding",
-    JSON.stringify(pending)
-  );
+  try {
+
+    sessionStorage.setItem(
+      "chama_pending_onboarding",
+      JSON.stringify(pending)
+    );
+
+  } catch (error) {
+
+    console.warn(
+      "CHAMA LIVE: sessionStorage unavailable",
+      error
+    );
+
+  }
 
 }
 
@@ -318,7 +291,7 @@ async function signup(event) {
 
 
   /* =====================================================
-     DISABLE BUTTON
+     BUTTON
   ===================================================== */
 
   if (createButton) {
@@ -334,18 +307,24 @@ async function signup(event) {
   try {
 
     /* ===================================================
-       SAVE TEMPORARY BROWSER DATA
+       SAVE LOCAL BACKUP
     =================================================== */
 
     savePendingOnboarding(data);
 
 
     /* ===================================================
-       CREATE AUTH ACCOUNT
+       CREATE SUPABASE AUTH ACCOUNT
     =================================================== */
 
     setStatus(
       "Creating your account..."
+    );
+
+
+    console.log(
+      "CHAMA LIVE: signup redirect:",
+      CONFIRM_URL
     );
 
 
@@ -363,20 +342,8 @@ async function signup(event) {
 
         options: {
 
-          /*
-           * THIS MUST BE THE GITHUB
-           * PAGES CONFIRMATION PAGE.
-           */
-
           emailRedirectTo:
             CONFIRM_URL,
-
-          /*
-           * Store onboarding information
-           * with the Auth account.
-           *
-           * This is NOT authorization.
-           */
 
           data: {
 
@@ -415,7 +382,7 @@ async function signup(event) {
 
 
     /* ===================================================
-       CHECK AUTH ERROR
+       AUTH ERROR
     =================================================== */
 
     if (authError) {
@@ -426,7 +393,7 @@ async function signup(event) {
 
 
     /* ===================================================
-       CHECK USER
+       USER
     =================================================== */
 
     const user =
@@ -443,28 +410,25 @@ async function signup(event) {
 
 
     console.log(
-      "CHAMA LIVE AUTH USER:",
+      "CHAMA LIVE: Auth user created:",
       user.id
     );
 
 
     console.log(
-      "CHAMA LIVE CONFIRM URL:",
+      "CHAMA LIVE: Confirmation URL:",
       CONFIRM_URL
     );
 
 
     /* ===================================================
-       IMPORTANT
-       
-       DO NOT CREATE THE GROUP HERE WHEN EMAIL
-       CONFIRMATION IS REQUIRED.
+       EMAIL CONFIRMATION REQUIRED
     =================================================== */
 
     if (!authData.session) {
 
       setStatus(
-        "Account created successfully. Please check your email and click the confirmation link to continue setting up your group."
+        "✓ Account created. Please check your email and click Confirm email address. Your group will be created after your email is confirmed."
       );
 
 
@@ -484,10 +448,7 @@ async function signup(event) {
 
 
     /* ===================================================
-       EMAIL CONFIRMATION DISABLED
-       
-       Session already exists, so we can complete
-       onboarding immediately.
+       CONFIRMATION NOT REQUIRED
     =================================================== */
 
     setStatus(
@@ -507,6 +468,7 @@ async function signup(event) {
 
 
     showError(error);
+
 
     setStatus(
       "Account creation failed."
@@ -528,7 +490,7 @@ async function signup(event) {
 
 
 /* =======================================================
-   COMPLETE ONBOARDING AFTER AUTHENTICATION
+   COMPLETE ONBOARDING
 ======================================================= */
 
 async function completeOnboardingFromMetadata() {
@@ -539,7 +501,7 @@ async function completeOnboardingFromMetadata() {
 
 
   /* =====================================================
-     GET CURRENT USER
+     GET AUTH USER
   ===================================================== */
 
   const {
@@ -570,13 +532,13 @@ async function completeOnboardingFromMetadata() {
 
 
   console.log(
-    "CHAMA LIVE AUTHENTICATED USER:",
+    "CHAMA LIVE: authenticated user:",
     user.id
   );
 
 
   /* =====================================================
-     GET ONBOARDING DATA FROM AUTH METADATA
+     READ METADATA
   ===================================================== */
 
   const metadata =
@@ -598,7 +560,7 @@ async function completeOnboardingFromMetadata() {
     metadata.group_name;
 
   const category =
-    metadata.category;
+    metadata.category || "other";
 
   const monthlyContribution =
     Number(
@@ -614,10 +576,10 @@ async function completeOnboardingFromMetadata() {
     metadata.description || null;
 
   const adminName =
-    metadata.admin_name;
+    metadata.admin_name || "";
 
   const adminPhone =
-    metadata.admin_phone;
+    metadata.admin_phone || "";
 
 
   if (!groupName) {
@@ -630,7 +592,7 @@ async function completeOnboardingFromMetadata() {
 
 
   /* =====================================================
-     CREATE GROUP
+     CREATE GROUP THROUGH RPC
   ===================================================== */
 
   const {
@@ -645,7 +607,7 @@ async function completeOnboardingFromMetadata() {
           groupName,
 
         p_category:
-          category || "other",
+          category,
 
         p_monthly_contribution:
           monthlyContribution,
@@ -677,13 +639,13 @@ async function completeOnboardingFromMetadata() {
 
 
   console.log(
-    "CHAMA LIVE ONBOARDING RESULT:",
+    "CHAMA LIVE: onboarding result:",
     result
   );
 
 
   /* =====================================================
-     VERIFY RESULT
+     VERIFY
   ===================================================== */
 
   if (
@@ -732,12 +694,72 @@ async function completeOnboardingFromMetadata() {
 
 
   /* =====================================================
-     REMOVE TEMPORARY DATA
+     CLEAN LOCAL STORAGE
   ===================================================== */
 
-  sessionStorage.removeItem(
-    "chama_pending_onboarding"
-  );
+  try {
+
+    sessionStorage.removeItem(
+      "chama_pending_onboarding"
+    );
+
+  } catch (error) {
+
+    console.warn(
+      "CHAMA LIVE: could not clear sessionStorage",
+      error
+    );
+
+  }
+
+
+  /* =====================================================
+     CLEAN AUTH METADATA
+  ===================================================== */
+
+  try {
+
+    const cleanedMetadata = {
+      ...metadata
+    };
+
+
+    delete cleanedMetadata.chama_onboarding;
+    delete cleanedMetadata.admin_name;
+    delete cleanedMetadata.admin_phone;
+    delete cleanedMetadata.group_name;
+    delete cleanedMetadata.category;
+    delete cleanedMetadata.monthly_contribution;
+    delete cleanedMetadata.opening_balance;
+    delete cleanedMetadata.description;
+    delete cleanedMetadata.country;
+
+
+    const {
+      error: metadataError
+    } =
+      await supabase.auth.updateUser({
+        data: cleanedMetadata
+      });
+
+
+    if (metadataError) {
+
+      console.warn(
+        "CHAMA LIVE metadata cleanup warning:",
+        metadataError
+      );
+
+    }
+
+  } catch (error) {
+
+    console.warn(
+      "CHAMA LIVE metadata cleanup warning:",
+      error
+    );
+
+  }
 
 
   /* =====================================================
@@ -770,11 +792,17 @@ if (form) {
     signup
   );
 
+} else {
+
+  console.warn(
+    "CHAMA LIVE: signupForm was not found."
+  );
+
 }
 
 
 /* =======================================================
-   STARTUP
+   START
 ======================================================= */
 
 console.log(
