@@ -824,7 +824,103 @@ button {
       var(--shadow);
 
     border-color:
+       
       var(--border);
   }
 
 }
+
+/* =========================================================
+CHAMA LIVE — CONTRIBUTION STATUS UI
+SAFE ADDITION
+Does not change HTML IDs or JavaScript
+========================================================= */
+
+/* Contribution status table */
+
+#memberStatusRows td {
+vertical-align: middle;
+}
+
+/* Amount columns */
+
+#memberStatusRows td:nth-child(2),
+#memberStatusRows td:nth-child(3),
+#memberStatusRows td:nth-child(4) {
+font-weight: 600;
+}
+
+/* Outstanding amount */
+
+#memberStatusRows td:nth-child(4) {
+color: var(--warning-dark);
+}
+
+/* Paid amount */
+
+#memberStatusRows td:nth-child(3) {
+color: var(--success-dark);
+}
+
+/* Status cell */
+
+#memberStatusRows td:last-child {
+font-weight: 700;
+}
+
+/* Automatically style common status text
+without changing JavaScript */
+
+#memberStatusRows td:last-child {
+font-size: 12px;
+text-transform: uppercase;
+letter-spacing: .2px;
+}
+
+/* Better member names */
+
+#memberStatusRows td:first-child {
+color: var(--text-dark);
+font-weight: 600;
+}
+
+/* Hover row */
+
+#memberStatusRows tr {
+transition:
+background .15s ease;
+}
+
+#memberStatusRows tr:hover {
+background:
+#f7fbfa;
+}
+
+/* =========================================================
+CONTRIBUTION LEDGER / FINANCIAL TABLE POLISH
+========================================================= */
+
+.table th {
+text-transform: none;
+letter-spacing: .1px;
+}
+
+.table td {
+vertical-align: middle;
+}
+
+/* =========================================================
+MOBILE CONTRIBUTION TABLE
+========================================================= */
+
+@media (max-width: 650px) {
+
+#memberStatusRows td {
+padding: 11px 12px;
+}
+
+#memberStatusRows td:first-child {
+min-width: 150px;
+}
+
+   }
