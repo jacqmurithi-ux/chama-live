@@ -1,5 +1,6 @@
 /* =========================================================
    CHAMA LIVE — APP CSS
+   Professional Financial UI
 ========================================================= */
 
 * {
@@ -9,6 +10,57 @@
 html {
   scroll-behavior: smooth;
 }
+
+:root {
+
+  /* Brand */
+
+  --primary: #0f766e;
+  --primary-dark: #115e59;
+  --primary-light: #ccfbf1;
+
+  /* Status */
+
+  --success: #10b981;
+  --success-light: #ecfdf3;
+
+  --warning: #f59e0b;
+  --warning-light: #fffaeb;
+
+  --danger: #dc2626;
+  --danger-light: #fee2e2;
+
+  /* Text */
+
+  --text: #172033;
+  --muted: #667085;
+
+  /* Surfaces */
+
+  --background: #f5f7fa;
+  --card: #ffffff;
+
+  --border: #e5e7eb;
+
+  /* Navigation */
+
+  --sidebar: #123c3a;
+  --sidebar-hover: #18534f;
+  --sidebar-text: #d7eeeb;
+
+  /* Shadows */
+
+  --shadow:
+    0 2px 8px rgba(15, 118, 110, 0.05);
+
+  --shadow-hover:
+    0 8px 22px rgba(15, 118, 110, 0.09);
+}
+
+
+/* =========================================================
+   BASE
+========================================================= */
 
 body {
   margin: 0;
@@ -21,15 +73,18 @@ body {
     "Segoe UI",
     sans-serif;
 
-  background: #f6f8fb;
+  background: var(--background);
 
-  color: #172033;
+  color: var(--text);
 
   line-height: 1.5;
+
+  overflow-x: hidden;
 }
 
 a {
   text-decoration: none;
+
   color: inherit;
 }
 
@@ -54,7 +109,8 @@ button {
 
   background: #fff;
 
-  border-bottom: 1px solid #e6eaf0;
+  border-bottom:
+    1px solid var(--border);
 
   display: flex;
 
@@ -71,18 +127,23 @@ button {
   z-index: 1000;
 }
 
+
+/* =========================================================
+   BRAND
+========================================================= */
+
 .brand {
   font-size: 20px;
 
   font-weight: 800;
 
-  letter-spacing: -0.3px;
+  letter-spacing: -0.4px;
 }
 
 .brand span {
-  font-weight: 500;
+  font-weight: 600;
 
-  color: #667085;
+  color: var(--primary);
 }
 
 
@@ -97,7 +158,8 @@ button {
 
   height: 42px;
 
-  border: 1px solid #e6eaf0;
+  border:
+    1px solid var(--border);
 
   background: #fff;
 
@@ -111,13 +173,19 @@ button {
 
   font-size: 22px;
 
-  color: #172033;
+  color: var(--primary);
 
   padding: 0;
+
+  transition:
+    background .15s ease,
+    border-color .15s ease;
 }
 
 .menu-toggle:hover {
-  background: #f3f5f8;
+  background: var(--primary-light);
+
+  border-color: #99f6e4;
 }
 
 
@@ -132,9 +200,12 @@ button {
 
   inset: 0;
 
-  background: rgba(15, 23, 42, 0.45);
+  background:
+    rgba(15, 23, 42, 0.48);
 
   z-index: 1100;
+
+  backdrop-filter: blur(2px);
 }
 
 .sidebar-overlay.show {
@@ -163,16 +234,29 @@ button {
 
   flex-shrink: 0;
 
-  background: #111827;
+  background:
+    linear-gradient(
+      180deg,
+      #123c3a 0%,
+      #0f3331 100%
+    );
 
   color: #fff;
 
   padding: 18px 12px;
 
   transition:
-    transform 0.25s ease,
-    width 0.25s ease;
+    transform .25s ease,
+    width .25s ease;
+
+  box-shadow:
+    inset -1px 0 rgba(255,255,255,.04);
 }
+
+
+/* =========================================================
+   NAVIGATION
+========================================================= */
 
 .nav {
   display: flex;
@@ -193,20 +277,39 @@ button {
 
   border-radius: 9px;
 
-  color: #cbd5e1;
+  color: var(--sidebar-text);
 
   margin: 0;
 
+  font-weight: 500;
+
   transition:
-    background 0.15s ease,
-    color 0.15s ease;
+    background .15s ease,
+    color .15s ease,
+    transform .15s ease;
 }
 
-.nav a:hover,
-.nav a.active {
-  background: #1f2937;
+.nav a:hover {
+  background:
+    var(--sidebar-hover);
 
   color: #fff;
+
+  transform:
+    translateX(2px);
+}
+
+.nav a.active {
+  background:
+    var(--primary);
+
+  color: #fff;
+
+  font-weight: 700;
+
+  box-shadow:
+    0 3px 10px
+    rgba(0,0,0,.12);
 }
 
 
@@ -249,10 +352,24 @@ button {
   font-size: 30px;
 
   line-height: 1.2;
+
+  letter-spacing: -0.6px;
 }
 
 .page-head p {
   margin: 0;
+}
+
+.eyebrow {
+  color: var(--primary);
+
+  font-size: 11px;
+
+  font-weight: 800;
+
+  letter-spacing: 1px;
+
+  margin-bottom: 5px;
 }
 
 
@@ -287,16 +404,27 @@ button {
 ========================================================= */
 
 .card {
-  background: #fff;
+  background:
+    var(--card);
 
-  border: 1px solid #e6eaf0;
+  border:
+    1px solid var(--border);
 
   border-radius: 14px;
 
   padding: 18px;
 
   box-shadow:
-    0 2px 8px rgba(16, 24, 40, 0.03);
+    var(--shadow);
+
+  transition:
+    box-shadow .2s ease,
+    transform .2s ease;
+}
+
+.card:hover {
+  box-shadow:
+    var(--shadow-hover);
 }
 
 .card h2 {
@@ -305,6 +433,8 @@ button {
   margin-bottom: 8px;
 
   font-size: 18px;
+
+  line-height: 1.3;
 }
 
 .card h3 {
@@ -313,21 +443,116 @@ button {
 
 
 /* =========================================================
-   METRIC
+   STATUS CARD
 ========================================================= */
+
+.status-card {
+  border-left:
+    4px solid var(--primary);
+}
+
+
+/* =========================================================
+   METRIC CARDS
+========================================================= */
+
+.dashboard-metrics {
+  margin-top: 0;
+}
+
+.metric-card {
+  position: relative;
+
+  overflow: hidden;
+}
+
+.metric-card::after {
+  content: "";
+
+  position: absolute;
+
+  right: -25px;
+
+  bottom: -35px;
+
+  width: 90px;
+
+  height: 90px;
+
+  border-radius: 50%;
+
+  background:
+    rgba(15, 118, 110, .035);
+
+  pointer-events: none;
+}
+
+.metric-label {
+  display: flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  color: #475467;
+
+  font-size: 13px;
+
+  font-weight: 700;
+}
+
+.metric-dot {
+  width: 8px;
+
+  height: 8px;
+
+  border-radius: 50%;
+
+  background:
+    var(--primary);
+
+  flex-shrink: 0;
+}
+
+.metric-dot.expected {
+  background:
+    #64748b;
+}
+
+.metric-dot.success {
+  background:
+    var(--success);
+}
+
+.metric-dot.warning {
+  background:
+    var(--warning);
+}
+
+.metric-dot.balance {
+  background:
+    #6366f1;
+}
 
 .metric {
   font-size: 28px;
 
   font-weight: 800;
 
-  margin-top: 8px;
+  margin-top: 9px;
 
   line-height: 1.2;
+
+  letter-spacing: -0.5px;
+}
+
+.metric-positive .metric {
+  color:
+    var(--primary-dark);
 }
 
 .muted {
-  color: #667085;
+  color: var(--muted);
 }
 
 
@@ -355,34 +580,67 @@ button {
   justify-content: center;
 
   transition:
-    opacity 0.15s ease,
-    transform 0.1s ease;
+    opacity .15s ease,
+    transform .1s ease,
+    background .15s ease;
 }
 
 .btn:hover {
-  opacity: 0.9;
+  opacity: .94;
 }
 
 .btn:active {
-  transform: translateY(1px);
+  transform:
+    translateY(1px);
 }
 
 .btn:disabled {
-  opacity: 0.55;
+  opacity: .55;
 
   cursor: not-allowed;
 }
 
+
+/* =========================================================
+   PRIMARY BUTTON
+========================================================= */
+
 .btn-primary {
-  background: #111827;
+  background:
+    var(--primary);
 
   color: #fff;
+
+  box-shadow:
+    0 3px 8px
+    rgba(15, 118, 110, .18);
 }
 
-.btn-secondary {
-  background: #eef2f6;
+.btn-primary:hover {
+  background:
+    var(--primary-dark);
 
-  color: #172033;
+  opacity: 1;
+}
+
+
+/* =========================================================
+   SECONDARY BUTTON
+========================================================= */
+
+.btn-secondary {
+  background:
+    #eef5f4;
+
+  color:
+    var(--primary-dark);
+}
+
+.btn-secondary:hover {
+  background:
+    var(--primary-light);
+
+  opacity: 1;
 }
 
 
@@ -419,31 +677,192 @@ button {
 
   align-items: center;
 
-  justify-content: center;
+  gap: 11px;
 
-  text-align: center;
+  min-height: 68px;
 
-  min-height: 54px;
+  padding: 12px 14px;
 
-  padding: 12px;
+  border:
+    1px solid var(--border);
 
-  border-radius: 10px;
+  border-radius: 12px;
 
-  background: #111827;
+  background:
+    #fff;
 
-  color: #fff;
+  color:
+    var(--text);
 
-  font-weight: 700;
+  box-shadow:
+    var(--shadow);
 
   transition:
-    opacity 0.15s ease,
-    transform 0.15s ease;
+    border-color .15s ease,
+    box-shadow .15s ease,
+    transform .15s ease;
 }
 
 .quick-action:hover {
-  opacity: 0.9;
+  border-color:
+    #99f6e4;
 
-  transform: translateY(-1px);
+  box-shadow:
+    var(--shadow-hover);
+
+  transform:
+    translateY(-2px);
+}
+
+.quick-action strong {
+  display: block;
+
+  font-size: 13px;
+
+  line-height: 1.3;
+}
+
+.quick-action small {
+  display: block;
+
+  color:
+    var(--muted);
+
+  font-size: 11px;
+
+  margin-top: 3px;
+}
+
+.quick-action-icon {
+  width: 38px;
+
+  height: 38px;
+
+  flex-shrink: 0;
+
+  border-radius: 10px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  background:
+    var(--primary-light);
+
+  color:
+    var(--primary-dark);
+
+  font-size: 17px;
+
+  font-weight: 800;
+}
+
+
+/* =========================================================
+   SECTION HEADINGS
+========================================================= */
+
+.section-heading {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: flex-start;
+
+  gap: 15px;
+
+  margin-bottom: 12px;
+}
+
+.section-heading p {
+  margin:
+    0;
+}
+
+.section-head {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  gap: 10px;
+
+  margin-bottom: 10px;
+}
+
+.section-head h2 {
+  margin-bottom: 3px;
+}
+
+.section-head p {
+  margin: 0;
+}
+
+
+/* =========================================================
+   PROGRESS
+========================================================= */
+
+.progress {
+  width: 100%;
+
+  height: 14px;
+
+  background:
+    #e6eeee;
+
+  border-radius: 999px;
+
+  overflow: hidden;
+
+  margin:
+    16px 0 10px;
+}
+
+.progress-bar {
+  width: 0%;
+
+  height: 100%;
+
+  border-radius: 999px;
+
+  background:
+    linear-gradient(
+      90deg,
+      var(--primary),
+      var(--success)
+    );
+
+  transition:
+    width .3s ease;
+}
+
+.progress-percentage {
+  color:
+    var(--primary);
+
+  font-size: 18px;
+
+  font-weight: 800;
+
+  white-space: nowrap;
+}
+
+.progress-footer {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  gap: 15px;
+
+  flex-wrap: wrap;
+
+  font-size: 14px;
 }
 
 
@@ -476,7 +895,8 @@ button {
 .field textarea {
   width: 100%;
 
-  border: 1px solid #d0d5dd;
+  border:
+    1px solid #d0d5dd;
 
   border-radius: 9px;
 
@@ -484,19 +904,24 @@ button {
 
   background: #fff;
 
-  color: #172033;
+  color: var(--text);
 
   outline: none;
+
+  transition:
+    border-color .2s ease,
+    box-shadow .2s ease;
 }
 
 .field input:focus,
 .field select:focus,
 .field textarea:focus {
-  border-color: #667085;
+  border-color:
+    var(--primary);
 
   box-shadow:
     0 0 0 3px
-    rgba(102, 112, 133, 0.12);
+    rgba(15, 118, 110, .12);
 }
 
 .field textarea {
@@ -532,7 +957,8 @@ button {
 
   padding: 12px;
 
-  border-bottom: 1px solid #edf0f4;
+  border-bottom:
+    1px solid #edf0f4;
 
   white-space: nowrap;
 }
@@ -542,9 +968,11 @@ button {
 
   font-weight: 800;
 
-  color: #475467;
+  color:
+    #475467;
 
-  background: #fafbfc;
+  background:
+    #f8fafc;
 }
 
 .table td {
@@ -552,37 +980,8 @@ button {
 }
 
 .table tbody tr:hover {
-  background: #fafbfc;
-}
-
-
-/* =========================================================
-   ERROR
-========================================================= */
-
-.error {
-  padding: 12px;
-
-  border-radius: 9px;
-
-  background: #fee4e2;
-
-  color: #b42318;
-
-  margin-top: 14px;
-}
-
-
-/* =========================================================
-   STATUS
-========================================================= */
-
-.status {
-  padding: 12px;
-
-  border-radius: 9px;
-
-  background: #f8fafc;
+  background:
+    #f8fbfb;
 }
 
 
@@ -609,57 +1008,57 @@ button {
 }
 
 .badge-success {
-  background: #ecfdf3;
+  background:
+    var(--success-light);
 
-  color: #027a48;
+  color:
+    #027a48;
 }
 
 .badge-warning {
-  background: #fffaeb;
+  background:
+    var(--warning-light);
 
-  color: #b54708;
+  color:
+    #b54708;
 }
 
 .badge-danger {
-  background: #fef3f2;
+  background:
+    var(--danger-light);
 
-  color: #b42318;
+  color:
+    #b42318;
 }
 
 .badge-neutral {
-  background: #f2f4f7;
+  background:
+    #f2f4f7;
 
-  color: #475467;
+  color:
+    #475467;
 }
 
 
 /* =========================================================
-   PROGRESS
+   ERROR
 ========================================================= */
 
-.progress {
-  width: 100%;
+.error {
+  padding: 12px;
 
-  height: 18px;
+  border-radius: 9px;
 
-  background: #e5e7eb;
+  background:
+    var(--danger-light);
 
-  border-radius: 999px;
+  color:
+    #b42318;
 
-  overflow: hidden;
-}
+  margin-top: 14px;
 
-.progress-bar {
-  width: 0%;
-
-  height: 100%;
-
-  border-radius: 999px;
-
-  background: currentColor;
-
-  transition:
-    width 0.3s ease;
+  border:
+    1px solid #fecaca;
 }
 
 
@@ -678,7 +1077,8 @@ button {
 }
 
 .auth-card {
-  width: min(440px, 100%);
+  width:
+    min(440px, 100%);
 }
 
 
@@ -691,7 +1091,23 @@ button {
 
   padding: 30px 20px;
 
-  color: #667085;
+  color:
+    var(--muted);
+}
+
+
+/* =========================================================
+   MAIN LINKS
+========================================================= */
+
+.main a:not(.btn):not(.quick-action) {
+  color:
+    var(--primary);
+}
+
+.main a:not(.btn):not(.quick-action):hover {
+  color:
+    var(--primary-dark);
 }
 
 
@@ -802,7 +1218,7 @@ button {
 
     box-shadow:
       8px 0 30px
-      rgba(0, 0, 0, 0.18);
+      rgba(0, 0, 0, .18);
   }
 
   .sidebar.open {
@@ -891,9 +1307,37 @@ button {
   }
 
   .quick-action {
-    min-height: 50px;
+    min-height: 66px;
+
+    padding: 10px;
+
+    gap: 8px;
+  }
+
+  .quick-action-icon {
+    width: 34px;
+
+    height: 34px;
 
     font-size: 14px;
+  }
+
+  .quick-action strong {
+    font-size: 12px;
+  }
+
+  .quick-action small {
+    font-size: 10px;
+  }
+
+
+  /* SECTION HEAD */
+
+  .section-head,
+  .section-heading {
+    align-items: flex-start;
+
+    flex-wrap: wrap;
   }
 
 
@@ -924,12 +1368,10 @@ button {
   }
 
 
-  /* SECTION HEADERS */
+  /* PROGRESS */
 
-  .section-head {
-    align-items: flex-start !important;
-
-    flex-wrap: wrap;
+  .progress-percentage {
+    font-size: 16px;
   }
 
 }
@@ -942,7 +1384,8 @@ button {
 @media (max-width: 400px) {
 
   .main {
-    padding: 14px 10px;
+    padding:
+      14px 10px;
   }
 
   .card {
@@ -954,11 +1397,17 @@ button {
   }
 
   .quick-action {
-    min-height: 46px;
+    min-height: 54px;
   }
 
   .topbar {
-    padding: 0 10px;
+    padding:
+      0 10px;
   }
 
+  .metric {
+    font-size: 24px;
   }
+
+   }
+
