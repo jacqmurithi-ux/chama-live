@@ -1,4 +1,6 @@
-import { supabase } from "./supabase.js";
+import {
+  supabase
+} from "./supabase.js";
 
 import {
   getMyMember,
@@ -20,7 +22,9 @@ console.log(
 ========================================================= */
 
 function byId(id) {
+
   return document.getElementById(id);
+
 }
 
 
@@ -45,16 +49,21 @@ function formatDate(value) {
     return "—";
   }
 
+
   const date =
     new Date(value);
+
 
   if (
     Number.isNaN(
       date.getTime()
     )
   ) {
+
     return "—";
+
   }
+
 
   return date.toLocaleDateString(
     "en-KE",
@@ -105,6 +114,7 @@ function setText(
   const element =
     byId(id);
 
+
   if (element) {
 
     element.textContent =
@@ -124,6 +134,7 @@ function getCurrentMonth() {
   const now =
     new Date();
 
+
   return (
     `${now.getFullYear()}-` +
     `${String(
@@ -138,36 +149,57 @@ function getContributionMonth(
   contribution
 ) {
 
+  /*
+   * Prefer database month.
+   */
+
   if (
-    contribution.month
+    contribution?.month
   ) {
 
     return String(
       contribution.month
-    ).slice(0, 7);
+    ).slice(
+      0,
+      7
+    );
 
   }
 
 
+  /*
+   * Use contribution date
+   * when month is unavailable.
+   */
+
   if (
-    contribution.contribution_date
+    contribution?.contribution_date
   ) {
 
     return String(
       contribution.contribution_date
-    ).slice(0, 7);
+    ).slice(
+      0,
+      7
+    );
 
   }
 
 
+  /*
+   * Last fallback:
+   * created_at.
+   */
+
   if (
-    contribution.created_at
+    contribution?.created_at
   ) {
 
     const date =
       new Date(
         contribution.created_at
       );
+
 
     if (
       !Number.isNaN(
@@ -179,7 +211,10 @@ function getContributionMonth(
         `${date.getFullYear()}-` +
         `${String(
           date.getMonth() + 1
-        ).padStart(2, "0")}`
+        ).padStart(
+          2,
+          "0"
+        )}`
       );
 
     }
@@ -203,6 +238,7 @@ function showStatus(
   const status =
     byId("status");
 
+
   if (status) {
 
     status.style.display =
@@ -220,6 +256,7 @@ function hideStatus() {
 
   const status =
     byId("status");
+
 
   if (status) {
 
@@ -240,29 +277,31 @@ function showError(
     error
   );
 
+
   const errorBox =
     byId("error");
+
 
   if (!errorBox) {
     return;
   }
 
+
   errorBox.hidden =
     false;
+
 
   errorBox.textContent =
     error?.message ||
     String(error) ||
     "Unable to load dashboard.";
 
-       }
+  }
 /* =========================================================
    MEMBERS
 ========================================================= */
 
-async function getMembers(
-  groupId
-) {
+async function getMembers(groupId) {
 
   const {
     data,
@@ -274,13 +313,18 @@ async function getMembers(
         id,
         group_id,
         user_id,
+        auth_user_id,
         member_number,
+        membership_number,
         name,
         phone,
         email,
         role,
         join_date,
         status,
+        onboarding_status,
+        invited_at,
+        activated_at,
         created_at
       `)
       .eq(
@@ -296,7 +340,9 @@ async function getMembers(
 
 
   if (error) {
+
     throw error;
+
   }
 
 
@@ -309,14 +355,15 @@ async function getMembers(
    CONTRIBUTIONS
 ========================================================= */
 
-async function getContributions(
-  groupId
-) {
+async function getContributions(groupId) {
 
   /*
-   * Use select("*") so this remains
-   * compatible with the current
-   * contributions table.
+   * Do NOT order by contribution_date
+   * here because older database versions
+   * may not contain that column.
+   *
+   * created_at is available and is safe
+   * for sorting recent records.
    */
 
   const {
@@ -331,12 +378,6 @@ async function getContributions(
         groupId
       )
       .order(
-        "contribution_date",
-        {
-          ascending: false
-        }
-      )
-      .order(
         "created_at",
         {
           ascending: false
@@ -345,7 +386,9 @@ async function getContributions(
 
 
   if (error) {
+
     throw error;
+
   }
 
 
@@ -358,9 +401,7 @@ async function getContributions(
    EXPENSES
 ========================================================= */
 
-async function getExpenses(
-  groupId
-) {
+async function getExpenses(groupId) {
 
   const {
     data,
@@ -382,7 +423,9 @@ async function getExpenses(
 
 
   if (error) {
+
     throw error;
+
   }
 
 
@@ -395,9 +438,7 @@ async function getExpenses(
    MEETINGS
 ========================================================= */
 
-async function getMeetings(
-  groupId
-) {
+async function getMeetings(groupId) {
 
   const {
     data,
@@ -419,7 +460,9 @@ async function getMeetings(
 
 
   if (error) {
+
     throw error;
+
   }
 
 
@@ -429,7 +472,69 @@ async function getMeetings(
 
 
 /* =========================================================
-   SUMMARY
+   FIND MEETING DATE
+========================================================= */
+
+function getMeetingDate(meeting) {
+
+  return (
+    meeting?.meeting_date ||
+    meeting?.date ||
+    meeting?.scheduled_date ||
+    meeting?.created_at ||
+    null
+  );
+
+}
+
+
+/* =========================================================
+   FIND MEETING TITLE
+========================================================= */
+
+function getMeetingTitle(meeting) {
+
+  return (
+    meeting?.title ||
+    meeting?.name ||
+    meeting?.description ||
+    "Meeting"
+  );
+
+}
+
+
+/* =========================================================
+   FIND EXPENSE DESCRIPTION
+========================================================= */
+
+function getExpenseDescription(expense) {
+
+  return (
+    expense?.description ||
+    expense?.title ||
+    expense?.name ||
+    "Expense"
+  );
+
+}
+
+
+/* =========================================================
+   FIND EXPENSE STATUS
+========================================================= */
+
+function getExpenseStatus(expense) {
+
+  return (
+    expense?.approval_status ||
+    expense?.status ||
+    "Recorded"
+  );
+
+}
+/* =========================================================
+   DASHBOARD SUMMARY
 ========================================================= */
 
 function renderSummary(
@@ -448,19 +553,17 @@ function renderSummary(
     members.filter(
       member =>
         String(
-          member.status ||
-          "active"
-        ).toLowerCase() ===
-        "active"
+          member.status || "active"
+        ).toLowerCase() === "active"
     );
-
-
-  const activeMemberCount =
-    activeMembers.length;
 
 
   const totalMembers =
     members.length;
+
+
+  const activeMemberCount =
+    activeMembers.length;
 
 
   /* =======================================================
@@ -477,8 +580,7 @@ function renderSummary(
         return (
           total +
           Number(
-            contribution.amount ||
-            0
+            contribution.amount || 0
           )
         );
 
@@ -488,7 +590,7 @@ function renderSummary(
 
 
   /* =======================================================
-     APPROVED EXPENSES
+     APPROVED / COMPLETED EXPENSES
   ======================================================= */
 
   const approvedExpenses =
@@ -521,8 +623,7 @@ function renderSummary(
           return (
             total +
             Number(
-              expense.amount ||
-              0
+              expense.amount || 0
             )
           );
 
@@ -532,15 +633,18 @@ function renderSummary(
 
 
   /* =======================================================
-     BALANCE
+     OPENING BALANCE
   ======================================================= */
 
   const openingBalance =
     Number(
-      group?.opening_balance ||
-      0
+      group?.opening_balance || 0
     );
 
+
+  /* =======================================================
+     CURRENT BALANCE
+  ======================================================= */
 
   const currentBalance =
     openingBalance +
@@ -549,15 +653,18 @@ function renderSummary(
 
 
   /* =======================================================
-     MONTHLY CONFIGURATION
+     MONTHLY CONTRIBUTION
   ======================================================= */
 
   const monthlyContribution =
     Number(
-      group?.monthly_contribution ||
-      0
+      group?.monthly_contribution || 0
     );
 
+
+  /* =======================================================
+     MONTHLY EXPECTED
+  ======================================================= */
 
   const monthlyExpected =
     activeMemberCount *
@@ -573,7 +680,7 @@ function renderSummary(
 
 
   /* =======================================================
-     MONTHLY COLLECTION
+     MONTHLY COLLECTED
   ======================================================= */
 
   const monthlyCollected =
@@ -581,17 +688,17 @@ function renderSummary(
       .filter(
         contribution => {
 
+          /*
+           * Only monthly contributions
+           * count toward monthly dues.
+           */
+
           const type =
             String(
               contribution.contribution_type ||
               ""
             ).toLowerCase();
 
-
-          /*
-           * Only monthly contributions
-           * count toward monthly dues.
-           */
 
           if (
             type !== "monthly"
@@ -605,8 +712,7 @@ function renderSummary(
           return (
             getContributionMonth(
               contribution
-            ) ===
-            currentMonth
+            ) === currentMonth
           );
 
         }
@@ -620,8 +726,7 @@ function renderSummary(
           return (
             total +
             Number(
-              contribution.amount ||
-              0
+              contribution.amount || 0
             )
           );
 
@@ -659,7 +764,7 @@ function renderSummary(
 
 
   /* =======================================================
-     DISPLAY
+     UPDATE METRICS
   ======================================================= */
 
   setText(
@@ -712,6 +817,10 @@ function renderSummary(
   );
 
 
+  /* =======================================================
+     PROGRESS
+  ======================================================= */
+
   setText(
     "progressText",
     `KSh ${money(
@@ -740,6 +849,10 @@ function renderSummary(
   }
 
 
+  /* =======================================================
+     PROGRESS MONTH
+  ======================================================= */
+
   const progressMonth =
     byId("progressMonth");
 
@@ -748,6 +861,7 @@ function renderSummary(
 
     const now =
       new Date();
+
 
     progressMonth.textContent =
       now.toLocaleDateString(
@@ -760,591 +874,634 @@ function renderSummary(
 
   }
 
-       /* =========================================================
-    MEMBER MONTHLY STATUS
- ========================================================= */
 
- function renderMemberStatus(
-   members,
-   contributions,
-   group
- ) {
+  /* =======================================================
+     CONSOLE SUMMARY
+  ======================================================= */
+
+  console.log(
+    "CHAMA LIVE FINANCIAL SUMMARY:",
+    {
+      totalMembers,
+      activeMemberCount,
+      monthlyContribution,
+      monthlyExpected,
+      monthlyCollected,
+      monthlyOutstanding,
+      collectionRate,
+      totalCollected,
+      approvedExpenses,
+      openingBalance,
+      currentBalance
+    }
+  );
 
-   const rows =
-     byId(
-       "memberStatusRows"
-     );
-
-
-   if (!rows) {
-     return;
-   }
-
-
-   const monthlyAmount =
-     Number(
-       group?.monthly_contribution ||
-       0
-     );
-
-
-   const currentMonth =
-     getCurrentMonth();
-
-
-   const activeMembers =
-     members.filter(
-       member =>
-         String(
-           member.status ||
-           "active"
-         ).toLowerCase() ===
-         "active"
-     );
-
-
-   if (
-     activeMembers.length === 0
-   ) {
-
-     rows.innerHTML = `
-       <tr>
-         <td colspan="5">
-           No active members.
-         </td>
-       </tr>
-     `;
-
-     return;
-
-   }
-
-
-   rows.innerHTML =
-     activeMembers
-       .map(
-         member => {
-
-           const paid =
-             contributions
-               .filter(
-                 contribution => {
-
-                   if (
-                     contribution.member_id !==
-                     member.id
-                   ) {
-
-                     return false;
-
-                   }
-
-
-                   const type =
-                     String(
-                       contribution.contribution_type ||
-                       ""
-                     ).toLowerCase();
-
-
-                   if (
-                     type !== "monthly"
-                   ) {
-
-                     return false;
-
-                   }
-
-
-                   return (
-                     getContributionMonth(
-                       contribution
-                     ) ===
-                     currentMonth
-                   );
-
-                 }
-               )
-               .reduce(
-                 (
-                   total,
-                   contribution
-                 ) => {
-
-                   return (
-                     total +
-                     Number(
-                       contribution.amount ||
-                       0
-                     )
-                   );
-
-                 },
-                 0
-               );
-
-
-           const outstanding =
-             Math.max(
-               0,
-               monthlyAmount -
-               paid
-             );
-
-
-           let status =
-             "Outstanding";
-
-
-           if (
-             monthlyAmount <= 0
-           ) {
-
-             status =
-               "Not Set";
-
-           }
-           else if (
-             paid >= monthlyAmount
-           ) {
-
-             status =
-               "Paid";
-
-           }
-           else if (
-             paid > 0
-           ) {
-
-             status =
-               "Partial";
-
-           }
-
-
-           return `
-             <tr>
-
-               <td>
-                 ${escapeHtml(
-                   member.name ||
-                   "Member"
-                 )}
-               </td>
-
-               <td>
-                 KSh ${money(
-                   monthlyAmount
-                 )}
-               </td>
-
-               <td>
-                 KSh ${money(
-                   paid
-                 )}
-               </td>
-
-               <td>
-                 KSh ${money(
-                   outstanding
-                 )}
-               </td>
-
-               <td>
-                 <strong>
-                   ${status}
-                 </strong>
-               </td>
-
-             </tr>
-           `;
-
-         }
-       )
-       .join("");
-
- }
-
-
- /* =========================================================
-    RECENT CONTRIBUTIONS
- ========================================================= */
-
- function renderRecentContributions(
-   contributions,
-   members
- ) {
-
-   const rows =
-     byId(
-       "recentContributionRows"
-     );
-
-
-   if (!rows) {
-     return;
-   }
-
-
-   if (
-     contributions.length === 0
-   ) {
-
-     rows.innerHTML = `
-       <tr>
-         <td colspan="3">
-           No contributions yet.
-         </td>
-       </tr>
-     `;
-
-     return;
-
-   }
-
-
-   const memberMap = {};
-
-
-   members.forEach(
-     member => {
-
-       memberMap[
-         member.id
-       ] =
-         member.name ||
-         "Member";
-
-     }
-   );
-
-
-   rows.innerHTML =
-     contributions
-       .slice(0, 5)
-       .map(
-         contribution => {
-
-           const name =
-             memberMap[
-               contribution.member_id
-             ] ||
-             "Member";
-
-
-           const date =
-             contribution.contribution_date ||
-             contribution.created_at;
-
-
-           return `
-             <tr>
-
-               <td>
-                 ${escapeHtml(
-                   name
-                 )}
-               </td>
-
-               <td>
-                 KSh ${money(
-                   contribution.amount
-                 )}
-               </td>
-
-               <td>
-                 ${formatDate(
-                   date
-                 )}
-               </td>
-
-             </tr>
-           `;
-
-         }
-       )
-       .join("");
-
- }
-
-
- /* =========================================================
-    RECENT EXPENSES
- ========================================================= */
-
- function renderRecentExpenses(
-   expenses
- ) {
-
-   const rows =
-     byId(
-       "recentExpenseRows"
-     );
-
-
-   if (!rows) {
-     return;
-   }
-
-
-   if (
-     expenses.length === 0
-   ) {
-
-     rows.innerHTML = `
-       <tr>
-         <td colspan="3">
-           No expenses yet.
-         </td>
-       </tr>
-     `;
-
-     return;
-
-   }
-
-
-   rows.innerHTML =
-     expenses
-       .slice(0, 5)
-       .map(
-         expense => {
-
-           const description =
-             expense.description ||
-             expense.title ||
-             expense.name ||
-             "Expense";
-
-
-           const status =
-             expense.approval_status ||
-             expense.status ||
-             "Recorded";
-
-
-           return `
-             <tr>
-
-               <td>
-                 ${escapeHtml(
-                   description
-                 )}
-               </td>
-
-               <td>
-                 KSh ${money(
-                   expense.amount
-                 )}
-               </td>
-
-               <td>
-                 ${escapeHtml(
-                   status
-                 )}
-               </td>
-
-             </tr>
-           `;
-
-         }
-       )
-       .join("");
-
- }
-
-
- /* =========================================================
-    UPCOMING MEETINGS
- ========================================================= */
-
- function renderUpcomingMeetings(
-   meetings
- ) {
-
-   const rows =
-     byId(
-       "upcomingMeetingRows"
-     );
-
-
-   if (!rows) {
-     return;
-   }
-
-
-   if (
-     meetings.length === 0
-   ) {
-
-     rows.innerHTML = `
-       <tr>
-         <td colspan="4">
-           No upcoming meetings.
-         </td>
-       </tr>
-     `;
-
-     return;
-
-   }
-
-
-   rows.innerHTML =
-     meetings
-       .slice(0, 5)
-       .map(
-         meeting => {
-
-           const date =
-             meeting.date ||
-             meeting.meeting_date ||
-             meeting.created_at;
-
-
-           const title =
-             meeting.title ||
-             meeting.name ||
-             meeting.description ||
-             "Meeting";
-
-
-           return `
-             <tr>
-
-               <td>
-                 ${formatDate(
-                   date
-                 )}
-               </td>
-
-               <td>
-                 ${escapeHtml(
-                   title
-                 )}
-               </td>
-
-               <td>
-                 ${escapeHtml(
-                   meeting.venue ||
-                   meeting.location ||
-                   "—"
-                 )}
-               </td>
-
-               <td>
-                 ${escapeHtml(
-                   meeting.status ||
-                   "Upcoming"
-                 )}
-               </td>
-
-             </tr>
-           `;
-
-         }
-       )
-       .join("");
-
-      }
 }
 /* =========================================================
-   DASHBOARD REFRESH
+   MEMBER MONTHLY CONTRIBUTION STATUS
 ========================================================= */
 
-async function refreshDashboard() {
+function renderMemberStatus(
+  members,
+  contributions,
+  group
+) {
 
-  try {
-
-    showStatus("Refreshing dashboard...");
-
-    const member =
-      await getMyMember();
-
-    if (!member?.group_id) {
-
-      throw new Error(
-        "Your member account is not linked to a group."
-      );
-
-    }
-
-    const group =
-      await getMyGroup();
-
-    if (!group?.id) {
-
-      throw new Error(
-        "Group information could not be loaded."
-      );
-
-    }
-
-    const [
-      members,
-      contributions,
-      expenses,
-      meetings
-    ] = await Promise.all([
-
-      getMembers(
-        group.id
-      ),
-
-      getContributions(
-        group.id
-      ),
-
-      getExpenses(
-        group.id
-      ),
-
-      getMeetings(
-        group.id
-      )
-
-    ]);
-
-    renderSummary(
-      members,
-      contributions,
-      expenses,
-      group
+  const rows =
+    byId(
+      "memberStatusRows"
     );
 
-    renderMemberStatus(
-      members,
-      contributions,
-      group
+
+  if (!rows) {
+    return;
+  }
+
+
+  /* =======================================================
+     MONTHLY AMOUNT
+  ======================================================= */
+
+  const monthlyAmount =
+    Number(
+      group?.monthly_contribution || 0
     );
 
-    renderRecentContributions(
-      contributions,
-      members
+
+  /* =======================================================
+     CURRENT MONTH
+  ======================================================= */
+
+  const currentMonth =
+    getCurrentMonth();
+
+
+  /* =======================================================
+     ACTIVE MEMBERS
+  ======================================================= */
+
+  const activeMembers =
+    members.filter(
+      member =>
+        String(
+          member.status || "active"
+        ).toLowerCase() === "active"
     );
 
-    renderRecentExpenses(
-      expenses
-    );
 
-    renderUpcomingMeetings(
-      meetings
-    );
+  /* =======================================================
+     NO MEMBERS
+  ======================================================= */
 
-    hideStatus();
+  if (
+    activeMembers.length === 0
+  ) {
 
-  } catch (error) {
+    rows.innerHTML = `
+      <tr>
+        <td colspan="5">
+          No active members.
+        </td>
+      </tr>
+    `;
 
-    console.error(
-      "Dashboard refresh error:",
-      error
-    );
-
-    showError(error);
+    return;
 
   }
 
+
+  /* =======================================================
+     BUILD MEMBER ROWS
+  ======================================================= */
+
+  rows.innerHTML =
+    activeMembers
+      .map(
+        member => {
+
+
+          /* ===============================================
+             MEMBER PAYMENT
+          =============================================== */
+
+          const paid =
+            contributions
+              .filter(
+                contribution => {
+
+                  /*
+                   * Match member.
+                   */
+
+                  if (
+                    contribution.member_id !==
+                    member.id
+                  ) {
+
+                    return false;
+
+                  }
+
+
+                  /*
+                   * Only monthly contributions
+                   * count toward monthly dues.
+                   */
+
+                  const type =
+                    String(
+                      contribution.contribution_type ||
+                      ""
+                    ).toLowerCase();
+
+
+                  if (
+                    type !== "monthly"
+                  ) {
+
+                    return false;
+
+                  }
+
+
+                  /*
+                   * Only current month.
+                   */
+
+                  return (
+                    getContributionMonth(
+                      contribution
+                    ) === currentMonth
+                  );
+
+                }
+              )
+              .reduce(
+                (
+                  total,
+                  contribution
+                ) => {
+
+                  return (
+                    total +
+                    Number(
+                      contribution.amount || 0
+                    )
+                  );
+
+                },
+                0
+              );
+
+
+          /* ===============================================
+             OUTSTANDING
+          =============================================== */
+
+          const outstanding =
+            Math.max(
+              0,
+              monthlyAmount -
+              paid
+            );
+
+
+          /* ===============================================
+             STATUS
+          =============================================== */
+
+          let status =
+            "Outstanding";
+
+
+          if (
+            monthlyAmount <= 0
+          ) {
+
+            status =
+              "Not Set";
+
+          }
+          else if (
+            paid >= monthlyAmount
+          ) {
+
+            status =
+              "Paid";
+
+          }
+          else if (
+            paid > 0
+          ) {
+
+            status =
+              "Partial";
+
+          }
+
+
+          /* ===============================================
+             STATUS CLASS
+          =============================================== */
+
+          let statusClass =
+            "status-outstanding";
+
+
+          if (
+            status === "Paid"
+          ) {
+
+            statusClass =
+              "status-paid";
+
+          }
+          else if (
+            status === "Partial"
+          ) {
+
+            statusClass =
+              "status-partial";
+
+          }
+          else if (
+            status === "Not Set"
+          ) {
+
+            statusClass =
+              "status-not-set";
+
+          }
+
+
+          /* ===============================================
+             HTML
+          =============================================== */
+
+          return `
+            <tr>
+
+              <td>
+                ${escapeHtml(
+                  member.name ||
+                  "Member"
+                )}
+              </td>
+
+              <td>
+                KSh ${money(
+                  monthlyAmount
+                )}
+              </td>
+
+              <td>
+                KSh ${money(
+                  paid
+                )}
+              </td>
+
+              <td>
+                KSh ${money(
+                  outstanding
+                )}
+              </td>
+
+              <td>
+
+                <strong
+                  class="${statusClass}"
+                >
+                  ${escapeHtml(
+                    status
+                  )}
+                </strong>
+
+              </td>
+
+            </tr>
+          `;
+
+        }
+      )
+      .join("");
+
 }
+/* =========================================================
+   RECENT CONTRIBUTIONS
+========================================================= */
+
+function renderRecentContributions(
+  contributions,
+  members
+) {
+
+  const rows =
+    byId(
+      "recentContributionRows"
+    );
+
+
+  if (!rows) {
+    return;
+  }
+
+
+  /* =======================================================
+     NO CONTRIBUTIONS
+  ======================================================= */
+
+  if (
+    contributions.length === 0
+  ) {
+
+    rows.innerHTML = `
+      <tr>
+        <td colspan="3">
+          No contributions yet.
+        </td>
+      </tr>
+    `;
+
+    return;
+
+  }
+
+
+  /* =======================================================
+     MEMBER LOOKUP
+  ======================================================= */
+
+  const memberMap = {};
+
+
+  members.forEach(
+    member => {
+
+      memberMap[
+        member.id
+      ] =
+        member.name ||
+        "Member";
+
+    }
+  );
+
+
+  /* =======================================================
+     DISPLAY LATEST 5
+  ======================================================= */
+
+  rows.innerHTML =
+    contributions
+      .slice(0, 5)
+      .map(
+        contribution => {
+
+          const name =
+            memberMap[
+              contribution.member_id
+            ] ||
+            "Member";
+
+
+          const date =
+            contribution.contribution_date ||
+            contribution.created_at;
+
+
+          return `
+            <tr>
+
+              <td>
+                ${escapeHtml(
+                  name
+                )}
+              </td>
+
+              <td>
+                KSh ${money(
+                  contribution.amount
+                )}
+              </td>
+
+              <td>
+                ${formatDate(
+                  date
+                )}
+              </td>
+
+            </tr>
+          `;
+
+        }
+      )
+      .join("");
+
+}
+
+
+/* =========================================================
+   RECENT EXPENSES
+========================================================= */
+
+function renderRecentExpenses(
+  expenses
+) {
+
+  const rows =
+    byId(
+      "recentExpenseRows"
+    );
+
+
+  if (!rows) {
+    return;
+  }
+
+
+  /* =======================================================
+     NO EXPENSES
+  ======================================================= */
+
+  if (
+    expenses.length === 0
+  ) {
+
+    rows.innerHTML = `
+      <tr>
+        <td colspan="3">
+          No expenses yet.
+        </td>
+      </tr>
+    `;
+
+    return;
+
+  }
+
+
+  /* =======================================================
+     DISPLAY LATEST 5
+  ======================================================= */
+
+  rows.innerHTML =
+    expenses
+      .slice(0, 5)
+      .map(
+        expense => {
+
+          const description =
+            expense.description ||
+            expense.title ||
+            expense.name ||
+            "Expense";
+
+
+          const status =
+            expense.approval_status ||
+            expense.status ||
+            "Recorded";
+
+
+          return `
+            <tr>
+
+              <td>
+                ${escapeHtml(
+                  description
+                )}
+              </td>
+
+              <td>
+                KSh ${money(
+                  expense.amount
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  status
+                )}
+              </td>
+
+            </tr>
+          `;
+
+        }
+      )
+      .join("");
+
+}
+/* =========================================================
+   UPCOMING MEETINGS
+========================================================= */
+
+function renderUpcomingMeetings(
+  meetings
+) {
+
+  const rows =
+    byId(
+      "upcomingMeetingRows"
+    );
+
+
+  if (!rows) {
+    return;
+  }
+
+
+  /* =======================================================
+     NO MEETINGS
+  ======================================================= */
+
+  if (
+    meetings.length === 0
+  ) {
+
+    rows.innerHTML = `
+      <tr>
+        <td colspan="4">
+          No upcoming meetings.
+        </td>
+      </tr>
+    `;
+
+    return;
+
+  }
+
+
+  /* =======================================================
+     DISPLAY LATEST 5
+  ======================================================= */
+
+  rows.innerHTML =
+    meetings
+      .slice(0, 5)
+      .map(
+        meeting => {
+
+          const date =
+            meeting.date ||
+            meeting.meeting_date ||
+            meeting.created_at;
+
+
+          const title =
+            meeting.title ||
+            meeting.name ||
+            meeting.description ||
+            "Meeting";
+
+
+          const venue =
+            meeting.venue ||
+            meeting.location ||
+            "—";
+
+
+          const status =
+            meeting.status ||
+            "Upcoming";
+
+
+          return `
+            <tr>
+
+              <td>
+                ${formatDate(
+                  date
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  title
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  venue
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  status
+                )}
+              </td>
+
+            </tr>
+          `;
+
+        }
+      )
+      .join("");
+
+}
+
 
 /* =========================================================
    LOAD DASHBOARD
@@ -1354,21 +1511,26 @@ async function loadDashboard() {
 
   try {
 
+    /* =====================================================
+       SHOW LOADING
+    ===================================================== */
+
     showStatus(
       "Loading dashboard..."
     );
 
 
-    /* -------------------------------------------------------
-       GET CURRENT MEMBER
-    ------------------------------------------------------- */
+    /* =====================================================
+       GET MEMBER
+    ===================================================== */
 
     const member =
       await getMyMember();
 
 
     if (
-      !member?.group_id
+      !member ||
+      !member.group_id
     ) {
 
       throw new Error(
@@ -1378,16 +1540,17 @@ async function loadDashboard() {
     }
 
 
-    /* -------------------------------------------------------
-       GET CURRENT GROUP
-    ------------------------------------------------------- */
+    /* =====================================================
+       GET GROUP
+    ===================================================== */
 
     const group =
       await getMyGroup();
 
 
     if (
-      !group?.id
+      !group ||
+      !group.id
     ) {
 
       throw new Error(
@@ -1406,9 +1569,9 @@ async function loadDashboard() {
     );
 
 
-    /* -------------------------------------------------------
-       LOAD DASHBOARD DATA
-    ------------------------------------------------------- */
+    /* =====================================================
+       LOAD GROUP DATA
+    ===================================================== */
 
     const [
       members,
@@ -1437,6 +1600,10 @@ async function loadDashboard() {
       ]);
 
 
+    /* =====================================================
+       DEBUG DATA
+    ===================================================== */
+
     console.log(
       "CHAMA LIVE DASHBOARD DATA:",
       {
@@ -1448,9 +1615,9 @@ async function loadDashboard() {
     );
 
 
-    /* -------------------------------------------------------
+    /* =====================================================
        RENDER SUMMARY
-    ------------------------------------------------------- */
+    ===================================================== */
 
     renderSummary(
       members,
@@ -1460,9 +1627,9 @@ async function loadDashboard() {
     );
 
 
-    /* -------------------------------------------------------
+    /* =====================================================
        RENDER MEMBER STATUS
-    ------------------------------------------------------- */
+    ===================================================== */
 
     renderMemberStatus(
       members,
@@ -1471,9 +1638,9 @@ async function loadDashboard() {
     );
 
 
-    /* -------------------------------------------------------
+    /* =====================================================
        RENDER RECENT CONTRIBUTIONS
-    ------------------------------------------------------- */
+    ===================================================== */
 
     renderRecentContributions(
       contributions,
@@ -1481,27 +1648,27 @@ async function loadDashboard() {
     );
 
 
-    /* -------------------------------------------------------
+    /* =====================================================
        RENDER RECENT EXPENSES
-    ------------------------------------------------------- */
+    ===================================================== */
 
     renderRecentExpenses(
       expenses
     );
 
 
-    /* -------------------------------------------------------
+    /* =====================================================
        RENDER MEETINGS
-    ------------------------------------------------------- */
+    ===================================================== */
 
     renderUpcomingMeetings(
       meetings
     );
 
 
-    /* -------------------------------------------------------
-       FINISHED
-    ------------------------------------------------------- */
+    /* =====================================================
+       HIDE LOADING
+    ===================================================== */
 
     hideStatus();
 
@@ -1510,13 +1677,9 @@ async function loadDashboard() {
       "CHAMA LIVE: Dashboard ready."
     );
 
-  } catch (error) {
+  }
 
-    console.error(
-      "CHAMA LIVE DASHBOARD ERROR:",
-      error
-    );
-
+  catch (error) {
 
     showError(
       error
@@ -1524,9 +1687,7 @@ async function loadDashboard() {
 
   }
 
-}
-
-
+      }
 /* =========================================================
    PUBLIC INITIALIZER
 ========================================================= */
@@ -1539,71 +1700,16 @@ export async function initDashboard() {
 
 
 /* =========================================================
-   AUTO REFRESH
-========================================================= */
-
-let refreshTimer = null;
-
-
-function startAutoRefresh() {
-
-  if (refreshTimer) {
-
-    clearInterval(
-      refreshTimer
-    );
-
-  }
-
-
-  refreshTimer =
-    setInterval(
-      async () => {
-
-        await loadDashboard();
-
-      },
-      60000
-    );
-
-}
-
-
-/* =========================================================
-   REFRESH WHEN USER RETURNS TO PAGE
-========================================================= */
-
-document.addEventListener(
-  "visibilitychange",
-  () => {
-
-    if (
-      document.visibilityState ===
-      "visible"
-    ) {
-
-      loadDashboard();
-
-    }
-
-  }
-);
-
-
-/* =========================================================
-   START DASHBOARD
+   AUTO START
 ========================================================= */
 
 await initDashboard();
 
 
 /* =========================================================
-   START AUTO REFRESH
+   CHAMA LIVE — DASHBOARD READY
 ========================================================= */
 
-startAutoRefresh();
-
-
 console.log(
-  "CHAMA LIVE: dashboard auto-refresh enabled."
+  "CHAMA LIVE: dashboard.js initialized."
 );
