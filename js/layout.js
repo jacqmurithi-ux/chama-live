@@ -6,7 +6,7 @@ import {
 } from "./auth.js";
 
 /* =========================================================
-   LAYOUT STATE
+   CHAMA LIVE — GLOBAL LAYOUT
 ========================================================= */
 
 let currentMember = null;
@@ -34,13 +34,11 @@ function displayUser(member) {
     member?.full_name ||
     "Member";
 
-  const elements = document.querySelectorAll(
-    "[data-user-name]"
-  );
-
-  elements.forEach(element => {
-    element.textContent = name;
-  });
+  document
+    .querySelectorAll("[data-user-name]")
+    .forEach(element => {
+      element.textContent = name;
+    });
 }
 
 
@@ -55,13 +53,11 @@ function displayGroup(group) {
     group?.group_name ||
     "CHAMA";
 
-  const elements = document.querySelectorAll(
-    "[data-group-name]"
-  );
-
-  elements.forEach(element => {
-    element.textContent = name;
-  });
+  document
+    .querySelectorAll("[data-group-name]")
+    .forEach(element => {
+      element.textContent = name;
+    });
 }
 
 
@@ -77,12 +73,26 @@ function setupLogout() {
     return;
   }
 
+  /*
+   * Prevent duplicate listeners if boot()
+   * is ever called more than once.
+   */
+
+  if (
+    logoutButton.dataset.logoutReady === "true"
+  ) {
+    return;
+  }
+
+  logoutButton.dataset.logoutReady = "true";
+
   logoutButton.addEventListener(
     "click",
     async () => {
 
       logoutButton.disabled = true;
-      logoutButton.textContent = "Signing out...";
+      logoutButton.textContent =
+        "Signing out...";
 
       try {
 
@@ -91,12 +101,26 @@ function setupLogout() {
       } catch (error) {
 
         console.error(
-          "Logout error:",
+          "CHAMA LIVE logout error:",
           error
         );
 
         logoutButton.disabled = false;
-        logoutButton.textContent = "Sign out";
+        logoutButton.textContent =
+          "Sign out";
+
+        const errorBox =
+          byId("error");
+
+        if (errorBox) {
+
+          errorBox.hidden = false;
+
+          errorBox.textContent =
+            error?.message ||
+            "Unable to sign out.";
+
+        }
 
       }
 
@@ -165,28 +189,19 @@ async function loadPageScript() {
   if (!script) {
 
     console.log(
-      "No page-specific script for this page."
+      "CHAMA LIVE: no page-specific script."
     );
 
     return;
+
   }
 
   console.log(
-    "Loading page script:",
+    "CHAMA LIVE: loading",
     script
   );
 
   try {
-
-    /*
-     * IMPORTANT:
-     *
-     * All page JS files live inside /js/
-     *
-     * Example:
-     *
-     * /js/members.js
-     */
 
     await import(
       `./${script}`
@@ -195,14 +210,15 @@ async function loadPageScript() {
     pageScriptLoaded = true;
 
     console.log(
-      "Loaded page script:",
-      script
+      "CHAMA LIVE:",
+      script,
+      "loaded successfully."
     );
 
   } catch (error) {
 
     console.error(
-      `Unable to load ${script}:`,
+      `CHAMA LIVE: unable to load ${script}:`,
       error
     );
 
@@ -214,7 +230,7 @@ async function loadPageScript() {
       errorBox.hidden = false;
 
       errorBox.textContent =
-        `Unable to load ${script}. Check that /js/${script} contains JavaScript code and is committed to GitHub.`;
+        `Unable to load ${script}. Please check that /js/${script} exists and is valid JavaScript.`;
 
     }
 
@@ -228,27 +244,54 @@ async function loadPageScript() {
 
 export async function boot() {
 
+  /*
+   * Prevent accidental double boot.
+   */
+
+  if (
+    document.body.dataset.chamaBooted === "true"
+  ) {
+
+    console.log(
+      "CHAMA LIVE: boot already completed."
+    );
+
+    return;
+
+  }
+
+  document.body.dataset.chamaBooted =
+    "true";
+
+
   try {
 
     console.log(
       "CHAMA LIVE booting..."
     );
 
-    /*
-     * 1. Make sure the user is logged in.
-     */
+
+    /* =====================================================
+       1. AUTHENTICATION
+    ===================================================== */
 
     const session =
       await requireAuth();
 
     if (!session) {
+
+      console.log(
+        "CHAMA LIVE: no authenticated session."
+      );
+
       return;
+
     }
 
 
-    /*
-     * 2. Get member.
-     */
+    /* =====================================================
+       2. CURRENT MEMBER
+    ===================================================== */
 
     currentMember =
       await getMyMember();
@@ -262,9 +305,15 @@ export async function boot() {
     }
 
 
-    /*
-     * 3. Get group.
-     */
+    console.log(
+      "CHAMA LIVE member:",
+      currentMember
+    );
+
+
+    /* =====================================================
+       3. CURRENT GROUP
+    ===================================================== */
 
     try {
 
@@ -274,30 +323,47 @@ export async function boot() {
     } catch (groupError) {
 
       console.warn(
-        "getMyGroup failed:",
+        "CHAMA LIVE: getMyGroup failed.",
         groupError
       );
 
+
       /*
-       * Some database versions may not
-       * have get_my_group().
+       * Fallback.
        *
-       * The member record still contains
-       * group_id, so allow the page to
-       * continue.
+       * The member record normally contains
+       * group_id.
        */
 
-      currentGroup = {
-        id:
-          currentMember.group_id
-      };
+      if (
+        currentMember.group_id
+      ) {
+
+        currentGroup = {
+          id:
+            currentMember.group_id
+        };
+
+      } else {
+
+        throw new Error(
+          "Your member account is not linked to a group."
+        );
+
+      }
 
     }
 
 
-    /*
-     * 4. Display information.
-     */
+    console.log(
+      "CHAMA LIVE group:",
+      currentGroup
+    );
+
+
+    /* =====================================================
+       4. DISPLAY GLOBAL DATA
+    ===================================================== */
 
     displayUser(
       currentMember
@@ -308,16 +374,16 @@ export async function boot() {
     );
 
 
-    /*
-     * 5. Setup logout.
-     */
+    /* =====================================================
+       5. LOGOUT
+    ===================================================== */
 
     setupLogout();
 
 
-    /*
-     * 6. Load page-specific JS.
-     */
+    /* =====================================================
+       6. PAGE SCRIPT
+    ===================================================== */
 
     await loadPageScript();
 
@@ -326,6 +392,7 @@ export async function boot() {
       "CHAMA LIVE ready."
     );
 
+
   } catch (error) {
 
     console.error(
@@ -333,8 +400,19 @@ export async function boot() {
       error
     );
 
+
+    /*
+     * Allow boot to be retried if the error
+     * was caused by a temporary problem.
+     */
+
+    document.body.dataset.chamaBooted =
+      "false";
+
+
     const errorBox =
       byId("error");
+
 
     if (errorBox) {
 
@@ -348,4 +426,4 @@ export async function boot() {
 
   }
 
-}
+      }
