@@ -17,6 +17,220 @@
     href="css/app.css"
   >
 
+  <!-- =====================================================
+       DASHBOARD MOBILE / VISUAL OVERRIDES
+       No need to edit app.css
+  ====================================================== -->
+
+  <style>
+
+    /* -----------------------------------------------------
+       MOBILE NAVIGATION
+    ----------------------------------------------------- */
+
+    .mobile-nav {
+      display: none;
+    }
+
+
+    /* -----------------------------------------------------
+       MOBILE ACTION GRID
+    ----------------------------------------------------- */
+
+    .visual-actions {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+
+    .visual-action {
+      text-decoration: none;
+      color: inherit;
+      background: var(--card-bg, #fff);
+      border: 1px solid rgba(0,0,0,.08);
+      border-radius: 18px;
+      padding: 18px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 82px;
+      box-shadow: 0 4px 14px rgba(0,0,0,.05);
+      transition: transform .2s ease,
+                  box-shadow .2s ease;
+    }
+
+
+    .visual-action:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 22px rgba(0,0,0,.09);
+    }
+
+
+    .visual-action-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 18px;
+      flex-shrink: 0;
+      background: #f1f5f9;
+    }
+
+
+    .visual-action strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+
+    .visual-action small {
+      display: block;
+      font-size: 11px;
+      opacity: .65;
+      line-height: 1.3;
+    }
+
+
+    /* -----------------------------------------------------
+       MOBILE
+    ----------------------------------------------------- */
+
+    @media (max-width: 650px) {
+
+      .menu-toggle {
+        display: none !important;
+      }
+
+
+      .sidebar {
+        display: none !important;
+      }
+
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+
+
+      .mobile-nav {
+        display: flex;
+        overflow-x: auto;
+        gap: 8px;
+        padding: 10px 12px;
+        background: var(--card-bg, #fff);
+        border-bottom: 1px solid rgba(0,0,0,.08);
+        scrollbar-width: none;
+        position: sticky;
+        top: 60px;
+        z-index: 90;
+      }
+
+
+      .mobile-nav::-webkit-scrollbar {
+        display: none;
+      }
+
+
+      .mobile-nav a {
+        flex: 0 0 auto;
+        text-decoration: none;
+        color: inherit;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 9px 13px;
+        border-radius: 999px;
+        background: #f1f5f9;
+        white-space: nowrap;
+      }
+
+
+      .mobile-nav a.active {
+        background: #111827;
+        color: #fff;
+      }
+
+
+      .visual-actions {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+
+
+      .visual-action {
+        padding: 14px 12px;
+        min-height: 76px;
+        border-radius: 16px;
+      }
+
+
+      .visual-action-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+      }
+
+
+      .visual-action strong {
+        font-size: 13px;
+      }
+
+
+      .visual-action small {
+        font-size: 10px;
+      }
+
+
+      .page-head {
+        align-items: flex-start;
+      }
+
+
+      .page-head .actions {
+        display: none;
+      }
+
+
+      .main {
+        width: 100%;
+      }
+
+    }
+
+
+    /* -----------------------------------------------------
+       VERY SMALL PHONES
+    ----------------------------------------------------- */
+
+    @media (max-width: 380px) {
+
+      .visual-actions {
+        grid-template-columns: 1fr 1fr;
+      }
+
+
+      .visual-action {
+        gap: 8px;
+      }
+
+
+      .visual-action-icon {
+        width: 38px;
+        height: 38px;
+        font-size: 15px;
+      }
+
+    }
+
+  </style>
+
 </head>
 
 
@@ -56,7 +270,58 @@
 </header>
 
 
+<!-- =====================================================
+     MOBILE NAVIGATION
+===================================================== -->
 
+<nav
+  class="mobile-nav"
+  aria-label="Mobile navigation"
+>
+
+  <a
+    href="dashboard.html"
+    class="active"
+  >
+    🏠 Dashboard
+  </a>
+
+
+  <a href="members.html">
+    👥 Members
+  </a>
+
+
+  <a href="contributions.html">
+    💰 Contributions
+  </a>
+
+
+  <a href="expenses.html">
+    💳 Expenses
+  </a>
+
+
+  <a href="meetings.html">
+    📅 Meetings
+  </a>
+
+
+  <a href="reports.html">
+    📊 Reports
+  </a>
+
+
+  <a href="monthly-closing.html">
+    🔒 Closing
+  </a>
+
+
+  <a href="group-management.html">
+    ⚙️ Group
+  </a>
+
+</nav>
 <!-- =====================================================
      APP LAYOUT
 ===================================================== -->
@@ -65,7 +330,7 @@
 
 
   <!-- ===================================================
-       SIDEBAR
+       DESKTOP SIDEBAR
   ==================================================== -->
 
   <aside
@@ -82,42 +347,42 @@
         href="dashboard.html"
         class="active"
       >
-        Dashboard
+        🏠 Dashboard
       </a>
 
 
       <a href="members.html">
-        Members
+        👥 Members
       </a>
 
 
       <a href="contributions.html">
-        Contributions
+        💰 Contributions
       </a>
 
 
       <a href="expenses.html">
-        Expenses
+        💳 Expenses
       </a>
 
 
       <a href="meetings.html">
-        Meetings
+        📅 Meetings
       </a>
 
 
       <a href="reports.html">
-        Reports
+        📊 Reports
       </a>
 
 
       <a href="monthly-closing.html">
-        Monthly Closing
+        🔒 Monthly Closing
       </a>
 
 
       <a href="group-management.html">
-        Group Management
+        ⚙️ Group Management
       </a>
 
     </nav>
@@ -156,7 +421,7 @@
       </div>
 
 
-      <!-- Desktop quick actions -->
+      <!-- Desktop buttons -->
 
       <div class="actions">
 
@@ -164,7 +429,7 @@
           href="members.html"
           class="btn btn-primary"
         >
-          + Member
+          + Add Member
         </a>
 
 
@@ -208,237 +473,181 @@
 
 
     <!-- =================================================
-         QUICK ACTIONS
+         VISUAL QUICK ACTIONS
     ================================================== -->
 
     <section
-      class="quick-actions"
+      class="visual-actions"
       aria-label="Quick actions"
     >
 
+
+      <!-- ADD MEMBER -->
+
       <a
         href="members.html"
-        class="quick-action"
+        class="visual-action"
       >
 
-        <span class="quick-action-icon">
-          +
+        <span class="visual-action-icon">
+          👤+
         </span>
 
         <span>
-          <strong>Add Member</strong>
-          <small>Register a member</small>
+
+          <strong>
+            Add Member
+          </strong>
+
+          <small>
+            Register a new member
+          </small>
+
         </span>
 
       </a>
 
+
+
+      <!-- CONTRIBUTION -->
 
       <a
         href="contributions.html"
-        class="quick-action"
+        class="visual-action"
       >
 
-        <span class="quick-action-icon">
-          KSh
+        <span class="visual-action-icon">
+          💰
         </span>
 
         <span>
-          <strong>Record Contribution</strong>
-          <small>Record member payment</small>
+
+          <strong>
+            Contribution
+          </strong>
+
+          <small>
+            Record member payment
+          </small>
+
         </span>
 
       </a>
 
+
+
+      <!-- EXPENSE -->
 
       <a
         href="expenses.html"
-        class="quick-action"
+        class="visual-action"
       >
 
-        <span class="quick-action-icon">
-          −
+        <span class="visual-action-icon">
+          💳
         </span>
 
         <span>
-          <strong>Record Expense</strong>
-          <small>Add group expense</small>
+
+          <strong>
+            Record Expense
+          </strong>
+
+          <small>
+            Add group spending
+          </small>
+
         </span>
 
       </a>
 
+
+
+      <!-- MEETING -->
 
       <a
         href="meetings.html"
-        class="quick-action"
+        class="visual-action"
       >
 
-        <span class="quick-action-icon">
-          •
+        <span class="visual-action-icon">
+          📅
         </span>
 
         <span>
-          <strong>Schedule Meeting</strong>
-          <small>Plan your next meeting</small>
+
+          <strong>
+            Schedule Meeting
+          </strong>
+
+          <small>
+            Plan your next meeting
+          </small>
+
         </span>
 
       </a>
 
-    </section>
+  </section>
+  <!-- =================================================
+     FINANCIAL OVERVIEW
+================================================== -->
 
+<section
+  class="dashboard-section"
+  aria-label="Financial overview"
+>
+
+  <div class="section-heading">
+
+    <div>
+
+      <div class="eyebrow">
+        FINANCIAL OVERVIEW
+      </div>
+
+      <h2>
+        Group Finances
+      </h2>
+
+    </div>
+
+  </div>
+
+
+  <div class="grid grid-3 dashboard-metrics">
 
 
     <!-- =================================================
-         FINANCIAL OVERVIEW
+         MEMBERS
     ================================================== -->
 
-    <div class="grid grid-3 dashboard-metrics">
+    <div class="card metric-card">
 
+      <div class="metric-label">
 
-      <!-- MEMBERS -->
+        <span class="metric-dot"></span>
 
-      <div class="card metric-card">
-
-        <div class="metric-label">
-          <span class="metric-dot"></span>
-          Members
-        </div>
-
-        <div
-          class="metric"
-          id="membersCount"
-        >
-          —
-        </div>
-
-        <div class="muted">
-
-          <span id="activeMembers">
-            —
-          </span>
-
-          active
-
-        </div>
+        Members
 
       </div>
 
 
-
-      <!-- MONTHLY EXPECTED -->
-
-      <div class="card metric-card">
-
-        <div class="metric-label">
-          <span class="metric-dot expected"></span>
-          Monthly Expected
-        </div>
-
-        <div
-          class="metric"
-          id="monthlyExpected"
-        >
-          —
-        </div>
-
-        <div class="muted">
-          Expected this month
-        </div>
-
+      <div
+        class="metric"
+        id="membersCount"
+      >
+        —
       </div>
 
 
+      <div class="muted">
 
-      <!-- MONTHLY COLLECTED -->
-
-      <div class="card metric-card metric-positive">
-
-        <div class="metric-label">
-          <span class="metric-dot success"></span>
-          Monthly Collected
-        </div>
-
-        <div
-          class="metric"
-          id="monthlyCollected"
-        >
+        <span id="activeMembers">
           —
-        </div>
+        </span>
 
-        <div class="muted">
-          Contributions received
-        </div>
-
-      </div>
-
-
-
-      <!-- OUTSTANDING -->
-
-      <div class="card metric-card">
-
-        <div class="metric-label">
-          <span class="metric-dot warning"></span>
-          Outstanding
-        </div>
-
-        <div
-          class="metric"
-          id="monthlyOutstanding"
-        >
-          —
-        </div>
-
-        <div class="muted">
-          Contributions pending
-        </div>
-
-      </div>
-
-
-
-      <!-- COLLECTION RATE -->
-
-      <div class="card metric-card metric-positive">
-
-        <div class="metric-label">
-          <span class="metric-dot success"></span>
-          Collection Rate
-        </div>
-
-        <div
-          class="metric"
-          id="collectionRate"
-        >
-          —
-        </div>
-
-        <div class="muted">
-          Monthly performance
-        </div>
-
-      </div>
-
-
-
-      <!-- CURRENT BALANCE -->
-
-      <div class="card metric-card">
-
-        <div class="metric-label">
-          <span class="metric-dot balance"></span>
-          Current Balance
-        </div>
-
-        <div
-          class="metric"
-          id="currentBalance"
-        >
-          —
-        </div>
-
-        <div class="muted">
-          Current group balance
-        </div>
+        active
 
       </div>
 
@@ -446,93 +655,665 @@
 
 
 
-    <br>
+    <!-- =================================================
+         MONTHLY EXPECTED
+    ================================================== -->
+
+    <div class="card metric-card">
+
+      <div class="metric-label">
+
+        <span class="metric-dot expected"></span>
+
+        Monthly Expected
+
+      </div>
+
+
+      <div
+        class="metric"
+        id="monthlyExpected"
+      >
+        —
+      </div>
+
+
+      <div class="muted">
+        Expected this month
+      </div>
+
+    </div>
 
 
 
     <!-- =================================================
-         CONTRIBUTION PROGRESS
+         MONTHLY COLLECTED
     ================================================== -->
 
-    <section class="card progress-card">
+    <div
+      class="card metric-card metric-positive"
+    >
 
-      <div class="section-heading">
+      <div class="metric-label">
 
-        <div>
+        <span class="metric-dot success"></span>
 
-          <h2>
-            Monthly Contribution Progress
-          </h2>
-
-          <p
-            class="muted"
-            id="progressMonth"
-          >
-            Current month
-          </p>
-
-        </div>
-
-
-        <div
-          class="progress-percentage"
-          id="progressPercentage"
-        >
-          0%
-        </div>
+        Monthly Collected
 
       </div>
 
 
-      <div class="progress">
-
-        <div
-          id="progressBar"
-          class="progress-bar"
-        ></div>
-
+      <div
+        class="metric"
+        id="monthlyCollected"
+      >
+        —
       </div>
 
 
-      <div class="progress-footer">
-
-        <span id="progressText">
-          KSh 0 / KSh 0
-        </span>
-
-        <span class="muted">
-          Monthly collection
-        </span>
-
+      <div class="muted">
+        Contributions received
       </div>
 
-    </section>
-
-
-
-    <br>
+    </div>
 
 
 
     <!-- =================================================
-         MEMBER CONTRIBUTION STATUS
+         OUTSTANDING
     ================================================== -->
 
-    <section class="card">
+    <div class="card metric-card">
 
-      <div class="section-heading">
+      <div class="metric-label">
+
+        <span class="metric-dot warning"></span>
+
+        Outstanding
+
+      </div>
+
+
+      <div
+        class="metric"
+        id="monthlyOutstanding"
+      >
+        —
+      </div>
+
+
+      <div class="muted">
+        Contributions pending
+      </div>
+
+    </div>
+
+
+
+    <!-- =================================================
+         COLLECTION RATE
+    ================================================== -->
+
+    <div
+      class="card metric-card metric-positive"
+    >
+
+      <div class="metric-label">
+
+        <span class="metric-dot success"></span>
+
+        Collection Rate
+
+      </div>
+
+
+      <div
+        class="metric"
+        id="collectionRate"
+      >
+        —
+      </div>
+
+
+      <div class="muted">
+        Monthly performance
+      </div>
+
+    </div>
+
+
+
+    <!-- =================================================
+         CURRENT BALANCE
+    ================================================== -->
+
+    <div class="card metric-card">
+
+      <div class="metric-label">
+
+        <span class="metric-dot balance"></span>
+
+        Current Balance
+
+      </div>
+
+
+      <div
+        class="metric"
+        id="currentBalance"
+      >
+        —
+      </div>
+
+
+      <div class="muted">
+        Current group balance
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+
+<!-- =================================================
+     MOBILE CARD IMPROVEMENTS
+================================================== -->
+
+<style>
+
+  .dashboard-section {
+    margin-bottom: 24px;
+  }
+
+
+  .dashboard-section
+  .section-heading {
+    margin-bottom: 14px;
+  }
+
+
+  @media (max-width: 650px) {
+
+    .dashboard-metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+
+    .dashboard-metrics
+    .metric-card {
+      padding: 15px 13px;
+      min-width: 0;
+      border-radius: 16px;
+    }
+
+
+    .dashboard-metrics
+    .metric-label {
+      font-size: 11px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+
+    .dashboard-metrics
+    .metric {
+      font-size: 21px;
+      margin: 7px 0 3px;
+    }
+
+
+    .dashboard-metrics
+    .muted {
+      font-size: 10px;
+      line-height: 1.3;
+    }
+
+
+    .dashboard-metrics
+    .metric-dot {
+      width: 7px;
+      height: 7px;
+      flex-shrink: 0;
+    }
+
+  }
+
+
+  @media (max-width: 380px) {
+
+    .dashboard-metrics {
+      gap: 8px;
+    }
+
+
+    .dashboard-metrics
+    .metric-card {
+      padding: 13px 10px;
+    }
+
+
+    .dashboard-metrics
+    .metric {
+      font-size: 18px;
+    }
+
+  }
+
+</style>
+<!-- =================================================
+     MONTHLY CONTRIBUTION PROGRESS
+================================================== -->
+
+<section class="card progress-card">
+
+  <div class="section-heading">
+
+    <div>
+
+      <div class="eyebrow">
+        THIS MONTH
+      </div>
+
+      <h2>
+        Contribution Progress
+      </h2>
+
+      <p
+        class="muted"
+        id="progressMonth"
+      >
+        Current month
+      </p>
+
+    </div>
+
+
+    <div
+      class="progress-percentage"
+      id="progressPercentage"
+    >
+      0%
+    </div>
+
+  </div>
+
+
+
+  <!-- =================================================
+       PROGRESS BAR
+  ================================================== -->
+
+  <div class="progress">
+
+    <div
+      id="progressBar"
+      class="progress-bar"
+      style="width:0%;"
+    ></div>
+
+  </div>
+
+
+
+  <!-- =================================================
+       PROGRESS DETAILS
+  ================================================== -->
+
+  <div class="progress-footer">
+
+    <strong id="progressText">
+      KSh 0 / KSh 0
+    </strong>
+
+    <span class="muted">
+      Monthly collection
+    </span>
+
+  </div>
+
+</section>
+
+
+
+<!-- =================================================
+     PROGRESS MOBILE DESIGN
+================================================== -->
+
+<style>
+
+  .progress-card {
+    margin-bottom: 24px;
+  }
+
+
+  .progress-card
+  .section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+  }
+
+
+  .progress-percentage {
+    min-width: 62px;
+    height: 62px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    font-weight: 800;
+    background: #f1f5f9;
+    flex-shrink: 0;
+  }
+
+
+  .progress {
+    height: 12px;
+    border-radius: 999px;
+    overflow: hidden;
+    margin: 20px 0 12px;
+    background: #e5e7eb;
+  }
+
+
+  .progress-bar {
+    height: 100%;
+    border-radius: inherit;
+    transition: width .5s ease;
+  }
+
+
+  .progress-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+
+  @media (max-width: 650px) {
+
+    .progress-card {
+      padding: 17px 14px;
+      border-radius: 17px;
+    }
+
+
+    .progress-card h2 {
+      font-size: 17px;
+    }
+
+
+    .progress-card .eyebrow {
+      font-size: 9px;
+    }
+
+
+    .progress-card .muted {
+      font-size: 11px;
+    }
+
+
+    .progress-percentage {
+      width: 54px;
+      min-width: 54px;
+      height: 54px;
+      font-size: 15px;
+    }
+
+
+    .progress {
+      height: 10px;
+      margin: 17px 0 11px;
+    }
+
+
+    .progress-footer {
+      font-size: 12px;
+    }
+
+  }
+
+</style>
+<!-- =================================================
+     MEMBER CONTRIBUTION STATUS
+================================================== -->
+
+<section class="card member-status-card">
+
+  <div class="section-heading">
+
+    <div>
+
+      <div class="eyebrow">
+        MEMBER PAYMENTS
+      </div>
+
+      <h2>
+        Contribution Status
+      </h2>
+
+      <p class="muted">
+        See who has cleared their monthly contribution.
+      </p>
+
+    </div>
+
+  </div>
+
+
+  <!-- =================================================
+       MOBILE MEMBER CARDS
+       The JavaScript table remains the same.
+  ================================================== -->
+
+  <div class="table-wrap member-status-table">
+
+    <table class="table">
+
+      <thead>
+
+        <tr>
+
+          <th>
+            Member
+          </th>
+
+          <th>
+            Expected
+          </th>
+
+          <th>
+            Paid
+          </th>
+
+          <th>
+            Outstanding
+          </th>
+
+          <th>
+            Status
+          </th>
+
+        </tr>
+
+      </thead>
+
+
+      <tbody id="memberStatusRows">
+
+        <tr>
+
+          <td colspan="5">
+            Loading...
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</section>
+
+
+
+<!-- =================================================
+     MEMBER STATUS MOBILE CSS
+================================================== -->
+
+<style>
+
+  .member-status-card {
+    margin-bottom: 24px;
+  }
+
+
+  .member-status-card
+  .section-heading {
+    margin-bottom: 16px;
+  }
+
+
+  /* ---------------------------------------------------
+     STATUS BADGES
+  --------------------------------------------------- */
+
+  .member-status-table
+  td:last-child strong {
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-width: 82px;
+
+    padding: 6px 10px;
+
+    border-radius: 999px;
+
+    font-size: 11px;
+
+    font-weight: 700;
+
+    background: #f1f5f9;
+
+  }
+
+
+  /* ---------------------------------------------------
+     MOBILE TABLE
+  --------------------------------------------------- */
+
+  @media (max-width: 650px) {
+
+    .member-status-card {
+      padding: 16px 12px;
+      border-radius: 17px;
+    }
+
+
+    .member-status-card h2 {
+      font-size: 17px;
+    }
+
+
+    .member-status-card
+    .muted {
+      font-size: 11px;
+    }
+
+
+    .member-status-table {
+      overflow-x: auto;
+      margin-left: -2px;
+      margin-right: -2px;
+    }
+
+
+    .member-status-table table {
+      min-width: 620px;
+    }
+
+
+    .member-status-table th,
+    .member-status-table td {
+      padding: 11px 8px;
+      font-size: 11px;
+    }
+
+
+    .member-status-table th {
+      font-size: 10px;
+    }
+
+
+    .member-status-table
+    td:first-child {
+      font-weight: 700;
+    }
+
+
+    .member-status-table
+    td:last-child strong {
+      min-width: 70px;
+      padding: 5px 8px;
+      font-size: 10px;
+    }
+
+  }
+
+</style>
+<!-- =================================================
+     RECENT ACTIVITY
+================================================== -->
+
+<section class="recent-activity">
+
+  <div class="grid grid-2">
+
+
+    <!-- =================================================
+         RECENT CONTRIBUTIONS
+    ================================================== -->
+
+    <section class="card activity-card">
+
+      <div class="section-head">
 
         <div>
 
+          <div class="eyebrow">
+            MONEY IN
+          </div>
+
           <h2>
-            Member Contribution Status
+            Recent Contributions
           </h2>
 
           <p class="muted">
-            Members who still have a monthly contribution balance.
+            Latest money received
           </p>
 
         </div>
+
+
+        <a
+          href="contributions.html"
+          class="btn btn-secondary"
+        >
+          View all
+        </a>
 
       </div>
 
@@ -550,19 +1331,11 @@
               </th>
 
               <th>
-                Expected
+                Amount
               </th>
 
               <th>
-                Paid
-              </th>
-
-              <th>
-                Outstanding
-              </th>
-
-              <th>
-                Status
+                Date
               </th>
 
             </tr>
@@ -570,11 +1343,11 @@
           </thead>
 
 
-          <tbody id="memberStatusRows">
+          <tbody id="recentContributionRows">
 
             <tr>
 
-              <td colspan="5">
+              <td colspan="3">
                 Loading...
               </td>
 
@@ -590,197 +1363,36 @@
 
 
 
-    <br>
-
-
-
     <!-- =================================================
-         RECENT ACTIVITY
+         RECENT EXPENSES
     ================================================== -->
 
-    <div class="grid grid-2">
-
-
-      <!-- RECENT CONTRIBUTIONS -->
-
-      <section class="card">
-
-        <div class="section-head">
-
-          <div>
-
-            <h2>
-              Recent Contributions
-            </h2>
-
-            <p class="muted">
-              Latest money received
-            </p>
-
-          </div>
-
-
-          <a
-            href="contributions.html"
-            class="btn btn-secondary"
-          >
-            View all
-          </a>
-
-        </div>
-
-
-        <div class="table-wrap">
-
-          <table class="table">
-
-            <thead>
-
-              <tr>
-
-                <th>
-                  Member
-                </th>
-
-                <th>
-                  Amount
-                </th>
-
-                <th>
-                  Date
-                </th>
-
-              </tr>
-
-            </thead>
-
-
-            <tbody id="recentContributionRows">
-
-              <tr>
-
-                <td colspan="3">
-                  Loading...
-                </td>
-
-              </tr>
-
-            </tbody>
-
-          </table>
-
-        </div>
-
-      </section>
-
-
-
-      <!-- RECENT EXPENSES -->
-
-      <section class="card">
-
-        <div class="section-head">
-
-          <div>
-
-            <h2>
-              Recent Expenses
-            </h2>
-
-            <p class="muted">
-              Latest group spending
-            </p>
-
-          </div>
-
-
-          <a
-            href="expenses.html"
-            class="btn btn-secondary"
-          >
-            View all
-          </a>
-
-        </div>
-
-
-        <div class="table-wrap">
-
-          <table class="table">
-
-            <thead>
-
-              <tr>
-
-                <th>
-                  Description
-                </th>
-
-                <th>
-                  Amount
-                </th>
-
-                <th>
-                  Status
-                </th>
-
-              </tr>
-
-            </thead>
-
-
-            <tbody id="recentExpenseRows">
-
-              <tr>
-
-                <td colspan="3">
-                  Loading...
-                </td>
-
-              </tr>
-
-            </tbody>
-
-          </table>
-
-        </div>
-
-      </section>
-
-    </div>
-
-
-
-    <br>
-
-
-
-    <!-- =================================================
-         UPCOMING MEETINGS
-    ================================================== -->
-
-    <section class="card">
+    <section class="card activity-card">
 
       <div class="section-head">
 
         <div>
 
+          <div class="eyebrow">
+            MONEY OUT
+          </div>
+
           <h2>
-            Upcoming Meetings
+            Recent Expenses
           </h2>
 
           <p class="muted">
-            Keep your group organised
+            Latest group spending
           </p>
 
         </div>
 
 
         <a
-          href="meetings.html"
+          href="expenses.html"
           class="btn btn-secondary"
         >
-          View meetings
+          View all
         </a>
 
       </div>
@@ -795,15 +1407,11 @@
             <tr>
 
               <th>
-                Date
+                Description
               </th>
 
               <th>
-                Meeting
-              </th>
-
-              <th>
-                Venue
+                Amount
               </th>
 
               <th>
@@ -815,11 +1423,11 @@
           </thead>
 
 
-          <tbody id="upcomingMeetingRows">
+          <tbody id="recentExpenseRows">
 
             <tr>
 
-              <td colspan="4">
+              <td colspan="3">
                 Loading...
               </td>
 
@@ -833,226 +1441,628 @@
 
     </section>
 
+  </div>
+
+</section>
+
+
+
+<!-- =================================================
+     RECENT ACTIVITY MOBILE CSS
+================================================== -->
+
+<style>
+
+  .recent-activity {
+    margin-bottom: 24px;
+  }
+
+
+  .activity-card {
+    min-width: 0;
+  }
+
+
+  .activity-card .section-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+
+  .activity-card h2 {
+    margin-bottom: 4px;
+  }
+
+
+  .activity-card .btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+
+  /* ---------------------------------------------------
+     MOBILE
+  --------------------------------------------------- */
+
+  @media (max-width: 650px) {
+
+    .recent-activity .grid-2 {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+
+    .activity-card {
+      padding: 16px 12px;
+      border-radius: 17px;
+    }
+
+
+    .activity-card h2 {
+      font-size: 16px;
+    }
+
+
+    .activity-card .eyebrow {
+      font-size: 9px;
+    }
+
+
+    .activity-card .muted {
+      font-size: 10px;
+    }
+
+
+    .activity-card .btn {
+      font-size: 10px;
+      padding: 7px 9px;
+    }
+
+
+    .activity-card .table-wrap {
+      overflow-x: auto;
+    }
+
+
+    .activity-card table {
+      min-width: 460px;
+    }
+
+
+    .activity-card th,
+    .activity-card td {
+      padding: 10px 8px;
+      font-size: 11px;
+    }
+
+  }
+
+</style>
+<!-- =================================================
+     UPCOMING MEETINGS
+================================================== -->
+
+<section class="card meetings-card">
+
+  <div class="section-head">
+
+    <div>
+
+      <div class="eyebrow">
+        GROUP CALENDAR
+      </div>
+
+      <h2>
+        Upcoming Meetings
+      </h2>
+
+      <p class="muted">
+        Keep your group organised.
+      </p>
+
+    </div>
+
+
+    <a
+      href="meetings.html"
+      class="btn btn-secondary"
+    >
+      View meetings
+    </a>
+
+  </div>
+
+
+  <div class="table-wrap">
+
+    <table class="table">
+
+      <thead>
+
+        <tr>
+
+          <th>
+            Date
+          </th>
+
+          <th>
+            Meeting
+          </th>
+
+          <th>
+            Venue
+          </th>
+
+          <th>
+            Status
+          </th>
+
+        </tr>
+
+      </thead>
+
+
+      <tbody id="upcomingMeetingRows">
+
+        <tr>
+
+          <td colspan="4">
+            Loading...
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</section>
+
+
+
+<!-- =================================================
+     MOBILE BOTTOM NAVIGATION
+================================================== -->
+
+<nav
+  class="mobile-bottom-nav"
+  aria-label="Mobile navigation"
+>
+
+
+  <a
+    href="dashboard.html"
+    class="mobile-nav-item active"
+  >
+
+    <span class="mobile-nav-icon">
+      🏠
+    </span>
+
+    <span>
+      Home
+    </span>
+
+  </a>
+
+
+
+  <a
+    href="members.html"
+    class="mobile-nav-item"
+  >
+
+    <span class="mobile-nav-icon">
+      👥
+    </span>
+
+    <span>
+      Members
+    </span>
+
+  </a>
+
+
+
+  <a
+    href="contributions.html"
+    class="mobile-nav-item mobile-nav-primary"
+  >
+
+    <span class="mobile-nav-plus">
+      +
+    </span>
+
+    <span>
+      Add
+    </span>
+
+  </a>
+
+
+
+  <a
+    href="expenses.html"
+    class="mobile-nav-item"
+  >
+
+    <span class="mobile-nav-icon">
+      💳
+    </span>
+
+    <span>
+      Expenses
+    </span>
+
+  </a>
+
+
+
+  <a
+    href="meetings.html"
+    class="mobile-nav-item"
+  >
+
+    <span class="mobile-nav-icon">
+      📅
+    </span>
+
+    <span>
+      Meetings
+    </span>
+
+  </a>
+
+</nav>
+
+
+
+<!-- =================================================
+     MOBILE NAVIGATION CSS
+================================================== -->
+
+<style>
+
+  .mobile-bottom-nav {
+    display: none;
+  }
+
+
+  .meetings-card {
+    margin-bottom: 30px;
+  }
+
+
+  @media (max-width: 650px) {
+
+    /*
+     * Hide the desktop sidebar.
+     */
+
+    .sidebar {
+      display: none !important;
+    }
+
+
+    /*
+     * Remove the old hamburger/menu area.
+     */
+
+    .menu-toggle {
+      display: none !important;
+    }
+
+
+    /*
+     * Make the layout full width.
+     */
+
+    .layout {
+      display: block !important;
+    }
+
+
+    .main {
+      width: 100%;
+      padding-bottom: 90px;
+    }
+
+
+    /*
+     * Bottom navigation.
+     */
+
+    .mobile-bottom-nav {
+
+      position: fixed;
+
+      left: 0;
+      right: 0;
+      bottom: 0;
+
+      z-index: 9999;
+
+      height: 68px;
+
+      display: flex;
+
+      align-items: center;
+      justify-content: space-around;
+
+      padding:
+        6px
+        8px
+        calc(6px + env(safe-area-inset-bottom));
+
+      background: rgba(255,255,255,.97);
+
+      border-top:
+        1px solid
+        #e5e7eb;
+
+      box-shadow:
+        0 -5px 20px
+        rgba(0,0,0,.08);
+
+      backdrop-filter: blur(12px);
+
+    }
+
+
+    /*
+     * Navigation items.
+     */
+
+    .mobile-nav-item {
+
+      flex: 1;
+
+      min-width: 0;
+
+      height: 54px;
+
+      display: flex;
+
+      flex-direction: column;
+
+      align-items: center;
+      justify-content: center;
+
+      gap: 2px;
+
+      text-decoration: none;
+
+      font-size: 9px;
+
+      font-weight: 600;
+
+      color: #64748b;
+
+      border-radius: 12px;
+
+    }
+
+
+    .mobile-nav-icon {
+
+      font-size: 19px;
+
+      line-height: 22px;
+
+    }
+
+
+    /*
+     * Active item.
+     */
+
+    .mobile-nav-item.active {
+
+      color: #111827;
+
+      background: #f1f5f9;
+
+    }
+
+
+    /*
+     * Center Add button.
+     */
+
+    .mobile-nav-primary {
+
+      position: relative;
+
+      color: #111827;
+
+    }
+
+
+    .mobile-nav-plus {
+
+      width: 39px;
+      height: 39px;
+
+      display: flex;
+
+      align-items: center;
+      justify-content: center;
+
+      border-radius: 50%;
+
+      font-size: 25px;
+
+      font-weight: 700;
+
+      background: #111827;
+
+      color: white;
+
+      box-shadow:
+        0 5px 14px
+        rgba(0,0,0,.20);
+
+      margin-top: -17px;
+
+      border:
+        4px solid
+        white;
+
+    }
+
+
+    /*
+     * Meetings table.
+     */
+
+    .meetings-card {
+      padding: 16px 12px;
+
+      border-radius: 17px;
+
+    }
+
+
+    .meetings-card h2 {
+      font-size: 17px;
+    }
+
+
+    .meetings-card .eyebrow {
+      font-size: 9px;
+    }
+
+
+    .meetings-card .muted {
+      font-size: 10px;
+    }
+
+
+    .meetings-card .btn {
+      font-size: 10px;
+      padding: 7px 9px;
+      white-space: nowrap;
+    }
+
+
+    .meetings-card .table-wrap {
+      overflow-x: auto;
+    }
+
+
+    .meetings-card table {
+      min-width: 560px;
+    }
+
+
+    .meetings-card th,
+    .meetings-card td {
+      padding: 10px 8px;
+      font-size: 11px;
+    }
+
+  }
+
+</style>
+<!-- =================================================
+     END MAIN CONTENT
+================================================== -->
 
   </main>
 
 </div>
 
 
-
-<!-- =====================================================
+<!-- =================================================
      JAVASCRIPT
-===================================================== -->
+================================================== -->
 
 <script type="module">
 
-  import { boot } from "./js/layout.js";
+  /*
+   * CHAMA LIVE dashboard boot
+   *
+   * layout.js handles:
+   * - authentication
+   * - member loading
+   * - group loading
+   * - logout
+   * - dashboard.js loading
+   */
+
+  import {
+    boot
+  } from "./js/layout.js";
 
 
   /*
-   * IMPORTANT:
-   *
-   * Existing application boot remains unchanged.
+   * Start the application.
    */
 
   boot();
 
 
-
-  /* =====================================================
-     MOBILE MENU
-  ===================================================== */
-
-  const menuToggle =
-    document.getElementById("menuToggle");
-
-  const sidebar =
-    document.getElementById("sidebar");
+</script>
 
 
-  if (
-    menuToggle &&
-    sidebar
-  ) {
+<!-- =================================================
+     MOBILE BOTTOM NAV ACTIVE STATE
+================================================== -->
+
+<script>
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+      const currentPage =
+        window.location.pathname
+          .split("/")
+          .pop()
+          .toLowerCase();
 
 
-    /* -----------------------------------------------
-       CREATE OVERLAY
-    ----------------------------------------------- */
+      document
+        .querySelectorAll(
+          ".mobile-nav-item"
+        )
+        .forEach(link => {
 
-    const overlay =
-      document.createElement("div");
-
-    overlay.className =
-      "sidebar-overlay";
-
-    document.body.appendChild(
-      overlay
-    );
+          const href =
+            link
+              .getAttribute("href")
+              ?.toLowerCase();
 
 
-    /* -----------------------------------------------
-       OPEN MENU
-    ----------------------------------------------- */
+          if (
+            href === currentPage
+          ) {
 
-    function openMenu() {
+            link.classList.add(
+              "active"
+            );
 
-      sidebar.classList.add(
-        "open"
-      );
+          } else {
 
-      overlay.classList.add(
-        "show"
-      );
+            link.classList.remove(
+              "active"
+            );
 
-      menuToggle.setAttribute(
-        "aria-expanded",
-        "true"
-      );
+          }
 
-      menuToggle.setAttribute(
-        "aria-label",
-        "Close menu"
-      );
-
-      menuToggle.textContent =
-        "✕";
-
-      document.body.style.overflow =
-        "hidden";
+        });
 
     }
-
-
-    /* -----------------------------------------------
-       CLOSE MENU
-    ----------------------------------------------- */
-
-    function closeMenu() {
-
-      sidebar.classList.remove(
-        "open"
-      );
-
-      overlay.classList.remove(
-        "show"
-      );
-
-      menuToggle.setAttribute(
-        "aria-expanded",
-        "false"
-      );
-
-      menuToggle.setAttribute(
-        "aria-label",
-        "Open menu"
-      );
-
-      menuToggle.textContent =
-        "☰";
-
-      document.body.style.overflow =
-        "";
-
-    }
-
-
-    /* -----------------------------------------------
-       TOGGLE MENU
-    ----------------------------------------------- */
-
-    menuToggle.addEventListener(
-      "click",
-      () => {
-
-        if (
-          sidebar.classList.contains(
-            "open"
-          )
-        ) {
-
-          closeMenu();
-
-        } else {
-
-          openMenu();
-
-        }
-
-      }
-    );
-
-
-    /* -----------------------------------------------
-       CLOSE OVERLAY
-    ----------------------------------------------- */
-
-    overlay.addEventListener(
-      "click",
-      closeMenu
-    );
-
-
-    /* -----------------------------------------------
-       CLOSE AFTER NAVIGATION
-    ----------------------------------------------- */
-
-    sidebar
-      .querySelectorAll("a")
-      .forEach(link => {
-
-        link.addEventListener(
-          "click",
-          closeMenu
-        );
-
-      });
-
-
-    /* -----------------------------------------------
-       ESCAPE KEY
-    ----------------------------------------------- */
-
-    document.addEventListener(
-      "keydown",
-      event => {
-
-        if (
-          event.key === "Escape"
-        ) {
-
-          closeMenu();
-
-        }
-
-      }
-    );
-
-
-    /* -----------------------------------------------
-       RESTORE DESKTOP STATE
-    ----------------------------------------------- */
-
-    window.addEventListener(
-      "resize",
-      () => {
-
-        if (
-          window.innerWidth > 650
-        ) {
-
-          closeMenu();
-
-        }
-
-      }
-    );
-
-  }
+  );
 
 </script>
 
 
 </body>
 
-          </html>
+</html>
