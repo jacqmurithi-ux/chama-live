@@ -1,3 +1,4 @@
+
 import { supabase } from "./supabase.js";
 
 
@@ -12,11 +13,9 @@ export async function getCurrentUser() {
     error
   } = await supabase.auth.getUser();
 
-
   if (error) {
     throw error;
   }
-
 
   if (!data?.user) {
 
@@ -25,7 +24,6 @@ export async function getCurrentUser() {
     );
 
   }
-
 
   return data.user;
 }
@@ -43,11 +41,9 @@ export async function getSession() {
   } =
     await supabase.auth.getSession();
 
-
   if (error) {
     throw error;
   }
-
 
   return data?.session || null;
 }
@@ -62,7 +58,6 @@ export async function requireAuth() {
   const session =
     await getSession();
 
-
   if (!session) {
 
     window.location.replace(
@@ -71,7 +66,6 @@ export async function requireAuth() {
 
     return null;
   }
-
 
   return session;
 }
@@ -91,7 +85,6 @@ export async function signIn(
       .trim()
       .toLowerCase();
 
-
   if (!cleanEmail) {
 
     throw new Error(
@@ -100,7 +93,6 @@ export async function signIn(
 
   }
 
-
   if (!password) {
 
     throw new Error(
@@ -108,7 +100,6 @@ export async function signIn(
     );
 
   }
-
 
   const {
     data,
@@ -124,7 +115,6 @@ export async function signIn(
 
     });
 
-
   if (error) {
 
     console.error(
@@ -134,7 +124,6 @@ export async function signIn(
 
     throw error;
   }
-
 
   if (
     !data?.user ||
@@ -146,7 +135,6 @@ export async function signIn(
     );
 
   }
-
 
   return data;
 }
@@ -163,11 +151,9 @@ export async function signOut() {
   } =
     await supabase.auth.signOut();
 
-
   if (error) {
     throw error;
   }
-
 
   window.location.replace(
     "./login.html"
@@ -185,6 +171,11 @@ export async function getCurrentMember() {
     await getCurrentUser();
 
 
+  /*
+   * Keep this query limited to columns that
+   * are part of the current members table.
+   */
+
   const {
     data,
     error
@@ -196,17 +187,12 @@ export async function getCurrentMember() {
         group_id,
         user_id,
         member_number,
-        membership_number,
         name,
         phone,
         email,
         role,
         join_date,
         status,
-        onboarding_status,
-        invited_at,
-        activated_at,
-        auth_user_id,
         created_at
       `)
       .eq(
@@ -225,7 +211,7 @@ export async function getCurrentMember() {
   if (error) {
 
     console.error(
-      "getCurrentMember error:",
+      "CHAMA LIVE getCurrentMember error:",
       error
     );
 
@@ -252,7 +238,7 @@ export async function getCurrentMember() {
   if (!member.group_id) {
 
     throw new Error(
-      "Your member record has no group."
+      "Your member record has no group assigned."
     );
 
   }
@@ -264,7 +250,6 @@ export async function getCurrentMember() {
 
 /* =====================================================
    ALIAS
-   Used by existing pages
 ===================================================== */
 
 export async function getMyMember() {
@@ -283,9 +268,7 @@ export async function getCurrentGroupId() {
   const member =
     await getCurrentMember();
 
-
   return member.group_id;
-
 }
 
 
@@ -325,7 +308,7 @@ export async function getCurrentGroup() {
   if (error) {
 
     console.error(
-      "getCurrentGroup error:",
+      "CHAMA LIVE getCurrentGroup error:",
       error
     );
 
@@ -351,7 +334,6 @@ export async function getCurrentGroup() {
 
 /* =====================================================
    ALIAS
-   Used by existing pages
 ===================================================== */
 
 export async function getMyGroup() {
@@ -394,6 +376,7 @@ export async function getMyGroups() {
 
 
   if (error) {
+
     throw error;
   }
 
@@ -437,7 +420,6 @@ export function setText(
     document.querySelector(
       selector
     );
-
 
   if (element) {
 
@@ -515,4 +497,4 @@ export function clearError() {
 
   }
 
-}
+     }
