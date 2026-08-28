@@ -1,7 +1,21 @@
 ```javascript
 /* =========================================================
    CHAMA LIVE — GLOBAL LAYOUT
-   CLEAN FINAL VERSION
+   FINAL CLEAN VERSION
+   ---------------------------------------------------------
+   IMPORTANT:
+   • HTML pages load ONLY layout.js
+   • layout.js authenticates the user
+   • layout.js loads member + group
+   • layout.js dynamically loads the current page JS
+   • DO NOT directly load dashboard.js, members.js,
+     contributions.js, expenses.js, meetings.js,
+     reports.js, etc. from HTML.
+========================================================= */
+
+
+/* =========================================================
+   IMPORTS
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -13,15 +27,18 @@ import {
 } from "./auth.js";
 
 
-console.log("CHAMA LIVE: layout.js loaded");
+console.log(
+  "CHAMA LIVE: layout.js loaded"
+);
 
 
 /* =========================================================
-   STATE
+   GLOBAL STATE
 ========================================================= */
 
 let currentMember = null;
 let currentGroup = null;
+
 let bootStarted = false;
 let pageScriptLoaded = false;
 
@@ -31,32 +48,41 @@ let pageScriptLoaded = false;
 ========================================================= */
 
 function byId(id) {
+
   return document.getElementById(id);
+
 }
 
 
 /* =========================================================
-   CURRENT PAGE
+   GET CURRENT PAGE
 ========================================================= */
 
 function getCurrentPage() {
 
+  const path =
+    window.location.pathname || "";
+
   const parts =
-    window.location.pathname.split("/");
+    path.split("/");
 
   let page =
     parts[parts.length - 1];
 
   if (!page) {
-    page = "dashboard.html";
+
+    page =
+      "dashboard.html";
+
   }
 
   return page.toLowerCase();
+
 }
 
 
 /* =========================================================
-   DISPLAY USER
+   DISPLAY USER NAME
 ========================================================= */
 
 function displayUser(member) {
@@ -66,19 +92,25 @@ function displayUser(member) {
     member?.full_name ||
     "Member";
 
+
   document
-    .querySelectorAll("[data-user-name]")
-    .forEach(function(element) {
+    .querySelectorAll(
+      "[data-user-name]"
+    )
+    .forEach(
+      function(element) {
 
-      element.textContent = name;
+        element.textContent =
+          name;
 
-    });
+      }
+    );
 
 }
 
 
 /* =========================================================
-   DISPLAY GROUP
+   DISPLAY GROUP NAME
 ========================================================= */
 
 function displayGroup(group) {
@@ -88,167 +120,426 @@ function displayGroup(group) {
     group?.group_name ||
     "CHAMA";
 
+
   document
-    .querySelectorAll("[data-group-name]")
-    .forEach(function(element) {
+    .querySelectorAll(
+      "[data-group-name]"
+    )
+    .forEach(
+      function(element) {
 
-      element.textContent = name;
+        element.textContent =
+          name;
 
-    });
+      }
+    );
 
 }
 
 
 /* =========================================================
-   MOBILE CSS
+   MOBILE NAVIGATION CSS
 ========================================================= */
 
 function injectMobileNavigationStyles() {
 
   if (
-    byId("chama-global-mobile-styles")
+    byId(
+      "chama-global-mobile-styles"
+    )
   ) {
+
     return;
+
   }
 
+
   const style =
-    document.createElement("style");
+    document.createElement(
+      "style"
+    );
+
 
   style.id =
     "chama-global-mobile-styles";
 
-  style.textContent = [
-    ".mobile-bottom-nav{display:none;}",
 
-    "@media(max-width:650px){",
+  style.textContent = `
 
-    ".sidebar{display:none!important;}",
+    /* =====================================================
+       DESKTOP
+    ===================================================== */
 
-    ".menu-toggle{display:none!important;}",
+    .mobile-bottom-nav {
+      display: none;
+    }
 
-    ".layout{display:block!important;width:100%!important;}",
 
-    ".main{",
-    "width:100%!important;",
-    "max-width:100%!important;",
-    "margin:0!important;",
-    "padding:16px 14px 96px 14px!important;",
-    "}",
+    /* =====================================================
+       MOBILE
+    ===================================================== */
 
-    ".topbar{",
-    "width:100%;",
-    "position:sticky;",
-    "top:0;",
-    "z-index:1000;",
-    "}",
+    @media (max-width: 650px) {
 
-    ".mobile-bottom-nav{",
-    "position:fixed;",
-    "left:0;",
-    "right:0;",
-    "bottom:0;",
-    "z-index:99999;",
-    "display:grid;",
-    "grid-template-columns:repeat(5,1fr);",
-    "height:72px;",
-    "padding:6px;",
-    "background:rgba(255,255,255,.98);",
-    "border-top:1px solid #e5e7eb;",
-    "box-shadow:0 -5px 20px rgba(0,0,0,.08);",
-    "}",
+      .sidebar {
+        display: none !important;
+      }
 
-    ".mobile-nav-item{",
-    "display:flex;",
-    "flex-direction:column;",
-    "align-items:center;",
-    "justify-content:center;",
-    "gap:3px;",
-    "text-decoration:none;",
-    "color:#64748b;",
-    "border-radius:13px;",
-    "}",
 
-    ".mobile-nav-item.active{",
-    "color:#0f766e;",
-    "background:rgba(15,118,110,.09);",
-    "}",
+      .menu-toggle {
+        display: none !important;
+      }
 
-    ".mobile-nav-icon{",
-    "display:flex;",
-    "align-items:center;",
-    "justify-content:center;",
-    "width:30px;",
-    "height:30px;",
-    "font-size:21px;",
-    "font-weight:700;",
-    "}",
 
-    ".mobile-nav-label{",
-    "font-size:9px;",
-    "line-height:1;",
-    "font-weight:600;",
-    "white-space:nowrap;",
-    "}",
+      .layout {
+        display: block !important;
+        width: 100% !important;
+      }
 
-    ".mobile-nav-main .mobile-nav-icon{",
-    "width:43px;",
-    "height:43px;",
-    "margin-top:-18px;",
-    "border-radius:50%;",
-    "background:#0f766e;",
-    "color:white;",
-    "border:4px solid white;",
-    "font-size:25px;",
-    "}",
 
-    ".mobile-nav-main .mobile-nav-label{",
-    "color:#0f766e;",
-    "}",
+      .main {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
 
-    ".table-wrap{",
-    "width:100%;",
-    "max-width:100%;",
-    "overflow-x:auto;",
-    "-webkit-overflow-scrolling:touch;",
-    "}",
+        padding:
+          16px
+          14px
+          96px
+          14px !important;
 
-    ".grid-2{",
-    "grid-template-columns:1fr!important;",
-    "}",
+        box-sizing: border-box;
+      }
 
-    ".grid-3{",
-    "grid-template-columns:repeat(2,minmax(0,1fr));",
-    "}",
 
-    "}",
+      .topbar {
+        width: 100%;
 
-    "@media(max-width:390px){",
+        position: sticky;
 
-    ".mobile-bottom-nav{height:68px;}",
+        top: 0;
 
-    ".mobile-nav-icon{",
-    "width:27px;",
-    "height:27px;",
-    "font-size:19px;",
-    "}",
+        z-index: 1000;
+      }
 
-    ".mobile-nav-label{font-size:8px;}",
 
-    ".mobile-nav-main .mobile-nav-icon{",
-    "width:39px;",
-    "height:39px;",
-    "font-size:22px;",
-    "}",
+      /* ===================================================
+         BOTTOM NAV
+      =================================================== */
 
-    ".grid-3{",
-    "grid-template-columns:1fr;",
-    "}",
+      .mobile-bottom-nav {
 
-    "}"
+        position: fixed;
 
-  ].join("");
+        left: 0;
+        right: 0;
+        bottom: 0;
 
-  document.head.appendChild(style);
+        z-index: 99999;
+
+        display: grid;
+
+        grid-template-columns:
+          repeat(5, 1fr);
+
+        align-items: stretch;
+
+        height: 72px;
+
+        padding:
+          6px;
+
+        padding-bottom:
+          calc(
+            6px +
+            env(safe-area-inset-bottom)
+          );
+
+        background:
+          rgba(255,255,255,.98);
+
+        border-top:
+          1px solid #e5e7eb;
+
+        box-shadow:
+          0 -5px 20px
+          rgba(0,0,0,.08);
+
+        backdrop-filter:
+          blur(14px);
+
+        -webkit-backdrop-filter:
+          blur(14px);
+
+        box-sizing: border-box;
+      }
+
+
+      /* ===================================================
+         NAV ITEM
+      =================================================== */
+
+      .mobile-nav-item {
+
+        display: flex;
+
+        flex-direction: column;
+
+        align-items: center;
+
+        justify-content: center;
+
+        gap: 3px;
+
+        min-width: 0;
+
+        text-decoration: none;
+
+        color: #64748b;
+
+        border-radius: 13px;
+
+        transition:
+          background .2s ease,
+          color .2s ease,
+          transform .2s ease;
+      }
+
+
+      .mobile-nav-item:active {
+
+        transform:
+          scale(.96);
+
+      }
+
+
+      /* ===================================================
+         ICON
+      =================================================== */
+
+      .mobile-nav-icon {
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        width: 30px;
+
+        height: 30px;
+
+        font-size: 21px;
+
+        line-height: 1;
+
+        font-weight: 700;
+      }
+
+
+      /* ===================================================
+         LABEL
+      =================================================== */
+
+      .mobile-nav-label {
+
+        font-size: 9px;
+
+        line-height: 1;
+
+        font-weight: 600;
+
+        white-space: nowrap;
+      }
+
+
+      /* ===================================================
+         ACTIVE
+      =================================================== */
+
+      .mobile-nav-item.active {
+
+        color: #0f766e;
+
+        background:
+          rgba(15,118,110,.09);
+      }
+
+
+      /* ===================================================
+         MAIN CONTRIBUTION BUTTON
+      =================================================== */
+
+      .mobile-nav-main {
+
+        position: relative;
+      }
+
+
+      .mobile-nav-main
+      .mobile-nav-icon {
+
+        width: 43px;
+
+        height: 43px;
+
+        margin-top: -18px;
+
+        border-radius: 50%;
+
+        background:
+          #0f766e;
+
+        color: white;
+
+        border:
+          4px solid white;
+
+        box-shadow:
+          0 5px 15px
+          rgba(15,118,110,.30);
+
+        font-size: 25px;
+      }
+
+
+      .mobile-nav-main
+      .mobile-nav-label {
+
+        color:
+          #0f766e;
+      }
+
+
+      .mobile-nav-main.active
+      .mobile-nav-icon {
+
+        background:
+          #115e59;
+      }
+
+
+      /* ===================================================
+         TABLES
+      =================================================== */
+
+      .table-wrap {
+
+        width: 100%;
+
+        max-width: 100%;
+
+        overflow-x: auto;
+
+        -webkit-overflow-scrolling:
+          touch;
+      }
+
+
+      /* ===================================================
+         GRIDS
+      =================================================== */
+
+      .grid-2 {
+
+        grid-template-columns:
+          1fr !important;
+      }
+
+
+      .grid-3 {
+
+        grid-template-columns:
+          repeat(
+            2,
+            minmax(0,1fr)
+          );
+      }
+
+
+      /* ===================================================
+         CARDS
+      =================================================== */
+
+      .card {
+
+        max-width:
+          100%;
+
+        box-sizing:
+          border-box;
+      }
+
+    }
+
+
+    /* =====================================================
+       SMALL PHONES
+    ===================================================== */
+
+    @media (max-width: 390px) {
+
+      .mobile-bottom-nav {
+
+        height:
+          68px;
+      }
+
+
+      .mobile-nav-icon {
+
+        width:
+          27px;
+
+        height:
+          27px;
+
+        font-size:
+          19px;
+      }
+
+
+      .mobile-nav-label {
+
+        font-size:
+          8px;
+      }
+
+
+      .mobile-nav-main
+      .mobile-nav-icon {
+
+        width:
+          39px;
+
+        height:
+          39px;
+
+        font-size:
+          22px;
+      }
+
+
+      .grid-3 {
+
+        grid-template-columns:
+          1fr;
+      }
+
+    }
+
+  `;
+
+
+  document.head.appendChild(
+    style
+  );
+
+
+  console.log(
+    "CHAMA LIVE: mobile styles ready"
+  );
 
 }
 
@@ -259,19 +550,30 @@ function injectMobileNavigationStyles() {
 
 function setupMobileNavigation() {
 
+  /*
+   * Never create the navigation twice.
+   */
+
   if (
     document.querySelector(
       ".mobile-bottom-nav"
     )
   ) {
+
     return;
+
   }
 
+
   const nav =
-    document.createElement("nav");
+    document.createElement(
+      "nav"
+    );
+
 
   nav.className =
     "mobile-bottom-nav";
+
 
   nav.setAttribute(
     "aria-label",
@@ -288,43 +590,61 @@ function setupMobileNavigation() {
   ) {
 
     const link =
-      document.createElement("a");
+      document.createElement(
+        "a"
+      );
 
-    link.href = href;
+
+    link.href =
+      href;
+
 
     link.className =
       "mobile-nav-item";
 
+
     if (isMain) {
+
       link.classList.add(
         "mobile-nav-main"
       );
+
     }
+
 
     link.dataset.page =
       page;
 
 
     const iconElement =
-      document.createElement("span");
+      document.createElement(
+        "span"
+      );
+
 
     iconElement.className =
       "mobile-nav-icon";
+
 
     iconElement.setAttribute(
       "aria-hidden",
       "true"
     );
 
+
     iconElement.textContent =
       icon;
 
 
     const labelElement =
-      document.createElement("span");
+      document.createElement(
+        "span"
+      );
+
 
     labelElement.className =
       "mobile-nav-label";
+
 
     labelElement.textContent =
       label;
@@ -334,11 +654,15 @@ function setupMobileNavigation() {
       iconElement
     );
 
+
     link.appendChild(
       labelElement
     );
 
-    nav.appendChild(link);
+
+    nav.appendChild(
+      link
+    );
 
   }
 
@@ -351,6 +675,7 @@ function setupMobileNavigation() {
     false
   );
 
+
   addLink(
     "members.html",
     "members.html",
@@ -358,6 +683,7 @@ function setupMobileNavigation() {
     "Members",
     false
   );
+
 
   addLink(
     "contributions.html",
@@ -367,6 +693,7 @@ function setupMobileNavigation() {
     true
   );
 
+
   addLink(
     "expenses.html",
     "expenses.html",
@@ -374,6 +701,7 @@ function setupMobileNavigation() {
     "Expenses",
     false
   );
+
 
   addLink(
     "meetings.html",
@@ -384,7 +712,9 @@ function setupMobileNavigation() {
   );
 
 
-  document.body.appendChild(nav);
+  document.body.appendChild(
+    nav
+  );
 
 
   const currentPage =
@@ -395,20 +725,27 @@ function setupMobileNavigation() {
     .querySelectorAll(
       ".mobile-nav-item"
     )
-    .forEach(function(item) {
+    .forEach(
+      function(item) {
 
-      if (
-        item.dataset.page ===
-        currentPage
-      ) {
+        if (
+          item.dataset.page ===
+          currentPage
+        ) {
 
-        item.classList.add(
-          "active"
-        );
+          item.classList.add(
+            "active"
+          );
+
+        }
 
       }
+    );
 
-    });
+
+  console.log(
+    "CHAMA LIVE: mobile navigation ready"
+  );
 
 }
 
@@ -422,16 +759,27 @@ function setupLogout() {
   const button =
     byId("logout");
 
+
   if (!button) {
+
     return;
+
   }
+
+
+  /*
+   * Prevent duplicate listener.
+   */
 
   if (
     button.dataset.layoutLogoutReady ===
     "true"
   ) {
+
     return;
+
   }
+
 
   button.dataset.layoutLogoutReady =
     "true";
@@ -444,8 +792,10 @@ function setupLogout() {
       const originalText =
         button.textContent;
 
+
       button.disabled =
         true;
+
 
       button.textContent =
         "Signing out...";
@@ -453,12 +803,18 @@ function setupLogout() {
 
       try {
 
-        const result =
+        const {
+          error
+        } =
           await supabase.auth.signOut();
 
-        if (result.error) {
-          throw result.error;
+
+        if (error) {
+
+          throw error;
+
         }
+
 
         window.location.href =
           "index.html";
@@ -471,8 +827,10 @@ function setupLogout() {
           error
         );
 
+
         button.disabled =
           false;
+
 
         button.textContent =
           originalText ||
@@ -481,6 +839,11 @@ function setupLogout() {
       }
 
     }
+  );
+
+
+  console.log(
+    "CHAMA LIVE: logout ready"
   );
 
 }
@@ -492,8 +855,14 @@ function setupLogout() {
 
 async function loadLayoutData() {
 
+  console.log(
+    "CHAMA LIVE: loading member..."
+  );
+
+
   currentMember =
     await getCurrentMember();
+
 
   if (!currentMember) {
 
@@ -504,7 +873,9 @@ async function loadLayoutData() {
   }
 
 
-  if (!currentMember.group_id) {
+  if (
+    !currentMember.group_id
+  ) {
 
     throw new Error(
       "Your member record has no group."
@@ -513,8 +884,14 @@ async function loadLayoutData() {
   }
 
 
+  console.log(
+    "CHAMA LIVE: loading group..."
+  );
+
+
   currentGroup =
     await getCurrentGroup();
+
 
   if (!currentGroup) {
 
@@ -529,6 +906,7 @@ async function loadLayoutData() {
     currentMember
   );
 
+
   displayGroup(
     currentGroup
   );
@@ -539,6 +917,7 @@ async function loadLayoutData() {
     currentMember
   );
 
+
   console.log(
     "CHAMA LIVE: group loaded",
     currentGroup
@@ -546,8 +925,13 @@ async function loadLayoutData() {
 
 
   return {
-    member: currentMember,
-    group: currentGroup
+
+    member:
+      currentMember,
+
+    group:
+      currentGroup
+
   };
 
 }
@@ -587,24 +971,193 @@ const PAGE_SCRIPTS = {
 
 
 /* =========================================================
-   LOAD PAGE SCRIPT
+   FIND PAGE INITIALIZER
+========================================================= */
+
+function getPageInitializer(
+  page,
+  module
+) {
+
+  /*
+   * Standard initializer.
+   */
+
+  if (
+    typeof module.initPage ===
+    "function"
+  ) {
+
+    return module.initPage;
+
+  }
+
+
+  /*
+   * Dashboard.
+   */
+
+  if (
+    page === "dashboard.html" &&
+    typeof module.initDashboard ===
+    "function"
+  ) {
+
+    return module.initDashboard;
+
+  }
+
+
+  /*
+   * Members.
+   */
+
+  if (
+    page === "members.html" &&
+    typeof module.initMembers ===
+    "function"
+  ) {
+
+    return module.initMembers;
+
+  }
+
+
+  /*
+   * Contributions.
+   */
+
+  if (
+    page === "contributions.html" &&
+    typeof module.initContributions ===
+    "function"
+  ) {
+
+    return module.initContributions;
+
+  }
+
+
+  /*
+   * Expenses.
+   */
+
+  if (
+    page === "expenses.html" &&
+    typeof module.initExpenses ===
+    "function"
+  ) {
+
+    return module.initExpenses;
+
+  }
+
+
+  /*
+   * Meetings.
+   */
+
+  if (
+    page === "meetings.html" &&
+    typeof module.initMeetings ===
+    "function"
+  ) {
+
+    return module.initMeetings;
+
+  }
+
+
+  /*
+   * Reports.
+   */
+
+  if (
+    page === "reports.html" &&
+    typeof module.initReports ===
+    "function"
+  ) {
+
+    return module.initReports;
+
+  }
+
+
+  /*
+   * Monthly closing.
+   */
+
+  if (
+    page === "monthly-closing.html" &&
+    typeof module.initMonthlyClosing ===
+    "function"
+  ) {
+
+    return module.initMonthlyClosing;
+
+  }
+
+
+  /*
+   * Group management.
+   */
+
+  if (
+    page === "group-management.html" &&
+    typeof module.initGroupManagement ===
+    "function"
+  ) {
+
+    return module.initGroupManagement;
+
+  }
+
+
+  /*
+   * Generic initializer.
+   */
+
+  if (
+    typeof module.init ===
+    "function"
+  ) {
+
+    return module.init;
+
+  }
+
+
+  return null;
+
+}
+
+
+/* =========================================================
+   LOAD CURRENT PAGE SCRIPT
 ========================================================= */
 
 async function loadCurrentPageScript() {
 
   if (pageScriptLoaded) {
+
+    console.warn(
+      "CHAMA LIVE: page script already loaded"
+    );
+
     return;
+
   }
 
 
   const page =
     getCurrentPage();
 
-  const script =
+
+  const scriptPath =
     PAGE_SCRIPTS[page];
 
 
-  if (!script) {
+  if (!scriptPath) {
 
     console.log(
       "CHAMA LIVE: no page script for",
@@ -617,130 +1170,40 @@ async function loadCurrentPageScript() {
 
 
   console.log(
-    "CHAMA LIVE: loading",
-    script
+    "CHAMA LIVE: loading page script:",
+    scriptPath
   );
 
 
   try {
 
     const module =
-      await import(script);
+      await import(
+        scriptPath
+      );
 
 
-    let initializer = null;
-
-
-    if (
-      typeof module.initPage ===
-      "function"
-    ) {
-
-      initializer =
-        module.initPage;
-
-    }
-    else if (
-      page === "dashboard.html" &&
-      typeof module.initDashboard ===
-      "function"
-    ) {
-
-      initializer =
-        module.initDashboard;
-
-    }
-    else if (
-      page === "members.html" &&
-      typeof module.initMembers ===
-      "function"
-    ) {
-
-      initializer =
-        module.initMembers;
-
-    }
-    else if (
-      page === "contributions.html" &&
-      typeof module.initContributions ===
-      "function"
-    ) {
-
-      initializer =
-        module.initContributions;
-
-    }
-    else if (
-      page === "expenses.html" &&
-      typeof module.initExpenses ===
-      "function"
-    ) {
-
-      initializer =
-        module.initExpenses;
-
-    }
-    else if (
-      page === "meetings.html" &&
-      typeof module.initMeetings ===
-      "function"
-    ) {
-
-      initializer =
-        module.initMeetings;
-
-    }
-    else if (
-      page === "reports.html" &&
-      typeof module.initReports ===
-      "function"
-    ) {
-
-      initializer =
-        module.initReports;
-
-    }
-    else if (
-      page === "monthly-closing.html" &&
-      typeof module.initMonthlyClosing ===
-      "function"
-    ) {
-
-      initializer =
-        module.initMonthlyClosing;
-
-    }
-    else if (
-      page === "group-management.html" &&
-      typeof module.initGroupManagement ===
-      "function"
-    ) {
-
-      initializer =
-        module.initGroupManagement;
-
-    }
-    else if (
-      typeof module.init ===
-      "function"
-    ) {
-
-      initializer =
-        module.init;
-
-    }
+    const initializer =
+      getPageInitializer(
+        page,
+        module
+      );
 
 
     pageScriptLoaded =
       true;
 
 
-    if (initializer) {
+    if (
+      typeof initializer ===
+      "function"
+    ) {
 
       await initializer();
 
+
       console.log(
-        "CHAMA LIVE: page initialized",
+        "CHAMA LIVE: page initialized:",
         page
       );
 
@@ -748,7 +1211,7 @@ async function loadCurrentPageScript() {
     else {
 
       console.warn(
-        "CHAMA LIVE: no initializer exported by",
+        "CHAMA LIVE: no initializer exported by:",
         page
       );
 
@@ -760,8 +1223,10 @@ async function loadCurrentPageScript() {
     pageScriptLoaded =
       false;
 
+
     console.error(
-      "CHAMA LIVE: page script failed",
+      "CHAMA LIVE: page script failed:",
+      scriptPath,
       error
     );
 
@@ -775,9 +1240,10 @@ async function loadCurrentPageScript() {
       errorBox.hidden =
         false;
 
+
       errorBox.textContent =
         error?.message ||
-        "Unable to load this page.";
+        "Unable to load this page. Please refresh and try again.";
 
     }
 
@@ -792,8 +1258,14 @@ async function loadCurrentPageScript() {
 
 async function initializeAuthentication() {
 
+  console.log(
+    "CHAMA LIVE: checking authentication..."
+  );
+
+
   const user =
     await getCurrentUser();
+
 
   if (!user) {
 
@@ -803,9 +1275,12 @@ async function initializeAuthentication() {
 
   }
 
+
   console.log(
-    "CHAMA LIVE: authentication verified"
+    "CHAMA LIVE: authentication verified:",
+    user.email
   );
+
 
   return user;
 
@@ -819,30 +1294,54 @@ async function initializeAuthentication() {
 async function initLayout() {
 
   console.log(
-    "CHAMA LIVE: initializing layout"
+    "CHAMA LIVE: initializing layout..."
   );
 
+
+  /*
+   * 1. Mobile styling
+   */
 
   injectMobileNavigationStyles();
 
 
+  /*
+   * 2. Authentication
+   */
+
   await initializeAuthentication();
 
+
+  /*
+   * 3. Current member + group
+   */
 
   await loadLayoutData();
 
 
+  /*
+   * 4. Logout
+   */
+
   setupLogout();
 
 
+  /*
+   * 5. Mobile navigation
+   */
+
   setupMobileNavigation();
 
+
+  /*
+   * 6. Current page JavaScript
+   */
 
   await loadCurrentPageScript();
 
 
   console.log(
-    "CHAMA LIVE: layout initialized"
+    "CHAMA LIVE: global layout initialized"
   );
 
 }
@@ -850,10 +1349,15 @@ async function initLayout() {
 
 /* =========================================================
    PUBLIC BOOT
-   THIS EXPORT IS REQUIRED BY ALL HTML FILES
+   ---------------------------------------------------------
+   THIS IS THE FUNCTION YOUR HTML FILES IMPORT.
 ========================================================= */
 
 export async function boot() {
+
+  /*
+   * Prevent double initialization.
+   */
 
   if (bootStarted) {
 
@@ -878,7 +1382,7 @@ export async function boot() {
   catch (error) {
 
     console.error(
-      "CHAMA LIVE: boot failed",
+      "CHAMA LIVE: layout initialization failed:",
       error
     );
 
@@ -896,6 +1400,7 @@ export async function boot() {
       errorBox.hidden =
         false;
 
+
       errorBox.textContent =
         error?.message ||
         "Unable to initialize CHAMA LIVE.";
@@ -908,16 +1413,27 @@ export async function boot() {
 
 
 /* =========================================================
-   OPTIONAL STATE EXPORTS
+   OPTIONAL GETTERS
+   ---------------------------------------------------------
+   These do NOT export mutable state directly.
 ========================================================= */
 
-export {
-  currentMember,
-  currentGroup
-};
+export function getLayoutMember() {
+
+  return currentMember;
+
+}
+
+
+export function getLayoutGroup() {
+
+  return currentGroup;
+
+}
 
 
 console.log(
   "CHAMA LIVE: layout.js ready — boot() exported"
 );
 ```
+
