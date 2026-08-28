@@ -1,13 +1,14 @@
 ```javascript
 /* =========================================================
    CHAMA LIVE — GLOBAL LAYOUT
-   Clean Version
-   ---------------------------------------------------------
+   Syntax-safe clean version
+
    IMPORTANT:
-   - HTML calls boot()
-   - layout.js dynamically loads page JS
-   - Page JS must NOT be loaded directly in HTML
-   - Prevents duplicate initialization
+   HTML loads layout.js and calls boot().
+   layout.js loads the current page JS dynamically.
+
+   DO NOT load dashboard.js, members.js, contributions.js,
+   expenses.js, meetings.js or reports.js directly from HTML.
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -68,15 +69,26 @@ function getCurrentPage() {
 function displayUser(member) {
 
   const name =
-    member?.name ||
-    member?.full_name ||
-    "Member";
+    member &&
+    (
+      member.name ||
+      member.full_name
+    )
+    ? (
+      member.name ||
+      member.full_name
+    )
+    : "Member";
+
 
   document
     .querySelectorAll("[data-user-name]")
-    .forEach(element => {
+    .forEach(function(element) {
+
       element.textContent = name;
+
     });
+
 }
 
 
@@ -87,311 +99,202 @@ function displayUser(member) {
 function displayGroup(group) {
 
   const name =
-    group?.name ||
-    group?.group_name ||
-    "CHAMA";
+    group &&
+    (
+      group.name ||
+      group.group_name
+    )
+    ? (
+      group.name ||
+      group.group_name
+    )
+    : "CHAMA";
+
 
   document
     .querySelectorAll("[data-group-name]")
-    .forEach(element => {
+    .forEach(function(element) {
+
       element.textContent = name;
+
     });
+
 }
 
 
 /* =========================================================
-   MOBILE CSS
+   MOBILE STYLES
 ========================================================= */
 
 function injectMobileNavigationStyles() {
 
   if (
-    document.getElementById(
-      "chama-global-mobile-styles"
-    )
+    byId("chama-global-mobile-styles")
   ) {
+
     return;
+
   }
 
 
   const style =
     document.createElement("style");
 
+
   style.id =
     "chama-global-mobile-styles";
 
 
-  style.textContent = `
-
-    .mobile-bottom-nav {
-      display: none;
-    }
-
-
-    @media (max-width: 650px) {
-
-      .sidebar {
-        display: none !important;
-      }
-
-      .menu-toggle {
-        display: none !important;
-      }
-
-      .layout {
-        display: block !important;
-        width: 100% !important;
-      }
-
-      .main {
-        width: 100% !important;
-        max-width: 100% !important;
-        margin: 0 !important;
-
-        padding:
-          16px
-          14px
-          96px
-          14px !important;
-      }
-
-      .topbar {
-        width: 100%;
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-      }
-
-
-      .mobile-bottom-nav {
-
-        position: fixed;
-
-        left: 0;
-        right: 0;
-        bottom: 0;
-
-        z-index: 99999;
-
-        display: grid;
-
-        grid-template-columns:
-          repeat(5, 1fr);
-
-        align-items: stretch;
-
-        height: 72px;
-
-        padding:
-          6px
-          6px
-          calc(
-            6px +
-            env(safe-area-inset-bottom)
-          );
-
-        background:
-          rgba(255,255,255,.98);
-
-        border-top:
-          1px solid #e5e7eb;
-
-        box-shadow:
-          0 -5px 20px
-          rgba(0,0,0,.08);
-
-        backdrop-filter:
-          blur(14px);
-
-        -webkit-backdrop-filter:
-          blur(14px);
-      }
-
-
-      .mobile-nav-item {
-
-        display: flex;
-
-        flex-direction: column;
-
-        align-items: center;
-
-        justify-content: center;
-
-        gap: 3px;
-
-        min-width: 0;
-
-        text-decoration: none;
-
-        color: #64748b;
-
-        border-radius: 13px;
-      }
-
-
-      .mobile-nav-icon {
-
-        display: flex;
-
-        align-items: center;
-
-        justify-content: center;
-
-        width: 30px;
-        height: 30px;
-
-        font-size: 21px;
-        line-height: 1;
-        font-weight: 700;
-      }
-
-
-      .mobile-nav-label {
-
-        font-size: 9px;
-
-        line-height: 1;
-
-        font-weight: 600;
-
-        white-space: nowrap;
-      }
-
-
-      .mobile-nav-item.active {
-
-        color: #0f766e;
-
-        background:
-          rgba(15,118,110,.09);
-      }
-
-
-      .mobile-nav-main {
-        position: relative;
-      }
-
-
-      .mobile-nav-main
-      .mobile-nav-icon {
-
-        width: 43px;
-        height: 43px;
-
-        margin-top: -18px;
-
-        border-radius: 50%;
-
-        background: #0f766e;
-
-        color: white;
-
-        border: 4px solid white;
-
-        box-shadow:
-          0 5px 15px
-          rgba(15,118,110,.30);
-
-        font-size: 25px;
-      }
-
-
-      .mobile-nav-main
-      .mobile-nav-label {
-
-        color: #0f766e;
-      }
-
-
-      .mobile-nav-main.active
-      .mobile-nav-icon {
-
-        background: #115e59;
-      }
-
-
-      .table-wrap {
-
-        width: 100%;
-
-        max-width: 100%;
-
-        overflow-x: auto;
-
-        -webkit-overflow-scrolling: touch;
-      }
-
-
-      .grid-2 {
-
-        grid-template-columns:
-          1fr !important;
-      }
-
-
-      .grid-3 {
-
-        grid-template-columns:
-          repeat(2, minmax(0, 1fr));
-      }
-
-
-      .card {
-
-        max-width: 100%;
-      }
-
-    }
-
-
-    @media (max-width: 390px) {
-
-      .mobile-bottom-nav {
-        height: 68px;
-      }
-
-
-      .mobile-nav-icon {
-
-        width: 27px;
-        height: 27px;
-
-        font-size: 19px;
-      }
-
-
-      .mobile-nav-label {
-        font-size: 8px;
-      }
-
-
-      .mobile-nav-main
-      .mobile-nav-icon {
-
-        width: 39px;
-        height: 39px;
-
-        font-size: 22px;
-      }
-
-
-      .grid-3 {
-
-        grid-template-columns:
-          1fr;
-      }
-
-    }
-
-  `;
+  style.textContent =
+    ".mobile-bottom-nav { display:none; }" +
+
+    "@media (max-width:650px) {" +
+
+      ".sidebar {" +
+        "display:none !important;" +
+      "}" +
+
+      ".menu-toggle {" +
+        "display:none !important;" +
+      "}" +
+
+      ".layout {" +
+        "display:block !important;" +
+        "width:100% !important;" +
+      "}" +
+
+      ".main {" +
+        "width:100% !important;" +
+        "max-width:100% !important;" +
+        "margin:0 !important;" +
+        "padding:16px 14px 96px 14px !important;" +
+      "}" +
+
+      ".topbar {" +
+        "width:100%;" +
+        "position:sticky;" +
+        "top:0;" +
+        "z-index:1000;" +
+      "}" +
+
+      ".mobile-bottom-nav {" +
+        "position:fixed;" +
+        "left:0;" +
+        "right:0;" +
+        "bottom:0;" +
+        "z-index:99999;" +
+        "display:grid;" +
+        "grid-template-columns:repeat(5,1fr);" +
+        "align-items:stretch;" +
+        "height:72px;" +
+        "padding:6px;" +
+        "background:rgba(255,255,255,.98);" +
+        "border-top:1px solid #e5e7eb;" +
+        "box-shadow:0 -5px 20px rgba(0,0,0,.08);" +
+      "}" +
+
+      ".mobile-nav-item {" +
+        "display:flex;" +
+        "flex-direction:column;" +
+        "align-items:center;" +
+        "justify-content:center;" +
+        "gap:3px;" +
+        "min-width:0;" +
+        "text-decoration:none;" +
+        "color:#64748b;" +
+        "border-radius:13px;" +
+      "}" +
+
+      ".mobile-nav-item.active {" +
+        "color:#0f766e;" +
+        "background:rgba(15,118,110,.09);" +
+      "}" +
+
+      ".mobile-nav-icon {" +
+        "display:flex;" +
+        "align-items:center;" +
+        "justify-content:center;" +
+        "width:30px;" +
+        "height:30px;" +
+        "font-size:21px;" +
+        "font-weight:700;" +
+      "}" +
+
+      ".mobile-nav-label {" +
+        "font-size:9px;" +
+        "line-height:1;" +
+        "font-weight:600;" +
+        "white-space:nowrap;" +
+      "}" +
+
+      ".mobile-nav-main .mobile-nav-icon {" +
+        "width:43px;" +
+        "height:43px;" +
+        "margin-top:-18px;" +
+        "border-radius:50%;" +
+        "background:#0f766e;" +
+        "color:white;" +
+        "border:4px solid white;" +
+        "font-size:25px;" +
+      "}" +
+
+      ".mobile-nav-main .mobile-nav-label {" +
+        "color:#0f766e;" +
+      "}" +
+
+      ".table-wrap {" +
+        "width:100%;" +
+        "max-width:100%;" +
+        "overflow-x:auto;" +
+        "-webkit-overflow-scrolling:touch;" +
+      "}" +
+
+      ".grid-2 {" +
+        "grid-template-columns:1fr !important;" +
+      "}" +
+
+      ".grid-3 {" +
+        "grid-template-columns:repeat(2,minmax(0,1fr));" +
+      "}" +
+
+    "}" +
+
+    "@media (max-width:390px) {" +
+
+      ".mobile-bottom-nav {" +
+        "height:68px;" +
+      "}" +
+
+      ".mobile-nav-icon {" +
+        "width:27px;" +
+        "height:27px;" +
+        "font-size:19px;" +
+      "}" +
+
+      ".mobile-nav-label {" +
+        "font-size:8px;" +
+      "}" +
+
+      ".mobile-nav-main .mobile-nav-icon {" +
+        "width:39px;" +
+        "height:39px;" +
+        "font-size:22px;" +
+      "}" +
+
+      ".grid-3 {" +
+        "grid-template-columns:1fr;" +
+      "}" +
+
+    "}";
 
 
   document.head.appendChild(style);
 
+
   console.log(
-    "CHAMA LIVE: mobile CSS injected"
+    "CHAMA LIVE: mobile styles ready"
   );
+
 }
 
 
@@ -406,15 +309,19 @@ function setupMobileNavigation() {
       ".mobile-bottom-nav"
     )
   ) {
+
     return;
+
   }
 
 
   const nav =
     document.createElement("nav");
 
+
   nav.className =
     "mobile-bottom-nav";
+
 
   nav.setAttribute(
     "aria-label",
@@ -422,88 +329,136 @@ function setupMobileNavigation() {
   );
 
 
-  nav.innerHTML = `
+  function createLink(
+    href,
+    page,
+    icon,
+    label,
+    main
+  ) {
 
-    <a
-      href="dashboard.html"
-      class="mobile-nav-item"
-      data-page="dashboard.html"
-    >
-      <span
-        class="mobile-nav-icon"
-        aria-hidden="true"
-      >⌂</span>
-
-      <span class="mobile-nav-label">
-        Home
-      </span>
-    </a>
+    const link =
+      document.createElement("a");
 
 
-    <a
-      href="members.html"
-      class="mobile-nav-item"
-      data-page="members.html"
-    >
-      <span
-        class="mobile-nav-icon"
-        aria-hidden="true"
-      >♙</span>
-
-      <span class="mobile-nav-label">
-        Members
-      </span>
-    </a>
+    link.href = href;
 
 
-    <a
-      href="contributions.html"
-      class="mobile-nav-item mobile-nav-main"
-      data-page="contributions.html"
-    >
-      <span
-        class="mobile-nav-icon"
-        aria-hidden="true"
-      >+</span>
-
-      <span class="mobile-nav-label">
-        Contribute
-      </span>
-    </a>
+    link.className =
+      "mobile-nav-item";
 
 
-    <a
-      href="expenses.html"
-      class="mobile-nav-item"
-      data-page="expenses.html"
-    >
-      <span
-        class="mobile-nav-icon"
-        aria-hidden="true"
-      >−</span>
+    if (main) {
 
-      <span class="mobile-nav-label">
-        Expenses
-      </span>
-    </a>
+      link.classList.add(
+        "mobile-nav-main"
+      );
+
+    }
 
 
-    <a
-      href="meetings.html"
-      class="mobile-nav-item"
-      data-page="meetings.html"
-    >
-      <span
-        class="mobile-nav-icon"
-        aria-hidden="true"
-      >◷</span>
+    link.dataset.page =
+      page;
 
-      <span class="mobile-nav-label">
-        Meetings
-      </span>
-    </a>
 
-  `;
+    const iconElement =
+      document.createElement("span");
+
+
+    iconElement.className =
+      "mobile-nav-icon";
+
+
+    iconElement.setAttribute(
+      "aria-hidden",
+      "true"
+    );
+
+
+    iconElement.textContent =
+      icon;
+
+
+    const labelElement =
+      document.createElement("span");
+
+
+    labelElement.className =
+      "mobile-nav-label";
+
+
+    labelElement.textContent =
+      label;
+
+
+    link.appendChild(
+      iconElement
+    );
+
+
+    link.appendChild(
+      labelElement
+    );
+
+
+    return link;
+
+  }
+
+
+  nav.appendChild(
+    createLink(
+      "dashboard.html",
+      "dashboard.html",
+      "⌂",
+      "Home",
+      false
+    )
+  );
+
+
+  nav.appendChild(
+    createLink(
+      "members.html",
+      "members.html",
+      "♙",
+      "Members",
+      false
+    )
+  );
+
+
+  nav.appendChild(
+    createLink(
+      "contributions.html",
+      "contributions.html",
+      "+",
+      "Contribute",
+      true
+    )
+  );
+
+
+  nav.appendChild(
+    createLink(
+      "expenses.html",
+      "expenses.html",
+      "−",
+      "Expenses",
+      false
+    )
+  );
+
+
+  nav.appendChild(
+    createLink(
+      "meetings.html",
+      "meetings.html",
+      "◷",
+      "Meetings",
+      false
+    )
+  );
 
 
   document.body.appendChild(nav);
@@ -517,17 +472,16 @@ function setupMobileNavigation() {
     .querySelectorAll(
       ".mobile-nav-item"
     )
-    .forEach(item => {
+    .forEach(function(item) {
 
-      const page =
-        String(
-          item.dataset.page || ""
-        ).toLowerCase();
+      if (
+        item.dataset.page ===
+        currentPage
+      ) {
 
-
-      if (page === currentPage) {
-
-        item.classList.add("active");
+        item.classList.add(
+          "active"
+        );
 
       }
 
@@ -537,6 +491,7 @@ function setupMobileNavigation() {
   console.log(
     "CHAMA LIVE: mobile navigation ready"
   );
+
 }
 
 
@@ -546,51 +501,57 @@ function setupMobileNavigation() {
 
 function setupLogout() {
 
-  const logoutButton =
+  const button =
     byId("logout");
 
 
-  if (!logoutButton) {
+  if (!button) {
+
     return;
+
   }
 
 
   if (
-    logoutButton.dataset
-      .layoutLogoutReady === "true"
+    button.dataset.layoutLogoutReady ===
+    "true"
   ) {
+
     return;
+
   }
 
 
-  logoutButton.dataset
-    .layoutLogoutReady = "true";
+  button.dataset.layoutLogoutReady =
+    "true";
 
 
-  logoutButton.addEventListener(
+  button.addEventListener(
     "click",
-    async () => {
+    async function() {
 
-      const originalText =
-        logoutButton.textContent;
+      const original =
+        button.textContent;
 
 
-      logoutButton.disabled = true;
+      button.disabled =
+        true;
 
-      logoutButton.textContent =
+
+      button.textContent =
         "Signing out...";
 
 
       try {
 
-        const {
-          error
-        } =
+        const result =
           await supabase.auth.signOut();
 
 
-        if (error) {
-          throw error;
+        if (result.error) {
+
+          throw result.error;
+
         }
 
 
@@ -606,21 +567,19 @@ function setupLogout() {
         );
 
 
-        logoutButton.disabled =
+        button.disabled =
           false;
 
-        logoutButton.textContent =
-          originalText || "Sign out";
+
+        button.textContent =
+          original ||
+          "Sign out";
 
       }
 
     }
   );
 
-
-  console.log(
-    "CHAMA LIVE: logout ready"
-  );
 }
 
 
@@ -639,6 +598,7 @@ async function loadLayoutData() {
     throw new Error(
       "No member record is linked to this account."
     );
+
   }
 
 
@@ -647,6 +607,7 @@ async function loadLayoutData() {
     throw new Error(
       "Your member record has no group."
     );
+
   }
 
 
@@ -659,6 +620,7 @@ async function loadLayoutData() {
     throw new Error(
       "Group information could not be found."
     );
+
   }
 
 
@@ -673,13 +635,13 @@ async function loadLayoutData() {
 
 
   console.log(
-    "CHAMA LIVE: current member:",
+    "CHAMA LIVE: member loaded",
     currentMember
   );
 
 
   console.log(
-    "CHAMA LIVE: current group:",
+    "CHAMA LIVE: group loaded",
     currentGroup
   );
 
@@ -688,6 +650,7 @@ async function loadLayoutData() {
     member: currentMember,
     group: currentGroup
   };
+
 }
 
 
@@ -732,11 +695,8 @@ async function loadCurrentPageScript() {
 
   if (pageScriptLoaded) {
 
-    console.log(
-      "CHAMA LIVE: page script already loaded"
-    );
-
     return;
+
   }
 
 
@@ -744,128 +704,165 @@ async function loadCurrentPageScript() {
     getCurrentPage();
 
 
-  const scriptPath =
+  const script =
     PAGE_SCRIPTS[page];
 
 
-  if (!scriptPath) {
+  if (!script) {
 
     console.log(
-      "CHAMA LIVE: no page script for:",
+      "CHAMA LIVE: no page script for",
       page
     );
 
     return;
+
   }
 
 
   console.log(
-    "CHAMA LIVE: loading:",
-    scriptPath
+    "CHAMA LIVE: loading page script",
+    script
   );
 
 
   try {
 
     const module =
-      await import(scriptPath);
-
-
-    pageScriptLoaded =
-      true;
+      await import(script);
 
 
     console.log(
-      "CHAMA LIVE: page module loaded:",
+      "CHAMA LIVE: page module loaded",
       page
     );
 
 
-    /* =====================================================
-       STANDARD initPage()
-    ===================================================== */
+    let initializer = null;
+
 
     if (
       typeof module.initPage ===
       "function"
     ) {
 
-      await module.initPage();
+      initializer =
+        module.initPage;
 
-      return;
     }
-
-
-    /* =====================================================
-       PAGE-SPECIFIC INITIALIZERS
-    ===================================================== */
-
-    const initializers = {
-
-      "dashboard.html":
-        "initDashboard",
-
-      "members.html":
-        "initMembers",
-
-      "contributions.html":
-        "initContributions",
-
-      "expenses.html":
-        "initExpenses",
-
-      "meetings.html":
-        "initMeetings",
-
-      "reports.html":
-        "initReports",
-
-      "monthly-closing.html":
-        "initMonthlyClosing",
-
-      "group-management.html":
-        "initGroupManagement"
-
-    };
-
-
-    const initializerName =
-      initializers[page];
-
-
-    if (
-      initializerName &&
-      typeof module[initializerName] ===
+    else if (
+      page === "dashboard.html" &&
+      typeof module.initDashboard ===
       "function"
     ) {
 
-      await module[
-        initializerName
-      ]();
+      initializer =
+        module.initDashboard;
 
-      return;
     }
+    else if (
+      page === "members.html" &&
+      typeof module.initMembers ===
+      "function"
+    ) {
 
+      initializer =
+        module.initMembers;
 
-    /* =====================================================
-       GENERIC init()
-    ===================================================== */
+    }
+    else if (
+      page === "contributions.html" &&
+      typeof module.initContributions ===
+      "function"
+    ) {
 
-    if (
+      initializer =
+        module.initContributions;
+
+    }
+    else if (
+      page === "expenses.html" &&
+      typeof module.initExpenses ===
+      "function"
+    ) {
+
+      initializer =
+        module.initExpenses;
+
+    }
+    else if (
+      page === "meetings.html" &&
+      typeof module.initMeetings ===
+      "function"
+    ) {
+
+      initializer =
+        module.initMeetings;
+
+    }
+    else if (
+      page === "reports.html" &&
+      typeof module.initReports ===
+      "function"
+    ) {
+
+      initializer =
+        module.initReports;
+
+    }
+    else if (
+      page === "monthly-closing.html" &&
+      typeof module.initMonthlyClosing ===
+      "function"
+    ) {
+
+      initializer =
+        module.initMonthlyClosing;
+
+    }
+    else if (
+      page === "group-management.html" &&
+      typeof module.initGroupManagement ===
+      "function"
+    ) {
+
+      initializer =
+        module.initGroupManagement;
+
+    }
+    else if (
       typeof module.init ===
       "function"
     ) {
 
-      await module.init();
+      initializer =
+        module.init;
 
-      return;
     }
 
 
-    console.warn(
-      "CHAMA LIVE: no initializer exported by:",
-      page
-    );
+    pageScriptLoaded =
+      true;
+
+
+    if (initializer) {
+
+      await initializer();
+
+      console.log(
+        "CHAMA LIVE: page initialized",
+        page
+      );
+
+    }
+    else {
+
+      console.warn(
+        "CHAMA LIVE: no initializer exported by",
+        page
+      );
+
+    }
 
   }
   catch (error) {
@@ -875,8 +872,7 @@ async function loadCurrentPageScript() {
 
 
     console.error(
-      "CHAMA LIVE: page script failed:",
-      scriptPath,
+      "CHAMA LIVE: page script error",
       error
     );
 
@@ -890,12 +886,17 @@ async function loadCurrentPageScript() {
       errorBox.hidden =
         false;
 
+
       errorBox.textContent =
-        error?.message ||
-        "Unable to load this page.";
+        error &&
+        error.message
+          ? error.message
+          : "Unable to load this page.";
+
     }
 
   }
+
 }
 
 
@@ -914,16 +915,17 @@ async function initializeAuthentication() {
     throw new Error(
       "You are not logged in."
     );
+
   }
 
 
   console.log(
-    "CHAMA LIVE: authentication verified:",
-    user.email
+    "CHAMA LIVE: authentication verified"
   );
 
 
   return user;
+
 }
 
 
@@ -934,36 +936,24 @@ async function initializeAuthentication() {
 async function initLayout() {
 
   console.log(
-    "CHAMA LIVE: starting layout..."
+    "CHAMA LIVE: initializing layout"
   );
 
-
-  /* 1. Mobile styles */
 
   injectMobileNavigationStyles();
 
 
-  /* 2. Authentication */
-
   await initializeAuthentication();
 
-
-  /* 3. Current member/group */
 
   await loadLayoutData();
 
 
-  /* 4. Logout */
-
   setupLogout();
 
 
-  /* 5. Mobile navigation */
-
   setupMobileNavigation();
 
-
-  /* 6. Page JS */
 
   await loadCurrentPageScript();
 
@@ -971,6 +961,7 @@ async function initLayout() {
   console.log(
     "CHAMA LIVE: layout initialized"
   );
+
 }
 
 
@@ -983,14 +974,16 @@ export async function boot() {
   if (bootStarted) {
 
     console.warn(
-      "CHAMA LIVE: boot() already running"
+      "CHAMA LIVE: boot already started"
     );
 
     return;
+
   }
 
 
-  bootStarted = true;
+  bootStarted =
+    true;
 
 
   try {
@@ -1001,12 +994,13 @@ export async function boot() {
   catch (error) {
 
     console.error(
-      "CHAMA LIVE: boot failed:",
+      "CHAMA LIVE: boot failed",
       error
     );
 
 
-    bootStarted = false;
+    bootStarted =
+      false;
 
 
     const errorBox =
@@ -1018,17 +1012,22 @@ export async function boot() {
       errorBox.hidden =
         false;
 
+
       errorBox.textContent =
-        error?.message ||
-        "Unable to initialize CHAMA LIVE.";
+        error &&
+        error.message
+          ? error.message
+          : "Unable to initialize CHAMA LIVE.";
+
     }
 
   }
+
 }
 
 
 /* =========================================================
-   PUBLIC STATE
+   OPTIONAL PUBLIC STATE
 ========================================================= */
 
 export {
@@ -1038,6 +1037,6 @@ export {
 
 
 console.log(
-  "CHAMA LIVE: layout ready — call boot() from HTML"
+  "CHAMA LIVE: ready — waiting for boot()"
 );
 ```
