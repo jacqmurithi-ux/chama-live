@@ -10,7 +10,81 @@ import { supabase } from "./supabase.js";
    LOG
 ========================================================= */
 
-console.log("CHAMA LIVE: auth.js loaded");
+console.log(
+  "CHAMA LIVE: auth.js loaded"
+);
+
+
+/* =========================================================
+   SIGN IN
+========================================================= */
+
+export async function signIn(
+  email,
+  password
+) {
+
+  const cleanEmail =
+    String(email || "")
+      .trim()
+      .toLowerCase();
+
+
+  if (!cleanEmail) {
+
+    throw new Error(
+      "Please enter your email address."
+    );
+
+  }
+
+
+  if (!password) {
+
+    throw new Error(
+      "Please enter your password."
+    );
+
+  }
+
+
+  const {
+    data,
+    error
+  } =
+    await supabase.auth.signInWithPassword({
+      email: cleanEmail,
+      password
+    });
+
+
+  if (error) {
+
+    throw error;
+
+  }
+
+
+  if (
+    !data?.user ||
+    !data?.session
+  ) {
+
+    throw new Error(
+      "Sign in failed. No active session was created."
+    );
+
+  }
+
+
+  console.log(
+    "CHAMA LIVE: sign in successful"
+  );
+
+
+  return data;
+
+}
 
 
 /* =========================================================
@@ -22,11 +96,14 @@ export async function getCurrentUser() {
   const {
     data,
     error
-  } = await supabase.auth.getUser();
+  } =
+    await supabase.auth.getUser();
 
 
   if (error) {
+
     throw error;
+
   }
 
 
@@ -53,11 +130,14 @@ export async function requireAuth() {
   const {
     data,
     error
-  } = await supabase.auth.getSession();
+  } =
+    await supabase.auth.getSession();
 
 
   if (error) {
+
     throw error;
+
   }
 
 
@@ -71,10 +151,6 @@ export async function requireAuth() {
       "CHAMA LIVE: no active session"
     );
 
-
-    /*
-     * Redirect to login.
-     */
 
     const currentPage =
       window.location.pathname
@@ -119,37 +195,40 @@ export async function getMyMember() {
   const {
     data,
     error
-  } = await supabase
-    .from("members")
-    .select(`
-      id,
-      group_id,
-      user_id,
-      member_number,
-      name,
-      phone,
-      email,
-      role,
-      join_date,
-      status,
-      onboarding_status,
-      created_at
-    `)
-    .eq(
-      "user_id",
-      user.id
-    )
-    .order(
-      "created_at",
-      {
-        ascending: true
-      }
-    )
-    .limit(1);
+  } =
+    await supabase
+      .from("members")
+      .select(`
+        id,
+        group_id,
+        user_id,
+        member_number,
+        name,
+        phone,
+        email,
+        role,
+        join_date,
+        status,
+        onboarding_status,
+        created_at
+      `)
+      .eq(
+        "user_id",
+        user.id
+      )
+      .order(
+        "created_at",
+        {
+          ascending: true
+        }
+      )
+      .limit(1);
 
 
   if (error) {
+
     throw error;
+
   }
 
 
@@ -211,29 +290,32 @@ export async function getMyGroup() {
   const {
     data,
     error
-  } = await supabase
-    .from("groups")
-    .select(`
-      id,
-      name,
-      category,
-      group_type,
-      monthly_contribution,
-      opening_balance,
-      description,
-      country,
-      access_code,
-      created_at
-    `)
-    .eq(
-      "id",
-      groupId
-    )
-    .limit(1);
+  } =
+    await supabase
+      .from("groups")
+      .select(`
+        id,
+        name,
+        category,
+        group_type,
+        monthly_contribution,
+        opening_balance,
+        description,
+        country,
+        access_code,
+        created_at
+      `)
+      .eq(
+        "id",
+        groupId
+      )
+      .limit(1);
 
 
   if (error) {
+
     throw error;
+
   }
 
 
@@ -262,11 +344,14 @@ export async function signOut() {
 
   const {
     error
-  } = await supabase.auth.signOut();
+  } =
+    await supabase.auth.signOut();
 
 
   if (error) {
+
     throw error;
+
   }
 
 
@@ -280,7 +365,9 @@ export async function signOut() {
    MONEY
 ========================================================= */
 
-export function money(amount) {
+export function money(
+  amount
+) {
 
   return (
     "KSh " +
@@ -327,7 +414,9 @@ export function setText(
    SHOW ERROR
 ========================================================= */
 
-export function showError(error) {
+export function showError(
+  error
+) {
 
   console.error(
     "CHAMA LIVE:",
@@ -392,8 +481,8 @@ export function clearError() {
 
 
 /* =========================================================
-   OPTIONAL ALIASES
-   Keeps older pages compatible.
+   OPTIONAL COMPATIBILITY ALIASES
+   Keeps older pages working.
 ========================================================= */
 
 export const getCurrentMember =
