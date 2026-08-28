@@ -1,14 +1,10 @@
 /* =========================================================
    CHAMA LIVE — AUTHENTICATION & CURRENT GROUP
-   Clean Final Version
+   Schema-aligned version
 ========================================================= */
 
 import { supabase } from "./supabase.js";
 
-
-/* =========================================================
-   LOG
-========================================================= */
 
 console.log(
   "CHAMA LIVE: auth.js loaded"
@@ -88,7 +84,7 @@ export async function signIn(
 
 
 /* =========================================================
-   GET CURRENT USER
+   CURRENT USER
 ========================================================= */
 
 export async function getCurrentUser() {
@@ -122,7 +118,7 @@ export async function getCurrentUser() {
 
 
 /* =========================================================
-   REQUIRE AUTHENTICATION
+   REQUIRE AUTH
 ========================================================= */
 
 export async function requireAuth() {
@@ -146,11 +142,6 @@ export async function requireAuth() {
 
 
   if (!session?.user) {
-
-    console.warn(
-      "CHAMA LIVE: no active session"
-    );
-
 
     const currentPage =
       window.location.pathname
@@ -193,7 +184,11 @@ export async function getMyMember() {
     await getCurrentUser();
 
 
-  const {
+  /*
+   * Newer account linkage:
+   * auth_user_id
+   */
+  let {
     data,
     error
   } =
@@ -203,16 +198,22 @@ export async function getMyMember() {
         id,
         group_id,
         user_id,
+        auth_user_id,
         member_number,
+        membership_number,
         name,
         phone,
+        email,
         role,
         join_date,
         status,
+        onboarding_status,
+        invited_at,
+        activated_at,
         created_at
       `)
       .eq(
-        "user_id",
+        "auth_user_id",
         user.id
       )
       .order(
@@ -227,6 +228,66 @@ export async function getMyMember() {
   if (error) {
 
     throw error;
+
+  }
+
+
+  /*
+   * Compatibility fallback:
+   * older accounts may still use user_id.
+   */
+  if (
+    !data ||
+    data.length === 0
+  ) {
+
+    const fallback =
+      await supabase
+        .from("members")
+        .select(`
+          id,
+          group_id,
+          user_id,
+          auth_user_id,
+          member_number,
+          membership_number,
+          name,
+          phone,
+          email,
+          role,
+          join_date,
+          status,
+          onboarding_status,
+          invited_at,
+          activated_at,
+          created_at
+        `)
+        .eq(
+          "user_id",
+          user.id
+        )
+        .order(
+          "created_at",
+          {
+            ascending: true
+          }
+        )
+        .limit(1);
+
+
+    data =
+      fallback.data;
+
+
+    error =
+      fallback.error;
+
+
+    if (error) {
+
+      throw error;
+
+    }
 
   }
 
@@ -295,13 +356,16 @@ export async function getMyGroup() {
       .select(`
         id,
         name,
-        category,
+        registration_number,
+        phone,
+        email,
         monthly_contribution,
         opening_balance,
+        created_at,
+        category,
         description,
-        country,
         access_code,
-        created_at
+        country
       `)
       .eq(
         "id",
@@ -428,7 +492,7 @@ export function showError(
     "Something went wrong.";
 
 
-  const errorElement =
+  const element =
     document.querySelector(
       "[data-error]"
     ) ||
@@ -437,12 +501,12 @@ export function showError(
     );
 
 
-  if (errorElement) {
+  if (element) {
 
-    errorElement.textContent =
+    element.textContent =
       message;
 
-    errorElement.hidden =
+    element.hidden =
       false;
 
   }
@@ -456,7 +520,7 @@ export function showError(
 
 export function clearError() {
 
-  const errorElement =
+  const element =
     document.querySelector(
       "[data-error]"
     ) ||
@@ -465,12 +529,12 @@ export function clearError() {
     );
 
 
-  if (errorElement) {
+  if (element) {
 
-    errorElement.textContent =
+    element.textContent =
       "";
 
-    errorElement.hidden =
+    element.hidden =
       true;
 
   }
@@ -479,8 +543,7 @@ export function clearError() {
 
 
 /* =========================================================
-   OPTIONAL COMPATIBILITY ALIASES
-   Keeps older pages working.
+   COMPATIBILITY ALIASES
 ========================================================= */
 
 export const getCurrentMember =
