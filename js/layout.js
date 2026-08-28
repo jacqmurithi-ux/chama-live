@@ -1,16 +1,21 @@
 /* =========================================================
    CHAMA LIVE — GLOBAL LAYOUT
    Clean Final Version
+   Compatible with current auth.js
 ========================================================= */
 
+import { supabase } from "./supabase.js";
+
 import {
-  requireAuth,
-  getMyMember,
-  getMyGroup,
-  signOut
+  getCurrentUser,
+  getCurrentMember,
+  getCurrentGroup
 } from "./auth.js";
 
-console.log("CHAMA LIVE: layout.js loaded");
+
+console.log(
+  "CHAMA LIVE: layout.js loaded"
+);
 
 
 /* =========================================================
@@ -42,11 +47,15 @@ function displayUser(member) {
     member?.full_name ||
     "Member";
 
+
   document
     .querySelectorAll("[data-user-name]")
     .forEach(element => {
+
       element.textContent = name;
+
     });
+
 }
 
 
@@ -61,11 +70,15 @@ function displayGroup(group) {
     group?.group_name ||
     "CHAMA";
 
+
   document
     .querySelectorAll("[data-group-name]")
     .forEach(element => {
+
       element.textContent = name;
+
     });
+
 }
 
 
@@ -80,20 +93,34 @@ function injectMobileNavigationStyles() {
       "chama-global-mobile-styles"
     )
   ) {
+
     return;
+
   }
+
 
   const style =
     document.createElement("style");
 
+
   style.id =
     "chama-global-mobile-styles";
 
+
   style.textContent = `
+
+    /* =====================================================
+       DESKTOP
+    ===================================================== */
 
     .mobile-bottom-nav {
       display: none;
     }
+
+
+    /* =====================================================
+       MOBILE
+    ===================================================== */
 
     @media (max-width: 650px) {
 
@@ -101,14 +128,17 @@ function injectMobileNavigationStyles() {
         display: none !important;
       }
 
+
       .menu-toggle {
         display: none !important;
       }
+
 
       .layout {
         display: block !important;
         width: 100% !important;
       }
+
 
       .main {
         width: 100% !important;
@@ -122,6 +152,7 @@ function injectMobileNavigationStyles() {
           14px !important;
       }
 
+
       .topbar {
         width: 100%;
         position: sticky;
@@ -129,7 +160,13 @@ function injectMobileNavigationStyles() {
         z-index: 1000;
       }
 
+
+      /* ===================================================
+         MOBILE BOTTOM NAVIGATION
+      =================================================== */
+
       .mobile-bottom-nav {
+
         position: fixed;
 
         left: 0;
@@ -170,9 +207,16 @@ function injectMobileNavigationStyles() {
 
         -webkit-backdrop-filter:
           blur(14px);
+
       }
 
+
+      /* ===================================================
+         NAVIGATION ITEM
+      =================================================== */
+
       .mobile-nav-item {
+
         display: flex;
 
         flex-direction: column;
@@ -195,13 +239,21 @@ function injectMobileNavigationStyles() {
           background .2s ease,
           color .2s ease,
           transform .2s ease;
+
       }
+
 
       .mobile-nav-item:active {
         transform: scale(.96);
       }
 
+
+      /* ===================================================
+         ICON
+      =================================================== */
+
       .mobile-nav-icon {
+
         display: flex;
 
         align-items: center;
@@ -209,6 +261,7 @@ function injectMobileNavigationStyles() {
         justify-content: center;
 
         width: 30px;
+
         height: 30px;
 
         font-size: 21px;
@@ -216,9 +269,16 @@ function injectMobileNavigationStyles() {
         line-height: 1;
 
         font-weight: 700;
+
       }
 
+
+      /* ===================================================
+         LABEL
+      =================================================== */
+
       .mobile-nav-label {
+
         font-size: 9px;
 
         line-height: 1;
@@ -226,22 +286,38 @@ function injectMobileNavigationStyles() {
         font-weight: 600;
 
         white-space: nowrap;
+
       }
 
+
+      /* ===================================================
+         ACTIVE PAGE
+      =================================================== */
+
       .mobile-nav-item.active {
+
         color: #0f766e;
 
         background:
           rgba(15,118,110,.09);
+
       }
+
+
+      /* ===================================================
+         CENTER CONTRIBUTION BUTTON
+      =================================================== */
 
       .mobile-nav-main {
         position: relative;
       }
 
+
       .mobile-nav-main
       .mobile-nav-icon {
+
         width: 43px;
+
         height: 43px;
 
         margin-top: -18px;
@@ -260,19 +336,32 @@ function injectMobileNavigationStyles() {
           rgba(15,118,110,.30);
 
         font-size: 25px;
+
       }
+
 
       .mobile-nav-main
       .mobile-nav-label {
+
         color: #0f766e;
+
       }
+
 
       .mobile-nav-main.active
       .mobile-nav-icon {
+
         background: #115e59;
+
       }
 
+
+      /* ===================================================
+         TABLES
+      =================================================== */
+
       .table-wrap {
+
         width: 100%;
 
         max-width: 100%;
@@ -281,87 +370,142 @@ function injectMobileNavigationStyles() {
 
         -webkit-overflow-scrolling:
           touch;
+
       }
+
+
+      /* ===================================================
+         GRIDS
+      =================================================== */
 
       .grid-2 {
+
         grid-template-columns:
           1fr !important;
+
       }
+
 
       .grid-3 {
+
         grid-template-columns:
           repeat(2, minmax(0, 1fr));
+
       }
 
+
+      /* ===================================================
+         CARDS
+      =================================================== */
+
       .card {
+
         max-width: 100%;
+
       }
+
     }
+
+
+    /* =====================================================
+       SMALL PHONES
+    ===================================================== */
 
     @media (max-width: 390px) {
 
       .mobile-bottom-nav {
+
         height: 68px;
+
       }
 
+
       .mobile-nav-icon {
+
         width: 27px;
+
         height: 27px;
 
         font-size: 19px;
+
       }
 
+
       .mobile-nav-label {
+
         font-size: 8px;
+
       }
+
 
       .mobile-nav-main
       .mobile-nav-icon {
+
         width: 39px;
+
         height: 39px;
 
         font-size: 22px;
+
       }
 
+
       .grid-3 {
+
         grid-template-columns:
           1fr;
+
       }
+
     }
 
   `;
 
+
   document.head.appendChild(style);
+
 
   console.log(
     "CHAMA LIVE: mobile CSS injected"
   );
+
 }
+
+
 /* =========================================================
    MOBILE NAVIGATION
 ========================================================= */
 
 function setupMobileNavigation() {
 
-  /* Prevent duplicates */
+  /*
+   * Prevent duplicate navigation.
+   */
+
   if (
     document.querySelector(
       ".mobile-bottom-nav"
     )
   ) {
+
     return;
+
   }
+
 
   const nav =
     document.createElement("nav");
 
+
   nav.className =
     "mobile-bottom-nav";
+
 
   nav.setAttribute(
     "aria-label",
     "Mobile navigation"
   );
+
 
   nav.innerHTML = `
 
@@ -370,14 +514,18 @@ function setupMobileNavigation() {
       class="mobile-nav-item"
       data-page="dashboard.html"
     >
+
       <span
         class="mobile-nav-icon"
         aria-hidden="true"
-      >⌂</span>
+      >
+        ⌂
+      </span>
 
       <span class="mobile-nav-label">
         Home
       </span>
+
     </a>
 
 
@@ -386,14 +534,18 @@ function setupMobileNavigation() {
       class="mobile-nav-item"
       data-page="members.html"
     >
+
       <span
         class="mobile-nav-icon"
         aria-hidden="true"
-      >♙</span>
+      >
+        ♙
+      </span>
 
       <span class="mobile-nav-label">
         Members
       </span>
+
     </a>
 
 
@@ -402,14 +554,18 @@ function setupMobileNavigation() {
       class="mobile-nav-item mobile-nav-main"
       data-page="contributions.html"
     >
+
       <span
         class="mobile-nav-icon"
         aria-hidden="true"
-      >+</span>
+      >
+        +
+      </span>
 
       <span class="mobile-nav-label">
         Contribute
       </span>
+
     </a>
 
 
@@ -418,14 +574,18 @@ function setupMobileNavigation() {
       class="mobile-nav-item"
       data-page="expenses.html"
     >
+
       <span
         class="mobile-nav-icon"
         aria-hidden="true"
-      >−</span>
+      >
+        −
+      </span>
 
       <span class="mobile-nav-label">
         Expenses
       </span>
+
     </a>
 
 
@@ -434,17 +594,22 @@ function setupMobileNavigation() {
       class="mobile-nav-item"
       data-page="meetings.html"
     >
+
       <span
         class="mobile-nav-icon"
         aria-hidden="true"
-      >◷</span>
+      >
+        ◷
+      </span>
 
       <span class="mobile-nav-label">
         Meetings
       </span>
+
     </a>
 
   `;
+
 
   document.body.appendChild(nav);
 
@@ -459,9 +624,12 @@ function setupMobileNavigation() {
       .pop()
       .toLowerCase();
 
+
   if (!currentPage) {
+
     currentPage =
       "dashboard.html";
+
   }
 
 
@@ -480,6 +648,7 @@ function setupMobileNavigation() {
           item.dataset.page || ""
         ).toLowerCase();
 
+
       if (
         page === currentPage
       ) {
@@ -496,6 +665,7 @@ function setupMobileNavigation() {
   console.log(
     "CHAMA LIVE: mobile navigation ready"
   );
+
 }
 
 
@@ -508,17 +678,25 @@ function setupLogout() {
   const logoutButton =
     byId("logout");
 
+
   if (!logoutButton) {
+
     return;
+
   }
 
 
-  /* Prevent duplicate listener */
+  /*
+   * Prevent duplicate listener.
+   */
+
   if (
     logoutButton.dataset
       .layoutLogoutReady === "true"
   ) {
+
     return;
+
   }
 
 
@@ -533,8 +711,10 @@ function setupLogout() {
       logoutButton.disabled =
         true;
 
+
       const originalText =
         logoutButton.textContent;
+
 
       logoutButton.textContent =
         "Signing out...";
@@ -542,7 +722,22 @@ function setupLogout() {
 
       try {
 
-        await signOut();
+        const {
+          error
+        } =
+          await supabase.auth.signOut();
+
+
+        if (error) {
+
+          throw error;
+
+        }
+
+
+        window.location.href =
+          "index.html";
+
 
       } catch (error) {
 
@@ -551,12 +746,15 @@ function setupLogout() {
           error
         );
 
+
         logoutButton.disabled =
           false;
+
 
         logoutButton.textContent =
           originalText ||
           "Sign out";
+
       }
 
     }
@@ -566,7 +764,9 @@ function setupLogout() {
   console.log(
     "CHAMA LIVE: logout ready"
   );
+
 }
+
 
 /* =========================================================
    LOAD MEMBER AND GROUP
@@ -576,39 +776,27 @@ async function loadLayoutData() {
 
   try {
 
-    /* -----------------------------------------------------
-       GET CURRENT MEMBER
-    ----------------------------------------------------- */
-
     currentMember =
-      await getMyMember();
+      await getCurrentMember();
 
 
     if (!currentMember) {
 
-      console.warn(
-        "CHAMA LIVE: no member record found"
+      throw new Error(
+        "No member record is linked to this account."
       );
 
-      return;
     }
 
 
-    /* -----------------------------------------------------
-       GET CURRENT GROUP
-    ----------------------------------------------------- */
-
     currentGroup =
-      await getMyGroup();
+      await getCurrentGroup();
 
-
-    /* -----------------------------------------------------
-       UPDATE GLOBAL UI
-    ----------------------------------------------------- */
 
     displayUser(
       currentMember
     );
+
 
     displayGroup(
       currentGroup
@@ -616,12 +804,21 @@ async function loadLayoutData() {
 
 
     console.log(
-      "CHAMA LIVE: member/group loaded",
-      {
-        member: currentMember,
-        group: currentGroup
-      }
+      "CHAMA LIVE: member loaded:",
+      currentMember
     );
+
+
+    console.log(
+      "CHAMA LIVE: group loaded:",
+      currentGroup
+    );
+
+
+    return {
+      member: currentMember,
+      group: currentGroup
+    };
 
 
   } catch (error) {
@@ -631,36 +828,17 @@ async function loadLayoutData() {
       error
     );
 
-  }
-}
 
-
-/* =========================================================
-   AUTHENTICATION
-========================================================= */
-
-async function initializeAuthentication() {
-
-  try {
-
-    await requireAuth();
-
-
-    console.log(
-      "CHAMA LIVE: authentication verified"
-    );
-
-
-  } catch (error) {
-
-    console.error(
-      "CHAMA LIVE: authentication failed:",
+    return {
+      member: null,
+      group: null,
       error
-    );
+    };
 
-    throw error;
   }
+
 }
+
 
 /* =========================================================
    CURRENT PAGE
@@ -675,11 +853,6 @@ function getCurrentPage() {
       .toLowerCase();
 
 
-  /*
-   * If the URL points to the site root,
-   * treat it as dashboard.
-   */
-
   if (!page) {
 
     page =
@@ -689,6 +862,7 @@ function getCurrentPage() {
 
 
   return page;
+
 }
 
 
@@ -731,10 +905,6 @@ const PAGE_SCRIPTS = {
 
 async function loadCurrentPageScript() {
 
-  /*
-   * Prevent loading the same page module twice.
-   */
-
   if (pageScriptLoaded) {
 
     return;
@@ -749,11 +919,6 @@ async function loadCurrentPageScript() {
   const scriptPath =
     PAGE_SCRIPTS[page];
 
-
-  /*
-   * Some pages may not have a dedicated
-   * JavaScript file.
-   */
 
   if (!scriptPath) {
 
@@ -775,10 +940,6 @@ async function loadCurrentPageScript() {
     );
 
 
-    /*
-     * Dynamically import the page module.
-     */
-
     const module =
       await import(scriptPath);
 
@@ -793,9 +954,9 @@ async function loadCurrentPageScript() {
     );
 
 
-    /* -----------------------------------------------------
+    /* =====================================================
        STANDARD INITIALIZER
-    ----------------------------------------------------- */
+    ===================================================== */
 
     if (
       typeof module.initPage ===
@@ -809,9 +970,9 @@ async function loadCurrentPageScript() {
     }
 
 
-    /* -----------------------------------------------------
-       DASHBOARD INITIALIZER
-    ----------------------------------------------------- */
+    /* =====================================================
+       DASHBOARD
+    ===================================================== */
 
     if (
       page === "dashboard.html" &&
@@ -826,9 +987,9 @@ async function loadCurrentPageScript() {
     }
 
 
-    /* -----------------------------------------------------
+    /* =====================================================
        PAGE-SPECIFIC INITIALIZERS
-    ----------------------------------------------------- */
+    ===================================================== */
 
     const initializerNames = [
 
@@ -855,11 +1016,14 @@ async function loadCurrentPageScript() {
     ) {
 
       if (
-        typeof module[functionName] ===
-        "function"
+        typeof module[
+          functionName
+        ] === "function"
       ) {
 
-        await module[functionName]();
+        await module[
+          functionName
+        ]();
 
         return;
 
@@ -883,11 +1047,6 @@ async function loadCurrentPageScript() {
     );
 
 
-    /*
-     * Display a useful message if the page
-     * contains an #error element.
-     */
-
     const errorBox =
       byId("error");
 
@@ -897,13 +1056,71 @@ async function loadCurrentPageScript() {
       errorBox.hidden =
         false;
 
+
       errorBox.textContent =
+        error?.message ||
         "Unable to load this page. Please refresh and try again.";
 
     }
 
   }
+
 }
+
+
+/* =========================================================
+   AUTHENTICATION
+========================================================= */
+
+async function initializeAuthentication() {
+
+  try {
+
+    await getCurrentUser();
+
+
+    console.log(
+      "CHAMA LIVE: authentication verified"
+    );
+
+
+    return true;
+
+
+  } catch (error) {
+
+    console.error(
+      "CHAMA LIVE: authentication failed:",
+      error
+    );
+
+
+    /*
+     * Do not allow protected pages
+     * to continue when authentication
+     * has failed.
+     */
+
+    if (
+      window.location.pathname
+        .split("/")
+        .pop()
+        .toLowerCase() !==
+      "index.html"
+    ) {
+
+      window.location.href =
+        "index.html";
+
+    }
+
+
+    throw error;
+
+  }
+
+}
+
 
 /* =========================================================
    INITIALIZE GLOBAL LAYOUT
@@ -911,13 +1128,8 @@ async function loadCurrentPageScript() {
 
 async function initLayout() {
 
-  console.log(
-    "CHAMA LIVE: starting global layout"
-  );
-
-
   /* -------------------------------------------------------
-     1. MOBILE NAVIGATION STYLES
+     1. MOBILE CSS
   ------------------------------------------------------- */
 
   injectMobileNavigationStyles();
@@ -931,7 +1143,7 @@ async function initLayout() {
 
 
   /* -------------------------------------------------------
-     3. MEMBER + GROUP DATA
+     3. MEMBER + GROUP
   ------------------------------------------------------- */
 
   await loadLayoutData();
@@ -952,7 +1164,7 @@ async function initLayout() {
 
 
   /* -------------------------------------------------------
-     6. CURRENT PAGE SCRIPT
+     6. PAGE SCRIPT
   ------------------------------------------------------- */
 
   await loadCurrentPageScript();
@@ -966,7 +1178,7 @@ async function initLayout() {
 
 
 /* =========================================================
-   START LAYOUT
+   START
 ========================================================= */
 
 async function startLayout() {
@@ -981,26 +1193,6 @@ async function startLayout() {
       "CHAMA LIVE: layout initialization error:",
       error
     );
-
-
-    /*
-     * Show a friendly error if the page
-     * provides an #error element.
-     */
-
-    const errorBox =
-      byId("error");
-
-
-    if (errorBox) {
-
-      errorBox.hidden =
-        false;
-
-      errorBox.textContent =
-        "Unable to load CHAMA LIVE. Please refresh the page.";
-
-    }
 
   }
 
