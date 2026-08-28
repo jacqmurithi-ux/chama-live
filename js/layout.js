@@ -1,8 +1,29 @@
+```javascript
 /* =========================================================
    CHAMA LIVE — GLOBAL LAYOUT
    Clean Final Version
    Compatible with current auth.js
+
+   Architecture:
+
+   HTML
+      ↓
+   boot()
+      ↓
+   Authentication
+      ↓
+   Current Member / Group
+      ↓
+   Global UI
+      ↓
+   Dynamically load page JS
+      ↓
+   Page initializer
+
+   IMPORTANT:
+   Page JS files are NOT loaded directly from HTML.
 ========================================================= */
+
 
 import { supabase } from "./supabase.js";
 
@@ -24,7 +45,9 @@ console.log(
 
 let currentMember = null;
 let currentGroup = null;
+
 let pageScriptLoaded = false;
+let bootStarted = false;
 
 
 /* =========================================================
@@ -32,7 +55,35 @@ let pageScriptLoaded = false;
 ========================================================= */
 
 function byId(id) {
+
   return document.getElementById(id);
+
+}
+
+
+/* =========================================================
+   CURRENT PAGE
+========================================================= */
+
+function getCurrentPage() {
+
+  let page =
+    window.location.pathname
+      .split("/")
+      .pop()
+      .toLowerCase();
+
+
+  if (!page) {
+
+    page =
+      "dashboard.html";
+
+  }
+
+
+  return page;
+
 }
 
 
@@ -49,12 +100,17 @@ function displayUser(member) {
 
 
   document
-    .querySelectorAll("[data-user-name]")
-    .forEach(element => {
+    .querySelectorAll(
+      "[data-user-name]"
+    )
+    .forEach(
+      element => {
 
-      element.textContent = name;
+        element.textContent =
+          name;
 
-    });
+      }
+    );
 
 }
 
@@ -72,12 +128,17 @@ function displayGroup(group) {
 
 
   document
-    .querySelectorAll("[data-group-name]")
-    .forEach(element => {
+    .querySelectorAll(
+      "[data-group-name]"
+    )
+    .forEach(
+      element => {
 
-      element.textContent = name;
+        element.textContent =
+          name;
 
-    });
+      }
+    );
 
 }
 
@@ -100,7 +161,9 @@ function injectMobileNavigationStyles() {
 
 
   const style =
-    document.createElement("style");
+    document.createElement(
+      "style"
+    );
 
 
   style.id =
@@ -462,7 +525,9 @@ function injectMobileNavigationStyles() {
   `;
 
 
-  document.head.appendChild(style);
+  document.head.appendChild(
+    style
+  );
 
 
   console.log(
@@ -478,10 +543,6 @@ function injectMobileNavigationStyles() {
 
 function setupMobileNavigation() {
 
-  /*
-   * Prevent duplicate navigation.
-   */
-
   if (
     document.querySelector(
       ".mobile-bottom-nav"
@@ -494,7 +555,9 @@ function setupMobileNavigation() {
 
 
   const nav =
-    document.createElement("nav");
+    document.createElement(
+      "nav"
+    );
 
 
   nav.className =
@@ -611,55 +674,41 @@ function setupMobileNavigation() {
   `;
 
 
-  document.body.appendChild(nav);
+  document.body.appendChild(
+    nav
+  );
 
 
-  /* =======================================================
-     CURRENT PAGE
-  ======================================================= */
+  const currentPage =
+    getCurrentPage();
 
-  let currentPage =
-    window.location.pathname
-      .split("/")
-      .pop()
-      .toLowerCase();
-
-
-  if (!currentPage) {
-
-    currentPage =
-      "dashboard.html";
-
-  }
-
-
-  /* =======================================================
-     ACTIVE PAGE
-  ======================================================= */
 
   nav
     .querySelectorAll(
       ".mobile-nav-item"
     )
-    .forEach(item => {
+    .forEach(
+      item => {
 
-      const page =
-        String(
-          item.dataset.page || ""
-        ).toLowerCase();
+        const page =
+          String(
+            item.dataset.page || ""
+          )
+            .toLowerCase();
 
 
-      if (
-        page === currentPage
-      ) {
+        if (
+          page === currentPage
+        ) {
 
-        item.classList.add(
-          "active"
-        );
+          item.classList.add(
+            "active"
+          );
+
+        }
 
       }
-
-    });
+    );
 
 
   console.log(
@@ -680,19 +729,14 @@ function setupLogout() {
 
 
   if (!logoutButton) {
-
     return;
-
   }
 
 
-  /*
-   * Prevent duplicate listener.
-   */
-
   if (
     logoutButton.dataset
-      .layoutLogoutReady === "true"
+      .layoutLogoutReady ===
+    "true"
   ) {
 
     return;
@@ -701,19 +745,20 @@ function setupLogout() {
 
 
   logoutButton.dataset
-    .layoutLogoutReady = "true";
+    .layoutLogoutReady =
+    "true";
 
 
   logoutButton.addEventListener(
     "click",
     async () => {
 
-      logoutButton.disabled =
-        true;
-
-
       const originalText =
         logoutButton.textContent;
+
+
+      logoutButton.disabled =
+        true;
 
 
       logoutButton.textContent =
@@ -729,17 +774,15 @@ function setupLogout() {
 
 
         if (error) {
-
           throw error;
-
         }
 
 
         window.location.href =
           "index.html";
 
-
-      } catch (error) {
+      }
+      catch (error) {
 
         console.error(
           "CHAMA LIVE: logout failed:",
@@ -769,99 +812,78 @@ function setupLogout() {
 
 
 /* =========================================================
-   LOAD MEMBER AND GROUP
+   LOAD CURRENT MEMBER + GROUP
 ========================================================= */
 
 async function loadLayoutData() {
 
-  try {
-
-    currentMember =
-      await getCurrentMember();
+  currentMember =
+    await getCurrentMember();
 
 
-    if (!currentMember) {
+  if (!currentMember) {
 
-      throw new Error(
-        "No member record is linked to this account."
-      );
-
-    }
-
-
-    currentGroup =
-      await getCurrentGroup();
-
-
-    displayUser(
-      currentMember
+    throw new Error(
+      "No member record is linked to this account."
     );
-
-
-    displayGroup(
-      currentGroup
-    );
-
-
-    console.log(
-      "CHAMA LIVE: member loaded:",
-      currentMember
-    );
-
-
-    console.log(
-      "CHAMA LIVE: group loaded:",
-      currentGroup
-    );
-
-
-    return {
-      member: currentMember,
-      group: currentGroup
-    };
-
-
-  } catch (error) {
-
-    console.error(
-      "CHAMA LIVE: failed to load member/group:",
-      error
-    );
-
-
-    return {
-      member: null,
-      group: null,
-      error
-    };
-
-  }
-
-}
-
-
-/* =========================================================
-   CURRENT PAGE
-========================================================= */
-
-function getCurrentPage() {
-
-  let page =
-    window.location.pathname
-      .split("/")
-      .pop()
-      .toLowerCase();
-
-
-  if (!page) {
-
-    page =
-      "dashboard.html";
 
   }
 
 
-  return page;
+  if (
+    !currentMember.group_id
+  ) {
+
+    throw new Error(
+      "Your member record has no group."
+    );
+
+  }
+
+
+  currentGroup =
+    await getCurrentGroup();
+
+
+  if (!currentGroup) {
+
+    throw new Error(
+      "Group information could not be found."
+    );
+
+  }
+
+
+  displayUser(
+    currentMember
+  );
+
+
+  displayGroup(
+    currentGroup
+  );
+
+
+  console.log(
+    "CHAMA LIVE: member loaded:",
+    currentMember
+  );
+
+
+  console.log(
+    "CHAMA LIVE: group loaded:",
+    currentGroup
+  );
+
+
+  return {
+    member:
+      currentMember,
+
+    group:
+      currentGroup
+
+  };
 
 }
 
@@ -932,16 +954,18 @@ async function loadCurrentPageScript() {
   }
 
 
+  console.log(
+    "CHAMA LIVE: loading page script:",
+    scriptPath
+  );
+
+
   try {
 
-    console.log(
-      "CHAMA LIVE: loading page script:",
-      scriptPath
-    );
-
-
     const module =
-      await import(scriptPath);
+      await import(
+        scriptPath
+      );
 
 
     pageScriptLoaded =
@@ -955,7 +979,7 @@ async function loadCurrentPageScript() {
 
 
     /* =====================================================
-       STANDARD INITIALIZER
+       PREFERRED STANDARD
     ===================================================== */
 
     if (
@@ -964,6 +988,125 @@ async function loadCurrentPageScript() {
     ) {
 
       await module.initPage();
+
+      return;
+
+    }
+
+
+    /* =====================================================
+       MEMBERS
+    ===================================================== */
+
+    if (
+      page === "members.html" &&
+      typeof module.initMembers ===
+      "function"
+    ) {
+
+      await module.initMembers();
+
+      return;
+
+    }
+
+
+    /* =====================================================
+       CONTRIBUTIONS
+    ===================================================== */
+
+    if (
+      page === "contributions.html" &&
+      typeof module.initContributions ===
+      "function"
+    ) {
+
+      await module.initContributions();
+
+      return;
+
+    }
+
+
+    /* =====================================================
+       EXPENSES
+    ===================================================== */
+
+    if (
+      page === "expenses.html" &&
+      typeof module.initExpenses ===
+      "function"
+    ) {
+
+      await module.initExpenses();
+
+      return;
+
+    }
+
+
+    /* =====================================================
+       MEETINGS
+    ===================================================== */
+
+    if (
+      page === "meetings.html" &&
+      typeof module.initMeetings ===
+      "function"
+    ) {
+
+      await module.initMeetings();
+
+      return;
+
+    }
+
+
+    /* =====================================================
+       REPORTS
+    ===================================================== */
+
+    if (
+      page === "reports.html" &&
+      typeof module.initReports ===
+      "function"
+    ) {
+
+      await module.initReports();
+
+      return;
+
+    }
+
+
+    /* =====================================================
+       MONTHLY CLOSING
+    ===================================================== */
+
+    if (
+      page === "monthly-closing.html" &&
+      typeof module.initMonthlyClosing ===
+      "function"
+    ) {
+
+      await module.initMonthlyClosing();
+
+      return;
+
+    }
+
+
+    /* =====================================================
+       GROUP MANAGEMENT
+    ===================================================== */
+
+    if (
+      page === "group-management.html" &&
+      typeof module.initGroupManagement ===
+      "function"
+    ) {
+
+      await module.initGroupManagement();
 
       return;
 
@@ -987,64 +1130,40 @@ async function loadCurrentPageScript() {
     }
 
 
-    /* =====================================================
-       PAGE-SPECIFIC INITIALIZERS
-    ===================================================== */
+    /*
+     * Compatibility:
+     * Some of the current page files export init().
+     */
 
-    const initializerNames = [
-
-      "initMembers",
-
-      "initContributions",
-
-      "initExpenses",
-
-      "initMeetings",
-
-      "initReports",
-
-      "initMonthlyClosing",
-
-      "initGroupManagement"
-
-    ];
-
-
-    for (
-      const functionName
-      of initializerNames
+    if (
+      typeof module.init ===
+      "function"
     ) {
 
-      if (
-        typeof module[
-          functionName
-        ] === "function"
-      ) {
+      await module.init();
 
-        await module[
-          functionName
-        ]();
-
-        return;
-
-      }
+      return;
 
     }
 
 
-    console.log(
-      "CHAMA LIVE: page script has no initializer:",
+    console.warn(
+      "CHAMA LIVE: page script loaded but no initializer was found:",
       page
     );
 
-
-  } catch (error) {
+  }
+  catch (error) {
 
     console.error(
       "CHAMA LIVE: failed to load page script:",
       scriptPath,
       error
     );
+
+
+    pageScriptLoaded =
+      false;
 
 
     const errorBox =
@@ -1074,59 +1193,39 @@ async function loadCurrentPageScript() {
 
 async function initializeAuthentication() {
 
-  try {
-
+  const user =
     await getCurrentUser();
 
 
-    console.log(
-      "CHAMA LIVE: authentication verified"
+  if (!user) {
+
+    throw new Error(
+      "You are not logged in."
     );
-
-
-    return true;
-
-
-  } catch (error) {
-
-    console.error(
-      "CHAMA LIVE: authentication failed:",
-      error
-    );
-
-
-    /*
-     * Do not allow protected pages
-     * to continue when authentication
-     * has failed.
-     */
-
-    if (
-      window.location.pathname
-        .split("/")
-        .pop()
-        .toLowerCase() !==
-      "index.html"
-    ) {
-
-      window.location.href =
-        "index.html";
-
-    }
-
-
-    throw error;
 
   }
+
+
+  console.log(
+    "CHAMA LIVE: authentication verified"
+  );
+
+
+  return user;
 
 }
 
 
 /* =========================================================
-   INITIALIZE GLOBAL LAYOUT
+   MAIN LAYOUT INITIALIZER
 ========================================================= */
 
 async function initLayout() {
+
+  console.log(
+    "CHAMA LIVE: initializing global layout..."
+  );
+
 
   /* -------------------------------------------------------
      1. MOBILE CSS
@@ -1178,21 +1277,69 @@ async function initLayout() {
 
 
 /* =========================================================
-   START
+   BOOT
 ========================================================= */
 
-async function startLayout() {
+/*
+ * THIS IS THE FUNCTION YOUR HTML CALLS:
+ *
+ * import { boot } from "./js/layout.js";
+ * boot();
+ *
+ * It is exported.
+ *
+ * It also has a duplicate-start guard.
+ */
+
+export async function boot() {
+
+  if (bootStarted) {
+
+    console.warn(
+      "CHAMA LIVE: boot() already started"
+    );
+
+    return;
+
+  }
+
+
+  bootStarted =
+    true;
+
 
   try {
 
     await initLayout();
 
-  } catch (error) {
+  }
+  catch (error) {
 
     console.error(
-      "CHAMA LIVE: layout initialization error:",
+      "CHAMA LIVE: boot failed:",
       error
     );
+
+
+    bootStarted =
+      false;
+
+
+    const errorBox =
+      byId("error");
+
+
+    if (errorBox) {
+
+      errorBox.hidden =
+        false;
+
+
+      errorBox.textContent =
+        error?.message ||
+        "Unable to initialize CHAMA LIVE.";
+
+    }
 
   }
 
@@ -1200,24 +1347,16 @@ async function startLayout() {
 
 
 /* =========================================================
-   DOM READY
+   OPTIONAL PUBLIC ACCESS
 ========================================================= */
 
-if (
-  document.readyState ===
-  "loading"
-) {
+export {
+  currentMember,
+  currentGroup
+};
 
-  document.addEventListener(
-    "DOMContentLoaded",
-    startLayout,
-    {
-      once: true
-    }
-  );
 
-} else {
-
-  startLayout();
-
-}
+console.log(
+  "CHAMA LIVE: layout ready — waiting for boot()"
+);
+```
