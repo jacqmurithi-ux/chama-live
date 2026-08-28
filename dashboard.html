@@ -1,3 +1,4 @@
+```html
 <!doctype html>
 <html lang="en">
 
@@ -82,6 +83,20 @@
       margin: 4px 0;
     }
 
+    /* =====================================================
+       PROGRESS
+    ===================================================== */
+
+    .progress-card {
+      margin-bottom: 24px;
+    }
+
+    .progress-percentage {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+
     .progress {
       width: 100%;
       height: 12px;
@@ -106,12 +121,9 @@
       margin-top: 10px;
     }
 
-    .table-wrap {
-      width: 100%;
-      max-width: 100%;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
+    /* =====================================================
+       ACTIVITY
+    ===================================================== */
 
     .activity-grid {
       display: grid;
@@ -143,12 +155,27 @@
       margin-bottom: 30px;
     }
 
+    /* =====================================================
+       MEMBER STATUS
+    ===================================================== */
+
     .member-status-card {
       margin-bottom: 24px;
     }
 
     .member-status-table table {
       min-width: 620px;
+    }
+
+    /* =====================================================
+       TABLES
+    ===================================================== */
+
+    .table-wrap {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
     /* =====================================================
@@ -338,7 +365,6 @@
           CHAMA LIVE
         </strong>
 
-
         <small
           data-group-name
           class="muted"
@@ -358,36 +384,29 @@
           Dashboard
         </a>
 
-
         <a href="members.html">
           Members
         </a>
-
 
         <a href="contributions.html">
           Contributions
         </a>
 
-
         <a href="expenses.html">
           Expenses
         </a>
-
 
         <a href="meetings.html">
           Meetings
         </a>
 
-
         <a href="reports.html">
           Reports
         </a>
 
-
         <a href="monthly-closing.html">
           Monthly Closing
         </a>
-
 
         <a href="group-management.html">
           Group Management
@@ -447,13 +466,10 @@
 
 
         <h1>
-
           Welcome to
-
           <span data-group-name>
             CHAMA
           </span>
-
         </h1>
 
 
@@ -469,9 +485,7 @@
            FINANCIAL METRICS
       ================================================== -->
 
-      <section
-        class="dashboard-metrics"
-      >
+      <section class="dashboard-metrics">
 
 
         <!-- ACTIVE MEMBERS -->
@@ -482,14 +496,12 @@
             Active Members
           </div>
 
-
           <div
             id="activeMembers"
             class="metric"
           >
             0
           </div>
-
 
           <div class="muted">
 
@@ -513,14 +525,12 @@
             Monthly Expected
           </div>
 
-
           <div
             id="monthlyExpected"
             class="metric"
           >
             KSh 0
           </div>
-
 
           <div class="muted">
             Expected this month
@@ -538,14 +548,12 @@
             Monthly Collected
           </div>
 
-
           <div
             id="monthlyCollected"
             class="metric"
           >
             KSh 0
           </div>
-
 
           <div class="muted">
             Received this month
@@ -563,7 +571,6 @@
             Current Balance
           </div>
 
-
           <div
             id="currentBalance"
             class="metric"
@@ -571,13 +578,11 @@
             KSh 0
           </div>
 
-
           <div class="muted">
             Group balance
           </div>
 
         </div>
-
 
       </section>
 
@@ -597,11 +602,9 @@
             THIS MONTH
           </div>
 
-
           <h2>
             Contribution Progress
           </h2>
-
 
           <p
             id="progressMonth"
@@ -615,11 +618,7 @@
 
         <div
           id="progressPercentage"
-          style="
-            font-size:28px;
-            font-weight:800;
-            margin-bottom:12px;
-          "
+          class="progress-percentage"
         >
           0%
         </div>
@@ -640,7 +639,6 @@
           <strong id="progressText">
             KSh 0 / KSh 0
           </strong>
-
 
           <span class="muted">
             Collection rate
@@ -677,11 +675,9 @@
             MEMBER PAYMENTS
           </div>
 
-
           <h2>
             Contribution Status
           </h2>
-
 
           <p class="muted">
             See who has cleared their monthly contribution.
@@ -764,19 +760,29 @@
 
             <div class="section-heading">
 
-              <div class="eyebrow">
-                CONTRIBUTIONS
+              <div>
+
+                <div class="eyebrow">
+                  CONTRIBUTIONS
+                </div>
+
+                <h2>
+                  Recent Contributions
+                </h2>
+
+                <p class="muted">
+                  Latest money received.
+                </p>
+
               </div>
 
 
-              <h2>
-                Recent Contributions
-              </h2>
-
-
-              <p class="muted">
-                Latest money received.
-              </p>
+              <a
+                href="contributions.html"
+                class="btn btn-secondary btn-small"
+              >
+                View all
+              </a>
 
             </div>
 
@@ -806,9 +812,7 @@
                 </thead>
 
 
-                <tbody
-                  id="recentContributionRows"
-                >
+                <tbody id="recentContributionRows">
 
                   <tr>
 
@@ -836,19 +840,29 @@
 
             <div class="section-heading">
 
-              <div class="eyebrow">
-                EXPENSES
+              <div>
+
+                <div class="eyebrow">
+                  EXPENSES
+                </div>
+
+                <h2>
+                  Recent Expenses
+                </h2>
+
+                <p class="muted">
+                  Latest group spending.
+                </p>
+
               </div>
 
 
-              <h2>
-                Recent Expenses
-              </h2>
-
-
-              <p class="muted">
-                Latest group spending.
-              </p>
+              <a
+                href="expenses.html"
+                class="btn btn-secondary btn-small"
+              >
+                View all
+              </a>
 
             </div>
 
@@ -878,9 +892,7 @@
                 </thead>
 
 
-                <tbody
-                  id="recentExpenseRows"
-                >
+                <tbody id="recentExpenseRows">
 
                   <tr>
 
@@ -915,19 +927,29 @@
 
         <div class="section-heading">
 
-          <div class="eyebrow">
-            ORGANISATION
+          <div>
+
+            <div class="eyebrow">
+              ORGANISATION
+            </div>
+
+            <h2>
+              Upcoming Meetings
+            </h2>
+
+            <p class="muted">
+              Keep your group organised.
+            </p>
+
           </div>
 
 
-          <h2>
-            Upcoming Meetings
-          </h2>
-
-
-          <p class="muted">
-            Keep your group organised.
-          </p>
+          <a
+            href="meetings.html"
+            class="btn btn-secondary btn-small"
+          >
+            View meetings
+          </a>
 
         </div>
 
@@ -961,9 +983,7 @@
             </thead>
 
 
-            <tbody
-              id="upcomingMeetingRows"
-            >
+            <tbody id="upcomingMeetingRows">
 
               <tr>
 
@@ -989,12 +1009,14 @@
 
 
   <!-- =====================================================
-       CHAMA LIVE GLOBAL LAYOUT
+       GLOBAL APPLICATION START
        
        IMPORTANT:
-       layout.js automatically loads dashboard.js.
+       layout.js handles authentication,
+       layout loading, mobile navigation,
+       and dynamically loads dashboard.js.
        
-       Do NOT add dashboard.js separately.
+       DO NOT add dashboard.js separately.
   ====================================================== -->
 
   <script
@@ -1006,3 +1028,4 @@
 </body>
 
 </html>
+```
