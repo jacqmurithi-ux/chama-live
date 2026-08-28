@@ -1,4 +1,3 @@
-```javascript
 /* =========================================================
    CHAMA LIVE — MEMBERS
    COMPLETE STABLE VERSION
@@ -76,7 +75,7 @@ function formatDate(value) {
 
 
 /* =========================================================
-   STATUS / ERROR MESSAGES
+   STATUS / ERROR
 ========================================================= */
 
 function showStatus(message) {
@@ -108,7 +107,10 @@ function showError(error) {
   element.textContent =
     error && error.message
       ? error.message
-      : String(error || "Something went wrong.");
+      : String(
+          error ||
+          "Something went wrong."
+        );
 
   element.hidden = false;
 }
@@ -131,16 +133,25 @@ function clearError() {
    FORM MESSAGE
 ========================================================= */
 
-function showFormMessage(message, type = "success") {
+function showFormMessage(
+  message,
+  type = "success"
+) {
 
-  const element = byId("formMessage");
+  const element =
+    byId("formMessage");
 
   if (!element) {
     return;
   }
 
-  element.textContent = message || "";
-  element.style.display = message ? "block" : "none";
+  element.textContent =
+    message || "";
+
+  element.style.display =
+    message
+      ? "block"
+      : "none";
 
   if (type === "error") {
 
@@ -165,14 +176,17 @@ function showFormMessage(message, type = "success") {
 
 function clearFormMessage() {
 
-  const element = byId("formMessage");
+  const element =
+    byId("formMessage");
 
   if (!element) {
     return;
   }
 
   element.textContent = "";
-  element.style.display = "none";
+
+  element.style.display =
+    "none";
 
 }
 
@@ -190,7 +204,6 @@ export async function init() {
     );
 
     return;
-
   }
 
   initialized = true;
@@ -199,14 +212,17 @@ export async function init() {
 
     clearError();
 
-    showStatus("Loading members...");
+    showStatus(
+      "Loading members..."
+    );
 
 
     /* -----------------------------------------------------
        AUTHENTICATION
     ----------------------------------------------------- */
 
-    currentUser = await requireAuth();
+    currentUser =
+      await requireAuth();
 
     if (!currentUser) {
 
@@ -221,7 +237,8 @@ export async function init() {
        CURRENT MEMBER
     ----------------------------------------------------- */
 
-    currentMember = await getMyMember();
+    currentMember =
+      await getMyMember();
 
     if (!currentMember) {
 
@@ -335,7 +352,7 @@ async function loadMembers() {
     await supabase
       .from("members")
       .select(
-        "id, group_id, user_id, member_number, name, phone, email, role, join_date, status, created_at"
+        "id, group_id, user_id, member_number, name, phone, email, role, join_date, status, onboarding_status, created_at"
       )
       .eq(
         "group_id",
@@ -377,7 +394,9 @@ async function loadMembers() {
 function createMemberRow(member) {
 
   const id =
-    escapeHtml(member.id);
+    escapeHtml(
+      member.id
+    );
 
   const memberNumber =
     escapeHtml(
@@ -406,7 +425,9 @@ function createMemberRow(member) {
 
   const status =
     escapeHtml(
-      member.status || "active"
+      member.onboarding_status ||
+      member.status ||
+      "active"
     );
 
 
@@ -467,7 +488,9 @@ function createMemberRow(member) {
    RENDER MEMBERS
 ========================================================= */
 
-function renderMembers(list = members) {
+function renderMembers(
+  list = members
+) {
 
   const tbody =
     byId("memberRows");
@@ -508,12 +531,14 @@ function renderMembers(list = members) {
   let html = "";
 
 
-  rows.forEach(function(member) {
+  rows.forEach(
+    function(member) {
 
-    html +=
-      createMemberRow(member);
+      html +=
+        createMemberRow(member);
 
-  });
+    }
+  );
 
 
   tbody.innerHTML =
@@ -538,7 +563,9 @@ function updateMemberCount() {
 
 
   element.textContent =
-    String(members.length);
+    String(
+      members.length
+    );
 
 }
 
@@ -564,7 +591,7 @@ function bindEvents() {
   const search =
     byId("memberSearch");
 
-  const closeModal =
+  const closeModalButton =
     byId("closeMemberModal");
 
   const tbody =
@@ -586,7 +613,7 @@ function bindEvents() {
 
 
   /* -------------------------------------------------------
-     CLOSE ADD MEMBER
+     CLOSE FORM
   ------------------------------------------------------- */
 
   if (closeButton) {
@@ -600,7 +627,7 @@ function bindEvents() {
 
 
   /* -------------------------------------------------------
-     CANCEL ADD MEMBER
+     CANCEL FORM
   ------------------------------------------------------- */
 
   if (cancelButton) {
@@ -642,12 +669,12 @@ function bindEvents() {
 
 
   /* -------------------------------------------------------
-     CLOSE MEMBER MODAL
+     CLOSE MODAL
   ------------------------------------------------------- */
 
-  if (closeModal) {
+  if (closeModalButton) {
 
-    closeModal.addEventListener(
+    closeModalButton.addEventListener(
       "click",
       closeMemberModal
     );
@@ -715,42 +742,50 @@ function handleSearch(event) {
 
 
   const filtered =
-    members.filter(function(member) {
+    members.filter(
+      function(member) {
 
-      const values = [
+        const values = [
 
-        member.member_number,
+          member.member_number,
 
-        member.name,
+          member.name,
 
-        member.phone,
+          member.phone,
 
-        member.email,
+          member.email,
 
-        member.role,
+          member.role,
 
-        member.status
+          member.status,
 
-      ];
+          member.onboarding_status
 
-
-      const searchable =
-        values
-          .filter(function(value) {
-
-            return (
-              value !== null &&
-              value !== undefined
-            );
-
-          })
-          .join(" ")
-          .toLowerCase();
+        ];
 
 
-      return searchable.includes(query);
+        const searchable =
+          values
+            .filter(
+              function(value) {
 
-    });
+                return (
+                  value !== null &&
+                  value !== undefined
+                );
+
+              }
+            )
+            .join(" ")
+            .toLowerCase();
+
+
+        return searchable.includes(
+          query
+        );
+
+      }
+    );
 
 
   const tbody =
@@ -777,7 +812,9 @@ function handleSearch(event) {
   }
 
 
-  renderMembers(filtered);
+  renderMembers(
+    filtered
+  );
 
 }
 
@@ -818,7 +855,9 @@ function handleTableAction(event) {
 
   if (action === "view") {
 
-    openMemberModal(memberId);
+    openMemberModal(
+      memberId
+    );
 
     return;
 
@@ -827,7 +866,9 @@ function handleTableAction(event) {
 
   if (action === "edit") {
 
-    openEditMember(memberId);
+    openEditMember(
+      memberId
+    );
 
   }
 
@@ -942,14 +983,18 @@ function closeMemberForm() {
    EDIT MEMBER
 ========================================================= */
 
-function openEditMember(memberId) {
+function openEditMember(
+  memberId
+) {
 
   const member =
-    members.find(function(item) {
+    members.find(
+      function(item) {
 
-      return item.id === memberId;
+        return item.id === memberId;
 
-    });
+      }
+    );
 
 
   if (!member) {
@@ -1229,7 +1274,7 @@ async function saveMember(event) {
     if (editingMemberId) {
 
       /* ---------------------------------------------------
-         CHECK DUPLICATE MEMBER NUMBER
+         DUPLICATE MEMBER NUMBER CHECK
       --------------------------------------------------- */
 
       const duplicateResult =
@@ -1338,7 +1383,7 @@ async function saveMember(event) {
     else {
 
       /* ---------------------------------------------------
-         CHECK DUPLICATE MEMBER NUMBER
+         DUPLICATE MEMBER NUMBER CHECK
       --------------------------------------------------- */
 
       const duplicateResult =
@@ -1378,7 +1423,7 @@ async function saveMember(event) {
 
 
       /* ---------------------------------------------------
-         INSERT
+         INSERT NEW MEMBER
       --------------------------------------------------- */
 
       const insertResult =
@@ -1414,7 +1459,7 @@ async function saveMember(event) {
 
           })
           .select(
-            "id, group_id, user_id, member_number, name, phone, email, role, join_date, status, created_at"
+            "id, group_id, user_id, member_number, name, phone, email, role, join_date, status, onboarding_status, created_at"
           )
           .single();
 
@@ -1503,14 +1548,18 @@ async function saveMember(event) {
    VIEW MEMBER
 ========================================================= */
 
-function openMemberModal(memberId) {
+function openMemberModal(
+  memberId
+) {
 
   const member =
-    members.find(function(item) {
+    members.find(
+      function(item) {
 
-      return item.id === memberId;
+        return item.id === memberId;
 
-    });
+      }
+    );
 
 
   if (!member) {
@@ -1591,7 +1640,9 @@ function openMemberModal(memberId) {
   if (status) {
 
     status.textContent =
-      member.status || "—";
+      member.onboarding_status ||
+      member.status ||
+      "—";
 
   }
 
@@ -1623,7 +1674,8 @@ function openMemberModal(memberId) {
 
   modal.hidden = false;
 
-  modal.style.display = "flex";
+  modal.style.display =
+    "flex";
 
 
   const closeButton =
@@ -1656,7 +1708,8 @@ function closeMemberModal() {
 
   modal.hidden = true;
 
-  modal.style.display = "none";
+  modal.style.display =
+    "none";
 
 }
 
@@ -1727,4 +1780,3 @@ export async function refreshMembers() {
 console.log(
   "CHAMA LIVE: members.js ready"
 );
-```
