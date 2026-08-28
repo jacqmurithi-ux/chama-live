@@ -1,9 +1,16 @@
+/* =========================================================
+   CHAMA LIVE — AUTHENTICATION & CURRENT GROUP
+   Clean Final Version
+========================================================= */
+
 import { supabase } from "./supabase.js";
 
 
 /* =========================================================
-   CHAMA LIVE — AUTH
+   LOG
 ========================================================= */
+
+console.log("CHAMA LIVE: auth.js loaded");
 
 
 /* =========================================================
@@ -33,14 +40,15 @@ export async function getCurrentUser() {
 
 
   return data.user;
+
 }
 
 
 /* =========================================================
-   GET SESSION
+   REQUIRE AUTHENTICATION
 ========================================================= */
 
-export async function getSession() {
+export async function requireAuth() {
 
   const {
     data,
@@ -53,258 +61,95 @@ export async function getSession() {
   }
 
 
-  return data?.session || null;
-}
-
-
-/* =========================================================
-   REQUIRE AUTH
-========================================================= */
-
-export async function requireAuth() {
-
   const session =
-    await getSession();
+    data?.session;
 
 
-  if (!session) {
+  if (!session?.user) {
 
-    window.location.replace(
-      "./login.html"
+    console.warn(
+      "CHAMA LIVE: no active session"
     );
 
-    return null;
+
+    /*
+     * Redirect to login.
+     */
+
+    const currentPage =
+      window.location.pathname
+        .split("/")
+        .pop()
+        .toLowerCase();
+
+
+    if (
+      currentPage !== "index.html" &&
+      currentPage !== "login.html"
+    ) {
+
+      window.location.href =
+        "index.html";
+
+    }
+
+
+    throw new Error(
+      "You are not logged in."
+    );
+
   }
 
 
-  return session;
+  return session.user;
+
 }
 
 
 /* =========================================================
-   SIGN IN
+   GET MY MEMBER
 ========================================================= */
 
-export async function signIn(
-  email,
-  password
-) {
-
-  const cleanEmail =
-    String(email || "")
-      .trim()
-      .toLowerCase();
-
-
-  if (!cleanEmail) {
-
-    throw new Error(
-      "Enter your email address."
-    );
-
-  }
-
-
-  if (!password) {
-
-    throw new Error(
-      "Enter your password."
-    );
-
-  }
-
-
-  const {
-    data,
-    error
-  } =
-    await supabase.auth.signInWithPassword({
-
-      email: cleanEmail,
-
-      password: password
-
-    });
-
-
-  if (error) {
-
-    console.error(
-      "Supabase sign-in error:",
-      error
-    );
-
-    throw error;
-  }
-
-
-  if (
-    !data?.user ||
-    !data?.session
-  ) {
-
-    throw new Error(
-      "Login succeeded but no active session was created."
-    );
-
-  }
-
-
-  return data;
-}
-
-
-/* =========================================================
-   SIGN OUT
-========================================================= */
-
-export async function signOut() {
-
-  const {
-    error
-  } =
-    await supabase.auth.signOut();
-
-
-  if (error) {
-    throw error;
-  }
-
-
-  window.location.replace(
-    "./login.html"
-  );
-}
-
-
-/* =========================================================
-   GET CURRENT MEMBER
-========================================================= */
-
-export async function getCurrentMember() {
+export async function getMyMember() {
 
   const user =
     await getCurrentUser();
 
 
-  /*
-   * NEW AUTH SYSTEM
-   *
-   * auth_user_id is the primary link
-   * between members and Supabase Auth.
-   */
-
-
-  let {
+  const {
     data,
     error
-  } =
-    await supabase
-      .from("members")
-      .select(`
-        id,
-        group_id,
-        user_id,
-        auth_user_id,
-        member_number,
-        membership_number,
-        name,
-        phone,
-        email,
-        role,
-        join_date,
-        status,
-        onboarding_status,
-        invited_at,
-        activated_at,
-        created_at
-      `)
-      .eq(
-        "auth_user_id",
-        user.id
-      )
-      .order(
-        "created_at",
-        {
-          ascending: true
-        }
-      )
-      .limit(1);
+  } = await supabase
+    .from("members")
+    .select(`
+      id,
+      group_id,
+      user_id,
+      member_number,
+      name,
+      phone,
+      email,
+      role,
+      join_date,
+      status,
+      onboarding_status,
+      created_at
+    `)
+    .eq(
+      "user_id",
+      user.id
+    )
+    .order(
+      "created_at",
+      {
+        ascending: true
+      }
+    )
+    .limit(1);
 
 
   if (error) {
-
-    console.error(
-      "Primary member lookup error:",
-      error
-    );
-
     throw error;
-  }
-
-
-  /*
-   * LEGACY FALLBACK
-   *
-   * Some existing members may still
-   * have their Auth UUID stored in
-   * user_id instead of auth_user_id.
-   */
-
-
-  if (
-    !data ||
-    data.length === 0
-  ) {
-
-    const fallback =
-      await supabase
-        .from("members")
-        .select(`
-          id,
-          group_id,
-          user_id,
-          auth_user_id,
-          member_number,
-          membership_number,
-          name,
-          phone,
-          email,
-          role,
-          join_date,
-          status,
-          onboarding_status,
-          invited_at,
-          activated_at,
-          created_at
-        `)
-        .eq(
-          "user_id",
-          user.id
-        )
-        .order(
-          "created_at",
-          {
-            ascending: true
-          }
-        )
-        .limit(1);
-
-
-    if (fallback.error) {
-
-      console.error(
-        "Legacy member lookup error:",
-        fallback.error
-      );
-
-      throw fallback.error;
-    }
-
-
-    data =
-      fallback.data || [];
-
   }
 
 
@@ -334,36 +179,18 @@ export async function getCurrentMember() {
 
 
   return member;
-}
-/* =========================================================
-   ALIAS
-   USED BY EXISTING PAGES
-========================================================= */
-
-export async function getMyMember() {
-
-  return await getCurrentMember();
 
 }
 
 
 /* =========================================================
-   GET CURRENT GROUP ID
+   GET MY GROUP ID
 ========================================================= */
 
-export async function getCurrentGroupId() {
+export async function getMyGroupId() {
 
   const member =
-    await getCurrentMember();
-
-
-  if (!member?.group_id) {
-
-    throw new Error(
-      "Your member account is not linked to a group."
-    );
-
-  }
+    await getMyMember();
 
 
   return member.group_id;
@@ -372,47 +199,41 @@ export async function getCurrentGroupId() {
 
 
 /* =========================================================
-   GET CURRENT GROUP
+   GET MY GROUP
 ========================================================= */
 
-export async function getCurrentGroup() {
+export async function getMyGroup() {
 
   const groupId =
-    await getCurrentGroupId();
+    await getMyGroupId();
 
 
   const {
     data,
     error
-  } =
-    await supabase
-      .from("groups")
-      .select(`
-        id,
-        name,
-        category,
-        monthly_contribution,
-        opening_balance,
-        description,
-        country,
-        access_code
-      `)
-      .eq(
-        "id",
-        groupId
-      )
-      .limit(1);
+  } = await supabase
+    .from("groups")
+    .select(`
+      id,
+      name,
+      category,
+      group_type,
+      monthly_contribution,
+      opening_balance,
+      description,
+      country,
+      access_code,
+      created_at
+    `)
+    .eq(
+      "id",
+      groupId
+    )
+    .limit(1);
 
 
   if (error) {
-
-    console.error(
-      "getCurrentGroup error:",
-      error
-    );
-
     throw error;
-
   }
 
 
@@ -434,62 +255,23 @@ export async function getCurrentGroup() {
 
 
 /* =========================================================
-   ALIAS
-   USED BY EXISTING PAGES
+   SIGN OUT
 ========================================================= */
 
-export async function getMyGroup() {
-
-  return await getCurrentGroup();
-
-}
-
-
-/* =========================================================
-   GET MY GROUPS
-========================================================= */
-
-export async function getMyGroups() {
-
-  const groupId =
-    await getCurrentGroupId();
-
+export async function signOut() {
 
   const {
-    data,
     error
-  } =
-    await supabase
-      .from("groups")
-      .select(`
-        id,
-        name,
-        category,
-        monthly_contribution,
-        opening_balance,
-        description,
-        country,
-        access_code
-      `)
-      .eq(
-        "id",
-        groupId
-      );
+  } = await supabase.auth.signOut();
 
 
   if (error) {
-
-    console.error(
-      "getMyGroups error:",
-      error
-    );
-
     throw error;
-
   }
 
 
-  return data || [];
+  window.location.href =
+    "index.html";
 
 }
 
@@ -539,22 +321,24 @@ export function setText(
   }
 
 }
+
+
 /* =========================================================
    SHOW ERROR
 ========================================================= */
 
 export function showError(error) {
 
+  console.error(
+    "CHAMA LIVE:",
+    error
+  );
+
+
   const message =
     error?.message ||
     String(error) ||
-    "An unexpected error occurred.";
-
-
-  console.error(
-    "CHAMA LIVE ERROR:",
-    error
-  );
+    "Something went wrong.";
 
 
   const errorElement =
@@ -569,7 +353,7 @@ export function showError(error) {
   if (errorElement) {
 
     errorElement.textContent =
-      "Error: " + message;
+      message;
 
     errorElement.hidden =
       false;
@@ -608,15 +392,22 @@ export function clearError() {
 
 
 /* =========================================================
-   AUTH STATE LISTENER
+   OPTIONAL ALIASES
+   Keeps older pages compatible.
 ========================================================= */
 
-export function onAuthStateChange(
-  callback
-) {
+export const getCurrentMember =
+  getMyMember;
 
-  return supabase.auth.onAuthStateChange(
-    callback
-  );
 
-}
+export const getCurrentGroup =
+  getMyGroup;
+
+
+export const getCurrentGroupId =
+  getMyGroupId;
+
+
+console.log(
+  "CHAMA LIVE: auth functions ready"
+);
