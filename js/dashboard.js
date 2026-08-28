@@ -1,8 +1,7 @@
-```javascript
+
 /* =========================================================
    CHAMA LIVE — DASHBOARD
-   Clean Final Version
-   Loaded dynamically by layout.js
+   FINAL FIXED VERSION
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -14,9 +13,7 @@ import {
 } from "./auth.js";
 
 
-console.log(
-  "CHAMA LIVE: dashboard.js loaded"
-);
+console.log("CHAMA LIVE: dashboard.js loaded");
 
 
 /* =========================================================
@@ -40,12 +37,10 @@ function byId(id) {
 
 function setText(id, value) {
 
-  const element =
-    byId(id);
+  const element = byId(id);
 
   if (element) {
-    element.textContent =
-      value ?? "—";
+    element.textContent = value ?? "—";
   }
 
 }
@@ -57,34 +52,24 @@ function formatDate(value) {
     return "—";
   }
 
-  const date =
-    new Date(value);
+  const date = new Date(value);
 
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
+  if (Number.isNaN(date.getTime())) {
     return String(value);
   }
 
-  return date.toLocaleDateString(
-    "en-KE",
-    {
-      year: "numeric",
-      month: "short",
-      day: "numeric"
-    }
-  );
+  return date.toLocaleDateString("en-KE", {
+    year: "numeric",
+    month: "short",
+    day: "numeric"
+  });
 
 }
 
 
 function escapeHtml(value) {
 
-  return String(
-    value ?? ""
-  )
+  return String(value ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
@@ -101,13 +86,11 @@ function showError(error) {
     error
   );
 
-  const errorBox =
-    byId("error");
+  const errorBox = byId("error");
 
   if (errorBox) {
 
-    errorBox.hidden =
-      false;
+    errorBox.hidden = false;
 
     errorBox.textContent =
       error?.message ||
@@ -124,8 +107,7 @@ function showError(error) {
 
 function getMonthStart() {
 
-  const now =
-    new Date();
+  const now = new Date();
 
   return new Date(
     now.getFullYear(),
@@ -140,8 +122,7 @@ function getMonthStart() {
 
 function getNextMonthStart() {
 
-  const now =
-    new Date();
+  const now = new Date();
 
   return new Date(
     now.getFullYear(),
@@ -155,7 +136,7 @@ function getNextMonthStart() {
 
 
 /* =========================================================
-   UPDATE GROUP HEADER
+   GROUP HEADER
 ========================================================= */
 
 function renderGroup() {
@@ -164,57 +145,24 @@ function renderGroup() {
     currentGroup?.name ||
     "CHAMA";
 
-
   document
-    .querySelectorAll(
-      "[data-group-name]"
-    )
-    .forEach(
-      element => {
+    .querySelectorAll("[data-group-name]")
+    .forEach(element => {
 
-        element.textContent =
-          groupName;
+      element.textContent = groupName;
 
-      }
-    );
+    });
 
 
   document
-    .querySelectorAll(
-      "[data-user-name]"
-    )
-    .forEach(
-      element => {
+    .querySelectorAll("[data-user-name]")
+    .forEach(element => {
 
-        element.textContent =
-          currentMember?.name ||
-          "Member";
+      element.textContent =
+        currentMember?.name ||
+        "Member";
 
-      }
-    );
-
-
-  /*
-   * Dashboard heading normally contains
-   * "Welcome to CHAMA".
-   */
-
-  const heading =
-    document.querySelector(
-      "h1"
-    );
-
-  if (
-    heading &&
-    heading.textContent
-      .toLowerCase()
-      .includes("welcome")
-  ) {
-
-    heading.textContent =
-      `Welcome to ${groupName}`;
-
-  }
+    });
 
 }
 
@@ -225,15 +173,14 @@ function renderGroup() {
 
 async function loadMembers() {
 
-  const {
-    data,
-    error
-  } =
+  const { data, error } =
     await supabase
       .from("members")
       .select(`
         id,
+        group_id,
         member_number,
+        membership_number,
         name,
         phone,
         email,
@@ -241,16 +188,10 @@ async function loadMembers() {
         status,
         join_date
       `)
-      .eq(
-        "group_id",
-        currentGroupId
-      )
-      .order(
-        "name",
-        {
-          ascending: true
-        }
-      );
+      .eq("group_id", currentGroupId)
+      .order("name", {
+        ascending: true
+      });
 
 
   if (error) {
@@ -258,18 +199,13 @@ async function loadMembers() {
   }
 
 
-  const members =
-    data || [];
+  const members = data || [];
 
 
   const activeMembers =
-    members.filter(
-      member =>
-        String(
-          member.status ||
-          ""
-        ).toLowerCase() ===
-        "active"
+    members.filter(member =>
+      String(member.status || "")
+        .toLowerCase() === "active"
     );
 
 
@@ -279,19 +215,8 @@ async function loadMembers() {
   );
 
 
-  /*
-   * Some dashboard versions use
-   * different IDs.
-   */
-
   setText(
-    "memberCount",
-    activeMembers.length
-  );
-
-
-  setText(
-    "totalMembers",
+    "membersCount",
     members.length
   );
 
@@ -302,7 +227,7 @@ async function loadMembers() {
 
 
 /* =========================================================
-   LOAD CONTRIBUTIONS
+   LOAD CURRENT MONTH CONTRIBUTIONS
 ========================================================= */
 
 async function loadContributions() {
@@ -314,10 +239,7 @@ async function loadContributions() {
     getNextMonthStart();
 
 
-  const {
-    data,
-    error
-  } =
+  const { data, error } =
     await supabase
       .from("contributions")
       .select(`
@@ -331,10 +253,7 @@ async function loadContributions() {
         mpesa_reference,
         created_at
       `)
-      .eq(
-        "group_id",
-        currentGroupId
-      )
+      .eq("group_id", currentGroupId)
       .gte(
         "contribution_date",
         monthStart
@@ -354,8 +273,8 @@ async function loadContributions() {
   if (error) {
 
     /*
-     * Some older databases may not have
-     * mpesa_reference. Retry without it.
+     * Compatibility fallback for databases
+     * where mpesa_reference is unavailable.
      */
 
     if (
@@ -418,7 +337,7 @@ async function loadContributions() {
 
 
 /* =========================================================
-   CALCULATE MONTHLY CONTRIBUTION
+   MONTHLY EXPECTED
 ========================================================= */
 
 function getMonthlyExpected() {
@@ -433,9 +352,7 @@ function getMonthlyExpected() {
     Number.isFinite(amount) &&
     amount > 0
   ) {
-
     return amount;
-
   }
 
 
@@ -445,7 +362,7 @@ function getMonthlyExpected() {
 
 
 /* =========================================================
-   RENDER CONTRIBUTION SUMMARY
+   CONTRIBUTION SUMMARY
 ========================================================= */
 
 function renderContributionSummary(
@@ -458,13 +375,9 @@ function renderContributionSummary(
 
 
   const activeMembers =
-    members.filter(
-      member =>
-        String(
-          member.status ||
-          ""
-        ).toLowerCase() ===
-        "active"
+    members.filter(member =>
+      String(member.status || "")
+        .toLowerCase() === "active"
     );
 
 
@@ -475,10 +388,7 @@ function renderContributionSummary(
 
   const collected =
     contributions.reduce(
-      (
-        total,
-        contribution
-      ) =>
+      (total, contribution) =>
         total +
         Number(
           contribution.amount || 0
@@ -489,8 +399,7 @@ function renderContributionSummary(
 
   const outstanding =
     Math.max(
-      expected -
-      collected,
+      expected - collected,
       0
     );
 
@@ -500,19 +409,15 @@ function renderContributionSummary(
       ? Math.min(
           100,
           Math.round(
-            (
-              collected /
-              expected
-            ) *
-            100
+            (collected / expected) * 100
           )
         )
       : 0;
 
 
-  /*
-   * Expected
-   */
+  /* =======================================================
+     METRICS
+  ======================================================= */
 
   setText(
     "monthlyExpected",
@@ -521,62 +426,8 @@ function renderContributionSummary(
 
 
   setText(
-    "expectedAmount",
-    money(expected)
-  );
-
-
-  /*
-   * Collected
-   */
-
-  setText(
     "monthlyCollected",
     money(collected)
-  );
-
-
-  setText(
-    "collectedAmount",
-    money(collected)
-  );
-
-
-  /*
-   * Progress
-   */
-
-  setText(
-    "contributionPercentage",
-    `${percentage}%`
-  );
-
-
-  setText(
-    "collectionRate",
-    `${percentage}%`
-  );
-
-
-  setText(
-    "contributionProgress",
-    `${percentage}%`
-  );
-
-
-  setText(
-    "contributionSummary",
-    `${money(collected)} / ${money(expected)}`
-  );
-
-
-  /*
-   * Outstanding
-   */
-
-  setText(
-    "outstandingAmount",
-    money(outstanding)
   );
 
 
@@ -586,22 +437,41 @@ function renderContributionSummary(
   );
 
 
-  /*
-   * Progress bar
-   */
+  /* =======================================================
+     PROGRESS
+  ======================================================= */
 
-  const progress =
-    document.querySelector(
-      "[data-contribution-progress]"
-    ) ||
-    byId(
-      "contributionProgressBar"
-    );
+  setText(
+    "progressPercentage",
+    `${percentage}%`
+  );
 
 
-  if (progress) {
+  setText(
+    "progressText",
+    `${money(collected)} / ${money(expected)}`
+  );
 
-    progress.style.width =
+
+  setText(
+    "progressMonth",
+    new Date().toLocaleDateString(
+      "en-KE",
+      {
+        month: "long",
+        year: "numeric"
+      }
+    )
+  );
+
+
+  const progressBar =
+    byId("progressBar");
+
+
+  if (progressBar) {
+
+    progressBar.style.width =
       `${percentage}%`;
 
   }
@@ -618,25 +488,19 @@ function renderContributionSummary(
 
 
 /* =========================================================
-   LOAD CURRENT BALANCE
+   CURRENT BALANCE
 ========================================================= */
 
 async function loadBalance() {
 
   /*
-   * Balance =
-   * total contributions - approved expenses.
-   *
-   * We query all group contributions because
-   * the balance is not limited to the current month.
+   * TOTAL CONTRIBUTIONS
    */
 
   const contributionResult =
     await supabase
       .from("contributions")
-      .select(
-        "amount"
-      )
+      .select("amount")
       .eq(
         "group_id",
         currentGroupId
@@ -649,35 +513,29 @@ async function loadBalance() {
 
 
   const totalContributions =
-    (
-      contributionResult.data ||
-      []
-    ).reduce(
-      (
-        total,
-        row
-      ) =>
-        total +
-        Number(
-          row.amount || 0
-        ),
-      0
-    );
+    (contributionResult.data || [])
+      .reduce(
+        (total, row) =>
+          total +
+          Number(row.amount || 0),
+        0
+      );
 
 
   /*
-   * Expenses
+   * EXPENSES
    *
-   * We deliberately select only common
-   * schema columns.
+   * Actual database column is `date`
+   * and approval column is `approval_status`.
    */
 
   const expenseResult =
     await supabase
       .from("expenses")
-      .select(
-        "amount,status"
-      )
+      .select(`
+        amount,
+        approval_status
+      `)
       .eq(
         "group_id",
         currentGroupId
@@ -686,20 +544,17 @@ async function loadBalance() {
 
   if (expenseResult.error) {
 
-    /*
-     * If expenses table has a different status
-     * structure, don't destroy the dashboard.
-     */
-
     console.warn(
-      "CHAMA LIVE: expenses balance query failed",
+      "CHAMA LIVE: expense balance query failed",
       expenseResult.error
     );
+
 
     setText(
       "currentBalance",
       money(totalContributions)
     );
+
 
     return totalContributions;
 
@@ -707,33 +562,23 @@ async function loadBalance() {
 
 
   const approvedExpenses =
-    (
-      expenseResult.data ||
-      []
-    )
-      .filter(
-        expense => {
+    (expenseResult.data || [])
+      .filter(expense => {
 
-          const status =
-            String(
-              expense.status ||
-              "approved"
-            )
-              .toLowerCase();
+        const status =
+          String(
+            expense.approval_status ||
+            "pending"
+          ).toLowerCase();
 
-          return (
-            status === "approved" ||
-            status === "paid" ||
-            status === "completed"
-          );
 
-        }
-      )
+        return (
+          status === "approved"
+        );
+
+      })
       .reduce(
-        (
-          total,
-          expense
-        ) =>
+        (total, expense) =>
           total +
           Number(
             expense.amount || 0
@@ -753,19 +598,13 @@ async function loadBalance() {
   );
 
 
-  setText(
-    "groupBalance",
-    money(balance)
-  );
-
-
   return balance;
 
 }
 
 
 /* =========================================================
-   LOAD MEMBER PAYMENT STATUS
+   MEMBER CONTRIBUTION STATUS
 ========================================================= */
 
 async function renderMemberPaymentStatus(
@@ -774,12 +613,7 @@ async function renderMemberPaymentStatus(
 ) {
 
   const rows =
-    byId(
-      "contributionStatusRows"
-    ) ||
-    byId(
-      "memberContributionRows"
-    );
+    byId("memberStatusRows");
 
 
   if (!rows) {
@@ -788,13 +622,9 @@ async function renderMemberPaymentStatus(
 
 
   const activeMembers =
-    members.filter(
-      member =>
-        String(
-          member.status ||
-          ""
-        ).toLowerCase() ===
-        "active"
+    members.filter(member =>
+      String(member.status || "")
+        .toLowerCase() === "active"
     );
 
 
@@ -803,8 +633,7 @@ async function renderMemberPaymentStatus(
 
 
   if (
-    activeMembers.length ===
-    0
+    activeMembers.length === 0
   ) {
 
     rows.innerHTML = `
@@ -820,8 +649,7 @@ async function renderMemberPaymentStatus(
   }
 
 
-  const paidByMember =
-    {};
+  const paidByMember = {};
 
 
   contributions.forEach(
@@ -837,10 +665,7 @@ async function renderMemberPaymentStatus(
 
 
       paidByMember[memberId] =
-        (
-          paidByMember[memberId] ||
-          0
-        ) +
+        (paidByMember[memberId] || 0) +
         Number(
           contribution.amount || 0
         );
@@ -851,103 +676,87 @@ async function renderMemberPaymentStatus(
 
   rows.innerHTML =
     activeMembers
-      .map(
-        member => {
+      .map(member => {
 
-          const paid =
-            Number(
-              paidByMember[
-                member.id
-              ] || 0
-            );
+        const paid =
+          Number(
+            paidByMember[member.id] || 0
+          );
 
 
-          const outstanding =
-            Math.max(
-              expected -
-              paid,
-              0
-            );
+        const outstanding =
+          Math.max(
+            expected - paid,
+            0
+          );
 
 
-          let status =
-            "Pending";
+        let status =
+          "Pending";
 
 
-          if (
-            expected <= 0
-          ) {
+        if (expected <= 0) {
 
-            status =
-              paid > 0
-                ? "Paid"
-                : "No amount set";
-
-          }
-          else if (
-            paid >= expected
-          ) {
-
-            status =
-              "Cleared";
-
-          }
-          else if (
+          status =
             paid > 0
-          ) {
-
-            status =
-              "Partial";
-
-          }
-
-
-          return `
-            <tr>
-
-              <td>
-                ${escapeHtml(
-                  member.name ||
-                  "Member"
-                )}
-              </td>
-
-              <td>
-                ${money(expected)}
-              </td>
-
-              <td>
-                ${money(paid)}
-              </td>
-
-              <td>
-                ${money(outstanding)}
-              </td>
-
-              <td>
-                ${escapeHtml(status)}
-              </td>
-
-            </tr>
-          `;
+              ? "Paid"
+              : "No amount set";
 
         }
-      )
+        else if (paid >= expected) {
+
+          status = "Cleared";
+
+        }
+        else if (paid > 0) {
+
+          status = "Partial";
+
+        }
+
+
+        return `
+          <tr>
+
+            <td>
+              ${escapeHtml(
+                member.name || "Member"
+              )}
+            </td>
+
+            <td>
+              ${money(expected)}
+            </td>
+
+            <td>
+              ${money(paid)}
+            </td>
+
+            <td>
+              ${money(outstanding)}
+            </td>
+
+            <td>
+              ${escapeHtml(status)}
+            </td>
+
+          </tr>
+        `;
+
+      })
       .join("");
 
 }
 
 
 /* =========================================================
-   LOAD RECENT CONTRIBUTIONS
+   RECENT CONTRIBUTIONS
 ========================================================= */
 
 async function renderRecentContributions() {
 
   const rows =
-    byId(
-      "recentContributionRows"
-    );
+    byId("recentContributionRows");
 
 
   if (!rows) {
@@ -955,17 +764,12 @@ async function renderRecentContributions() {
   }
 
 
-  const {
-    data,
-    error
-  } =
+  const { data, error } =
     await supabase
       .from("contributions")
       .select(`
         amount,
         contribution_date,
-        contribution_type,
-        payment_method,
         member_id
       `)
       .eq(
@@ -991,8 +795,7 @@ async function renderRecentContributions() {
 
 
   if (
-    contributions.length ===
-    0
+    contributions.length === 0
   ) {
 
     rows.innerHTML = `
@@ -1008,62 +811,40 @@ async function renderRecentContributions() {
   }
 
 
-  /*
-   * Fetch member names separately.
-   * This avoids depending on a foreign-key
-   * relationship being exposed to PostgREST.
-   */
-
   const memberIds =
     [
       ...new Set(
         contributions
-          .map(
-            row =>
-              row.member_id
-          )
+          .map(row => row.member_id)
           .filter(Boolean)
       )
     ];
 
 
-  let membersById =
-    {};
+  let membersById = {};
 
 
-  if (
-    memberIds.length > 0
-  ) {
+  if (memberIds.length > 0) {
 
     const memberResult =
       await supabase
         .from("members")
-        .select(
-          "id,name"
-        )
+        .select("id,name")
         .in(
           "id",
           memberIds
         );
 
 
-    if (
-      !memberResult.error
-    ) {
+    if (!memberResult.error) {
 
-      (
-        memberResult.data ||
-        []
-      ).forEach(
-        member => {
+      (memberResult.data || [])
+        .forEach(member => {
 
-          membersById[
-            member.id
-          ] =
+          membersById[member.id] =
             member.name;
 
-        }
-      );
+        });
 
     }
 
@@ -1072,57 +853,51 @@ async function renderRecentContributions() {
 
   rows.innerHTML =
     contributions
-      .map(
-        contribution => {
+      .map(contribution => {
 
-          const memberName =
-            membersById[
-              contribution.member_id
-            ] ||
-            "Member";
+        const memberName =
+          membersById[
+            contribution.member_id
+          ] ||
+          "Member";
 
 
-          return `
-            <tr>
+        return `
+          <tr>
 
-              <td>
-                ${escapeHtml(
-                  memberName
-                )}
-              </td>
+            <td>
+              ${escapeHtml(memberName)}
+            </td>
 
-              <td>
-                ${money(
-                  contribution.amount
-                )}
-              </td>
+            <td>
+              ${money(
+                contribution.amount
+              )}
+            </td>
 
-              <td>
-                ${formatDate(
-                  contribution.contribution_date
-                )}
-              </td>
+            <td>
+              ${formatDate(
+                contribution.contribution_date
+              )}
+            </td>
 
-            </tr>
-          `;
+          </tr>
+        `;
 
-        }
-      )
+      })
       .join("");
 
 }
 
 
 /* =========================================================
-   LOAD RECENT EXPENSES
+   RECENT EXPENSES
 ========================================================= */
 
 async function renderRecentExpenses() {
 
   const rows =
-    byId(
-      "recentExpenseRows"
-    );
+    byId("recentExpenseRows");
 
 
   if (!rows) {
@@ -1130,24 +905,29 @@ async function renderRecentExpenses() {
   }
 
 
-  const {
-    data,
-    error
-  } =
+  /*
+   * IMPORTANT:
+   *
+   * Database uses:
+   * date
+   * approval_status
+   */
+
+  const { data, error } =
     await supabase
       .from("expenses")
       .select(`
         description,
         amount,
-        status,
-        expense_date
+        approval_status,
+        date
       `)
       .eq(
         "group_id",
         currentGroupId
       )
       .order(
-        "expense_date",
+        "date",
         {
           ascending: false
         }
@@ -1164,10 +944,7 @@ async function renderRecentExpenses() {
     data || [];
 
 
-  if (
-    expenses.length ===
-    0
-  ) {
+  if (expenses.length === 0) {
 
     rows.innerHTML = `
       <tr>
@@ -1184,52 +961,48 @@ async function renderRecentExpenses() {
 
   rows.innerHTML =
     expenses
-      .map(
-        expense => {
+      .map(expense => {
 
-          return `
-            <tr>
+        return `
+          <tr>
 
-              <td>
-                ${escapeHtml(
-                  expense.description ||
-                  "Expense"
-                )}
-              </td>
+            <td>
+              ${escapeHtml(
+                expense.description ||
+                "Expense"
+              )}
+            </td>
 
-              <td>
-                ${money(
-                  expense.amount
-                )}
-              </td>
+            <td>
+              ${money(
+                expense.amount
+              )}
+            </td>
 
-              <td>
-                ${escapeHtml(
-                  expense.status ||
-                  "Pending"
-                )}
-              </td>
+            <td>
+              ${escapeHtml(
+                expense.approval_status ||
+                "Pending"
+              )}
+            </td>
 
-            </tr>
-          `;
+          </tr>
+        `;
 
-        }
-      )
+      })
       .join("");
 
 }
 
 
 /* =========================================================
-   LOAD UPCOMING MEETINGS
+   UPCOMING MEETINGS
 ========================================================= */
 
 async function renderUpcomingMeetings() {
 
   const rows =
-    byId(
-      "upcomingMeetingRows"
-    );
+    byId("upcomingMeetingRows");
 
 
   if (!rows) {
@@ -1243,15 +1016,19 @@ async function renderUpcomingMeetings() {
       .split("T")[0];
 
 
-  const {
-    data,
-    error
-  } =
+  /*
+   * IMPORTANT:
+   *
+   * Database uses `date`
+   * not `meeting_date`.
+   */
+
+  const { data, error } =
     await supabase
       .from("meetings")
       .select(`
         id,
-        meeting_date,
+        date,
         title,
         venue,
         status
@@ -1261,11 +1038,11 @@ async function renderUpcomingMeetings() {
         currentGroupId
       )
       .gte(
-        "meeting_date",
+        "date",
         today
       )
       .order(
-        "meeting_date",
+        "date",
         {
           ascending: true
         }
@@ -1282,10 +1059,7 @@ async function renderUpcomingMeetings() {
     data || [];
 
 
-  if (
-    meetings.length ===
-    0
-  ) {
+  if (meetings.length === 0) {
 
     rows.innerHTML = `
       <tr>
@@ -1302,66 +1076,67 @@ async function renderUpcomingMeetings() {
 
   rows.innerHTML =
     meetings
-      .map(
-        meeting => {
+      .map(meeting => {
 
-          return `
-            <tr>
+        return `
+          <tr>
 
-              <td>
-                ${formatDate(
-                  meeting.meeting_date
-                )}
-              </td>
+            <td>
+              ${formatDate(
+                meeting.date
+              )}
+            </td>
 
-              <td>
-                ${escapeHtml(
-                  meeting.title ||
-                  "Meeting"
-                )}
-              </td>
+            <td>
+              ${escapeHtml(
+                meeting.title ||
+                "Meeting"
+              )}
+            </td>
 
-              <td>
-                ${escapeHtml(
-                  meeting.venue ||
-                  "—"
-                )}
-              </td>
+            <td>
+              ${escapeHtml(
+                meeting.venue ||
+                "—"
+              )}
+            </td>
 
-              <td>
-                ${escapeHtml(
-                  meeting.status ||
-                  "Scheduled"
-                )}
-              </td>
+            <td>
+              ${escapeHtml(
+                meeting.status ||
+                "Upcoming"
+              )}
+            </td>
 
-            </tr>
-          `;
+          </tr>
+        `;
 
-        }
-      )
+      })
       .join("");
 
 }
 
 
 /* =========================================================
-   MAIN DASHBOARD LOAD
+   MAIN DASHBOARD
 ========================================================= */
 
 async function loadDashboard() {
 
+  console.log(
+    "CHAMA LIVE: loading dashboard data..."
+  );
+
+
   /*
-   * Get authenticated member.
+   * MEMBER
    */
 
   currentMember =
     await getCurrentMember();
 
 
-  if (
-    !currentMember
-  ) {
+  if (!currentMember) {
 
     throw new Error(
       "No member record is linked to this account."
@@ -1374,9 +1149,7 @@ async function loadDashboard() {
     currentMember.group_id;
 
 
-  if (
-    !currentGroupId
-  ) {
+  if (!currentGroupId) {
 
     throw new Error(
       "Your member record has no group."
@@ -1386,16 +1159,14 @@ async function loadDashboard() {
 
 
   /*
-   * Get group.
+   * GROUP
    */
 
   currentGroup =
     await getCurrentGroup();
 
 
-  if (
-    !currentGroup
-  ) {
+  if (!currentGroup) {
 
     throw new Error(
       "Group information could not be found."
@@ -1408,7 +1179,7 @@ async function loadDashboard() {
 
 
   /*
-   * Members.
+   * MEMBERS
    */
 
   const members =
@@ -1416,7 +1187,7 @@ async function loadDashboard() {
 
 
   /*
-   * Current month contributions.
+   * CONTRIBUTIONS
    */
 
   const contributions =
@@ -1424,7 +1195,7 @@ async function loadDashboard() {
 
 
   /*
-   * Contribution summary.
+   * SUMMARY
    */
 
   renderContributionSummary(
@@ -1434,7 +1205,7 @@ async function loadDashboard() {
 
 
   /*
-   * Member payment status.
+   * MEMBER PAYMENT STATUS
    */
 
   await renderMemberPaymentStatus(
@@ -1444,35 +1215,35 @@ async function loadDashboard() {
 
 
   /*
-   * Recent contributions.
+   * RECENT CONTRIBUTIONS
    */
 
   await renderRecentContributions();
 
 
   /*
-   * Recent expenses.
+   * RECENT EXPENSES
    */
 
   await renderRecentExpenses();
 
 
   /*
-   * Upcoming meetings.
+   * MEETINGS
    */
 
   await renderUpcomingMeetings();
 
 
   /*
-   * Balance.
+   * BALANCE
    */
 
   await loadBalance();
 
 
   console.log(
-    "CHAMA LIVE: dashboard data loaded"
+    "CHAMA LIVE: dashboard data loaded successfully"
   );
 
 }
@@ -1495,8 +1266,7 @@ export async function initDashboard() {
   }
 
 
-  initialized =
-    true;
+  initialized = true;
 
 
   const status =
@@ -1523,6 +1293,7 @@ export async function initDashboard() {
 
     }
 
+
     console.log(
       "CHAMA LIVE: dashboard initialized"
     );
@@ -1530,8 +1301,7 @@ export async function initDashboard() {
   }
   catch (error) {
 
-    initialized =
-      false;
+    initialized = false;
 
 
     if (status) {
@@ -1560,4 +1330,3 @@ export const initPage =
 console.log(
   "CHAMA LIVE: dashboard.js ready"
 );
-```
