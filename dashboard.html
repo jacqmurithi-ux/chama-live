@@ -1,4 +1,4 @@
-
+```html
 <!doctype html>
 <html lang="en">
 
@@ -19,6 +19,100 @@
   >
 
   <style>
+
+    /* =====================================================
+       TOP NAVIGATION
+    ===================================================== */
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      width: 100%;
+    }
+
+    .topbar-inner {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .brand {
+      flex-shrink: 0;
+    }
+
+    .top-nav {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex: 1;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .top-nav::-webkit-scrollbar {
+      display: none;
+    }
+
+    .top-nav a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 11px;
+      border-radius: 8px;
+      text-decoration: none;
+      white-space: nowrap;
+      font-size: 13px;
+      font-weight: 600;
+      color: inherit;
+      transition:
+        background .2s ease,
+        color .2s ease;
+    }
+
+    .top-nav a:hover {
+      background: rgba(15, 118, 110, .08);
+      color: #0f766e;
+    }
+
+    .top-nav a.active {
+      background: #0f766e;
+      color: #fff;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .user-name {
+      max-width: 150px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* =====================================================
+       REMOVE SIDEBAR / FULL WIDTH LAYOUT
+    ===================================================== */
+
+    .layout {
+      display: block !important;
+      width: 100%;
+    }
+
+    .sidebar {
+      display: none !important;
+    }
+
+    .main {
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
 
     /* =====================================================
        DASHBOARD
@@ -179,10 +273,78 @@
     }
 
     /* =====================================================
+       DESKTOP
+    ===================================================== */
+
+    @media (min-width: 801px) {
+
+      .topbar {
+        padding-left: 24px;
+        padding-right: 24px;
+      }
+
+      .main {
+        padding: 30px 28px;
+      }
+
+    }
+
+    /* =====================================================
+       TABLET
+    ===================================================== */
+
+    @media (max-width: 1000px) {
+
+      .topbar-inner {
+        gap: 14px;
+      }
+
+      .top-nav a {
+        padding: 7px 9px;
+        font-size: 12px;
+      }
+
+      .user-name {
+        display: none;
+      }
+
+    }
+
+    /* =====================================================
        MOBILE
     ===================================================== */
 
     @media (max-width: 800px) {
+
+      .topbar {
+        padding: 10px 12px;
+      }
+
+      .topbar-inner {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .top-nav {
+        min-width: 0;
+        gap: 3px;
+      }
+
+      .top-nav a {
+        padding: 7px 9px;
+        font-size: 11px;
+      }
+
+      .topbar-actions {
+        gap: 6px;
+      }
+
+      .topbar-actions .btn {
+        padding: 7px 9px;
+        font-size: 11px;
+      }
 
       .dashboard-metrics {
         grid-template-columns:
@@ -193,9 +355,26 @@
         grid-template-columns: 1fr;
       }
 
+      .main {
+        width: 100%;
+      }
+
     }
 
     @media (max-width: 650px) {
+
+      .topbar {
+        padding: 9px 10px;
+      }
+
+      .brand {
+        font-size: 15px;
+      }
+
+      .top-nav a {
+        padding: 7px 8px;
+        font-size: 10px;
+      }
 
       .dashboard-header {
         margin-bottom: 18px;
@@ -287,7 +466,31 @@
 
     }
 
-    @media (max-width: 390px) {
+    @media (max-width: 480px) {
+
+      .topbar-inner {
+        grid-template-columns: 1fr auto;
+      }
+
+      .brand {
+        order: 1;
+      }
+
+      .topbar-actions {
+        order: 2;
+      }
+
+      .top-nav {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        width: 100%;
+        border-top: 1px solid rgba(100, 116, 139, .15);
+        padding-top: 7px;
+      }
+
+      .top-nav a {
+        flex-shrink: 0;
+      }
 
       .dashboard-metrics {
         gap: 8px;
@@ -299,6 +502,24 @@
 
       .metric {
         font-size: 19px;
+      }
+
+    }
+
+    @media (max-width: 390px) {
+
+      .top-nav a {
+        padding: 6px 7px;
+        font-size: 9px;
+      }
+
+      .topbar-actions .btn {
+        font-size: 10px;
+        padding: 6px 8px;
+      }
+
+      .metric {
+        font-size: 18px;
       }
 
     }
@@ -317,65 +538,21 @@
 
   <header class="topbar">
 
-    <div class="brand">
-      CHAMA <span>LIVE</span>
-    </div>
+    <div class="topbar-inner">
 
 
-    <div class="topbar-actions">
+      <!-- BRAND -->
 
-      <span
-        data-user-name
-        class="muted"
-      >
-        Member
-      </span>
-
-
-      <button
-        id="logout"
-        class="btn btn-secondary"
-        type="button"
-      >
-        Sign out
-      </button>
-
-    </div>
-
-  </header>
-
-
-
-  <!-- =====================================================
-       APPLICATION LAYOUT
-  ====================================================== -->
-
-  <div class="layout">
-
-
-    <!-- ===================================================
-         SIDEBAR
-    ==================================================== -->
-
-    <aside class="sidebar">
-
-      <div class="sidebar-brand">
-
-        <strong>
-          CHAMA LIVE
-        </strong>
-
-        <small
-          data-group-name
-          class="muted"
-        >
-          CHAMA
-        </small>
-
+      <div class="brand">
+        CHAMA <span>LIVE</span>
       </div>
 
 
-      <nav class="sidebar-nav">
+      <!-- =================================================
+           TOP NAVIGATION
+      ================================================== -->
+
+      <nav class="top-nav">
 
         <a
           href="dashboard.html"
@@ -414,8 +591,43 @@
 
       </nav>
 
-    </aside>
 
+      <!-- =================================================
+           USER / LOGOUT
+      ================================================== -->
+
+      <div class="topbar-actions">
+
+        <span
+          data-user-name
+          class="muted user-name"
+        >
+          Member
+        </span>
+
+        <button
+          id="logout"
+          class="btn btn-secondary"
+          type="button"
+        >
+          Sign out
+        </button>
+
+      </div>
+
+    </div>
+
+  </header>
+
+
+
+  <!-- =====================================================
+       APPLICATION LAYOUT
+       
+       NO SIDEBAR
+  ====================================================== -->
+
+  <div class="layout">
 
 
     <!-- ===================================================
@@ -1010,13 +1222,18 @@
 
   <!-- =====================================================
        GLOBAL APPLICATION START
-       
-       IMPORTANT:
-       layout.js handles authentication,
-       layout loading, mobile navigation,
-       and dynamically loads dashboard.js.
-       
-       DO NOT add dashboard.js separately.
+
+       layout.js handles:
+
+       • Authentication
+       • User/member loading
+       • Group loading
+       • Logout
+       • Navigation
+       • Dynamic dashboard.js loading
+       • Mobile behaviour
+
+       DO NOT load dashboard.js here.
   ====================================================== -->
 
   <script
@@ -1028,4 +1245,4 @@
 </body>
 
 </html>
-
+```
