@@ -161,7 +161,8 @@ export async function requireAuth() {
 
     if (
       currentPage !== "index.html" &&
-      currentPage !== "login.html"
+      currentPage !== "login.html" &&
+      currentPage !== ""
     ) {
 
       window.location.href =
@@ -205,11 +206,9 @@ export async function getMyMember() {
         member_number,
         name,
         phone,
-        email,
         role,
         join_date,
         status,
-        onboarding_status,
         created_at
       `)
       .eq(
@@ -297,7 +296,6 @@ export async function getMyGroup() {
         id,
         name,
         category,
-        group_type,
         monthly_contribution,
         opening_balance,
         description,
