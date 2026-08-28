@@ -1,8 +1,8 @@
 ```javascript
 /* =========================================================
    CHAMA LIVE — MEMBERS
-   FINAL STABLE VERSION
-   Loaded by layout.js
+   COMPLETE STABLE VERSION
+   Loaded dynamically by layout.js
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -76,7 +76,7 @@ function formatDate(value) {
 
 
 /* =========================================================
-   STATUS
+   STATUS / ERROR MESSAGES
 ========================================================= */
 
 function showStatus(message) {
@@ -131,7 +131,7 @@ function clearError() {
    FORM MESSAGE
 ========================================================= */
 
-function showFormMessage(message, type) {
+function showFormMessage(message, type = "success") {
 
   const element = byId("formMessage");
 
@@ -139,20 +139,27 @@ function showFormMessage(message, type) {
     return;
   }
 
-  element.textContent = message;
-  element.style.display = "block";
+  element.textContent = message || "";
+  element.style.display = message ? "block" : "none";
 
   if (type === "error") {
 
     element.style.background =
       "rgba(220, 38, 38, .12)";
 
+    element.style.color =
+      "#b91c1c";
+
   } else {
 
     element.style.background =
       "rgba(22, 163, 74, .12)";
 
+    element.style.color =
+      "#166534";
+
   }
+
 }
 
 
@@ -166,6 +173,7 @@ function clearFormMessage() {
 
   element.textContent = "";
   element.style.display = "none";
+
 }
 
 
@@ -182,6 +190,7 @@ export async function init() {
     );
 
     return;
+
   }
 
   initialized = true;
@@ -194,7 +203,7 @@ export async function init() {
 
 
     /* -----------------------------------------------------
-       AUTH
+       AUTHENTICATION
     ----------------------------------------------------- */
 
     currentUser = await requireAuth();
@@ -242,7 +251,6 @@ export async function init() {
 
     currentGroup =
       await getMyGroup();
-
 
     if (!currentGroup) {
 
@@ -327,7 +335,7 @@ async function loadMembers() {
     await supabase
       .from("members")
       .select(
-        "id, group_id, user_id, member_number, name, phone, email, role, join_date, status, onboarding_status, created_at"
+        "id, group_id, user_id, member_number, name, phone, email, role, join_date, status, created_at"
       )
       .eq(
         "group_id",
@@ -342,12 +350,16 @@ async function loadMembers() {
 
 
   if (result.error) {
+
     throw result.error;
+
   }
 
 
   members =
-    result.data || [];
+    Array.isArray(result.data)
+      ? result.data
+      : [];
 
 
   console.log(
@@ -359,7 +371,7 @@ async function loadMembers() {
 
 
 /* =========================================================
-   MEMBER ROW
+   CREATE MEMBER TABLE ROW
 ========================================================= */
 
 function createMemberRow(member) {
@@ -394,16 +406,12 @@ function createMemberRow(member) {
 
   const status =
     escapeHtml(
-      member.onboarding_status ||
-      member.status ||
-      "active"
+      member.status || "active"
     );
 
 
   return `
 <tr data-member-id="${id}">
-
-  <td>${memberNumber}</td>
 
   <td>${memberNumber}</td>
 
@@ -451,6 +459,7 @@ function createMemberRow(member) {
 
 </tr>
 `;
+
 }
 
 
@@ -458,7 +467,7 @@ function createMemberRow(member) {
    RENDER MEMBERS
 ========================================================= */
 
-function renderMembers(list) {
+function renderMembers(list = members) {
 
   const tbody =
     byId("memberRows");
@@ -476,33 +485,39 @@ function renderMembers(list) {
 
 
   const rows =
-    list || members;
+    Array.isArray(list)
+      ? list
+      : [];
 
 
   if (!rows.length) {
 
     tbody.innerHTML = `
 <tr>
-  <td colspan="8">
+  <td colspan="7">
     No members registered yet.
   </td>
 </tr>
 `;
 
     return;
+
   }
 
 
   let html = "";
 
+
   rows.forEach(function(member) {
 
-    html += createMemberRow(member);
+    html +=
+      createMemberRow(member);
 
   });
 
 
-  tbody.innerHTML = html;
+  tbody.innerHTML =
+    html;
 
 }
 
@@ -556,6 +571,10 @@ function bindEvents() {
     byId("memberRows");
 
 
+  /* -------------------------------------------------------
+     ADD MEMBER
+  ------------------------------------------------------- */
+
   if (addButton) {
 
     addButton.addEventListener(
@@ -565,6 +584,10 @@ function bindEvents() {
 
   }
 
+
+  /* -------------------------------------------------------
+     CLOSE ADD MEMBER
+  ------------------------------------------------------- */
 
   if (closeButton) {
 
@@ -576,6 +599,10 @@ function bindEvents() {
   }
 
 
+  /* -------------------------------------------------------
+     CANCEL ADD MEMBER
+  ------------------------------------------------------- */
+
   if (cancelButton) {
 
     cancelButton.addEventListener(
@@ -585,6 +612,10 @@ function bindEvents() {
 
   }
 
+
+  /* -------------------------------------------------------
+     FORM SUBMIT
+  ------------------------------------------------------- */
 
   if (form) {
 
@@ -596,6 +627,10 @@ function bindEvents() {
   }
 
 
+  /* -------------------------------------------------------
+     SEARCH
+  ------------------------------------------------------- */
+
   if (search) {
 
     search.addEventListener(
@@ -605,6 +640,10 @@ function bindEvents() {
 
   }
 
+
+  /* -------------------------------------------------------
+     CLOSE MEMBER MODAL
+  ------------------------------------------------------- */
 
   if (closeModal) {
 
@@ -616,6 +655,10 @@ function bindEvents() {
   }
 
 
+  /* -------------------------------------------------------
+     TABLE ACTIONS
+  ------------------------------------------------------- */
+
   if (tbody) {
 
     tbody.addEventListener(
@@ -626,6 +669,10 @@ function bindEvents() {
   }
 
 
+  /* -------------------------------------------------------
+     ESCAPE KEY
+  ------------------------------------------------------- */
+
   document.addEventListener(
     "keydown",
     function(event) {
@@ -633,6 +680,8 @@ function bindEvents() {
       if (event.key === "Escape") {
 
         closeMemberModal();
+
+        closeMemberForm();
 
       }
 
@@ -680,9 +729,7 @@ function handleSearch(event) {
 
         member.role,
 
-        member.status,
-
-        member.onboarding_status
+        member.status
 
       ];
 
@@ -690,8 +737,12 @@ function handleSearch(event) {
       const searchable =
         values
           .filter(function(value) {
-            return value !== null &&
-                   value !== undefined;
+
+            return (
+              value !== null &&
+              value !== undefined
+            );
+
           })
           .join(" ")
           .toLowerCase();
@@ -715,13 +766,14 @@ function handleSearch(event) {
 
     tbody.innerHTML = `
 <tr>
-  <td colspan="8">
+  <td colspan="7">
     No matching members found.
   </td>
 </tr>
 `;
 
     return;
+
   }
 
 
@@ -768,6 +820,8 @@ function handleTableAction(event) {
 
     openMemberModal(memberId);
 
+    return;
+
   }
 
 
@@ -803,12 +857,17 @@ function openAddMember() {
 
 
   if (panel) {
+
     panel.hidden = false;
+
   }
 
 
   if (title) {
-    title.textContent = "Add Member";
+
+    title.textContent =
+      "Add Member";
+
   }
 
 
@@ -821,7 +880,9 @@ function openAddMember() {
 
 
   if (form) {
+
     form.reset();
+
   }
 
 
@@ -833,14 +894,16 @@ function openAddMember() {
 
 
   if (memberNumber) {
+
     memberNumber.focus();
+
   }
 
 }
 
 
 /* =========================================================
-   CLOSE FORM
+   CLOSE MEMBER FORM
 ========================================================= */
 
 function closeMemberForm() {
@@ -853,7 +916,9 @@ function closeMemberForm() {
 
 
   if (panel) {
+
     panel.hidden = true;
+
   }
 
 
@@ -862,7 +927,9 @@ function closeMemberForm() {
 
 
   if (form) {
+
     form.reset();
+
   }
 
 
@@ -894,6 +961,7 @@ function openEditMember(memberId) {
     );
 
     return;
+
   }
 
 
@@ -904,22 +972,25 @@ function openEditMember(memberId) {
   const panel =
     byId("addMemberPanel");
 
-
   const title =
     byId("memberFormTitle");
-
 
   const description =
     byId("memberFormDescription");
 
 
   if (panel) {
+
     panel.hidden = false;
+
   }
 
 
   if (title) {
-    title.textContent = "Edit Member";
+
+    title.textContent =
+      "Edit Member";
+
   }
 
 
@@ -1032,6 +1103,10 @@ async function saveMember(event) {
 
   try {
 
+    /* -----------------------------------------------------
+       FORM ELEMENTS
+    ----------------------------------------------------- */
+
     const memberNumberElement =
       byId("memberNumber");
 
@@ -1050,6 +1125,10 @@ async function saveMember(event) {
     const statusElement =
       byId("memberStatus");
 
+
+    /* -----------------------------------------------------
+       FORM VALUES
+    ----------------------------------------------------- */
 
     const memberNumber =
       memberNumberElement
@@ -1127,6 +1206,10 @@ async function saveMember(event) {
     }
 
 
+    /* -----------------------------------------------------
+       BUTTON STATE
+    ----------------------------------------------------- */
+
     if (saveButton) {
 
       saveButton.disabled = true;
@@ -1145,22 +1228,76 @@ async function saveMember(event) {
 
     if (editingMemberId) {
 
+      /* ---------------------------------------------------
+         CHECK DUPLICATE MEMBER NUMBER
+      --------------------------------------------------- */
+
+      const duplicateResult =
+        await supabase
+          .from("members")
+          .select("id")
+          .eq(
+            "group_id",
+            groupId
+          )
+          .eq(
+            "member_number",
+            memberNumber
+          )
+          .neq(
+            "id",
+            editingMemberId
+          )
+          .limit(1);
+
+
+      if (duplicateResult.error) {
+
+        throw duplicateResult.error;
+
+      }
+
+
+      if (
+        duplicateResult.data &&
+        duplicateResult.data.length > 0
+      ) {
+
+        throw new Error(
+          "Member number " +
+          memberNumber +
+          " is already registered in this group."
+        );
+
+      }
+
+
+      /* ---------------------------------------------------
+         UPDATE
+      --------------------------------------------------- */
+
       const updateResult =
         await supabase
           .from("members")
           .update({
 
-            member_number: memberNumber,
+            member_number:
+              memberNumber,
 
-            name: name,
+            name:
+              name,
 
-            phone: phone,
+            phone:
+              phone,
 
-            email: email || null,
+            email:
+              email || null,
 
-            role: role,
+            role:
+              role,
 
-            status: status
+            status:
+              status
 
           })
           .eq(
@@ -1180,6 +1317,12 @@ async function saveMember(event) {
       }
 
 
+      console.log(
+        "CHAMA LIVE: member updated",
+        editingMemberId
+      );
+
+
       showFormMessage(
         "Member updated successfully.",
         "success"
@@ -1193,6 +1336,10 @@ async function saveMember(event) {
     ===================================================== */
 
     else {
+
+      /* ---------------------------------------------------
+         CHECK DUPLICATE MEMBER NUMBER
+      --------------------------------------------------- */
 
       const duplicateResult =
         await supabase
@@ -1230,24 +1377,35 @@ async function saveMember(event) {
       }
 
 
+      /* ---------------------------------------------------
+         INSERT
+      --------------------------------------------------- */
+
       const insertResult =
         await supabase
           .from("members")
           .insert({
 
-            group_id: groupId,
+            group_id:
+              groupId,
 
-            member_number: memberNumber,
+            member_number:
+              memberNumber,
 
-            name: name,
+            name:
+              name,
 
-            phone: phone,
+            phone:
+              phone,
 
-            email: email || null,
+            email:
+              email || null,
 
-            role: role,
+            role:
+              role,
 
-            status: status,
+            status:
+              status,
 
             join_date:
               new Date()
@@ -1256,7 +1414,7 @@ async function saveMember(event) {
 
           })
           .select(
-            "id, group_id, user_id, member_number, name, phone, email, role, join_date, status, onboarding_status, created_at"
+            "id, group_id, user_id, member_number, name, phone, email, role, join_date, status, created_at"
           )
           .single();
 
@@ -1282,9 +1440,9 @@ async function saveMember(event) {
     }
 
 
-    /* -----------------------------------------------------
+    /* =====================================================
        REFRESH TABLE
-    ----------------------------------------------------- */
+    ===================================================== */
 
     await loadMembers();
 
@@ -1292,6 +1450,10 @@ async function saveMember(event) {
 
     updateMemberCount();
 
+
+    /* -----------------------------------------------------
+       CLOSE FORM AFTER SUCCESS
+    ----------------------------------------------------- */
 
     setTimeout(
       function() {
@@ -1304,6 +1466,12 @@ async function saveMember(event) {
 
   }
   catch (error) {
+
+    console.error(
+      "CHAMA LIVE: save member failed",
+      error
+    );
+
 
     showFormMessage(
       error && error.message
@@ -1354,6 +1522,7 @@ function openMemberModal(memberId) {
     );
 
     return;
+
   }
 
 
@@ -1442,7 +1611,13 @@ function openMemberModal(memberId) {
 
 
   if (!modal) {
+
+    console.warn(
+      "CHAMA LIVE: #memberModal not found"
+    );
+
     return;
+
   }
 
 
@@ -1456,7 +1631,9 @@ function openMemberModal(memberId) {
 
 
   if (closeButton) {
+
     closeButton.focus();
+
   }
 
 }
@@ -1491,11 +1668,19 @@ function closeMemberModal() {
 export async function refreshMembers() {
 
   if (!groupId) {
+
+    console.warn(
+      "CHAMA LIVE: Cannot refresh members without groupId"
+    );
+
     return;
+
   }
 
 
   try {
+
+    clearError();
 
     showStatus(
       "Refreshing members..."
@@ -1509,6 +1694,11 @@ export async function refreshMembers() {
     updateMemberCount();
 
     showStatus("");
+
+
+    console.log(
+      "CHAMA LIVE: members refreshed"
+    );
 
   }
   catch (error) {
