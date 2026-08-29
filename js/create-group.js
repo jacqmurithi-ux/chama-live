@@ -1,90 +1,452 @@
+```javascript
 import { supabase } from "./supabase.js";
+
+
+/* =====================================================
+   CHAMA LIVE — CREATE GROUP ONBOARDING
+   GitHub Pages + Supabase Auth
+
+   Production URL:
+   https://jacqmurithi-ux.github.io/chama-live/
+
+   Email confirmation returns to:
+   https://jacqmurithi-ux.github.io/chama-live/create-group.html
+===================================================== */
+
+
+/* =====================================================
+   CONFIGURATION
+===================================================== */
+
+const CREATE_GROUP_URL =
+  "https://jacqmurithi-ux.github.io/chama-live/create-group.html";
+
+const PENDING_KEY =
+  "chama_live_pending_group_onboarding";
+
+const NEW_GROUP_KEY =
+  "chama_live_new_group";
 
 
 /* =====================================================
    ELEMENTS
 ===================================================== */
 
-const $ = (id) => document.getElementById(id);
+const $ = (id) =>
+  document.getElementById(id);
 
-const form = $("createGroupForm");
-const statusBox = $("status");
-const errorBox = $("error");
-const successBox = $("success");
+const form =
+  $("createGroupForm");
 
-const createButton = $("createGroupButton");
+const statusBox =
+  $("status");
 
-const accessCodeBox = $("accessCode");
-const memberNumberBox = $("memberNumber");
+const errorBox =
+  $("error");
 
-const copyCodeButton = $("copyCode");
+const successBox =
+  $("success");
+
+const createButton =
+  $("createGroupButton");
+
+const accessCodeBox =
+  $("accessCode");
+
+const memberNumberBox =
+  $("memberNumber");
+
+const copyCodeButton =
+  $("copyCode");
 
 
 /* =====================================================
-   STORAGE
-===================================================== */
-
-const PENDING_KEY =
-  "chama_live_pending_group_onboarding";
-
-
-/* =====================================================
-   INIT
+   INITIALIZATION
 ===================================================== */
 
 async function init() {
 
   clearError();
+  hideSuccess();
+
+  /*
+   * Supabase can return from an email confirmation
+   * with authentication information in the URL.
+   *
+   * supabase.js has detectSessionInUrl enabled,
+   * but we still give the client a moment to process
+   * the callback before checking the session.
+   */
+
+  await waitForAuthCallback();
+
+
+  /*
+   * Load previously saved onboarding information.
+   */
 
   const pending =
     loadPendingOnboarding();
 
 
   /*
-   * If the user has already authenticated
-   * and previously started onboarding,
-   * restore the safe fields.
+   * Check current authentication state.
+   */
+
+  const {
+    data: {
+      session
+    },
+    error
+  } =
+    await supabase.auth.getSession();
+
+
+  if (error) {
+
+    console.error(
+      "GET SESSION ERROR:",
+      error
+    );
+
+    showError(
+      "We could not verify your login session. " +
+      "Please refresh the page and try again."
+    );
+
+    return;
+
+  }
+
+
+  /*
+   * Restore saved group information.
    */
 
   if (pending) {
 
-    restorePendingForm(pending);
-
-    showStatus(
-      "Your previous group setup was saved. " +
-      "Complete the setup below."
+    restorePendingForm(
+      pending
     );
 
   }
 
 
   /*
-   * If already logged in, don't create
-   * another Auth account.
+   * -------------------------------------------------
+   * USER IS ALREADY AUTHENTICATED
+   * -------------------------------------------------
    */
-
-  const {
-    data: {
-      session
-    }
-  } = await supabase.auth.getSession();
-
 
   if (session?.user) {
 
+    /*
+     * Email has been confirmed and the user has
+     * an active Supabase session.
+     */
+
+    prepareAuthenticatedOnboarding();
+
     showStatus(
-      "You are already signed in. " +
-      "Submit the form to create the group."
+      "Your account is confirmed. " +
+      "Your saved group details are ready. " +
+      "Click Create Group Account to finish."
     );
 
-    if (pending) {
+    return;
 
-      showStatus(
-        "Your saved group setup is ready. " +
-        "Click Create Group Account to finish."
-      );
+  }
+
+
+  /*
+   * -------------------------------------------------
+   * USER IS NOT AUTHENTICATED
+   * -------------------------------------------------
+   */
+
+  prepareUnauthenticatedOnboarding();
+
+  if (pending) {
+
+    showStatus(
+      "Your group details have been saved. " +
+      "Create your account to continue."
+    );
+
+  }
+
+}
+
+
+/* =====================================================
+   AUTH CALLBACK WAIT
+===================================================== */
+
+async function waitForAuthCallback() {
+
+  const url =
+    window.location.href;
+
+  const hash =
+    window.location.hash;
+
+  const search =
+    window.location.search;
+
+
+  const isAuthCallback =
+    hash.includes(
+      "access_token"
+    ) ||
+    hash.includes(
+      "refresh_token"
+    ) ||
+    search.includes(
+      "code="
+    ) ||
+    search.includes(
+      "token_hash="
+    );
+
+
+  if (!isAuthCallback) {
+
+    return;
+
+  }
+
+
+  showStatus(
+    "Confirming your account..."
+  );
+
+
+  /*
+   * Give Supabase Auth enough time to process
+   * the callback URL.
+   */
+
+  await new Promise(
+    (resolve) =>
+      setTimeout(
+        resolve,
+        800
+      )
+  );
+
+
+  /*
+   * Ask Supabase for the resulting session.
+   */
+
+  for (
+    let attempt = 0;
+    attempt < 5;
+    attempt++
+  ) {
+
+    const {
+      data: {
+        session
+      }
+    } =
+      await supabase.auth.getSession();
+
+
+    if (session?.user) {
+
+      return;
 
     }
+
+
+    await new Promise(
+      (resolve) =>
+        setTimeout(
+          resolve,
+          500
+        )
+    );
+
+  }
+
+}
+
+
+/* =====================================================
+   AUTH STATE LISTENER
+===================================================== */
+
+supabase.auth.onAuthStateChange(
+  async (
+    event,
+    session
+  ) => {
+
+    console.log(
+      "AUTH EVENT:",
+      event
+    );
+
+
+    if (
+      event ===
+      "SIGNED_IN"
+    ) {
+
+      if (session?.user) {
+
+        prepareAuthenticatedOnboarding();
+
+        const pending =
+          loadPendingOnboarding();
+
+        if (pending) {
+
+          restorePendingForm(
+            pending
+          );
+
+        }
+
+        showStatus(
+          "Your account is confirmed. " +
+          "Your group details are ready. " +
+          "Click Create Group Account to finish."
+        );
+
+      }
+
+    }
+
+
+    if (
+      event ===
+      "TOKEN_REFRESHED"
+    ) {
+
+      if (session?.user) {
+
+        prepareAuthenticatedOnboarding();
+
+      }
+
+    }
+
+  }
+);
+
+
+/* =====================================================
+   AUTHENTICATED FORM MODE
+===================================================== */
+
+function prepareAuthenticatedOnboarding() {
+
+  /*
+   * Password is NOT needed once the user has
+   * authenticated through email confirmation.
+   *
+   * We deliberately never restore or store passwords.
+   */
+
+  const password =
+    $("password");
+
+  const confirmPassword =
+    $("confirmPassword");
+
+
+  if (password) {
+
+    password.required =
+      false;
+
+    password.value =
+      "";
+
+  }
+
+
+  if (confirmPassword) {
+
+    confirmPassword.required =
+      false;
+
+    confirmPassword.value =
+      "";
+
+  }
+
+
+  /*
+   * Email should not normally be changed after
+   * authentication.
+   */
+
+  const email =
+    $("email");
+
+
+  if (email) {
+
+    email.required =
+      false;
+
+  }
+
+
+  /*
+   * Change the button state back to normal.
+   */
+
+  if (createButton) {
+
+    createButton.disabled =
+      false;
+
+  }
+
+}
+
+
+/* =====================================================
+   UNAUTHENTICATED FORM MODE
+===================================================== */
+
+function prepareUnauthenticatedOnboarding() {
+
+  const password =
+    $("password");
+
+  const confirmPassword =
+    $("confirmPassword");
+
+
+  if (password) {
+
+    password.required =
+      true;
+
+  }
+
+
+  if (confirmPassword) {
+
+    confirmPassword.required =
+      true;
+
+  }
+
+
+  const email =
+    $("email");
+
+
+  if (email) {
+
+    email.required =
+      true;
 
   }
 
@@ -95,95 +457,280 @@ async function init() {
    FORM SUBMIT
 ===================================================== */
 
-form.addEventListener(
-  "submit",
-  async (event) => {
+if (form) {
 
-    event.preventDefault();
+  form.addEventListener(
+    "submit",
+    async (event) => {
 
-    clearError();
+      event.preventDefault();
 
-    hideSuccess();
-
-
-    try {
-
-      const values =
-        readForm();
+      clearError();
+      hideSuccess();
 
 
-      validateForm(
-        values
-      );
+      try {
+
+        /*
+         * Read the form first.
+         */
+
+        const values =
+          readForm();
 
 
-      /*
-       * Save only non-sensitive onboarding data.
-       *
-       * NEVER save the password to localStorage.
-       */
+        /*
+         * Check current authentication BEFORE
+         * validating the password.
+         */
 
-      savePendingOnboarding(
-        values
-      );
+        let {
+          data: {
+            session
+          },
+          error:
+            sessionError
+        } =
+          await supabase.auth.getSession();
 
 
-      setLoading(
-        true
-      );
+        if (sessionError) {
 
+          throw sessionError;
 
-      /*
-       * Check whether there is already
-       * an authenticated session.
-       */
-
-      let {
-        data: {
-          session
         }
-      } =
-        await supabase.auth.getSession();
 
 
-      /*
-       * -------------------------------------------------
-       * STEP 1
-       * CREATE AUTH ACCOUNT IF NOT LOGGED IN
-       * -------------------------------------------------
-       */
+        /*
+         * -------------------------------------------------
+         * AUTHENTICATED USER
+         * -------------------------------------------------
+         */
 
-      if (!session?.user) {
+        if (session?.user) {
 
-        showStatus(
-          "Creating your login account..."
+          /*
+           * The password is intentionally not required
+           * at this stage.
+           */
+
+          validateAuthenticatedForm(
+            values
+          );
+
+        }
+
+
+        /*
+         * -------------------------------------------------
+         * NOT AUTHENTICATED
+         * -------------------------------------------------
+         */
+
+        else {
+
+          validateForm(
+            values
+          );
+
+        }
+
+
+        /*
+         * Save only safe onboarding information.
+         *
+         * Password is NEVER saved.
+         */
+
+        savePendingOnboarding(
+          values
         );
 
+
+        setLoading(
+          true
+        );
+
+
+        /*
+         * -------------------------------------------------
+         * STEP 1
+         * CREATE AUTH ACCOUNT
+         * -------------------------------------------------
+         */
+
+        if (!session?.user) {
+
+          showStatus(
+            "Creating your login account..."
+          );
+
+
+          const {
+            data,
+            error
+          } =
+            await supabase.auth.signUp({
+
+              email:
+                values.email,
+
+              password:
+                values.password,
+
+              options: {
+
+                data: {
+
+                  full_name:
+                    values.adminName
+
+                },
+
+                /*
+                 * THIS IS THE IMPORTANT FIX.
+                 *
+                 * After email confirmation Supabase
+                 * returns the user to this GitHub Pages
+                 * onboarding page.
+                 */
+
+                emailRedirectTo:
+                  CREATE_GROUP_URL
+
+              }
+
+            });
+
+
+          if (error) {
+
+            throw error;
+
+          }
+
+
+          console.log(
+            "SIGNUP RESULT:",
+            data
+          );
+
+
+          session =
+            data.session;
+
+
+          /*
+           * Email confirmation is required.
+           *
+           * Supabase creates the user but does not
+           * provide a session until the email is confirmed.
+           */
+
+          if (!session) {
+
+            setLoading(
+              false
+            );
+
+
+            showStatus(
+              "Your account was created. " +
+              "Please check your email and confirm " +
+              "your account. After confirmation, " +
+              "you will return here automatically."
+            );
+
+
+            return;
+
+          }
+
+        }
+
+
+        /*
+         * -------------------------------------------------
+         * STEP 2
+         * CREATE GROUP
+         * -------------------------------------------------
+         */
+
+        showStatus(
+          "Creating your group..."
+        );
+
+
+        /*
+         * Get the latest session one more time.
+         */
+
+        const {
+          data: {
+            session:
+              currentSession
+          },
+          error:
+            currentSessionError
+        } =
+          await supabase.auth.getSession();
+
+
+        if (currentSessionError) {
+
+          throw currentSessionError;
+
+        }
+
+
+        if (!currentSession?.user) {
+
+          throw new Error(
+            "Your account is not authenticated. " +
+            "Please confirm your email and return to " +
+            "this page."
+          );
+
+        }
+
+
+        /*
+         * -------------------------------------------------
+         * CALL SUPABASE RPC
+         * -------------------------------------------------
+         */
 
         const {
           data,
           error
         } =
-          await supabase.auth.signUp({
+          await supabase.rpc(
+            "create_group_account",
+            {
 
-            email:
-              values.email,
+              p_name:
+                values.groupName,
 
-            password:
-              values.password,
+              p_category:
+                values.category,
 
-            options: {
+              p_monthly_contribution:
+                values.monthlyContribution,
 
-              data: {
+              p_description:
+                values.description,
 
-                full_name:
-                  values.adminName
+              p_admin_name:
+                values.adminName,
 
-              }
+              p_admin_phone:
+                values.adminPhone,
+
+              p_country:
+                values.country
 
             }
-
-          });
+          );
 
 
         if (error) {
@@ -193,194 +740,159 @@ form.addEventListener(
         }
 
 
-        session =
-          data.session;
-
-
         /*
-         * Email confirmation may be enabled.
-         *
-         * In that case Supabase returns a user
-         * but no active session.
+         * RPC may return an object or an array.
          */
 
-        if (!session) {
+        const result =
+          Array.isArray(data)
+            ? data[0]
+            : data;
 
-          setLoading(
-            false
+
+        if (!result) {
+
+          throw new Error(
+            "The group was not created. " +
+            "No result was returned by the server."
           );
-
-
-          showStatus(
-            "Your account was created. " +
-            "Please check your email and confirm " +
-            "your account, then return to this page " +
-            "to finish creating the group."
-          );
-
-
-          return;
 
         }
 
-      }
 
+        /*
+         * -------------------------------------------------
+         * SUCCESS
+         * -------------------------------------------------
+         */
 
-      /*
-       * -------------------------------------------------
-       * STEP 2
-       * CREATE GROUP + FIRST ADMIN MEMBER
-       * -------------------------------------------------
-       */
-
-      showStatus(
-        "Creating your group..."
-      );
-
-
-      const {
-        data,
-        error
-      } =
-        await supabase.rpc(
-          "create_group_account",
-          {
-
-            p_name:
-              values.groupName,
-
-            p_category:
-              values.category,
-
-            p_monthly_contribution:
-              values.monthlyContribution,
-
-            p_description:
-              values.description,
-
-            p_admin_name:
-              values.adminName,
-
-            p_admin_phone:
-              values.adminPhone,
-
-            p_country:
-              values.country
-
-          }
+        localStorage.removeItem(
+          PENDING_KEY
         );
 
 
-      if (error) {
+        /*
+         * Display access code.
+         */
 
-        throw error;
+        if (accessCodeBox) {
 
-      }
+          accessCodeBox.textContent =
+            result.access_code ||
+            "—";
 
-
-      const result =
-        Array.isArray(data)
-          ? data[0]
-          : data;
+        }
 
 
-      if (!result) {
+        /*
+         * Display first member number.
+         */
 
-        throw new Error(
-          "The group was not created. " +
-          "No result was returned."
+        if (memberNumberBox) {
+
+          memberNumberBox.textContent =
+            result.member_number ||
+            "0001";
+
+        }
+
+
+        /*
+         * Hide form.
+         */
+
+        form.hidden =
+          true;
+
+
+        /*
+         * Hide errors.
+         */
+
+        if (errorBox) {
+
+          errorBox.hidden =
+            true;
+
+        }
+
+
+        /*
+         * Show success panel.
+         */
+
+        if (successBox) {
+
+          successBox.hidden =
+            false;
+
+        }
+
+
+        showStatus(
+          "Your CHAMA LIVE group account is ready."
         );
 
-      }
+
+        /*
+         * Save non-sensitive group information
+         * for the next page.
+         */
+
+        localStorage.setItem(
+          NEW_GROUP_KEY,
+          JSON.stringify({
+
+            group_id:
+              result.group_id,
+
+            access_code:
+              result.access_code,
+
+            member_id:
+              result.member_id,
+
+            member_number:
+              result.member_number
+
+          })
+        );
 
 
-      /*
-       * Remove pending onboarding data
-       */
+        /*
+         * Clear password fields from memory/UI.
+         */
 
-      localStorage.removeItem(
-        PENDING_KEY
-      );
+        clearPasswordFields();
 
 
-      /*
-       * Show result
-       */
+      } catch (error) {
 
-      accessCodeBox.textContent =
-        result.access_code || "—";
-
-
-      memberNumberBox.textContent =
-        result.member_number || "0001";
-
-
-      form.hidden =
-        true;
-
-
-      errorBox.hidden =
-        true;
-
-
-      successBox.hidden =
-        false;
-
-
-      showStatus(
-        "Your CHAMA LIVE group account is ready."
-      );
-
-
-      /*
-       * Store group information for
-       * optional dashboard welcome.
-       */
-
-      localStorage.setItem(
-        "chama_live_new_group",
-        JSON.stringify({
-
-          group_id:
-            result.group_id,
-
-          access_code:
-            result.access_code,
-
-          member_id:
-            result.member_id,
-
-          member_number:
-            result.member_number
-
-        })
-      );
-
-
-    } catch (error) {
-
-      console.error(
-        "CREATE GROUP ERROR:",
-        error
-      );
-
-
-      showError(
-        friendlyError(
+        console.error(
+          "CREATE GROUP ERROR:",
           error
-        )
-      );
+        );
 
-    } finally {
 
-      setLoading(
-        false
-      );
+        showError(
+          friendlyError(
+            error
+          )
+        );
+
+
+      } finally {
+
+        setLoading(
+          false
+        );
+
+      }
 
     }
+  );
 
-  }
-);
+}
 
 
 /* =====================================================
@@ -392,39 +904,60 @@ function readForm() {
   return {
 
     groupName:
-      $("groupName").value.trim(),
+      getValue(
+        "groupName"
+      ),
 
     category:
-      $("category").value.trim(),
+      getValue(
+        "category"
+      ),
 
     country:
-      $("country").value.trim() ||
+      getValue(
+        "country"
+      ) ||
       "Kenya",
 
     monthlyContribution:
       Number(
-        $("monthlyContribution").value || 0
+        getValue(
+          "monthlyContribution"
+        ) ||
+        0
       ),
 
     description:
-      $("description").value.trim(),
+      getValue(
+        "description"
+      ),
 
     adminName:
-      $("adminName").value.trim(),
+      getValue(
+        "adminName"
+      ),
 
     adminPhone:
       normalizePhone(
-        $("adminPhone").value
+        getRawValue(
+          "adminPhone"
+        )
       ),
 
     email:
-      $("email").value.trim().toLowerCase(),
+      getValue(
+        "email"
+      ).toLowerCase(),
 
     password:
-      $("password").value,
+      getRawValue(
+        "password"
+      ),
 
     confirmPassword:
-      $("confirmPassword").value
+      getRawValue(
+        "confirmPassword"
+      )
 
   };
 
@@ -432,62 +965,57 @@ function readForm() {
 
 
 /* =====================================================
-   VALIDATION
+   SAFE VALUE HELPERS
 ===================================================== */
 
-function validateForm(values) {
+function getValue(id) {
 
-  if (!values.groupName) {
+  const element =
+    $(id);
 
-    throw new Error(
-      "Please enter the group name."
-    );
+  return element
+    ? String(
+        element.value ||
+        ""
+      ).trim()
+    : "";
 
-  }
+}
 
 
-  if (values.groupName.length < 2) {
+function getRawValue(id) {
 
-    throw new Error(
-      "Group name is too short."
-    );
+  const element =
+    $(id);
 
-  }
+  return element
+    ? String(
+        element.value ||
+        ""
+      )
+    : "";
+
+}
+
+
+/* =====================================================
+   VALIDATION — NEW ACCOUNT
+===================================================== */
+
+function validateForm(
+  values
+) {
+
+  validateCommonFields(
+    values
+  );
 
 
   if (
-    !Number.isFinite(
-      values.monthlyContribution
-    ) ||
-    values.monthlyContribution < 0
+    !isValidEmail(
+      values.email
+    )
   ) {
-
-    throw new Error(
-      "Monthly contribution must be zero or greater."
-    );
-
-  }
-
-
-  if (!values.adminName) {
-
-    throw new Error(
-      "Please enter the administrator's name."
-    );
-
-  }
-
-
-  if (!values.adminPhone) {
-
-    throw new Error(
-      "Please enter the administrator's phone number."
-    );
-
-  }
-
-
-  if (!isValidEmail(values.email)) {
 
     throw new Error(
       "Please enter a valid email address."
@@ -497,7 +1025,8 @@ function validateForm(values) {
 
 
   if (
-    values.password.length < 8
+    values.password.length <
+    8
   ) {
 
     throw new Error(
@@ -522,14 +1051,102 @@ function validateForm(values) {
 
 
 /* =====================================================
-   PHONE
+   VALIDATION — AUTHENTICATED USER
 ===================================================== */
 
-function normalizePhone(phone) {
+function validateAuthenticatedForm(
+  values
+) {
+
+  validateCommonFields(
+    values
+  );
+
+}
+
+
+/* =====================================================
+   COMMON VALIDATION
+===================================================== */
+
+function validateCommonFields(
+  values
+) {
+
+  if (
+    !values.groupName
+  ) {
+
+    throw new Error(
+      "Please enter the group name."
+    );
+
+  }
+
+
+  if (
+    values.groupName.length <
+    2
+  ) {
+
+    throw new Error(
+      "Group name is too short."
+    );
+
+  }
+
+
+  if (
+    !Number.isFinite(
+      values.monthlyContribution
+    ) ||
+    values.monthlyContribution <
+    0
+  ) {
+
+    throw new Error(
+      "Monthly contribution must be zero or greater."
+    );
+
+  }
+
+
+  if (
+    !values.adminName
+  ) {
+
+    throw new Error(
+      "Please enter the administrator's name."
+    );
+
+  }
+
+
+  if (
+    !values.adminPhone
+  ) {
+
+    throw new Error(
+      "Please enter the administrator's phone number."
+    );
+
+  }
+
+}
+
+
+/* =====================================================
+   PHONE NORMALIZATION
+===================================================== */
+
+function normalizePhone(
+  phone
+) {
 
   let value =
     String(
-      phone || ""
+      phone ||
+      ""
     ).trim();
 
 
@@ -546,9 +1163,16 @@ function normalizePhone(phone) {
    * 0712345678
    * -> +254712345678
    *
+   * 0112345678
+   * -> +254112345678
+   *
    * 712345678
    * -> +254712345678
+   *
+   * 112345678
+   * -> +254112345678
    */
+
 
   if (
     /^07\d{8}$/.test(
@@ -558,7 +1182,9 @@ function normalizePhone(phone) {
 
     return (
       "+254" +
-      value.substring(1)
+      value.substring(
+        1
+      )
     );
 
   }
@@ -572,7 +1198,9 @@ function normalizePhone(phone) {
 
     return (
       "+254" +
-      value.substring(1)
+      value.substring(
+        1
+      )
     );
 
   }
@@ -612,10 +1240,12 @@ function normalizePhone(phone) {
 
 
 /* =====================================================
-   EMAIL
+   EMAIL VALIDATION
 ===================================================== */
 
-function isValidEmail(email) {
+function isValidEmail(
+  email
+) {
 
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
     email
@@ -625,12 +1255,18 @@ function isValidEmail(email) {
 
 
 /* =====================================================
-   SAVE PENDING DATA
+   SAVE PENDING ONBOARDING
 ===================================================== */
 
 function savePendingOnboarding(
   values
 ) {
+
+  /*
+   * IMPORTANT:
+   *
+   * Password is intentionally excluded.
+   */
 
   const safeData = {
 
@@ -672,7 +1308,7 @@ function savePendingOnboarding(
 
 
 /* =====================================================
-   LOAD PENDING DATA
+   LOAD PENDING ONBOARDING
 ===================================================== */
 
 function loadPendingOnboarding() {
@@ -692,15 +1328,39 @@ function loadPendingOnboarding() {
     }
 
 
-    return JSON.parse(
-      raw
+    const data =
+      JSON.parse(
+        raw
+      );
+
+
+    if (
+      !data ||
+      typeof data !==
+      "object"
+    ) {
+
+      return null;
+
+    }
+
+
+    return data;
+
+  } catch (
+    error
+  ) {
+
+    console.error(
+      "LOAD PENDING ERROR:",
+      error
     );
 
-  } catch {
 
     localStorage.removeItem(
       PENDING_KEY
     );
+
 
     return null;
 
@@ -717,34 +1377,22 @@ function restorePendingForm(
   data
 ) {
 
-  if (
+  setValue(
+    "groupName",
     data.groupName
-  ) {
-
-    $("groupName").value =
-      data.groupName;
-
-  }
+  );
 
 
-  if (
+  setValue(
+    "category",
     data.category
-  ) {
-
-    $("category").value =
-      data.category;
-
-  }
+  );
 
 
-  if (
+  setValue(
+    "country",
     data.country
-  ) {
-
-    $("country").value =
-      data.country;
-
-  }
+  );
 
 
   if (
@@ -752,48 +1400,79 @@ function restorePendingForm(
     undefined
   ) {
 
-    $("monthlyContribution").value =
-      data.monthlyContribution;
+    setValue(
+      "monthlyContribution",
+      data.monthlyContribution
+    );
 
   }
 
 
-  if (
+  setValue(
+    "description",
     data.description
-  ) {
-
-    $("description").value =
-      data.description;
-
-  }
+  );
 
 
-  if (
+  setValue(
+    "adminName",
     data.adminName
-  ) {
-
-    $("adminName").value =
-      data.adminName;
-
-  }
+  );
 
 
-  if (
+  setValue(
+    "adminPhone",
     data.adminPhone
-  ) {
+  );
 
-    $("adminPhone").value =
-      data.adminPhone;
 
-  }
+  setValue(
+    "email",
+    data.email
+  );
+
+
+  /*
+   * NEVER restore password.
+   */
+
+  setValue(
+    "password",
+    ""
+  );
+
+
+  setValue(
+    "confirmPassword",
+    ""
+  );
+
+}
+
+
+/* =====================================================
+   SET FORM VALUE
+===================================================== */
+
+function setValue(
+  id,
+  value
+) {
+
+  const element =
+    $(id);
 
 
   if (
-    data.email
+    element &&
+    value !==
+    undefined &&
+    value !==
+    null
   ) {
 
-    $("email").value =
-      data.email;
+    element.value =
+      value;
 
   }
 
@@ -801,14 +1480,47 @@ function restorePendingForm(
 
 
 /* =====================================================
-   LOADING
+   CLEAR PASSWORDS
+===================================================== */
+
+function clearPasswordFields() {
+
+  const password =
+    $("password");
+
+  const confirmPassword =
+    $("confirmPassword");
+
+
+  if (password) {
+
+    password.value =
+      "";
+
+  }
+
+
+  if (confirmPassword) {
+
+    confirmPassword.value =
+      "";
+
+  }
+
+}
+
+
+/* =====================================================
+   LOADING STATE
 ===================================================== */
 
 function setLoading(
   loading
 ) {
 
-  if (!createButton) {
+  if (
+    !createButton
+  ) {
 
     return;
 
@@ -820,28 +1532,41 @@ function setLoading(
     createButton.disabled =
       true;
 
+
     createButton.dataset.originalText =
       createButton.textContent;
+
 
     createButton.textContent =
       "Please wait...";
 
-    form.classList.add(
-      "loading"
-    );
+
+    if (form) {
+
+      form.classList.add(
+        "loading"
+      );
+
+    }
 
   } else {
 
     createButton.disabled =
       false;
 
+
     createButton.textContent =
       createButton.dataset.originalText ||
       "Create Group Account";
 
-    form.classList.remove(
-      "loading"
-    );
+
+    if (form) {
+
+      form.classList.remove(
+        "loading"
+      );
+
+    }
 
   }
 
@@ -856,7 +1581,9 @@ function showStatus(
   message
 ) {
 
-  if (!statusBox) {
+  if (
+    !statusBox
+  ) {
 
     return;
 
@@ -878,7 +1605,9 @@ function showStatus(
 
 function clearError() {
 
-  if (!errorBox) {
+  if (
+    !errorBox
+  ) {
 
     return;
 
@@ -898,7 +1627,9 @@ function showError(
   message
 ) {
 
-  if (!errorBox) {
+  if (
+    !errorBox
+  ) {
 
     return;
 
@@ -919,9 +1650,15 @@ function showError(
 }
 
 
+/* =====================================================
+   SUCCESS
+===================================================== */
+
 function hideSuccess() {
 
-  if (successBox) {
+  if (
+    successBox
+  ) {
 
     successBox.hidden =
       true;
@@ -941,55 +1678,105 @@ function friendlyError(
 
   const message =
     error?.message ||
-    String(error) ||
+    String(
+      error
+    ) ||
     "Unable to create the group.";
 
 
+  const lower =
+    message.toLowerCase();
+
+
+  /*
+   * Existing account
+   */
+
   if (
-    message.includes(
-      "User already registered"
+    lower.includes(
+      "user already registered"
     )
   ) {
 
     return (
       "An account with this email already exists. " +
-      "Please sign in first, then return here " +
-      "to create the group."
+      "Please sign in using that account, then " +
+      "return here to create your group."
     );
 
   }
 
 
+  /*
+   * Rate limit
+   */
+
   if (
-    message.includes(
+    lower.includes(
       "email rate limit"
+    ) ||
+    lower.includes(
+      "rate limit"
     )
   ) {
 
     return (
       "Too many signup attempts were made. " +
-      "Please wait a little while and try again."
+      "Please wait a little while before trying again."
     );
 
   }
 
 
+  /*
+   * Email confirmation
+   */
+
   if (
-    message.includes(
-      "Not authenticated"
+    lower.includes(
+      "email not confirmed"
+    )
+  ) {
+
+    return (
+      "Your email address has not been confirmed yet. " +
+      "Please check your email and click the confirmation link."
+    );
+
+  }
+
+
+  /*
+   * Authentication
+   */
+
+  if (
+    lower.includes(
+      "not authenticated"
+    ) ||
+    lower.includes(
+      "jwt"
+    ) ||
+    lower.includes(
+      "authentication"
     )
   ) {
 
     return (
       "Your login session is not active. " +
-      "Please sign in again and retry."
+      "Please confirm your email, return to this page, " +
+      "and try again."
     );
 
   }
 
 
+  /*
+   * RPC missing
+   */
+
   if (
-    message.includes(
+    lower.includes(
       "create_group_account"
     )
   ) {
@@ -997,6 +1784,45 @@ function friendlyError(
     return (
       "The group onboarding service is not available. " +
       "Please contact the system administrator."
+    );
+
+  }
+
+
+  /*
+   * Duplicate group/member errors
+   */
+
+  if (
+    lower.includes(
+      "duplicate"
+    )
+  ) {
+
+    return (
+      "This information appears to have already been registered. " +
+      "Please check your account or contact the system administrator."
+    );
+
+  }
+
+
+  /*
+   * Network
+   */
+
+  if (
+    lower.includes(
+      "failed to fetch"
+    ) ||
+    lower.includes(
+      "network"
+    )
+  ) {
+
+    return (
+      "We could not connect to the CHAMA LIVE server. " +
+      "Please check your internet connection and try again."
     );
 
   }
@@ -1011,17 +1837,25 @@ function friendlyError(
    COPY ACCESS CODE
 ===================================================== */
 
-if (copyCodeButton) {
+if (
+  copyCodeButton
+) {
 
   copyCodeButton.addEventListener(
     "click",
     async () => {
 
       const code =
-        accessCodeBox.textContent.trim();
+        accessCodeBox
+          ?.textContent
+          ?.trim();
 
 
-      if (!code) {
+      if (
+        !code ||
+        code ===
+        "—"
+      ) {
 
         return;
 
@@ -1050,7 +1884,15 @@ if (copyCodeButton) {
         );
 
 
-      } catch {
+      } catch (
+        error
+      ) {
+
+        console.error(
+          "COPY ERROR:",
+          error
+        );
+
 
         alert(
           `Group access code: ${code}`
@@ -1065,7 +1907,8 @@ if (copyCodeButton) {
 
 
 /* =====================================================
-   START
+   START APPLICATION
 ===================================================== */
 
 init();
+```
