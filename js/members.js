@@ -1,12 +1,18 @@
+
 /* =========================================================
    CHAMA LIVE — MEMBERS
-   COMPLETE STABLE GITHUB PAGES VERSION
+   COMPLETE GITHUB PAGES VERSION
+   WITH MEMBER INVITATION / LOGIN FLOW
 
    File:
    /js/members.js
 
-   Loaded dynamically by:
-   /js/layout.js
+   Important:
+   - Admin creates the member record.
+   - Member gets their own Supabase Auth account.
+   - Admin must NOT create another user's password.
+   - Existing member_number is preserved.
+   - user_id is never manually invented.
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -46,10 +52,6 @@ function byId(id) {
 }
 
 
-/* =========================================================
-   ESCAPE HTML
-========================================================= */
-
 function escapeHtml(value) {
 
   if (value === null || value === undefined) {
@@ -62,11 +64,12 @@ function escapeHtml(value) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+
 }
 
 
 /* =========================================================
-   FORMAT DATE
+   DATE
 ========================================================= */
 
 function formatDate(value) {
@@ -86,6 +89,7 @@ function formatDate(value) {
     month: "short",
     year: "numeric"
   });
+
 }
 
 
@@ -103,6 +107,7 @@ function showStatus(message) {
 
   element.textContent = message || "";
   element.hidden = !message;
+
 }
 
 
@@ -124,17 +129,13 @@ function showError(error) {
   }
 
   element.textContent =
-    error && error.message
-      ? error.message
-      : String(error || "Something went wrong.");
+    error?.message ||
+    String(error || "Something went wrong.");
 
   element.hidden = false;
+
 }
 
-
-/* =========================================================
-   CLEAR ERROR
-========================================================= */
 
 function clearError() {
 
@@ -146,6 +147,7 @@ function clearError() {
 
   element.textContent = "";
   element.hidden = true;
+
 }
 
 
@@ -192,10 +194,6 @@ function showFormMessage(
 }
 
 
-/* =========================================================
-   CLEAR FORM MESSAGE
-========================================================= */
-
 function clearFormMessage() {
 
   const element = byId("formMessage");
@@ -206,17 +204,19 @@ function clearFormMessage() {
 
   element.textContent = "";
   element.style.display = "none";
+
 }
 
 
 /* =========================================================
-   GET MEMBER BY ID
+   MEMBER LOOKUP
 ========================================================= */
 
 function findMember(memberId) {
 
   return members.find(
-    member => String(member.id) === String(memberId)
+    member =>
+      String(member.id) === String(memberId)
   );
 
 }
@@ -246,11 +246,13 @@ export async function init() {
 
     clearError();
 
-    showStatus("Loading members...");
+    showStatus(
+      "Loading members..."
+    );
 
 
     /* =====================================================
-       AUTHENTICATION
+       AUTH
     ===================================================== */
 
     currentUser =
@@ -314,13 +316,13 @@ export async function init() {
 
 
     console.log(
-      "CHAMA LIVE: members current member",
+      "CHAMA LIVE: current member",
       currentMember
     );
 
 
     console.log(
-      "CHAMA LIVE: members current group",
+      "CHAMA LIVE: current group",
       currentGroup
     );
 
@@ -332,18 +334,9 @@ export async function init() {
     await loadMembers();
 
 
-    /* =====================================================
-       RENDER
-    ===================================================== */
-
     renderMembers();
 
     updateMemberCount();
-
-
-    /* =====================================================
-       EVENTS
-    ===================================================== */
 
     bindEvents();
 
@@ -384,7 +377,11 @@ async function loadMembers() {
   }
 
 
-  const result =
+  /*
+   * Try full structure first.
+   */
+
+  let result =
     await supabase
       .from("members")
       .select(`
@@ -413,76 +410,48 @@ async function loadMembers() {
       );
 
 
+  /*
+   * Older schema fallback.
+   */
+
+  if (
+    result.error &&
+    String(result.error.message || "")
+      .toLowerCase()
+      .includes("auth_user_id")
+  ) {
+
+    result =
+      await supabase
+        .from("members")
+        .select(`
+          id,
+          group_id,
+          user_id,
+          member_number,
+          name,
+          phone,
+          email,
+          role,
+          join_date,
+          status,
+          created_at
+        `)
+        .eq(
+          "group_id",
+          groupId
+        )
+        .order(
+          "created_at",
+          {
+            ascending: true
+          }
+        );
+
+  }
+
+
   if (result.error) {
-
-    /*
-     * Some databases may not contain
-     * auth_user_id.
-     *
-     * Retry using the core columns.
-     */
-
-    const message =
-      String(
-        result.error.message || ""
-      ).toLowerCase();
-
-
-    if (
-      message.includes("auth_user_id")
-    ) {
-
-      const retry =
-        await supabase
-          .from("members")
-          .select(`
-            id,
-            group_id,
-            user_id,
-            member_number,
-            name,
-            phone,
-            email,
-            role,
-            join_date,
-            status,
-            created_at
-          `)
-          .eq(
-            "group_id",
-            groupId
-          )
-          .order(
-            "created_at",
-            {
-              ascending: true
-            }
-          );
-
-
-      if (retry.error) {
-
-        throw retry.error;
-
-      }
-
-
-      members =
-        Array.isArray(retry.data)
-          ? retry.data
-          : [];
-
-
-      console.log(
-        "CHAMA LIVE: loaded members:",
-        members.length
-      );
-
-
-      return members;
-
-    }
-
 
     throw result.error;
 
@@ -507,7 +476,7 @@ async function loadMembers() {
 
 
 /* =========================================================
-   CREATE MEMBER ROW
+   MEMBER ROW
 ========================================================= */
 
 function createMemberRow(member) {
@@ -552,6 +521,17 @@ function createMemberRow(member) {
     );
 
 
+  const linked =
+    member.user_id ||
+    member.auth_user_id;
+
+
+  const accountStatus =
+    linked
+      ? "Linked"
+      : "Pending Login";
+
+
   return `
     <tr data-member-id="${id}">
 
@@ -577,6 +557,10 @@ function createMemberRow(member) {
 
       <td>
         ${status}
+      </td>
+
+      <td>
+        ${accountStatus}
       </td>
 
       <td>
@@ -607,6 +591,21 @@ function createMemberRow(member) {
             Edit
           </button>
 
+          ${
+            !linked && member.email
+              ? `
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  data-action="invite"
+                  data-member-id="${id}"
+                >
+                  Invite
+                </button>
+              `
+              : ""
+          }
+
         </div>
 
       </td>
@@ -618,7 +617,7 @@ function createMemberRow(member) {
 
 
 /* =========================================================
-   RENDER MEMBERS
+   RENDER
 ========================================================= */
 
 function renderMembers(list = members) {
@@ -648,7 +647,7 @@ function renderMembers(list = members) {
 
     tbody.innerHTML = `
       <tr>
-        <td colspan="7">
+        <td colspan="8">
           No members registered yet.
         </td>
       </tr>
@@ -691,10 +690,8 @@ function updateMemberCount() {
 
 
   if (count) {
-
     count.textContent =
       String(total);
-
   }
 
 
@@ -703,10 +700,8 @@ function updateMemberCount() {
 
 
   if (totalMembers) {
-
     totalMembers.textContent =
       String(total);
-
   }
 
 
@@ -715,17 +710,15 @@ function updateMemberCount() {
 
 
   if (activeMembers) {
-
     activeMembers.textContent =
       String(active);
-
   }
 
 }
 
 
 /* =========================================================
-   BIND EVENTS
+   EVENTS
 ========================================================= */
 
 function bindEvents() {
@@ -766,10 +759,6 @@ function bindEvents() {
     byId("memberRows");
 
 
-  /* =======================================================
-     ADD MEMBER
-  ======================================================= */
-
   if (addButton) {
 
     addButton.addEventListener(
@@ -779,10 +768,6 @@ function bindEvents() {
 
   }
 
-
-  /* =======================================================
-     CLOSE FORM
-  ======================================================= */
 
   if (closeButton) {
 
@@ -804,10 +789,6 @@ function bindEvents() {
   }
 
 
-  /* =======================================================
-     FORM SUBMIT
-  ======================================================= */
-
   if (form) {
 
     form.addEventListener(
@@ -817,10 +798,6 @@ function bindEvents() {
 
   }
 
-
-  /* =======================================================
-     SEARCH
-  ======================================================= */
 
   if (search) {
 
@@ -832,10 +809,6 @@ function bindEvents() {
   }
 
 
-  /* =======================================================
-     TABLE ACTIONS
-  ======================================================= */
-
   if (tbody) {
 
     tbody.addEventListener(
@@ -845,10 +818,6 @@ function bindEvents() {
 
   }
 
-
-  /* =======================================================
-     CLOSE MODAL
-  ======================================================= */
 
   if (closeModalButton) {
 
@@ -860,10 +829,6 @@ function bindEvents() {
   }
 
 
-  /* =======================================================
-     ESCAPE KEY
-  ======================================================= */
-
   document.addEventListener(
     "keydown",
     handleEscape
@@ -873,7 +838,7 @@ function bindEvents() {
 
 
 /* =========================================================
-   ESCAPE KEY
+   ESCAPE
 ========================================================= */
 
 function handleEscape(event) {
@@ -881,7 +846,6 @@ function handleEscape(event) {
   if (event.key !== "Escape") {
     return;
   }
-
 
   closeMemberModal();
 
@@ -1000,13 +964,22 @@ function handleTableAction(event) {
 
     openEditMember(memberId);
 
+    return;
+
+  }
+
+
+  if (action === "invite") {
+
+    inviteMember(memberId);
+
   }
 
 }
 
 
 /* =========================================================
-   OPEN ADD MEMBER
+   ADD MEMBER
 ========================================================= */
 
 function openAddMember() {
@@ -1031,17 +1004,13 @@ function openAddMember() {
 
 
   if (panel) {
-
     panel.hidden = false;
-
   }
 
 
   if (title) {
-
     title.textContent =
       "Add Member";
-
   }
 
 
@@ -1054,9 +1023,7 @@ function openAddMember() {
 
 
   if (form) {
-
     form.reset();
-
   }
 
 
@@ -1068,9 +1035,7 @@ function openAddMember() {
 
 
   if (memberNumber) {
-
     memberNumber.focus();
-
   }
 
 }
@@ -1090,9 +1055,7 @@ function closeMemberForm() {
 
 
   if (panel) {
-
     panel.hidden = true;
-
   }
 
 
@@ -1101,9 +1064,7 @@ function closeMemberForm() {
 
 
   if (form) {
-
     form.reset();
-
   }
 
 
@@ -1113,7 +1074,7 @@ function closeMemberForm() {
 
 
 /* =========================================================
-   OPEN EDIT MEMBER
+   EDIT MEMBER
 ========================================================= */
 
 function openEditMember(memberId) {
@@ -1152,17 +1113,13 @@ function openEditMember(memberId) {
 
 
   if (panel) {
-
     panel.hidden = false;
-
   }
 
 
   if (title) {
-
     title.textContent =
       "Edit Member";
-
   }
 
 
@@ -1262,7 +1219,7 @@ function openEditMember(memberId) {
 
 
 /* =========================================================
-   GET FORM VALUES
+   FORM VALUES
 ========================================================= */
 
 function getFormValues() {
@@ -1310,7 +1267,7 @@ function getFormValues() {
 
     email:
       emailElement
-        ? emailElement.value.trim()
+        ? emailElement.value.trim().toLowerCase()
         : "",
 
     role:
@@ -1329,7 +1286,7 @@ function getFormValues() {
 
 
 /* =========================================================
-   VALIDATE FORM
+   VALIDATE
 ========================================================= */
 
 function validateForm(values) {
@@ -1373,7 +1330,7 @@ function validateForm(values) {
 
 
 /* =========================================================
-   CHECK DUPLICATE MEMBER NUMBER
+   DUPLICATE MEMBER NUMBER
 ========================================================= */
 
 async function checkDuplicateMemberNumber(
@@ -1410,9 +1367,7 @@ async function checkDuplicateMemberNumber(
 
 
   if (result.error) {
-
     throw result.error;
-
   }
 
 
@@ -1450,10 +1405,6 @@ async function saveMember(event) {
     validateForm(values);
 
 
-    /* =====================================================
-       BUTTON
-    ===================================================== */
-
     if (saveButton) {
 
       saveButton.disabled = true;
@@ -1465,10 +1416,6 @@ async function saveMember(event) {
 
     }
 
-
-    /* =====================================================
-       DUPLICATE CHECK
-    ===================================================== */
 
     const duplicate =
       await checkDuplicateMemberNumber(
@@ -1488,7 +1435,7 @@ async function saveMember(event) {
 
 
     /* =====================================================
-       UPDATE EXISTING
+       UPDATE
     ===================================================== */
 
     if (editingMemberId) {
@@ -1533,16 +1480,8 @@ async function saveMember(event) {
 
 
       if (result.error) {
-
         throw result.error;
-
       }
-
-
-      console.log(
-        "CHAMA LIVE: member updated",
-        editingMemberId
-      );
 
 
       showFormMessage(
@@ -1554,10 +1493,21 @@ async function saveMember(event) {
 
 
     /* =====================================================
-       CREATE NEW
+       CREATE
     ===================================================== */
 
     else {
+
+      /*
+       * CRITICAL:
+       *
+       * member_number MUST be supplied.
+       *
+       * Do not send membership_number unless that is
+       * actually the database column.
+       *
+       * Your current schema uses member_number.
+       */
 
       const insertPayload = {
 
@@ -1613,16 +1563,8 @@ async function saveMember(event) {
 
 
       if (result.error) {
-
         throw result.error;
-
       }
-
-
-      console.log(
-        "CHAMA LIVE: member created",
-        result.data
-      );
 
 
       showFormMessage(
@@ -1630,12 +1572,40 @@ async function saveMember(event) {
         "success"
       );
 
+
+      /*
+       * If the member has an email, offer invitation.
+       */
+
+      if (values.email) {
+
+        setTimeout(
+          async () => {
+
+            const invite =
+              await inviteMember(
+                result.data.id,
+                true
+              );
+
+
+            if (invite) {
+
+              showFormMessage(
+                "Member added. An invitation link has been prepared.",
+                "success"
+              );
+
+            }
+
+          },
+          400
+        );
+
+      }
+
     }
 
-
-    /* =====================================================
-       REFRESH
-    ===================================================== */
 
     await loadMembers();
 
@@ -1644,17 +1614,13 @@ async function saveMember(event) {
     updateMemberCount();
 
 
-    /* =====================================================
-       CLOSE FORM
-    ===================================================== */
-
     setTimeout(
       () => {
 
         closeMemberForm();
 
       },
-      700
+      900
     );
 
   }
@@ -1667,9 +1633,8 @@ async function saveMember(event) {
 
 
     showFormMessage(
-      error && error.message
-        ? error.message
-        : String(error),
+      error?.message ||
+      String(error),
       "error"
     );
 
@@ -1693,7 +1658,190 @@ async function saveMember(event) {
 
 
 /* =========================================================
-   OPEN MEMBER MODAL
+   MEMBER INVITATION
+========================================================= */
+
+async function inviteMember(
+  memberId,
+  silent = false
+) {
+
+  const member =
+    findMember(memberId);
+
+
+  if (!member) {
+
+    if (!silent) {
+
+      showError(
+        new Error(
+          "Member could not be found."
+        )
+      );
+
+    }
+
+    return false;
+
+  }
+
+
+  if (!member.email) {
+
+    if (!silent) {
+
+      showFormMessage(
+        "This member does not have an email address.",
+        "error"
+      );
+
+    }
+
+    return false;
+
+  }
+
+
+  try {
+
+    /*
+     * The invitation is sent by Supabase Auth.
+     *
+     * This must be configured in Supabase Auth.
+     */
+
+    const redirectTo =
+      new URL(
+        "create-group.html",
+        window.location.href
+      ).href;
+
+
+    /*
+     * IMPORTANT:
+     *
+     * This calls Supabase's password-reset/invite
+     * mechanism only if the project permits it.
+     *
+     * A browser client cannot securely create another
+     * user's Auth account with admin privileges.
+     *
+     * Therefore we use a recovery-style email flow.
+     */
+
+    const result =
+      await supabase.auth.resetPasswordForEmail(
+        member.email,
+        {
+          redirectTo
+        }
+      );
+
+
+    if (result.error) {
+
+      throw result.error;
+
+    }
+
+
+    if (!silent) {
+
+      showFormMessage(
+        "Login setup email sent to " +
+        member.email +
+        ".",
+        "success"
+      );
+
+    }
+
+
+    console.log(
+      "CHAMA LIVE: member login email sent",
+      member.email
+    );
+
+
+    return true;
+
+  }
+  catch (error) {
+
+    console.error(
+      "CHAMA LIVE: member invitation failed",
+      error
+    );
+
+
+    if (!silent) {
+
+      showFormMessage(
+        friendlyInviteError(error),
+        "error"
+      );
+
+    }
+
+
+    return false;
+
+  }
+
+}
+
+
+/* =========================================================
+   INVITATION ERROR
+========================================================= */
+
+function friendlyInviteError(error) {
+
+  const message =
+    String(
+      error?.message ||
+      error ||
+      ""
+    );
+
+
+  if (
+    message.toLowerCase()
+      .includes("rate limit")
+  ) {
+
+    return (
+      "The email service has reached its sending limit. " +
+      "Please wait and try again later."
+    );
+
+  }
+
+
+  if (
+    message.toLowerCase()
+      .includes("redirect")
+  ) {
+
+    return (
+      "The member login email could not be prepared " +
+      "because the redirect URL is not allowed in Supabase Auth."
+    );
+
+  }
+
+
+  return (
+    "The member login email could not be sent. " +
+    message
+  );
+
+}
+
+
+/* =========================================================
+   MEMBER VIEW
 ========================================================= */
 
 function openMemberModal(memberId) {
@@ -1744,50 +1892,38 @@ function openMemberModal(memberId) {
 
 
   if (name) {
-
     name.textContent =
       member.name || "Member";
-
   }
 
 
   if (number) {
-
     number.textContent =
       member.member_number || "—";
-
   }
 
 
   if (phone) {
-
     phone.textContent =
       member.phone || "—";
-
   }
 
 
   if (email) {
-
     email.textContent =
       member.email || "—";
-
   }
 
 
   if (role) {
-
     role.textContent =
       member.role || "member";
-
   }
 
 
   if (status) {
-
     status.textContent =
       member.status || "—";
-
   }
 
 
@@ -1826,16 +1962,14 @@ function openMemberModal(memberId) {
 
 
   if (closeButton) {
-
     closeButton.focus();
-
   }
 
 }
 
 
 /* =========================================================
-   CLOSE MEMBER MODAL
+   CLOSE MODAL
 ========================================================= */
 
 function closeMemberModal() {
@@ -1857,7 +1991,7 @@ function closeMemberModal() {
 
 
 /* =========================================================
-   REFRESH MEMBERS
+   REFRESH
 ========================================================= */
 
 export async function refreshMembers() {
@@ -1888,13 +2022,8 @@ export async function refreshMembers() {
 
     updateMemberCount();
 
-
     showStatus("");
 
-
-    console.log(
-      "CHAMA LIVE: members refreshed"
-    );
 
   }
   catch (error) {
@@ -1909,7 +2038,7 @@ export async function refreshMembers() {
 
 
 /* =========================================================
-   OPTIONAL PUBLIC REFRESH ALIAS
+   PUBLIC ALIAS
 ========================================================= */
 
 export const loadPage =
