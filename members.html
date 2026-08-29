@@ -1,3 +1,4 @@
+html
 <!doctype html>
 <html lang="en">
 
@@ -136,6 +137,7 @@
       id="status"
       class="card"
       style="margin-bottom:20px;"
+      hidden
     >
       Loading members...
     </div>
@@ -327,6 +329,11 @@
               placeholder="member@example.com"
             >
 
+            <small class="muted">
+              An email address is required if the member will
+              receive a login invitation.
+            </small>
+
           </div>
 
 
@@ -517,6 +524,10 @@
               </th>
 
               <th>
+                Login Status
+              </th>
+
+              <th>
                 Actions
               </th>
 
@@ -530,7 +541,7 @@
 
             <tr>
 
-              <td colspan="8">
+              <td colspan="9">
                 Loading...
               </td>
 
@@ -555,11 +566,6 @@
 
 <!-- =========================================================
      VIEW MEMBER MODAL
-     
-     IMPORTANT:
-     NO aria-hidden="true" HERE.
-     
-     The JavaScript controls hidden/display and focus.
 ========================================================= -->
 
 <div
@@ -640,6 +646,22 @@
 
 
 
+    <!-- MEMBERSHIP NUMBER -->
+
+    <p>
+
+      <strong>
+        Membership Number:
+      </strong>
+
+      <span id="viewMembershipNumber">
+        —
+      </span>
+
+    </p>
+
+
+
     <!-- PHONE -->
 
     <p>
@@ -688,15 +710,31 @@
 
 
 
-    <!-- STATUS -->
+    <!-- ACCOUNT STATUS -->
 
     <p>
 
       <strong>
-        Status:
+        Account Status:
       </strong>
 
       <span id="viewMemberStatus">
+        —
+      </span>
+
+    </p>
+
+
+
+    <!-- LOGIN STATUS -->
+
+    <p>
+
+      <strong>
+        Login Status:
+      </strong>
+
+      <span id="viewMemberLoginStatus">
         —
       </span>
 
@@ -744,3 +782,4 @@
 </body>
 
 </html>
+
