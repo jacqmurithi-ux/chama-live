@@ -2,17 +2,21 @@
 /* =========================================================
    CHAMA LIVE — MEMBERS
    COMPLETE GITHUB PAGES VERSION
-   WITH MEMBER INVITATION / LOGIN FLOW
+   WITH MEMBER LOGIN / INVITATION FLOW
 
    File:
    /js/members.js
 
-   Important:
-   - Admin creates the member record.
-   - Member gets their own Supabase Auth account.
-   - Admin must NOT create another user's password.
-   - Existing member_number is preserved.
-   - user_id is never manually invented.
+   Features:
+   - Load current authenticated member
+   - Load group members
+   - Add member
+   - Edit member
+   - View member
+   - Search members
+   - Send member login invitation
+   - Calls Supabase Edge Function:
+       send-member-invitation
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -52,6 +56,10 @@ function byId(id) {
 }
 
 
+/* =========================================================
+   ESCAPE HTML
+========================================================= */
+
 function escapeHtml(value) {
 
   if (value === null || value === undefined) {
@@ -64,12 +72,11 @@ function escapeHtml(value) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
-
 }
 
 
 /* =========================================================
-   DATE
+   FORMAT DATE
 ========================================================= */
 
 function formatDate(value) {
@@ -89,7 +96,6 @@ function formatDate(value) {
     month: "short",
     year: "numeric"
   });
-
 }
 
 
@@ -107,7 +113,6 @@ function showStatus(message) {
 
   element.textContent = message || "";
   element.hidden = !message;
-
 }
 
 
@@ -129,13 +134,17 @@ function showError(error) {
   }
 
   element.textContent =
-    error?.message ||
-    String(error || "Something went wrong.");
+    error && error.message
+      ? error.message
+      : String(error || "Something went wrong.");
 
   element.hidden = false;
-
 }
 
+
+/* =========================================================
+   CLEAR ERROR
+========================================================= */
 
 function clearError() {
 
@@ -147,7 +156,6 @@ function clearError() {
 
   element.textContent = "";
   element.hidden = true;
-
 }
 
 
@@ -180,8 +188,7 @@ function showFormMessage(
     element.style.color =
       "#b91c1c";
 
-  }
-  else {
+  } else {
 
     element.style.background =
       "rgba(22, 163, 74, .12)";
@@ -194,6 +201,10 @@ function showFormMessage(
 }
 
 
+/* =========================================================
+   CLEAR FORM MESSAGE
+========================================================= */
+
 function clearFormMessage() {
 
   const element = byId("formMessage");
@@ -204,12 +215,11 @@ function clearFormMessage() {
 
   element.textContent = "";
   element.style.display = "none";
-
 }
 
 
 /* =========================================================
-   MEMBER LOOKUP
+   FIND MEMBER
 ========================================================= */
 
 function findMember(memberId) {
@@ -246,13 +256,11 @@ export async function init() {
 
     clearError();
 
-    showStatus(
-      "Loading members..."
-    );
+    showStatus("Loading members...");
 
 
     /* =====================================================
-       AUTH
+       AUTHENTICATION
     ===================================================== */
 
     currentUser =
@@ -338,6 +346,7 @@ export async function init() {
 
     updateMemberCount();
 
+
     bindEvents();
 
 
@@ -377,10 +386,6 @@ async function loadMembers() {
   }
 
 
-  /*
-   * Try full structure first.
-   */
-
   let result =
     await supabase
       .from("members")
@@ -390,6 +395,7 @@ async function loadMembers() {
         user_id,
         auth_user_id,
         member_number,
+        membership_number,
         name,
         phone,
         email,
@@ -411,42 +417,53 @@ async function loadMembers() {
 
 
   /*
-   * Older schema fallback.
+   * Some installations may not yet have
+   * membership_number or auth_user_id.
+   *
+   * Retry with the older structure.
    */
 
-  if (
-    result.error &&
-    String(result.error.message || "")
-      .toLowerCase()
-      .includes("auth_user_id")
-  ) {
+  if (result.error) {
 
-    result =
-      await supabase
-        .from("members")
-        .select(`
-          id,
-          group_id,
-          user_id,
-          member_number,
-          name,
-          phone,
-          email,
-          role,
-          join_date,
-          status,
-          created_at
-        `)
-        .eq(
-          "group_id",
-          groupId
-        )
-        .order(
-          "created_at",
-          {
-            ascending: true
-          }
-        );
+    const message =
+      String(
+        result.error.message || ""
+      ).toLowerCase();
+
+
+    if (
+      message.includes("membership_number") ||
+      message.includes("auth_user_id")
+    ) {
+
+      result =
+        await supabase
+          .from("members")
+          .select(`
+            id,
+            group_id,
+            user_id,
+            member_number,
+            name,
+            phone,
+            email,
+            role,
+            join_date,
+            status,
+            created_at
+          `)
+          .eq(
+            "group_id",
+            groupId
+          )
+          .order(
+            "created_at",
+            {
+              ascending: true
+            }
+          );
+
+    }
 
   }
 
@@ -476,7 +493,35 @@ async function loadMembers() {
 
 
 /* =========================================================
-   MEMBER ROW
+   MEMBER LOGIN STATUS
+========================================================= */
+
+function getInvitationStatus(member) {
+
+  if (
+    member.auth_user_id ||
+    member.user_id
+  ) {
+
+    return "Account linked";
+
+  }
+
+
+  if (member.email) {
+
+    return "Invitation available";
+
+  }
+
+
+  return "No email";
+
+}
+
+
+/* =========================================================
+   CREATE MEMBER ROW
 ========================================================= */
 
 function createMemberRow(member) {
@@ -487,7 +532,9 @@ function createMemberRow(member) {
 
   const memberNumber =
     escapeHtml(
-      member.member_number || "—"
+      member.member_number ||
+      member.membership_number ||
+      "—"
     );
 
 
@@ -521,15 +568,39 @@ function createMemberRow(member) {
     );
 
 
-  const linked =
-    member.user_id ||
-    member.auth_user_id;
+  const invitationStatus =
+    escapeHtml(
+      getInvitationStatus(member)
+    );
 
 
-  const accountStatus =
-    linked
-      ? "Linked"
-      : "Pending Login";
+  /*
+   * Do not show invitation button if:
+   * - no email
+   * - already linked to an auth account
+   */
+
+  let invitationButton = "";
+
+
+  if (
+    member.email &&
+    !member.auth_user_id &&
+    !member.user_id
+  ) {
+
+    invitationButton = `
+      <button
+        type="button"
+        class="btn btn-secondary"
+        data-action="invite"
+        data-member-id="${id}"
+      >
+        Send Invitation
+      </button>
+    `;
+
+  }
 
 
   return `
@@ -560,7 +631,7 @@ function createMemberRow(member) {
       </td>
 
       <td>
-        ${accountStatus}
+        ${invitationStatus}
       </td>
 
       <td>
@@ -591,20 +662,7 @@ function createMemberRow(member) {
             Edit
           </button>
 
-          ${
-            !linked && member.email
-              ? `
-                <button
-                  type="button"
-                  class="btn btn-secondary"
-                  data-action="invite"
-                  data-member-id="${id}"
-                >
-                  Invite
-                </button>
-              `
-              : ""
-          }
+          ${invitationButton}
 
         </div>
 
@@ -617,7 +675,7 @@ function createMemberRow(member) {
 
 
 /* =========================================================
-   RENDER
+   RENDER MEMBERS
 ========================================================= */
 
 function renderMembers(list = members) {
@@ -690,8 +748,10 @@ function updateMemberCount() {
 
 
   if (count) {
+
     count.textContent =
       String(total);
+
   }
 
 
@@ -700,8 +760,10 @@ function updateMemberCount() {
 
 
   if (totalMembers) {
+
     totalMembers.textContent =
       String(total);
+
   }
 
 
@@ -710,15 +772,17 @@ function updateMemberCount() {
 
 
   if (activeMembers) {
+
     activeMembers.textContent =
       String(active);
+
   }
 
 }
 
 
 /* =========================================================
-   EVENTS
+   BIND EVENTS
 ========================================================= */
 
 function bindEvents() {
@@ -759,6 +823,10 @@ function bindEvents() {
     byId("memberRows");
 
 
+  /* =======================================================
+     ADD MEMBER
+  ======================================================= */
+
   if (addButton) {
 
     addButton.addEventListener(
@@ -768,6 +836,10 @@ function bindEvents() {
 
   }
 
+
+  /* =======================================================
+     CLOSE FORM
+  ======================================================= */
 
   if (closeButton) {
 
@@ -789,6 +861,10 @@ function bindEvents() {
   }
 
 
+  /* =======================================================
+     FORM SUBMIT
+  ======================================================= */
+
   if (form) {
 
     form.addEventListener(
@@ -798,6 +874,10 @@ function bindEvents() {
 
   }
 
+
+  /* =======================================================
+     SEARCH
+  ======================================================= */
 
   if (search) {
 
@@ -809,6 +889,10 @@ function bindEvents() {
   }
 
 
+  /* =======================================================
+     TABLE ACTIONS
+  ======================================================= */
+
   if (tbody) {
 
     tbody.addEventListener(
@@ -819,6 +903,10 @@ function bindEvents() {
   }
 
 
+  /* =======================================================
+     CLOSE MODAL
+  ======================================================= */
+
   if (closeModalButton) {
 
     closeModalButton.addEventListener(
@@ -828,6 +916,10 @@ function bindEvents() {
 
   }
 
+
+  /* =======================================================
+     ESCAPE
+  ======================================================= */
 
   document.addEventListener(
     "keydown",
@@ -884,6 +976,7 @@ function handleSearch(event) {
         const values = [
 
           member.member_number,
+          member.membership_number,
           member.name,
           member.phone,
           member.email,
@@ -971,7 +1064,7 @@ function handleTableAction(event) {
 
   if (action === "invite") {
 
-    inviteMember(memberId);
+    sendMemberInvitation(memberId);
 
   }
 
@@ -979,7 +1072,7 @@ function handleTableAction(event) {
 
 
 /* =========================================================
-   ADD MEMBER
+   OPEN ADD MEMBER
 ========================================================= */
 
 function openAddMember() {
@@ -1004,13 +1097,17 @@ function openAddMember() {
 
 
   if (panel) {
+
     panel.hidden = false;
+
   }
 
 
   if (title) {
+
     title.textContent =
       "Add Member";
+
   }
 
 
@@ -1023,7 +1120,9 @@ function openAddMember() {
 
 
   if (form) {
+
     form.reset();
+
   }
 
 
@@ -1035,7 +1134,9 @@ function openAddMember() {
 
 
   if (memberNumber) {
+
     memberNumber.focus();
+
   }
 
 }
@@ -1055,7 +1156,9 @@ function closeMemberForm() {
 
 
   if (panel) {
+
     panel.hidden = true;
+
   }
 
 
@@ -1064,7 +1167,9 @@ function closeMemberForm() {
 
 
   if (form) {
+
     form.reset();
+
   }
 
 
@@ -1074,7 +1179,7 @@ function closeMemberForm() {
 
 
 /* =========================================================
-   EDIT MEMBER
+   OPEN EDIT
 ========================================================= */
 
 function openEditMember(memberId) {
@@ -1113,13 +1218,17 @@ function openEditMember(memberId) {
 
 
   if (panel) {
+
     panel.hidden = false;
+
   }
 
 
   if (title) {
+
     title.textContent =
       "Edit Member";
+
   }
 
 
@@ -1158,7 +1267,9 @@ function openEditMember(memberId) {
   if (memberNumber) {
 
     memberNumber.value =
-      member.member_number || "";
+      member.member_number ||
+      member.membership_number ||
+      "";
 
   }
 
@@ -1267,7 +1378,7 @@ function getFormValues() {
 
     email:
       emailElement
-        ? emailElement.value.trim().toLowerCase()
+        ? emailElement.value.trim()
         : "",
 
     role:
@@ -1286,7 +1397,7 @@ function getFormValues() {
 
 
 /* =========================================================
-   VALIDATE
+   VALIDATE FORM
 ========================================================= */
 
 function validateForm(values) {
@@ -1367,7 +1478,9 @@ async function checkDuplicateMemberNumber(
 
 
   if (result.error) {
+
     throw result.error;
+
   }
 
 
@@ -1416,6 +1529,10 @@ async function saveMember(event) {
 
     }
 
+
+    /* =====================================================
+       DUPLICATE
+    ===================================================== */
 
     const duplicate =
       await checkDuplicateMemberNumber(
@@ -1480,7 +1597,9 @@ async function saveMember(event) {
 
 
       if (result.error) {
+
         throw result.error;
+
       }
 
 
@@ -1497,17 +1616,6 @@ async function saveMember(event) {
     ===================================================== */
 
     else {
-
-      /*
-       * CRITICAL:
-       *
-       * member_number MUST be supplied.
-       *
-       * Do not send membership_number unless that is
-       * actually the database column.
-       *
-       * Your current schema uses member_number.
-       */
 
       const insertPayload = {
 
@@ -1550,6 +1658,7 @@ async function saveMember(event) {
             id,
             group_id,
             user_id,
+            auth_user_id,
             member_number,
             name,
             phone,
@@ -1563,8 +1672,16 @@ async function saveMember(event) {
 
 
       if (result.error) {
+
         throw result.error;
+
       }
+
+
+      console.log(
+        "CHAMA LIVE: member created",
+        result.data
+      );
 
 
       showFormMessage(
@@ -1574,38 +1691,58 @@ async function saveMember(event) {
 
 
       /*
-       * If the member has an email, offer invitation.
+       * Automatically send invitation when
+       * a valid email address was provided.
        */
 
       if (values.email) {
 
-        setTimeout(
-          async () => {
+        try {
 
-            const invite =
-              await inviteMember(
-                result.data.id,
-                true
-              );
+          showFormMessage(
+            "Member added. Sending login invitation...",
+            "success"
+          );
 
 
-            if (invite) {
+          await sendInvitationForMember(
+            result.data
+          );
 
-              showFormMessage(
-                "Member added. An invitation link has been prepared.",
-                "success"
-              );
 
-            }
+          showFormMessage(
+            "Member added successfully. " +
+            "Login invitation sent to " +
+            values.email + ".",
+            "success"
+          );
 
-          },
-          400
-        );
+        }
+        catch (invitationError) {
+
+          console.error(
+            "CHAMA LIVE: invitation failed",
+            invitationError
+          );
+
+
+          showFormMessage(
+            "Member was added successfully, " +
+            "but the invitation could not be sent. " +
+            "You can use Send Invitation from the members list.",
+            "error"
+          );
+
+        }
 
       }
 
     }
 
+
+    /* =====================================================
+       REFRESH
+    ===================================================== */
 
     await loadMembers();
 
@@ -1633,8 +1770,9 @@ async function saveMember(event) {
 
 
     showFormMessage(
-      error?.message ||
-      String(error),
+      error && error.message
+        ? error.message
+        : String(error),
       "error"
     );
 
@@ -1658,13 +1796,10 @@ async function saveMember(event) {
 
 
 /* =========================================================
-   MEMBER INVITATION
+   SEND MEMBER INVITATION
 ========================================================= */
 
-async function inviteMember(
-  memberId,
-  silent = false
-) {
+async function sendMemberInvitation(memberId) {
 
   const member =
     findMember(memberId);
@@ -1672,176 +1807,274 @@ async function inviteMember(
 
   if (!member) {
 
-    if (!silent) {
+    showError(
+      new Error(
+        "Member could not be found."
+      )
+    );
 
-      showError(
-        new Error(
-          "Member could not be found."
-        )
-      );
-
-    }
-
-    return false;
+    return;
 
   }
 
 
   if (!member.email) {
 
-    if (!silent) {
+    showError(
+      new Error(
+        "This member does not have an email address."
+      )
+    );
 
-      showFormMessage(
-        "This member does not have an email address.",
-        "error"
+    return;
+
+  }
+
+
+  if (
+    member.auth_user_id ||
+    member.user_id
+  ) {
+
+    const confirmed =
+      window.confirm(
+        "This member already has a linked login account. " +
+        "Do you want to send the invitation again?"
       );
 
+
+    if (!confirmed) {
+      return;
     }
 
-    return false;
+  }
+
+
+  const button =
+    document.querySelector(
+      `[data-action="invite"][data-member-id="${memberId}"]`
+    );
+
+
+  if (button) {
+
+    button.disabled = true;
+
+    button.textContent =
+      "Sending...";
 
   }
 
 
   try {
 
-    /*
-     * The invitation is sent by Supabase Auth.
-     *
-     * This must be configured in Supabase Auth.
-     */
-
-    const redirectTo =
-      new URL(
-        "create-group.html",
-        window.location.href
-      ).href;
-
-
-    /*
-     * IMPORTANT:
-     *
-     * This calls Supabase's password-reset/invite
-     * mechanism only if the project permits it.
-     *
-     * A browser client cannot securely create another
-     * user's Auth account with admin privileges.
-     *
-     * Therefore we use a recovery-style email flow.
-     */
-
-    const result =
-      await supabase.auth.resetPasswordForEmail(
-        member.email,
-        {
-          redirectTo
-        }
-      );
-
-
-    if (result.error) {
-
-      throw result.error;
-
-    }
-
-
-    if (!silent) {
-
-      showFormMessage(
-        "Login setup email sent to " +
-        member.email +
-        ".",
-        "success"
-      );
-
-    }
-
-
-    console.log(
-      "CHAMA LIVE: member login email sent",
-      member.email
+    showStatus(
+      "Sending invitation to " +
+      member.email +
+      "..."
     );
 
 
-    return true;
+    await sendInvitationForMember(
+      member
+    );
+
+
+    showFormMessage(
+      "Invitation sent successfully to " +
+      member.email + ".",
+      "success"
+    );
+
+
+    showStatus("");
+
 
   }
   catch (error) {
 
     console.error(
-      "CHAMA LIVE: member invitation failed",
+      "CHAMA LIVE: invitation failed",
       error
     );
 
 
-    if (!silent) {
+    showError(error);
 
-      showFormMessage(
-        friendlyInviteError(error),
-        "error"
-      );
+  }
+  finally {
+
+    if (button) {
+
+      button.disabled = false;
+
+      button.textContent =
+        "Send Invitation";
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   INVITATION API CALL
+========================================================= */
+
+async function sendInvitationForMember(member) {
+
+  if (!member) {
+
+    throw new Error(
+      "Member information is missing."
+    );
+
+  }
+
+
+  if (!member.email) {
+
+    throw new Error(
+      "The member does not have an email address."
+    );
+
+  }
+
+
+  if (!groupId) {
+
+    throw new Error(
+      "No group is associated with this account."
+    );
+
+  }
+
+
+  /*
+   * Make sure the current session is valid.
+   */
+
+  const {
+    data: {
+      session
+    }
+  } =
+    await supabase.auth.getSession();
+
+
+  if (!session?.access_token) {
+
+    throw new Error(
+      "Your login session has expired. " +
+      "Please sign in again."
+    );
+
+  }
+
+
+  /*
+   * Call the Supabase Edge Function.
+   *
+   * supabase.functions.invoke automatically
+   * attaches the current Supabase session.
+   */
+
+  const {
+    data,
+    error
+  } =
+    await supabase.functions.invoke(
+      "send-member-invitation",
+      {
+
+        body: {
+
+          member_id:
+            member.id,
+
+          group_id:
+            groupId
+
+        }
+
+      }
+    );
+
+
+  if (error) {
+
+    console.error(
+      "CHAMA LIVE: Edge Function error",
+      error
+    );
+
+
+    /*
+     * Try to expose the actual function response.
+     */
+
+    let details =
+      error.message ||
+      "Unable to send member invitation.";
+
+
+    if (
+      error.context &&
+      typeof error.context.json === "function"
+    ) {
+
+      try {
+
+        const response =
+          await error.context.json();
+
+
+        if (response?.error) {
+
+          details =
+            response.error;
+
+        }
+
+      }
+      catch {
+        /* Ignore response parsing errors */
+      }
 
     }
 
 
-    return false;
-
-  }
-
-}
-
-
-/* =========================================================
-   INVITATION ERROR
-========================================================= */
-
-function friendlyInviteError(error) {
-
-  const message =
-    String(
-      error?.message ||
-      error ||
-      ""
-    );
-
-
-  if (
-    message.toLowerCase()
-      .includes("rate limit")
-  ) {
-
-    return (
-      "The email service has reached its sending limit. " +
-      "Please wait and try again later."
-    );
+    throw new Error(details);
 
   }
 
 
   if (
-    message.toLowerCase()
-      .includes("redirect")
+    data &&
+    data.error
   ) {
 
-    return (
-      "The member login email could not be prepared " +
-      "because the redirect URL is not allowed in Supabase Auth."
+    throw new Error(
+      data.error
     );
 
   }
 
 
-  return (
-    "The member login email could not be sent. " +
-    message
+  console.log(
+    "CHAMA LIVE: invitation sent",
+    data
   );
 
+
+  return data;
+
 }
 
 
 /* =========================================================
-   MEMBER VIEW
+   MEMBER MODAL
 ========================================================= */
 
 function openMemberModal(memberId) {
@@ -1892,38 +2125,52 @@ function openMemberModal(memberId) {
 
 
   if (name) {
+
     name.textContent =
       member.name || "Member";
+
   }
 
 
   if (number) {
+
     number.textContent =
-      member.member_number || "—";
+      member.member_number ||
+      member.membership_number ||
+      "—";
+
   }
 
 
   if (phone) {
+
     phone.textContent =
       member.phone || "—";
+
   }
 
 
   if (email) {
+
     email.textContent =
       member.email || "—";
+
   }
 
 
   if (role) {
+
     role.textContent =
       member.role || "member";
+
   }
 
 
   if (status) {
+
     status.textContent =
       member.status || "—";
+
   }
 
 
@@ -1962,14 +2209,16 @@ function openMemberModal(memberId) {
 
 
   if (closeButton) {
+
     closeButton.focus();
+
   }
 
 }
 
 
 /* =========================================================
-   CLOSE MODAL
+   CLOSE MEMBER MODAL
 ========================================================= */
 
 function closeMemberModal() {
@@ -2022,8 +2271,13 @@ export async function refreshMembers() {
 
     updateMemberCount();
 
+
     showStatus("");
 
+
+    console.log(
+      "CHAMA LIVE: members refreshed"
+    );
 
   }
   catch (error) {
@@ -2052,3 +2306,4 @@ export const loadPage =
 console.log(
   "CHAMA LIVE: members.js ready"
 );
+
