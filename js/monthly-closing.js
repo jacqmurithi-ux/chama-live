@@ -1,23 +1,38 @@
 /* =========================================================
    CHAMA LIVE — MONTHLY CLOSING
+   =========================================================
+   SECURE TRANSACTIONAL VERSION
+
+   ARCHITECTURE
    ---------------------------------------------------------
-   COMPLETE STABLE VERSION
+   Frontend:
+   - Displays calculations
+   - Requests closing through RPC
+   - Never directly changes financial status
+
+   Database RPC:
+   - Validates authenticated user
+   - Validates group membership
+   - Validates authorized role
+   - Prevents future closing
+   - Prevents duplicate closing
+   - Calculates financial totals server-side
+   - Creates monthly_closings record
+   - Updates financial_periods
+   - Runs atomically
 
    RULES
    ---------------------------------------------------------
-   1. Only the logged-in user's group can be closed.
-   2. A month can only be closed once.
-   3. ALL contribution types count as cash.
-   4. ONLY approved expenses reduce closing balance.
-   5. Pending/rejected expenses do not reduce balance.
-   6. Previous closed month's closing balance becomes
-      current month's opening balance.
-   7. Closing is stored in BOTH:
-        - monthly_closings
-        - financial_periods
-   8. Closed months cannot be closed again.
-   9. Future months cannot be closed.
-  10. The closing balance is permanently stored.
+   1. Only authorized group officials can close.
+   2. Frontend cannot force balances.
+   3. Server calculates authoritative totals.
+   4. All contribution types count as cash.
+   5. Only approved expenses reduce balance.
+   6. Previous closed balance becomes opening balance.
+   7. Closed balance becomes immutable.
+   8. Duplicate closing is prevented.
+   9. Future months cannot close.
+  10. Closing happens in one database transaction.
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -43,20 +58,6 @@ function setText(id, value) {
 }
 
 
-function money(value) {
-
-  return new Intl.NumberFormat("en-KE", {
-    style: "currency",
-    currency: "KES",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(
-    Number(value || 0)
-  );
-
-}
-
-
 function number(value) {
 
   const parsed =
@@ -65,6 +66,23 @@ function number(value) {
   return Number.isFinite(parsed)
     ? parsed
     : 0;
+
+}
+
+
+function money(value) {
+
+  return new Intl.NumberFormat(
+    "en-KE",
+    {
+      style: "currency",
+      currency: "KES",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }
+  ).format(
+    number(value)
+  );
 
 }
 
@@ -81,25 +99,44 @@ function escapeHtml(value) {
 }
 
 
+function normalize(value) {
+
+  return String(value || "")
+    .trim()
+    .toLowerCase();
+
+}
+
+
+/* =========================================================
+   MONTH HELPERS
+========================================================= */
+
 function monthKey(value) {
 
   if (!value) {
     return "";
   }
 
+
   const text =
-    String(value);
+    String(value).trim();
 
-  if (
-    /^\d{4}-\d{2}/.test(text)
-  ) {
 
-    return text.slice(0, 7);
+  const match =
+    text.match(/^(\d{4})-(\d{2})/);
+
+
+  if (match) {
+
+    return `${match[1]}-${match[2]}`;
 
   }
 
+
   const date =
     new Date(value);
+
 
   if (
     Number.isNaN(
@@ -111,11 +148,15 @@ function monthKey(value) {
 
   }
 
+
   return [
+
     date.getFullYear(),
+
     String(
       date.getMonth() + 1
     ).padStart(2, "0")
+
   ].join("-");
 
 }
@@ -126,11 +167,15 @@ function getCurrentMonth() {
   const now =
     new Date();
 
+
   return [
+
     now.getFullYear(),
+
     String(
       now.getMonth() + 1
     ).padStart(2, "0")
+
   ].join("-");
 
 }
@@ -149,6 +194,17 @@ function addMonths(
       .split("-")
       .map(Number);
 
+
+  if (
+    !Number.isFinite(year) ||
+    !Number.isFinite(monthNumber)
+  ) {
+
+    return "";
+
+  }
+
+
   const date =
     new Date(
       year,
@@ -156,11 +212,15 @@ function addMonths(
       1
     );
 
+
   return [
+
     date.getFullYear(),
+
     String(
       date.getMonth() + 1
     ).padStart(2, "0")
+
   ].join("-");
 
 }
@@ -172,6 +232,7 @@ function formatMonth(month) {
     return "Selected month";
   }
 
+
   const [
     year,
     monthNumber
@@ -179,6 +240,17 @@ function formatMonth(month) {
     String(month)
       .split("-")
       .map(Number);
+
+
+  if (
+    !Number.isFinite(year) ||
+    !Number.isFinite(monthNumber)
+  ) {
+
+    return "Selected month";
+
+  }
+
 
   return new Date(
     year,
@@ -196,13 +268,67 @@ function formatMonth(month) {
 
 
 /* =========================================================
+   CONTRIBUTION MONTH
+========================================================= */
+
+function getContributionMonth(
+  contribution
+) {
+
+  if (!contribution) {
+    return "";
+  }
+
+
+  if (contribution.month) {
+
+    const explicitMonth =
+      monthKey(
+        contribution.month
+      );
+
+
+    if (explicitMonth) {
+      return explicitMonth;
+    }
+
+  }
+
+
+  if (contribution.contribution_date) {
+
+    const dateMonth =
+      monthKey(
+        contribution.contribution_date
+      );
+
+
+    if (dateMonth) {
+      return dateMonth;
+    }
+
+  }
+
+
+  return monthKey(
+    contribution.created_at
+  );
+
+}
+
+
+/* =========================================================
    STATE
 ========================================================= */
 
 let currentMember = null;
-let groupId = null;
+
 let currentUser = null;
+
+let groupId = null;
+
 let selectedMonth = "";
+
 let closingData = null;
 
 
@@ -218,9 +344,10 @@ async function init() {
       "Loading monthly closing..."
     );
 
-    /* -----------------------------------------------------
+
+    /* =====================================================
        AUTH USER
-    ----------------------------------------------------- */
+    ===================================================== */
 
     const {
       data: {
@@ -230,9 +357,11 @@ async function init() {
     } =
       await supabase.auth.getUser();
 
+
     if (userError) {
       throw userError;
     }
+
 
     if (!user) {
 
@@ -242,16 +371,18 @@ async function init() {
 
     }
 
+
     currentUser =
       user;
 
 
-    /* -----------------------------------------------------
-       MEMBER
-    ----------------------------------------------------- */
+    /* =====================================================
+       CURRENT MEMBER
+    ===================================================== */
 
     currentMember =
       await getMyMember();
+
 
     if (
       !currentMember ||
@@ -264,13 +395,14 @@ async function init() {
 
     }
 
+
     groupId =
       currentMember.group_id;
 
 
-    /* -----------------------------------------------------
+    /* =====================================================
        DEFAULT MONTH
-    ----------------------------------------------------- */
+    ===================================================== */
 
     selectedMonth =
       getCurrentMonth();
@@ -279,13 +411,16 @@ async function init() {
     const monthInput =
       $("closingMonth");
 
+
     if (monthInput) {
 
       monthInput.value =
         selectedMonth;
 
+
       monthInput.max =
         selectedMonth;
+
 
       monthInput.addEventListener(
         "change",
@@ -295,8 +430,10 @@ async function init() {
             return;
           }
 
+
           selectedMonth =
             monthInput.value;
+
 
           await loadClosing();
 
@@ -306,9 +443,9 @@ async function init() {
     }
 
 
-    /* -----------------------------------------------------
+    /* =====================================================
        BUTTONS
-    ----------------------------------------------------- */
+    ===================================================== */
 
     $("calculateClosing")
       ?.addEventListener(
@@ -338,9 +475,9 @@ async function init() {
       );
 
 
-    /* -----------------------------------------------------
+    /* =====================================================
        LOAD
-    ----------------------------------------------------- */
+    ===================================================== */
 
     await loadClosing();
 
@@ -362,6 +499,16 @@ async function loadClosing() {
 
   clearError();
 
+
+  if (!groupId) {
+
+    throw new Error(
+      "Group could not be identified."
+    );
+
+  }
+
+
   if (!selectedMonth) {
     return;
   }
@@ -375,11 +522,12 @@ async function loadClosing() {
   try {
 
     /* =====================================================
-       PREVENT FUTURE CLOSING
+       PREVENT FUTURE MONTH
     ===================================================== */
 
     const currentMonth =
       getCurrentMonth();
+
 
     if (
       selectedMonth >
@@ -393,8 +541,23 @@ async function loadClosing() {
     }
 
 
+    const startDate =
+      `${selectedMonth}-01`;
+
+
+    const nextMonth =
+      addMonths(
+        selectedMonth,
+        1
+      );
+
+
+    const endDate =
+      `${nextMonth}-01`;
+
+
     /* =====================================================
-       GROUP
+       LOAD GROUP
     ===================================================== */
 
     const {
@@ -415,13 +578,14 @@ async function loadClosing() {
         )
         .single();
 
+
     if (groupError) {
       throw groupError;
     }
 
 
     /* =====================================================
-       FINANCIAL PERIOD
+       LOAD FINANCIAL PERIOD
     ===================================================== */
 
     const {
@@ -451,27 +615,15 @@ async function loadClosing() {
         )
         .maybeSingle();
 
+
     if (periodError) {
       throw periodError;
     }
 
 
     /* =====================================================
-       MONTHLY CLOSING RECORD
+       LOAD MONTHLY CLOSING
     ===================================================== */
-
-    const closingStart =
-      `${selectedMonth}-01`;
-
-    const nextMonth =
-      addMonths(
-        selectedMonth,
-        1
-      );
-
-    const closingEnd =
-      `${nextMonth}-01`;
-
 
     const {
       data: existingClosing,
@@ -498,9 +650,10 @@ async function loadClosing() {
         )
         .eq(
           "closing_month",
-          closingStart
+          startDate
         )
         .maybeSingle();
+
 
     if (closingError) {
       throw closingError;
@@ -508,19 +661,22 @@ async function loadClosing() {
 
 
     /* =====================================================
-       CONTRIBUTIONS
+       LOAD CONTRIBUTIONS
        -----------------------------------------------------
+       We load by accounting month.
+
        ALL contribution types count as cash.
     ===================================================== */
 
     const {
       data: contributions,
-      error: contributionsError
+      error: contributionError
     } =
       await supabase
         .from("contributions")
         .select(`
           id,
+          group_id,
           member_id,
           amount,
           contribution_type,
@@ -534,46 +690,29 @@ async function loadClosing() {
         )
         .lt(
           "contribution_date",
-          closingEnd
+          endDate
         );
 
-    if (contributionsError) {
-      throw contributionsError;
+
+    if (contributionError) {
+      throw contributionError;
     }
 
-
-    /* =====================================================
-       CURRENT MONTH CONTRIBUTIONS
-    ===================================================== */
 
     const currentContributions =
       (contributions || [])
         .filter(
-          contribution => {
-
-            const contributionMonth =
-              monthKey(
-                contribution.month ||
-                contribution.contribution_date ||
-                contribution.created_at
-              );
-
-            return (
-              contributionMonth ===
-              selectedMonth
-            );
-
-          }
+          contribution =>
+            getContributionMonth(
+              contribution
+            ) === selectedMonth
         );
 
 
     const totalCollected =
       currentContributions
         .reduce(
-          (
-            total,
-            contribution
-          ) =>
+          (total, contribution) =>
             total +
             number(
               contribution.amount
@@ -583,7 +722,7 @@ async function loadClosing() {
 
 
     /* =====================================================
-       MEMBERS
+       LOAD MEMBERS
     ===================================================== */
 
     const {
@@ -594,15 +733,16 @@ async function loadClosing() {
         .from("members")
         .select(`
           id,
-          group_id,
           name,
           status,
+          onboarding_status,
           join_date
         `)
         .eq(
           "group_id",
           groupId
         );
+
 
     if (membersError) {
       throw membersError;
@@ -613,16 +753,33 @@ async function loadClosing() {
       (members || [])
         .filter(
           member =>
-            String(
-              member.status ||
-              "active"
-            ).toLowerCase() ===
-            "active"
+            normalize(
+              member.status || "active"
+            ) === "active" &&
+            normalize(
+              member.onboarding_status || "active"
+            ) === "active"
+        )
+        .filter(
+          member => {
+
+            const joinMonth =
+              monthKey(
+                member.join_date
+              );
+
+
+            return (
+              !joinMonth ||
+              joinMonth <= selectedMonth
+            );
+
+          }
         );
 
 
     /* =====================================================
-       EXPECTED
+       EXPECTED CONTRIBUTIONS
     ===================================================== */
 
     const monthlyContribution =
@@ -632,41 +789,12 @@ async function loadClosing() {
 
 
     const totalExpected =
-      activeMembers.reduce(
-        (
-          total,
-          member
-        ) => {
-
-          const joinMonth =
-            monthKey(
-              member.join_date
-            );
-
-          if (
-            joinMonth &&
-            joinMonth >
-            selectedMonth
-          ) {
-
-            return total;
-
-          }
-
-          return (
-            total +
-            monthlyContribution
-          );
-
-        },
-        0
-      );
+      activeMembers.length *
+      monthlyContribution;
 
 
     /* =====================================================
-       EXPENSES
-       -----------------------------------------------------
-       ONLY APPROVED expenses count.
+       LOAD EXPENSES
     ===================================================== */
 
     const {
@@ -689,12 +817,13 @@ async function loadClosing() {
         )
         .gte(
           "date",
-          closingStart
+          startDate
         )
         .lt(
           "date",
-          closingEnd
+          endDate
         );
+
 
     if (expensesError) {
       throw expensesError;
@@ -705,11 +834,9 @@ async function loadClosing() {
       (expenses || [])
         .filter(
           expense =>
-            String(
-              expense.approval_status ||
-              ""
-            ).toLowerCase() ===
-            "approved"
+            normalize(
+              expense.approval_status
+            ) === "approved"
         );
 
 
@@ -717,11 +844,9 @@ async function loadClosing() {
       (expenses || [])
         .filter(
           expense =>
-            String(
-              expense.approval_status ||
-              ""
-            ).toLowerCase() ===
-            "pending"
+            normalize(
+              expense.approval_status
+            ) === "pending"
         );
 
 
@@ -729,21 +854,16 @@ async function loadClosing() {
       (expenses || [])
         .filter(
           expense =>
-            String(
-              expense.approval_status ||
-              ""
-            ).toLowerCase() ===
-            "rejected"
+            normalize(
+              expense.approval_status
+            ) === "rejected"
         );
 
 
     const totalExpenses =
       approvedExpenses
         .reduce(
-          (
-            total,
-            expense
-          ) =>
+          (total, expense) =>
             total +
             number(
               expense.amount
@@ -755,10 +875,7 @@ async function loadClosing() {
     const pendingTotal =
       pendingExpenses
         .reduce(
-          (
-            total,
-            expense
-          ) =>
+          (total, expense) =>
             total +
             number(
               expense.amount
@@ -770,10 +887,7 @@ async function loadClosing() {
     const rejectedTotal =
       rejectedExpenses
         .reduce(
-          (
-            total,
-            expense
-          ) =>
+          (total, expense) =>
             total +
             number(
               expense.amount
@@ -789,14 +903,9 @@ async function loadClosing() {
     let openingBalance = 0;
 
 
-    /* -----------------------------------------------------
-       Existing financial period
-    ----------------------------------------------------- */
-
     if (
       period &&
-      period.opening_balance !== null &&
-      period.opening_balance !== undefined
+      period.opening_balance !== null
     ) {
 
       openingBalance =
@@ -806,13 +915,9 @@ async function loadClosing() {
 
     } else {
 
-      /* ---------------------------------------------------
-         Find previous closed financial period
-      --------------------------------------------------- */
-
       const {
         data: previousPeriod,
-        error: previousPeriodError
+        error: previousError
       } =
         await supabase
           .from("financial_periods")
@@ -842,15 +947,15 @@ async function loadClosing() {
           .limit(1)
           .maybeSingle();
 
-      if (previousPeriodError) {
-        throw previousPeriodError;
+
+      if (previousError) {
+        throw previousError;
       }
 
 
       if (
         previousPeriod &&
-        previousPeriod.closing_balance !== null &&
-        previousPeriod.closing_balance !== undefined
+        previousPeriod.closing_balance !== null
       ) {
 
         openingBalance =
@@ -860,61 +965,10 @@ async function loadClosing() {
 
       } else {
 
-        /* -------------------------------------------------
-           Check previous monthly closing
-        ------------------------------------------------- */
-
-        const {
-          data: previousClosing,
-          error: previousClosingError
-        } =
-          await supabase
-            .from("monthly_closings")
-            .select(`
-              closing_month,
-              closing_balance
-            `)
-            .eq(
-              "group_id",
-              groupId
-            )
-            .lt(
-              "closing_month",
-              closingStart
-            )
-            .order(
-              "closing_month",
-              {
-                ascending: false
-              }
-            )
-            .limit(1)
-            .maybeSingle();
-
-        if (previousClosingError) {
-          throw previousClosingError;
-        }
-
-
-        if (
-          previousClosing &&
-          previousClosing.closing_balance !== null &&
-          previousClosing.closing_balance !== undefined
-        ) {
-
-          openingBalance =
-            number(
-              previousClosing.closing_balance
-            );
-
-        } else {
-
-          openingBalance =
-            number(
-              group.opening_balance
-            );
-
-        }
+        openingBalance =
+          number(
+            group.opening_balance
+          );
 
       }
 
@@ -932,36 +986,25 @@ async function loadClosing() {
 
 
     /* =====================================================
-       STORED CLOSING
-       -----------------------------------------------------
-       If already closed, NEVER recalculate the stored
-       closing balance for display.
+       CLOSED STATUS
     ===================================================== */
 
     const isClosed =
-      String(
-        period?.status ||
-        ""
-      ).toLowerCase() ===
-      "closed";
+      normalize(
+        period?.status
+      ) === "closed";
 
 
-    const hasStoredClosing =
-      existingClosing &&
-      existingClosing.closing_balance !== null &&
-      existingClosing.closing_balance !== undefined;
-
-
-    const finalClosing =
+    const storedClosing =
       isClosed &&
-      period?.closing_balance !== null &&
-      period?.closing_balance !== undefined
+      period?.closing_balance !== null
 
         ? number(
             period.closing_balance
           )
 
-        : hasStoredClosing
+        : existingClosing &&
+          existingClosing.closing_balance !== null
 
           ? number(
               existingClosing.closing_balance
@@ -1012,7 +1055,7 @@ async function loadClosing() {
       calculatedClosing,
 
       closingBalance:
-        finalClosing,
+        storedClosing,
 
       isClosed
 
@@ -1027,9 +1070,13 @@ async function loadClosing() {
 
 
     setStatus(
+
       isClosed
+
         ? `${formatMonth(selectedMonth)} is CLOSED.`
+
         : `${formatMonth(selectedMonth)} is ready for closing.`
+
     );
 
 
@@ -1050,6 +1097,7 @@ function renderClosing() {
 
   const data =
     closingData;
+
 
   if (!data) {
     return;
@@ -1076,7 +1124,7 @@ function renderClosing() {
 
 
   /* =====================================================
-     FINANCIAL TOTALS
+     TOTALS
   ===================================================== */
 
   setText(
@@ -1169,15 +1217,11 @@ function renderClosing() {
      STATUS
   ===================================================== */
 
-  const status =
-    data.isClosed
-      ? "CLOSED"
-      : "OPEN";
-
-
   setText(
     "periodStatus",
-    status
+    data.isClosed
+      ? "CLOSED"
+      : "OPEN"
   );
 
 
@@ -1188,25 +1232,30 @@ function renderClosing() {
   const closeButton =
     $("closeMonth");
 
+
   if (closeButton) {
 
     closeButton.disabled =
       data.isClosed;
 
+
     closeButton.textContent =
       data.isClosed
+
         ? "Month Already Closed"
+
         : `Close ${formatMonth(selectedMonth)}`;
 
   }
 
 
   /* =====================================================
-     WARNING
+     CLOSED WARNING
   ===================================================== */
 
   const warning =
     $("closingWarning");
+
 
   if (warning) {
 
@@ -1215,18 +1264,11 @@ function renderClosing() {
       warning.hidden =
         false;
 
+
       warning.textContent =
-        `This period was closed on ${
-          data.period?.closed_at
-            ? new Date(
-                data.period.closed_at
-              ).toLocaleString("en-KE")
-            : "a previous date"
-        }. The stored closing balance is ${
-          money(
-            data.closingBalance
-          )
-        }.`;
+        `This period is closed. ` +
+        `Stored closing balance: ` +
+        `${money(data.closingBalance)}.`;
 
     } else {
 
@@ -1242,11 +1284,12 @@ function renderClosing() {
 
 
   /* =====================================================
-     CLOSING NOTES
+     NOTES
   ===================================================== */
 
   const notes =
     $("closingNotes");
+
 
   if (
     notes &&
@@ -1258,12 +1301,22 @@ function renderClosing() {
 
   }
 
-
 }
 
 
 /* =========================================================
    CLOSE MONTH
+   ---------------------------------------------------------
+   IMPORTANT:
+
+   The frontend DOES NOT:
+
+   - insert financial_periods
+   - update financial_periods
+   - insert monthly_closings
+   - calculate authoritative balances
+
+   Everything important happens inside PostgreSQL RPC.
 ========================================================= */
 
 async function closeMonth() {
@@ -1279,9 +1332,7 @@ async function closeMonth() {
   }
 
 
-  if (
-    closingData.isClosed
-  ) {
+  if (closingData.isClosed) {
 
     showError(
       `${formatMonth(selectedMonth)} is already closed.`
@@ -1292,14 +1343,51 @@ async function closeMonth() {
   }
 
 
+  /* =====================================================
+     PREVENT FUTURE MONTH
+  ===================================================== */
+
+  if (
+    selectedMonth >
+    getCurrentMonth()
+  ) {
+
+    showError(
+      "A future month cannot be closed."
+    );
+
+    return;
+
+  }
+
+
+  /* =====================================================
+     CONFIRM
+  ===================================================== */
+
   const confirmed =
     window.confirm(
-      `Are you sure you want to close ${formatMonth(selectedMonth)}?\n\n` +
-      `Opening balance: ${money(closingData.openingBalance)}\n` +
-      `Contributions: ${money(closingData.totalCollected)}\n` +
-      `Approved expenses: ${money(closingData.totalExpenses)}\n` +
-      `Closing balance: ${money(closingData.calculatedClosing)}\n\n` +
-      `Once closed, this month's stored closing balance will be used for future reporting.`
+
+      `Close ${formatMonth(selectedMonth)}?\n\n` +
+
+      `Opening Balance: ${money(
+        closingData.openingBalance
+      )}\n` +
+
+      `Contributions: ${money(
+        closingData.totalCollected
+      )}\n` +
+
+      `Approved Expenses: ${money(
+        closingData.totalExpenses
+      )}\n\n` +
+
+      `Calculated Closing: ${money(
+        closingData.calculatedClosing
+      )}\n\n` +
+
+      `The database will independently verify and calculate all totals before permanently closing this period.`
+
     );
 
 
@@ -1308,40 +1396,49 @@ async function closeMonth() {
   }
 
 
-  const closeButton =
+  const button =
     $("closeMonth");
 
-  if (closeButton) {
-    closeButton.disabled =
+
+  if (button) {
+
+    button.disabled =
       true;
 
-    closeButton.textContent =
-      "Closing month...";
+
+    button.textContent =
+      "Closing month securely...";
+
   }
 
 
+  clearError();
+
+
   setStatus(
-    `Closing ${formatMonth(selectedMonth)}...`
+    `Securing ${formatMonth(selectedMonth)} closing...`
   );
 
 
   try {
 
     /* =====================================================
-       REFRESH AUTH
+       REFRESH AUTH SESSION
     ===================================================== */
 
     const {
       data: {
         user
       },
-      error: userError
+      error: authError
     } =
       await supabase.auth.getUser();
 
-    if (userError) {
-      throw userError;
+
+    if (authError) {
+      throw authError;
     }
+
 
     if (!user) {
 
@@ -1357,275 +1454,131 @@ async function closeMonth() {
 
 
     /* =====================================================
-       CHECK AGAIN FOR EXISTING PERIOD
-       -----------------------------------------------------
-       Prevent race-condition duplicate closing.
-    ===================================================== */
-
-    const {
-      data: existingPeriod,
-      error: existingPeriodError
-    } =
-      await supabase
-        .from("financial_periods")
-        .select(`
-          id,
-          status,
-          closing_balance
-        `)
-        .eq(
-          "group_id",
-          groupId
-        )
-        .eq(
-          "month",
-          selectedMonth
-        )
-        .maybeSingle();
-
-    if (existingPeriodError) {
-      throw existingPeriodError;
-    }
-
-
-    if (
-      existingPeriod &&
-      String(
-        existingPeriod.status
-      ).toLowerCase() ===
-      "closed"
-    ) {
-
-      throw new Error(
-        "This month has already been closed."
-      );
-
-    }
-
-
-    /* =====================================================
-       CHECK MONTHLY CLOSING TABLE
-    ===================================================== */
-
-    const {
-      data: duplicateClosing,
-      error: duplicateClosingError
-    } =
-      await supabase
-        .from("monthly_closings")
-        .select("id")
-        .eq(
-          "group_id",
-          groupId
-        )
-        .eq(
-          "closing_month",
-          `${selectedMonth}-01`
-        )
-        .maybeSingle();
-
-    if (duplicateClosingError) {
-      throw duplicateClosingError;
-    }
-
-
-    if (duplicateClosing) {
-
-      throw new Error(
-        "A monthly closing record already exists for this month."
-      );
-
-    }
-
-
-    /* =====================================================
-       INSERT MONTHLY CLOSING
+       NOTES
     ===================================================== */
 
     const notes =
-      $("closingNotes")?.value?.trim() ||
-      `Monthly closing for ${formatMonth(selectedMonth)}.`;
+      $("closingNotes")
+        ?.value
+        ?.trim() || "";
 
+
+    /* =====================================================
+       SECURE RPC
+       -----------------------------------------------------
+       Expected PostgreSQL function:
+
+       close_financial_month(
+         p_group_id uuid,
+         p_month text,
+         p_notes text
+       )
+
+       Database performs:
+
+       ✓ auth validation
+       ✓ group validation
+       ✓ role validation
+       ✓ future month validation
+       ✓ duplicate prevention
+       ✓ advisory locking
+       ✓ contribution calculation
+       ✓ expense calculation
+       ✓ opening balance calculation
+       ✓ monthly_closings insert
+       ✓ financial_periods update
+       ✓ atomic transaction
+    ===================================================== */
 
     const {
-      data: insertedClosing,
-      error: insertClosingError
+      data,
+      error
     } =
-      await supabase
-        .from("monthly_closings")
-        .insert({
+      await supabase.rpc(
+        "close_financial_month",
+        {
 
-          group_id:
+          p_group_id:
             groupId,
 
-          closing_month:
-            `${selectedMonth}-01`,
+          p_month:
+            selectedMonth,
 
-          closed_by:
-            currentUser.id,
+          p_notes:
+            notes
 
-          total_expected:
-            closingData.totalExpected,
+        }
+      );
 
-          total_collected:
-            closingData.totalCollected,
 
-          total_expenses:
-            closingData.totalExpenses,
-
-          closing_balance:
-            closingData.calculatedClosing,
-
-          notes
-
-        })
-        .select(`
-          id,
-          group_id,
-          closing_month,
-          closed_by,
-          closed_at,
-          total_expected,
-          total_collected,
-          total_expenses,
-          closing_balance,
-          notes,
-          created_at
-        `)
-        .single();
-
-    if (insertClosingError) {
-      throw insertClosingError;
+    if (error) {
+      throw error;
     }
 
 
     /* =====================================================
-       FINANCIAL PERIOD
+       RPC RESULT
     ===================================================== */
 
-    if (existingPeriod) {
+    console.log(
+      "CHAMA LIVE closing result:",
+      data
+    );
 
-      const {
-        error: updatePeriodError
-      } =
-        await supabase
-          .from("financial_periods")
-          .update({
-
-            opening_balance:
-              closingData.openingBalance,
-
-            closing_balance:
-              closingData.calculatedClosing,
-
-            status:
-              "closed",
-
-            closed_at:
-              new Date().toISOString(),
-
-            closed_by:
-              currentUser.id
-
-          })
-          .eq(
-            "id",
-            existingPeriod.id
-          );
-
-      if (updatePeriodError) {
-
-        /*
-         * The monthly_closings record has already been inserted.
-         * Do not create another one.
-         */
-
-        throw updatePeriodError;
-
-      }
-
-    } else {
-
-      const {
-        error: insertPeriodError
-      } =
-        await supabase
-          .from("financial_periods")
-          .insert({
-
-            group_id:
-              groupId,
-
-            month:
-              selectedMonth,
-
-            opening_balance:
-              closingData.openingBalance,
-
-            closing_balance:
-              closingData.calculatedClosing,
-
-            status:
-              "closed",
-
-            closed_at:
-              new Date().toISOString(),
-
-            closed_by:
-              currentUser.id
-
-          });
-
-      if (insertPeriodError) {
-
-        /*
-         * The monthly_closings record exists.
-         * Surface the exact database error rather than silently
-         * pretending the whole operation succeeded.
-         */
-
-        throw insertPeriodError;
-
-      }
-
-    }
-
-
-    /* =====================================================
-       SUCCESS
-    ===================================================== */
 
     setStatus(
       `${formatMonth(selectedMonth)} closed successfully.`
     );
 
 
+    const result =
+      Array.isArray(data)
+        ? data[0]
+        : data;
+
+
+    const authoritativeClosing =
+      result?.closing_balance ??
+      result?.closingBalance ??
+      closingData.calculatedClosing;
+
+
     alert(
+
       `${formatMonth(selectedMonth)} has been closed successfully.\n\n` +
-      `Closing balance: ${money(closingData.calculatedClosing)}`
+
+      `Closing Balance: ${money(
+        authoritativeClosing
+      )}`
+
     );
 
 
-    /* -----------------------------------------------------
-       Reload from database.
-    ----------------------------------------------------- */
+    /* =====================================================
+       RELOAD DATABASE STATE
+    ===================================================== */
 
     await loadClosing();
 
 
   } catch (error) {
 
+    console.error(
+      "CHAMA LIVE secure closing:",
+      error
+    );
+
+
     showError(error);
 
-    const closeButton =
-      $("closeMonth");
 
-    if (closeButton) {
+    if (button) {
 
-      closeButton.disabled =
+      button.disabled =
         false;
 
-      closeButton.textContent =
+
+      button.textContent =
         `Close ${formatMonth(selectedMonth)}`;
 
     }
@@ -1651,6 +1604,7 @@ function printClosing() {
 
   }
 
+
   window.print();
 
 }
@@ -1664,6 +1618,7 @@ function setStatus(message) {
 
   const element =
     $("status");
+
 
   if (element) {
 
@@ -1687,7 +1642,7 @@ function showError(error) {
   );
 
 
-  const message =
+  let message =
     error?.message ||
     String(
       error ||
@@ -1695,13 +1650,25 @@ function showError(error) {
     );
 
 
+  /* =====================================================
+     CLEAN POSTGRES ERRORS
+  ===================================================== */
+
+  message =
+    String(message)
+      .replace(/^ERROR:\s*/i, "")
+      .trim();
+
+
   const element =
     $("error");
+
 
   if (element) {
 
     element.hidden =
       false;
+
 
     element.textContent =
       message;
@@ -1725,10 +1692,12 @@ function clearError() {
   const element =
     $("error");
 
+
   if (element) {
 
     element.hidden =
       true;
+
 
     element.textContent =
       "";
