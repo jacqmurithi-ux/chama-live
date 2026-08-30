@@ -26,17 +26,21 @@
     ====================================================== */
 
     .report-filters {
+
       display: grid;
+
       grid-template-columns:
         repeat(2, minmax(0, 1fr));
 
       gap: 14px;
 
       align-items: end;
+
     }
 
 
     .report-filter-actions {
+
       display: flex;
 
       gap: 10px;
@@ -44,6 +48,7 @@
       flex-wrap: wrap;
 
       margin-top: 14px;
+
     }
 
 
@@ -51,15 +56,27 @@
        REPORT TABLES
     ====================================================== */
 
+    .report-table {
+
+      width: 100%;
+
+    }
+
+
     .report-table th,
     .report-table td {
+
       white-space: nowrap;
+
       vertical-align: middle;
+
     }
 
 
     .report-table td strong {
+
       font-weight: 800;
+
     }
 
 
@@ -68,8 +85,37 @@
     ====================================================== */
 
     .report-balance {
+
       font-size: 24px;
+
       font-weight: 800;
+
+    }
+
+
+    /* =====================================================
+       REPORT STATUS
+    ====================================================== */
+
+    #status {
+
+      padding: 14px;
+
+      border-radius: 10px;
+
+      font-weight: 600;
+
+    }
+
+
+    /* =====================================================
+       REPORT ERROR
+    ====================================================== */
+
+    #error {
+
+      border-radius: 10px;
+
     }
 
 
@@ -80,17 +126,24 @@
     @media (max-width: 700px) {
 
       .report-filters {
-        grid-template-columns: 1fr;
+
+        grid-template-columns:
+          1fr;
+
       }
 
 
       .report-table {
+
         min-width: 650px;
+
       }
 
 
       .report-balance {
+
         font-size: 21px;
+
       }
 
     }
@@ -110,7 +163,12 @@
 <header class="topbar">
 
   <div class="brand">
-    CHAMA <span>LIVE</span>
+
+    CHAMA
+    <span>
+      LIVE
+    </span>
+
   </div>
 
 
@@ -119,7 +177,9 @@
     id="logout"
     type="button"
   >
+
     Sign out
+
   </button>
 
 </header>
@@ -202,7 +262,9 @@
         </h1>
 
         <p class="muted">
+
           Financial, membership and meeting reports.
+
         </p>
 
       </div>
@@ -247,12 +309,13 @@
         Report Period
       </h2>
 
-
       <br>
 
 
       <div class="report-filters">
 
+
+        <!-- FROM DATE -->
 
         <div class="form-group">
 
@@ -260,8 +323,11 @@
             for="fromDate"
             class="muted"
           >
+
             From Date
+
           </label>
+
 
           <input
             id="fromDate"
@@ -272,14 +338,19 @@
 
 
 
+        <!-- TO DATE -->
+
         <div class="form-group">
 
           <label
             for="toDate"
             class="muted"
           >
+
             To Date
+
           </label>
+
 
           <input
             id="toDate"
@@ -292,6 +363,7 @@
       </div>
 
 
+
       <div class="report-filter-actions">
 
         <button
@@ -299,7 +371,9 @@
           id="applyFilters"
           type="button"
         >
+
           Generate Report
+
         </button>
 
 
@@ -308,7 +382,9 @@
           id="resetFilters"
           type="button"
         >
+
           Reset Period
+
         </button>
 
       </div>
@@ -331,7 +407,6 @@
         Financial Summary
       </h2>
 
-
       <br>
 
 
@@ -343,14 +418,19 @@
         <div class="card">
 
           <div class="muted">
+
             Total Contributions
+
           </div>
+
 
           <div
             class="metric"
             id="totalContributions"
           >
+
             KSh 0
+
           </div>
 
         </div>
@@ -362,14 +442,19 @@
         <div class="card">
 
           <div class="muted">
+
             Approved Expenses
+
           </div>
+
 
           <div
             class="metric"
             id="approvedExpenses"
           >
+
             KSh 0
+
           </div>
 
         </div>
@@ -381,14 +466,19 @@
         <div class="card">
 
           <div class="muted">
+
             Current Balance
+
           </div>
+
 
           <div
             class="report-balance"
             id="currentBalance"
           >
+
             KSh 0
+
           </div>
 
         </div>
@@ -400,14 +490,19 @@
         <div class="card">
 
           <div class="muted">
+
             Pending Expenses
+
           </div>
+
 
           <div
             class="metric"
             id="pendingExpenses"
           >
+
             KSh 0
+
           </div>
 
         </div>
@@ -419,33 +514,43 @@
         <div class="card">
 
           <div class="muted">
+
             Rejected Expenses
+
           </div>
+
 
           <div
             class="metric"
             id="rejectedExpenses"
           >
+
             KSh 0
+
           </div>
 
         </div>
 
 
 
-        <!-- MEMBERS -->
+        <!-- ACTIVE MEMBERS -->
 
         <div class="card">
 
           <div class="muted">
+
             Active Report Members
+
           </div>
+
 
           <div
             class="metric"
             id="activeMembers"
           >
+
             0
+
           </div>
 
         </div>
@@ -471,75 +576,102 @@
         Meeting Summary
       </h2>
 
-
       <br>
 
 
       <div class="grid grid-3">
 
 
+        <!-- TOTAL -->
+
         <div class="card">
 
           <div class="muted">
+
             Total Meetings
+
           </div>
+
 
           <div
             class="metric"
             id="totalMeetings"
           >
+
             0
+
           </div>
 
         </div>
 
 
 
+        <!-- UPCOMING -->
+
         <div class="card">
 
           <div class="muted">
+
             Upcoming
+
           </div>
+
 
           <div
             class="metric"
             id="upcomingMeetings"
           >
+
             0
+
           </div>
 
         </div>
 
 
 
+        <!-- COMPLETED -->
+
         <div class="card">
 
           <div class="muted">
+
             Completed
+
           </div>
+
 
           <div
             class="metric"
             id="completedMeetings"
           >
+
             0
+
           </div>
 
         </div>
 
 
 
+        <!-- CANCELLED -->
+
         <div class="card">
 
           <div class="muted">
+
             Cancelled
+
           </div>
+
 
           <div
             class="metric"
             id="cancelledMeetings"
           >
+
             0
+
           </div>
 
         </div>
@@ -564,6 +696,8 @@
       <h2>
         Contribution Breakdown
       </h2>
+
+      <br>
 
 
       <div class="table-wrap">
@@ -598,7 +732,9 @@
             <tr>
 
               <td colspan="3">
+
                 Loading...
+
               </td>
 
             </tr>
@@ -626,6 +762,8 @@
       <h2>
         Approved Expense Breakdown
       </h2>
+
+      <br>
 
 
       <div class="table-wrap">
@@ -660,7 +798,9 @@
             <tr>
 
               <td colspan="3">
+
                 Loading...
+
               </td>
 
             </tr>
@@ -692,7 +832,7 @@
 
       <p class="muted">
 
-        Most recent contributions within the
+        Contributions recorded within the
         selected reporting period.
 
       </p>
@@ -738,7 +878,9 @@
             <tr>
 
               <td colspan="5">
+
                 Loading...
+
               </td>
 
             </tr>
@@ -816,7 +958,9 @@
             <tr>
 
               <td colspan="5">
+
                 Loading...
+
               </td>
 
             </tr>
@@ -839,8 +983,12 @@
 <!-- =====================================================
      PAGE BOOT
 
-     layout.js already maps reports.html
-     to ./reports.js and calls initReports().
+     layout.js dynamically loads reports.js.
+
+     layout.js then calls:
+
+         initReports()
+
 ====================================================== -->
 
 <script type="module">
