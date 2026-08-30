@@ -1,20 +1,30 @@
 /* =========================================================
    CHAMA LIVE — EXPENSES
-   FULL SCHEMA-ALIGNED VERSION
+   FINAL STABLE FRONTEND VERSION
+
+   DATABASE RULE
+   ---------------------------------------------------------
+   expenses.recorded_by -> members.id
+
+   Therefore:
+       recorded_by = currentMember.id
+
+   NOT:
+       recorded_by = currentUser.id
 
    FEATURES
    ---------------------------------------------------------
    • Load group expenses
-   • Record new expenses
-   • recorded_by uses the current MEMBER id
-   • Default approval status = pending
-   • Approve pending expenses
-   • Reject pending/approved expenses
-   • Restore rejected expenses to pending
-   • Delete expenses
-   • Filter by status
-   • Filter by category
+   • Record expenses
+   • Pending by default
+   • Approve
+   • Reject
+   • Restore rejected → pending
+   • Delete
+   • Status filter
+   • Category filter
    • Approved / Pending / Rejected totals
+   • Safe receipt/reference rendering
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -25,9 +35,7 @@ import {
 } from "./auth.js";
 
 
-console.log(
-  "CHAMA LIVE: expenses.js loaded"
-);
+console.log("CHAMA LIVE: expenses.js loaded");
 
 
 /* =========================================================
@@ -84,20 +92,13 @@ const rejectedTotalEl =
    STATE
 ========================================================= */
 
-let groupId =
-  null;
+let currentUser = null;
+let currentMember = null;
+let groupId = null;
 
-let currentUser =
-  null;
+let expenses = [];
 
-let currentMember =
-  null;
-
-let expenses =
-  [];
-
-let initialized =
-  false;
+let initialized = false;
 
 
 /* =========================================================
@@ -121,31 +122,20 @@ function money(value) {
 }
 
 
-/* =========================================================
-   DATE
-========================================================= */
-
 function todayString() {
 
-  const now =
-    new Date();
+  const now = new Date();
 
   return [
     now.getFullYear(),
 
     String(
       now.getMonth() + 1
-    ).padStart(
-      2,
-      "0"
-    ),
+    ).padStart(2, "0"),
 
     String(
       now.getDate()
-    ).padStart(
-      2,
-      "0"
-    )
+    ).padStart(2, "0")
 
   ].join("-");
 
@@ -160,10 +150,8 @@ function formatDate(value) {
 
   }
 
-
   const date =
     new Date(value);
-
 
   if (
     Number.isNaN(
@@ -174,7 +162,6 @@ function formatDate(value) {
     return String(value);
 
   }
-
 
   return date.toLocaleDateString(
     "en-KE",
@@ -188,42 +175,60 @@ function formatDate(value) {
 }
 
 
-/* =========================================================
-   HTML ESCAPE
-========================================================= */
-
 function escapeHtml(value) {
 
   return String(
     value ?? ""
   )
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 
 }
 
 
-/* =========================================================
-   STATUS MESSAGE
-========================================================= */
+function normalizeStatus(value) {
+
+  const status =
+    String(
+      value || "pending"
+    )
+      .trim()
+      .toLowerCase();
+
+  if (
+    status === "approved"
+  ) {
+
+    return "approved";
+
+  }
+
+  if (
+    status === "rejected"
+  ) {
+
+    return "rejected";
+
+  }
+
+  return "pending";
+
+}
+
+
+function normalizeCategory(value) {
+
+  return String(
+    value || "other"
+  )
+    .trim()
+    .toLowerCase();
+
+}
+
 
 function showStatus(message) {
 
@@ -233,12 +238,28 @@ function showStatus(message) {
 
   }
 
-
   statusEl.textContent =
     message || "";
 
   statusEl.hidden =
     !message;
+
+}
+
+
+function clearError() {
+
+  if (!errorEl) {
+
+    return;
+
+  }
+
+  errorEl.textContent =
+    "";
+
+  errorEl.hidden =
+    true;
 
 }
 
@@ -250,12 +271,10 @@ function showPageError(error) {
     error
   );
 
-
   const message =
     error?.message ||
     String(error) ||
     "Unable to process expense.";
-
 
   if (errorEl) {
 
@@ -270,35 +289,12 @@ function showPageError(error) {
 }
 
 
-function clearError() {
-
-  if (errorEl) {
-
-    errorEl.textContent =
-      "";
-
-    errorEl.hidden =
-      true;
-
-  }
-
-}
-
-
-/* =========================================================
-   DEFAULT DATE
-========================================================= */
-
 function setDefaultDate() {
 
-  if (!dateInput) {
-
-    return;
-
-  }
-
-
-  if (!dateInput.value) {
+  if (
+    dateInput &&
+    !dateInput.value
+  ) {
 
     dateInput.value =
       todayString();
@@ -309,41 +305,57 @@ function setDefaultDate() {
 
 
 /* =========================================================
-   NORMALIZE STATUS
+   RECEIPT / REFERENCE
 ========================================================= */
 
-function normalizeStatus(
-  value
-) {
+function renderReceipt(value) {
 
-  const status =
+  const reference =
     String(
-      value ||
-      "pending"
-    )
-      .trim()
-      .toLowerCase();
+      value || ""
+    ).trim();
 
+  if (!reference) {
 
-  if (
-    status === "approved"
-  ) {
-
-    return "approved";
+    return "—";
 
   }
 
 
-  if (
-    status === "rejected"
-  ) {
+  /*
+     Only make actual web URLs clickable.
+     Receipt numbers such as:
+         REC-001
+         M-PESA QWE123
+     remain plain text.
+  */
 
-    return "rejected";
+  const isUrl =
+    /^https?:\/\/[^\s]+$/i.test(
+      reference
+    );
+
+
+  if (!isUrl) {
+
+    return `
+      <span>
+        ${escapeHtml(reference)}
+      </span>
+    `;
 
   }
 
 
-  return "pending";
+  return `
+    <a
+      href="${escapeHtml(reference)}"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      View
+    </a>
+  `;
 
 }
 
@@ -418,85 +430,67 @@ async function loadExpenses() {
 
 function renderMetrics() {
 
-  let approved =
-    0;
-
-  let pending =
-    0;
-
-  let rejected =
-    0;
+  let approved = 0;
+  let pending = 0;
+  let rejected = 0;
 
 
-  expenses.forEach(
-    expense => {
+  for (
+    const expense of expenses
+  ) {
 
-      const amount =
-        Number(
-          expense.amount ||
-          0
-        );
+    const amount =
+      Number(
+        expense.amount || 0
+      );
+
+    const status =
+      normalizeStatus(
+        expense.approval_status
+      );
 
 
-      const status =
-        normalizeStatus(
-          expense.approval_status
-        );
+    if (
+      status === "approved"
+    ) {
 
-
-      if (
-        status === "approved"
-      ) {
-
-        approved +=
-          amount;
-
-      }
-      else if (
-        status === "rejected"
-      ) {
-
-        rejected +=
-          amount;
-
-      }
-      else {
-
-        pending +=
-          amount;
-
-      }
+      approved += amount;
 
     }
-  );
+    else if (
+      status === "rejected"
+    ) {
+
+      rejected += amount;
+
+    }
+    else {
+
+      pending += amount;
+
+    }
+
+  }
 
 
   if (approvedTotalEl) {
 
     approvedTotalEl.textContent =
-      money(
-        approved
-      );
+      money(approved);
 
   }
-
 
   if (pendingTotalEl) {
 
     pendingTotalEl.textContent =
-      money(
-        pending
-      );
+      money(pending);
 
   }
-
 
   if (rejectedTotalEl) {
 
     rejectedTotalEl.textContent =
-      money(
-        rejected
-      );
+      money(rejected);
 
   }
 
@@ -504,15 +498,14 @@ function renderMetrics() {
 
 
 /* =========================================================
-   FILTERED EXPENSES
+   FILTER
 ========================================================= */
 
-function filteredExpenses() {
+function getFilteredExpenses() {
 
   const selectedStatus =
     String(
-      statusFilter?.value ||
-      "all"
+      statusFilter?.value || "all"
     )
       .trim()
       .toLowerCase();
@@ -520,8 +513,7 @@ function filteredExpenses() {
 
   const selectedCategory =
     String(
-      categoryFilter?.value ||
-      "all"
+      categoryFilter?.value || "all"
     )
       .trim()
       .toLowerCase();
@@ -537,12 +529,9 @@ function filteredExpenses() {
 
 
       const category =
-        String(
-          expense.category ||
-          "other"
-        )
-          .trim()
-          .toLowerCase();
+        normalizeCategory(
+          expense.category
+        );
 
 
       const statusMatches =
@@ -567,6 +556,27 @@ function filteredExpenses() {
 
 
 /* =========================================================
+   STATUS BADGE
+========================================================= */
+
+function statusBadge(status) {
+
+  const normalized =
+    normalizeStatus(status);
+
+
+  return `
+    <span
+      class="expense-status expense-status-${normalized}"
+    >
+      ${escapeHtml(normalized)}
+    </span>
+  `;
+
+}
+
+
+/* =========================================================
    RENDER EXPENSES
 ========================================================= */
 
@@ -580,14 +590,17 @@ function renderExpenses() {
 
 
   const list =
-    filteredExpenses();
+    getFilteredExpenses();
 
 
   if (!list.length) {
 
     expenseRows.innerHTML = `
       <tr>
-        <td colspan="7">
+        <td
+          colspan="7"
+          style="text-align:center;"
+        >
           No expenses found.
         </td>
       </tr>
@@ -599,199 +612,161 @@ function renderExpenses() {
 
 
   expenseRows.innerHTML =
-    list
-      .map(
-        expense => {
+    list.map(
+      expense => {
 
-          const status =
-            normalizeStatus(
-              expense.approval_status
-            );
-
-
-          let actions =
-            "";
+        const status =
+          normalizeStatus(
+            expense.approval_status
+          );
 
 
-          /* -------------------------------------------------
-             PENDING
-          ------------------------------------------------- */
-
-          if (
-            status === "pending"
-          ) {
-
-            actions += `
-              <button
-                type="button"
-                class="btn btn-secondary"
-                data-action="approve"
-                data-id="${escapeHtml(
-                  expense.id
-                )}"
-              >
-                Approve
-              </button>
-
-              <button
-                type="button"
-                class="btn btn-secondary"
-                data-action="reject"
-                data-id="${escapeHtml(
-                  expense.id
-                )}"
-              >
-                Reject
-              </button>
-            `;
-
-          }
+        let actions = "";
 
 
-          /* -------------------------------------------------
-             APPROVED
-          ------------------------------------------------- */
+        /* -------------------------------------------------
+           PENDING
+        ------------------------------------------------- */
 
-          else if (
-            status === "approved"
-          ) {
-
-            actions += `
-              <button
-                type="button"
-                class="btn btn-secondary"
-                data-action="reject"
-                data-id="${escapeHtml(
-                  expense.id
-                )}"
-              >
-                Reject
-              </button>
-            `;
-
-          }
-
-
-          /* -------------------------------------------------
-             REJECTED
-          ------------------------------------------------- */
-
-          else {
-
-            actions += `
-              <button
-                type="button"
-                class="btn btn-secondary"
-                data-action="pending"
-                data-id="${escapeHtml(
-                  expense.id
-                )}"
-              >
-                Restore
-              </button>
-            `;
-
-          }
-
-
-          /* -------------------------------------------------
-             DELETE
-          ------------------------------------------------- */
+        if (
+          status === "pending"
+        ) {
 
           actions += `
             <button
               type="button"
               class="btn btn-secondary"
-              data-action="delete"
-              data-id="${escapeHtml(
-                expense.id
-              )}"
+              data-action="approve"
+              data-id="${escapeHtml(expense.id)}"
             >
-              Delete
+              Approve
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-action="reject"
+              data-id="${escapeHtml(expense.id)}"
+            >
+              Reject
             </button>
           `;
 
-
-          const receipt =
-            expense.receipt_url
-              ? `
-                <a
-                  href="${escapeHtml(
-                    expense.receipt_url
-                  )}"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  View
-                </a>
-              `
-              : "—";
+        }
 
 
-          return `
-            <tr>
+        /* -------------------------------------------------
+           APPROVED
+        ------------------------------------------------- */
 
-              <td>
-                ${escapeHtml(
-                  formatDate(
-                    expense.date
-                  )
-                )}
-              </td>
+        else if (
+          status === "approved"
+        ) {
 
-              <td>
-                ${escapeHtml(
-                  expense.description
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  expense.category ||
-                  "—"
-                )}
-              </td>
-
-              <td>
-                <strong>
-                  ${escapeHtml(
-                    money(
-                      expense.amount
-                    )
-                  )}
-                </strong>
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  status
-                )}
-              </td>
-
-              <td>
-                ${receipt}
-              </td>
-
-              <td>
-
-                <div
-                  style="
-                    display:flex;
-                    gap:6px;
-                    flex-wrap:wrap;
-                  "
-                >
-                  ${actions}
-                </div>
-
-              </td>
-
-            </tr>
+          actions += `
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-action="reject"
+              data-id="${escapeHtml(expense.id)}"
+            >
+              Reject
+            </button>
           `;
 
         }
-      )
-      .join("");
+
+
+        /* -------------------------------------------------
+           REJECTED
+        ------------------------------------------------- */
+
+        else {
+
+          actions += `
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-action="pending"
+              data-id="${escapeHtml(expense.id)}"
+            >
+              Restore
+            </button>
+          `;
+
+        }
+
+
+        /* -------------------------------------------------
+           DELETE
+        ------------------------------------------------- */
+
+        actions += `
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-action="delete"
+            data-id="${escapeHtml(expense.id)}"
+          >
+            Delete
+          </button>
+        `;
+
+
+        return `
+          <tr>
+
+            <td>
+              ${escapeHtml(
+                formatDate(expense.date)
+              )}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                expense.description
+              )}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                expense.category || "—"
+              )}
+            </td>
+
+            <td>
+              <strong>
+                ${escapeHtml(
+                  money(expense.amount)
+                )}
+              </strong>
+            </td>
+
+            <td>
+              ${statusBadge(status)}
+            </td>
+
+            <td>
+              ${renderReceipt(
+                expense.receipt_url
+              )}
+            </td>
+
+            <td>
+
+              <div
+                class="expense-actions"
+              >
+                ${actions}
+              </div>
+
+            </td>
+
+          </tr>
+        `;
+
+      }
+    ).join("");
 
 }
 
@@ -800,19 +775,16 @@ function renderExpenses() {
    CREATE EXPENSE
 ========================================================= */
 
-async function createExpense(
-  event
-) {
+async function createExpense(event) {
 
   event.preventDefault();
 
+  clearError();
+
+  showStatus("");
+
 
   try {
-
-    clearError();
-
-    showStatus("");
-
 
     if (!groupId) {
 
@@ -834,43 +806,37 @@ async function createExpense(
 
     const description =
       String(
-        descriptionInput?.value ||
-        ""
-      )
-        .trim();
+        descriptionInput?.value || ""
+      ).trim();
 
 
     const category =
       String(
-        categoryInput?.value ||
-        ""
-      )
-        .trim();
+        categoryInput?.value || ""
+      ).trim();
 
 
     const amount =
       Number(
-        amountInput?.value ||
-        0
+        amountInput?.value || 0
       );
 
 
     const date =
-      dateInput?.value ||
-      "";
+      String(
+        dateInput?.value || ""
+      ).trim();
 
 
     const receiptUrl =
       String(
-        receiptInput?.value ||
-        ""
-      )
-        .trim();
+        receiptInput?.value || ""
+      ).trim();
 
 
-    /* -------------------------------------------------------
+    /* -----------------------------------------------------
        VALIDATION
-    ------------------------------------------------------- */
+    ----------------------------------------------------- */
 
     if (!description) {
 
@@ -927,12 +893,12 @@ async function createExpense(
     );
 
 
-    /* -------------------------------------------------------
-       INSERT
+    /* -----------------------------------------------------
+       IMPORTANT
 
-       IMPORTANT:
-       recorded_by is the MEMBER id, not auth.users.id.
-    ------------------------------------------------------- */
+       recorded_by = MEMBER ID
+       NOT AUTH USER ID
+    ----------------------------------------------------- */
 
     const payload = {
 
@@ -965,7 +931,7 @@ async function createExpense(
 
 
     console.log(
-      "CHAMA LIVE: inserting expense",
+      "CHAMA LIVE: expense insert",
       payload
     );
 
@@ -976,9 +942,7 @@ async function createExpense(
     } =
       await supabase
         .from("expenses")
-        .insert(
-          payload
-        )
+        .insert(payload)
         .select(`
           id,
           group_id,
@@ -1030,11 +994,7 @@ async function createExpense(
 
 
     setTimeout(
-      () => {
-
-        showStatus("");
-
-      },
+      () => showStatus(""),
       3000
     );
 
@@ -1043,9 +1003,7 @@ async function createExpense(
 
     showStatus("");
 
-    showPageError(
-      error
-    );
+    showPageError(error);
 
   }
   finally {
@@ -1071,33 +1029,31 @@ async function createExpense(
 
 async function updateStatus(
   id,
-  status
+  newStatus
 ) {
 
-  const allowedStatuses = [
-    "pending",
-    "approved",
-    "rejected"
-  ];
+  const allowed =
+    [
+      "pending",
+      "approved",
+      "rejected"
+    ];
 
 
-  const normalizedStatus =
+  const status =
     String(
-      status ||
-      ""
+      newStatus || ""
     )
       .trim()
       .toLowerCase();
 
 
   if (
-    !allowedStatuses.includes(
-      normalizedStatus
-    )
+    !allowed.includes(status)
   ) {
 
     throw new Error(
-      `Invalid expense status: ${status}`
+      "Invalid expense status."
     );
 
   }
@@ -1112,16 +1068,6 @@ async function updateStatus(
   }
 
 
-  console.log(
-    "CHAMA LIVE: updating expense status",
-    {
-      id,
-      status:
-        normalizedStatus
-    }
-  );
-
-
   const {
     data,
     error
@@ -1130,7 +1076,7 @@ async function updateStatus(
       .from("expenses")
       .update({
         approval_status:
-          normalizedStatus
+          status
       })
       .eq(
         "id",
@@ -1165,7 +1111,7 @@ async function updateStatus(
   if (!data) {
 
     throw new Error(
-      "Expense was not updated. You may not have permission to modify this expense."
+      "Expense was not updated. You may not have permission to modify it."
     );
 
   }
@@ -1179,16 +1125,12 @@ async function updateStatus(
 
 
   showStatus(
-    `Expense marked ${normalizedStatus}.`
+    `Expense marked ${status}.`
   );
 
 
   setTimeout(
-    () => {
-
-      showStatus("");
-
-    },
+    () => showStatus(""),
     3000
   );
 
@@ -1196,12 +1138,10 @@ async function updateStatus(
 
 
 /* =========================================================
-   DELETE EXPENSE
+   DELETE
 ========================================================= */
 
-async function deleteExpense(
-  id
-) {
+async function deleteExpense(id) {
 
   if (!id) {
 
@@ -1223,12 +1163,6 @@ async function deleteExpense(
     return;
 
   }
-
-
-  console.log(
-    "CHAMA LIVE: deleting expense",
-    id
-  );
 
 
   const {
@@ -1267,11 +1201,7 @@ async function deleteExpense(
 
 
   setTimeout(
-    () => {
-
-      showStatus("");
-
-    },
+    () => showStatus(""),
     3000
   );
 
@@ -1284,79 +1214,64 @@ async function deleteExpense(
 
 async function handleExpenseAction(
   action,
-  id,
-  button
+  id
 ) {
 
-  if (!action) {
+  if (
+    action === "approve"
+  ) {
+
+    await updateStatus(
+      id,
+      "approved"
+    );
 
     return;
 
   }
 
 
-  if (!id) {
+  if (
+    action === "reject"
+  ) {
 
-    throw new Error(
-      "Expense ID is missing."
+    await updateStatus(
+      id,
+      "rejected"
     );
+
+    return;
 
   }
 
 
-  /* -------------------------------------------------------
-     IMPORTANT STATUS MAPPING
+  if (
+    action === "pending"
+  ) {
 
-     UI action       DATABASE status
-     --------------------------------
-     approve         approved
-     reject          rejected
-     pending         pending
-  ------------------------------------------------------- */
-
-  const statusMap = {
-
-    approve:
-      "approved",
-
-    reject:
-      "rejected",
-
-    pending:
+    await updateStatus(
+      id,
       "pending"
+    );
 
-  };
+    return;
+
+  }
 
 
   if (
     action === "delete"
   ) {
 
-    await deleteExpense(
-      id
-    );
+    await deleteExpense(id);
 
     return;
 
   }
 
 
-  const newStatus =
-    statusMap[action];
-
-
-  if (!newStatus) {
-
-    throw new Error(
-      `Unknown expense action: ${action}`
-    );
-
-  }
-
-
-  await updateStatus(
-    id,
-    newStatus
+  throw new Error(
+    `Unknown expense action: ${action}`
   );
 
 }
@@ -1394,8 +1309,7 @@ function setupActions() {
 
       const action =
         String(
-          button.dataset.action ||
-          ""
+          button.dataset.action || ""
         )
           .trim()
           .toLowerCase();
@@ -1422,23 +1336,18 @@ function setupActions() {
 
         clearError();
 
-
         button.disabled =
           true;
 
-
         await handleExpenseAction(
           action,
-          id,
-          button
+          id
         );
 
       }
       catch (error) {
 
-        showPageError(
-          error
-        );
+        showPageError(error);
 
       }
       finally {
@@ -1460,32 +1369,16 @@ function setupActions() {
 
 function setupFilters() {
 
-  if (statusFilter) {
-
-    statusFilter.addEventListener(
-      "change",
-      () => {
-
-        renderExpenses();
-
-      }
-    );
-
-  }
+  statusFilter?.addEventListener(
+    "change",
+    renderExpenses
+  );
 
 
-  if (categoryFilter) {
-
-    categoryFilter.addEventListener(
-      "change",
-      () => {
-
-        renderExpenses();
-
-      }
-    );
-
-  }
+  categoryFilter?.addEventListener(
+    "change",
+    renderExpenses
+  );
 
 }
 
@@ -1497,10 +1390,6 @@ function setupFilters() {
 export async function initPage() {
 
   if (initialized) {
-
-    console.warn(
-      "CHAMA LIVE: expenses already initialized"
-    );
 
     return;
 
@@ -1520,9 +1409,9 @@ export async function initPage() {
     );
 
 
-    /* -------------------------------------------------------
-       AUTHENTICATION
-    ------------------------------------------------------- */
+    /* -----------------------------------------------------
+       AUTH
+    ----------------------------------------------------- */
 
     currentUser =
       await requireAuth();
@@ -1537,9 +1426,9 @@ export async function initPage() {
     }
 
 
-    /* -------------------------------------------------------
+    /* -----------------------------------------------------
        MEMBER
-    ------------------------------------------------------- */
+    ----------------------------------------------------- */
 
     currentMember =
       await getMyMember();
@@ -1554,9 +1443,9 @@ export async function initPage() {
     }
 
 
-    /* -------------------------------------------------------
+    /* -----------------------------------------------------
        GROUP
-    ------------------------------------------------------- */
+    ----------------------------------------------------- */
 
     groupId =
       currentMember.group_id;
@@ -1572,7 +1461,7 @@ export async function initPage() {
 
 
     console.log(
-      "CHAMA LIVE: expenses context",
+      "CHAMA LIVE: expense context",
       {
         userId:
           currentUser.id,
@@ -1586,31 +1475,27 @@ export async function initPage() {
     );
 
 
-    /* -------------------------------------------------------
+    /* -----------------------------------------------------
        EVENTS
-    ------------------------------------------------------- */
+    ----------------------------------------------------- */
 
     setupActions();
 
     setupFilters();
 
 
-    if (form) {
-
-      form.addEventListener(
-        "submit",
-        createExpense
-      );
-
-    }
+    form?.addEventListener(
+      "submit",
+      createExpense
+    );
 
 
     setDefaultDate();
 
 
-    /* -------------------------------------------------------
+    /* -----------------------------------------------------
        DATA
-    ------------------------------------------------------- */
+    ----------------------------------------------------- */
 
     await loadExpenses();
 
@@ -1625,11 +1510,7 @@ export async function initPage() {
 
 
     setTimeout(
-      () => {
-
-        showStatus("");
-
-      },
+      () => showStatus(""),
       2000
     );
 
@@ -1646,9 +1527,7 @@ export async function initPage() {
 
     showStatus("");
 
-    showPageError(
-      error
-    );
+    showPageError(error);
 
   }
 
@@ -1674,11 +1553,7 @@ if (
 
   document.addEventListener(
     "DOMContentLoaded",
-    () => {
-
-      initPage();
-
-    },
+    () => initPage(),
     {
       once: true
     }
