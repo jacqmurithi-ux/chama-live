@@ -2,24 +2,25 @@
    CHAMA LIVE — MONTHLY CLOSING
    FULL SCHEMA-ALIGNED VERSION
 
-   DATABASE
+   PURPOSE
    ---------------------------------------------------------
-   monthly_closings
-   • id
-   • group_id
-   • closing_month
-   • closed_by
-   • closed_at
-   • total_expected
-   • total_collected
-   • total_expenses
-   • closing_balance
-   • notes
+   • Select a financial month
+   • Calculate expected contributions
+   • Calculate collected contributions
+   • Calculate approved expenses
+   • Calculate closing balance
+   • Show previous closing
+   • Close the selected month
+   • Prevent duplicate closing
+   • Display previous closing records
 
    IMPORTANT
    ---------------------------------------------------------
-   closed_by = currentMember.id
-   NOT auth.users.id
+   monthly_closings.closed_by -> auth.users.id
+
+   Unlike:
+   contributions.recorded_by -> members.id
+   expenses.recorded_by       -> members.id
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -66,19 +67,16 @@ const collectedEl =
 const expensesEl =
   document.getElementById("totalExpenses");
 
-const openingEl =
-  document.getElementById("openingBalance");
-
-const closingEl =
+const balanceEl =
   document.getElementById("closingBalance");
 
-const collectionRateEl =
-  document.getElementById("collectionRate");
+const previousBalanceEl =
+  document.getElementById("previousBalance");
 
 const closingStatusEl =
   document.getElementById("closingStatus");
 
-const historyRows =
+const closingRows =
   document.getElementById("closingRows");
 
 
@@ -86,15 +84,23 @@ const historyRows =
    STATE
 ========================================================= */
 
-let currentUser = null;
+let currentUser =
+  null;
 
-let currentMember = null;
+let currentMember =
+  null;
 
-let groupId = null;
+let groupId =
+  null;
 
-let initialized = false;
+let currentClosing =
+  null;
 
-let closingData = null;
+let calculatedData =
+  null;
+
+let initialized =
+  false;
 
 
 /* =========================================================
@@ -118,166 +124,7 @@ function money(value) {
 }
 
 
-/* =========================================================
-   DATE HELPERS
-========================================================= */
-
-function getCurrentMonth() {
-
-  const date =
-    new Date();
-
-  return [
-    date.getFullYear(),
-
-    String(
-      date.getMonth() + 1
-    ).padStart(
-      2,
-      "0"
-    ),
-
-    "01"
-
-  ].join("-");
-
-}
-
-
-function getMonthRange(
-  month
-) {
-
-  const firstDay =
-    new Date(
-      `${month}T00:00:00`
-    );
-
-
-  const nextMonth =
-    new Date(
-      firstDay
-    );
-
-
-  nextMonth.setMonth(
-    nextMonth.getMonth() + 1
-  );
-
-
-  const nextMonthString =
-    [
-      nextMonth.getFullYear(),
-
-      String(
-        nextMonth.getMonth() + 1
-      ).padStart(
-        2,
-        "0"
-      ),
-
-      "01"
-
-    ].join("-");
-
-
-  return {
-    start:
-      month,
-
-    end:
-      nextMonthString
-  };
-
-}
-
-
-function formatMonth(
-  value
-) {
-
-  if (!value) {
-
-    return "—";
-
-  }
-
-
-  const date =
-    new Date(
-      `${value}T00:00:00`
-    );
-
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-
-    return value;
-
-  }
-
-
-  return date.toLocaleDateString(
-    "en-KE",
-    {
-      year: "numeric",
-      month: "long"
-    }
-  );
-
-}
-
-
-function formatDateTime(
-  value
-) {
-
-  if (!value) {
-
-    return "—";
-
-  }
-
-
-  const date =
-    new Date(value);
-
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-
-    return value;
-
-  }
-
-
-  return date.toLocaleString(
-    "en-KE",
-    {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit"
-    }
-  );
-
-}
-
-
-/* =========================================================
-   HTML ESCAPE
-========================================================= */
-
-function escapeHtml(
-  value
-) {
+function escapeHtml(value) {
 
   return String(
     value ?? ""
@@ -306,13 +153,7 @@ function escapeHtml(
 }
 
 
-/* =========================================================
-   STATUS
-========================================================= */
-
-function showStatus(
-  message
-) {
+function showStatus(message) {
 
   if (!statusEl) {
 
@@ -330,9 +171,7 @@ function showStatus(
 }
 
 
-function showError(
-  error
-) {
+function showError(error) {
 
   console.error(
     "CHAMA LIVE Monthly Closing:",
@@ -340,121 +179,187 @@ function showError(
   );
 
 
-  if (errorEl) {
+  if (!errorEl) {
 
-    errorEl.textContent =
-      error?.message ||
-      String(error) ||
-      "Unable to process monthly closing.";
-
-    errorEl.hidden =
-      false;
+    return;
 
   }
+
+
+  errorEl.textContent =
+    error?.message ||
+    String(error) ||
+    "Unable to process monthly closing.";
+
+  errorEl.hidden =
+    false;
 
 }
 
 
 function clearError() {
 
-  if (errorEl) {
+  if (!errorEl) {
 
-    errorEl.textContent =
-      "";
-
-    errorEl.hidden =
-      true;
+    return;
 
   }
+
+
+  errorEl.textContent =
+    "";
+
+  errorEl.hidden =
+    true;
 
 }
 
 
-/* =========================================================
-   GET GROUP
-========================================================= */
+function getCurrentMonth() {
 
-async function loadGroup() {
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("groups")
-      .select(`
-        id,
-        name,
-        monthly_contribution,
-        opening_balance
-      `)
-      .eq(
-        "id",
-        groupId
-      )
-      .single();
+  const date =
+    new Date();
 
 
-  if (error) {
+  return [
+    date.getFullYear(),
 
-    throw error;
+    String(
+      date.getMonth() + 1
+    ).padStart(
+      2,
+      "0"
+    )
 
-  }
-
-
-  return data;
+  ].join("-");
 
 }
 
 
-/* =========================================================
-   ACTIVE MEMBERS
-========================================================= */
+function formatMonth(value) {
 
-async function getActiveMemberCount() {
+  if (!value) {
 
-  const {
-    count,
-    error
-  } =
-    await supabase
-      .from("members")
-      .select(
-        "id",
-        {
-          count: "exact",
-          head: true
-        }
-      )
-      .eq(
-        "group_id",
-        groupId
-      )
-      .eq(
-        "status",
-        "active"
-      );
-
-
-  if (error) {
-
-    throw error;
+    return "—";
 
   }
 
 
-  return Number(
-    count || 0
+  const date =
+    new Date(
+      `${value}-01T00:00:00`
+    );
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+
+    return value;
+
+  }
+
+
+  return date.toLocaleDateString(
+    "en-KE",
+    {
+      year: "numeric",
+      month: "long"
+    }
+  );
+
+}
+
+
+function formatDate(value) {
+
+  if (!value) {
+
+    return "—";
+
+  }
+
+
+  const date =
+    new Date(value);
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+
+    return String(value);
+
+  }
+
+
+  return date.toLocaleDateString(
+    "en-KE",
+    {
+      year: "numeric",
+      month: "short",
+      day: "numeric"
+    }
   );
 
 }
 
 
 /* =========================================================
-   PREVIOUS CLOSING
+   MONTH RANGE
 ========================================================= */
 
-async function getPreviousClosing(
+function getMonthRange(
+  month
+) {
+
+  const start =
+    `${month}-01`;
+
+  const date =
+    new Date(
+      `${month}-01T00:00:00`
+    );
+
+
+  date.setMonth(
+    date.getMonth() + 1
+  );
+
+
+  const end =
+    [
+      date.getFullYear(),
+
+      String(
+        date.getMonth() + 1
+      ).padStart(
+        2,
+        "0"
+      ),
+
+      "01"
+
+    ].join("-");
+
+
+  return {
+    start,
+    end
+  };
+
+}
+
+
+/* =========================================================
+   LOAD EXISTING CLOSING
+========================================================= */
+
+async function loadExistingClosing(
   month
 ) {
 
@@ -466,9 +371,450 @@ async function getPreviousClosing(
       .from("monthly_closings")
       .select(`
         id,
+        group_id,
         closing_month,
+        closed_by,
+        closed_at,
+        total_expected,
+        total_collected,
+        total_expenses,
         closing_balance,
-        closed_at
+        notes
+      `)
+      .eq(
+        "group_id",
+        groupId
+      )
+      .eq(
+        "closing_month",
+        month
+      )
+      .maybeSingle();
+
+
+  if (error) {
+
+    throw error;
+
+  }
+
+
+  currentClosing =
+    data || null;
+
+
+  renderClosingStatus();
+
+}
+
+
+/* =========================================================
+   LOAD CLOSING HISTORY
+========================================================= */
+
+async function loadClosingHistory() {
+
+  if (!closingRows) {
+
+    return;
+
+  }
+
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("monthly_closings")
+      .select(`
+        id,
+        closing_month,
+        closed_at,
+        total_expected,
+        total_collected,
+        total_expenses,
+        closing_balance,
+        notes
+      `)
+      .eq(
+        "group_id",
+        groupId
+      )
+      .order(
+        "closing_month",
+        {
+          ascending: false
+        }
+      );
+
+
+  if (error) {
+
+    throw error;
+
+  }
+
+
+  if (!data?.length) {
+
+    closingRows.innerHTML = `
+      <tr>
+        <td colspan="7">
+          No monthly closings recorded yet.
+        </td>
+      </tr>
+    `;
+
+    return;
+
+  }
+
+
+  closingRows.innerHTML =
+    data
+      .map(
+        closing => {
+
+          return `
+            <tr>
+
+              <td>
+                ${escapeHtml(
+                  formatMonth(
+                    closing.closing_month
+                  )
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  money(
+                    closing.total_expected
+                  )
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  money(
+                    closing.total_collected
+                  )
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  money(
+                    closing.total_expenses
+                  )
+                )}
+              </td>
+
+              <td>
+                <strong>
+                  ${escapeHtml(
+                    money(
+                      closing.closing_balance
+                    )
+                  )}
+                </strong>
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  formatDate(
+                    closing.closed_at
+                  )
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  closing.notes ||
+                  "—"
+                )}
+              </td>
+
+            </tr>
+          `;
+
+        }
+      )
+      .join("");
+
+}
+
+
+/* =========================================================
+   CALCULATE EXPECTED
+========================================================= */
+
+async function calculateExpected(
+  month
+) {
+
+  /*
+     Groups table contains the default monthly
+     contribution amount.
+
+     Members table determines the number of
+     active members expected to contribute.
+  */
+
+  const {
+    data: group,
+    error: groupError
+  } =
+    await supabase
+      .from("groups")
+      .select(`
+        id,
+        monthly_contribution
+      `)
+      .eq(
+        "id",
+        groupId
+      )
+      .single();
+
+
+  if (groupError) {
+
+    throw groupError;
+
+  }
+
+
+  const {
+    data: members,
+    error: membersError
+  } =
+    await supabase
+      .from("members")
+      .select(`
+        id,
+        status
+      `)
+      .eq(
+        "group_id",
+        groupId
+      );
+
+
+  if (membersError) {
+
+    throw membersError;
+
+  }
+
+
+  const activeMembers =
+    (members || [])
+      .filter(
+        member =>
+          String(
+            member.status ||
+            "active"
+          )
+            .toLowerCase() ===
+          "active"
+      );
+
+
+  const monthlyContribution =
+    Number(
+      group?.monthly_contribution ||
+      0
+    );
+
+
+  const expected =
+    activeMembers.length *
+    monthlyContribution;
+
+
+  return {
+    expected,
+    activeMembers:
+      activeMembers.length,
+    monthlyContribution
+  };
+
+}
+
+
+/* =========================================================
+   CALCULATE COLLECTED
+========================================================= */
+
+async function calculateCollected(
+  month
+) {
+
+  const {
+    start,
+    end
+  } =
+    getMonthRange(
+      month
+    );
+
+
+  /*
+     Only contributions recorded during the
+     selected calendar month are counted here.
+
+     This is the cash movement recorded in
+     the contribution ledger for that month.
+  */
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("contributions")
+      .select(`
+        id,
+        amount,
+        contribution_type,
+        contribution_date
+      `)
+      .eq(
+        "group_id",
+        groupId
+      )
+      .gte(
+        "contribution_date",
+        start
+      )
+      .lt(
+        "contribution_date",
+        end
+      );
+
+
+  if (error) {
+
+    throw error;
+
+  }
+
+
+  const collected =
+    (data || [])
+      .reduce(
+        (
+          total,
+          contribution
+        ) =>
+          total +
+          Number(
+            contribution.amount ||
+            0
+          ),
+        0
+      );
+
+
+  return collected;
+
+}
+
+
+/* =========================================================
+   CALCULATE APPROVED EXPENSES
+========================================================= */
+
+async function calculateExpenses(
+  month
+) {
+
+  const {
+    start,
+    end
+  } =
+    getMonthRange(
+      month
+    );
+
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("expenses")
+      .select(`
+        id,
+        amount,
+        approval_status,
+        date
+      `)
+      .eq(
+        "group_id",
+        groupId
+      )
+      .eq(
+        "approval_status",
+        "approved"
+      )
+      .gte(
+        "date",
+        start
+      )
+      .lt(
+        "date",
+        end
+      );
+
+
+  if (error) {
+
+    throw error;
+
+  }
+
+
+  const total =
+    (data || [])
+      .reduce(
+        (
+          sum,
+          expense
+        ) =>
+          sum +
+          Number(
+            expense.amount ||
+            0
+          ),
+        0
+      );
+
+
+  return total;
+
+}
+
+
+/* =========================================================
+   PREVIOUS CLOSING BALANCE
+========================================================= */
+
+async function loadPreviousBalance(
+  month
+) {
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("monthly_closings")
+      .select(`
+        closing_month,
+        closing_balance
       `)
       .eq(
         "group_id",
@@ -495,144 +841,8 @@ async function getPreviousClosing(
   }
 
 
-  return data || null;
-
-}
-
-
-/* =========================================================
-   CHECK CURRENT CLOSING
-========================================================= */
-
-async function getCurrentClosing(
-  month
-) {
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("monthly_closings")
-      .select(`
-        id,
-        group_id,
-        closing_month,
-        closed_by,
-        closed_at,
-        total_expected,
-        total_collected,
-        total_expenses,
-        closing_balance,
-        notes
-      `)
-      .eq(
-        "group_id",
-        groupId
-      )
-      .eq(
-        "closing_month",
-        month
-      )
-      .maybeSingle();
-
-
-  if (error) {
-
-    throw error;
-
-  }
-
-
-  return data || null;
-
-}
-
-
-/* =========================================================
-   CALCULATE EXPECTED
-========================================================= */
-
-async function calculateExpected(
-  group
-) {
-
-  const memberCount =
-    await getActiveMemberCount();
-
-
-  const monthlyContribution =
-    Number(
-      group?.monthly_contribution ||
-      0
-    );
-
-
-  return (
-    memberCount *
-    monthlyContribution
-  );
-
-}
-
-
-/* =========================================================
-   CALCULATE COLLECTIONS
-========================================================= */
-
-async function calculateCollections(
-  range
-) {
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("contributions")
-      .select(`
-        amount,
-        contribution_date,
-        contribution_type
-      `)
-      .eq(
-        "group_id",
-        groupId
-      )
-      .gte(
-        "contribution_date",
-        range.start
-      )
-      .lt(
-        "contribution_date",
-        range.end
-      );
-
-
-  if (error) {
-
-    throw error;
-
-  }
-
-
-  return (
-    data || []
-  ).reduce(
-    (
-      total,
-      contribution
-    ) => {
-
-      return (
-        total +
-        Number(
-          contribution.amount ||
-          0
-        )
-      );
-
-    },
+  return Number(
+    data?.closing_balance ||
     0
   );
 
@@ -640,227 +850,12 @@ async function calculateCollections(
 
 
 /* =========================================================
-   CALCULATE APPROVED EXPENSES
+   RENDER CALCULATION
 ========================================================= */
 
-async function calculateExpenses(
-  range
-) {
+function renderCalculation() {
 
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("expenses")
-      .select(`
-        amount,
-        date,
-        approval_status
-      `)
-      .eq(
-        "group_id",
-        groupId
-      )
-      .gte(
-        "date",
-        range.start
-      )
-      .lt(
-        "date",
-        range.end
-      )
-      .eq(
-        "approval_status",
-        "approved"
-      );
-
-
-  if (error) {
-
-    throw error;
-
-  }
-
-
-  return (
-    data || []
-  ).reduce(
-    (
-      total,
-      expense
-    ) => {
-
-      return (
-        total +
-        Number(
-          expense.amount ||
-          0
-        )
-      );
-
-    },
-    0
-  );
-
-}
-
-
-/* =========================================================
-   CALCULATE MONTH
-========================================================= */
-
-async function calculateClosing() {
-
-  clearError();
-
-
-  if (!groupId) {
-
-    throw new Error(
-      "No group is associated with this account."
-    );
-
-  }
-
-
-  const month =
-    monthInput?.value;
-
-
-  if (!month) {
-
-    throw new Error(
-      "Please select a closing month."
-    );
-
-  }
-
-
-  showStatus(
-    "Calculating monthly closing..."
-  );
-
-
-  const group =
-    await loadGroup();
-
-
-  const range =
-    getMonthRange(
-      month
-    );
-
-
-  const [
-    totalExpected,
-    totalCollected,
-    totalExpenses,
-    previousClosing,
-    existingClosing
-  ] =
-    await Promise.all([
-      calculateExpected(
-        group
-      ),
-
-      calculateCollections(
-        range
-      ),
-
-      calculateExpenses(
-        range
-      ),
-
-      getPreviousClosing(
-        month
-      ),
-
-      getCurrentClosing(
-        month
-      )
-    ]);
-
-
-  const openingBalance =
-    previousClosing
-      ? Number(
-          previousClosing.closing_balance ||
-          0
-        )
-      : Number(
-          group?.opening_balance ||
-          0
-        );
-
-
-  const closingBalance =
-    openingBalance +
-    totalCollected -
-    totalExpenses;
-
-
-  const collectionRate =
-    totalExpected > 0
-      ? (
-          totalCollected /
-          totalExpected
-        ) *
-        100
-      : 0;
-
-
-  closingData = {
-
-    month,
-
-    totalExpected,
-
-    totalCollected,
-
-    totalExpenses,
-
-    openingBalance,
-
-    closingBalance,
-
-    collectionRate,
-
-    existingClosing,
-
-    previousClosing
-
-  };
-
-
-  renderClosing();
-
-
-  if (existingClosing) {
-
-    showStatus(
-      "This month has already been closed."
-    );
-
-  }
-  else {
-
-    showStatus(
-      "Monthly closing calculated."
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   RENDER
-========================================================= */
-
-function renderClosing() {
-
-  if (!closingData) {
+  if (!calculatedData) {
 
     return;
 
@@ -871,7 +866,7 @@ function renderClosing() {
 
     expectedEl.textContent =
       money(
-        closingData.totalExpected
+        calculatedData.totalExpected
       );
 
   }
@@ -881,7 +876,7 @@ function renderClosing() {
 
     collectedEl.textContent =
       money(
-        closingData.totalCollected
+        calculatedData.totalCollected
       );
 
   }
@@ -891,68 +886,27 @@ function renderClosing() {
 
     expensesEl.textContent =
       money(
-        closingData.totalExpenses
+        calculatedData.totalExpenses
       );
 
   }
 
 
-  if (openingEl) {
+  if (balanceEl) {
 
-    openingEl.textContent =
+    balanceEl.textContent =
       money(
-        closingData.openingBalance
+        calculatedData.closingBalance
       );
 
   }
 
 
-  if (closingEl) {
+  if (previousBalanceEl) {
 
-    closingEl.textContent =
+    previousBalanceEl.textContent =
       money(
-        closingData.closingBalance
-      );
-
-  }
-
-
-  if (collectionRateEl) {
-
-    collectionRateEl.textContent =
-      `${Math.min(
-        closingData.collectionRate,
-        100
-      ).toFixed(1)}%`;
-
-  }
-
-
-  if (closingStatusEl) {
-
-    if (
-      closingData.existingClosing
-    ) {
-
-      closingStatusEl.textContent =
-        "CLOSED";
-
-    }
-    else {
-
-      closingStatusEl.textContent =
-        "OPEN";
-
-    }
-
-  }
-
-
-  if (closeButton) {
-
-    closeButton.disabled =
-      Boolean(
-        closingData.existingClosing
+        calculatedData.previousBalance
       );
 
   }
@@ -961,285 +915,473 @@ function renderClosing() {
 
 
 /* =========================================================
-   SAVE CLOSING
+   RENDER STATUS
+========================================================= */
+
+function renderClosingStatus() {
+
+  if (!closingStatusEl) {
+
+    return;
+
+  }
+
+
+  if (currentClosing) {
+
+    closingStatusEl.textContent =
+      `Closed on ${formatDate(
+        currentClosing.closed_at
+      )}`;
+
+    closingStatusEl.className =
+      "metric";
+
+    if (closeButton) {
+
+      closeButton.disabled =
+        true;
+
+      closeButton.textContent =
+        "Month Already Closed";
+
+    }
+
+    if (notesInput) {
+
+      notesInput.value =
+        currentClosing.notes ||
+        "";
+
+    }
+
+    if (expectedEl) {
+
+      expectedEl.textContent =
+        money(
+          currentClosing.total_expected
+        );
+
+    }
+
+    if (collectedEl) {
+
+      collectedEl.textContent =
+        money(
+          currentClosing.total_collected
+        );
+
+    }
+
+    if (expensesEl) {
+
+      expensesEl.textContent =
+        money(
+          currentClosing.total_expenses
+        );
+
+    }
+
+    if (balanceEl) {
+
+      balanceEl.textContent =
+        money(
+          currentClosing.closing_balance
+        );
+
+    }
+
+  }
+  else {
+
+    closingStatusEl.textContent =
+      "Open";
+
+    closingStatusEl.className =
+      "muted";
+
+    if (closeButton) {
+
+      closeButton.disabled =
+        false;
+
+      closeButton.textContent =
+        "Close Month";
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   CALCULATE MONTH
+========================================================= */
+
+async function calculateMonth() {
+
+  try {
+
+    clearError();
+
+    showStatus(
+      "Calculating monthly closing..."
+    );
+
+
+    const month =
+      monthInput?.value;
+
+
+    if (!month) {
+
+      throw new Error(
+        "Please select a month."
+      );
+
+    }
+
+
+    await loadExistingClosing(
+      month
+    );
+
+
+    const expected =
+      await calculateExpected(
+        month
+      );
+
+
+    const collected =
+      await calculateCollected(
+        month
+      );
+
+
+    const totalExpenses =
+      await calculateExpenses(
+        month
+      );
+
+
+    const previousBalance =
+      await loadPreviousBalance(
+        month
+      );
+
+
+    /*
+       Closing balance represents:
+
+       Previous closing balance
+       + contributions collected
+       - approved expenses
+    */
+
+    const closingBalance =
+      previousBalance +
+      collected -
+      totalExpenses;
+
+
+    calculatedData = {
+
+      totalExpected:
+        expected.expected,
+
+      totalCollected:
+        collected,
+
+      totalExpenses:
+        totalExpenses,
+
+      previousBalance:
+        previousBalance,
+
+      closingBalance:
+        closingBalance,
+
+      activeMembers:
+        expected.activeMembers,
+
+      monthlyContribution:
+        expected.monthlyContribution
+
+    };
+
+
+    renderCalculation();
+
+    renderClosingStatus();
+
+
+    showStatus(
+      `Calculation ready for ${formatMonth(
+        month
+      )}.`
+    );
+
+  }
+  catch (error) {
+
+    showStatus("");
+
+    showError(
+      error
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   CLOSE MONTH
 ========================================================= */
 
 async function closeMonth() {
 
-  clearError();
+  try {
+
+    clearError();
 
 
-  if (!closingData) {
+    const month =
+      monthInput?.value;
 
-    throw new Error(
-      "Calculate the monthly closing first."
+
+    if (!month) {
+
+      throw new Error(
+        "Please select a month."
+      );
+
+    }
+
+
+    if (currentClosing) {
+
+      throw new Error(
+        "This month has already been closed."
+      );
+
+    }
+
+
+    if (!calculatedData) {
+
+      await calculateMonth();
+
+    }
+
+
+    if (!calculatedData) {
+
+      throw new Error(
+        "Unable to calculate the month."
+      );
+
+    }
+
+
+    const confirmed =
+      window.confirm(
+        `Close ${formatMonth(
+          month
+        )}?\n\nOnce closed, this record will be saved as the official monthly closing.`
+      );
+
+
+    if (!confirmed) {
+
+      return;
+
+    }
+
+
+    if (closeButton) {
+
+      closeButton.disabled =
+        true;
+
+      closeButton.textContent =
+        "Closing...";
+
+    }
+
+
+    showStatus(
+      `Closing ${formatMonth(
+        month
+      )}...`
+    );
+
+
+    const payload = {
+
+      group_id:
+        groupId,
+
+      closing_month:
+        month,
+
+      closed_by:
+        currentUser.id,
+
+      closed_at:
+        new Date().toISOString(),
+
+      total_expected:
+        calculatedData.totalExpected,
+
+      total_collected:
+        calculatedData.totalCollected,
+
+      total_expenses:
+        calculatedData.totalExpenses,
+
+      closing_balance:
+        calculatedData.closingBalance,
+
+      notes:
+        notesInput?.value?.trim() ||
+        null
+
+    };
+
+
+    const {
+      data,
+      error
+    } =
+      await supabase
+        .from("monthly_closings")
+        .insert(
+          payload
+        )
+        .select(`
+          id,
+          group_id,
+          closing_month,
+          closed_by,
+          closed_at,
+          total_expected,
+          total_collected,
+          total_expenses,
+          closing_balance,
+          notes
+        `)
+        .single();
+
+
+    if (error) {
+
+      throw error;
+
+    }
+
+
+    currentClosing =
+      data;
+
+
+    renderClosingStatus();
+
+    await loadClosingHistory();
+
+
+    showStatus(
+      `${formatMonth(
+        month
+      )} closed successfully.`
+    );
+
+
+    calculatedData =
+      null;
+
+  }
+  catch (error) {
+
+    showStatus("");
+
+    showError(
+      error
     );
 
   }
+  finally {
 
+    if (
+      closeButton &&
+      !currentClosing
+    ) {
 
-  if (
-    closingData.existingClosing
-  ) {
+      closeButton.disabled =
+        false;
 
-    throw new Error(
-      "This month has already been closed."
-    );
+      closeButton.textContent =
+        "Close Month";
 
-  }
-
-
-  if (!currentMember?.id) {
-
-    throw new Error(
-      "Your member record could not be found."
-    );
+    }
 
   }
-
-
-  const confirmed =
-    window.confirm(
-      `Close ${formatMonth(
-        closingData.month
-      )}? This will record the month's financial closing.`
-    );
-
-
-  if (!confirmed) {
-
-    return;
-
-  }
-
-
-  if (closeButton) {
-
-    closeButton.disabled =
-      true;
-
-    closeButton.textContent =
-      "Closing...";
-
-  }
-
-
-  showStatus(
-    "Saving monthly closing..."
-  );
-
-
-  const payload = {
-
-    group_id:
-      groupId,
-
-    closing_month:
-      closingData.month,
-
-    closed_by:
-      currentMember.id,
-
-    closed_at:
-      new Date().toISOString(),
-
-    total_expected:
-      closingData.totalExpected,
-
-    total_collected:
-      closingData.totalCollected,
-
-    total_expenses:
-      closingData.totalExpenses,
-
-    closing_balance:
-      closingData.closingBalance,
-
-    notes:
-      notesInput?.value?.trim() ||
-      null
-
-  };
-
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("monthly_closings")
-      .insert(
-        payload
-      )
-      .select(`
-        id,
-        group_id,
-        closing_month,
-        closed_by,
-        closed_at,
-        total_expected,
-        total_collected,
-        total_expenses,
-        closing_balance,
-        notes
-      `)
-      .single();
-
-
-  if (error) {
-
-    throw error;
-
-  }
-
-
-  closingData.existingClosing =
-    data;
-
-
-  renderClosing();
-
-  await loadHistory();
-
-
-  showStatus(
-    `${formatMonth(
-      closingData.month
-    )} closed successfully.`
-  );
 
 }
 
 
 /* =========================================================
-   LOAD HISTORY
+   MONTH CHANGE
 ========================================================= */
 
-async function loadHistory() {
+async function handleMonthChange() {
 
-  if (!historyRows) {
+  calculatedData =
+    null;
 
-    return;
+  currentClosing =
+    null;
+
+
+  if (expectedEl) {
+
+    expectedEl.textContent =
+      money(0);
+
+  }
+
+  if (collectedEl) {
+
+    collectedEl.textContent =
+      money(0);
+
+  }
+
+  if (expensesEl) {
+
+    expensesEl.textContent =
+      money(0);
+
+  }
+
+  if (balanceEl) {
+
+    balanceEl.textContent =
+      money(0);
+
+  }
+
+  if (previousBalanceEl) {
+
+    previousBalanceEl.textContent =
+      money(0);
 
   }
 
 
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("monthly_closings")
-      .select(`
-        id,
-        closing_month,
-        closed_at,
-        total_expected,
-        total_collected,
-        total_expenses,
-        closing_balance,
-        notes
-      `)
-      .eq(
-        "group_id",
-        groupId
-      )
-      .order(
-        "closing_month",
-        {
-          ascending: false
-        }
-      );
-
-
-  if (error) {
-
-    throw error;
-
-  }
-
-
-  const rows =
-    data || [];
-
-
-  if (!rows.length) {
-
-    historyRows.innerHTML = `
-      <tr>
-        <td colspan="6">
-          No monthly closings recorded yet.
-        </td>
-      </tr>
-    `;
-
-    return;
-
-  }
-
-
-  historyRows.innerHTML =
-    rows.map(
-      row => {
-
-        return `
-          <tr>
-
-            <td>
-              ${escapeHtml(
-                formatMonth(
-                  row.closing_month
-                )
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                money(
-                  row.total_expected
-                )
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                money(
-                  row.total_collected
-                )
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                money(
-                  row.total_expenses
-                )
-              )}
-            </td>
-
-            <td>
-              <strong>
-                ${escapeHtml(
-                  money(
-                    row.closing_balance
-                  )
-                )}
-              </strong>
-            </td>
-
-            <td>
-              ${escapeHtml(
-                formatDateTime(
-                  row.closed_at
-                )
-              )}
-            </td>
-
-          </tr>
-        `;
-
-      }
-    ).join("");
+  await calculateMonth();
 
 }
 
@@ -1250,24 +1392,21 @@ async function loadHistory() {
 
 function setupEvents() {
 
+  monthInput?.addEventListener(
+    "change",
+    () => {
+
+      handleMonthChange();
+
+    }
+  );
+
+
   calculateButton?.addEventListener(
     "click",
-    async () => {
+    () => {
 
-      try {
-
-        await calculateClosing();
-
-      }
-      catch (error) {
-
-        showError(
-          error
-        );
-
-        showStatus("");
-
-      }
+      calculateMonth();
 
     }
   );
@@ -1275,62 +1414,9 @@ function setupEvents() {
 
   closeButton?.addEventListener(
     "click",
-    async () => {
-
-      try {
-
-        await closeMonth();
-
-      }
-      catch (error) {
-
-        showError(
-          error
-        );
-
-        showStatus("");
-
-      }
-      finally {
-
-        if (closeButton) {
-
-          closeButton.disabled =
-            Boolean(
-              closingData?.existingClosing
-            );
-
-          closeButton.textContent =
-            "Close Month";
-
-        }
-
-      }
-
-    }
-  );
-
-
-  monthInput?.addEventListener(
-    "change",
     () => {
 
-      closingData =
-        null;
-
-      if (closeButton) {
-
-        closeButton.disabled =
-          true;
-
-      }
-
-      if (closingStatusEl) {
-
-        closingStatusEl.textContent =
-          "NOT CALCULATED";
-
-      }
+      closeMonth();
 
     }
   );
@@ -1413,23 +1499,29 @@ export async function initPage() {
 
     setupEvents();
 
-    await loadHistory();
 
-    await calculateClosing();
+    await calculateMonth();
+
+    await loadClosingHistory();
+
+
+    showStatus(
+      "Monthly closing ready."
+    );
+
+
+    setTimeout(
+      () => {
+
+        showStatus("");
+
+      },
+      2500
+    );
 
 
     console.log(
-      "CHAMA LIVE: monthly closing initialized",
-      {
-        userId:
-          currentUser.id,
-
-        memberId:
-          currentMember.id,
-
-        groupId:
-          groupId
-      }
+      "CHAMA LIVE: monthly closing initialized"
     );
 
   }
@@ -1448,10 +1540,6 @@ export async function initPage() {
 
 }
 
-
-/* =========================================================
-   PUBLIC ALIAS
-========================================================= */
 
 export const initMonthlyClosing =
   initPage;
