@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+
   <meta charset="utf-8">
 
   <meta
@@ -9,12 +10,15 @@
     content="width=device-width, initial-scale=1"
   >
 
-  <title>Meetings — CHAMA LIVE</title>
+  <title>
+    Meetings — CHAMA LIVE
+  </title>
 
   <link
     rel="stylesheet"
     href="css/app.css"
   >
+
 </head>
 
 
@@ -76,9 +80,11 @@
       <a href="reports.html">
         Reports
       </a>
-<a href="monthly-closing.html">
-  Monthly Closing
-</a>
+
+      <a href="monthly-closing.html">
+        Monthly Closing
+      </a>
+
       <a href="group-management.html">
         Group Management
       </a>
@@ -114,19 +120,22 @@
 
 
 
-    <!-- STATUS -->
+    <!-- ==================================================
+         STATUS
+    =================================================== -->
 
     <div
       id="status"
       class="card"
       style="margin-bottom:20px;"
-    >
-      Loading meetings...
-    </div>
+      hidden
+    ></div>
 
 
 
-    <!-- ERROR -->
+    <!-- ==================================================
+         ERROR
+    =================================================== -->
 
     <div
       id="error"
@@ -202,7 +211,7 @@
 
 
     <!-- ==================================================
-         CREATE MEETING
+         SCHEDULE MEETING
     =================================================== -->
 
     <section class="card">
@@ -210,6 +219,8 @@
       <h2>
         Schedule Meeting
       </h2>
+
+      <br>
 
 
       <form id="meetingForm">
@@ -223,6 +234,7 @@
 
           <input
             id="title"
+            name="title"
             type="text"
             required
             placeholder="e.g. Monthly Chama Meeting"
@@ -240,6 +252,7 @@
 
           <input
             id="meetingDate"
+            name="date"
             type="date"
             required
           >
@@ -256,6 +269,7 @@
 
           <input
             id="venue"
+            name="venue"
             type="text"
             placeholder="e.g. Timau"
           >
@@ -272,21 +286,42 @@
 
           <textarea
             id="agenda"
-            rows="4"
-            placeholder="Enter meeting agenda..."
+            name="agenda"
+            rows="5"
+            placeholder="Enter one agenda item per line..."
           ></textarea>
 
         </div>
 
 
 
-        <button
-          class="btn"
-          id="saveMeeting"
-          type="submit"
+        <div
+          style="
+            display:flex;
+            gap:10px;
+            flex-wrap:wrap;
+          "
         >
-          Schedule Meeting
-        </button>
+
+          <button
+            class="btn btn-primary"
+            id="saveMeeting"
+            type="submit"
+          >
+            Schedule Meeting
+          </button>
+
+
+          <button
+            class="btn btn-secondary"
+            id="cancelEdit"
+            type="button"
+            hidden
+          >
+            Cancel Edit
+          </button>
+
+        </div>
 
 
       </form>
@@ -300,7 +335,7 @@
 
 
     <!-- ==================================================
-         MEETING LEDGER
+         MEETING RECORDS
     =================================================== -->
 
     <section class="card">
@@ -308,6 +343,8 @@
       <h2>
         Meeting Records
       </h2>
+
+      <br>
 
 
       <div
@@ -319,7 +356,9 @@
         "
       >
 
-        <select id="statusFilter">
+        <select
+          id="statusFilter"
+        >
 
           <option value="all">
             All Meetings
@@ -401,7 +440,7 @@
 
 
     <!-- ==================================================
-         MEETING DETAILS
+         DETAILS
     =================================================== -->
 
     <section
@@ -414,18 +453,23 @@
         Meeting Details
       </h2>
 
+      <br>
+
 
       <div id="meetingDetails"></div>
 
 
-      <br>
+      <hr>
 
+
+      <!-- ACTIONS -->
 
       <div
         style="
           display:flex;
           gap:10px;
           flex-wrap:wrap;
+          margin:15px 0;
         "
       >
 
@@ -458,6 +502,16 @@
 
         <button
           class="btn btn-secondary"
+          id="restoreMeeting"
+          type="button"
+          hidden
+        >
+          Restore Meeting
+        </button>
+
+
+        <button
+          class="btn btn-secondary"
           id="deleteMeeting"
           type="button"
         >
@@ -470,20 +524,24 @@
       <br>
 
 
+      <!-- MINUTES -->
+
       <div class="form-group">
 
         <label for="minutes">
-          Minutes
+          Meeting Minutes
         </label>
 
         <textarea
           id="minutes"
-          rows="6"
+          rows="7"
           placeholder="Enter meeting minutes..."
         ></textarea>
 
       </div>
 
+
+      <!-- RESOLUTIONS -->
 
       <div class="form-group">
 
@@ -493,15 +551,15 @@
 
         <textarea
           id="resolution"
-          rows="6"
-          placeholder="Enter resolutions..."
+          rows="7"
+          placeholder="Enter resolutions and decisions..."
         ></textarea>
 
       </div>
 
 
       <button
-        class="btn"
+        class="btn btn-primary"
         id="saveMinutes"
         type="button"
       >
@@ -515,15 +573,21 @@
 
 </div>
 
+
+
+<!-- =====================================================
+     PAGE BOOT
+====================================================== -->
+
 <script type="module">
 
-  import { boot } from "./js/layout.js";
+  import {
+    boot
+  } from "./js/layout.js";
 
   boot();
 
 </script>
-
-
 
 
 </body>
