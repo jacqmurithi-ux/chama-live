@@ -1,4 +1,3 @@
-html
 <!doctype html>
 <html lang="en">
 
@@ -19,6 +18,12 @@ html
   >
 
   <style>
+
+    /* =====================================================
+       CHAMA LIVE — DASHBOARD
+       Updated recurring contribution UI
+    ===================================================== */
+
 
     /* =====================================================
        TOP NAVIGATION
@@ -47,6 +52,7 @@ html
       align-items: center;
       gap: 4px;
       flex: 1;
+      min-width: 0;
       overflow-x: auto;
       scrollbar-width: none;
     }
@@ -59,27 +65,44 @@ html
       display: inline-flex;
       align-items: center;
       justify-content: center;
+
       padding: 8px 11px;
+
       border-radius: 8px;
+
       text-decoration: none;
       white-space: nowrap;
+
       font-size: 13px;
       font-weight: 600;
+
       color: inherit;
+
       transition:
         background .2s ease,
         color .2s ease;
     }
 
     .top-nav a:hover {
-      background: rgba(15, 118, 110, .08);
-      color: #0f766e;
+      background:
+        rgba(15, 118, 110, .08);
+
+      color:
+        #0f766e;
     }
 
     .top-nav a.active {
-      background: #0f766e;
-      color: #fff;
+      background:
+        #0f766e;
+
+      color:
+        #fff;
     }
+
+
+    /* =====================================================
+       TOPBAR ACTIONS
+    ===================================================== */
 
     .topbar-actions {
       display: flex;
@@ -90,187 +113,532 @@ html
 
     .user-name {
       max-width: 150px;
+
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
+
     /* =====================================================
-       REMOVE SIDEBAR / FULL WIDTH LAYOUT
+       FULL WIDTH LAYOUT
     ===================================================== */
 
     .layout {
-      display: block !important;
-      width: 100%;
+      display:
+        block !important;
+
+      width:
+        100%;
     }
 
     .sidebar {
-      display: none !important;
+      display:
+        none !important;
     }
 
     .main {
-      width: 100%;
-      max-width: 1400px;
-      margin: 0 auto;
+      width:
+        100%;
+
+      max-width:
+        1400px;
+
+      margin:
+        0 auto;
     }
 
+
     /* =====================================================
-       DASHBOARD
+       DASHBOARD HEADER
     ===================================================== */
 
     .dashboard-header {
-      margin-bottom: 24px;
+      margin-bottom:
+        24px;
     }
 
     .dashboard-header h1 {
-      margin: 0 0 6px;
+      margin:
+        0 0 6px;
     }
 
     .dashboard-header p {
-      margin: 0;
+      margin:
+        0;
     }
 
+
+    /* =====================================================
+       FINANCIAL METRICS
+    ===================================================== */
+
     .dashboard-metrics {
-      display: grid;
+      display:
+        grid;
+
       grid-template-columns:
         repeat(4, minmax(0, 1fr));
-      gap: 14px;
-      margin-bottom: 24px;
+
+      gap:
+        14px;
+
+      margin-bottom:
+        24px;
     }
 
     .metric-card {
-      min-width: 0;
+      min-width:
+        0;
     }
 
     .metric-label {
-      font-size: 12px;
-      font-weight: 600;
-      color: #64748b;
+      font-size:
+        12px;
+
+      font-weight:
+        600;
+
+      color:
+        #64748b;
     }
 
     .metric {
-      font-size: 26px;
-      font-weight: 800;
-      margin: 8px 0 4px;
+      font-size:
+        26px;
+
+      font-weight:
+        800;
+
+      margin:
+        8px 0 4px;
     }
 
     .muted {
-      color: #64748b;
+      color:
+        #64748b;
     }
 
     .eyebrow {
-      font-size: 10px;
-      font-weight: 800;
-      letter-spacing: .08em;
-      color: #0f766e;
+      font-size:
+        10px;
+
+      font-weight:
+        800;
+
+      letter-spacing:
+        .08em;
+
+      color:
+        #0f766e;
     }
 
+
+    /* =====================================================
+       DASHBOARD SECTIONS
+    ===================================================== */
+
     .dashboard-section {
-      margin-bottom: 24px;
+      margin-bottom:
+        24px;
     }
 
     .section-heading {
-      margin-bottom: 16px;
+      margin-bottom:
+        16px;
     }
 
     .section-heading h2 {
-      margin: 4px 0;
+      margin:
+        4px 0;
     }
 
+
     /* =====================================================
-       PROGRESS
+       CONTRIBUTION PROGRESS
     ===================================================== */
 
     .progress-card {
-      margin-bottom: 24px;
+      margin-bottom:
+        24px;
     }
 
     .progress-percentage {
-      font-size: 28px;
-      font-weight: 800;
-      margin-bottom: 12px;
+      font-size:
+        28px;
+
+      font-weight:
+        800;
+
+      margin-bottom:
+        12px;
     }
 
     .progress {
-      width: 100%;
-      height: 12px;
-      overflow: hidden;
-      border-radius: 999px;
-      background: #e5e7eb;
+      width:
+        100%;
+
+      height:
+        12px;
+
+      overflow:
+        hidden;
+
+      border-radius:
+        999px;
+
+      background:
+        #e5e7eb;
     }
 
     .progress-bar {
-      height: 100%;
-      width: 0%;
-      border-radius: inherit;
-      background: #0f766e;
-      transition: width .4s ease;
+      height:
+        100%;
+
+      width:
+        0%;
+
+      border-radius:
+        inherit;
+
+      background:
+        #0f766e;
+
+      transition:
+        width .4s ease;
     }
 
     .progress-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      margin-top: 10px;
+      display:
+        flex;
+
+      justify-content:
+        space-between;
+
+      align-items:
+        center;
+
+      gap:
+        10px;
+
+      margin-top:
+        10px;
     }
 
+
     /* =====================================================
-       ACTIVITY
+       MEMBER CONTRIBUTOR SUMMARY
+    ===================================================== */
+
+    .contributor-summary {
+      display:
+        grid;
+
+      grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+      gap:
+        10px;
+
+      margin-top:
+        18px;
+    }
+
+    .contributor-stat {
+      padding:
+        12px;
+
+      border:
+        1px solid #e5e7eb;
+
+      border-radius:
+        12px;
+
+      background:
+        #f8fafc;
+    }
+
+    .contributor-stat-label {
+      font-size:
+        11px;
+
+      color:
+        #64748b;
+
+      margin-bottom:
+        4px;
+    }
+
+    .contributor-stat-value {
+      font-size:
+        18px;
+
+      font-weight:
+        800;
+
+      color:
+        #172033;
+    }
+
+
+    /* =====================================================
+       CREDIT / OUTSTANDING SUMMARY
+    ===================================================== */
+
+    .contribution-breakdown {
+      display:
+        flex;
+
+      flex-wrap:
+        wrap;
+
+      gap:
+        8px 18px;
+
+      margin-top:
+        14px;
+
+      font-size:
+        12px;
+    }
+
+    .contribution-breakdown span {
+      display:
+        inline-flex;
+
+      align-items:
+        center;
+
+      gap:
+        5px;
+    }
+
+    .breakdown-dot {
+      width:
+        7px;
+
+      height:
+        7px;
+
+      border-radius:
+        50%;
+
+      background:
+        #0f766e;
+
+      flex-shrink:
+        0;
+    }
+
+    .breakdown-dot.credit {
+      background:
+        #10b981;
+    }
+
+    .breakdown-dot.outstanding {
+      background:
+        #f59e0b;
+    }
+
+
+    /* =====================================================
+       MEMBER STATUS TABLE
+    ===================================================== */
+
+    .member-status-card {
+      margin-bottom:
+        24px;
+    }
+
+    .member-status-table {
+      width:
+        100%;
+    }
+
+    .member-status-table table {
+      min-width:
+        850px;
+    }
+
+    .member-status-table td {
+      vertical-align:
+        middle;
+    }
+
+    .member-status-table td:first-child {
+      font-weight:
+        600;
+    }
+
+
+    /* =====================================================
+       STATUS BADGES
+    ===================================================== */
+
+    .status-badge {
+      display:
+        inline-flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        center;
+
+      padding:
+        4px 8px;
+
+      border-radius:
+        999px;
+
+      font-size:
+        10px;
+
+      font-weight:
+        700;
+
+      white-space:
+        nowrap;
+    }
+
+    .status-cleared,
+    .status-paid,
+    .status-credit {
+      background:
+        #ecfdf3;
+
+      color:
+        #047857;
+    }
+
+    .status-partial {
+      background:
+        #fffaeb;
+
+      color:
+        #b45309;
+    }
+
+    .status-outstanding,
+    .status-pending {
+      background:
+        #fee2e2;
+
+      color:
+        #b91c1c;
+    }
+
+    .status-neutral {
+      background:
+        #f1f5f9;
+
+      color:
+        #475569;
+    }
+
+
+    /* =====================================================
+       CREDIT / OUTSTANDING VALUES
+    ===================================================== */
+
+    .credit-value {
+      color:
+        #047857;
+
+      font-weight:
+        700;
+    }
+
+    .outstanding-value {
+      color:
+        #b45309;
+
+      font-weight:
+        700;
+    }
+
+    .applied-value {
+      color:
+        #0f766e;
+
+      font-weight:
+        700;
+    }
+
+
+    /* =====================================================
+       ACTIVITY GRID
     ===================================================== */
 
     .activity-grid {
-      display: grid;
+      display:
+        grid;
+
       grid-template-columns:
         repeat(2, minmax(0, 1fr));
-      gap: 18px;
+
+      gap:
+        18px;
     }
 
     .activity-card {
-      min-width: 0;
+      min-width:
+        0;
     }
 
     .activity-card .section-heading,
     .meetings-card .section-heading {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 15px;
+      display:
+        flex;
+
+      align-items:
+        flex-start;
+
+      justify-content:
+        space-between;
+
+      gap:
+        15px;
     }
 
     .btn-small {
-      padding: 7px 11px;
-      font-size: 11px;
-      white-space: nowrap;
-      flex-shrink: 0;
+      padding:
+        7px 11px;
+
+      font-size:
+        11px;
+
+      white-space:
+        nowrap;
+
+      flex-shrink:
+        0;
     }
 
     .meetings-card {
-      margin-bottom: 30px;
+      margin-bottom:
+        30px;
     }
 
-    /* =====================================================
-       MEMBER STATUS
-    ===================================================== */
-
-    .member-status-card {
-      margin-bottom: 24px;
-    }
-
-    .member-status-table table {
-      min-width: 620px;
-    }
 
     /* =====================================================
        TABLES
     ===================================================== */
 
     .table-wrap {
-      width: 100%;
-      max-width: 100%;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
+      width:
+        100%;
+
+      max-width:
+        100%;
+
+      overflow-x:
+        auto;
+
+      -webkit-overflow-scrolling:
+        touch;
     }
+
 
     /* =====================================================
        DESKTOP
@@ -279,15 +647,20 @@ html
     @media (min-width: 801px) {
 
       .topbar {
-        padding-left: 24px;
-        padding-right: 24px;
+        padding-left:
+          24px;
+
+        padding-right:
+          24px;
       }
 
       .main {
-        padding: 30px 28px;
+        padding:
+          30px 28px;
       }
 
     }
+
 
     /* =====================================================
        TABLET
@@ -296,19 +669,30 @@ html
     @media (max-width: 1000px) {
 
       .topbar-inner {
-        gap: 14px;
+        gap:
+          14px;
       }
 
       .top-nav a {
-        padding: 7px 9px;
-        font-size: 12px;
+        padding:
+          7px 9px;
+
+        font-size:
+          12px;
       }
 
       .user-name {
-        display: none;
+        display:
+          none;
+      }
+
+      .dashboard-metrics {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
       }
 
     }
+
 
     /* =====================================================
        MOBILE
@@ -317,33 +701,51 @@ html
     @media (max-width: 800px) {
 
       .topbar {
-        padding: 10px 12px;
+        padding:
+          10px 12px;
       }
 
       .topbar-inner {
-        display: grid;
-        grid-template-columns: auto 1fr auto;
-        gap: 10px;
-        align-items: center;
+        display:
+          grid;
+
+        grid-template-columns:
+          auto 1fr auto;
+
+        gap:
+          10px;
+
+        align-items:
+          center;
       }
 
       .top-nav {
-        min-width: 0;
-        gap: 3px;
+        min-width:
+          0;
+
+        gap:
+          3px;
       }
 
       .top-nav a {
-        padding: 7px 9px;
-        font-size: 11px;
+        padding:
+          7px 9px;
+
+        font-size:
+          11px;
       }
 
       .topbar-actions {
-        gap: 6px;
+        gap:
+          6px;
       }
 
       .topbar-actions .btn {
-        padding: 7px 9px;
-        font-size: 11px;
+        padding:
+          7px 9px;
+
+        font-size:
+          11px;
       }
 
       .dashboard-metrics {
@@ -352,106 +754,155 @@ html
       }
 
       .activity-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns:
+          1fr;
+      }
+
+      .contributor-summary {
+        grid-template-columns:
+          1fr;
       }
 
       .main {
-        width: 100%;
+        width:
+          100%;
       }
 
     }
 
+
+    /* =====================================================
+       SMALL MOBILE
+    ===================================================== */
+
     @media (max-width: 650px) {
 
       .topbar {
-        padding: 9px 10px;
+        padding:
+          9px 10px;
       }
 
       .brand {
-        font-size: 15px;
+        font-size:
+          15px;
       }
 
       .top-nav a {
-        padding: 7px 8px;
-        font-size: 10px;
+        padding:
+          7px 8px;
+
+        font-size:
+          10px;
       }
 
       .dashboard-header {
-        margin-bottom: 18px;
+        margin-bottom:
+          18px;
       }
 
       .dashboard-header h1 {
-        font-size: 23px;
+        font-size:
+          23px;
       }
 
       .dashboard-header p {
-        font-size: 12px;
+        font-size:
+          12px;
       }
 
       .dashboard-metrics {
-        gap: 10px;
+        gap:
+          10px;
       }
 
       .metric-card {
-        padding: 14px;
-        border-radius: 16px;
+        padding:
+          14px;
+
+        border-radius:
+          16px;
       }
 
       .metric-label {
-        font-size: 10px;
+        font-size:
+          10px;
       }
 
       .metric {
-        font-size: 21px;
-        margin: 7px 0 3px;
+        font-size:
+          21px;
+
+        margin:
+          7px 0 3px;
       }
 
       .metric-card .muted {
-        font-size: 10px;
+        font-size:
+          10px;
       }
 
       .dashboard-section {
-        margin-bottom: 18px;
+        margin-bottom:
+          18px;
       }
 
       .dashboard-section.card,
       .member-status-card,
       .activity-card,
       .meetings-card {
-        padding: 16px 12px;
-        border-radius: 17px;
+        padding:
+          16px 12px;
+
+        border-radius:
+          17px;
       }
 
       .section-heading h2 {
-        font-size: 17px;
+        font-size:
+          17px;
       }
 
       .eyebrow {
-        font-size: 9px;
+        font-size:
+          9px;
       }
 
       .muted {
-        font-size: 11px;
+        font-size:
+          11px;
       }
 
       .progress {
-        height: 10px;
+        height:
+          10px;
       }
 
       .progress-footer {
-        font-size: 11px;
+        font-size:
+          11px;
+      }
+
+      .contribution-breakdown {
+        flex-direction:
+          column;
+
+        gap:
+          7px;
       }
 
       .activity-grid {
-        gap: 12px;
+        gap:
+          12px;
       }
 
       .activity-card table {
-        min-width: 480px;
+        min-width:
+          480px;
       }
 
       .meetings-card table {
-        min-width: 560px;
+        min-width:
+          560px;
       }
 
       .member-status-table th,
@@ -460,66 +911,108 @@ html
       .activity-card td,
       .meetings-card th,
       .meetings-card td {
-        padding: 10px 8px;
-        font-size: 11px;
+        padding:
+          10px 8px;
+
+        font-size:
+          11px;
       }
 
     }
+
+
+    /* =====================================================
+       VERY SMALL MOBILE
+    ===================================================== */
 
     @media (max-width: 480px) {
 
       .topbar-inner {
-        grid-template-columns: 1fr auto;
+        grid-template-columns:
+          1fr auto;
       }
 
       .brand {
-        order: 1;
+        order:
+          1;
       }
 
       .topbar-actions {
-        order: 2;
+        order:
+          2;
       }
 
       .top-nav {
-        grid-column: 1 / -1;
-        grid-row: 2;
-        width: 100%;
-        border-top: 1px solid rgba(100, 116, 139, .15);
-        padding-top: 7px;
+        grid-column:
+          1 / -1;
+
+        grid-row:
+          2;
+
+        width:
+          100%;
+
+        border-top:
+          1px solid
+          rgba(100, 116, 139, .15);
+
+        padding-top:
+          7px;
       }
 
       .top-nav a {
-        flex-shrink: 0;
+        flex-shrink:
+          0;
       }
 
       .dashboard-metrics {
-        gap: 8px;
+        gap:
+          8px;
       }
 
       .metric-card {
-        padding: 12px 10px;
+        padding:
+          12px 10px;
       }
 
       .metric {
-        font-size: 19px;
+        font-size:
+          19px;
+      }
+
+      .progress-percentage {
+        font-size:
+          24px;
       }
 
     }
 
+
+    /* =====================================================
+       390PX
+    ===================================================== */
+
     @media (max-width: 390px) {
 
       .top-nav a {
-        padding: 6px 7px;
-        font-size: 9px;
+        padding:
+          6px 7px;
+
+        font-size:
+          9px;
       }
 
       .topbar-actions .btn {
-        font-size: 10px;
-        padding: 6px 8px;
+        font-size:
+          10px;
+
+        padding:
+          6px 8px;
       }
 
       .metric {
-        font-size: 18px;
+        font-size:
+          18px;
       }
 
     }
@@ -623,8 +1116,6 @@ html
 
   <!-- =====================================================
        APPLICATION LAYOUT
-       
-       NO SIDEBAR
   ====================================================== -->
 
   <div class="layout">
@@ -745,19 +1236,19 @@ html
           </div>
 
           <div class="muted">
-            Expected this month
+            Recurring monthly due
           </div>
 
         </div>
 
 
 
-        <!-- MONTHLY COLLECTED -->
+        <!-- MONTHLY APPLIED -->
 
         <div class="card metric-card">
 
           <div class="metric-label">
-            Monthly Collected
+            Monthly Applied
           </div>
 
           <div
@@ -768,7 +1259,7 @@ html
           </div>
 
           <div class="muted">
-            Received this month
+            Applied toward this month's dues
           </div>
 
         </div>
@@ -808,6 +1299,7 @@ html
         class="card dashboard-section progress-card"
       >
 
+
         <div class="section-heading">
 
           <div class="eyebrow">
@@ -827,6 +1319,10 @@ html
 
         </div>
 
+
+        <!-- =================================================
+             AMOUNT PROGRESS
+        ================================================== -->
 
         <div
           id="progressPercentage"
@@ -859,13 +1355,121 @@ html
         </div>
 
 
+        <!-- =================================================
+             MEMBER PARTICIPATION
+        ================================================== -->
+
+        <div class="contributor-summary">
+
+
+          <div class="contributor-stat">
+
+            <div class="contributor-stat-label">
+              Members Contributed
+            </div>
+
+            <div
+              id="contributorsCount"
+              class="contributor-stat-value"
+            >
+              0 / 0
+            </div>
+
+          </div>
+
+
+          <div class="contributor-stat">
+
+            <div class="contributor-stat-label">
+              Member Participation
+            </div>
+
+            <div
+              id="contributorsPercentage"
+              class="contributor-stat-value"
+            >
+              0%
+            </div>
+
+          </div>
+
+
+          <div class="contributor-stat">
+
+            <div class="contributor-stat-label">
+              Current Outstanding
+            </div>
+
+            <div
+              id="monthlyOutstanding"
+              class="contributor-stat-value"
+            >
+              KSh 0
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- =================================================
+             CONTRIBUTION BREAKDOWN
+        ================================================== -->
+
+        <div class="contribution-breakdown">
+
+          <span>
+
+            <span class="breakdown-dot"></span>
+
+            Applied this month:
+
+            <strong id="progressApplied">
+              KSh 0
+            </strong>
+
+          </span>
+
+
+          <span>
+
+            <span class="breakdown-dot credit"></span>
+
+            Carry-forward credit:
+
+            <strong
+              id="progressCarryForward"
+              class="credit-value"
+            >
+              KSh 0
+            </strong>
+
+          </span>
+
+
+          <span>
+
+            <span class="breakdown-dot outstanding"></span>
+
+            Outstanding:
+
+            <strong
+              id="progressOutstanding"
+              class="outstanding-value"
+            >
+              KSh 0
+            </strong>
+
+          </span>
+
+        </div>
+
+
         <p class="muted">
 
-          Outstanding:
-
-          <strong id="monthlyOutstanding">
-            KSh 0
-          </strong>
+          Payments first clear previous outstanding balances.
+          Any amount remaining after the monthly due is carried
+          forward as credit to the next month.
 
         </p>
 
@@ -881,6 +1485,7 @@ html
         class="card member-status-card"
       >
 
+
         <div class="section-heading">
 
           <div class="eyebrow">
@@ -892,7 +1497,8 @@ html
           </h2>
 
           <p class="muted">
-            See who has cleared their monthly contribution.
+            Monthly recurring contribution status after applying
+            outstanding balances and carry-forward credits.
           </p>
 
         </div>
@@ -904,6 +1510,7 @@ html
 
           <table class="table">
 
+
             <thead>
 
               <tr>
@@ -913,15 +1520,23 @@ html
                 </th>
 
                 <th>
-                  Expected
+                  Monthly Due
                 </th>
 
                 <th>
-                  Paid
+                  Previous Outstanding
                 </th>
 
                 <th>
-                  Outstanding
+                  Applied This Month
+                </th>
+
+                <th>
+                  Carry Forward
+                </th>
+
+                <th>
+                  Current Outstanding
                 </th>
 
                 <th>
@@ -937,7 +1552,7 @@ html
 
               <tr>
 
-                <td colspan="5">
+                <td colspan="7">
                   Loading...
                 </td>
 
@@ -969,6 +1584,7 @@ html
           ================================================== -->
 
           <div class="card activity-card">
+
 
             <div class="section-heading">
 
@@ -1049,6 +1665,7 @@ html
           ================================================== -->
 
           <div class="card activity-card">
+
 
             <div class="section-heading">
 
@@ -1137,6 +1754,7 @@ html
         class="card meetings-card"
       >
 
+
         <div class="section-heading">
 
           <div>
@@ -1169,6 +1787,7 @@ html
         <div class="table-wrap">
 
           <table class="table">
+
 
             <thead>
 
@@ -1221,28 +1840,20 @@ html
 
 
   <!-- =====================================================
-       GLOBAL APPLICATION START
-
-       layout.js handles:
-
-       • Authentication
-       • User/member loading
-       • Group loading
-       • Logout
-       • Navigation
-       • Dynamic dashboard.js loading
-       • Mobile behaviour
-
-       DO NOT load dashboard.js here.
+       PAGE BOOT
   ====================================================== -->
 
- <script type="module">
-  import { boot } from "./js/layout.js";
+  <script type="module">
 
-  boot();
-</script>
+    import {
+      boot
+    } from "./js/layout.js";
+
+    boot();
+
+  </script>
+
 
 </body>
 
 </html>
-
