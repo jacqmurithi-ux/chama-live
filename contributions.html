@@ -19,440 +19,149 @@
     href="css/app.css"
   >
 
-
-  <!-- =====================================================
-       CONTRIBUTION PAGE STYLES
-  ====================================================== -->
-
   <style>
 
-    /* ===================================================
-       GOAL PROGRESS
-    =================================================== */
+    /* =====================================================
+       CONTRIBUTION PROGRESS
+    ====================================================== */
 
-    .goal-progress-container {
-
-      display:
-        grid;
-
-      gap:
-        16px;
-
+    .contribution-progress {
+      margin-bottom: 20px;
     }
 
-
-    .goal-progress-card {
-
-      background:
-        #ffffff;
-
-      border:
-        1px solid #e5e7eb;
-
-      border-radius:
-        15px;
-
-      padding:
-        18px;
-
-      box-shadow:
-        0 2px 8px rgba(15,118,110,.05);
-
+    .progress-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 14px;
     }
 
-
-    .goal-progress-header {
-
-      display:
-        flex;
-
-      justify-content:
-        space-between;
-
-      align-items:
-        flex-start;
-
-      gap:
-        15px;
-
-      margin-bottom:
-        14px;
-
+    .progress-title {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text-dark);
     }
 
-
-    .goal-progress-header h3 {
-
-      margin:
-        3px 0 4px;
-
-      font-size:
-        18px;
-
-      color:
-        #101828;
-
+    .progress-month {
+      margin-top: 4px;
+      font-size: 13px;
+      color: var(--muted);
     }
 
-
-    .goal-category {
-
-      display:
-        inline-block;
-
-      font-size:
-        10px;
-
-      font-weight:
-        800;
-
-      text-transform:
-        uppercase;
-
-      letter-spacing:
-        .6px;
-
-      color:
-        #0f766e;
-
-      background:
-        #ecfdf5;
-
-      padding:
-        4px 8px;
-
-      border-radius:
-        999px;
-
+    .progress-percent {
+      font-size: 30px;
+      line-height: 1;
+      font-weight: 800;
+      color: var(--primary);
     }
 
-
-    .goal-progress-header p {
-
-      margin:
-        5px 0 0;
-
-      font-size:
-        12px;
-
+    .progress-track {
+      width: 100%;
+      height: 13px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e8eef0;
     }
 
-
-    .goal-percent {
-
-      font-size:
-        22px;
-
-      color:
-        #0f766e;
-
-      white-space:
-        nowrap;
-
+    .progress-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--primary);
+      transition: width .35s ease;
     }
 
-
-    .goal-progress-label-row {
-
-      display:
-        flex;
-
-      justify-content:
-        space-between;
-
-      gap:
-        10px;
-
-      font-size:
-        12px;
-
-      margin-bottom:
-        7px;
-
+    .progress-amount {
+      margin-top: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-dark);
     }
 
+    .progress-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(3, minmax(0, 1fr));
 
-    .goal-progress-label-row strong {
-
-      color:
-        #172033;
-
+      gap: 12px;
+      margin-top: 16px;
     }
 
-
-    .goal-progress-track,
-    .goal-member-progress-track {
-
-      width:
-        100%;
-
-      height:
-        10px;
-
-      background:
-        #edf0f4;
-
-      border-radius:
-        999px;
-
-      overflow:
-        hidden;
-
+    .progress-stat {
+      padding: 13px;
+      border: 1px solid var(--border-light);
+      border-radius: 11px;
+      background: var(--surface-soft);
     }
 
-
-    .goal-progress-fill {
-
-      height:
-        100%;
-
-      width:
-        0;
-
-      background:
-        #0f766e;
-
-      border-radius:
-        inherit;
-
-      transition:
-        width .4s ease;
-
+    .progress-stat-label {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
     }
 
-
-    .goal-members-row {
-
-      display:
-        flex;
-
-      justify-content:
-        space-between;
-
-      align-items:
-        center;
-
-      gap:
-        10px;
-
-      margin-top:
-        18px;
-
-      margin-bottom:
-        7px;
-
-      font-size:
-        13px;
-
+    .progress-stat-value {
+      color: var(--text-dark);
+      font-size: 17px;
+      font-weight: 800;
     }
 
-
-    .goal-members-row strong {
-
-      color:
-        #101828;
-
+    .progress-note {
+      margin-top: 13px;
+      margin-bottom: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
     }
 
+    /* =====================================================
+       STATUS TABLE
+    ====================================================== */
 
-    .goal-member-progress-track {
-
-      height:
-        7px;
-
+    #memberStatusRows td {
+      vertical-align: middle;
     }
 
-
-    .goal-member-progress-fill {
-
-      height:
-        100%;
-
-      width:
-        0;
-
-      background:
-        #10b981;
-
-      border-radius:
-        inherit;
-
-      transition:
-        width .4s ease;
-
+    #memberStatusRows td:nth-child(2),
+    #memberStatusRows td:nth-child(3),
+    #memberStatusRows td:nth-child(4),
+    #memberStatusRows td:nth-child(5),
+    #memberStatusRows td:nth-child(6) {
+      white-space: nowrap;
     }
 
-
-    .goal-footer {
-
-      display:
-        flex;
-
-      justify-content:
-        space-between;
-
-      gap:
-        10px;
-
-      margin-top:
-        10px;
-
-      font-size:
-        11px;
-
-      color:
-        #667085;
-
+    #memberStatusRows td:nth-child(5) {
+      color: var(--success-dark);
+      font-weight: 700;
     }
 
-
-    .goal-empty {
-
-      padding:
-        18px;
-
-      border:
-        1px dashed #d0d5dd;
-
-      border-radius:
-        12px;
-
-      background:
-        #f8fafc;
-
+    #memberStatusRows td:nth-child(6) {
+      color: var(--warning-dark);
+      font-weight: 700;
     }
 
-
-    .goal-empty p {
-
-      margin:
-        5px 0 0;
-
-      font-size:
-        13px;
-
+    #memberStatusRows td:last-child {
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
     }
 
+    @media (max-width: 700px) {
 
-    /* ===================================================
-       CONTRIBUTION STATUS
-    =================================================== */
-
-    .contribution-status {
-
-      display:
-        inline-block;
-
-      padding:
-        4px 8px;
-
-      border-radius:
-        999px;
-
-      font-size:
-        10px;
-
-      font-weight:
-        800;
-
-      text-transform:
-        uppercase;
-
-      letter-spacing:
-        .2px;
-
-    }
-
-
-    .contribution-status-paid {
-
-      background:
-        #ecfdf3;
-
-      color:
-        #047857;
-
-    }
-
-
-    .contribution-status-partial {
-
-      background:
-        #fffaeb;
-
-      color:
-        #b45309;
-
-    }
-
-
-    .contribution-status-outstanding {
-
-      background:
-        #fee2e2;
-
-      color:
-        #b91c1c;
-
-    }
-
-
-    .contribution-status-credit {
-
-      background:
-        #eff6ff;
-
-      color:
-        #1d4ed8;
-
-    }
-
-
-    /* ===================================================
-       MOBILE
-    =================================================== */
-
-    @media (max-width: 650px) {
-
-      .goal-progress-card {
-
-        padding:
-          15px;
-
+      .progress-grid {
+        grid-template-columns: 1fr;
       }
 
-
-      .goal-progress-header {
-
-        gap:
-          10px;
-
+      .progress-header {
+        align-items: flex-start;
       }
 
-
-      .goal-progress-header h3 {
-
-        font-size:
-          16px;
-
-      }
-
-
-      .goal-percent {
-
-        font-size:
-          19px;
-
-      }
-
-
-      .goal-progress-label-row,
-      .goal-members-row,
-      .goal-footer {
-
-        font-size:
-          11px;
-
+      .progress-percent {
+        font-size: 25px;
       }
 
     }
@@ -468,14 +177,8 @@
 <header class="topbar">
 
   <div class="brand">
-
-    CHAMA
-    <span>
-      LIVE
-    </span>
-
+    CHAMA <span>LIVE</span>
   </div>
-
 
   <button
     class="btn btn-secondary"
@@ -491,10 +194,6 @@
 
 <div class="layout">
 
-
-  <!-- =====================================================
-       SIDEBAR
-  ====================================================== -->
 
   <aside class="sidebar">
 
@@ -541,10 +240,6 @@
 
 
 
-  <!-- =====================================================
-       MAIN
-  ====================================================== -->
-
   <main class="main">
 
 
@@ -556,16 +251,12 @@
 
       <div>
 
-        <div class="eyebrow">
-          FINANCE
-        </div>
-
         <h1>
           Contributions
         </h1>
 
         <p class="muted">
-          Record, track and manage recurring member contributions.
+          Record and track recurring member contributions.
         </p>
 
       </div>
@@ -601,54 +292,141 @@
 
 
     <!-- ===================================================
-         CONTRIBUTION GOALS
+         MONTHLY CONTRIBUTION PROGRESS
     ==================================================== -->
 
-    <section class="card">
+    <section class="card contribution-progress">
 
-      <div
-        style="
-          display:flex;
-          justify-content:space-between;
-          align-items:flex-start;
-          gap:15px;
-          margin-bottom:16px;
-        "
-      >
+      <div class="progress-header">
 
         <div>
 
-          <h2>
-            Contribution Goals
+          <h2 class="progress-title">
+            Contribution Progress
           </h2>
 
-          <p class="muted">
-            Track money collected and member participation towards each active goal.
-          </p>
+          <div
+            id="progressMonth"
+            class="progress-month"
+          >
+            August 2026
+          </div>
 
+        </div>
+
+
+        <div
+          id="progressPercent"
+          class="progress-percent"
+        >
+          0%
         </div>
 
       </div>
 
 
       <div
-        id="goalProgressContainer"
-        class="goal-progress-container"
+        class="progress-track"
+        role="progressbar"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="0"
       >
 
-        <div class="goal-empty">
+        <div
+          id="progressBar"
+          class="progress-fill"
+        ></div>
 
-          Loading contribution goals...
+      </div>
+
+
+      <div class="progress-amount">
+
+        <span id="progressAmount">
+          KSh 0
+        </span>
+
+        /
+
+        <span id="progressGoal">
+          KSh 0
+        </span>
+
+      </div>
+
+
+      <div class="progress-grid">
+
+
+        <div class="progress-stat">
+
+          <span class="progress-stat-label">
+            Collection rate
+          </span>
+
+          <span
+            id="progressRate"
+            class="progress-stat-value"
+          >
+            0%
+          </span>
+
+        </div>
+
+
+        <div class="progress-stat">
+
+          <span class="progress-stat-label">
+            Members contributed
+          </span>
+
+          <span
+            id="progressMembers"
+            class="progress-stat-value"
+          >
+            0 / 0
+          </span>
+
+        </div>
+
+
+        <div class="progress-stat">
+
+          <span class="progress-stat-label">
+            Member participation
+          </span>
+
+          <span
+            id="progressParticipation"
+            class="progress-stat-value"
+          >
+            0%
+          </span>
 
         </div>
 
       </div>
 
+
+      <p
+        id="progressMemberCount"
+        class="progress-note"
+      >
+        0 of 0 members
+      </p>
+
+
+      <p class="progress-note">
+
+        Only amounts actually applied to the current
+        month's recurring contribution count toward this
+        month's progress. Previous arrears are cleared first,
+        while extra payments become carry-forward credit.
+
+      </p>
+
     </section>
-
-
-
-    <br>
 
 
 
@@ -662,18 +440,10 @@
         Record Contribution
       </h2>
 
-
-      <p class="muted">
-        Monthly contributions are recurring. Outstanding balances and extra payments are automatically calculated.
-      </p>
-
-
       <br>
 
 
-      <form
-        id="contributionForm"
-      >
+      <form id="contributionForm">
 
 
         <div class="grid grid-2">
@@ -826,40 +596,9 @@
 
 
 
-          <!-- GOAL -->
+          <!-- MPESA REFERENCE -->
 
-          <div>
-
-            <label
-              for="goal"
-              class="muted"
-            >
-              Contribution Goal
-            </label>
-
-            <select
-              id="goal"
-            >
-
-              <option value="">
-                General contribution
-              </option>
-
-            </select>
-
-            <small>
-              Optional — select a goal if this payment is towards a specific fundraising target.
-            </small>
-
-          </div>
-
-
-
-          <!-- MPESA -->
-
-          <div
-            id="mpesaReferenceWrap"
-          >
+          <div id="mpesaReferenceWrap">
 
             <label
               for="mpesaReference"
@@ -929,9 +668,11 @@
       <p class="muted">
 
         Payments first clear previous outstanding balances.
-        Any amount remaining after the current month's contribution becomes carry-forward credit.
+        The current month's due is then covered. Any amount
+        remaining becomes carry-forward credit.
 
       </p>
+
 
 
       <div class="table-wrap">
@@ -975,9 +716,7 @@
           </thead>
 
 
-          <tbody
-            id="memberStatusRows"
-          >
+          <tbody id="memberStatusRows">
 
             <tr>
 
@@ -1002,7 +741,7 @@
 
 
     <!-- ===================================================
-         LEDGER
+         CONTRIBUTION LEDGER
     ==================================================== -->
 
     <section class="card">
@@ -1010,11 +749,6 @@
       <h2>
         Contribution Ledger
       </h2>
-
-
-      <p class="muted">
-        Complete record of actual payments received.
-      </p>
 
 
       <div class="table-wrap">
@@ -1046,10 +780,6 @@
               </th>
 
               <th>
-                Goal
-              </th>
-
-              <th>
                 Reference
               </th>
 
@@ -1058,13 +788,11 @@
           </thead>
 
 
-          <tbody
-            id="contributionRows"
-          >
+          <tbody id="contributionRows">
 
             <tr>
 
-              <td colspan="7">
+              <td colspan="6">
                 Loading...
               </td>
 
@@ -1103,5 +831,5 @@
 
 </body>
 
-            </html>
-            
+      </html>
+      
