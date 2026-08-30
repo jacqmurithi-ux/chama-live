@@ -3,7 +3,7 @@
 
 <head>
 
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
 
   <meta
     name="viewport"
@@ -19,203 +19,10 @@
     href="css/app.css"
   >
 
-  <style>
-
-    /* =====================================================
-       CONTRIBUTION PROGRESS
-    ====================================================== */
-
-    .contribution-progress {
-      margin-bottom: 20px;
-    }
-
-    .progress-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 20px;
-      margin-bottom: 14px;
-    }
-
-    .progress-title {
-      margin: 0;
-      font-size: 18px;
-      font-weight: 800;
-      color: var(--text-dark);
-    }
-
-    .progress-month {
-      margin-top: 4px;
-      font-size: 13px;
-      color: var(--muted);
-    }
-
-    .progress-percent {
-      font-size: 30px;
-      line-height: 1;
-      font-weight: 800;
-      color: var(--primary);
-    }
-
-    .progress-track {
-      width: 100%;
-      height: 13px;
-      overflow: hidden;
-      border-radius: 999px;
-      background: #e8eef0;
-    }
-
-    .progress-fill {
-      width: 0%;
-      height: 100%;
-      border-radius: inherit;
-      background: var(--primary);
-      transition: width .35s ease;
-    }
-
-    .progress-amount {
-      margin-top: 10px;
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--text-dark);
-    }
-
-    .progress-grid {
-      display: grid;
-      grid-template-columns:
-        repeat(3, minmax(0, 1fr));
-
-      gap: 12px;
-      margin-top: 16px;
-    }
-
-    .progress-stat {
-      padding: 13px;
-      border: 1px solid var(--border-light);
-      border-radius: 11px;
-      background: var(--surface-soft);
-    }
-
-    .progress-stat-label {
-      display: block;
-      margin-bottom: 4px;
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 600;
-    }
-
-    .progress-stat-value {
-      color: var(--text-dark);
-      font-size: 17px;
-      font-weight: 800;
-    }
-
-    .progress-note {
-      margin-top: 13px;
-      margin-bottom: 0;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.5;
-    }
-
-
-    /* =====================================================
-       STATUS TABLE
-    ====================================================== */
-
-    #memberStatusRows td {
-      vertical-align: middle;
-    }
-
-    #memberStatusRows td:nth-child(2),
-    #memberStatusRows td:nth-child(3),
-    #memberStatusRows td:nth-child(4),
-    #memberStatusRows td:nth-child(5),
-    #memberStatusRows td:nth-child(6) {
-      white-space: nowrap;
-    }
-
-    #memberStatusRows td:nth-child(5) {
-      color: var(--success-dark);
-      font-weight: 700;
-    }
-
-    #memberStatusRows td:nth-child(6) {
-      color: var(--warning-dark);
-      font-weight: 700;
-    }
-
-    #memberStatusRows td:last-child {
-      font-size: 12px;
-      font-weight: 800;
-      text-transform: uppercase;
-    }
-
-
-    /* =====================================================
-       MONTHLY STATUS COLORS
-    ====================================================== */
-
-    #memberStatusRows
-    .monthly-status-paid {
-
-      color: var(--success-dark);
-      font-weight: 800;
-
-    }
-
-    #memberStatusRows
-    .monthly-status-partial {
-
-      color: var(--warning-dark);
-      font-weight: 800;
-
-    }
-
-    #memberStatusRows
-    .monthly-status-outstanding {
-
-      color: var(--warning-dark);
-      font-weight: 800;
-
-    }
-
-    #memberStatusRows
-    .monthly-status-credit {
-
-      color: var(--success-dark);
-      font-weight: 800;
-
-    }
-
-
-    /* =====================================================
-       MOBILE
-    ====================================================== */
-
-    @media (max-width: 700px) {
-
-      .progress-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .progress-header {
-        align-items: flex-start;
-      }
-
-      .progress-percent {
-        font-size: 25px;
-      }
-
-    }
-
-  </style>
-
 </head>
 
 
 <body>
-
 
 <header class="topbar">
 
@@ -223,657 +30,308 @@
     CHAMA <span>LIVE</span>
   </div>
 
-  <button
-    class="btn btn-secondary"
-    id="logout"
-    type="button"
-  >
-    Sign out
-  </button>
+  <div>
+    <span data-group-name>
+      CHAMA
+    </span>
+  </div>
 
 </header>
 
 
+<main class="page-container">
 
-<div class="layout">
+  <section class="page-header">
 
+    <h1>
+      Contributions
+    </h1>
 
-  <aside class="sidebar">
+    <p>
+      Record and manage member contributions.
+    </p>
 
-    <nav class="nav">
-
-      <a href="dashboard.html">
-        Dashboard
-      </a>
-
-      <a href="members.html">
-        Members
-      </a>
-
-      <a
-        class="active"
-        href="contributions.html"
-      >
-        Contributions
-      </a>
-
-      <a href="expenses.html">
-        Expenses
-      </a>
-
-      <a href="meetings.html">
-        Meetings
-      </a>
-
-      <a href="reports.html">
-        Reports
-      </a>
-
-      <a href="monthly-closing.html">
-        Monthly Closing
-      </a>
-
-      <a href="group-management.html">
-        Group Management
-      </a>
-
-    </nav>
-
-  </aside>
+  </section>
 
 
+  <section class="card">
 
-  <main class="main">
-
-
-    <!-- ===================================================
-         PAGE HEADER
-    ==================================================== -->
-
-    <div class="page-head">
-
-      <div>
-
-        <h1>
-          Contributions
-        </h1>
-
-        <p class="muted">
-          Record and track recurring member contributions.
-        </p>
-
-      </div>
-
-    </div>
+    <h2>
+      Record Contribution
+    </h2>
 
 
-
-    <!-- ===================================================
-         STATUS
-    ==================================================== -->
-
-    <div
-      id="status"
-      class="card"
-      style="margin-bottom:20px;"
-      hidden
-    ></div>
+    <form
+      id="contributionForm"
+      novalidate
+    >
 
 
+      <!-- MEMBER -->
 
-    <!-- ===================================================
-         ERROR
-    ==================================================== -->
+      <div class="form-group">
 
-    <div
-      id="error"
-      class="error"
-      hidden
-      style="margin-bottom:20px;"
-    ></div>
+        <label for="memberId">
+          Member
+        </label>
 
-
-
-    <!-- ===================================================
-         MONTHLY CONTRIBUTION PROGRESS
-    ==================================================== -->
-
-    <section class="card contribution-progress">
-
-      <div class="progress-header">
-
-        <div>
-
-          <h2 class="progress-title">
-            Contribution Progress
-          </h2>
-
-          <div
-            id="progressMonth"
-            class="progress-month"
-          >
-            Loading...
-          </div>
-
-        </div>
-
-
-        <div
-          id="progressPercent"
-          class="progress-percent"
+        <select
+          id="memberId"
+          name="member_id"
+          required
         >
-          0%
-        </div>
+
+          <option value="">
+            Select member
+          </option>
+
+        </select>
 
       </div>
 
+
+      <!-- AMOUNT -->
+
+      <div class="form-group">
+
+        <label for="amount">
+          Amount
+        </label>
+
+        <input
+          type="number"
+          id="amount"
+          name="amount"
+          min="1"
+          step="0.01"
+          placeholder="200"
+          required
+        >
+
+      </div>
+
+
+      <!-- DATE -->
+
+      <div class="form-group">
+
+        <label for="contributionDate">
+          Contribution Date
+        </label>
+
+        <input
+          type="date"
+          id="contributionDate"
+          name="contribution_date"
+          required
+        >
+
+      </div>
+
+
+      <!-- CONTRIBUTION TYPE -->
+
+      <div class="form-group">
+
+        <label for="contributionType">
+          Contribution Type
+        </label>
+
+        <select
+          id="contributionType"
+          name="contribution_type"
+          required
+        >
+
+          <option value="">
+            Select contribution type
+          </option>
+
+          <option value="Monthly">
+            Monthly
+          </option>
+
+          <option value="Registration">
+            Registration
+          </option>
+
+          <option value="Welfare">
+            Welfare
+          </option>
+
+          <option value="Special">
+            Special
+          </option>
+
+          <option value="__OTHER__">
+            Other
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <!-- CUSTOM TYPE -->
 
       <div
-        class="progress-track"
-        role="progressbar"
-        aria-label="Monthly contribution progress"
-        aria-valuemin="0"
-        aria-valuemax="100"
-        aria-valuenow="0"
+        class="form-group"
+        id="otherContributionTypeContainer"
+        hidden
       >
 
-        <div
-          id="progressBar"
-          class="progress-fill"
-        ></div>
-
-      </div>
-
-
-      <div class="progress-amount">
-
-        <span id="progressAmount">
-          KSh 0
-        </span>
-
-        /
-
-        <span id="progressGoal">
-          KSh 0
-        </span>
-
-      </div>
-
-
-      <div class="progress-grid">
-
-
-        <div class="progress-stat">
-
-          <span class="progress-stat-label">
-            Collection rate
-          </span>
-
-          <span
-            id="progressRate"
-            class="progress-stat-value"
-          >
-            0%
-          </span>
-
-        </div>
-
-
-        <div class="progress-stat">
-
-          <span class="progress-stat-label">
-            Members contributed
-          </span>
-
-          <span
-            id="progressMembers"
-            class="progress-stat-value"
-          >
-            0 / 0
-          </span>
-
-        </div>
-
-
-        <div class="progress-stat">
-
-          <span class="progress-stat-label">
-            Member participation
-          </span>
-
-          <span
-            id="progressParticipation"
-            class="progress-stat-value"
-          >
-            0%
-          </span>
-
-        </div>
-
-      </div>
-
-
-      <p
-        id="progressMemberCount"
-        class="progress-note"
-      >
-        0 of 0 members
-      </p>
-
-
-      <p class="progress-note">
-
-        Monthly progress is calculated from the authoritative
-        database monthly-status report. Payments first clear
-        previous arrears, then cover the current month's due.
-        Extra payments become carry-forward credit.
-
-      </p>
-
-    </section>
-
-
-
-    <!-- ===================================================
-         RECORD CONTRIBUTION
-    ==================================================== -->
-
-    <section class="card">
-
-      <h2>
-        Record Contribution
-      </h2>
-
-      <br>
-
-
-      <form id="contributionForm">
-
-
-        <div class="grid grid-2">
-
-
-          <!-- MEMBER -->
-
-          <div>
-
-            <label
-              for="member"
-              class="muted"
-            >
-              Member
-            </label>
-
-            <select
-              id="member"
-              required
-            >
-
-              <option value="">
-                Select member
-              </option>
-
-            </select>
-
-          </div>
-
-
-
-          <!-- AMOUNT -->
-
-          <div>
-
-            <label
-              for="amount"
-              class="muted"
-            >
-              Amount
-            </label>
-
-            <input
-              id="amount"
-              type="number"
-              min="1"
-              step="0.01"
-              required
-              placeholder="200"
-            >
-
-          </div>
-
-
-
-          <!-- DATE -->
-
-          <div>
-
-            <label
-              for="contributionDate"
-              class="muted"
-            >
-              Contribution Date
-            </label>
-
-            <input
-              id="contributionDate"
-              type="date"
-              required
-            >
-
-          </div>
-
-
-
-          <!-- TYPE -->
-
-          <div>
-
-            <label
-              for="contributionType"
-              class="muted"
-            >
-              Contribution Type
-            </label>
-
-            <select
-              id="contributionType"
-              required
-            >
-
-              <option value="monthly">
-                Monthly
-              </option>
-
-              <option value="registration">
-                Registration
-              </option>
-
-              <option value="welfare">
-                Welfare
-              </option>
-
-              <option value="special">
-                Special
-              </option>
-
-              <option value="other">
-                Other
-              </option>
-
-            </select>
-
-          </div>
-
-
-
-          <!-- PAYMENT METHOD -->
-
-          <div>
-
-            <label
-              for="paymentMethod"
-              class="muted"
-            >
-              Payment Method
-            </label>
-
-            <select
-              id="paymentMethod"
-              required
-            >
-
-              <option value="M-Pesa">
-                M-Pesa
-              </option>
-
-              <option value="Cash">
-                Cash
-              </option>
-
-              <option value="Bank transfer">
-                Bank Transfer
-              </option>
-
-            </select>
-
-          </div>
-
-
-
-          <!-- MPESA REFERENCE -->
-
-          <div id="mpesaReferenceWrap">
-
-            <label
-              for="mpesaReference"
-              class="muted"
-            >
-              M-Pesa Reference
-            </label>
-
-            <input
-              id="mpesaReference"
-              type="text"
-              maxlength="100"
-              autocomplete="off"
-              placeholder="e.g. QWE123XYZ"
-            >
-
-          </div>
-
-
-        </div>
-
-
-        <br>
-
-
-        <button
-          class="btn btn-primary"
-          id="saveContribution"
-          type="submit"
+        <label for="otherContributionType">
+          Other Contribution Type
+        </label>
+
+        <input
+          type="text"
+          id="otherContributionType"
+          name="other_contribution_type"
+          maxlength="100"
+          placeholder="e.g. Fundraiser, Christmas Fund, Project Contribution"
+          autocomplete="off"
         >
-          Record Contribution
-        </button>
 
-
-      </form>
-
-    </section>
-
-
-
-    <br>
-
-
-
-    <!-- ===================================================
-         MONTHLY STATUS
-    ==================================================== -->
-
-    <section class="card">
-
-      <h2>
-        Monthly Contribution Status
-      </h2>
-
-
-      <p class="muted">
-
-        Recurring monthly contribution:
-
-        <strong id="monthlyExpected">
-          KSh 0
-        </strong>
-
-      </p>
-
-
-      <p class="muted">
-
-        Status is calculated by the database using the
-        authoritative monthly accounting rules. Previous
-        arrears are cleared first, the current month's due
-        is then covered, and any remaining payment becomes
-        carry-forward credit.
-
-      </p>
-
-
-
-      <div class="table-wrap">
-
-        <table class="table">
-
-          <thead>
-
-            <tr>
-
-              <th>
-                Member
-              </th>
-
-              <th>
-                Monthly Due
-              </th>
-
-              <th>
-                Previous Outstanding
-              </th>
-
-              <th>
-                Applied This Month
-              </th>
-
-              <th>
-                Carry Forward
-              </th>
-
-              <th>
-                Current Outstanding
-              </th>
-
-              <th>
-                Status
-              </th>
-
-            </tr>
-
-          </thead>
-
-
-          <tbody id="memberStatusRows">
-
-            <tr>
-
-              <td colspan="7">
-                Loading...
-              </td>
-
-            </tr>
-
-          </tbody>
-
-        </table>
+        <small>
+          This category will be saved for your group
+          and will appear in the Contribution Type
+          list next time.
+        </small>
 
       </div>
 
-    </section>
 
+      <!-- PAYMENT METHOD -->
 
+      <div class="form-group">
 
-    <br>
+        <label for="paymentMethod">
+          Payment Method
+        </label>
 
+        <select
+          id="paymentMethod"
+          name="payment_method"
+        >
 
+          <option value="">
+            Select payment method
+          </option>
 
-    <!-- ===================================================
-         CONTRIBUTION LEDGER
-    ==================================================== -->
+          <option value="M-Pesa">
+            M-Pesa
+          </option>
 
-    <section class="card">
+          <option value="Cash">
+            Cash
+          </option>
 
-      <h2>
-        Contribution Ledger
-      </h2>
+          <option value="Bank">
+            Bank
+          </option>
 
+          <option value="Other">
+            Other
+          </option>
 
-      <div class="table-wrap">
-
-        <table class="table">
-
-          <thead>
-
-            <tr>
-
-              <th>
-                Date
-              </th>
-
-              <th>
-                Member
-              </th>
-
-              <th>
-                Amount
-              </th>
-
-              <th>
-                Type
-              </th>
-
-              <th>
-                Method
-              </th>
-
-              <th>
-                Reference
-              </th>
-
-            </tr>
-
-          </thead>
-
-
-          <tbody id="contributionRows">
-
-            <tr>
-
-              <td colspan="6">
-                Loading...
-              </td>
-
-            </tr>
-
-          </tbody>
-
-        </table>
+        </select>
 
       </div>
 
-    </section>
+
+      <!-- M-PESA REFERENCE -->
+
+      <div class="form-group">
+
+        <label for="mpesaReference">
+          M-Pesa Reference
+        </label>
+
+        <input
+          type="text"
+          id="mpesaReference"
+          name="mpesa_reference"
+          maxlength="100"
+          placeholder="e.g. QWE123XYZ"
+          autocomplete="off"
+        >
+
+      </div>
 
 
-  </main>
+      <!-- NOTES -->
+
+      <div class="form-group">
+
+        <label for="notes">
+          Notes
+        </label>
+
+        <textarea
+          id="notes"
+          name="notes"
+          rows="3"
+          placeholder="Optional notes"
+        ></textarea>
+
+      </div>
 
 
-</div>
+      <!-- MESSAGE -->
+
+      <div
+        id="formMessage"
+        hidden
+        role="alert"
+      ></div>
 
 
+      <!-- SUBMIT -->
 
-<!-- =====================================================
-     PAGE BOOT
-====================================================== -->
+      <button
+        type="submit"
+        id="saveContribution"
+      >
+        Record Contribution
+      </button>
 
-<script type="module">
 
-  import {
-    boot
-  } from "./js/layout.js";
+    </form>
 
-  boot();
+  </section>
 
-</script>
 
+  <section class="card">
+
+    <h2>
+      Current Group
+    </h2>
+
+    <p>
+      Group:
+      <strong data-group-name>
+        —
+      </strong>
+    </p>
+
+    <p>
+      Recorded by:
+      <strong data-user-name>
+        —
+      </strong>
+    </p>
+
+  </section>
+
+
+</main>
+
+
+<script
+  type="module"
+  src="js/layout.js"
+></script>
 
 </body>
 
