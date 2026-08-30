@@ -1,24 +1,25 @@
 /* =========================================================
    CHAMA LIVE — CONTRIBUTIONS
-   COMPLETE UPDATED VERSION
+   COMPLETE GROUP-SCOPED VERSION
 
-   Features
+   FEATURES
    ---------------------------------------------------------
    1. Recurring monthly contributions
    2. Outstanding balances carried forward
    3. Oldest arrears paid first
    4. Extra payments become credit
-   5. Credit automatically offsets future obligations
+   5. Credit offsets future obligations
    6. Contribution goals
    7. Goal amount progress
    8. Goal member participation progress
    9. Unique contributing-member count
-  10. Live Supabase data
-  11. Group-scoped contribution types
-  12. Custom "Other" contribution categories
-  13. Custom categories persist in Supabase
-  14. members.name used for member display
-  15. contributions.recorded_by = members.id
+   10. Group-scoped contribution types
+   11. Custom "Other" contribution type
+   12. Custom contribution types persist per group
+   13. M-Pesa reference handling
+   14. Notes support
+   15. Correct recorded_by = members.id
+   16. Uses members.name — NOT members.full_name
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -124,18 +125,6 @@ const goalProgressContainer =
 
 
 /* =========================================================
-   DEFAULT CONTRIBUTION TYPES
-========================================================= */
-
-const DEFAULT_CONTRIBUTION_TYPES = [
-  "Monthly",
-  "Registration",
-  "Welfare",
-  "Special"
-];
-
-
-/* =========================================================
    MONEY
 ========================================================= */
 
@@ -143,9 +132,7 @@ function money(value) {
 
   return (
     "KSh " +
-    Number(
-      value || 0
-    ).toLocaleString(
+    Number(value || 0).toLocaleString(
       "en-KE",
       {
         minimumFractionDigits: 0,
@@ -330,38 +317,6 @@ function clearError() {
 
 
 /* =========================================================
-   NORMALIZE TYPE NAME
-========================================================= */
-
-function normalizeTypeName(value) {
-
-  return String(
-    value || ""
-  )
-    .trim()
-    .replace(/\s+/g, " ");
-
-}
-
-
-/* =========================================================
-   COMPARE TYPE NAMES
-========================================================= */
-
-function sameTypeName(
-  first,
-  second
-) {
-
-  return normalizeTypeName(first)
-    .toLowerCase() ===
-    normalizeTypeName(second)
-      .toLowerCase();
-
-}
-
-
-/* =========================================================
    INITIALIZE
 ========================================================= */
 
@@ -380,7 +335,6 @@ export async function init() {
   initialized =
     true;
 
-
   try {
 
     clearError();
@@ -391,7 +345,7 @@ export async function init() {
 
 
     /* -----------------------------------------------------
-       AUTH
+       AUTHENTICATION
     ----------------------------------------------------- */
 
     currentUser =
@@ -406,7 +360,16 @@ export async function init() {
       await getMyMember();
 
 
-    if (!currentMember?.group_id) {
+    if (!currentMember) {
+
+      throw new Error(
+        "No member record is linked to this account."
+      );
+
+    }
+
+
+    if (!currentMember.group_id) {
 
       throw new Error(
         "Your account is not linked to a group."
@@ -425,6 +388,15 @@ export async function init() {
 
     currentGroup =
       await getMyGroup();
+
+
+    if (!currentGroup) {
+
+      throw new Error(
+        "The current group could not be loaded."
+      );
+
+    }
 
 
     /* -----------------------------------------------------
@@ -448,11 +420,11 @@ export async function init() {
 
     await loadMembers();
 
+    await loadContributionTypes();
+
     await loadContributions();
 
     await loadContributionGoals();
-
-    await loadContributionTypes();
 
 
     /* -----------------------------------------------------
@@ -461,15 +433,13 @@ export async function init() {
 
     renderMonthlyExpected();
 
-    renderGoalSelect();
-
     renderContributionTypeSelect();
 
-    renderOtherContributionType();
-
-    renderMonthlyStatus();
+    renderGoalSelect();
 
     renderGoalProgress();
+
+    renderMonthlyStatus();
 
     renderLedger();
 
@@ -487,17 +457,9 @@ export async function init() {
     console.log(
       "CHAMA LIVE: contributions initialized",
       {
-        userId:
-          currentUser?.id,
-
-        memberId:
-          currentMember?.id,
-
-        groupId:
-          groupId,
-
-        contributionTypes:
-          contributionTypes.length
+        groupId,
+        memberId: currentMember.id,
+        userId: currentUser?.id
       }
     );
 
@@ -539,7 +501,8 @@ async function loadMembers() {
         email,
         role,
         join_date,
-        status
+        status,
+        created_at
       `)
       .eq(
         "group_id",
@@ -616,12 +579,16 @@ function renderMemberSelect() {
         member.id;
 
 
+      const number =
+        member.member_number ||
+        member.membership_number ||
+        "";
+
+
       option.textContent =
-        `${
-          member.member_number ||
-          member.membership_number ||
-          ""
-        } — ${member.name}`;
+        number
+          ? `${number} — ${member.name}`
+          : member.name;
 
 
       memberSelect.appendChild(
@@ -630,6 +597,508 @@ function renderMemberSelect() {
 
     }
   );
+
+}
+
+
+/* =========================================================
+   LOAD CONTRIBUTION TYPES
+========================================================= */
+
+async function loadContributionTypes() {
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("contribution_types")
+      .select(`
+        id,
+        group_id,
+        name,
+        created_by,
+        created_at
+      `)
+      .eq(
+        "group_id",
+        groupId
+      )
+      .order(
+        "name",
+        {
+          ascending: true
+        }
+      );
+
+
+  if (error) {
+    throw error;
+  }
+
+
+  contributionTypes =
+    data || [];
+
+
+  console.log(
+    "CHAMA LIVE: contribution types loaded",
+    contributionTypes
+  );
+
+}
+
+
+/* =========================================================
+   DEFAULT CONTRIBUTION TYPES
+========================================================= */
+
+const DEFAULT_CONTRIBUTION_TYPES = [
+  {
+    value: "monthly",
+    label: "Monthly Contribution"
+  },
+  {
+    value: "welfare",
+    label: "Welfare"
+  },
+  {
+    value: "emergency",
+    label: "Emergency"
+  },
+  {
+    value: "fundraising",
+    label: "Fundraising"
+  },
+  {
+    value: "project",
+    label: "Project"
+  },
+  {
+    value: "event",
+    label: "Event"
+  }
+];
+
+
+/* =========================================================
+   NORMALIZE TYPE
+========================================================= */
+
+function normalizeContributionType(
+  value
+) {
+
+  return String(
+    value || ""
+  )
+    .trim()
+    .toLowerCase()
+    .replaceAll(
+      " ",
+      "_"
+    );
+
+}
+
+
+/* =========================================================
+   RENDER CONTRIBUTION TYPE SELECT
+========================================================= */
+
+function renderContributionTypeSelect(
+  selectedValue = null
+) {
+
+  if (!typeSelect) {
+    return;
+  }
+
+
+  const previousValue =
+    selectedValue ??
+    typeSelect.value;
+
+
+  typeSelect.innerHTML =
+    "";
+
+
+  /* -------------------------------------------------------
+     DEFAULT TYPES
+  ------------------------------------------------------- */
+
+  DEFAULT_CONTRIBUTION_TYPES.forEach(
+    type => {
+
+      const option =
+        document.createElement(
+          "option"
+        );
+
+
+      option.value =
+        type.value;
+
+
+      option.textContent =
+        type.label;
+
+
+      typeSelect.appendChild(
+        option
+      );
+
+    }
+  );
+
+
+  /* -------------------------------------------------------
+     CUSTOM GROUP TYPES
+  ------------------------------------------------------- */
+
+  contributionTypes.forEach(
+    type => {
+
+      const normalized =
+        normalizeContributionType(
+          type.name
+        );
+
+
+      /*
+       * Avoid duplicates with default
+       * types.
+       */
+
+      const alreadyExists =
+        Array.from(
+          typeSelect.options
+        ).some(
+          option =>
+            normalizeContributionType(
+              option.value
+            ) === normalized ||
+            normalizeContributionType(
+              option.textContent
+            ) === normalized
+        );
+
+
+      if (
+        alreadyExists
+      ) {
+
+        return;
+
+      }
+
+
+      const option =
+        document.createElement(
+          "option"
+        );
+
+
+      option.value =
+        type.name;
+
+
+      option.textContent =
+        type.name;
+
+
+      typeSelect.appendChild(
+        option
+      );
+
+    }
+  );
+
+
+  /* -------------------------------------------------------
+     OTHER
+  ------------------------------------------------------- */
+
+  const otherOption =
+    document.createElement(
+      "option"
+    );
+
+
+  otherOption.value =
+    "other";
+
+
+  otherOption.textContent =
+    "Other";
+
+
+  typeSelect.appendChild(
+    otherOption
+  );
+
+
+  /*
+   * Restore previous selection
+   * if still available.
+   */
+
+  if (
+    previousValue &&
+    Array.from(
+      typeSelect.options
+    ).some(
+      option =>
+        option.value ===
+        previousValue
+    )
+  ) {
+
+    typeSelect.value =
+      previousValue;
+
+  }
+
+  else {
+
+    typeSelect.value =
+      "monthly";
+
+  }
+
+
+  toggleOtherContributionType();
+
+}
+
+
+/* =========================================================
+   TOGGLE OTHER CONTRIBUTION TYPE
+========================================================= */
+
+function toggleOtherContributionType() {
+
+  if (!typeSelect) {
+    return;
+  }
+
+
+  const selected =
+    String(
+      typeSelect.value || ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  const isOther =
+    selected ===
+    "other";
+
+
+  if (otherTypeWrap) {
+
+    otherTypeWrap.hidden =
+      !isOther;
+
+  }
+
+
+  if (otherTypeInput) {
+
+    otherTypeInput.required =
+      isOther;
+
+    if (!isOther) {
+
+      otherTypeInput.value =
+        "";
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   SAVE CUSTOM CONTRIBUTION TYPE
+========================================================= */
+
+async function saveCustomContributionType(
+  typeName
+) {
+
+  const cleanName =
+    String(
+      typeName || ""
+    ).trim();
+
+
+  if (!cleanName) {
+
+    throw new Error(
+      "Please enter the name of the other contribution."
+    );
+
+  }
+
+
+  /*
+   * Check existing group types first.
+   */
+
+  const existingCustom =
+    contributionTypes.find(
+      type =>
+        normalizeContributionType(
+          type.name
+        ) ===
+        normalizeContributionType(
+          cleanName
+        )
+    );
+
+
+  if (existingCustom) {
+
+    return existingCustom.name;
+
+  }
+
+
+  /*
+   * Check default types.
+   */
+
+  const existingDefault =
+    DEFAULT_CONTRIBUTION_TYPES.find(
+      type =>
+        normalizeContributionType(
+          type.value
+        ) ===
+        normalizeContributionType(
+          cleanName
+        ) ||
+        normalizeContributionType(
+          type.label
+        ) ===
+        normalizeContributionType(
+          cleanName
+        )
+    );
+
+
+  if (existingDefault) {
+
+    return existingDefault.value;
+
+  }
+
+
+  /*
+   * Insert into group-scoped
+   * contribution_types.
+   *
+   * IMPORTANT:
+   * created_by -> members.id
+   */
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("contribution_types")
+      .insert({
+        group_id:
+          groupId,
+
+        name:
+          cleanName,
+
+        created_by:
+          currentMember?.id ||
+          null
+      })
+      .select(`
+        id,
+        group_id,
+        name,
+        created_by,
+        created_at
+      `)
+      .single();
+
+
+  if (error) {
+
+    /*
+     * If another request created
+     * the same type at the same time,
+     * reload and use it.
+     */
+
+    const duplicate =
+      String(
+        error.message || ""
+      )
+        .toLowerCase()
+        .includes(
+          "duplicate"
+        );
+
+
+    if (duplicate) {
+
+      await loadContributionTypes();
+
+      const found =
+        contributionTypes.find(
+          type =>
+            normalizeContributionType(
+              type.name
+            ) ===
+            normalizeContributionType(
+              cleanName
+            )
+        );
+
+
+      if (found) {
+
+        return found.name;
+
+      }
+
+    }
+
+
+    throw error;
+
+  }
+
+
+  if (data) {
+
+    contributionTypes.push(
+      data
+    );
+
+  }
+
+
+  /*
+   * Refresh dropdown immediately.
+   */
+
+  renderContributionTypeSelect(
+    cleanName
+  );
+
+
+  return cleanName;
 
 }
 
@@ -744,506 +1213,6 @@ async function loadContributionGoals() {
 
   contributionGoals =
     data || [];
-
-}
-
-
-/* =========================================================
-   LOAD CONTRIBUTION TYPES
-========================================================= */
-
-async function loadContributionTypes() {
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("contribution_types")
-      .select(`
-        id,
-        group_id,
-        name,
-        created_by,
-        created_at
-      `)
-      .eq(
-        "group_id",
-        groupId
-      )
-      .order(
-        "name",
-        {
-          ascending: true
-        }
-      );
-
-
-  if (error) {
-    throw error;
-  }
-
-
-  contributionTypes =
-    data || [];
-
-
-  /*
-   * Make sure older groups also have
-   * the standard categories.
-   */
-
-  for (
-    const defaultType
-    of DEFAULT_CONTRIBUTION_TYPES
-  ) {
-
-    const exists =
-      contributionTypes.some(
-        type =>
-          sameTypeName(
-            type.name,
-            defaultType
-          )
-      );
-
-
-    if (!exists) {
-
-      try {
-
-        const created =
-          await createContributionType(
-            defaultType
-          );
-
-
-        if (created) {
-
-          contributionTypes.push(
-            created
-          );
-
-        }
-
-      }
-      catch (createError) {
-
-        console.warn(
-          "CHAMA LIVE: could not create default type",
-          defaultType,
-          createError
-        );
-
-      }
-
-    }
-
-  }
-
-
-  contributionTypes =
-    contributionTypes.sort(
-      (a, b) =>
-        String(
-          a.name || ""
-        ).localeCompare(
-          String(
-            b.name || ""
-          )
-        )
-    );
-
-}
-
-
-/* =========================================================
-   CREATE CONTRIBUTION TYPE
-========================================================= */
-
-async function createContributionType(
-  name
-) {
-
-  const cleanedName =
-    normalizeTypeName(name);
-
-
-  if (!cleanedName) {
-
-    throw new Error(
-      "Contribution type name cannot be empty."
-    );
-
-  }
-
-
-  /*
-   * Prevent duplicate category names
-   * within the same group.
-   */
-
-  const existing =
-    contributionTypes.find(
-      type =>
-        sameTypeName(
-          type.name,
-          cleanedName
-        )
-    );
-
-
-  if (existing) {
-
-    return existing;
-
-  }
-
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("contribution_types")
-      .insert({
-        group_id:
-          groupId,
-
-        name:
-          cleanedName,
-
-        created_by:
-          currentMember.id
-      })
-      .select(`
-        id,
-        group_id,
-        name,
-        created_by,
-        created_at
-      `)
-      .single();
-
-
-  if (!error) {
-
-    return data;
-
-  }
-
-
-  /*
-   * If another group member created
-   * the same category at almost the
-   * same time, retrieve it.
-   */
-
-  const {
-    data: existingData,
-    error: existingError
-  } =
-    await supabase
-      .from("contribution_types")
-      .select(`
-        id,
-        group_id,
-        name,
-        created_by,
-        created_at
-      `)
-      .eq(
-        "group_id",
-        groupId
-      )
-      .ilike(
-        "name",
-        cleanedName
-      )
-      .limit(1)
-      .maybeSingle();
-
-
-  if (
-    !existingError &&
-    existingData
-  ) {
-
-    return existingData;
-
-  }
-
-
-  throw error;
-
-}
-
-
-/* =========================================================
-   RENDER CONTRIBUTION TYPE SELECT
-========================================================= */
-
-function renderContributionTypeSelect() {
-
-  if (!typeSelect) {
-    return;
-  }
-
-
-  const currentValue =
-    typeSelect.value;
-
-
-  typeSelect.innerHTML =
-    `
-      <option value="">
-        Select contribution type
-      </option>
-    `;
-
-
-  contributionTypes.forEach(
-    type => {
-
-      const option =
-        document.createElement(
-          "option"
-        );
-
-
-      option.value =
-        type.name;
-
-
-      option.textContent =
-        type.name;
-
-
-      typeSelect.appendChild(
-        option
-      );
-
-    }
-  );
-
-
-  const otherOption =
-    document.createElement(
-      "option"
-    );
-
-
-  otherOption.value =
-    "__OTHER__";
-
-
-  otherOption.textContent =
-    "Other";
-
-
-  typeSelect.appendChild(
-    otherOption
-  );
-
-
-  if (
-    currentValue &&
-    Array.from(
-      typeSelect.options
-    ).some(
-      option =>
-        option.value ===
-        currentValue
-    )
-  ) {
-
-    typeSelect.value =
-      currentValue;
-
-  }
-
-}
-
-
-/* =========================================================
-   RENDER OTHER CONTRIBUTION TYPE
-========================================================= */
-
-function renderOtherContributionType() {
-
-  if (!typeSelect) {
-    return;
-  }
-
-
-  const isOther =
-    typeSelect.value ===
-    "__OTHER__";
-
-
-  if (otherTypeWrap) {
-
-    otherTypeWrap.hidden =
-      !isOther;
-
-  }
-
-
-  if (otherTypeInput) {
-
-    otherTypeInput.required =
-      isOther;
-
-
-    if (!isOther) {
-
-      otherTypeInput.value =
-        "";
-
-    }
-
-  }
-
-}
-
-
-/* =========================================================
-   GET SELECTED CONTRIBUTION TYPE
-========================================================= */
-
-async function getSelectedContributionType() {
-
-  const selected =
-    normalizeTypeName(
-      typeSelect?.value
-    );
-
-
-  if (!selected) {
-
-    throw new Error(
-      "Please select a contribution type."
-    );
-
-  }
-
-
-  /*
-   * Normal existing category.
-   */
-
-  if (
-    selected !==
-    "__OTHER__"
-  ) {
-
-    return selected;
-
-  }
-
-
-  /*
-   * User selected Other.
-   */
-
-  const customName =
-    normalizeTypeName(
-      otherTypeInput?.value
-    );
-
-
-  if (!customName) {
-
-    throw new Error(
-      "Please enter the other contribution type."
-    );
-
-  }
-
-
-  /*
-   * Check if this category
-   * already exists.
-   */
-
-  const existing =
-    contributionTypes.find(
-      type =>
-        sameTypeName(
-          type.name,
-          customName
-        )
-    );
-
-
-  if (existing) {
-
-    return existing.name;
-
-  }
-
-
-  /*
-   * Persist category to Supabase.
-   */
-
-  showStatus(
-    "Saving new contribution category..."
-  );
-
-
-  const newType =
-    await createContributionType(
-      customName
-    );
-
-
-  /*
-   * Add to local state.
-   */
-
-  contributionTypes.push(
-    newType
-  );
-
-
-  contributionTypes =
-    contributionTypes.sort(
-      (a, b) =>
-        String(
-          a.name || ""
-        ).localeCompare(
-          String(
-            b.name || ""
-          )
-        )
-    );
-
-
-  /*
-   * Re-render dropdown.
-   */
-
-  renderContributionTypeSelect();
-
-
-  /*
-   * Select the newly created
-   * category.
-   */
-
-  if (typeSelect) {
-
-    typeSelect.value =
-      newType.name;
-
-  }
-
-
-  renderOtherContributionType();
-
-
-  return newType.name;
 
 }
 
@@ -1466,10 +1435,6 @@ function getMemberMonthlyPosition(
     );
 
 
-  /*
-   * Member hasn't joined yet.
-   */
-
   if (
     joinMonth >
     currentMonthValue
@@ -1500,11 +1465,6 @@ function getMemberMonthlyPosition(
   }
 
 
-  /*
-   * Number of recurring monthly
-   * obligations including current month.
-   */
-
   const monthsDue =
     monthDifference(
       joinMonth,
@@ -1517,27 +1477,13 @@ function getMemberMonthlyPosition(
     expected;
 
 
-  /*
-   * IMPORTANT:
-   *
-   * Monthly accounting only counts
-   * the Monthly category.
-   *
-   * Custom categories and goal
-   * contributions do NOT reduce
-   * monthly arrears.
-   */
-
   const totalPaid =
     contributions
       .filter(
         contribution =>
           contribution.member_id ===
             member.id &&
-          String(
-            contribution.contribution_type ||
-            ""
-          ).toLowerCase() ===
+          contribution.contribution_type ===
             "monthly"
       )
       .reduce(
@@ -1553,11 +1499,6 @@ function getMemberMonthlyPosition(
       );
 
 
-  /*
-   * Amount required for all
-   * months before current month.
-   */
-
   const previousDue =
     Math.max(
       monthsDue - 1,
@@ -1566,22 +1507,12 @@ function getMemberMonthlyPosition(
     expected;
 
 
-  /*
-   * Payment applied against
-   * previous months.
-   */
-
   const previousPaid =
     Math.min(
       totalPaid,
       previousDue
     );
 
-
-  /*
-   * Remaining arrears from
-   * previous months.
-   */
 
   const previousOutstanding =
     Math.max(
@@ -1591,11 +1522,6 @@ function getMemberMonthlyPosition(
     );
 
 
-  /*
-   * Payment remaining after
-   * previous arrears.
-   */
-
   const amountAfterPrevious =
     Math.max(
       totalPaid -
@@ -1604,21 +1530,12 @@ function getMemberMonthlyPosition(
     );
 
 
-  /*
-   * Amount allocated to current
-   * month's obligation.
-   */
-
   const currentPaid =
     Math.min(
       amountAfterPrevious,
       expected
     );
 
-
-  /*
-   * Extra amount becomes credit.
-   */
 
   const carryForward =
     Math.max(
@@ -1627,10 +1544,6 @@ function getMemberMonthlyPosition(
       0
     );
 
-
-  /*
-   * Current month outstanding.
-   */
 
   const currentOutstanding =
     Math.max(
@@ -1723,11 +1636,9 @@ function renderMonthlyStatus() {
     memberStatusRows.innerHTML =
       `
         <tr>
-
           <td colspan="7">
             No members found.
           </td>
-
         </tr>
       `;
 
@@ -1745,6 +1656,17 @@ function renderMonthlyStatus() {
             getMemberMonthlyPosition(
               member
             );
+
+
+          const statusClass =
+            String(
+              position.status
+            )
+              .toLowerCase()
+              .replaceAll(
+                " ",
+                "-"
+              );
 
 
           return `
@@ -1789,12 +1711,7 @@ function renderMonthlyStatus() {
               <td>
                 <span
                   class="contribution-status contribution-status-${escapeHtml(
-                    position.status
-                      .toLowerCase()
-                      .replaceAll(
-                        " ",
-                        "-"
-                      )
+                    statusClass
                   )}"
                 >
                   ${escapeHtml(
@@ -1986,12 +1903,6 @@ function renderGoalProgress() {
             );
 
 
-          /*
-           * Count unique active members
-           * who have contributed towards
-           * this specific goal.
-           */
-
           const contributingMemberIds =
             new Set(
               goalContributions
@@ -2026,15 +1937,13 @@ function renderGoalProgress() {
 
           const roundedAmountPercentage =
             Math.round(
-              amountPercentage *
-              10
+              amountPercentage * 10
             ) / 10;
 
 
           const roundedMemberPercentage =
             Math.round(
-              memberPercentage *
-              10
+              memberPercentage * 10
             ) / 10;
 
 
@@ -2149,7 +2058,6 @@ function renderGoalProgress() {
                   </span>
 
                 </div>
-
 
                 <strong>
                   ${roundedMemberPercentage}%
@@ -2390,7 +2298,57 @@ function toggleMpesaReference() {
     mpesaReference.required =
       isMpesa;
 
+    if (!isMpesa) {
+
+      mpesaReference.value =
+        "";
+
+    }
+
   }
+
+}
+
+
+/* =========================================================
+   BIND EVENTS
+========================================================= */
+
+function bindEvents() {
+
+  if (form) {
+
+    form.addEventListener(
+      "submit",
+      handleSubmit
+    );
+
+  }
+
+
+  if (methodSelect) {
+
+    methodSelect.addEventListener(
+      "change",
+      toggleMpesaReference
+    );
+
+  }
+
+
+  if (typeSelect) {
+
+    typeSelect.addEventListener(
+      "change",
+      toggleOtherContributionType
+    );
+
+  }
+
+
+  toggleMpesaReference();
+
+  toggleOtherContributionType();
 
 }
 
@@ -2420,6 +2378,15 @@ async function handleSubmit(
     }
 
 
+    if (!currentMember?.id) {
+
+      throw new Error(
+        "Your member account could not be identified."
+      );
+
+    }
+
+
     /* -----------------------------------------------------
        MEMBER
     ----------------------------------------------------- */
@@ -2437,6 +2404,12 @@ async function handleSubmit(
     }
 
 
+    /*
+     * Extra security:
+     * selected member must belong
+     * to current group.
+     */
+
     const selectedMember =
       members.find(
         member =>
@@ -2445,10 +2418,14 @@ async function handleSubmit(
       );
 
 
-    if (!selectedMember) {
+    if (
+      !selectedMember ||
+      selectedMember.group_id !==
+      groupId
+    ) {
 
       throw new Error(
-        "Selected member could not be found in this group."
+        "The selected member does not belong to this group."
       );
 
     }
@@ -2485,12 +2462,59 @@ async function handleSubmit(
       todayString();
 
 
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(
+      contributionDate
+    )) {
+
+      throw new Error(
+        "Please enter a valid contribution date."
+      );
+
+    }
+
+
     /* -----------------------------------------------------
-       TYPE
+       CONTRIBUTION TYPE
     ----------------------------------------------------- */
 
-    const contributionType =
-      await getSelectedContributionType();
+    let contributionType =
+      typeSelect?.value ||
+      "monthly";
+
+
+    /*
+     * OTHER TYPE
+     */
+
+    if (
+      normalizeContributionType(
+        contributionType
+      ) ===
+      "other"
+    ) {
+
+      const customType =
+        String(
+          otherTypeInput?.value ||
+          ""
+        ).trim();
+
+
+      if (!customType) {
+
+        throw new Error(
+          "Please enter the name of the other contribution."
+        );
+
+      }
+
+
+      contributionType =
+        await saveCustomContributionType(
+          customType
+        );
+
+    }
 
 
     /* -----------------------------------------------------
@@ -2503,7 +2527,7 @@ async function handleSubmit(
 
 
     /* -----------------------------------------------------
-       MPESA
+       M-PESA
     ----------------------------------------------------- */
 
     const mpesaRef =
@@ -2513,28 +2537,27 @@ async function handleSubmit(
       ).trim();
 
 
-    const normalizedMethod =
+    const paymentMethodLower =
       paymentMethod
-        .toLowerCase()
-        .replaceAll(
-          "-",
-          ""
-        )
-        .replaceAll(
-          "_",
-          ""
-        );
+        .toLowerCase();
 
 
     if (
-      normalizedMethod ===
-        "mpesa" &&
-      !mpesaRef
+      paymentMethodLower.includes(
+        "mpesa"
+      ) ||
+      paymentMethodLower.includes(
+        "m-pesa"
+      )
     ) {
 
-      throw new Error(
-        "Please enter the M-Pesa reference."
-      );
+      if (!mpesaRef) {
+
+        throw new Error(
+          "Please enter the M-Pesa reference."
+        );
+
+      }
 
     }
 
@@ -2592,9 +2615,12 @@ async function handleSubmit(
 
     /* -----------------------------------------------------
        PAYLOAD
+       
        IMPORTANT:
-       recorded_by MUST be members.id
-       NOT auth.users.id
+       recorded_by = currentMember.id
+       NOT currentUser.id
+       because contributions.recorded_by
+       references members.id.
     ----------------------------------------------------- */
 
     const payload = {
@@ -2627,6 +2653,10 @@ async function handleSubmit(
         mpesaRef ||
         null,
 
+      mpesa_reference:
+        mpesaRef ||
+        null,
+
       goal_id:
         goalId,
 
@@ -2637,13 +2667,10 @@ async function handleSubmit(
     };
 
 
-    /*
-     * Do not send mpesa_reference separately
-     * unless the database has that column.
-     *
-     * reference is the canonical field
-     * used by this implementation.
-     */
+    console.log(
+      "CHAMA LIVE: contribution payload",
+      payload
+    );
 
 
     /* -----------------------------------------------------
@@ -2672,7 +2699,8 @@ async function handleSubmit(
           created_at,
           goal_id,
           contribution_date,
-          notes
+          notes,
+          mpesa_reference
         `)
         .single();
 
@@ -2707,19 +2735,30 @@ async function handleSubmit(
     }
 
 
-    renderOtherContributionType();
+    /*
+     * Re-render the custom types
+     * after reset.
+     */
+
+    renderContributionTypeSelect();
 
     toggleMpesaReference();
+
+    toggleOtherContributionType();
 
 
     /* -----------------------------------------------------
        REFRESH DATA
     ----------------------------------------------------- */
 
+    await loadContributionTypes();
+
     await loadContributions();
 
     await loadContributionGoals();
 
+
+    renderContributionTypeSelect();
 
     renderGoalSelect();
 
@@ -2772,101 +2811,6 @@ async function handleSubmit(
 
 
 /* =========================================================
-   BIND EVENTS
-========================================================= */
-
-function bindEvents() {
-
-  if (
-    form &&
-    form.dataset.bound !==
-      "true"
-  ) {
-
-    form.dataset.bound =
-      "true";
-
-
-    form.addEventListener(
-      "submit",
-      handleSubmit
-    );
-
-  }
-
-
-  if (
-    methodSelect &&
-    methodSelect.dataset.bound !==
-      "true"
-  ) {
-
-    methodSelect.dataset.bound =
-      "true";
-
-
-    methodSelect.addEventListener(
-      "change",
-      toggleMpesaReference
-    );
-
-  }
-
-
-  if (
-    typeSelect &&
-    typeSelect.dataset.bound !==
-      "true"
-  ) {
-
-    typeSelect.dataset.bound =
-      "true";
-
-
-    typeSelect.addEventListener(
-      "change",
-      renderOtherContributionType
-    );
-
-  }
-
-
-  /*
-   * Allow Enter/blur to clean
-   * the custom category name.
-   */
-
-  if (
-    otherTypeInput &&
-    otherTypeInput.dataset.bound !==
-      "true"
-  ) {
-
-    otherTypeInput.dataset.bound =
-      "true";
-
-
-    otherTypeInput.addEventListener(
-      "blur",
-      () => {
-
-        otherTypeInput.value =
-          normalizeTypeName(
-            otherTypeInput.value
-          );
-
-      }
-    );
-
-  }
-
-
-  toggleMpesaReference();
-
-}
-
-
-/* =========================================================
    PUBLIC REFRESH
 ========================================================= */
 
@@ -2879,20 +2823,18 @@ export async function refreshContributions() {
 
   await loadMembers();
 
+  await loadContributionTypes();
+
   await loadContributions();
 
   await loadContributionGoals();
 
-  await loadContributionTypes();
-
 
   renderMonthlyExpected();
 
-  renderGoalSelect();
-
   renderContributionTypeSelect();
 
-  renderOtherContributionType();
+  renderGoalSelect();
 
   renderGoalProgress();
 
