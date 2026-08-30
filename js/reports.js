@@ -1,774 +1,367 @@
 /* =========================================================
    CHAMA LIVE — REPORTS
+   COMPLETE SCHEMA-ALIGNED VERSION
+
+   FEATURES
    ---------------------------------------------------------
-   BACKEND-DRIVEN REPORTING MODULE
+   • Group financial summary
+   • Member count
+   • Contribution totals
+   • Expense totals
+   • Approved / pending / rejected expenses
+   • Current balance
+   • Contribution vs expense comparison
+   • Monthly contribution breakdown
+   • Monthly expense breakdown
+   • Meeting statistics
+   • Recent contributions
+   • Recent approved expenses
+   • Date filtering
+   • Print report
+   • CSV export
 
-   SOURCE OF TRUTH
+   IMPORTANT DATABASE RULE
    ---------------------------------------------------------
-   Financial summary:
-   public.get_monthly_financial_report(group_id, month)
+   contributions.recorded_by -> members.id
+   expenses.recorded_by      -> members.id
 
-   Member contribution status:
-   public.get_member_monthly_status(group_id, month)
+   Therefore:
+       recorded_by = currentMember.id
 
-   RULE:
-   Frontend displays accounting results.
-   Backend performs accounting calculations.
-
+   NOT:
+       recorded_by = currentUser.id
 ========================================================= */
 
 import { supabase } from "./supabase.js";
-import { getMyMember } from "./auth.js";
+
+import {
+  requireAuth,
+  getMyMember
+} from "./auth.js";
+
+
+console.log(
+  "CHAMA LIVE: reports.js loaded"
+);
 
 
 /* =========================================================
-   HELPERS
+   ELEMENTS
 ========================================================= */
 
-const $ = (id) => document.getElementById(id);
+const statusEl =
+  document.getElementById("status");
+
+const errorEl =
+  document.getElementById("error");
+
+const fromDateInput =
+  document.getElementById("fromDate");
+
+const toDateInput =
+  document.getElementById("toDate");
+
+const generateButton =
+  document.getElementById("generateReport");
+
+const printButton =
+  document.getElementById("printReport");
+
+const csvButton =
+  document.getElementById("exportCsv");
 
 
-function setText(id, value) {
+/* SUMMARY */
 
-  const el = $(id);
+const membersTotalEl =
+  document.getElementById("membersTotal");
 
-  if (el) {
-    el.textContent = value;
-  }
+const contributionsTotalEl =
+  document.getElementById("contributionsTotal");
 
-}
+const approvedExpensesEl =
+  document.getElementById("approvedExpenses");
 
+const balanceTotalEl =
+  document.getElementById("balanceTotal");
 
-function number(value) {
+const pendingExpensesEl =
+  document.getElementById("pendingExpenses");
 
-  const n = Number(value);
-
-  return Number.isFinite(n) ? n : 0;
-
-}
-
-
-function money(value) {
-
-  return new Intl.NumberFormat("en-KE", {
-    style: "currency",
-    currency: "KES",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(number(value));
-
-}
+const rejectedExpensesEl =
+  document.getElementById("rejectedExpenses");
 
 
-function normalizeType(value) {
+/* BREAKDOWN */
 
-  return String(value || "")
-    .trim()
-    .toLowerCase();
-
-}
-
-
-function escapeHtml(value) {
-
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-
-}
-
-
-function formatMonth(month) {
-
-  if (!month) {
-    return "Selected month";
-  }
-
-  const parts = String(month)
-    .split("-")
-    .map(Number);
-
-  const year = parts[0];
-  const monthNumber = parts[1];
-
-  if (
-    !Number.isFinite(year) ||
-    !Number.isFinite(monthNumber)
-  ) {
-    return "Selected month";
-  }
-
-  return new Date(
-    year,
-    monthNumber - 1,
-    1
-  ).toLocaleDateString(
-    "en-KE",
-    {
-      month: "long",
-      year: "numeric"
-    }
+const contributionBreakdownRows =
+  document.getElementById(
+    "contributionBreakdownRows"
   );
 
-}
-
-
-function getCurrentMonth() {
-
-  const now = new Date();
-
-  return [
-    now.getFullYear(),
-    String(now.getMonth() + 1)
-      .padStart(2, "0")
-  ].join("-");
-
-}
-
-
-function addMonths(month, amount) {
-
-  const parts = String(month)
-    .split("-")
-    .map(Number);
-
-  const year = parts[0];
-  const monthNumber = parts[1];
-
-  if (
-    !Number.isFinite(year) ||
-    !Number.isFinite(monthNumber)
-  ) {
-    return "";
-  }
-
-  const date = new Date(
-    year,
-    monthNumber - 1 + amount,
-    1
+const expenseBreakdownRows =
+  document.getElementById(
+    "expenseBreakdownRows"
   );
 
-  return [
-    date.getFullYear(),
-    String(date.getMonth() + 1)
-      .padStart(2, "0")
-  ].join("-");
 
-}
+/* RECENT */
+
+const contributionRows =
+  document.getElementById(
+    "reportContributionRows"
+  );
+
+const expenseRows =
+  document.getElementById(
+    "reportExpenseRows"
+  );
+
+
+/* MEETINGS */
+
+const meetingsTotalEl =
+  document.getElementById(
+    "meetingsTotal"
+  );
+
+const upcomingMeetingsEl =
+  document.getElementById(
+    "upcomingMeetings"
+  );
+
+const completedMeetingsEl =
+  document.getElementById(
+    "completedMeetings"
+  );
+
+const cancelledMeetingsEl =
+  document.getElementById(
+    "cancelledMeetings"
+  );
 
 
 /* =========================================================
    STATE
 ========================================================= */
 
-let groupId = null;
+let currentUser = null;
+
 let currentMember = null;
-let currentMonth = "";
-let reportData = null;
+
+let groupId = null;
+
+let members = [];
+
+let contributions = [];
+
+let expenses = [];
+
+let meetings = [];
+
+let initialized = false;
 
 
 /* =========================================================
-   INITIALIZE
+   HELPERS
 ========================================================= */
 
-async function init() {
+function money(value) {
 
-  try {
-
-    currentMember =
-      await getMyMember();
-
-
-    if (
-      !currentMember ||
-      !currentMember.group_id
-    ) {
-
-      throw new Error(
-        "Unable to identify your group."
-      );
-
+  return new Intl.NumberFormat(
+    "en-KE",
+    {
+      style: "currency",
+      currency: "KES",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
     }
-
-
-    groupId =
-      currentMember.group_id;
-
-
-    currentMonth =
-      getCurrentMonth();
-
-
-    const monthInput =
-      $("month");
-
-
-    if (monthInput) {
-
-      monthInput.value =
-        currentMonth;
-
-
-      monthInput.addEventListener(
-        "change",
-        async () => {
-
-          if (!monthInput.value) {
-            return;
-          }
-
-          currentMonth =
-            monthInput.value;
-
-          await loadReports();
-
-        }
-      );
-
-    }
-
-
-    $("printReport")
-      ?.addEventListener(
-        "click",
-        printReport
-      );
-
-
-    $("exportCsv")
-      ?.addEventListener(
-        "click",
-        exportCsv
-      );
-
-
-    $("refreshReport")
-      ?.addEventListener(
-        "click",
-        loadReports
-      );
-
-
-    await loadReports();
-
-  } catch (error) {
-
-    showError(error);
-
-  }
+  ).format(
+    Number(value || 0)
+  );
 
 }
 
 
-/* =========================================================
-   LOAD REPORTS
-========================================================= */
+function number(value) {
 
-async function loadReports() {
+  return new Intl.NumberFormat(
+    "en-KE"
+  ).format(
+    Number(value || 0)
+  );
 
-  clearError();
+}
 
 
-  if (!groupId) {
+function escapeHtml(value) {
 
-    showError(
-      "Group could not be identified."
+  return String(
+    value ?? ""
+  )
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+    .replaceAll(
+      "'",
+      "&#039;"
     );
+
+}
+
+
+function formatDate(value) {
+
+  if (!value) {
+
+    return "—";
+
+  }
+
+
+  const date =
+    new Date(value);
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+
+    return String(value);
+
+  }
+
+
+  return date.toLocaleDateString(
+    "en-KE",
+    {
+      year: "numeric",
+      month: "short",
+      day: "numeric"
+    }
+  );
+
+}
+
+
+function getToday() {
+
+  const date =
+    new Date();
+
+
+  return [
+    date.getFullYear(),
+
+    String(
+      date.getMonth() + 1
+    ).padStart(
+      2,
+      "0"
+    ),
+
+    String(
+      date.getDate()
+    ).padStart(
+      2,
+      "0"
+    )
+
+  ].join("-");
+
+}
+
+
+function getMonthStart() {
+
+  const date =
+    new Date();
+
+  return [
+    date.getFullYear(),
+
+    String(
+      date.getMonth() + 1
+    ).padStart(
+      2,
+      "0"
+    ),
+
+    "01"
+
+  ].join("-");
+
+}
+
+
+function showStatus(message) {
+
+  if (!statusEl) {
 
     return;
 
   }
 
 
-  setStatus(
-    `Loading ${formatMonth(currentMonth)} report...`
+  statusEl.textContent =
+    message || "";
+
+  statusEl.hidden =
+    !message;
+
+}
+
+
+function showError(error) {
+
+  console.error(
+    "CHAMA LIVE Reports:",
+    error
   );
 
 
-  try {
+  if (!errorEl) {
 
-    /* =====================================================
-       GROUP
-    ===================================================== */
+    return;
 
-    const {
-      data: group,
-      error: groupError
-    } =
-      await supabase
-        .from("groups")
-        .select(`
-          id,
-          name,
-          monthly_contribution,
-          opening_balance
-        `)
-        .eq("id", groupId)
-        .single();
+  }
 
 
-    if (groupError) {
-      throw groupError;
-    }
+  errorEl.textContent =
+    error?.message ||
+    String(error) ||
+    "Unable to generate report.";
 
+  errorEl.hidden =
+    false;
 
-    /* =====================================================
-       FINANCIAL PERIOD
-    ===================================================== */
+}
 
-    const {
-      data: period,
-      error: periodError
-    } =
-      await supabase
-        .from("financial_periods")
-        .select(`
-          id,
-          group_id,
-          month,
-          opening_balance,
-          closing_balance,
-          status,
-          closed_at,
-          closed_by,
-          created_at
-        `)
-        .eq("group_id", groupId)
-        .eq("month", currentMonth)
-        .maybeSingle();
 
+function clearError() {
 
-    if (periodError) {
-      throw periodError;
-    }
+  if (errorEl) {
 
+    errorEl.textContent =
+      "";
 
-    /* =====================================================
-       AUTHORITATIVE FINANCIAL REPORT
-
-       Backend is the single source of truth.
-    ===================================================== */
-
-    const {
-      data: financialReport,
-      error: financialReportError
-    } =
-      await supabase.rpc(
-        "get_monthly_financial_report",
-        {
-          p_group_id: groupId,
-          p_month: currentMonth
-        }
-      );
-
-
-    if (financialReportError) {
-      throw financialReportError;
-    }
-
-
-    const summary =
-      normalizeRpcResult(
-        financialReport
-      );
-
-
-    /* =====================================================
-       MEMBER MONTHLY STATUS
-
-       Same backend allocation engine used across the app.
-    ===================================================== */
-
-    const {
-      data: memberStatusData,
-      error: memberStatusError
-    } =
-      await supabase.rpc(
-        "get_member_monthly_status",
-        {
-          p_group_id: groupId,
-          p_month: currentMonth
-        }
-      );
-
-
-    if (memberStatusError) {
-      throw memberStatusError;
-    }
-
-
-    const memberStatuses =
-      memberStatusData || [];
-
-
-    /* =====================================================
-       CONTRIBUTIONS
-
-       These are transaction records for the selected
-       physical transaction period.
-
-       Used for:
-       - Cashbook
-       - Contribution ledger
-       - Payment breakdown
-    ===================================================== */
-
-    const start =
-      `${currentMonth}-01`;
-
-
-    const end =
-      `${addMonths(currentMonth, 1)}-01`;
-
-
-    const {
-      data: contributions,
-      error: contributionsError
-    } =
-      await supabase
-        .from("contributions")
-        .select(`
-          id,
-          group_id,
-          member_id,
-          amount,
-          contribution_type,
-          month,
-          payment_method,
-          reference,
-          mpesa_reference,
-          recorded_by,
-          created_at,
-          goal_id,
-          contribution_date,
-          notes
-        `)
-        .eq("group_id", groupId)
-        .gte(
-          "contribution_date",
-          start
-        )
-        .lt(
-          "contribution_date",
-          end
-        )
-        .order(
-          "contribution_date",
-          {
-            ascending: true
-          }
-        )
-        .order(
-          "created_at",
-          {
-            ascending: true
-          }
-        );
-
-
-    if (contributionsError) {
-      throw contributionsError;
-    }
-
-
-    /* =====================================================
-       EXPENSES
-    ===================================================== */
-
-    const {
-      data: expenses,
-      error: expensesError
-    } =
-      await supabase
-        .from("expenses")
-        .select(`
-          id,
-          group_id,
-          description,
-          category,
-          amount,
-          date,
-          recorded_by,
-          receipt_url,
-          approval_status,
-          created_at
-        `)
-        .eq("group_id", groupId)
-        .gte(
-          "date",
-          start
-        )
-        .lt(
-          "date",
-          end
-        )
-        .order(
-          "date",
-          {
-            ascending: true
-          }
-        )
-        .order(
-          "created_at",
-          {
-            ascending: true
-          }
-        );
-
-
-    if (expensesError) {
-      throw expensesError;
-    }
-
-
-    /* =====================================================
-       MEMBERS
-
-       Needed to map member IDs to names in transaction
-       reports.
-    ===================================================== */
-
-    const {
-      data: members,
-      error: membersError
-    } =
-      await supabase
-        .from("members")
-        .select(`
-          id,
-          group_id,
-          member_number,
-          membership_number,
-          name,
-          phone,
-          email,
-          role,
-          join_date,
-          status
-        `)
-        .eq("group_id", groupId)
-        .order(
-          "name",
-          {
-            ascending: true
-          }
-        );
-
-
-    if (membersError) {
-      throw membersError;
-    }
-
-
-    /* =====================================================
-       CONTRIBUTION BREAKDOWN
-    ===================================================== */
-
-    const monthlyCollected =
-      (contributions || [])
-        .filter(
-          contribution =>
-            normalizeType(
-              contribution.contribution_type
-            ) === "monthly"
-        )
-        .reduce(
-          (total, contribution) =>
-            total +
-            number(contribution.amount),
-          0
-        );
-
-
-    const otherCollected =
-      (contributions || [])
-        .filter(
-          contribution =>
-            normalizeType(
-              contribution.contribution_type
-            ) !== "monthly"
-        )
-        .reduce(
-          (total, contribution) =>
-            total +
-            number(contribution.amount),
-          0
-        );
-
-
-    /* =====================================================
-       REPORT DATA
-
-       IMPORTANT:
-       Financial totals come from backend RPC.
-
-       Transaction lists come directly from tables.
-    ===================================================== */
-
-    reportData = {
-
-      group,
-
-      period,
-
-      summary,
-
-      members:
-        members || [],
-
-      memberStatuses,
-
-      contributions:
-        contributions || [],
-
-      expenses:
-        expenses || [],
-
-
-      /* Financial Summary */
-
-      opening:
-        number(
-          summary.opening_balance
-        ),
-
-      expected:
-        number(
-          summary.expected_monthly_contributions
-        ),
-
-      collected:
-        number(
-          summary.total_contributions_collected
-        ),
-
-      previousOutstanding:
-        number(
-          summary.previous_outstanding
-        ),
-
-      appliedThisMonth:
-        number(
-          summary.applied_this_month
-        ),
-
-      carryForward:
-        number(
-          summary.carry_forward
-        ),
-
-      outstanding:
-        number(
-          summary.current_outstanding
-        ),
-
-      approvedExpenses:
-        number(
-          summary.approved_expenses
-        ),
-
-      pendingExpenses:
-        number(
-          summary.pending_expenses
-        ),
-
-      closing:
-        number(
-          summary.closing_balance
-        ),
-
-      calculatedClosing:
-        number(
-          summary.closing_balance
-        ),
-
-      activeMembers:
-        number(
-          summary.active_members
-        ),
-
-      paidCount:
-        number(
-          summary.members_paid
-        ),
-
-      partialCount:
-        number(
-          summary.partial_payments
-        ),
-
-      outstandingCount:
-        number(
-          summary.outstanding_members
-        ),
-
-      collectionRate:
-        number(
-          summary.collection_rate
-        ),
-
-      periodStatus:
-        String(
-          summary.period_status ||
-          period?.status ||
-          "open"
-        ).toLowerCase(),
-
-
-      /* Transaction breakdown */
-
-      monthlyCollected,
-
-      otherCollected,
-
-      rejectedExpenses:
-        (expenses || [])
-          .filter(
-            expense =>
-              normalizeType(
-                expense.approval_status
-              ) === "rejected"
-          )
-          .reduce(
-            (total, expense) =>
-              total +
-              number(expense.amount),
-            0
-          )
-
-    };
-
-
-    /* =====================================================
-       RENDER
-    ===================================================== */
-
-    renderSummary();
-
-    renderMemberReport();
-
-    renderContributionReport();
-
-    renderExpenseReport();
-
-    renderContributionBreakdown();
-
-    renderFinancialPosition();
-
-    updateReportHeader();
-
-
-    setStatus(
-      `${formatMonth(currentMonth)} report loaded`
-    );
-
-
-  } catch (error) {
-
-    showError(error);
+    errorEl.hidden =
+      true;
 
   }
 
@@ -776,615 +369,1401 @@ async function loadReports() {
 
 
 /* =========================================================
-   NORMALIZE RPC RESULT
-
-   Supabase/Postgres RPC may return:
-   - object
-   - JSON object
-   - array containing one object
+   STATUS NORMALIZATION
 ========================================================= */
 
-function normalizeRpcResult(data) {
+function normalizeExpenseStatus(
+  value
+) {
 
-  if (Array.isArray(data)) {
+  const status =
+    String(
+      value ||
+      "pending"
+    )
+      .trim()
+      .toLowerCase();
 
-    return data[0] || {};
+
+  if (
+    status === "approved"
+  ) {
+
+    return "approved";
 
   }
 
 
   if (
-    typeof data === "string"
+    status === "rejected"
   ) {
 
-    try {
+    return "rejected";
 
-      return JSON.parse(data);
+  }
 
-    } catch {
 
-      return {};
+  return "pending";
+
+}
+
+
+/* =========================================================
+   LOAD MEMBERS
+========================================================= */
+
+async function loadMembers() {
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("members")
+      .select(`
+        id,
+        group_id,
+        full_name,
+        status
+      `)
+      .eq(
+        "group_id",
+        groupId
+      );
+
+
+  if (error) {
+
+    throw error;
+
+  }
+
+
+  members =
+    data || [];
+
+}
+
+
+/* =========================================================
+   LOAD CONTRIBUTIONS
+========================================================= */
+
+async function loadContributions() {
+
+  let query =
+    supabase
+      .from("contributions")
+      .select(`
+        id,
+        group_id,
+        amount,
+        date,
+        type,
+        payment_method,
+        mpesa_reference,
+        recorded_by,
+        created_at
+      `)
+      .eq(
+        "group_id",
+        groupId
+      );
+
+
+  const fromDate =
+    fromDateInput?.value ||
+    "";
+
+
+  const toDate =
+    toDateInput?.value ||
+    "";
+
+
+  if (fromDate) {
+
+    query =
+      query.gte(
+        "date",
+        fromDate
+      );
+
+  }
+
+
+  if (toDate) {
+
+    query =
+      query.lte(
+        "date",
+        toDate
+      );
+
+  }
+
+
+  const {
+    data,
+    error
+  } =
+    await query
+      .order(
+        "date",
+        {
+          ascending: false
+        }
+      )
+      .order(
+        "created_at",
+        {
+          ascending: false
+        }
+      );
+
+
+  if (error) {
+
+    throw error;
+
+  }
+
+
+  contributions =
+    data || [];
+
+}
+
+
+/* =========================================================
+   LOAD EXPENSES
+========================================================= */
+
+async function loadExpenses() {
+
+  let query =
+    supabase
+      .from("expenses")
+      .select(`
+        id,
+        group_id,
+        description,
+        category,
+        amount,
+        date,
+        recorded_by,
+        receipt_url,
+        approval_status,
+        created_at
+      `)
+      .eq(
+        "group_id",
+        groupId
+      );
+
+
+  const fromDate =
+    fromDateInput?.value ||
+    "";
+
+
+  const toDate =
+    toDateInput?.value ||
+    "";
+
+
+  if (fromDate) {
+
+    query =
+      query.gte(
+        "date",
+        fromDate
+      );
+
+  }
+
+
+  if (toDate) {
+
+    query =
+      query.lte(
+        "date",
+        toDate
+      );
+
+  }
+
+
+  const {
+    data,
+    error
+  } =
+    await query
+      .order(
+        "date",
+        {
+          ascending: false
+        }
+      )
+      .order(
+        "created_at",
+        {
+          ascending: false
+        }
+      );
+
+
+  if (error) {
+
+    throw error;
+
+  }
+
+
+  expenses =
+    data || [];
+
+}
+
+
+/* =========================================================
+   LOAD MEETINGS
+========================================================= */
+
+async function loadMeetings() {
+
+  let query =
+    supabase
+      .from("meetings")
+      .select(`
+        id,
+        group_id,
+        title,
+        date,
+        venue,
+        status,
+        created_at
+      `)
+      .eq(
+        "group_id",
+        groupId
+      );
+
+
+  const fromDate =
+    fromDateInput?.value ||
+    "";
+
+
+  const toDate =
+    toDateInput?.value ||
+    "";
+
+
+  if (fromDate) {
+
+    query =
+      query.gte(
+        "date",
+        fromDate
+      );
+
+  }
+
+
+  if (toDate) {
+
+    query =
+      query.lte(
+        "date",
+        toDate
+      );
+
+  }
+
+
+  const {
+    data,
+    error
+  } =
+    await query
+      .order(
+        "date",
+        {
+          ascending: false
+        }
+      );
+
+
+  if (error) {
+
+    throw error;
+
+  }
+
+
+  meetings =
+    data || [];
+
+}
+
+
+/* =========================================================
+   LOAD ALL DATA
+========================================================= */
+
+async function loadReportData() {
+
+  showStatus(
+    "Loading report data..."
+  );
+
+
+  await Promise.all([
+    loadMembers(),
+    loadContributions(),
+    loadExpenses(),
+    loadMeetings()
+  ]);
+
+}
+
+
+/* =========================================================
+   SUMMARY
+========================================================= */
+
+function renderSummary() {
+
+  let contributionTotal =
+    0;
+
+  let approvedExpenses =
+    0;
+
+  let pendingExpenses =
+    0;
+
+  let rejectedExpenses =
+    0;
+
+
+  contributions.forEach(
+    contribution => {
+
+      contributionTotal +=
+        Number(
+          contribution.amount ||
+          0
+        );
+
+    }
+  );
+
+
+  expenses.forEach(
+    expense => {
+
+      const amount =
+        Number(
+          expense.amount ||
+          0
+        );
+
+
+      const status =
+        normalizeExpenseStatus(
+          expense.approval_status
+        );
+
+
+      if (
+        status === "approved"
+      ) {
+
+        approvedExpenses +=
+          amount;
+
+      }
+      else if (
+        status === "rejected"
+      ) {
+
+        rejectedExpenses +=
+          amount;
+
+      }
+      else {
+
+        pendingExpenses +=
+          amount;
+
+      }
+
+    }
+  );
+
+
+  const balance =
+    contributionTotal -
+    approvedExpenses;
+
+
+  if (membersTotalEl) {
+
+    membersTotalEl.textContent =
+      number(
+        members.length
+      );
+
+  }
+
+
+  if (contributionsTotalEl) {
+
+    contributionsTotalEl.textContent =
+      money(
+        contributionTotal
+      );
+
+  }
+
+
+  if (approvedExpensesEl) {
+
+    approvedExpensesEl.textContent =
+      money(
+        approvedExpenses
+      );
+
+  }
+
+
+  if (balanceTotalEl) {
+
+    balanceTotalEl.textContent =
+      money(
+        balance
+      );
+
+  }
+
+
+  if (pendingExpensesEl) {
+
+    pendingExpensesEl.textContent =
+      money(
+        pendingExpenses
+      );
+
+  }
+
+
+  if (rejectedExpensesEl) {
+
+    rejectedExpensesEl.textContent =
+      money(
+        rejectedExpenses
+      );
+
+  }
+
+}
+
+
+/* =========================================================
+   MEMBER NAME
+========================================================= */
+
+function memberName(
+  memberId
+) {
+
+  const member =
+    members.find(
+      item =>
+        String(
+          item.id
+        ) ===
+        String(
+          memberId
+        )
+    );
+
+
+  if (!member) {
+
+    return "Unknown member";
+
+  }
+
+
+  return (
+    member.full_name ||
+    "Unnamed member"
+  );
+
+}
+
+
+/* =========================================================
+   MONTHLY CONTRIBUTIONS
+========================================================= */
+
+function renderContributionBreakdown() {
+
+  if (!contributionBreakdownRows) {
+
+    return;
+
+  }
+
+
+  const months = {};
+
+
+  contributions.forEach(
+    contribution => {
+
+      const date =
+        String(
+          contribution.date ||
+          ""
+        );
+
+
+      const month =
+        date.slice(
+          0,
+          7
+        );
+
+
+      if (!month) {
+
+        return;
+
+      }
+
+
+      if (!months[month]) {
+
+        months[month] = {
+          count: 0,
+          amount: 0
+        };
+
+      }
+
+
+      months[month].count +=
+        1;
+
+      months[month].amount +=
+        Number(
+          contribution.amount ||
+          0
+        );
+
+    }
+  );
+
+
+  const list =
+    Object.entries(
+      months
+    )
+      .sort(
+        ([a], [b]) =>
+          b.localeCompare(a)
+      );
+
+
+  if (!list.length) {
+
+    contributionBreakdownRows.innerHTML = `
+      <tr>
+        <td colspan="3">
+          No contribution data found.
+        </td>
+      </tr>
+    `;
+
+    return;
+
+  }
+
+
+  contributionBreakdownRows.innerHTML =
+    list
+      .map(
+        ([month, data]) => {
+
+          const label =
+            new Date(
+              `${month}-01T00:00:00`
+            )
+              .toLocaleDateString(
+                "en-KE",
+                {
+                  year: "numeric",
+                  month: "long"
+                }
+              );
+
+
+          return `
+            <tr>
+
+              <td>
+                ${escapeHtml(label)}
+              </td>
+
+              <td>
+                ${number(data.count)}
+              </td>
+
+              <td>
+                <strong>
+                  ${escapeHtml(
+                    money(data.amount)
+                  )}
+                </strong>
+              </td>
+
+            </tr>
+          `;
+
+        }
+      )
+      .join("");
+
+}
+
+
+/* =========================================================
+   MONTHLY EXPENSES
+========================================================= */
+
+function renderExpenseBreakdown() {
+
+  if (!expenseBreakdownRows) {
+
+    return;
+
+  }
+
+
+  const months = {};
+
+
+  expenses.forEach(
+    expense => {
+
+      if (
+        normalizeExpenseStatus(
+          expense.approval_status
+        ) !==
+        "approved"
+      ) {
+
+        return;
+
+      }
+
+
+      const date =
+        String(
+          expense.date ||
+          ""
+        );
+
+
+      const month =
+        date.slice(
+          0,
+          7
+        );
+
+
+      if (!month) {
+
+        return;
+
+      }
+
+
+      if (!months[month]) {
+
+        months[month] = {
+          count: 0,
+          amount: 0
+        };
+
+      }
+
+
+      months[month].count +=
+        1;
+
+      months[month].amount +=
+        Number(
+          expense.amount ||
+          0
+        );
+
+    }
+  );
+
+
+  const list =
+    Object.entries(
+      months
+    )
+      .sort(
+        ([a], [b]) =>
+          b.localeCompare(a)
+      );
+
+
+  if (!list.length) {
+
+    expenseBreakdownRows.innerHTML = `
+      <tr>
+        <td colspan="3">
+          No approved expense data found.
+        </td>
+      </tr>
+    `;
+
+    return;
+
+  }
+
+
+  expenseBreakdownRows.innerHTML =
+    list
+      .map(
+        ([month, data]) => {
+
+          const label =
+            new Date(
+              `${month}-01T00:00:00`
+            )
+              .toLocaleDateString(
+                "en-KE",
+                {
+                  year: "numeric",
+                  month: "long"
+                }
+              );
+
+
+          return `
+            <tr>
+
+              <td>
+                ${escapeHtml(label)}
+              </td>
+
+              <td>
+                ${number(data.count)}
+              </td>
+
+              <td>
+                <strong>
+                  ${escapeHtml(
+                    money(data.amount)
+                  )}
+                </strong>
+              </td>
+
+            </tr>
+          `;
+
+        }
+      )
+      .join("");
+
+}
+
+
+/* =========================================================
+   RECENT CONTRIBUTIONS
+========================================================= */
+
+function renderContributionLedger() {
+
+  if (!contributionRows) {
+
+    return;
+
+  }
+
+
+  const list =
+    contributions.slice(
+      0,
+      20
+    );
+
+
+  if (!list.length) {
+
+    contributionRows.innerHTML = `
+      <tr>
+        <td colspan="5">
+          No contributions found.
+        </td>
+      </tr>
+    `;
+
+    return;
+
+  }
+
+
+  contributionRows.innerHTML =
+    list
+      .map(
+        contribution => {
+
+          return `
+            <tr>
+
+              <td>
+                ${escapeHtml(
+                  formatDate(
+                    contribution.date
+                  )
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  memberName(
+                    contribution.recorded_by
+                  )
+                )}
+              </td>
+
+              <td>
+                <strong>
+                  ${escapeHtml(
+                    money(
+                      contribution.amount
+                    )
+                  )}
+                </strong>
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  contribution.type ||
+                  "monthly"
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  contribution.payment_method ||
+                  "—"
+                )}
+              </td>
+
+            </tr>
+          `;
+
+        }
+      )
+      .join("");
+
+}
+
+
+/* =========================================================
+   APPROVED EXPENSE LEDGER
+========================================================= */
+
+function renderExpenseLedger() {
+
+  if (!expenseRows) {
+
+    return;
+
+  }
+
+
+  const list =
+    expenses
+      .filter(
+        expense =>
+          normalizeExpenseStatus(
+            expense.approval_status
+          ) ===
+          "approved"
+      )
+      .slice(
+        0,
+        20
+      );
+
+
+  if (!list.length) {
+
+    expenseRows.innerHTML = `
+      <tr>
+        <td colspan="5">
+          No approved expenses found.
+        </td>
+      </tr>
+    `;
+
+    return;
+
+  }
+
+
+  expenseRows.innerHTML =
+    list
+      .map(
+        expense => {
+
+          return `
+            <tr>
+
+              <td>
+                ${escapeHtml(
+                  formatDate(
+                    expense.date
+                  )
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  expense.description
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  expense.category ||
+                  "—"
+                )}
+              </td>
+
+              <td>
+                <strong>
+                  ${escapeHtml(
+                    money(
+                      expense.amount
+                    )
+                  )}
+                </strong>
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  memberName(
+                    expense.recorded_by
+                  )
+                )}
+              </td>
+
+            </tr>
+          `;
+
+        }
+      )
+      .join("");
+
+}
+
+
+/* =========================================================
+   MEETING REPORT
+========================================================= */
+
+function renderMeetingSummary() {
+
+  const upcoming =
+    meetings.filter(
+      meeting =>
+        String(
+          meeting.status ||
+          "upcoming"
+        )
+          .toLowerCase() ===
+        "upcoming"
+    ).length;
+
+
+  const completed =
+    meetings.filter(
+      meeting =>
+        String(
+          meeting.status ||
+          ""
+        )
+          .toLowerCase() ===
+        "completed"
+    ).length;
+
+
+  const cancelled =
+    meetings.filter(
+      meeting =>
+        String(
+          meeting.status ||
+          ""
+        )
+          .toLowerCase() ===
+        "cancelled"
+    ).length;
+
+
+  if (meetingsTotalEl) {
+
+    meetingsTotalEl.textContent =
+      number(
+        meetings.length
+      );
+
+  }
+
+
+  if (upcomingMeetingsEl) {
+
+    upcomingMeetingsEl.textContent =
+      number(
+        upcoming
+      );
+
+  }
+
+
+  if (completedMeetingsEl) {
+
+    completedMeetingsEl.textContent =
+      number(
+        completed
+      );
+
+  }
+
+
+  if (cancelledMeetingsEl) {
+
+    cancelledMeetingsEl.textContent =
+      number(
+        cancelled
+      );
+
+  }
+
+}
+
+
+/* =========================================================
+   RENDER EVERYTHING
+========================================================= */
+
+function renderReport() {
+
+  renderSummary();
+
+  renderContributionBreakdown();
+
+  renderExpenseBreakdown();
+
+  renderContributionLedger();
+
+  renderExpenseLedger();
+
+  renderMeetingSummary();
+
+}
+
+
+/* =========================================================
+   GENERATE
+========================================================= */
+
+async function generateReport() {
+
+  try {
+
+    clearError();
+
+    showStatus(
+      "Generating report..."
+    );
+
+
+    const fromDate =
+      fromDateInput?.value ||
+      "";
+
+    const toDate =
+      toDateInput?.value ||
+      "";
+
+
+    if (
+      fromDate &&
+      toDate &&
+      fromDate >
+      toDate
+    ) {
+
+      throw new Error(
+        "The From date cannot be after the To date."
+      );
+
+    }
+
+
+    if (generateButton) {
+
+      generateButton.disabled =
+        true;
+
+      generateButton.textContent =
+        "Generating...";
+
+    }
+
+
+    await loadReportData();
+
+    renderReport();
+
+
+    showStatus(
+      "Report generated successfully."
+    );
+
+
+    setTimeout(
+      () => {
+
+        showStatus("");
+
+      },
+      2500
+    );
+
+  }
+  catch (error) {
+
+    showStatus("");
+
+    showError(
+      error
+    );
+
+  }
+  finally {
+
+    if (generateButton) {
+
+      generateButton.disabled =
+        false;
+
+      generateButton.textContent =
+        "Generate Report";
 
     }
 
   }
 
-
-  return data || {};
-
 }
 
 
 /* =========================================================
-   RENDER SUMMARY
+   CSV EXPORT
 ========================================================= */
 
-function renderSummary() {
+function csvEscape(value) {
 
-  const r = reportData;
-
-  if (!r) {
-    return;
-  }
-
-
-  setText(
-    "openingBalance",
-    money(r.opening)
-  );
+  const text =
+    String(
+      value ?? ""
+    );
 
 
-  setText(
-    "expected",
-    money(r.expected)
-  );
-
-
-  setText(
-    "collected",
-    money(r.collected)
-  );
-
-
-  setText(
-    "monthlyCollected",
-    money(r.monthlyCollected)
-  );
-
-
-  setText(
-    "otherCollected",
-    money(r.otherCollected)
-  );
-
-
-  setText(
-    "previousOutstanding",
-    money(r.previousOutstanding)
-  );
-
-
-  setText(
-    "appliedThisMonth",
-    money(r.appliedThisMonth)
-  );
-
-
-  setText(
-    "carryForward",
-    money(r.carryForward)
-  );
-
-
-  setText(
-    "outstanding",
-    money(r.outstanding)
-  );
-
-
-  setText(
-    "approvedExpenses",
-    money(r.approvedExpenses)
-  );
-
-
-  setText(
-    "pendingExpenses",
-    money(r.pendingExpenses)
-  );
-
-
-  setText(
-    "rejectedExpenses",
-    money(r.rejectedExpenses)
-  );
-
-
-  setText(
-    "closingBalance",
-    money(r.closing)
-  );
-
-
-  setText(
-    "memberCount",
-    r.activeMembers
-  );
-
-
-  setText(
-    "membersPaid",
-    r.paidCount
-  );
-
-
-  setText(
-    "membersPartial",
-    r.partialCount
-  );
-
-
-  setText(
-    "membersOutstanding",
-    r.outstandingCount
-  );
-
-
-  setText(
-    "collectionRate",
-    `${r.collectionRate.toFixed(1)}%`
-  );
-
-
-  setText(
-    "periodStatus",
-    r.periodStatus.toUpperCase()
-  );
+  return `"${text.replaceAll(
+    '"',
+    '""'
+  )}"`;
 
 }
 
 
-/* =========================================================
-   RENDER FINANCIAL POSITION
-========================================================= */
+function exportCsv() {
 
-function renderFinancialPosition() {
+  try {
 
-  const r = reportData;
+    const rows = [
+      [
+        "Type",
+        "Date",
+        "Description",
+        "Category",
+        "Amount",
+        "Status",
+        "Member / Recorded By",
+        "Payment Method"
+      ]
+    ];
 
-  if (!r) {
-    return;
-  }
 
+    contributions.forEach(
+      contribution => {
 
-  setText(
-    "opening2",
-    money(r.opening)
-  );
+        rows.push([
+          "Contribution",
 
+          contribution.date ||
+          "",
 
-  setText(
-    "contributions2",
-    money(r.collected)
-  );
+          "Contribution",
 
+          contribution.type ||
+          "",
 
-  setText(
-    "expenses2",
-    money(r.approvedExpenses)
-  );
+          contribution.amount ||
+          0,
 
+          "recorded",
 
-  setText(
-    "balance2",
-    money(r.closing)
-  );
+          memberName(
+            contribution.recorded_by
+          ),
 
-}
+          contribution.payment_method ||
+          ""
+        ]);
 
+      }
+    );
 
-/* =========================================================
-   RENDER MEMBER REPORT
-========================================================= */
 
-function renderMemberReport() {
+    expenses.forEach(
+      expense => {
 
-  const tbody =
-    $("memberRows");
+        rows.push([
+          "Expense",
 
+          expense.date ||
+          "",
 
-  if (!tbody) {
-    return;
-  }
+          expense.description ||
+          "",
 
+          expense.category ||
+          "",
 
-  const rows =
-    reportData?.memberStatuses || [];
+          expense.amount ||
+          0,
 
-
-  if (!rows.length) {
-
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="10">
-          No active members found.
-        </td>
-      </tr>
-    `;
-
-    return;
-
-  }
-
-
-  tbody.innerHTML =
-    rows
-      .map(item => {
-
-        const memberName =
-          item.name ||
-          item.member_name ||
-          "Unknown member";
-
-
-        const memberNumber =
-          item.member_number ||
-          item.membership_number ||
-          "-";
-
-
-        const status =
-          item.contribution_status ||
-          item.status ||
-          "Outstanding";
-
-
-        return `
-          <tr>
-
-            <td>
-              <strong>
-                ${escapeHtml(memberName)}
-              </strong>
-            </td>
-
-            <td>
-              ${escapeHtml(memberNumber)}
-            </td>
-
-            <td>
-              ${money(item.monthly_due)}
-            </td>
-
-            <td>
-              ${money(item.previous_outstanding)}
-            </td>
-
-            <td>
-              ${money(item.applied_this_month)}
-            </td>
-
-            <td>
-              ${money(item.carry_forward)}
-            </td>
-
-            <td>
-              ${money(item.current_outstanding)}
-            </td>
-
-            <td>
-              <strong>
-                ${escapeHtml(status)}
-              </strong>
-            </td>
-
-          </tr>
-        `;
-
-      })
-      .join("");
-
-}
-
-
-/* =========================================================
-   RENDER CONTRIBUTION REPORT
-========================================================= */
-
-function renderContributionReport() {
-
-  const tbody =
-    $("contributionRows");
-
-
-  if (!tbody) {
-    return;
-  }
-
-
-  const contributions =
-    reportData?.contributions || [];
-
-
-  if (!contributions.length) {
-
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="7">
-          No contributions recorded for this month.
-        </td>
-      </tr>
-    `;
-
-    return;
-
-  }
-
-
-  const members =
-    reportData?.members || [];
-
-
-  tbody.innerHTML =
-    contributions
-      .map(contribution => {
-
-        const member =
-          members.find(
-            item =>
-              String(item.id) ===
-              String(
-                contribution.member_id
-              )
-          );
-
-
-        const reference =
-          contribution.mpesa_reference ||
-          contribution.reference ||
-          "-";
-
-
-        return `
-          <tr>
-
-            <td>
-              ${escapeHtml(
-                contribution.contribution_date ||
-                "-"
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                member?.name ||
-                "Unknown member"
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                contribution.contribution_type ||
-                "-"
-              )}
-            </td>
-
-            <td>
-              <strong>
-                ${money(
-                  contribution.amount
-                )}
-              </strong>
-            </td>
-
-            <td>
-              ${escapeHtml(
-                contribution.payment_method ||
-                "-"
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(reference)}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                contribution.month ||
-                "-"
-              )}
-            </td>
-
-          </tr>
-        `;
-
-      })
-      .join("");
-
-}
-
-
-/* =========================================================
-   RENDER EXPENSE REPORT
-========================================================= */
-
-function renderExpenseReport() {
-
-  const tbody =
-    $("expenseRows");
-
-
-  if (!tbody) {
-    return;
-  }
-
-
-  const expenses =
-    reportData?.expenses || [];
-
-
-  if (!expenses.length) {
-
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="6">
-          No expenses recorded for this month.
-        </td>
-      </tr>
-    `;
-
-    return;
-
-  }
-
-
-  tbody.innerHTML =
-    expenses
-      .map(expense => {
-
-        const status =
-          normalizeType(
+          normalizeExpenseStatus(
             expense.approval_status
-          );
+          ),
+
+          memberName(
+            expense.recorded_by
+          ),
+
+          ""
+        ]);
+
+      }
+    );
 
 
-        return `
-          <tr>
-
-            <td>
-              ${escapeHtml(
-                expense.date ||
-                "-"
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                expense.description ||
-                "-"
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                expense.category ||
-                "-"
-              )}
-            </td>
-
-            <td>
-              <strong>
-                ${money(
-                  expense.amount
-                )}
-              </strong>
-            </td>
-
-            <td>
-              ${escapeHtml(
-                status
-                  ? status.toUpperCase()
-                  : "-"
-              )}
-            </td>
-
-            <td>
-              ${
-                expense.receipt_url
-
-                  ? `
-                    <a
-                      href="${escapeHtml(
-                        expense.receipt_url
-                      )}"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      View
-                    </a>
-                  `
-
-                  : "-"
-              }
-            </td>
-
-          </tr>
-        `;
-
-      })
-      .join("");
-
-}
+    const csv =
+      rows
+        .map(
+          row =>
+            row
+              .map(csvEscape)
+              .join(",")
+        )
+        .join("\r\n");
 
 
-/* =========================================================
-   CONTRIBUTION BREAKDOWN
-========================================================= */
-
-function renderContributionBreakdown() {
-
-  setText(
-    "monthlyContributionTotal",
-    money(
-      reportData?.monthlyCollected
-    )
-  );
-
-
-  setText(
-    "otherContributionTotal",
-    money(
-      reportData?.otherCollected
-    )
-  );
+    const blob =
+      new Blob(
+        [
+          "\ufeff",
+          csv
+        ],
+        {
+          type:
+            "text/csv;charset=utf-8;"
+        }
+      );
 
 
-  setText(
-    "totalContributionTotal",
-    money(
-      reportData?.collected
-    )
-  );
-
-}
+    const url =
+      URL.createObjectURL(
+        blob
+      );
 
 
-/* =========================================================
-   REPORT HEADER
-========================================================= */
-
-function updateReportHeader() {
-
-  const r =
-    reportData;
+    const link =
+      document.createElement(
+        "a"
+      );
 
 
-  if (!r) {
-    return;
+    link.href =
+      url;
+
+    link.download =
+      `chama-live-report-${getToday()}.csv`;
+
+
+    document.body.appendChild(
+      link
+    );
+
+
+    link.click();
+
+
+    link.remove();
+
+
+    URL.revokeObjectURL(
+      url
+    );
+
+
+    showStatus(
+      "CSV report exported."
+    );
+
+
+    setTimeout(
+      () => {
+
+        showStatus("");
+
+      },
+      2500
+    );
+
   }
+  catch (error) {
 
+    showError(
+      error
+    );
 
-  setText(
-    "reportGroupName",
-    r.group?.name ||
-    "CHAMA"
-  );
-
-
-  setText(
-    "reportMonth",
-    formatMonth(
-      currentMonth
-    )
-  );
-
-
-  setText(
-    "reportGenerated",
-    new Date().toLocaleString(
-      "en-KE"
-    )
-  );
+  }
 
 }
 
@@ -1395,237 +1774,203 @@ function updateReportHeader() {
 
 function printReport() {
 
-  if (!reportData) {
-
-    showError(
-      "Report data is not loaded."
-    );
-
-    return;
-
-  }
-
-
   window.print();
 
 }
 
 
 /* =========================================================
-   CSV EXPORT
+   DEFAULT FILTER
 ========================================================= */
 
-function exportCsv() {
+function setDefaultDates() {
 
-  if (!reportData) {
+  if (fromDateInput) {
 
-    showError(
-      "Report data is not loaded."
-    );
+    fromDateInput.value =
+      getMonthStart();
+
+  }
+
+
+  if (toDateInput) {
+
+    toDateInput.value =
+      getToday();
+
+  }
+
+}
+
+
+/* =========================================================
+   EVENTS
+========================================================= */
+
+function setupEvents() {
+
+  generateButton?.addEventListener(
+    "click",
+    generateReport
+  );
+
+
+  printButton?.addEventListener(
+    "click",
+    printReport
+  );
+
+
+  csvButton?.addEventListener(
+    "click",
+    exportCsv
+  );
+
+}
+
+
+/* =========================================================
+   INITIALIZE
+========================================================= */
+
+export async function initPage() {
+
+  if (initialized) {
 
     return;
 
   }
 
 
-  const rows = [
-
-    [
-      "Member",
-      "Member Number",
-      "Monthly Due",
-      "Previous Outstanding",
-      "Applied This Month",
-      "Carry Forward",
-      "Current Outstanding",
-      "Status"
-    ]
-
-  ];
+  initialized =
+    true;
 
 
-  (
-    reportData.memberStatuses || []
-  ).forEach(item => {
+  try {
 
-    rows.push([
+    clearError();
 
-      item.name ||
-      item.member_name ||
-      "",
-
-      item.member_number ||
-      item.membership_number ||
-      "",
-
-      number(item.monthly_due),
-
-      number(item.previous_outstanding),
-
-      number(item.applied_this_month),
-
-      number(item.carry_forward),
-
-      number(item.current_outstanding),
-
-      item.contribution_status ||
-      item.status ||
-      ""
-
-    ]);
-
-  });
+    showStatus(
+      "Loading reports..."
+    );
 
 
-  const csv =
-    rows
-      .map(
-        row =>
-          row
-            .map(
-              value =>
-                `"${String(value)
-                  .replaceAll(
-                    '"',
-                    '""'
-                  )}"`
-            )
-            .join(",")
-      )
-      .join("\n");
+    currentUser =
+      await requireAuth();
 
 
-  const blob =
-    new Blob(
-      [csv],
+    if (!currentUser) {
+
+      throw new Error(
+        "You are not signed in."
+      );
+
+    }
+
+
+    currentMember =
+      await getMyMember();
+
+
+    if (!currentMember) {
+
+      throw new Error(
+        "No member record is linked to this account."
+      );
+
+    }
+
+
+    groupId =
+      currentMember.group_id;
+
+
+    if (!groupId) {
+
+      throw new Error(
+        "Your member record is not linked to a group."
+      );
+
+    }
+
+
+    console.log(
+      "CHAMA LIVE: reports context",
       {
-        type:
-          "text/csv;charset=utf-8;"
+        userId:
+          currentUser.id,
+
+        memberId:
+          currentMember.id,
+
+        groupId:
+          groupId
       }
     );
 
 
-  const url =
-    URL.createObjectURL(blob);
+    setDefaultDates();
+
+    setupEvents();
 
 
-  const link =
-    document.createElement("a");
+    await generateReport();
 
 
-  link.href =
-    url;
-
-
-  link.download =
-    `CHAMA-LIVE-${currentMonth}-report.csv`;
-
-
-  document.body.appendChild(
-    link
-  );
-
-
-  link.click();
-
-
-  link.remove();
-
-
-  URL.revokeObjectURL(
-    url
-  );
-
-}
-
-
-/* =========================================================
-   STATUS
-========================================================= */
-
-function setStatus(message) {
-
-  const element =
-    $("status");
-
-
-  if (element) {
-
-    element.textContent =
-      message;
-
-  }
-
-}
-
-
-/* =========================================================
-   ERROR
-========================================================= */
-
-function showError(error) {
-
-  console.error(
-    "CHAMA LIVE Reports:",
-    error
-  );
-
-
-  const message =
-    error?.message ||
-    String(
-      error ||
-      "Unable to load reports."
+    console.log(
+      "CHAMA LIVE: reports initialized"
     );
 
+  }
+  catch (error) {
 
-  const element =
-    $("error");
-
-
-  if (element) {
-
-    element.hidden =
+    initialized =
       false;
 
-    element.textContent =
-      message;
+    showStatus("");
+
+    showError(
+      error
+    );
 
   }
 
+}
 
-  setStatus(
-    "Unable to load reports."
+
+export const initReports =
+  initPage;
+
+
+/* =========================================================
+   AUTO BOOT
+========================================================= */
+
+if (
+  document.readyState ===
+  "loading"
+) {
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+      initPage();
+
+    },
+    {
+      once: true
+    }
   );
 
 }
+else {
 
-
-/* =========================================================
-   CLEAR ERROR
-========================================================= */
-
-function clearError() {
-
-  const element =
-    $("error");
-
-
-  if (element) {
-
-    element.hidden =
-      true;
-
-    element.textContent =
-      "";
-
-  }
+  initPage();
 
 }
 
 
-/* =========================================================
-   START
-========================================================= */
-
-init();
+console.log(
+  "CHAMA LIVE: reports.js ready"
+);
