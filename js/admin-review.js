@@ -1,56 +1,58 @@
 /* =========================================================
    CHAMA LIVE — ADMIN REVIEW
-   PLATFORM ADMIN APPLICATION REVIEW
 
-   LIVE DATABASE RPC CONTRACT
+   COMPLETE PRODUCTION VERSION
+
+   LIVE DATABASE FLOW
    ---------------------------------------------------------
+   Platform Admin
+        ↓
    list_pending_group_applications()
-       → SETOF public.group_applications
+        ↓
+   Admin selects application
+        ↓
+   APPROVE
+        ↓
+   approve_group_application(uuid)
+        ↓
+   group + admin member created
+        ↓
+   application marked approved
+        ↓
+   send-review-email Edge Function
+        ↓
+   approval email sent
+        ↓
+   Applicant signs in
+        ↓
+   Dashboard
 
-   approve_group_application(
-       p_application_id uuid
-   )
-       → jsonb
-
-   reject_group_application(
-       p_application_id uuid,
-       p_reason text
-   )
-       → jsonb
-
-   is_platform_admin()
-       → boolean
+   REJECT
+        ↓
+   reject_group_application(uuid, reason)
+        ↓
+   application marked rejected
+        ↓
+   send-review-email Edge Function
+        ↓
+   rejection email sent
 
    IMPORTANT
    ---------------------------------------------------------
-   This file NEVER directly edits:
+   This file NEVER directly updates:
+
        group_applications
        groups
        members
 
-   All approval/rejection operations go through
-   the SECURITY DEFINER RPCs above.
+   All approval/rejection changes happen through
+   the protected live RPC functions.
+========================================================= */
 
-   Approval flow:
-       Platform Admin
-            ↓
-       list pending applications
-            ↓
-       approve RPC
-            ↓
-       group created
-            ↓
-       admin member created
-            ↓
-       financial period created
-            ↓
-       application approved
-            ↓
-       account can access Dashboard
-
-   ========================================================= */
-
-import { supabase, BASE_URL } from "./auth.js";
+import {
+  supabase,
+  BASE_URL
+} from "./auth.js";
 
 
 console.log(
@@ -59,14 +61,15 @@ console.log(
 
 
 /* =========================================================
-   PAGES
+   CONFIGURATION
 ========================================================= */
+
+const SEND_REVIEW_EMAIL_FUNCTION =
+  "send-review-email";
+
 
 const LOGIN_PAGE =
   `${BASE_URL}/login.html`;
-
-const HOME_PAGE =
-  `${BASE_URL}/index.html`;
 
 
 /* =========================================================
@@ -77,347 +80,423 @@ let applications = [];
 
 let selectedApplication = null;
 
-let isBusy = false;
+let loadingApplications = false;
+
+let processingApplication = false;
 
 
 /* =========================================================
-   ELEMENT LOOKUP
-   ---------------------------------------------------------
-   The selectors intentionally support several common IDs
-   so this JS remains compatible with the existing
-   admin-review.html structure.
+   ELEMENTS
 ========================================================= */
 
-function getElement(...ids) {
-
-  for (const id of ids) {
-
-    const element =
-      document.getElementById(id);
-
-    if (element) {
-      return element;
-    }
-
-  }
-
-  return null;
-
-}
-
-
 const applicationList =
-  getElement(
-    "applications",
-    "applicationList",
-    "pendingApplications",
-    "applicationsList"
+  document.getElementById(
+    "applicationList"
   );
 
 
-const emptyState =
-  getElement(
-    "emptyState",
-    "noApplications",
-    "emptyApplications"
+const applicationsContainer =
+  document.getElementById(
+    "applications"
+  ) ||
+  document.getElementById(
+    "applicationsContainer"
   );
 
 
-const loadingState =
-  getElement(
-    "loading",
-    "loadingState",
-    "applicationsLoading"
+const loadingBox =
+  document.getElementById(
+    "loading"
+  );
+
+
+const emptyBox =
+  document.getElementById(
+    "empty"
   );
 
 
 const errorBox =
-  getElement(
-    "error",
-    "errorBox",
-    "adminError"
+  document.getElementById(
+    "error"
   );
 
 
-const successBox =
-  getElement(
-    "success",
-    "successBox",
-    "adminSuccess"
+const statusBox =
+  document.getElementById(
+    "status"
   );
 
 
 const refreshButton =
-  getElement(
-    "refreshButton",
-    "refreshApplications",
-    "refresh"
+  document.getElementById(
+    "refreshButton"
   );
 
 
 const logoutButton =
-  getElement(
-    "logoutButton",
-    "adminLogout",
-    "logout"
-  );
-
-
-const applicationCount =
-  getElement(
-    "applicationCount",
-    "pendingCount",
-    "count"
+  document.getElementById(
+    "logoutButton"
   );
 
 
 /* =========================================================
-   OPTIONAL DETAIL / MODAL ELEMENTS
+   GENERIC ELEMENT HELPERS
 ========================================================= */
 
-const reviewModal =
-  getElement(
-    "reviewModal",
-    "applicationModal",
-    "reviewDialog"
-  );
-
-
-const reviewDetails =
-  getElement(
-    "reviewDetails",
-    "applicationDetails",
-    "selectedApplication"
-  );
-
-
-const closeModalButton =
-  getElement(
-    "closeModal",
-    "closeReview",
-    "closeApplication"
-  );
-
-
-const approveButton =
-  getElement(
-    "approveButton",
-    "approveApplication"
-  );
-
-
-const rejectButton =
-  getElement(
-    "rejectButton",
-    "rejectApplication"
-  );
-
-
-const rejectionReasonInput =
-  getElement(
-    "rejectionReason",
-    "rejectReason"
-  );
-
-
-/* =========================================================
-   UTILITIES
-========================================================= */
-
-function escapeHtml(value) {
+function escapeHtml(
+  value
+) {
 
   return String(
-    value ?? ""
+    value ??
+    ""
   )
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-
-}
-
-
-function formatCurrency(value) {
-
-  const amount =
-    Number(value ?? 0);
-
-  if (!Number.isFinite(amount)) {
-    return "KSh 0.00";
-  }
-
-  return (
-    "KSh " +
-    amount.toLocaleString(
-      "en-KE",
-      {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      }
+    .replace(
+      /&/g,
+      "&amp;"
     )
-  );
-
-}
-
-
-function formatDate(value) {
-
-  if (!value) {
-    return "—";
-  }
-
-  const date =
-    new Date(value);
-
-  if (
-    Number.isNaN(
-      date.getTime()
+    .replace(
+      /</g,
+      "&lt;"
     )
-  ) {
-    return String(value);
-  }
-
-  return date.toLocaleString(
-    "en-KE",
-    {
-      dateStyle: "medium",
-      timeStyle: "short"
-    }
-  );
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
 
 }
 
 
 /* =========================================================
-   STATUS MESSAGE
+   STATUS
 ========================================================= */
 
-function hideMessage(element) {
-
-  if (!element) {
-    return;
-  }
-
-  element.hidden = true;
-  element.textContent = "";
-
-}
-
-
-function showMessage(
-  element,
+function showStatus(
   message
 ) {
 
-  if (!element) {
+  if (!statusBox) {
     return;
   }
 
-  element.textContent =
-    String(message || "");
 
-  element.hidden =
+  statusBox.textContent =
+    String(
+      message ||
+      ""
+    );
+
+
+  statusBox.hidden =
     !message;
 
 }
 
 
-function showError(message) {
+/* =========================================================
+   ERROR
+========================================================= */
+
+function showError(
+  message
+) {
+
+  const cleanMessage =
+    String(
+      message ||
+      "Something went wrong."
+    );
+
 
   console.error(
     "CHAMA LIVE ADMIN REVIEW:",
-    message
+    cleanMessage
   );
 
-  showMessage(
-    errorBox,
-    message ||
-      "Something went wrong."
+
+  if (errorBox) {
+
+    errorBox.textContent =
+      cleanMessage;
+
+    errorBox.hidden =
+      false;
+
+  }
+
+
+  showStatus(
+    ""
   );
-
-}
-
-
-function showSuccess(message) {
-
-  showMessage(
-    successBox,
-    message
-  );
-
-}
-
-
-function clearMessages() {
-
-  hideMessage(errorBox);
-  hideMessage(successBox);
 
 }
 
 
 /* =========================================================
-   LOADING
+   CLEAR MESSAGES
+========================================================= */
+
+function clearMessages() {
+
+  if (errorBox) {
+
+    errorBox.textContent =
+      "";
+
+    errorBox.hidden =
+      true;
+
+  }
+
+
+  if (statusBox) {
+
+    statusBox.textContent =
+      "";
+
+    statusBox.hidden =
+      true;
+
+  }
+
+}
+
+
+/* =========================================================
+   LOADING UI
 ========================================================= */
 
 function setLoading(
-  loading,
-  message = "Loading applications..."
+  loading
 ) {
 
-  if (loadingState) {
+  loadingApplications =
+    loading;
 
-    loadingState.textContent =
-      message;
 
-    loadingState.hidden =
+  if (loadingBox) {
+
+    loadingBox.hidden =
       !loading;
 
   }
+
 
   if (refreshButton) {
 
     refreshButton.disabled =
       loading;
 
+    refreshButton.textContent =
+      loading
+        ? "Refreshing..."
+        : "Refresh";
+
   }
 
 }
 
 
 /* =========================================================
-   BUTTON STATE
+   PROCESSING UI
 ========================================================= */
 
-function setActionButtonsDisabled(
-  disabled
+function setProcessing(
+  processing
 ) {
 
-  if (approveButton) {
-    approveButton.disabled =
-      disabled;
-  }
+  processingApplication =
+    processing;
 
-  if (rejectButton) {
-    rejectButton.disabled =
-      disabled;
-  }
+
+  document
+    .querySelectorAll(
+      "[data-approve]"
+    )
+    .forEach(
+      button => {
+
+        button.disabled =
+          processing;
+
+      }
+    );
+
+
+  document
+    .querySelectorAll(
+      "[data-reject]"
+    )
+    .forEach(
+      button => {
+
+        button.disabled =
+          processing;
+
+      }
+    );
 
 }
 
 
 /* =========================================================
-   AUTHENTICATION
+   ERROR NORMALIZATION
 ========================================================= */
 
-async function requirePlatformAdmin() {
+function normalizeError(
+  error
+) {
+
+  const message =
+    String(
+      error?.message ||
+      error ||
+      ""
+    );
+
+
+  const lower =
+    message.toLowerCase();
+
+
+  if (
+    lower.includes(
+      "authentication required"
+    )
+  ) {
+
+    return (
+      "Your administrator session has expired. " +
+      "Please sign in again."
+    );
+
+  }
+
+
+  if (
+    lower.includes(
+      "platform administrator access required"
+    )
+  ) {
+
+    return (
+      "Platform administrator access is required " +
+      "to review group applications."
+    );
+
+  }
+
+
+  if (
+    lower.includes(
+      "application not found"
+    )
+  ) {
+
+    return (
+      "This application could not be found. " +
+      "It may have already been processed."
+    );
+
+  }
+
+
+  if (
+    lower.includes(
+      "already approved"
+    )
+  ) {
+
+    return (
+      "This application has already been approved."
+    );
+
+  }
+
+
+  if (
+    lower.includes(
+      "rejected applications cannot be approved"
+    )
+  ) {
+
+    return (
+      "A rejected application cannot be approved."
+    );
+
+  }
+
+
+  if (
+    lower.includes(
+      "failed to fetch"
+    ) ||
+    lower.includes(
+      "network"
+    )
+  ) {
+
+    return (
+      "Unable to connect to CHAMA LIVE. " +
+      "Please check your internet connection."
+    );
+
+  }
+
+
+  return (
+    message ||
+    "The requested operation could not be completed."
+  );
+
+}
+
+
+/* =========================================================
+   VERIFY PLATFORM ADMIN
+========================================================= */
+
+async function verifyPlatformAdmin() {
+
+  const {
+    data: {
+      session
+    } = {},
+    error: sessionError
+  } =
+    await supabase.auth.getSession();
+
+
+  if (sessionError) {
+    throw sessionError;
+  }
+
+
+  if (!session?.user) {
+
+    throw new Error(
+      "Authentication required."
+    );
+
+  }
+
 
   const {
     data,
     error
   } =
-    await supabase.auth.getSession();
+    await supabase.rpc(
+      "is_platform_admin"
+    );
 
 
   if (error) {
@@ -425,68 +504,16 @@ async function requirePlatformAdmin() {
   }
 
 
-  const session =
-    data?.session;
+  if (data !== true) {
 
-
-  if (!session?.user) {
-
-    window.location.replace(
-      LOGIN_PAGE
+    throw new Error(
+      "Platform administrator access required."
     );
-
-    return false;
 
   }
 
 
-  /*
-   * IMPORTANT:
-   *
-   * Do not trust a local role,
-   * localStorage value, URL parameter,
-   * or HTML state.
-   *
-   * Ask the live database.
-   */
-
-  const {
-    data: isAdmin,
-    error: adminError
-  } =
-    await supabase.rpc(
-      "is_platform_admin"
-    );
-
-
-  if (adminError) {
-    throw adminError;
-  }
-
-
-  if (isAdmin !== true) {
-
-    showError(
-      "Platform administrator access is required."
-    );
-
-    setTimeout(
-      () => {
-
-        window.location.replace(
-          LOGIN_PAGE
-        );
-
-      },
-      1600
-    );
-
-    return false;
-
-  }
-
-
-  return true;
+  return session.user;
 
 }
 
@@ -495,31 +522,35 @@ async function requirePlatformAdmin() {
    LOAD PENDING APPLICATIONS
 ========================================================= */
 
-async function loadApplications() {
-
-  if (isBusy) {
-    return;
-  }
-
-
-  isBusy = true;
+async function loadPendingApplications() {
 
   clearMessages();
 
+
   setLoading(
-    true,
-    "Loading pending applications..."
+    true
   );
 
 
   try {
 
+    await verifyPlatformAdmin();
+
+
+    showStatus(
+      "Loading pending applications..."
+    );
+
+
     /*
-     * EXACT LIVE RPC:
+     * IMPORTANT:
+     *
+     * This calls the exact live RPC:
      *
      * list_pending_group_applications()
      *
-     * No arguments.
+     * It does NOT query group_applications
+     * directly.
      */
 
     const {
@@ -542,24 +573,34 @@ async function loadApplications() {
         : [];
 
 
-    updateCount();
+    console.log(
+      "CHAMA LIVE: pending applications",
+      applications
+    );
+
 
     renderApplications();
+
+
+    showStatus(
+      applications.length
+        ? `${applications.length} pending application${applications.length === 1 ? "" : "s"}.`
+        : "No pending applications."
+    );
 
   }
 
   catch (error) {
 
     console.error(
-      "CHAMA LIVE: unable to load applications",
+      "CHAMA LIVE: failed loading applications",
       error
     );
 
 
     showError(
       normalizeError(
-        error,
-        "Unable to load pending applications."
+        error
       )
     );
 
@@ -571,28 +612,71 @@ async function loadApplications() {
       false
     );
 
-    isBusy = false;
-
   }
 
 }
 
 
 /* =========================================================
-   COUNT
+   FORMAT DATE
 ========================================================= */
 
-function updateCount() {
+function formatDate(
+  value
+) {
 
-  if (!applicationCount) {
-    return;
+  if (!value) {
+    return "—";
   }
 
 
-  applicationCount.textContent =
-    String(
-      applications.length
+  const date =
+    new Date(
+      value
     );
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+
+    return String(
+      value
+    );
+
+  }
+
+
+  return new Intl.DateTimeFormat(
+    "en-KE",
+    {
+      dateStyle:
+        "medium",
+      timeStyle:
+        "short"
+    }
+  ).format(
+    date
+  );
+
+}
+
+
+/* =========================================================
+   APPLICATION DISPLAY VALUE
+========================================================= */
+
+function applicationId(
+  application
+) {
+
+  return (
+    application?.id ||
+    application?.application_id ||
+    ""
+  );
 
 }
 
@@ -603,7 +687,12 @@ function updateCount() {
 
 function renderApplications() {
 
-  if (!applicationList) {
+  const target =
+    applicationList ||
+    applicationsContainer;
+
+
+  if (!target) {
 
     console.warn(
       "CHAMA LIVE: application list container not found."
@@ -614,45 +703,64 @@ function renderApplications() {
   }
 
 
-  applicationList.innerHTML = "";
+  target.innerHTML =
+    "";
 
 
   if (
-    applications.length === 0
+    applications.length ===
+    0
   ) {
 
-    if (emptyState) {
-      emptyState.hidden = false;
+    if (emptyBox) {
+
+      emptyBox.hidden =
+        false;
+
     }
+
+
+    target.innerHTML = `
+      <div class="cl-empty-review">
+        <strong>No pending applications</strong>
+        <p>
+          New group applications will appear here
+          when they are submitted.
+        </p>
+      </div>
+    `;
+
 
     return;
 
   }
 
 
-  if (emptyState) {
-    emptyState.hidden = true;
-  }
+  if (emptyBox) {
 
-
-  for (
-    const application
-    of applications
-  ) {
-
-    applicationList.appendChild(
-      createApplicationCard(
-        application
-      )
-    );
+    emptyBox.hidden =
+      true;
 
   }
+
+
+  applications.forEach(
+    application => {
+
+      target.appendChild(
+        createApplicationCard(
+          application
+        )
+      );
+
+    }
+  );
 
 }
 
 
 /* =========================================================
-   APPLICATION CARD
+   CREATE APPLICATION CARD
 ========================================================= */
 
 function createApplicationCard(
@@ -666,20 +774,36 @@ function createApplicationCard(
 
 
   card.className =
-    "cl-application-card";
+    "cl-review-application";
 
 
   const id =
-    application.id;
+    applicationId(
+      application
+    );
+
+
+  card.dataset.applicationId =
+    id;
 
 
   const groupName =
     application.group_name ||
-    "Unnamed Group";
+    "Unnamed group";
+
+
+  const category =
+    application.category ||
+    "Other";
 
 
   const adminName =
     application.admin_name ||
+    "—";
+
+
+  const adminPhone =
+    application.admin_phone ||
     "—";
 
 
@@ -688,130 +812,157 @@ function createApplicationCard(
     "—";
 
 
-  const phone =
-    application.admin_phone ||
-    "—";
-
-
-  const category =
-    application.category ||
-    "other";
-
-
   const country =
     application.country ||
     "Kenya";
 
 
-  const monthly =
-    formatCurrency(
-      application.monthly_contribution
-    );
+  const contribution =
+    application.monthly_contribution;
 
 
-  const created =
-    formatDate(
-      application.created_at
-    );
+  const description =
+    application.description ||
+    "No description provided.";
+
+
+  const submittedAt =
+    application.created_at ||
+    application.submitted_at ||
+    application.createdAt;
 
 
   card.innerHTML = `
 
-    <div class="cl-application-card-header">
+    <div class="cl-review-card-header">
 
       <div>
 
-        <span class="cl-application-badge">
+        <div class="cl-review-status-badge">
           PENDING REVIEW
-        </span>
+        </div>
 
         <h3>
           ${escapeHtml(groupName)}
         </h3>
 
-      </div>
+        <p>
+          ${escapeHtml(category)}
+        </p>
 
-      <span class="cl-application-date">
-        ${escapeHtml(created)}
-      </span>
+      </div>
 
     </div>
 
 
-    <div class="cl-application-grid">
+    <div class="cl-review-details">
 
-      <div>
-        <small>Administrator</small>
+      <div class="cl-review-detail">
+
+        <span>Administrator</span>
+
         <strong>
           ${escapeHtml(adminName)}
         </strong>
+
       </div>
 
-      <div>
-        <small>Email</small>
+
+      <div class="cl-review-detail">
+
+        <span>Email</span>
+
         <strong>
           ${escapeHtml(email)}
         </strong>
+
       </div>
 
-      <div>
-        <small>Phone</small>
+
+      <div class="cl-review-detail">
+
+        <span>Phone</span>
+
         <strong>
-          ${escapeHtml(phone)}
+          ${escapeHtml(adminPhone)}
         </strong>
+
       </div>
 
-      <div>
-        <small>Group type</small>
-        <strong>
-          ${escapeHtml(category)}
-        </strong>
-      </div>
 
-      <div>
-        <small>Country</small>
+      <div class="cl-review-detail">
+
+        <span>Country</span>
+
         <strong>
           ${escapeHtml(country)}
         </strong>
+
       </div>
 
-      <div>
-        <small>Monthly contribution</small>
+
+      <div class="cl-review-detail">
+
+        <span>Monthly contribution</span>
+
         <strong>
-          ${escapeHtml(monthly)}
+          ${
+            contribution === null ||
+            contribution === undefined ||
+            contribution === ""
+              ? "KSh 0"
+              : `KSh ${Number(contribution).toLocaleString("en-KE")}`
+          }
         </strong>
+
+      </div>
+
+
+      <div class="cl-review-detail">
+
+        <span>Submitted</span>
+
+        <strong>
+          ${escapeHtml(
+            formatDate(
+              submittedAt
+            )
+          )}
+        </strong>
+
       </div>
 
     </div>
 
 
-    <div class="cl-application-actions">
+    <div class="cl-review-description">
 
-      <button
-        type="button"
-        class="btn btn-secondary"
-        data-action="view"
-        data-id="${escapeHtml(id)}"
-      >
-        View Application
-      </button>
+      <span>Description</span>
+
+      <p>
+        ${escapeHtml(description)}
+      </p>
+
+    </div>
+
+
+    <div class="cl-review-actions">
 
       <button
         type="button"
         class="btn btn-primary"
-        data-action="approve"
-        data-id="${escapeHtml(id)}"
+        data-approve="${escapeHtml(id)}"
       >
-        Approve
+        Approve Application
       </button>
+
 
       <button
         type="button"
-        class="btn btn-danger"
-        data-action="reject"
-        data-id="${escapeHtml(id)}"
+        class="btn btn-secondary"
+        data-reject="${escapeHtml(id)}"
       >
-        Reject
+        Reject Application
       </button>
 
     </div>
@@ -820,196 +971,6 @@ function createApplicationCard(
 
 
   return card;
-
-}
-
-
-/* =========================================================
-   VIEW APPLICATION
-========================================================= */
-
-function viewApplication(
-  application
-) {
-
-  selectedApplication =
-    application;
-
-
-  if (!reviewDetails) {
-
-    /*
-     * Fallback:
-     * use a simple browser dialog if
-     * no detail container exists.
-     */
-
-    window.alert(
-      buildApplicationText(
-        application
-      )
-    );
-
-    return;
-
-  }
-
-
-  reviewDetails.innerHTML = `
-
-    <div class="cl-detail-row">
-      <span>Application ID</span>
-      <strong>
-        ${escapeHtml(application.id)}
-      </strong>
-    </div>
-
-    <div class="cl-detail-row">
-      <span>Group name</span>
-      <strong>
-        ${escapeHtml(application.group_name)}
-      </strong>
-    </div>
-
-    <div class="cl-detail-row">
-      <span>Group type</span>
-      <strong>
-        ${escapeHtml(application.category || "other")}
-      </strong>
-    </div>
-
-    <div class="cl-detail-row">
-      <span>Country</span>
-      <strong>
-        ${escapeHtml(application.country || "Kenya")}
-      </strong>
-    </div>
-
-    <div class="cl-detail-row">
-      <span>Administrator</span>
-      <strong>
-        ${escapeHtml(application.admin_name)}
-      </strong>
-    </div>
-
-    <div class="cl-detail-row">
-      <span>Phone</span>
-      <strong>
-        ${escapeHtml(application.admin_phone)}
-      </strong>
-    </div>
-
-    <div class="cl-detail-row">
-      <span>Email</span>
-      <strong>
-        ${escapeHtml(application.email)}
-      </strong>
-    </div>
-
-    <div class="cl-detail-row">
-      <span>Monthly contribution</span>
-      <strong>
-        ${escapeHtml(
-          formatCurrency(
-            application.monthly_contribution
-          )
-        )}
-      </strong>
-    </div>
-
-    <div class="cl-detail-row">
-      <span>Opening balance</span>
-      <strong>
-        ${escapeHtml(
-          formatCurrency(
-            application.opening_balance
-          )
-        )}
-      </strong>
-    </div>
-
-    <div class="cl-detail-description">
-
-      <span>Description</span>
-
-      <p>
-        ${
-          escapeHtml(
-            application.description ||
-            "No description provided."
-          )
-        }
-      </p>
-
-    </div>
-
-  `;
-
-
-  if (reviewModal) {
-    reviewModal.hidden = false;
-  }
-
-}
-
-
-/* =========================================================
-   BUILD TEXT FALLBACK
-========================================================= */
-
-function buildApplicationText(
-  application
-) {
-
-  return [
-
-    `Group: ${application.group_name || "—"}`,
-
-    `Administrator: ${application.admin_name || "—"}`,
-
-    `Email: ${application.email || "—"}`,
-
-    `Phone: ${application.admin_phone || "—"}`,
-
-    `Type: ${application.category || "other"}`,
-
-    `Country: ${application.country || "Kenya"}`,
-
-    `Monthly contribution: ${
-      formatCurrency(
-        application.monthly_contribution
-      )
-    }`,
-
-    `Opening balance: ${
-      formatCurrency(
-        application.opening_balance
-      )
-    }`,
-
-    `Description: ${
-      application.description ||
-      "None"
-    }`
-
-  ].join("\n");
-
-}
-
-
-/* =========================================================
-   CLOSE MODAL
-========================================================= */
-
-function closeReviewModal() {
-
-  selectedApplication =
-    null;
-
-
-  if (reviewModal) {
-    reviewModal.hidden = true;
-  }
 
 }
 
@@ -1024,8 +985,14 @@ function findApplication(
 
   return applications.find(
     application =>
-      String(application.id) ===
-      String(id)
+      String(
+        applicationId(
+          application
+        )
+      ) ===
+      String(
+        id
+      )
   );
 
 }
@@ -1036,13 +1003,26 @@ function findApplication(
 ========================================================= */
 
 async function approveApplication(
-  application
+  id
 ) {
 
-  if (!application?.id) {
+  if (
+    processingApplication
+  ) {
+    return;
+  }
+
+
+  const application =
+    findApplication(
+      id
+    );
+
+
+  if (!application) {
 
     showError(
-      "Invalid application."
+      "The selected application could not be found."
     );
 
     return;
@@ -1050,16 +1030,17 @@ async function approveApplication(
   }
 
 
-  if (isBusy) {
-    return;
-  }
+  const groupName =
+    application.group_name ||
+    "this group";
 
 
   const confirmed =
     window.confirm(
-      `Approve "${application.group_name}"?\n\n` +
-      "This will create the group, create the administrator member, " +
-      "generate the group access code and activate the account."
+      `Approve "${groupName}"?\n\n` +
+      "This will create the group and administrator " +
+      "member, activate the account, and then send " +
+      "the approval email."
     );
 
 
@@ -1068,21 +1049,23 @@ async function approveApplication(
   }
 
 
-  isBusy = true;
-
   clearMessages();
 
-  setActionButtonsDisabled(
-    true
-  );
 
-  setLoading(
-    true,
-    "Approving application..."
+  setProcessing(
+    true
   );
 
 
   try {
+
+    await verifyPlatformAdmin();
+
+
+    showStatus(
+      "Approving application..."
+    );
+
 
     /*
      * EXACT LIVE RPC:
@@ -1090,52 +1073,38 @@ async function approveApplication(
      * approve_group_application(
      *   p_application_id uuid
      * )
+     *
+     * The RPC performs the actual database
+     * transaction.
      */
 
     const {
-      data,
-      error
+      data: approvalResult,
+      error: approvalError
     } =
       await supabase.rpc(
         "approve_group_application",
         {
           p_application_id:
-            application.id
+            id
         }
       );
 
 
-    if (error) {
-      throw error;
+    if (approvalError) {
+      throw approvalError;
     }
 
 
-    /*
-     * Expected result:
-     *
-     * {
-     *   success: true,
-     *   application_id,
-     *   group_id,
-     *   member_id,
-     *   member_number,
-     *   access_code,
-     *   role: "admin",
-     *   email,
-     *   admin_name,
-     *   group_name
-     * }
-     */
-
-    const result =
-      Array.isArray(data)
-        ? data[0]
-        : data;
+    console.log(
+      "CHAMA LIVE: approval RPC result",
+      approvalResult
+    );
 
 
     if (
-      !result ||
-      result.success !== true
+      !approvalResult ||
+      approvalResult.success !== true
     ) {
 
       throw new Error(
@@ -1145,40 +1114,89 @@ async function approveApplication(
     }
 
 
-    showSuccess(
-      `${result.group_name || application.group_name} ` +
-      "has been approved successfully."
+    showStatus(
+      "Application approved. Sending confirmation email..."
     );
 
 
     /*
-     * Remove the approved application
-     * from the pending list immediately.
+     * The approval RPC returns the approved
+     * application information.
+     *
+     * We use the application ID returned by
+     * the RPC to invoke the email function.
+     */
+
+    const approvedApplicationId =
+      approvalResult.application_id ||
+      id;
+
+
+    await sendReviewEmail(
+      approvedApplicationId,
+      "approval"
+    );
+
+
+    /*
+     * Remove the approved application from
+     * the current screen.
      */
 
     applications =
       applications.filter(
         item =>
-          String(item.id) !==
-          String(application.id)
+          String(
+            applicationId(
+              item
+            )
+          ) !==
+          String(
+            id
+          )
       );
 
 
-    updateCount();
-
     renderApplications();
 
-    closeReviewModal();
+
+    const memberNumber =
+      approvalResult.member_number ||
+      "assigned";
 
 
-    /*
-     * Keep the generated credentials available
-     * for the admin UI without storing them in
-     * the browser permanently.
-     */
+    const accessCode =
+      approvalResult.access_code ||
+      "generated";
 
-    showApprovalResult(
-      result
+
+    showStatus(
+      `Approved successfully. ` +
+      `Administrator member number: ${memberNumber}. ` +
+      `Access code: ${accessCode}. ` +
+      `Approval email sent.`
+    );
+
+
+    console.log(
+      "CHAMA LIVE: application approved and email sent",
+      {
+        applicationId:
+          approvedApplicationId,
+
+        groupId:
+          approvalResult.group_id,
+
+        memberId:
+          approvalResult.member_id,
+
+        memberNumber,
+
+        accessCode,
+
+        email:
+          approvalResult.email
+      }
     );
 
   }
@@ -1193,8 +1211,7 @@ async function approveApplication(
 
     showError(
       normalizeError(
-        error,
-        "Unable to approve the application."
+        error
       )
     );
 
@@ -1202,97 +1219,11 @@ async function approveApplication(
 
   finally {
 
-    setLoading(
+    setProcessing(
       false
     );
 
-    setActionButtonsDisabled(
-      false
-    );
-
-    isBusy = false;
-
   }
-
-}
-
-
-/* =========================================================
-   SHOW APPROVAL RESULT
-========================================================= */
-
-function showApprovalResult(
-  result
-) {
-
-  const accessCode =
-    result?.access_code ||
-    "";
-
-
-  const memberNumber =
-    result?.member_number ||
-    "";
-
-
-  /*
-   * If the HTML contains dedicated result
-   * elements, populate them.
-   */
-
-  const approvalResult =
-    getElement(
-      "approvalResult",
-      "approvedResult",
-      "successResult"
-    );
-
-
-  const resultAccessCode =
-    getElement(
-      "resultAccessCode",
-      "accessCode"
-    );
-
-
-  const resultMemberNumber =
-    getElement(
-      "resultMemberNumber",
-      "memberNumber"
-    );
-
-
-  if (approvalResult) {
-
-    approvalResult.hidden =
-      false;
-
-  }
-
-
-  if (resultAccessCode) {
-
-    resultAccessCode.textContent =
-      accessCode || "—";
-
-  }
-
-
-  if (resultMemberNumber) {
-
-    resultMemberNumber.textContent =
-      memberNumber || "—";
-
-  }
-
-
-  /*
-   * If no result UI exists, don't create
-   * a disruptive popup.
-   *
-   * The RPC has already completed the
-   * database operation successfully.
-   */
 
 }
 
@@ -1302,14 +1233,26 @@ function showApprovalResult(
 ========================================================= */
 
 async function rejectApplication(
-  application,
-  reason = ""
+  id
 ) {
 
-  if (!application?.id) {
+  if (
+    processingApplication
+  ) {
+    return;
+  }
+
+
+  const application =
+    findApplication(
+      id
+    );
+
+
+  if (!application) {
 
     showError(
-      "Invalid application."
+      "The selected application could not be found."
     );
 
     return;
@@ -1317,9 +1260,29 @@ async function rejectApplication(
   }
 
 
+  const groupName =
+    application.group_name ||
+    "this group";
+
+
+  const reason =
+    window.prompt(
+      `Reason for rejecting "${groupName}":`
+    );
+
+
+  if (
+    reason ===
+    null
+  ) {
+
+    return;
+
+  }
+
+
   const cleanReason =
-    String(reason || "")
-      .trim();
+    reason.trim();
 
 
   if (!cleanReason) {
@@ -1328,47 +1291,28 @@ async function rejectApplication(
       "Please provide a rejection reason."
     );
 
-    if (rejectionReasonInput) {
-      rejectionReasonInput.focus();
-    }
-
     return;
 
   }
 
-
-  if (isBusy) {
-    return;
-  }
-
-
-  const confirmed =
-    window.confirm(
-      `Reject "${application.group_name}"?\n\n` +
-      "The application will be marked as rejected."
-    );
-
-
-  if (!confirmed) {
-    return;
-  }
-
-
-  isBusy = true;
 
   clearMessages();
 
-  setActionButtonsDisabled(
-    true
-  );
 
-  setLoading(
-    true,
-    "Rejecting application..."
+  setProcessing(
+    true
   );
 
 
   try {
+
+    await verifyPlatformAdmin();
+
+
+    showStatus(
+      "Rejecting application..."
+    );
+
 
     /*
      * EXACT LIVE RPC:
@@ -1380,14 +1324,14 @@ async function rejectApplication(
      */
 
     const {
-      data,
-      error
+      data: rejectionResult,
+      error: rejectionError
     } =
       await supabase.rpc(
         "reject_group_application",
         {
           p_application_id:
-            application.id,
+            id,
 
           p_reason:
             cleanReason
@@ -1395,20 +1339,20 @@ async function rejectApplication(
       );
 
 
-    if (error) {
-      throw error;
+    if (rejectionError) {
+      throw rejectionError;
     }
 
 
-    const result =
-      Array.isArray(data)
-        ? data[0]
-        : data;
+    console.log(
+      "CHAMA LIVE: rejection RPC result",
+      rejectionResult
+    );
 
 
     if (
-      !result ||
-      result.success !== true
+      rejectionResult &&
+      rejectionResult.success === false
     ) {
 
       throw new Error(
@@ -1418,30 +1362,56 @@ async function rejectApplication(
     }
 
 
-    showSuccess(
-      `${result.group_name || application.group_name} ` +
-      "has been rejected."
+    showStatus(
+      "Application rejected. Sending notification email..."
+    );
+
+
+    /*
+     * Send rejection email ONLY AFTER the
+     * rejection RPC has successfully completed.
+     */
+
+    const rejectedApplicationId =
+      rejectionResult?.application_id ||
+      id;
+
+
+    await sendReviewEmail(
+      rejectedApplicationId,
+      "rejection"
     );
 
 
     applications =
       applications.filter(
         item =>
-          String(item.id) !==
-          String(application.id)
+          String(
+            applicationId(
+              item
+            )
+          ) !==
+          String(
+            id
+          )
       );
 
 
-    updateCount();
-
     renderApplications();
 
-    closeReviewModal();
+
+    showStatus(
+      "Application rejected successfully. Rejection email sent."
+    );
 
 
-    if (rejectionReasonInput) {
-      rejectionReasonInput.value = "";
-    }
+    console.log(
+      "CHAMA LIVE: application rejected and email sent",
+      {
+        applicationId:
+          rejectedApplicationId
+      }
+    );
 
   }
 
@@ -1455,8 +1425,7 @@ async function rejectApplication(
 
     showError(
       normalizeError(
-        error,
-        "Unable to reject the application."
+        error
       )
     );
 
@@ -1464,15 +1433,9 @@ async function rejectApplication(
 
   finally {
 
-    setLoading(
+    setProcessing(
       false
     );
-
-    setActionButtonsDisabled(
-      false
-    );
-
-    isBusy = false;
 
   }
 
@@ -1480,180 +1443,265 @@ async function rejectApplication(
 
 
 /* =========================================================
-   REJECTION PROMPT
+   SEND REVIEW EMAIL
 ========================================================= */
 
-function promptReject(
-  application
+async function sendReviewEmail(
+  applicationIdValue,
+  type
 ) {
 
-  const reason =
-    window.prompt(
-      `Why are you rejecting "${application.group_name}"?\n\n` +
-      "A rejection reason is required."
+  if (
+    !applicationIdValue
+  ) {
+
+    throw new Error(
+      "Missing application ID for review email."
     );
+
+  }
 
 
   if (
-    reason === null
+    type !==
+      "approval" &&
+    type !==
+      "rejection"
   ) {
-    return;
+
+    throw new Error(
+      "Invalid review email type."
+    );
+
   }
 
 
-  rejectApplication(
-    application,
-    reason
+  /*
+   * Ensure there is still a valid authenticated
+   * platform-admin session before calling the
+   * protected Edge Function.
+   */
+
+  const {
+    data: {
+      session
+    } = {},
+    error: sessionError
+  } =
+    await supabase.auth.getSession();
+
+
+  if (sessionError) {
+    throw sessionError;
+  }
+
+
+  if (!session?.access_token) {
+
+    throw new Error(
+      "Your administrator session has expired. " +
+      "Please sign in again."
+    );
+
+  }
+
+
+  /*
+   * IMPORTANT:
+   *
+   * supabase.functions.invoke()
+   * automatically uses the Supabase client's
+   * current authentication session.
+   *
+   * The deployed function receives:
+   *
+   * {
+   *   application_id,
+   *   type
+   * }
+   */
+
+  const {
+    data,
+    error
+  } =
+    await supabase.functions.invoke(
+      SEND_REVIEW_EMAIL_FUNCTION,
+      {
+        body: {
+
+          application_id:
+            applicationIdValue,
+
+          type
+
+        }
+      }
+    );
+
+
+  if (error) {
+
+    console.error(
+      "CHAMA LIVE: send-review-email error",
+      error
+    );
+
+
+    /*
+     * functions.invoke() can return an error
+     * without giving us the JSON body directly.
+     *
+     * Preserve a useful message for the admin.
+     */
+
+    let message =
+      error.message ||
+      "Unable to send review email.";
+
+
+    /*
+     * Some Supabase function errors expose
+     * context with a Response object.
+     */
+
+    try {
+
+      if (
+        error.context &&
+        typeof error.context.json ===
+          "function"
+      ) {
+
+        const body =
+          await error.context.json();
+
+
+        if (
+          body?.error
+        ) {
+
+          message =
+            body.error;
+
+        }
+
+      }
+
+    }
+
+    catch (
+      ignored
+    ) {
+
+      console.warn(
+        "CHAMA LIVE: unable to parse Edge Function error body",
+        ignored
+      );
+
+    }
+
+
+    throw new Error(
+      message
+    );
+
+  }
+
+
+  console.log(
+    "CHAMA LIVE: review email response",
+    data
   );
+
+
+  /*
+   * The deployed function should return
+   * success=true.
+   *
+   * Fail if it explicitly reports failure.
+   */
+
+  if (
+    data &&
+    data.success === false
+  ) {
+
+    throw new Error(
+      data.error ||
+      "Review email was not sent."
+    );
+
+  }
+
+
+  return data;
 
 }
 
 
 /* =========================================================
-   APPLICATION LIST EVENTS
+   EVENT DELEGATION
 ========================================================= */
 
-if (applicationList) {
+function setupApplicationActions() {
 
-  applicationList.addEventListener(
+  const target =
+    applicationList ||
+    applicationsContainer;
+
+
+  if (!target) {
+
+    console.warn(
+      "CHAMA LIVE: no application action container found."
+    );
+
+    return;
+
+  }
+
+
+  target.addEventListener(
     "click",
     event => {
 
-      const button =
+      const approveButton =
         event.target.closest(
-          "button[data-action]"
+          "[data-approve]"
         );
 
 
-      if (!button) {
-        return;
-      }
+      if (approveButton) {
+
+        const id =
+          approveButton.dataset.approve;
 
 
-      const action =
-        button.dataset.action;
-
-
-      const id =
-        button.dataset.id;
-
-
-      const application =
-        findApplication(
+        approveApplication(
           id
         );
 
 
-      if (!application) {
-
-        showError(
-          "This application is no longer available."
-        );
-
         return;
 
       }
 
 
-      if (
-        action ===
-        "view"
-      ) {
-
-        viewApplication(
-          application
+      const rejectButton =
+        event.target.closest(
+          "[data-reject]"
         );
 
-        return;
 
-      }
+      if (rejectButton) {
 
-
-      if (
-        action ===
-        "approve"
-      ) {
-
-        approveApplication(
-          application
-        );
-
-        return;
-
-      }
-
-
-      if (
-        action ===
-        "reject"
-      ) {
-
-        promptReject(
-          application
-        );
-
-      }
-
-    }
-  );
-
-}
-
-
-/* =========================================================
-   MODAL BUTTONS
-========================================================= */
-
-if (closeModalButton) {
-
-  closeModalButton.addEventListener(
-    "click",
-    closeReviewModal
-  );
-
-}
-
-
-if (approveButton) {
-
-  approveButton.addEventListener(
-    "click",
-    () => {
-
-      if (
-        selectedApplication
-      ) {
-
-        approveApplication(
-          selectedApplication
-        );
-
-      }
-
-    }
-  );
-
-}
-
-
-if (rejectButton) {
-
-  rejectButton.addEventListener(
-    "click",
-    () => {
-
-      if (
-        selectedApplication
-      ) {
-
-        const reason =
-          rejectionReasonInput?.value ||
-          "";
+        const id =
+          rejectButton.dataset.reject;
 
 
         rejectApplication(
-          selectedApplication,
-          reason
+          id
         );
 
       }
@@ -1662,52 +1710,6 @@ if (rejectButton) {
   );
 
 }
-
-
-/* =========================================================
-   CLOSE MODAL ON BACKDROP
-========================================================= */
-
-if (reviewModal) {
-
-  reviewModal.addEventListener(
-    "click",
-    event => {
-
-      if (
-        event.target ===
-        reviewModal
-      ) {
-
-        closeReviewModal();
-
-      }
-
-    }
-  );
-
-}
-
-
-/* =========================================================
-   ESCAPE KEY
-========================================================= */
-
-document.addEventListener(
-  "keydown",
-  event => {
-
-    if (
-      event.key ===
-      "Escape"
-    ) {
-
-      closeReviewModal();
-
-    }
-
-  }
-);
 
 
 /* =========================================================
@@ -1720,7 +1722,7 @@ if (refreshButton) {
     "click",
     () => {
 
-      loadApplications();
+      loadPendingApplications();
 
     }
   );
@@ -1738,24 +1740,27 @@ if (logoutButton) {
     "click",
     async () => {
 
-      if (isBusy) {
-        return;
-      }
-
-
       try {
 
         await supabase.auth.signOut();
 
       }
 
-      finally {
+      catch (
+        error
+      ) {
 
-        window.location.replace(
-          LOGIN_PAGE
+        console.error(
+          "CHAMA LIVE: logout failed",
+          error
         );
 
       }
+
+
+      window.location.replace(
+        LOGIN_PAGE
+      );
 
     }
   );
@@ -1764,144 +1769,35 @@ if (logoutButton) {
 
 
 /* =========================================================
-   NORMALIZE RPC ERRORS
+   AUTH STATE
 ========================================================= */
 
-function normalizeError(
-  error,
-  fallback
-) {
+supabase.auth.onAuthStateChange(
+  (
+    event,
+    session
+  ) => {
 
-  const raw =
-    String(
-      error?.message ||
-      error?.details ||
-      error ||
-      ""
+    console.log(
+      "CHAMA LIVE: auth event",
+      event
     );
 
 
-  const lower =
-    raw.toLowerCase();
+    if (
+      event ===
+        "SIGNED_OUT" ||
+      !session?.user
+    ) {
 
+      window.location.replace(
+        LOGIN_PAGE
+      );
 
-  if (
-    lower.includes(
-      "platform administrator access required"
-    )
-  ) {
-
-    return (
-      "Platform administrator access is required."
-    );
+    }
 
   }
-
-
-  if (
-    lower.includes(
-      "authentication required"
-    )
-  ) {
-
-    return (
-      "Your admin session has expired. " +
-      "Please sign in again."
-    );
-
-  }
-
-
-  if (
-    lower.includes(
-      "application not found"
-    )
-  ) {
-
-    return (
-      "That application could not be found. " +
-      "Refresh the review list."
-    );
-
-  }
-
-
-  if (
-    lower.includes(
-      "already approved"
-    )
-  ) {
-
-    return (
-      "This application has already been approved."
-    );
-
-  }
-
-
-  if (
-    lower.includes(
-      "already rejected"
-    )
-  ) {
-
-    return (
-      "This application has already been rejected."
-    );
-
-  }
-
-
-  if (
-    lower.includes(
-      "rejected applications cannot be approved"
-    )
-  ) {
-
-    return (
-      "A rejected application cannot be approved."
-    );
-
-  }
-
-
-  if (
-    lower.includes(
-      "approved applications cannot be rejected"
-    )
-  ) {
-
-    return (
-      "An approved application cannot be rejected."
-    );
-
-  }
-
-
-  if (
-    lower.includes(
-      "network"
-    ) ||
-    lower.includes(
-      "failed to fetch"
-    )
-  ) {
-
-    return (
-      "Unable to connect to CHAMA LIVE. " +
-      "Check your internet connection and try again."
-    );
-
-  }
-
-
-  return (
-    raw ||
-    fallback ||
-    "An unexpected error occurred."
-  );
-
-}
+);
 
 
 /* =========================================================
@@ -1910,21 +1806,13 @@ function normalizeError(
 
 async function initialize() {
 
-  clearMessages();
-
-
   try {
 
-    const isAdmin =
-      await requirePlatformAdmin();
+    await verifyPlatformAdmin();
 
+    setupApplicationActions();
 
-    if (!isAdmin) {
-      return;
-    }
-
-
-    await loadApplications();
+    await loadPendingApplications();
 
   }
 
@@ -1938,8 +1826,7 @@ async function initialize() {
 
     showError(
       normalizeError(
-        error,
-        "Unable to initialize the account review page."
+        error
       )
     );
 
@@ -1947,10 +1834,6 @@ async function initialize() {
 
 }
 
-
-/* =========================================================
-   START
-========================================================= */
 
 initialize();
 
