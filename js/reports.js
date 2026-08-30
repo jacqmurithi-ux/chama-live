@@ -1,82 +1,18 @@
 /* =========================================================
    CHAMA LIVE — REPORTS
-   COMPLETE INTEGRATED VERSION
+   COMPLETE STABLE VERSION
 
-   PURPOSE
-   ---------------------------------------------------------
-   Financial, membership and meeting reporting.
-
-   GROUP CONTEXT
-   ---------------------------------------------------------
-   Reports always operate on the authenticated member's
-   current group.
-
-   DATABASE RULES
-   ---------------------------------------------------------
-   members.name
-       -> member display name
-
-   members.id
-       -> member primary key
-
-   members.group_id
-       -> group ownership
-
-   contributions.member_id
-       -> member who made the contribution
-
-   contributions.recorded_by
-       -> member who recorded the contribution
-
-   contributions.group_id
-       -> group ownership
-
-   contributions.contribution_date
-       -> contribution date
-
-   contributions.amount
-       -> contribution amount
-
-   expenses.recorded_by
-       -> member who recorded the expense
-
-   expenses.group_id
-       -> group ownership
-
-   expenses.approval_status
-       -> pending / approved / rejected
-
-   expenses.date
-       -> expense date
-
-   meetings.group_id
-       -> group ownership
-
-   meetings.date
-       -> meeting date
-
-   meetings.status
-       -> upcoming / completed / cancelled
-
-   IMPORTANT
-   ---------------------------------------------------------
-   DO NOT USE:
-
-       members.full_name
-
-   USE:
-
+   GROUP-SCOPED REPORTING
+   Uses:
        members.name
+       members.id
+       members.group_id
 
-   ARCHITECTURE
-   ---------------------------------------------------------
-   layout.js dynamically loads this module and calls:
+   Loaded dynamically by layout.js.
 
+   Required export:
        initReports()
-
-   No database schema changes are required.
 ========================================================= */
-
 
 import { supabase } from "./supabase.js";
 
@@ -87,9 +23,7 @@ import {
 } from "./auth.js";
 
 
-console.log(
-  "CHAMA LIVE: reports.js loaded"
-);
+console.log("CHAMA LIVE: reports.js loaded");
 
 
 /* =========================================================
@@ -106,113 +40,23 @@ let contributions = [];
 let expenses = [];
 let meetings = [];
 
-let initialized = false;
-
 
 /* =========================================================
-   DOM HELPERS
+   DOM
 ========================================================= */
 
-function byId(id) {
+function el(id) {
   return document.getElementById(id);
 }
 
 
 function setText(id, value) {
-
-  const element = byId(id);
-
-  if (element) {
-    element.textContent =
-      value ?? "—";
-  }
-
-}
-
-
-function setHtml(id, html) {
-
-  const element = byId(id);
+  const element = el(id);
 
   if (element) {
-    element.innerHTML = html;
+    element.textContent = value ?? "—";
   }
-
 }
-
-
-/* =========================================================
-   ELEMENTS
-========================================================= */
-
-const statusEl =
-  byId("status");
-
-const errorEl =
-  byId("error");
-
-const fromDateInput =
-  byId("fromDate");
-
-const toDateInput =
-  byId("toDate");
-
-const applyFiltersButton =
-  byId("applyFilters");
-
-const resetFiltersButton =
-  byId("resetFilters");
-
-
-/* FINANCIAL */
-
-const totalContributionsEl =
-  byId("totalContributions");
-
-const approvedExpensesEl =
-  byId("approvedExpenses");
-
-const currentBalanceEl =
-  byId("currentBalance");
-
-const pendingExpensesEl =
-  byId("pendingExpenses");
-
-const rejectedExpensesEl =
-  byId("rejectedExpenses");
-
-const activeMembersEl =
-  byId("activeMembers");
-
-
-/* MEETINGS */
-
-const totalMeetingsEl =
-  byId("totalMeetings");
-
-const upcomingMeetingsEl =
-  byId("upcomingMeetings");
-
-const completedMeetingsEl =
-  byId("completedMeetings");
-
-const cancelledMeetingsEl =
-  byId("cancelledMeetings");
-
-
-/* TABLES */
-
-const contributionBreakdownRows =
-  byId("contributionBreakdownRows");
-
-const expenseBreakdownRows =
-  byId("expenseBreakdownRows");
-
-const contributionReportRows =
-  byId("contributionReportRows");
-
-const expenseReportRows =
-  byId("expenseReportRows");
 
 
 /* =========================================================
@@ -220,128 +64,97 @@ const expenseReportRows =
 ========================================================= */
 
 function money(value) {
-
-  const amount =
-    Number(value || 0);
+  const amount = Number(value || 0);
 
   return (
     "KSh " +
-    amount.toLocaleString(
-      "en-KE",
-      {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2
-      }
-    )
+    amount.toLocaleString("en-KE", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    })
   );
-
 }
 
 
 /* =========================================================
-   HTML ESCAPE
+   ESCAPE HTML
 ========================================================= */
 
 function escapeHtml(value) {
-
-  return String(
-    value ?? ""
-  )
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
-
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 
 /* =========================================================
-   STATUS MESSAGE
-========================================================= */
-
-function showStatus(message) {
-
-  if (!statusEl) {
-    return;
-  }
-
-  statusEl.hidden = false;
-
-  statusEl.textContent =
-    message || "";
-
-}
-
-
-function clearStatus() {
-
-  if (!statusEl) {
-    return;
-  }
-
-  statusEl.hidden = true;
-
-  statusEl.textContent =
-    "";
-
-}
-
-
-/* =========================================================
-   ERROR HANDLING
+   ERROR
 ========================================================= */
 
 function showError(error) {
-
   console.error(
-    "CHAMA LIVE: reports error",
+    "CHAMA LIVE: Reports error",
     error
   );
 
-  const message =
-    error?.message ||
-    String(error) ||
-    "Unable to load reports.";
+  const errorElement = el("error");
 
-  if (errorEl) {
-
-    errorEl.hidden = false;
-
-    errorEl.textContent =
-      message;
-
+  if (!errorElement) {
+    return;
   }
 
+  errorElement.hidden = false;
+
+  errorElement.textContent =
+    error?.message ||
+    "Unable to load reports.";
 }
 
 
 function clearError() {
+  const errorElement = el("error");
 
-  if (!errorEl) {
+  if (!errorElement) {
     return;
   }
 
-  errorEl.hidden = true;
+  errorElement.hidden = true;
 
-  errorEl.textContent =
-    "";
+  errorElement.textContent = "";
+}
 
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+function showStatus(message) {
+  const statusElement = el("status");
+
+  if (!statusElement) {
+    return;
+  }
+
+  statusElement.hidden = false;
+
+  statusElement.textContent =
+    message || "";
+}
+
+
+function clearStatus() {
+  const statusElement = el("status");
+
+  if (!statusElement) {
+    return;
+  }
+
+  statusElement.hidden = true;
+
+  statusElement.textContent = "";
 }
 
 
@@ -349,23 +162,50 @@ function clearError() {
    DATE HELPERS
 ========================================================= */
 
-function formatDate(value) {
+function today() {
+  const date = new Date();
 
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0")
+  ].join("-");
+}
+
+
+function firstDayOfMonth() {
+  const date = new Date();
+
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    "01"
+  ].join("-");
+}
+
+
+function normalizeDate(value) {
   if (!value) {
+    return "";
+  }
+
+  return String(value).substring(0, 10);
+}
+
+
+function formatDate(value) {
+  const dateValue =
+    normalizeDate(value);
+
+  if (!dateValue) {
     return "—";
   }
 
   const date =
-    new Date(
-      `${value}T00:00:00`
-    );
+    new Date(`${dateValue}T00:00:00`);
 
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-    return String(value);
+  if (Number.isNaN(date.getTime())) {
+    return dateValue;
   }
 
   return date.toLocaleDateString(
@@ -376,160 +216,29 @@ function formatDate(value) {
       day: "numeric"
     }
   );
-
 }
 
 
-function getTodayKey() {
+function monthKey(value) {
+  const date =
+    normalizeDate(value);
 
-  const now =
-    new Date();
-
-  return [
-    now.getFullYear(),
-    String(
-      now.getMonth() + 1
-    ).padStart(2, "0"),
-    String(
-      now.getDate()
-    ).padStart(2, "0")
-  ].join("-");
-
+  return date
+    ? date.substring(0, 7)
+    : "";
 }
 
 
-function getFirstDayOfCurrentMonth() {
-
-  const now =
-    new Date();
-
-  return [
-    now.getFullYear(),
-    String(
-      now.getMonth() + 1
-    ).padStart(2, "0"),
-    "01"
-  ].join("-");
-
-}
-
-
-function normalizeDate(value) {
-
+function formatMonth(value) {
   if (!value) {
-    return "";
-  }
-
-  return String(value).slice(
-    0,
-    10
-  );
-
-}
-
-
-/* =========================================================
-   DATE RANGE
-========================================================= */
-
-function getDateRange() {
-
-  const from =
-    normalizeDate(
-      fromDateInput?.value
-    );
-
-  const to =
-    normalizeDate(
-      toDateInput?.value
-    );
-
-  return {
-    from,
-    to
-  };
-
-}
-
-
-function dateIsInRange(
-  value,
-  from,
-  to
-) {
-
-  const date =
-    normalizeDate(value);
-
-  if (!date) {
-    return false;
-  }
-
-  if (
-    from &&
-    date < from
-  ) {
-    return false;
-  }
-
-  if (
-    to &&
-    date > to
-  ) {
-    return false;
-  }
-
-  return true;
-
-}
-
-
-/* =========================================================
-   MONTH KEY
-========================================================= */
-
-function getMonthKey(value) {
-
-  const date =
-    normalizeDate(value);
-
-  if (!date) {
-    return "";
-  }
-
-  return date.slice(
-    0,
-    7
-  );
-
-}
-
-
-/* =========================================================
-   MONTH LABEL
-========================================================= */
-
-function formatMonth(monthKey) {
-
-  if (
-    !/^\d{4}-\d{2}$/.test(
-      monthKey
-    )
-  ) {
-    return monthKey || "—";
+    return "—";
   }
 
   const date =
-    new Date(
-      `${monthKey}-01T00:00:00`
-    );
+    new Date(`${value}-01T00:00:00`);
 
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-    return monthKey;
+  if (Number.isNaN(date.getTime())) {
+    return value;
   }
 
   return date.toLocaleDateString(
@@ -539,64 +248,94 @@ function formatMonth(monthKey) {
       month: "long"
     }
   );
-
 }
 
 
 /* =========================================================
-   INITIAL DATE FILTER
+   DATE RANGE
 ========================================================= */
 
-function setDefaultDateRange() {
+function getDateRange() {
+  return {
+    from:
+      normalizeDate(
+        el("fromDate")?.value
+      ),
 
-  if (fromDateInput) {
-
-    fromDateInput.value =
-      getFirstDayOfCurrentMonth();
-
-  }
-
-  if (toDateInput) {
-
-    toDateInput.value =
-      getTodayKey();
-
-  }
-
+    to:
+      normalizeDate(
+        el("toDate")?.value
+      )
+  };
 }
 
 
-/* =========================================================
-   VALIDATE DATE FILTER
-========================================================= */
+function inDateRange(
+  value,
+  from,
+  to
+) {
+  const date =
+    normalizeDate(value);
+
+  if (!date) {
+    return false;
+  }
+
+  if (from && date < from) {
+    return false;
+  }
+
+  if (to && date > to) {
+    return false;
+  }
+
+  return true;
+}
+
 
 function validateDateRange() {
-
   const {
     from,
     to
   } = getDateRange();
 
-  if (
-    from &&
-    to &&
-    from > to
-  ) {
-
+  if (from && to && from > to) {
     throw new Error(
       "From Date cannot be later than To Date."
     );
-
   }
-
 }
 
 
 /* =========================================================
-   LOAD CURRENT GROUP CONTEXT
+   SET DEFAULT DATES
 ========================================================= */
 
-async function loadGroupContext() {
+function setDefaultDates() {
+  const fromInput =
+    el("fromDate");
+
+  const toInput =
+    el("toDate");
+
+  if (fromInput) {
+    fromInput.value =
+      firstDayOfMonth();
+  }
+
+  if (toInput) {
+    toInput.value =
+      today();
+  }
+}
+
+
+/* =========================================================
+   CURRENT GROUP CONTEXT
+========================================================= */
+
+async function loadContext() {
 
   currentUser =
     await requireAuth();
@@ -605,19 +344,15 @@ async function loadGroupContext() {
     await getMyMember();
 
   if (!currentMember) {
-
     throw new Error(
       "No member record is linked to this account."
     );
-
   }
 
   if (!currentMember.group_id) {
-
     throw new Error(
       "Your member record has no group."
     );
-
   }
 
   currentGroupId =
@@ -627,43 +362,31 @@ async function loadGroupContext() {
     await getMyGroup();
 
   if (!currentGroup) {
-
     throw new Error(
       "Group information could not be found."
     );
-
   }
 
   if (
     String(currentGroup.id) !==
     String(currentGroupId)
   ) {
-
     throw new Error(
-      "The current group context could not be verified."
+      "Current group context could not be verified."
     );
-
   }
 
-  renderGroupContext();
+  renderContext();
 
   console.log(
     "CHAMA LIVE: Reports group context",
     {
-      userId:
-        currentUser?.id,
-
-      memberId:
-        currentMember?.id,
-
-      groupId:
-        currentGroupId,
-
-      groupName:
-        currentGroup?.name
+      userId: currentUser?.id,
+      memberId: currentMember?.id,
+      groupId: currentGroupId,
+      groupName: currentGroup?.name
     }
   );
-
 }
 
 
@@ -671,42 +394,24 @@ async function loadGroupContext() {
    RENDER GROUP CONTEXT
 ========================================================= */
 
-function renderGroupContext() {
-
-  const groupName =
-    currentGroup?.name ||
-    "CHAMA";
-
-  const memberName =
-    currentMember?.name ||
-    "Member";
+function renderContext() {
 
   document
-    .querySelectorAll(
-      "[data-group-name]"
-    )
-    .forEach(
-      element => {
+    .querySelectorAll("[data-group-name]")
+    .forEach(element => {
+      element.textContent =
+        currentGroup?.name ||
+        "CHAMA";
+    });
 
-        element.textContent =
-          groupName;
-
-      }
-    );
 
   document
-    .querySelectorAll(
-      "[data-user-name]"
-    )
-    .forEach(
-      element => {
-
-        element.textContent =
-          memberName;
-
-      }
-    );
-
+    .querySelectorAll("[data-user-name]")
+    .forEach(element => {
+      element.textContent =
+        currentMember?.name ||
+        "Member";
+    });
 }
 
 
@@ -716,10 +421,7 @@ function renderGroupContext() {
 
 async function loadMembers() {
 
-  const {
-    data,
-    error
-  } =
+  const result =
     await supabase
       .from("members")
       .select(`
@@ -749,29 +451,12 @@ async function loadMembers() {
         }
       );
 
-  if (error) {
-    throw error;
+  if (result.error) {
+    throw result.error;
   }
 
   members =
-    data || [];
-
-  const activeCount =
-    members.filter(
-      member =>
-        String(
-          member?.status || ""
-        )
-          .trim()
-          .toLowerCase() ===
-        "active"
-    ).length;
-
-  setText(
-    "activeMembers",
-    activeCount
-  );
-
+    result.data || [];
 }
 
 
@@ -781,10 +466,7 @@ async function loadMembers() {
 
 async function loadContributions() {
 
-  const {
-    data,
-    error
-  } =
+  const result =
     await supabase
       .from("contributions")
       .select(`
@@ -810,21 +492,14 @@ async function loadContributions() {
         {
           ascending: false
         }
-      )
-      .order(
-        "created_at",
-        {
-          ascending: false
-        }
       );
 
-  if (error) {
-    throw error;
+  if (result.error) {
+    throw result.error;
   }
 
   contributions =
-    data || [];
-
+    result.data || [];
 }
 
 
@@ -834,10 +509,7 @@ async function loadContributions() {
 
 async function loadExpenses() {
 
-  const {
-    data,
-    error
-  } =
+  const result =
     await supabase
       .from("expenses")
       .select(`
@@ -861,21 +533,14 @@ async function loadExpenses() {
         {
           ascending: false
         }
-      )
-      .order(
-        "created_at",
-        {
-          ascending: false
-        }
       );
 
-  if (error) {
-    throw error;
+  if (result.error) {
+    throw result.error;
   }
 
   expenses =
-    data || [];
-
+    result.data || [];
 }
 
 
@@ -885,10 +550,7 @@ async function loadExpenses() {
 
 async function loadMeetings() {
 
-  const {
-    data,
-    error
-  } =
+  const result =
     await supabase
       .from("meetings")
       .select(`
@@ -912,29 +574,22 @@ async function loadMeetings() {
         {
           ascending: false
         }
-      )
-      .order(
-        "created_at",
-        {
-          ascending: false
-        }
       );
 
-  if (error) {
-    throw error;
+  if (result.error) {
+    throw result.error;
   }
 
   meetings =
-    data || [];
-
+    result.data || [];
 }
 
 
 /* =========================================================
-   LOAD ALL REPORT DATA
+   LOAD REPORT DATA
 ========================================================= */
 
-async function loadReportData() {
+async function loadData() {
 
   showStatus(
     "Loading report data..."
@@ -948,17 +603,14 @@ async function loadReportData() {
   ]);
 
   clearStatus();
-
 }
 
 
 /* =========================================================
-   MEMBER NAME LOOKUP
+   MEMBER NAME
 ========================================================= */
 
-function getMemberName(
-  memberId
-) {
+function memberName(memberId) {
 
   if (!memberId) {
     return "—";
@@ -975,15 +627,14 @@ function getMemberName(
     member?.name ||
     "Unknown member"
   );
-
 }
 
 
 /* =========================================================
-   FILTER CONTRIBUTIONS
+   FILTERED CONTRIBUTIONS
 ========================================================= */
 
-function getFilteredContributions() {
+function filteredContributions() {
 
   const {
     from,
@@ -992,21 +643,20 @@ function getFilteredContributions() {
 
   return contributions.filter(
     contribution =>
-      dateIsInRange(
+      inDateRange(
         contribution.contribution_date,
         from,
         to
       )
   );
-
 }
 
 
 /* =========================================================
-   FILTER EXPENSES
+   FILTERED EXPENSES
 ========================================================= */
 
-function getFilteredExpenses() {
+function filteredExpenses() {
 
   const {
     from,
@@ -1015,21 +665,20 @@ function getFilteredExpenses() {
 
   return expenses.filter(
     expense =>
-      dateIsInRange(
+      inDateRange(
         expense.date,
         from,
         to
       )
   );
-
 }
 
 
 /* =========================================================
-   FILTER MEETINGS
+   FILTERED MEETINGS
 ========================================================= */
 
-function getFilteredMeetings() {
+function filteredMeetings() {
 
   const {
     from,
@@ -1038,13 +687,12 @@ function getFilteredMeetings() {
 
   return meetings.filter(
     meeting =>
-      dateIsInRange(
+      inDateRange(
         meeting.date,
         from,
         to
       )
   );
-
 }
 
 
@@ -1052,173 +700,137 @@ function getFilteredMeetings() {
    EXPENSE STATUS
 ========================================================= */
 
-function normalizeExpenseStatus(
-  expense
-) {
+function expenseStatus(expense) {
 
   return String(
     expense?.approval_status || ""
   )
     .trim()
     .toLowerCase();
-
 }
 
 
 /* =========================================================
-   CALCULATE FINANCIAL SUMMARY
+   FINANCIAL SUMMARY
 ========================================================= */
 
-function calculateFinancialSummary() {
+function renderFinancialSummary() {
 
-  const filteredContributions =
-    getFilteredContributions();
+  const contributionRows =
+    filteredContributions();
 
-  const filteredExpenses =
-    getFilteredExpenses();
+  const expenseRows =
+    filteredExpenses();
 
-  const totalContributions =
-    filteredContributions.reduce(
-      (
-        total,
-        row
-      ) =>
+
+  const contributionsTotal =
+    contributionRows.reduce(
+      (total, row) =>
         total +
-        Number(
-          row.amount || 0
-        ),
+        Number(row.amount || 0),
       0
     );
 
+
   const approvedExpenses =
-    filteredExpenses
+    expenseRows
       .filter(
-        expense =>
-          normalizeExpenseStatus(
-            expense
-          ) ===
+        row =>
+          expenseStatus(row) ===
           "approved"
       )
       .reduce(
-        (
-          total,
-          row
-        ) =>
+        (total, row) =>
           total +
-          Number(
-            row.amount || 0
-          ),
+          Number(row.amount || 0),
         0
       );
 
+
   const pendingExpenses =
-    filteredExpenses
+    expenseRows
       .filter(
-        expense =>
-          normalizeExpenseStatus(
-            expense
-          ) ===
+        row =>
+          expenseStatus(row) ===
           "pending"
       )
       .reduce(
-        (
-          total,
-          row
-        ) =>
+        (total, row) =>
           total +
-          Number(
-            row.amount || 0
-          ),
+          Number(row.amount || 0),
         0
       );
 
+
   const rejectedExpenses =
-    filteredExpenses
+    expenseRows
       .filter(
-        expense =>
-          normalizeExpenseStatus(
-            expense
-          ) ===
+        row =>
+          expenseStatus(row) ===
           "rejected"
       )
       .reduce(
-        (
-          total,
-          row
-        ) =>
+        (total, row) =>
           total +
-          Number(
-            row.amount || 0
-          ),
+          Number(row.amount || 0),
         0
       );
+
 
   const openingBalance =
     Number(
       currentGroup?.opening_balance || 0
     );
 
-  const currentBalance =
+
+  const balance =
     openingBalance +
-    totalContributions -
+    contributionsTotal -
     approvedExpenses;
 
-  return {
-    totalContributions,
-    approvedExpenses,
-    pendingExpenses,
-    rejectedExpenses,
-    openingBalance,
-    currentBalance
-  };
-
-}
-
-
-/* =========================================================
-   RENDER FINANCIAL SUMMARY
-========================================================= */
-
-function renderFinancialSummary() {
-
-  const summary =
-    calculateFinancialSummary();
 
   setText(
     "totalContributions",
-    money(
-      summary.totalContributions
-    )
+    money(contributionsTotal)
   );
 
   setText(
     "approvedExpenses",
-    money(
-      summary.approvedExpenses
-    )
-  );
-
-  setText(
-    "currentBalance",
-    money(
-      summary.currentBalance
-    )
+    money(approvedExpenses)
   );
 
   setText(
     "pendingExpenses",
-    money(
-      summary.pendingExpenses
-    )
+    money(pendingExpenses)
   );
 
   setText(
     "rejectedExpenses",
-    money(
-      summary.rejectedExpenses
-    )
+    money(rejectedExpenses)
   );
 
+  setText(
+    "currentBalance",
+    money(balance)
+  );
+
+
+  const activeMembers =
+    members.filter(
+      member =>
+        String(
+          member.status || ""
+        )
+          .trim()
+          .toLowerCase() ===
+        "active"
+    ).length;
+
+
+  setText(
+    "activeMembers",
+    activeMembers
+  );
 }
 
 
@@ -1228,65 +840,42 @@ function renderFinancialSummary() {
 
 function renderMeetingSummary() {
 
-  const filtered =
-    getFilteredMeetings();
+  const rows =
+    filteredMeetings();
 
-  const total =
-    filtered.length;
 
-  const upcoming =
-    filtered.filter(
-      meeting =>
-        String(
-          meeting?.status || ""
-        )
-          .trim()
-          .toLowerCase() ===
-        "upcoming"
-    ).length;
+  const countStatus =
+    status =>
+      rows.filter(
+        meeting =>
+          String(
+            meeting.status || ""
+          )
+            .trim()
+            .toLowerCase() ===
+          status
+      ).length;
 
-  const completed =
-    filtered.filter(
-      meeting =>
-        String(
-          meeting?.status || ""
-        )
-          .trim()
-          .toLowerCase() ===
-        "completed"
-    ).length;
-
-  const cancelled =
-    filtered.filter(
-      meeting =>
-        String(
-          meeting?.status || ""
-        )
-          .trim()
-          .toLowerCase() ===
-        "cancelled"
-    ).length;
 
   setText(
     "totalMeetings",
-    total
+    rows.length
   );
 
   setText(
     "upcomingMeetings",
-    upcoming
+    countStatus("upcoming")
   );
 
   setText(
     "completedMeetings",
-    completed
+    countStatus("completed")
   );
 
   setText(
     "cancelledMeetings",
-    cancelled
+    countStatus("cancelled")
   );
-
 }
 
 
@@ -1296,26 +885,29 @@ function renderMeetingSummary() {
 
 function renderContributionBreakdown() {
 
-  if (!contributionBreakdownRows) {
+  const container =
+    el("contributionBreakdownRows");
+
+  if (!container) {
     return;
   }
 
-  const filtered =
-    getFilteredContributions();
 
   const grouped = {};
 
-  filtered.forEach(
-    contribution => {
+
+  filteredContributions()
+    .forEach(row => {
 
       const month =
-        getMonthKey(
-          contribution.contribution_date
+        monthKey(
+          row.contribution_date
         );
 
       if (!month) {
         return;
       }
+
 
       if (!grouped[month]) {
 
@@ -1326,25 +918,24 @@ function renderContributionBreakdown() {
 
       }
 
-      grouped[month].entries +=
-        1;
+
+      grouped[month].entries += 1;
 
       grouped[month].amount +=
-        Number(
-          contribution.amount || 0
-        );
+        Number(row.amount || 0);
 
-    }
-  );
+    });
+
 
   const months =
     Object.keys(grouped)
       .sort()
       .reverse();
 
+
   if (months.length === 0) {
 
-    contributionBreakdownRows.innerHTML = `
+    container.innerHTML = `
       <tr>
         <td colspan="3">
           No contributions found for this period.
@@ -1353,43 +944,38 @@ function renderContributionBreakdown() {
     `;
 
     return;
-
   }
 
-  contributionBreakdownRows.innerHTML =
-    months
-      .map(
-        month => {
 
-          const row =
-            grouped[month];
+  container.innerHTML =
+    months.map(month => {
 
-          return `
-            <tr>
-              <td>
-                ${escapeHtml(
-                  formatMonth(month)
-                )}
-              </td>
+      const row =
+        grouped[month];
 
-              <td>
-                ${row.entries}
-              </td>
+      return `
+        <tr>
+          <td>
+            ${escapeHtml(
+              formatMonth(month)
+            )}
+          </td>
 
-              <td>
-                <strong>
-                  ${escapeHtml(
-                    money(row.amount)
-                  )}
-                </strong>
-              </td>
-            </tr>
-          `;
+          <td>
+            ${row.entries}
+          </td>
 
-        }
-      )
-      .join("");
+          <td>
+            <strong>
+              ${escapeHtml(
+                money(row.amount)
+              )}
+            </strong>
+          </td>
+        </tr>
+      `;
 
+    }).join("");
 }
 
 
@@ -1399,33 +985,32 @@ function renderContributionBreakdown() {
 
 function renderExpenseBreakdown() {
 
-  if (!expenseBreakdownRows) {
+  const container =
+    el("expenseBreakdownRows");
+
+  if (!container) {
     return;
   }
 
-  const filtered =
-    getFilteredExpenses()
-      .filter(
-        expense =>
-          normalizeExpenseStatus(
-            expense
-          ) ===
-          "approved"
-      );
 
   const grouped = {};
 
-  filtered.forEach(
-    expense => {
+
+  filteredExpenses()
+    .filter(
+      row =>
+        expenseStatus(row) ===
+        "approved"
+    )
+    .forEach(row => {
 
       const month =
-        getMonthKey(
-          expense.date
-        );
+        monthKey(row.date);
 
       if (!month) {
         return;
       }
+
 
       if (!grouped[month]) {
 
@@ -1436,25 +1021,24 @@ function renderExpenseBreakdown() {
 
       }
 
-      grouped[month].entries +=
-        1;
+
+      grouped[month].entries += 1;
 
       grouped[month].amount +=
-        Number(
-          expense.amount || 0
-        );
+        Number(row.amount || 0);
 
-    }
-  );
+    });
+
 
   const months =
     Object.keys(grouped)
       .sort()
       .reverse();
 
+
   if (months.length === 0) {
 
-    expenseBreakdownRows.innerHTML = `
+    container.innerHTML = `
       <tr>
         <td colspan="3">
           No approved expenses found for this period.
@@ -1463,62 +1047,62 @@ function renderExpenseBreakdown() {
     `;
 
     return;
-
   }
 
-  expenseBreakdownRows.innerHTML =
-    months
-      .map(
-        month => {
 
-          const row =
-            grouped[month];
+  container.innerHTML =
+    months.map(month => {
 
-          return `
-            <tr>
-              <td>
-                ${escapeHtml(
-                  formatMonth(month)
-                )}
-              </td>
+      const row =
+        grouped[month];
 
-              <td>
-                ${row.entries}
-              </td>
+      return `
+        <tr>
+          <td>
+            ${escapeHtml(
+              formatMonth(month)
+            )}
+          </td>
 
-              <td>
-                <strong>
-                  ${escapeHtml(
-                    money(row.amount)
-                  )}
-                </strong>
-              </td>
-            </tr>
-          `;
+          <td>
+            ${row.entries}
+          </td>
 
-        }
-      )
-      .join("");
+          <td>
+            <strong>
+              ${escapeHtml(
+                money(row.amount)
+              )}
+            </strong>
+          </td>
+        </tr>
+      `;
 
+    }).join("");
 }
 
 
 /* =========================================================
-   CONTRIBUTION REPORT
+   CONTRIBUTION REPORT TABLE
 ========================================================= */
 
 function renderContributionReport() {
 
-  if (!contributionReportRows) {
+  const container =
+    el("contributionReportRows");
+
+  if (!container) {
     return;
   }
 
-  const filtered =
-    getFilteredContributions();
 
-  if (filtered.length === 0) {
+  const rows =
+    filteredContributions();
 
-    contributionReportRows.innerHTML = `
+
+  if (rows.length === 0) {
+
+    container.innerHTML = `
       <tr>
         <td colspan="5">
           No contributions found for this period.
@@ -1527,105 +1111,87 @@ function renderContributionReport() {
     `;
 
     return;
-
   }
 
-  const rows =
-    filtered.slice(
-      0,
-      200
-    );
 
-  contributionReportRows.innerHTML =
-    rows
-      .map(
-        contribution => {
+  container.innerHTML =
+    rows.slice(0, 200)
+      .map(row => {
 
-          const recordedBy =
-            getMemberName(
-              contribution.recorded_by
-            );
+        return `
+          <tr>
 
-          const type =
-            contribution.contribution_type ||
-            "Contribution";
+            <td>
+              ${escapeHtml(
+                formatDate(
+                  row.contribution_date
+                )
+              )}
+            </td>
 
-          const paymentMethod =
-            contribution.payment_method ||
-            "—";
+            <td>
+              ${escapeHtml(
+                memberName(
+                  row.recorded_by
+                )
+              )}
+            </td>
 
-          return `
-            <tr>
-
-              <td>
+            <td>
+              <strong>
                 ${escapeHtml(
-                  formatDate(
-                    contribution.contribution_date
-                  )
+                  money(row.amount)
                 )}
-              </td>
+              </strong>
+            </td>
 
-              <td>
-                ${escapeHtml(
-                  recordedBy
-                )}
-              </td>
+            <td>
+              ${escapeHtml(
+                row.contribution_type ||
+                "Contribution"
+              )}
+            </td>
 
-              <td>
-                <strong>
-                  ${escapeHtml(
-                    money(
-                      contribution.amount
-                    )
-                  )}
-                </strong>
-              </td>
+            <td>
+              ${escapeHtml(
+                row.payment_method ||
+                "—"
+              )}
+            </td>
 
-              <td>
-                ${escapeHtml(
-                  type
-                )}
-              </td>
+          </tr>
+        `;
 
-              <td>
-                ${escapeHtml(
-                  paymentMethod
-                )}
-              </td>
-
-            </tr>
-          `;
-
-        }
-      )
-      .join("");
-
+      }).join("");
 }
 
 
 /* =========================================================
-   EXPENSE REPORT
+   EXPENSE REPORT TABLE
 ========================================================= */
 
 function renderExpenseReport() {
 
-  if (!expenseReportRows) {
+  const container =
+    el("expenseReportRows");
+
+  if (!container) {
     return;
   }
 
-  const filtered =
-    getFilteredExpenses()
+
+  const rows =
+    filteredExpenses()
       .filter(
-        expense =>
-          normalizeExpenseStatus(
-            expense
-          ) ===
+        row =>
+          expenseStatus(row) ===
           "approved"
       );
 
-  if (filtered.length === 0) {
 
-    expenseReportRows.innerHTML = `
+  if (rows.length === 0) {
+
+    container.innerHTML = `
       <tr>
         <td colspan="5">
           No approved expenses found for this period.
@@ -1634,78 +1200,61 @@ function renderExpenseReport() {
     `;
 
     return;
-
   }
 
-  const rows =
-    filtered.slice(
-      0,
-      200
-    );
 
-  expenseReportRows.innerHTML =
-    rows
-      .map(
-        expense => {
+  container.innerHTML =
+    rows.slice(0, 200)
+      .map(row => {
 
-          const recordedBy =
-            getMemberName(
-              expense.recorded_by
-            );
+        return `
+          <tr>
 
-          return `
-            <tr>
+            <td>
+              ${escapeHtml(
+                formatDate(row.date)
+              )}
+            </td>
 
-              <td>
+            <td>
+              ${escapeHtml(
+                row.description ||
+                "—"
+              )}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                row.category ||
+                "—"
+              )}
+            </td>
+
+            <td>
+              <strong>
                 ${escapeHtml(
-                  formatDate(
-                    expense.date
-                  )
+                  money(row.amount)
                 )}
-              </td>
+              </strong>
+            </td>
 
-              <td>
-                ${escapeHtml(
-                  expense.description ||
-                  "—"
-                )}
-              </td>
+            <td>
+              ${escapeHtml(
+                memberName(
+                  row.recorded_by
+                )
+              )}
+            </td>
 
-              <td>
-                ${escapeHtml(
-                  expense.category ||
-                  "—"
-                )}
-              </td>
+          </tr>
+        `;
 
-              <td>
-                <strong>
-                  ${escapeHtml(
-                    money(
-                      expense.amount
-                    )
-                  )}
-                </strong>
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  recordedBy
-                )}
-              </td>
-
-            </tr>
-          `;
-
-        }
-      )
-      .join("");
-
+      }).join("");
 }
 
 
 /* =========================================================
-   RENDER ALL REPORTS
+   RENDER
 ========================================================= */
 
 function renderReports() {
@@ -1723,15 +1272,14 @@ function renderReports() {
   renderContributionReport();
 
   renderExpenseReport();
-
 }
 
 
 /* =========================================================
-   APPLY FILTERS
+   APPLY FILTER
 ========================================================= */
 
-async function applyFilters() {
+function applyFilters() {
 
   try {
 
@@ -1745,32 +1293,29 @@ async function applyFilters() {
       "Report generated successfully."
     );
 
-    window.setTimeout(
+    setTimeout(
       clearStatus,
-      1800
+      1500
     );
 
   }
   catch (error) {
 
-    showError(
-      error
-    );
+    showError(error);
 
   }
-
 }
 
 
 /* =========================================================
-   RESET FILTERS
+   RESET FILTER
 ========================================================= */
 
 function resetFilters() {
 
   clearError();
 
-  setDefaultDateRange();
+  setDefaultDates();
 
   renderReports();
 
@@ -1778,30 +1323,35 @@ function resetFilters() {
     "Report period reset."
   );
 
-  window.setTimeout(
+  setTimeout(
     clearStatus,
     1500
   );
-
 }
 
 
 /* =========================================================
-   EVENT LISTENERS
+   EVENTS
 ========================================================= */
 
 function setupEvents() {
 
+  const applyButton =
+    el("applyFilters");
+
+  const resetButton =
+    el("resetFilters");
+
+
   if (
-    applyFiltersButton &&
-    applyFiltersButton.dataset.ready !==
-    "true"
+    applyButton &&
+    applyButton.dataset.bound !== "true"
   ) {
 
-    applyFiltersButton.dataset.ready =
+    applyButton.dataset.bound =
       "true";
 
-    applyFiltersButton.addEventListener(
+    applyButton.addEventListener(
       "click",
       applyFilters
     );
@@ -1810,130 +1360,97 @@ function setupEvents() {
 
 
   if (
-    resetFiltersButton &&
-    resetFiltersButton.dataset.ready !==
-    "true"
+    resetButton &&
+    resetButton.dataset.bound !== "true"
   ) {
 
-    resetFiltersButton.dataset.ready =
+    resetButton.dataset.bound =
       "true";
 
-    resetFiltersButton.addEventListener(
+    resetButton.addEventListener(
       "click",
       resetFilters
     );
 
   }
-
 }
 
 
 /* =========================================================
-   INITIALIZE REPORTS
+   INIT REPORTS
 ========================================================= */
 
 export async function initReports() {
 
-  if (initialized) {
-
-    console.log(
-      "CHAMA LIVE: reports already initialized"
-    );
-
-    return;
-
-  }
-
-  initialized =
-    true;
-
   try {
 
     console.log(
-      "CHAMA LIVE: initializing reports"
+      "CHAMA LIVE: initializing Reports..."
     );
 
     clearError();
 
     clearStatus();
 
-    setDefaultDateRange();
+    setDefaultDates();
 
     setupEvents();
 
-    await loadGroupContext();
+    await loadContext();
 
-    await loadReportData();
+    await loadData();
 
     renderReports();
 
     console.log(
-      "CHAMA LIVE: reports initialized successfully",
+      "CHAMA LIVE: Reports initialized",
       {
-        groupId:
-          currentGroupId,
-
-        members:
-          members.length,
-
-        contributions:
-          contributions.length,
-
-        expenses:
-          expenses.length,
-
-        meetings:
-          meetings.length
+        groupId: currentGroupId,
+        members: members.length,
+        contributions: contributions.length,
+        expenses: expenses.length,
+        meetings: meetings.length
       }
     );
 
   }
   catch (error) {
 
-    initialized =
-      false;
-
-    showError(
-      error
-    );
+    showError(error);
 
     console.error(
-      "CHAMA LIVE: reports initialization failed",
+      "CHAMA LIVE: Reports initialization failed",
       error
     );
 
   }
-
 }
 
 
 /* =========================================================
-   OPTIONAL PUBLIC REFRESH
+   REFRESH REPORTS
 ========================================================= */
 
 export async function refreshReports() {
 
   try {
 
+    clearError();
+
     if (!currentGroupId) {
-
-      await loadGroupContext();
-
+      await loadContext();
     }
 
-    await loadReportData();
+    await loadData();
 
     renderReports();
 
   }
   catch (error) {
 
-    showError(
-      error
-    );
+    showError(error);
 
   }
-
 }
 
 
