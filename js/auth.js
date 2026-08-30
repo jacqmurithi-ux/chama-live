@@ -1,10 +1,44 @@
 /* =========================================================
    CHAMA LIVE — AUTHENTICATION & CURRENT GROUP
-   Schema-aligned version
+   Complete fixed version
+
+   File:
+   /js/auth.js
+
+   Handles:
+   - Supabase authentication
+   - Sign in
+   - Current user
+   - Current member
+   - Current group
+   - Group ID
+   - Sign out
+   - Money formatting
+   - Error helpers
+   - Compatibility with auth_user_id / user_id
 ========================================================= */
 
 import { supabase } from "./supabase.js";
 
+
+/* =========================================================
+   EXPORT SUPABASE
+========================================================= */
+
+export { supabase };
+
+
+/* =========================================================
+   BASE URL
+========================================================= */
+
+export const BASE_URL =
+  "https://jacqmurithi-ux.github.io/chama-live";
+
+
+/* =========================================================
+   LOG
+========================================================= */
 
 console.log(
   "CHAMA LIVE: auth.js loaded"
@@ -49,8 +83,12 @@ export async function signIn(
     error
   } =
     await supabase.auth.signInWithPassword({
-      email: cleanEmail,
+
+      email:
+        cleanEmail,
+
       password
+
     });
 
 
@@ -74,7 +112,8 @@ export async function signIn(
 
 
   console.log(
-    "CHAMA LIVE: sign in successful"
+    "CHAMA LIVE: sign in successful",
+    data.user.id
   );
 
 
@@ -150,14 +189,31 @@ export async function requireAuth() {
         .toLowerCase();
 
 
+    /*
+     * Public pages.
+     */
+
+    const publicPages = [
+
+      "",
+      "index.html",
+      "login.html",
+      "forgot-password.html",
+      "activate-account.html",
+      "reset-password.html"
+
+    ];
+
+
     if (
-      currentPage !== "index.html" &&
-      currentPage !== "login.html" &&
-      currentPage !== ""
+      !publicPages.includes(
+        currentPage
+      )
     ) {
 
-      window.location.href =
-        "index.html";
+      window.location.replace(
+        `${BASE_URL}/login.html`
+      );
 
     }
 
@@ -167,6 +223,12 @@ export async function requireAuth() {
     );
 
   }
+
+
+  console.log(
+    "CHAMA LIVE: authentication verified",
+    session.user.id
+  );
 
 
   return session.user;
@@ -185,9 +247,11 @@ export async function getMyMember() {
 
 
   /*
-   * Newer account linkage:
+   * First try the current linkage:
+   *
    * auth_user_id
    */
+
   let {
     data,
     error
@@ -225,17 +289,29 @@ export async function getMyMember() {
       .limit(1);
 
 
+  /*
+   * If the column/query fails,
+   * report the actual database error.
+   */
+
   if (error) {
 
-    throw error;
+    console.error(
+      "CHAMA LIVE: auth_user_id lookup failed",
+      error
+    );
+
+    /*
+     * Continue to compatibility fallback.
+     */
 
   }
 
 
   /*
-   * Compatibility fallback:
-   * older accounts may still use user_id.
+   * Older records may use user_id.
    */
+
   if (
     !data ||
     data.length === 0
@@ -275,22 +351,27 @@ export async function getMyMember() {
         .limit(1);
 
 
-    data =
-      fallback.data;
+    if (fallback.error) {
 
+      console.error(
+        "CHAMA LIVE: user_id lookup failed",
+        fallback.error
+      );
 
-    error =
-      fallback.error;
-
-
-    if (error) {
-
-      throw error;
+      throw fallback.error;
 
     }
 
+
+    data =
+      fallback.data;
+
   }
 
+
+  /*
+   * No member found.
+   */
 
   if (
     !data ||
@@ -308,6 +389,10 @@ export async function getMyMember() {
     data[0];
 
 
+  /*
+   * Every member must belong to a group.
+   */
+
   if (!member.group_id) {
 
     throw new Error(
@@ -315,6 +400,25 @@ export async function getMyMember() {
     );
 
   }
+
+
+  console.log(
+    "CHAMA LIVE: member found",
+    {
+      id:
+        member.id,
+
+      group_id:
+        member.group_id,
+
+      name:
+        member.name,
+
+      membership_number:
+        member.membership_number ||
+        member.member_number
+    }
+  );
 
 
   return member;
@@ -330,6 +434,15 @@ export async function getMyGroupId() {
 
   const member =
     await getMyMember();
+
+
+  if (!member?.group_id) {
+
+    throw new Error(
+      "No group is associated with your member account."
+    );
+
+  }
 
 
   return member.group_id;
@@ -376,6 +489,11 @@ export async function getMyGroup() {
 
   if (error) {
 
+    console.error(
+      "CHAMA LIVE: group lookup failed",
+      error
+    );
+
     throw error;
 
   }
@@ -391,6 +509,18 @@ export async function getMyGroup() {
     );
 
   }
+
+
+  console.log(
+    "CHAMA LIVE: group found",
+    {
+      id:
+        data[0].id,
+
+      name:
+        data[0].name
+    }
+  );
 
 
   return data[0];
@@ -417,8 +547,9 @@ export async function signOut() {
   }
 
 
-  window.location.href =
-    "index.html";
+  window.location.replace(
+    `${BASE_URL}/login.html`
+  );
 
 }
 
@@ -486,10 +617,28 @@ export function showError(
   );
 
 
-  const message =
-    error?.message ||
-    String(error) ||
+  let message =
     "Something went wrong.";
+
+
+  if (
+    typeof error ===
+    "string"
+  ) {
+
+    message =
+      error;
+
+  }
+
+  else if (
+    error?.message
+  ) {
+
+    message =
+      error.message;
+
+  }
 
 
   const element =
@@ -510,6 +659,9 @@ export function showError(
       false;
 
   }
+
+
+  return message;
 
 }
 
@@ -557,6 +709,10 @@ export const getCurrentGroup =
 export const getCurrentGroupId =
   getMyGroupId;
 
+
+/* =========================================================
+   READY
+========================================================= */
 
 console.log(
   "CHAMA LIVE: auth functions ready"
