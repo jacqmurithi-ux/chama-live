@@ -10,19 +10,10 @@
    4. Any excess becomes carry-forward credit.
    5. Carry-forward credit is automatically used in future
       months before requiring a new payment.
-   6. Progress bar counts ONLY the amount applied to the
+   6. Progress counts only the amount applied to the
       selected month's recurring contribution.
-   7. Progress also shows:
-        - Amount collected toward monthly goal
-        - Monthly goal
-        - Collection percentage
-        - Number of members who contributed
-        - Member participation percentage
-   8. A member paying KSh 600 against KSh 200 monthly due
-      gets:
-        Applied This Month = KSh 200
-        Carry Forward = KSh 400
-   9. Members with arrears are handled chronologically.
+   7. Shows monthly goal, collection rate and participation.
+   8. recorded_by stores the CURRENT MEMBER ID.
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -185,8 +176,7 @@ function todayString() {
 
 function currentMonth() {
 
-  return todayString()
-    .slice(0, 7);
+  return todayString().slice(0, 7);
 
 }
 
@@ -200,26 +190,11 @@ function escapeHtml(value) {
   return String(
     value ?? ""
   )
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 
 }
 
@@ -268,7 +243,7 @@ function formatMonth(month) {
   }
 
   const parts =
-    month.split("-");
+    String(month).split("-");
 
   if (parts.length !== 2) {
     return month;
@@ -322,10 +297,25 @@ function showError(error) {
     error
   );
 
-  const message =
+  let message =
     error?.message ||
     String(error) ||
     "Something went wrong.";
+
+  /*
+   * Make common Supabase errors easier to understand.
+   */
+
+  if (
+    message
+      .toLowerCase()
+      .includes("recorded_by")
+  ) {
+
+    message =
+      "The contribution recorder could not be linked to your member account. Please make sure your account is linked to a member.";
+
+  }
 
   if (errorEl) {
 
@@ -360,7 +350,7 @@ function clearError() {
 
 
 /* =========================================================
-   GET MONTHLY DUE
+   GET MONTHLY CONTRIBUTION
 ========================================================= */
 
 function getMonthlyContribution() {
@@ -422,9 +412,7 @@ function getContributionMonth(
   contribution
 ) {
 
-  if (
-    contribution?.month
-  ) {
+  if (contribution?.month) {
 
     return String(
       contribution.month
@@ -432,9 +420,7 @@ function getContributionMonth(
 
   }
 
-  if (
-    contribution?.contribution_date
-  ) {
+  if (contribution?.contribution_date) {
 
     return String(
       contribution.contribution_date
@@ -460,10 +446,8 @@ function getMonthlyContributionsForMember(
       contribution => {
 
         return (
-          contribution.member_id ===
-            memberId &&
-          contribution.contribution_type ===
-            "monthly"
+          contribution.member_id === memberId &&
+          contribution.contribution_type === "monthly"
         );
 
       }
@@ -517,7 +501,7 @@ function monthsBetween(
     year,
     month
   ] =
-    startMonth
+    String(startMonth)
       .split("-")
       .map(Number);
 
@@ -525,7 +509,7 @@ function monthsBetween(
     endYear,
     endMonthNumber
   ] =
-    endMonth
+    String(endMonth)
       .split("-")
       .map(Number);
 
@@ -558,51 +542,7 @@ function monthsBetween(
 
 
 /* =========================================================
-   PREVIOUS MONTH
-========================================================= */
-
-function previousMonth(month) {
-
-  const [
-    year,
-    monthNumber
-  ] =
-    String(month)
-      .split("-")
-      .map(Number);
-
-  let y = year;
-  let m = monthNumber - 1;
-
-  if (m === 0) {
-
-    m = 12;
-    y--;
-
-  }
-
-  return (
-    `${y}-${String(m).padStart(2, "0")}`
-  );
-
-}
-
-
-/* =========================================================
    MEMBER MONTHLY ACCOUNTING
-
-   This calculates the member's position for a month.
-
-   IMPORTANT:
-
-   Payments are allocated in this order:
-
-      1. Previous outstanding
-      2. Current monthly due
-      3. Carry-forward credit
-
-   Credit from a previous month is automatically used
-   before the member needs to pay again.
 ========================================================= */
 
 function calculateMemberMonth(
@@ -618,9 +558,7 @@ function calculateMemberMonth(
       memberId
     );
 
-  if (
-    monthlyDue <= 0
-  ) {
+  if (monthlyDue <= 0) {
 
     return {
       monthlyDue: 0,
@@ -635,8 +573,7 @@ function calculateMemberMonth(
 
 
   /*
-   * Find the first month in which the member
-   * had a monthly contribution.
+   * Find earliest month with a payment.
    */
 
   const contributionMonths =
@@ -648,34 +585,19 @@ function calculateMemberMonth(
       .sort();
 
 
-  /*
-   * Start from the earliest contribution month,
-   * or the target month if there are no payments.
-   */
-
   let firstMonth =
     contributionMonths.length
       ? contributionMonths[0]
       : targetMonth;
 
 
-  /*
-   * Never calculate before target.
-   */
-
-  if (
-    firstMonth > targetMonth
-  ) {
+  if (firstMonth > targetMonth) {
 
     firstMonth =
       targetMonth;
 
   }
 
-
-  /*
-   * Process all months chronologically.
-   */
 
   const months =
     monthsBetween(
@@ -684,46 +606,42 @@ function calculateMemberMonth(
     );
 
 
-  let credit =
-    0;
+  let credit = 0;
 
-  let outstanding =
-    0;
+  let outstanding = 0;
 
-  let appliedThisMonth =
-    0;
+  let appliedThisMonth = 0;
 
-  let previousOutstanding =
-    0;
+  let previousOutstanding = 0;
 
 
   for (
     const month of months
   ) {
 
-    /*
-     * Carry previous balance into this month.
-     */
-
     previousOutstanding =
       outstanding;
 
 
     /*
-     * Credit from previous month is used
-     * against this month's due.
+     * Carry-forward credit from previous month.
      */
 
     let availableCredit =
       credit;
 
 
-    let due =
+    /*
+     * Monthly amount due.
+     */
+
+    let currentDue =
       monthlyDue;
 
 
     /*
-     * Credit first clears outstanding.
+     * First use existing credit against
+     * previous outstanding.
      */
 
     if (
@@ -747,34 +665,32 @@ function calculateMemberMonth(
 
 
     /*
-     * Remaining credit then pays current
-     * monthly due.
+     * Then use remaining credit against
+     * current month's due.
      */
 
-    let currentDueAfterCredit =
-      due;
-
     if (
-      availableCredit > 0
+      availableCredit > 0 &&
+      currentDue > 0
     ) {
 
-      const creditUsedForDue =
+      const usedCredit =
         Math.min(
           availableCredit,
-          currentDueAfterCredit
+          currentDue
         );
 
-      currentDueAfterCredit -=
-        creditUsedForDue;
+      currentDue -=
+        usedCredit;
 
       availableCredit -=
-        creditUsedForDue;
+        usedCredit;
 
     }
 
 
     /*
-     * This month's actual cash payments.
+     * Get actual payments made during this month.
      */
 
     const monthPayments =
@@ -803,8 +719,7 @@ function calculateMemberMonth(
 
 
     /*
-     * First use this month's payment
-     * to clear any outstanding balance.
+     * Payment first clears arrears.
      */
 
     if (
@@ -828,7 +743,7 @@ function calculateMemberMonth(
 
 
     /*
-     * Payment now goes toward current month.
+     * Payment then covers current month's due.
      */
 
     let applied =
@@ -836,16 +751,16 @@ function calculateMemberMonth(
 
     if (
       payment > 0 &&
-      currentDueAfterCredit > 0
+      currentDue > 0
     ) {
 
       applied =
         Math.min(
           payment,
-          currentDueAfterCredit
+          currentDue
         );
 
-      currentDueAfterCredit -=
+      currentDue -=
         applied;
 
       payment -=
@@ -855,7 +770,7 @@ function calculateMemberMonth(
 
 
     /*
-     * Anything remaining becomes credit.
+     * Remaining amount becomes carry-forward credit.
      */
 
     credit =
@@ -864,20 +779,15 @@ function calculateMemberMonth(
 
 
     /*
-     * Current month outstanding.
+     * Remaining current month due.
      */
 
     outstanding =
-      currentDueAfterCredit;
+      currentDue;
 
 
     /*
-     * The progress figure for the target month
-     * is the actual amount applied to that month's
-     * KSh 200 due.
-
-     * Credit used toward the current month also
-     * counts as applied.
+     * For target month, determine amount applied.
      */
 
     if (
@@ -887,11 +797,6 @@ function calculateMemberMonth(
       appliedThisMonth =
         monthlyDue -
         outstanding;
-
-      /*
-       * Never allow the applied amount to exceed
-       * the monthly due.
-       */
 
       appliedThisMonth =
         Math.min(
@@ -906,10 +811,6 @@ function calculateMemberMonth(
 
   }
 
-
-  /*
-   * Determine status.
-   */
 
   let status =
     "Outstanding";
@@ -946,8 +847,7 @@ function calculateMemberMonth(
 
     monthlyDue,
 
-    previousOutstanding:
-      previousOutstanding,
+    previousOutstanding,
 
     appliedThisMonth,
 
@@ -992,18 +892,54 @@ export async function init() {
     );
 
 
+    /*
+     * Authenticate user.
+     */
+
     currentUser =
       await requireAuth();
 
+
+    if (!currentUser?.id) {
+
+      throw new Error(
+        "You are not signed in."
+      );
+
+    }
+
+
+    /*
+     * Get the member linked to the
+     * authenticated account.
+     */
 
     currentMember =
       await getMyMember();
 
 
-    if (!currentMember?.group_id) {
+    if (!currentMember) {
 
       throw new Error(
-        "Your account is not linked to a group."
+        "No member record is linked to your account."
+      );
+
+    }
+
+
+    if (!currentMember.id) {
+
+      throw new Error(
+        "Your member record is missing its ID."
+      );
+
+    }
+
+
+    if (!currentMember.group_id) {
+
+      throw new Error(
+        "Your member account is not linked to a group."
       );
 
     }
@@ -1013,9 +949,26 @@ export async function init() {
       currentMember.group_id;
 
 
+    /*
+     * Load group.
+     */
+
     currentGroup =
       await getMyGroup();
 
+
+    if (!currentGroup) {
+
+      throw new Error(
+        "Unable to load your group."
+      );
+
+    }
+
+
+    /*
+     * Set today's date.
+     */
 
     if (
       dateInput &&
@@ -1028,10 +981,18 @@ export async function init() {
     }
 
 
+    /*
+     * Load data.
+     */
+
     await loadMembers();
 
     await loadContributions();
 
+
+    /*
+     * Render page.
+     */
 
     renderMonthlyExpected();
 
@@ -1042,6 +1003,10 @@ export async function init() {
     renderLedger();
 
 
+    /*
+     * Bind form events.
+     */
+
     bindEvents();
 
 
@@ -1049,7 +1014,16 @@ export async function init() {
 
 
     console.log(
-      "CHAMA LIVE: contributions initialized"
+      "CHAMA LIVE: contributions initialized",
+      {
+        authUserId:
+          currentUser.id,
+
+        recorderMemberId:
+          currentMember.id,
+
+        groupId
+      }
     );
 
   }
@@ -1147,8 +1121,16 @@ function renderMemberSelect() {
       option.value =
         member.id;
 
+      const number =
+        member.member_number ||
+        member.membership_number ||
+        "";
+
       option.textContent =
-        `${member.member_number || member.membership_number || ""} — ${member.name}`;
+        number
+          ? `${number} — ${member.name}`
+          : member.name;
+
 
       memberSelect.appendChild(
         option
@@ -1297,13 +1279,6 @@ function renderProgress() {
       appliedTotal +=
         account.appliedThisMonth;
 
-
-      /*
-       * A member counts as having contributed
-       * toward this month's goal when some
-       * amount has actually been applied to
-       * this month's recurring due.
-       */
 
       if (
         account.appliedThisMonth > 0
@@ -1733,6 +1708,33 @@ async function handleSubmit(
     }
 
 
+    /*
+     * IMPORTANT:
+     *
+     * recorded_by MUST be the member ID,
+     * NOT the Supabase Auth user ID.
+     */
+
+    if (!currentMember?.id) {
+
+      throw new Error(
+        "Your account is not linked to a valid member record. Please contact the group administrator."
+      );
+
+    }
+
+
+    if (
+      currentMember.group_id !== groupId
+    ) {
+
+      throw new Error(
+        "Your member account is linked to a different group."
+      );
+
+    }
+
+
     const memberId =
       memberSelect?.value;
 
@@ -1741,6 +1743,27 @@ async function handleSubmit(
 
       throw new Error(
         "Please select a member."
+      );
+
+    }
+
+
+    /*
+     * Confirm selected member belongs
+     * to this group.
+     */
+
+    const selectedMember =
+      members.find(
+        member =>
+          member.id === memberId
+      );
+
+
+    if (!selectedMember) {
+
+      throw new Error(
+        "The selected member could not be found in this group."
       );
 
     }
@@ -1783,7 +1806,7 @@ async function handleSubmit(
       String(
         mpesaReference?.value || ""
       )
-      .trim();
+        .trim();
 
 
     if (
@@ -1807,6 +1830,19 @@ async function handleSubmit(
       );
 
 
+    if (
+      !/^\d{4}-\d{2}-\d{2}$/.test(
+        contributionDate
+      )
+    ) {
+
+      throw new Error(
+        "Please enter a valid contribution date."
+      );
+
+    }
+
+
     if (saveButton) {
 
       saveButton.disabled =
@@ -1824,9 +1860,14 @@ async function handleSubmit(
 
 
     /*
-     * Monthly contributions are stored as
-     * payments. Allocation is calculated from
-     * the ledger.
+     * IMPORTANT DATABASE MAPPING
+     * --------------------------
+     *
+     * recorded_by = currentMember.id
+     *
+     * NOT:
+     *
+     * currentUser.id
      */
 
     const payload = {
@@ -1853,7 +1894,7 @@ async function handleSubmit(
         contributionDate,
 
       recorded_by:
-        currentUser?.id || null,
+        currentMember.id,
 
       reference:
         mpesaRef || null,
@@ -1862,6 +1903,16 @@ async function handleSubmit(
         mpesaRef || null
 
     };
+
+
+    console.log(
+      "CHAMA LIVE: contribution payload",
+      {
+        ...payload,
+        recorded_by:
+          currentMember.id
+      }
+    );
 
 
     const {
@@ -1893,7 +1944,14 @@ async function handleSubmit(
 
 
     if (error) {
+
+      console.error(
+        "CHAMA LIVE: contribution insert failed",
+        error
+      );
+
       throw error;
+
     }
 
 
@@ -1903,10 +1961,18 @@ async function handleSubmit(
     );
 
 
+    /*
+     * Reset form.
+     */
+
     if (form) {
       form.reset();
     }
 
+
+    /*
+     * Restore today's date.
+     */
 
     if (dateInput) {
 
@@ -1919,8 +1985,16 @@ async function handleSubmit(
     toggleMpesaReference();
 
 
+    /*
+     * Reload ledger.
+     */
+
     await loadContributions();
 
+
+    /*
+     * Refresh dashboard.
+     */
 
     renderProgress();
 
@@ -1936,7 +2010,9 @@ async function handleSubmit(
 
     setTimeout(
       () => {
+
         showStatus("");
+
       },
       3000
     );
@@ -1995,14 +2071,15 @@ export async function refreshContributions() {
 ========================================================= */
 
 if (
-  document.readyState ===
-  "loading"
+  document.readyState === "loading"
 ) {
 
   document.addEventListener(
     "DOMContentLoaded",
     () => {
+
       init();
+
     },
     {
       once: true
