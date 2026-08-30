@@ -4,18 +4,19 @@
    File:
    /js/forgot-password.js
 
+   Uses Supabase Auth directly.
+
    Flow:
 
-   Enter registered email
+   forgot-password.html
           ↓
-   Supabase Edge Function
-   "reset-password"
+   supabase.auth.resetPasswordForEmail()
           ↓
-   Supabase Auth
-          ↓
-   Supabase email
+   Supabase recovery email
           ↓
    reset-password.html
+          ↓
+   New password
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -26,33 +27,23 @@ import { supabase } from "./supabase.js";
 ========================================================= */
 
 const form =
-  document.getElementById(
-    "forgotPasswordForm"
-  );
+  document.getElementById("forgotPasswordForm");
 
 const email =
-  document.getElementById(
-    "email"
-  );
+  document.getElementById("email");
 
 const button =
-  document.getElementById(
-    "resetButton"
-  );
+  document.getElementById("resetButton");
 
 const errorBox =
-  document.getElementById(
-    "error"
-  );
+  document.getElementById("error");
 
 const successBox =
-  document.getElementById(
-    "success"
-  );
+  document.getElementById("success");
 
 
 /* =========================================================
-   RESET PAGE URL
+   RESET PAGE
 ========================================================= */
 
 const RESET_URL =
@@ -68,17 +59,17 @@ function showError(message) {
   if (errorBox) {
 
     errorBox.hidden = false;
+    errorBox.textContent = message;
 
-    errorBox.textContent =
-      message;
   }
 
   if (successBox) {
 
     successBox.hidden = true;
-
     successBox.textContent = "";
+
   }
+
 }
 
 
@@ -91,22 +82,22 @@ function showSuccess(message) {
   if (successBox) {
 
     successBox.hidden = false;
+    successBox.textContent = message;
 
-    successBox.textContent =
-      message;
   }
 
   if (errorBox) {
 
     errorBox.hidden = true;
-
     errorBox.textContent = "";
+
   }
+
 }
 
 
 /* =========================================================
-   CLEAR MESSAGES
+   CLEAR
 ========================================================= */
 
 function clearMessages() {
@@ -114,21 +105,22 @@ function clearMessages() {
   if (errorBox) {
 
     errorBox.hidden = true;
-
     errorBox.textContent = "";
+
   }
 
   if (successBox) {
 
     successBox.hidden = true;
-
     successBox.textContent = "";
+
   }
+
 }
 
 
 /* =========================================================
-   BUTTON
+   LOADING
 ========================================================= */
 
 function setLoading(loading) {
@@ -144,6 +136,7 @@ function setLoading(loading) {
     loading
       ? "Sending..."
       : "Send Reset Link";
+
 }
 
 
@@ -169,6 +162,10 @@ else {
       clearMessages();
 
 
+      /* ===================================================
+         EMAIL
+      =================================================== */
+
       const userEmail =
         String(
           email?.value || ""
@@ -176,10 +173,6 @@ else {
           .trim()
           .toLowerCase();
 
-
-      /* ===================================================
-         VALIDATION
-      =================================================== */
 
       if (!userEmail) {
 
@@ -190,8 +183,13 @@ else {
         email?.focus();
 
         return;
+
       }
 
+
+      /* ===================================================
+         EMAIL VALIDATION
+      =================================================== */
 
       const emailPattern =
         /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -210,6 +208,7 @@ else {
         email?.focus();
 
         return;
+
       }
 
 
@@ -219,96 +218,35 @@ else {
       try {
 
         console.log(
-          "CHAMA LIVE: requesting password reset"
+          "CHAMA LIVE: requesting password reset",
+          {
+            email: userEmail,
+            redirectTo: RESET_URL
+          }
         );
 
 
         /* =================================================
-           CALL EDGE FUNCTION
+           SUPABASE AUTH RECOVERY
         ================================================= */
 
-        const result =
-          await supabase.functions.invoke(
-            "reset-password",
-            {
-              body: {
-
-                email:
-                  userEmail,
-
-                redirect_to:
+        const {
+          error
+        } =
+          await supabase.auth
+            .resetPasswordForEmail(
+              userEmail,
+              {
+                redirectTo:
                   RESET_URL
-
               }
-            }
-          );
+            );
 
 
-        console.log(
-          "CHAMA LIVE: reset response",
-          result
-        );
+        if (error) {
 
+          throw error;
 
-        if (result.error) {
-
-          let message =
-            result.error.message ||
-            "Unable to send password reset email.";
-
-
-          /*
-           * Try to read server response.
-           */
-
-          try {
-
-            const context =
-              result.error.context;
-
-            if (
-              context &&
-              typeof context.clone ===
-                "function"
-            ) {
-
-              const response =
-                context.clone();
-
-              const body =
-                await response.json();
-
-              if (body?.message) {
-
-                message =
-                  body.message;
-              }
-
-            }
-
-          }
-          catch (_) {
-            /*
-             * Keep normal error.
-             */
-          }
-
-
-          throw new Error(
-            message
-          );
-        }
-
-
-        if (
-          result.data?.success === false
-        ) {
-
-          throw new Error(
-            result.data?.message ||
-            result.data?.error ||
-            "Unable to send password reset email."
-          );
         }
 
 
@@ -317,32 +255,20 @@ else {
         ================================================= */
 
         showSuccess(
-
-          result.data?.message ||
-
-          "If an account exists for that email, a password reset email has been sent. Please check your inbox and spam folder."
-
+          "Password reset email sent. Check your inbox and spam folder, then click the reset link."
         );
 
 
-        /*
-         * Keep email visible so user knows
-         * which address was used.
-         */
-
-        if (email) {
-
-          email.value =
-            userEmail;
-        }
-
+        console.log(
+          "CHAMA LIVE: password reset email requested successfully"
+        );
 
       }
 
       catch (error) {
 
         console.error(
-          "CHAMA LIVE: password reset request failed",
+          "CHAMA LIVE: password reset failed",
           error
         );
 
@@ -371,5 +297,5 @@ else {
 ========================================================= */
 
 console.log(
-  "CHAMA LIVE: forgot-password.js ready"
+  "CHAMA LIVE: forgot-password.js loaded"
 );
