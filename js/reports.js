@@ -1,6 +1,15 @@
 /* =========================================================
    CHAMA LIVE — REPORTS
-   Schema-aligned version
+   CURRENT CONTRIBUTION SYSTEM
+   ---------------------------------------------------------
+   Uses:
+   - monthly contribution allocation
+   - previous outstanding
+   - current-month applied amount
+   - carry-forward credit
+   - current outstanding
+   - approved expenses
+   - current top-navigation layout
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -11,9 +20,7 @@ import {
 } from "./auth.js";
 
 
-console.log(
-  "CHAMA LIVE: reports.js loaded"
-);
+console.log("CHAMA LIVE: reports.js loaded");
 
 
 /* =========================================================
@@ -35,80 +42,53 @@ const statusEl =
 const errorEl =
   document.getElementById("error");
 
+
 const openingBalanceEl =
-  document.getElementById(
-    "openingBalance"
-  );
+  document.getElementById("openingBalance");
 
 const expectedEl =
-  document.getElementById(
-    "expected"
-  );
+  document.getElementById("expected");
 
 const collectedEl =
-  document.getElementById(
-    "collected"
-  );
+  document.getElementById("collected");
 
 const outstandingEl =
-  document.getElementById(
-    "outstanding"
-  );
+  document.getElementById("outstanding");
 
 const approvedExpensesEl =
-  document.getElementById(
-    "approvedExpenses"
-  );
+  document.getElementById("approvedExpenses");
 
 const closingBalanceEl =
-  document.getElementById(
-    "closingBalance"
-  );
+  document.getElementById("closingBalance");
+
 
 const activeMembersEl =
-  document.getElementById(
-    "activeMembers"
-  );
+  document.getElementById("activeMembers");
 
 const membersPaidEl =
-  document.getElementById(
-    "membersPaid"
-  );
+  document.getElementById("membersPaid");
 
 const membersPartialEl =
-  document.getElementById(
-    "membersPartial"
-  );
+  document.getElementById("membersPartial");
 
 const membersOutstandingEl =
-  document.getElementById(
-    "membersOutstanding"
-  );
+  document.getElementById("membersOutstanding");
 
 const collectionRateEl =
-  document.getElementById(
-    "collectionRate"
-  );
+  document.getElementById("collectionRate");
 
 const periodStatusEl =
-  document.getElementById(
-    "periodStatus"
-  );
+  document.getElementById("periodStatus");
+
 
 const cashbookRows =
-  document.getElementById(
-    "cashbookRows"
-  );
+  document.getElementById("cashbookRows");
 
 const memberRows =
-  document.getElementById(
-    "memberRows"
-  );
+  document.getElementById("memberRows");
 
 const expenseRows =
-  document.getElementById(
-    "expenseRows"
-  );
+  document.getElementById("expenseRows");
 
 
 /* =========================================================
@@ -158,26 +138,11 @@ function escapeHtml(value) {
   return String(
     value ?? ""
   )
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 
 }
 
@@ -201,7 +166,7 @@ function formatDate(value) {
     )
   ) {
 
-    return value;
+    return String(value);
 
   }
 
@@ -220,8 +185,67 @@ function formatDate(value) {
 
 function currentMonth() {
 
-  const date =
+  const now =
     new Date();
+
+
+  return [
+    now.getFullYear(),
+    String(
+      now.getMonth() + 1
+    ).padStart(2, "0")
+  ].join("-");
+
+}
+
+
+function monthKey(value) {
+
+  if (!value) {
+
+    return "";
+
+  }
+
+
+  const text =
+    String(value);
+
+
+  /*
+   * Handles:
+   * 2026-08
+   * 2026-08-30
+   * 2026-08-30T10:00:00
+   */
+
+  if (
+    /^\d{4}-\d{2}/.test(
+      text
+    )
+  ) {
+
+    return text.slice(
+      0,
+      7
+    );
+
+  }
+
+
+  const date =
+    new Date(value);
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+
+    return "";
+
+  }
 
 
   return [
@@ -230,6 +254,69 @@ function currentMonth() {
       date.getMonth() + 1
     ).padStart(2, "0")
   ].join("-");
+
+}
+
+
+function addMonths(
+  month,
+  amount
+) {
+
+  const [
+    year,
+    monthNumber
+  ] =
+    String(month)
+      .split("-")
+      .map(Number);
+
+
+  const date =
+    new Date(
+      year,
+      monthNumber - 1 + amount,
+      1
+    );
+
+
+  return [
+    date.getFullYear(),
+    String(
+      date.getMonth() + 1
+    ).padStart(2, "0")
+  ].join("-");
+
+}
+
+
+function monthDifference(
+  fromMonth,
+  toMonth
+) {
+
+  const [
+    fromYear,
+    fromMonthNumber
+  ] =
+    fromMonth
+      .split("-")
+      .map(Number);
+
+
+  const [
+    toYear,
+    toMonthNumber
+  ] =
+    toMonth
+      .split("-")
+      .map(Number);
+
+
+  return (
+    (toYear - fromYear) * 12 +
+    (toMonthNumber - fromMonthNumber)
+  );
 
 }
 
@@ -250,6 +337,21 @@ function showError(error) {
 
     errorEl.hidden =
       false;
+
+  }
+
+}
+
+
+function clearError() {
+
+  if (errorEl) {
+
+    errorEl.hidden =
+      true;
+
+    errorEl.textContent =
+      "";
 
   }
 
@@ -326,7 +428,7 @@ async function loadMembers() {
         groupId
       )
       .order(
-        "member_number",
+        "name",
         {
           ascending: true
         }
@@ -348,11 +450,28 @@ async function loadMembers() {
 
 /* =========================================================
    LOAD CONTRIBUTIONS
+   ---------------------------------------------------------
+   IMPORTANT:
+   We load contribution history up to the selected month,
+   not only the selected month.
+
+   This is required to calculate:
+   - previous outstanding
+   - current-month application
+   - carry-forward
+   - current outstanding
 ========================================================= */
 
 async function loadContributions(
   month
 ) {
+
+  const end =
+    `${addMonths(
+      month,
+      1
+    )}-01`;
+
 
   const {
     data,
@@ -373,16 +492,15 @@ async function loadContributions(
         created_at,
         goal_id,
         contribution_date,
-        notes,
-        mpesa_reference
+        notes
       `)
       .eq(
         "group_id",
         groupId
       )
-      .eq(
-        "month",
-        month
+      .lt(
+        "contribution_date",
+        end
       )
       .order(
         "contribution_date",
@@ -422,26 +540,11 @@ async function loadExpenses(
   const start =
     `${month}-01`;
 
-
-  const date =
-    new Date(
-      `${month}-01T00:00:00`
-    );
-
-
-  date.setMonth(
-    date.getMonth() + 1
-  );
-
-
   const end =
-    [
-      date.getFullYear(),
-      String(
-        date.getMonth() + 1
-      ).padStart(2, "0"),
-      "01"
-    ].join("-");
+    `${addMonths(
+      month,
+      1
+    )}-01`;
 
 
   const {
@@ -502,14 +605,14 @@ async function loadExpenses(
 
 
 /* =========================================================
-   LOAD / CREATE FINANCIAL PERIOD
+   LOAD FINANCIAL PERIOD
 ========================================================= */
 
 async function loadFinancialPeriod(
   month
 ) {
 
-  let {
+  const {
     data,
     error
   } =
@@ -544,100 +647,516 @@ async function loadFinancialPeriod(
   }
 
 
-  if (
-    data &&
-    data.length
-  ) {
-
-    period =
-      data[0];
-
-    return;
-
-  }
-
-
-  /*
-   * Create an open period using
-   * the group's opening balance.
-   */
-
-  const {
-    data: created,
-    error: createError
-  } =
-    await supabase
-      .from("financial_periods")
-      .insert({
-
-        group_id:
-          groupId,
-
-        month:
-          month,
-
-        opening_balance:
-          Number(
-            group?.opening_balance ||
-            0
-          ),
-
-        status:
-          "open"
-
-      })
-      .select(`
-        id,
-        group_id,
-        month,
-        opening_balance,
-        closing_balance,
-        status,
-        closed_at,
-        closed_by,
-        created_at
-      `)
-      .single();
-
-
-  if (createError) {
-
-    throw createError;
-
-  }
-
-
   period =
-    created;
+    data?.[0] ||
+    null;
 
 }
 
 
 /* =========================================================
-   MEMBER PAID MAP
+   ACTIVE MEMBERS
 ========================================================= */
 
-function getMemberPaid(
+function getActiveMembers() {
+
+  return members.filter(
+    member =>
+      String(
+        member.status ||
+        "active"
+      ).toLowerCase() ===
+      "active"
+  );
+
+}
+
+
+/* =========================================================
+   MONTHLY CONTRIBUTIONS ONLY
+========================================================= */
+
+function getMonthlyPaymentsForMember(
   memberId,
+  upToMonth
+) {
+
+  return contributions.filter(
+    contribution => {
+
+      if (
+        String(
+          contribution.member_id
+        ) !==
+        String(memberId)
+      ) {
+
+        return false;
+
+      }
+
+
+      const type =
+        String(
+          contribution.contribution_type ||
+          ""
+        ).toLowerCase();
+
+
+      /*
+       * Only recurring monthly contributions
+       * participate in monthly allocation.
+       */
+
+      if (
+        type !==
+        "monthly"
+      ) {
+
+        return false;
+
+      }
+
+
+      const paymentMonth =
+        monthKey(
+          contribution.month ||
+          contribution.contribution_date ||
+          contribution.created_at
+        );
+
+
+      if (!paymentMonth) {
+
+        return false;
+
+      }
+
+
+      return (
+        paymentMonth <=
+        upToMonth
+      );
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   MEMBER START MONTH
+========================================================= */
+
+function getMemberStartMonth(
+  member,
+  selectedMonth
+) {
+
+  const joinMonth =
+    monthKey(
+      member.join_date
+    );
+
+
+  if (
+    joinMonth &&
+    joinMonth <=
+    selectedMonth
+  ) {
+
+    return joinMonth;
+
+  }
+
+
+  /*
+   * If no join date exists, use the earliest
+   * contribution month for this member.
+   */
+
+  const memberPayments =
+    contributions
+      .filter(
+        contribution =>
+          String(
+            contribution.member_id
+          ) ===
+          String(
+            member.id
+          )
+      )
+      .map(
+        contribution =>
+          monthKey(
+            contribution.month ||
+            contribution.contribution_date ||
+            contribution.created_at
+          )
+      )
+      .filter(Boolean)
+      .sort();
+
+
+  if (memberPayments.length) {
+
+    return memberPayments[0];
+
+  }
+
+
+  /*
+   * For a member with no history and no join
+   * date, start at the selected month.
+   */
+
+  return selectedMonth;
+
+}
+
+
+/* =========================================================
+   ALLOCATE MEMBER CONTRIBUTIONS
+   ---------------------------------------------------------
+   Rules:
+
+   1. Previous outstanding is cleared first.
+   2. Current month's due is then covered.
+   3. Extra payment becomes carry-forward credit.
+   4. Carry-forward credit is used against future dues.
+   5. Only "monthly" contributions participate.
+========================================================= */
+
+function calculateMemberStatus(
+  member,
+  selectedMonth
+) {
+
+  const monthlyDue =
+    Number(
+      group?.monthly_contribution ||
+      0
+    );
+
+
+  const startMonth =
+    getMemberStartMonth(
+      member,
+      selectedMonth
+    );
+
+
+  const payments =
+    getMonthlyPaymentsForMember(
+      member.id,
+      selectedMonth
+    );
+
+
+  const paymentsByMonth =
+    new Map();
+
+
+  payments.forEach(
+    contribution => {
+
+      const key =
+        monthKey(
+          contribution.month ||
+          contribution.contribution_date ||
+          contribution.created_at
+        );
+
+
+      const current =
+        Number(
+          paymentsByMonth.get(
+            key
+          ) ||
+          0
+        );
+
+
+      paymentsByMonth.set(
+        key,
+        current +
+        Number(
+          contribution.amount ||
+          0
+        )
+      );
+
+    }
+  );
+
+
+  let previousOutstanding =
+    0;
+
+  let carryForward =
+    0;
+
+  let selectedResult =
+    null;
+
+
+  const months =
+    Math.max(
+      0,
+      monthDifference(
+        startMonth,
+        selectedMonth
+      )
+    );
+
+
+  for (
+    let index = 0;
+    index <= months;
+    index++
+  ) {
+
+    const currentMonth =
+      addMonths(
+        startMonth,
+        index
+      );
+
+
+    const payment =
+      Number(
+        paymentsByMonth.get(
+          currentMonth
+        ) ||
+        0
+      );
+
+
+    let available =
+      payment;
+
+
+    let debtBeforeMonth =
+      previousOutstanding;
+
+
+    /*
+     * Carry-forward is credit.
+     * It can never coexist with debt.
+     */
+
+    if (
+      carryForward > 0 &&
+      debtBeforeMonth <= 0
+    ) {
+
+      available +=
+        carryForward;
+
+      carryForward =
+        0;
+
+    }
+
+
+    /*
+     * First clear previous arrears.
+     */
+
+    const clearedPrevious =
+      Math.min(
+        available,
+        debtBeforeMonth
+      );
+
+
+    available -=
+      clearedPrevious;
+
+    debtBeforeMonth -=
+      clearedPrevious;
+
+
+    /*
+     * Now apply remaining amount to
+     * current month's recurring due.
+     */
+
+    const appliedThisMonth =
+      Math.min(
+        available,
+        monthlyDue
+      );
+
+
+    available -=
+      appliedThisMonth;
+
+
+    const currentOutstanding =
+      Math.max(
+        monthlyDue -
+        appliedThisMonth,
+        0
+      );
+
+
+    /*
+     * Anything remaining becomes
+     * carry-forward credit.
+     */
+
+    carryForward =
+      Math.max(
+        available,
+        0
+      );
+
+
+    previousOutstanding =
+      debtBeforeMonth +
+      currentOutstanding;
+
+
+    /*
+     * Capture selected month.
+     */
+
+    if (
+      currentMonth ===
+      selectedMonth
+    ) {
+
+      selectedResult = {
+
+        monthlyDue,
+
+        payment,
+
+        previousOutstanding:
+          debtBeforeMonth,
+
+        clearedPrevious,
+
+        appliedThisMonth,
+
+        carryForward,
+
+        currentOutstanding,
+
+        status:
+          currentOutstanding <= 0
+            ? "Paid"
+            : (
+                appliedThisMonth > 0
+                  ? "Partial"
+                  : "Outstanding"
+              )
+
+      };
+
+    }
+
+  }
+
+
+  return (
+    selectedResult || {
+
+      monthlyDue,
+
+      payment: 0,
+
+      previousOutstanding: 0,
+
+      clearedPrevious: 0,
+
+      appliedThisMonth: 0,
+
+      carryForward: 0,
+
+      currentOutstanding:
+        monthlyDue,
+
+      status:
+        "Outstanding"
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   CALCULATE ALL MEMBER STATUSES
+========================================================= */
+
+function calculateMemberStatuses(
   month
 ) {
 
-  return contributions
-    .filter(
-      contribution =>
-        String(
-          contribution.member_id
-        ) ===
-        String(
-          memberId
-        ) &&
-        String(
-          contribution.month ||
-          ""
-        ).slice(0, 7) ===
-        month
-    )
-    .reduce(
+  return getActiveMembers()
+    .map(
+      member => ({
+
+        member,
+
+        ...calculateMemberStatus(
+          member,
+          month
+        )
+
+      })
+    );
+
+}
+
+
+/* =========================================================
+   CALCULATE REPORT
+========================================================= */
+
+function calculateReport(
+  month
+) {
+
+  const activeMembers =
+    getActiveMembers();
+
+
+  const memberStatuses =
+    calculateMemberStatuses(
+      month
+    );
+
+
+  const monthlyExpected =
+    memberStatuses.reduce(
+      (
+        total,
+        item
+      ) =>
+        total +
+        Number(
+          item.monthlyDue ||
+          0
+        ),
+      0
+    );
+
+
+  /*
+   * All contribution money is used for the
+   * financial cashbook.
+   *
+   * Registration, welfare, special and other
+   * payments therefore still count as cash
+   * received, but do NOT inflate monthly
+   * recurring collection progress.
+   */
+
+  const collected =
+    contributions.reduce(
       (
         total,
         contribution
@@ -650,49 +1169,61 @@ function getMemberPaid(
       0
     );
 
-}
 
-
-/* =========================================================
-   CALCULATE
-========================================================= */
-
-function calculateReport(
-  month
-) {
-
-  const activeMembers =
-    members.filter(
-      member =>
-        String(
-          member.status ||
-          "active"
-        ).toLowerCase() ===
-        "active"
-    );
-
-
-  const monthlyAmount =
-    Number(
-      group?.monthly_contribution ||
+  const currentMonthApplied =
+    memberStatuses.reduce(
+      (
+        total,
+        item
+      ) =>
+        total +
+        Number(
+          item.appliedThisMonth ||
+          0
+        ),
       0
     );
 
 
-  const expected =
-    activeMembers.length *
-    monthlyAmount;
-
-
-  const collected =
-    contributions.reduce(
+  const currentMonthCarryForward =
+    memberStatuses.reduce(
       (
         total,
-        contribution
+        item
       ) =>
         total +
         Number(
-          contribution.amount ||
+          item.carryForward ||
+          0
+        ),
+      0
+    );
+
+
+  const currentOutstanding =
+    memberStatuses.reduce(
+      (
+        total,
+        item
+      ) =>
+        total +
+        Number(
+          item.currentOutstanding ||
+          0
+        ),
+      0
+    );
+
+
+  const previousOutstanding =
+    memberStatuses.reduce(
+      (
+        total,
+        item
+      ) =>
+        total +
+        Number(
+          item.previousOutstanding ||
           0
         ),
       0
@@ -723,18 +1254,10 @@ function calculateReport(
       );
 
 
-  const outstanding =
-    Math.max(
-      expected -
-      collected,
-      0
-    );
-
-
   const opening =
     Number(
-      period?.opening_balance ||
-      group?.opening_balance ||
+      period?.opening_balance ??
+      group?.opening_balance ??
       0
     );
 
@@ -746,55 +1269,39 @@ function calculateReport(
 
 
   const paidCount =
-    activeMembers.filter(
-      member =>
-        getMemberPaid(
-          member.id,
-          month
-        ) >=
-        monthlyAmount &&
-        monthlyAmount > 0
+    memberStatuses.filter(
+      item =>
+        item.status ===
+        "Paid"
     ).length;
 
 
   const partialCount =
-    activeMembers.filter(
-      member => {
-
-        const paid =
-          getMemberPaid(
-            member.id,
-            month
-          );
-
-
-        return (
-          paid > 0 &&
-          paid <
-          monthlyAmount
-        );
-
-      }
+    memberStatuses.filter(
+      item =>
+        item.status ===
+        "Partial"
     ).length;
 
 
   const outstandingCount =
-    activeMembers.filter(
-      member =>
-        getMemberPaid(
-          member.id,
-          month
-        ) <= 0
+    memberStatuses.filter(
+      item =>
+        item.status ===
+        "Outstanding"
     ).length;
 
 
   const collectionRate =
-    expected > 0
-      ? (
-          collected /
-          expected
-        ) *
-        100
+    monthlyExpected > 0
+      ? Math.min(
+          (
+            currentMonthApplied /
+            monthlyExpected
+          ) *
+          100,
+          100
+        )
       : 0;
 
 
@@ -803,11 +1310,19 @@ function calculateReport(
     activeMembers:
       activeMembers.length,
 
-    expected,
+    expected:
+      monthlyExpected,
 
     collected,
 
-    outstanding,
+    currentMonthApplied,
+
+    currentMonthCarryForward,
+
+    previousOutstanding,
+
+    outstanding:
+      currentOutstanding,
 
     approvedExpenses,
 
@@ -821,7 +1336,9 @@ function calculateReport(
 
     outstandingCount,
 
-    collectionRate
+    collectionRate,
+
+    memberStatuses
 
   };
 
@@ -836,67 +1353,115 @@ function renderSummary(
   summary
 ) {
 
-  openingBalanceEl.textContent =
-    money(
-      summary.opening
-    );
+  if (openingBalanceEl) {
+
+    openingBalanceEl.textContent =
+      money(
+        summary.opening
+      );
+
+  }
 
 
-  expectedEl.textContent =
-    money(
-      summary.expected
-    );
+  if (expectedEl) {
+
+    expectedEl.textContent =
+      money(
+        summary.expected
+      );
+
+  }
 
 
-  collectedEl.textContent =
-    money(
-      summary.collected
-    );
+  if (collectedEl) {
+
+    collectedEl.textContent =
+      money(
+        summary.collected
+      );
+
+  }
 
 
-  outstandingEl.textContent =
-    money(
-      summary.outstanding
-    );
+  if (outstandingEl) {
+
+    outstandingEl.textContent =
+      money(
+        summary.outstanding
+      );
+
+  }
 
 
-  approvedExpensesEl.textContent =
-    money(
-      summary.approvedExpenses
-    );
+  if (approvedExpensesEl) {
+
+    approvedExpensesEl.textContent =
+      money(
+        summary.approvedExpenses
+      );
+
+  }
 
 
-  closingBalanceEl.textContent =
-    money(
-      summary.closing
-    );
+  if (closingBalanceEl) {
+
+    closingBalanceEl.textContent =
+      money(
+        summary.closing
+      );
+
+  }
 
 
-  activeMembersEl.textContent =
-    summary.activeMembers;
+  if (activeMembersEl) {
+
+    activeMembersEl.textContent =
+      summary.activeMembers;
+
+  }
 
 
-  membersPaidEl.textContent =
-    summary.paidCount;
+  if (membersPaidEl) {
+
+    membersPaidEl.textContent =
+      summary.paidCount;
+
+  }
 
 
-  membersPartialEl.textContent =
-    summary.partialCount;
+  if (membersPartialEl) {
+
+    membersPartialEl.textContent =
+      summary.partialCount;
+
+  }
 
 
-  membersOutstandingEl.textContent =
-    summary.outstandingCount;
+  if (membersOutstandingEl) {
+
+    membersOutstandingEl.textContent =
+      summary.outstandingCount;
+
+  }
 
 
-  collectionRateEl.textContent =
-    `${summary.collectionRate.toFixed(1)}%`;
+  if (collectionRateEl) {
+
+    collectionRateEl.textContent =
+      `${summary.collectionRate.toFixed(1)}%`;
+
+  }
 
 
-  periodStatusEl.textContent =
-    String(
-      period?.status ||
-      "open"
-    ).toUpperCase();
+  if (periodStatusEl) {
+
+    periodStatusEl.textContent =
+      String(
+        period?.status ||
+        "open"
+      ).toUpperCase();
+
+  }
 
 }
 
@@ -915,61 +1480,69 @@ function renderCashbook() {
 
 
   const contributionEntries =
-    contributions.map(
-      contribution => {
-
-        const reference =
-          contribution.mpesa_reference ||
-          contribution.reference ||
-          "—";
-
-
-        const member =
-          members.find(
-            item =>
-              String(
-                item.id
-              ) ===
-              String(
-                contribution.member_id
-              )
-          );
-
-
-        return {
-
-          date:
+    contributions
+      .filter(
+        contribution =>
+          monthKey(
+            contribution.month ||
             contribution.contribution_date ||
-            contribution.created_at,
+            contribution.created_at
+          ) ===
+          (
+            monthInput?.value ||
+            currentMonth()
+          )
+      )
+      .map(
+        contribution => {
 
-          description:
-            member?.name ||
-            "Member contribution",
+          const member =
+            members.find(
+              item =>
+                String(
+                  item.id
+                ) ===
+                String(
+                  contribution.member_id
+                )
+            );
 
-          type:
-            contribution.contribution_type ||
-            "Contribution",
 
-          method:
-            contribution.payment_method ||
-            "—",
+          return {
 
-          reference:
-            reference,
+            date:
+              contribution.contribution_date ||
+              contribution.created_at,
 
-          amount:
-            Number(
-              contribution.amount ||
-              0
-            ),
+            description:
+              member?.name ||
+              "Member contribution",
 
-          income:
-            true
+            type:
+              contribution.contribution_type ||
+              "Contribution",
 
-        };
+            method:
+              contribution.payment_method ||
+              "—",
 
-      }
-    );
+            reference:
+              contribution.reference ||
+              "—",
+
+            amount:
+              Number(
+                contribution.amount ||
+                0
+              ),
+
+            income:
+              true
+
+          };
+
+        }
+      );
 
 
   const expenseEntries =
@@ -983,38 +1556,34 @@ function renderCashbook() {
           "approved"
       )
       .map(
-        expense => {
+        expense => ({
 
-          return {
+          date:
+            expense.date,
 
-            date:
-              expense.date,
+          description:
+            expense.description,
 
-            description:
-              expense.description,
+          type:
+            "Expense",
 
-            type:
-              "Expense",
+          method:
+            "—",
 
-            method:
-              "—",
+          reference:
+            expense.receipt_url ||
+            "—",
 
-            reference:
-              expense.receipt_url ||
-              "—",
+          amount:
+            Number(
+              expense.amount ||
+              0
+            ),
 
-            amount:
-              Number(
-                expense.amount ||
-                0
-              ),
+          income:
+            false
 
-            income:
-              false
-
-          };
-
-        }
+        })
       );
 
 
@@ -1027,13 +1596,37 @@ function renderCashbook() {
         (
           a,
           b
-        ) =>
-          new Date(
-            a.date
-          ) -
-          new Date(
-            b.date
-          )
+        ) => {
+
+          const dateDifference =
+            new Date(
+              a.date
+            ) -
+            new Date(
+              b.date
+            );
+
+
+          if (
+            dateDifference !==
+            0
+          ) {
+
+            return dateDifference;
+
+          }
+
+
+          return (
+            a.income ===
+            b.income
+              ? 0
+              : a.income
+                ? -1
+                : 1
+          );
+
+        }
       );
 
 
@@ -1121,11 +1714,11 @@ function renderCashbook() {
 
 
 /* =========================================================
-   RENDER MEMBERS
+   RENDER MEMBER REPORT
 ========================================================= */
 
 function renderMembers(
-  month
+  summary
 ) {
 
   if (!memberRows) {
@@ -1135,22 +1728,15 @@ function renderMembers(
   }
 
 
-  const activeMembers =
-    members.filter(
-      member =>
-        String(
-          member.status ||
-          "active"
-        ).toLowerCase() ===
-        "active"
-    );
+  const statuses =
+    summary.memberStatuses;
 
 
-  if (!activeMembers.length) {
+  if (!statuses.length) {
 
     memberRows.innerHTML = `
       <tr>
-        <td colspan="6">
+        <td colspan="9">
           No active members found.
         </td>
       </tr>
@@ -1161,94 +1747,103 @@ function renderMembers(
   }
 
 
-  const expected =
-    Number(
-      group?.monthly_contribution ||
-      0
-    );
-
-
   memberRows.innerHTML =
-    activeMembers
+    statuses
       .map(
-        member => {
+        item => {
 
-          const paid =
-            getMemberPaid(
-              member.id,
-              month
-            );
+          const member =
+            item.member;
 
 
-          const outstanding =
-            Math.max(
-              expected -
-              paid,
-              0
-            );
+          const memberNumber =
+            member.member_number ||
+            member.membership_number ||
+            "—";
 
 
-          let status =
-            "Outstanding";
-
-
-          if (
-            expected > 0 &&
-            paid >= expected
-          ) {
-
-            status =
-              "Paid";
-
-          }
-          else if (
-            paid > 0
-          ) {
-
-            status =
-              "Partial";
-
-          }
+          const statusClass =
+            item.status
+              .toLowerCase();
 
 
           return `
             <tr>
 
               <td>
+                <strong>
+                  ${escapeHtml(
+                    member.name
+                  )}
+                </strong>
+              </td>
+
+              <td>
                 ${escapeHtml(
-                  member.name
+                  memberNumber
                 )}
               </td>
 
               <td>
                 ${escapeHtml(
-                  member.member_number ||
-                  member.membership_number ||
-                  "—"
+                  money(
+                    item.monthlyDue
+                  )
                 )}
               </td>
 
               <td>
                 ${escapeHtml(
-                  money(expected)
+                  money(
+                    item.previousOutstanding
+                  )
                 )}
               </td>
 
               <td>
                 ${escapeHtml(
-                  money(paid)
+                  money(
+                    item.appliedThisMonth
+                  )
                 )}
               </td>
 
               <td>
                 ${escapeHtml(
-                  money(outstanding)
+                  money(
+                    item.carryForward
+                  )
                 )}
               </td>
 
               <td>
                 ${escapeHtml(
-                  status
+                  money(
+                    item.currentOutstanding
+                  )
+                )}
+              </td>
+
+              <td>
+                <strong
+                  class="
+                    report-status
+                    report-status-${escapeHtml(
+                      statusClass
+                    )}
+                  "
+                >
+                  ${escapeHtml(
+                    item.status
+                  )}
+                </strong>
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  money(
+                    item.payment
+                  )
                 )}
               </td>
 
@@ -1295,6 +1890,13 @@ function renderExpenses() {
       .map(
         expense => {
 
+          const status =
+            String(
+              expense.approval_status ||
+              "pending"
+            ).toLowerCase();
+
+
           return `
             <tr>
 
@@ -1327,10 +1929,11 @@ function renderExpenses() {
               </td>
 
               <td>
-                ${escapeHtml(
-                  expense.approval_status ||
-                  "pending"
-                )}
+                <strong>
+                  ${escapeHtml(
+                    status
+                  )}
+                </strong>
               </td>
 
             </tr>
@@ -1339,6 +1942,62 @@ function renderExpenses() {
         }
       )
       .join("");
+
+}
+
+
+/* =========================================================
+   UPDATE NEW REPORT METRICS
+========================================================= */
+
+function renderNewContributionMetrics(
+  summary
+) {
+
+  const appliedEl =
+    document.getElementById(
+      "currentMonthApplied"
+    );
+
+  const carryForwardEl =
+    document.getElementById(
+      "carryForward"
+    );
+
+  const previousOutstandingEl =
+    document.getElementById(
+      "previousOutstanding"
+    );
+
+
+  if (appliedEl) {
+
+    appliedEl.textContent =
+      money(
+        summary.currentMonthApplied
+      );
+
+  }
+
+
+  if (carryForwardEl) {
+
+    carryForwardEl.textContent =
+      money(
+        summary.currentMonthCarryForward
+      );
+
+  }
+
+
+  if (previousOutstandingEl) {
+
+    previousOutstandingEl.textContent =
+      money(
+        summary.previousOutstanding
+      );
+
+  }
 
 }
 
@@ -1362,15 +2021,10 @@ async function loadReport() {
   }
 
 
+  clearError();
+
+
   try {
-
-    if (errorEl) {
-
-      errorEl.hidden =
-        true;
-
-    }
-
 
     if (statusEl) {
 
@@ -1407,11 +2061,14 @@ async function loadReport() {
       summary
     );
 
+    renderNewContributionMetrics(
+      summary
+    );
 
     renderCashbook();
 
     renderMembers(
-      month
+      summary
     );
 
     renderExpenses();
@@ -1471,6 +2128,18 @@ export async function initPage() {
 
     currentMember =
       await getMyMember();
+
+
+    if (
+      !currentMember ||
+      !currentMember.group_id
+    ) {
+
+      throw new Error(
+        "No group is linked to your account."
+      );
+
+    }
 
 
     groupId =
