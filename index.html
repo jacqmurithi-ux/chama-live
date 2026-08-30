@@ -1,8 +1,6 @@
 <!doctype html>
 <html lang="en">
-
 <head>
-
   <meta charset="utf-8">
 
   <meta
@@ -12,28 +10,23 @@
 
   <meta
     name="description"
-    content="CHAMA LIVE — manage members, contributions, expenses, meetings and reports in one connected platform."
+    content="CHAMA LIVE — simple, transparent digital management for Chamas, welfare groups and community groups."
   >
 
   <meta
     name="theme-color"
-    content="#0f172a"
+    content="#0f766e"
   >
 
-  <title>
-    CHAMA LIVE — Run Your Chama. Live.
-  </title>
+  <title>CHAMA LIVE — Run Your Chama. Know Your Money.</title>
 
   <link
     rel="stylesheet"
     href="css/landing.css"
   >
-
 </head>
 
-
 <body>
-
 
   <!-- =====================================================
        HEADER
@@ -41,19 +34,20 @@
 
   <header class="landing-header">
 
-    <div class="landing-container nav-wrap">
+    <div class="container nav-container">
 
       <a
         href="index.html"
-        class="landing-brand"
+        class="brand"
         aria-label="CHAMA LIVE home"
       >
-        CHAMA <span>LIVE</span>
+        <span class="brand-chama">CHAMA</span>
+        <span class="brand-live">LIVE</span>
       </a>
 
 
       <nav
-        class="landing-nav"
+        class="desktop-nav"
         aria-label="Main navigation"
       >
 
@@ -62,38 +56,94 @@
         </a>
 
         <a href="#how-it-works">
-          How it works
+          How It Works
         </a>
 
-        <a href="#why">
+        <a href="#why-chama-live">
           Why CHAMA LIVE
         </a>
 
-        <a
-          href="login.html"
-          class="nav-login"
-        >
-          Sign In
-        </a>
-
-        <a
-          href="create-group.html"
-          class="btn btn-small btn-primary"
-        >
-          Create Your Chama
+        <a href="#contact">
+          Contact
         </a>
 
       </nav>
 
 
+      <div class="nav-actions">
+
+        <a
+          href="login.html"
+          class="btn btn-outline btn-small"
+        >
+          Sign In
+        </a>
+
+        <a
+          href="signup.html"
+          class="btn btn-primary btn-small"
+        >
+          Create Group
+        </a>
+
+      </div>
+
+
+      <button
+        class="mobile-menu-button"
+        type="button"
+        aria-label="Open navigation menu"
+        aria-expanded="false"
+        aria-controls="mobileNav"
+      >
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+
+    </div>
+
+
+    <!-- MOBILE NAV -->
+
+    <nav
+      id="mobileNav"
+      class="mobile-nav"
+      aria-label="Mobile navigation"
+      hidden
+    >
+
+      <a href="#features">
+        Features
+      </a>
+
+      <a href="#how-it-works">
+        How It Works
+      </a>
+
+      <a href="#why-chama-live">
+        Why CHAMA LIVE
+      </a>
+
+      <a href="#contact">
+        Contact
+      </a>
+
       <a
         href="login.html"
-        class="mobile-login"
+        class="mobile-nav-button"
       >
         Sign In
       </a>
 
-    </div>
+      <a
+        href="signup.html"
+        class="mobile-nav-button mobile-nav-primary"
+      >
+        Create Group
+      </a>
+
+    </nav>
 
   </header>
 
@@ -101,57 +151,50 @@
 
   <main>
 
-
     <!-- ===================================================
          HERO
     ==================================================== -->
 
     <section class="hero">
 
-      <div class="landing-container hero-grid">
+      <div class="hero-background"></div>
 
+      <div class="container hero-grid">
 
-        <div class="hero-copy">
+        <div class="hero-content">
 
           <div class="eyebrow">
-
             <span class="eyebrow-dot"></span>
-
-            Digital group management for real chamas
-
+            Built for Kenyan Chamas
           </div>
 
 
           <h1>
             Run Your Chama.
-            <br>
-            <span>Live.</span>
+            <span>Know Your Money.</span>
           </h1>
 
 
-          <p class="hero-lead">
-
-            Keep members, contributions, expenses,
-            meetings and reports connected in one
-            simple platform built for groups.
-
+          <p class="hero-description">
+            CHAMA LIVE brings members, contributions,
+            expenses, meetings and financial reports
+            together in one simple digital platform.
           </p>
 
 
           <div class="hero-actions">
 
             <a
-              href="create-group.html"
+              href="signup.html"
               class="btn btn-primary btn-large"
             >
               Create Your Chama
-              <span>→</span>
+              <span class="btn-arrow">→</span>
             </a>
-
 
             <a
               href="login.html"
-              class="btn btn-secondary btn-large"
+              class="btn btn-light btn-large"
             >
               Sign In
             </a>
@@ -161,279 +204,234 @@
 
           <div class="hero-trust">
 
-            <span>
-              ✓ Group-scoped records
-            </span>
+            <div class="trust-item">
+              <span class="trust-icon">✓</span>
+              Group-scoped records
+            </div>
 
-            <span>
-              ✓ Live data
-            </span>
+            <div class="trust-item">
+              <span class="trust-icon">✓</span>
+              Real-time data
+            </div>
 
-            <span>
-              ✓ Simple to use
-            </span>
+            <div class="trust-item">
+              <span class="trust-icon">✓</span>
+              Mobile friendly
+            </div>
 
           </div>
 
         </div>
 
 
+        <!-- DASHBOARD PREVIEW -->
 
-        <!-- =================================================
-             DASHBOARD PREVIEW
-        ================================================== -->
+        <div class="hero-dashboard">
 
-        <div
-          class="hero-dashboard"
-          aria-label="CHAMA LIVE dashboard preview"
-        >
+          <div class="dashboard-window">
 
-          <div class="dash-window">
+            <div class="window-top">
 
-
-            <div class="dash-topbar">
-
-              <div class="dash-brand">
-                CHAMA <b>LIVE</b>
+              <div class="window-dots">
+                <span></span>
+                <span></span>
+                <span></span>
               </div>
 
-              <div class="dash-user">
+              <span class="window-title">
+                CHAMA LIVE
+              </span>
 
-                <span></span>
+            </div>
 
-                Timau Chama
+
+            <div class="dashboard-preview">
+
+              <div class="preview-sidebar">
+
+                <div class="preview-logo">
+                  CL
+                </div>
+
+                <span class="sidebar-line active"></span>
+                <span class="sidebar-line"></span>
+                <span class="sidebar-line"></span>
+                <span class="sidebar-line"></span>
+                <span class="sidebar-line"></span>
+
+              </div>
+
+
+              <div class="preview-main">
+
+                <div class="preview-header">
+
+                  <div>
+                    <small>
+                      Welcome back
+                    </small>
+
+                    <strong>
+                      Timau Chama
+                    </strong>
+                  </div>
+
+                  <div class="preview-avatar">
+                    JM
+                  </div>
+
+                </div>
+
+
+                <div class="preview-cards">
+
+                  <div class="preview-card">
+
+                    <small>
+                      Group Balance
+                    </small>
+
+                    <strong>
+                      KSh 84,500
+                    </strong>
+
+                    <span class="positive">
+                      ↑ Healthy
+                    </span>
+
+                  </div>
+
+
+                  <div class="preview-card">
+
+                    <small>
+                      Members
+                    </small>
+
+                    <strong>
+                      24
+                    </strong>
+
+                    <span>
+                      Active members
+                    </span>
+
+                  </div>
+
+
+                  <div class="preview-card">
+
+                    <small>
+                      This Month
+                    </small>
+
+                    <strong>
+                      KSh 18,200
+                    </strong>
+
+                    <span>
+                      Contributions
+                    </span>
+
+                  </div>
+
+                </div>
+
+
+                <div class="preview-chart">
+
+                  <div class="chart-heading">
+
+                    <strong>
+                      Contributions
+                    </strong>
+
+                    <span>
+                      Monthly
+                    </span>
+
+                  </div>
+
+
+                  <div class="chart-bars">
+
+                    <span style="height:42%"></span>
+                    <span style="height:58%"></span>
+                    <span style="height:48%"></span>
+                    <span style="height:72%"></span>
+                    <span style="height:65%"></span>
+                    <span style="height:84%"></span>
+                    <span style="height:76%"></span>
+
+                  </div>
+
+                </div>
+
+
+                <div class="preview-table">
+
+                  <div>
+                    <span>
+                      Monthly contributions
+                    </span>
+
+                    <strong>
+                      KSh 18,200
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>
+                      Approved expenses
+                    </span>
+
+                    <strong>
+                      KSh 6,450
+                    </strong>
+                  </div>
+
+                </div>
 
               </div>
 
             </div>
 
+          </div>
 
 
-            <div class="dash-body">
+          <div class="floating-card floating-card-one">
 
+            <span class="floating-icon">
+              ✓
+            </span>
 
-              <div class="dash-heading">
+            <div>
+              <strong>
+                Contribution recorded
+              </strong>
 
-                <div>
+              <small>
+                KSh 2,000
+              </small>
+            </div>
 
-                  <small>
-                    GROUP DASHBOARD
-                  </small>
+          </div>
 
-                  <h2>
-                    Good morning 👋
-                  </h2>
 
-                </div>
+          <div class="floating-card floating-card-two">
 
+            <span class="floating-icon">
+              ↑
+            </span>
 
-                <div class="dash-live">
+            <div>
+              <strong>
+                Monthly progress
+              </strong>
 
-                  <i></i>
-
-                  Live
-
-                </div>
-
-              </div>
-
-
-
-              <div class="dash-cards">
-
-
-                <div class="dash-card balance">
-
-                  <small>
-                    Group Balance
-                  </small>
-
-                  <strong>
-                    KSh 65,500
-                  </strong>
-
-                  <span>
-                    ↑ Updated from records
-                  </span>
-
-                </div>
-
-
-                <div class="dash-card">
-
-                  <small>
-                    Active Members
-                  </small>
-
-                  <strong>
-                    42
-                  </strong>
-
-                  <span>
-                    Members
-                  </span>
-
-                </div>
-
-
-                <div class="dash-card">
-
-                  <small>
-                    Contributions
-                  </small>
-
-                  <strong>
-                    KSh 84,000
-                  </strong>
-
-                  <span>
-                    This month
-                  </span>
-
-                </div>
-
-
-                <div class="dash-card">
-
-                  <small>
-                    Expenses
-                  </small>
-
-                  <strong>
-                    KSh 18,500
-                  </strong>
-
-                  <span>
-                    Approved
-                  </span>
-
-                </div>
-
-              </div>
-
-
-
-              <div class="dash-lower">
-
-
-                <div class="dash-panel">
-
-                  <div class="panel-title">
-
-                    <strong>
-                      Monthly contributions
-                    </strong>
-
-                    <span>
-                      82%
-                    </span>
-
-                  </div>
-
-
-                  <div class="fake-chart">
-
-                    <span style="height:34%"></span>
-                    <span style="height:48%"></span>
-                    <span style="height:43%"></span>
-                    <span style="height:67%"></span>
-                    <span style="height:58%"></span>
-                    <span style="height:78%"></span>
-                    <span style="height:88%"></span>
-
-                  </div>
-
-                </div>
-
-
-
-                <div class="dash-panel activity">
-
-                  <div class="panel-title">
-
-                    <strong>
-                      Recent activity
-                    </strong>
-
-                    <span>
-                      View all
-                    </span>
-
-                  </div>
-
-
-                  <div class="activity-row">
-
-                    <b>✓</b>
-
-                    <div>
-
-                      <strong>
-                        Mary
-                      </strong>
-
-                      <small>
-                        Contribution recorded
-                      </small>
-
-                    </div>
-
-                    <em>
-                      KSh 200
-                    </em>
-
-                  </div>
-
-
-                  <div class="activity-row">
-
-                    <b>✓</b>
-
-                    <div>
-
-                      <strong>
-                        John
-                      </strong>
-
-                      <small>
-                        Contribution recorded
-                      </small>
-
-                    </div>
-
-                    <em>
-                      KSh 500
-                    </em>
-
-                  </div>
-
-
-                  <div class="activity-row">
-
-                    <b>✓</b>
-
-                    <div>
-
-                      <strong>
-                        Peter
-                      </strong>
-
-                      <small>
-                        Expense approved
-                      </small>
-
-                    </div>
-
-                    <em>
-                      KSh 1,200
-                    </em>
-
-                  </div>
-
-                </div>
-
-              </div>
-
+              <small>
+                On track
+              </small>
             </div>
 
           </div>
@@ -447,123 +445,30 @@
 
 
     <!-- ===================================================
-         PROBLEM / VALUE
+         INTRO STRIP
     ==================================================== -->
 
-    <section
-      class="problem-section"
-      id="why"
-    >
+    <section class="intro-strip">
 
-      <div class="landing-container">
+      <div class="container intro-grid">
 
-
-        <div class="section-heading centered">
-
-          <span class="section-kicker">
-            A better way to manage your group
+        <div>
+          <span class="section-label">
+            ONE PLATFORM
           </span>
 
           <h2>
-            Less paperwork.
-            <br>
-            <span>More control.</span>
+            Everything your group needs,
+            without the paperwork headache.
           </h2>
-
-          <p>
-            Move your group records from scattered
-            books and spreadsheets into one connected
-            workspace.
-          </p>
-
         </div>
 
 
-
-        <div class="before-after">
-
-
-          <article class="before-card">
-
-            <div class="card-label">
-              THE OLD WAY
-            </div>
-
-            <h3>
-              Records everywhere
-            </h3>
-
-            <ul>
-
-              <li>
-                📒 Exercise books
-              </li>
-
-              <li>
-                📊 Spreadsheets
-              </li>
-
-              <li>
-                📱 WhatsApp messages
-              </li>
-
-              <li>
-                🧮 Manual calculations
-              </li>
-
-              <li>
-                🔎 Difficult record tracking
-              </li>
-
-            </ul>
-
-          </article>
-
-
-
-          <div class="transform-arrow">
-            →
-          </div>
-
-
-
-          <article class="after-card">
-
-            <div class="card-label live-label">
-              WITH CHAMA LIVE
-            </div>
-
-            <h3>
-              Everything connected
-            </h3>
-
-            <ul>
-
-              <li>
-                ✓ One group account
-              </li>
-
-              <li>
-                ✓ One member register
-              </li>
-
-              <li>
-                ✓ Live contribution records
-              </li>
-
-              <li>
-                ✓ Connected expenses and reports
-              </li>
-
-              <li>
-                ✓ Monthly closing and carry-forward
-              </li>
-
-            </ul>
-
-          </article>
-
-        </div>
+        <p>
+          Keep your group's everyday records organised,
+          accessible and easier to understand — from
+          member registration to monthly closing.
+        </p>
 
       </div>
 
@@ -576,40 +481,38 @@
     ==================================================== -->
 
     <section
-      class="features-section"
       id="features"
+      class="section features-section"
     >
 
-      <div class="landing-container">
-
+      <div class="container">
 
         <div class="section-heading centered">
 
-          <span class="section-kicker">
-            One platform
+          <span class="section-label">
+            CHAMA MANAGEMENT
           </span>
 
           <h2>
-            Everything your group
-            <br>
-            <span>needs to stay organized.</span>
+            One place for the work
+            your committee does every day.
           </h2>
 
           <p>
-            Each part of your chama works from
-            the same group and member context.
+            Designed around the actual activities of
+            community groups, welfare groups and Chamas.
           </p>
 
         </div>
 
 
-
         <div class="feature-grid">
 
+          <!-- MEMBERS -->
 
           <article class="feature-card">
 
-            <div class="feature-icon">
+            <div class="feature-icon icon-members">
               👥
             </div>
 
@@ -618,22 +521,24 @@
             </h3>
 
             <p>
-              Keep your member register, roles,
-              contacts and membership status organized.
+              Keep member records, roles, status and
+              membership information organised in one place.
             </p>
 
             <span class="feature-link">
-              Member management →
+              Member management
+              <span>→</span>
             </span>
 
           </article>
 
 
+          <!-- CONTRIBUTIONS -->
 
-          <article class="feature-card">
+          <article class="feature-card featured">
 
-            <div class="feature-icon">
-              💰
+            <div class="feature-icon icon-money">
+              KSh
             </div>
 
             <h3>
@@ -641,22 +546,25 @@
             </h3>
 
             <p>
-              Record recurring contributions, arrears,
-              credits, goals and custom contribution types.
+              Record monthly and special contributions,
+              track arrears, current dues and carry-forward
+              credit.
             </p>
 
             <span class="feature-link">
-              Contribution tracking →
+              Contribution tracking
+              <span>→</span>
             </span>
 
           </article>
 
 
+          <!-- EXPENSES -->
 
           <article class="feature-card">
 
-            <div class="feature-icon">
-              💳
+            <div class="feature-icon icon-expenses">
+              ↓
             </div>
 
             <h3>
@@ -664,22 +572,24 @@
             </h3>
 
             <p>
-              Track group spending and keep approved
-              expenses connected to the group ledger.
+              Record group expenses and keep approved
+              spending visible alongside your income.
             </p>
 
             <span class="feature-link">
-              Expense records →
+              Expense records
+              <span>→</span>
             </span>
 
           </article>
 
 
+          <!-- MEETINGS -->
 
           <article class="feature-card">
 
-            <div class="feature-icon">
-              📅
+            <div class="feature-icon icon-meetings">
+              ◫
             </div>
 
             <h3>
@@ -687,22 +597,24 @@
             </h3>
 
             <p>
-              Keep meetings, attendance and group
-              activity records in one place.
+              Keep meeting dates, attendance, agendas
+              and records together for easier follow-up.
             </p>
 
             <span class="feature-link">
-              Meeting management →
+              Meeting management
+              <span>→</span>
             </span>
 
           </article>
 
 
+          <!-- REPORTS -->
 
           <article class="feature-card">
 
-            <div class="feature-icon">
-              📊
+            <div class="feature-icon icon-reports">
+              ≋
             </div>
 
             <h3>
@@ -710,22 +622,24 @@
             </h3>
 
             <p>
-              Turn your group records into financial,
-              membership and contribution reports.
+              Turn your group's records into useful
+              financial, membership and activity reports.
             </p>
 
             <span class="feature-link">
-              Reporting →
+              Financial visibility
+              <span>→</span>
             </span>
 
           </article>
 
 
+          <!-- MONTHLY CLOSING -->
 
           <article class="feature-card">
 
-            <div class="feature-icon">
-              🗓️
+            <div class="feature-icon icon-closing">
+              ✓
             </div>
 
             <h3>
@@ -733,12 +647,13 @@
             </h3>
 
             <p>
-              Close each month and carry the right
-              balances forward into the next period.
+              Review contributions, expenses and balances
+              before closing each accounting period.
             </p>
 
             <span class="feature-link">
-              Monthly accounting →
+              Close with confidence
+              <span>→</span>
             </span>
 
           </article>
@@ -752,49 +667,90 @@
 
 
     <!-- ===================================================
-         ACCOUNTING
+         CONTRIBUTION ACCOUNTING
     ==================================================== -->
 
-    <section class="accounting-section">
+    <section
+      id="why-chama-live"
+      class="section accounting-section"
+    >
 
-      <div class="landing-container accounting-grid">
+      <div class="container accounting-grid">
 
+        <div class="accounting-content">
 
-        <div class="accounting-copy">
-
-          <span class="section-kicker">
-            Built around real group accounting
+          <span class="section-label">
+            SMARTER CONTRIBUTION TRACKING
           </span>
 
           <h2>
-            Never lose track of
-            <span>arrears or credit.</span>
+            Contributions should tell
+            the whole story.
           </h2>
 
           <p>
-            CHAMA LIVE follows the payment flow your
-            group actually needs: older arrears are
-            handled first, the current month's obligation
-            is covered next, and genuine extra payments
-            remain available as carry-forward credit.
+            CHAMA LIVE is designed to make recurring
+            monthly contributions easier to understand.
+            Instead of looking at one payment in isolation,
+            the system can show the member's previous
+            arrears, current obligation and any credit
+            carried forward.
           </p>
 
 
           <div class="accounting-points">
 
-            <div>
-              <b>01</b>
-              <span>Previous arrears</span>
+            <div class="accounting-point">
+
+              <span>01</span>
+
+              <div>
+                <strong>
+                  Previous arrears
+                </strong>
+
+                <p>
+                  See outstanding obligations from
+                  previous months.
+                </p>
+              </div>
+
             </div>
 
-            <div>
-              <b>02</b>
-              <span>Current month due</span>
+
+            <div class="accounting-point">
+
+              <span>02</span>
+
+              <div>
+                <strong>
+                  Current contribution
+                </strong>
+
+                <p>
+                  Track what has been paid against
+                  the current month's requirement.
+                </p>
+              </div>
+
             </div>
 
-            <div>
-              <b>03</b>
-              <span>Carry-forward credit</span>
+
+            <div class="accounting-point">
+
+              <span>03</span>
+
+              <div>
+                <strong>
+                  Carry-forward credit
+                </strong>
+
+                <p>
+                  Extra payments can remain visible as
+                  credit for future obligations.
+                </p>
+              </div>
+
             </div>
 
           </div>
@@ -802,156 +758,88 @@
         </div>
 
 
-
         <div class="accounting-visual">
 
-          <div class="ledger-card">
+          <div class="accounting-card">
 
-            <div class="ledger-title">
+            <div class="accounting-card-header">
 
-              <span>
-                Monthly contribution
+              <div>
+                <small>
+                  Monthly contribution status
+                </small>
+
+                <strong>
+                  Member Account
+                </strong>
+              </div>
+
+              <span class="status-badge">
+                Current
               </span>
-
-              <strong>
-                KSh 1,000 paid
-              </strong>
 
             </div>
 
 
-            <div class="ledger-line">
+            <div class="accounting-row">
 
               <span>
                 Previous arrears
               </span>
 
               <strong>
-                KSh 600
+                KSh 400
               </strong>
 
             </div>
 
 
-            <div class="ledger-progress">
-              <i style="width:60%"></i>
-            </div>
-
-
-            <div class="ledger-line">
+            <div class="accounting-row">
 
               <span>
-                Current month
+                Current due
               </span>
 
               <strong>
-                KSh 200
+                KSh 2,000
               </strong>
 
             </div>
 
 
-            <div class="ledger-progress current">
-              <i style="width:100%"></i>
-            </div>
-
-
-            <div class="ledger-line">
+            <div class="accounting-row paid">
 
               <span>
-                Carry-forward credit
+                Current paid
               </span>
 
               <strong>
-                KSh 200
+                KSh 2,400
               </strong>
 
             </div>
 
 
-            <div class="credit-box">
-              ✓ KSh 200 available for future obligations
+            <div class="accounting-divider"></div>
+
+
+            <div class="accounting-total">
+
+              <span>
+                Carry forward
+              </span>
+
+              <strong>
+                KSh 0
+              </strong>
+
             </div>
 
-          </div>
 
-        </div>
-
-      </div>
-
-    </section>
-
-
-
-    <!-- ===================================================
-         CUSTOM GROUP CATEGORIES
-    ==================================================== -->
-
-    <section class="groups-section">
-
-      <div class="landing-container">
-
-        <div class="group-banner">
-
-
-          <div>
-
-            <span class="section-kicker">
-              Made for different kinds of groups
-            </span>
-
-            <h2>
-              Your group has its own rules.
-              <br>
-              <span>CHAMA LIVE adapts.</span>
-            </h2>
-
-            <p>
-              Use your own contribution categories and
-              group settings instead of forcing your group
-              into a one-size-fits-all system.
-            </p>
-
-          </div>
-
-
-
-          <div
-            class="category-cloud"
-            aria-label="Example contribution categories"
-          >
-
-            <span>
-              Monthly
-            </span>
-
-            <span>
-              Welfare
-            </span>
-
-            <span>
-              Emergency
-            </span>
-
-            <span>
-              Project
-            </span>
-
-            <span>
-              Development
-            </span>
-
-            <span>
-              Fundraising
-            </span>
-
-            <span>
-              Registration
-            </span>
-
-            <span>
-              Custom
-            </span>
+            <div class="accounting-status">
+              <span class="status-dot"></span>
+              Contribution up to date
+            </div>
 
           </div>
 
@@ -968,35 +856,32 @@
     ==================================================== -->
 
     <section
-      class="steps-section"
       id="how-it-works"
+      class="section steps-section"
     >
 
-      <div class="landing-container">
-
+      <div class="container">
 
         <div class="section-heading centered">
 
-          <span class="section-kicker">
-            Getting started
+          <span class="section-label">
+            HOW IT WORKS
           </span>
 
           <h2>
-            Start in
-            <span>three simple steps.</span>
+            From paper records to
+            a live group system.
           </h2>
 
           <p>
-            No complicated setup. Create your group,
-            add members and start managing your records.
+            Start small and bring your group's everyday
+            activities into one organised workspace.
           </p>
 
         </div>
 
 
-
         <div class="steps-grid">
-
 
           <article class="step-card">
 
@@ -1004,21 +889,16 @@
               01
             </div>
 
-            <div class="step-icon">
-              🏠
-            </div>
-
             <h3>
               Create your group
             </h3>
 
             <p>
-              Set up your group account and define
+              Set up your group account and establish
               the basic group information.
             </p>
 
           </article>
-
 
 
           <article class="step-card">
@@ -1027,21 +907,16 @@
               02
             </div>
 
-            <div class="step-icon">
-              👥
-            </div>
-
             <h3>
               Add members
             </h3>
 
             <p>
-              Build your member register and organize
-              roles and membership details.
+              Build your member register with the
+              information your group actually needs.
             </p>
 
           </article>
-
 
 
           <article class="step-card">
@@ -1050,17 +925,31 @@
               03
             </div>
 
-            <div class="step-icon">
-              🚀
-            </div>
-
             <h3>
-              Start recording
+              Record activity
             </h3>
 
             <p>
-              Record contributions, expenses and
-              meetings while reports stay connected.
+              Capture contributions, expenses and
+              meetings as they happen.
+            </p>
+
+          </article>
+
+
+          <article class="step-card">
+
+            <div class="step-number">
+              04
+            </div>
+
+            <h3>
+              Understand your group
+            </h3>
+
+            <p>
+              Use reports and monthly closing to
+              understand where your group stands.
             </p>
 
           </article>
@@ -1074,115 +963,95 @@
 
 
     <!-- ===================================================
-         TRUST
+         TRANSPARENCY
     ==================================================== -->
 
-    <section class="trust-section">
+    <section class="transparency-section">
 
-      <div class="landing-container trust-grid">
+      <div class="container">
 
+        <div class="transparency-card">
 
-        <div>
+          <div class="transparency-content">
 
-          <span class="section-kicker">
-            Designed with your group's data in mind
-          </span>
+            <span class="section-label">
+              BUILT FOR TRANSPARENCY
+            </span>
 
-          <h2>
-            One group context.
-            <br>
-            <span>Clearer records.</span>
-          </h2>
+            <h2>
+              Everyone should know
+              what the records say.
+            </h2>
 
-          <p>
-            CHAMA LIVE is designed so the signed-in
-            member and their group stay at the centre
-            of the application.
-          </p>
-
-        </div>
-
-
-
-        <div class="trust-items">
+            <p>
+              Good group management starts with records
+              that are clear, consistent and easy to review.
+              CHAMA LIVE keeps your group activities
+              connected so your committee can work from
+              the same information.
+            </p>
 
 
-          <div>
+            <div class="transparency-list">
 
-            <span>🔐</span>
+              <div>
+                <span>✓</span>
+                Member-linked transactions
+              </div>
 
-            <div>
-
-              <strong>
-                Secure authentication
-              </strong>
-
-              <small>
-                Members sign in to their own accounts.
-              </small>
-
-            </div>
-
-          </div>
-
-
-
-          <div>
-
-            <span>🏠</span>
-
-            <div>
-
-              <strong>
+              <div>
+                <span>✓</span>
                 Group-scoped records
-              </strong>
+              </div>
 
-              <small>
-                Your group data stays connected
-                to its group context.
-              </small>
+              <div>
+                <span>✓</span>
+                Financial reporting
+              </div>
 
-            </div>
-
-          </div>
-
-
-
-          <div>
-
-            <span>📋</span>
-
-            <div>
-
-              <strong>
-                Organized history
-              </strong>
-
-              <small>
-                Contributions, expenses and meetings
-                remain traceable.
-              </small>
+              <div>
+                <span>✓</span>
+                Monthly accountability
+              </div>
 
             </div>
 
           </div>
 
 
+          <div class="transparency-visual">
 
-          <div>
+            <div class="record-stack">
 
-            <span>📈</span>
+              <div class="record-card record-back">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
 
-            <div>
+              <div class="record-card record-middle">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
 
-              <strong>
-                Connected reporting
-              </strong>
+              <div class="record-card record-front">
 
-              <small>
-                Reports are built from the records
-                already in your system.
-              </small>
+                <div class="record-check">
+                  ✓
+                </div>
+
+                <div>
+                  <strong>
+                    Records connected
+                  </strong>
+
+                  <small>
+                    Members · Contributions · Expenses
+                  </small>
+                </div>
+
+              </div>
 
             </div>
 
@@ -1197,54 +1066,52 @@
 
 
     <!-- ===================================================
-         FINAL CTA
+         CTA
     ==================================================== -->
 
-    <section class="cta-section">
+    <section
+      id="contact"
+      class="cta-section"
+    >
 
-      <div class="landing-container">
+      <div class="container">
 
         <div class="cta-card">
 
-
-          <div class="cta-orb orb-one"></div>
-          <div class="cta-orb orb-two"></div>
-
+          <div class="cta-pattern"></div>
 
           <div class="cta-content">
 
-            <span class="section-kicker">
-              Ready when your group is
+            <span class="cta-label">
+              READY TO GO DIGITAL?
             </span>
 
             <h2>
-              Your Chama deserves
-              <br>
-              <span>better records.</span>
+              Give your Chama
+              a better way to work.
             </h2>
 
             <p>
-              Move from scattered records to one
-              connected digital workspace.
+              Replace scattered records with one
+              connected group management system.
             </p>
 
 
-            <div class="hero-actions centered-actions">
+            <div class="cta-actions">
 
               <a
-                href="create-group.html"
-                class="btn btn-light btn-large"
+                href="signup.html"
+                class="btn btn-white btn-large"
               >
                 Create Your Chama
-                <span>→</span>
+                <span class="btn-arrow">→</span>
               </a>
-
 
               <a
                 href="login.html"
-                class="btn btn-outline-light btn-large"
+                class="btn btn-ghost-white btn-large"
               >
-                Already have an account?
+                Already a member? Sign In
               </a>
 
             </div>
@@ -1267,42 +1134,82 @@
 
   <footer class="landing-footer">
 
-    <div class="landing-container footer-grid">
+    <div class="container footer-grid">
 
-
-      <div>
+      <div class="footer-brand">
 
         <a
           href="index.html"
-          class="landing-brand footer-brand"
+          class="brand footer-logo"
         >
-          CHAMA <span>LIVE</span>
+          <span class="brand-chama">
+            CHAMA
+          </span>
+
+          <span class="brand-live">
+            LIVE
+          </span>
         </a>
 
+
         <p>
-          A simple digital workspace for managing
-          group activities and records.
+          Simple digital management for Chamas,
+          welfare groups and community groups.
         </p>
 
       </div>
 
 
-      <div class="footer-links">
+      <div class="footer-column">
+
+        <h3>
+          Platform
+        </h3>
 
         <a href="#features">
           Features
         </a>
 
         <a href="#how-it-works">
-          How it works
+          How It Works
         </a>
 
-        <a href="create-group.html">
-          Create group
+        <a href="#why-chama-live">
+          Why CHAMA LIVE
         </a>
+
+      </div>
+
+
+      <div class="footer-column">
+
+        <h3>
+          Account
+        </h3>
 
         <a href="login.html">
-          Sign in
+          Sign In
+        </a>
+
+        <a href="signup.html">
+          Create Group
+        </a>
+
+      </div>
+
+
+      <div class="footer-column">
+
+        <h3>
+          Support
+        </h3>
+
+        <a href="#contact">
+          Contact
+        </a>
+
+        <a href="mailto:support@chama-live.com">
+          Email Support
         </a>
 
       </div>
@@ -1310,21 +1217,110 @@
     </div>
 
 
-    <div class="landing-container footer-bottom">
+    <div class="container footer-bottom">
 
-      <span>
+      <p>
         © 2026 CHAMA LIVE. All rights reserved.
-      </span>
+      </p>
 
-      <span>
-        Built for groups. Built for clarity.
-      </span>
+      <div>
+        <span>
+          Built for better group management.
+        </span>
+      </div>
 
     </div>
 
   </footer>
 
 
-</body>
 
+  <!-- =====================================================
+       MOBILE NAV SCRIPT
+  ====================================================== -->
+
+  <script>
+
+    (() => {
+
+      const button =
+        document.querySelector(
+          ".mobile-menu-button"
+        );
+
+      const mobileNav =
+        document.getElementById(
+          "mobileNav"
+        );
+
+
+      if (
+        !button ||
+        !mobileNav
+      ) {
+        return;
+      }
+
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          const expanded =
+            button.getAttribute(
+              "aria-expanded"
+            ) === "true";
+
+
+          button.setAttribute(
+            "aria-expanded",
+            String(!expanded)
+          );
+
+
+          mobileNav.hidden =
+            expanded;
+
+
+          button.classList.toggle(
+            "open",
+            !expanded
+          );
+
+        }
+      );
+
+
+      mobileNav
+        .querySelectorAll("a")
+        .forEach(
+          link => {
+
+            link.addEventListener(
+              "click",
+              () => {
+
+                button.setAttribute(
+                  "aria-expanded",
+                  "false"
+                );
+
+                mobileNav.hidden =
+                  true;
+
+                button.classList.remove(
+                  "open"
+                );
+
+              }
+            );
+
+          }
+        );
+
+    })();
+
+  </script>
+
+</body>
 </html>
