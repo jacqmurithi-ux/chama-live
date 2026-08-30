@@ -1,6 +1,24 @@
 /* =========================================================
    CHAMA LIVE — MEETINGS
-   Schema-aligned version
+   COMPLETE STABLE VERSION
+
+   FEATURES
+   ---------------------------------------------------------
+   • Load group meetings
+   • Schedule meetings
+   • Edit meetings
+   • View meeting details
+   • Mark completed
+   • Cancel meeting
+   • Restore cancelled meeting to upcoming
+   • Save minutes and resolutions
+   • Delete meetings
+   • Filter by status
+   • Upcoming / Completed / Cancelled totals
+
+   DATABASE RULE
+   ---------------------------------------------------------
+   meetings.group_id = currentMember.group_id
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -74,6 +92,9 @@ const completeMeeting =
 const cancelMeeting =
   document.getElementById("cancelMeeting");
 
+const restoreMeeting =
+  document.getElementById("restoreMeeting");
+
 const deleteMeeting =
   document.getElementById("deleteMeeting");
 
@@ -86,6 +107,9 @@ const resolutionInput =
 const saveMinutes =
   document.getElementById("saveMinutes");
 
+const cancelEdit =
+  document.getElementById("cancelEdit");
+
 
 /* =========================================================
    STATE
@@ -93,9 +117,13 @@ const saveMinutes =
 
 let groupId = null;
 
+let currentMember = null;
+
 let meetings = [];
 
 let selectedMeeting = null;
+
+let editingMeetingId = null;
 
 let initialized = false;
 
@@ -106,29 +134,42 @@ let initialized = false;
 
 function escapeHtml(value) {
 
-  return String(
-    value ?? ""
-  )
-    .replaceAll(
-      "&",
-      "&amp;"
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
+}
+
+
+function normalizeStatus(value) {
+
+  const status =
+    String(
+      value || "upcoming"
     )
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
+      .trim()
+      .toLowerCase();
+
+  if (
+    status === "completed"
+  ) {
+
+    return "completed";
+
+  }
+
+  if (
+    status === "cancelled"
+  ) {
+
+    return "cancelled";
+
+  }
+
+  return "upcoming";
 
 }
 
@@ -141,10 +182,8 @@ function formatDate(value) {
 
   }
 
-
   const date =
     new Date(value);
-
 
   if (
     Number.isNaN(
@@ -152,10 +191,9 @@ function formatDate(value) {
     )
   ) {
 
-    return value;
+    return String(value);
 
   }
-
 
   return date.toLocaleDateString(
     "en-KE",
@@ -169,31 +207,28 @@ function formatDate(value) {
 }
 
 
-function showError(error) {
+function getToday() {
 
-  console.error(
-    "CHAMA LIVE Meetings:",
-    error
-  );
+  const date =
+    new Date();
 
+  return [
+    date.getFullYear(),
 
-  if (errorEl) {
+    String(
+      date.getMonth() + 1
+    ).padStart(2, "0"),
 
-    errorEl.textContent =
-      error?.message ||
-      "Unable to load meetings.";
+    String(
+      date.getDate()
+    ).padStart(2, "0")
 
-    errorEl.hidden =
-      false;
-
-  }
+  ].join("-");
 
 }
 
 
-function agendaToArray(
-  value
-) {
+function agendaToArray(value) {
 
   return String(
     value || ""
@@ -208,9 +243,7 @@ function agendaToArray(
 }
 
 
-function agendaToText(
-  value
-) {
+function agendaToText(value) {
 
   if (
     Array.isArray(value)
@@ -220,7 +253,6 @@ function agendaToText(
 
   }
 
-
   return String(
     value || ""
   );
@@ -228,30 +260,146 @@ function agendaToText(
 }
 
 
-function getToday() {
+function showStatus(message) {
 
-  const date =
-    new Date();
+  if (!statusEl) {
+
+    return;
+
+  }
+
+  statusEl.textContent =
+    message || "";
+
+  statusEl.hidden =
+    !message;
+
+}
 
 
-  return [
-    date.getFullYear(),
-    String(
-      date.getMonth() + 1
-    ).padStart(2, "0"),
-    String(
-      date.getDate()
-    ).padStart(2, "0")
-  ].join("-");
+function showError(error) {
+
+  console.error(
+    "CHAMA LIVE Meetings:",
+    error
+  );
+
+  if (errorEl) {
+
+    errorEl.textContent =
+      error?.message ||
+      String(error) ||
+      "Unable to process meeting.";
+
+    errorEl.hidden =
+      false;
+
+  }
+
+}
+
+
+function clearError() {
+
+  if (errorEl) {
+
+    errorEl.textContent =
+      "";
+
+    errorEl.hidden =
+      true;
+
+  }
 
 }
 
 
 /* =========================================================
-   LOAD
+   FORM MODE
+========================================================= */
+
+function setCreateMode() {
+
+  editingMeetingId =
+    null;
+
+  if (saveButton) {
+
+    saveButton.textContent =
+      "Schedule Meeting";
+
+  }
+
+  if (cancelEdit) {
+
+    cancelEdit.hidden =
+      true;
+
+  }
+
+}
+
+
+function setEditMode(meeting) {
+
+  if (!meeting) {
+
+    return;
+
+  }
+
+  editingMeetingId =
+    meeting.id;
+
+  titleInput.value =
+    meeting.title || "";
+
+  dateInput.value =
+    meeting.date || "";
+
+  venueInput.value =
+    meeting.venue || "";
+
+  agendaInput.value =
+    agendaToText(
+      meeting.agenda
+    );
+
+  if (saveButton) {
+
+    saveButton.textContent =
+      "Update Meeting";
+
+  }
+
+  if (cancelEdit) {
+
+    cancelEdit.hidden =
+      false;
+
+  }
+
+  form?.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+
+}
+
+
+/* =========================================================
+   LOAD MEETINGS
 ========================================================= */
 
 async function loadMeetings() {
+
+  if (!groupId) {
+
+    throw new Error(
+      "No group is associated with this account."
+    );
+
+  }
 
   const {
     data,
@@ -288,13 +436,11 @@ async function loadMeetings() {
         }
       );
 
-
   if (error) {
 
     throw error;
 
   }
-
 
   meetings =
     data || [];
@@ -308,34 +454,45 @@ async function loadMeetings() {
 
 function renderMetrics() {
 
-  const upcoming =
-    meetings.filter(
-      meeting =>
-        String(
+  let upcoming = 0;
+
+  let completed = 0;
+
+  let cancelled = 0;
+
+
+  meetings.forEach(
+    meeting => {
+
+      const status =
+        normalizeStatus(
           meeting.status
-        ).toLowerCase() ===
-        "upcoming"
-    ).length;
+        );
 
+      if (
+        status === "upcoming"
+      ) {
 
-  const completed =
-    meetings.filter(
-      meeting =>
-        String(
-          meeting.status
-        ).toLowerCase() ===
-        "completed"
-    ).length;
+        upcoming++;
 
+      }
+      else if (
+        status === "completed"
+      ) {
 
-  const cancelled =
-    meetings.filter(
-      meeting =>
-        String(
-          meeting.status
-        ).toLowerCase() ===
-        "cancelled"
-    ).length;
+        completed++;
+
+      }
+      else if (
+        status === "cancelled"
+      ) {
+
+        cancelled++;
+
+      }
+
+    }
+  );
 
 
   if (upcomingCount) {
@@ -345,14 +502,12 @@ function renderMetrics() {
 
   }
 
-
   if (completedCount) {
 
     completedCount.textContent =
       completed;
 
   }
-
 
   if (cancelledCount) {
 
@@ -374,24 +529,22 @@ function getFilteredMeetings() {
     String(
       statusFilter?.value ||
       "all"
-    ).toLowerCase();
+    )
+      .trim()
+      .toLowerCase();
 
 
   return meetings.filter(
     meeting => {
 
       const status =
-        String(
-          meeting.status ||
-          "upcoming"
-        ).toLowerCase();
-
+        normalizeStatus(
+          meeting.status
+        );
 
       return (
-        filter ===
-        "all" ||
-        status ===
-        filter
+        filter === "all" ||
+        filter === status
       );
 
     }
@@ -401,7 +554,7 @@ function getFilteredMeetings() {
 
 
 /* =========================================================
-   RENDER
+   RENDER TABLE
 ========================================================= */
 
 function renderMeetings() {
@@ -437,6 +590,12 @@ function renderMeetings() {
       .map(
         meeting => {
 
+          const status =
+            normalizeStatus(
+              meeting.status
+            );
+
+
           return `
             <tr>
 
@@ -463,8 +622,7 @@ function renderMeetings() {
 
               <td>
                 ${escapeHtml(
-                  meeting.status ||
-                  "upcoming"
+                  status
                 )}
               </td>
 
@@ -519,6 +677,12 @@ function renderDetails() {
   }
 
 
+  const status =
+    normalizeStatus(
+      selectedMeeting.status
+    );
+
+
   const agenda =
     agendaToText(
       selectedMeeting.agenda
@@ -527,7 +691,7 @@ function renderDetails() {
 
   meetingDetails.innerHTML = `
     <p>
-      <strong>Title:</strong>
+      <strong>Meeting:</strong>
       ${escapeHtml(
         selectedMeeting.title
       )}
@@ -553,8 +717,7 @@ function renderDetails() {
     <p>
       <strong>Status:</strong>
       ${escapeHtml(
-        selectedMeeting.status ||
-        "upcoming"
+        status
       )}
     </p>
 
@@ -597,11 +760,48 @@ function renderDetails() {
   detailsCard.hidden =
     false;
 
+
+  /* -------------------------------------------------------
+     BUTTON VISIBILITY
+  ------------------------------------------------------- */
+
+  if (completeMeeting) {
+
+    completeMeeting.hidden =
+      status !== "upcoming";
+
+  }
+
+
+  if (cancelMeeting) {
+
+    cancelMeeting.hidden =
+      status === "cancelled" ||
+      status === "completed";
+
+  }
+
+
+  if (restoreMeeting) {
+
+    restoreMeeting.hidden =
+      status !== "cancelled";
+
+  }
+
+
+  if (deleteMeeting) {
+
+    deleteMeeting.hidden =
+      false;
+
+  }
+
 }
 
 
 /* =========================================================
-   CREATE / UPDATE MEETING
+   CREATE / UPDATE
 ========================================================= */
 
 async function saveMeetingForm(
@@ -610,21 +810,48 @@ async function saveMeetingForm(
 
   event.preventDefault();
 
+  clearError();
+
+  showStatus("");
+
 
   try {
 
+    if (!groupId) {
+
+      throw new Error(
+        "No group is associated with this account."
+      );
+
+    }
+
+
+    if (!currentMember?.id) {
+
+      throw new Error(
+        "Your member record could not be found."
+      );
+
+    }
+
+
     const title =
-      titleInput?.value
-        .trim();
+      String(
+        titleInput?.value ||
+        ""
+      ).trim();
 
 
     const date =
-      dateInput?.value;
+      dateInput?.value ||
+      "";
 
 
     const venue =
-      venueInput?.value
-        .trim();
+      String(
+        venueInput?.value ||
+        ""
+      ).trim();
 
 
     const agenda =
@@ -657,7 +884,9 @@ async function saveMeetingForm(
         true;
 
       saveButton.textContent =
-        "Saving...";
+        editingMeetingId
+          ? "Updating..."
+          : "Saving...";
 
     }
 
@@ -683,11 +912,14 @@ async function saveMeetingForm(
     };
 
 
-    if (
-      selectedMeeting
-    ) {
+    /* -------------------------------------------------------
+       UPDATE
+    ------------------------------------------------------- */
+
+    if (editingMeetingId) {
 
       const {
+        data,
         error
       } =
         await supabase
@@ -697,12 +929,25 @@ async function saveMeetingForm(
           )
           .eq(
             "id",
-            selectedMeeting.id
+            editingMeetingId
           )
           .eq(
             "group_id",
             groupId
-          );
+          )
+          .select(`
+            id,
+            group_id,
+            title,
+            date,
+            venue,
+            agenda,
+            minutes,
+            resolution,
+            status,
+            created_at
+          `)
+          .single();
 
 
       if (error) {
@@ -712,14 +957,21 @@ async function saveMeetingForm(
       }
 
 
-      if (statusEl) {
+      selectedMeeting =
+        data;
 
-        statusEl.textContent =
-          "Meeting updated successfully.";
 
-      }
+      showStatus(
+        "Meeting updated successfully."
+      );
 
     }
+
+
+    /* -------------------------------------------------------
+       CREATE
+    ------------------------------------------------------- */
+
     else {
 
       payload.status =
@@ -727,13 +979,27 @@ async function saveMeetingForm(
 
 
       const {
+        data,
         error
       } =
         await supabase
           .from("meetings")
           .insert(
             payload
-          );
+          )
+          .select(`
+            id,
+            group_id,
+            title,
+            date,
+            venue,
+            agenda,
+            minutes,
+            resolution,
+            status,
+            created_at
+          `)
+          .single();
 
 
       if (error) {
@@ -743,12 +1009,13 @@ async function saveMeetingForm(
       }
 
 
-      if (statusEl) {
+      selectedMeeting =
+        data;
 
-        statusEl.textContent =
-          "Meeting scheduled successfully.";
 
-      }
+      showStatus(
+        "Meeting scheduled successfully."
+      );
 
     }
 
@@ -764,16 +1031,7 @@ async function saveMeetingForm(
     }
 
 
-    selectedMeeting =
-      null;
-
-
-    if (detailsCard) {
-
-      detailsCard.hidden =
-        true;
-
-    }
+    setCreateMode();
 
 
     await loadMeetings();
@@ -781,6 +1039,36 @@ async function saveMeetingForm(
     renderMetrics();
 
     renderMeetings();
+
+
+    if (selectedMeeting) {
+
+      selectedMeeting =
+        meetings.find(
+          meeting =>
+            String(
+              meeting.id
+            ) ===
+            String(
+              selectedMeeting.id
+            )
+        ) ||
+        null;
+
+    }
+
+
+    renderDetails();
+
+
+    setTimeout(
+      () => {
+
+        showStatus("");
+
+      },
+      3000
+    );
 
   }
   catch (error) {
@@ -798,7 +1086,9 @@ async function saveMeetingForm(
         false;
 
       saveButton.textContent =
-        "Schedule Meeting";
+        editingMeetingId
+          ? "Update Meeting"
+          : "Schedule Meeting";
 
     }
 
@@ -808,12 +1098,10 @@ async function saveMeetingForm(
 
 
 /* =========================================================
-   VIEW
+   VIEW MEETING
 ========================================================= */
 
-function viewMeeting(
-  id
-) {
+function viewMeeting(id) {
 
   selectedMeeting =
     meetings.find(
@@ -836,24 +1124,47 @@ function viewMeeting(
 ========================================================= */
 
 async function updateMeetingStatus(
-  status
+  newStatus
 ) {
 
   if (!selectedMeeting) {
 
-    return;
+    throw new Error(
+      "Select a meeting first."
+    );
+
+  }
+
+
+  const allowed = [
+    "upcoming",
+    "completed",
+    "cancelled"
+  ];
+
+
+  if (
+    !allowed.includes(
+      newStatus
+    )
+  ) {
+
+    throw new Error(
+      "Invalid meeting status."
+    );
 
   }
 
 
   const {
+    data,
     error
   } =
     await supabase
       .from("meetings")
       .update({
         status:
-          status
+          newStatus
       })
       .eq(
         "id",
@@ -862,7 +1173,20 @@ async function updateMeetingStatus(
       .eq(
         "group_id",
         groupId
-      );
+      )
+      .select(`
+        id,
+        group_id,
+        title,
+        date,
+        venue,
+        agenda,
+        minutes,
+        resolution,
+        status,
+        created_at
+      `)
+      .single();
 
 
   if (error) {
@@ -872,27 +1196,32 @@ async function updateMeetingStatus(
   }
 
 
-  await loadMeetings();
-
-
   selectedMeeting =
-    meetings.find(
-      meeting =>
-        String(
-          meeting.id
-        ) ===
-        String(
-          selectedMeeting.id
-        )
-    ) ||
-    null;
+    data;
 
+
+  await loadMeetings();
 
   renderMetrics();
 
   renderMeetings();
 
   renderDetails();
+
+
+  showStatus(
+    `Meeting marked ${newStatus}.`
+  );
+
+
+  setTimeout(
+    () => {
+
+      showStatus("");
+
+    },
+    3000
+  );
 
 }
 
@@ -912,7 +1241,22 @@ async function saveMeetingMinutes() {
   }
 
 
+  const minutes =
+    String(
+      minutesInput?.value ||
+      ""
+    ).trim();
+
+
+  const resolution =
+    String(
+      resolutionInput?.value ||
+      ""
+    ).trim();
+
+
   const {
+    data,
     error
   } =
     await supabase
@@ -920,13 +1264,11 @@ async function saveMeetingMinutes() {
       .update({
 
         minutes:
-          minutesInput?.value
-            ?.trim() ||
+          minutes ||
           null,
 
         resolution:
-          resolutionInput?.value
-            ?.trim() ||
+          resolution ||
           null
 
       })
@@ -937,7 +1279,20 @@ async function saveMeetingMinutes() {
       .eq(
         "group_id",
         groupId
-      );
+      )
+      .select(`
+        id,
+        group_id,
+        title,
+        date,
+        venue,
+        agenda,
+        minutes,
+        resolution,
+        status,
+        created_at
+      `)
+      .single();
 
 
   if (error) {
@@ -947,31 +1302,28 @@ async function saveMeetingMinutes() {
   }
 
 
-  await loadMeetings();
-
-
   selectedMeeting =
-    meetings.find(
-      meeting =>
-        String(
-          meeting.id
-        ) ===
-        String(
-          selectedMeeting.id
-        )
-    ) ||
-    null;
+    data;
 
+
+  await loadMeetings();
 
   renderDetails();
 
 
-  if (statusEl) {
+  showStatus(
+    "Minutes and resolutions saved successfully."
+  );
 
-    statusEl.textContent =
-      "Minutes and resolutions saved.";
 
-  }
+  setTimeout(
+    () => {
+
+      showStatus("");
+
+    },
+    3000
+  );
 
 }
 
@@ -984,16 +1336,20 @@ async function removeMeeting() {
 
   if (!selectedMeeting) {
 
-    return;
+    throw new Error(
+      "Select a meeting first."
+    );
 
   }
 
 
-  if (
-    !window.confirm(
+  const confirmed =
+    window.confirm(
       "Are you sure you want to delete this meeting?"
-    )
-  ) {
+    );
+
+
+  if (!confirmed) {
 
     return;
 
@@ -1040,12 +1396,19 @@ async function removeMeeting() {
   renderDetails();
 
 
-  if (statusEl) {
+  showStatus(
+    "Meeting deleted successfully."
+  );
 
-    statusEl.textContent =
-      "Meeting deleted successfully.";
 
-  }
+  setTimeout(
+    () => {
+
+      showStatus("");
+
+    },
+    3000
+  );
 
 }
 
@@ -1091,7 +1454,7 @@ function setupTableActions() {
 
 
 /* =========================================================
-   BUTTONS
+   BUTTON EVENTS
 ========================================================= */
 
 function setupButtons() {
@@ -1112,28 +1475,26 @@ function setupButtons() {
 
       }
 
+      setEditMode(
+        selectedMeeting
+      );
 
-      titleInput.value =
-        selectedMeeting.title ||
-        "";
+    }
+  );
+
+
+  cancelEdit?.addEventListener(
+    "click",
+    () => {
+
+      form?.reset();
 
       dateInput.value =
-        selectedMeeting.date ||
-        "";
+        getToday();
 
-      venueInput.value =
-        selectedMeeting.venue ||
-        "";
+      setCreateMode();
 
-      agendaInput.value =
-        agendaToText(
-          selectedMeeting.agenda
-        );
-
-
-      form?.scrollIntoView({
-        behavior: "smooth"
-      });
+      showStatus("");
 
     }
   );
@@ -1144,6 +1505,8 @@ function setupButtons() {
     async () => {
 
       try {
+
+        clearError();
 
         await updateMeetingStatus(
           "completed"
@@ -1168,8 +1531,35 @@ function setupButtons() {
 
       try {
 
+        clearError();
+
         await updateMeetingStatus(
           "cancelled"
+        );
+
+      }
+      catch (error) {
+
+        showError(
+          error
+        );
+
+      }
+
+    }
+  );
+
+
+  restoreMeeting?.addEventListener(
+    "click",
+    async () => {
+
+      try {
+
+        clearError();
+
+        await updateMeetingStatus(
+          "upcoming"
         );
 
       }
@@ -1191,6 +1581,8 @@ function setupButtons() {
 
       try {
 
+        clearError();
+
         await removeMeeting();
 
       }
@@ -1211,6 +1603,8 @@ function setupButtons() {
     async () => {
 
       try {
+
+        clearError();
 
         await saveMeetingMinutes();
 
@@ -1248,15 +1642,55 @@ export async function initPage() {
 
   try {
 
+    clearError();
+
+    showStatus(
+      "Loading meetings..."
+    );
+
+
     await requireAuth();
 
 
-    const member =
+    currentMember =
       await getMyMember();
 
 
+    if (!currentMember) {
+
+      throw new Error(
+        "No member record is linked to this account."
+      );
+
+    }
+
+
     groupId =
-      member.group_id;
+      currentMember.group_id;
+
+
+    if (!groupId) {
+
+      throw new Error(
+        "Your member record is not linked to a group."
+      );
+
+    }
+
+
+    console.log(
+      "CHAMA LIVE: meetings context",
+      {
+        memberId:
+          currentMember.id,
+
+        groupId:
+          groupId
+      }
+    );
+
+
+    setCreateMode();
 
 
     if (dateInput) {
@@ -1280,24 +1714,39 @@ export async function initPage() {
 
     await loadMeetings();
 
-
     renderMetrics();
 
     renderMeetings();
 
+    renderDetails();
 
-    if (statusEl) {
 
-      statusEl.textContent =
-        "Meetings ready.";
+    showStatus(
+      "Meetings ready."
+    );
 
-    }
+
+    setTimeout(
+      () => {
+
+        showStatus("");
+
+      },
+      2000
+    );
+
+
+    console.log(
+      "CHAMA LIVE: meetings initialized"
+    );
 
   }
   catch (error) {
 
     initialized =
       false;
+
+    showStatus("");
 
     showError(
       error
@@ -1308,8 +1757,41 @@ export async function initPage() {
 }
 
 
+/* =========================================================
+   PUBLIC ALIAS
+========================================================= */
+
 export const initMeetings =
   initPage;
+
+
+/* =========================================================
+   AUTO BOOT
+========================================================= */
+
+if (
+  document.readyState ===
+  "loading"
+) {
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+      initPage();
+
+    },
+    {
+      once: true
+    }
+  );
+
+}
+else {
+
+  initPage();
+
+}
 
 
 console.log(
