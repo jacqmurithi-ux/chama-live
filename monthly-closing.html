@@ -21,140 +21,101 @@
 
   <style>
 
-    .closing-grid {
-
-      display: grid;
-
-      grid-template-columns:
-        repeat(3, minmax(0, 1fr));
-
-      gap: 15px;
-
+    .closing-header {
+      margin-bottom: 20px;
     }
 
+    .closing-selector {
+      display: flex;
+      gap: 12px;
+      align-items: end;
+      flex-wrap: wrap;
+    }
+
+    .closing-selector .form-group {
+      margin-bottom: 0;
+      min-width: 220px;
+    }
+
+    .closing-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
 
     .closing-card {
-
       padding: 18px;
-
-      border:
-        1px solid
-        var(--border-light);
-
-      border-radius: 12px;
-
-      background:
-        var(--surface-soft);
-
     }
 
-
-    .closing-label {
-
+    .closing-card-label {
       display: block;
-
       margin-bottom: 7px;
-
-      color:
-        var(--muted);
-
+      color: var(--muted);
       font-size: 13px;
-
       font-weight: 600;
-
     }
 
-
-    .closing-value {
-
-      font-size: 23px;
-
+    .closing-card-value {
+      font-size: 24px;
       font-weight: 800;
-
-      color:
-        var(--text-dark);
-
+      color: var(--text-dark);
     }
-
-
-    .closing-summary {
-
-      display: grid;
-
-      grid-template-columns:
-        repeat(2, minmax(0, 1fr));
-
-      gap: 15px;
-
-      margin-top: 20px;
-
-    }
-
 
     .closing-balance {
-
-      padding: 20px;
-
+      margin-top: 20px;
+      padding: 22px;
       border-radius: 12px;
-
-      border:
-        1px solid
-        var(--border-light);
-
-      background:
-        var(--surface-soft);
-
+      border: 1px solid var(--border-light);
+      background: var(--surface-soft);
     }
 
-
-    .closing-balance h3 {
-
-      margin-top: 0;
-
+    .closing-balance-label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 5px;
     }
 
+    .closing-balance-value {
+      font-size: 32px;
+      font-weight: 900;
+      color: var(--primary);
+    }
 
     .closing-actions {
-
       display: flex;
-
       gap: 10px;
-
       flex-wrap: wrap;
-
       margin-top: 20px;
-
     }
-
 
     .closing-status {
+      margin-top: 15px;
+      font-weight: 700;
+    }
 
-      display: inline-block;
+    @media (max-width: 900px) {
 
-      margin-top: 8px;
-
-      font-size: 12px;
-
-      font-weight: 800;
-
-      text-transform: uppercase;
+      .closing-grid {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
 
     }
 
-
-    @media (max-width: 700px) {
+    @media (max-width: 600px) {
 
       .closing-grid {
-
         grid-template-columns: 1fr;
-
       }
 
+      .closing-card-value {
+        font-size: 21px;
+      }
 
-      .closing-summary {
-
-        grid-template-columns: 1fr;
-
+      .closing-balance-value {
+        font-size: 27px;
       }
 
     }
@@ -172,7 +133,6 @@
   <div class="brand">
     CHAMA <span>LIVE</span>
   </div>
-
 
   <button
     class="btn btn-secondary"
@@ -245,7 +205,7 @@
   <main class="main">
 
 
-    <div class="page-head">
+    <div class="page-head closing-header">
 
       <div>
 
@@ -254,8 +214,8 @@
         </h1>
 
         <p class="muted">
-          Review and close the financial records for a
-          completed month.
+          Review the month's contributions and approved
+          expenses before officially closing the period.
         </p>
 
       </div>
@@ -296,42 +256,43 @@
         Select Closing Month
       </h2>
 
+      <br>
 
-      <div
-        style="
-          display:flex;
-          gap:10px;
-          flex-wrap:wrap;
-          align-items:end;
-          margin-top:15px;
-        "
-      >
+      <div class="closing-selector">
 
-        <div>
+        <div class="form-group">
 
           <label
             for="closingMonth"
-            class="muted"
           >
-            Month
+            Financial Month
           </label>
 
           <input
             id="closingMonth"
             type="month"
+            required
           >
 
         </div>
 
 
         <button
-          class="btn btn-primary"
+          class="btn btn-secondary"
           id="calculateClosing"
           type="button"
         >
-          Calculate Closing
+          Calculate
         </button>
 
+      </div>
+
+
+      <div
+        id="closingStatus"
+        class="closing-status muted"
+      >
+        Open
       </div>
 
     </section>
@@ -349,22 +310,24 @@
     <section class="card">
 
       <h2>
-        Monthly Financial Summary
+        Closing Summary
       </h2>
+
+      <br>
 
 
       <div class="closing-grid">
 
 
-        <div class="closing-card">
+        <div class="card closing-card">
 
-          <span class="closing-label">
+          <span class="closing-card-label">
             Total Expected
           </span>
 
           <span
-            class="closing-value"
             id="totalExpected"
+            class="closing-card-value"
           >
             KSh 0
           </span>
@@ -372,16 +335,15 @@
         </div>
 
 
+        <div class="card closing-card">
 
-        <div class="closing-card">
-
-          <span class="closing-label">
+          <span class="closing-card-label">
             Total Collected
           </span>
 
           <span
-            class="closing-value"
             id="totalCollected"
+            class="closing-card-value"
           >
             KSh 0
           </span>
@@ -389,16 +351,31 @@
         </div>
 
 
+        <div class="card closing-card">
 
-        <div class="closing-card">
-
-          <span class="closing-label">
+          <span class="closing-card-label">
             Approved Expenses
           </span>
 
           <span
-            class="closing-value"
             id="totalExpenses"
+            class="closing-card-value"
+          >
+            KSh 0
+          </span>
+
+        </div>
+
+
+        <div class="card closing-card">
+
+          <span class="closing-card-label">
+            Previous Closing Balance
+          </span>
+
+          <span
+            id="previousBalance"
+            class="closing-card-value"
           >
             KSh 0
           </span>
@@ -408,85 +385,30 @@
       </div>
 
 
+      <div class="closing-balance">
 
-      <div class="closing-summary">
-
-
-        <div class="closing-balance">
-
-          <h3>
-            Opening Balance
-          </h3>
-
-          <div
-            class="closing-value"
-            id="openingBalance"
-          >
-            KSh 0
-          </div>
-
-          <p class="muted">
-            Previous month's closing balance,
-            or the group's opening balance for
-            the first closing.
-          </p>
-
+        <div class="closing-balance-label">
+          Closing Balance
         </div>
 
-
-
-        <div class="closing-balance">
-
-          <h3>
-            Closing Balance
-          </h3>
-
-          <div
-            class="closing-value"
-            id="closingBalance"
-          >
-            KSh 0
-          </div>
-
-          <p class="muted">
-            Opening balance + collections −
-            approved expenses.
-          </p>
-
-        </div>
-
-      </div>
-
-
-
-      <div
-        style="
-          margin-top:20px;
-          padding:15px;
-          border:1px solid var(--border-light);
-          border-radius:10px;
-          background:var(--surface-soft);
-        "
-      >
-
-        <strong>
-          Collection Rate:
-        </strong>
-
-        <span id="collectionRate">
-          0%
-        </span>
-
-        <br>
-
-        <span
-          class="closing-status"
-          id="closingStatus"
+        <div
+          id="closingBalance"
+          class="closing-balance-value"
         >
-          NOT CALCULATED
-        </span>
+          KSh 0
+        </div>
 
       </div>
+
+
+      <p class="muted">
+
+        Closing balance =
+        previous closing balance
+        + contributions collected
+        − approved expenses.
+
+      </p>
 
     </section>
 
@@ -497,35 +419,30 @@
 
 
     <!-- ==================================================
-         CLOSE MONTH
+         NOTES / CLOSE
     =================================================== -->
 
     <section class="card">
 
       <h2>
-        Close Month
+        Finalize Monthly Closing
       </h2>
 
-
-      <p class="muted">
-
-        Closing a month records its final financial
-        summary in CHAMA LIVE. The next month's opening
-        balance will use this month's closing balance.
-
-      </p>
+      <br>
 
 
       <div class="form-group">
 
-        <label for="closingNotes">
+        <label
+          for="closingNotes"
+        >
           Closing Notes
         </label>
 
         <textarea
           id="closingNotes"
           rows="5"
-          placeholder="Optional notes about this month's closing..."
+          placeholder="Enter any notes, explanations or observations for this month's closing..."
         ></textarea>
 
       </div>
@@ -537,12 +454,21 @@
           class="btn btn-primary"
           id="closeMonth"
           type="button"
-          disabled
         >
           Close Month
         </button>
 
       </div>
+
+
+      <p class="muted">
+
+        Closing a month creates the official monthly
+        financial record. Make sure contributions and
+        approved expenses have been reviewed before
+        completing the closing.
+
+      </p>
 
     </section>
 
@@ -559,13 +485,10 @@
     <section class="card">
 
       <h2>
-        Closing History
+        Monthly Closing History
       </h2>
 
-
-      <p class="muted">
-        Previously closed months and their final balances.
-      </p>
+      <br>
 
 
       <div class="table-wrap">
@@ -600,6 +523,10 @@
                 Closed At
               </th>
 
+              <th>
+                Notes
+              </th>
+
             </tr>
 
           </thead>
@@ -609,7 +536,7 @@
 
             <tr>
 
-              <td colspan="6">
+              <td colspan="7">
                 Loading...
               </td>
 
