@@ -24,22 +24,22 @@
 
 <body>
 
+
 <header class="topbar">
 
   <div class="brand">
     CHAMA <span>LIVE</span>
   </div>
 
-  <div>
-    <span data-group-name>
-      CHAMA
-    </span>
-  </div>
-
 </header>
 
 
 <main class="page-container">
+
+
+  <!-- =====================================================
+       PAGE HEADER
+  ====================================================== -->
 
   <section class="page-header">
 
@@ -53,6 +53,29 @@
 
   </section>
 
+
+  <!-- =====================================================
+       STATUS
+  ====================================================== -->
+
+  <div
+    id="status"
+    hidden
+    role="status"
+    aria-live="polite"
+  ></div>
+
+
+  <div
+    id="error"
+    hidden
+    role="alert"
+  ></div>
+
+
+  <!-- =====================================================
+       RECORD CONTRIBUTION
+  ====================================================== -->
 
   <section class="card">
 
@@ -71,13 +94,13 @@
 
       <div class="form-group">
 
-        <label for="memberId">
+        <label for="member">
           Member
         </label>
 
         <select
-          id="memberId"
-          name="member_id"
+          id="member"
+          name="member"
           required
         >
 
@@ -111,7 +134,7 @@
       </div>
 
 
-      <!-- DATE -->
+      <!-- CONTRIBUTION DATE -->
 
       <div class="form-group">
 
@@ -122,7 +145,7 @@
         <input
           type="date"
           id="contributionDate"
-          name="contribution_date"
+          name="contributionDate"
           required
         >
 
@@ -139,7 +162,7 @@
 
         <select
           id="contributionType"
-          name="contribution_type"
+          name="contributionType"
           required
         >
 
@@ -172,11 +195,13 @@
       </div>
 
 
-      <!-- CUSTOM TYPE -->
+      <!-- =================================================
+           OTHER CONTRIBUTION TYPE
+      ================================================== -->
 
       <div
         class="form-group"
-        id="otherContributionTypeContainer"
+        id="otherContributionTypeWrap"
         hidden
       >
 
@@ -187,16 +212,16 @@
         <input
           type="text"
           id="otherContributionType"
-          name="other_contribution_type"
+          name="otherContributionType"
           maxlength="100"
-          placeholder="e.g. Fundraiser, Christmas Fund, Project Contribution"
+          placeholder="e.g. Christmas Fund"
           autocomplete="off"
         >
 
         <small>
-          This category will be saved for your group
-          and will appear in the Contribution Type
-          list next time.
+          Enter the name of the contribution category.
+          Once saved, it will remain available for this
+          group whenever another contribution is recorded.
         </small>
 
       </div>
@@ -212,7 +237,8 @@
 
         <select
           id="paymentMethod"
-          name="payment_method"
+          name="paymentMethod"
+          required
         >
 
           <option value="">
@@ -242,7 +268,11 @@
 
       <!-- M-PESA REFERENCE -->
 
-      <div class="form-group">
+      <div
+        class="form-group"
+        id="mpesaReferenceWrap"
+        hidden
+      >
 
         <label for="mpesaReference">
           M-Pesa Reference
@@ -251,11 +281,33 @@
         <input
           type="text"
           id="mpesaReference"
-          name="mpesa_reference"
+          name="mpesaReference"
           maxlength="100"
           placeholder="e.g. QWE123XYZ"
           autocomplete="off"
         >
+
+      </div>
+
+
+      <!-- GOAL -->
+
+      <div class="form-group">
+
+        <label for="goal">
+          Contribution Goal
+        </label>
+
+        <select
+          id="goal"
+          name="goal"
+        >
+
+          <option value="">
+            General contribution
+          </option>
+
+        </select>
 
       </div>
 
@@ -278,23 +330,18 @@
       </div>
 
 
-      <!-- MESSAGE -->
+      <!-- SAVE -->
 
-      <div
-        id="formMessage"
-        hidden
-        role="alert"
-      ></div>
+      <div class="form-actions">
 
+        <button
+          type="submit"
+          id="saveContribution"
+        >
+          Record Contribution
+        </button>
 
-      <!-- SUBMIT -->
-
-      <button
-        type="submit"
-        id="saveContribution"
-      >
-        Record Contribution
-      </button>
+      </div>
 
 
     </form>
@@ -302,25 +349,196 @@
   </section>
 
 
+  <!-- =====================================================
+       MONTHLY EXPECTED
+  ====================================================== -->
+
   <section class="card">
 
     <h2>
-      Current Group
+      Monthly Contribution
     </h2>
 
     <p>
-      Group:
-      <strong data-group-name>
-        —
+      Expected monthly contribution:
+      <strong id="monthlyExpected">
+        KSh 0
       </strong>
     </p>
 
-    <p>
-      Recorded by:
-      <strong data-user-name>
-        —
-      </strong>
-    </p>
+  </section>
+
+
+  <!-- =====================================================
+       MONTHLY MEMBER STATUS
+  ====================================================== -->
+
+  <section class="card">
+
+    <h2>
+      Monthly Contribution Status
+    </h2>
+
+
+    <div class="table-responsive">
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            <th>
+              Member
+            </th>
+
+            <th>
+              Current Due
+            </th>
+
+            <th>
+              Previous Arrears
+            </th>
+
+            <th>
+              Current Paid
+            </th>
+
+            <th>
+              Carry Forward
+            </th>
+
+            <th>
+              Outstanding
+            </th>
+
+            <th>
+              Status
+            </th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody
+          id="memberStatusRows"
+        >
+
+          <tr>
+
+            <td colspan="7">
+              Loading...
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </section>
+
+
+  <!-- =====================================================
+       CONTRIBUTION GOALS
+  ====================================================== -->
+
+  <section class="card">
+
+    <h2>
+      Contribution Goals
+    </h2>
+
+
+    <div
+      id="goalProgressContainer"
+    >
+
+      <p>
+        Loading contribution goals...
+      </p>
+
+    </div>
+
+  </section>
+
+
+  <!-- =====================================================
+       CONTRIBUTION LEDGER
+  ====================================================== -->
+
+  <section class="card">
+
+    <h2>
+      Contribution History
+    </h2>
+
+
+    <div class="table-responsive">
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            <th>
+              Date
+            </th>
+
+            <th>
+              Member
+            </th>
+
+            <th>
+              Amount
+            </th>
+
+            <th>
+              Type
+            </th>
+
+            <th>
+              Payment Method
+            </th>
+
+            <th>
+              Goal
+            </th>
+
+            <th>
+              Reference
+            </th>
+
+            <th>
+              Notes
+            </th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody
+          id="contributionRows"
+        >
+
+          <tr>
+
+            <td colspan="8">
+              Loading contributions...
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
 
   </section>
 
@@ -332,6 +550,7 @@
   type="module"
   src="js/layout.js"
 ></script>
+
 
 </body>
 
