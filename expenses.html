@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+
   <meta charset="utf-8">
 
   <meta
@@ -9,15 +10,98 @@
     content="width=device-width, initial-scale=1"
   >
 
-  <title>Expenses — CHAMA LIVE</title>
+  <title>
+    Expenses — CHAMA LIVE
+  </title>
 
   <link
     rel="stylesheet"
     href="css/app.css"
   >
+
+  <style>
+
+    /* =====================================================
+       EXPENSE STATUS
+    ====================================================== */
+
+    .expense-status {
+      display: inline-block;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .03em;
+    }
+
+    .expense-status-pending {
+      background: #fff4d6;
+      color: #8a5a00;
+    }
+
+    .expense-status-approved {
+      background: #dcf7e8;
+      color: #176b3a;
+    }
+
+    .expense-status-rejected {
+      background: #fde2e2;
+      color: #9b1c1c;
+    }
+
+
+    /* =====================================================
+       ACTIONS
+    ====================================================== */
+
+    .expense-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+
+    /* =====================================================
+       TABLE
+    ====================================================== */
+
+    #expenseRows td {
+      vertical-align: middle;
+    }
+
+    #expenseRows td:nth-child(1),
+    #expenseRows td:nth-child(4),
+    #expenseRows td:nth-child(5),
+    #expenseRows td:nth-child(6) {
+      white-space: nowrap;
+    }
+
+
+    /* =====================================================
+       MOBILE
+    ====================================================== */
+
+    @media (max-width: 700px) {
+
+      .expense-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .expense-actions .btn {
+        width: 100%;
+      }
+
+    }
+
+  </style>
+
 </head>
 
+
 <body>
+
 
 <header class="topbar">
 
@@ -39,7 +123,9 @@
 <div class="layout">
 
 
-  <!-- SIDEBAR -->
+  <!-- ===================================================
+       SIDEBAR
+  ==================================================== -->
 
   <aside class="sidebar">
 
@@ -71,9 +157,11 @@
       <a href="reports.html">
         Reports
       </a>
-<a href="monthly-closing.html">
-  Monthly Closing
-</a>
+
+      <a href="monthly-closing.html">
+        Monthly Closing
+      </a>
+
       <a href="group-management.html">
         Group Management
       </a>
@@ -83,10 +171,14 @@
   </aside>
 
 
-  <!-- MAIN -->
+  <!-- ===================================================
+       MAIN
+  ==================================================== -->
 
   <main class="main">
 
+
+    <!-- PAGE HEADER -->
 
     <div class="page-head">
 
@@ -111,9 +203,8 @@
       id="status"
       class="card"
       style="margin-bottom:20px;"
-    >
-      Loading expenses...
-    </div>
+      hidden
+    ></div>
 
 
     <!-- ERROR -->
@@ -126,9 +217,14 @@
     ></div>
 
 
-    <!-- METRICS -->
+    <!-- =================================================
+         METRICS
+    ================================================== -->
 
     <div class="grid grid-3">
+
+
+      <!-- APPROVED -->
 
       <div class="card">
 
@@ -140,11 +236,13 @@
           class="metric"
           id="approvedTotal"
         >
-          Ksh 0
+          KSh 0
         </div>
 
       </div>
 
+
+      <!-- PENDING -->
 
       <div class="card">
 
@@ -156,11 +254,13 @@
           class="metric"
           id="pendingTotal"
         >
-          Ksh 0
+          KSh 0
         </div>
 
       </div>
 
+
+      <!-- REJECTED -->
 
       <div class="card">
 
@@ -172,10 +272,11 @@
           class="metric"
           id="rejectedTotal"
         >
-          Ksh 0
+          KSh 0
         </div>
 
       </div>
+
 
     </div>
 
@@ -183,13 +284,23 @@
     <br>
 
 
-    <!-- RECORD EXPENSE -->
+    <!-- =================================================
+         RECORD EXPENSE
+    ================================================== -->
 
     <section class="card">
 
       <h2>
         Record Expense
       </h2>
+
+      <p class="muted">
+        New expenses are recorded as pending until reviewed.
+      </p>
+
+
+      <br>
+
 
       <form id="expenseForm">
 
@@ -198,7 +309,9 @@
 
         <div class="form-group">
 
-          <label for="description">
+          <label
+            for="description"
+          >
             Description
           </label>
 
@@ -207,6 +320,7 @@
             name="description"
             type="text"
             required
+            maxlength="255"
             placeholder="e.g. Meeting catering"
           >
 
@@ -217,7 +331,9 @@
 
         <div class="form-group">
 
-          <label for="category">
+          <label
+            for="category"
+          >
             Category
           </label>
 
@@ -268,7 +384,9 @@
 
         <div class="form-group">
 
-          <label for="amount">
+          <label
+            for="amount"
+          >
             Amount
           </label>
 
@@ -289,7 +407,9 @@
 
         <div class="form-group">
 
-          <label for="expenseDate">
+          <label
+            for="expenseDate"
+          >
             Expense Date
           </label>
 
@@ -303,11 +423,13 @@
         </div>
 
 
-        <!-- RECEIPT -->
+        <!-- RECEIPT / REFERENCE -->
 
         <div class="form-group">
 
-          <label for="receiptUrl">
+          <label
+            for="receiptUrl"
+          >
             Receipt / Reference
           </label>
 
@@ -315,8 +437,15 @@
             id="receiptUrl"
             name="receipt_url"
             type="text"
-            placeholder="Receipt number or document reference"
+            maxlength="500"
+            autocomplete="off"
+            placeholder="Receipt number, M-Pesa reference or document URL"
           >
+
+          <small class="muted">
+            Optional. You can enter a receipt number or reference,
+            or paste a document URL.
+          </small>
 
         </div>
 
@@ -325,7 +454,7 @@
 
 
         <button
-          class="btn"
+          class="btn btn-primary"
           id="saveExpense"
           type="submit"
         >
@@ -341,7 +470,9 @@
     <br>
 
 
-    <!-- FILTER -->
+    <!-- =================================================
+         EXPENSE LEDGER
+    ================================================== -->
 
     <section class="card">
 
@@ -349,6 +480,15 @@
         Expense Ledger
       </h2>
 
+      <p class="muted">
+        Review expenses by approval status and category.
+      </p>
+
+
+      <br>
+
+
+      <!-- FILTERS -->
 
       <div
         style="
@@ -359,8 +499,12 @@
         "
       >
 
+
+        <!-- STATUS -->
+
         <select
           id="statusFilter"
+          aria-label="Filter expenses by status"
         >
 
           <option value="all">
@@ -382,8 +526,11 @@
         </select>
 
 
+        <!-- CATEGORY -->
+
         <select
           id="categoryFilter"
+          aria-label="Filter expenses by category"
         >
 
           <option value="all">
@@ -420,8 +567,11 @@
 
         </select>
 
+
       </div>
 
+
+      <!-- TABLE -->
 
       <div class="table-wrap">
 
@@ -452,7 +602,7 @@
               </th>
 
               <th>
-                Receipt
+                Receipt / Reference
               </th>
 
               <th>
@@ -480,6 +630,7 @@
 
       </div>
 
+
     </section>
 
 
@@ -487,9 +638,16 @@
 
 </div>
 
+
+<!-- =====================================================
+     PAGE BOOT
+====================================================== -->
+
 <script type="module">
 
-  import { boot } from "./js/layout.js";
+  import {
+    boot
+  } from "./js/layout.js";
 
   boot();
 
