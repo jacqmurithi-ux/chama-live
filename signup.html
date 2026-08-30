@@ -1,392 +1,1362 @@
 <!doctype html>
-<html lang="en">
 
-<head>
+<html lang="en"><head>  <meta charset="utf-8"><meta
+name="viewport"
+content="width=device-width, initial-scale=1"
 
-  <meta charset="utf-8">
+«»
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1"
-  >
+<meta
+name="description"
+content="Create your CHAMA LIVE group account and start managing members, contributions, expenses, meetings and reports in one connected system."
 
-  <title>Create Group — CHAMA LIVE</title>
+«»
 
-  <link
+<meta
+name="theme-color"
+content="#0f766e"
+
+«»
+
+  <title>Create Group — CHAMA LIVE</title>  <!-- Existing application styles -->  <link
     rel="stylesheet"
     href="css/app.css"
-  >
-
-  <link
+  >  <!-- Existing landing-page styles -->  <link
     rel="stylesheet"
     href="css/landing.css"
-  >
+  >  <!-- =====================================================
+       SIGNUP PAGE VISUAL LAYER
 
-</head>
+       This styling is intentionally page-local so the
+       existing application and landing page styles remain
+       untouched.
+  ====================================================== -->  <style>
+
+    :root {
+      --cl-primary: #0f766e;
+      --cl-primary-dark: #115e59;
+      --cl-primary-light: #14b8a6;
+      --cl-accent: #ccfbf1;
+
+      --cl-dark: #0f172a;
+      --cl-text: #334155;
+      --cl-muted: #64748b;
+
+      --cl-border: #dbe4ea;
+      --cl-surface: #ffffff;
+      --cl-background: #f0fdfa;
+
+      --cl-success: #047857;
+      --cl-danger: #be123c;
+
+      --cl-shadow:
+        0 30px 80px rgba(15, 118, 110, .14);
+
+      --cl-radius: 22px;
+    }
 
 
-<body class="cl-auth-body">
+    * {
+      box-sizing: border-box;
+    }
 
 
-<main class="cl-auth-shell">
+    html {
+      scroll-behavior: smooth;
+    }
 
 
-  <section class="cl-auth-card">
+    body.cl-auth-body {
+
+      margin: 0;
+
+      min-height: 100vh;
+
+      color: var(--cl-text);
+
+      background:
+        radial-gradient(
+          circle at 10% 10%,
+          rgba(20, 184, 166, .16),
+          transparent 30%
+        ),
+        radial-gradient(
+          circle at 90% 20%,
+          rgba(15, 118, 110, .12),
+          transparent 28%
+        ),
+        linear-gradient(
+          135deg,
+          #ecfdf9 0%,
+          #f8fafc 48%,
+          #ecfdf5 100%
+        );
+
+      font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    }
 
 
-    <a
-      class="cl-brand"
-      href="index.html"
-    >
-      CHAMA <span>LIVE</span>
-    </a>
+    /* =====================================================
+       BACKGROUND
+    ====================================================== */
+
+    .cl-auth-body::before {
+
+      content: "";
+
+      position: fixed;
+
+      width: 420px;
+      height: 420px;
+
+      top: -180px;
+      right: -120px;
+
+      border-radius: 50%;
+
+      background:
+        linear-gradient(
+          135deg,
+          rgba(20,184,166,.18),
+          rgba(15,118,110,.03)
+        );
+
+      pointer-events: none;
+
+      z-index: 0;
+    }
 
 
-    <div class="cl-eyebrow">
-      GROUP ONBOARDING
+    .cl-auth-body::after {
+
+      content: "";
+
+      position: fixed;
+
+      width: 360px;
+      height: 360px;
+
+      bottom: -180px;
+      left: -120px;
+
+      border-radius: 50%;
+
+      background:
+        linear-gradient(
+          135deg,
+          rgba(15,118,110,.10),
+          rgba(20,184,166,.02)
+        );
+
+      pointer-events: none;
+
+      z-index: 0;
+    }
+
+
+    /* =====================================================
+       MAIN SHELL
+    ====================================================== */
+
+    .cl-auth-shell {
+
+      position: relative;
+
+      z-index: 1;
+
+      width: 100%;
+
+      min-height: 100vh;
+
+      display: flex;
+
+      justify-content: center;
+
+      padding:
+        42px
+        20px
+        60px;
+    }
+
+
+    /* =====================================================
+       CARD
+    ====================================================== */
+
+    .cl-auth-card {
+
+      width: 100%;
+
+      max-width: 920px;
+
+      background:
+        rgba(255,255,255,.96);
+
+      border:
+        1px solid
+        rgba(255,255,255,.8);
+
+      border-radius:
+        var(--cl-radius);
+
+      padding:
+        44px;
+
+      box-shadow:
+        var(--cl-shadow);
+
+      backdrop-filter:
+        blur(18px);
+
+      -webkit-backdrop-filter:
+        blur(18px);
+    }
+
+
+    /* =====================================================
+       BRAND
+    ====================================================== */
+
+    .cl-brand {
+
+      display: inline-flex;
+
+      align-items: center;
+
+      gap: 5px;
+
+      text-decoration: none;
+
+      font-size: 25px;
+
+      line-height: 1;
+
+      font-weight: 900;
+
+      letter-spacing: -.8px;
+
+      color: var(--cl-dark);
+
+      margin-bottom: 30px;
+    }
+
+
+    .cl-brand span {
+
+      color:
+        var(--cl-primary);
+    }
+
+
+    .cl-brand:hover {
+
+      text-decoration: none;
+    }
+
+
+    /* =====================================================
+       INTRO
+    ====================================================== */
+
+    .cl-eyebrow {
+
+      display: inline-flex;
+
+      align-items: center;
+
+      gap: 8px;
+
+      color:
+        var(--cl-primary-dark);
+
+      background:
+        var(--cl-accent);
+
+      border:
+        1px solid
+        rgba(20,184,166,.18);
+
+      border-radius: 999px;
+
+      padding:
+        7px 12px;
+
+      font-size: 11px;
+
+      font-weight: 800;
+
+      letter-spacing: 1.2px;
+
+      margin-bottom: 16px;
+    }
+
+
+    .cl-eyebrow::before {
+
+      content: "";
+
+      width: 7px;
+      height: 7px;
+
+      border-radius: 50%;
+
+      background:
+        var(--cl-primary-light);
+
+      box-shadow:
+        0 0 0 4px
+        rgba(20,184,166,.12);
+    }
+
+
+    .cl-auth-card h1 {
+
+      margin:
+        0 0 12px;
+
+      color:
+        var(--cl-dark);
+
+      font-size:
+        clamp(30px, 5vw, 46px);
+
+      line-height:
+        1.08;
+
+      letter-spacing:
+        -1.6px;
+
+      font-weight:
+        850;
+    }
+
+
+    .cl-auth-intro {
+
+      max-width: 700px;
+
+      margin:
+        0 0 32px;
+
+      color:
+        var(--cl-muted);
+
+      font-size:
+        16px;
+
+      line-height:
+        1.7;
+    }
+
+
+    /* =====================================================
+       ALERTS
+    ====================================================== */
+
+    .cl-auth-card .alert {
+
+      border-radius:
+        13px;
+
+      padding:
+        14px 16px;
+
+      margin-bottom:
+        20px;
+
+      line-height:
+        1.55;
+    }
+
+
+    .cl-auth-card .alert-info {
+
+      color:
+        #155e75;
+
+      background:
+        #ecfeff;
+
+      border:
+        1px solid
+        #bae6fd;
+    }
+
+
+    .cl-auth-card .alert-error {
+
+      color:
+        var(--cl-danger);
+
+      background:
+        #fff1f2;
+
+      border:
+        1px solid
+        #fecdd3;
+    }
+
+
+    /* =====================================================
+       FORM SECTION
+    ====================================================== */
+
+    .cl-auth-card form {
+
+      margin-top:
+        10px;
+    }
+
+
+    .cl-auth-card form h2 {
+
+      position: relative;
+
+      margin:
+        34px 0 18px;
+
+      padding-bottom:
+        12px;
+
+      color:
+        var(--cl-dark);
+
+      font-size:
+        18px;
+
+      font-weight:
+        800;
+    }
+
+
+    .cl-auth-card form h2::after {
+
+      content: "";
+
+      position: absolute;
+
+      left: 0;
+      bottom: 0;
+
+      width: 48px;
+      height: 3px;
+
+      border-radius: 99px;
+
+      background:
+        var(--cl-primary-light);
+    }
+
+
+    .cl-form-grid {
+
+      display:
+        grid;
+
+      grid-template-columns:
+        repeat(
+          2,
+          minmax(0, 1fr)
+        );
+
+      gap:
+        18px;
+    }
+
+
+    .cl-form-grid .form-group.full {
+
+      grid-column:
+        1 / -1;
+    }
+
+
+    /* =====================================================
+       FORM CONTROLS
+    ====================================================== */
+
+    .cl-auth-card .form-group {
+
+      display:
+        flex;
+
+      flex-direction:
+        column;
+
+      gap:
+        7px;
+    }
+
+
+    .cl-auth-card .form-group label {
+
+      color:
+        var(--cl-dark);
+
+      font-size:
+        13px;
+
+      font-weight:
+        750;
+    }
+
+
+    .cl-auth-card
+    .form-group
+    input,
+
+    .cl-auth-card
+    .form-group
+    select,
+
+    .cl-auth-card
+    .form-group
+    textarea {
+
+      width:
+        100%;
+
+      min-height:
+        48px;
+
+      padding:
+        12px 14px;
+
+      border:
+        1px solid
+        var(--cl-border);
+
+      border-radius:
+        11px;
+
+      background:
+        #ffffff;
+
+      color:
+        var(--cl-dark);
+
+      font:
+        inherit;
+
+      font-size:
+        14px;
+
+      outline:
+        none;
+
+      transition:
+        border-color .18s ease,
+        box-shadow .18s ease,
+        background .18s ease;
+    }
+
+
+    .cl-auth-card
+    .form-group
+    textarea {
+
+      min-height:
+        110px;
+
+      resize:
+        vertical;
+    }
+
+
+    .cl-auth-card
+    .form-group
+    input::placeholder,
+
+    .cl-auth-card
+    .form-group
+    textarea::placeholder {
+
+      color:
+        #94a3b8;
+    }
+
+
+    .cl-auth-card
+    .form-group
+    input:focus,
+
+    .cl-auth-card
+    .form-group
+    select:focus,
+
+    .cl-auth-card
+    .form-group
+    textarea:focus {
+
+      border-color:
+        var(--cl-primary-light);
+
+      box-shadow:
+        0 0 0 4px
+        rgba(20,184,166,.12);
+
+      background:
+        #ffffff;
+    }
+
+
+    .cl-auth-card
+    .form-group
+    input:hover,
+
+    .cl-auth-card
+    .form-group
+    select:hover,
+
+    .cl-auth-card
+    .form-group
+    textarea:hover {
+
+      border-color:
+        #a7f3d0;
+    }
+
+
+    /* =====================================================
+       REVIEW NOTICE
+    ====================================================== */
+
+    .cl-review-note {
+
+      position: relative;
+
+      margin:
+        30px 0 24px;
+
+      padding:
+        20px 22px;
+
+      border-radius:
+        16px;
+
+      border:
+        1px solid
+        #b7eee4;
+
+      background:
+        linear-gradient(
+          135deg,
+          #f0fdfa,
+          #f8fffd
+        );
+
+      overflow:
+        hidden;
+    }
+
+
+    .cl-review-note::before {
+
+      content: "";
+
+      position: absolute;
+
+      left: 0;
+      top: 0;
+      bottom: 0;
+
+      width: 4px;
+
+      background:
+        linear-gradient(
+          180deg,
+          var(--cl-primary-light),
+          var(--cl-primary)
+        );
+    }
+
+
+    .cl-review-note strong {
+
+      color:
+        var(--cl-dark);
+    }
+
+
+    .cl-review-note ol {
+
+      margin:
+        12px 0 0;
+
+      padding-left:
+        21px;
+
+      color:
+        var(--cl-muted);
+
+      line-height:
+        1.7;
+    }
+
+
+    .cl-review-note li {
+
+      margin-bottom:
+        5px;
+    }
+
+
+    /* =====================================================
+       PRIMARY BUTTON
+    ====================================================== */
+
+    .cl-full-btn {
+
+      width:
+        100%;
+
+      min-height:
+        52px;
+
+      border:
+        0;
+
+      border-radius:
+        12px;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(--cl-primary),
+          var(--cl-primary-light)
+        );
+
+      color:
+        #ffffff;
+
+      font-size:
+        15px;
+
+      font-weight:
+        800;
+
+      cursor:
+        pointer;
+
+      box-shadow:
+        0 12px 25px
+        rgba(15,118,110,.20);
+
+      transition:
+        transform .18s ease,
+        box-shadow .18s ease,
+        opacity .18s ease;
+    }
+
+
+    .cl-full-btn:hover {
+
+      transform:
+        translateY(-1px);
+
+      box-shadow:
+        0 16px 30px
+        rgba(15,118,110,.26);
+    }
+
+
+    .cl-full-btn:active {
+
+      transform:
+        translateY(0);
+    }
+
+
+    .cl-full-btn:disabled {
+
+      opacity:
+        .65;
+
+      cursor:
+        not-allowed;
+
+      transform:
+        none;
+
+      box-shadow:
+        none;
+    }
+
+
+    /* =====================================================
+       FOOTER
+    ====================================================== */
+
+    .cl-auth-footer {
+
+      margin:
+        26px 0 0;
+
+      text-align:
+        center;
+
+      color:
+        var(--cl-muted);
+
+      font-size:
+        14px;
+    }
+
+
+    .cl-auth-footer a {
+
+      color:
+        var(--cl-primary);
+
+      font-weight:
+        750;
+
+      text-decoration:
+        none;
+    }
+
+
+    .cl-auth-footer a:hover {
+
+      text-decoration:
+        underline;
+    }
+
+
+    /* =====================================================
+       MOBILE
+    ====================================================== */
+
+    @media (max-width: 720px) {
+
+      .cl-auth-shell {
+
+        padding:
+          18px 12px 35px;
+      }
+
+
+      .cl-auth-card {
+
+        padding:
+          26px 19px;
+
+        border-radius:
+          18px;
+      }
+
+
+      .cl-brand {
+
+        margin-bottom:
+          24px;
+      }
+
+
+      .cl-auth-card h1 {
+
+        font-size:
+          32px;
+
+        letter-spacing:
+          -1px;
+      }
+
+
+      .cl-auth-intro {
+
+        font-size:
+          14px;
+
+        line-height:
+          1.65;
+
+        margin-bottom:
+          24px;
+      }
+
+
+      .cl-form-grid {
+
+        grid-template-columns:
+          1fr;
+
+        gap:
+          15px;
+      }
+
+
+      .cl-form-grid
+      .form-group.full {
+
+        grid-column:
+          auto;
+      }
+
+
+      .cl-auth-card form h2 {
+
+        margin-top:
+          28px;
+      }
+
+
+      .cl-review-note {
+
+        padding:
+          18px 18px 18px 20px;
+
+        font-size:
+          14px;
+      }
+
+    }
+
+
+    /* =====================================================
+       SMALL PHONES
+    ====================================================== */
+
+    @media (max-width: 400px) {
+
+      .cl-auth-shell {
+
+        padding:
+          10px 8px 25px;
+      }
+
+
+      .cl-auth-card {
+
+        padding:
+          22px 15px;
+
+        border-radius:
+          15px;
+      }
+
+
+      .cl-auth-card h1 {
+
+        font-size:
+          28px;
+      }
+
+
+      .cl-eyebrow {
+
+        font-size:
+          10px;
+      }
+
+    }
+
+
+    /* =====================================================
+       ACCESSIBILITY
+    ====================================================== */
+
+    @media (prefers-reduced-motion: reduce) {
+
+      * {
+
+        scroll-behavior:
+          auto !important;
+
+        transition:
+          none !important;
+      }
+
+    }
+
+  </style></head><body class="cl-auth-body"><main class="cl-auth-shell">  <section
+    class="cl-auth-card"
+    aria-labelledby="signupTitle"
+  ><!-- =================================================
+     BRAND
+================================================== -->
+
+<a
+  class="cl-brand"
+  href="index.html"
+  aria-label="CHAMA LIVE home"
+>
+  CHAMA <span>LIVE</span>
+</a>
+
+
+<!-- =================================================
+     INTRO
+================================================== -->
+
+<div class="cl-eyebrow">
+  GROUP ONBOARDING
+</div>
+
+
+<h1 id="signupTitle">
+  Create your CHAMA LIVE account
+</h1>
+
+
+<p class="cl-auth-intro">
+  Set up your group and administrator account.
+  New group accounts are reviewed before
+  Dashboard access is enabled.
+</p>
+
+
+<!-- =================================================
+     ERROR
+================================================== -->
+
+<div
+  id="error"
+  class="alert alert-error"
+  hidden
+  role="alert"
+></div>
+
+
+<!-- =================================================
+     STATUS
+================================================== -->
+
+<div
+  id="status"
+  class="alert alert-info"
+  hidden
+  role="status"
+></div>
+
+
+<!-- =================================================
+     SIGNUP FORM
+================================================== -->
+
+<form
+  id="signupForm"
+  autocomplete="on"
+>
+
+
+  <!-- =================================================
+       GROUP DETAILS
+  ================================================== -->
+
+  <h2>
+    Group details
+  </h2>
+
+
+  <div class="cl-form-grid">
+
+
+    <div class="form-group full">
+
+      <label for="groupName">
+        Group name *
+      </label>
+
+      <input
+        id="groupName"
+        name="groupName"
+        type="text"
+        required
+        maxlength="120"
+        placeholder="e.g. Timau Community Welfare Group"
+      >
+
     </div>
 
 
-    <h1>
-      Create your CHAMA LIVE account
-    </h1>
-
-
-    <p class="cl-auth-intro">
-      Set up your group and administrator account.
-      New group accounts are reviewed before
-      Dashboard access is enabled.
-    </p>
-
-
-    <div
-      id="error"
-      class="alert alert-error"
-      hidden
-      role="alert"
-    ></div>
-
-
-    <div
-      id="status"
-      class="alert alert-info"
-      hidden
-      role="status"
-    ></div>
-
-
-    <form
-      id="signupForm"
-      autocomplete="on"
-    >
-
-
-      <!-- =================================================
-           GROUP DETAILS
-      ================================================== -->
-
-      <h2>
-        Group details
-      </h2>
-
-
-      <div class="cl-form-grid">
-
-
-        <div class="form-group full">
-
-          <label for="groupName">
-            Group name *
-          </label>
-
-          <input
-            id="groupName"
-            name="groupName"
-            type="text"
-            required
-            maxlength="120"
-            placeholder="e.g. Timau Community Welfare Group"
-          >
-
-        </div>
-
-
-        <div class="form-group">
-
-          <label for="category">
-            Group type
-          </label>
-
-          <select
-            id="category"
-            name="category"
-          >
-
-            <option value="chama">
-              Chama
-            </option>
-
-            <option value="welfare">
-              Welfare Group
-            </option>
-
-            <option value="investment">
-              Investment Group
-            </option>
-
-            <option value="savings">
-              Savings Group
-            </option>
-
-            <option value="self_help">
-              Self Help Group
-            </option>
-
-            <option value="cbo">
-              CBO
-            </option>
-
-            <option value="other">
-              Other
-            </option>
-
-          </select>
-
-        </div>
-
-
-        <div class="form-group">
-
-          <label for="country">
-            Country
-          </label>
-
-          <input
-            id="country"
-            name="country"
-            type="text"
-            value="Kenya"
-            maxlength="100"
-          >
-
-        </div>
-
-
-        <div class="form-group">
-
-          <label for="monthlyContribution">
-            Monthly contribution (KSh)
-          </label>
-
-          <input
-            id="monthlyContribution"
-            name="monthlyContribution"
-            type="number"
-            min="0"
-            step="0.01"
-            value="0"
-          >
-
-        </div>
-
-
-        <div class="form-group full">
-
-          <label for="description">
-            Description
-          </label>
-
-          <textarea
-            id="description"
-            name="description"
-            maxlength="500"
-            placeholder="Brief description of the group"
-          ></textarea>
-
-        </div>
-
-
-      </div>
-
-
-      <!-- =================================================
-           ADMINISTRATOR
-      ================================================== -->
-
-      <h2>
-        Administrator
-      </h2>
-
-
-      <div class="cl-form-grid">
-
-
-        <div class="form-group">
-
-          <label for="adminName">
-            Full name *
-          </label>
-
-          <input
-            id="adminName"
-            name="adminName"
-            type="text"
-            required
-            maxlength="120"
-            autocomplete="name"
-          >
-
-        </div>
-
-
-        <div class="form-group">
-
-          <label for="adminPhone">
-            Phone number *
-          </label>
-
-          <input
-            id="adminPhone"
-            name="adminPhone"
-            type="tel"
-            required
-            maxlength="30"
-            placeholder="07XXXXXXXX"
-            autocomplete="tel"
-          >
-
-        </div>
-
-
-        <div class="form-group full">
-
-          <label for="email">
-            Email address *
-          </label>
-
-          <input
-            id="email"
-            name="email"
-            type="email"
-            required
-            autocomplete="email"
-            placeholder="you@example.com"
-          >
-
-        </div>
-
-
-        <div class="form-group">
-
-          <label for="password">
-            Password *
-          </label>
-
-          <input
-            id="password"
-            name="password"
-            type="password"
-            required
-            minlength="8"
-            autocomplete="new-password"
-          >
-
-        </div>
-
-
-        <div class="form-group">
-
-          <label for="confirmPassword">
-            Confirm password *
-          </label>
-
-          <input
-            id="confirmPassword"
-            name="confirmPassword"
-            type="password"
-            required
-            minlength="8"
-            autocomplete="new-password"
-          >
-
-        </div>
-
-
-      </div>
-
-
-      <!-- =================================================
-           REVIEW NOTICE
-      ================================================== -->
-
-      <div class="cl-review-note">
-
-        <strong>
-          What happens next?
-        </strong>
-
-        <ol>
-
-          <li>
-            Your login account and group application
-            are created.
-          </li>
-
-          <li>
-            Your application is marked
-            <strong>Pending Review</strong>.
-          </li>
-
-          <li>
-            CHAMA LIVE reviews the account before
-            Dashboard access is enabled.
-          </li>
-
-          <li>
-            After approval, sign in normally to
-            access your group.
-          </li>
-
-        </ol>
-
-      </div>
-
-
-      <button
-        id="signupButton"
-        class="btn btn-primary cl-full-btn"
-        type="submit"
+    <div class="form-group">
+
+      <label for="category">
+        Group type
+      </label>
+
+      <select
+        id="category"
+        name="category"
       >
-        Create Group Account
-      </button>
+
+        <option value="chama">
+          Chama
+        </option>
+
+        <option value="welfare">
+          Welfare Group
+        </option>
+
+        <option value="investment">
+          Investment Group
+        </option>
+
+        <option value="savings">
+          Savings Group
+        </option>
+
+        <option value="self_help">
+          Self Help Group
+        </option>
+
+        <option value="cbo">
+          CBO
+        </option>
+
+        <option value="other">
+          Other
+        </option>
+
+      </select>
+
+    </div>
 
 
-    </form>
+    <div class="form-group">
+
+      <label for="country">
+        Country
+      </label>
+
+      <input
+        id="country"
+        name="country"
+        type="text"
+        value="Kenya"
+        maxlength="100"
+      >
+
+    </div>
 
 
-    <p class="cl-auth-footer">
+    <div class="form-group">
 
-      Already have an account?
+      <label for="monthlyContribution">
+        Monthly contribution (KSh)
+      </label>
 
-      <a href="login.html">
-        Sign in
-      </a>
+      <input
+        id="monthlyContribution"
+        name="monthlyContribution"
+        type="number"
+        min="0"
+        step="0.01"
+        value="0"
+      >
 
-    </p>
+    </div>
 
 
-  </section>
+    <div class="form-group full">
+
+      <label for="description">
+        Description
+      </label>
+
+      <textarea
+        id="description"
+        name="description"
+        maxlength="500"
+        placeholder="Brief description of the group"
+      ></textarea>
+
+    </div>
 
 
-</main>
+  </div>
 
 
-<script
+  <!-- =================================================
+       ADMINISTRATOR
+  ================================================== -->
+
+  <h2>
+    Administrator
+  </h2>
+
+
+  <div class="cl-form-grid">
+
+
+    <div class="form-group">
+
+      <label for="adminName">
+        Full name *
+      </label>
+
+      <input
+        id="adminName"
+        name="adminName"
+        type="text"
+        required
+        maxlength="120"
+        autocomplete="name"
+      >
+
+    </div>
+
+
+    <div class="form-group">
+
+      <label for="adminPhone">
+        Phone number *
+      </label>
+
+      <input
+        id="adminPhone"
+        name="adminPhone"
+        type="tel"
+        required
+        maxlength="30"
+        placeholder="07XXXXXXXX"
+        autocomplete="tel"
+      >
+
+    </div>
+
+
+    <div class="form-group full">
+
+      <label for="email">
+        Email address *
+      </label>
+
+      <input
+        id="email"
+        name="email"
+        type="email"
+        required
+        autocomplete="email"
+        placeholder="you@example.com"
+      >
+
+    </div>
+
+
+    <div class="form-group">
+
+      <label for="password">
+        Password *
+      </label>
+
+      <input
+        id="password"
+        name="password"
+        type="password"
+        required
+        minlength="8"
+        autocomplete="new-password"
+      >
+
+    </div>
+
+
+    <div class="form-group">
+
+      <label for="confirmPassword">
+        Confirm password *
+      </label>
+
+      <input
+        id="confirmPassword"
+        name="confirmPassword"
+        type="password"
+        required
+        minlength="8"
+        autocomplete="new-password"
+      >
+
+    </div>
+
+
+  </div>
+
+
+  <!-- =================================================
+       REVIEW NOTICE
+  ================================================== -->
+
+  <div class="cl-review-note">
+
+    <strong>
+      What happens next?
+    </strong>
+
+    <ol>
+
+      <li>
+        Your login account and group application
+        are created.
+      </li>
+
+      <li>
+        Your application is marked
+        <strong>Pending Review</strong>.
+      </li>
+
+      <li>
+        CHAMA LIVE reviews the account before
+        Dashboard access is enabled.
+      </li>
+
+      <li>
+        After approval, sign in normally to
+        access your group.
+      </li>
+
+    </ol>
+
+  </div>
+
+
+  <!-- =================================================
+       SUBMIT
+  ================================================== -->
+
+  <button
+    id="signupButton"
+    class="btn btn-primary cl-full-btn"
+    type="submit"
+  >
+    Create Group Account
+  </button>
+
+
+</form>
+
+
+<!-- =================================================
+     SIGN IN
+================================================== -->
+
+<p class="cl-auth-footer">
+
+  Already have an account?
+
+  <a href="login.html">
+    Sign in
+  </a>
+
+</p>
+
+  </section></main><!-- =====================================================
+     EXISTING SUPABASE / SIGNUP LOGIC
+
+     DO NOT REMOVE.
+
+     This remains the form submission hook for:
+     signup → group creation → application review
+     → approval → sign-in → dashboard.
+====================================================== --><script
   type="module"
   src="js/signup.js"
-></script>
-
-
-</body>
-
-</html>
+></script></body></html>
