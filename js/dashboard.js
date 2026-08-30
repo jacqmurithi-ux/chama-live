@@ -2,20 +2,17 @@
    CHAMA LIVE — DASHBOARD
    RECURRING MONTHLY CONTRIBUTION SYSTEM
 
-   IMPORTANT BUSINESS RULES
+   BUSINESS RULES
    ---------------------------------------------------------
-   1. Monthly contribution is recurring.
-   2. Every active member has a monthly due.
-   3. Payments first clear previous outstanding balances.
-   4. After outstanding balances are cleared, payment is
-      applied toward the current month's contribution.
-   5. Any amount remaining becomes carry-forward credit.
-   6. Carry-forward credit can satisfy future months.
-   7. Dashboard "Monthly Collected" represents the amount
-      actually allocated to the CURRENT month's contribution,
-      not the total cash paid during the month.
-   8. Member participation counts members whose current
-      monthly contribution has received an allocation.
+   1. Every active member has a recurring monthly due.
+   2. Payments first clear previous outstanding balances.
+   3. Remaining payment is applied to the current month.
+   4. Any remaining amount becomes carry-forward credit.
+   5. Carry-forward credit can satisfy future months.
+   6. "Monthly Applied" = amount allocated to the
+      current month's contribution.
+   7. "Members Contributed" = active members with an
+      actual current-month allocation > 0.
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -48,22 +45,17 @@ let initialized = false;
 ========================================================= */
 
 function byId(id) {
-
   return document.getElementById(id);
-
 }
 
 
 function setText(id, value) {
 
-  const element =
-    byId(id);
+  const element = byId(id);
 
   if (element) {
-
     element.textContent =
       value ?? "—";
-
   }
 
 }
@@ -81,27 +73,35 @@ function escapeHtml(value) {
 }
 
 
+function formatMoney(value) {
+
+  const amount = Number(value || 0);
+
+  return money(
+    Number.isFinite(amount)
+      ? amount
+      : 0
+  );
+
+}
+
+
 function formatDate(value) {
 
   if (!value) {
     return "—";
   }
 
-
   const date =
     new Date(value);
-
 
   if (
     Number.isNaN(
       date.getTime()
     )
   ) {
-
     return String(value);
-
   }
-
 
   return date.toLocaleDateString(
     "en-KE",
@@ -116,7 +116,7 @@ function formatDate(value) {
 
 
 /* =========================================================
-   ERROR
+   ERROR HANDLING
 ========================================================= */
 
 function showError(error) {
@@ -126,15 +126,12 @@ function showError(error) {
     error
   );
 
-
   const errorBox =
     byId("error");
 
-
   if (errorBox) {
 
-    errorBox.hidden =
-      false;
+    errorBox.hidden = false;
 
     errorBox.textContent =
       error?.message ||
@@ -163,7 +160,9 @@ function getLocalDate() {
 }
 
 
-function getMonthKey(date = getLocalDate()) {
+function getMonthKey(
+  date = getLocalDate()
+) {
 
   return [
     date.getFullYear(),
@@ -175,42 +174,45 @@ function getMonthKey(date = getLocalDate()) {
 }
 
 
-function getMonthStart() {
+function getTodayKey() {
 
-  const now =
+  const date =
     getLocalDate();
 
   return [
-    now.getFullYear(),
+    date.getFullYear(),
     String(
-      now.getMonth() + 1
+      date.getMonth() + 1
     ).padStart(2, "0"),
-    "01"
+    String(
+      date.getDate()
+    ).padStart(2, "0")
   ].join("-");
 
 }
 
 
-function getNextMonthStart() {
+function getPreviousMonthKey(
+  monthKey
+) {
 
-  const now =
-    getLocalDate();
+  const [year, month] =
+    monthKey
+      .split("-")
+      .map(Number);
 
-
-  const next =
+  const date =
     new Date(
-      now.getFullYear(),
-      now.getMonth() + 1,
+      year,
+      month - 2,
       1
     );
 
-
   return [
-    next.getFullYear(),
+    date.getFullYear(),
     String(
-      next.getMonth() + 1
-    ).padStart(2, "0"),
-    "01"
+      date.getMonth() + 1
+    ).padStart(2, "0")
   ].join("-");
 
 }
@@ -225,7 +227,6 @@ function renderGroup() {
   const groupName =
     currentGroup?.name ||
     "CHAMA";
-
 
   document
     .querySelectorAll(
@@ -265,7 +266,6 @@ function getMonthlyExpectedPerMember() {
       currentGroup?.monthly_contribution
     );
 
-
   if (
     Number.isFinite(amount) &&
     amount > 0
@@ -275,8 +275,23 @@ function getMonthlyExpectedPerMember() {
 
   }
 
-
   return 0;
+
+}
+
+
+/* =========================================================
+   MEMBER STATUS
+========================================================= */
+
+function isActiveMember(member) {
+
+  return String(
+    member?.status || ""
+  )
+    .trim()
+    .toLowerCase() ===
+    "active";
 
 }
 
@@ -328,13 +343,7 @@ async function loadMembers() {
 
   const activeMembers =
     members.filter(
-      member =>
-        String(
-          member.status || ""
-        )
-          .trim()
-          .toLowerCase() ===
-        "active"
+      isActiveMember
     );
 
 
@@ -350,20 +359,39 @@ async function loadMembers() {
   );
 
 
+  console.log(
+    "CHAMA LIVE: members loaded",
+    {
+      total: members.length,
+      active: activeMembers.length
+    }
+  );
+
+
   return members;
 
 }
 
 
 /* =========================================================
-   LOAD ALL CONTRIBUTIONS
-   Needed for calculating:
-   - previous outstanding
-   - carry-forward credit
-   - current month allocation
+   LOAD CONTRIBUTIONS
 ========================================================= */
 
 async function loadAllContributions() {
+
+  /*
+   * Use only columns confirmed to exist
+   * in the CHAMA LIVE contributions table.
+   *
+   * Known schema:
+   * id
+   * group_id
+   * member_id
+   * amount
+   * contribution_date
+   * contribution_type
+   * month
+   */
 
   const {
     data,
@@ -378,11 +406,7 @@ async function loadAllContributions() {
         amount,
         contribution_date,
         contribution_type,
-        month,
-        payment_method,
-        reference,
-        mpesa_reference,
-        created_at
+        month
       `)
       .eq(
         "group_id",
@@ -395,7 +419,7 @@ async function loadAllContributions() {
         }
       )
       .order(
-        "created_at",
+        "id",
         {
           ascending: true
         }
@@ -403,71 +427,34 @@ async function loadAllContributions() {
 
 
   if (error) {
-
-    /*
-     * Compatibility fallback if an older
-     * database does not have mpesa_reference.
-     */
-
-    if (
-      String(
-        error.message || ""
-      )
-        .toLowerCase()
-        .includes(
-          "mpesa_reference"
-        )
-    ) {
-
-      const retry =
-        await supabase
-          .from("contributions")
-          .select(`
-            id,
-            group_id,
-            member_id,
-            amount,
-            contribution_date,
-            contribution_type,
-            month,
-            payment_method,
-            reference,
-            created_at
-          `)
-          .eq(
-            "group_id",
-            currentGroupId
-          )
-          .order(
-            "contribution_date",
-            {
-              ascending: true
-            }
-          )
-          .order(
-            "created_at",
-            {
-              ascending: true
-            }
-          );
-
-
-      if (retry.error) {
-        throw retry.error;
-      }
-
-
-      return retry.data || [];
-
-    }
-
-
     throw error;
-
   }
 
 
-  return data || [];
+  const contributions =
+    data || [];
+
+
+  console.log(
+    "CHAMA LIVE: contributions loaded",
+    {
+      count:
+        contributions.length,
+
+      total:
+        contributions.reduce(
+          (sum, row) =>
+            sum +
+            Number(
+              row.amount || 0
+            ),
+          0
+        )
+    }
+  );
+
+
+  return contributions;
 
 }
 
@@ -481,16 +468,35 @@ function getContributionMonth(
 ) {
 
   /*
-   * Prefer the explicit month field.
+   * Explicit month is preferred.
+   *
+   * Some databases may store this as:
+   * 2026-08
+   * 2026-08-01
+   * 2026-08-31
+   *
+   * We normalize everything to YYYY-MM.
    */
 
   if (
     contribution?.month
   ) {
 
-    return String(
-      contribution.month
-    ).slice(0, 7);
+    const value =
+      String(
+        contribution.month
+      );
+
+    if (
+      /^\d{4}-\d{2}/.test(value)
+    ) {
+
+      return value.slice(
+        0,
+        7
+      );
+
+    }
 
   }
 
@@ -503,24 +509,21 @@ function getContributionMonth(
     contribution?.contribution_date
   ) {
 
-    return String(
-      contribution.contribution_date
-    ).slice(0, 7);
+    const value =
+      String(
+        contribution.contribution_date
+      );
 
-  }
+    if (
+      /^\d{4}-\d{2}/.test(value)
+    ) {
 
+      return value.slice(
+        0,
+        7
+      );
 
-  /*
-   * Final fallback.
-   */
-
-  if (
-    contribution?.created_at
-  ) {
-
-    return String(
-      contribution.created_at
-    ).slice(0, 7);
+    }
 
   }
 
@@ -531,33 +534,154 @@ function getContributionMonth(
 
 
 /* =========================================================
-   MONTHLY RECURRING ALLOCATION ENGINE
+   MONTH COMPARISON
 ========================================================= */
 
-/*
- * This is the important part.
- *
- * It calculates the actual amount that should count
- * toward each month's recurring contribution.
- *
- * Example:
- *
- * Monthly due = 200
- *
- * Previous outstanding = 0
- * Previous credit = 0
- *
- * August payment = 600
- *
- * August allocation:
- * 200
- *
- * Carry forward:
- * 400
- *
- * Therefore August collection =
- * 200, NOT 600.
- */
+function compareMonthKeys(
+  a,
+  b
+) {
+
+  return String(a)
+    .localeCompare(
+      String(b)
+    );
+
+}
+
+
+/* =========================================================
+   GET MONTH KEYS
+========================================================= */
+
+function getMonthKeysThroughTarget(
+  contributions,
+  targetMonth
+) {
+
+  const keys =
+    new Set();
+
+
+  contributions.forEach(
+    contribution => {
+
+      const month =
+        getContributionMonth(
+          contribution
+        );
+
+      if (
+        month &&
+        compareMonthKeys(
+          month,
+          targetMonth
+        ) <= 0
+      ) {
+
+        keys.add(month);
+
+      }
+
+    }
+  );
+
+
+  /*
+   * Always include target month.
+   */
+
+  keys.add(
+    targetMonth
+  );
+
+
+  const sorted =
+    [...keys]
+      .sort(
+        compareMonthKeys
+      );
+
+
+  /*
+   * If there are payments before
+   * target month, fill in missing months.
+   *
+   * This is important for recurring dues.
+   */
+
+  if (
+    sorted.length <= 1
+  ) {
+
+    return sorted;
+
+  }
+
+
+  const first =
+    sorted[0];
+
+
+  const [firstYear, firstMonth] =
+    first
+      .split("-")
+      .map(Number);
+
+
+  const [targetYear, targetMonthNumber] =
+    targetMonth
+      .split("-")
+      .map(Number);
+
+
+  const result = [];
+
+
+  let year =
+    firstYear;
+
+  let month =
+    firstMonth;
+
+
+  while (
+    year < targetYear ||
+    (
+      year === targetYear &&
+      month <= targetMonthNumber
+    )
+  ) {
+
+    result.push(
+      `${year}-${String(month).padStart(2, "0")}`
+    );
+
+
+    month++;
+
+
+    if (
+      month > 12
+    ) {
+
+      month = 1;
+
+      year++;
+
+    }
+
+  }
+
+
+  return result;
+
+}
+
+
+/* =========================================================
+   MEMBER MONTHLY STATE
+========================================================= */
 
 function calculateMemberMonthlyState(
   memberId,
@@ -566,70 +690,56 @@ function calculateMemberMonthlyState(
   monthlyDue
 ) {
 
+  const emptyState = {
+
+    previousOutstanding: 0,
+
+    previousCredit: 0,
+
+    currentPayment: 0,
+
+    appliedToPrevious: 0,
+
+    appliedThisMonth: 0,
+
+    carryForward: 0,
+
+    currentOutstanding: monthlyDue,
+
+    totalCashPaid: 0
+
+  };
+
+
   if (
     !memberId ||
     monthlyDue <= 0
   ) {
 
-    return {
-      previousOutstanding: 0,
-      previousCredit: 0,
-      currentPayment: 0,
-      appliedToPrevious: 0,
-      appliedThisMonth: 0,
-      carryForward: 0,
-      currentOutstanding: 0,
-      totalCashPaid: 0
-    };
+    return emptyState;
 
   }
 
 
   /*
-   * Convert YYYY-MM into a date-like
-   * sortable numeric value.
-   */
-
-  const targetYear =
-    Number(
-      targetMonth.slice(0, 4)
-    );
-
-  const targetMonthNumber =
-    Number(
-      targetMonth.slice(5, 7)
-    );
-
-
-  /*
-   * We need to know all previous months.
-   */
-
-  let credit = 0;
-
-  let outstanding = 0;
-
-  let currentPayment = 0;
-
-  let currentApplied = 0;
-
-  let currentCarryForward = 0;
-
-  let totalCashPaid = 0;
-
-
-  /*
-   * Group contributions by month.
+   * -------------------------------------------------------
+   * GROUP PAYMENTS BY MEMBER + MONTH
+   * -------------------------------------------------------
    */
 
   const monthlyPayments = {};
 
 
+  let totalCashPaid = 0;
+
+
   contributions
     .filter(
       contribution =>
-        contribution.member_id ===
-        memberId
+        String(
+          contribution.member_id
+        ) ===
+        String(memberId)
     )
     .forEach(
       contribution => {
@@ -683,203 +793,234 @@ function calculateMemberMonthlyState(
 
 
   /*
-   * Build every month from the first
-   * contribution month through target month.
-   */
-
-  const monthKeys =
-    Object.keys(
-      monthlyPayments
-    );
-
-
-  /*
-   * If there are no payments at all,
-   * there is nothing to process.
+   * -------------------------------------------------------
+   * NO CONTRIBUTIONS
+   * -------------------------------------------------------
    */
 
   if (
-    monthKeys.length === 0
+    Object.keys(
+      monthlyPayments
+    ).length === 0
   ) {
 
     return {
-      previousOutstanding: monthlyDue,
+
+      previousOutstanding: 0,
+
       previousCredit: 0,
+
       currentPayment: 0,
+
       appliedToPrevious: 0,
+
       appliedThisMonth: 0,
+
       carryForward: 0,
-      currentOutstanding: monthlyDue,
+
+      currentOutstanding:
+        monthlyDue,
+
       totalCashPaid: 0
+
     };
 
   }
 
 
-  let firstYear =
-    targetYear;
-
-  let firstMonth =
-    targetMonthNumber;
-
-
-  monthKeys.forEach(
-    month => {
-
-      const year =
-        Number(
-          month.slice(0, 4)
-        );
-
-      const monthNumber =
-        Number(
-          month.slice(5, 7)
-        );
-
-
-      if (
-        year < firstYear ||
-        (
-          year === firstYear &&
-          monthNumber < firstMonth
-        )
-      ) {
-
-        firstYear =
-          year;
-
-        firstMonth =
-          monthNumber;
-
-      }
-
-    }
-  );
-
-
   /*
-   * Start one month before the first
-   * actual contribution.
-   *
-   * There is no historical debt known
-   * before CHAMA LIVE started recording.
+   * -------------------------------------------------------
+   * FIND FIRST RECORDED MONTH
+   * -------------------------------------------------------
    */
 
-  let year =
-    firstYear;
+  const firstRecordedMonth =
+    Object.keys(
+      monthlyPayments
+    )
+      .sort(
+        compareMonthKeys
+      )[0];
 
-  let month =
-    firstMonth;
 
-
-  const monthDifference =
-    (
-      targetYear * 12 +
-      targetMonthNumber
-    ) -
-    (
-      year * 12 +
-      month
+  const monthKeys =
+    getMonthKeysThroughTarget(
+      contributions.filter(
+        contribution =>
+          String(
+            contribution.member_id
+          ) ===
+          String(memberId)
+      ),
+      targetMonth
     );
 
 
-  for (
-    let index = 0;
-    index <= monthDifference;
-    index++
+  /*
+   * If target is before all payments,
+   * member has no previous history.
+   */
+
+  if (
+    compareMonthKeys(
+      targetMonth,
+      firstRecordedMonth
+    ) < 0
   ) {
 
-    const key =
-      `${year}-${String(month).padStart(2, "0")}`;
+    return {
 
+      previousOutstanding: 0,
+
+      previousCredit: 0,
+
+      currentPayment: 0,
+
+      appliedToPrevious: 0,
+
+      appliedThisMonth: 0,
+
+      carryForward: 0,
+
+      currentOutstanding:
+        monthlyDue,
+
+      totalCashPaid
+
+    };
+
+  }
+
+
+  /*
+   * -------------------------------------------------------
+   * RECURRING LEDGER
+   * -------------------------------------------------------
+   *
+   * We process each month chronologically.
+   *
+   * outstanding:
+   * amount still owed from previous months
+   *
+   * credit:
+   * overpayment available for future months
+   */
+
+  let outstanding = 0;
+
+  let credit = 0;
+
+
+  let targetPreviousOutstanding = 0;
+
+  let targetPreviousCredit = 0;
+
+  let targetPayment = 0;
+
+  let targetAppliedToPrevious = 0;
+
+  let targetAppliedThisMonth = 0;
+
+  let targetCarryForward = 0;
+
+  let targetCurrentOutstanding = monthlyDue;
+
+
+  for (
+    const monthKey of monthKeys
+  ) {
 
     const payment =
       Number(
-        monthlyPayments[key] || 0
+        monthlyPayments[monthKey] ||
+        0
       );
 
 
     const isTarget =
-      key === targetMonth;
+      monthKey === targetMonth;
+
+
+    /*
+     * Save balances immediately before
+     * processing target month.
+     */
+
+    if (isTarget) {
+
+      targetPreviousOutstanding =
+        outstanding;
+
+      targetPreviousCredit =
+        credit;
+
+      targetPayment =
+        payment;
+
+    }
 
 
     /*
      * -----------------------------------------------------
-     * PREVIOUS BALANCE
+     * CURRENT MONTH DUE
      * -----------------------------------------------------
      *
-     * outstanding = amount still owed
-     * credit = overpayment available
+     * Every active member has a monthly due.
      */
 
-    const previousOutstanding =
-      outstanding;
-
-    const previousCredit =
-      credit;
-
-
-    /*
-     * The current month's due is
-     * added to the previous outstanding.
-     *
-     * BUT existing credit is applied
-     * first.
-     */
-
-    let monthDue =
+    let currentDue =
       monthlyDue;
 
 
-    let creditUsed =
+    /*
+     * Existing credit can pay
+     * the current month's due.
+     */
+
+    const creditUsed =
       Math.min(
-        previousCredit,
-        monthDue
+        credit,
+        currentDue
       );
 
 
-    monthDue -=
+    currentDue -=
       creditUsed;
 
 
-    let remainingCredit =
+    credit =
       Math.max(
-        previousCredit -
+        credit -
         creditUsed,
         0
       );
 
 
     /*
-     * Add any existing previous
-     * outstanding to the current
-     * month's obligation.
+     * -----------------------------------------------------
+     * PAYMENT
+     * -----------------------------------------------------
      *
-     * Previous outstanding must be
-     * cleared before current month.
-     */
-
-    let obligation =
-      previousOutstanding +
-      monthDue;
-
-
-    /*
-     * Payment for this month.
+     * Payment first clears previous
+     * outstanding.
      */
 
     let remainingPayment =
       payment;
 
 
-    /*
-     * First clear previous outstanding.
-     */
-
     const appliedToPrevious =
       Math.min(
-        previousOutstanding,
+        outstanding,
         remainingPayment
+      );
+
+
+    outstanding =
+      Math.max(
+        outstanding -
+        appliedToPrevious,
+        0
       );
 
 
@@ -887,120 +1028,70 @@ function calculateMemberMonthlyState(
       appliedToPrevious;
 
 
-    obligation =
-      Math.max(
-        obligation -
-        appliedToPrevious,
-        0
-      );
-
-
     /*
-     * Apply remaining payment
-     * to current month's due.
+     * -----------------------------------------------------
+     * APPLY TO CURRENT MONTH
+     * -----------------------------------------------------
      */
 
-    const appliedToCurrent =
+    const appliedThisMonth =
       Math.min(
-        monthDue,
+        currentDue,
         remainingPayment
       );
 
 
+    currentDue =
+      Math.max(
+        currentDue -
+        appliedThisMonth,
+        0
+      );
+
+
     remainingPayment -=
-      appliedToCurrent;
+      appliedThisMonth;
 
 
     /*
-     * Anything remaining is credit.
+     * -----------------------------------------------------
+     * CARRY FORWARD
+     * -----------------------------------------------------
      */
 
-    const newCredit =
-      remainingCredit +
+    credit +=
       remainingPayment;
 
 
     /*
-     * Calculate current outstanding.
+     * -----------------------------------------------------
+     * CURRENT OUTSTANDING
+     * -----------------------------------------------------
      */
 
-    const newOutstanding =
-      Math.max(
-        obligation -
-        appliedToCurrent,
-        0
-      );
+    outstanding +=
+      currentDue;
 
 
     /*
-     * Save target month information.
+     * -----------------------------------------------------
+     * SAVE TARGET VALUES
+     * -----------------------------------------------------
      */
 
     if (isTarget) {
 
-      currentPayment =
-        payment;
+      targetAppliedToPrevious =
+        appliedToPrevious;
 
-      currentApplied =
-        appliedToCurrent;
+      targetAppliedThisMonth =
+        appliedThisMonth;
 
-      currentCarryForward =
-        newCredit;
+      targetCarryForward =
+        credit;
 
-
-      /*
-       * Previous outstanding displayed
-       * for the current month should be
-       * the outstanding BEFORE the
-       * current month's payment.
-       */
-
-      /*
-       * If credit was available before
-       * this month, it would have already
-       * reduced the current obligation.
-       *
-       * For dashboard display we expose
-       * the actual previous debt.
-       */
-
-      outstanding =
-        newOutstanding;
-
-      credit =
-        newCredit;
-
-
-      return;
-
-    }
-
-
-    /*
-     * Move state forward.
-     */
-
-    outstanding =
-      newOutstanding;
-
-    credit =
-      newCredit;
-
-
-    /*
-     * Move to next month.
-     */
-
-    month++;
-
-
-    if (
-      month > 12
-    ) {
-
-      month = 1;
-
-      year++;
+      targetCurrentOutstanding =
+        outstanding;
 
     }
 
@@ -1008,250 +1099,33 @@ function calculateMemberMonthlyState(
 
 
   /*
-   * Previous outstanding for the target
-   * month must be calculated separately.
-   *
-   * Recalculate history up to the month
-   * immediately before target.
+   * -------------------------------------------------------
+   * RETURN TARGET STATE
+   * -------------------------------------------------------
    */
-
-  let historyOutstanding = 0;
-
-  let historyCredit = 0;
-
-
-  year =
-    firstYear;
-
-  month =
-    firstMonth;
-
-
-  const historyDifference =
-    (
-      targetYear * 12 +
-      targetMonthNumber
-    ) -
-    (
-      year * 12 +
-      month
-    );
-
-
-  for (
-    let index = 0;
-    index < historyDifference;
-    index++
-  ) {
-
-    const key =
-      `${year}-${String(month).padStart(2, "0")}`;
-
-
-    const payment =
-      Number(
-        monthlyPayments[key] || 0
-      );
-
-
-    /*
-     * Existing credit first reduces
-     * this month's due.
-     */
-
-    let monthDue =
-      Math.max(
-        monthlyDue -
-        historyCredit,
-        0
-      );
-
-
-    const creditUsed =
-      Math.min(
-        historyCredit,
-        monthlyDue
-      );
-
-
-    let remainingPayment =
-      payment;
-
-
-    /*
-     * Clear old outstanding.
-     */
-
-    const oldOutstanding =
-      historyOutstanding;
-
-
-    const appliedToOld =
-      Math.min(
-        oldOutstanding,
-        remainingPayment
-      );
-
-
-    remainingPayment -=
-      appliedToOld;
-
-
-    /*
-     * Current month allocation.
-     */
-
-    const appliedCurrent =
-      Math.min(
-        monthDue,
-        remainingPayment
-      );
-
-
-    remainingPayment -=
-      appliedCurrent;
-
-
-    historyOutstanding =
-      Math.max(
-        oldOutstanding +
-        monthDue -
-        creditUsed -
-        appliedToOld -
-        appliedCurrent,
-        0
-      );
-
-
-    historyCredit =
-      Math.max(
-        historyCredit -
-        creditUsed +
-        remainingPayment,
-        0
-      );
-
-
-    month++;
-
-
-    if (
-      month > 12
-    ) {
-
-      month = 1;
-
-      year++;
-
-    }
-
-  }
-
-
-  /*
-   * Current month payment allocation
-   * needs to use the historical state.
-   */
-
-  const targetPayment =
-    Number(
-      monthlyPayments[targetMonth] || 0
-    );
-
-
-  const previousOutstanding =
-    historyOutstanding;
-
-
-  const previousCredit =
-    historyCredit;
-
-
-  /*
-   * Current month due after previous
-   * credit.
-   */
-
-  const currentDueAfterCredit =
-    Math.max(
-      monthlyDue -
-      previousCredit,
-      0
-    );
-
-
-  /*
-   * Payment first clears previous debt.
-   */
-
-  const appliedToPrevious =
-    Math.min(
-      previousOutstanding,
-      targetPayment
-    );
-
-
-  const afterPrevious =
-    Math.max(
-      targetPayment -
-      appliedToPrevious,
-      0
-    );
-
-
-  /*
-   * Then it pays the current month.
-   */
-
-  const appliedThisMonth =
-    Math.min(
-      currentDueAfterCredit,
-      afterPrevious
-    );
-
-
-  /*
-   * Anything left is carry-forward.
-   */
-
-  const carryForward =
-    Math.max(
-      afterPrevious -
-      appliedThisMonth,
-      0
-    );
-
-
-  /*
-   * Current outstanding.
-   */
-
-  const currentOutstanding =
-    Math.max(
-      previousOutstanding -
-      appliedToPrevious +
-      currentDueAfterCredit -
-      appliedThisMonth,
-      0
-    );
-
 
   return {
 
-    previousOutstanding,
+    previousOutstanding:
+      targetPreviousOutstanding,
 
-    previousCredit,
+    previousCredit:
+      targetPreviousCredit,
 
     currentPayment:
       targetPayment,
 
-    appliedToPrevious,
+    appliedToPrevious:
+      targetAppliedToPrevious,
 
-    appliedThisMonth,
+    appliedThisMonth:
+      targetAppliedThisMonth,
 
-    carryForward,
+    carryForward:
+      targetCarryForward,
 
-    currentOutstanding,
+    currentOutstanding:
+      targetCurrentOutstanding,
 
     totalCashPaid
 
@@ -1266,15 +1140,12 @@ function calculateMemberMonthlyState(
 
 function calculateAllMemberStates(
   members,
-  contributions
+  contributions,
+  targetMonth = getMonthKey()
 ) {
 
   const monthlyDue =
     getMonthlyExpectedPerMember();
-
-
-  const month =
-    getMonthKey();
 
 
   const states = {};
@@ -1282,13 +1153,7 @@ function calculateAllMemberStates(
 
   members
     .filter(
-      member =>
-        String(
-          member.status || ""
-        )
-          .trim()
-          .toLowerCase() ===
-        "active"
+      isActiveMember
     )
     .forEach(
       member => {
@@ -1297,7 +1162,7 @@ function calculateAllMemberStates(
           calculateMemberMonthlyState(
             member.id,
             contributions,
-            month,
+            targetMonth,
             monthlyDue
           );
 
@@ -1325,13 +1190,7 @@ function renderContributionSummary(
 
   const activeMembers =
     members.filter(
-      member =>
-        String(
-          member.status || ""
-        )
-          .trim()
-          .toLowerCase() ===
-        "active"
+      isActiveMember
     );
 
 
@@ -1340,14 +1199,15 @@ function renderContributionSummary(
     activeMembers.length;
 
 
-  /*
-   * Calculate actual monthly allocation.
-   */
+  const targetMonth =
+    getMonthKey();
+
 
   const states =
     calculateAllMemberStates(
       members,
-      contributions
+      contributions,
+      targetMonth
     );
 
 
@@ -1363,22 +1223,53 @@ function renderContributionSummary(
     0;
 
 
+  let carryForward =
+    0;
+
+
+  let previousOutstanding =
+    0;
+
+
   activeMembers.forEach(
     member => {
 
       const state =
-        states[member.id];
+        states[member.id] ||
+        {
+          appliedThisMonth: 0,
+          currentOutstanding:
+            monthlyDue,
+          carryForward: 0,
+          previousOutstanding: 0
+        };
 
 
       const applied =
         Number(
-          state?.appliedThisMonth || 0
+          state.appliedThisMonth ||
+          0
         );
 
 
       const memberOutstanding =
         Number(
-          state?.currentOutstanding || 0
+          state.currentOutstanding ||
+          0
+        );
+
+
+      const memberCredit =
+        Number(
+          state.carryForward ||
+          0
+        );
+
+
+      const previousDebt =
+        Number(
+          state.previousOutstanding ||
+          0
         );
 
 
@@ -1390,10 +1281,19 @@ function renderContributionSummary(
         memberOutstanding;
 
 
+      carryForward +=
+        memberCredit;
+
+
+      previousOutstanding +=
+        previousDebt;
+
+
       /*
-       * A member counts as having
-       * contributed if money has actually
-       * been applied to this month's
+       * THIS IS THE IMPORTANT FIX.
+       *
+       * Count a member when an actual amount
+       * was allocated to the current month's
        * recurring contribution.
        */
 
@@ -1408,16 +1308,6 @@ function renderContributionSummary(
     }
   );
 
-
-  /*
-   * IMPORTANT:
-   *
-   * Do NOT calculate outstanding as
-   * expected - total cash received.
-   *
-   * Instead use the recurring allocation
-   * engine above.
-   */
 
   const percentage =
     expected > 0
@@ -1446,31 +1336,35 @@ function renderContributionSummary(
       : 0;
 
 
-  /* =======================================================
-     METRICS
-  ======================================================= */
+  /*
+   * -------------------------------------------------------
+   * FINANCIAL METRICS
+   * -------------------------------------------------------
+   */
 
   setText(
     "monthlyExpected",
-    money(expected)
+    formatMoney(expected)
   );
 
 
   setText(
     "monthlyCollected",
-    money(collected)
+    formatMoney(collected)
   );
 
 
   setText(
     "monthlyOutstanding",
-    money(outstanding)
+    formatMoney(outstanding)
   );
 
 
-  /* =======================================================
-     PROGRESS
-  ======================================================= */
+  /*
+   * -------------------------------------------------------
+   * PROGRESS
+   * -------------------------------------------------------
+   */
 
   setText(
     "progressPercentage",
@@ -1480,7 +1374,7 @@ function renderContributionSummary(
 
   setText(
     "progressText",
-    `${money(collected)} / ${money(expected)}`
+    `${formatMoney(collected)} / ${formatMoney(expected)}`
   );
 
 
@@ -1508,19 +1402,75 @@ function renderContributionSummary(
   }
 
 
-  /* =======================================================
-     MEMBER PARTICIPATION
-  ======================================================= */
+  /*
+   * -------------------------------------------------------
+   * MEMBER PARTICIPATION
+   * -------------------------------------------------------
+   *
+   * These IDs MUST match dashboard.html.
+   *
+   * HTML:
+   * contributorsCount
+   * contributorsPercentage
+   */
 
   setText(
-    "membersContributed",
+    "contributorsCount",
     `${contributedMembers} / ${activeMembers.length}`
   );
 
 
   setText(
-    "memberParticipation",
+    "contributorsPercentage",
     `${participation}%`
+  );
+
+
+  /*
+   * -------------------------------------------------------
+   * BREAKDOWN
+   * -------------------------------------------------------
+   */
+
+  setText(
+    "progressApplied",
+    formatMoney(collected)
+  );
+
+
+  setText(
+    "progressCarryForward",
+    formatMoney(carryForward)
+  );
+
+
+  setText(
+    "progressOutstanding",
+    formatMoney(outstanding)
+  );
+
+
+  /*
+   * -------------------------------------------------------
+   * DEBUG
+   * -------------------------------------------------------
+   */
+
+  console.log(
+    "CHAMA LIVE: contribution summary",
+    {
+      targetMonth,
+      monthlyDue,
+      activeMembers:
+        activeMembers.length,
+      expected,
+      collected,
+      contributedMembers,
+      participation,
+      outstanding,
+      carryForward,
+      previousOutstanding
+    }
   );
 
 
@@ -1540,6 +1490,8 @@ function renderContributionSummary(
       activeMembers.length,
 
     participation,
+
+    carryForward,
 
     states
 
@@ -1570,13 +1522,7 @@ function renderMemberPaymentStatus(
 
   const activeMembers =
     members.filter(
-      member =>
-        String(
-          member.status || ""
-        )
-          .trim()
-          .toLowerCase() ===
-        "active"
+      isActiveMember
     );
 
 
@@ -1590,7 +1536,7 @@ function renderMemberPaymentStatus(
 
     rows.innerHTML = `
       <tr>
-        <td colspan="5">
+        <td colspan="7">
           No active members found.
         </td>
       </tr>
@@ -1604,7 +1550,8 @@ function renderMemberPaymentStatus(
   const states =
     calculateAllMemberStates(
       members,
-      contributions
+      contributions,
+      getMonthKey()
     );
 
 
@@ -1616,26 +1563,54 @@ function renderMemberPaymentStatus(
           const state =
             states[member.id] ||
             {
+              previousOutstanding: 0,
               appliedThisMonth: 0,
+              carryForward: 0,
               currentOutstanding:
                 monthlyDue
             };
 
 
-          const applied =
+          const previousOutstanding =
             Number(
-              state.appliedThisMonth || 0
+              state.previousOutstanding ||
+              0
             );
 
 
-          const outstanding =
+          const appliedThisMonth =
             Number(
-              state.currentOutstanding || 0
+              state.appliedThisMonth ||
+              0
             );
 
+
+          const carryForward =
+            Number(
+              state.carryForward ||
+              0
+            );
+
+
+          const currentOutstanding =
+            Number(
+              state.currentOutstanding ||
+              0
+            );
+
+
+          /*
+           * -------------------------------------------------
+           * STATUS
+           * -------------------------------------------------
+           */
 
           let status =
             "Pending";
+
+
+          let statusClass =
+            "status-neutral";
 
 
           if (
@@ -1643,28 +1618,66 @@ function renderMemberPaymentStatus(
           ) {
 
             status =
-              applied > 0
+              appliedThisMonth > 0
                 ? "Paid"
                 : "No amount set";
 
+            statusClass =
+              appliedThisMonth > 0
+                ? "status-paid"
+                : "status-neutral";
+
           }
           else if (
-            outstanding <= 0
+            currentOutstanding <= 0
           ) {
 
             status =
-              "Cleared";
+              carryForward > 0
+                ? "Paid + Credit"
+                : "Cleared";
+
+            statusClass =
+              "status-cleared";
 
           }
           else if (
-            applied > 0
+            appliedThisMonth > 0
           ) {
 
             status =
               "Partial";
 
+            statusClass =
+              "status-partial";
+
+          }
+          else if (
+            previousOutstanding > 0
+          ) {
+
+            status =
+              "Outstanding";
+
+            statusClass =
+              "status-outstanding";
+
           }
 
+
+          /*
+           * -------------------------------------------------
+           * SEVEN HTML COLUMNS
+           * -------------------------------------------------
+           *
+           * 1 Member
+           * 2 Monthly Due
+           * 3 Previous Outstanding
+           * 4 Applied This Month
+           * 5 Carry Forward
+           * 6 Current Outstanding
+           * 7 Status
+           */
 
           return `
             <tr>
@@ -1677,27 +1690,65 @@ function renderMemberPaymentStatus(
               </td>
 
               <td>
-                ${money(
+                ${formatMoney(
                   monthlyDue
                 )}
               </td>
 
               <td>
-                ${money(
-                  applied
-                )}
+                <span class="${
+                  previousOutstanding > 0
+                    ? "outstanding-value"
+                    : ""
+                }">
+                  ${formatMoney(
+                    previousOutstanding
+                  )}
+                </span>
               </td>
 
               <td>
-                ${money(
-                  outstanding
-                )}
+                <span class="${
+                  appliedThisMonth > 0
+                    ? "applied-value"
+                    : ""
+                }">
+                  ${formatMoney(
+                    appliedThisMonth
+                  )}
+                </span>
               </td>
 
               <td>
-                ${escapeHtml(
-                  status
-                )}
+                <span class="${
+                  carryForward > 0
+                    ? "credit-value"
+                    : ""
+                }">
+                  ${formatMoney(
+                    carryForward
+                  )}
+                </span>
+              </td>
+
+              <td>
+                <span class="${
+                  currentOutstanding > 0
+                    ? "outstanding-value"
+                    : "credit-value"
+                }">
+                  ${formatMoney(
+                    currentOutstanding
+                  )}
+                </span>
+              </td>
+
+              <td>
+                <span class="status-badge ${statusClass}">
+                  ${escapeHtml(
+                    status
+                  )}
+                </span>
               </td>
 
             </tr>
@@ -1706,6 +1757,15 @@ function renderMemberPaymentStatus(
         }
       )
       .join("");
+
+
+  console.log(
+    "CHAMA LIVE: member payment status rendered",
+    {
+      members:
+        activeMembers.length
+    }
+  );
 
 }
 
@@ -1727,6 +1787,14 @@ async function renderRecentContributions() {
   }
 
 
+  /*
+   * IMPORTANT:
+   *
+   * Do not request created_at here because
+   * the known schema only guarantees the
+   * contribution columns we use.
+   */
+
   const {
     data,
     error
@@ -1734,6 +1802,7 @@ async function renderRecentContributions() {
     await supabase
       .from("contributions")
       .select(`
+        id,
         amount,
         contribution_date,
         member_id
@@ -1749,7 +1818,7 @@ async function renderRecentContributions() {
         }
       )
       .order(
-        "created_at",
+        "id",
         {
           ascending: false
         }
@@ -1782,6 +1851,10 @@ async function renderRecentContributions() {
 
   }
 
+
+  /*
+   * Get member names.
+   */
 
   const memberIds =
     [
@@ -1816,8 +1889,16 @@ async function renderRecentContributions() {
 
 
     if (
-      !memberResult.error
+      memberResult.error
     ) {
+
+      console.warn(
+        "CHAMA LIVE: member lookup for recent contributions failed",
+        memberResult.error
+      );
+
+    }
+    else {
 
       (
         memberResult.data ||
@@ -1861,7 +1942,7 @@ async function renderRecentContributions() {
               </td>
 
               <td>
-                ${money(
+                ${formatMoney(
                   contribution.amount
                 )}
               </td>
@@ -1957,6 +2038,56 @@ async function renderRecentExpenses() {
       .map(
         expense => {
 
+          const rawStatus =
+            String(
+              expense.approval_status ||
+              "Pending"
+            );
+
+
+          const normalizedStatus =
+            rawStatus
+              .trim()
+              .toLowerCase();
+
+
+          let statusClass =
+            "status-neutral";
+
+
+          if (
+            normalizedStatus ===
+            "approved"
+          ) {
+
+            statusClass =
+              "status-paid";
+
+          }
+          else if (
+            normalizedStatus ===
+              "pending" ||
+            normalizedStatus ===
+              "submitted"
+          ) {
+
+            statusClass =
+              "status-pending";
+
+          }
+          else if (
+            normalizedStatus ===
+              "rejected" ||
+            normalizedStatus ===
+              "declined"
+          ) {
+
+            statusClass =
+              "status-outstanding";
+
+          }
+
+
           return `
             <tr>
 
@@ -1968,16 +2099,17 @@ async function renderRecentExpenses() {
               </td>
 
               <td>
-                ${money(
+                ${formatMoney(
                   expense.amount
                 )}
               </td>
 
               <td>
-                ${escapeHtml(
-                  expense.approval_status ||
-                  "Pending"
-                )}
+                <span class="status-badge ${statusClass}">
+                  ${escapeHtml(
+                    rawStatus
+                  )}
+                </span>
               </td>
 
             </tr>
@@ -2008,12 +2140,7 @@ async function renderUpcomingMeetings() {
 
 
   const today =
-    getMonthStart()
-      .slice(0, 7) +
-    "-" +
-    String(
-      getLocalDate().getDate()
-    ).padStart(2, "0");
+    getTodayKey();
 
 
   const {
@@ -2103,10 +2230,12 @@ async function renderUpcomingMeetings() {
               </td>
 
               <td>
-                ${escapeHtml(
-                  meeting.status ||
-                  "Upcoming"
-                )}
+                <span class="status-badge status-neutral">
+                  ${escapeHtml(
+                    meeting.status ||
+                    "Upcoming"
+                  )}
+                </span>
               </td>
 
             </tr>
@@ -2197,7 +2326,7 @@ async function loadBalance() {
 
     setText(
       "currentBalance",
-      money(
+      formatMoney(
         totalContributions
       )
     );
@@ -2243,11 +2372,120 @@ async function loadBalance() {
 
   setText(
     "currentBalance",
-    money(balance)
+    formatMoney(balance)
+  );
+
+
+  console.log(
+    "CHAMA LIVE: balance",
+    {
+      totalContributions,
+      approvedExpenses,
+      balance
+    }
   );
 
 
   return balance;
+
+}
+
+
+/* =========================================================
+   DIAGNOSTIC CONTRIBUTION CHECK
+========================================================= */
+
+/*
+ * This function is intentionally included to make the
+ * "0 contributors" problem easy to diagnose.
+ *
+ * It prints the exact member IDs and contribution member IDs
+ * being compared.
+ */
+
+function debugContributionLinks(
+  members,
+  contributions
+) {
+
+  const activeMembers =
+    members.filter(
+      isActiveMember
+    );
+
+
+  const activeIds =
+    activeMembers.map(
+      member =>
+        String(
+          member.id
+        )
+    );
+
+
+  const contributionLinks =
+    contributions
+      .map(
+        contribution => ({
+          memberId:
+            contribution.member_id,
+
+          memberIdString:
+            String(
+              contribution.member_id
+            ),
+
+          amount:
+            Number(
+              contribution.amount || 0
+            ),
+
+          month:
+            getContributionMonth(
+              contribution
+            )
+        })
+      );
+
+
+  console.log(
+    "CHAMA LIVE: contribution/member diagnostic",
+    {
+      activeMemberIds:
+        activeIds,
+
+      contributionLinks,
+
+      currentMonth:
+        getMonthKey()
+    }
+  );
+
+
+  /*
+   * Warn if contributions exist but none
+   * can be linked to a member.
+   */
+
+  const linked =
+    contributionLinks.filter(
+      contribution =>
+        activeIds.includes(
+          contribution.memberIdString
+        )
+    );
+
+
+  if (
+    contributionLinks.length > 0 &&
+    linked.length === 0
+  ) {
+
+    console.warn(
+      "CHAMA LIVE: contributions exist, but none are linked to an active member by member_id."
+    );
+
+  }
 
 }
 
@@ -2263,9 +2501,11 @@ async function loadDashboard() {
   );
 
 
-  /* -------------------------------------------------------
-     MEMBER
-  ------------------------------------------------------- */
+  /*
+   * -------------------------------------------------------
+   * CURRENT MEMBER
+   * -------------------------------------------------------
+   */
 
   currentMember =
     await getCurrentMember();
@@ -2293,9 +2533,26 @@ async function loadDashboard() {
   }
 
 
-  /* -------------------------------------------------------
-     GROUP
-  ------------------------------------------------------- */
+  console.log(
+    "CHAMA LIVE: current member",
+    {
+      id:
+        currentMember.id,
+
+      name:
+        currentMember.name,
+
+      groupId:
+        currentGroupId
+    }
+  );
+
+
+  /*
+   * -------------------------------------------------------
+   * GROUP
+   * -------------------------------------------------------
+   */
 
   currentGroup =
     await getCurrentGroup();
@@ -2313,25 +2570,58 @@ async function loadDashboard() {
   renderGroup();
 
 
-  /* -------------------------------------------------------
-     MEMBERS
-  ------------------------------------------------------- */
+  console.log(
+    "CHAMA LIVE: current group",
+    {
+      id:
+        currentGroup.id,
+
+      name:
+        currentGroup.name,
+
+      monthlyContribution:
+        currentGroup.monthly_contribution
+    }
+  );
+
+
+  /*
+   * -------------------------------------------------------
+   * MEMBERS
+   * -------------------------------------------------------
+   */
 
   const members =
     await loadMembers();
 
 
-  /* -------------------------------------------------------
-     ALL CONTRIBUTIONS
-  ------------------------------------------------------- */
+  /*
+   * -------------------------------------------------------
+   * CONTRIBUTIONS
+   * -------------------------------------------------------
+   */
 
   const contributions =
     await loadAllContributions();
 
 
-  /* -------------------------------------------------------
-     CONTRIBUTION SUMMARY
-  ------------------------------------------------------- */
+  /*
+   * -------------------------------------------------------
+   * DEBUG LINKING
+   * -------------------------------------------------------
+   */
+
+  debugContributionLinks(
+    members,
+    contributions
+  );
+
+
+  /*
+   * -------------------------------------------------------
+   * CONTRIBUTION SUMMARY
+   * -------------------------------------------------------
+   */
 
   renderContributionSummary(
     members,
@@ -2339,9 +2629,11 @@ async function loadDashboard() {
   );
 
 
-  /* -------------------------------------------------------
-     MEMBER STATUS
-  ------------------------------------------------------- */
+  /*
+   * -------------------------------------------------------
+   * MEMBER STATUS
+   * -------------------------------------------------------
+   */
 
   renderMemberPaymentStatus(
     members,
@@ -2349,9 +2641,11 @@ async function loadDashboard() {
   );
 
 
-  /* -------------------------------------------------------
-     RECENT ACTIVITY
-  ------------------------------------------------------- */
+  /*
+   * -------------------------------------------------------
+   * RECENT ACTIVITY
+   * -------------------------------------------------------
+   */
 
   await renderRecentContributions();
 
@@ -2360,9 +2654,11 @@ async function loadDashboard() {
   await renderUpcomingMeetings();
 
 
-  /* -------------------------------------------------------
-     BALANCE
-  ------------------------------------------------------- */
+  /*
+   * -------------------------------------------------------
+   * BALANCE
+   * -------------------------------------------------------
+   */
 
   await loadBalance();
 
