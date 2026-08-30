@@ -2,7 +2,6 @@
 <html lang="en">
 
 <head>
-
   <meta charset="utf-8">
 
   <meta
@@ -16,84 +15,10 @@
     rel="stylesheet"
     href="css/app.css"
   >
-
-  <style>
-
-    .report-header {
-      margin-bottom: 20px;
-    }
-
-    .report-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: end;
-    }
-
-    .report-actions label {
-      display: block;
-      margin-bottom: 5px;
-    }
-
-    .negative {
-      font-weight: 700;
-    }
-
-    .report-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    .report-table th,
-    .report-table td {
-      padding: 10px;
-      border-bottom: 1px solid #ddd;
-      text-align: left;
-      white-space: nowrap;
-    }
-
-    .table-wrap {
-      overflow-x: auto;
-    }
-
-    @media print {
-
-      .topbar,
-      .sidebar,
-      .report-actions,
-      #status,
-      #error,
-      button {
-        display: none !important;
-      }
-
-      .layout {
-        display: block !important;
-      }
-
-      .main {
-        width: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-      }
-
-      .card {
-        break-inside: avoid;
-      }
-
-      .report-section {
-        break-inside: avoid;
-      }
-
-    }
-
-  </style>
-
 </head>
 
 
 <body>
-
 
 <header class="topbar">
 
@@ -113,7 +38,6 @@
 
 
 <div class="layout">
-
 
   <!-- =====================================================
        SIDEBAR
@@ -169,112 +93,63 @@
 
   <main class="main">
 
+    <!-- =================================================
+         PAGE HEADER
+    ================================================== -->
 
-    <!-- ===================================================
-         REPORT HEADER
-    ==================================================== -->
+    <div class="page-head">
 
-    <section class="report-header">
+      <div>
 
-      <div class="page-head">
+        <h1>
+          Financial Reports
+        </h1>
 
-        <div>
-
-          <h1>
-            Financial Reports
-          </h1>
-
-          <p class="muted">
-
-            <strong id="reportGroupName">
-              CHAMA LIVE
-            </strong>
-
-            —
-
-            <span id="reportMonth">
-              Loading...
-            </span>
-
-          </p>
-
-          <p
-            class="muted"
-            id="reportGenerated"
-          >
-          </p>
-
-        </div>
-
-
-        <div class="report-actions">
-
-          <div>
-
-            <label
-              for="month"
-              class="muted"
-            >
-              Financial Month
-            </label>
-
-            <input
-              type="month"
-              id="month"
-            >
-
-          </div>
-
-
-          <button
-            class="btn btn-secondary"
-            id="refreshReport"
-            type="button"
-          >
-            Refresh
-          </button>
-
-
-          <button
-            class="btn btn-secondary"
-            id="exportCsv"
-            type="button"
-          >
-            Export CSV
-          </button>
-
-
-          <button
-            class="btn btn-primary"
-            id="printReport"
-            type="button"
-          >
-            Print Report
-          </button>
-
-        </div>
+        <p class="muted">
+          View your group's contribution,
+          expense and financial performance.
+        </p>
 
       </div>
 
-    </section>
+
+      <div>
+
+        <label
+          for="reportMonth"
+          class="muted"
+        >
+          Financial Month
+        </label>
+
+        <br>
+
+        <input
+          type="month"
+          id="reportMonth"
+        >
+
+      </div>
+
+    </div>
 
 
-    <!-- ===================================================
+    <!-- =================================================
          STATUS
-    ==================================================== -->
+    ================================================== -->
 
     <div
       id="status"
       class="card"
       style="margin-bottom:20px;"
     >
-      Loading report...
+      Loading reports...
     </div>
 
 
-    <!-- ===================================================
+    <!-- =================================================
          ERROR
-    ==================================================== -->
+    ================================================== -->
 
     <div
       id="error"
@@ -284,21 +159,65 @@
     ></div>
 
 
-    <!-- ===================================================
-         FINANCIAL SUMMARY
-    ==================================================== -->
+    <!-- =================================================
+         REPORT ACTIONS
+    ================================================== -->
 
-    <section class="card report-section">
+    <section class="card">
 
       <h2>
-        Financial Summary
+        Report Actions
+      </h2>
+
+      <div
+        style="
+          display:flex;
+          gap:10px;
+          flex-wrap:wrap;
+        "
+      >
+
+        <button
+          class="btn btn-primary"
+          id="refreshReport"
+          type="button"
+        >
+          Refresh Report
+        </button>
+
+
+        <button
+          class="btn btn-secondary"
+          id="printReport"
+          type="button"
+        >
+          Print Report
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <br>
+
+
+    <!-- =================================================
+         FINANCIAL OVERVIEW
+    ================================================== -->
+
+    <section>
+
+      <h2>
+        Financial Overview
       </h2>
 
 
       <div class="grid grid-3">
 
+        <!-- Opening -->
 
-        <div>
+        <div class="card">
 
           <div class="muted">
             Opening Balance
@@ -314,15 +233,17 @@
         </div>
 
 
-        <div>
+        <!-- Contributions -->
+
+        <div class="card">
 
           <div class="muted">
-            Expected Monthly Contributions
+            Contributions
           </div>
 
           <div
             class="metric"
-            id="expected"
+            id="totalContributions"
           >
             KSh 0.00
           </div>
@@ -330,55 +251,9 @@
         </div>
 
 
-        <div>
+        <!-- Expenses -->
 
-          <div class="muted">
-            Total Collected
-          </div>
-
-          <div
-            class="metric"
-            id="collected"
-          >
-            KSh 0.00
-          </div>
-
-        </div>
-
-
-        <div>
-
-          <div class="muted">
-            Monthly Contributions
-          </div>
-
-          <div
-            class="metric"
-            id="monthlyCollected"
-          >
-            KSh 0.00
-          </div>
-
-        </div>
-
-
-        <div>
-
-          <div class="muted">
-            Other Contributions
-          </div>
-
-          <div
-            class="metric"
-            id="otherCollected"
-          >
-            KSh 0.00
-          </div>
-
-        </div>
-
-
-        <div>
+        <div class="card">
 
           <div class="muted">
             Approved Expenses
@@ -386,7 +261,7 @@
 
           <div
             class="metric"
-            id="approvedExpenses"
+            id="totalExpenses"
           >
             KSh 0.00
           </div>
@@ -394,7 +269,9 @@
         </div>
 
 
-        <div>
+        <!-- Balance -->
+
+        <div class="card">
 
           <div class="muted">
             Closing Balance
@@ -410,15 +287,17 @@
         </div>
 
 
-        <div>
+        <!-- Expected -->
+
+        <div class="card">
 
           <div class="muted">
-            Current Outstanding
+            Expected Monthly Contributions
           </div>
 
           <div
             class="metric"
-            id="outstanding"
+            id="expectedContributions"
           >
             KSh 0.00
           </div>
@@ -426,17 +305,19 @@
         </div>
 
 
-        <div>
+        <!-- Outstanding -->
+
+        <div class="card">
 
           <div class="muted">
-            Collection Rate
+            Outstanding Contributions
           </div>
 
           <div
             class="metric"
-            id="collectionRate"
+            id="outstandingContributions"
           >
-            0%
+            KSh 0.00
           </div>
 
         </div>
@@ -449,19 +330,18 @@
     <br>
 
 
-    <!-- ===================================================
-         MEMBER SUMMARY
-    ==================================================== -->
+    <!-- =================================================
+         CONTRIBUTION PERFORMANCE
+    ================================================== -->
 
-    <section class="card report-section">
+    <section class="card">
 
       <h2>
-        Member Summary
+        Contribution Performance
       </h2>
 
 
       <div class="grid grid-3">
-
 
         <div>
 
@@ -469,7 +349,7 @@
             Active Members
           </div>
 
-          <strong id="memberCount">
+          <strong id="activeMembers">
             0
           </strong>
 
@@ -479,7 +359,7 @@
         <div>
 
           <div class="muted">
-            Paid
+            Members Paid
           </div>
 
           <strong id="membersPaid">
@@ -492,7 +372,7 @@
         <div>
 
           <div class="muted">
-            Partial
+            Partial Payments
           </div>
 
           <strong id="membersPartial">
@@ -505,7 +385,7 @@
         <div>
 
           <div class="muted">
-            Outstanding Members
+            Members Outstanding
           </div>
 
           <strong id="membersOutstanding">
@@ -518,37 +398,11 @@
         <div>
 
           <div class="muted">
-            Previous Outstanding
+            Collection Rate
           </div>
 
-          <strong id="previousOutstanding">
-            KSh 0.00
-          </strong>
-
-        </div>
-
-
-        <div>
-
-          <div class="muted">
-            Cleared Previous Arrears
-          </div>
-
-          <strong id="appliedThisMonth">
-            KSh 0.00
-          </strong>
-
-        </div>
-
-
-        <div>
-
-          <div class="muted">
-            Carry-forward
-          </div>
-
-          <strong id="carryForward">
-            KSh 0.00
+          <strong id="collectionRate">
+            0%
           </strong>
 
         </div>
@@ -574,50 +428,70 @@
     <br>
 
 
-    <!-- ===================================================
-         FINANCIAL POSITION
-    ==================================================== -->
+    <!-- =================================================
+         CONTRIBUTION ALLOCATION
+    ================================================== -->
 
-    <section class="card report-section">
+    <section class="card">
 
       <h2>
-        Financial Position
+        Contribution Allocation
       </h2>
 
+      <div class="grid grid-3">
 
-      <p>
-        Opening balance:
-        <strong id="opening2">
-          KSh 0.00
-        </strong>
-      </p>
+        <div>
 
+          <div class="muted">
+            Previous Outstanding
+          </div>
 
-      <p>
-        Contributions:
-        <strong id="contributions2">
-          KSh 0.00
-        </strong>
-      </p>
+          <strong id="previousOutstanding">
+            KSh 0.00
+          </strong>
+
+        </div>
 
 
-      <p>
-        Approved expenses:
-        <strong id="expenses2">
-          KSh 0.00
-        </strong>
-      </p>
+        <div>
+
+          <div class="muted">
+            Applied This Month
+          </div>
+
+          <strong id="appliedThisMonth">
+            KSh 0.00
+          </strong>
+
+        </div>
 
 
-      <hr>
+        <div>
+
+          <div class="muted">
+            Carry Forward
+          </div>
+
+          <strong id="carryForward">
+            KSh 0.00
+          </strong>
+
+        </div>
 
 
-      <p>
-        Closing balance:
-        <strong id="balance2">
-          KSh 0.00
-        </strong>
-      </p>
+        <div>
+
+          <div class="muted">
+            Current Outstanding
+          </div>
+
+          <strong id="currentOutstanding">
+            KSh 0.00
+          </strong>
+
+        </div>
+
+      </div>
 
     </section>
 
@@ -625,11 +499,11 @@
     <br>
 
 
-    <!-- ===================================================
+    <!-- =================================================
          EXPENSE SUMMARY
-    ==================================================== -->
+    ================================================== -->
 
-    <section class="card report-section">
+    <section class="card">
 
       <h2>
         Expense Summary
@@ -637,7 +511,6 @@
 
 
       <div class="grid grid-3">
-
 
         <div>
 
@@ -685,86 +558,25 @@
     <br>
 
 
-    <!-- ===================================================
-         CONTRIBUTION BREAKDOWN
-    ==================================================== -->
+    <!-- =================================================
+         MEMBER CONTRIBUTION STATUS
+    ================================================== -->
 
-    <section class="card report-section">
-
-      <h2>
-        Contribution Breakdown
-      </h2>
-
-
-      <div class="grid grid-3">
-
-
-        <div>
-
-          <div class="muted">
-            Monthly
-          </div>
-
-          <strong
-            id="monthlyContributionTotal"
-          >
-            KSh 0.00
-          </strong>
-
-        </div>
-
-
-        <div>
-
-          <div class="muted">
-            Other
-          </div>
-
-          <strong
-            id="otherContributionTotal"
-          >
-            KSh 0.00
-          </strong>
-
-        </div>
-
-
-        <div>
-
-          <div class="muted">
-            Total Cash Collected
-          </div>
-
-          <strong
-            id="totalContributionTotal"
-          >
-            KSh 0.00
-          </strong>
-
-        </div>
-
-      </div>
-
-    </section>
-
-
-    <br>
-
-
-    <!-- ===================================================
-         MEMBER CONTRIBUTION REPORT
-    ==================================================== -->
-
-    <section class="card report-section">
+    <section class="card">
 
       <h2>
         Member Contribution Status
       </h2>
 
+      <p class="muted">
+        Monthly recurring contribution performance
+        for the selected financial month.
+      </p>
+
 
       <div class="table-wrap">
 
-        <table class="report-table">
+        <table class="table">
 
           <thead>
 
@@ -779,7 +591,11 @@
               </th>
 
               <th>
-                Monthly Due
+                Expected
+              </th>
+
+              <th>
+                Paid
               </th>
 
               <th>
@@ -787,19 +603,11 @@
               </th>
 
               <th>
-                Payment
-              </th>
-
-              <th>
-                Cleared Previous
-              </th>
-
-              <th>
-                Applied Current
-              </th>
-
-              <th>
                 Current Outstanding
+              </th>
+
+              <th>
+                Carry Forward
               </th>
 
               <th>
@@ -815,8 +623,8 @@
 
             <tr>
 
-              <td colspan="9">
-                Loading...
+              <td colspan="8">
+                Loading member report...
               </td>
 
             </tr>
@@ -833,24 +641,27 @@
     <br>
 
 
-    <!-- ===================================================
+    <!-- =================================================
          CONTRIBUTION TRANSACTIONS
-    ==================================================== -->
+    ================================================== -->
 
-    <section class="card report-section">
+    <section class="card">
 
       <h2>
         Contribution Transactions
       </h2>
 
-
       <div class="table-wrap">
 
-        <table class="report-table">
+        <table class="table">
 
           <thead>
 
             <tr>
+
+              <th>
+                Date
+              </th>
 
               <th>
                 Member
@@ -872,14 +683,6 @@
                 Reference
               </th>
 
-              <th>
-                Date
-              </th>
-
-              <th>
-                Notes
-              </th>
-
             </tr>
 
           </thead>
@@ -889,8 +692,8 @@
 
             <tr>
 
-              <td colspan="7">
-                Loading...
+              <td colspan="6">
+                Loading contributions...
               </td>
 
             </tr>
@@ -907,24 +710,27 @@
     <br>
 
 
-    <!-- ===================================================
-         EXPENSE REPORT
-    ==================================================== -->
+    <!-- =================================================
+         EXPENSE TRANSACTIONS
+    ================================================== -->
 
-    <section class="card report-section">
+    <section class="card">
 
       <h2>
-        Expense Report
+        Expense Transactions
       </h2>
-
 
       <div class="table-wrap">
 
-        <table class="report-table">
+        <table class="table">
 
           <thead>
 
             <tr>
+
+              <th>
+                Date
+              </th>
 
               <th>
                 Description
@@ -939,15 +745,7 @@
               </th>
 
               <th>
-                Date
-              </th>
-
-              <th>
-                Status
-              </th>
-
-              <th>
-                Receipt
+                Approval Status
               </th>
 
             </tr>
@@ -959,8 +757,8 @@
 
             <tr>
 
-              <td colspan="6">
-                Loading...
+              <td colspan="5">
+                Loading expenses...
               </td>
 
             </tr>
@@ -973,14 +771,102 @@
 
     </section>
 
+
+    <br>
+
+
+    <!-- =================================================
+         FINANCIAL POSITION
+    ================================================== -->
+
+    <section class="card">
+
+      <h2>
+        Financial Position
+      </h2>
+
+
+      <p>
+        Opening balance:
+        <strong id="opening2">
+          KSh 0.00
+        </strong>
+      </p>
+
+
+      <p>
+        Contributions:
+        <strong id="contributions2">
+          KSh 0.00
+        </strong>
+      </p>
+
+
+      <p>
+        Approved expenses:
+        <strong id="expenses2">
+          KSh 0.00
+        </strong>
+      </p>
+
+
+      <hr>
+
+
+      <p>
+        <strong>
+          Closing balance:
+        </strong>
+
+        <strong id="balance2">
+          KSh 0.00
+        </strong>
+      </p>
+
+    </section>
+
+
+    <br>
+
+
+    <!-- =================================================
+         REPORT FOOTER
+    ================================================== -->
+
+    <section class="card">
+
+      <p class="muted">
+        CHAMA LIVE financial report.
+      </p>
+
+      <p class="muted">
+        Only actual contributions are included
+        in cash balance calculations.
+      </p>
+
+      <p class="muted">
+        Only approved expenses are deducted from
+        the financial balance.
+      </p>
+
+      <p class="muted">
+        Monthly contribution progress is based
+        only on recurring monthly contributions.
+      </p>
+
+    </section>
+
   </main>
 
 </div>
 
 
-<!-- =======================================================
-     LAYOUT
-======================================================== -->
+<!-- =====================================================
+     APPLICATION
+     -----------------------------------------------------
+     layout.js handles authentication, navigation
+     and common application boot.
+====================================================== -->
 
 <script type="module">
 
@@ -990,6 +876,16 @@
 
 </script>
 
+
+<!-- =====================================================
+     REPORTS MODULE
+====================================================== -->
+
+<script type="module">
+
+  import "./js/reports.js";
+
+</script>
 
 </body>
 
