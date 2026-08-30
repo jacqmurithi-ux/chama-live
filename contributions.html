@@ -3,7 +3,7 @@
 
 <head>
 
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
 
   <meta
     name="viewport"
@@ -24,7 +24,6 @@
 
 <body>
 
-
 <header class="topbar">
 
   <div class="brand">
@@ -34,22 +33,21 @@
 </header>
 
 
-<main class="page-container">
-
-
-  <!-- =====================================================
-       PAGE HEADER
-  ====================================================== -->
+<main class="page">
 
   <section class="page-header">
 
-    <h1>
-      Contributions
-    </h1>
+    <div>
 
-    <p>
-      Record and manage member contributions.
-    </p>
+      <h1>
+        Contributions
+      </h1>
+
+      <p class="muted">
+        Record and manage member contributions.
+      </p>
+
+    </div>
 
   </section>
 
@@ -60,14 +58,15 @@
 
   <div
     id="status"
+    class="status"
     hidden
-    role="status"
     aria-live="polite"
   ></div>
 
 
   <div
     id="error"
+    class="error"
     hidden
     role="alert"
   ></div>
@@ -79,9 +78,21 @@
 
   <section class="card">
 
-    <h2>
-      Record Contribution
-    </h2>
+    <div class="card-header">
+
+      <div>
+
+        <h2>
+          Record Contribution
+        </h2>
+
+        <p class="muted">
+          Record a contribution for a group member.
+        </p>
+
+      </div>
+
+    </div>
 
 
     <form
@@ -122,10 +133,10 @@
         </label>
 
         <input
-          type="number"
           id="amount"
           name="amount"
-          min="1"
+          type="number"
+          min="0.01"
           step="0.01"
           placeholder="200"
           required
@@ -134,7 +145,7 @@
       </div>
 
 
-      <!-- CONTRIBUTION DATE -->
+      <!-- DATE -->
 
       <div class="form-group">
 
@@ -143,9 +154,9 @@
         </label>
 
         <input
-          type="date"
           id="contributionDate"
           name="contributionDate"
+          type="date"
           required
         >
 
@@ -166,27 +177,31 @@
           required
         >
 
-          <option value="">
-            Select contribution type
+          <option value="monthly">
+            Monthly Contribution
           </option>
 
-          <option value="Monthly">
-            Monthly
-          </option>
-
-          <option value="Registration">
-            Registration
-          </option>
-
-          <option value="Welfare">
+          <option value="welfare">
             Welfare
           </option>
 
-          <option value="Special">
-            Special
+          <option value="emergency">
+            Emergency
           </option>
 
-          <option value="__OTHER__">
+          <option value="fundraising">
+            Fundraising
+          </option>
+
+          <option value="project">
+            Project
+          </option>
+
+          <option value="event">
+            Event
+          </option>
+
+          <option value="other">
             Other
           </option>
 
@@ -200,28 +215,31 @@
       ================================================== -->
 
       <div
-        class="form-group"
         id="otherContributionTypeWrap"
+        class="form-group"
         hidden
       >
 
         <label for="otherContributionType">
-          Other Contribution Type
+
+          Other Contribution Name
+
         </label>
 
         <input
-          type="text"
           id="otherContributionType"
           name="otherContributionType"
+          type="text"
           maxlength="100"
-          placeholder="e.g. Christmas Fund"
-          autocomplete="off"
+          placeholder="e.g. Birthday contribution"
         >
 
-        <small>
-          Enter the name of the contribution category.
-          Once saved, it will remain available for this
-          group whenever another contribution is recorded.
+        <small class="muted">
+
+          Enter the name of this contribution.
+          It will be saved for this group and will
+          appear in the contribution type list next time.
+
         </small>
 
       </div>
@@ -241,10 +259,6 @@
           required
         >
 
-          <option value="">
-            Select payment method
-          </option>
-
           <option value="M-Pesa">
             M-Pesa
           </option>
@@ -253,12 +267,8 @@
             Cash
           </option>
 
-          <option value="Bank">
-            Bank
-          </option>
-
-          <option value="Other">
-            Other
+          <option value="Bank transfer">
+            Bank transfer
           </option>
 
         </select>
@@ -269,28 +279,29 @@
       <!-- M-PESA REFERENCE -->
 
       <div
-        class="form-group"
         id="mpesaReferenceWrap"
+        class="form-group"
         hidden
       >
 
         <label for="mpesaReference">
+
           M-Pesa Reference
+
         </label>
 
         <input
-          type="text"
           id="mpesaReference"
           name="mpesaReference"
+          type="text"
           maxlength="100"
           placeholder="e.g. QWE123XYZ"
-          autocomplete="off"
         >
 
       </div>
 
 
-      <!-- GOAL -->
+      <!-- CONTRIBUTION GOAL -->
 
       <div class="form-group">
 
@@ -324,7 +335,8 @@
           id="notes"
           name="notes"
           rows="3"
-          placeholder="Optional notes"
+          maxlength="500"
+          placeholder="Optional notes about this contribution"
         ></textarea>
 
       </div>
@@ -335,14 +347,14 @@
       <div class="form-actions">
 
         <button
-          type="submit"
           id="saveContribution"
+          type="submit"
+          class="button button-primary"
         >
           Record Contribution
         </button>
 
       </div>
-
 
     </form>
 
@@ -350,7 +362,7 @@
 
 
   <!-- =====================================================
-       MONTHLY EXPECTED
+       CURRENT GROUP
   ====================================================== -->
 
   <section class="card">
@@ -359,7 +371,7 @@
       Monthly Contribution
     </h2>
 
-    <p>
+    <p class="muted">
       Expected monthly contribution:
       <strong id="monthlyExpected">
         KSh 0
@@ -370,17 +382,25 @@
 
 
   <!-- =====================================================
-       MONTHLY MEMBER STATUS
+       MONTHLY STATUS
   ====================================================== -->
 
   <section class="card">
 
-    <h2>
-      Monthly Contribution Status
-    </h2>
+    <div class="card-header">
+
+      <div>
+
+        <h2>
+          Monthly Contribution Status
+        </h2>
+
+      </div>
+
+    </div>
 
 
-    <div class="table-responsive">
+    <div class="table-wrapper">
 
       <table>
 
@@ -421,9 +441,7 @@
         </thead>
 
 
-        <tbody
-          id="memberStatusRows"
-        >
+        <tbody id="memberStatusRows">
 
           <tr>
 
@@ -448,16 +466,24 @@
 
   <section class="card">
 
-    <h2>
-      Contribution Goals
-    </h2>
+    <div class="card-header">
+
+      <div>
+
+        <h2>
+          Contribution Goals
+        </h2>
+
+      </div>
+
+    </div>
 
 
     <div
       id="goalProgressContainer"
     >
 
-      <p>
+      <p class="muted">
         Loading contribution goals...
       </p>
 
@@ -467,17 +493,25 @@
 
 
   <!-- =====================================================
-       CONTRIBUTION LEDGER
+       CONTRIBUTION HISTORY
   ====================================================== -->
 
   <section class="card">
 
-    <h2>
-      Contribution History
-    </h2>
+    <div class="card-header">
+
+      <div>
+
+        <h2>
+          Contribution History
+        </h2>
+
+      </div>
+
+    </div>
 
 
-    <div class="table-responsive">
+    <div class="table-wrapper">
 
       <table>
 
@@ -522,9 +556,7 @@
         </thead>
 
 
-        <tbody
-          id="contributionRows"
-        >
+        <tbody id="contributionRows">
 
           <tr>
 
@@ -543,14 +575,32 @@
   </section>
 
 
+  <!-- =====================================================
+       GROUP / RECORDER INFORMATION
+  ====================================================== -->
+
+  <section class="card">
+
+    <p class="muted">
+
+      All contribution records are scoped to the
+      currently authenticated group.
+
+    </p>
+
+  </section>
+
+
+  <!-- =====================================================
+       PAGE SCRIPT
+  ====================================================== -->
+
+  <script
+    type="module"
+    src="js/contributions.js"
+  ></script>
+
 </main>
-
-
-<script
-  type="module"
-  src="js/layout.js"
-></script>
-
 
 </body>
 
