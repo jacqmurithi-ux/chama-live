@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+
   <meta charset="utf-8">
 
   <meta
@@ -9,193 +10,117 @@
     content="width=device-width, initial-scale=1"
   >
 
-  <title>Create Account — CHAMA LIVE</title>
+  <title>Create Group — CHAMA LIVE</title>
 
   <link
     rel="stylesheet"
     href="css/app.css"
   >
+
+  <link
+    rel="stylesheet"
+    href="css/landing.css"
+  >
+
 </head>
 
-<body>
 
-<main
-  class="main"
-  style="max-width:760px;margin:40px auto;"
->
+<body class="cl-auth-body">
 
-  <section class="card">
 
-    <div class="brand" style="margin-bottom:10px;">
+<main class="cl-auth-shell">
+
+
+  <section class="cl-auth-card">
+
+
+    <a
+      class="cl-brand"
+      href="index.html"
+    >
       CHAMA <span>LIVE</span>
+    </a>
+
+
+    <div class="cl-eyebrow">
+      GROUP ONBOARDING
     </div>
+
 
     <h1>
-      Create Your Group
+      Create your CHAMA LIVE account
     </h1>
 
-    <p class="muted">
-      Create your CHAMA LIVE account and set up your group.
-      You will automatically become the group administrator.
+
+    <p class="cl-auth-intro">
+      Set up your group and administrator account.
+      New group accounts are reviewed before
+      Dashboard access is enabled.
     </p>
 
-    <div
-      id="status"
-      class="card"
-      style="margin:20px 0;"
-    >
-      Enter your details below.
-    </div>
 
     <div
       id="error"
-      class="error"
+      class="alert alert-error"
       hidden
-      style="margin-bottom:20px;"
+      role="alert"
     ></div>
 
 
-    <form id="signupForm">
+    <div
+      id="status"
+      class="alert alert-info"
+      hidden
+      role="status"
+    ></div>
+
+
+    <form
+      id="signupForm"
+      autocomplete="on"
+    >
+
+
+      <!-- =================================================
+           GROUP DETAILS
+      ================================================== -->
 
       <h2>
-        Administrator Account
+        Group details
       </h2>
 
-      <br>
 
-      <div class="grid grid-2">
-
-        <div>
-
-          <label
-            for="adminName"
-            class="muted"
-          >
-            Full Name
-          </label>
-
-          <input
-            id="adminName"
-            type="text"
-            required
-            autocomplete="name"
-            placeholder="Your full name"
-          >
-
-        </div>
+      <div class="cl-form-grid">
 
 
-        <div>
+        <div class="form-group full">
 
-          <label
-            for="adminPhone"
-            class="muted"
-          >
-            Phone Number
-          </label>
-
-          <input
-            id="adminPhone"
-            type="tel"
-            required
-            autocomplete="tel"
-            placeholder="0712345678"
-          >
-
-        </div>
-
-
-        <div>
-
-          <label
-            for="email"
-            class="muted"
-          >
-            Email Address
-          </label>
-
-          <input
-            id="email"
-            type="email"
-            required
-            autocomplete="email"
-            placeholder="you@example.com"
-          >
-
-        </div>
-
-
-        <div>
-
-          <label
-            for="password"
-            class="muted"
-          >
-            Password
-          </label>
-
-          <input
-            id="password"
-            type="password"
-            required
-            minlength="6"
-            autocomplete="new-password"
-            placeholder="At least 6 characters"
-          >
-
-        </div>
-
-      </div>
-
-
-      <br>
-
-
-      <h2>
-        Group Details
-      </h2>
-
-      <br>
-
-
-      <div class="grid grid-2">
-
-        <div>
-
-          <label
-            for="groupName"
-            class="muted"
-          >
-            Group Name
+          <label for="groupName">
+            Group name *
           </label>
 
           <input
             id="groupName"
+            name="groupName"
             type="text"
             required
-            placeholder="e.g. Timau Welfare Group"
+            maxlength="120"
+            placeholder="e.g. Timau Community Welfare Group"
           >
 
         </div>
 
 
-        <div>
+        <div class="form-group">
 
-          <label
-            for="category"
-            class="muted"
-          >
-            Group Category
+          <label for="category">
+            Group type
           </label>
 
           <select
             id="category"
-            required
+            name="category"
           >
-
-            <option value="">
-              Select category
-            </option>
 
             <option value="chama">
               Chama
@@ -207,6 +132,10 @@
 
             <option value="investment">
               Investment Group
+            </option>
+
+            <option value="savings">
+              Savings Group
             </option>
 
             <option value="self_help">
@@ -226,104 +155,236 @@
         </div>
 
 
-        <div>
+        <div class="form-group">
 
-          <label
-            for="monthlyContribution"
-            class="muted"
+          <label for="country">
+            Country
+          </label>
+
+          <input
+            id="country"
+            name="country"
+            type="text"
+            value="Kenya"
+            maxlength="100"
           >
-            Monthly Contribution
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label for="monthlyContribution">
+            Monthly contribution (KSh)
           </label>
 
           <input
             id="monthlyContribution"
-            type="number"
-            min="0"
-            step="0.01"
-            value="200"
-            placeholder="200"
-          >
-
-        </div>
-
-
-        <div>
-
-          <label
-            for="openingBalance"
-            class="muted"
-          >
-            Opening Balance
-          </label>
-
-          <input
-            id="openingBalance"
+            name="monthlyContribution"
             type="number"
             min="0"
             step="0.01"
             value="0"
-            placeholder="0"
           >
 
         </div>
 
-      </div>
 
+        <div class="form-group full">
 
-      <br>
+          <label for="description">
+            Description
+          </label>
 
+          <textarea
+            id="description"
+            name="description"
+            maxlength="500"
+            placeholder="Brief description of the group"
+          ></textarea>
 
-      <div>
+        </div>
 
-        <label
-          for="description"
-          class="muted"
-        >
-          Group Description
-        </label>
-
-        <textarea
-          id="description"
-          rows="4"
-          placeholder="Brief description of your group"
-        ></textarea>
 
       </div>
 
 
-      <br>
+      <!-- =================================================
+           ADMINISTRATOR
+      ================================================== -->
+
+      <h2>
+        Administrator
+      </h2>
+
+
+      <div class="cl-form-grid">
+
+
+        <div class="form-group">
+
+          <label for="adminName">
+            Full name *
+          </label>
+
+          <input
+            id="adminName"
+            name="adminName"
+            type="text"
+            required
+            maxlength="120"
+            autocomplete="name"
+          >
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label for="adminPhone">
+            Phone number *
+          </label>
+
+          <input
+            id="adminPhone"
+            name="adminPhone"
+            type="tel"
+            required
+            maxlength="30"
+            placeholder="07XXXXXXXX"
+            autocomplete="tel"
+          >
+
+        </div>
+
+
+        <div class="form-group full">
+
+          <label for="email">
+            Email address *
+          </label>
+
+          <input
+            id="email"
+            name="email"
+            type="email"
+            required
+            autocomplete="email"
+            placeholder="you@example.com"
+          >
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label for="password">
+            Password *
+          </label>
+
+          <input
+            id="password"
+            name="password"
+            type="password"
+            required
+            minlength="8"
+            autocomplete="new-password"
+          >
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label for="confirmPassword">
+            Confirm password *
+          </label>
+
+          <input
+            id="confirmPassword"
+            name="confirmPassword"
+            type="password"
+            required
+            minlength="8"
+            autocomplete="new-password"
+          >
+
+        </div>
+
+
+      </div>
+
+
+      <!-- =================================================
+           REVIEW NOTICE
+      ================================================== -->
+
+      <div class="cl-review-note">
+
+        <strong>
+          What happens next?
+        </strong>
+
+        <ol>
+
+          <li>
+            Your login account and group application
+            are created.
+          </li>
+
+          <li>
+            Your application is marked
+            <strong>Pending Review</strong>.
+          </li>
+
+          <li>
+            CHAMA LIVE reviews the account before
+            Dashboard access is enabled.
+          </li>
+
+          <li>
+            After approval, sign in normally to
+            access your group.
+          </li>
+
+        </ol>
+
+      </div>
 
 
       <button
-        class="btn btn-primary"
-        id="createAccount"
+        id="signupButton"
+        class="btn btn-primary cl-full-btn"
         type="submit"
       >
-        Create Account &amp; Group
+        Create Group Account
       </button>
+
 
     </form>
 
 
-    <br>
+    <p class="cl-auth-footer">
 
-
-    <p class="muted">
       Already have an account?
+
       <a href="login.html">
         Sign in
       </a>
+
     </p>
 
+
   </section>
+
 
 </main>
 
 
-<script type="module">
-  import "./js/signup.js?v=20260827-1";
-</script>
-
+<script
+  type="module"
+  src="js/signup.js"
+></script>
 
 
 </body>
