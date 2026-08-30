@@ -21,7 +21,7 @@
 
     /* =====================================================
        CHAMA LIVE — DASHBOARD
-       Updated recurring contribution UI
+       Recurring Monthly Contribution System
     ===================================================== */
 
 
@@ -327,7 +327,7 @@
 
 
     /* =====================================================
-       MEMBER CONTRIBUTOR SUMMARY
+       CONTRIBUTOR SUMMARY
     ===================================================== */
 
     .contributor-summary {
@@ -382,7 +382,7 @@
 
 
     /* =====================================================
-       CREDIT / OUTSTANDING SUMMARY
+       CONTRIBUTION BREAKDOWN
     ===================================================== */
 
     .contribution-breakdown {
@@ -457,7 +457,7 @@
 
     .member-status-table table {
       min-width:
-        850px;
+        900px;
     }
 
     .member-status-table td {
@@ -538,7 +538,7 @@
 
 
     /* =====================================================
-       CREDIT / OUTSTANDING VALUES
+       VALUE COLORS
     ===================================================== */
 
     .credit-value {
@@ -905,6 +905,11 @@
           560px;
       }
 
+      .member-status-table table {
+        min-width:
+          900px;
+      }
+
       .member-status-table th,
       .member-status-table td,
       .activity-card th,
@@ -983,6 +988,16 @@
       .progress-percentage {
         font-size:
           24px;
+      }
+
+      .contributor-stat {
+        padding:
+          11px;
+      }
+
+      .contributor-stat-value {
+        font-size:
+          17px;
       }
 
     }
@@ -1113,7 +1128,6 @@
   </header>
 
 
-
   <!-- =====================================================
        APPLICATION LAYOUT
   ====================================================== -->
@@ -1156,7 +1170,6 @@
       ></div>
 
 
-
       <!-- =================================================
            DASHBOARD HEADER
       ================================================== -->
@@ -1167,21 +1180,21 @@
           GROUP DASHBOARD
         </div>
 
-
         <h1>
+
           Welcome to
+
           <span data-group-name>
             CHAMA
           </span>
-        </h1>
 
+        </h1>
 
         <p class="muted">
           Here's an overview of your group's activities.
         </p>
 
       </section>
-
 
 
       <!-- =================================================
@@ -1219,7 +1232,6 @@
         </div>
 
 
-
         <!-- MONTHLY EXPECTED -->
 
         <div class="card metric-card">
@@ -1240,7 +1252,6 @@
           </div>
 
         </div>
-
 
 
         <!-- MONTHLY APPLIED -->
@@ -1265,7 +1276,6 @@
         </div>
 
 
-
         <!-- CURRENT BALANCE -->
 
         <div class="card metric-card">
@@ -1288,7 +1298,6 @@
         </div>
 
       </section>
-
 
 
       <!-- =================================================
@@ -1321,7 +1330,7 @@
 
 
         <!-- =================================================
-             AMOUNT PROGRESS
+             PERCENTAGE
         ================================================== -->
 
         <div
@@ -1332,7 +1341,18 @@
         </div>
 
 
-        <div class="progress">
+        <!-- =================================================
+             PROGRESS BAR
+        ================================================== -->
+
+        <div
+          class="progress"
+          role="progressbar"
+          aria-label="Monthly contribution progress"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-valuenow="0"
+        >
 
           <div
             id="progressBar"
@@ -1341,6 +1361,10 @@
 
         </div>
 
+
+        <!-- =================================================
+             PROGRESS TOTAL
+        ================================================== -->
 
         <div class="progress-footer">
 
@@ -1356,11 +1380,13 @@
 
 
         <!-- =================================================
-             MEMBER PARTICIPATION
+             MEMBER PARTICIPATION SUMMARY
         ================================================== -->
 
         <div class="contributor-summary">
 
+
+          <!-- MEMBERS WHO HAVE CONTRIBUTED -->
 
           <div class="contributor-stat">
 
@@ -1378,6 +1404,8 @@
           </div>
 
 
+          <!-- MEMBER PARTICIPATION -->
+
           <div class="contributor-stat">
 
             <div class="contributor-stat-label">
@@ -1393,6 +1421,8 @@
 
           </div>
 
+
+          <!-- CURRENT OUTSTANDING -->
 
           <div class="contributor-stat">
 
@@ -1418,18 +1448,26 @@
 
         <div class="contribution-breakdown">
 
+
+          <!-- APPLIED -->
+
           <span>
 
             <span class="breakdown-dot"></span>
 
             Applied this month:
 
-            <strong id="progressApplied">
+            <strong
+              id="progressApplied"
+              class="applied-value"
+            >
               KSh 0
             </strong>
 
           </span>
 
+
+          <!-- CARRY FORWARD -->
 
           <span>
 
@@ -1446,6 +1484,8 @@
 
           </span>
 
+
+          <!-- OUTSTANDING -->
 
           <span>
 
@@ -1465,16 +1505,20 @@
         </div>
 
 
+        <!-- =================================================
+             EXPLANATION
+        ================================================== -->
+
         <p class="muted">
 
           Payments first clear previous outstanding balances.
-          Any amount remaining after the monthly due is carried
-          forward as credit to the next month.
+          Any amount remaining after the monthly recurring
+          contribution is carried forward as credit to the
+          next month.
 
         </p>
 
       </section>
-
 
 
       <!-- =================================================
@@ -1498,7 +1542,8 @@
 
           <p class="muted">
             Monthly recurring contribution status after applying
-            outstanding balances and carry-forward credits.
+            previous outstanding balances and carry-forward
+            credits.
           </p>
 
         </div>
@@ -1553,7 +1598,7 @@
               <tr>
 
                 <td colspan="7">
-                  Loading...
+                  Loading contribution status...
                 </td>
 
               </tr>
@@ -1565,7 +1610,6 @@
         </div>
 
       </section>
-
 
 
       <!-- =================================================
@@ -1659,7 +1703,6 @@
           </div>
 
 
-
           <!-- =================================================
                RECENT EXPENSES
           ================================================== -->
@@ -1745,7 +1788,6 @@
       </section>
 
 
-
       <!-- =================================================
            UPCOMING MEETINGS
       ================================================== -->
@@ -1787,7 +1829,6 @@
         <div class="table-wrap">
 
           <table class="table">
-
 
             <thead>
 
@@ -1838,7 +1879,6 @@
   </div>
 
 
-
   <!-- =====================================================
        PAGE BOOT
   ====================================================== -->
@@ -1857,3 +1897,4 @@
 </body>
 
 </html>
+  
