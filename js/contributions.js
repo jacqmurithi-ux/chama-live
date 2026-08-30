@@ -1,7 +1,20 @@
-/* =========================================================
+
+        /* =========================================================
    CHAMA LIVE — CONTRIBUTIONS
-   LIVE SUPABASE SCHEMA ALIGNED
-   Loaded dynamically by layout.js
+   COMPLETE UPDATED VERSION
+
+   Features:
+   ---------------------------------------------------------
+   1. Recurring monthly contributions
+   2. Outstanding balances carried forward
+   3. Oldest arrears paid first
+   4. Extra payments become credit
+   5. Credit automatically offsets future obligations
+   6. Contribution goals
+   7. Goal amount progress
+   8. Goal member participation progress
+   9. Unique contributing-member count
+   10. Live Supabase data
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -29,6 +42,7 @@ let groupId = null;
 
 let members = [];
 let contributions = [];
+let contributionGoals = [];
 
 let initialized = false;
 
@@ -76,6 +90,9 @@ const mpesaReference =
 const mpesaReferenceWrap =
   byId("mpesaReferenceWrap");
 
+const goalSelect =
+  byId("goal");
+
 const saveButton =
   byId("saveContribution");
 
@@ -88,16 +105,21 @@ const memberStatusRows =
 const contributionRows =
   byId("contributionRows");
 
+const goalProgressContainer =
+  byId("goalProgressContainer");
+
 
 /* =========================================================
-   HELPERS
+   MONEY
 ========================================================= */
 
 function money(value) {
 
   return (
     "KSh " +
-    Number(value || 0).toLocaleString(
+    Number(
+      value || 0
+    ).toLocaleString(
       "en-KE",
       {
         minimumFractionDigits: 0,
@@ -120,12 +142,15 @@ function todayString() {
 
   return [
     now.getFullYear(),
+
     String(
       now.getMonth() + 1
     ).padStart(2, "0"),
+
     String(
       now.getDate()
     ).padStart(2, "0")
+
   ].join("-");
 
 }
@@ -194,7 +219,9 @@ function formatDate(value) {
       date.getTime()
     )
   ) {
+
     return value;
+
   }
 
   return date.toLocaleDateString(
@@ -295,6 +322,7 @@ export async function init() {
   initialized =
     true;
 
+
   try {
 
     clearError();
@@ -342,7 +370,7 @@ export async function init() {
 
 
     /* -----------------------------------------------------
-       DATE DEFAULT
+       DATE
     ----------------------------------------------------- */
 
     if (
@@ -364,7 +392,18 @@ export async function init() {
 
     await loadContributions();
 
+    await loadContributionGoals();
+
+
+    /* -----------------------------------------------------
+       RENDER
+    ----------------------------------------------------- */
+
     renderMonthlyExpected();
+
+    renderGoalSelect();
+
+    renderGoalProgress();
 
     renderMonthlyStatus();
 
@@ -380,11 +419,13 @@ export async function init() {
 
     showStatus("");
 
+
     console.log(
       "CHAMA LIVE: contributions initialized"
     );
 
   }
+
   catch (error) {
 
     initialized =
@@ -420,6 +461,7 @@ async function loadMembers() {
         phone,
         email,
         role,
+        join_date,
         status
       `)
       .eq(
@@ -444,6 +486,23 @@ async function loadMembers() {
 
 
   renderMemberSelect();
+
+}
+
+
+/* =========================================================
+   ACTIVE MEMBERS
+========================================================= */
+
+function getActiveMembers() {
+
+  return members.filter(
+    member =>
+      String(
+        member.status || "active"
+      ).toLowerCase() ===
+      "active"
+  );
 
 }
 
@@ -475,11 +534,18 @@ function renderMemberSelect() {
           "option"
         );
 
+
       option.value =
         member.id;
 
+
       option.textContent =
-        `${member.member_number || member.membership_number || ""} — ${member.name}`;
+        `${
+          member.member_number ||
+          member.membership_number ||
+          ""
+        } — ${member.name}`;
+
 
       memberSelect.appendChild(
         option
@@ -549,7 +615,64 @@ async function loadContributions() {
 
 
 /* =========================================================
-   MONTHLY EXPECTED
+   LOAD CONTRIBUTION GOALS
+========================================================= */
+
+async function loadContributionGoals() {
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("contribution_goals")
+      .select(`
+        id,
+        group_id,
+        goal_name,
+        category,
+        description,
+        frequency,
+        start_date,
+        end_date,
+        expected_amount_per_member,
+        target_amount,
+        status,
+        created_by,
+        created_at,
+        updated_at
+      `)
+      .eq(
+        "group_id",
+        groupId
+      )
+      .in(
+        "status",
+        [
+          "active"
+        ]
+      )
+      .order(
+        "created_at",
+        {
+          ascending: false
+        }
+      );
+
+
+  if (error) {
+    throw error;
+  }
+
+
+  contributionGoals =
+    data || [];
+
+}
+
+
+/* =========================================================
+   MONTHLY CONTRIBUTION
 ========================================================= */
 
 function getMonthlyContribution() {
@@ -580,6 +703,52 @@ function renderMonthlyExpected() {
 
 
 /* =========================================================
+   RENDER GOAL SELECT
+========================================================= */
+
+function renderGoalSelect() {
+
+  if (!goalSelect) {
+    return;
+  }
+
+
+  goalSelect.innerHTML =
+    `
+      <option value="">
+        General contribution
+      </option>
+    `;
+
+
+  contributionGoals.forEach(
+    goal => {
+
+      const option =
+        document.createElement(
+          "option"
+        );
+
+
+      option.value =
+        goal.id;
+
+
+      option.textContent =
+        goal.goal_name;
+
+
+      goalSelect.appendChild(
+        option
+      );
+
+    }
+  );
+
+}
+
+
+/* =========================================================
    GET MEMBER NAME
 ========================================================= */
 
@@ -593,10 +762,361 @@ function getMemberName(
         item.id === memberId
     );
 
+
   return (
     member?.name ||
     "Unknown member"
   );
+
+}
+
+
+/* =========================================================
+   MONTH DIFFERENCE
+========================================================= */
+
+function monthDifference(
+  startMonth,
+  endMonth
+) {
+
+  const start =
+    new Date(
+      `${startMonth}-01T00:00:00`
+    );
+
+  const end =
+    new Date(
+      `${endMonth}-01T00:00:00`
+    );
+
+
+  if (
+    Number.isNaN(
+      start.getTime()
+    ) ||
+    Number.isNaN(
+      end.getTime()
+    )
+  ) {
+
+    return 0;
+
+  }
+
+
+  return (
+    (
+      end.getFullYear() -
+      start.getFullYear()
+    ) * 12
+  ) +
+  (
+    end.getMonth() -
+    start.getMonth()
+  );
+
+}
+
+
+/* =========================================================
+   GET MEMBER START MONTH
+========================================================= */
+
+function getMemberStartMonth(
+  member
+) {
+
+  const rawDate =
+    member.join_date ||
+    member.created_at ||
+    todayString();
+
+
+  return String(
+    rawDate
+  ).slice(0, 7);
+
+}
+
+
+/* =========================================================
+   GET MEMBER MONTHLY POSITION
+========================================================= */
+
+function getMemberMonthlyPosition(
+  member
+) {
+
+  const expected =
+    getMonthlyContribution();
+
+
+  if (expected <= 0) {
+
+    return {
+
+      previousOutstanding: 0,
+
+      currentDue: 0,
+
+      currentPaid: 0,
+
+      carryForward: 0,
+
+      currentOutstanding: 0,
+
+      status: "—",
+
+      totalPaid: 0,
+
+      totalDue: 0,
+
+      monthsDue: 0
+
+    };
+
+  }
+
+
+  const currentMonthValue =
+    currentMonth();
+
+
+  const joinMonth =
+    getMemberStartMonth(
+      member
+    );
+
+
+  /*
+   * Member hasn't joined yet.
+   */
+
+  if (
+    joinMonth >
+    currentMonthValue
+  ) {
+
+    return {
+
+      previousOutstanding: 0,
+
+      currentDue: 0,
+
+      currentPaid: 0,
+
+      carryForward: 0,
+
+      currentOutstanding: 0,
+
+      status: "—",
+
+      totalPaid: 0,
+
+      totalDue: 0,
+
+      monthsDue: 0
+
+    };
+
+  }
+
+
+  /*
+   * Number of recurring monthly
+   * obligations including current month.
+   */
+
+  const monthsDue =
+    monthDifference(
+      joinMonth,
+      currentMonthValue
+    ) + 1;
+
+
+  const totalDue =
+    monthsDue *
+    expected;
+
+
+  /*
+   * All monthly payments made
+   * by this member.
+   */
+
+  const totalPaid =
+    contributions
+      .filter(
+        contribution =>
+          contribution.member_id ===
+            member.id &&
+          contribution.contribution_type ===
+            "monthly"
+      )
+      .reduce(
+        (
+          total,
+          contribution
+        ) =>
+          total +
+          Number(
+            contribution.amount || 0
+          ),
+        0
+      );
+
+
+  /*
+   * Amount required for all
+   * months before current month.
+   */
+
+  const previousDue =
+    Math.max(
+      monthsDue - 1,
+      0
+    ) *
+    expected;
+
+
+  /*
+   * Payment applied against
+   * previous months.
+   */
+
+  const previousPaid =
+    Math.min(
+      totalPaid,
+      previousDue
+    );
+
+
+  /*
+   * Remaining arrears from
+   * previous months.
+   */
+
+  const previousOutstanding =
+    Math.max(
+      previousDue -
+      previousPaid,
+      0
+    );
+
+
+  /*
+   * Payment remaining after
+   * previous arrears.
+   */
+
+  const amountAfterPrevious =
+    Math.max(
+      totalPaid -
+      previousDue,
+      0
+    );
+
+
+  /*
+   * Amount allocated to current
+   * month's obligation.
+   */
+
+  const currentPaid =
+    Math.min(
+      amountAfterPrevious,
+      expected
+    );
+
+
+  /*
+   * Extra amount becomes credit.
+   */
+
+  const carryForward =
+    Math.max(
+      amountAfterPrevious -
+      expected,
+      0
+    );
+
+
+  /*
+   * Current month outstanding.
+   */
+
+  const currentOutstanding =
+    Math.max(
+      expected -
+      currentPaid,
+      0
+    );
+
+
+  let status =
+    "Outstanding";
+
+
+  if (
+    carryForward > 0
+  ) {
+
+    status =
+      "Credit";
+
+  }
+
+  else if (
+    currentPaid >= expected
+  ) {
+
+    status =
+      "Paid";
+
+  }
+
+  else if (
+    currentPaid > 0
+  ) {
+
+    status =
+      "Partial";
+
+  }
+
+  else if (
+    previousOutstanding > 0
+  ) {
+
+    status =
+      "Outstanding";
+
+  }
+
+
+  return {
+
+    previousOutstanding,
+
+    currentDue:
+      expected,
+
+    currentPaid,
+
+    carryForward,
+
+    currentOutstanding,
+
+    status,
+
+    totalPaid,
+
+    totalDue,
+
+    monthsDue
+
+  };
 
 }
 
@@ -612,22 +1132,16 @@ function renderMonthlyStatus() {
   }
 
 
-  const month =
-    currentMonth();
-
-
-  const expected =
-    getMonthlyContribution();
-
-
   if (!members.length) {
 
     memberStatusRows.innerHTML =
       `
         <tr>
-          <td colspan="5">
+
+          <td colspan="7">
             No members found.
           </td>
+
         </tr>
       `;
 
@@ -641,17 +1155,212 @@ function renderMonthlyStatus() {
       .map(
         member => {
 
-          const paid =
-            contributions
-              .filter(
-                contribution =>
-                  contribution.member_id ===
-                    member.id &&
-                  contribution.month ===
-                    month &&
-                  contribution.contribution_type ===
-                    "monthly"
-              )
+          const position =
+            getMemberMonthlyPosition(
+              member
+            );
+
+
+          return `
+            <tr>
+
+              <td>
+                ${escapeHtml(
+                  member.name
+                )}
+              </td>
+
+              <td>
+                ${money(
+                  position.currentDue
+                )}
+              </td>
+
+              <td>
+                ${money(
+                  position.previousOutstanding
+                )}
+              </td>
+
+              <td>
+                ${money(
+                  position.currentPaid
+                )}
+              </td>
+
+              <td>
+                ${money(
+                  position.carryForward
+                )}
+              </td>
+
+              <td>
+                ${money(
+                  position.currentOutstanding
+                )}
+              </td>
+
+              <td>
+                <span
+                  class="contribution-status contribution-status-${escapeHtml(
+                    position.status
+                      .toLowerCase()
+                      .replaceAll(
+                        " ",
+                        "-"
+                      )
+                  )}"
+                >
+                  ${escapeHtml(
+                    position.status
+                  )}
+                </span>
+              </td>
+
+            </tr>
+          `;
+
+        }
+      )
+      .join("");
+
+}
+
+
+/* =========================================================
+   GOAL DATE CHECK
+========================================================= */
+
+function goalIsWithinDate(
+  goal,
+  month
+) {
+
+  if (
+    goal.start_date &&
+    String(
+      goal.start_date
+    ).slice(0, 7) >
+      month
+  ) {
+
+    return false;
+
+  }
+
+
+  if (
+    goal.end_date &&
+    String(
+      goal.end_date
+    ).slice(0, 7) <
+      month
+  ) {
+
+    return false;
+
+  }
+
+
+  return true;
+
+}
+
+
+/* =========================================================
+   GET GOAL CONTRIBUTIONS
+========================================================= */
+
+function getGoalContributions(
+  goal
+) {
+
+  return contributions.filter(
+    contribution => {
+
+      if (
+        contribution.goal_id !==
+        goal.id
+      ) {
+
+        return false;
+
+      }
+
+
+      const month =
+        contribution.month ||
+        String(
+          contribution.contribution_date ||
+          ""
+        ).slice(0, 7);
+
+
+      return goalIsWithinDate(
+        goal,
+        month
+      );
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   RENDER GOAL PROGRESS
+========================================================= */
+
+function renderGoalProgress() {
+
+  if (!goalProgressContainer) {
+    return;
+  }
+
+
+  if (!contributionGoals.length) {
+
+    goalProgressContainer.innerHTML =
+      `
+        <div class="goal-empty">
+
+          <strong>
+            No active contribution goals
+          </strong>
+
+          <p class="muted">
+            Create a contribution goal from Group Management to track a fundraising target here.
+          </p>
+
+        </div>
+      `;
+
+    return;
+
+  }
+
+
+  const activeMembers =
+    getActiveMembers();
+
+
+  const totalMembers =
+    activeMembers.length;
+
+
+  goalProgressContainer.innerHTML =
+    contributionGoals
+      .map(
+        goal => {
+
+          const goalContributions =
+            getGoalContributions(
+              goal
+            );
+
+
+          const amountCollected =
+            goalContributions
               .reduce(
                 (
                   total,
@@ -665,73 +1374,262 @@ function renderMonthlyStatus() {
               );
 
 
-          const outstanding =
-            Math.max(
-              expected - paid,
-              0
+          const target =
+            Number(
+              goal.target_amount || 0
             );
 
 
-          let status =
-            "Outstanding";
+          let amountPercentage =
+            target > 0
+              ? (
+                  amountCollected /
+                  target
+                ) *
+                100
+              : 0;
 
 
-          if (
-            expected <= 0
-          ) {
+          amountPercentage =
+            Math.min(
+              Math.max(
+                amountPercentage,
+                0
+              ),
+              100
+            );
 
-            status =
-              paid > 0
-                ? "Paid"
-                : "—";
 
-          }
-          else if (
-            paid >= expected
-          ) {
+          /*
+           * Count unique active members
+           * who have contributed towards
+           * this specific goal.
+           */
 
-            status =
-              "Paid";
+          const contributingMemberIds =
+            new Set(
+              goalContributions
+                .filter(
+                  contribution =>
+                    activeMembers.some(
+                      member =>
+                        member.id ===
+                        contribution.member_id
+                    )
+                )
+                .map(
+                  contribution =>
+                    contribution.member_id
+                )
+            );
 
-          }
-          else if (
-            paid > 0
-          ) {
 
-            status =
-              "Partial";
+          const contributingMembers =
+            contributingMemberIds.size;
 
-          }
+
+          const memberPercentage =
+            totalMembers > 0
+              ? (
+                  contributingMembers /
+                  totalMembers
+                ) *
+                100
+              : 0;
+
+
+          const roundedAmountPercentage =
+            Math.round(
+              amountPercentage *
+              10
+            ) / 10;
+
+
+          const roundedMemberPercentage =
+            Math.round(
+              memberPercentage *
+              10
+            ) / 10;
+
+
+          const category =
+            goal.category ||
+            "other";
 
 
           return `
-            <tr>
+            <article
+              class="goal-progress-card"
+            >
 
-              <td>
-                ${escapeHtml(
-                  member.name
-                )}
-              </td>
+              <div
+                class="goal-progress-header"
+              >
 
-              <td>
-                ${money(expected)}
-              </td>
+                <div>
 
-              <td>
-                ${money(paid)}
-              </td>
+                  <div
+                    class="goal-category"
+                  >
+                    ${escapeHtml(
+                      category
+                    )}
+                  </div>
 
-              <td>
-                ${money(outstanding)}
-              </td>
+                  <h3>
+                    ${escapeHtml(
+                      goal.goal_name
+                    )}
+                  </h3>
 
-              <td>
-                ${escapeHtml(
-                  status
-                )}
-              </td>
+                  ${
+                    goal.description
+                      ? `
+                        <p class="muted">
+                          ${escapeHtml(
+                            goal.description
+                          )}
+                        </p>
+                      `
+                      : ""
+                  }
 
-            </tr>
+                </div>
+
+                <strong
+                  class="goal-percent"
+                >
+                  ${roundedAmountPercentage}%
+                </strong>
+
+              </div>
+
+
+              <!-- MONEY PROGRESS -->
+
+              <div
+                class="goal-progress-label-row"
+              >
+
+                <span>
+                  Amount collected
+                </span>
+
+                <strong>
+                  ${money(
+                    amountCollected
+                  )}
+                  ${
+                    target > 0
+                      ? ` / ${money(target)}`
+                      : ""
+                  }
+                </strong>
+
+              </div>
+
+
+              <div
+                class="goal-progress-track"
+                role="progressbar"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="${roundedAmountPercentage}"
+                aria-label="${escapeHtml(
+                  goal.goal_name
+                )} amount progress"
+              >
+
+                <div
+                  class="goal-progress-fill"
+                  style="width:${roundedAmountPercentage}%"
+                ></div>
+
+              </div>
+
+
+              <!-- MEMBER PARTICIPATION -->
+
+              <div
+                class="goal-members-row"
+              >
+
+                <div>
+
+                  <strong>
+                    ${contributingMembers}
+                  </strong>
+
+                  <span class="muted">
+                    of
+                    ${totalMembers}
+                    active members contributed
+                  </span>
+
+                </div>
+
+
+                <strong>
+                  ${roundedMemberPercentage}%
+                </strong>
+
+              </div>
+
+
+              <div
+                class="goal-member-progress-track"
+                role="progressbar"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="${roundedMemberPercentage}"
+                aria-label="${escapeHtml(
+                  goal.goal_name
+                )} member participation"
+              >
+
+                <div
+                  class="goal-member-progress-fill"
+                  style="width:${roundedMemberPercentage}%"
+                ></div>
+
+              </div>
+
+
+              <div
+                class="goal-footer"
+              >
+
+                <span>
+                  ${contributingMembers}
+                  member${
+                    contributingMembers === 1
+                      ? ""
+                      : "s"
+                  }
+                  contributing
+                </span>
+
+                ${
+                  target > 0
+                    ? `
+                      <span>
+                        ${
+                          target >
+                          amountCollected
+                            ? money(
+                                target -
+                                amountCollected
+                              )
+                            : "Target reached"
+                        }
+                      </span>
+                    `
+                    : ""
+                }
+
+              </div>
+
+            </article>
           `;
 
         }
@@ -757,9 +1655,11 @@ function renderLedger() {
     contributionRows.innerHTML =
       `
         <tr>
-          <td colspan="6">
+
+          <td colspan="7">
             No contributions recorded yet.
           </td>
+
         </tr>
       `;
 
@@ -793,6 +1693,14 @@ function renderLedger() {
           const type =
             contribution.contribution_type ||
             "—";
+
+
+          const goal =
+            contributionGoals.find(
+              item =>
+                item.id ===
+                contribution.goal_id
+            );
 
 
           return `
@@ -834,6 +1742,13 @@ function renderLedger() {
 
               <td>
                 ${escapeHtml(
+                  goal?.goal_name ||
+                  "General"
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
                   reference
                 )}
               </td>
@@ -849,14 +1764,12 @@ function renderLedger() {
 
 
 /* =========================================================
-   TOGGLE MPESA FIELD
+   TOGGLE MPESA
 ========================================================= */
 
 function toggleMpesaReference() {
 
-  if (
-    !methodSelect
-  ) {
+  if (!methodSelect) {
     return;
   }
 
@@ -883,9 +1796,7 @@ function toggleMpesaReference() {
   }
 
 
-  if (
-    mpesaReference
-  ) {
+  if (mpesaReference) {
 
     mpesaReference.required =
       isMpesa;
@@ -942,10 +1853,6 @@ async function handleSubmit(
     clearError();
 
 
-    /* -----------------------------------------------------
-       VALIDATE
-    ----------------------------------------------------- */
-
     if (!groupId) {
 
       throw new Error(
@@ -954,6 +1861,10 @@ async function handleSubmit(
 
     }
 
+
+    /* -----------------------------------------------------
+       MEMBER
+    ----------------------------------------------------- */
 
     const memberId =
       memberSelect?.value;
@@ -967,6 +1878,10 @@ async function handleSubmit(
 
     }
 
+
+    /* -----------------------------------------------------
+       AMOUNT
+    ----------------------------------------------------- */
 
     const amount =
       Number(
@@ -986,26 +1901,42 @@ async function handleSubmit(
     }
 
 
+    /* -----------------------------------------------------
+       DATE
+    ----------------------------------------------------- */
+
     const contributionDate =
       dateInput?.value ||
       todayString();
 
+
+    /* -----------------------------------------------------
+       TYPE
+    ----------------------------------------------------- */
 
     const contributionType =
       typeSelect?.value ||
       "monthly";
 
 
+    /* -----------------------------------------------------
+       PAYMENT METHOD
+    ----------------------------------------------------- */
+
     const paymentMethod =
       methodSelect?.value ||
-      "cash";
+      "Cash";
 
+
+    /* -----------------------------------------------------
+       MPESA
+    ----------------------------------------------------- */
 
     const mpesaRef =
       String(
-        mpesaReference?.value || ""
-      )
-      .trim();
+        mpesaReference?.value ||
+        ""
+      ).trim();
 
 
     if (
@@ -1034,7 +1965,16 @@ async function handleSubmit(
 
 
     /* -----------------------------------------------------
-       DISABLE BUTTON
+       GOAL
+    ----------------------------------------------------- */
+
+    const goalId =
+      goalSelect?.value ||
+      null;
+
+
+    /* -----------------------------------------------------
+       BUTTON
     ----------------------------------------------------- */
 
     if (saveButton) {
@@ -1054,10 +1994,7 @@ async function handleSubmit(
 
 
     /* -----------------------------------------------------
-       INSERT
-       
-       IMPORTANT:
-       These fields match the LIVE schema.
+       PAYLOAD
     ----------------------------------------------------- */
 
     const payload = {
@@ -1084,16 +2021,26 @@ async function handleSubmit(
         contributionDate,
 
       recorded_by:
-        currentUser?.id || null,
+        currentUser?.id ||
+        null,
 
       reference:
-        mpesaRef || null,
+        mpesaRef ||
+        null,
 
       mpesa_reference:
-        mpesaRef || null
+        mpesaRef ||
+        null,
+
+      goal_id:
+        goalId
 
     };
 
+
+    /* -----------------------------------------------------
+       INSERT
+    ----------------------------------------------------- */
 
     const {
       data,
@@ -1135,17 +2082,21 @@ async function handleSubmit(
 
 
     /* -----------------------------------------------------
-       RESET
+       RESET FORM
     ----------------------------------------------------- */
 
     if (form) {
+
       form.reset();
+
     }
 
 
     if (dateInput) {
+
       dateInput.value =
         todayString();
+
     }
 
 
@@ -1153,10 +2104,17 @@ async function handleSubmit(
 
 
     /* -----------------------------------------------------
-       REFRESH
+       REFRESH DATA
     ----------------------------------------------------- */
 
     await loadContributions();
+
+    await loadContributionGoals();
+
+
+    renderGoalSelect();
+
+    renderGoalProgress();
 
     renderMonthlyStatus();
 
@@ -1170,12 +2128,15 @@ async function handleSubmit(
 
     setTimeout(
       () => {
+
         showStatus("");
+
       },
       3000
     );
 
   }
+
   catch (error) {
 
     showStatus("");
@@ -1183,6 +2144,7 @@ async function handleSubmit(
     showError(error);
 
   }
+
   finally {
 
     if (saveButton) {
@@ -1211,7 +2173,18 @@ export async function refreshContributions() {
   }
 
 
+  await loadMembers();
+
   await loadContributions();
+
+  await loadContributionGoals();
+
+
+  renderMonthlyExpected();
+
+  renderGoalSelect();
+
+  renderGoalProgress();
 
   renderMonthlyStatus();
 
@@ -1222,10 +2195,6 @@ export async function refreshContributions() {
 
 /* =========================================================
    AUTO INITIALIZE
-   Safe when loaded by layout.js.
-   
-   layout.js may also call init(), but the initialized
-   guard prevents duplicate initialization.
 ========================================================= */
 
 if (
@@ -1244,6 +2213,7 @@ if (
   );
 
 }
+
 else {
 
   init();
