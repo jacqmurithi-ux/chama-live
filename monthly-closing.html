@@ -1,958 +1,522 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
+
+  <meta charset="utf-8">
 
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1.0"
+    content="width=device-width, initial-scale=1"
   >
 
-  <title>CHAMA LIVE — Monthly Closing</title>
+  <title>
+    Monthly Closing — CHAMA LIVE
+  </title>
 
-  <meta
-    name="description"
-    content="CHAMA LIVE monthly financial period closing"
+  <link
+    rel="stylesheet"
+    href="css/app.css"
   >
-
-  <link rel="stylesheet" href="./css/style.css">
 
   <style>
-    /* =========================================================
-       CHAMA LIVE — MONTHLY CLOSING
-    ========================================================= */
 
-    * {
-      box-sizing: border-box;
-    }
+    .closing-grid {
 
-    body {
-      margin: 0;
-      font-family:
-        Inter,
-        system-ui,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-      background: #f5f7fb;
-      color: #1f2937;
-    }
-
-    .closing-page {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 24px;
-    }
-
-    /* =========================================================
-       HEADER
-    ========================================================= */
-
-    .page-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-      margin-bottom: 24px;
-      flex-wrap: wrap;
-    }
-
-    .page-title h1 {
-      margin: 0 0 6px;
-      font-size: 28px;
-      font-weight: 800;
-    }
-
-    .page-title p {
-      margin: 0;
-      color: #6b7280;
-      font-size: 14px;
-    }
-
-    .header-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    /* =========================================================
-       BUTTONS
-    ========================================================= */
-
-    button {
-      border: 0;
-      cursor: pointer;
-      font: inherit;
-    }
-
-    .btn {
-      padding: 10px 16px;
-      border-radius: 8px;
-      font-weight: 700;
-      transition: 0.2s ease;
-    }
-
-    .btn:hover {
-      transform: translateY(-1px);
-    }
-
-    .btn-primary {
-      background: #2563eb;
-      color: white;
-    }
-
-    .btn-primary:hover {
-      background: #1d4ed8;
-    }
-
-    .btn-secondary {
-      background: #e5e7eb;
-      color: #111827;
-    }
-
-    .btn-secondary:hover {
-      background: #d1d5db;
-    }
-
-    .btn-danger {
-      background: #dc2626;
-      color: white;
-    }
-
-    .btn-danger:hover {
-      background: #b91c1c;
-    }
-
-    .btn-success {
-      background: #16a34a;
-      color: white;
-    }
-
-    .btn-success:hover {
-      background: #15803d;
-    }
-
-    button:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    /* =========================================================
-       ALERTS
-    ========================================================= */
-
-    .alert {
-      border-radius: 10px;
-      padding: 14px 16px;
-      margin-bottom: 20px;
-      font-size: 14px;
-    }
-
-    .alert-error {
-      background: #fee2e2;
-      color: #991b1b;
-      border: 1px solid #fecaca;
-    }
-
-    .alert-warning {
-      background: #fff7ed;
-      color: #9a3412;
-      border: 1px solid #fed7aa;
-    }
-
-    .alert-success {
-      background: #dcfce7;
-      color: #166534;
-      border: 1px solid #bbf7d0;
-    }
-
-    /* =========================================================
-       PERIOD SELECTOR
-    ========================================================= */
-
-    .selector-card {
-      background: white;
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
-    }
-
-    .selector-grid {
       display: grid;
+
       grid-template-columns:
-        minmax(180px, 1fr)
-        minmax(180px, 1fr)
-        auto;
-      gap: 16px;
-      align-items: end;
+        repeat(3, minmax(0, 1fr));
+
+      gap: 15px;
+
     }
 
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
-    }
-
-    .form-group label {
-      font-size: 13px;
-      font-weight: 700;
-      color: #374151;
-    }
-
-    .form-group input,
-    .form-group select {
-      width: 100%;
-      padding: 11px 12px;
-      border: 1px solid #d1d5db;
-      border-radius: 8px;
-      background: white;
-      color: #111827;
-      outline: none;
-    }
-
-    .form-group input:focus,
-    .form-group select:focus {
-      border-color: #2563eb;
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-    }
-
-    /* =========================================================
-       STATUS CARD
-    ========================================================= */
-
-    .period-status {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-      padding: 18px 20px;
-      background: white;
-      border-radius: 12px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
-      flex-wrap: wrap;
-    }
-
-    .status-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .status-label {
-      font-weight: 700;
-    }
-
-    .status-badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 6px 12px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 800;
-      text-transform: uppercase;
-    }
-
-    .status-open {
-      background: #dcfce7;
-      color: #166534;
-    }
-
-    .status-closed {
-      background: #e5e7eb;
-      color: #374151;
-    }
-
-    /* =========================================================
-       SUMMARY CARDS
-    ========================================================= */
-
-    .summary-grid {
-      display: grid;
-      grid-template-columns:
-        repeat(4, minmax(0, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .summary-card {
-      background: white;
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
-    }
-
-    .summary-card .label {
-      color: #6b7280;
-      font-size: 13px;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-
-    .summary-card .value {
-      font-size: 24px;
-      font-weight: 800;
-      color: #111827;
-    }
-
-    .summary-card .small {
-      margin-top: 5px;
-      color: #9ca3af;
-      font-size: 12px;
-    }
-
-    /* =========================================================
-       CLOSING PANEL
-    ========================================================= */
 
     .closing-card {
-      background: white;
-      border-radius: 14px;
-      padding: 24px;
-      margin-bottom: 24px;
-      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
-    }
 
-    .closing-card h2 {
-      margin: 0 0 8px;
-      font-size: 20px;
-    }
+      padding: 18px;
 
-    .closing-card > p {
-      margin: 0 0 20px;
-      color: #6b7280;
-      font-size: 14px;
-    }
+      border:
+        1px solid
+        var(--border-light);
 
-    .financial-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    .financial-table th,
-    .financial-table td {
-      padding: 13px 10px;
-      border-bottom: 1px solid #e5e7eb;
-      text-align: left;
-    }
-
-    .financial-table th {
-      font-size: 13px;
-      color: #6b7280;
-    }
-
-    .financial-table td {
-      font-size: 14px;
-    }
-
-    .financial-table .amount {
-      text-align: right;
-      font-weight: 700;
-    }
-
-    .financial-table .total-row td {
-      border-top: 2px solid #111827;
-      border-bottom: 0;
-      font-size: 17px;
-      font-weight: 800;
-      padding-top: 18px;
-    }
-
-    /* =========================================================
-       NOTES
-    ========================================================= */
-
-    .notes-section {
-      margin-top: 24px;
-    }
-
-    .notes-section label {
-      display: block;
-      margin-bottom: 8px;
-      font-size: 13px;
-      font-weight: 700;
-    }
-
-    .notes-section textarea {
-      width: 100%;
-      min-height: 110px;
-      resize: vertical;
-      border: 1px solid #d1d5db;
-      border-radius: 8px;
-      padding: 12px;
-      font: inherit;
-      outline: none;
-    }
-
-    .notes-section textarea:focus {
-      border-color: #2563eb;
-      box-shadow:
-        0 0 0 3px
-        rgba(37, 99, 235, 0.1);
-    }
-
-    /* =========================================================
-       CLOSE ACTION
-    ========================================================= */
-
-    .close-action {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      margin-top: 24px;
-      flex-wrap: wrap;
-    }
-
-    /* =========================================================
-       INFORMATION
-    ========================================================= */
-
-    .info-card {
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
       border-radius: 12px;
-      padding: 18px 20px;
-      margin-bottom: 24px;
+
+      background:
+        var(--surface-soft);
+
     }
 
-    .info-card h3 {
-      margin: 0 0 8px;
-      font-size: 15px;
-      color: #1e40af;
-    }
 
-    .info-card ul {
-      margin: 0;
-      padding-left: 20px;
-      color: #374151;
+    .closing-label {
+
+      display: block;
+
+      margin-bottom: 7px;
+
+      color:
+        var(--muted);
+
       font-size: 13px;
-      line-height: 1.7;
+
+      font-weight: 600;
+
     }
 
-    /* =========================================================
-       LOADING
-    ========================================================= */
 
-    .loading {
-      display: none;
-      align-items: center;
-      gap: 10px;
-      color: #6b7280;
-      font-size: 14px;
+    .closing-value {
+
+      font-size: 23px;
+
+      font-weight: 800;
+
+      color:
+        var(--text-dark);
+
     }
 
-    .loading.visible {
+
+    .closing-summary {
+
+      display: grid;
+
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+      gap: 15px;
+
+      margin-top: 20px;
+
+    }
+
+
+    .closing-balance {
+
+      padding: 20px;
+
+      border-radius: 12px;
+
+      border:
+        1px solid
+        var(--border-light);
+
+      background:
+        var(--surface-soft);
+
+    }
+
+
+    .closing-balance h3 {
+
+      margin-top: 0;
+
+    }
+
+
+    .closing-actions {
+
       display: flex;
-    }
 
-    .spinner {
-      width: 16px;
-      height: 16px;
-      border: 2px solid #d1d5db;
-      border-top-color: #2563eb;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
+      gap: 10px;
 
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
+      flex-wrap: wrap;
 
-    /* =========================================================
-       EMPTY / HIDDEN
-    ========================================================= */
-
-    [hidden] {
-      display: none !important;
-    }
-
-    /* =========================================================
-       RESPONSIVE
-    ========================================================= */
-
-    @media (max-width: 900px) {
-
-      .summary-grid {
-        grid-template-columns:
-          repeat(2, minmax(0, 1fr));
-      }
-
-      .selector-grid {
-        grid-template-columns:
-          1fr 1fr;
-      }
-
-      .selector-grid .selector-button {
-        grid-column: 1 / -1;
-      }
+      margin-top: 20px;
 
     }
 
-    @media (max-width: 600px) {
 
-      .closing-page {
-        padding: 15px;
-      }
+    .closing-status {
 
-      .page-title h1 {
-        font-size: 23px;
-      }
+      display: inline-block;
 
-      .summary-grid {
+      margin-top: 8px;
+
+      font-size: 12px;
+
+      font-weight: 800;
+
+      text-transform: uppercase;
+
+    }
+
+
+    @media (max-width: 700px) {
+
+      .closing-grid {
+
         grid-template-columns: 1fr;
+
       }
 
-      .selector-grid {
+
+      .closing-summary {
+
         grid-template-columns: 1fr;
-      }
 
-      .selector-grid .selector-button {
-        grid-column: auto;
-      }
-
-      .financial-table {
-        font-size: 13px;
-      }
-
-      .financial-table th,
-      .financial-table td {
-        padding: 10px 6px;
-      }
-
-      .header-actions,
-      .close-action {
-        width: 100%;
-      }
-
-      .header-actions .btn,
-      .close-action .btn {
-        flex: 1;
       }
 
     }
 
-    /* =========================================================
-       PRINT
-    ========================================================= */
-
-    @media print {
-
-      body {
-        background: white;
-      }
-
-      .closing-page {
-        max-width: none;
-        padding: 0;
-      }
-
-      .header-actions,
-      .selector-card,
-      .close-action,
-      .notes-section,
-      .info-card,
-      .period-status .btn {
-        display: none !important;
-      }
-
-      .summary-card,
-      .closing-card,
-      .period-status {
-        box-shadow: none;
-        border: 1px solid #ddd;
-      }
-
-      .summary-grid {
-        grid-template-columns:
-          repeat(4, 1fr);
-      }
-
-    }
   </style>
+
 </head>
+
 
 <body>
 
-  <!-- =======================================================
-       CHAMA LIVE — MONTHLY CLOSING
-  ======================================================== -->
 
-  <main class="closing-page">
+<header class="topbar">
 
-    <!-- =====================================================
-         HEADER
-    ====================================================== -->
+  <div class="brand">
+    CHAMA <span>LIVE</span>
+  </div>
 
-    <header class="page-header">
 
-      <div class="page-title">
+  <button
+    class="btn btn-secondary"
+    id="logout"
+    type="button"
+  >
+    Sign out
+  </button>
+
+</header>
+
+
+
+<div class="layout">
+
+
+  <!-- ==================================================
+       SIDEBAR
+  =================================================== -->
+
+  <aside class="sidebar">
+
+    <nav class="nav">
+
+      <a href="dashboard.html">
+        Dashboard
+      </a>
+
+      <a href="members.html">
+        Members
+      </a>
+
+      <a href="contributions.html">
+        Contributions
+      </a>
+
+      <a href="expenses.html">
+        Expenses
+      </a>
+
+      <a href="meetings.html">
+        Meetings
+      </a>
+
+      <a href="reports.html">
+        Reports
+      </a>
+
+      <a
+        class="active"
+        href="monthly-closing.html"
+      >
+        Monthly Closing
+      </a>
+
+      <a href="group-management.html">
+        Group Management
+      </a>
+
+    </nav>
+
+  </aside>
+
+
+
+  <!-- ==================================================
+       MAIN
+  =================================================== -->
+
+  <main class="main">
+
+
+    <div class="page-head">
+
+      <div>
 
         <h1>
           Monthly Closing
         </h1>
 
-        <p>
-          Review and close the selected financial period.
+        <p class="muted">
+          Review and close the financial records for a
+          completed month.
         </p>
-
-      </div>
-
-
-      <div class="header-actions">
-
-        <button
-          type="button"
-          class="btn btn-secondary"
-          id="refreshClosing"
-        >
-          Refresh
-        </button>
-
-        <button
-          type="button"
-          class="btn btn-secondary"
-          id="printClosing"
-        >
-          Print
-        </button>
-
-      </div>
-
-    </header>
-
-
-    <!-- =====================================================
-         ERROR
-    ====================================================== -->
-
-    <div
-      id="error"
-      class="alert alert-error"
-      hidden
-      role="alert"
-    ></div>
-
-
-    <!-- =====================================================
-         SUCCESS
-    ====================================================== -->
-
-    <div
-      id="success"
-      class="alert alert-success"
-      hidden
-      role="status"
-    ></div>
-
-
-    <!-- =====================================================
-         WARNING
-    ====================================================== -->
-
-    <div
-      id="warning"
-      class="alert alert-warning"
-      hidden
-    ></div>
-
-
-    <!-- =====================================================
-         STATUS
-    ====================================================== -->
-
-    <div class="period-status">
-
-      <div class="status-left">
-
-        <span class="status-label">
-          Period:
-        </span>
-
-        <strong id="periodMonth">
-          Loading...
-        </strong>
-
-        <span
-          id="periodStatus"
-          class="status-badge status-open"
-        >
-          OPEN
-        </span>
-
-      </div>
-
-
-      <div class="loading" id="loading">
-
-        <span class="spinner"></span>
-
-        <span>
-          Loading financial data...
-        </span>
 
       </div>
 
     </div>
 
 
-    <!-- =====================================================
-         PERIOD SELECTOR
-    ====================================================== -->
 
-    <section class="selector-card">
+    <!-- STATUS -->
 
-      <div class="selector-grid">
-
-        <div class="form-group">
-
-          <label for="month">
-            Financial Month
-          </label>
-
-          <input
-            type="month"
-            id="month"
-            name="month"
-          >
-
-        </div>
+    <div
+      id="status"
+      class="card"
+      style="margin-bottom:20px;"
+      hidden
+    ></div>
 
 
-        <div class="form-group">
 
-          <label for="closingBalancePreview">
-            Closing Balance
-          </label>
+    <!-- ERROR -->
 
-          <input
-            type="text"
-            id="closingBalancePreview"
-            value="KSh 0.00"
-            readonly
-          >
-
-        </div>
+    <div
+      id="error"
+      class="error"
+      hidden
+      style="margin-bottom:20px;"
+    ></div>
 
 
-        <div class="selector-button">
 
-          <button
-            type="button"
-            class="btn btn-primary"
-            id="loadClosing"
-          >
-            Load Period
-          </button>
+    <!-- ==================================================
+         SELECT MONTH
+    =================================================== -->
 
-        </div>
-
-      </div>
-
-    </section>
-
-
-    <!-- =====================================================
-         SUMMARY
-    ====================================================== -->
-
-    <section class="summary-grid">
-
-      <div class="summary-card">
-
-        <div class="label">
-          Opening Balance
-        </div>
-
-        <div
-          class="value"
-          id="openingBalance"
-        >
-          KSh 0.00
-        </div>
-
-        <div class="small">
-          Balance brought forward
-        </div>
-
-      </div>
-
-
-      <div class="summary-card">
-
-        <div class="label">
-          Contributions
-        </div>
-
-        <div
-          class="value"
-          id="contributions"
-        >
-          KSh 0.00
-        </div>
-
-        <div class="small">
-          All contribution types
-        </div>
-
-      </div>
-
-
-      <div class="summary-card">
-
-        <div class="label">
-          Approved Expenses
-        </div>
-
-        <div
-          class="value"
-          id="approvedExpenses"
-        >
-          KSh 0.00
-        </div>
-
-        <div class="small">
-          Deducted from balance
-        </div>
-
-      </div>
-
-
-      <div class="summary-card">
-
-        <div class="label">
-          Closing Balance
-        </div>
-
-        <div
-          class="value"
-          id="closingBalance"
-        >
-          KSh 0.00
-        </div>
-
-        <div class="small">
-          Final period balance
-        </div>
-
-      </div>
-
-    </section>
-
-
-    <!-- =====================================================
-         FINANCIAL POSITION
-    ====================================================== -->
-
-    <section class="closing-card">
+    <section class="card">
 
       <h2>
-        Financial Position
+        Select Closing Month
       </h2>
 
-      <p>
-        Review the amounts below before closing the month.
+
+      <div
+        style="
+          display:flex;
+          gap:10px;
+          flex-wrap:wrap;
+          align-items:end;
+          margin-top:15px;
+        "
+      >
+
+        <div>
+
+          <label
+            for="closingMonth"
+            class="muted"
+          >
+            Month
+          </label>
+
+          <input
+            id="closingMonth"
+            type="month"
+          >
+
+        </div>
+
+
+        <button
+          class="btn btn-primary"
+          id="calculateClosing"
+          type="button"
+        >
+          Calculate Closing
+        </button>
+
+      </div>
+
+    </section>
+
+
+
+    <br>
+
+
+
+    <!-- ==================================================
+         SUMMARY
+    =================================================== -->
+
+    <section class="card">
+
+      <h2>
+        Monthly Financial Summary
+      </h2>
+
+
+      <div class="closing-grid">
+
+
+        <div class="closing-card">
+
+          <span class="closing-label">
+            Total Expected
+          </span>
+
+          <span
+            class="closing-value"
+            id="totalExpected"
+          >
+            KSh 0
+          </span>
+
+        </div>
+
+
+
+        <div class="closing-card">
+
+          <span class="closing-label">
+            Total Collected
+          </span>
+
+          <span
+            class="closing-value"
+            id="totalCollected"
+          >
+            KSh 0
+          </span>
+
+        </div>
+
+
+
+        <div class="closing-card">
+
+          <span class="closing-label">
+            Approved Expenses
+          </span>
+
+          <span
+            class="closing-value"
+            id="totalExpenses"
+          >
+            KSh 0
+          </span>
+
+        </div>
+
+      </div>
+
+
+
+      <div class="closing-summary">
+
+
+        <div class="closing-balance">
+
+          <h3>
+            Opening Balance
+          </h3>
+
+          <div
+            class="closing-value"
+            id="openingBalance"
+          >
+            KSh 0
+          </div>
+
+          <p class="muted">
+            Previous month's closing balance,
+            or the group's opening balance for
+            the first closing.
+          </p>
+
+        </div>
+
+
+
+        <div class="closing-balance">
+
+          <h3>
+            Closing Balance
+          </h3>
+
+          <div
+            class="closing-value"
+            id="closingBalance"
+          >
+            KSh 0
+          </div>
+
+          <p class="muted">
+            Opening balance + collections −
+            approved expenses.
+          </p>
+
+        </div>
+
+      </div>
+
+
+
+      <div
+        style="
+          margin-top:20px;
+          padding:15px;
+          border:1px solid var(--border-light);
+          border-radius:10px;
+          background:var(--surface-soft);
+        "
+      >
+
+        <strong>
+          Collection Rate:
+        </strong>
+
+        <span id="collectionRate">
+          0%
+        </span>
+
+        <br>
+
+        <span
+          class="closing-status"
+          id="closingStatus"
+        >
+          NOT CALCULATED
+        </span>
+
+      </div>
+
+    </section>
+
+
+
+    <br>
+
+
+
+    <!-- ==================================================
+         CLOSE MONTH
+    =================================================== -->
+
+    <section class="card">
+
+      <h2>
+        Close Month
+      </h2>
+
+
+      <p class="muted">
+
+        Closing a month records its final financial
+        summary in CHAMA LIVE. The next month's opening
+        balance will use this month's closing balance.
+
       </p>
 
 
-      <table class="financial-table">
-
-        <thead>
-
-          <tr>
-
-            <th>
-              Description
-            </th>
-
-            <th class="amount">
-              Amount
-            </th>
-
-          </tr>
-
-        </thead>
-
-
-        <tbody>
-
-          <tr>
-
-            <td>
-              Opening Balance
-            </td>
-
-            <td
-              class="amount"
-              id="opening2"
-            >
-              KSh 0.00
-            </td>
-
-          </tr>
-
-
-          <tr>
-
-            <td>
-              Contributions Received
-            </td>
-
-            <td
-              class="amount"
-              id="contributions2"
-            >
-              KSh 0.00
-            </td>
-
-          </tr>
-
-
-          <tr>
-
-            <td>
-              Approved Expenses
-            </td>
-
-            <td
-              class="amount"
-              id="expenses2"
-            >
-              KSh 0.00
-            </td>
-
-          </tr>
-
-
-          <tr class="total-row">
-
-            <td>
-              Closing Balance
-            </td>
-
-            <td
-              class="amount"
-              id="balance2"
-            >
-              KSh 0.00
-            </td>
-
-          </tr>
-
-        </tbody>
-
-      </table>
-
-
-      <!-- ===================================================
-           NOTES
-      ==================================================== -->
-
-      <div class="notes-section">
+      <div class="form-group">
 
         <label for="closingNotes">
           Closing Notes
@@ -960,31 +524,20 @@
 
         <textarea
           id="closingNotes"
-          name="closingNotes"
-          placeholder="Enter any notes about this month's closing..."
+          rows="5"
+          placeholder="Optional notes about this month's closing..."
         ></textarea>
 
       </div>
 
 
-      <!-- ===================================================
-           ACTIONS
-      ==================================================== -->
-
-      <div class="close-action">
+      <div class="closing-actions">
 
         <button
-          type="button"
-          class="btn btn-secondary"
-          id="cancelClosing"
-        >
-          Cancel
-        </button>
-
-        <button
-          type="button"
-          class="btn btn-success"
+          class="btn btn-primary"
           id="closeMonth"
+          type="button"
+          disabled
         >
           Close Month
         </button>
@@ -994,80 +547,104 @@
     </section>
 
 
-    <!-- =====================================================
-         INFORMATION
-    ====================================================== -->
 
-    <section class="info-card">
+    <br>
 
-      <h3>
-        Before closing the month
-      </h3>
 
-      <ul>
 
-        <li>
-          Confirm all contributions for the selected month
-          have been recorded.
-        </li>
+    <!-- ==================================================
+         CLOSING HISTORY
+    =================================================== -->
 
-        <li>
-          Confirm all expenses have the correct approval
-          status.
-        </li>
+    <section class="card">
 
-        <li>
-          Only approved expenses are deducted from the
-          closing balance.
-        </li>
+      <h2>
+        Closing History
+      </h2>
 
-        <li>
-          Pending and rejected expenses do not reduce the
-          closing balance.
-        </li>
 
-        <li>
-          Once a period is closed, its stored closing balance
-          becomes the opening balance reference for the next
-          period.
-        </li>
+      <p class="muted">
+        Previously closed months and their final balances.
+      </p>
 
-        <li>
-          Review the financial position carefully before
-          confirming the closing.
-        </li>
 
-      </ul>
+      <div class="table-wrap">
+
+        <table class="table">
+
+          <thead>
+
+            <tr>
+
+              <th>
+                Month
+              </th>
+
+              <th>
+                Expected
+              </th>
+
+              <th>
+                Collected
+              </th>
+
+              <th>
+                Expenses
+              </th>
+
+              <th>
+                Closing Balance
+              </th>
+
+              <th>
+                Closed At
+              </th>
+
+            </tr>
+
+          </thead>
+
+
+          <tbody id="closingRows">
+
+            <tr>
+
+              <td colspan="6">
+                Loading...
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
 
     </section>
 
 
-    <!-- =====================================================
-         HIDDEN DATA / STATUS
-    ====================================================== -->
-
-    <div
-      id="status"
-      aria-live="polite"
-      style="
-        color:#6b7280;
-        font-size:13px;
-        margin-top:10px;
-      "
-    ></div>
-
-
   </main>
 
+</div>
 
-  <!-- =======================================================
-       MONTHLY CLOSING MODULE
-  ======================================================== -->
 
-  <script
-    type="module"
-    src="./js/monthly-closing.js"
-  ></script>
+
+<!-- =====================================================
+     PAGE BOOT
+====================================================== -->
+
+<script type="module">
+
+  import {
+    boot
+  } from "./js/layout.js";
+
+  boot();
+
+</script>
+
 
 </body>
+
 </html>
