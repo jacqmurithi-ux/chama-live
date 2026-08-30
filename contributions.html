@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
 
@@ -11,12 +10,454 @@
     content="width=device-width, initial-scale=1"
   >
 
-  <title>Contributions — CHAMA LIVE</title>
+  <title>
+    Contributions — CHAMA LIVE
+  </title>
 
   <link
     rel="stylesheet"
     href="css/app.css"
   >
+
+
+  <!-- =====================================================
+       CONTRIBUTION PAGE STYLES
+  ====================================================== -->
+
+  <style>
+
+    /* ===================================================
+       GOAL PROGRESS
+    =================================================== */
+
+    .goal-progress-container {
+
+      display:
+        grid;
+
+      gap:
+        16px;
+
+    }
+
+
+    .goal-progress-card {
+
+      background:
+        #ffffff;
+
+      border:
+        1px solid #e5e7eb;
+
+      border-radius:
+        15px;
+
+      padding:
+        18px;
+
+      box-shadow:
+        0 2px 8px rgba(15,118,110,.05);
+
+    }
+
+
+    .goal-progress-header {
+
+      display:
+        flex;
+
+      justify-content:
+        space-between;
+
+      align-items:
+        flex-start;
+
+      gap:
+        15px;
+
+      margin-bottom:
+        14px;
+
+    }
+
+
+    .goal-progress-header h3 {
+
+      margin:
+        3px 0 4px;
+
+      font-size:
+        18px;
+
+      color:
+        #101828;
+
+    }
+
+
+    .goal-category {
+
+      display:
+        inline-block;
+
+      font-size:
+        10px;
+
+      font-weight:
+        800;
+
+      text-transform:
+        uppercase;
+
+      letter-spacing:
+        .6px;
+
+      color:
+        #0f766e;
+
+      background:
+        #ecfdf5;
+
+      padding:
+        4px 8px;
+
+      border-radius:
+        999px;
+
+    }
+
+
+    .goal-progress-header p {
+
+      margin:
+        5px 0 0;
+
+      font-size:
+        12px;
+
+    }
+
+
+    .goal-percent {
+
+      font-size:
+        22px;
+
+      color:
+        #0f766e;
+
+      white-space:
+        nowrap;
+
+    }
+
+
+    .goal-progress-label-row {
+
+      display:
+        flex;
+
+      justify-content:
+        space-between;
+
+      gap:
+        10px;
+
+      font-size:
+        12px;
+
+      margin-bottom:
+        7px;
+
+    }
+
+
+    .goal-progress-label-row strong {
+
+      color:
+        #172033;
+
+    }
+
+
+    .goal-progress-track,
+    .goal-member-progress-track {
+
+      width:
+        100%;
+
+      height:
+        10px;
+
+      background:
+        #edf0f4;
+
+      border-radius:
+        999px;
+
+      overflow:
+        hidden;
+
+    }
+
+
+    .goal-progress-fill {
+
+      height:
+        100%;
+
+      width:
+        0;
+
+      background:
+        #0f766e;
+
+      border-radius:
+        inherit;
+
+      transition:
+        width .4s ease;
+
+    }
+
+
+    .goal-members-row {
+
+      display:
+        flex;
+
+      justify-content:
+        space-between;
+
+      align-items:
+        center;
+
+      gap:
+        10px;
+
+      margin-top:
+        18px;
+
+      margin-bottom:
+        7px;
+
+      font-size:
+        13px;
+
+    }
+
+
+    .goal-members-row strong {
+
+      color:
+        #101828;
+
+    }
+
+
+    .goal-member-progress-track {
+
+      height:
+        7px;
+
+    }
+
+
+    .goal-member-progress-fill {
+
+      height:
+        100%;
+
+      width:
+        0;
+
+      background:
+        #10b981;
+
+      border-radius:
+        inherit;
+
+      transition:
+        width .4s ease;
+
+    }
+
+
+    .goal-footer {
+
+      display:
+        flex;
+
+      justify-content:
+        space-between;
+
+      gap:
+        10px;
+
+      margin-top:
+        10px;
+
+      font-size:
+        11px;
+
+      color:
+        #667085;
+
+    }
+
+
+    .goal-empty {
+
+      padding:
+        18px;
+
+      border:
+        1px dashed #d0d5dd;
+
+      border-radius:
+        12px;
+
+      background:
+        #f8fafc;
+
+    }
+
+
+    .goal-empty p {
+
+      margin:
+        5px 0 0;
+
+      font-size:
+        13px;
+
+    }
+
+
+    /* ===================================================
+       CONTRIBUTION STATUS
+    =================================================== */
+
+    .contribution-status {
+
+      display:
+        inline-block;
+
+      padding:
+        4px 8px;
+
+      border-radius:
+        999px;
+
+      font-size:
+        10px;
+
+      font-weight:
+        800;
+
+      text-transform:
+        uppercase;
+
+      letter-spacing:
+        .2px;
+
+    }
+
+
+    .contribution-status-paid {
+
+      background:
+        #ecfdf3;
+
+      color:
+        #047857;
+
+    }
+
+
+    .contribution-status-partial {
+
+      background:
+        #fffaeb;
+
+      color:
+        #b45309;
+
+    }
+
+
+    .contribution-status-outstanding {
+
+      background:
+        #fee2e2;
+
+      color:
+        #b91c1c;
+
+    }
+
+
+    .contribution-status-credit {
+
+      background:
+        #eff6ff;
+
+      color:
+        #1d4ed8;
+
+    }
+
+
+    /* ===================================================
+       MOBILE
+    =================================================== */
+
+    @media (max-width: 650px) {
+
+      .goal-progress-card {
+
+        padding:
+          15px;
+
+      }
+
+
+      .goal-progress-header {
+
+        gap:
+          10px;
+
+      }
+
+
+      .goal-progress-header h3 {
+
+        font-size:
+          16px;
+
+      }
+
+
+      .goal-percent {
+
+        font-size:
+          19px;
+
+      }
+
+
+      .goal-progress-label-row,
+      .goal-members-row,
+      .goal-footer {
+
+        font-size:
+          11px;
+
+      }
+
+    }
+
+  </style>
 
 </head>
 
@@ -27,8 +468,14 @@
 <header class="topbar">
 
   <div class="brand">
-    CHAMA <span>LIVE</span>
+
+    CHAMA
+    <span>
+      LIVE
+    </span>
+
   </div>
+
 
   <button
     class="btn btn-secondary"
@@ -101,18 +548,24 @@
   <main class="main">
 
 
-    <!-- PAGE HEADER -->
+    <!-- ===================================================
+         PAGE HEADER
+    ==================================================== -->
 
     <div class="page-head">
 
       <div>
+
+        <div class="eyebrow">
+          FINANCE
+        </div>
 
         <h1>
           Contributions
         </h1>
 
         <p class="muted">
-          Record and track member contributions.
+          Record, track and manage recurring member contributions.
         </p>
 
       </div>
@@ -121,23 +574,22 @@
 
 
 
-    <!-- =====================================================
+    <!-- ===================================================
          STATUS
-    ====================================================== -->
+    ==================================================== -->
 
     <div
       id="status"
       class="card"
       style="margin-bottom:20px;"
-    >
-      Loading contributions...
-    </div>
+      hidden
+    ></div>
 
 
 
-    <!-- =====================================================
+    <!-- ===================================================
          ERROR
-    ====================================================== -->
+    ==================================================== -->
 
     <div
       id="error"
@@ -148,9 +600,61 @@
 
 
 
-    <!-- =====================================================
+    <!-- ===================================================
+         CONTRIBUTION GOALS
+    ==================================================== -->
+
+    <section class="card">
+
+      <div
+        style="
+          display:flex;
+          justify-content:space-between;
+          align-items:flex-start;
+          gap:15px;
+          margin-bottom:16px;
+        "
+      >
+
+        <div>
+
+          <h2>
+            Contribution Goals
+          </h2>
+
+          <p class="muted">
+            Track money collected and member participation towards each active goal.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div
+        id="goalProgressContainer"
+        class="goal-progress-container"
+      >
+
+        <div class="goal-empty">
+
+          Loading contribution goals...
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+
+    <br>
+
+
+
+    <!-- ===================================================
          RECORD CONTRIBUTION
-    ====================================================== -->
+    ==================================================== -->
 
     <section class="card">
 
@@ -158,10 +662,18 @@
         Record Contribution
       </h2>
 
+
+      <p class="muted">
+        Monthly contributions are recurring. Outstanding balances and extra payments are automatically calculated.
+      </p>
+
+
       <br>
 
 
-      <form id="contributionForm">
+      <form
+        id="contributionForm"
+      >
 
 
         <div class="grid grid-2">
@@ -296,12 +808,6 @@
               required
             >
 
-              <!--
-                IMPORTANT:
-                These values must match the
-                database CHECK constraint.
-              -->
-
               <option value="M-Pesa">
                 M-Pesa
               </option>
@@ -320,9 +826,40 @@
 
 
 
-          <!-- MPESA REFERENCE -->
+          <!-- GOAL -->
 
-          <div id="mpesaReferenceWrap">
+          <div>
+
+            <label
+              for="goal"
+              class="muted"
+            >
+              Contribution Goal
+            </label>
+
+            <select
+              id="goal"
+            >
+
+              <option value="">
+                General contribution
+              </option>
+
+            </select>
+
+            <small>
+              Optional — select a goal if this payment is towards a specific fundraising target.
+            </small>
+
+          </div>
+
+
+
+          <!-- MPESA -->
+
+          <div
+            id="mpesaReferenceWrap"
+          >
 
             <label
               for="mpesaReference"
@@ -367,9 +904,9 @@
 
 
 
-    <!-- =====================================================
-         MONTHLY MEMBER STATUS
-    ====================================================== -->
+    <!-- ===================================================
+         MONTHLY STATUS
+    ==================================================== -->
 
     <section class="card">
 
@@ -380,7 +917,7 @@
 
       <p class="muted">
 
-        Expected monthly contribution:
+        Recurring monthly contribution:
 
         <strong id="monthlyExpected">
           KSh 0
@@ -388,6 +925,13 @@
 
       </p>
 
+
+      <p class="muted">
+
+        Payments first clear previous outstanding balances.
+        Any amount remaining after the current month's contribution becomes carry-forward credit.
+
+      </p>
 
 
       <div class="table-wrap">
@@ -403,15 +947,23 @@
               </th>
 
               <th>
-                Expected
+                Monthly Due
               </th>
 
               <th>
-                Paid
+                Previous Outstanding
               </th>
 
               <th>
-                Outstanding
+                Applied This Month
+              </th>
+
+              <th>
+                Carry Forward
+              </th>
+
+              <th>
+                Current Outstanding
               </th>
 
               <th>
@@ -423,11 +975,13 @@
           </thead>
 
 
-          <tbody id="memberStatusRows">
+          <tbody
+            id="memberStatusRows"
+          >
 
             <tr>
 
-              <td colspan="5">
+              <td colspan="7">
                 Loading...
               </td>
 
@@ -447,15 +1001,20 @@
 
 
 
-    <!-- =====================================================
-         CONTRIBUTION LEDGER
-    ====================================================== -->
+    <!-- ===================================================
+         LEDGER
+    ==================================================== -->
 
     <section class="card">
 
       <h2>
         Contribution Ledger
       </h2>
+
+
+      <p class="muted">
+        Complete record of actual payments received.
+      </p>
 
 
       <div class="table-wrap">
@@ -487,6 +1046,10 @@
               </th>
 
               <th>
+                Goal
+              </th>
+
+              <th>
                 Reference
               </th>
 
@@ -495,11 +1058,13 @@
           </thead>
 
 
-          <tbody id="contributionRows">
+          <tbody
+            id="contributionRows"
+          >
 
             <tr>
 
-              <td colspan="6">
+              <td colspan="7">
                 Loading...
               </td>
 
@@ -538,4 +1103,5 @@
 
 </body>
 
-</html>
+            </html>
+            
