@@ -1,17 +1,28 @@
 /* =========================================================
    CHAMA LIVE — LOGIN
 
-   File:
-   /js/login.js
+   Approval-aware authentication.
 
-   Features:
-   - Supabase email/password login
-   - Session verification before redirect
-   - Forgot password link
-   - Safe URL parameter handling
-   - Clear error messages
-   - Prevents redirect loops
-   - Compatible with auth.js
+   Flow:
+   ---------------------------------------------------------
+   Supabase Auth
+        ↓
+   Find member
+        ↓
+   Check onboarding_status
+        ↓
+   pending  → account-review.html
+   rejected → review/rejection message
+   approved → dashboard.html
+
+   Group context remains:
+        auth user
+           ↓
+        members
+           ↓
+        group_id
+           ↓
+        getMyGroup()
 ========================================================= */
 
 import {
@@ -34,20 +45,24 @@ const form =
     "loginForm"
   );
 
+
 const emailInput =
   document.getElementById(
     "email"
   );
+
 
 const passwordInput =
   document.getElementById(
     "password"
   );
 
+
 const button =
   document.getElementById(
     "loginButton"
   );
+
 
 const errorBox =
   document.getElementById(
@@ -55,8 +70,26 @@ const errorBox =
   );
 
 
+const successBox =
+  document.getElementById(
+    "success"
+  );
+
+
 /* =========================================================
-   SHOW ERROR
+   PAGES
+========================================================= */
+
+const DASHBOARD =
+  `${BASE_URL}/dashboard.html`;
+
+
+const REVIEW_PAGE =
+  `${BASE_URL}/account-review.html`;
+
+
+/* =========================================================
+   ERROR
 ========================================================= */
 
 function showError(
@@ -71,27 +104,20 @@ function showError(
 
 
   console.error(
-    "CHAMA LIVE: login error:",
+    "CHAMA LIVE login:",
     cleanMessage
   );
 
 
-  if (!errorBox) {
+  if (errorBox) {
 
-    alert(
-      cleanMessage
-    );
+    errorBox.textContent =
+      cleanMessage;
 
-    return;
+    errorBox.hidden =
+      false;
 
   }
-
-
-  errorBox.textContent =
-    cleanMessage;
-
-  errorBox.hidden =
-    false;
 
 }
 
@@ -102,22 +128,57 @@ function showError(
 
 function clearError() {
 
-  if (!errorBox) {
-    return;
+  if (errorBox) {
+
+    errorBox.textContent =
+      "";
+
+    errorBox.hidden =
+      true;
+
   }
 
 
-  errorBox.textContent =
-    "";
+  if (successBox) {
 
-  errorBox.hidden =
-    true;
+    successBox.textContent =
+      "";
+
+    successBox.hidden =
+      true;
+
+  }
 
 }
 
 
 /* =========================================================
-   SET BUTTON STATE
+   SUCCESS
+========================================================= */
+
+function showSuccess(
+  message
+) {
+
+  if (!successBox) {
+    return;
+  }
+
+
+  successBox.textContent =
+    String(
+      message || ""
+    );
+
+
+  successBox.hidden =
+    !message;
+
+}
+
+
+/* =========================================================
+   LOADING
 ========================================================= */
 
 function setLoading(
@@ -142,25 +203,24 @@ function setLoading(
 
 
 /* =========================================================
-   NORMALIZE AUTH ERROR
+   LOGIN ERROR
 ========================================================= */
 
 function normalizeLoginError(
   error
 ) {
 
-  let message =
-    error?.message ||
-    String(error || "");
+  const message =
+    String(
+      error?.message ||
+      error ||
+      ""
+    );
 
 
   const lower =
     message.toLowerCase();
 
-
-  /*
-   * Invalid credentials.
-   */
 
   if (
     lower.includes(
@@ -176,10 +236,6 @@ function normalizeLoginError(
   }
 
 
-  /*
-   * Email not confirmed.
-   */
-
   if (
     lower.includes(
       "email not confirmed"
@@ -193,10 +249,6 @@ function normalizeLoginError(
 
   }
 
-
-  /*
-   * Too many attempts.
-   */
 
   if (
     lower.includes(
@@ -212,10 +264,6 @@ function normalizeLoginError(
   }
 
 
-  /*
-   * Network problem.
-   */
-
   if (
     lower.includes(
       "failed to fetch"
@@ -226,8 +274,8 @@ function normalizeLoginError(
   ) {
 
     return (
-      "Unable to connect to the server. " +
-      "Please check your internet connection and try again."
+      "Unable to connect to CHAMA LIVE. " +
+      "Please check your internet connection."
     );
 
   }
@@ -242,154 +290,644 @@ function normalizeLoginError(
 
 
 /* =========================================================
-   READ URL PARAMETERS
+   GET MEMBER FOR AUTH USER
 ========================================================= */
 
-function loadUrlParameters() {
+async function getMemberForUser(
+  userId
+) {
 
-  const params =
-    new URLSearchParams(
-      window.location.search
-    );
-
-
-  const urlEmail =
-    params.get(
-      "email"
-    );
-
-
-  /*
-   * IMPORTANT:
-   * Do NOT read password from the URL.
-   *
-   * Passwords should never be placed
-   * in a URL because they can appear in:
-   * - browser history
-   * - server logs
-   * - analytics
-   * - shared links
-   */
-
-
-  if (
-    urlEmail &&
-    emailInput
-  ) {
-
-    emailInput.value =
-      urlEmail
-        .trim()
-        .toLowerCase();
-
-  }
-
-
-  /*
-   * Remove query parameters from
-   * browser address bar.
-   */
-
-  if (
-    window.history &&
-    window.history.replaceState
-  ) {
-
-    const cleanUrl =
-      `${BASE_URL}/login.html`;
-
-    window.history.replaceState(
-      {},
-      document.title,
-      cleanUrl
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   VERIFY SESSION
-========================================================= */
-
-async function verifySession() {
-
-  const {
+  let {
     data,
     error
   } =
-    await supabase.auth.getSession();
+    await supabase
+      .from("members")
+      .select(`
+        id,
+        group_id,
+        user_id,
+        auth_user_id,
+        member_number,
+        membership_number,
+        name,
+        email,
+        role,
+        status,
+        onboarding_status,
+        join_date,
+        activated_at
+      `)
+      .eq(
+        "auth_user_id",
+        userId
+      )
+      .limit(1);
 
 
-  if (error) {
+  /*
+   * Compatibility fallback for
+   * older records.
+   */
 
-    console.error(
-      "CHAMA LIVE: session check failed",
-      error
-    );
+  if (
+    (!data || data.length === 0) &&
+    !error
+  ) {
 
-    return null;
+    const fallback =
+      await supabase
+        .from("members")
+        .select(`
+          id,
+          group_id,
+          user_id,
+          auth_user_id,
+          member_number,
+          membership_number,
+          name,
+          email,
+          role,
+          status,
+          onboarding_status,
+          join_date,
+          activated_at
+        `)
+        .eq(
+          "user_id",
+          userId
+        )
+        .limit(1);
+
+
+    if (fallback.error) {
+      throw fallback.error;
+    }
+
+
+    data =
+      fallback.data;
 
   }
 
 
-  return (
-    data?.session ||
-    null
-  );
+  if (error) {
+    throw error;
+  }
+
+
+  if (
+    !data ||
+    data.length === 0
+  ) {
+
+    throw new Error(
+      "No member record is linked to this account."
+    );
+
+  }
+
+
+  return data[0];
 
 }
 
 
 /* =========================================================
-   REDIRECT TO DASHBOARD
+   CHECK APPROVAL
 ========================================================= */
 
-function redirectToDashboard() {
+async function checkAccountStatus(
+  user
+) {
+
+  const member =
+    await getMemberForUser(
+      user.id
+    );
+
+
+  if (!member?.group_id) {
+
+    throw new Error(
+      "Your member record is not linked to a group."
+    );
+
+  }
+
+
+  const onboardingStatus =
+    String(
+      member.onboarding_status ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  const memberStatus =
+    String(
+      member.status ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
 
   console.log(
-    "CHAMA LIVE: redirecting to dashboard"
+    "CHAMA LIVE: account status",
+    {
+      memberId:
+        member.id,
+
+      groupId:
+        member.group_id,
+
+      onboardingStatus,
+
+      memberStatus
+    }
   );
 
 
+  /* =====================================================
+     REJECTED
+  ===================================================== */
+
+  if (
+    onboardingStatus ===
+      "rejected" ||
+    memberStatus ===
+      "rejected"
+  ) {
+
+    return {
+
+      allowed:
+        false,
+
+      reason:
+        "rejected",
+
+      member
+
+    };
+
+  }
+
+
+  /* =====================================================
+     PENDING
+  ===================================================== */
+
+  if (
+    onboardingStatus ===
+      "pending" ||
+    onboardingStatus ===
+      "submitted" ||
+    memberStatus ===
+      "pending"
+  ) {
+
+    return {
+
+      allowed:
+        false,
+
+      reason:
+        "pending",
+
+      member
+
+    };
+
+  }
+
+
+  /* =====================================================
+     APPROVED / ACTIVE
+  ===================================================== */
+
+  if (
+    onboardingStatus ===
+      "approved" ||
+    onboardingStatus ===
+      "active"
+  ) {
+
+    return {
+
+      allowed:
+        memberStatus !==
+          "suspended" &&
+        memberStatus !==
+          "inactive",
+
+      reason:
+        "approved",
+
+      member
+
+    };
+
+  }
+
+
+  /*
+   * Legacy active records.
+   */
+
+  if (
+    memberStatus ===
+    "active"
+  ) {
+
+    return {
+
+      allowed:
+        true,
+
+      reason:
+        "approved",
+
+      member
+
+    };
+
+  }
+
+
+  /*
+   * Unknown status:
+   * fail closed.
+   */
+
+  return {
+
+    allowed:
+      false,
+
+    reason:
+      "pending",
+
+    member
+
+  };
+
+}
+
+
+/* =========================================================
+   REDIRECT
+========================================================= */
+
+function redirect(
+  url
+) {
+
   window.location.replace(
-    `${BASE_URL}/dashboard.html`
+    url
   );
 
 }
 
 
 /* =========================================================
-   CHECK EXISTING SESSION
+   LOGIN
+========================================================= */
+
+async function performLogin() {
+
+  clearError();
+
+
+  const email =
+    emailInput?.value
+      .trim()
+      .toLowerCase() ||
+    "";
+
+
+  const password =
+    passwordInput?.value ||
+    "";
+
+
+  if (!email) {
+
+    showError(
+      "Please enter your email address."
+    );
+
+    emailInput?.focus();
+
+    return;
+
+  }
+
+
+  if (
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+      email
+    )
+  ) {
+
+    showError(
+      "Please enter a valid email address."
+    );
+
+    emailInput?.focus();
+
+    return;
+
+  }
+
+
+  if (!password) {
+
+    showError(
+      "Please enter your password."
+    );
+
+    passwordInput?.focus();
+
+    return;
+
+  }
+
+
+  setLoading(
+    true
+  );
+
+
+  try {
+
+    /* ===================================================
+       SUPABASE LOGIN
+    ================================================== */
+
+    showSuccess(
+      "Authenticating..."
+    );
+
+
+    const {
+      data,
+      error
+    } =
+      await supabase.auth.signInWithPassword({
+
+        email,
+
+        password
+
+      });
+
+
+    if (error) {
+      throw error;
+    }
+
+
+    if (
+      !data?.user ||
+      !data?.session
+    ) {
+
+      throw new Error(
+        "Login was not completed."
+      );
+
+    }
+
+
+    /* ===================================================
+       CHECK MEMBER / APPROVAL
+    ================================================== */
+
+    showSuccess(
+      "Checking your group account..."
+    );
+
+
+    const account =
+      await checkAccountStatus(
+        data.user
+      );
+
+
+    /* ===================================================
+       PENDING
+    ================================================== */
+
+    if (
+      account.reason ===
+      "pending"
+    ) {
+
+      await supabase.auth.signOut();
+
+
+      localStorage.setItem(
+        "chama_live_review_application",
+        JSON.stringify({
+
+          member_number:
+            account.member
+              ?.member_number ||
+            account.member
+              ?.membership_number ||
+            null,
+
+          email:
+            email
+
+        })
+      );
+
+
+      redirect(
+        REVIEW_PAGE
+      );
+
+
+      return;
+
+    }
+
+
+    /* ===================================================
+       REJECTED
+    ================================================== */
+
+    if (
+      account.reason ===
+      "rejected"
+    ) {
+
+      await supabase.auth.signOut();
+
+
+      throw new Error(
+        "Your CHAMA LIVE account application was not approved. Please contact the CHAMA LIVE administrator for assistance."
+      );
+
+    }
+
+
+    /* ===================================================
+       APPROVED
+    ================================================== */
+
+    if (!account.allowed) {
+
+      await supabase.auth.signOut();
+
+
+      throw new Error(
+        "Your account is not currently active. Please contact your group administrator."
+      );
+
+    }
+
+
+    /* ===================================================
+       CLEAR PASSWORD
+    ================================================== */
+
+    if (passwordInput) {
+
+      passwordInput.value =
+        "";
+
+    }
+
+
+    showSuccess(
+      "Account approved. Opening Dashboard..."
+    );
+
+
+    /*
+     * Important:
+     *
+     * Dashboard will independently call:
+     *
+     * requireAuth()
+     * getMyMember()
+     * getMyGroup()
+     *
+     * Therefore group context is NOT passed
+     * through the URL.
+     */
+
+    redirect(
+      DASHBOARD
+    );
+
+  }
+
+  catch (error) {
+
+    console.error(
+      "CHAMA LIVE: login failed",
+      error
+    );
+
+
+    showError(
+      normalizeLoginError(
+        error
+      )
+    );
+
+
+    setLoading(
+      false
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   EXISTING SESSION
 ========================================================= */
 
 async function checkExistingSession() {
 
   try {
 
-    const session =
-      await verifySession();
+    const {
+      data,
+      error
+    } =
+      await supabase.auth.getSession();
 
 
-    if (!session) {
+    if (error) {
       return;
     }
 
 
-    console.log(
-      "CHAMA LIVE: existing session found",
-      session.user?.id
-    );
+    const session =
+      data?.session;
+
+
+    if (!session?.user) {
+      return;
+    }
 
 
     /*
-     * User is already authenticated.
+     * Do NOT automatically trust an existing
+     * authenticated session.
      *
-     * Do not force them to log in again.
+     * Check the member approval status.
      */
 
-    redirectToDashboard();
+    const account =
+      await checkAccountStatus(
+        session.user
+      );
+
+
+    if (
+      account.allowed
+    ) {
+
+      redirect(
+        DASHBOARD
+      );
+
+
+      return;
+
+    }
+
+
+    if (
+      account.reason ===
+      "pending"
+    ) {
+
+      redirect(
+        REVIEW_PAGE
+      );
+
+
+      return;
+
+    }
+
+
+    /*
+     * Unknown/rejected account.
+     */
+
+    await supabase.auth.signOut();
 
   }
 
@@ -406,263 +944,10 @@ async function checkExistingSession() {
 
 
 /* =========================================================
-   LOGIN
+   FORM
 ========================================================= */
 
-async function performLogin() {
-
-  clearError();
-
-
-  if (!emailInput) {
-
-    showError(
-      "The email field could not be found."
-    );
-
-    return;
-
-  }
-
-
-  if (!passwordInput) {
-
-    showError(
-      "The password field could not be found."
-    );
-
-    return;
-
-  }
-
-
-  const email =
-    emailInput.value
-      .trim()
-      .toLowerCase();
-
-
-  const password =
-    passwordInput.value;
-
-
-  /* =======================================================
-     VALIDATION
-  ======================================================= */
-
-  if (!email) {
-
-    showError(
-      "Please enter your email address."
-    );
-
-    emailInput.focus();
-
-    return;
-
-  }
-
-
-  const emailPattern =
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-
-  if (
-    !emailPattern.test(
-      email
-    )
-  ) {
-
-    showError(
-      "Please enter a valid email address."
-    );
-
-    emailInput.focus();
-
-    return;
-
-  }
-
-
-  if (!password) {
-
-    showError(
-      "Please enter your password."
-    );
-
-    passwordInput.focus();
-
-    return;
-
-  }
-
-
-  /* =======================================================
-     LOADING
-  ======================================================= */
-
-  setLoading(
-    true
-  );
-
-
-  try {
-
-    console.log(
-      "CHAMA LIVE: signing in",
-      {
-        email
-      }
-    );
-
-
-    /* =====================================================
-       SUPABASE LOGIN
-    ===================================================== */
-
-    const {
-      data,
-      error
-    } =
-      await supabase.auth.signInWithPassword({
-
-        email,
-
-        password
-
-      });
-
-
-    if (error) {
-
-      throw error;
-
-    }
-
-
-    /*
-     * Supabase must return both
-     * user and session.
-     */
-
-    if (
-      !data?.user ||
-      !data?.session
-    ) {
-
-      throw new Error(
-        "Login was not completed. No active session was created."
-      );
-
-    }
-
-
-    console.log(
-      "CHAMA LIVE: password accepted"
-    );
-
-
-    console.log(
-      "CHAMA LIVE: authenticated user",
-      data.user.id
-    );
-
-
-    /* =====================================================
-       VERIFY SESSION
-    ===================================================== */
-
-    const session =
-      await verifySession();
-
-
-    if (!session) {
-
-      throw new Error(
-        "Login succeeded, but the session could not be stored. Please try again."
-      );
-
-    }
-
-
-    if (
-      session.user?.id !==
-      data.user.id
-    ) {
-
-      throw new Error(
-        "The authenticated session could not be verified."
-      );
-
-    }
-
-
-    console.log(
-      "CHAMA LIVE: session verified successfully"
-    );
-
-
-    /* =====================================================
-       CLEAR PASSWORD
-    ===================================================== */
-
-    if (passwordInput) {
-
-      passwordInput.value =
-        "";
-
-    }
-
-
-    /* =====================================================
-       REDIRECT
-    ===================================================== */
-
-    redirectToDashboard();
-
-  }
-
-  catch (error) {
-
-    console.error(
-      "CHAMA LIVE: sign in failed",
-      error
-    );
-
-
-    const message =
-      normalizeLoginError(
-        error
-      );
-
-
-    showError(
-      message
-    );
-
-
-    setLoading(
-      false
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   FORM SUBMIT
-========================================================= */
-
-if (!form) {
-
-  console.error(
-    "CHAMA LIVE: #loginForm was not found."
-  );
-
-}
-
-else {
+if (form) {
 
   form.addEventListener(
     "submit",
@@ -679,50 +964,11 @@ else {
 
 
 /* =========================================================
-   PASSWORD ENTER KEY
-========================================================= */
-
-if (passwordInput) {
-
-  passwordInput.addEventListener(
-    "keydown",
-    event => {
-
-      if (
-        event.key ===
-        "Enter"
-      ) {
-
-        event.preventDefault();
-
-        if (
-          form
-        ) {
-
-          form.requestSubmit();
-
-        }
-
-      }
-
-    }
-  );
-
-}
-
-
-/* =========================================================
    INITIALIZE
 ========================================================= */
 
-loadUrlParameters();
-
 checkExistingSession();
 
-
-/* =========================================================
-   READY
-========================================================= */
 
 console.log(
   "CHAMA LIVE: login.js ready"
