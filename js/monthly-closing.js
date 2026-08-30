@@ -1,18 +1,23 @@
 /* =========================================================
    CHAMA LIVE — MONTHLY CLOSING
    ---------------------------------------------------------
-   Uses the SAME contribution allocation logic as reports.js.
+   COMPLETE STABLE VERSION
 
-   RULES:
-   1. Previous outstanding is cleared first.
-   2. Carry-forward credit is applied before new money.
-   3. Current month's recurring due is then covered.
-   4. Anything remaining becomes carry-forward.
-   5. Only monthly contributions affect recurring progress.
-   6. All actual contributions affect cash balance.
-   7. Only approved expenses affect closing balance.
-   8. Pending/rejected expenses do not affect closing balance.
-   9. Closed periods use their stored closing balance.
+   RULES
+   ---------------------------------------------------------
+   1. Only the logged-in user's group can be closed.
+   2. A month can only be closed once.
+   3. ALL contribution types count as cash.
+   4. ONLY approved expenses reduce closing balance.
+   5. Pending/rejected expenses do not reduce balance.
+   6. Previous closed month's closing balance becomes
+      current month's opening balance.
+   7. Closing is stored in BOTH:
+        - monthly_closings
+        - financial_periods
+   8. Closed months cannot be closed again.
+   9. Future months cannot be closed.
+  10. The closing balance is permanently stored.
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -27,17 +32,178 @@ const $ = (id) =>
   document.getElementById(id);
 
 
+function setText(id, value) {
+
+  const element = $(id);
+
+  if (element) {
+    element.textContent = value;
+  }
+
+}
+
+
+function money(value) {
+
+  return new Intl.NumberFormat("en-KE", {
+    style: "currency",
+    currency: "KES",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(
+    Number(value || 0)
+  );
+
+}
+
+
+function number(value) {
+
+  const parsed =
+    Number(value);
+
+  return Number.isFinite(parsed)
+    ? parsed
+    : 0;
+
+}
+
+
+function escapeHtml(value) {
+
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
+}
+
+
+function monthKey(value) {
+
+  if (!value) {
+    return "";
+  }
+
+  const text =
+    String(value);
+
+  if (
+    /^\d{4}-\d{2}/.test(text)
+  ) {
+
+    return text.slice(0, 7);
+
+  }
+
+  const date =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+
+    return "";
+
+  }
+
+  return [
+    date.getFullYear(),
+    String(
+      date.getMonth() + 1
+    ).padStart(2, "0")
+  ].join("-");
+
+}
+
+
+function getCurrentMonth() {
+
+  const now =
+    new Date();
+
+  return [
+    now.getFullYear(),
+    String(
+      now.getMonth() + 1
+    ).padStart(2, "0")
+  ].join("-");
+
+}
+
+
+function addMonths(
+  month,
+  amount
+) {
+
+  const [
+    year,
+    monthNumber
+  ] =
+    String(month)
+      .split("-")
+      .map(Number);
+
+  const date =
+    new Date(
+      year,
+      monthNumber - 1 + amount,
+      1
+    );
+
+  return [
+    date.getFullYear(),
+    String(
+      date.getMonth() + 1
+    ).padStart(2, "0")
+  ].join("-");
+
+}
+
+
+function formatMonth(month) {
+
+  if (!month) {
+    return "Selected month";
+  }
+
+  const [
+    year,
+    monthNumber
+  ] =
+    String(month)
+      .split("-")
+      .map(Number);
+
+  return new Date(
+    year,
+    monthNumber - 1,
+    1
+  ).toLocaleDateString(
+    "en-KE",
+    {
+      month: "long",
+      year: "numeric"
+    }
+  );
+
+}
+
+
 /* =========================================================
    STATE
 ========================================================= */
 
-let groupId = null;
-
 let currentMember = null;
-
-let currentMonth = "";
-
-let currentSummary = null;
+let groupId = null;
+let currentUser = null;
+let selectedMonth = "";
+let closingData = null;
 
 
 /* =========================================================
@@ -48,9 +214,44 @@ async function init() {
 
   try {
 
+    setStatus(
+      "Loading monthly closing..."
+    );
+
+    /* -----------------------------------------------------
+       AUTH USER
+    ----------------------------------------------------- */
+
+    const {
+      data: {
+        user
+      },
+      error: userError
+    } =
+      await supabase.auth.getUser();
+
+    if (userError) {
+      throw userError;
+    }
+
+    if (!user) {
+
+      throw new Error(
+        "You must be signed in to access monthly closing."
+      );
+
+    }
+
+    currentUser =
+      user;
+
+
+    /* -----------------------------------------------------
+       MEMBER
+    ----------------------------------------------------- */
+
     currentMember =
       await getMyMember();
-
 
     if (
       !currentMember ||
@@ -63,28 +264,28 @@ async function init() {
 
     }
 
-
     groupId =
       currentMember.group_id;
 
 
-    /* -----------------------------------------
-       Default month
-    ----------------------------------------- */
+    /* -----------------------------------------------------
+       DEFAULT MONTH
+    ----------------------------------------------------- */
 
-    currentMonth =
+    selectedMonth =
       getCurrentMonth();
 
 
     const monthInput =
-      $("month");
-
+      $("closingMonth");
 
     if (monthInput) {
 
       monthInput.value =
-        currentMonth;
+        selectedMonth;
 
+      monthInput.max =
+        selectedMonth;
 
       monthInput.addEventListener(
         "change",
@@ -94,12 +295,10 @@ async function init() {
             return;
           }
 
-
-          currentMonth =
+          selectedMonth =
             monthInput.value;
 
-
-          await loadMonthlyClosing();
+          await loadClosing();
 
         }
       );
@@ -107,9 +306,16 @@ async function init() {
     }
 
 
-    /* -----------------------------------------
-       Buttons
-    ----------------------------------------- */
+    /* -----------------------------------------------------
+       BUTTONS
+    ----------------------------------------------------- */
+
+    $("calculateClosing")
+      ?.addEventListener(
+        "click",
+        loadClosing
+      );
+
 
     $("closeMonth")
       ?.addEventListener(
@@ -118,25 +324,25 @@ async function init() {
       );
 
 
-    $("reopenMonth")
+    $("refreshClosing")
       ?.addEventListener(
         "click",
-        reopenMonth
+        loadClosing
       );
 
 
-    $("printReport")
+    $("printClosing")
       ?.addEventListener(
         "click",
-        printMonthlyReport
+        printClosing
       );
 
 
-    /* -----------------------------------------
-       Initial load
-    ----------------------------------------- */
+    /* -----------------------------------------------------
+       LOAD
+    ----------------------------------------------------- */
 
-    await loadMonthlyClosing();
+    await loadClosing();
 
 
   } catch (error) {
@@ -149,22 +355,43 @@ async function init() {
 
 
 /* =========================================================
-   LOAD MONTHLY CLOSING
+   LOAD CLOSING
 ========================================================= */
 
-async function loadMonthlyClosing() {
+async function loadClosing() {
 
   clearError();
 
+  if (!selectedMonth) {
+    return;
+  }
+
 
   setStatus(
-    `Loading ${formatMonth(
-      currentMonth
-    )}...`
+    `Calculating ${formatMonth(selectedMonth)}...`
   );
 
 
   try {
+
+    /* =====================================================
+       PREVENT FUTURE CLOSING
+    ===================================================== */
+
+    const currentMonth =
+      getCurrentMonth();
+
+    if (
+      selectedMonth >
+      currentMonth
+    ) {
+
+      throw new Error(
+        "A future month cannot be closed."
+      );
+
+    }
+
 
     /* =====================================================
        GROUP
@@ -188,7 +415,6 @@ async function loadMonthlyClosing() {
         )
         .single();
 
-
     if (groupError) {
       throw groupError;
     }
@@ -198,7 +424,7 @@ async function loadMonthlyClosing() {
        FINANCIAL PERIOD
     ===================================================== */
 
-    let {
+    const {
       data: period,
       error: periodError
     } =
@@ -221,10 +447,9 @@ async function loadMonthlyClosing() {
         )
         .eq(
           "month",
-          currentMonth
+          selectedMonth
         )
         .maybeSingle();
-
 
     if (periodError) {
       throw periodError;
@@ -232,47 +457,129 @@ async function loadMonthlyClosing() {
 
 
     /* =====================================================
-       CREATE PERIOD IF MISSING
+       MONTHLY CLOSING RECORD
     ===================================================== */
 
-    if (!period) {
+    const closingStart =
+      `${selectedMonth}-01`;
 
-      const opening =
-        await calculateOpeningBalance();
+    const nextMonth =
+      addMonths(
+        selectedMonth,
+        1
+      );
 
-
-      const {
-        data: createdPeriod,
-        error: createError
-      } =
-        await supabase
-          .from("financial_periods")
-          .insert({
-            group_id:
-              groupId,
-
-            month:
-              currentMonth,
-
-            opening_balance:
-              opening,
-
-            status:
-              "open"
-          })
-          .select()
-          .single();
+    const closingEnd =
+      `${nextMonth}-01`;
 
 
-      if (createError) {
-        throw createError;
-      }
+    const {
+      data: existingClosing,
+      error: closingError
+    } =
+      await supabase
+        .from("monthly_closings")
+        .select(`
+          id,
+          group_id,
+          closing_month,
+          closed_by,
+          closed_at,
+          total_expected,
+          total_collected,
+          total_expenses,
+          closing_balance,
+          notes,
+          created_at
+        `)
+        .eq(
+          "group_id",
+          groupId
+        )
+        .eq(
+          "closing_month",
+          closingStart
+        )
+        .maybeSingle();
 
-
-      period =
-        createdPeriod;
-
+    if (closingError) {
+      throw closingError;
     }
+
+
+    /* =====================================================
+       CONTRIBUTIONS
+       -----------------------------------------------------
+       ALL contribution types count as cash.
+    ===================================================== */
+
+    const {
+      data: contributions,
+      error: contributionsError
+    } =
+      await supabase
+        .from("contributions")
+        .select(`
+          id,
+          member_id,
+          amount,
+          contribution_type,
+          month,
+          contribution_date,
+          created_at
+        `)
+        .eq(
+          "group_id",
+          groupId
+        )
+        .lt(
+          "contribution_date",
+          closingEnd
+        );
+
+    if (contributionsError) {
+      throw contributionsError;
+    }
+
+
+    /* =====================================================
+       CURRENT MONTH CONTRIBUTIONS
+    ===================================================== */
+
+    const currentContributions =
+      (contributions || [])
+        .filter(
+          contribution => {
+
+            const contributionMonth =
+              monthKey(
+                contribution.month ||
+                contribution.contribution_date ||
+                contribution.created_at
+              );
+
+            return (
+              contributionMonth ===
+              selectedMonth
+            );
+
+          }
+        );
+
+
+    const totalCollected =
+      currentContributions
+        .reduce(
+          (
+            total,
+            contribution
+          ) =>
+            total +
+            number(
+              contribution.amount
+            ),
+          0
+        );
 
 
     /* =====================================================
@@ -288,169 +595,18 @@ async function loadMonthlyClosing() {
         .select(`
           id,
           group_id,
-          member_number,
-          membership_number,
           name,
-          phone,
-          email,
-          role,
-          join_date,
-          status
+          status,
+          join_date
         `)
         .eq(
           "group_id",
           groupId
-        )
-        .order(
-          "name",
-          {
-            ascending:
-              true
-          }
         );
-
 
     if (membersError) {
       throw membersError;
     }
-
-
-    /* =====================================================
-       CONTRIBUTIONS
-       -----------------------------------------------------
-       We need history up to selected month.
-
-       This is necessary for:
-       - previous outstanding
-       - carry-forward
-       - current-month application
-    ===================================================== */
-
-    const end =
-      `${addMonths(
-        currentMonth,
-        1
-      )}-01`;
-
-
-    const {
-      data: contributions,
-      error: contributionsError
-    } =
-      await supabase
-        .from("contributions")
-        .select(`
-          id,
-          group_id,
-          member_id,
-          amount,
-          contribution_type,
-          month,
-          payment_method,
-          reference,
-          recorded_by,
-          created_at,
-          goal_id,
-          contribution_date,
-          notes
-        `)
-        .eq(
-          "group_id",
-          groupId
-        )
-        .lt(
-          "contribution_date",
-          end
-        )
-        .order(
-          "contribution_date",
-          {
-            ascending:
-              true
-          }
-        )
-        .order(
-          "created_at",
-          {
-            ascending:
-              true
-          }
-        );
-
-
-    if (contributionsError) {
-      throw contributionsError;
-    }
-
-
-    /* =====================================================
-       EXPENSES
-    ===================================================== */
-
-    const start =
-      `${currentMonth}-01`;
-
-
-    const {
-      data: expenses,
-      error: expensesError
-    } =
-      await supabase
-        .from("expenses")
-        .select(`
-          id,
-          group_id,
-          description,
-          category,
-          amount,
-          date,
-          recorded_by,
-          receipt_url,
-          approval_status,
-          created_at
-        `)
-        .eq(
-          "group_id",
-          groupId
-        )
-        .gte(
-          "date",
-          start
-        )
-        .lt(
-          "date",
-          end
-        )
-        .order(
-          "date",
-          {
-            ascending:
-              true
-          }
-        )
-        .order(
-          "created_at",
-          {
-            ascending:
-              true
-          }
-        );
-
-
-    if (expensesError) {
-      throw expensesError;
-    }
-
-
-    /* =====================================================
-       MONTHLY CONTRIBUTION ALLOCATION
-    ===================================================== */
-
-    const monthlyContribution =
-      Number(
-        group.monthly_contribution ||
-        0
-      );
 
 
     const activeMembers =
@@ -465,158 +621,85 @@ async function loadMonthlyClosing() {
         );
 
 
-    const memberStatuses =
-      activeMembers.map(
-        member => {
+    /* =====================================================
+       EXPECTED
+    ===================================================== */
 
-          return {
-
-            member,
-
-            ...calculateMemberStatus(
-              member,
-              currentMonth,
-              group,
-              contributions || []
-            )
-
-          };
-
-        }
+    const monthlyContribution =
+      number(
+        group.monthly_contribution
       );
 
 
-    /* =====================================================
-       MONTHLY EXPECTED
-    ===================================================== */
-
-    const expected =
-      memberStatuses.reduce(
+    const totalExpected =
+      activeMembers.reduce(
         (
           total,
-          item
-        ) =>
-          total +
-          Number(
-            item.monthlyDue ||
-            0
-          ),
-        0
-      );
+          member
+        ) => {
 
-
-    /* =====================================================
-       CURRENT MONTH CASH COLLECTION
-       -----------------------------------------------------
-       ALL contribution types count as cash.
-
-       Monthly allocation is handled separately.
-    ===================================================== */
-
-    const currentMonthContributions =
-      (contributions || [])
-        .filter(
-          contribution => {
-
-            const paymentMonth =
-              monthKey(
-                contribution.month ||
-                contribution.contribution_date ||
-                contribution.created_at
-              );
-
-
-            return (
-              paymentMonth ===
-              currentMonth
+          const joinMonth =
+            monthKey(
+              member.join_date
             );
 
+          if (
+            joinMonth &&
+            joinMonth >
+            selectedMonth
+          ) {
+
+            return total;
+
           }
+
+          return (
+            total +
+            monthlyContribution
+          );
+
+        },
+        0
+      );
+
+
+    /* =====================================================
+       EXPENSES
+       -----------------------------------------------------
+       ONLY APPROVED expenses count.
+    ===================================================== */
+
+    const {
+      data: expenses,
+      error: expensesError
+    } =
+      await supabase
+        .from("expenses")
+        .select(`
+          id,
+          description,
+          category,
+          amount,
+          date,
+          approval_status
+        `)
+        .eq(
+          "group_id",
+          groupId
+        )
+        .gte(
+          "date",
+          closingStart
+        )
+        .lt(
+          "date",
+          closingEnd
         );
 
+    if (expensesError) {
+      throw expensesError;
+    }
 
-    const collected =
-      currentMonthContributions.reduce(
-        (
-          total,
-          contribution
-        ) =>
-          total +
-          Number(
-            contribution.amount ||
-            0
-          ),
-        0
-      );
-
-
-    /* =====================================================
-       ALLOCATION TOTALS
-    ===================================================== */
-
-    const previousOutstanding =
-      memberStatuses.reduce(
-        (
-          total,
-          item
-        ) =>
-          total +
-          Number(
-            item.previousOutstanding ||
-            0
-          ),
-        0
-      );
-
-
-    const appliedThisMonth =
-      memberStatuses.reduce(
-        (
-          total,
-          item
-        ) =>
-          total +
-          Number(
-            item.appliedThisMonth ||
-            0
-          ),
-        0
-      );
-
-
-    const carryForward =
-      memberStatuses.reduce(
-        (
-          total,
-          item
-        ) =>
-          total +
-          Number(
-            item.carryForward ||
-            0
-          ),
-        0
-      );
-
-
-    const outstanding =
-      memberStatuses.reduce(
-        (
-          total,
-          item
-        ) =>
-          total +
-          Number(
-            item.currentOutstanding ||
-            0
-          ),
-        0
-      );
-
-
-    /* =====================================================
-       APPROVED EXPENSES
-    ===================================================== */
 
     const approvedExpenses =
       (expenses || [])
@@ -627,24 +710,8 @@ async function loadMonthlyClosing() {
               ""
             ).toLowerCase() ===
             "approved"
-        )
-        .reduce(
-          (
-            total,
-            expense
-          ) =>
-            total +
-            Number(
-              expense.amount ||
-              0
-            ),
-          0
         );
 
-
-    /* =====================================================
-       PENDING EXPENSES
-    ===================================================== */
 
     const pendingExpenses =
       (expenses || [])
@@ -655,24 +722,8 @@ async function loadMonthlyClosing() {
               ""
             ).toLowerCase() ===
             "pending"
-        )
-        .reduce(
-          (
-            total,
-            expense
-          ) =>
-            total +
-            Number(
-              expense.amount ||
-              0
-            ),
-          0
         );
 
-
-    /* =====================================================
-       REJECTED EXPENSES
-    ===================================================== */
 
     const rejectedExpenses =
       (expenses || [])
@@ -683,16 +734,49 @@ async function loadMonthlyClosing() {
               ""
             ).toLowerCase() ===
             "rejected"
-        )
+        );
+
+
+    const totalExpenses =
+      approvedExpenses
         .reduce(
           (
             total,
             expense
           ) =>
             total +
-            Number(
-              expense.amount ||
-              0
+            number(
+              expense.amount
+            ),
+          0
+        );
+
+
+    const pendingTotal =
+      pendingExpenses
+        .reduce(
+          (
+            total,
+            expense
+          ) =>
+            total +
+            number(
+              expense.amount
+            ),
+          0
+        );
+
+
+    const rejectedTotal =
+      rejectedExpenses
+        .reduce(
+          (
+            total,
+            expense
+          ) =>
+            total +
+            number(
+              expense.amount
             ),
           0
         );
@@ -702,147 +786,210 @@ async function loadMonthlyClosing() {
        OPENING BALANCE
     ===================================================== */
 
-    const opening =
-      Number(
-        period.opening_balance ??
-        group.opening_balance ??
-        0
-      );
+    let openingBalance = 0;
+
+
+    /* -----------------------------------------------------
+       Existing financial period
+    ----------------------------------------------------- */
+
+    if (
+      period &&
+      period.opening_balance !== null &&
+      period.opening_balance !== undefined
+    ) {
+
+      openingBalance =
+        number(
+          period.opening_balance
+        );
+
+    } else {
+
+      /* ---------------------------------------------------
+         Find previous closed financial period
+      --------------------------------------------------- */
+
+      const {
+        data: previousPeriod,
+        error: previousPeriodError
+      } =
+        await supabase
+          .from("financial_periods")
+          .select(`
+            month,
+            closing_balance,
+            status
+          `)
+          .eq(
+            "group_id",
+            groupId
+          )
+          .eq(
+            "status",
+            "closed"
+          )
+          .lt(
+            "month",
+            selectedMonth
+          )
+          .order(
+            "month",
+            {
+              ascending: false
+            }
+          )
+          .limit(1)
+          .maybeSingle();
+
+      if (previousPeriodError) {
+        throw previousPeriodError;
+      }
+
+
+      if (
+        previousPeriod &&
+        previousPeriod.closing_balance !== null &&
+        previousPeriod.closing_balance !== undefined
+      ) {
+
+        openingBalance =
+          number(
+            previousPeriod.closing_balance
+          );
+
+      } else {
+
+        /* -------------------------------------------------
+           Check previous monthly closing
+        ------------------------------------------------- */
+
+        const {
+          data: previousClosing,
+          error: previousClosingError
+        } =
+          await supabase
+            .from("monthly_closings")
+            .select(`
+              closing_month,
+              closing_balance
+            `)
+            .eq(
+              "group_id",
+              groupId
+            )
+            .lt(
+              "closing_month",
+              closingStart
+            )
+            .order(
+              "closing_month",
+              {
+                ascending: false
+              }
+            )
+            .limit(1)
+            .maybeSingle();
+
+        if (previousClosingError) {
+          throw previousClosingError;
+        }
+
+
+        if (
+          previousClosing &&
+          previousClosing.closing_balance !== null &&
+          previousClosing.closing_balance !== undefined
+        ) {
+
+          openingBalance =
+            number(
+              previousClosing.closing_balance
+            );
+
+        } else {
+
+          openingBalance =
+            number(
+              group.opening_balance
+            );
+
+        }
+
+      }
+
+    }
 
 
     /* =====================================================
-       CLOSING BALANCE
-       -----------------------------------------------------
-       IMPORTANT:
-
-       Carry-forward is NOT subtracted.
-
-       It is already included in actual cash collected.
-
-       Example:
-
-       Opening       0
-       Contributions 900
-       Expenses      1050
-
-       Closing      -150
+       CALCULATED CLOSING
     ===================================================== */
 
     const calculatedClosing =
-      opening +
-      collected -
-      approvedExpenses;
+      openingBalance +
+      totalCollected -
+      totalExpenses;
 
 
-    const periodIsClosed =
+    /* =====================================================
+       STORED CLOSING
+       -----------------------------------------------------
+       If already closed, NEVER recalculate the stored
+       closing balance for display.
+    ===================================================== */
+
+    const isClosed =
       String(
-        period.status ||
+        period?.status ||
         ""
       ).toLowerCase() ===
       "closed";
 
 
-    const closing =
-      periodIsClosed &&
-      period.closing_balance !== null &&
-      period.closing_balance !== undefined
+    const hasStoredClosing =
+      existingClosing &&
+      existingClosing.closing_balance !== null &&
+      existingClosing.closing_balance !== undefined;
 
-        ? Number(
+
+    const finalClosing =
+      isClosed &&
+      period?.closing_balance !== null &&
+      period?.closing_balance !== undefined
+
+        ? number(
             period.closing_balance
           )
 
-        : calculatedClosing;
+        : hasStoredClosing
+
+          ? number(
+              existingClosing.closing_balance
+            )
+
+          : calculatedClosing;
 
 
     /* =====================================================
-       COUNTS
+       SAVE STATE
     ===================================================== */
 
-    const paidCount =
-      memberStatuses.filter(
-        item =>
-          item.status ===
-          "Paid"
-      ).length;
-
-
-    const partialCount =
-      memberStatuses.filter(
-        item =>
-          item.status ===
-          "Partial"
-      ).length;
-
-
-    const outstandingCount =
-      memberStatuses.filter(
-        item =>
-          item.status ===
-          "Outstanding"
-      ).length;
-
-
-    /* =====================================================
-       COLLECTION RATE
-       -----------------------------------------------------
-       ONLY applied current-month recurring contribution
-       counts toward progress.
-
-       Carry-forward does not inflate progress.
-
-       Maximum = 100%.
-    ===================================================== */
-
-    const collectionRate =
-      expected > 0
-
-        ? Math.min(
-            (
-              appliedThisMonth /
-              expected
-            ) *
-            100,
-            100
-          )
-
-        : 0;
-
-
-    /* =====================================================
-       SAVE SUMMARY
-    ===================================================== */
-
-    currentSummary = {
+    closingData = {
 
       group,
 
       period,
 
+      existingClosing,
+
       members:
         activeMembers,
 
-      memberStatuses,
-
       contributions:
-        currentMonthContributions,
-
-      allContributions:
-        contributions || [],
+        currentContributions,
 
       expenses:
         expenses || [],
-
-      expected,
-
-      collected,
-
-      previousOutstanding,
-
-      appliedThisMonth,
-
-      carryForward,
-
-      outstanding,
 
       approvedExpenses,
 
@@ -850,19 +997,24 @@ async function loadMonthlyClosing() {
 
       rejectedExpenses,
 
-      opening,
+      totalExpected,
 
-      closing,
+      totalCollected,
+
+      totalExpenses,
+
+      pendingTotal,
+
+      rejectedTotal,
+
+      openingBalance,
 
       calculatedClosing,
 
-      paidCount,
+      closingBalance:
+        finalClosing,
 
-      partialCount,
-
-      outstandingCount,
-
-      collectionRate
+      isClosed
 
     };
 
@@ -871,17 +1023,13 @@ async function loadMonthlyClosing() {
        RENDER
     ===================================================== */
 
-    renderSummary();
-
-    renderMemberStatus();
-
-    updateButtons();
+    renderClosing();
 
 
     setStatus(
-      `Monthly financials loaded • ${new Date().toLocaleString(
-        "en-KE"
-      )}`
+      isClosed
+        ? `${formatMonth(selectedMonth)} is CLOSED.`
+        : `${formatMonth(selectedMonth)} is ready for closing.`
     );
 
 
@@ -895,698 +1043,70 @@ async function loadMonthlyClosing() {
 
 
 /* =========================================================
-   MEMBER START MONTH
-   ---------------------------------------------------------
-   Same rule as reports.js.
-
-   1. Use join_date when available.
-   2. Otherwise use earliest contribution.
-   3. Otherwise start at selected month.
+   RENDER
 ========================================================= */
 
-function getMemberStartMonth(
-  member,
-  selectedMonth,
-  contributions
-) {
+function renderClosing() {
 
-  const joinMonth =
-    monthKey(
-      member.join_date
-    );
+  const data =
+    closingData;
 
-
-  if (
-    joinMonth &&
-    joinMonth <=
-    selectedMonth
-  ) {
-
-    return joinMonth;
-
-  }
-
-
-  const memberPayments =
-    contributions
-      .filter(
-        contribution =>
-          String(
-            contribution.member_id
-          ) ===
-          String(
-            member.id
-          )
-      )
-      .map(
-        contribution =>
-          monthKey(
-            contribution.month ||
-            contribution.contribution_date ||
-            contribution.created_at
-          )
-      )
-      .filter(Boolean)
-      .sort();
-
-
-  if (
-    memberPayments.length
-  ) {
-
-    return memberPayments[0];
-
-  }
-
-
-  return selectedMonth;
-
-}
-
-
-/* =========================================================
-   GET MONTHLY PAYMENTS
-   ---------------------------------------------------------
-   ONLY "monthly" contributions participate in recurring
-   monthly allocation.
-
-   Registration/welfare/special/etc. remain cash but do not
-   inflate recurring monthly collection progress.
-========================================================= */
-
-function getMonthlyPaymentsForMember(
-  memberId,
-  upToMonth,
-  contributions
-) {
-
-  return contributions.filter(
-    contribution => {
-
-      if (
-        String(
-          contribution.member_id
-        ) !==
-        String(
-          memberId
-        )
-      ) {
-
-        return false;
-
-      }
-
-
-      const type =
-        String(
-          contribution.contribution_type ||
-          ""
-        ).toLowerCase();
-
-
-      if (
-        type !==
-        "monthly"
-      ) {
-
-        return false;
-
-      }
-
-
-      const paymentMonth =
-        monthKey(
-          contribution.month ||
-          contribution.contribution_date ||
-          contribution.created_at
-        );
-
-
-      if (!paymentMonth) {
-
-        return false;
-
-      }
-
-
-      return (
-        paymentMonth <=
-        upToMonth
-      );
-
-    }
-  );
-
-}
-
-
-/* =========================================================
-   CALCULATE MEMBER STATUS
-   ---------------------------------------------------------
-   THIS IS THE SAME CORE MODEL USED BY REPORTS.JS.
-
-   Flow:
-
-   Previous outstanding
-           ↓
-   Carry-forward
-           ↓
-   Current payment
-           ↓
-   Previous arrears
-           ↓
-   Current month due
-           ↓
-   Carry-forward
-========================================================= */
-
-function calculateMemberStatus(
-  member,
-  selectedMonth,
-  group,
-  contributions
-) {
-
-  const monthlyDue =
-    Number(
-      group?.monthly_contribution ||
-      0
-    );
-
-
-  const startMonth =
-    getMemberStartMonth(
-      member,
-      selectedMonth,
-      contributions
-    );
-
-
-  const payments =
-    getMonthlyPaymentsForMember(
-      member.id,
-      selectedMonth,
-      contributions
-    );
-
-
-  const paymentsByMonth =
-    new Map();
-
-
-  payments.forEach(
-    contribution => {
-
-      const key =
-        monthKey(
-          contribution.month ||
-          contribution.contribution_date ||
-          contribution.created_at
-        );
-
-
-      const current =
-        Number(
-          paymentsByMonth.get(
-            key
-          ) ||
-          0
-        );
-
-
-      paymentsByMonth.set(
-        key,
-        current +
-        Number(
-          contribution.amount ||
-          0
-        )
-      );
-
-    }
-  );
-
-
-  let previousOutstanding =
-    0;
-
-
-  let carryForward =
-    0;
-
-
-  let selectedResult =
-    null;
-
-
-  const months =
-    Math.max(
-      0,
-      monthDifference(
-        startMonth,
-        selectedMonth
-      )
-    );
-
-
-  /* =======================================================
-     PROCESS EVERY MONTH FROM MEMBER START
-     TO SELECTED MONTH
-  ======================================================= */
-
-  for (
-    let index = 0;
-    index <= months;
-    index++
-  ) {
-
-    const processingMonth =
-      addMonths(
-        startMonth,
-        index
-      );
-
-
-    const payment =
-      Number(
-        paymentsByMonth.get(
-          processingMonth
-        ) ||
-        0
-      );
-
-
-    let available =
-      payment;
-
-
-    let debtBeforeMonth =
-      previousOutstanding;
-
-
-    /* -----------------------------------------
-       Use carry-forward first.
-
-       Credit should not coexist with debt.
-    ----------------------------------------- */
-
-    if (
-      carryForward > 0 &&
-      debtBeforeMonth <= 0
-    ) {
-
-      available +=
-        carryForward;
-
-
-      carryForward =
-        0;
-
-    }
-
-
-    /* -----------------------------------------
-       Clear previous arrears first.
-    ----------------------------------------- */
-
-    const clearedPrevious =
-      Math.min(
-        available,
-        debtBeforeMonth
-      );
-
-
-    available -=
-      clearedPrevious;
-
-
-    debtBeforeMonth -=
-      clearedPrevious;
-
-
-    /* -----------------------------------------
-       Apply remaining amount to current month.
-    ----------------------------------------- */
-
-    const appliedThisMonth =
-      Math.min(
-        available,
-        monthlyDue
-      );
-
-
-    available -=
-      appliedThisMonth;
-
-
-    /* -----------------------------------------
-       Current outstanding
-    ----------------------------------------- */
-
-    const currentOutstanding =
-      Math.max(
-        monthlyDue -
-        appliedThisMonth,
-        0
-      );
-
-
-    /* -----------------------------------------
-       Remaining amount becomes credit.
-    ----------------------------------------- */
-
-    carryForward =
-      Math.max(
-        available,
-        0
-      );
-
-
-    /* -----------------------------------------
-       Debt after current month.
-    ----------------------------------------- */
-
-    previousOutstanding =
-      debtBeforeMonth +
-      currentOutstanding;
-
-
-    /* -----------------------------------------
-       Capture selected month.
-    ----------------------------------------- */
-
-    if (
-      processingMonth ===
-      selectedMonth
-    ) {
-
-      selectedResult = {
-
-        monthlyDue,
-
-        payment,
-
-        previousOutstanding:
-          debtBeforeMonth,
-
-        clearedPrevious,
-
-        appliedThisMonth,
-
-        carryForward,
-
-        currentOutstanding,
-
-        status:
-          currentOutstanding <= 0
-
-            ? "Paid"
-
-            : (
-                appliedThisMonth > 0
-                  ? "Partial"
-                  : "Outstanding"
-              )
-
-      };
-
-    }
-
-  }
-
-
-  return (
-    selectedResult || {
-
-      monthlyDue,
-
-      payment:
-        0,
-
-      previousOutstanding:
-        0,
-
-      clearedPrevious:
-        0,
-
-      appliedThisMonth:
-        0,
-
-      carryForward:
-        0,
-
-      currentOutstanding:
-        monthlyDue,
-
-      status:
-        "Outstanding"
-
-    }
-  );
-
-}
-
-
-/* =========================================================
-   CALCULATE OPENING BALANCE
-========================================================= */
-
-async function calculateOpeningBalance() {
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("financial_periods")
-      .select(`
-        month,
-        closing_balance,
-        status
-      `)
-      .eq(
-        "group_id",
-        groupId
-      )
-      .eq(
-        "status",
-        "closed"
-      )
-      .lt(
-        "month",
-        currentMonth
-      )
-      .order(
-        "month",
-        {
-          ascending:
-            false
-        }
-      )
-      .limit(1);
-
-
-  if (error) {
-    throw error;
-  }
-
-
-  if (
-    data &&
-    data.length > 0 &&
-    data[0].closing_balance !== null &&
-    data[0].closing_balance !== undefined
-  ) {
-
-    return Number(
-      data[0].closing_balance
-    );
-
-  }
-
-
-  /* -----------------------------------------
-     No previous closed period.
-     Use group opening balance.
-  ----------------------------------------- */
-
-  const {
-    data: group,
-    error: groupError
-  } =
-    await supabase
-      .from("groups")
-      .select(
-        "opening_balance"
-      )
-      .eq(
-        "id",
-        groupId
-      )
-      .single();
-
-
-  if (groupError) {
-    throw groupError;
-  }
-
-
-  return Number(
-    group?.opening_balance ||
-    0
-  );
-
-}
-
-
-/* =========================================================
-   RENDER SUMMARY
-========================================================= */
-
-function renderSummary() {
-
-  const s =
-    currentSummary;
-
-
-  if (!s) {
+  if (!data) {
     return;
   }
 
 
+  /* =====================================================
+     HEADER
+  ===================================================== */
+
+  setText(
+    "groupName",
+    data.group?.name ||
+    "CHAMA LIVE"
+  );
+
+
+  setText(
+    "closingMonthLabel",
+    formatMonth(
+      selectedMonth
+    )
+  );
+
+
+  /* =====================================================
+     FINANCIAL TOTALS
+  ===================================================== */
+
   setText(
     "openingBalance",
     money(
-      s.opening
+      data.openingBalance
     )
   );
 
 
   setText(
-    "expected",
+    "totalExpected",
     money(
-      s.expected
+      data.totalExpected
     )
   );
 
 
   setText(
-    "collected",
+    "totalCollected",
     money(
-      s.collected
+      data.totalCollected
     )
   );
 
 
   setText(
-    "outstanding",
+    "totalExpenses",
     money(
-      s.outstanding
-    )
-  );
-
-
-  setText(
-    "approvedExpenses",
-    money(
-      s.approvedExpenses
-    )
-  );
-
-
-  setText(
-    "closingBalance",
-    money(
-      s.closing
-    )
-  );
-
-
-  setText(
-    "memberCount",
-    s.members.length
-  );
-
-
-  setText(
-    "membersPaid",
-    s.paidCount
-  );
-
-
-  setText(
-    "membersPartial",
-    s.partialCount
-  );
-
-
-  setText(
-    "membersOutstanding",
-    s.outstandingCount
-  );
-
-
-  setText(
-    "collectionRate",
-    `${s.collectionRate.toFixed(
-      1
-    )}%`
-  );
-
-
-  setText(
-    "periodStatus",
-    String(
-      s.period.status ||
-      "open"
-    ).toUpperCase()
-  );
-
-
-  /* -----------------------------------------
-     Financial position
-  ----------------------------------------- */
-
-  setText(
-    "opening2",
-    money(
-      s.opening
-    )
-  );
-
-
-  setText(
-    "contributions2",
-    money(
-      s.collected
-    )
-  );
-
-
-  setText(
-    "expenses2",
-    money(
-      s.approvedExpenses
-    )
-  );
-
-
-  setText(
-    "balance2",
-    money(
-      s.closing
-    )
-  );
-
-
-  /* -----------------------------------------
-     Expense summary
-  ----------------------------------------- */
-
-  setText(
-    "approved2",
-    money(
-      s.approvedExpenses
+      data.totalExpenses
     )
   );
 
@@ -1594,7 +1114,7 @@ function renderSummary() {
   setText(
     "pendingExpenses",
     money(
-      s.pendingExpenses
+      data.pendingTotal
     )
   );
 
@@ -1602,142 +1122,142 @@ function renderSummary() {
   setText(
     "rejectedExpenses",
     money(
-      s.rejectedExpenses
+      data.rejectedTotal
     )
   );
 
-}
+
+  setText(
+    "calculatedClosing",
+    money(
+      data.calculatedClosing
+    )
+  );
 
 
-/* =========================================================
-   RENDER MEMBER STATUS
-========================================================= */
-
-function renderMemberStatus() {
-
-  const tbody =
-    $("memberRows");
+  setText(
+    "closingBalance",
+    money(
+      data.closingBalance
+    )
+  );
 
 
-  if (!tbody) {
-    return;
-  }
+  /* =====================================================
+     COUNTS
+  ===================================================== */
+
+  setText(
+    "memberCount",
+    data.members.length
+  );
 
 
-  const members =
-    currentSummary?.memberStatuses ||
-    [];
+  setText(
+    "contributionCount",
+    data.contributions.length
+  );
 
 
-  if (!members.length) {
-
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="5">
-          No active members found.
-        </td>
-      </tr>
-    `;
-
-    return;
-
-  }
+  setText(
+    "expenseCount",
+    data.expenses.length
+  );
 
 
-  tbody.innerHTML =
-    members
-      .map(
-        item => {
+  /* =====================================================
+     STATUS
+  ===================================================== */
 
-          const member =
-            item.member;
-
-
-          return `
-
-            <tr>
-
-              <td>
-                <strong>
-                  ${escapeHtml(
-                    member.name
-                  )}
-                </strong>
-              </td>
-
-              <td>
-                ${money(
-                  item.monthlyDue
-                )}
-              </td>
-
-              <td>
-                <strong>
-                  ${money(
-                    item.appliedThisMonth
-                  )}
-                </strong>
-              </td>
-
-              <td>
-                ${money(
-                  item.currentOutstanding
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  item.status
-                )}
-              </td>
-
-            </tr>
-
-          `;
-
-        }
-      )
-      .join("");
-
-}
+  const status =
+    data.isClosed
+      ? "CLOSED"
+      : "OPEN";
 
 
-/* =========================================================
-   UPDATE BUTTONS
-========================================================= */
+  setText(
+    "periodStatus",
+    status
+  );
 
-function updateButtons() {
 
-  const closed =
-    String(
-      currentSummary?.period?.status ||
-      "open"
-    ).toLowerCase() ===
-    "closed";
-
+  /* =====================================================
+     CLOSE BUTTON
+  ===================================================== */
 
   const closeButton =
     $("closeMonth");
 
-
-  const reopenButton =
-    $("reopenMonth");
-
-
   if (closeButton) {
 
-    closeButton.hidden =
-      closed;
+    closeButton.disabled =
+      data.isClosed;
+
+    closeButton.textContent =
+      data.isClosed
+        ? "Month Already Closed"
+        : `Close ${formatMonth(selectedMonth)}`;
 
   }
 
 
-  if (reopenButton) {
+  /* =====================================================
+     WARNING
+  ===================================================== */
 
-    reopenButton.hidden =
-      !closed;
+  const warning =
+    $("closingWarning");
+
+  if (warning) {
+
+    if (data.isClosed) {
+
+      warning.hidden =
+        false;
+
+      warning.textContent =
+        `This period was closed on ${
+          data.period?.closed_at
+            ? new Date(
+                data.period.closed_at
+              ).toLocaleString("en-KE")
+            : "a previous date"
+        }. The stored closing balance is ${
+          money(
+            data.closingBalance
+          )
+        }.`;
+
+    } else {
+
+      warning.hidden =
+        true;
+
+      warning.textContent =
+        "";
+
+    }
 
   }
+
+
+  /* =====================================================
+     CLOSING NOTES
+  ===================================================== */
+
+  const notes =
+    $("closingNotes");
+
+  if (
+    notes &&
+    data.existingClosing?.notes
+  ) {
+
+    notes.value =
+      data.existingClosing.notes;
+
+  }
+
 
 }
 
@@ -1748,30 +1268,23 @@ function updateButtons() {
 
 async function closeMonth() {
 
-  if (!currentSummary) {
+  if (!closingData) {
 
     showError(
-      "Monthly financial data is not loaded."
+      "Please calculate the closing first."
     );
 
     return;
 
   }
-
-
-  const s =
-    currentSummary;
 
 
   if (
-    String(
-      s.period.status
-    ).toLowerCase() ===
-    "closed"
+    closingData.isClosed
   ) {
 
     showError(
-      "This month is already closed."
+      `${formatMonth(selectedMonth)} is already closed.`
     );
 
     return;
@@ -1779,54 +1292,14 @@ async function closeMonth() {
   }
 
 
-  /* -----------------------------------------
-     Confirmation
-  ----------------------------------------- */
-
   const confirmed =
     window.confirm(
-
-      `Close ${formatMonth(
-        currentMonth
-      )}?
-
-Opening balance:
-${money(
-  s.opening
-)}
-
-Contributions collected:
-${money(
-  s.collected
-)}
-
-Applied to current month:
-${money(
-  s.appliedThisMonth
-)}
-
-Carry-forward:
-${money(
-  s.carryForward
-)}
-
-Current outstanding:
-${money(
-  s.outstanding
-)}
-
-Approved expenses:
-${money(
-  s.approvedExpenses
-)}
-
-Closing balance:
-${money(
-  s.calculatedClosing
-)}
-
-This action should only be performed after reviewing the report.`
-
+      `Are you sure you want to close ${formatMonth(selectedMonth)}?\n\n` +
+      `Opening balance: ${money(closingData.openingBalance)}\n` +
+      `Contributions: ${money(closingData.totalCollected)}\n` +
+      `Approved expenses: ${money(closingData.totalExpenses)}\n` +
+      `Closing balance: ${money(closingData.calculatedClosing)}\n\n` +
+      `Once closed, this month's stored closing balance will be used for future reporting.`
     );
 
 
@@ -1835,222 +1308,327 @@ This action should only be performed after reviewing the report.`
   }
 
 
+  const closeButton =
+    $("closeMonth");
+
+  if (closeButton) {
+    closeButton.disabled =
+      true;
+
+    closeButton.textContent =
+      "Closing month...";
+  }
+
+
+  setStatus(
+    `Closing ${formatMonth(selectedMonth)}...`
+  );
+
+
   try {
 
-    setStatus(
-      "Closing financial month..."
-    );
-
-
-    /* -----------------------------------------
-       Recalculate closing balance.
-    ----------------------------------------- */
-
-    const closingBalance =
-      Number(
-        s.opening
-      ) +
-      Number(
-        s.collected
-      ) -
-      Number(
-        s.approvedExpenses
-      );
-
-
-    /* -----------------------------------------
-       Close only if still OPEN.
-
-       This prevents two simultaneous
-       close operations from both succeeding.
-    ----------------------------------------- */
+    /* =====================================================
+       REFRESH AUTH
+    ===================================================== */
 
     const {
-      data,
-      error
+      data: {
+        user
+      },
+      error: userError
+    } =
+      await supabase.auth.getUser();
+
+    if (userError) {
+      throw userError;
+    }
+
+    if (!user) {
+
+      throw new Error(
+        "Your session has expired. Please sign in again."
+      );
+
+    }
+
+
+    currentUser =
+      user;
+
+
+    /* =====================================================
+       CHECK AGAIN FOR EXISTING PERIOD
+       -----------------------------------------------------
+       Prevent race-condition duplicate closing.
+    ===================================================== */
+
+    const {
+      data: existingPeriod,
+      error: existingPeriodError
     } =
       await supabase
         .from("financial_periods")
-        .update({
-
-          status:
-            "closed",
-
-          closing_balance:
-            closingBalance,
-
-          closed_at:
-            new Date().toISOString(),
-
-          closed_by:
-            currentMember?.id ||
-            null
-
-        })
+        .select(`
+          id,
+          status,
+          closing_balance
+        `)
         .eq(
-          "id",
-          s.period.id
+          "group_id",
+          groupId
         )
         .eq(
-          "status",
-          "open"
+          "month",
+          selectedMonth
         )
-        .select()
-        .single();
+        .maybeSingle();
 
-
-    if (error) {
-      throw error;
+    if (existingPeriodError) {
+      throw existingPeriodError;
     }
 
 
-    if (!data) {
+    if (
+      existingPeriod &&
+      String(
+        existingPeriod.status
+      ).toLowerCase() ===
+      "closed"
+    ) {
 
       throw new Error(
-        "The month could not be closed. It may already have been closed."
+        "This month has already been closed."
       );
 
     }
 
 
-    currentSummary.period =
-      data;
+    /* =====================================================
+       CHECK MONTHLY CLOSING TABLE
+    ===================================================== */
+
+    const {
+      data: duplicateClosing,
+      error: duplicateClosingError
+    } =
+      await supabase
+        .from("monthly_closings")
+        .select("id")
+        .eq(
+          "group_id",
+          groupId
+        )
+        .eq(
+          "closing_month",
+          `${selectedMonth}-01`
+        )
+        .maybeSingle();
+
+    if (duplicateClosingError) {
+      throw duplicateClosingError;
+    }
 
 
-    currentSummary.closing =
-      Number(
-        data.closing_balance
+    if (duplicateClosing) {
+
+      throw new Error(
+        "A monthly closing record already exists for this month."
       );
 
+    }
 
-    updateButtons();
 
-    renderSummary();
+    /* =====================================================
+       INSERT MONTHLY CLOSING
+    ===================================================== */
 
+    const notes =
+      $("closingNotes")?.value?.trim() ||
+      `Monthly closing for ${formatMonth(selectedMonth)}.`;
+
+
+    const {
+      data: insertedClosing,
+      error: insertClosingError
+    } =
+      await supabase
+        .from("monthly_closings")
+        .insert({
+
+          group_id:
+            groupId,
+
+          closing_month:
+            `${selectedMonth}-01`,
+
+          closed_by:
+            currentUser.id,
+
+          total_expected:
+            closingData.totalExpected,
+
+          total_collected:
+            closingData.totalCollected,
+
+          total_expenses:
+            closingData.totalExpenses,
+
+          closing_balance:
+            closingData.calculatedClosing,
+
+          notes
+
+        })
+        .select(`
+          id,
+          group_id,
+          closing_month,
+          closed_by,
+          closed_at,
+          total_expected,
+          total_collected,
+          total_expenses,
+          closing_balance,
+          notes,
+          created_at
+        `)
+        .single();
+
+    if (insertClosingError) {
+      throw insertClosingError;
+    }
+
+
+    /* =====================================================
+       FINANCIAL PERIOD
+    ===================================================== */
+
+    if (existingPeriod) {
+
+      const {
+        error: updatePeriodError
+      } =
+        await supabase
+          .from("financial_periods")
+          .update({
+
+            opening_balance:
+              closingData.openingBalance,
+
+            closing_balance:
+              closingData.calculatedClosing,
+
+            status:
+              "closed",
+
+            closed_at:
+              new Date().toISOString(),
+
+            closed_by:
+              currentUser.id
+
+          })
+          .eq(
+            "id",
+            existingPeriod.id
+          );
+
+      if (updatePeriodError) {
+
+        /*
+         * The monthly_closings record has already been inserted.
+         * Do not create another one.
+         */
+
+        throw updatePeriodError;
+
+      }
+
+    } else {
+
+      const {
+        error: insertPeriodError
+      } =
+        await supabase
+          .from("financial_periods")
+          .insert({
+
+            group_id:
+              groupId,
+
+            month:
+              selectedMonth,
+
+            opening_balance:
+              closingData.openingBalance,
+
+            closing_balance:
+              closingData.calculatedClosing,
+
+            status:
+              "closed",
+
+            closed_at:
+              new Date().toISOString(),
+
+            closed_by:
+              currentUser.id
+
+          });
+
+      if (insertPeriodError) {
+
+        /*
+         * The monthly_closings record exists.
+         * Surface the exact database error rather than silently
+         * pretending the whole operation succeeded.
+         */
+
+        throw insertPeriodError;
+
+      }
+
+    }
+
+
+    /* =====================================================
+       SUCCESS
+    ===================================================== */
 
     setStatus(
-      `${formatMonth(
-        currentMonth
-      )} closed successfully.`
+      `${formatMonth(selectedMonth)} closed successfully.`
     );
+
+
+    alert(
+      `${formatMonth(selectedMonth)} has been closed successfully.\n\n` +
+      `Closing balance: ${money(closingData.calculatedClosing)}`
+    );
+
+
+    /* -----------------------------------------------------
+       Reload from database.
+    ----------------------------------------------------- */
+
+    await loadClosing();
 
 
   } catch (error) {
 
     showError(error);
 
-  }
+    const closeButton =
+      $("closeMonth");
 
-}
+    if (closeButton) {
 
+      closeButton.disabled =
+        false;
 
-/* =========================================================
-   REOPEN MONTH
-========================================================= */
-
-async function reopenMonth() {
-
-  if (!currentSummary) {
-    return;
-  }
-
-
-  const confirmed =
-    window.confirm(
-
-      `Reopen ${formatMonth(
-        currentMonth
-      )}?
-
-This should only be done by an authorized administrator.
-
-Reopening allows the financial period to be edited again.`
-
-    );
-
-
-  if (!confirmed) {
-    return;
-  }
-
-
-  try {
-
-    setStatus(
-      "Reopening financial month..."
-    );
-
-
-    const {
-      data,
-      error
-    } =
-      await supabase
-        .from("financial_periods")
-        .update({
-
-          status:
-            "open",
-
-          closing_balance:
-            null,
-
-          closed_at:
-            null,
-
-          closed_by:
-            null
-
-        })
-        .eq(
-          "id",
-          currentSummary.period.id
-        )
-        .eq(
-          "status",
-          "closed"
-        )
-        .select()
-        .single();
-
-
-    if (error) {
-      throw error;
-    }
-
-
-    if (!data) {
-
-      throw new Error(
-        "The month could not be reopened."
-      );
+      closeButton.textContent =
+        `Close ${formatMonth(selectedMonth)}`;
 
     }
-
-
-    currentSummary.period =
-      data;
-
-
-    currentSummary.closing =
-      currentSummary.calculatedClosing;
-
-
-    updateButtons();
-
-    renderSummary();
-
-
-    setStatus(
-      `${formatMonth(
-        currentMonth
-      )} reopened.`
-    );
-
-
-  } catch (error) {
-
-    showError(error);
 
   }
 
@@ -2061,308 +1639,19 @@ Reopening allows the financial period to be edited again.`
    PRINT
 ========================================================= */
 
-function printMonthlyReport() {
+function printClosing() {
+
+  if (!closingData) {
+
+    showError(
+      "No closing report is available to print."
+    );
+
+    return;
+
+  }
 
   window.print();
-
-}
-
-
-/* =========================================================
-   CURRENT MONTH
-========================================================= */
-
-function getCurrentMonth() {
-
-  const now =
-    new Date();
-
-
-  return [
-    now.getFullYear(),
-    String(
-      now.getMonth() + 1
-    ).padStart(
-      2,
-      "0"
-    )
-  ].join("-");
-
-}
-
-
-/* =========================================================
-   ADD MONTHS
-========================================================= */
-
-function addMonths(
-  month,
-  amount
-) {
-
-  const [
-    year,
-    monthNumber
-  ] =
-    String(month)
-      .split("-")
-      .map(Number);
-
-
-  const date =
-    new Date(
-      year,
-      monthNumber - 1 + amount,
-      1
-    );
-
-
-  return [
-    date.getFullYear(),
-    String(
-      date.getMonth() + 1
-    ).padStart(
-      2,
-      "0"
-    )
-  ].join("-");
-
-}
-
-
-/* =========================================================
-   MONTH DIFFERENCE
-========================================================= */
-
-function monthDifference(
-  fromMonth,
-  toMonth
-) {
-
-  const [
-    fromYear,
-    fromMonthNumber
-  ] =
-    String(
-      fromMonth
-    )
-      .split("-")
-      .map(Number);
-
-
-  const [
-    toYear,
-    toMonthNumber
-  ] =
-    String(
-      toMonth
-    )
-      .split("-")
-      .map(Number);
-
-
-  return (
-    (
-      toYear -
-      fromYear
-    ) * 12
-    +
-    (
-      toMonthNumber -
-      fromMonthNumber
-    )
-  );
-
-}
-
-
-/* =========================================================
-   MONTH KEY
-========================================================= */
-
-function monthKey(
-  value
-) {
-
-  if (!value) {
-    return "";
-  }
-
-
-  const text =
-    String(value);
-
-
-  if (
-    /^\d{4}-\d{2}/.test(
-      text
-    )
-  ) {
-
-    return text.slice(
-      0,
-      7
-    );
-
-  }
-
-
-  const date =
-    new Date(value);
-
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-
-    return "";
-
-  }
-
-
-  return [
-    date.getFullYear(),
-    String(
-      date.getMonth() + 1
-    ).padStart(
-      2,
-      "0"
-    )
-  ].join("-");
-
-}
-
-
-/* =========================================================
-   FORMAT MONTH
-========================================================= */
-
-function formatMonth(
-  month
-) {
-
-  if (!month) {
-    return "selected month";
-  }
-
-
-  const [
-    year,
-    monthNumber
-  ] =
-    String(
-      month
-    )
-      .split("-")
-      .map(Number);
-
-
-  return new Date(
-    year,
-    monthNumber - 1,
-    1
-  ).toLocaleDateString(
-    "en-KE",
-    {
-      month:
-        "long",
-
-      year:
-        "numeric"
-    }
-  );
-
-}
-
-
-/* =========================================================
-   MONEY
-========================================================= */
-
-function money(
-  value
-) {
-
-  return new Intl.NumberFormat(
-    "en-KE",
-    {
-      style:
-        "currency",
-
-      currency:
-        "KES",
-
-      minimumFractionDigits:
-        2,
-
-      maximumFractionDigits:
-        2
-    }
-  ).format(
-    Number(
-      value || 0
-    )
-  );
-
-}
-
-
-/* =========================================================
-   SET TEXT
-========================================================= */
-
-function setText(
-  id,
-  value
-) {
-
-  const element =
-    $(id);
-
-
-  if (element) {
-
-    element.textContent =
-      value;
-
-  }
-
-}
-
-
-/* =========================================================
-   ESCAPE HTML
-========================================================= */
-
-function escapeHtml(
-  value
-) {
-
-  return String(
-    value ?? ""
-  )
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
 
 }
 
@@ -2371,13 +1660,10 @@ function escapeHtml(
    STATUS
 ========================================================= */
 
-function setStatus(
-  message
-) {
+function setStatus(message) {
 
   const element =
     $("status");
-
 
   if (element) {
 
@@ -2393,9 +1679,7 @@ function setStatus(
    ERROR
 ========================================================= */
 
-function showError(
-  error
-) {
+function showError(error) {
 
   console.error(
     "CHAMA LIVE Monthly Closing:",
@@ -2407,27 +1691,26 @@ function showError(
     error?.message ||
     String(
       error ||
-      "Unable to load monthly financials."
+      "Unable to process monthly closing."
     );
 
 
-  const errorElement =
+  const element =
     $("error");
 
+  if (element) {
 
-  if (errorElement) {
-
-    errorElement.hidden =
+    element.hidden =
       false;
 
-    errorElement.textContent =
+    element.textContent =
       message;
 
   }
 
 
   setStatus(
-    "Unable to load monthly financials."
+    "Monthly closing could not be completed."
   );
 
 }
@@ -2439,16 +1722,15 @@ function showError(
 
 function clearError() {
 
-  const errorElement =
+  const element =
     $("error");
 
+  if (element) {
 
-  if (errorElement) {
-
-    errorElement.hidden =
+    element.hidden =
       true;
 
-    errorElement.textContent =
+    element.textContent =
       "";
 
   }
@@ -2457,7 +1739,7 @@ function clearError() {
 
 
 /* =========================================================
-   START APPLICATION
+   START
 ========================================================= */
 
 init();
