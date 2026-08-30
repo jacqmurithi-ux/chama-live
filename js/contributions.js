@@ -1,19 +1,29 @@
 /* =========================================================
    CHAMA LIVE — CONTRIBUTIONS
    RECURRING MONTHLY CONTRIBUTIONS
+   FINAL STABLE VERSION
 
-   FEATURES
+   IMPORTANT DATABASE RULE
    ---------------------------------------------------------
-   1. Monthly contribution is recurring.
-   2. Previous outstanding balances are cleared first.
-   3. Current month's monthly due is applied next.
-   4. Any excess becomes carry-forward credit.
-   5. Carry-forward credit is automatically used in future
-      months before requiring a new payment.
-   6. Progress counts only the amount applied to the
-      selected month's recurring contribution.
-   7. Shows monthly goal, collection rate and participation.
-   8. recorded_by stores the CURRENT MEMBER ID.
+   contributions.recorded_by -> members.id
+
+   Therefore:
+       recorded_by = currentMember.id
+
+   NOT:
+       recorded_by = currentUser.id
+
+   Monthly accounting:
+       1. Previous arrears
+       2. Current month due
+       3. Carry-forward credit
+
+   Example:
+       Monthly due = KSh 200
+       Payment = KSh 600
+
+       Applied this month = KSh 200
+       Carry forward = KSh 400
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -43,6 +53,7 @@ let members = [];
 let contributions = [];
 
 let initialized = false;
+let eventsBound = false;
 
 
 /* =========================================================
@@ -159,12 +170,15 @@ function todayString() {
 
   return [
     now.getFullYear(),
+
     String(
       now.getMonth() + 1
     ).padStart(2, "0"),
+
     String(
       now.getDate()
     ).padStart(2, "0")
+
   ].join("-");
 
 }
@@ -190,11 +204,26 @@ function escapeHtml(value) {
   return String(
     value ?? ""
   )
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
 
 }
 
@@ -217,7 +246,7 @@ function formatDate(value) {
       date.getTime()
     )
   ) {
-    return value;
+    return String(value);
   }
 
   return date.toLocaleDateString(
@@ -233,7 +262,7 @@ function formatDate(value) {
 
 
 /* =========================================================
-   MONTH NAME
+   FORMAT MONTH
 ========================================================= */
 
 function formatMonth(month) {
@@ -245,14 +274,29 @@ function formatMonth(month) {
   const parts =
     String(month).split("-");
 
-  if (parts.length !== 2) {
-    return month;
+  if (
+    parts.length !== 2
+  ) {
+    return String(month);
+  }
+
+  const year =
+    Number(parts[0]);
+
+  const monthNumber =
+    Number(parts[1]);
+
+  if (
+    !Number.isFinite(year) ||
+    !Number.isFinite(monthNumber)
+  ) {
+    return String(month);
   }
 
   const date =
     new Date(
-      Number(parts[0]),
-      Number(parts[1]) - 1,
+      year,
+      monthNumber - 1,
       1
     );
 
@@ -268,7 +312,7 @@ function formatMonth(month) {
 
 
 /* =========================================================
-   SHOW STATUS
+   STATUS MESSAGE
 ========================================================= */
 
 function showStatus(message) {
@@ -287,13 +331,13 @@ function showStatus(message) {
 
 
 /* =========================================================
-   SHOW ERROR
+   ERROR MESSAGE
 ========================================================= */
 
 function showError(error) {
 
   console.error(
-    "CHAMA LIVE Contributions:",
+    "CHAMA LIVE: Contributions error",
     error
   );
 
@@ -302,20 +346,57 @@ function showError(error) {
     String(error) ||
     "Something went wrong.";
 
-  /*
-   * Make common Supabase errors easier to understand.
-   */
+  const lower =
+    message.toLowerCase();
+
 
   if (
-    message
-      .toLowerCase()
-      .includes("recorded_by")
+    lower.includes(
+      "recorded_by"
+    ) ||
+    lower.includes(
+      "contributions_recorded_by_fkey"
+    )
   ) {
 
     message =
-      "The contribution recorder could not be linked to your member account. Please make sure your account is linked to a member.";
+      "Your account is not correctly linked to a member record. Please contact the group administrator.";
 
   }
+  else if (
+    lower.includes(
+      "row-level security"
+    ) ||
+    lower.includes(
+      "permission denied"
+    )
+  ) {
+
+    message =
+      "You do not have permission to record contributions for this group.";
+
+  }
+  else if (
+    lower.includes(
+      "payment_method"
+    )
+  ) {
+
+    message =
+      "The selected payment method is not valid.";
+
+  }
+  else if (
+    lower.includes(
+      "member_id"
+    )
+  ) {
+
+    message =
+      "The selected member could not be found in this group.";
+
+  }
+
 
   if (errorEl) {
 
@@ -380,8 +461,7 @@ function getActiveMembers() {
 
       return (
         status === "active" ||
-        status === "" ||
-        status === "approved"
+        status === ""
       );
 
     }
@@ -412,7 +492,9 @@ function getContributionMonth(
   contribution
 ) {
 
-  if (contribution?.month) {
+  if (
+    contribution?.month
+  ) {
 
     return String(
       contribution.month
@@ -420,7 +502,9 @@ function getContributionMonth(
 
   }
 
-  if (contribution?.contribution_date) {
+  if (
+    contribution?.contribution_date
+  ) {
 
     return String(
       contribution.contribution_date
@@ -434,7 +518,7 @@ function getContributionMonth(
 
 
 /* =========================================================
-   MONTHLY CONTRIBUTIONS ONLY
+   MONTHLY CONTRIBUTIONS FOR MEMBER
 ========================================================= */
 
 function getMonthlyContributionsForMember(
@@ -446,8 +530,16 @@ function getMonthlyContributionsForMember(
       contribution => {
 
         return (
-          contribution.member_id === memberId &&
-          contribution.contribution_type === "monthly"
+          String(
+            contribution.member_id
+          ) ===
+          String(memberId) &&
+
+          String(
+            contribution.contribution_type ||
+            ""
+          ).toLowerCase() ===
+          "monthly"
         );
 
       }
@@ -480,7 +572,7 @@ function getMonthlyContributionsForMember(
 
 
 /* =========================================================
-   GET MONTHS BETWEEN TWO MONTHS
+   MONTHS BETWEEN
 ========================================================= */
 
 function monthsBetween(
@@ -497,6 +589,7 @@ function monthsBetween(
     return result;
   }
 
+
   let [
     year,
     month
@@ -505,6 +598,7 @@ function monthsBetween(
       .split("-")
       .map(Number);
 
+
   const [
     endYear,
     endMonthNumber
@@ -512,6 +606,19 @@ function monthsBetween(
     String(endMonth)
       .split("-")
       .map(Number);
+
+
+  if (
+    !Number.isFinite(year) ||
+    !Number.isFinite(month) ||
+    !Number.isFinite(endYear) ||
+    !Number.isFinite(endMonthNumber)
+  ) {
+
+    return result;
+
+  }
+
 
   while (
     year < endYear ||
@@ -525,9 +632,13 @@ function monthsBetween(
       `${year}-${String(month).padStart(2, "0")}`
     );
 
+
     month++;
 
-    if (month > 12) {
+
+    if (
+      month > 12
+    ) {
 
       month = 1;
       year++;
@@ -535,6 +646,7 @@ function monthsBetween(
     }
 
   }
+
 
   return result;
 
@@ -553,28 +665,35 @@ function calculateMemberMonth(
   const monthlyDue =
     getMonthlyContribution();
 
+
   const memberContributions =
     getMonthlyContributionsForMember(
       memberId
     );
 
-  if (monthlyDue <= 0) {
+
+  if (
+    monthlyDue <= 0
+  ) {
 
     return {
+
       monthlyDue: 0,
+
       previousOutstanding: 0,
+
       appliedThisMonth: 0,
+
       carryForward: 0,
+
       currentOutstanding: 0,
+
       status: "—"
+
     };
 
   }
 
-
-  /*
-   * Find earliest month with a payment.
-   */
 
   const contributionMonths =
     memberContributions
@@ -591,7 +710,9 @@ function calculateMemberMonth(
       : targetMonth;
 
 
-  if (firstMonth > targetMonth) {
+  if (
+    firstMonth > targetMonth
+  ) {
 
     firstMonth =
       targetMonth;
@@ -623,26 +744,17 @@ function calculateMemberMonth(
       outstanding;
 
 
-    /*
-     * Carry-forward credit from previous month.
-     */
-
     let availableCredit =
       credit;
 
-
-    /*
-     * Monthly amount due.
-     */
 
     let currentDue =
       monthlyDue;
 
 
-    /*
-     * First use existing credit against
-     * previous outstanding.
-     */
+    /* -----------------------------------------------------
+       CREDIT FIRST CLEARS PREVIOUS ARREARS
+    ----------------------------------------------------- */
 
     if (
       availableCredit > 0 &&
@@ -664,10 +776,9 @@ function calculateMemberMonth(
     }
 
 
-    /*
-     * Then use remaining credit against
-     * current month's due.
-     */
+    /* -----------------------------------------------------
+       REMAINING CREDIT PAYS CURRENT MONTH
+    ----------------------------------------------------- */
 
     if (
       availableCredit > 0 &&
@@ -689,9 +800,9 @@ function calculateMemberMonth(
     }
 
 
-    /*
-     * Get actual payments made during this month.
-     */
+    /* -----------------------------------------------------
+       ACTUAL CASH PAYMENTS FOR THIS MONTH
+    ----------------------------------------------------- */
 
     const monthPayments =
       memberContributions
@@ -705,11 +816,16 @@ function calculateMemberMonth(
           (
             total,
             contribution
-          ) =>
-            total +
-            Number(
-              contribution.amount || 0
-            ),
+          ) => {
+
+            return (
+              total +
+              Number(
+                contribution.amount || 0
+              )
+            );
+
+          },
           0
         );
 
@@ -718,9 +834,9 @@ function calculateMemberMonth(
       monthPayments;
 
 
-    /*
-     * Payment first clears arrears.
-     */
+    /* -----------------------------------------------------
+       PAYMENT CLEARS PREVIOUS ARREARS
+    ----------------------------------------------------- */
 
     if (
       payment > 0 &&
@@ -742,19 +858,16 @@ function calculateMemberMonth(
     }
 
 
-    /*
-     * Payment then covers current month's due.
-     */
-
-    let applied =
-      0;
+    /* -----------------------------------------------------
+       PAYMENT COVERS CURRENT MONTH
+    ----------------------------------------------------- */
 
     if (
       payment > 0 &&
       currentDue > 0
     ) {
 
-      applied =
+      const applied =
         Math.min(
           payment,
           currentDue
@@ -769,26 +882,26 @@ function calculateMemberMonth(
     }
 
 
-    /*
-     * Remaining amount becomes carry-forward credit.
-     */
+    /* -----------------------------------------------------
+       REMAINING PAYMENT BECOMES CREDIT
+    ----------------------------------------------------- */
 
     credit =
       availableCredit +
       payment;
 
 
-    /*
-     * Remaining current month due.
-     */
+    /* -----------------------------------------------------
+       REMAINING CURRENT MONTH OUTSTANDING
+    ----------------------------------------------------- */
 
     outstanding =
       currentDue;
 
 
-    /*
-     * For target month, determine amount applied.
-     */
+    /* -----------------------------------------------------
+       TARGET MONTH PROGRESS
+    ----------------------------------------------------- */
 
     if (
       month === targetMonth
@@ -797,6 +910,7 @@ function calculateMemberMonth(
       appliedThisMonth =
         monthlyDue -
         outstanding;
+
 
       appliedThisMonth =
         Math.min(
@@ -868,11 +982,13 @@ function calculateMemberMonth(
    INITIALIZE
 ========================================================= */
 
-export async function init() {
+export async function initContributions() {
 
-  if (initialized) {
+  if (
+    initialized
+  ) {
 
-    console.warn(
+    console.log(
       "CHAMA LIVE: contributions already initialized"
     );
 
@@ -880,8 +996,10 @@ export async function init() {
 
   }
 
+
   initialized =
     true;
+
 
   try {
 
@@ -892,15 +1010,17 @@ export async function init() {
     );
 
 
-    /*
-     * Authenticate user.
-     */
+    /* -----------------------------------------------------
+       AUTHENTICATION
+    ----------------------------------------------------- */
 
     currentUser =
       await requireAuth();
 
 
-    if (!currentUser?.id) {
+    if (
+      !currentUser?.id
+    ) {
 
       throw new Error(
         "You are not signed in."
@@ -909,16 +1029,17 @@ export async function init() {
     }
 
 
-    /*
-     * Get the member linked to the
-     * authenticated account.
-     */
+    /* -----------------------------------------------------
+       CURRENT MEMBER
+    ----------------------------------------------------- */
 
     currentMember =
       await getMyMember();
 
 
-    if (!currentMember) {
+    if (
+      !currentMember
+    ) {
 
       throw new Error(
         "No member record is linked to your account."
@@ -927,19 +1048,23 @@ export async function init() {
     }
 
 
-    if (!currentMember.id) {
+    if (
+      !currentMember.id
+    ) {
 
       throw new Error(
-        "Your member record is missing its ID."
+        "Your member record does not have a valid member ID."
       );
 
     }
 
 
-    if (!currentMember.group_id) {
+    if (
+      !currentMember.group_id
+    ) {
 
       throw new Error(
-        "Your member account is not linked to a group."
+        "Your member record is not linked to a group."
       );
 
     }
@@ -949,26 +1074,28 @@ export async function init() {
       currentMember.group_id;
 
 
-    /*
-     * Load group.
-     */
+    /* -----------------------------------------------------
+       CURRENT GROUP
+    ----------------------------------------------------- */
 
     currentGroup =
       await getMyGroup();
 
 
-    if (!currentGroup) {
+    if (
+      !currentGroup
+    ) {
 
       throw new Error(
-        "Unable to load your group."
+        "Group information could not be loaded."
       );
 
     }
 
 
-    /*
-     * Set today's date.
-     */
+    /* -----------------------------------------------------
+       DATE
+    ----------------------------------------------------- */
 
     if (
       dateInput &&
@@ -981,18 +1108,18 @@ export async function init() {
     }
 
 
-    /*
-     * Load data.
-     */
+    /* -----------------------------------------------------
+       LOAD DATA
+    ----------------------------------------------------- */
 
     await loadMembers();
 
     await loadContributions();
 
 
-    /*
-     * Render page.
-     */
+    /* -----------------------------------------------------
+       RENDER
+    ----------------------------------------------------- */
 
     renderMonthlyExpected();
 
@@ -1003,9 +1130,9 @@ export async function init() {
     renderLedger();
 
 
-    /*
-     * Bind form events.
-     */
+    /* -----------------------------------------------------
+       EVENTS
+    ----------------------------------------------------- */
 
     bindEvents();
 
@@ -1014,20 +1141,10 @@ export async function init() {
 
 
     console.log(
-      "CHAMA LIVE: contributions initialized",
-      {
-        authUserId:
-          currentUser.id,
-
-        recorderMemberId:
-          currentMember.id,
-
-        groupId
-      }
+      "CHAMA LIVE: contributions initialized successfully"
     );
 
   }
-
   catch (error) {
 
     initialized =
@@ -1043,10 +1160,32 @@ export async function init() {
 
 
 /* =========================================================
+   BACKWARD COMPATIBILITY
+========================================================= */
+
+export async function init() {
+
+  return initContributions();
+
+}
+
+
+/* =========================================================
    LOAD MEMBERS
 ========================================================= */
 
 async function loadMembers() {
+
+  if (
+    !groupId
+  ) {
+
+    throw new Error(
+      "No group ID available."
+    );
+
+  }
+
 
   const {
     data,
@@ -1063,7 +1202,8 @@ async function loadMembers() {
         phone,
         email,
         role,
-        status
+        status,
+        auth_user_id
       `)
       .eq(
         "group_id",
@@ -1077,8 +1217,12 @@ async function loadMembers() {
       );
 
 
-  if (error) {
+  if (
+    error
+  ) {
+
     throw error;
+
   }
 
 
@@ -1097,8 +1241,12 @@ async function loadMembers() {
 
 function renderMemberSelect() {
 
-  if (!memberSelect) {
+  if (
+    !memberSelect
+  ) {
+
     return;
+
   }
 
 
@@ -1118,13 +1266,16 @@ function renderMemberSelect() {
           "option"
         );
 
+
       option.value =
         member.id;
+
 
       const number =
         member.member_number ||
         member.membership_number ||
         "";
+
 
       option.textContent =
         number
@@ -1147,6 +1298,17 @@ function renderMemberSelect() {
 ========================================================= */
 
 async function loadContributions() {
+
+  if (
+    !groupId
+  ) {
+
+    throw new Error(
+      "No group ID available."
+    );
+
+  }
+
 
   const {
     data,
@@ -1188,8 +1350,12 @@ async function loadContributions() {
       );
 
 
-  if (error) {
+  if (
+    error
+  ) {
+
     throw error;
+
   }
 
 
@@ -1205,9 +1371,14 @@ async function loadContributions() {
 
 function renderMonthlyExpected() {
 
-  if (!monthlyExpected) {
+  if (
+    !monthlyExpected
+  ) {
+
     return;
+
   }
+
 
   monthlyExpected.textContent =
     money(
@@ -1228,8 +1399,10 @@ function getMemberName(
   const member =
     members.find(
       item =>
-        item.id === memberId
+        String(item.id) ===
+        String(memberId)
     );
+
 
   return (
     member?.name ||
@@ -1248,11 +1421,14 @@ function renderProgress() {
   const month =
     currentMonth();
 
+
   const activeMembers =
     getActiveMembers();
 
+
   const monthlyDue =
     getMonthlyContribution();
+
 
   const goal =
     activeMembers.length *
@@ -1261,6 +1437,7 @@ function renderProgress() {
 
   let appliedTotal =
     0;
+
 
   let contributingMembers =
     0;
@@ -1294,6 +1471,7 @@ function renderProgress() {
 
   const percentage =
     goal > 0
+
       ? Math.min(
           100,
           Math.round(
@@ -1304,11 +1482,13 @@ function renderProgress() {
             100
           )
         )
+
       : 0;
 
 
   const participation =
     activeMembers.length > 0
+
       ? Math.round(
           (
             contributingMembers /
@@ -1316,10 +1496,13 @@ function renderProgress() {
           ) *
           100
         )
+
       : 0;
 
 
-  if (progressMonth) {
+  if (
+    progressMonth
+  ) {
 
     progressMonth.textContent =
       formatMonth(month);
@@ -1327,7 +1510,9 @@ function renderProgress() {
   }
 
 
-  if (progressPercent) {
+  if (
+    progressPercent
+  ) {
 
     progressPercent.textContent =
       `${percentage}%`;
@@ -1335,7 +1520,9 @@ function renderProgress() {
   }
 
 
-  if (progressAmount) {
+  if (
+    progressAmount
+  ) {
 
     progressAmount.textContent =
       money(
@@ -1345,7 +1532,9 @@ function renderProgress() {
   }
 
 
-  if (progressGoal) {
+  if (
+    progressGoal
+  ) {
 
     progressGoal.textContent =
       money(
@@ -1355,20 +1544,35 @@ function renderProgress() {
   }
 
 
-  if (progressBar) {
+  if (
+    progressBar
+  ) {
 
     progressBar.style.width =
       `${percentage}%`;
 
-    progressBar.setAttribute(
+  }
+
+
+  const progressTrack =
+    progressBar?.parentElement;
+
+
+  if (
+    progressTrack
+  ) {
+
+    progressTrack.setAttribute(
       "aria-valuenow",
-      percentage
+      String(percentage)
     );
 
   }
 
 
-  if (progressRate) {
+  if (
+    progressRate
+  ) {
 
     progressRate.textContent =
       `${percentage}%`;
@@ -1376,7 +1580,9 @@ function renderProgress() {
   }
 
 
-  if (progressMembers) {
+  if (
+    progressMembers
+  ) {
 
     progressMembers.textContent =
       `${contributingMembers} / ${activeMembers.length}`;
@@ -1384,7 +1590,9 @@ function renderProgress() {
   }
 
 
-  if (progressMemberCount) {
+  if (
+    progressMemberCount
+  ) {
 
     progressMemberCount.textContent =
       `${contributingMembers} of ${activeMembers.length} members`;
@@ -1392,7 +1600,9 @@ function renderProgress() {
   }
 
 
-  if (progressParticipation) {
+  if (
+    progressParticipation
+  ) {
 
     progressParticipation.textContent =
       `${participation}%`;
@@ -1408,8 +1618,12 @@ function renderProgress() {
 
 function renderMonthlyStatus() {
 
-  if (!memberStatusRows) {
+  if (
+    !memberStatusRows
+  ) {
+
     return;
+
   }
 
 
@@ -1417,7 +1631,9 @@ function renderMonthlyStatus() {
     currentMonth();
 
 
-  if (!members.length) {
+  if (
+    !members.length
+  ) {
 
     memberStatusRows.innerHTML =
       `
@@ -1506,12 +1722,18 @@ function renderMonthlyStatus() {
 
 function renderLedger() {
 
-  if (!contributionRows) {
+  if (
+    !contributionRows
+  ) {
+
     return;
+
   }
 
 
-  if (!contributions.length) {
+  if (
+    !contributions.length
+  ) {
 
     contributionRows.innerHTML =
       `
@@ -1610,13 +1832,17 @@ function renderLedger() {
 
 
 /* =========================================================
-   TOGGLE MPESA FIELD
+   TOGGLE M-PESA FIELD
 ========================================================= */
 
 function toggleMpesaReference() {
 
-  if (!methodSelect) {
+  if (
+    !methodSelect
+  ) {
+
     return;
+
   }
 
 
@@ -1629,12 +1855,14 @@ function toggleMpesaReference() {
 
 
   const isMpesa =
-    method === "mpesa" ||
     method === "m-pesa" ||
+    method === "mpesa" ||
     method === "m_pesa";
 
 
-  if (mpesaReferenceWrap) {
+  if (
+    mpesaReferenceWrap
+  ) {
 
     mpesaReferenceWrap.hidden =
       !isMpesa;
@@ -1642,7 +1870,9 @@ function toggleMpesaReference() {
   }
 
 
-  if (mpesaReference) {
+  if (
+    mpesaReference
+  ) {
 
     mpesaReference.required =
       isMpesa;
@@ -1658,7 +1888,24 @@ function toggleMpesaReference() {
 
 function bindEvents() {
 
-  if (form) {
+  if (
+    eventsBound
+  ) {
+
+    toggleMpesaReference();
+
+    return;
+
+  }
+
+
+  eventsBound =
+    true;
+
+
+  if (
+    form
+  ) {
 
     form.addEventListener(
       "submit",
@@ -1668,7 +1915,9 @@ function bindEvents() {
   }
 
 
-  if (methodSelect) {
+  if (
+    methodSelect
+  ) {
 
     methodSelect.addEventListener(
       "change",
@@ -1684,6 +1933,92 @@ function bindEvents() {
 
 
 /* =========================================================
+   GET CURRENT RECORDER MEMBER
+========================================================= */
+
+function getRecorderMemberId() {
+
+  /*
+   * CRITICAL:
+   *
+   * contributions.recorded_by references
+   * public.members.id.
+   *
+   * It must NEVER receive currentUser.id.
+   */
+
+  const recorderId =
+    currentMember?.id;
+
+
+  if (
+    !recorderId
+  ) {
+
+    throw new Error(
+      "Your account is not linked to a valid member record. Please contact the group administrator."
+    );
+
+  }
+
+
+  return recorderId;
+
+}
+
+
+/* =========================================================
+   VALIDATE SELECTED MEMBER
+========================================================= */
+
+function getSelectedMember(
+  memberId
+) {
+
+  const member =
+    members.find(
+      item =>
+        String(item.id) ===
+        String(memberId)
+    );
+
+
+  if (
+    !member
+  ) {
+
+    throw new Error(
+      "The selected member does not belong to this group."
+    );
+
+  }
+
+
+  const status =
+    String(
+      member.status || ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  if (
+    status === "inactive"
+  ) {
+
+    throw new Error(
+      "This member is inactive and cannot receive a contribution."
+    );
+
+  }
+
+
+  return member;
+
+}
+
+
+/* =========================================================
    SUBMIT CONTRIBUTION
 ========================================================= */
 
@@ -1694,12 +2029,23 @@ async function handleSubmit(
   event.preventDefault();
 
 
+  if (
+    saveButton?.disabled
+  ) {
+
+    return;
+
+  }
+
+
   try {
 
     clearError();
 
 
-    if (!groupId) {
+    if (
+      !groupId
+    ) {
 
       throw new Error(
         "No group is associated with this account."
@@ -1708,38 +2054,27 @@ async function handleSubmit(
     }
 
 
-    /*
-     * IMPORTANT:
-     *
-     * recorded_by MUST be the member ID,
-     * NOT the Supabase Auth user ID.
-     */
+    /* -----------------------------------------------------
+       RECORDER
+    ----------------------------------------------------- */
 
-    if (!currentMember?.id) {
+    const recorderMemberId =
+      getRecorderMemberId();
 
-      throw new Error(
-        "Your account is not linked to a valid member record. Please contact the group administrator."
-      );
 
-    }
+    /* -----------------------------------------------------
+       MEMBER
+    ----------------------------------------------------- */
+
+    const memberId =
+      String(
+        memberSelect?.value || ""
+      ).trim();
 
 
     if (
-      currentMember.group_id !== groupId
+      !memberId
     ) {
-
-      throw new Error(
-        "Your member account is linked to a different group."
-      );
-
-    }
-
-
-    const memberId =
-      memberSelect?.value;
-
-
-    if (!memberId) {
 
       throw new Error(
         "Please select a member."
@@ -1748,26 +2083,14 @@ async function handleSubmit(
     }
 
 
-    /*
-     * Confirm selected member belongs
-     * to this group.
-     */
-
-    const selectedMember =
-      members.find(
-        member =>
-          member.id === memberId
-      );
+    getSelectedMember(
+      memberId
+    );
 
 
-    if (!selectedMember) {
-
-      throw new Error(
-        "The selected member could not be found in this group."
-      );
-
-    }
-
+    /* -----------------------------------------------------
+       AMOUNT
+    ----------------------------------------------------- */
 
     const amount =
       Number(
@@ -1787,32 +2110,108 @@ async function handleSubmit(
     }
 
 
+    /* -----------------------------------------------------
+       DATE
+    ----------------------------------------------------- */
+
     const contributionDate =
       dateInput?.value ||
       todayString();
 
 
-    const contributionType =
-      typeSelect?.value ||
-      "monthly";
+    if (
+      !/^\d{4}-\d{2}-\d{2}$/.test(
+        contributionDate
+      )
+    ) {
 
+      throw new Error(
+        "Please select a valid contribution date."
+      );
+
+    }
+
+
+    /* -----------------------------------------------------
+       TYPE
+    ----------------------------------------------------- */
+
+    const contributionType =
+      String(
+        typeSelect?.value ||
+        "monthly"
+      )
+        .trim();
+
+
+    const allowedTypes = [
+      "monthly",
+      "registration",
+      "welfare",
+      "special",
+      "other"
+    ];
+
+
+    if (
+      !allowedTypes.includes(
+        contributionType
+      )
+    ) {
+
+      throw new Error(
+        "Invalid contribution type."
+      );
+
+    }
+
+
+    /* -----------------------------------------------------
+       PAYMENT METHOD
+    ----------------------------------------------------- */
 
     const paymentMethod =
-      methodSelect?.value ||
-      "Cash";
+      String(
+        methodSelect?.value ||
+        "Cash"
+      )
+        .trim();
 
+
+    const allowedMethods = [
+      "M-Pesa",
+      "Cash",
+      "Bank transfer"
+    ];
+
+
+    if (
+      !allowedMethods.includes(
+        paymentMethod
+      )
+    ) {
+
+      throw new Error(
+        "Invalid payment method."
+      );
+
+    }
+
+
+    /* -----------------------------------------------------
+       M-PESA REFERENCE
+    ----------------------------------------------------- */
 
     const mpesaRef =
       String(
-        mpesaReference?.value || ""
+        mpesaReference?.value ||
+        ""
       )
         .trim();
 
 
     if (
-      paymentMethod
-        .toLowerCase()
-        .includes("mpesa") &&
+      paymentMethod === "M-Pesa" &&
       !mpesaRef
     ) {
 
@@ -1823,6 +2222,10 @@ async function handleSubmit(
     }
 
 
+    /* -----------------------------------------------------
+       MONTH
+    ----------------------------------------------------- */
+
     const month =
       contributionDate.slice(
         0,
@@ -1830,20 +2233,13 @@ async function handleSubmit(
       );
 
 
+    /* -----------------------------------------------------
+       BUTTON
+    ----------------------------------------------------- */
+
     if (
-      !/^\d{4}-\d{2}-\d{2}$/.test(
-        contributionDate
-      )
+      saveButton
     ) {
-
-      throw new Error(
-        "Please enter a valid contribution date."
-      );
-
-    }
-
-
-    if (saveButton) {
 
       saveButton.disabled =
         true;
@@ -1859,16 +2255,17 @@ async function handleSubmit(
     );
 
 
-    /*
-     * IMPORTANT DATABASE MAPPING
-     * --------------------------
-     *
-     * recorded_by = currentMember.id
-     *
-     * NOT:
-     *
-     * currentUser.id
-     */
+    /* -----------------------------------------------------
+       PAYLOAD
+       
+       CRITICAL:
+       
+       recorded_by = currentMember.id
+       
+       NOT:
+       
+       currentUser.id
+    ----------------------------------------------------- */
 
     const payload = {
 
@@ -1894,7 +2291,7 @@ async function handleSubmit(
         contributionDate,
 
       recorded_by:
-        currentMember.id,
+        recorderMemberId,
 
       reference:
         mpesaRef || null,
@@ -1908,47 +2305,42 @@ async function handleSubmit(
     console.log(
       "CHAMA LIVE: contribution payload",
       {
-        ...payload,
+        group_id: payload.group_id,
+        member_id: payload.member_id,
+        amount: payload.amount,
+        contribution_type:
+          payload.contribution_type,
+        month: payload.month,
+        payment_method:
+          payload.payment_method,
+        contribution_date:
+          payload.contribution_date,
         recorded_by:
-          currentMember.id
+          payload.recorded_by
       }
     );
 
 
+    /* -----------------------------------------------------
+       INSERT
+       
+       Do NOT call .select() here.
+       We only need the insert to succeed.
+    ----------------------------------------------------- */
+
     const {
-      data,
       error
     } =
       await supabase
         .from("contributions")
         .insert(
           payload
-        )
-        .select(`
-          id,
-          group_id,
-          member_id,
-          amount,
-          contribution_type,
-          month,
-          payment_method,
-          reference,
-          recorded_by,
-          created_at,
-          goal_id,
-          contribution_date,
-          notes,
-          mpesa_reference
-        `)
-        .single();
+        );
 
 
-    if (error) {
-
-      console.error(
-        "CHAMA LIVE: contribution insert failed",
-        error
-      );
+    if (
+      error
+    ) {
 
       throw error;
 
@@ -1956,25 +2348,26 @@ async function handleSubmit(
 
 
     console.log(
-      "CHAMA LIVE: contribution recorded",
-      data
+      "CHAMA LIVE: contribution recorded successfully"
     );
 
 
-    /*
-     * Reset form.
-     */
+    /* -----------------------------------------------------
+       RESET FORM
+    ----------------------------------------------------- */
 
-    if (form) {
+    if (
+      form
+    ) {
+
       form.reset();
+
     }
 
 
-    /*
-     * Restore today's date.
-     */
-
-    if (dateInput) {
+    if (
+      dateInput
+    ) {
 
       dateInput.value =
         todayString();
@@ -1982,19 +2375,35 @@ async function handleSubmit(
     }
 
 
+    if (
+      typeSelect
+    ) {
+
+      typeSelect.value =
+        "monthly";
+
+    }
+
+
+    if (
+      methodSelect
+    ) {
+
+      methodSelect.value =
+        "M-Pesa";
+
+    }
+
+
     toggleMpesaReference();
 
 
-    /*
-     * Reload ledger.
-     */
+    /* -----------------------------------------------------
+       REFRESH DATA
+    ----------------------------------------------------- */
 
     await loadContributions();
 
-
-    /*
-     * Refresh dashboard.
-     */
 
     renderProgress();
 
@@ -2018,7 +2427,6 @@ async function handleSubmit(
     );
 
   }
-
   catch (error) {
 
     showStatus("");
@@ -2026,10 +2434,11 @@ async function handleSubmit(
     showError(error);
 
   }
-
   finally {
 
-    if (saveButton) {
+    if (
+      saveButton
+    ) {
 
       saveButton.disabled =
         false;
@@ -2050,8 +2459,12 @@ async function handleSubmit(
 
 export async function refreshContributions() {
 
-  if (!groupId) {
+  if (
+    !groupId
+  ) {
+
     return;
+
   }
 
 
@@ -2067,31 +2480,68 @@ export async function refreshContributions() {
 
 
 /* =========================================================
-   AUTO INITIALIZE
+   AUTO INITIALIZATION
+=========================================================
+
+   layout.js dynamically imports this module and calls:
+
+       initContributions()
+
+   The compatibility auto-init below also allows the file
+   to work if loaded directly on the page.
 ========================================================= */
 
-if (
-  document.readyState === "loading"
-) {
+function autoInitialize() {
 
-  document.addEventListener(
-    "DOMContentLoaded",
-    () => {
+  if (
+    typeof document ===
+    "undefined"
+  ) {
 
-      init();
+    return;
 
-    },
-    {
-      once: true
-    }
-  );
+  }
+
+
+  if (
+    document.readyState ===
+    "loading"
+  ) {
+
+    document.addEventListener(
+      "DOMContentLoaded",
+      () => {
+
+        /*
+         * layout.js normally initializes the page.
+         * Calling initContributions here is safe because
+         * the initialized flag prevents duplicate work.
+         */
+
+        initContributions();
+
+      },
+      {
+        once: true
+      }
+    );
+
+  }
+  else {
+
+    initContributions();
+
+  }
 
 }
-else {
 
-  init();
 
-}
+/*
+ * Keep automatic initialization for compatibility
+ * with pages that load contributions.js directly.
+ */
+
+autoInitialize();
 
 
 console.log(
