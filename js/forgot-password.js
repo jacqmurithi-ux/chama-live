@@ -4,22 +4,29 @@
    File:
    /js/forgot-password.js
 
-   Uses Supabase Auth directly.
+   Supabase Auth password recovery.
 
    Flow:
 
    forgot-password.html
           ↓
-   supabase.auth.resetPasswordForEmail()
+   resetPasswordForEmail()
           ↓
    Supabase recovery email
           ↓
-   reset-password.html
+   /chama-live/reset-password.html
           ↓
    New password
+          ↓
+   Login
 ========================================================= */
 
 import { supabase } from "./supabase.js";
+
+
+console.log(
+  "CHAMA LIVE: forgot-password.js loaded"
+);
 
 
 /* =========================================================
@@ -27,46 +34,93 @@ import { supabase } from "./supabase.js";
 ========================================================= */
 
 const form =
-  document.getElementById("forgotPasswordForm");
+  document.getElementById(
+    "forgotPasswordForm"
+  );
 
 const email =
-  document.getElementById("email");
+  document.getElementById(
+    "email"
+  );
 
 const button =
-  document.getElementById("resetButton");
+  document.getElementById(
+    "resetButton"
+  );
 
 const errorBox =
-  document.getElementById("error");
+  document.getElementById(
+    "error"
+  );
 
 const successBox =
-  document.getElementById("success");
+  document.getElementById(
+    "success"
+  );
 
 
 /* =========================================================
-   RESET PAGE
+   CHAMA LIVE BASE URL
+========================================================= */
+
+/*
+ * IMPORTANT:
+ *
+ * The application is hosted at:
+ *
+ * https://jacqmurithi-ux.github.io/chama-live/
+ *
+ * window.location.origin only returns:
+ *
+ * https://jacqmurithi-ux.github.io
+ *
+ * Therefore we must include /chama-live/.
+ */
+
+const BASE_URL =
+  "https://jacqmurithi-ux.github.io/chama-live";
+
+
+/* =========================================================
+   PASSWORD RESET URL
 ========================================================= */
 
 const RESET_URL =
-  `${window.location.origin}/reset-password.html`;
+  `${BASE_URL}/reset-password.html`;
+
+
+console.log(
+  "CHAMA LIVE: password reset redirect:",
+  RESET_URL
+);
 
 
 /* =========================================================
    SHOW ERROR
 ========================================================= */
 
-function showError(message) {
+function showError(
+  message
+) {
 
   if (errorBox) {
 
-    errorBox.hidden = false;
-    errorBox.textContent = message;
+    errorBox.hidden =
+      false;
+
+    errorBox.textContent =
+      message;
 
   }
 
+
   if (successBox) {
 
-    successBox.hidden = true;
-    successBox.textContent = "";
+    successBox.hidden =
+      true;
+
+    successBox.textContent =
+      "";
 
   }
 
@@ -77,19 +131,28 @@ function showError(message) {
    SHOW SUCCESS
 ========================================================= */
 
-function showSuccess(message) {
+function showSuccess(
+  message
+) {
 
   if (successBox) {
 
-    successBox.hidden = false;
-    successBox.textContent = message;
+    successBox.hidden =
+      false;
+
+    successBox.textContent =
+      message;
 
   }
 
+
   if (errorBox) {
 
-    errorBox.hidden = true;
-    errorBox.textContent = "";
+    errorBox.hidden =
+      true;
+
+    errorBox.textContent =
+      "";
 
   }
 
@@ -97,22 +160,29 @@ function showSuccess(message) {
 
 
 /* =========================================================
-   CLEAR
+   CLEAR MESSAGES
 ========================================================= */
 
 function clearMessages() {
 
   if (errorBox) {
 
-    errorBox.hidden = true;
-    errorBox.textContent = "";
+    errorBox.hidden =
+      true;
+
+    errorBox.textContent =
+      "";
 
   }
 
+
   if (successBox) {
 
-    successBox.hidden = true;
-    successBox.textContent = "";
+    successBox.hidden =
+      true;
+
+    successBox.textContent =
+      "";
 
   }
 
@@ -120,17 +190,21 @@ function clearMessages() {
 
 
 /* =========================================================
-   LOADING
+   BUTTON LOADING
 ========================================================= */
 
-function setLoading(loading) {
+function setLoading(
+  loading
+) {
 
   if (!button) {
     return;
   }
 
+
   button.disabled =
     loading;
+
 
   button.textContent =
     loading
@@ -141,17 +215,94 @@ function setLoading(loading) {
 
 
 /* =========================================================
-   FORM
+   NORMALIZE ERROR
+========================================================= */
+
+function getFriendlyError(
+  error
+) {
+
+  const message =
+    String(
+      error?.message ||
+      error ||
+      "Unable to send password reset email."
+    );
+
+
+  const lower =
+    message.toLowerCase();
+
+
+  if (
+    lower.includes(
+      "rate limit"
+    ) ||
+    lower.includes(
+      "too many requests"
+    )
+  ) {
+
+    return (
+      "Too many reset requests. " +
+      "Please wait a few minutes and try again."
+    );
+
+  }
+
+
+  if (
+    lower.includes(
+      "failed to fetch"
+    ) ||
+    lower.includes(
+      "network"
+    )
+  ) {
+
+    return (
+      "Unable to connect to Supabase. " +
+      "Please check your internet connection and try again."
+    );
+
+  }
+
+
+  if (
+    lower.includes(
+      "redirect"
+    )
+  ) {
+
+    return (
+      "Password reset redirect is not configured correctly in Supabase."
+    );
+
+  }
+
+
+  return message;
+
+}
+
+
+/* =========================================================
+   FORM CHECK
 ========================================================= */
 
 if (!form) {
 
   console.error(
-    "CHAMA LIVE: forgotPasswordForm not found."
+    "CHAMA LIVE: #forgotPasswordForm was not found."
   );
 
 }
 else {
+
+
+  /* =======================================================
+     SUBMIT
+  ======================================================= */
 
   form.addEventListener(
     "submit",
@@ -159,20 +310,26 @@ else {
 
       event.preventDefault();
 
+
       clearMessages();
 
 
       /* ===================================================
-         EMAIL
+         READ EMAIL
       =================================================== */
 
       const userEmail =
         String(
-          email?.value || ""
+          email?.value ||
+          ""
         )
           .trim()
           .toLowerCase();
 
+
+      /* ===================================================
+         VALIDATE EMAIL
+      =================================================== */
 
       if (!userEmail) {
 
@@ -186,10 +343,6 @@ else {
 
       }
 
-
-      /* ===================================================
-         EMAIL VALIDATION
-      =================================================== */
 
       const emailPattern =
         /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -212,7 +365,13 @@ else {
       }
 
 
-      setLoading(true);
+      /* ===================================================
+         LOADING
+      =================================================== */
+
+      setLoading(
+        true
+      );
 
 
       try {
@@ -220,17 +379,21 @@ else {
         console.log(
           "CHAMA LIVE: requesting password reset",
           {
-            email: userEmail,
-            redirectTo: RESET_URL
+            email:
+              userEmail,
+
+            redirectTo:
+              RESET_URL
           }
         );
 
 
         /* =================================================
-           SUPABASE AUTH RECOVERY
+           SUPABASE PASSWORD RESET
         ================================================= */
 
         const {
+          data,
           error
         } =
           await supabase.auth
@@ -242,6 +405,19 @@ else {
               }
             );
 
+
+        console.log(
+          "CHAMA LIVE: reset request response",
+          {
+            data,
+            error
+          }
+        );
+
+
+        /* =================================================
+           HANDLE ERROR
+        ================================================= */
 
         if (error) {
 
@@ -260,8 +436,16 @@ else {
 
 
         console.log(
-          "CHAMA LIVE: password reset email requested successfully"
+          "CHAMA LIVE: password reset email sent successfully"
         );
+
+
+        /*
+         * Keep the email in the field.
+         *
+         * This makes it easier for the user
+         * to request another link if necessary.
+         */
 
       }
 
@@ -274,15 +458,18 @@ else {
 
 
         showError(
-          error?.message ||
-          "Unable to send password reset email. Please try again."
+          getFriendlyError(
+            error
+          )
         );
 
       }
 
       finally {
 
-        setLoading(false);
+        setLoading(
+          false
+        );
 
       }
 
@@ -297,5 +484,5 @@ else {
 ========================================================= */
 
 console.log(
-  "CHAMA LIVE: forgot-password.js loaded"
+  "CHAMA LIVE: password recovery system ready"
 );
