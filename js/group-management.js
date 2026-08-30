@@ -1,18 +1,23 @@
 /* =========================================================
    CHAMA LIVE — GROUP MANAGEMENT
-   Schema-aligned version
+   FINAL SCHEMA-ALIGNED VERSION
 
-   FEATURES
+   IMPORTANT DATABASE ALIGNMENT
    ---------------------------------------------------------
-   • Load current user's group
-   • Display group information
-   • Edit group information
-   • Update group name
-   • Update group type
-   • Update country
-   • Update monthly contribution
-   • Group-isolated queries
-   • Uses current MEMBER record to identify group
+   groups.category           -> group type/category
+   groups.monthly_contribution
+   groups.country
+   groups.name
+
+   THERE IS NO groups.type COLUMN.
+
+   Group context:
+       currentMember.group_id
+
+   Therefore:
+       member -> group_id -> groups.id
+
+   No schema redesign required.
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -104,6 +109,10 @@ function money(value) {
 }
 
 
+/* =========================================================
+   STATUS
+========================================================= */
+
 function showStatus(message) {
 
   if (!statusEl) {
@@ -137,9 +146,29 @@ function showError(error) {
   }
 
 
-  errorEl.textContent =
+  let message =
     error?.message ||
     "Unable to process group information.";
+
+
+  /*
+     Make the common schema problem clearer.
+  */
+
+  if (
+    message.includes(
+      "groups.type"
+    )
+  ) {
+
+    message =
+      "Group Management is using an outdated database field. The group type is stored as 'category'.";
+
+  }
+
+
+  errorEl.textContent =
+    message;
 
   errorEl.hidden =
     false;
@@ -180,6 +209,14 @@ async function loadGroup() {
   }
 
 
+  /*
+     IMPORTANT:
+
+     Use groups.category.
+
+     DO NOT use groups.type.
+  */
+
   const {
     data,
     error
@@ -189,7 +226,7 @@ async function loadGroup() {
       .select(`
         id,
         name,
-        type,
+        category,
         country,
         monthly_contribution,
         created_at
@@ -219,6 +256,12 @@ async function loadGroup() {
 
   group =
     data;
+
+
+  console.log(
+    "CHAMA LIVE: group loaded",
+    group
+  );
 
 }
 
@@ -294,11 +337,62 @@ function renderGroup() {
   }
 
 
+  /*
+     DATABASE FIELD:
+
+         category
+
+     UI FIELD:
+
+         groupType
+  */
+
   if (groupTypeInput) {
 
-    groupTypeInput.value =
-      group.type ||
-      "chama";
+    const category =
+      String(
+        group.category ||
+        "chama"
+      )
+        .trim()
+        .toLowerCase();
+
+
+    /*
+       Only select an existing option.
+
+       This prevents the form from silently
+       showing a blank value if the database
+       contains an unexpected category.
+    */
+
+    const optionExists =
+      Array.from(
+        groupTypeInput.options
+      ).some(
+        option =>
+          option.value ===
+          category
+      );
+
+
+    if (optionExists) {
+
+      groupTypeInput.value =
+        category;
+
+    }
+    else {
+
+      /*
+         Keep the first/default option
+         when an unknown legacy value exists.
+      */
+
+      groupTypeInput.value =
+        "other";
+
+    }
 
   }
 
@@ -380,12 +474,21 @@ async function saveGroup(
         .trim();
 
 
-    const type =
+    /*
+       UI calls this Group Type.
+
+       DATABASE stores it in:
+
+           groups.category
+    */
+
+    const category =
       String(
         groupTypeInput?.value ||
         ""
       )
-        .trim();
+        .trim()
+        .toLowerCase();
 
 
     const country =
@@ -416,7 +519,7 @@ async function saveGroup(
     }
 
 
-    if (!type) {
+    if (!category) {
 
       throw new Error(
         "Please select the group type."
@@ -464,13 +567,19 @@ async function saveGroup(
     );
 
 
+    /*
+       IMPORTANT DATABASE PAYLOAD
+
+       category, NOT type.
+    */
+
     const payload = {
 
       name:
         name,
 
-      type:
-        type,
+      category:
+        category,
 
       country:
         country,
@@ -506,7 +615,7 @@ async function saveGroup(
         .select(`
           id,
           name,
-          type,
+          category,
           country,
           monthly_contribution,
           created_at
@@ -626,7 +735,7 @@ export async function initPage() {
 
 
     /* -------------------------------------------------------
-       MEMBER
+       MEMBER CONTEXT
     ------------------------------------------------------- */
 
     currentMember =
@@ -643,7 +752,13 @@ export async function initPage() {
 
 
     /* -------------------------------------------------------
-       GROUP
+       GROUP CONTEXT
+       
+       THIS IS THE COMMON CHAMA LIVE CONTEXT.
+
+       currentMember.group_id
+              ↓
+       groups.id
     ------------------------------------------------------- */
 
     groupId =
