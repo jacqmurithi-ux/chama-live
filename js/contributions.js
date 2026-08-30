@@ -1,29 +1,34 @@
+```javascript
 /* =========================================================
    CHAMA LIVE — CONTRIBUTIONS
-   RECURRING MONTHLY CONTRIBUTIONS
-   FINAL STABLE VERSION
+   SECURE / STABLE VERSION
 
-   IMPORTANT DATABASE RULE
+   Accounting rules:
+   ---------------------------------------------------------
+   1. Previous arrears are cleared first.
+   2. Current month's recurring due is then covered.
+   3. Extra payment becomes carry-forward credit.
+
+   SECURITY:
    ---------------------------------------------------------
    contributions.recorded_by -> members.id
 
-   Therefore:
-       recorded_by = currentMember.id
+   DO NOT send auth.uid() from the frontend.
 
-   NOT:
-       recorded_by = currentUser.id
+   The database trigger:
+       set_recorded_by_from_auth()
 
-   Monthly accounting:
-       1. Previous arrears
-       2. Current month due
-       3. Carry-forward credit
+   securely resolves:
+       auth.uid()
+          ↓
+       members.user_id / auth_user_id
+          ↓
+       members.id
+          ↓
+       contributions.recorded_by
 
-   Example:
-       Monthly due = KSh 200
-       Payment = KSh 600
-
-       Applied this month = KSh 200
-       Carry forward = KSh 400
+   This prevents the frontend from impersonating another
+   recorder/member.
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -165,8 +170,7 @@ function money(value) {
 
 function todayString() {
 
-  const now =
-    new Date();
+  const now = new Date();
 
   return [
     now.getFullYear(),
@@ -201,29 +205,12 @@ function currentMonth() {
 
 function escapeHtml(value) {
 
-  return String(
-    value ?? ""
-  )
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 
 }
 
@@ -238,14 +225,9 @@ function formatDate(value) {
     return "—";
   }
 
-  const date =
-    new Date(value);
+  const date = new Date(value);
 
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
+  if (Number.isNaN(date.getTime())) {
     return String(value);
   }
 
@@ -274,9 +256,7 @@ function formatMonth(month) {
   const parts =
     String(month).split("-");
 
-  if (
-    parts.length !== 2
-  ) {
+  if (parts.length !== 2) {
     return String(month);
   }
 
@@ -350,7 +330,32 @@ function showError(error) {
     message.toLowerCase();
 
 
+  /* -------------------------------------------------------
+     CLOSED FINANCIAL MONTH
+  ------------------------------------------------------- */
+
   if (
+    lower.includes("financial month") &&
+    lower.includes("closed")
+  ) {
+
+    message =
+      "This financial month is closed. Contributions cannot be recorded or changed until the month is reopened.";
+
+  }
+
+
+  /* -------------------------------------------------------
+     RECORDER / MEMBER LINK
+  ------------------------------------------------------- */
+
+  else if (
+    lower.includes(
+      "no active member record"
+    ) ||
+    lower.includes(
+      "invalid recorded_by"
+    ) ||
     lower.includes(
       "recorded_by"
     ) ||
@@ -360,9 +365,15 @@ function showError(error) {
   ) {
 
     message =
-      "Your account is not correctly linked to a member record. Please contact the group administrator.";
+      "Your account is not correctly linked to an active member record. Please contact the group administrator.";
 
   }
+
+
+  /* -------------------------------------------------------
+     PERMISSION
+  ------------------------------------------------------- */
+
   else if (
     lower.includes(
       "row-level security"
@@ -376,6 +387,12 @@ function showError(error) {
       "You do not have permission to record contributions for this group.";
 
   }
+
+
+  /* -------------------------------------------------------
+     PAYMENT METHOD
+  ------------------------------------------------------- */
+
   else if (
     lower.includes(
       "payment_method"
@@ -386,6 +403,12 @@ function showError(error) {
       "The selected payment method is not valid.";
 
   }
+
+
+  /* -------------------------------------------------------
+     MEMBER
+  ------------------------------------------------------- */
+
   else if (
     lower.includes(
       "member_id"
@@ -397,6 +420,10 @@ function showError(error) {
 
   }
 
+
+  /* -------------------------------------------------------
+     SHOW
+  ------------------------------------------------------- */
 
   if (errorEl) {
 
@@ -431,7 +458,7 @@ function clearError() {
 
 
 /* =========================================================
-   GET MONTHLY CONTRIBUTION
+   MONTHLY CONTRIBUTION
 ========================================================= */
 
 function getMonthlyContribution() {
@@ -492,9 +519,7 @@ function getContributionMonth(
   contribution
 ) {
 
-  if (
-    contribution?.month
-  ) {
+  if (contribution?.month) {
 
     return String(
       contribution.month
@@ -502,9 +527,7 @@ function getContributionMonth(
 
   }
 
-  if (
-    contribution?.contribution_date
-  ) {
+  if (contribution?.contribution_date) {
 
     return String(
       contribution.contribution_date
@@ -532,14 +555,11 @@ function getMonthlyContributionsForMember(
         return (
           String(
             contribution.member_id
-          ) ===
-          String(memberId) &&
+          ) === String(memberId) &&
 
           String(
-            contribution.contribution_type ||
-            ""
-          ).toLowerCase() ===
-          "monthly"
+            contribution.contribution_type || ""
+          ).toLowerCase() === "monthly"
         );
 
       }
@@ -586,9 +606,10 @@ function monthsBetween(
     !startMonth ||
     !endMonth
   ) {
-    return result;
-  }
 
+    return result;
+
+  }
 
   let [
     year,
@@ -598,7 +619,6 @@ function monthsBetween(
       .split("-")
       .map(Number);
 
-
   const [
     endYear,
     endMonthNumber
@@ -606,7 +626,6 @@ function monthsBetween(
     String(endMonth)
       .split("-")
       .map(Number);
-
 
   if (
     !Number.isFinite(year) ||
@@ -618,7 +637,6 @@ function monthsBetween(
     return result;
 
   }
-
 
   while (
     year < endYear ||
@@ -632,13 +650,9 @@ function monthsBetween(
       `${year}-${String(month).padStart(2, "0")}`
     );
 
-
     month++;
 
-
-    if (
-      month > 12
-    ) {
+    if (month > 12) {
 
       month = 1;
       year++;
@@ -647,7 +661,6 @@ function monthsBetween(
 
   }
 
-
   return result;
 
 }
@@ -655,6 +668,18 @@ function monthsBetween(
 
 /* =========================================================
    MEMBER MONTHLY ACCOUNTING
+=========================================================
+
+   NOTE:
+   This function is retained for the Contributions page
+   display.
+
+   Reports and Monthly Closing MUST use the authoritative
+   database RPC:
+
+       get_monthly_financial_report()
+
+   This avoids frontend/reporting discrepancies.
 ========================================================= */
 
 function calculateMemberMonth(
@@ -665,60 +690,40 @@ function calculateMemberMonth(
   const monthlyDue =
     getMonthlyContribution();
 
-
   const memberContributions =
     getMonthlyContributionsForMember(
       memberId
     );
 
-
-  if (
-    monthlyDue <= 0
-  ) {
+  if (monthlyDue <= 0) {
 
     return {
 
       monthlyDue: 0,
-
       previousOutstanding: 0,
-
       appliedThisMonth: 0,
-
       carryForward: 0,
-
       currentOutstanding: 0,
-
       status: "—"
 
     };
 
   }
 
-
   const contributionMonths =
     memberContributions
-      .map(
-        getContributionMonth
-      )
+      .map(getContributionMonth)
       .filter(Boolean)
       .sort();
-
 
   let firstMonth =
     contributionMonths.length
       ? contributionMonths[0]
       : targetMonth;
 
-
-  if (
-    firstMonth > targetMonth
-  ) {
-
-    firstMonth =
-      targetMonth;
-
+  if (firstMonth > targetMonth) {
+    firstMonth = targetMonth;
   }
-
 
   const months =
     monthsBetween(
@@ -726,34 +731,25 @@ function calculateMemberMonth(
       targetMonth
     );
 
-
   let credit = 0;
-
   let outstanding = 0;
-
   let appliedThisMonth = 0;
-
   let previousOutstanding = 0;
 
-
-  for (
-    const month of months
-  ) {
+  for (const month of months) {
 
     previousOutstanding =
       outstanding;
 
-
     let availableCredit =
       credit;
-
 
     let currentDue =
       monthlyDue;
 
 
     /* -----------------------------------------------------
-       CREDIT FIRST CLEARS PREVIOUS ARREARS
+       CREDIT CLEARS PREVIOUS ARREARS
     ----------------------------------------------------- */
 
     if (
@@ -777,7 +773,7 @@ function calculateMemberMonth(
 
 
     /* -----------------------------------------------------
-       REMAINING CREDIT PAYS CURRENT MONTH
+       CREDIT COVERS CURRENT MONTH
     ----------------------------------------------------- */
 
     if (
@@ -801,7 +797,7 @@ function calculateMemberMonth(
 
 
     /* -----------------------------------------------------
-       ACTUAL CASH PAYMENTS FOR THIS MONTH
+       CASH PAYMENTS
     ----------------------------------------------------- */
 
     const monthPayments =
@@ -816,16 +812,11 @@ function calculateMemberMonth(
           (
             total,
             contribution
-          ) => {
-
-            return (
-              total +
-              Number(
-                contribution.amount || 0
-              )
-            );
-
-          },
+          ) =>
+            total +
+            Number(
+              contribution.amount || 0
+            ),
           0
         );
 
@@ -835,7 +826,7 @@ function calculateMemberMonth(
 
 
     /* -----------------------------------------------------
-       PAYMENT CLEARS PREVIOUS ARREARS
+       PAYMENT CLEARS ARREARS
     ----------------------------------------------------- */
 
     if (
@@ -883,7 +874,7 @@ function calculateMemberMonth(
 
 
     /* -----------------------------------------------------
-       REMAINING PAYMENT BECOMES CREDIT
+       REMAINING PAYMENT = CREDIT
     ----------------------------------------------------- */
 
     credit =
@@ -891,33 +882,21 @@ function calculateMemberMonth(
       payment;
 
 
-    /* -----------------------------------------------------
-       REMAINING CURRENT MONTH OUTSTANDING
-    ----------------------------------------------------- */
-
     outstanding =
       currentDue;
 
-
-    /* -----------------------------------------------------
-       TARGET MONTH PROGRESS
-    ----------------------------------------------------- */
 
     if (
       month === targetMonth
     ) {
 
       appliedThisMonth =
-        monthlyDue -
-        outstanding;
-
-
-      appliedThisMonth =
         Math.min(
           monthlyDue,
           Math.max(
             0,
-            appliedThisMonth
+            monthlyDue -
+            outstanding
           )
         );
 
@@ -928,7 +907,6 @@ function calculateMemberMonth(
 
   let status =
     "Outstanding";
-
 
   if (
     outstanding <= 0 &&
@@ -984,9 +962,7 @@ function calculateMemberMonth(
 
 export async function initContributions() {
 
-  if (
-    initialized
-  ) {
+  if (initialized) {
 
     console.log(
       "CHAMA LIVE: contributions already initialized"
@@ -996,10 +972,7 @@ export async function initContributions() {
 
   }
 
-
-  initialized =
-    true;
-
+  initialized = true;
 
   try {
 
@@ -1011,16 +984,13 @@ export async function initContributions() {
 
 
     /* -----------------------------------------------------
-       AUTHENTICATION
+       AUTH
     ----------------------------------------------------- */
 
     currentUser =
       await requireAuth();
 
-
-    if (
-      !currentUser?.id
-    ) {
+    if (!currentUser?.id) {
 
       throw new Error(
         "You are not signed in."
@@ -1030,16 +1000,13 @@ export async function initContributions() {
 
 
     /* -----------------------------------------------------
-       CURRENT MEMBER
+       MEMBER
     ----------------------------------------------------- */
 
     currentMember =
       await getMyMember();
 
-
-    if (
-      !currentMember
-    ) {
+    if (!currentMember) {
 
       throw new Error(
         "No member record is linked to your account."
@@ -1047,10 +1014,7 @@ export async function initContributions() {
 
     }
 
-
-    if (
-      !currentMember.id
-    ) {
+    if (!currentMember.id) {
 
       throw new Error(
         "Your member record does not have a valid member ID."
@@ -1058,10 +1022,7 @@ export async function initContributions() {
 
     }
 
-
-    if (
-      !currentMember.group_id
-    ) {
+    if (!currentMember.group_id) {
 
       throw new Error(
         "Your member record is not linked to a group."
@@ -1069,22 +1030,18 @@ export async function initContributions() {
 
     }
 
-
     groupId =
       currentMember.group_id;
 
 
     /* -----------------------------------------------------
-       CURRENT GROUP
+       GROUP
     ----------------------------------------------------- */
 
     currentGroup =
       await getMyGroup();
 
-
-    if (
-      !currentGroup
-    ) {
+    if (!currentGroup) {
 
       throw new Error(
         "Group information could not be loaded."
@@ -1136,7 +1093,6 @@ export async function initContributions() {
 
     bindEvents();
 
-
     showStatus("");
 
 
@@ -1147,8 +1103,7 @@ export async function initContributions() {
   }
   catch (error) {
 
-    initialized =
-      false;
+    initialized = false;
 
     showStatus("");
 
@@ -1176,16 +1131,13 @@ export async function init() {
 
 async function loadMembers() {
 
-  if (
-    !groupId
-  ) {
+  if (!groupId) {
 
     throw new Error(
       "No group ID available."
     );
 
   }
-
 
   const {
     data,
@@ -1203,7 +1155,9 @@ async function loadMembers() {
         email,
         role,
         status,
-        auth_user_id
+        onboarding_status,
+        auth_user_id,
+        user_id
       `)
       .eq(
         "group_id",
@@ -1217,9 +1171,7 @@ async function loadMembers() {
       );
 
 
-  if (
-    error
-  ) {
+  if (error) {
 
     throw error;
 
@@ -1241,14 +1193,9 @@ async function loadMembers() {
 
 function renderMemberSelect() {
 
-  if (
-    !memberSelect
-  ) {
-
+  if (!memberSelect) {
     return;
-
   }
-
 
   memberSelect.innerHTML =
     `
@@ -1266,22 +1213,18 @@ function renderMemberSelect() {
           "option"
         );
 
-
       option.value =
         member.id;
-
 
       const number =
         member.member_number ||
         member.membership_number ||
         "";
 
-
       option.textContent =
         number
           ? `${number} — ${member.name}`
           : member.name;
-
 
       memberSelect.appendChild(
         option
@@ -1299,16 +1242,13 @@ function renderMemberSelect() {
 
 async function loadContributions() {
 
-  if (
-    !groupId
-  ) {
+  if (!groupId) {
 
     throw new Error(
       "No group ID available."
     );
 
   }
-
 
   const {
     data,
@@ -1350,9 +1290,7 @@ async function loadContributions() {
       );
 
 
-  if (
-    error
-  ) {
+  if (error) {
 
     throw error;
 
@@ -1371,14 +1309,9 @@ async function loadContributions() {
 
 function renderMonthlyExpected() {
 
-  if (
-    !monthlyExpected
-  ) {
-
+  if (!monthlyExpected) {
     return;
-
   }
-
 
   monthlyExpected.textContent =
     money(
@@ -1389,7 +1322,7 @@ function renderMonthlyExpected() {
 
 
 /* =========================================================
-   GET MEMBER NAME
+   MEMBER NAME
 ========================================================= */
 
 function getMemberName(
@@ -1402,7 +1335,6 @@ function getMemberName(
         String(item.id) ===
         String(memberId)
     );
-
 
   return (
     member?.name ||
@@ -1421,26 +1353,19 @@ function renderProgress() {
   const month =
     currentMonth();
 
-
   const activeMembers =
     getActiveMembers();
 
-
   const monthlyDue =
     getMonthlyContribution();
-
 
   const goal =
     activeMembers.length *
     monthlyDue;
 
+  let appliedTotal = 0;
 
-  let appliedTotal =
-    0;
-
-
-  let contributingMembers =
-    0;
+  let contributingMembers = 0;
 
 
   activeMembers.forEach(
@@ -1452,10 +1377,8 @@ function renderProgress() {
           month
         );
 
-
       appliedTotal +=
         account.appliedThisMonth;
-
 
       if (
         account.appliedThisMonth > 0
@@ -1471,96 +1394,68 @@ function renderProgress() {
 
   const percentage =
     goal > 0
-
       ? Math.min(
           100,
           Math.round(
             (
               appliedTotal /
               goal
-            ) *
-            100
+            ) * 100
           )
         )
-
       : 0;
 
 
   const participation =
     activeMembers.length > 0
-
       ? Math.round(
           (
             contributingMembers /
             activeMembers.length
-          ) *
-          100
+          ) * 100
         )
-
       : 0;
 
 
-  if (
-    progressMonth
-  ) {
+  if (progressMonth) {
 
     progressMonth.textContent =
       formatMonth(month);
 
   }
 
-
-  if (
-    progressPercent
-  ) {
+  if (progressPercent) {
 
     progressPercent.textContent =
       `${percentage}%`;
 
   }
 
-
-  if (
-    progressAmount
-  ) {
+  if (progressAmount) {
 
     progressAmount.textContent =
-      money(
-        appliedTotal
-      );
+      money(appliedTotal);
 
   }
 
-
-  if (
-    progressGoal
-  ) {
+  if (progressGoal) {
 
     progressGoal.textContent =
-      money(
-        goal
-      );
+      money(goal);
 
   }
 
-
-  if (
-    progressBar
-  ) {
+  if (progressBar) {
 
     progressBar.style.width =
       `${percentage}%`;
 
   }
 
-
   const progressTrack =
     progressBar?.parentElement;
 
-
-  if (
-    progressTrack
-  ) {
+  if (progressTrack) {
 
     progressTrack.setAttribute(
       "aria-valuenow",
@@ -1569,40 +1464,28 @@ function renderProgress() {
 
   }
 
-
-  if (
-    progressRate
-  ) {
+  if (progressRate) {
 
     progressRate.textContent =
       `${percentage}%`;
 
   }
 
-
-  if (
-    progressMembers
-  ) {
+  if (progressMembers) {
 
     progressMembers.textContent =
       `${contributingMembers} / ${activeMembers.length}`;
 
   }
 
-
-  if (
-    progressMemberCount
-  ) {
+  if (progressMemberCount) {
 
     progressMemberCount.textContent =
       `${contributingMembers} of ${activeMembers.length} members`;
 
   }
 
-
-  if (
-    progressParticipation
-  ) {
+  if (progressParticipation) {
 
     progressParticipation.textContent =
       `${participation}%`;
@@ -1618,22 +1501,15 @@ function renderProgress() {
 
 function renderMonthlyStatus() {
 
-  if (
-    !memberStatusRows
-  ) {
-
+  if (!memberStatusRows) {
     return;
-
   }
-
 
   const month =
     currentMonth();
 
 
-  if (
-    !members.length
-  ) {
+  if (!members.length) {
 
     memberStatusRows.innerHTML =
       `
@@ -1722,18 +1598,12 @@ function renderMonthlyStatus() {
 
 function renderLedger() {
 
-  if (
-    !contributionRows
-  ) {
-
+  if (!contributionRows) {
     return;
-
   }
 
 
-  if (
-    !contributions.length
-  ) {
+  if (!contributions.length) {
 
     contributionRows.innerHTML =
       `
@@ -1761,17 +1631,14 @@ function renderLedger() {
               contribution.member_id
             );
 
-
           const reference =
             contribution.mpesa_reference ||
             contribution.reference ||
             "—";
 
-
           const method =
             contribution.payment_method ||
             "—";
-
 
           const type =
             contribution.contribution_type ||
@@ -1832,19 +1699,14 @@ function renderLedger() {
 
 
 /* =========================================================
-   TOGGLE M-PESA FIELD
+   TOGGLE M-PESA
 ========================================================= */
 
 function toggleMpesaReference() {
 
-  if (
-    !methodSelect
-  ) {
-
+  if (!methodSelect) {
     return;
-
   }
-
 
   const method =
     String(
@@ -1853,26 +1715,20 @@ function toggleMpesaReference() {
       .trim()
       .toLowerCase();
 
-
   const isMpesa =
     method === "m-pesa" ||
     method === "mpesa" ||
     method === "m_pesa";
 
 
-  if (
-    mpesaReferenceWrap
-  ) {
+  if (mpesaReferenceWrap) {
 
     mpesaReferenceWrap.hidden =
       !isMpesa;
 
   }
 
-
-  if (
-    mpesaReference
-  ) {
+  if (mpesaReference) {
 
     mpesaReference.required =
       isMpesa;
@@ -1888,9 +1744,7 @@ function toggleMpesaReference() {
 
 function bindEvents() {
 
-  if (
-    eventsBound
-  ) {
+  if (eventsBound) {
 
     toggleMpesaReference();
 
@@ -1898,14 +1752,10 @@ function bindEvents() {
 
   }
 
-
-  eventsBound =
-    true;
+  eventsBound = true;
 
 
-  if (
-    form
-  ) {
+  if (form) {
 
     form.addEventListener(
       "submit",
@@ -1914,10 +1764,7 @@ function bindEvents() {
 
   }
 
-
-  if (
-    methodSelect
-  ) {
+  if (methodSelect) {
 
     methodSelect.addEventListener(
       "change",
@@ -1926,43 +1773,7 @@ function bindEvents() {
 
   }
 
-
   toggleMpesaReference();
-
-}
-
-
-/* =========================================================
-   GET CURRENT RECORDER MEMBER
-========================================================= */
-
-function getRecorderMemberId() {
-
-  /*
-   * CRITICAL:
-   *
-   * contributions.recorded_by references
-   * public.members.id.
-   *
-   * It must NEVER receive currentUser.id.
-   */
-
-  const recorderId =
-    currentMember?.id;
-
-
-  if (
-    !recorderId
-  ) {
-
-    throw new Error(
-      "Your account is not linked to a valid member record. Please contact the group administrator."
-    );
-
-  }
-
-
-  return recorderId;
 
 }
 
@@ -1983,9 +1794,7 @@ function getSelectedMember(
     );
 
 
-  if (
-    !member
-  ) {
+  if (!member) {
 
     throw new Error(
       "The selected member does not belong to this group."
@@ -2002,9 +1811,7 @@ function getSelectedMember(
       .toLowerCase();
 
 
-  if (
-    status === "inactive"
-  ) {
+  if (status === "inactive") {
 
     throw new Error(
       "This member is inactive and cannot receive a contribution."
@@ -2014,6 +1821,65 @@ function getSelectedMember(
 
 
   return member;
+
+}
+
+
+/* =========================================================
+   CHECK FINANCIAL MONTH
+=========================================================
+
+   This is a UI convenience check.
+
+   The DATABASE trigger remains the authoritative security
+   control:
+
+       prevent_closed_month_contribution()
+========================================================= */
+
+async function ensureMonthIsOpen(
+  month
+) {
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("financial_periods")
+      .select(`
+        status
+      `)
+      .eq(
+        "group_id",
+        groupId
+      )
+      .eq(
+        "month",
+        month
+      )
+      .maybeSingle();
+
+
+  if (error) {
+
+    throw error;
+
+  }
+
+
+  if (
+    data &&
+    String(
+      data.status || ""
+    ).toLowerCase() === "closed"
+  ) {
+
+    throw new Error(
+      `Financial month ${month} is closed. Contributions cannot be recorded.`
+    );
+
+  }
 
 }
 
@@ -2029,12 +1895,8 @@ async function handleSubmit(
   event.preventDefault();
 
 
-  if (
-    saveButton?.disabled
-  ) {
-
+  if (saveButton?.disabled) {
     return;
-
   }
 
 
@@ -2043,23 +1905,13 @@ async function handleSubmit(
     clearError();
 
 
-    if (
-      !groupId
-    ) {
+    if (!groupId) {
 
       throw new Error(
         "No group is associated with this account."
       );
 
     }
-
-
-    /* -----------------------------------------------------
-       RECORDER
-    ----------------------------------------------------- */
-
-    const recorderMemberId =
-      getRecorderMemberId();
 
 
     /* -----------------------------------------------------
@@ -2072,9 +1924,7 @@ async function handleSubmit(
       ).trim();
 
 
-    if (
-      !memberId
-    ) {
+    if (!memberId) {
 
       throw new Error(
         "Please select a member."
@@ -2132,6 +1982,13 @@ async function handleSubmit(
     }
 
 
+    const month =
+      contributionDate.slice(
+        0,
+        7
+      );
+
+
     /* -----------------------------------------------------
        TYPE
     ----------------------------------------------------- */
@@ -2140,8 +1997,7 @@ async function handleSubmit(
       String(
         typeSelect?.value ||
         "monthly"
-      )
-        .trim();
+      ).trim();
 
 
     const allowedTypes = [
@@ -2174,8 +2030,7 @@ async function handleSubmit(
       String(
         methodSelect?.value ||
         "Cash"
-      )
-        .trim();
+      ).trim();
 
 
     const allowedMethods = [
@@ -2199,15 +2054,13 @@ async function handleSubmit(
 
 
     /* -----------------------------------------------------
-       M-PESA REFERENCE
+       M-PESA
     ----------------------------------------------------- */
 
     const mpesaRef =
       String(
-        mpesaReference?.value ||
-        ""
-      )
-        .trim();
+        mpesaReference?.value || ""
+      ).trim();
 
 
     if (
@@ -2223,23 +2076,19 @@ async function handleSubmit(
 
 
     /* -----------------------------------------------------
-       MONTH
+       MONTH OPEN CHECK
     ----------------------------------------------------- */
 
-    const month =
-      contributionDate.slice(
-        0,
-        7
-      );
+    await ensureMonthIsOpen(
+      month
+    );
 
 
     /* -----------------------------------------------------
        BUTTON
     ----------------------------------------------------- */
 
-    if (
-      saveButton
-    ) {
+    if (saveButton) {
 
       saveButton.disabled =
         true;
@@ -2255,17 +2104,22 @@ async function handleSubmit(
     );
 
 
-    /* -----------------------------------------------------
-       PAYLOAD
-       
-       CRITICAL:
-       
-       recorded_by = currentMember.id
-       
-       NOT:
-       
-       currentUser.id
-    ----------------------------------------------------- */
+    /* =====================================================
+       IMPORTANT SECURITY CHANGE
+
+       DO NOT SEND:
+
+           recorded_by: currentUser.id
+
+       DO NOT SEND:
+
+           recorded_by: currentMember.id
+
+       The database trigger will resolve the authenticated
+       user to the correct members.id.
+
+       This prevents clients from choosing the recorder.
+    ===================================================== */
 
     const payload = {
 
@@ -2290,9 +2144,6 @@ async function handleSubmit(
       contribution_date:
         contributionDate,
 
-      recorded_by:
-        recorderMemberId,
-
       reference:
         mpesaRef || null,
 
@@ -2303,29 +2154,34 @@ async function handleSubmit(
 
 
     console.log(
-      "CHAMA LIVE: contribution payload",
+      "CHAMA LIVE: secure contribution payload",
       {
-        group_id: payload.group_id,
-        member_id: payload.member_id,
-        amount: payload.amount,
+        group_id:
+          payload.group_id,
+
+        member_id:
+          payload.member_id,
+
+        amount:
+          payload.amount,
+
         contribution_type:
           payload.contribution_type,
-        month: payload.month,
+
+        month:
+          payload.month,
+
         payment_method:
           payload.payment_method,
+
         contribution_date:
-          payload.contribution_date,
-        recorded_by:
-          payload.recorded_by
+          payload.contribution_date
       }
     );
 
 
     /* -----------------------------------------------------
        INSERT
-       
-       Do NOT call .select() here.
-       We only need the insert to succeed.
     ----------------------------------------------------- */
 
     const {
@@ -2338,9 +2194,7 @@ async function handleSubmit(
         );
 
 
-    if (
-      error
-    ) {
+    if (error) {
 
       throw error;
 
@@ -2353,21 +2207,17 @@ async function handleSubmit(
 
 
     /* -----------------------------------------------------
-       RESET FORM
+       RESET
     ----------------------------------------------------- */
 
-    if (
-      form
-    ) {
+    if (form) {
 
       form.reset();
 
     }
 
 
-    if (
-      dateInput
-    ) {
+    if (dateInput) {
 
       dateInput.value =
         todayString();
@@ -2375,9 +2225,7 @@ async function handleSubmit(
     }
 
 
-    if (
-      typeSelect
-    ) {
+    if (typeSelect) {
 
       typeSelect.value =
         "monthly";
@@ -2385,9 +2233,7 @@ async function handleSubmit(
     }
 
 
-    if (
-      methodSelect
-    ) {
+    if (methodSelect) {
 
       methodSelect.value =
         "M-Pesa";
@@ -2399,11 +2245,10 @@ async function handleSubmit(
 
 
     /* -----------------------------------------------------
-       REFRESH DATA
+       REFRESH
     ----------------------------------------------------- */
 
     await loadContributions();
-
 
     renderProgress();
 
@@ -2436,9 +2281,7 @@ async function handleSubmit(
   }
   finally {
 
-    if (
-      saveButton
-    ) {
+    if (saveButton) {
 
       saveButton.disabled =
         false;
@@ -2459,14 +2302,9 @@ async function handleSubmit(
 
 export async function refreshContributions() {
 
-  if (
-    !groupId
-  ) {
-
+  if (!groupId) {
     return;
-
   }
-
 
   await loadContributions();
 
@@ -2481,14 +2319,6 @@ export async function refreshContributions() {
 
 /* =========================================================
    AUTO INITIALIZATION
-=========================================================
-
-   layout.js dynamically imports this module and calls:
-
-       initContributions()
-
-   The compatibility auto-init below also allows the file
-   to work if loaded directly on the page.
 ========================================================= */
 
 function autoInitialize() {
@@ -2512,12 +2342,6 @@ function autoInitialize() {
       "DOMContentLoaded",
       () => {
 
-        /*
-         * layout.js normally initializes the page.
-         * Calling initContributions here is safe because
-         * the initialized flag prevents duplicate work.
-         */
-
         initContributions();
 
       },
@@ -2536,14 +2360,10 @@ function autoInitialize() {
 }
 
 
-/*
- * Keep automatic initialization for compatibility
- * with pages that load contributions.js directly.
- */
-
 autoInitialize();
 
 
 console.log(
   "CHAMA LIVE: contributions.js ready"
 );
+```
