@@ -22,27 +22,7 @@
   <style>
 
     /* =====================================================
-       REPORT HEADER
-    ====================================================== */
-
-    .report-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 20px;
-      flex-wrap: wrap;
-    }
-
-
-    .report-actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-
-    /* =====================================================
-       FILTERS
+       REPORT FILTERS
     ====================================================== */
 
     .report-filters {
@@ -50,102 +30,67 @@
       grid-template-columns:
         repeat(2, minmax(0, 1fr));
 
-      gap: 15px;
-      margin-bottom: 15px;
+      gap: 14px;
+
+      align-items: end;
     }
 
 
     .report-filter-actions {
       display: flex;
+
       gap: 10px;
+
       flex-wrap: wrap;
+
+      margin-top: 14px;
     }
 
 
     /* =====================================================
-       REPORT CARDS
+       REPORT TABLES
     ====================================================== */
 
-    .report-value {
-      margin-top: 6px;
-      font-size: 24px;
-      font-weight: 800;
-      color: var(--text-dark);
+    .report-table th,
+    .report-table td {
+      white-space: nowrap;
+      vertical-align: middle;
     }
 
+
+    .report-table td strong {
+      font-weight: 800;
+    }
+
+
+    /* =====================================================
+       BALANCE
+    ====================================================== */
 
     .report-balance {
-      color: var(--success-dark);
+      font-size: 24px;
+      font-weight: 800;
     }
 
 
     /* =====================================================
-       TWO COLUMN REPORT
+       RESPONSIVE
     ====================================================== */
 
-    .report-columns {
-      display: grid;
-      grid-template-columns:
-        repeat(2, minmax(0, 1fr));
+    @media (max-width: 700px) {
 
-      gap: 20px;
-    }
-
-
-    /* =====================================================
-       PRINT
-    ====================================================== */
-
-    @media print {
-
-      .topbar,
-      .sidebar,
-      .report-actions,
-      .report-filters,
-      #status,
-      #error,
-      button {
-        display: none !important;
-      }
-
-
-      .layout {
-        display: block;
-      }
-
-
-      .main {
-        width: 100%;
-        margin: 0;
-        padding: 0;
-      }
-
-
-      .card {
-        box-shadow: none !important;
-        border: 1px solid #ddd;
-        break-inside: avoid;
-      }
-
-
-      body {
-        background: white;
-      }
-
-    }
-
-
-    /* =====================================================
-       MOBILE
-    ====================================================== */
-
-    @media (
-      max-width: 700px
-    ) {
-
-      .report-filters,
-      .report-columns {
+      .report-filters {
         grid-template-columns: 1fr;
+      }
+
+
+      .report-table {
+        min-width: 650px;
+      }
+
+
+      .report-balance {
+        font-size: 21px;
       }
 
     }
@@ -157,6 +102,10 @@
 
 <body>
 
+
+<!-- =====================================================
+     TOP BAR
+====================================================== -->
 
 <header class="topbar">
 
@@ -176,6 +125,10 @@
 </header>
 
 
+
+<!-- =====================================================
+     APPLICATION LAYOUT
+====================================================== -->
 
 <div class="layout">
 
@@ -236,47 +189,23 @@
   <main class="main">
 
 
-    <div class="report-header">
+    <!-- =================================================
+         PAGE HEADER
+    ================================================== -->
 
+    <div class="page-head">
 
-      <div class="page-head">
+      <div>
 
-        <div>
+        <h1>
+          Reports
+        </h1>
 
-          <h1>
-            Reports
-          </h1>
-
-          <p class="muted">
-            Financial, membership and meeting reports.
-          </p>
-
-        </div>
-
-      </div>
-
-
-      <div class="report-actions">
-
-        <button
-          class="btn btn-secondary"
-          id="exportCsv"
-          type="button"
-        >
-          Export CSV
-        </button>
-
-
-        <button
-          class="btn btn-secondary"
-          id="printReport"
-          type="button"
-        >
-          Print Report
-        </button>
+        <p class="muted">
+          Financial, membership and meeting reports.
+        </p>
 
       </div>
-
 
     </div>
 
@@ -309,42 +238,56 @@
 
 
     <!-- =================================================
-         FILTERS
+         REPORT PERIOD
     ================================================== -->
 
-    <section class="card report-filters">
+    <section class="card">
+
+      <h2>
+        Report Period
+      </h2>
 
 
-      <div>
-
-        <label
-          for="fromDate"
-          class="muted"
-        >
-          From Date
-        </label>
-
-        <input
-          id="fromDate"
-          type="date"
-        >
-
-      </div>
+      <br>
 
 
-      <div>
+      <div class="report-filters">
 
-        <label
-          for="toDate"
-          class="muted"
-        >
-          To Date
-        </label>
 
-        <input
-          id="toDate"
-          type="date"
-        >
+        <div class="form-group">
+
+          <label
+            for="fromDate"
+            class="muted"
+          >
+            From Date
+          </label>
+
+          <input
+            id="fromDate"
+            type="date"
+          >
+
+        </div>
+
+
+
+        <div class="form-group">
+
+          <label
+            for="toDate"
+            class="muted"
+          >
+            To Date
+          </label>
+
+          <input
+            id="toDate"
+            type="date"
+          >
+
+        </div>
+
 
       </div>
 
@@ -353,10 +296,19 @@
 
         <button
           class="btn btn-primary"
-          id="generateReport"
+          id="applyFilters"
           type="button"
         >
           Generate Report
+        </button>
+
+
+        <button
+          class="btn btn-secondary"
+          id="resetFilters"
+          type="button"
+        >
+          Reset Period
         </button>
 
       </div>
@@ -365,19 +317,28 @@
 
 
 
+    <br>
+
+
+
     <!-- =================================================
          FINANCIAL SUMMARY
     ================================================== -->
 
-    <section>
+    <section class="card">
 
       <h2>
         Financial Summary
       </h2>
 
 
+      <br>
+
+
       <div class="grid grid-3">
 
+
+        <!-- CONTRIBUTIONS -->
 
         <div class="card">
 
@@ -386,14 +347,17 @@
           </div>
 
           <div
-            class="report-value"
-            id="contributionsTotal"
+            class="metric"
+            id="totalContributions"
           >
             KSh 0
           </div>
 
         </div>
 
+
+
+        <!-- APPROVED EXPENSES -->
 
         <div class="card">
 
@@ -402,7 +366,7 @@
           </div>
 
           <div
-            class="report-value"
+            class="metric"
             id="approvedExpenses"
           >
             KSh 0
@@ -411,6 +375,9 @@
         </div>
 
 
+
+        <!-- BALANCE -->
+
         <div class="card">
 
           <div class="muted">
@@ -418,14 +385,17 @@
           </div>
 
           <div
-            class="report-value report-balance"
-            id="balanceTotal"
+            class="report-balance"
+            id="currentBalance"
           >
             KSh 0
           </div>
 
         </div>
 
+
+
+        <!-- PENDING -->
 
         <div class="card">
 
@@ -434,7 +404,7 @@
           </div>
 
           <div
-            class="report-value"
+            class="metric"
             id="pendingExpenses"
           >
             KSh 0
@@ -443,6 +413,9 @@
         </div>
 
 
+
+        <!-- REJECTED -->
+
         <div class="card">
 
           <div class="muted">
@@ -450,7 +423,7 @@
           </div>
 
           <div
-            class="report-value"
+            class="metric"
             id="rejectedExpenses"
           >
             KSh 0
@@ -459,6 +432,9 @@
         </div>
 
 
+
+        <!-- MEMBERS -->
+
         <div class="card">
 
           <div class="muted">
@@ -466,13 +442,14 @@
           </div>
 
           <div
-            class="report-value"
-            id="membersTotal"
+            class="metric"
+            id="activeMembers"
           >
             0
           </div>
 
         </div>
+
 
       </div>
 
@@ -488,14 +465,17 @@
          MEETING SUMMARY
     ================================================== -->
 
-    <section>
+    <section class="card">
 
       <h2>
         Meeting Summary
       </h2>
 
 
-      <div class="grid grid-4">
+      <br>
+
+
+      <div class="grid grid-3">
 
 
         <div class="card">
@@ -505,13 +485,14 @@
           </div>
 
           <div
-            class="report-value"
-            id="meetingsTotal"
+            class="metric"
+            id="totalMeetings"
           >
             0
           </div>
 
         </div>
+
 
 
         <div class="card">
@@ -521,13 +502,14 @@
           </div>
 
           <div
-            class="report-value"
+            class="metric"
             id="upcomingMeetings"
           >
             0
           </div>
 
         </div>
+
 
 
         <div class="card">
@@ -537,13 +519,14 @@
           </div>
 
           <div
-            class="report-value"
+            class="metric"
             id="completedMeetings"
           >
             0
           </div>
 
         </div>
+
 
 
         <div class="card">
@@ -553,7 +536,7 @@
           </div>
 
           <div
-            class="report-value"
+            class="metric"
             id="cancelledMeetings"
           >
             0
@@ -561,6 +544,7 @@
 
         </div>
 
+
       </div>
 
     </section>
@@ -572,122 +556,58 @@
 
 
     <!-- =================================================
-         MONTHLY BREAKDOWN
+         CONTRIBUTION BREAKDOWN
     ================================================== -->
 
-    <section class="report-columns">
+    <section class="card">
+
+      <h2>
+        Contribution Breakdown
+      </h2>
 
 
-      <!-- CONTRIBUTIONS -->
+      <div class="table-wrap">
 
-      <div class="card">
+        <table class="table report-table">
 
-        <h2>
-          Contribution Breakdown
-        </h2>
+          <thead>
 
+            <tr>
 
-        <div class="table-wrap">
+              <th>
+                Month
+              </th>
 
-          <table class="table">
+              <th>
+                Entries
+              </th>
 
-            <thead>
+              <th>
+                Amount
+              </th>
 
-              <tr>
+            </tr>
 
-                <th>
-                  Month
-                </th>
-
-                <th>
-                  Entries
-                </th>
-
-                <th>
-                  Amount
-                </th>
-
-              </tr>
-
-            </thead>
+          </thead>
 
 
-            <tbody
-              id="contributionBreakdownRows"
-            >
+          <tbody
+            id="contributionBreakdownRows"
+          >
 
-              <tr>
+            <tr>
 
-                <td colspan="3">
-                  Loading...
-                </td>
+              <td colspan="3">
+                Loading...
+              </td>
 
-              </tr>
+            </tr>
 
-            </tbody>
+          </tbody>
 
-          </table>
-
-        </div>
+        </table>
 
       </div>
-
-
-
-      <!-- EXPENSES -->
-
-      <div class="card">
-
-        <h2>
-          Approved Expense Breakdown
-        </h2>
-
-
-        <div class="table-wrap">
-
-          <table class="table">
-
-            <thead>
-
-              <tr>
-
-                <th>
-                  Month
-                </th>
-
-                <th>
-                  Entries
-                </th>
-
-                <th>
-                  Amount
-                </th>
-
-              </tr>
-
-            </thead>
-
-
-            <tbody
-              id="expenseBreakdownRows"
-            >
-
-              <tr>
-
-                <td colspan="3">
-                  Loading...
-                </td>
-
-              </tr>
-
-            </tbody>
-
-          </table>
-
-        </div>
-
-      </div>
-
 
     </section>
 
@@ -698,7 +618,69 @@
 
 
     <!-- =================================================
-         RECENT CONTRIBUTIONS
+         APPROVED EXPENSE BREAKDOWN
+    ================================================== -->
+
+    <section class="card">
+
+      <h2>
+        Approved Expense Breakdown
+      </h2>
+
+
+      <div class="table-wrap">
+
+        <table class="table report-table">
+
+          <thead>
+
+            <tr>
+
+              <th>
+                Month
+              </th>
+
+              <th>
+                Entries
+              </th>
+
+              <th>
+                Amount
+              </th>
+
+            </tr>
+
+          </thead>
+
+
+          <tbody
+            id="expenseBreakdownRows"
+          >
+
+            <tr>
+
+              <td colspan="3">
+                Loading...
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+
+
+    <br>
+
+
+
+    <!-- =================================================
+         CONTRIBUTION REPORT
     ================================================== -->
 
     <section class="card">
@@ -709,14 +691,16 @@
 
 
       <p class="muted">
-        Most recent contributions within the selected
-        reporting period.
+
+        Most recent contributions within the
+        selected reporting period.
+
       </p>
 
 
       <div class="table-wrap">
 
-        <table class="table">
+        <table class="table report-table">
 
           <thead>
 
@@ -748,7 +732,7 @@
 
 
           <tbody
-            id="reportContributionRows"
+            id="contributionReportRows"
           >
 
             <tr>
@@ -774,7 +758,7 @@
 
 
     <!-- =================================================
-         APPROVED EXPENSES
+         APPROVED EXPENSE REPORT
     ================================================== -->
 
     <section class="card">
@@ -785,14 +769,16 @@
 
 
       <p class="muted">
-        Approved expenses within the selected reporting
-        period.
+
+        Approved expenses within the selected
+        reporting period.
+
       </p>
 
 
       <div class="table-wrap">
 
-        <table class="table">
+        <table class="table report-table">
 
           <thead>
 
@@ -824,7 +810,7 @@
 
 
           <tbody
-            id="reportExpenseRows"
+            id="expenseReportRows"
           >
 
             <tr>
@@ -852,6 +838,9 @@
 
 <!-- =====================================================
      PAGE BOOT
+
+     layout.js already maps reports.html
+     to ./reports.js and calls initReports().
 ====================================================== -->
 
 <script type="module">
