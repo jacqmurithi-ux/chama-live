@@ -118,6 +118,7 @@
       line-height: 1.5;
     }
 
+
     /* =====================================================
        STATUS TABLE
     ====================================================== */
@@ -149,6 +150,48 @@
       font-weight: 800;
       text-transform: uppercase;
     }
+
+
+    /* =====================================================
+       MONTHLY STATUS COLORS
+    ====================================================== */
+
+    #memberStatusRows
+    .monthly-status-paid {
+
+      color: var(--success-dark);
+      font-weight: 800;
+
+    }
+
+    #memberStatusRows
+    .monthly-status-partial {
+
+      color: var(--warning-dark);
+      font-weight: 800;
+
+    }
+
+    #memberStatusRows
+    .monthly-status-outstanding {
+
+      color: var(--warning-dark);
+      font-weight: 800;
+
+    }
+
+    #memberStatusRows
+    .monthly-status-credit {
+
+      color: var(--success-dark);
+      font-weight: 800;
+
+    }
+
+
+    /* =====================================================
+       MOBILE
+    ====================================================== */
 
     @media (max-width: 700px) {
 
@@ -309,7 +352,7 @@
             id="progressMonth"
             class="progress-month"
           >
-            August 2026
+            Loading...
           </div>
 
         </div>
@@ -328,6 +371,7 @@
       <div
         class="progress-track"
         role="progressbar"
+        aria-label="Monthly contribution progress"
         aria-valuemin="0"
         aria-valuemax="100"
         aria-valuenow="0"
@@ -419,10 +463,10 @@
 
       <p class="progress-note">
 
-        Only amounts actually applied to the current
-        month's recurring contribution count toward this
-        month's progress. Previous arrears are cleared first,
-        while extra payments become carry-forward credit.
+        Monthly progress is calculated from the authoritative
+        database monthly-status report. Payments first clear
+        previous arrears, then cover the current month's due.
+        Extra payments become carry-forward credit.
 
       </p>
 
@@ -667,9 +711,11 @@
 
       <p class="muted">
 
-        Payments first clear previous outstanding balances.
-        The current month's due is then covered. Any amount
-        remaining becomes carry-forward credit.
+        Status is calculated by the database using the
+        authoritative monthly accounting rules. Previous
+        arrears are cleared first, the current month's due
+        is then covered, and any remaining payment becomes
+        carry-forward credit.
 
       </p>
 
@@ -831,5 +877,4 @@
 
 </body>
 
-      </html>
-      
+</html>
