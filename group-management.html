@@ -1,23 +1,29 @@
-
 <!doctype html>
 <html lang="en">
 
 <head>
+
   <meta charset="utf-8">
+
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1"
   >
 
-  <title>Group Management — CHAMA LIVE</title>
+  <title>
+    Group Management — CHAMA LIVE
+  </title>
 
   <link
     rel="stylesheet"
     href="css/app.css"
   >
+
 </head>
 
+
 <body>
+
 
 <header class="topbar">
 
@@ -36,7 +42,13 @@
 </header>
 
 
+
 <div class="layout">
+
+
+  <!-- ==================================================
+       SIDEBAR
+  =================================================== -->
 
   <aside class="sidebar">
 
@@ -66,6 +78,10 @@
         Reports
       </a>
 
+      <a href="monthly-closing.html">
+        Monthly Closing
+      </a>
+
       <a
         class="active"
         href="group-management.html"
@@ -78,7 +94,15 @@
   </aside>
 
 
+
+  <!-- ==================================================
+       MAIN
+  =================================================== -->
+
   <main class="main">
+
+
+    <!-- PAGE HEADER -->
 
     <div class="page-head">
 
@@ -89,12 +113,14 @@
         </h1>
 
         <p class="muted">
-          Manage your group's profile and financial settings.
+          Manage your group's basic information and
+          contribution settings.
         </p>
 
       </div>
 
     </div>
+
 
 
     <!-- STATUS -->
@@ -103,9 +129,9 @@
       id="status"
       class="card"
       style="margin-bottom:20px;"
-    >
-      Loading group settings...
-    </div>
+      hidden
+    ></div>
+
 
 
     <!-- ERROR -->
@@ -118,127 +144,22 @@
     ></div>
 
 
-    <!-- GROUP PROFILE -->
+
+    <!-- ==================================================
+         GROUP OVERVIEW
+    =================================================== -->
 
     <section class="card">
 
       <h2>
-        Group Profile
+        Group Overview
       </h2>
 
       <br>
 
-      <form id="groupForm">
-
-        <div class="grid grid-2">
-
-          <!-- GROUP NAME -->
-
-          <div>
-
-            <label
-              for="groupName"
-              class="muted"
-            >
-              Group Name
-            </label>
-
-            <input
-              id="groupName"
-              name="groupName"
-              type="text"
-              required
-              autocomplete="organization"
-              placeholder="Enter group name"
-            >
-
-          </div>
-
-
-          <!-- OPENING BALANCE -->
-
-          <div>
-
-            <label
-              for="openingBalance"
-              class="muted"
-            >
-              Opening Balance
-            </label>
-
-            <input
-              id="openingBalance"
-              name="openingBalance"
-              type="number"
-              min="0"
-              step="0.01"
-              required
-              placeholder="0.00"
-            >
-
-          </div>
-
-
-          <!-- MONTHLY CONTRIBUTION -->
-
-          <div>
-
-            <label
-              for="monthlyContribution"
-              class="muted"
-            >
-              Monthly Contribution
-            </label>
-
-            <input
-              id="monthlyContribution"
-              name="monthlyContribution"
-              type="number"
-              min="0"
-              step="0.01"
-              required
-              placeholder="0.00"
-            >
-
-          </div>
-
-        </div>
-
-
-        <br>
-
-
-        <div>
-
-          <button
-            class="btn"
-            id="saveButton"
-            type="submit"
-          >
-            Save Changes
-          </button>
-
-        </div>
-
-      </form>
-
-    </section>
-
-
-    <br>
-
-
-    <!-- CURRENT SETTINGS -->
-
-    <section class="card">
-
-      <h2>
-        Current Settings
-      </h2>
-
-      <br>
 
       <div class="grid grid-3">
+
 
         <div>
 
@@ -246,7 +167,9 @@
             Group
           </div>
 
-          <strong id="currentGroupName">
+          <strong
+            id="currentGroupName"
+          >
             —
           </strong>
 
@@ -256,11 +179,13 @@
         <div>
 
           <div class="muted">
-            Opening Balance
+            Members
           </div>
 
-          <strong id="currentOpeningBalance">
-            KSh 0.00
+          <strong
+            id="memberCount"
+          >
+            0
           </strong>
 
         </div>
@@ -269,30 +194,256 @@
         <div>
 
           <div class="muted">
-            Monthly Contribution
+            Group ID
           </div>
 
-          <strong id="currentMonthlyContribution">
-            KSh 0.00
+          <strong
+            id="groupId"
+            style="
+              word-break:break-all;
+              font-size:12px;
+            "
+          >
+            —
           </strong>
 
         </div>
+
 
       </div>
 
     </section>
 
+
+
+    <br>
+
+
+
+    <!-- ==================================================
+         GROUP INFORMATION
+    =================================================== -->
+
+    <section class="card">
+
+      <h2>
+        Group Information
+      </h2>
+
+      <p class="muted">
+        Update the information used throughout CHAMA LIVE.
+      </p>
+
+
+      <br>
+
+
+      <form id="groupForm">
+
+
+        <!-- GROUP NAME -->
+
+        <div class="form-group">
+
+          <label
+            for="groupName"
+          >
+            Group Name
+          </label>
+
+          <input
+            id="groupName"
+            type="text"
+            required
+            maxlength="150"
+            placeholder="e.g. Timau Community Welfare Group"
+          >
+
+        </div>
+
+
+
+        <!-- GROUP TYPE -->
+
+        <div class="form-group">
+
+          <label
+            for="groupType"
+          >
+            Group Type
+          </label>
+
+          <select
+            id="groupType"
+            required
+          >
+
+            <option value="chama">
+              Chama
+            </option>
+
+            <option value="welfare">
+              Welfare Group
+            </option>
+
+            <option value="investment">
+              Investment Group
+            </option>
+
+            <option value="sacco">
+              SACCO
+            </option>
+
+            <option value="community">
+              Community Group
+            </option>
+
+            <option value="other">
+              Other
+            </option>
+
+          </select>
+
+        </div>
+
+
+
+        <!-- COUNTRY -->
+
+        <div class="form-group">
+
+          <label
+            for="country"
+          >
+            Country
+          </label>
+
+          <input
+            id="country"
+            type="text"
+            required
+            maxlength="100"
+            placeholder="Kenya"
+          >
+
+        </div>
+
+
+
+        <!-- MONTHLY CONTRIBUTION -->
+
+        <div class="form-group">
+
+          <label
+            for="monthlyContribution"
+          >
+            Default Monthly Contribution
+          </label>
+
+          <input
+            id="monthlyContribution"
+            type="number"
+            min="0"
+            step="0.01"
+            required
+            placeholder="200"
+          >
+
+          <p class="muted">
+            This is the default monthly amount expected
+            from each active member.
+          </p>
+
+        </div>
+
+
+
+        <br>
+
+
+        <button
+          class="btn"
+          id="saveGroup"
+          type="submit"
+        >
+          Save Changes
+        </button>
+
+
+      </form>
+
+    </section>
+
+
+
+    <br>
+
+
+
+    <!-- ==================================================
+         ACCOUNT INFORMATION
+    =================================================== -->
+
+    <section class="card">
+
+      <h2>
+        Group Account
+      </h2>
+
+      <p class="muted">
+        This account is currently linked to the group
+        displayed above.
+      </p>
+
+
+      <div
+        style="
+          margin-top:15px;
+          padding:15px;
+          border:1px solid var(--border-light);
+          border-radius:10px;
+          background:var(--surface-soft);
+        "
+      >
+
+        <strong>
+          Group-scoped account
+        </strong>
+
+        <p
+          class="muted"
+          style="margin-bottom:0;"
+        >
+          Your CHAMA LIVE records are loaded using your
+          member's group ID, keeping group information
+          separated from other groups.
+        </p>
+
+      </div>
+
+    </section>
+
+
   </main>
 
 </div>
 
+
+
+<!-- =====================================================
+     PAGE BOOT
+====================================================== -->
+
 <script type="module">
 
-  import { boot } from "./js/layout.js";
+  import {
+    boot
+  } from "./js/layout.js";
 
   boot();
 
 </script>
+
 
 </body>
 
