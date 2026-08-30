@@ -1,340 +1,753 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
 
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1"
+    content="width=device-width, initial-scale=1.0"
   >
 
-  <title>Monthly Closing — CHAMA LIVE</title>
+  <title>CHAMA LIVE — Monthly Closing</title>
 
-  <link
-    rel="stylesheet"
-    href="css/app.css"
+  <meta
+    name="description"
+    content="CHAMA LIVE monthly financial period closing"
   >
+
+  <link rel="stylesheet" href="./css/style.css">
+
+  <style>
+    /* =========================================================
+       CHAMA LIVE — MONTHLY CLOSING
+    ========================================================= */
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family:
+        Inter,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+      background: #f5f7fb;
+      color: #1f2937;
+    }
+
+    .closing-page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    /* =========================================================
+       HEADER
+    ========================================================= */
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .page-title h1 {
+      margin: 0 0 6px;
+      font-size: 28px;
+      font-weight: 800;
+    }
+
+    .page-title p {
+      margin: 0;
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* =========================================================
+       BUTTONS
+    ========================================================= */
+
+    button {
+      border: 0;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .btn {
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-weight: 700;
+      transition: 0.2s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #1d4ed8;
+    }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .btn-secondary:hover {
+      background: #d1d5db;
+    }
+
+    .btn-danger {
+      background: #dc2626;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #b91c1c;
+    }
+
+    .btn-success {
+      background: #16a34a;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #15803d;
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* =========================================================
+       ALERTS
+    ========================================================= */
+
+    .alert {
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+
+    .alert-error {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+
+    .alert-warning {
+      background: #fff7ed;
+      color: #9a3412;
+      border: 1px solid #fed7aa;
+    }
+
+    .alert-success {
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+    }
+
+    /* =========================================================
+       PERIOD SELECTOR
+    ========================================================= */
+
+    .selector-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+    }
+
+    .selector-grid {
+      display: grid;
+      grid-template-columns:
+        minmax(180px, 1fr)
+        minmax(180px, 1fr)
+        auto;
+      gap: 16px;
+      align-items: end;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .form-group label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #374151;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 11px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      background: white;
+      color: #111827;
+      outline: none;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    /* =========================================================
+       STATUS CARD
+    ========================================================= */
+
+    .period-status {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 18px 20px;
+      background: white;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+      flex-wrap: wrap;
+    }
+
+    .status-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .status-label {
+      font-weight: 700;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .status-open {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .status-closed {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    /* =========================================================
+       SUMMARY CARDS
+    ========================================================= */
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .summary-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+    }
+
+    .summary-card .label {
+      color: #6b7280;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .summary-card .value {
+      font-size: 24px;
+      font-weight: 800;
+      color: #111827;
+    }
+
+    .summary-card .small {
+      margin-top: 5px;
+      color: #9ca3af;
+      font-size: 12px;
+    }
+
+    /* =========================================================
+       CLOSING PANEL
+    ========================================================= */
+
+    .closing-card {
+      background: white;
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+    }
+
+    .closing-card h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+    }
+
+    .closing-card > p {
+      margin: 0 0 20px;
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .financial-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .financial-table th,
+    .financial-table td {
+      padding: 13px 10px;
+      border-bottom: 1px solid #e5e7eb;
+      text-align: left;
+    }
+
+    .financial-table th {
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    .financial-table td {
+      font-size: 14px;
+    }
+
+    .financial-table .amount {
+      text-align: right;
+      font-weight: 700;
+    }
+
+    .financial-table .total-row td {
+      border-top: 2px solid #111827;
+      border-bottom: 0;
+      font-size: 17px;
+      font-weight: 800;
+      padding-top: 18px;
+    }
+
+    /* =========================================================
+       NOTES
+    ========================================================= */
+
+    .notes-section {
+      margin-top: 24px;
+    }
+
+    .notes-section label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .notes-section textarea {
+      width: 100%;
+      min-height: 110px;
+      resize: vertical;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 12px;
+      font: inherit;
+      outline: none;
+    }
+
+    .notes-section textarea:focus {
+      border-color: #2563eb;
+      box-shadow:
+        0 0 0 3px
+        rgba(37, 99, 235, 0.1);
+    }
+
+    /* =========================================================
+       CLOSE ACTION
+    ========================================================= */
+
+    .close-action {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 24px;
+      flex-wrap: wrap;
+    }
+
+    /* =========================================================
+       INFORMATION
+    ========================================================= */
+
+    .info-card {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-bottom: 24px;
+    }
+
+    .info-card h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      color: #1e40af;
+    }
+
+    .info-card ul {
+      margin: 0;
+      padding-left: 20px;
+      color: #374151;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    /* =========================================================
+       LOADING
+    ========================================================= */
+
+    .loading {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .loading.visible {
+      display: flex;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid #d1d5db;
+      border-top-color: #2563eb;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* =========================================================
+       EMPTY / HIDDEN
+    ========================================================= */
+
+    [hidden] {
+      display: none !important;
+    }
+
+    /* =========================================================
+       RESPONSIVE
+    ========================================================= */
+
+    @media (max-width: 900px) {
+
+      .summary-grid {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+
+      .selector-grid {
+        grid-template-columns:
+          1fr 1fr;
+      }
+
+      .selector-grid .selector-button {
+        grid-column: 1 / -1;
+      }
+
+    }
+
+    @media (max-width: 600px) {
+
+      .closing-page {
+        padding: 15px;
+      }
+
+      .page-title h1 {
+        font-size: 23px;
+      }
+
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .selector-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .selector-grid .selector-button {
+        grid-column: auto;
+      }
+
+      .financial-table {
+        font-size: 13px;
+      }
+
+      .financial-table th,
+      .financial-table td {
+        padding: 10px 6px;
+      }
+
+      .header-actions,
+      .close-action {
+        width: 100%;
+      }
+
+      .header-actions .btn,
+      .close-action .btn {
+        flex: 1;
+      }
+
+    }
+
+    /* =========================================================
+       PRINT
+    ========================================================= */
+
+    @media print {
+
+      body {
+        background: white;
+      }
+
+      .closing-page {
+        max-width: none;
+        padding: 0;
+      }
+
+      .header-actions,
+      .selector-card,
+      .close-action,
+      .notes-section,
+      .info-card,
+      .period-status .btn {
+        display: none !important;
+      }
+
+      .summary-card,
+      .closing-card,
+      .period-status {
+        box-shadow: none;
+        border: 1px solid #ddd;
+      }
+
+      .summary-grid {
+        grid-template-columns:
+          repeat(4, 1fr);
+      }
+
+    }
+  </style>
 </head>
 
 <body>
 
-<header class="topbar">
+  <!-- =======================================================
+       CHAMA LIVE — MONTHLY CLOSING
+  ======================================================== -->
 
-  <div class="brand">
-    CHAMA <span>LIVE</span>
-  </div>
+  <main class="closing-page">
 
-  <button
-    class="btn btn-secondary"
-    id="logout"
-    type="button"
-  >
-    Sign out
-  </button>
+    <!-- =====================================================
+         HEADER
+    ====================================================== -->
 
-</header>
+    <header class="page-header">
 
-
-<div class="layout">
-
-  <!-- SIDEBAR -->
-
-  <aside class="sidebar">
-
-    <nav class="nav">
-
-      <a href="dashboard.html">
-        Dashboard
-      </a>
-
-      <a href="members.html">
-        Members
-      </a>
-
-      <a href="contributions.html">
-        Contributions
-      </a>
-
-      <a href="expenses.html">
-        Expenses
-      </a>
-
-      <a href="meetings.html">
-        Meetings
-      </a>
-
-      <a href="reports.html">
-        Reports
-      </a>
-
-      <a
-        href="monthly-closing.html"
-        class="active"
-      >
-        Monthly Closing
-      </a>
-
-      <a href="group-management.html">
-        Group Management
-      </a>
-
-    </nav>
-
-  </aside>
-
-
-  <!-- MAIN -->
-
-  <main class="main">
-
-    <div class="page-head">
-
-      <div>
+      <div class="page-title">
 
         <h1>
           Monthly Closing
         </h1>
 
-        <p class="muted">
-          Review and close your group's
-          monthly financial period.
+        <p>
+          Review and close the selected financial period.
         </p>
 
       </div>
 
 
-      <div>
+      <div class="header-actions">
 
-        <label
-          for="month"
-          class="muted"
+        <button
+          type="button"
+          class="btn btn-secondary"
+          id="refreshClosing"
         >
-          Financial Month
-        </label>
+          Refresh
+        </button>
 
-        <br>
-
-        <input
-          type="month"
-          id="month"
+        <button
+          type="button"
+          class="btn btn-secondary"
+          id="printClosing"
         >
+          Print
+        </button>
 
       </div>
 
-    </div>
+    </header>
 
 
-    <!-- STATUS -->
-
-    <div
-      id="status"
-      class="card"
-      style="margin-bottom:20px;"
-    >
-      Loading monthly financials...
-    </div>
-
-
-    <!-- ERROR -->
+    <!-- =====================================================
+         ERROR
+    ====================================================== -->
 
     <div
       id="error"
-      class="error"
+      class="alert alert-error"
       hidden
-      style="margin-bottom:20px;"
+      role="alert"
     ></div>
 
 
-    <!-- FINANCIAL SUMMARY -->
+    <!-- =====================================================
+         SUCCESS
+    ====================================================== -->
 
-    <div class="grid grid-3">
+    <div
+      id="success"
+      class="alert alert-success"
+      hidden
+      role="status"
+    ></div>
 
-      <div class="card">
 
-        <div class="muted">
-          Opening Balance
-        </div>
+    <!-- =====================================================
+         WARNING
+    ====================================================== -->
 
-        <div
-          class="metric"
-          id="openingBalance"
+    <div
+      id="warning"
+      class="alert alert-warning"
+      hidden
+    ></div>
+
+
+    <!-- =====================================================
+         STATUS
+    ====================================================== -->
+
+    <div class="period-status">
+
+      <div class="status-left">
+
+        <span class="status-label">
+          Period:
+        </span>
+
+        <strong id="periodMonth">
+          Loading...
+        </strong>
+
+        <span
+          id="periodStatus"
+          class="status-badge status-open"
         >
-          KSh 0
-        </div>
+          OPEN
+        </span>
 
       </div>
 
 
-      <div class="card">
+      <div class="loading" id="loading">
 
-        <div class="muted">
-          Expected Contributions
-        </div>
+        <span class="spinner"></span>
 
-        <div
-          class="metric"
-          id="expected"
-        >
-          KSh 0
-        </div>
-
-      </div>
-
-
-      <div class="card">
-
-        <div class="muted">
-          Collected Contributions
-        </div>
-
-        <div
-          class="metric"
-          id="collected"
-        >
-          KSh 0
-        </div>
-
-      </div>
-
-
-      <div class="card">
-
-        <div class="muted">
-          Outstanding
-        </div>
-
-        <div
-          class="metric"
-          id="outstanding"
-        >
-          KSh 0
-        </div>
-
-      </div>
-
-
-      <div class="card">
-
-        <div class="muted">
-          Approved Expenses
-        </div>
-
-        <div
-          class="metric"
-          id="approvedExpenses"
-        >
-          KSh 0
-        </div>
-
-      </div>
-
-
-      <div class="card">
-
-        <div class="muted">
-          Closing Balance
-        </div>
-
-        <div
-          class="metric"
-          id="closingBalance"
-        >
-          KSh 0
-        </div>
+        <span>
+          Loading financial data...
+        </span>
 
       </div>
 
     </div>
 
 
-    <br>
+    <!-- =====================================================
+         PERIOD SELECTOR
+    ====================================================== -->
 
+    <section class="selector-card">
 
-    <!-- CONTRIBUTION SUMMARY -->
+      <div class="selector-grid">
 
-    <section class="card">
+        <div class="form-group">
 
-      <h2>
-        Monthly Contribution Summary
-      </h2>
+          <label for="month">
+            Financial Month
+          </label>
 
-      <div class="grid grid-3">
-
-        <div>
-
-          <div class="muted">
-            Members Expected
-          </div>
-
-          <strong id="memberCount">
-            0
-          </strong>
+          <input
+            type="month"
+            id="month"
+            name="month"
+          >
 
         </div>
 
 
-        <div>
+        <div class="form-group">
 
-          <div class="muted">
-            Members Paid
-          </div>
+          <label for="closingBalancePreview">
+            Closing Balance
+          </label>
 
-          <strong id="membersPaid">
-            0
-          </strong>
-
-        </div>
-
-
-        <div>
-
-          <div class="muted">
-            Partial
-          </div>
-
-          <strong id="membersPartial">
-            0
-          </strong>
+          <input
+            type="text"
+            id="closingBalancePreview"
+            value="KSh 0.00"
+            readonly
+          >
 
         </div>
 
 
-        <div>
+        <div class="selector-button">
 
-          <div class="muted">
-            Outstanding Members
-          </div>
-
-          <strong id="membersOutstanding">
-            0
-          </strong>
-
-        </div>
-
-
-        <div>
-
-          <div class="muted">
-            Collection Rate
-          </div>
-
-          <strong id="collectionRate">
-            0%
-          </strong>
-
-        </div>
-
-
-        <div>
-
-          <div class="muted">
-            Period Status
-          </div>
-
-          <strong id="periodStatus">
-            OPEN
-          </strong>
+          <button
+            type="button"
+            class="btn btn-primary"
+            id="loadClosing"
+          >
+            Load Period
+          </button>
 
         </div>
 
@@ -343,232 +756,318 @@
     </section>
 
 
-    <br>
+    <!-- =====================================================
+         SUMMARY
+    ====================================================== -->
+
+    <section class="summary-grid">
+
+      <div class="summary-card">
+
+        <div class="label">
+          Opening Balance
+        </div>
+
+        <div
+          class="value"
+          id="openingBalance"
+        >
+          KSh 0.00
+        </div>
+
+        <div class="small">
+          Balance brought forward
+        </div>
+
+      </div>
 
 
-    <!-- FINANCIAL POSITION -->
+      <div class="summary-card">
 
-    <section class="card">
+        <div class="label">
+          Contributions
+        </div>
+
+        <div
+          class="value"
+          id="contributions"
+        >
+          KSh 0.00
+        </div>
+
+        <div class="small">
+          All contribution types
+        </div>
+
+      </div>
+
+
+      <div class="summary-card">
+
+        <div class="label">
+          Approved Expenses
+        </div>
+
+        <div
+          class="value"
+          id="approvedExpenses"
+        >
+          KSh 0.00
+        </div>
+
+        <div class="small">
+          Deducted from balance
+        </div>
+
+      </div>
+
+
+      <div class="summary-card">
+
+        <div class="label">
+          Closing Balance
+        </div>
+
+        <div
+          class="value"
+          id="closingBalance"
+        >
+          KSh 0.00
+        </div>
+
+        <div class="small">
+          Final period balance
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         FINANCIAL POSITION
+    ====================================================== -->
+
+    <section class="closing-card">
 
       <h2>
         Financial Position
       </h2>
 
       <p>
-        Opening balance:
-        <strong id="opening2">
-          KSh 0
-        </strong>
+        Review the amounts below before closing the month.
       </p>
 
-      <p>
-        Contributions:
-        <strong id="contributions2">
-          KSh 0
-        </strong>
-      </p>
 
-      <p>
-        Approved expenses:
-        <strong id="expenses2">
-          KSh 0
-        </strong>
-      </p>
+      <table class="financial-table">
 
-      <hr>
+        <thead>
 
-      <p>
-        Closing balance:
-        <strong id="balance2">
-          KSh 0
-        </strong>
-      </p>
+          <tr>
 
-    </section>
+            <th>
+              Description
+            </th>
+
+            <th class="amount">
+              Amount
+            </th>
+
+          </tr>
+
+        </thead>
 
 
-    <br>
+        <tbody>
+
+          <tr>
+
+            <td>
+              Opening Balance
+            </td>
+
+            <td
+              class="amount"
+              id="opening2"
+            >
+              KSh 0.00
+            </td>
+
+          </tr>
 
 
-    <!-- EXPENSE SUMMARY -->
+          <tr>
 
-    <section class="card">
+            <td>
+              Contributions Received
+            </td>
 
-      <h2>
-        Expense Summary
-      </h2>
+            <td
+              class="amount"
+              id="contributions2"
+            >
+              KSh 0.00
+            </td>
 
-      <div class="grid grid-3">
-
-        <div>
-
-          <div class="muted">
-            Approved
-          </div>
-
-          <strong id="approved2">
-            KSh 0
-          </strong>
-
-        </div>
+          </tr>
 
 
-        <div>
+          <tr>
 
-          <div class="muted">
-            Pending
-          </div>
+            <td>
+              Approved Expenses
+            </td>
 
-          <strong id="pendingExpenses">
-            KSh 0
-          </strong>
+            <td
+              class="amount"
+              id="expenses2"
+            >
+              KSh 0.00
+            </td>
 
-        </div>
+          </tr>
 
 
-        <div>
+          <tr class="total-row">
 
-          <div class="muted">
-            Rejected
-          </div>
+            <td>
+              Closing Balance
+            </td>
 
-          <strong id="rejectedExpenses">
-            KSh 0
-          </strong>
+            <td
+              class="amount"
+              id="balance2"
+            >
+              KSh 0.00
+            </td>
 
-        </div>
+          </tr>
+
+        </tbody>
+
+      </table>
+
+
+      <!-- ===================================================
+           NOTES
+      ==================================================== -->
+
+      <div class="notes-section">
+
+        <label for="closingNotes">
+          Closing Notes
+        </label>
+
+        <textarea
+          id="closingNotes"
+          name="closingNotes"
+          placeholder="Enter any notes about this month's closing..."
+        ></textarea>
 
       </div>
 
-    </section>
 
+      <!-- ===================================================
+           ACTIONS
+      ==================================================== -->
 
-    <br>
-
-
-    <!-- ACTIONS -->
-
-    <section class="card">
-
-      <h2>
-        Month Actions
-      </h2>
-
-      <p class="muted">
-        Closing a month records its final
-        financial position. Contributions and
-        expenses are not deleted.
-      </p>
-
-
-      <div
-        style="
-          display:flex;
-          gap:10px;
-          flex-wrap:wrap;
-        "
-      >
+      <div class="close-action">
 
         <button
-          class="btn btn-primary"
-          id="closeMonth"
           type="button"
+          class="btn btn-secondary"
+          id="cancelClosing"
+        >
+          Cancel
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-success"
+          id="closeMonth"
         >
           Close Month
         </button>
 
-
-        <button
-          class="btn btn-secondary"
-          id="reopenMonth"
-          type="button"
-          hidden
-        >
-          Reopen Month
-        </button>
-
-
-        <button
-          class="btn btn-secondary"
-          id="printReport"
-          type="button"
-        >
-          Print Monthly Report
-        </button>
-
       </div>
 
     </section>
 
 
-    <br>
+    <!-- =====================================================
+         INFORMATION
+    ====================================================== -->
 
+    <section class="info-card">
 
-    <!-- MEMBER STATUS -->
+      <h3>
+        Before closing the month
+      </h3>
 
-    <section class="card">
+      <ul>
 
-      <h2>
-        Member Contribution Status
-      </h2>
+        <li>
+          Confirm all contributions for the selected month
+          have been recorded.
+        </li>
 
-      <div class="table-wrap">
+        <li>
+          Confirm all expenses have the correct approval
+          status.
+        </li>
 
-        <table class="table">
+        <li>
+          Only approved expenses are deducted from the
+          closing balance.
+        </li>
 
-          <thead>
+        <li>
+          Pending and rejected expenses do not reduce the
+          closing balance.
+        </li>
 
-            <tr>
+        <li>
+          Once a period is closed, its stored closing balance
+          becomes the opening balance reference for the next
+          period.
+        </li>
 
-              <th>Member</th>
+        <li>
+          Review the financial position carefully before
+          confirming the closing.
+        </li>
 
-              <th>Expected</th>
-
-              <th>Paid</th>
-
-              <th>Outstanding</th>
-
-              <th>Status</th>
-
-            </tr>
-
-          </thead>
-
-
-          <tbody id="memberRows">
-
-            <tr>
-
-              <td colspan="5">
-                Loading...
-              </td>
-
-            </tr>
-
-          </tbody>
-
-        </table>
-
-      </div>
+      </ul>
 
     </section>
+
+
+    <!-- =====================================================
+         HIDDEN DATA / STATUS
+    ====================================================== -->
+
+    <div
+      id="status"
+      aria-live="polite"
+      style="
+        color:#6b7280;
+        font-size:13px;
+        margin-top:10px;
+      "
+    ></div>
+
 
   </main>
 
-</div>
 
+  <!-- =======================================================
+       MONTHLY CLOSING MODULE
+  ======================================================== -->
 
-<!-- IMPORTANT:
-     Do NOT import layout.js here.
-     Monthly Closing handles its own authentication.
--->
-<script type="module">
-
-  import { boot } from "./js/layout.js";
-
-  boot();
-
-</script>
+  <script
+    type="module"
+    src="./js/monthly-closing.js"
+  ></script>
 
 </body>
 </html>
