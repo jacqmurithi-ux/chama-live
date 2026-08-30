@@ -1,202 +1,444 @@
-import { supabase } from "./supabase.js";
+/* =========================================================
+   CHAMA LIVE — GROUP SIGNUP / ONBOARDING
 
-console.log("CHAMA LIVE: signup.js loaded");
+   Flow:
+   ---------------------------------------------------------
+   1. Create Supabase Auth account
+   2. Confirm email if required
+   3. Call create_group_account RPC
+   4. RPC creates group
+   5. RPC creates admin member
+   6. Admin/member starts as PENDING
+   7. Redirect to account-review.html
+
+   IMPORTANT
+   ---------------------------------------------------------
+   Password is NEVER stored in localStorage.
+========================================================= */
+
+import {
+  supabase
+} from "./auth.js";
 
 
-/* =======================================================
-   CONFIGURATION
-======================================================= */
-
-const APP_URL =
-  "https://jacqmurithi-ux.github.io/chama-live";
-
-const CONFIRM_URL =
-  "https://jacqmurithi-ux.github.io/chama-live/confirm.html";
+console.log(
+  "CHAMA LIVE: signup.js loaded"
+);
 
 
-/* =======================================================
+/* =========================================================
    ELEMENTS
-======================================================= */
+========================================================= */
 
 const form =
-  document.getElementById("signupForm");
-
-const statusEl =
-  document.getElementById("status");
-
-const errorEl =
-  document.getElementById("error");
-
-const createButton =
-  document.getElementById("createAccount");
-
-
-/* =======================================================
-   HELPERS
-======================================================= */
-
-function setStatus(message) {
-
-  if (statusEl) {
-    statusEl.textContent = message;
-  }
-
-}
-
-
-function showError(error) {
-
-  console.error(
-    "CHAMA LIVE Signup Error:",
-    error
+  document.getElementById(
+    "signupForm"
   );
 
-  if (errorEl) {
 
-    errorEl.textContent =
-      error?.message ||
-      "Unable to complete account creation.";
+const button =
+  document.getElementById(
+    "signupButton"
+  );
 
-    errorEl.hidden = false;
 
-  }
+const errorBox =
+  document.getElementById(
+    "error"
+  );
+
+
+const statusBox =
+  document.getElementById(
+    "status"
+  );
+
+
+/* =========================================================
+   CONSTANTS
+========================================================= */
+
+const BASE_URL =
+  "https://jacqmurithi-ux.github.io/chama-live";
+
+
+const REVIEW_PAGE =
+  `${BASE_URL}/account-review.html`;
+
+
+const PENDING_KEY =
+  "chama_live_pending_group_onboarding";
+
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function byId(id) {
+
+  return document.getElementById(id);
 
 }
 
+
+/* =========================================================
+   SHOW ERROR
+========================================================= */
+
+function showError(message) {
+
+  console.error(
+    "CHAMA LIVE signup:",
+    message
+  );
+
+
+  if (!errorBox) {
+    return;
+  }
+
+
+  errorBox.textContent =
+    String(
+      message ||
+      "Unable to create the account."
+    );
+
+
+  errorBox.hidden =
+    false;
+
+}
+
+
+/* =========================================================
+   CLEAR ERROR
+========================================================= */
 
 function clearError() {
 
-  if (!errorEl) {
+  if (!errorBox) {
     return;
   }
 
-  errorEl.textContent = "";
-  errorEl.hidden = true;
+
+  errorBox.textContent =
+    "";
+
+
+  errorBox.hidden =
+    true;
 
 }
 
 
-function value(id) {
+/* =========================================================
+   STATUS
+========================================================= */
 
-  return (
-    document
-      .getElementById(id)
-      ?.value
-      ?.trim() || ""
-  );
+function showStatus(message) {
+
+  if (!statusBox) {
+    return;
+  }
+
+
+  statusBox.textContent =
+    String(
+      message || ""
+    );
+
+
+  statusBox.hidden =
+    !message;
 
 }
 
 
-/* =======================================================
-   GET FORM DATA
-======================================================= */
+/* =========================================================
+   LOADING
+========================================================= */
 
-function getFormData() {
+function setLoading(
+  loading
+) {
+
+  if (!button) {
+    return;
+  }
+
+
+  button.disabled =
+    loading;
+
+
+  button.textContent =
+    loading
+      ? "Creating account..."
+      : "Create Group Account";
+
+}
+
+
+/* =========================================================
+   PHONE
+========================================================= */
+
+function normalizePhone(
+  value
+) {
+
+  let phone =
+    String(
+      value || ""
+    )
+      .trim()
+      .replace(
+        /[\s()-]/g,
+        ""
+      );
+
+
+  if (
+    /^07\d{8}$/.test(
+      phone
+    )
+  ) {
+
+    return (
+      "+254" +
+      phone.substring(1)
+    );
+
+  }
+
+
+  if (
+    /^01\d{8}$/.test(
+      phone
+    )
+  ) {
+
+    return (
+      "+254" +
+      phone.substring(1)
+    );
+
+  }
+
+
+  if (
+    /^7\d{8}$/.test(
+      phone
+    )
+  ) {
+
+    return (
+      "+254" +
+      phone
+    );
+
+  }
+
+
+  if (
+    /^1\d{8}$/.test(
+      phone
+    )
+  ) {
+
+    return (
+      "+254" +
+      phone
+    );
+
+  }
+
+
+  return phone;
+
+}
+
+
+/* =========================================================
+   READ FORM
+========================================================= */
+
+function readForm() {
 
   return {
 
-    adminName:
-      value("adminName"),
-
-    adminPhone:
-      value("adminPhone"),
-
-    email:
-      value("email"),
-
-    password:
-      document.getElementById("password")
-        ?.value || "",
-
     groupName:
-      value("groupName"),
+      byId("groupName")
+        ?.value
+        .trim() ||
+      "",
+
 
     category:
-      value("category") || "other",
+      byId("category")
+        ?.value
+        .trim() ||
+      "chama",
+
+
+    country:
+      byId("country")
+        ?.value
+        .trim() ||
+      "Kenya",
+
 
     monthlyContribution:
       Number(
-        document.getElementById(
+        byId(
           "monthlyContribution"
-        )?.value || 0
+        )?.value ||
+        0
       ),
 
-    openingBalance:
-      Number(
-        document.getElementById(
-          "openingBalance"
-        )?.value || 0
-      ),
 
     description:
-      value("description")
+      byId("description")
+        ?.value
+        .trim() ||
+      "",
+
+
+    adminName:
+      byId("adminName")
+        ?.value
+        .trim() ||
+      "",
+
+
+    adminPhone:
+      normalizePhone(
+        byId(
+          "adminPhone"
+        )?.value ||
+        ""
+      ),
+
+
+    email:
+      byId("email")
+        ?.value
+        .trim()
+        .toLowerCase() ||
+      "",
+
+
+    password:
+      byId("password")
+        ?.value ||
+      "",
+
+
+    confirmPassword:
+      byId("confirmPassword")
+        ?.value ||
+      ""
 
   };
 
 }
 
 
-/* =======================================================
+/* =========================================================
    VALIDATION
-======================================================= */
+========================================================= */
 
-function validate(data) {
+function validateForm(
+  values
+) {
 
-  if (!data.adminName) {
-    throw new Error(
-      "Please enter your full name."
-    );
-  }
+  if (!values.groupName) {
 
-
-  if (!data.adminPhone) {
-    throw new Error(
-      "Please enter your phone number."
-    );
-  }
-
-
-  if (!data.email) {
-    throw new Error(
-      "Please enter your email address."
-    );
-  }
-
-
-  if (data.password.length < 6) {
-    throw new Error(
-      "Password must contain at least 6 characters."
-    );
-  }
-
-
-  if (!data.groupName) {
     throw new Error(
       "Please enter the group name."
     );
+
   }
 
 
   if (
-    !Number.isFinite(data.monthlyContribution) ||
-    data.monthlyContribution < 0
+    values.groupName.length <
+    2
   ) {
 
     throw new Error(
-      "Please enter a valid monthly contribution."
+      "Group name is too short."
     );
 
   }
 
 
   if (
-    !Number.isFinite(data.openingBalance) ||
-    data.openingBalance < 0
+    !Number.isFinite(
+      values.monthlyContribution
+    ) ||
+    values.monthlyContribution <
+    0
   ) {
 
     throw new Error(
-      "Please enter a valid opening balance."
+      "Monthly contribution must be zero or greater."
+    );
+
+  }
+
+
+  if (!values.adminName) {
+
+    throw new Error(
+      "Please enter the administrator's name."
+    );
+
+  }
+
+
+  if (!values.adminPhone) {
+
+    throw new Error(
+      "Please enter the administrator's phone number."
+    );
+
+  }
+
+
+  if (
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+      values.email
+    )
+  ) {
+
+    throw new Error(
+      "Please enter a valid email address."
+    );
+
+  }
+
+
+  if (
+    values.password.length <
+    8
+  ) {
+
+    throw new Error(
+      "Password must contain at least 8 characters."
+    );
+
+  }
+
+
+  if (
+    values.password !==
+    values.confirmPassword
+  ) {
+
+    throw new Error(
+      "Passwords do not match."
     );
 
   }
@@ -204,607 +446,449 @@ function validate(data) {
 }
 
 
-/* =======================================================
-   SAVE LOCAL BACKUP
-======================================================= */
+/* =========================================================
+   SAVE SAFE ONBOARDING DATA
+========================================================= */
 
-function savePendingOnboarding(data) {
+function savePending(
+  values
+) {
 
-  const pending = {
-
-    adminName:
-      data.adminName,
-
-    adminPhone:
-      data.adminPhone,
-
-    email:
-      data.email,
+  const safeData = {
 
     groupName:
-      data.groupName,
+      values.groupName,
 
     category:
-      data.category,
+      values.category,
+
+    country:
+      values.country,
 
     monthlyContribution:
-      data.monthlyContribution,
-
-    openingBalance:
-      data.openingBalance,
+      values.monthlyContribution,
 
     description:
-      data.description
+      values.description,
+
+    adminName:
+      values.adminName,
+
+    adminPhone:
+      values.adminPhone,
+
+    email:
+      values.email
 
   };
 
 
-  try {
-
-    sessionStorage.setItem(
-      "chama_pending_onboarding",
-      JSON.stringify(pending)
-    );
-
-  } catch (error) {
-
-    console.warn(
-      "CHAMA LIVE: sessionStorage unavailable",
-      error
-    );
-
-  }
+  localStorage.setItem(
+    PENDING_KEY,
+    JSON.stringify(
+      safeData
+    )
+  );
 
 }
 
 
-/* =======================================================
-   SIGNUP
-======================================================= */
-
-async function signup(event) {
-
-  event.preventDefault();
-
-  clearError();
-
-
-  const data =
-    getFormData();
-
-
-  /* =====================================================
-     VALIDATE
-  ===================================================== */
-
-  try {
-
-    validate(data);
-
-  } catch (error) {
-
-    showError(error);
-
-    return;
-
-  }
-
-
-  /* =====================================================
-     BUTTON
-  ===================================================== */
-
-  if (createButton) {
-
-    createButton.disabled = true;
-
-    createButton.textContent =
-      "Creating account...";
-
-  }
-
-
-  try {
-
-    /* ===================================================
-       SAVE LOCAL BACKUP
-    =================================================== */
-
-    savePendingOnboarding(data);
-
-
-    /* ===================================================
-       CREATE SUPABASE AUTH ACCOUNT
-    =================================================== */
-
-    setStatus(
-      "Creating your account..."
-    );
-
-
-    console.log(
-      "CHAMA LIVE: signup redirect:",
-      CONFIRM_URL
-    );
-
-
-    const {
-      data: authData,
-      error: authError
-    } =
-      await supabase.auth.signUp({
-
-        email:
-          data.email,
-
-        password:
-          data.password,
-
-        options: {
-
-          emailRedirectTo:
-            CONFIRM_URL,
-
-          data: {
-
-            chama_onboarding:
-              true,
-
-            admin_name:
-              data.adminName,
-
-            admin_phone:
-              data.adminPhone,
-
-            group_name:
-              data.groupName,
-
-            category:
-              data.category,
-
-            monthly_contribution:
-              data.monthlyContribution,
-
-            opening_balance:
-              data.openingBalance,
-
-            description:
-              data.description || null,
-
-            country:
-              "Kenya"
-
-          }
-
-        }
-
-      });
-
-
-    /* ===================================================
-       AUTH ERROR
-    =================================================== */
-
-    if (authError) {
-
-      throw authError;
-
-    }
-
-
-    /* ===================================================
-       USER
-    =================================================== */
-
-    const user =
-      authData?.user;
-
-
-    if (!user) {
-
-      throw new Error(
-        "Supabase did not return a user."
-      );
-
-    }
-
-
-    console.log(
-      "CHAMA LIVE: Auth user created:",
-      user.id
-    );
-
-
-    console.log(
-      "CHAMA LIVE: Confirmation URL:",
-      CONFIRM_URL
-    );
-
-
-    /* ===================================================
-       EMAIL CONFIRMATION REQUIRED
-    =================================================== */
-
-    if (!authData.session) {
-
-      setStatus(
-        "✓ Account created. Please check your email and click Confirm email address. Your group will be created after your email is confirmed."
-      );
-
-
-      if (createButton) {
-
-        createButton.disabled = false;
-
-        createButton.textContent =
-          "Create Account & Group";
-
-      }
-
-
-      return;
-
-    }
-
-
-    /* ===================================================
-       CONFIRMATION NOT REQUIRED
-    =================================================== */
-
-    setStatus(
-      "Account created. Setting up your group..."
-    );
-
-
-    await completeOnboardingFromMetadata();
-
-
-  } catch (error) {
-
-    console.error(
-      "CHAMA LIVE Signup Error:",
-      error
-    );
-
-
-    showError(error);
-
-
-    setStatus(
-      "Account creation failed."
-    );
-
-
-    if (createButton) {
-
-      createButton.disabled = false;
-
-      createButton.textContent =
-        "Create Account & Group";
-
-    }
-
-  }
+/* =========================================================
+   CLEAR PENDING
+========================================================= */
+
+function clearPending() {
+
+  localStorage.removeItem(
+    PENDING_KEY
+  );
 
 }
 
 
-/* =======================================================
-   COMPLETE ONBOARDING
-======================================================= */
+/* =========================================================
+   FRIENDLY ERROR
+========================================================= */
 
-async function completeOnboardingFromMetadata() {
+function friendlyError(
+  error
+) {
 
-  setStatus(
-    "Creating your group..."
-  );
-
-
-  /* =====================================================
-     GET AUTH USER
-  ===================================================== */
-
-  const {
-    data: userData,
-    error: userError
-  } =
-    await supabase.auth.getUser();
-
-
-  if (userError) {
-
-    throw userError;
-
-  }
-
-
-  const user =
-    userData?.user;
-
-
-  if (!user) {
-
-    throw new Error(
-      "Authenticated user could not be found."
+  const message =
+    String(
+      error?.message ||
+      error ||
+      ""
     );
 
-  }
 
-
-  console.log(
-    "CHAMA LIVE: authenticated user:",
-    user.id
-  );
-
-
-  /* =====================================================
-     READ METADATA
-  ===================================================== */
-
-  const metadata =
-    user.user_metadata || {};
+  const lower =
+    message.toLowerCase();
 
 
   if (
-    metadata.chama_onboarding !== true
+    lower.includes(
+      "user already registered"
+    )
   ) {
 
-    throw new Error(
-      "No pending group setup information was found."
+    return (
+      "An account already exists for this email. " +
+      "Please sign in instead."
     );
 
   }
 
 
-  const groupName =
-    metadata.group_name;
+  if (
+    lower.includes(
+      "email rate limit"
+    )
+  ) {
 
-  const category =
-    metadata.category || "other";
-
-  const monthlyContribution =
-    Number(
-      metadata.monthly_contribution || 0
-    );
-
-  const openingBalance =
-    Number(
-      metadata.opening_balance || 0
-    );
-
-  const description =
-    metadata.description || null;
-
-  const adminName =
-    metadata.admin_name || "";
-
-  const adminPhone =
-    metadata.admin_phone || "";
-
-
-  if (!groupName) {
-
-    throw new Error(
-      "Group name is missing from your account setup."
+    return (
+      "Too many email requests. " +
+      "Please wait a few minutes and try again."
     );
 
   }
 
 
-  /* =====================================================
-     CREATE GROUP THROUGH RPC
-  ===================================================== */
+  if (
+    lower.includes(
+      "already linked to a group"
+    )
+  ) {
+
+    return (
+      "This account is already linked to a CHAMA LIVE group."
+    );
+
+  }
+
+
+  if (
+    lower.includes(
+      "failed to fetch"
+    ) ||
+    lower.includes(
+      "network"
+    )
+  ) {
+
+    return (
+      "Unable to connect to CHAMA LIVE. " +
+      "Check your internet connection and try again."
+    );
+
+  }
+
+
+  return (
+    message ||
+    "Unable to complete group registration."
+  );
+
+}
+
+
+/* =========================================================
+   CREATE GROUP
+========================================================= */
+
+async function createGroup(
+  values
+) {
 
   const {
-    data: result,
-    error: onboardingError
+    data,
+    error
   } =
     await supabase.rpc(
-      "onboard_new_group",
+      "create_group_account",
       {
 
-        p_group_name:
-          groupName,
+        p_name:
+          values.groupName,
 
         p_category:
-          category,
+          values.category,
 
         p_monthly_contribution:
-          monthlyContribution,
-
-        p_opening_balance:
-          openingBalance,
+          values.monthlyContribution,
 
         p_description:
-          description,
+          values.description,
 
         p_admin_name:
-          adminName,
+          values.adminName,
 
         p_admin_phone:
-          adminPhone,
+          values.adminPhone,
 
         p_country:
-          "Kenya"
+          values.country
 
       }
     );
 
 
-  if (onboardingError) {
-
-    throw onboardingError;
-
+  if (error) {
+    throw error;
   }
 
 
-  console.log(
-    "CHAMA LIVE: onboarding result:",
-    result
-  );
+  const result =
+    Array.isArray(data)
+      ? data[0]
+      : data;
 
 
-  /* =====================================================
-     VERIFY
-  ===================================================== */
-
-  if (
-    !result ||
-    result.success !== true
-  ) {
+  if (!result?.group_id) {
 
     throw new Error(
-      "Group onboarding did not complete successfully."
+      "The group was not created. No group ID was returned."
     );
 
   }
 
 
-  if (!result.group_id) {
-
-    throw new Error(
-      "Group was created but no group ID was returned."
-    );
-
-  }
-
-
-  console.log(
-    "CHAMA LIVE GROUP:",
-    result.group_id
-  );
-
-
-  console.log(
-    "CHAMA LIVE MEMBER:",
-    result.member_id
-  );
-
-
-  console.log(
-    "CHAMA LIVE MEMBER NUMBER:",
-    result.member_number
-  );
-
-
-  console.log(
-    "CHAMA LIVE ACCESS CODE:",
-    result.access_code
-  );
-
-
-  /* =====================================================
-     CLEAN LOCAL STORAGE
-  ===================================================== */
-
-  try {
-
-    sessionStorage.removeItem(
-      "chama_pending_onboarding"
-    );
-
-  } catch (error) {
-
-    console.warn(
-      "CHAMA LIVE: could not clear sessionStorage",
-      error
-    );
-
-  }
-
-
-  /* =====================================================
-     CLEAN AUTH METADATA
-  ===================================================== */
-
-  try {
-
-    const cleanedMetadata = {
-      ...metadata
-    };
-
-
-    delete cleanedMetadata.chama_onboarding;
-    delete cleanedMetadata.admin_name;
-    delete cleanedMetadata.admin_phone;
-    delete cleanedMetadata.group_name;
-    delete cleanedMetadata.category;
-    delete cleanedMetadata.monthly_contribution;
-    delete cleanedMetadata.opening_balance;
-    delete cleanedMetadata.description;
-    delete cleanedMetadata.country;
-
-
-    const {
-      error: metadataError
-    } =
-      await supabase.auth.updateUser({
-        data: cleanedMetadata
-      });
-
-
-    if (metadataError) {
-
-      console.warn(
-        "CHAMA LIVE metadata cleanup warning:",
-        metadataError
-      );
-
-    }
-
-  } catch (error) {
-
-    console.warn(
-      "CHAMA LIVE metadata cleanup warning:",
-      error
-    );
-
-  }
-
-
-  /* =====================================================
-     SUCCESS
-  ===================================================== */
-
-  setStatus(
-    "✓ Your group has been created successfully. Redirecting..."
-  );
-
-
-  setTimeout(() => {
-
-    window.location.href =
-      `${APP_URL}/dashboard.html`;
-
-  }, 800);
+  return result;
 
 }
 
 
-/* =======================================================
-   EVENT
-======================================================= */
+/* =========================================================
+   FORM SUBMIT
+========================================================= */
 
 if (form) {
 
   form.addEventListener(
     "submit",
-    signup
-  );
+    async event => {
 
-} else {
+      event.preventDefault();
 
-  console.warn(
-    "CHAMA LIVE: signupForm was not found."
+      clearError();
+
+
+      let values;
+
+
+      try {
+
+        values =
+          readForm();
+
+
+        validateForm(
+          values
+        );
+
+
+        savePending(
+          values
+        );
+
+
+        setLoading(
+          true
+        );
+
+
+        /* =================================================
+           CHECK SESSION
+        ================================================= */
+
+        showStatus(
+          "Checking your account..."
+        );
+
+
+        const {
+          data: sessionData,
+          error: sessionError
+        } =
+          await supabase.auth.getSession();
+
+
+        if (sessionError) {
+          throw sessionError;
+        }
+
+
+        let session =
+          sessionData?.session ||
+          null;
+
+
+        /* =================================================
+           CREATE AUTH USER
+        ================================================= */
+
+        if (!session?.user) {
+
+          showStatus(
+            "Creating your secure login account..."
+          );
+
+
+          const {
+            data,
+            error
+          } =
+            await supabase.auth.signUp({
+
+              email:
+                values.email,
+
+              password:
+                values.password,
+
+              options: {
+
+                emailRedirectTo:
+                  REVIEW_PAGE,
+
+                data: {
+
+                  full_name:
+                    values.adminName
+
+                }
+
+              }
+
+            });
+
+
+          if (error) {
+            throw error;
+          }
+
+
+          session =
+            data?.session ||
+            null;
+
+
+          /*
+           * Email confirmation required.
+           */
+
+          if (!session?.user) {
+
+            setLoading(
+              false
+            );
+
+
+            showStatus(
+              "Account created successfully. " +
+              "Please check your email and confirm your address. " +
+              "After confirmation, sign in to continue."
+            );
+
+
+            return;
+
+          }
+
+        }
+
+
+        /* =================================================
+           CREATE GROUP
+        ================================================= */
+
+        showStatus(
+          "Creating your group application..."
+        );
+
+
+        const result =
+          await createGroup(
+            values
+          );
+
+
+        /*
+         * The RPC now creates the administrator
+         * as pending.
+         */
+
+        clearPending();
+
+
+        /*
+         * Save only non-sensitive result data.
+         */
+
+        localStorage.setItem(
+          "chama_live_review_application",
+          JSON.stringify({
+
+            group_id:
+              result.group_id,
+
+            member_id:
+              result.member_id,
+
+            member_number:
+              result.member_number,
+
+            access_code:
+              result.access_code,
+
+            email:
+              values.email,
+
+            created_at:
+              new Date().toISOString()
+
+          })
+        );
+
+
+        showStatus(
+          "Group application submitted successfully."
+        );
+
+
+        window.location.replace(
+          `${REVIEW_PAGE}?submitted=1`
+        );
+
+      }
+
+      catch (error) {
+
+        console.error(
+          "CHAMA LIVE: signup failed",
+          error
+        );
+
+
+        showError(
+          friendlyError(
+            error
+          )
+        );
+
+
+        setLoading(
+          false
+        );
+
+      }
+
+    }
   );
 
 }
 
 
-/* =======================================================
-   START
-======================================================= */
-
 console.log(
-  "CHAMA LIVE: signup ready"
+  "CHAMA LIVE: signup.js ready"
 );
