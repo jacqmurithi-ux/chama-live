@@ -1,8 +1,7 @@
-```css
 /* =========================================================
    CHAMA LIVE — APP CSS
    Professional Financial Dashboard UI
-   TOP NAVIGATION VERSION — NO SIDEBAR
+   TOP NAVIGATION + RESPONSIVE MOBILE MENU
 ========================================================= */
 
 * {
@@ -23,6 +22,7 @@ html {
   --primary-dark: #115e59;
   --primary-light: #ccfbf1;
 
+
   /* =====================================================
      STATUS
   ===================================================== */
@@ -42,6 +42,7 @@ html {
   --info: #3b82f6;
   --info-light: #eff6ff;
 
+
   /* =====================================================
      TEXT
   ===================================================== */
@@ -50,6 +51,7 @@ html {
   --text-dark: #101828;
   --muted: #667085;
   --muted-light: #98a2b3;
+
 
   /* =====================================================
      SURFACES
@@ -62,6 +64,7 @@ html {
   --border: #e5e7eb;
   --border-light: #edf0f4;
 
+
   /* =====================================================
      TOP NAVIGATION
   ===================================================== */
@@ -70,6 +73,7 @@ html {
   --nav-text: #475467;
   --nav-hover: #f0fdfa;
   --nav-active: #ecfdf5;
+
 
   /* =====================================================
      SHADOWS
@@ -91,7 +95,9 @@ html {
 ========================================================= */
 
 body {
-  margin: 0;
+
+  margin:
+    0;
 
   font-family:
     Inter,
@@ -117,20 +123,28 @@ body {
     antialiased;
 }
 
+
 a {
-  text-decoration: none;
-  color: inherit;
+  text-decoration:
+    none;
+
+  color:
+    inherit;
 }
+
 
 button,
 input,
 select,
 textarea {
-  font: inherit;
+  font:
+    inherit;
 }
 
+
 button {
-  -webkit-tap-highlight-color: transparent;
+  -webkit-tap-highlight-color:
+    transparent;
 }
 
 
@@ -139,10 +153,12 @@ button {
 ========================================================= */
 
 .topbar {
-  min-height: 64px;
+
+  min-height:
+    64px;
 
   background:
-    rgba(255, 255, 255, 0.97);
+    rgba(255, 255, 255, .97);
 
   border-bottom:
     1px solid var(--border);
@@ -172,7 +188,7 @@ button {
     blur(10px);
 
   box-shadow:
-    0 1px 4px rgba(16, 24, 40, 0.03);
+    0 1px 4px rgba(16, 24, 40, .03);
 }
 
 
@@ -181,7 +197,9 @@ button {
 ========================================================= */
 
 .brand {
-  flex-shrink: 0;
+
+  flex-shrink:
+    0;
 
   font-size:
     20px;
@@ -190,7 +208,7 @@ button {
     800;
 
   letter-spacing:
-    -0.5px;
+    -.5px;
 
   color:
     var(--text-dark);
@@ -199,7 +217,9 @@ button {
     nowrap;
 }
 
+
 .brand span {
+
   font-weight:
     600;
 
@@ -213,6 +233,7 @@ button {
 ========================================================= */
 
 .topbar-nav {
+
   display:
     flex;
 
@@ -241,6 +262,7 @@ button {
     nowrap;
 }
 
+
 .topbar-nav::-webkit-scrollbar {
   display:
     none;
@@ -252,6 +274,7 @@ button {
 ========================================================= */
 
 .topbar-nav a {
+
   display:
     inline-flex;
 
@@ -288,7 +311,9 @@ button {
     transform .15s ease;
 }
 
+
 .topbar-nav a:hover {
+
   background:
     var(--nav-hover);
 
@@ -296,7 +321,9 @@ button {
     var(--primary);
 }
 
+
 .topbar-nav a.active {
+
   background:
     var(--nav-active);
 
@@ -313,6 +340,7 @@ button {
 ========================================================= */
 
 .topbar-actions {
+
   display:
     flex;
 
@@ -326,7 +354,9 @@ button {
     0;
 }
 
+
 .topbar-actions [data-user-name] {
+
   max-width:
     170px;
 
@@ -348,20 +378,75 @@ button {
 
 
 /* =========================================================
-   MOBILE MENU BUTTON
-   Kept for compatibility with existing layout.js.
-   It is hidden because navigation is always visible.
+   MENU BUTTON
+   Desktop: hidden
+   Mobile: enabled by layout.js CSS
 ========================================================= */
 
 .menu-toggle {
+
   display:
-    none !important;
+    none;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  width:
+    40px;
+
+  height:
+    40px;
+
+  padding:
+    0;
+
+  border:
+    1px solid var(--border);
+
+  border-radius:
+    10px;
+
+  background:
+    #ffffff;
+
+  color:
+    #344054;
+
+  cursor:
+    pointer;
+
+  font-size:
+    21px;
+
+  line-height:
+    1;
+
+  flex-shrink:
+    0;
+}
+
+
+.menu-toggle:hover {
+
+  background:
+    var(--nav-hover);
+
+  color:
+    var(--primary);
+}
+
+
+.menu-toggle:active {
+  transform:
+    scale(.96);
 }
 
 
 /* =========================================================
    SIDEBAR
-   Completely disabled.
 ========================================================= */
 
 .sidebar {
@@ -369,16 +454,12 @@ button {
     none !important;
 }
 
+
 .sidebar-overlay {
   display:
     none !important;
 }
 
-
-/* =========================================================
-   OLD SIDEBAR NAV
-   Disabled.
-========================================================= */
 
 .sidebar .nav,
 .sidebar-nav {
@@ -392,6 +473,7 @@ button {
 ========================================================= */
 
 .layout {
+
   display:
     block !important;
 
@@ -408,6 +490,7 @@ button {
 ========================================================= */
 
 .main {
+
   width:
     100%;
 
@@ -430,6 +513,7 @@ button {
 ========================================================= */
 
 .page-head {
+
   display:
     flex;
 
@@ -446,7 +530,9 @@ button {
     22px;
 }
 
+
 .page-head h1 {
+
   margin:
     0 0 5px;
 
@@ -463,7 +549,9 @@ button {
     var(--text-dark);
 }
 
+
 .page-head p {
+
   margin:
     0;
 
@@ -471,7 +559,9 @@ button {
     14px;
 }
 
+
 .eyebrow {
+
   color:
     var(--primary);
 
@@ -490,7 +580,7 @@ button {
 
 
 /* =========================================================
-   KEYBOARD ACCESSIBILITY
+   ACCESSIBILITY
 ========================================================= */
 
 .topbar-nav a:focus-visible,
@@ -498,9 +588,10 @@ button {
 .btn:focus-visible,
 .quick-action:focus-visible,
 .menu-toggle:focus-visible {
+
   outline:
     3px solid
-    rgba(15,118,110,.25);
+    rgba(15, 118, 110, .25);
 
   outline-offset:
     2px;
@@ -508,10 +599,11 @@ button {
 
 
 /* =========================================================
-   GRID SYSTEM
+   GRID
 ========================================================= */
 
 .grid {
+
   display:
     grid;
 
@@ -519,15 +611,18 @@ button {
     16px;
 }
 
+
 .grid-4 {
   grid-template-columns:
     repeat(4, minmax(0, 1fr));
 }
 
+
 .grid-3 {
   grid-template-columns:
     repeat(3, minmax(0, 1fr));
 }
+
 
 .grid-2 {
   grid-template-columns:
@@ -540,6 +635,7 @@ button {
 ========================================================= */
 
 .card {
+
   background:
     var(--card);
 
@@ -561,7 +657,9 @@ button {
     transform .2s ease;
 }
 
+
 .card:hover {
+
   box-shadow:
     var(--shadow-hover);
 
@@ -569,7 +667,9 @@ button {
     #dce7e6;
 }
 
+
 .card h2 {
+
   margin:
     0 0 8px;
 
@@ -583,6 +683,7 @@ button {
     var(--text-dark);
 }
 
+
 .card h3 {
   margin-top:
     0;
@@ -594,6 +695,7 @@ button {
 ========================================================= */
 
 .status-card {
+
   border-left:
     4px solid var(--primary);
 }
@@ -614,6 +716,7 @@ button {
 ========================================================= */
 
 .metric-card {
+
   position:
     relative;
 
@@ -621,7 +724,9 @@ button {
     hidden;
 }
 
+
 .metric-card::after {
+
   content:
     "";
 
@@ -644,7 +749,7 @@ button {
     50%;
 
   background:
-    rgba(15,118,110,.035);
+    rgba(15, 118, 110, .035);
 
   pointer-events:
     none;
@@ -656,6 +761,7 @@ button {
 ========================================================= */
 
 .metric-label {
+
   display:
     flex;
 
@@ -681,6 +787,7 @@ button {
 ========================================================= */
 
 .metric-dot {
+
   width:
     8px;
 
@@ -697,20 +804,24 @@ button {
     0;
 }
 
+
 .metric-dot.expected {
   background:
     #64748b;
 }
+
 
 .metric-dot.success {
   background:
     var(--success);
 }
 
+
 .metric-dot.warning {
   background:
     var(--warning);
 }
+
 
 .metric-dot.balance {
   background:
@@ -723,6 +834,7 @@ button {
 ========================================================= */
 
 .metric {
+
   font-size:
     28px;
 
@@ -744,7 +856,7 @@ button {
 
 
 /* =========================================================
-   FINANCIAL VALUE STATES
+   FINANCIAL STATES
 ========================================================= */
 
 .metric-positive .metric {
@@ -752,15 +864,18 @@ button {
     var(--success-dark);
 }
 
+
 .metric-warning .metric {
   color:
     var(--warning-dark);
 }
 
+
 .metric-danger .metric {
   color:
     var(--danger-dark);
 }
+
 
 .metric-neutral .metric {
   color:
@@ -769,7 +884,7 @@ button {
 
 
 /* =========================================================
-   MUTED TEXT
+   MUTED
 ========================================================= */
 
 .muted {
@@ -778,11 +893,8 @@ button {
 }
 
 
-/* =========================================================
-   SMALL SUPPORTING TEXT
-========================================================= */
-
 .card small {
+
   color:
     var(--muted);
 
@@ -791,10 +903,6 @@ button {
 }
 
 
-/* =========================================================
-   CARD VALUE EMPHASIS
-========================================================= */
-
 .card strong {
   font-weight:
     750;
@@ -802,12 +910,13 @@ button {
 
 
 /* =========================================================
-   CARD HOVER SAFETY
+   HOVER SAFETY
 ========================================================= */
 
 @media (hover: none) {
 
   .card:hover {
+
     box-shadow:
       var(--shadow);
 
@@ -827,24 +936,32 @@ button {
     middle;
 }
 
+
 #memberStatusRows td:nth-child(2),
 #memberStatusRows td:nth-child(3),
 #memberStatusRows td:nth-child(4) {
+
   font-weight:
     600;
 }
 
+
 #memberStatusRows td:nth-child(4) {
+
   color:
     var(--warning-dark);
 }
 
+
 #memberStatusRows td:nth-child(3) {
+
   color:
     var(--success-dark);
 }
 
+
 #memberStatusRows td:last-child {
+
   font-weight:
     700;
 
@@ -858,7 +975,9 @@ button {
     .2px;
 }
 
+
 #memberStatusRows td:first-child {
+
   color:
     var(--text-dark);
 
@@ -866,12 +985,16 @@ button {
     600;
 }
 
+
 #memberStatusRows tr {
+
   transition:
     background .15s ease;
 }
 
+
 #memberStatusRows tr:hover {
+
   background:
     #f7fbfa;
 }
@@ -882,6 +1005,7 @@ button {
 ========================================================= */
 
 .table-wrap {
+
   width:
     100%;
 
@@ -895,13 +1019,16 @@ button {
     touch;
 }
 
+
 .table th {
+
   text-transform:
     none;
 
   letter-spacing:
     .1px;
 }
+
 
 .table td {
   vertical-align:
@@ -910,12 +1037,13 @@ button {
 
 
 /* =========================================================
-   MOBILE / TABLET
+   TABLET
 ========================================================= */
 
 @media (max-width: 1100px) {
 
   .topbar {
+
     gap:
       10px;
 
@@ -923,7 +1051,9 @@ button {
       8px 16px;
   }
 
+
   .topbar-nav a {
+
     padding:
       8px 9px;
 
@@ -931,12 +1061,16 @@ button {
       12px;
   }
 
+
   .topbar-actions [data-user-name] {
+
     max-width:
       110px;
   }
 
+
   .main {
+
     padding:
       24px;
   }
@@ -951,6 +1085,7 @@ button {
 @media (max-width: 800px) {
 
   .topbar {
+
     flex-wrap:
       wrap;
 
@@ -964,17 +1099,23 @@ button {
       7px 10px;
   }
 
+
   .brand {
+
     font-size:
       18px;
   }
 
+
   .topbar-actions {
+
     margin-left:
       auto;
   }
 
+
   .topbar-nav {
+
     order:
       3;
 
@@ -983,12 +1124,11 @@ button {
 
     width:
       100%;
-
-    padding-bottom:
-      2px;
   }
 
+
   .topbar-nav a {
+
     min-height:
       35px;
 
@@ -999,22 +1139,30 @@ button {
       11px;
   }
 
+
   .main {
+
     padding:
       20px 14px;
   }
 
+
   .grid-4 {
+
     grid-template-columns:
       repeat(2, minmax(0, 1fr));
   }
+
 
   .grid-3 {
+
     grid-template-columns:
       repeat(2, minmax(0, 1fr));
   }
 
+
   .grid-2 {
+
     grid-template-columns:
       1fr;
   }
@@ -1029,21 +1177,28 @@ button {
 @media (max-width: 650px) {
 
   .topbar {
+
     padding:
       8px 10px;
   }
 
+
   .brand {
+
     font-size:
       16px;
   }
 
+
   .topbar-actions [data-user-name] {
+
     display:
       none;
   }
 
+
   .topbar-actions .btn {
+
     padding:
       7px 10px;
 
@@ -1051,28 +1206,39 @@ button {
       11px;
   }
 
+
+  /*
+   * On mobile the full top navigation is replaced
+   * by the hamburger menu.
+   */
+
   .topbar-nav {
-    gap:
-      2px;
+
+    display:
+      none !important;
   }
 
-  .topbar-nav a {
-    min-height:
-      33px;
 
-    padding:
-      6px 8px;
+  /*
+   * Mobile menu button is visible.
+   */
 
-    font-size:
-      10px;
+  .menu-toggle {
+
+    display:
+      inline-flex !important;
   }
+
 
   .main {
+
     padding:
-      16px 10px;
+      16px 10px 96px 10px;
   }
 
+
   .page-head {
+
     align-items:
       flex-start;
 
@@ -1083,28 +1249,38 @@ button {
       12px;
   }
 
+
   .page-head h1 {
+
     font-size:
       24px;
   }
 
+
   .card {
+
     padding:
       16px;
   }
 
+
   .grid-4,
   .grid-3 {
+
     grid-template-columns:
       1fr;
   }
 
+
   #memberStatusRows td {
+
     padding:
       11px 12px;
   }
 
+
   #memberStatusRows td:first-child {
+
     min-width:
       150px;
   }
@@ -1118,18 +1294,20 @@ button {
 
 @media (max-width: 390px) {
 
-  .topbar-nav a {
-    padding:
-      6px 7px;
+  .menu-toggle {
 
-    font-size:
-      9px;
+    width:
+      38px;
+
+    height:
+      38px;
   }
 
+
   .main {
+
     padding:
-      14px 9px;
+      14px 9px 92px 9px;
   }
 
 }
-```
