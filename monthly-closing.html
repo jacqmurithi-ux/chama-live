@@ -21,101 +21,617 @@
 
   <style>
 
+    /* =====================================================
+       MONTHLY CLOSING — PAGE DESIGN
+    ====================================================== */
+
     .closing-header {
-      margin-bottom: 20px;
+      margin-bottom: 22px;
     }
 
-    .closing-selector {
+
+    .closing-header-content {
       display: flex;
-      gap: 12px;
-      align-items: end;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+
+    .closing-header-copy h1 {
+      margin-bottom: 6px;
+    }
+
+
+    .closing-header-copy p {
+      margin: 0;
+      max-width: 680px;
+    }
+
+
+    .closing-month-display {
+      min-width: 190px;
+      padding: 14px 18px;
+      border: 1px solid var(--border-light);
+      border-radius: 14px;
+      background: var(--surface-soft);
+      text-align: right;
+    }
+
+
+    .closing-month-display-label {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+
+    .closing-month-display-value {
+      display: block;
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--text-dark);
+    }
+
+
+    /* =====================================================
+       STATUS / ERROR
+    ====================================================== */
+
+    .closing-status-message {
+      margin-bottom: 18px;
+    }
+
+
+    #status {
+      padding: 14px 16px;
+      border-radius: 12px;
+      font-weight: 700;
+      border: 1px solid var(--border-light);
+    }
+
+
+    #error {
+      padding: 14px 16px;
+      border-radius: 12px;
+      margin-bottom: 18px;
+    }
+
+
+    /* =====================================================
+       SECTION HEAD
+    ====================================================== */
+
+    .closing-section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      margin-bottom: 18px;
+    }
+
+
+    .closing-section-head h2 {
+      margin: 0;
+    }
+
+
+    .section-description {
+      margin: 5px 0 0;
+    }
+
+
+    /* =====================================================
+       MONTH SELECTOR
+    ====================================================== */
+
+    .month-selector-card {
+      overflow: hidden;
+    }
+
+
+    .month-selector-inner {
+      display: flex;
+      align-items: flex-end;
+      gap: 14px;
       flex-wrap: wrap;
     }
 
-    .closing-selector .form-group {
+
+    .month-selector-inner .form-group {
       margin-bottom: 0;
-      min-width: 220px;
+      min-width: 230px;
+      flex: 1;
     }
 
-    .closing-grid {
+
+    .month-selector-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+
+    .closing-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      margin-top: 18px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+
+    .closing-status-badge::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+
+    .closing-status-badge.open {
+      color: #166534;
+      background: #dcfce7;
+    }
+
+
+    .closing-status-badge.closed {
+      color: #1d4ed8;
+      background: #dbeafe;
+    }
+
+
+    /* =====================================================
+       SUMMARY GRID
+    ====================================================== */
+
+    .closing-summary-grid {
       display: grid;
       grid-template-columns:
         repeat(4, minmax(0, 1fr));
       gap: 14px;
     }
 
-    .closing-card {
-      padding: 18px;
+
+    .closing-metric-card {
+      position: relative;
+      overflow: hidden;
+      padding: 20px;
+      border: 1px solid var(--border-light);
+      border-radius: 14px;
+      background: var(--surface);
     }
 
-    .closing-card-label {
-      display: block;
-      margin-bottom: 7px;
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 600;
+
+    .closing-metric-card::after {
+      content: "";
+      position: absolute;
+      right: -24px;
+      bottom: -30px;
+      width: 85px;
+      height: 85px;
+      border-radius: 50%;
+      background: var(--surface-soft);
+      opacity: .8;
     }
 
-    .closing-card-value {
-      font-size: 24px;
+
+    .closing-metric-icon {
+      width: 38px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 15px;
+      border-radius: 10px;
+      background: var(--surface-soft);
+      font-size: 18px;
       font-weight: 800;
+    }
+
+
+    .closing-metric-label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .035em;
+    }
+
+
+    .closing-metric-value {
+      display: block;
+      font-size: 25px;
+      line-height: 1.15;
+      font-weight: 900;
       color: var(--text-dark);
     }
 
-    .closing-balance {
-      margin-top: 20px;
-      padding: 22px;
-      border-radius: 12px;
+
+    .metric-subtext {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+
+    /* =====================================================
+       CONTRIBUTION PROGRESS
+    ====================================================== */
+
+    .collection-progress-card {
+      margin-top: 16px;
+      padding: 18px 20px;
       border: 1px solid var(--border-light);
+      border-radius: 14px;
       background: var(--surface-soft);
     }
 
-    .closing-balance-label {
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 600;
-      margin-bottom: 5px;
+
+    .collection-progress-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
     }
 
+
+    .collection-progress-title {
+      font-weight: 800;
+    }
+
+
+    #collectionProgressText {
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+
+    .collection-progress-track {
+      height: 10px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: var(--border-light);
+    }
+
+
+    .collection-progress {
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: var(--primary);
+      transition: width .35s ease;
+    }
+
+
+    .collection-progress-footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 9px;
+    }
+
+
+    .collection-difference {
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+
+    .collection-difference.positive {
+      color: #15803d;
+    }
+
+
+    .collection-difference.negative {
+      color: #dc2626;
+    }
+
+
+    /* =====================================================
+       BALANCE CARD
+    ====================================================== */
+
+    .closing-balance-card {
+      position: relative;
+      overflow: hidden;
+      margin-top: 18px;
+      padding: 24px;
+      border: 1px solid var(--border-light);
+      border-radius: 16px;
+      background: var(--surface-soft);
+    }
+
+
+    .closing-balance-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 5px;
+      height: 100%;
+      background: var(--primary);
+    }
+
+
+    .closing-balance-label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+
     .closing-balance-value {
-      font-size: 32px;
-      font-weight: 900;
+      font-size: 36px;
+      line-height: 1.1;
+      font-weight: 950;
       color: var(--primary);
     }
 
+
+    .closing-balance-equation {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+
+    .amount-positive {
+      color: #15803d !important;
+    }
+
+
+    .amount-negative {
+      color: #dc2626 !important;
+    }
+
+
+    .amount-neutral {
+      color: var(--text-dark) !important;
+    }
+
+
+    /* =====================================================
+       FINALIZE SECTION
+    ====================================================== */
+
+    .finalize-card {
+      position: relative;
+      overflow: hidden;
+    }
+
+
+    .finalize-card.already-closed {
+      border-color: var(--border-light);
+    }
+
+
+    .finalize-warning {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding: 14px;
+      border-radius: 12px;
+      background: var(--surface-soft);
+      border: 1px solid var(--border-light);
+    }
+
+
+    .finalize-warning-icon {
+      width: 32px;
+      height: 32px;
+      flex: 0 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: var(--surface);
+      font-weight: 900;
+    }
+
+
+    .finalize-warning strong {
+      display: block;
+      margin-bottom: 3px;
+    }
+
+
+    .finalize-warning p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+
+    .closing-notes {
+      min-height: 130px;
+      resize: vertical;
+    }
+
+
     .closing-actions {
       display: flex;
-      gap: 10px;
+      align-items: center;
+      gap: 12px;
       flex-wrap: wrap;
-      margin-top: 20px;
+      margin-top: 16px;
     }
 
-    .closing-status {
-      margin-top: 15px;
-      font-weight: 700;
+
+    .close-month-button {
+      min-width: 170px;
     }
 
-    @media (max-width: 900px) {
 
-      .closing-grid {
+    .finalize-help {
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+
+    /* =====================================================
+       HISTORY
+    ====================================================== */
+
+    .history-card {
+      overflow: hidden;
+    }
+
+
+    .history-table {
+      width: 100%;
+    }
+
+
+    .history-table th,
+    .history-table td {
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+
+    .history-table td strong {
+      font-weight: 800;
+    }
+
+
+    .history-notes {
+      max-width: 260px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+
+    .empty-state {
+      min-height: 150px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+
+    .empty-state-icon {
+      width: 42px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 5px;
+      border-radius: 12px;
+      background: var(--surface-soft);
+      font-weight: 900;
+    }
+
+
+    /* =====================================================
+       RESPONSIVE
+    ====================================================== */
+
+    @media (max-width: 1000px) {
+
+      .closing-summary-grid {
         grid-template-columns:
           repeat(2, minmax(0, 1fr));
       }
 
     }
 
-    @media (max-width: 600px) {
 
-      .closing-grid {
+    @media (max-width: 700px) {
+
+      .closing-header-content {
+        flex-direction: column;
+      }
+
+
+      .closing-month-display {
+        width: 100%;
+        text-align: left;
+      }
+
+
+      .month-selector-inner {
+        align-items: stretch;
+      }
+
+
+      .month-selector-inner .form-group {
+        min-width: 100%;
+      }
+
+
+      .month-selector-actions {
+        width: 100%;
+      }
+
+
+      .month-selector-actions .btn {
+        flex: 1;
+      }
+
+
+      .closing-summary-grid {
         grid-template-columns: 1fr;
       }
 
-      .closing-card-value {
-        font-size: 21px;
+
+      .closing-metric-value {
+        font-size: 22px;
       }
 
+
       .closing-balance-value {
-        font-size: 27px;
+        font-size: 29px;
+      }
+
+
+      .closing-progress-footer {
+        flex-direction: column;
+      }
+
+
+      .collection-progress-footer {
+        flex-direction: column;
+      }
+
+
+      .closing-actions {
+        width: 100%;
+      }
+
+
+      .close-month-button {
+        width: 100%;
+      }
+
+
+      .history-table {
+        min-width: 850px;
       }
 
     }
@@ -128,11 +644,16 @@
 <body>
 
 
+<!-- =====================================================
+     TOP BAR
+====================================================== -->
+
 <header class="topbar">
 
   <div class="brand">
     CHAMA <span>LIVE</span>
   </div>
+
 
   <button
     class="btn btn-secondary"
@@ -146,12 +667,16 @@
 
 
 
+<!-- =====================================================
+     APPLICATION LAYOUT
+====================================================== -->
+
 <div class="layout">
 
 
-  <!-- ==================================================
+  <!-- ===================================================
        SIDEBAR
-  =================================================== -->
+  ==================================================== -->
 
   <aside class="sidebar">
 
@@ -198,25 +723,50 @@
 
 
 
-  <!-- ==================================================
+  <!-- ===================================================
        MAIN
-  =================================================== -->
+  ==================================================== -->
 
   <main class="main">
 
 
+    <!-- =================================================
+         PAGE HEADER
+    ================================================== -->
+
     <div class="page-head closing-header">
 
-      <div>
+      <div class="closing-header-content">
 
-        <h1>
-          Monthly Closing
-        </h1>
+        <div class="closing-header-copy">
 
-        <p class="muted">
-          Review the month's contributions and approved
-          expenses before officially closing the period.
-        </p>
+          <h1>
+            Monthly Closing
+          </h1>
+
+          <p class="muted">
+            Review contributions, approved expenses and
+            the financial balance before officially closing
+            the month.
+          </p>
+
+        </div>
+
+
+        <div class="closing-month-display">
+
+          <span class="closing-month-display-label">
+            Closing Period
+          </span>
+
+          <span
+            id="selectedMonthLabel"
+            class="closing-month-display-value"
+          >
+            Loading...
+          </span>
+
+        </div>
 
       </div>
 
@@ -224,41 +774,54 @@
 
 
 
-    <!-- STATUS -->
+    <!-- =================================================
+         STATUS
+    ================================================== -->
 
     <div
       id="status"
-      class="card"
-      style="margin-bottom:20px;"
+      class="card closing-status-message"
       hidden
     ></div>
 
 
 
-    <!-- ERROR -->
+    <!-- =================================================
+         ERROR
+    ================================================== -->
 
     <div
       id="error"
       class="error"
       hidden
-      style="margin-bottom:20px;"
     ></div>
 
 
 
-    <!-- ==================================================
-         SELECT MONTH
-    =================================================== -->
+    <!-- =================================================
+         SELECT CLOSING MONTH
+    ================================================== -->
 
-    <section class="card">
+    <section class="card month-selector-card">
 
-      <h2>
-        Select Closing Month
-      </h2>
+      <div class="closing-section-head">
 
-      <br>
+        <div>
 
-      <div class="closing-selector">
+          <h2>
+            Select Closing Month
+          </h2>
+
+          <p class="muted section-description">
+            Select the financial month you want to review.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div class="month-selector-inner">
 
         <div class="form-group">
 
@@ -277,20 +840,24 @@
         </div>
 
 
-        <button
-          class="btn btn-secondary"
-          id="calculateClosing"
-          type="button"
-        >
-          Calculate
-        </button>
+        <div class="month-selector-actions">
+
+          <button
+            class="btn btn-secondary"
+            id="calculateClosing"
+            type="button"
+          >
+            Calculate
+          </button>
+
+        </div>
 
       </div>
 
 
       <div
         id="closingStatus"
-        class="closing-status muted"
+        class="closing-status-badge open"
       >
         Open
       </div>
@@ -303,81 +870,134 @@
 
 
 
-    <!-- ==================================================
-         SUMMARY
-    =================================================== -->
+    <!-- =================================================
+         CLOSING SUMMARY
+    ================================================== -->
 
     <section class="card">
 
-      <h2>
-        Closing Summary
-      </h2>
+      <div class="closing-section-head">
 
-      <br>
+        <div>
+
+          <h2>
+            Closing Summary
+          </h2>
+
+          <p class="muted section-description">
+            Your month-end financial position.
+          </p>
+
+        </div>
+
+      </div>
 
 
-      <div class="closing-grid">
+      <div class="closing-summary-grid">
 
 
-        <div class="card closing-card">
+        <!-- EXPECTED -->
 
-          <span class="closing-card-label">
+        <div class="closing-metric-card">
+
+          <div class="closing-metric-icon">
+            ◎
+          </div>
+
+          <span class="closing-metric-label">
             Total Expected
           </span>
 
           <span
             id="totalExpected"
-            class="closing-card-value"
+            class="closing-metric-value"
           >
             KSh 0
+          </span>
+
+          <span class="metric-subtext">
+            Monthly contribution target
           </span>
 
         </div>
 
 
-        <div class="card closing-card">
 
-          <span class="closing-card-label">
+        <!-- COLLECTED -->
+
+        <div class="closing-metric-card">
+
+          <div class="closing-metric-icon">
+            ✓
+          </div>
+
+          <span class="closing-metric-label">
             Total Collected
           </span>
 
           <span
             id="totalCollected"
-            class="closing-card-value"
+            class="closing-metric-value"
           >
             KSh 0
+          </span>
+
+          <span class="metric-subtext">
+            Contributions received
           </span>
 
         </div>
 
 
-        <div class="card closing-card">
 
-          <span class="closing-card-label">
+        <!-- EXPENSES -->
+
+        <div class="closing-metric-card">
+
+          <div class="closing-metric-icon">
+            −
+          </div>
+
+          <span class="closing-metric-label">
             Approved Expenses
           </span>
 
           <span
             id="totalExpenses"
-            class="closing-card-value"
+            class="closing-metric-value"
           >
             KSh 0
+          </span>
+
+          <span class="metric-subtext">
+            Approved for payment
           </span>
 
         </div>
 
 
-        <div class="card closing-card">
 
-          <span class="closing-card-label">
-            Previous Closing Balance
+        <!-- PREVIOUS BALANCE -->
+
+        <div class="closing-metric-card">
+
+          <div class="closing-metric-icon">
+            ↗
+          </div>
+
+          <span class="closing-metric-label">
+            Previous Balance
           </span>
 
           <span
             id="previousBalance"
-            class="closing-card-value"
+            class="closing-metric-value"
           >
             KSh 0
+          </span>
+
+          <span class="metric-subtext">
+            Carried into this month
           </span>
 
         </div>
@@ -385,11 +1005,64 @@
       </div>
 
 
-      <div class="closing-balance">
 
-        <div class="closing-balance-label">
-          Closing Balance
+      <!-- =================================================
+           COLLECTION PROGRESS
+      ================================================== -->
+
+      <div class="collection-progress-card">
+
+        <div class="collection-progress-head">
+
+          <span class="collection-progress-title">
+            Contribution Collection
+          </span>
+
+          <span id="collectionProgressText">
+            0% collected
+          </span>
+
         </div>
+
+
+        <div class="collection-progress-track">
+
+          <div
+            id="collectionProgress"
+            class="collection-progress"
+          ></div>
+
+        </div>
+
+
+        <div class="collection-progress-footer">
+
+          <span class="muted">
+            Current month collection progress
+          </span>
+
+          <span
+            id="collectionDifference"
+            class="collection-difference"
+          >
+            —
+          </span>
+
+        </div>
+
+      </div>
+
+
+
+      <!-- =================================================
+           CLOSING BALANCE
+      ================================================== -->
+
+      <div class="closing-balance-card">
+
+        <span class="closing-balance-label">
+          Closing Balance
+        </span>
 
         <div
           id="closingBalance"
@@ -398,17 +1071,16 @@
           KSh 0
         </div>
 
+        <p class="closing-balance-equation">
+
+          Previous closing balance
+          + contributions collected
+          − approved expenses
+          = closing balance.
+
+        </p>
+
       </div>
-
-
-      <p class="muted">
-
-        Closing balance =
-        previous closing balance
-        + contributions collected
-        − approved expenses.
-
-      </p>
 
     </section>
 
@@ -418,17 +1090,55 @@
 
 
 
-    <!-- ==================================================
-         NOTES / CLOSE
-    =================================================== -->
+    <!-- =================================================
+         FINALIZE MONTH
+    ================================================== -->
 
-    <section class="card">
+    <section
+      id="finalizeSection"
+      class="card finalize-card"
+    >
 
-      <h2>
-        Finalize Monthly Closing
-      </h2>
+      <div class="closing-section-head">
 
-      <br>
+        <div>
+
+          <h2>
+            Finalize Monthly Closing
+          </h2>
+
+          <p class="muted section-description">
+            Create the official financial record for this
+            month.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div class="finalize-warning">
+
+        <div class="finalize-warning-icon">
+          !
+        </div>
+
+        <div>
+
+          <strong>
+            Review before closing
+          </strong>
+
+          <p>
+            Make sure all contributions and approved
+            expenses for this month have been recorded
+            correctly. Once closed, this month becomes the
+            official monthly financial record.
+          </p>
+
+        </div>
+
+      </div>
 
 
       <div class="form-group">
@@ -441,8 +1151,9 @@
 
         <textarea
           id="closingNotes"
+          class="closing-notes"
           rows="5"
-          placeholder="Enter any notes, explanations or observations for this month's closing..."
+          placeholder="Enter notes, explanations or observations for this month's closing..."
         ></textarea>
 
       </div>
@@ -451,7 +1162,7 @@
       <div class="closing-actions">
 
         <button
-          class="btn btn-primary"
+          class="btn btn-primary close-month-button"
           id="closeMonth"
           type="button"
         >
@@ -461,13 +1172,10 @@
       </div>
 
 
-      <p class="muted">
-
-        Closing a month creates the official monthly
-        financial record. Make sure contributions and
-        approved expenses have been reviewed before
-        completing the closing.
-
+      <p class="finalize-help">
+        Closing is protected against duplicate financial
+        periods. A month that has already been closed
+        cannot be closed again.
       </p>
 
     </section>
@@ -478,22 +1186,33 @@
 
 
 
-    <!-- ==================================================
-         CLOSING HISTORY
-    =================================================== -->
+    <!-- =================================================
+         HISTORY
+    ================================================== -->
 
-    <section class="card">
+    <section class="card history-card">
 
-      <h2>
-        Monthly Closing History
-      </h2>
+      <div class="closing-section-head">
 
-      <br>
+        <div>
+
+          <h2>
+            Monthly Closing History
+          </h2>
+
+          <p class="muted section-description">
+            Official financial records for previously
+            closed months.
+          </p>
+
+        </div>
+
+      </div>
 
 
       <div class="table-wrap">
 
-        <table class="table">
+        <table class="table history-table">
 
           <thead>
 
@@ -537,7 +1256,7 @@
             <tr>
 
               <td colspan="7">
-                Loading...
+                Loading monthly closing history...
               </td>
 
             </tr>
@@ -559,6 +1278,13 @@
 
 <!-- =====================================================
      PAGE BOOT
+
+     layout.js dynamically loads monthly-closing.js.
+
+     layout.js then calls:
+
+         initPage()
+
 ====================================================== -->
 
 <script type="module">
