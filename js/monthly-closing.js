@@ -18,18 +18,22 @@
        Applied To Current Month Obligations
        / Expected Monthly Obligations
 
-   IMPORTANT
+   AUTHORIZATION IMPORTANT
    ---------------------------------------------------------
-   Total cash received is NOT automatically the amount
-   applied to the current month's obligations.
+   monthly_closings.closed_by is protected by RLS and must
+   equal auth.uid().
 
-   Carry-forward remains separate.
+   Therefore:
+       closed_by = currentUser.id
 
-   INITIALIZATION
-   ---------------------------------------------------------
-   layout.js is the sole page bootloader.
+   NOT:
+       closed_by = currentMember.id
 
-   This module MUST NOT auto-boot itself.
+   Member identity and authenticated-user identity are
+   separate concepts.
+
+   No database, migration, RLS, or production SQL changes
+   are required by this frontend correction.
 
    Required exports:
        initPage()
@@ -666,8 +670,10 @@ async function getOpeningBalance(
 
 
   if (
-    previousClosing?.closing_balance !== null &&
-    previousClosing?.closing_balance !== undefined
+    previousClosing?.closing_balance !==
+      null &&
+    previousClosing?.closing_balance !==
+      undefined
   ) {
 
     return Number(
@@ -727,16 +733,15 @@ async function loadCanonicalAccounting(
   /*
      CANONICAL 2B ENGINE
 
-     This is the authoritative source for:
+     Authoritative member-level source:
 
-       monthly due
-       previous outstanding
-       previous credit
-       current month payment
-       applied this month
-       carry-forward
-       current outstanding
-       status
+       obligation
+          ↓
+       payment
+          ↓
+       allocation
+          ↓
+       arrears / credit
   */
 
   const {
@@ -766,13 +771,15 @@ async function loadCanonicalAccounting(
 
 
   /*
-     Canonical summary gives us:
+     CANONICAL SUMMARY
 
-       expected
-       total collected
-       applied
+     Authoritative summary source for:
+
+       expected obligations
+       cash collected
+       applied amount
        carry-forward
-       outstanding
+       current outstanding
        member counts
   */
 
@@ -810,7 +817,7 @@ async function loadCanonicalAccounting(
   /*
      Approved expenses are intentionally loaded
      separately because the canonical contribution
-     RPC concerns contribution accounting.
+     RPCs concern contribution accounting.
   */
 
   const monthStart =
@@ -893,23 +900,20 @@ async function loadCanonicalAccounting(
 
 
   /*
-     IMPORTANT:
+     CASH CLOSING
 
-     Cash closing is NOT:
-
-       opening + applied - expenses
-
-     It is:
-
-       opening
+       opening balance
        + cash received
        - approved expenses
 
-     because cash received is actual money
-     entering the group account.
+     This is deliberately different from
+     contribution application.
 
-     Application is used only for collection
-     progress and member obligation accounting.
+     Application determines contribution
+     progress and member obligation status.
+
+     Cash received determines actual cash
+     movement.
   */
 
   const totalCollected =
@@ -1083,6 +1087,14 @@ function renderCalculation() {
     Number(
       calculatedData
         .carry_forward ||
+      0
+    );
+
+
+  const outstanding =
+    Number(
+      calculatedData
+        .current_outstanding ||
       0
     );
 
@@ -1540,6 +1552,33 @@ async function closeMonth() {
     }
 
 
+    if (!currentUser?.id) {
+
+      throw new Error(
+        "Your authenticated user session is unavailable."
+      );
+
+    }
+
+
+    if (!currentMember?.id) {
+
+      throw new Error(
+        "Your member record is unavailable."
+      );
+
+    }
+
+
+    if (!groupId) {
+
+      throw new Error(
+        "Your member record is not linked to a group."
+      );
+
+    }
+
+
     if (currentClosing) {
 
       throw new Error(
@@ -1644,6 +1683,22 @@ async function closeMonth() {
     );
 
 
+    /*
+     ========================================================
+     CRITICAL AUTHORIZATION FIX
+     ========================================================
+
+     The live RLS policy requires:
+
+         closed_by = auth.uid()
+
+     Therefore closed_by MUST be the authenticated
+     Supabase user ID.
+
+     currentMember.id is the members table ID and is
+     deliberately NOT used here.
+    */
+
     const payload = {
 
       group_id:
@@ -1653,7 +1708,7 @@ async function closeMonth() {
         `${month}-01`,
 
       closed_by:
-        currentMember.id,
+        currentUser.id,
 
       closed_at:
         new Date().toISOString(),
@@ -1693,6 +1748,20 @@ async function closeMonth() {
     };
 
 
+    console.log(
+      "CHAMA LIVE: submitting monthly closing",
+      {
+        groupId,
+        closingMonth:
+          `${month}-01`,
+        closedBy:
+          currentUser.id,
+        memberId:
+          currentMember.id
+      }
+    );
+
+
     const {
       data,
       error
@@ -1730,7 +1799,28 @@ async function closeMonth() {
 
       }
 
+      if (
+        error.code ===
+        "42501"
+      ) {
+
+        throw new Error(
+          "You are not authorized to close this financial month. " +
+          "Your account must have the required group closing role."
+        );
+
+      }
+
       throw error;
+
+    }
+
+
+    if (!data) {
+
+      throw new Error(
+        "The monthly closing was not returned after insertion."
+      );
 
     }
 
@@ -1986,41 +2076,38 @@ export async function initPage() {
 }
 
 
-/* =========================================================
-   BACKWARD-COMPATIBLE EXPORT
-========================================================= */
-
 export const initMonthlyClosing =
   initPage;
 
 
 /* =========================================================
-   NO AUTO BOOT
-=========================================================
-
-   layout.js is the sole page bootloader.
-
-   Flow:
-
-       monthly-closing.html
-              ↓
-          layout.js
-              ↓
-       dynamic import()
-              ↓
-          initPage()
-
-   Do NOT call initPage() automatically here.
-
-   This prevents:
-
-       duplicate authentication
-       duplicate RPC calls
-       duplicate rendering
-       duplicate event initialization
-       race conditions between page loaders
-
+   AUTO BOOT
 ========================================================= */
+
+if (
+  document.readyState ===
+  "loading"
+) {
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+      initPage();
+
+    },
+    {
+      once: true
+    }
+  );
+
+}
+else {
+
+  initPage();
+
+}
+
 
 console.log(
   "CHAMA LIVE: monthly-closing.js ready"
