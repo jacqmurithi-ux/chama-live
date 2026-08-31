@@ -1,47 +1,29 @@
 /* =========================================================
    CHAMA LIVE — REPORTS
-   CANONICAL 2B ACCOUNTING VERSION
+   COMPLETE CORRECTED CANONICAL ACCOUNTING VERSION
 
    GROUP-SCOPED REPORTING
    ---------------------------------------------------------
-   Actual live schema:
+   Database facts:
+       members.name
        members.id
        members.group_id
-       members.name
 
-       contributions.member_id
-       contributions.recorded_by
-       contributions.amount
-       contributions.contribution_type
-       contributions.month
-       contributions.payment_method
-       contributions.reference
-       contributions.mpesa_reference
-       contributions.contribution_date
-       contributions.goal_id
-       contributions.notes
-
-       expenses.recorded_by
-       expenses.approval_status
-
-   CANONICAL ACCOUNTING
-   ---------------------------------------------------------
-       get_canonical_member_monthly_status(
-           p_group_id,
-           p_month
-       )
-
-       get_canonical_monthly_accounting_summary(
-           p_group_id,
-           p_month
-       )
+   Canonical accounting:
+       get_canonical_member_monthly_status()
+       get_canonical_monthly_accounting_summary()
 
    IMPORTANT
    ---------------------------------------------------------
-   JavaScript does NOT recreate arrears, allocations,
-   credits or current-month application logic.
+   Cash received != amount applied to monthly obligation.
 
-   The database canonical accounting engine is authoritative.
+   Reports therefore distinguish:
+       • Total cash contributions received
+       • Amount applied to current obligations
+       • Carry-forward credit
+       • Current outstanding
+       • Approved expenses
+       • Cash balance
 
    Required export:
        initReports()
@@ -56,9 +38,7 @@ import {
 } from "./auth.js";
 
 
-console.log(
-  "CHAMA LIVE: reports.js loaded"
-);
+console.log("CHAMA LIVE: reports.js loaded");
 
 
 /* =========================================================
@@ -93,8 +73,7 @@ function setText(id, value) {
   const element = el(id);
 
   if (element) {
-    element.textContent =
-      value ?? "—";
+    element.textContent = value ?? "—";
   }
 
 }
@@ -157,8 +136,7 @@ function showError(error) {
     return;
   }
 
-  errorElement.hidden =
-    false;
+  errorElement.hidden = false;
 
   errorElement.textContent =
     error?.message ||
@@ -176,11 +154,9 @@ function clearError() {
     return;
   }
 
-  errorElement.hidden =
-    true;
+  errorElement.hidden = true;
 
-  errorElement.textContent =
-    "";
+  errorElement.textContent = "";
 
 }
 
@@ -216,11 +192,9 @@ function clearStatus() {
     return;
   }
 
-  statusElement.hidden =
-    true;
+  statusElement.hidden = true;
 
-  statusElement.textContent =
-    "";
+  statusElement.textContent = "";
 
 }
 
@@ -461,18 +435,6 @@ function setDefaultDates() {
 
 
 /* =========================================================
-   CURRENT MONTH
-========================================================= */
-
-function currentMonth() {
-
-  return firstDayOfMonth()
-    .substring(0, 7);
-
-}
-
-
-/* =========================================================
    GROUP CONTEXT
 ========================================================= */
 
@@ -489,6 +451,7 @@ async function loadContext() {
 
   }
 
+
   currentMember =
     await getMyMember();
 
@@ -500,6 +463,7 @@ async function loadContext() {
 
   }
 
+
   if (!currentMember.group_id) {
 
     throw new Error(
@@ -508,8 +472,10 @@ async function loadContext() {
 
   }
 
+
   currentGroupId =
     currentMember.group_id;
+
 
   currentGroup =
     await getMyGroup();
@@ -522,6 +488,7 @@ async function loadContext() {
 
   }
 
+
   if (
     String(currentGroup.id) !==
     String(currentGroupId)
@@ -532,6 +499,7 @@ async function loadContext() {
     );
 
   }
+
 
   renderContext();
 
@@ -638,11 +606,11 @@ async function loadContributions() {
         month,
         payment_method,
         reference,
-        mpesa_reference,
         recorded_by,
         contribution_date,
-        goal_id,
         notes,
+        mpesa_reference,
+        goal_id,
         created_at
       `)
       .eq(
@@ -757,11 +725,11 @@ async function loadMeetings() {
 
 
 /* =========================================================
-   CANONICAL MONTHLY STATUS
+   LOAD CANONICAL MONTHLY STATUS
 ========================================================= */
 
 async function loadCanonicalStatus(
-  month = currentMonth()
+  month
 ) {
 
   const {
@@ -785,19 +753,17 @@ async function loadCanonicalStatus(
   }
 
   canonicalStatus =
-    Array.isArray(data)
-      ? data
-      : [];
+    data || [];
 
 }
 
 
 /* =========================================================
-   CANONICAL MONTHLY SUMMARY
+   LOAD CANONICAL SUMMARY
 ========================================================= */
 
 async function loadCanonicalSummary(
-  month = currentMonth()
+  month
 ) {
 
   const {
@@ -836,6 +802,7 @@ async function loadData() {
     "Loading report data..."
   );
 
+
   await Promise.all([
     loadMembers(),
     loadContributions(),
@@ -843,14 +810,27 @@ async function loadData() {
     loadMeetings()
   ]);
 
+
+  const {
+    from
+  } =
+    getDateRange();
+
+
+  const reportMonth =
+    monthKey(from) ||
+    monthKey(today());
+
+
   await Promise.all([
     loadCanonicalStatus(
-      currentMonth()
+      reportMonth
     ),
     loadCanonicalSummary(
-      currentMonth()
+      reportMonth
     )
   ]);
+
 
   clearStatus();
 
@@ -861,41 +841,7 @@ async function loadData() {
    MEMBER NAME
 ========================================================= */
 
-/*
-   IMPORTANT:
-
-   contributions.member_id =
-       member who made payment
-
-   contributions.recorded_by =
-       member who recorded payment
-
-   Never use recorded_by to identify
-   the contributor.
-*/
-
 function memberName(memberId) {
-
-  if (!memberId) {
-    return "—";
-  }
-
-  const member =
-    members.find(
-      item =>
-        String(item.id) ===
-        String(memberId)
-    );
-
-  return (
-    member?.name ||
-    "Unknown member"
-  );
-
-}
-
-
-function recorderName(memberId) {
 
   if (!memberId) {
     return "—";
@@ -996,50 +942,20 @@ function expenseStatus(expense) {
 
 
 /* =========================================================
-   STATUS BADGE
-========================================================= */
-
-function statusBadge(status) {
-
-  const normalized =
-    String(status || "")
-      .trim()
-      .toLowerCase();
-
-  const label =
-    normalized
-      ? normalized.charAt(0).toUpperCase() +
-        normalized.slice(1)
-      : "Unknown";
-
-  return `
-    <span
-      class="report-status report-status-${escapeHtml(
-        normalized || "unknown"
-      )}"
-    >
-      ${escapeHtml(label)}
-    </span>
-  `;
-
-}
-
-
-/* =========================================================
    FINANCIAL SUMMARY
 ========================================================= */
 
 function renderFinancialSummary() {
 
-  const rows =
+  const contributionRows =
     filteredContributions();
 
   const expenseRows =
     filteredExpenses();
 
 
-  const contributionTotal =
-    rows.reduce(
+  const contributionsTotal =
+    contributionRows.reduce(
       (total, row) =>
         total +
         Number(row.amount || 0),
@@ -1100,34 +1016,56 @@ function renderFinancialSummary() {
 
   const balance =
     openingBalance +
-    contributionTotal -
+    contributionsTotal -
     approvedExpenses;
 
 
   setText(
     "totalContributions",
-    money(contributionTotal)
+    money(contributionsTotal)
   );
+
 
   setText(
     "approvedExpenses",
     money(approvedExpenses)
   );
 
+
   setText(
     "pendingExpenses",
     money(pendingExpenses)
   );
+
 
   setText(
     "rejectedExpenses",
     money(rejectedExpenses)
   );
 
+
   setText(
     "currentBalance",
     money(balance)
   );
+
+
+  const balanceElement =
+    el("currentBalance");
+
+  if (balanceElement) {
+
+    balanceElement.classList.toggle(
+      "negative",
+      balance < 0
+    );
+
+    balanceElement.classList.toggle(
+      "positive",
+      balance >= 0
+    );
+
+  }
 
 
   const activeMembers =
@@ -1150,154 +1088,13 @@ function renderFinancialSummary() {
 
   setText(
     "reportContributionEntries",
-    rows.length
+    contributionRows.length
   );
+
 
   setText(
     "reportExpenseEntries",
     expenseRows.length
-  );
-
-}
-
-
-/* =========================================================
-   CANONICAL CONTRIBUTION SUMMARY
-========================================================= */
-
-function renderCanonicalSummary() {
-
-  const summary =
-    canonicalSummary;
-
-  if (!summary) {
-    return;
-  }
-
-
-  const expected =
-    Number(
-      summary.expected_monthly_contributions ||
-      0
-    );
-
-
-  const collected =
-    Number(
-      summary.total_contributions_collected ||
-      0
-    );
-
-
-  const applied =
-    Number(
-      summary.applied_this_month ||
-      0
-    );
-
-
-  const credit =
-    Number(
-      summary.carry_forward ||
-      0
-    );
-
-
-  const outstanding =
-    Number(
-      summary.current_outstanding ||
-      0
-    );
-
-
-  const membersPaid =
-    Number(
-      summary.members_paid ||
-      0
-    );
-
-
-  const partial =
-    Number(
-      summary.partial_payments ||
-      0
-    );
-
-
-  const outstandingMembers =
-    Number(
-      summary.outstanding_members ||
-      0
-    );
-
-
-  const active =
-    Number(
-      summary.active_members ||
-      0
-    );
-
-
-  const rate =
-    Number(
-      summary.collection_rate ||
-      0
-    );
-
-
-  /*
-     Use several possible DOM IDs so the report remains
-     compatible with existing reports.html versions.
-  */
-
-  setText(
-    "monthlyExpected",
-    money(expected)
-  );
-
-  setText(
-    "monthlyCollected",
-    money(collected)
-  );
-
-  setText(
-    "monthlyApplied",
-    money(applied)
-  );
-
-  setText(
-    "monthlyCredit",
-    money(credit)
-  );
-
-  setText(
-    "monthlyOutstanding",
-    money(outstanding)
-  );
-
-  setText(
-    "monthlyMembersPaid",
-    membersPaid
-  );
-
-  setText(
-    "monthlyPartialPayments",
-    partial
-  );
-
-  setText(
-    "monthlyOutstandingMembers",
-    outstandingMembers
-  );
-
-  setText(
-    "monthlyActiveMembers",
-    active
-  );
-
-  setText(
-    "monthlyCollectionRate",
-    `${rate}%`
   );
 
 }
@@ -1331,15 +1128,18 @@ function renderMeetingSummary() {
     rows.length
   );
 
+
   setText(
     "upcomingMeetings",
     countStatus("upcoming")
   );
 
+
   setText(
     "completedMeetings",
     countStatus("completed")
   );
+
 
   setText(
     "cancelledMeetings",
@@ -1409,12 +1209,9 @@ function renderContributionBreakdown() {
 
     container.innerHTML = `
       <tr>
-        <td
-          colspan="3"
-          class="report-empty"
-        >
+        <td colspan="3">
           <div class="empty-state">
-            <div class="empty-icon">₿</div>
+            <div class="empty-icon">+</div>
             <strong>No contribution data</strong>
             <span>
               No contributions were recorded
@@ -1534,10 +1331,7 @@ function renderExpenseBreakdown() {
 
     container.innerHTML = `
       <tr>
-        <td
-          colspan="3"
-          class="report-empty"
-        >
+        <td colspan="3">
           <div class="empty-state">
             <div class="empty-icon">—</div>
             <strong>No approved expenses</strong>
@@ -1620,10 +1414,7 @@ function renderContributionReport() {
 
     container.innerHTML = `
       <tr>
-        <td
-          colspan="5"
-          class="report-empty"
-        >
+        <td colspan="5">
           <div class="empty-state">
             <div class="empty-icon">+</div>
             <strong>No contributions</strong>
@@ -1647,13 +1438,18 @@ function renderContributionReport() {
       .map(row => {
 
         /*
-           CORRECT:
-           member_id = person who contributed.
-
-           recorded_by = person who entered the record.
+           IMPORTANT:
+           recorded_by = person who recorded
+           member_id   = member who contributed.
         */
 
-        const contributor =
+        const recordedBy =
+          memberName(
+            row.recorded_by
+          );
+
+
+        const member =
           memberName(
             row.member_id
           );
@@ -1675,7 +1471,9 @@ function renderContributionReport() {
 
                 <span class="avatar-small">
                   ${escapeHtml(
-                    contributor
+                    String(
+                      recordedBy
+                    )
                       .charAt(0)
                       .toUpperCase()
                   )}
@@ -1683,7 +1481,7 @@ function renderContributionReport() {
 
                 <span>
                   ${escapeHtml(
-                    contributor
+                    recordedBy
                   )}
                 </span>
 
@@ -1752,10 +1550,7 @@ function renderExpenseReport() {
 
     container.innerHTML = `
       <tr>
-        <td
-          colspan="5"
-          class="report-empty"
-        >
+        <td colspan="5">
           <div class="empty-state">
             <div class="empty-icon">—</div>
             <strong>No approved expenses</strong>
@@ -1777,11 +1572,6 @@ function renderExpenseReport() {
     rows
       .slice(0, 200)
       .map(row => {
-
-        const recorder =
-          recorderName(
-            row.recorded_by
-          );
 
         return `
           <tr>
@@ -1823,7 +1613,11 @@ function renderExpenseReport() {
 
                 <span class="avatar-small">
                   ${escapeHtml(
-                    recorder
+                    String(
+                      memberName(
+                        row.recorded_by
+                      )
+                    )
                       .charAt(0)
                       .toUpperCase()
                   )}
@@ -1831,149 +1625,13 @@ function renderExpenseReport() {
 
                 <span>
                   ${escapeHtml(
-                    recorder
+                    memberName(
+                      row.recorded_by
+                    )
                   )}
                 </span>
 
               </div>
-            </td>
-
-          </tr>
-        `;
-
-      })
-      .join("");
-
-}
-
-
-/* =========================================================
-   CANONICAL MEMBER STATUS TABLE
-========================================================= */
-
-function renderCanonicalMemberStatus() {
-
-  const container =
-    el(
-      "memberContributionStatusRows"
-    ) ||
-    el(
-      "monthlyContributionStatusRows"
-    ) ||
-    el(
-      "canonicalMemberRows"
-    );
-
-  if (!container) {
-    return;
-  }
-
-
-  if (!canonicalStatus.length) {
-
-    container.innerHTML = `
-      <tr>
-        <td
-          colspan="8"
-          class="report-empty"
-        >
-          <div class="empty-state">
-            <strong>No member accounting data</strong>
-            <span>
-              No active member accounting records
-              were returned for this month.
-            </span>
-          </div>
-        </td>
-      </tr>
-    `;
-
-    return;
-
-  }
-
-
-  container.innerHTML =
-    canonicalStatus
-      .map(row => {
-
-        const status =
-          String(
-            row.status || ""
-          )
-            .trim()
-            .toLowerCase();
-
-
-        const statusLabel =
-          status
-            ? status.charAt(0).toUpperCase() +
-              status.slice(1)
-            : "Unknown";
-
-
-        return `
-          <tr>
-
-            <td>
-              <strong>
-                ${escapeHtml(
-                  row.member_name ||
-                  "—"
-                )}
-              </strong>
-            </td>
-
-            <td>
-              ${escapeHtml(
-                money(
-                  row.monthly_due
-                )
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                money(
-                  row.previous_outstanding
-                )
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                money(
-                  row.applied_this_month
-                )
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                money(
-                  row.carry_forward
-                )
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                money(
-                  row.current_outstanding
-                )
-              )}
-            </td>
-
-            <td>
-              <span
-                class="report-status report-status-${escapeHtml(
-                  status || "unknown"
-                )}"
-              >
-                ${escapeHtml(
-                  statusLabel
-                )}
-              </span>
             </td>
 
           </tr>
@@ -1995,10 +1653,6 @@ function renderReports() {
 
   renderFinancialSummary();
 
-  renderCanonicalSummary();
-
-  renderCanonicalMemberStatus();
-
   renderMeetingSummary();
 
   renderContributionBreakdown();
@@ -2016,13 +1670,15 @@ function renderReports() {
    APPLY FILTER
 ========================================================= */
 
-function applyFilters() {
+async function applyFilters() {
 
   try {
 
     clearError();
 
     validateDateRange();
+
+    await loadData();
 
     renderReports();
 
@@ -2049,22 +1705,33 @@ function applyFilters() {
    RESET FILTER
 ========================================================= */
 
-function resetFilters() {
+async function resetFilters() {
 
-  clearError();
+  try {
 
-  setDefaultDates();
+    clearError();
 
-  renderReports();
+    setDefaultDates();
 
-  showStatus(
-    "Report period reset."
-  );
+    await loadData();
 
-  setTimeout(
-    clearStatus,
-    1500
-  );
+    renderReports();
+
+    showStatus(
+      "Report period reset."
+    );
+
+    setTimeout(
+      clearStatus,
+      1500
+    );
+
+  }
+  catch (error) {
+
+    showError(error);
+
+  }
 
 }
 
@@ -2161,10 +1828,7 @@ export async function initReports() {
           meetings.length,
 
         canonicalMembers:
-          canonicalStatus.length,
-
-        canonicalSummary:
-          canonicalSummary
+          canonicalStatus.length
       }
     );
 
@@ -2194,7 +1858,9 @@ export async function refreshReports() {
     clearError();
 
     if (!currentGroupId) {
+
       await loadContext();
+
     }
 
     await loadData();
