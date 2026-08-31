@@ -1,6 +1,6 @@
 /* =========================================================
    CHAMA LIVE — EXPENSES
-   FINAL STABLE FRONTEND VERSION
+   COMPLETE STABLE VERSION
 
    DATABASE RULE
    ---------------------------------------------------------
@@ -14,6 +14,7 @@
 
    FEATURES
    ---------------------------------------------------------
+   • Shared group context
    • Load group expenses
    • Record expenses
    • Pending by default
@@ -25,6 +26,8 @@
    • Category filter
    • Approved / Pending / Rejected totals
    • Safe receipt/reference rendering
+   • "Other" category details field
+   • Mobile-safe rendering
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -35,7 +38,9 @@ import {
 } from "./auth.js";
 
 
-console.log("CHAMA LIVE: expenses.js loaded");
+console.log(
+  "CHAMA LIVE: expenses.js loaded"
+);
 
 
 /* =========================================================
@@ -56,6 +61,12 @@ const descriptionInput =
 
 const categoryInput =
   document.getElementById("category");
+
+const otherDetailsBox =
+  document.getElementById("otherDetailsBox");
+
+const otherDetailsInput =
+  document.getElementById("otherDetails");
 
 const amountInput =
   document.getElementById("amount");
@@ -92,13 +103,20 @@ const rejectedTotalEl =
    STATE
 ========================================================= */
 
-let currentUser = null;
-let currentMember = null;
-let groupId = null;
+let currentUser =
+  null;
 
-let expenses = [];
+let currentMember =
+  null;
 
-let initialized = false;
+let groupId =
+  null;
+
+let expenses =
+  [];
+
+let initialized =
+  false;
 
 
 /* =========================================================
@@ -122,20 +140,31 @@ function money(value) {
 }
 
 
+/* =========================================================
+   DATE
+========================================================= */
+
 function todayString() {
 
-  const now = new Date();
+  const now =
+    new Date();
 
   return [
     now.getFullYear(),
 
     String(
       now.getMonth() + 1
-    ).padStart(2, "0"),
+    ).padStart(
+      2,
+      "0"
+    ),
 
     String(
       now.getDate()
-    ).padStart(2, "0")
+    ).padStart(
+      2,
+      "0"
+    )
 
   ].join("-");
 
@@ -150,8 +179,10 @@ function formatDate(value) {
 
   }
 
+
   const date =
     new Date(value);
+
 
   if (
     Number.isNaN(
@@ -162,6 +193,7 @@ function formatDate(value) {
     return String(value);
 
   }
+
 
   return date.toLocaleDateString(
     "en-KE",
@@ -175,19 +207,42 @@ function formatDate(value) {
 }
 
 
+/* =========================================================
+   SECURITY
+========================================================= */
+
 function escapeHtml(value) {
 
   return String(
     value ?? ""
   )
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
 
 }
 
+
+/* =========================================================
+   NORMALIZATION
+========================================================= */
 
 function normalizeStatus(value) {
 
@@ -198,6 +253,7 @@ function normalizeStatus(value) {
       .trim()
       .toLowerCase();
 
+
   if (
     status === "approved"
   ) {
@@ -206,6 +262,7 @@ function normalizeStatus(value) {
 
   }
 
+
   if (
     status === "rejected"
   ) {
@@ -213,6 +270,7 @@ function normalizeStatus(value) {
     return "rejected";
 
   }
+
 
   return "pending";
 
@@ -230,6 +288,10 @@ function normalizeCategory(value) {
 }
 
 
+/* =========================================================
+   MESSAGES
+========================================================= */
+
 function showStatus(message) {
 
   if (!statusEl) {
@@ -237,6 +299,7 @@ function showStatus(message) {
     return;
 
   }
+
 
   statusEl.textContent =
     message || "";
@@ -255,6 +318,7 @@ function clearError() {
 
   }
 
+
   errorEl.textContent =
     "";
 
@@ -271,10 +335,12 @@ function showPageError(error) {
     error
   );
 
+
   const message =
     error?.message ||
     String(error) ||
     "Unable to process expense.";
+
 
   if (errorEl) {
 
@@ -288,6 +354,10 @@ function showPageError(error) {
 
 }
 
+
+/* =========================================================
+   DEFAULT DATE
+========================================================= */
 
 function setDefaultDate() {
 
@@ -305,6 +375,65 @@ function setDefaultDate() {
 
 
 /* =========================================================
+   OTHER CATEGORY
+========================================================= */
+
+function updateOtherCategoryField() {
+
+  if (
+    !categoryInput ||
+    !otherDetailsBox
+  ) {
+
+    return;
+
+  }
+
+
+  const isOther =
+    normalizeCategory(
+      categoryInput.value
+    ) === "other";
+
+
+  if (isOther) {
+
+    otherDetailsBox.classList.add(
+      "visible"
+    );
+
+
+    if (otherDetailsInput) {
+
+      otherDetailsInput.required =
+        true;
+
+    }
+
+  }
+  else {
+
+    otherDetailsBox.classList.remove(
+      "visible"
+    );
+
+
+    if (otherDetailsInput) {
+
+      otherDetailsInput.required =
+        false;
+
+      otherDetailsInput.value =
+        "";
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
    RECEIPT / REFERENCE
 ========================================================= */
 
@@ -315,20 +444,13 @@ function renderReceipt(value) {
       value || ""
     ).trim();
 
+
   if (!reference) {
 
     return "—";
 
   }
 
-
-  /*
-     Only make actual web URLs clickable.
-     Receipt numbers such as:
-         REC-001
-         M-PESA QWE123
-     remain plain text.
-  */
 
   const isUrl =
     /^https?:\/\/[^\s]+$/i.test(
@@ -339,7 +461,7 @@ function renderReceipt(value) {
   if (!isUrl) {
 
     return `
-      <span>
+      <span class="expense-reference">
         ${escapeHtml(reference)}
       </span>
     `;
@@ -348,13 +470,15 @@ function renderReceipt(value) {
 
 
   return `
-    <a
-      href="${escapeHtml(reference)}"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      View
-    </a>
+    <span class="expense-reference">
+      <a
+        href="${escapeHtml(reference)}"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        View document
+      </a>
+    </span>
   `;
 
 }
@@ -430,9 +554,14 @@ async function loadExpenses() {
 
 function renderMetrics() {
 
-  let approved = 0;
-  let pending = 0;
-  let rejected = 0;
+  let approved =
+    0;
+
+  let pending =
+    0;
+
+  let rejected =
+    0;
 
 
   for (
@@ -444,6 +573,7 @@ function renderMetrics() {
         expense.amount || 0
       );
 
+
     const status =
       normalizeStatus(
         expense.approval_status
@@ -454,19 +584,22 @@ function renderMetrics() {
       status === "approved"
     ) {
 
-      approved += amount;
+      approved +=
+        amount;
 
     }
     else if (
       status === "rejected"
     ) {
 
-      rejected += amount;
+      rejected +=
+        amount;
 
     }
     else {
 
-      pending += amount;
+      pending +=
+        amount;
 
     }
 
@@ -480,12 +613,14 @@ function renderMetrics() {
 
   }
 
+
   if (pendingTotalEl) {
 
     pendingTotalEl.textContent =
       money(pending);
 
   }
+
 
   if (rejectedTotalEl) {
 
@@ -498,14 +633,15 @@ function renderMetrics() {
 
 
 /* =========================================================
-   FILTER
+   FILTERING
 ========================================================= */
 
 function getFilteredExpenses() {
 
   const selectedStatus =
     String(
-      statusFilter?.value || "all"
+      statusFilter?.value ||
+      "all"
     )
       .trim()
       .toLowerCase();
@@ -513,7 +649,8 @@ function getFilteredExpenses() {
 
   const selectedCategory =
     String(
-      categoryFilter?.value || "all"
+      categoryFilter?.value ||
+      "all"
     )
       .trim()
       .toLowerCase();
@@ -577,6 +714,50 @@ function statusBadge(status) {
 
 
 /* =========================================================
+   CATEGORY LABEL
+========================================================= */
+
+function categoryLabel(category) {
+
+  const normalized =
+    normalizeCategory(category);
+
+
+  const labels = {
+
+    meeting:
+      "Meeting",
+
+    welfare:
+      "Welfare",
+
+    transport:
+      "Transport",
+
+    food:
+      "Food",
+
+    supplies:
+      "Supplies",
+
+    bank_charges:
+      "Bank Charges",
+
+    other:
+      "Other"
+
+  };
+
+
+  return (
+    labels[normalized] ||
+    normalized
+  );
+
+}
+
+
+/* =========================================================
    RENDER EXPENSES
 ========================================================= */
 
@@ -596,14 +777,26 @@ function renderExpenses() {
   if (!list.length) {
 
     expenseRows.innerHTML = `
+
       <tr>
+
         <td
           colspan="7"
-          style="text-align:center;"
+          class="expense-empty"
         >
-          No expenses found.
+
+          <div class="expense-empty-title">
+            No expenses found
+          </div>
+
+          <div class="muted expense-empty-text">
+            There are no expenses matching the selected filters.
+          </div>
+
         </td>
+
       </tr>
+
     `;
 
     return;
@@ -621,18 +814,26 @@ function renderExpenses() {
           );
 
 
-        let actions = "";
+        const category =
+          normalizeCategory(
+            expense.category
+          );
 
 
-        /* -------------------------------------------------
+        let actions =
+          "";
+
+
+        /* -----------------------------------------------
            PENDING
-        ------------------------------------------------- */
+        ----------------------------------------------- */
 
         if (
           status === "pending"
         ) {
 
           actions += `
+
             <button
               type="button"
               class="btn btn-secondary"
@@ -650,20 +851,22 @@ function renderExpenses() {
             >
               Reject
             </button>
+
           `;
 
         }
 
 
-        /* -------------------------------------------------
+        /* -----------------------------------------------
            APPROVED
-        ------------------------------------------------- */
+        ----------------------------------------------- */
 
         else if (
           status === "approved"
         ) {
 
           actions += `
+
             <button
               type="button"
               class="btn btn-secondary"
@@ -672,18 +875,20 @@ function renderExpenses() {
             >
               Reject
             </button>
+
           `;
 
         }
 
 
-        /* -------------------------------------------------
+        /* -----------------------------------------------
            REJECTED
-        ------------------------------------------------- */
+        ----------------------------------------------- */
 
         else {
 
           actions += `
+
             <button
               type="button"
               class="btn btn-secondary"
@@ -692,16 +897,18 @@ function renderExpenses() {
             >
               Restore
             </button>
+
           `;
 
         }
 
 
-        /* -------------------------------------------------
+        /* -----------------------------------------------
            DELETE
-        ------------------------------------------------- */
+        ----------------------------------------------- */
 
         actions += `
+
           <button
             type="button"
             class="btn btn-secondary"
@@ -710,10 +917,12 @@ function renderExpenses() {
           >
             Delete
           </button>
+
         `;
 
 
         return `
+
           <tr>
 
             <td>
@@ -722,47 +931,68 @@ function renderExpenses() {
               )}
             </td>
 
-            <td>
-              ${escapeHtml(
-                expense.description
-              )}
-            </td>
 
             <td>
-              ${escapeHtml(
-                expense.category || "—"
-              )}
+
+              <div class="expense-description">
+                ${escapeHtml(
+                  expense.description
+                )}
+              </div>
+
             </td>
 
+
             <td>
-              <strong>
+
+              <span class="expense-category">
+                ${escapeHtml(
+                  categoryLabel(category)
+                )}
+              </span>
+
+            </td>
+
+
+            <td>
+
+              <span class="expense-amount">
                 ${escapeHtml(
                   money(expense.amount)
                 )}
-              </strong>
+              </span>
+
             </td>
 
+
             <td>
+
               ${statusBadge(status)}
+
             </td>
 
+
             <td>
+
               ${renderReceipt(
                 expense.receipt_url
               )}
+
             </td>
+
 
             <td>
 
-              <div
-                class="expense-actions"
-              >
+              <div class="expense-actions">
+
                 ${actions}
+
               </div>
 
             </td>
 
           </tr>
+
         `;
 
       }
@@ -806,37 +1036,50 @@ async function createExpense(event) {
 
     const description =
       String(
-        descriptionInput?.value || ""
+        descriptionInput?.value ||
+        ""
       ).trim();
 
 
     const category =
       String(
-        categoryInput?.value || ""
+        categoryInput?.value ||
+        ""
+      ).trim()
+      .toLowerCase();
+
+
+    const otherDetails =
+      String(
+        otherDetailsInput?.value ||
+        ""
       ).trim();
 
 
     const amount =
       Number(
-        amountInput?.value || 0
+        amountInput?.value ||
+        0
       );
 
 
     const date =
       String(
-        dateInput?.value || ""
+        dateInput?.value ||
+        ""
       ).trim();
 
 
     const receiptUrl =
       String(
-        receiptInput?.value || ""
+        receiptInput?.value ||
+        ""
       ).trim();
 
 
-    /* -----------------------------------------------------
+    /* =====================================================
        VALIDATION
-    ----------------------------------------------------- */
+    ====================================================== */
 
     if (!description) {
 
@@ -851,6 +1094,18 @@ async function createExpense(event) {
 
       throw new Error(
         "Please select an expense category."
+      );
+
+    }
+
+
+    if (
+      category === "other" &&
+      !otherDetails
+    ) {
+
+      throw new Error(
+        "Please enter details for the Other expense category."
       );
 
     }
@@ -877,6 +1132,47 @@ async function createExpense(event) {
     }
 
 
+    /* =====================================================
+       DESCRIPTION
+
+       We do not invent a new database column.
+
+       For "Other", the details are stored inside the
+       existing description column.
+    ====================================================== */
+
+    let finalDescription =
+      description;
+
+
+    if (
+      category === "other"
+    ) {
+
+      finalDescription =
+        `${description} — Other details: ${otherDetails}`;
+
+    }
+
+
+    if (
+      finalDescription.length >
+      255
+    ) {
+
+      finalDescription =
+        finalDescription.substring(
+          0,
+          255
+        );
+
+    }
+
+
+    /* =====================================================
+       BUTTON STATE
+    ====================================================== */
+
     if (saveButton) {
 
       saveButton.disabled =
@@ -893,12 +1189,11 @@ async function createExpense(event) {
     );
 
 
-    /* -----------------------------------------------------
-       IMPORTANT
+    /* =====================================================
+       INSERT
 
        recorded_by = MEMBER ID
-       NOT AUTH USER ID
-    ----------------------------------------------------- */
+    ====================================================== */
 
     const payload = {
 
@@ -906,7 +1201,7 @@ async function createExpense(event) {
         groupId,
 
       description:
-        description,
+        finalDescription,
 
       category:
         category,
@@ -971,6 +1266,10 @@ async function createExpense(event) {
     );
 
 
+    /* =====================================================
+       RESET
+    ====================================================== */
+
     if (form) {
 
       form.reset();
@@ -978,8 +1277,14 @@ async function createExpense(event) {
     }
 
 
+    updateOtherCategoryField();
+
     setDefaultDate();
 
+
+    /* =====================================================
+       REFRESH
+    ====================================================== */
 
     await loadExpenses();
 
@@ -1032,12 +1337,13 @@ async function updateStatus(
   newStatus
 ) {
 
-  const allowed =
-    [
-      "pending",
-      "approved",
-      "rejected"
-    ];
+  const allowed = [
+
+    "pending",
+    "approved",
+    "rejected"
+
+  ];
 
 
   const status =
@@ -1063,6 +1369,15 @@ async function updateStatus(
 
     throw new Error(
       "Expense ID is missing."
+    );
+
+  }
+
+
+  if (!groupId) {
+
+    throw new Error(
+      "Group context is missing."
     );
 
   }
@@ -1147,6 +1462,15 @@ async function deleteExpense(id) {
 
     throw new Error(
       "Expense ID is missing."
+    );
+
+  }
+
+
+  if (!groupId) {
+
+    throw new Error(
+      "Group context is missing."
     );
 
   }
@@ -1309,7 +1633,8 @@ function setupActions() {
 
       const action =
         String(
-          button.dataset.action || ""
+          button.dataset.action ||
+          ""
         )
           .trim()
           .toLowerCase();
@@ -1347,7 +1672,9 @@ function setupActions() {
       }
       catch (error) {
 
-        showPageError(error);
+        showPageError(
+          error
+        );
 
       }
       finally {
@@ -1384,6 +1711,23 @@ function setupFilters() {
 
 
 /* =========================================================
+   CATEGORY EVENTS
+========================================================= */
+
+function setupCategoryField() {
+
+  categoryInput?.addEventListener(
+    "change",
+    updateOtherCategoryField
+  );
+
+
+  updateOtherCategoryField();
+
+}
+
+
+/* =========================================================
    INITIALIZE
 ========================================================= */
 
@@ -1409,9 +1753,9 @@ export async function initPage() {
     );
 
 
-    /* -----------------------------------------------------
+    /* =====================================================
        AUTH
-    ----------------------------------------------------- */
+    ====================================================== */
 
     currentUser =
       await requireAuth();
@@ -1426,9 +1770,9 @@ export async function initPage() {
     }
 
 
-    /* -----------------------------------------------------
+    /* =====================================================
        MEMBER
-    ----------------------------------------------------- */
+    ====================================================== */
 
     currentMember =
       await getMyMember();
@@ -1443,9 +1787,9 @@ export async function initPage() {
     }
 
 
-    /* -----------------------------------------------------
+    /* =====================================================
        GROUP
-    ----------------------------------------------------- */
+    ====================================================== */
 
     groupId =
       currentMember.group_id;
@@ -1475,13 +1819,15 @@ export async function initPage() {
     );
 
 
-    /* -----------------------------------------------------
+    /* =====================================================
        EVENTS
-    ----------------------------------------------------- */
+    ====================================================== */
 
     setupActions();
 
     setupFilters();
+
+    setupCategoryField();
 
 
     form?.addEventListener(
@@ -1493,9 +1839,9 @@ export async function initPage() {
     setDefaultDate();
 
 
-    /* -----------------------------------------------------
+    /* =====================================================
        DATA
-    ----------------------------------------------------- */
+    ====================================================== */
 
     await loadExpenses();
 
@@ -1527,7 +1873,9 @@ export async function initPage() {
 
     showStatus("");
 
-    showPageError(error);
+    showPageError(
+      error
+    );
 
   }
 
