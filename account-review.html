@@ -12,7 +12,7 @@
 
   <meta
     name="description"
-    content="Check your CHAMA LIVE group registration and account approval status."
+    content="Check the status of your CHAMA LIVE group registration."
   >
 
   <meta
@@ -23,15 +23,11 @@
   <title>Account Review — CHAMA LIVE</title>
 
 
-  <!-- Existing application styles -->
-
   <link
     rel="stylesheet"
     href="css/app.css"
   >
 
-
-  <!-- Landing page visual system -->
 
   <link
     rel="stylesheet"
@@ -59,44 +55,46 @@
 
       --cl-success: #15803d;
       --cl-success-bg: #f0fdf4;
-      --cl-success-border: #bbf7d0;
 
       --cl-warning: #b45309;
       --cl-warning-bg: #fffbeb;
-      --cl-warning-border: #fde68a;
 
       --cl-danger: #be123c;
       --cl-danger-bg: #fff1f2;
-      --cl-danger-border: #fecdd3;
 
-      --cl-suspended: #475569;
-      --cl-suspended-bg: #f8fafc;
-      --cl-suspended-border: #cbd5e1;
+      --cl-suspended: #c2410c;
+      --cl-suspended-bg: #fff7ed;
 
       --cl-shadow:
         0 30px 80px
-        rgba(15, 118, 110, .14);
+        rgba(15,118,110,.14);
 
     }
 
 
     * {
-      box-sizing: border-box;
+
+      box-sizing:
+        border-box;
+
     }
 
 
     html {
-      scroll-behavior: smooth;
+
+      scroll-behavior:
+        smooth;
+
     }
 
 
-    body.cl-review-body {
+    body {
 
-      margin: 0;
+      margin:
+        0;
 
-      min-height: 100vh;
-
-      color: var(--cl-text);
+      min-height:
+        100vh;
 
       font-family:
         Inter,
@@ -106,6 +104,9 @@
         BlinkMacSystemFont,
         "Segoe UI",
         sans-serif;
+
+      color:
+        var(--cl-text);
 
       background:
 
@@ -117,7 +118,7 @@
 
         radial-gradient(
           circle at 90% 15%,
-          rgba(15,118,110,.12),
+          rgba(15,118,110,.13),
           transparent 28%
         ),
 
@@ -131,60 +132,66 @@
     }
 
 
-    /* =====================================================
-       BACKGROUND DECORATION
-    ====================================================== */
+    body::before {
 
-    body.cl-review-body::before {
+      content:
+        "";
 
-      content: "";
+      position:
+        fixed;
 
-      position: fixed;
+      width:
+        420px;
 
-      width: 450px;
-      height: 450px;
+      height:
+        420px;
 
-      top: -220px;
-      right: -160px;
+      top:
+        -220px;
 
-      border-radius: 50%;
+      right:
+        -140px;
+
+      border-radius:
+        50%;
 
       background:
+        rgba(20,184,166,.08);
 
-        linear-gradient(
-          135deg,
-          rgba(20,184,166,.18),
-          rgba(15,118,110,.02)
-        );
-
-      pointer-events: none;
+      pointer-events:
+        none;
 
     }
 
 
-    body.cl-review-body::after {
+    body::after {
 
-      content: "";
+      content:
+        "";
 
-      position: fixed;
+      position:
+        fixed;
 
-      width: 400px;
-      height: 400px;
+      width:
+        380px;
 
-      bottom: -220px;
-      left: -150px;
+      height:
+        380px;
 
-      border-radius: 50%;
+      bottom:
+        -200px;
+
+      left:
+        -150px;
+
+      border-radius:
+        50%;
 
       background:
+        rgba(15,118,110,.08);
 
-        linear-gradient(
-          135deg,
-          rgba(15,118,110,.12),
-          rgba(20,184,166,.02)
-        );
-
-      pointer-events: none;
+      pointer-events:
+        none;
 
     }
 
@@ -195,19 +202,23 @@
 
     .cl-review-shell {
 
-      position: relative;
+      position:
+        relative;
 
-      z-index: 1;
+      z-index:
+        1;
 
-      min-height: 100vh;
+      min-height:
+        100vh;
 
-      display: flex;
+      display:
+        grid;
 
-      align-items: center;
+      place-items:
+        center;
 
-      justify-content: center;
-
-      padding: 32px 18px;
+      padding:
+        30px 18px;
 
     }
 
@@ -216,52 +227,155 @@
        CARD
     ====================================================== */
 
-    .cl-review-card {
+    .cl-review-layout {
 
-      width: 100%;
+      width:
+        100%;
 
-      max-width: 760px;
+      max-width:
+        1050px;
+
+      display:
+        grid;
+
+      grid-template-columns:
+        minmax(0, 1fr)
+        minmax(400px, .85fr);
+
+      overflow:
+        hidden;
+
+      border-radius:
+        24px;
 
       background:
-        rgba(255,255,255,.97);
+        #ffffff;
+
+      box-shadow:
+        var(--cl-shadow);
 
       border:
         1px solid
         rgba(255,255,255,.9);
 
-      border-radius: 26px;
-
-      padding: 48px;
-
-      box-shadow:
-        var(--cl-shadow);
-
-      backdrop-filter:
-        blur(18px);
-
-      -webkit-backdrop-filter:
-        blur(18px);
-
     }
 
 
     /* =====================================================
-       BRAND
+       LEFT PANEL
     ====================================================== */
 
-    .cl-review-brand {
+    .cl-review-info {
 
-      display: inline-flex;
+      position:
+        relative;
 
-      align-items: center;
+      min-height:
+        650px;
 
-      margin-bottom: 36px;
+      padding:
+        52px;
+
+      overflow:
+        hidden;
 
       color:
-        var(--cl-dark);
+        #ffffff;
+
+      background:
+
+        radial-gradient(
+          circle at 85% 15%,
+          rgba(45,212,191,.28),
+          transparent 30%
+        ),
+
+        radial-gradient(
+          circle at 10% 90%,
+          rgba(13,148,136,.28),
+          transparent 35%
+        ),
+
+        linear-gradient(
+          145deg,
+          #115e59,
+          #0f766e 55%,
+          #0d9488
+        );
+
+    }
+
+
+    .cl-review-info::before {
+
+      content:
+        "";
+
+      position:
+        absolute;
+
+      width:
+        360px;
+
+      height:
+        360px;
+
+      right:
+        -180px;
+
+      bottom:
+        -170px;
+
+      border:
+        1px solid
+        rgba(255,255,255,.15);
+
+      border-radius:
+        50%;
+
+      box-shadow:
+        0 0 0 70px rgba(255,255,255,.025),
+        0 0 0 140px rgba(255,255,255,.02);
+
+    }
+
+
+    .cl-info-content {
+
+      position:
+        relative;
+
+      z-index:
+        2;
+
+      height:
+        100%;
+
+      display:
+        flex;
+
+      flex-direction:
+        column;
+
+      justify-content:
+        space-between;
+
+    }
+
+
+    .cl-brand-light {
+
+      display:
+        inline-flex;
+
+      width:
+        fit-content;
 
       text-decoration:
         none;
+
+      color:
+        #ffffff;
 
       font-size:
         26px;
@@ -270,130 +384,106 @@
         900;
 
       letter-spacing:
-        -1px;
+        -.8px;
 
     }
 
 
-    .cl-review-brand span {
+    .cl-brand-light span {
 
       color:
-        var(--cl-primary);
+        #99f6e4;
 
     }
 
 
-    /* =====================================================
-       HERO
-    ====================================================== */
+    .cl-info-copy {
 
-    .cl-review-header {
-
-      text-align: center;
-
-      max-width: 620px;
-
-      margin:
-        0 auto
-        34px;
+      margin-top:
+        70px;
 
     }
 
 
-    .cl-review-icon {
+    .cl-eyebrow-light {
 
-      width: 72px;
-      height: 72px;
+      display:
+        inline-flex;
 
-      display: grid;
+      align-items:
+        center;
 
-      place-items: center;
-
-      margin:
-        0 auto
-        22px;
-
-      border-radius: 22px;
-
-      background:
-
-        linear-gradient(
-          135deg,
-          var(--cl-primary),
-          var(--cl-primary-light)
-        );
-
-      color:
-        #ffffff;
-
-      font-size:
-        30px;
-
-      font-weight:
-        900;
-
-      box-shadow:
-        0 15px 30px
-        rgba(15,118,110,.22);
-
-    }
-
-
-    .cl-review-eyebrow {
-
-      display: inline-flex;
-
-      align-items: center;
-
-      gap: 8px;
+      gap:
+        8px;
 
       padding:
-        8px 13px;
+        7px 12px;
+
+      margin-bottom:
+        20px;
 
       border-radius:
         999px;
 
-      background:
-        #ecfdf5;
-
       border:
         1px solid
-        #bbf7d0;
+        rgba(255,255,255,.18);
+
+      background:
+        rgba(255,255,255,.08);
 
       color:
-        var(--cl-primary-dark);
+        #ccfbf1;
 
       font-size:
         10px;
 
       font-weight:
-        850;
+        800;
 
       letter-spacing:
-        1.3px;
-
-      margin-bottom:
-        16px;
+        1.2px;
 
     }
 
 
-    .cl-review-header h1 {
+    .cl-eyebrow-light::before {
+
+      content:
+        "";
+
+      width:
+        7px;
+
+      height:
+        7px;
+
+      border-radius:
+        50%;
+
+      background:
+        #5eead4;
+
+      box-shadow:
+        0 0 0 4px
+        rgba(94,234,212,.12);
+
+    }
+
+
+    .cl-info-copy h1 {
 
       margin:
-        0 0 13px;
-
-      color:
-        var(--cl-dark);
+        0 0 18px;
 
       font-size:
-        clamp(30px, 5vw, 44px);
+        clamp(34px,4vw,52px);
 
       line-height:
-        1.1;
+        1.08;
 
       letter-spacing:
-        -1.5px;
+        -1.8px;
 
       font-weight:
         850;
@@ -401,78 +491,227 @@
     }
 
 
-    .cl-review-header p {
-
-      margin: 0;
+    .cl-info-copy h1 span {
 
       color:
-        var(--cl-muted);
+        #99f6e4;
 
-      font-size:
-        15px;
+    }
+
+
+    .cl-info-copy p {
+
+      max-width:
+        480px;
+
+      margin:
+        0;
+
+      color:
+        rgba(255,255,255,.78);
 
       line-height:
         1.7;
+
+      font-size:
+        16px;
 
     }
 
 
     /* =====================================================
-       LOOKUP PANEL
+       STEPS
     ====================================================== */
 
-    .cl-lookup-panel {
+    .cl-review-steps {
 
-      padding: 28px;
+      margin-top:
+        42px;
 
-      border:
-        1px solid
-        #e2e8f0;
+      display:
+        grid;
 
-      border-radius:
-        20px;
-
-      background:
-
-        linear-gradient(
-          180deg,
-          #ffffff,
-          #f8fafc
-        );
+      gap:
+        14px;
 
     }
 
 
-    .cl-lookup-panel h2 {
+    .cl-review-step {
+
+      display:
+        flex;
+
+      align-items:
+        flex-start;
+
+      gap:
+        14px;
+
+      padding:
+        15px;
+
+      border-radius:
+        14px;
+
+      border:
+        1px solid
+        rgba(255,255,255,.12);
+
+      background:
+        rgba(255,255,255,.07);
+
+    }
+
+
+    .cl-step-number {
+
+      flex:
+        0 0 auto;
+
+      width:
+        30px;
+
+      height:
+        30px;
+
+      display:
+        grid;
+
+      place-items:
+        center;
+
+      border-radius:
+        50%;
+
+      background:
+        rgba(255,255,255,.14);
+
+      color:
+        #99f6e4;
+
+      font-size:
+        12px;
+
+      font-weight:
+        800;
+
+    }
+
+
+    .cl-review-step strong {
+
+      display:
+        block;
+
+      margin-bottom:
+        4px;
+
+      font-size:
+        13px;
+
+    }
+
+
+    .cl-review-step span {
+
+      display:
+        block;
+
+      color:
+        rgba(255,255,255,.65);
+
+      font-size:
+        12px;
+
+      line-height:
+        1.5;
+
+    }
+
+
+    /* =====================================================
+       FORM PANEL
+    ====================================================== */
+
+    .cl-review-panel {
+
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        center;
+
+      padding:
+        50px 46px;
+
+      background:
+        #ffffff;
+
+    }
+
+
+    .cl-review-container {
+
+      width:
+        100%;
+
+      max-width:
+        420px;
+
+    }
+
+
+    .cl-mobile-brand {
+
+      display:
+        none;
+
+      margin-bottom:
+        28px;
+
+    }
+
+
+    .cl-review-container h2 {
 
       margin:
-        0 0 8px;
+        0 0 10px;
 
       color:
         var(--cl-dark);
 
       font-size:
-        20px;
+        31px;
 
       letter-spacing:
-        -.4px;
+        -1px;
+
+      line-height:
+        1.1;
+
+      font-weight:
+        850;
 
     }
 
 
-    .cl-lookup-panel > p {
+    .cl-review-intro {
 
       margin:
-        0 0 22px;
+        0 0 28px;
 
       color:
         var(--cl-muted);
 
+      line-height:
+        1.65;
+
       font-size:
         14px;
-
-      line-height:
-        1.6;
 
     }
 
@@ -490,7 +729,7 @@
         column;
 
       gap:
-        14px;
+        18px;
 
     }
 
@@ -532,7 +771,7 @@
         52px;
 
       padding:
-        12px 15px;
+        12px 14px;
 
       border:
         1px solid
@@ -563,14 +802,6 @@
     }
 
 
-    .cl-review-field input:hover {
-
-      border-color:
-        #99f6e4;
-
-    }
-
-
     .cl-review-field input:focus {
 
       border-color:
@@ -583,20 +814,39 @@
     }
 
 
+    .cl-review-help {
+
+      color:
+        var(--cl-muted);
+
+      font-size:
+        11px;
+
+      line-height:
+        1.5;
+
+    }
+
+
+    /* =====================================================
+       BUTTON
+    ====================================================== */
+
     .cl-review-button {
 
-      width: 100%;
+      width:
+        100%;
 
       min-height:
-        53px;
+        52px;
 
-      border: 0;
+      border:
+        none;
 
       border-radius:
         12px;
 
       background:
-
         linear-gradient(
           135deg,
           var(--cl-primary),
@@ -621,8 +871,7 @@
 
       transition:
         transform .18s ease,
-        box-shadow .18s ease,
-        opacity .18s ease;
+        box-shadow .18s ease;
 
     }
 
@@ -650,9 +899,6 @@
       transform:
         none;
 
-      box-shadow:
-        none;
-
     }
 
 
@@ -662,20 +908,20 @@
 
     .cl-alert {
 
-      margin-bottom:
-        18px;
-
       padding:
         13px 15px;
 
       border-radius:
         12px;
 
+      margin-bottom:
+        18px;
+
       font-size:
-        14px;
+        13px;
 
       line-height:
-        1.5;
+        1.55;
 
     }
 
@@ -686,11 +932,11 @@
         var(--cl-danger);
 
       background:
-        var(--cl-danger-bg);
+        #fff1f2;
 
       border:
         1px solid
-        var(--cl-danger-border);
+        #fecdd3;
 
     }
 
@@ -717,73 +963,45 @@
     .cl-status-result {
 
       margin-top:
-        28px;
+        26px;
 
       padding:
-        28px;
+        22px;
 
       border-radius:
-        20px;
+        16px;
 
       border:
         1px solid
         #e2e8f0;
 
       background:
-        #ffffff;
+        #f8fafc;
 
     }
 
 
-    .cl-status-result[hidden] {
-
-      display:
-        none !important;
-
-    }
-
-
-    .cl-status-top {
+    .cl-status-header {
 
       display:
         flex;
 
       align-items:
-        flex-start;
+        center;
 
       justify-content:
         space-between;
 
       gap:
-        18px;
+        12px;
 
       margin-bottom:
-        24px;
-
-      padding-bottom:
-        20px;
-
-      border-bottom:
-        1px solid
-        #edf2f4;
-
-    }
-
-
-    .cl-status-group {
-
-      min-width: 0;
+        18px;
 
     }
 
 
     .cl-status-label {
-
-      display:
-        block;
-
-      margin-bottom:
-        7px;
 
       color:
         var(--cl-muted);
@@ -803,33 +1021,7 @@
     }
 
 
-    .cl-status-group h2 {
-
-      margin: 0;
-
-      color:
-        var(--cl-dark);
-
-      font-size:
-        22px;
-
-      line-height:
-        1.3;
-
-      word-break:
-        break-word;
-
-    }
-
-
-    /* =====================================================
-       STATUS BADGES
-    ====================================================== */
-
     .cl-status-badge {
-
-      flex:
-        0 0 auto;
 
       display:
         inline-flex;
@@ -838,35 +1030,33 @@
         center;
 
       gap:
-        8px;
+        7px;
 
       padding:
-        9px 13px;
+        7px 11px;
 
       border-radius:
         999px;
 
       font-size:
-        12px;
+        11px;
 
       font-weight:
-        850;
-
-      white-space:
-        nowrap;
+        800;
 
     }
 
 
     .cl-status-badge::before {
 
-      content: "";
+      content:
+        "";
 
       width:
-        8px;
+        7px;
 
       height:
-        8px;
+        7px;
 
       border-radius:
         50%;
@@ -887,7 +1077,7 @@
 
       border:
         1px solid
-        var(--cl-warning-border);
+        #fde68a;
 
     }
 
@@ -902,7 +1092,7 @@
 
       border:
         1px solid
-        var(--cl-success-border);
+        #bbf7d0;
 
     }
 
@@ -917,7 +1107,7 @@
 
       border:
         1px solid
-        var(--cl-danger-border);
+        #fecdd3;
 
     }
 
@@ -932,89 +1122,38 @@
 
       border:
         1px solid
-        var(--cl-suspended-border);
+        #fed7aa;
 
     }
 
 
-    /* =====================================================
-       DETAILS
-    ====================================================== */
+    .cl-status-group {
 
-    .cl-status-details {
-
-      display:
-        grid;
-
-      grid-template-columns:
-        repeat(2, minmax(0, 1fr));
-
-      gap:
-        14px;
-
-      margin-bottom:
-        22px;
-
-    }
-
-
-    .cl-status-detail {
-
-      padding:
-        15px;
-
-      border-radius:
-        13px;
-
-      background:
-        #f8fafc;
-
-      border:
-        1px solid
-        #edf2f4;
-
-    }
-
-
-    .cl-status-detail span {
-
-      display:
-        block;
-
-      margin-bottom:
-        6px;
-
-      color:
-        var(--cl-muted);
-
-      font-size:
-        10px;
-
-      font-weight:
-        800;
-
-      letter-spacing:
-        .7px;
-
-      text-transform:
-        uppercase;
-
-    }
-
-
-    .cl-status-detail strong {
-
-      display:
-        block;
+      margin:
+        0 0 5px;
 
       color:
         var(--cl-dark);
 
       font-size:
-        14px;
+        20px;
 
-      line-height:
-        1.45;
+      font-weight:
+        800;
+
+    }
+
+
+    .cl-status-email {
+
+      margin:
+        0;
+
+      color:
+        var(--cl-muted);
+
+      font-size:
+        12px;
 
       word-break:
         break-word;
@@ -1022,136 +1161,67 @@
     }
 
 
-    /* =====================================================
-       STATUS MESSAGE
-    ====================================================== */
-
     .cl-status-message {
 
-      padding:
+      margin-top:
         18px;
 
-      border-radius:
-        14px;
+      padding-top:
+        16px;
+
+      border-top:
+        1px solid
+        #e2e8f0;
+
+      color:
+        var(--cl-text);
+
+      font-size:
+        13px;
 
       line-height:
         1.65;
 
-      font-size:
-        14px;
-
-    }
-
-
-    .message-pending {
-
-      color:
-        #92400e;
-
-      background:
-        var(--cl-warning-bg);
-
-      border:
-        1px solid
-        var(--cl-warning-border);
-
-    }
-
-
-    .message-approved {
-
-      color:
-        #166534;
-
-      background:
-        var(--cl-success-bg);
-
-      border:
-        1px solid
-        var(--cl-success-border);
-
-    }
-
-
-    .message-rejected {
-
-      color:
-        #9f1239;
-
-      background:
-        var(--cl-danger-bg);
-
-      border:
-        1px solid
-        var(--cl-danger-border);
-
-    }
-
-
-    .message-suspended {
-
-      color:
-        #334155;
-
-      background:
-        var(--cl-suspended-bg);
-
-      border:
-        1px solid
-        var(--cl-suspended-border);
-
     }
 
 
     /* =====================================================
-       RESULT ACTIONS
+       STATUS ACTION
     ====================================================== */
 
-    .cl-status-actions {
-
-      display:
-        flex;
-
-      gap:
-        12px;
-
-      flex-wrap:
-        wrap;
+    .cl-status-action {
 
       margin-top:
-        22px;
+        18px;
 
     }
 
 
-    .cl-action-primary {
+    .cl-dashboard-button {
 
       display:
-        inline-flex;
+        block;
 
-      align-items:
-        center;
-
-      justify-content:
-        center;
-
-      min-height:
-        48px;
+      width:
+        100%;
 
       padding:
-        0 20px;
+        13px;
 
       border-radius:
         11px;
 
-      background:
-        var(--cl-primary);
+      text-align:
+        center;
+
+      text-decoration:
+        none;
 
       color:
         #ffffff;
 
-      text-decoration:
-        none;
+      background:
+        var(--cl-primary);
 
       font-size:
         14px;
@@ -1162,195 +1232,21 @@
     }
 
 
-    .cl-action-primary:hover {
-
-      background:
-        var(--cl-primary-dark);
-
-    }
-
-
-    .cl-action-secondary {
-
-      display:
-        inline-flex;
-
-      align-items:
-        center;
-
-      justify-content:
-        center;
-
-      min-height:
-        48px;
-
-      padding:
-        0 20px;
-
-      border-radius:
-        11px;
-
-      border:
-        1px solid
-        var(--cl-border);
-
-      background:
-        #ffffff;
-
-      color:
-        var(--cl-primary);
-
-      text-decoration:
-        none;
-
-      font-size:
-        14px;
-
-      font-weight:
-        750;
-
-    }
-
-
     /* =====================================================
-       WHAT HAPPENS NEXT
+       LINKS
     ====================================================== */
 
-    .cl-review-info {
+    .cl-review-links {
 
       margin-top:
-        30px;
+        24px;
 
       padding-top:
-        28px;
+        22px;
 
       border-top:
         1px solid
         #edf2f4;
-
-    }
-
-
-    .cl-review-info h3 {
-
-      margin:
-        0 0 16px;
-
-      color:
-        var(--cl-dark);
-
-      font-size:
-        16px;
-
-    }
-
-
-    .cl-review-steps {
-
-      display:
-        grid;
-
-      grid-template-columns:
-        repeat(3, 1fr);
-
-      gap:
-        14px;
-
-    }
-
-
-    .cl-review-step {
-
-      padding:
-        16px;
-
-      border:
-        1px solid
-        #e2e8f0;
-
-      border-radius:
-        14px;
-
-      background:
-        #ffffff;
-
-    }
-
-
-    .cl-step-number {
-
-      width:
-        26px;
-
-      height:
-        26px;
-
-      display:
-        grid;
-
-      place-items:
-        center;
-
-      margin-bottom:
-        10px;
-
-      border-radius:
-        50%;
-
-      background:
-        #ccfbf1;
-
-      color:
-        var(--cl-primary-dark);
-
-      font-size:
-        11px;
-
-      font-weight:
-        850;
-
-    }
-
-
-    .cl-review-step strong {
-
-      display:
-        block;
-
-      margin-bottom:
-        5px;
-
-      color:
-        var(--cl-dark);
-
-      font-size:
-        13px;
-
-    }
-
-
-    .cl-review-step span {
-
-      color:
-        var(--cl-muted);
-
-      font-size:
-        11px;
-
-      line-height:
-        1.5;
-
-    }
-
-
-    /* =====================================================
-       FOOTER
-    ====================================================== */
-
-    .cl-review-footer {
-
-      margin-top:
-        30px;
 
       text-align:
         center;
@@ -1361,24 +1257,27 @@
       font-size:
         13px;
 
+      line-height:
+        1.7;
+
     }
 
 
-    .cl-review-footer a {
+    .cl-review-links a {
 
       color:
         var(--cl-primary);
 
-      text-decoration:
-        none;
-
       font-weight:
         750;
+
+      text-decoration:
+        none;
 
     }
 
 
-    .cl-review-footer a:hover {
+    .cl-review-links a:hover {
 
       text-decoration:
         underline;
@@ -1390,100 +1289,86 @@
        RESPONSIVE
     ====================================================== */
 
-    @media (max-width: 700px) {
+    @media (max-width: 850px) {
 
-      .cl-review-card {
+      .cl-review-layout {
+
+        grid-template-columns:
+          1fr;
+
+        max-width:
+          540px;
+
+      }
+
+
+      .cl-review-info {
+
+        display:
+          none;
+
+      }
+
+
+      .cl-mobile-brand {
+
+        display:
+          inline-flex;
+
+      }
+
+
+      .cl-review-panel {
 
         padding:
-          34px 24px;
-
-        border-radius:
-          22px;
-
-      }
-
-
-      .cl-status-top {
-
-        flex-direction:
-          column;
-
-      }
-
-
-      .cl-status-details {
-
-        grid-template-columns:
-          1fr;
-
-      }
-
-
-      .cl-review-steps {
-
-        grid-template-columns:
-          1fr;
+          42px 30px;
 
       }
 
     }
 
 
-    @media (max-width: 480px) {
+    @media (max-width: 520px) {
 
       .cl-review-shell {
 
         padding:
-          14px;
+          12px;
 
       }
 
 
-      .cl-review-card {
+      .cl-review-layout {
+
+        border-radius:
+          18px;
+
+      }
+
+
+      .cl-review-panel {
 
         padding:
-          28px 18px;
+          32px 20px;
 
       }
 
 
-      .cl-lookup-panel {
-
-        padding:
-          20px 16px;
-
-      }
-
-
-      .cl-status-result {
-
-        padding:
-          20px 16px;
-
-      }
-
-
-      .cl-review-header h1 {
+      .cl-review-container h2 {
 
         font-size:
-          30px;
+          28px;
 
       }
 
 
-      .cl-status-actions {
+      .cl-status-header {
+
+        align-items:
+          flex-start;
 
         flex-direction:
           column;
-
-      }
-
-
-      .cl-action-primary,
-      .cl-action-secondary {
-
-        width:
-          100%;
 
       }
 
@@ -1497,9 +1382,6 @@
         transition:
           none !important;
 
-        scroll-behavior:
-          auto !important;
-
       }
 
     }
@@ -1509,340 +1391,365 @@
 </head>
 
 
-<body class="cl-review-body">
+<body>
 
 
 <main class="cl-review-shell">
 
 
-  <section class="cl-review-card">
+  <section class="cl-review-layout">
 
 
-    <!-- =================================================
-         BRAND
-    ================================================== -->
+    <!-- ================================================
+         LEFT INFORMATION PANEL
+    ================================================= -->
 
-    <a
-      href="index.html"
-      class="cl-review-brand"
-      aria-label="CHAMA LIVE home"
-    >
-      CHAMA <span>LIVE</span>
-    </a>
-
-
-    <!-- =================================================
-         HEADER
-    ================================================== -->
-
-    <header class="cl-review-header">
-
-
-      <div class="cl-review-icon">
-        ✓
-      </div>
-
-
-      <div class="cl-review-eyebrow">
-        ACCOUNT REVIEW
-      </div>
-
-
-      <h1>
-        Check your group application
-      </h1>
-
-
-      <p>
-        Enter the email address used when registering
-        your CHAMA LIVE group to securely check
-        your application status.
-      </p>
-
-
-    </header>
-
-
-    <!-- =================================================
-         STATUS LOOKUP
-    ================================================== -->
-
-    <section
-      class="cl-lookup-panel"
-      aria-labelledby="lookupTitle"
+    <aside
+      class="cl-review-info"
+      aria-label="Account review information"
     >
 
 
-      <h2 id="lookupTitle">
-        Administrator email verification
-      </h2>
+      <div class="cl-info-content">
 
 
-      <p>
-        Only the registered group administrator email
-        can be used to retrieve an application status.
-      </p>
+        <div>
 
 
-      <!-- Error -->
-
-      <div
-        id="error"
-        class="cl-alert cl-alert-error"
-        hidden
-        role="alert"
-      ></div>
-
-
-      <!-- Status -->
-
-      <div
-        id="status"
-        class="cl-alert cl-alert-info"
-        hidden
-        role="status"
-      ></div>
-
-
-      <!-- Lookup Form -->
-
-      <form
-        id="reviewLookupForm"
-        class="cl-review-form"
-        autocomplete="on"
-      >
-
-
-        <div class="cl-review-field">
-
-          <label for="email">
-            Registered administrator email
-          </label>
-
-
-          <input
-            id="email"
-            name="email"
-            type="email"
-            required
-            autocomplete="email"
-            inputmode="email"
-            placeholder="you@example.com"
+          <a
+            href="index.html"
+            class="cl-brand-light"
           >
+            CHAMA <span>LIVE</span>
+          </a>
+
+
+          <div class="cl-info-copy">
+
+
+            <div class="cl-eyebrow-light">
+              GROUP REGISTRATION
+            </div>
+
+
+            <h1>
+              Track your
+              <span>group application.</span>
+            </h1>
+
+
+            <p>
+              Enter the administrator email used during
+              group registration to securely check your
+              CHAMA LIVE account status.
+            </p>
+
+
+            <div class="cl-review-steps">
+
+
+              <div class="cl-review-step">
+
+                <div class="cl-step-number">
+                  1
+                </div>
+
+                <div>
+
+                  <strong>
+                    Register
+                  </strong>
+
+                  <span>
+                    Submit your group and administrator details.
+                  </span>
+
+                </div>
+
+              </div>
+
+
+              <div class="cl-review-step">
+
+                <div class="cl-step-number">
+                  2
+                </div>
+
+                <div>
+
+                  <strong>
+                    Review
+                  </strong>
+
+                  <span>
+                    CHAMA LIVE verifies your group application.
+                  </span>
+
+                </div>
+
+              </div>
+
+
+              <div class="cl-review-step">
+
+                <div class="cl-step-number">
+                  3
+                </div>
+
+                <div>
+
+                  <strong>
+                    Access
+                  </strong>
+
+                  <span>
+                    Approved administrators can access their Dashboard.
+                  </span>
+
+                </div>
+
+              </div>
+
+
+            </div>
+
+
+          </div>
+
 
         </div>
 
 
-        <button
-          id="checkStatusButton"
-          class="cl-review-button"
-          type="submit"
+        <p
+          style="
+            margin:0;
+            color:rgba(255,255,255,.55);
+            font-size:11px;
+          "
         >
-          Check Application Status
-        </button>
+          Secure group management • CHAMA LIVE
+        </p>
 
 
-      </form>
+      </div>
 
 
-    </section>
+    </aside>
 
 
-    <!-- =================================================
-         STATUS RESULT
+    <!-- ================================================
+         REVIEW PANEL
+    ================================================= -->
 
-         Hidden until registered admin email is verified.
-    ================================================== -->
-
-    <section
-      id="statusResult"
-      class="cl-status-result"
-      hidden
-      aria-live="polite"
-    >
+    <section class="cl-review-panel">
 
 
-      <div class="cl-status-top">
+      <div class="cl-review-container">
 
 
-        <div class="cl-status-group">
+        <!-- MOBILE BRAND -->
 
-          <span class="cl-status-label">
-            Registered Group
-          </span>
-
-
-          <h2 id="groupName">
-            —
-          </h2>
+        <a
+          href="index.html"
+          class="cl-brand cl-mobile-brand"
+        >
+          CHAMA <span>LIVE</span>
+        </a>
 
 
+        <div class="cl-eyebrow">
+          ACCOUNT REVIEW
         </div>
 
+
+        <h2>
+          Check application status
+        </h2>
+
+
+        <p class="cl-review-intro">
+          Enter the administrator email address used when
+          registering your group. Only the registered group
+          administrator can view the application status.
+        </p>
+
+
+        <!-- ERROR -->
 
         <div
-          id="statusBadge"
-          class="cl-status-badge status-pending"
+          id="error"
+          class="cl-alert cl-alert-error"
+          hidden
+          role="alert"
+        ></div>
+
+
+        <!-- STATUS -->
+
+        <div
+          id="status"
+          class="cl-alert cl-alert-info"
+          hidden
+          role="status"
+        ></div>
+
+
+        <!-- ================================================
+             EMAIL LOOKUP FORM
+        ================================================= -->
+
+        <form
+          id="reviewLookupForm"
+          class="cl-review-form"
+          autocomplete="on"
         >
-          Pending Review
-        </div>
 
 
-      </div>
+          <div class="cl-review-field">
 
 
-      <!-- Details -->
+            <label for="adminEmail">
 
-      <div class="cl-status-details">
+              Registered administrator email
 
-
-        <div class="cl-status-detail">
-
-          <span>
-            Administrator
-          </span>
-
-          <strong id="adminName">
-            —
-          </strong>
-
-        </div>
+            </label>
 
 
-        <div class="cl-status-detail">
-
-          <span>
-            Application Email
-          </span>
-
-          <strong id="adminEmail">
-            —
-          </strong>
-
-        </div>
+            <input
+              id="adminEmail"
+              name="adminEmail"
+              type="email"
+              required
+              autocomplete="email"
+              inputmode="email"
+              placeholder="you@example.com"
+            >
 
 
-        <div class="cl-status-detail">
+            <span class="cl-review-help">
 
-          <span>
-            Group Type
-          </span>
+              Use the same email address entered during
+              CHAMA LIVE group registration.
 
-          <strong id="groupCategory">
-            —
-          </strong>
-
-        </div>
+            </span>
 
 
-        <div class="cl-status-detail">
-
-          <span>
-            Account Status
-          </span>
-
-          <strong id="accountStatus">
-            —
-          </strong>
-
-        </div>
-
-
-      </div>
-
-
-      <!-- Dynamic Message -->
-
-      <div
-        id="statusMessage"
-        class="cl-status-message message-pending"
-      >
-      </div>
-
-
-      <!-- Dynamic Actions -->
-
-      <div
-        id="statusActions"
-        class="cl-status-actions"
-      >
-      </div>
-
-
-    </section>
-
-
-    <!-- =================================================
-         PROCESS
-    ================================================== -->
-
-    <section class="cl-review-info">
-
-
-      <h3>
-        How account review works
-      </h3>
-
-
-      <div class="cl-review-steps">
-
-
-        <div class="cl-review-step">
-
-          <div class="cl-step-number">
-            1
           </div>
 
 
-          <strong>
-            Registration
-          </strong>
+          <button
+            id="checkStatusButton"
+            class="cl-review-button"
+            type="submit"
+          >
+
+            Check Application Status
+
+          </button>
 
 
-          <span>
-            Your group and administrator application
-            are securely submitted.
-          </span>
+        </form>
+
+
+        <!-- ================================================
+             RESULT
+        ================================================= -->
+
+        <div
+          id="reviewResult"
+          class="cl-status-result"
+          hidden
+        >
+
+
+          <div class="cl-status-header">
+
+
+            <span class="cl-status-label">
+
+              Application Status
+
+            </span>
+
+
+            <span
+              id="statusBadge"
+              class="cl-status-badge status-pending"
+            >
+
+              Pending Review
+
+            </span>
+
+
+          </div>
+
+
+          <h3
+            id="groupName"
+            class="cl-status-group"
+          >
+          </h3>
+
+
+          <p
+            id="registeredEmail"
+            class="cl-status-email"
+          >
+          </p>
+
+
+          <div
+            id="statusMessage"
+            class="cl-status-message"
+          >
+          </div>
+
+
+          <div
+            id="statusAction"
+            class="cl-status-action"
+            hidden
+          >
+
+            <a
+              href="login.html"
+              class="cl-dashboard-button"
+            >
+
+              Go to Sign In
+
+            </a>
+
+          </div>
+
 
         </div>
 
 
-        <div class="cl-review-step">
+        <!-- ================================================
+             FOOTER LINKS
+        ================================================= -->
 
-          <div class="cl-step-number">
-            2
-          </div>
-
-
-          <strong>
-            Review
-          </strong>
+        <div class="cl-review-links">
 
 
-          <span>
-            CHAMA LIVE verifies the application
-            before enabling group access.
-          </span>
+          <a href="login.html">
 
-        </div>
+            Return to Sign In
 
-
-        <div class="cl-review-step">
-
-          <div class="cl-step-number">
-            3
-          </div>
+          </a>
 
 
-          <strong>
-            Access
-          </strong>
+          <br>
 
 
-          <span>
-            Once approved, sign in and start
-            managing your group.
-          </span>
+          <a href="index.html">
+
+            Back to CHAMA LIVE
+
+          </a>
+
 
         </div>
 
@@ -1851,25 +1758,6 @@
 
 
     </section>
-
-
-    <!-- =================================================
-         FOOTER
-    ================================================== -->
-
-    <div class="cl-review-footer">
-
-      <a href="login.html">
-        Return to Sign In
-      </a>
-
-      &nbsp;•&nbsp;
-
-      <a href="index.html">
-        Back to CHAMA LIVE
-      </a>
-
-    </div>
 
 
   </section>
