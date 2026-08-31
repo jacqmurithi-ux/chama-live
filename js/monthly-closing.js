@@ -2,19 +2,22 @@
    CHAMA LIVE — MONTHLY CLOSING
    CANONICAL 2B VERSION
    ---------------------------------------------------------
-   Accounting source:
+
+   ACCOUNTING SOURCES
+   ---------------------------------------------------------
+   Monthly accounting:
        get_canonical_monthly_accounting_summary()
 
-   Member accounting source:
+   Member accounting:
        get_canonical_member_monthly_status()
 
-   Cash closing:
+   CASH CLOSING:
        Opening Balance
        + Actual Cash Contributions Received
        - Approved Expenses
        = Closing Balance
 
-   Contribution accounting:
+   CONTRIBUTION ACCOUNTING:
        Expected Monthly Obligations
        Applied To Current Month Obligations
        Outstanding
@@ -31,10 +34,11 @@
    These are NOT necessarily the same amount.
 
    Example:
+
        August cash payment
-            ↓
+              ↓
        September obligation
-            ↓
+              ↓
        September allocation
 
    Therefore:
@@ -43,22 +47,30 @@
        September Applied       = KES 300
 
    Collection progress is based on APPLICATION against
-   current-month obligations, not blindly on cash received.
+   current-month obligations.
 
+   CASH CLOSING MUST NEVER USE APPLICATION.
+
+   ---------------------------------------------------------
    RLS IDENTITY RULE
    ---------------------------------------------------------
    monthly_closings.closed_by references auth.users.id.
 
    Therefore:
+
        closed_by = currentUser.id
 
    NOT:
+
        closed_by = currentMember.id
 
-   Required exports:
+   ---------------------------------------------------------
+   REQUIRED EXPORTS
+   ---------------------------------------------------------
        initPage()
        initMonthlyClosing
 ========================================================= */
+
 
 import { supabase } from "./supabase.js";
 
@@ -74,61 +86,142 @@ console.log(
 
 
 /* =========================================================
+   ELEMENT HELPER
+   ---------------------------------------------------------
+   Supports both the current canonical IDs and older IDs.
+========================================================= */
+
+function getElement(...ids) {
+
+  for (const id of ids) {
+
+    const element =
+      document.getElementById(id);
+
+    if (element) {
+      return element;
+    }
+
+  }
+
+  return null;
+
+}
+
+
+/* =========================================================
    ELEMENTS
 ========================================================= */
 
 const statusEl =
-  document.getElementById("status");
+  getElement(
+    "status"
+  );
+
 
 const errorEl =
-  document.getElementById("error");
+  getElement(
+    "error"
+  );
+
 
 const monthInput =
-  document.getElementById("closingMonth");
+  getElement(
+    "closingMonth",
+    "month"
+  );
+
 
 const calculateButton =
-  document.getElementById("calculateClosing");
+  getElement(
+    "calculateClosing",
+    "calculate"
+  );
+
 
 const closeButton =
-  document.getElementById("closeMonth");
+  getElement(
+    "closeMonth"
+  );
+
 
 const notesInput =
-  document.getElementById("closingNotes");
+  getElement(
+    "closingNotes",
+    "notes"
+  );
+
 
 const expectedEl =
-  document.getElementById("totalExpected");
+  getElement(
+    "totalExpected",
+    "expected"
+  );
+
 
 const collectedEl =
-  document.getElementById("totalCollected");
+  getElement(
+    "totalCollected",
+    "collected"
+  );
+
 
 const expensesEl =
-  document.getElementById("totalExpenses");
+  getElement(
+    "totalExpenses",
+    "approvedExpenses",
+    "expenses"
+  );
+
 
 const balanceEl =
-  document.getElementById("closingBalance");
+  getElement(
+    "closingBalance",
+    "balance"
+  );
+
 
 const previousBalanceEl =
-  document.getElementById("previousBalance");
+  getElement(
+    "previousBalance",
+    "openingBalance"
+  );
+
 
 const closingStatusEl =
-  document.getElementById("closingStatus");
+  getElement(
+    "closingStatus",
+    "periodStatus"
+  );
+
 
 const closingRows =
-  document.getElementById("closingRows");
+  getElement(
+    "closingRows"
+  );
+
 
 const selectedMonthLabel =
-  document.getElementById("selectedMonthLabel");
+  getElement(
+    "selectedMonthLabel",
+    "selectedMonth"
+  );
+
 
 const collectionProgress =
-  document.getElementById("collectionProgress");
+  getElement(
+    "collectionProgress"
+  );
+
 
 const collectionProgressText =
-  document.getElementById(
+  getElement(
     "collectionProgressText"
   );
 
+
 const collectionDifference =
-  document.getElementById(
+  getElement(
     "collectionDifference"
   );
 
@@ -182,11 +275,26 @@ function escapeHtml(value) {
   return String(
     value ?? ""
   )
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
 
 }
 
@@ -261,7 +369,10 @@ function getCurrentMonth() {
 
     String(
       date.getMonth() + 1
-    ).padStart(2, "0")
+    ).padStart(
+      2,
+      "0"
+    )
 
   ].join("-");
 
@@ -284,7 +395,9 @@ function formatMonth(value) {
       date.getTime()
     )
   ) {
+
     return value;
+
   }
 
   return date.toLocaleDateString(
@@ -312,7 +425,9 @@ function formatDate(value) {
       date.getTime()
     )
   ) {
+
     return String(value);
+
   }
 
   return date.toLocaleDateString(
@@ -350,12 +465,6 @@ function renderSelectedMonth() {
 
 /* =========================================================
    OPTIONAL 2B ELEMENTS
-   ---------------------------------------------------------
-   These are rendered only when the corresponding IDs exist
-   in the current UI.
-
-   This allows the current UI to remain unchanged while
-   supporting explicit 2B accounting fields if present.
 ========================================================= */
 
 function renderOptionalAccountingFields(data) {
@@ -366,7 +475,7 @@ function renderOptionalAccountingFields(data) {
 
 
   const appliedEl =
-    document.getElementById(
+    getElement(
       "appliedThisMonth"
     );
 
@@ -381,7 +490,7 @@ function renderOptionalAccountingFields(data) {
 
 
   const carryForwardEl =
-    document.getElementById(
+    getElement(
       "carryForward"
     );
 
@@ -396,7 +505,7 @@ function renderOptionalAccountingFields(data) {
 
 
   const outstandingEl =
-    document.getElementById(
+    getElement(
       "currentOutstanding"
     );
 
@@ -411,7 +520,7 @@ function renderOptionalAccountingFields(data) {
 
 
   const cashReceivedEl =
-    document.getElementById(
+    getElement(
       "cashReceived"
     );
 
@@ -426,7 +535,7 @@ function renderOptionalAccountingFields(data) {
 
 
   const collectionLabelEl =
-    document.getElementById(
+    getElement(
       "collectionProgressLabel"
     );
 
@@ -439,7 +548,7 @@ function renderOptionalAccountingFields(data) {
 
 
   const collectedLabelEl =
-    document.getElementById(
+    getElement(
       "totalCollectedLabel"
     );
 
@@ -466,7 +575,9 @@ async function loadExistingClosing(
     error
   } =
     await supabase
-      .from("monthly_closings")
+      .from(
+        "monthly_closings"
+      )
       .select(`
         id,
         group_id,
@@ -489,9 +600,11 @@ async function loadExistingClosing(
       )
       .maybeSingle();
 
+
   if (error) {
     throw error;
   }
+
 
   currentClosing =
     data || null;
@@ -509,12 +622,15 @@ async function loadClosingHistory() {
     return;
   }
 
+
   const {
     data,
     error
   } =
     await supabase
-      .from("monthly_closings")
+      .from(
+        "monthly_closings"
+      )
       .select(`
         id,
         closing_month,
@@ -535,6 +651,7 @@ async function loadClosingHistory() {
           ascending: false
         }
       );
+
 
   if (error) {
     throw error;
@@ -601,7 +718,10 @@ async function loadClosingHistory() {
                     formatMonth(
                       String(
                         closing.closing_month
-                      ).slice(0, 7)
+                      ).slice(
+                        0,
+                        7
+                      )
                     )
                   )}
                 </strong>
@@ -638,7 +758,9 @@ async function loadClosingHistory() {
                   class="${balanceClass}"
                 >
                   ${escapeHtml(
-                    money(balance)
+                    money(
+                      balance
+                    )
                   )}
                 </strong>
               </td>
@@ -680,10 +802,10 @@ async function getOpeningBalance(
     `${month}-01`;
 
 
-  /*
-     First preference:
-     previously closed financial period.
-  */
+  /* -------------------------------------------------------
+     FIRST:
+     Previous closed financial period
+  ------------------------------------------------------- */
 
   const {
     data: previousPeriod,
@@ -691,7 +813,9 @@ async function getOpeningBalance(
       previousPeriodError
   } =
     await supabase
-      .from("financial_periods")
+      .from(
+        "financial_periods"
+      )
       .select(`
         closing_balance,
         month,
@@ -723,14 +847,6 @@ async function getOpeningBalance(
     previousPeriodError
   ) {
 
-    /*
-       Some installations may not expose
-       financial_periods through the current
-       client role.
-
-       Fall back to monthly_closings.
-    */
-
     console.warn(
       "CHAMA LIVE: financial_periods lookup:",
       previousPeriodError
@@ -740,10 +856,8 @@ async function getOpeningBalance(
 
 
   if (
-    previousPeriod?.closing_balance !==
-      null &&
-    previousPeriod?.closing_balance !==
-      undefined
+    previousPeriod?.closing_balance !== null &&
+    previousPeriod?.closing_balance !== undefined
   ) {
 
     return Number(
@@ -753,10 +867,10 @@ async function getOpeningBalance(
   }
 
 
-  /*
-     Second preference:
-     monthly_closings.
-  */
+  /* -------------------------------------------------------
+     SECOND:
+     Previous monthly closing
+  ------------------------------------------------------- */
 
   const {
     data: previousClosing,
@@ -764,7 +878,9 @@ async function getOpeningBalance(
       previousClosingError
   } =
     await supabase
-      .from("monthly_closings")
+      .from(
+        "monthly_closings"
+      )
       .select(`
         closing_balance,
         closing_month
@@ -787,7 +903,9 @@ async function getOpeningBalance(
       .maybeSingle();
 
 
-  if (previousClosingError) {
+  if (
+    previousClosingError
+  ) {
 
     console.warn(
       "CHAMA LIVE: previous monthly closing lookup:",
@@ -798,10 +916,8 @@ async function getOpeningBalance(
 
 
   if (
-    previousClosing?.closing_balance !==
-      null &&
-    previousClosing?.closing_balance !==
-      undefined
+    previousClosing?.closing_balance !== null &&
+    previousClosing?.closing_balance !== undefined
   ) {
 
     return Number(
@@ -811,10 +927,10 @@ async function getOpeningBalance(
   }
 
 
-  /*
-     Final fallback:
-     group opening balance.
-  */
+  /* -------------------------------------------------------
+     FINAL:
+     Group opening balance
+  ------------------------------------------------------- */
 
   const {
     data: group,
@@ -822,7 +938,9 @@ async function getOpeningBalance(
       groupError
   } =
     await supabase
-      .from("groups")
+      .from(
+        "groups"
+      )
       .select(`
         opening_balance
       `)
@@ -858,9 +976,9 @@ async function loadCanonicalAccounting(
   );
 
 
-  /* ---------------------------------------------------------
+  /* -------------------------------------------------------
      CANONICAL MEMBER STATUS
-  --------------------------------------------------------- */
+  ------------------------------------------------------- */
 
   const {
     data: statusData,
@@ -888,9 +1006,9 @@ async function loadCanonicalAccounting(
     statusData || [];
 
 
-  /* ---------------------------------------------------------
+  /* -------------------------------------------------------
      CANONICAL MONTHLY SUMMARY
-  --------------------------------------------------------- */
+  ------------------------------------------------------- */
 
   const {
     data: summaryData,
@@ -923,16 +1041,10 @@ async function loadCanonicalAccounting(
   }
 
 
-  /*
-     The RPC may return either a single object
-     or a one-row array depending on the Supabase
-     function configuration.
-
-     Normalize both shapes.
-  */
-
   const summary =
-    Array.isArray(summaryData)
+    Array.isArray(
+      summaryData
+    )
       ? summaryData[0]
       : summaryData;
 
@@ -946,12 +1058,13 @@ async function loadCanonicalAccounting(
   }
 
 
-  /* ---------------------------------------------------------
+  /* -------------------------------------------------------
      APPROVED EXPENSES
-  --------------------------------------------------------- */
+  ------------------------------------------------------- */
 
   const monthStart =
     `${month}-01`;
+
 
   const monthDate =
     new Date(
@@ -970,7 +1083,10 @@ async function loadCanonicalAccounting(
 
       String(
         monthDate.getMonth() + 1
-      ).padStart(2, "0"),
+      ).padStart(
+        2,
+        "0"
+      ),
 
       "01"
 
@@ -982,7 +1098,9 @@ async function loadCanonicalAccounting(
     error: expenseError
   } =
     await supabase
-      .from("expenses")
+      .from(
+        "expenses"
+      )
       .select(`
         id,
         amount,
@@ -1015,18 +1133,22 @@ async function loadCanonicalAccounting(
   const approvedExpenses =
     (expenseRows || [])
       .reduce(
-        (total, expense) =>
+        (
+          total,
+          expense
+        ) =>
           total +
           Number(
             expense.amount || 0
           ),
+
         0
       );
 
 
-  /* ---------------------------------------------------------
+  /* -------------------------------------------------------
      OPENING BALANCE
-  --------------------------------------------------------- */
+  ------------------------------------------------------- */
 
   const openingBalance =
     await getOpeningBalance(
@@ -1034,17 +1156,17 @@ async function loadCanonicalAccounting(
     );
 
 
-  /* ---------------------------------------------------------
+  /* =======================================================
      CANONICAL 2B VALUES
-  --------------------------------------------------------- */
+  ======================================================= */
 
   /*
      ACTUAL CASH RECEIVED
 
-     This is the amount of contribution cash
-     recorded during the selected month.
+     This is contribution cash actually recorded
+     during the selected financial month.
 
-     It is used for CASH CLOSING.
+     It belongs in CASH CLOSING.
   */
 
   const totalCollected =
@@ -1070,7 +1192,10 @@ async function loadCanonicalAccounting(
   /*
      APPLICATION AGAINST CURRENT MONTH
 
-     This can come from earlier payments/carry-forward.
+     This can originate from:
+       - current-month cash
+       - earlier payment
+       - carry-forward credit
   */
 
   const applied =
@@ -1105,25 +1230,30 @@ async function loadCanonicalAccounting(
     );
 
 
-  /* ---------------------------------------------------------
+  /* =======================================================
      CASH CLOSING
-  ---------------------------------------------------------
+     -------------------------------------------------------
 
-     IMPORTANT:
-
-       opening
+       opening balance
        + actual cash received
        - approved expenses
 
-     NOT:
+     NEVER use "applied" here.
 
-       opening
-       + applied amount
-       - expenses
+     Example:
 
-     Application is an obligation-accounting concept,
-     not a cash-flow concept.
-  --------------------------------------------------------- */
+       September opening       -150
+       September cash received    0
+       September expenses         0
+
+       Closing balance = -150
+
+     Even if:
+
+       September applied = 300
+
+     the KES 300 is NOT September cash.
+  ======================================================= */
 
   const closingBalance =
     openingBalance +
@@ -1131,11 +1261,12 @@ async function loadCanonicalAccounting(
     approvedExpenses;
 
 
-  /* ---------------------------------------------------------
+  /* -------------------------------------------------------
      APPLICATION RATE
-  --------------------------------------------------------- */
+  ------------------------------------------------------- */
 
-  let collectionRate = 0;
+  let collectionRate =
+    0;
 
 
   if (expected > 0) {
@@ -1210,10 +1341,46 @@ async function loadCanonicalAccounting(
 
     collection_rate:
       Number(
-        collectionRate.toFixed(2)
+        collectionRate.toFixed(
+          2
+        )
       )
 
   };
+
+
+  console.log(
+    "CHAMA LIVE: canonical monthly accounting",
+    {
+      month,
+
+      expected,
+
+      actualCashReceived:
+        totalCollected,
+
+      appliedThisMonth:
+        applied,
+
+      carryForward,
+
+      currentOutstanding:
+        outstanding,
+
+      approvedExpenses,
+
+      openingBalance,
+
+      closingBalance,
+
+      collectionRate:
+        Number(
+          collectionRate.toFixed(
+            2
+          )
+        )
+    }
+  );
 
 
   renderCalculation();
@@ -1240,10 +1407,6 @@ function renderCalculation() {
     );
 
 
-  /*
-     ACTUAL CASH RECEIVED
-  */
-
   const collected =
     Number(
       calculatedData
@@ -1251,10 +1414,6 @@ function renderCalculation() {
       0
     );
 
-
-  /*
-     AMOUNT APPLIED TO CURRENT MONTH
-  */
 
   const applied =
     Number(
@@ -1304,27 +1463,44 @@ function renderCalculation() {
     );
 
 
-  /* ---------------------------------------------------------
+  /* -------------------------------------------------------
      SUMMARY CARDS
-  --------------------------------------------------------- */
+  ------------------------------------------------------- */
 
   if (expectedEl) {
 
     expectedEl.textContent =
-      money(expected);
+      money(
+        expected
+      );
 
   }
 
 
   /*
-     "Total Collected" intentionally shows
-     actual cash received.
+     TOTAL COLLECTED
+     ----------------
+
+     This is CASH.
+
+     It must NOT display applied amount.
+
+     September example:
+
+       cash = 0
+       applied = 300
+
+     Therefore:
+
+       Total Collected = KES 0
   */
 
   if (collectedEl) {
 
     collectedEl.textContent =
-      money(collected);
+      money(
+        collected
+      );
 
   }
 
@@ -1332,7 +1508,9 @@ function renderCalculation() {
   if (expensesEl) {
 
     expensesEl.textContent =
-      money(expenses);
+      money(
+        expenses
+      );
 
   }
 
@@ -1340,7 +1518,9 @@ function renderCalculation() {
   if (previousBalanceEl) {
 
     previousBalanceEl.textContent =
-      money(previousBalance);
+      money(
+        previousBalance
+      );
 
   }
 
@@ -1348,34 +1528,28 @@ function renderCalculation() {
   if (balanceEl) {
 
     balanceEl.textContent =
-      money(balance);
+      money(
+        balance
+      );
 
   }
 
 
-  /* ---------------------------------------------------------
+  /* -------------------------------------------------------
      APPLICATION PROGRESS
-  ---------------------------------------------------------
+     -------------------------------------------------------
 
      IMPORTANT:
 
-     The percentage is based on:
+       applied / expected
 
-         applied / expected
+     NOT:
 
-     It must therefore say:
+       cash received / expected
+  ------------------------------------------------------- */
 
-         "applied"
-
-     and NOT:
-
-         "collected"
-
-     because an allocation can originate from
-     an earlier cash payment.
-  --------------------------------------------------------- */
-
-  let percentage = 0;
+  let percentage =
+    0;
 
 
   if (expected > 0) {
@@ -1426,10 +1600,14 @@ function renderCalculation() {
   }
 
 
-  /*
-     Difference is also based on APPLICATION
-     against current-month expected obligations.
-  */
+  /* -------------------------------------------------------
+     DIFFERENCE
+     -------------------------------------------------------
+
+     Difference is based on:
+
+       applied - expected
+  ------------------------------------------------------- */
 
   if (collectionDifference) {
 
@@ -1449,17 +1627,21 @@ function renderCalculation() {
         "collection-difference positive";
 
     }
+
     else if (difference < 0) {
 
       collectionDifference.textContent =
         `${money(
-          Math.abs(difference)
+          Math.abs(
+            difference
+          )
         )} below expected`;
 
       collectionDifference.className =
         "collection-difference negative";
 
     }
+
     else {
 
       collectionDifference.textContent =
@@ -1473,9 +1655,9 @@ function renderCalculation() {
   }
 
 
-  /* ---------------------------------------------------------
+  /* -------------------------------------------------------
      BALANCE CLASS
-  --------------------------------------------------------- */
+  ------------------------------------------------------- */
 
   if (balanceEl) {
 
@@ -1493,6 +1675,7 @@ function renderCalculation() {
       );
 
     }
+
     else if (balance > 0) {
 
       balanceEl.classList.add(
@@ -1500,6 +1683,7 @@ function renderCalculation() {
       );
 
     }
+
     else {
 
       balanceEl.classList.add(
@@ -1511,26 +1695,20 @@ function renderCalculation() {
   }
 
 
-  /* ---------------------------------------------------------
-     OPTIONAL 2B FIELDS
-  --------------------------------------------------------- */
+  /* -------------------------------------------------------
+     OPTIONAL 2B VALUES
+  ------------------------------------------------------- */
 
   renderOptionalAccountingFields(
     calculatedData
   );
 
 
-  /*
-     Optional explanatory labels.
-
-     These only affect elements that explicitly exist
-     in the current HTML, so the existing UI remains intact.
-  */
-
   const progressDescription =
-    document.getElementById(
+    getElement(
       "collectionProgressDescription"
     );
+
 
   if (progressDescription) {
 
@@ -1541,9 +1719,10 @@ function renderCalculation() {
 
 
   const cashDescription =
-    document.getElementById(
+    getElement(
       "cashCollectedDescription"
     );
+
 
   if (cashDescription) {
 
@@ -1554,9 +1733,10 @@ function renderCalculation() {
 
 
   const appliedDescription =
-    document.getElementById(
+    getElement(
       "appliedDescription"
     );
+
 
   if (appliedDescription) {
 
@@ -1566,14 +1746,11 @@ function renderCalculation() {
   }
 
 
-  /*
-     Optional current accounting values.
-  */
-
   const activeMembersEl =
-    document.getElementById(
+    getElement(
       "activeMembers"
     );
+
 
   if (activeMembersEl) {
 
@@ -1586,9 +1763,10 @@ function renderCalculation() {
 
 
   const paidMembersEl =
-    document.getElementById(
+    getElement(
       "membersPaid"
     );
+
 
   if (paidMembersEl) {
 
@@ -1601,9 +1779,10 @@ function renderCalculation() {
 
 
   const partialMembersEl =
-    document.getElementById(
+    getElement(
       "partialPayments"
     );
+
 
   if (partialMembersEl) {
 
@@ -1616,9 +1795,10 @@ function renderCalculation() {
 
 
   const outstandingMembersEl =
-    document.getElementById(
+    getElement(
       "outstandingMembers"
     );
+
 
   if (outstandingMembersEl) {
 
@@ -1649,6 +1829,7 @@ function renderClosingStatus() {
       `Closed on ${formatDate(
         currentClosing.closed_at
       )}`;
+
 
     closingStatusEl.className =
       "closing-status-badge closed";
@@ -1687,9 +1868,7 @@ function renderClosingStatus() {
     if (collectedEl) {
 
       /*
-         Historical monthly_closings.total_collected
-         represents actual cash collected for that
-         closed financial period.
+         Historical closing stores ACTUAL CASH.
       */
 
       collectedEl.textContent =
@@ -1717,13 +1896,53 @@ function renderClosingStatus() {
           currentClosing.closing_balance
         );
 
+
+      balanceEl.classList.remove(
+        "amount-positive",
+        "amount-negative",
+        "amount-neutral"
+      );
+
+
+      const historicalBalance =
+        Number(
+          currentClosing.closing_balance ||
+          0
+        );
+
+
+      if (historicalBalance < 0) {
+
+        balanceEl.classList.add(
+          "amount-negative"
+        );
+
+      }
+
+      else if (historicalBalance > 0) {
+
+        balanceEl.classList.add(
+          "amount-positive"
+        );
+
+      }
+
+      else {
+
+        balanceEl.classList.add(
+          "amount-neutral"
+        );
+
+      }
+
     }
 
 
     const finalizeSection =
-      document.getElementById(
+      getElement(
         "finalizeSection"
       );
+
 
     if (finalizeSection) {
 
@@ -1734,10 +1953,12 @@ function renderClosingStatus() {
     }
 
   }
+
   else {
 
     closingStatusEl.textContent =
       "Open";
+
 
     closingStatusEl.className =
       "closing-status-badge open";
@@ -1755,9 +1976,10 @@ function renderClosingStatus() {
 
 
     const finalizeSection =
-      document.getElementById(
+      getElement(
         "finalizeSection"
       );
+
 
     if (finalizeSection) {
 
@@ -1782,6 +2004,7 @@ async function calculateMonth() {
 
     clearError();
 
+
     const month =
       monthInput?.value;
 
@@ -1798,8 +2021,10 @@ async function calculateMonth() {
     calculatedData =
       null;
 
+
     currentClosing =
       null;
+
 
     canonicalStatus =
       [];
@@ -1828,9 +2053,12 @@ async function calculateMonth() {
     );
 
   }
+
   catch (error) {
 
-    showError(error);
+    showError(
+      error
+    );
 
   }
 
@@ -1871,11 +2099,9 @@ async function closeMonth() {
 
 
     /*
-       Recalculate before closing.
+       Recalculate immediately before closing.
 
-       This prevents stale values from being
-       written if another contribution or expense
-       was recorded after the last calculation.
+       This prevents stale accounting values.
     */
 
     await loadCanonicalAccounting(
@@ -1893,11 +2119,7 @@ async function closeMonth() {
 
 
     /*
-       Check again immediately before INSERT.
-
-       This prevents duplicate closing records
-       when another session has already closed
-       the month.
+       Check duplicate immediately before INSERT.
     */
 
     await loadExistingClosing(
@@ -1924,48 +2146,56 @@ async function closeMonth() {
         )}?\n\n` +
 
         `Expected monthly obligations: ` +
+
         `${money(
           calculatedData
             .expected_monthly_contributions
         )}\n` +
 
         `Actual cash contributions received: ` +
+
         `${money(
           calculatedData
             .total_contributions_collected
         )}\n` +
 
         `Applied to current-month obligations: ` +
+
         `${money(
           calculatedData
             .applied_this_month
         )}\n` +
 
         `Carry-forward credit: ` +
+
         `${money(
           calculatedData
             .carry_forward
         )}\n` +
 
         `Current outstanding: ` +
+
         `${money(
           calculatedData
             .current_outstanding
         )}\n` +
 
         `Approved expenses: ` +
+
         `${money(
           calculatedData
             .approved_expenses
         )}\n` +
 
         `Opening balance: ` +
+
         `${money(
           calculatedData
             .opening_balance
         )}\n` +
 
         `Closing cash balance: ` +
+
         `${money(
           calculatedData
             .closing_balance
@@ -2027,10 +2257,10 @@ async function closeMonth() {
 
 
     /* =====================================================
-       RLS IDENTITY FIX
+       RLS IDENTITY
 
-       monthly_closings.closed_by references
-       auth.users.id.
+       monthly_closings.closed_by
+       references auth.users.id.
 
        Therefore:
 
@@ -2038,7 +2268,7 @@ async function closeMonth() {
 
        is REQUIRED.
 
-       Do NOT use:
+       NEVER:
 
            currentMember.id
     ===================================================== */
@@ -2065,7 +2295,11 @@ async function closeMonth() {
         ),
 
       /*
-         This is ACTUAL CASH RECEIVED.
+         ACTUAL CASH RECEIVED.
+
+         This is deliberately NOT:
+
+             applied_this_month
       */
 
       total_collected:
@@ -2083,11 +2317,11 @@ async function closeMonth() {
         ),
 
       /*
-         Cash closing formula:
+         CASH CLOSING:
 
            opening
-           + actual cash received
-           - approved expenses
+           + actual cash
+           - expenses
       */
 
       closing_balance:
@@ -2107,6 +2341,7 @@ async function closeMonth() {
     console.log(
       "CHAMA LIVE: monthly closing insert",
       {
+
         groupId:
           payload.group_id,
 
@@ -2132,11 +2367,24 @@ async function closeMonth() {
         actualCashReceived:
           payload.total_collected,
 
+        appliedThisMonth:
+          calculatedData
+            .applied_this_month,
+
+        carryForward:
+          calculatedData
+            .carry_forward,
+
         approvedExpenses:
           payload.total_expenses,
 
+        openingBalance:
+          calculatedData
+            .opening_balance,
+
         closingBalance:
           payload.closing_balance
+
       }
     );
 
@@ -2146,7 +2394,9 @@ async function closeMonth() {
       error
     } =
       await supabase
-        .from("monthly_closings")
+        .from(
+          "monthly_closings"
+        )
         .insert(
           payload
         )
@@ -2184,12 +2434,7 @@ async function closeMonth() {
 
 
       /*
-         RLS diagnostic message.
-
-         We do not bypass RLS.
-
-         The authenticated user ID is deliberately
-         used as closed_by.
+         RLS authorization failure.
       */
 
       if (
@@ -2215,6 +2460,7 @@ async function closeMonth() {
 
     renderClosingStatus();
 
+
     await loadClosingHistory();
 
 
@@ -2234,13 +2480,16 @@ async function closeMonth() {
       3000
     );
 
-
   }
+
   catch (error) {
 
-    showError(error);
+    showError(
+      error
+    );
 
   }
+
   finally {
 
     if (
@@ -2269,7 +2518,8 @@ function setupEvents() {
 
   if (
     monthInput &&
-    monthInput.dataset.bound !== "true"
+    monthInput.dataset.bound !==
+      "true"
   ) {
 
     monthInput.dataset.bound =
@@ -2289,7 +2539,6 @@ function setupEvents() {
         canonicalStatus =
           [];
 
-
         renderSelectedMonth();
 
         calculateMonth();
@@ -2302,7 +2551,8 @@ function setupEvents() {
 
   if (
     calculateButton &&
-    calculateButton.dataset.bound !== "true"
+    calculateButton.dataset.bound !==
+      "true"
   ) {
 
     calculateButton.dataset.bound =
@@ -2323,7 +2573,8 @@ function setupEvents() {
 
   if (
     closeButton &&
-    closeButton.dataset.bound !== "true"
+    closeButton.dataset.bound !==
+      "true"
   ) {
 
     closeButton.dataset.bound =
@@ -2362,6 +2613,7 @@ export async function initPage() {
   try {
 
     clearError();
+
 
     showStatus(
       "Loading monthly closing..."
@@ -2451,6 +2703,7 @@ export async function initPage() {
 
     renderSelectedMonth();
 
+
     setupEvents();
 
 
@@ -2486,6 +2739,7 @@ export async function initPage() {
     console.log(
       "CHAMA LIVE: monthly closing initialized",
       {
+
         groupId,
 
         memberId:
@@ -2502,10 +2756,12 @@ export async function initPage() {
 
         canonicalMembers:
           canonicalStatus.length
+
       }
     );
 
   }
+
   catch (error) {
 
     initialized =
@@ -2513,7 +2769,9 @@ export async function initPage() {
 
     showStatus("");
 
-    showError(error);
+    showError(
+      error
+    );
 
   }
 
@@ -2550,6 +2808,7 @@ if (
   );
 
 }
+
 else {
 
   initPage();
