@@ -1,34 +1,64 @@
 /* =========================================================
    CHAMA LIVE — CONTRIBUTIONS
-   COMPLETE GROUP-SCOPED VERSION
+   COMPLETE STABLE + VISUALLY ENHANCED VERSION
 
    FEATURES
    ---------------------------------------------------------
-   1. Recurring monthly contributions
-   2. Outstanding balances carried forward
-   3. Oldest arrears paid first
-   4. Extra payments become credit
-   5. Credit offsets future obligations
-   6. Contribution goals
-   7. Goal amount progress
-   8. Goal member participation progress
-   9. Unique contributing-member count
-   10. Group-scoped contribution types
-   11. Custom "Other" contribution type
-   12. Custom contribution types persist per group
-   13. M-Pesa reference handling
-   14. Notes support
-   15. Correct recorded_by = members.id
-   16. Uses members.name — NOT members.full_name
+   • Group-scoped contribution records
+   • Monthly contribution tracking
+   • Contribution goals
+   • M-Pesa / Cash / Bank transfer
+   • M-Pesa reference validation
+   • "Other" contribution type with custom details
+   • Notes support
+   • Duplicate monthly payment warning
+   • Responsive contribution history
+   • Responsive monthly status
+   • CHAMA LIVE visual enhancement
+   • Compatible with layout.js dynamic loading
+
+   LIVE DATABASE TABLES USED
+   ---------------------------------------------------------
+   public.groups
+   public.members
+   public.contributions
+   public.contribution_goals
+
+   EXISTING CONTRIBUTIONS COLUMNS USED
+   ---------------------------------------------------------
+   group_id
+   member_id
+   amount
+   contribution_type
+   month
+   payment_method
+   reference
+   recorded_by
+   created_at
+   goal_id
+   contribution_date
+   notes
+   mpesa_reference
+
+   IMPORTANT
+   ---------------------------------------------------------
+   No database migration is required for "Other".
+
+   When contribution type = "other":
+
+       contribution_type = "other"
+
+       notes =
+         "Other contribution: <custom details>"
+         + optional existing notes
+
+   This keeps the database schema compatible while
+   preserving the administrator's description.
 ========================================================= */
 
-import { supabase } from "./supabase.js";
-
 import {
-  requireAuth,
-  getMyMember,
-  getMyGroup
-} from "./auth.js";
+  supabase
+} from "./supabase.js";
 
 
 console.log(
@@ -37,155 +67,356 @@ console.log(
 
 
 /* =========================================================
-   STATE
-========================================================= */
-
-let currentUser = null;
-let currentMember = null;
-let currentGroup = null;
-let groupId = null;
-
-let members = [];
-let contributions = [];
-let contributionGoals = [];
-let contributionTypes = [];
-
-let initialized = false;
-
-
-/* =========================================================
-   ELEMENT HELPER
-========================================================= */
-
-function byId(id) {
-  return document.getElementById(id);
-}
-
-
-/* =========================================================
    ELEMENTS
 ========================================================= */
 
 const statusEl =
-  byId("status");
+  document.getElementById(
+    "status"
+  );
+
 
 const errorEl =
-  byId("error");
+  document.getElementById(
+    "error"
+  );
+
 
 const form =
-  byId("contributionForm");
+  document.getElementById(
+    "contributionForm"
+  );
+
 
 const memberSelect =
-  byId("member");
+  document.getElementById(
+    "member"
+  );
+
 
 const amountInput =
-  byId("amount");
+  document.getElementById(
+    "amount"
+  );
+
 
 const dateInput =
-  byId("contributionDate");
+  document.getElementById(
+    "contributionDate"
+  );
+
 
 const typeSelect =
-  byId("contributionType");
+  document.getElementById(
+    "contributionType"
+  );
 
-const otherTypeWrap =
-  byId("otherContributionTypeWrap");
-
-const otherTypeInput =
-  byId("otherContributionType");
 
 const methodSelect =
-  byId("paymentMethod");
+  document.getElementById(
+    "paymentMethod"
+  );
+
 
 const mpesaReference =
-  byId("mpesaReference");
+  document.getElementById(
+    "mpesaReference"
+  );
+
 
 const mpesaReferenceWrap =
-  byId("mpesaReferenceWrap");
+  document.getElementById(
+    "mpesaReferenceWrap"
+  );
 
-const goalSelect =
-  byId("goal");
-
-const notesInput =
-  byId("notes");
 
 const saveButton =
-  byId("saveContribution");
+  document.getElementById(
+    "saveContribution"
+  );
+
 
 const monthlyExpected =
-  byId("monthlyExpected");
+  document.getElementById(
+    "monthlyExpected"
+  );
+
 
 const memberStatusRows =
-  byId("memberStatusRows");
+  document.getElementById(
+    "memberStatusRows"
+  );
+
 
 const contributionRows =
-  byId("contributionRows");
-
-const goalProgressContainer =
-  byId("goalProgressContainer");
+  document.getElementById(
+    "contributionRows"
+  );
 
 
 /* =========================================================
-   MONEY
+   OPTIONAL EXISTING ELEMENTS
 ========================================================= */
 
-function money(value) {
+const notesInput =
+  document.getElementById(
+    "notes"
+  );
 
-  return (
-    "KSh " +
-    Number(value || 0).toLocaleString(
-      "en-KE",
-      {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2
-      }
+
+const goalSelect =
+  document.getElementById(
+    "goal"
+  ) ||
+  document.getElementById(
+    "contributionGoal"
+  );
+
+
+/* =========================================================
+   STATE
+========================================================= */
+
+let groupId =
+  null;
+
+
+let members =
+  [];
+
+
+let contributions =
+  [];
+
+
+let contributionGoals =
+  [];
+
+
+let monthlyContribution =
+  0;
+
+
+let initialized =
+  false;
+
+
+/* =========================================================
+   CONSTANTS
+========================================================= */
+
+const PAYMENT_METHODS = {
+
+  MPESA:
+    "M-Pesa",
+
+  CASH:
+    "Cash",
+
+  BANK:
+    "Bank transfer"
+
+};
+
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function money(
+  value
+) {
+
+  return new Intl.NumberFormat(
+    "en-KE",
+    {
+      style:
+        "currency",
+
+      currency:
+        "KES",
+
+      minimumFractionDigits:
+        0,
+
+      maximumFractionDigits:
+        2
+    }
+  ).format(
+    Number(
+      value || 0
     )
   );
 
 }
 
 
-/* =========================================================
-   TODAY
-========================================================= */
-
 function todayString() {
 
   const now =
     new Date();
 
+
   return [
+
     now.getFullYear(),
 
     String(
       now.getMonth() + 1
-    ).padStart(2, "0"),
+    ).padStart(
+      2,
+      "0"
+    ),
 
     String(
       now.getDate()
-    ).padStart(2, "0")
+    ).padStart(
+      2,
+      "0"
+    )
 
-  ].join("-");
-
-}
-
-
-/* =========================================================
-   CURRENT MONTH
-========================================================= */
-
-function currentMonth() {
-
-  return todayString()
-    .slice(0, 7);
+  ].join(
+    "-"
+  );
 
 }
 
 
-/* =========================================================
-   ESCAPE HTML
-========================================================= */
+function getCurrentMonth() {
 
-function escapeHtml(value) {
+  const now =
+    new Date();
+
+
+  return (
+    `${now.getFullYear()}-` +
+    `${String(
+      now.getMonth() + 1
+    ).padStart(
+      2,
+      "0"
+    )}`
+  );
+
+}
+
+
+function getContributionMonth(
+  item
+) {
+
+  if (
+    item?.contribution_date
+  ) {
+
+    return String(
+      item.contribution_date
+    ).slice(
+      0,
+      7
+    );
+
+  }
+
+
+  if (
+    item?.month
+  ) {
+
+    return String(
+      item.month
+    ).slice(
+      0,
+      7
+    );
+
+  }
+
+
+  if (
+    item?.created_at
+  ) {
+
+    const date =
+      new Date(
+        item.created_at
+      );
+
+
+    if (
+      !Number.isNaN(
+        date.getTime()
+      )
+    ) {
+
+      return (
+        `${date.getFullYear()}-` +
+        `${String(
+          date.getMonth() + 1
+        ).padStart(
+          2,
+          "0"
+        )}`
+      );
+
+    }
+
+  }
+
+
+  return "";
+
+}
+
+
+function formatDate(
+  value
+) {
+
+  if (!value) {
+    return "—";
+  }
+
+
+  const date =
+    new Date(
+      value
+    );
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+
+    return String(
+      value
+    );
+
+  }
+
+
+  return date.toLocaleDateString(
+    "en-KE",
+    {
+      day:
+        "2-digit",
+
+      month:
+        "short",
+
+      year:
+        "numeric"
+    }
+  );
+
+}
+
+
+function escapeHtml(
+  value
+) {
 
   return String(
     value ?? ""
@@ -215,101 +446,50 @@ function escapeHtml(value) {
 
 
 /* =========================================================
-   FORMAT DATE
+   STATUS / ERROR
 ========================================================= */
 
-function formatDate(value) {
-
-  if (!value) {
-    return "—";
-  }
-
-  const date =
-    new Date(value);
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-
-    return value;
-
-  }
-
-  return date.toLocaleDateString(
-    "en-KE",
-    {
-      day: "2-digit",
-      month: "short",
-      year: "numeric"
-    }
-  );
-
-}
-
-
-/* =========================================================
-   SHOW STATUS
-========================================================= */
-
-function showStatus(message) {
-
-  if (!statusEl) {
-    return;
-  }
-
-  statusEl.textContent =
-    message || "";
-
-  statusEl.hidden =
-    !message;
-
-}
-
-
-/* =========================================================
-   SHOW ERROR
-========================================================= */
-
-function showError(error) {
+function showError(
+  error
+) {
 
   console.error(
-    "CHAMA LIVE Contributions:",
+    "CHAMA LIVE Contributions Error:",
     error
   );
 
-  const message =
-    error?.message ||
-    String(error) ||
-    "Something went wrong.";
 
   if (errorEl) {
 
     errorEl.textContent =
-      message;
+      error?.message ||
+      "Something went wrong.";
 
     errorEl.hidden =
       false;
 
   }
 
+
+  if (statusEl) {
+
+    statusEl.textContent =
+      "Unable to complete the contribution request.";
+
+  }
+
 }
 
-
-/* =========================================================
-   CLEAR ERROR
-========================================================= */
 
 function clearError() {
 
   if (errorEl) {
 
-    errorEl.textContent =
-      "";
-
     errorEl.hidden =
       true;
+
+    errorEl.textContent =
+      "";
 
   }
 
@@ -317,164 +497,120 @@ function clearError() {
 
 
 /* =========================================================
-   INITIALIZE
+   CURRENT GROUP
 ========================================================= */
 
-export async function init() {
+async function getGroupId() {
 
-  if (initialized) {
-
-    console.warn(
-      "CHAMA LIVE: contributions already initialized"
+  const {
+    data,
+    error
+  } =
+    await supabase.rpc(
+      "my_group_id"
     );
 
-    return;
+
+  if (error) {
+
+    throw error;
 
   }
 
-  initialized =
-    true;
 
-  try {
+  if (!data) {
 
-    clearError();
+    throw new Error(
+      "No group is associated with your account."
+    );
 
-    showStatus(
-      "Loading contributions..."
+  }
+
+
+  return data;
+
+}
+
+
+/* =========================================================
+   LOAD GROUP
+========================================================= */
+
+async function loadGroup() {
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from(
+        "groups"
+      )
+      .select(
+        "monthly_contribution,name,category"
+      )
+      .eq(
+        "id",
+        groupId
+      )
+      .single();
+
+
+  if (error) {
+
+    throw error;
+
+  }
+
+
+  monthlyContribution =
+    Number(
+      data?.monthly_contribution ||
+      0
     );
 
 
-    /* -----------------------------------------------------
-       AUTHENTICATION
-    ----------------------------------------------------- */
+  if (
+    monthlyExpected
+  ) {
 
-    currentUser =
-      await requireAuth();
-
-
-    /* -----------------------------------------------------
-       MEMBER
-    ----------------------------------------------------- */
-
-    currentMember =
-      await getMyMember();
-
-
-    if (!currentMember) {
-
-      throw new Error(
-        "No member record is linked to this account."
+    monthlyExpected.textContent =
+      money(
+        monthlyContribution
       );
 
-    }
+  }
 
 
-    if (!currentMember.group_id) {
+  if (
+    amountInput &&
+    monthlyContribution > 0
+  ) {
 
-      throw new Error(
-        "Your account is not linked to a group."
-      );
+    amountInput.value =
+      monthlyContribution;
 
-    }
-
-
-    groupId =
-      currentMember.group_id;
+  }
 
 
-    /* -----------------------------------------------------
-       GROUP
-    ----------------------------------------------------- */
+  /*
+   * Update group heading if the page
+   * contains the global group-name hook.
+   */
 
-    currentGroup =
-      await getMyGroup();
+  document
+    .querySelectorAll(
+      "[data-group-name]"
+    )
+    .forEach(
+      element => {
 
+        element.textContent =
+          data?.name ||
+          "CHAMA";
 
-    if (!currentGroup) {
-
-      throw new Error(
-        "The current group could not be loaded."
-      );
-
-    }
-
-
-    /* -----------------------------------------------------
-       DATE
-    ----------------------------------------------------- */
-
-    if (
-      dateInput &&
-      !dateInput.value
-    ) {
-
-      dateInput.value =
-        todayString();
-
-    }
-
-
-    /* -----------------------------------------------------
-       LOAD DATA
-    ----------------------------------------------------- */
-
-    await loadMembers();
-
-    await loadContributionTypes();
-
-    await loadContributions();
-
-    await loadContributionGoals();
-
-
-    /* -----------------------------------------------------
-       RENDER
-    ----------------------------------------------------- */
-
-    renderMonthlyExpected();
-
-    renderContributionTypeSelect();
-
-    renderGoalSelect();
-
-    renderGoalProgress();
-
-    renderMonthlyStatus();
-
-    renderLedger();
-
-
-    /* -----------------------------------------------------
-       EVENTS
-    ----------------------------------------------------- */
-
-    bindEvents();
-
-
-    showStatus("");
-
-
-    console.log(
-      "CHAMA LIVE: contributions initialized",
-      {
-        groupId,
-        memberId: currentMember.id,
-        userId: currentUser?.id
       }
     );
-
-  }
-
-  catch (error) {
-
-    initialized =
-      false;
-
-    showStatus("");
-
-    showError(error);
-
-  }
 
 }
 
@@ -490,20 +626,16 @@ async function loadMembers() {
     error
   } =
     await supabase
-      .from("members")
-      .select(`
-        id,
-        group_id,
-        member_number,
-        membership_number,
-        name,
-        phone,
-        email,
-        role,
-        join_date,
-        status,
-        created_at
-      `)
+      .from(
+        "members"
+      )
+      .select(
+        `
+          id,
+          name,
+          status
+        `
+      )
       .eq(
         "group_id",
         groupId
@@ -511,59 +643,48 @@ async function loadMembers() {
       .order(
         "name",
         {
-          ascending: true
+          ascending:
+            true
         }
       );
 
 
   if (error) {
+
     throw error;
+
   }
 
 
   members =
-    data || [];
+    (data || [])
+      .filter(
+        member =>
+          String(
+            member.status ||
+            "active"
+          )
+            .toLowerCase() ===
+          "active"
+      );
 
 
-  renderMemberSelect();
+  if (
+    !memberSelect
+  ) {
 
-}
-
-
-/* =========================================================
-   ACTIVE MEMBERS
-========================================================= */
-
-function getActiveMembers() {
-
-  return members.filter(
-    member =>
-      String(
-        member.status || "active"
-      ).toLowerCase() ===
-      "active"
-  );
-
-}
-
-
-/* =========================================================
-   RENDER MEMBER SELECT
-========================================================= */
-
-function renderMemberSelect() {
-
-  if (!memberSelect) {
     return;
+
   }
 
 
-  memberSelect.innerHTML =
-    `
-      <option value="">
-        Select member
-      </option>
-    `;
+  memberSelect.innerHTML = `
+
+    <option value="">
+      Select member
+    </option>
+
+  `;
 
 
   members.forEach(
@@ -579,16 +700,8 @@ function renderMemberSelect() {
         member.id;
 
 
-      const number =
-        member.member_number ||
-        member.membership_number ||
-        "";
-
-
       option.textContent =
-        number
-          ? `${number} — ${member.name}`
-          : member.name;
+        member.name;
 
 
       memberSelect.appendChild(
@@ -602,669 +715,84 @@ function renderMemberSelect() {
 
 
 /* =========================================================
-   LOAD CONTRIBUTION TYPES
-========================================================= */
-
-async function loadContributionTypes() {
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("contribution_types")
-      .select(`
-        id,
-        group_id,
-        name,
-        created_by,
-        created_at
-      `)
-      .eq(
-        "group_id",
-        groupId
-      )
-      .order(
-        "name",
-        {
-          ascending: true
-        }
-      );
-
-
-  if (error) {
-    throw error;
-  }
-
-
-  contributionTypes =
-    data || [];
-
-
-  console.log(
-    "CHAMA LIVE: contribution types loaded",
-    contributionTypes
-  );
-
-}
-
-
-/* =========================================================
-   DEFAULT CONTRIBUTION TYPES
-========================================================= */
-
-const DEFAULT_CONTRIBUTION_TYPES = [
-  {
-    value: "monthly",
-    label: "Monthly Contribution"
-  },
-  {
-    value: "welfare",
-    label: "Welfare"
-  },
-  {
-    value: "emergency",
-    label: "Emergency"
-  },
-  {
-    value: "fundraising",
-    label: "Fundraising"
-  },
-  {
-    value: "project",
-    label: "Project"
-  },
-  {
-    value: "event",
-    label: "Event"
-  }
-];
-
-
-/* =========================================================
-   NORMALIZE TYPE
-========================================================= */
-
-function normalizeContributionType(
-  value
-) {
-
-  return String(
-    value || ""
-  )
-    .trim()
-    .toLowerCase()
-    .replaceAll(
-      " ",
-      "_"
-    );
-
-}
-
-
-/* =========================================================
-   RENDER CONTRIBUTION TYPE SELECT
-========================================================= */
-
-function renderContributionTypeSelect(
-  selectedValue = null
-) {
-
-  if (!typeSelect) {
-    return;
-  }
-
-
-  const previousValue =
-    selectedValue ??
-    typeSelect.value;
-
-
-  typeSelect.innerHTML =
-    "";
-
-
-  /* -------------------------------------------------------
-     DEFAULT TYPES
-  ------------------------------------------------------- */
-
-  DEFAULT_CONTRIBUTION_TYPES.forEach(
-    type => {
-
-      const option =
-        document.createElement(
-          "option"
-        );
-
-
-      option.value =
-        type.value;
-
-
-      option.textContent =
-        type.label;
-
-
-      typeSelect.appendChild(
-        option
-      );
-
-    }
-  );
-
-
-  /* -------------------------------------------------------
-     CUSTOM GROUP TYPES
-  ------------------------------------------------------- */
-
-  contributionTypes.forEach(
-    type => {
-
-      const normalized =
-        normalizeContributionType(
-          type.name
-        );
-
-
-      /*
-       * Avoid duplicates with default
-       * types.
-       */
-
-      const alreadyExists =
-        Array.from(
-          typeSelect.options
-        ).some(
-          option =>
-            normalizeContributionType(
-              option.value
-            ) === normalized ||
-            normalizeContributionType(
-              option.textContent
-            ) === normalized
-        );
-
-
-      if (
-        alreadyExists
-      ) {
-
-        return;
-
-      }
-
-
-      const option =
-        document.createElement(
-          "option"
-        );
-
-
-      option.value =
-        type.name;
-
-
-      option.textContent =
-        type.name;
-
-
-      typeSelect.appendChild(
-        option
-      );
-
-    }
-  );
-
-
-  /* -------------------------------------------------------
-     OTHER
-  ------------------------------------------------------- */
-
-  const otherOption =
-    document.createElement(
-      "option"
-    );
-
-
-  otherOption.value =
-    "other";
-
-
-  otherOption.textContent =
-    "Other";
-
-
-  typeSelect.appendChild(
-    otherOption
-  );
-
-
-  /*
-   * Restore previous selection
-   * if still available.
-   */
-
-  if (
-    previousValue &&
-    Array.from(
-      typeSelect.options
-    ).some(
-      option =>
-        option.value ===
-        previousValue
-    )
-  ) {
-
-    typeSelect.value =
-      previousValue;
-
-  }
-
-  else {
-
-    typeSelect.value =
-      "monthly";
-
-  }
-
-
-  toggleOtherContributionType();
-
-}
-
-
-/* =========================================================
-   TOGGLE OTHER CONTRIBUTION TYPE
-========================================================= */
-
-function toggleOtherContributionType() {
-
-  if (!typeSelect) {
-    return;
-  }
-
-
-  const selected =
-    String(
-      typeSelect.value || ""
-    )
-      .trim()
-      .toLowerCase();
-
-
-  const isOther =
-    selected ===
-    "other";
-
-
-  if (otherTypeWrap) {
-
-    otherTypeWrap.hidden =
-      !isOther;
-
-  }
-
-
-  if (otherTypeInput) {
-
-    otherTypeInput.required =
-      isOther;
-
-    if (!isOther) {
-
-      otherTypeInput.value =
-        "";
-
-    }
-
-  }
-
-}
-
-
-/* =========================================================
-   SAVE CUSTOM CONTRIBUTION TYPE
-========================================================= */
-
-async function saveCustomContributionType(
-  typeName
-) {
-
-  const cleanName =
-    String(
-      typeName || ""
-    ).trim();
-
-
-  if (!cleanName) {
-
-    throw new Error(
-      "Please enter the name of the other contribution."
-    );
-
-  }
-
-
-  /*
-   * Check existing group types first.
-   */
-
-  const existingCustom =
-    contributionTypes.find(
-      type =>
-        normalizeContributionType(
-          type.name
-        ) ===
-        normalizeContributionType(
-          cleanName
-        )
-    );
-
-
-  if (existingCustom) {
-
-    return existingCustom.name;
-
-  }
-
-
-  /*
-   * Check default types.
-   */
-
-  const existingDefault =
-    DEFAULT_CONTRIBUTION_TYPES.find(
-      type =>
-        normalizeContributionType(
-          type.value
-        ) ===
-        normalizeContributionType(
-          cleanName
-        ) ||
-        normalizeContributionType(
-          type.label
-        ) ===
-        normalizeContributionType(
-          cleanName
-        )
-    );
-
-
-  if (existingDefault) {
-
-    return existingDefault.value;
-
-  }
-
-
-  /*
-   * Insert into group-scoped
-   * contribution_types.
-   *
-   * IMPORTANT:
-   * created_by -> members.id
-   */
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("contribution_types")
-      .insert({
-        group_id:
-          groupId,
-
-        name:
-          cleanName,
-
-        created_by:
-          currentMember?.id ||
-          null
-      })
-      .select(`
-        id,
-        group_id,
-        name,
-        created_by,
-        created_at
-      `)
-      .single();
-
-
-  if (error) {
-
-    /*
-     * If another request created
-     * the same type at the same time,
-     * reload and use it.
-     */
-
-    const duplicate =
-      String(
-        error.message || ""
-      )
-        .toLowerCase()
-        .includes(
-          "duplicate"
-        );
-
-
-    if (duplicate) {
-
-      await loadContributionTypes();
-
-      const found =
-        contributionTypes.find(
-          type =>
-            normalizeContributionType(
-              type.name
-            ) ===
-            normalizeContributionType(
-              cleanName
-            )
-        );
-
-
-      if (found) {
-
-        return found.name;
-
-      }
-
-    }
-
-
-    throw error;
-
-  }
-
-
-  if (data) {
-
-    contributionTypes.push(
-      data
-    );
-
-  }
-
-
-  /*
-   * Refresh dropdown immediately.
-   */
-
-  renderContributionTypeSelect(
-    cleanName
-  );
-
-
-  return cleanName;
-
-}
-
-
-/* =========================================================
-   LOAD CONTRIBUTIONS
-========================================================= */
-
-async function loadContributions() {
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("contributions")
-      .select(`
-        id,
-        group_id,
-        member_id,
-        amount,
-        contribution_type,
-        month,
-        payment_method,
-        reference,
-        recorded_by,
-        created_at,
-        goal_id,
-        contribution_date,
-        notes,
-        mpesa_reference
-      `)
-      .eq(
-        "group_id",
-        groupId
-      )
-      .order(
-        "contribution_date",
-        {
-          ascending: false
-        }
-      )
-      .order(
-        "created_at",
-        {
-          ascending: false
-        }
-      );
-
-
-  if (error) {
-    throw error;
-  }
-
-
-  contributions =
-    data || [];
-
-}
-
-
-/* =========================================================
    LOAD CONTRIBUTION GOALS
 ========================================================= */
 
 async function loadContributionGoals() {
 
+  contributionGoals =
+    [];
+
+
+  /*
+   * If this page has no goal selector,
+   * there is nothing to populate.
+   */
+
+  if (
+    !goalSelect
+  ) {
+
+    return;
+
+  }
+
+
   const {
     data,
     error
   } =
     await supabase
-      .from("contribution_goals")
-      .select(`
-        id,
-        group_id,
-        goal_name,
-        category,
-        description,
-        frequency,
-        start_date,
-        end_date,
-        expected_amount_per_member,
-        target_amount,
-        status,
-        created_by,
-        created_at,
-        updated_at
-      `)
+      .from(
+        "contribution_goals"
+      )
+      .select(
+        `
+          id,
+          goal_name,
+          category,
+          target_amount,
+          status,
+          start_date,
+          end_date
+        `
+      )
       .eq(
         "group_id",
         groupId
       )
-      .in(
+      .eq(
         "status",
-        [
-          "active"
-        ]
+        "active"
       )
       .order(
         "created_at",
         {
-          ascending: false
+          ascending:
+            false
         }
       );
 
 
   if (error) {
+
     throw error;
+
   }
 
 
   contributionGoals =
-    data || [];
-
-}
-
-
-/* =========================================================
-   MONTHLY CONTRIBUTION
-========================================================= */
-
-function getMonthlyContribution() {
-
-  return Number(
-    currentGroup?.monthly_contribution || 0
-  );
-
-}
+    data ||
+    [];
 
 
-/* =========================================================
-   RENDER MONTHLY EXPECTED
-========================================================= */
+  goalSelect.innerHTML = `
 
-function renderMonthlyExpected() {
+    <option value="">
+      General contribution
+    </option>
 
-  if (!monthlyExpected) {
-    return;
-  }
-
-  monthlyExpected.textContent =
-    money(
-      getMonthlyContribution()
-    );
-
-}
-
-
-/* =========================================================
-   RENDER GOAL SELECT
-========================================================= */
-
-function renderGoalSelect() {
-
-  if (!goalSelect) {
-    return;
-  }
-
-
-  goalSelect.innerHTML =
-    `
-      <option value="">
-        General contribution
-      </option>
-    `;
+  `;
 
 
   contributionGoals.forEach(
@@ -1281,7 +809,11 @@ function renderGoalSelect() {
 
 
       option.textContent =
-        goal.goal_name;
+        goal.target_amount
+          ? `${goal.goal_name} — ${money(
+              goal.target_amount
+            )}`
+          : goal.goal_name;
 
 
       goalSelect.appendChild(
@@ -1295,7 +827,73 @@ function renderGoalSelect() {
 
 
 /* =========================================================
-   GET MEMBER NAME
+   LOAD CONTRIBUTIONS
+========================================================= */
+
+async function loadContributions() {
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from(
+        "contributions"
+      )
+      .select(
+        `
+          id,
+          group_id,
+          member_id,
+          amount,
+          contribution_type,
+          month,
+          payment_method,
+          reference,
+          recorded_by,
+          created_at,
+          goal_id,
+          contribution_date,
+          notes,
+          mpesa_reference
+        `
+      )
+      .eq(
+        "group_id",
+        groupId
+      )
+      .order(
+        "contribution_date",
+        {
+          ascending:
+            false
+        }
+      )
+      .order(
+        "created_at",
+        {
+          ascending:
+            false
+        }
+      );
+
+
+  if (error) {
+
+    throw error;
+
+  }
+
+
+  contributions =
+    data ||
+    [];
+
+}
+
+
+/* =========================================================
+   MEMBER NAME
 ========================================================= */
 
 function getMemberName(
@@ -1305,7 +903,12 @@ function getMemberName(
   const member =
     members.find(
       item =>
-        item.id === memberId
+        String(
+          item.id
+        ) ===
+        String(
+          memberId
+        )
     );
 
 
@@ -1318,987 +921,549 @@ function getMemberName(
 
 
 /* =========================================================
-   MONTH DIFFERENCE
+   GOAL NAME
 ========================================================= */
 
-function monthDifference(
-  startMonth,
-  endMonth
+function getGoalName(
+  goalId
 ) {
 
-  const start =
-    new Date(
-      `${startMonth}-01T00:00:00`
-    );
+  if (!goalId) {
 
-  const end =
-    new Date(
-      `${endMonth}-01T00:00:00`
-    );
-
-
-  if (
-    Number.isNaN(
-      start.getTime()
-    ) ||
-    Number.isNaN(
-      end.getTime()
-    )
-  ) {
-
-    return 0;
+    return "General";
 
   }
+
+
+  const goal =
+    contributionGoals.find(
+      item =>
+        String(
+          item.id
+        ) ===
+        String(
+          goalId
+        )
+    );
 
 
   return (
-    (
-      end.getFullYear() -
-      start.getFullYear()
-    ) * 12
-  ) +
-  (
-    end.getMonth() -
-    start.getMonth()
+    goal?.goal_name ||
+    "Goal"
   );
 
 }
 
 
 /* =========================================================
-   GET MEMBER START MONTH
+   PAYMENT METHOD NORMALIZATION
 ========================================================= */
 
-function getMemberStartMonth(
-  member
+function normalizePaymentMethod(
+  value
 ) {
-
-  const rawDate =
-    member.join_date ||
-    member.created_at ||
-    todayString();
-
-
-  return String(
-    rawDate
-  ).slice(0, 7);
-
-}
-
-
-/* =========================================================
-   GET MEMBER MONTHLY POSITION
-========================================================= */
-
-function getMemberMonthlyPosition(
-  member
-) {
-
-  const expected =
-    getMonthlyContribution();
-
-
-  if (expected <= 0) {
-
-    return {
-
-      previousOutstanding: 0,
-
-      currentDue: 0,
-
-      currentPaid: 0,
-
-      carryForward: 0,
-
-      currentOutstanding: 0,
-
-      status: "—",
-
-      totalPaid: 0,
-
-      totalDue: 0,
-
-      monthsDue: 0
-
-    };
-
-  }
-
-
-  const currentMonthValue =
-    currentMonth();
-
-
-  const joinMonth =
-    getMemberStartMonth(
-      member
-    );
-
-
-  if (
-    joinMonth >
-    currentMonthValue
-  ) {
-
-    return {
-
-      previousOutstanding: 0,
-
-      currentDue: 0,
-
-      currentPaid: 0,
-
-      carryForward: 0,
-
-      currentOutstanding: 0,
-
-      status: "—",
-
-      totalPaid: 0,
-
-      totalDue: 0,
-
-      monthsDue: 0
-
-    };
-
-  }
-
-
-  const monthsDue =
-    monthDifference(
-      joinMonth,
-      currentMonthValue
-    ) + 1;
-
-
-  const totalDue =
-    monthsDue *
-    expected;
-
-
-  const totalPaid =
-    contributions
-      .filter(
-        contribution =>
-          contribution.member_id ===
-            member.id &&
-          contribution.contribution_type ===
-            "monthly"
-      )
-      .reduce(
-        (
-          total,
-          contribution
-        ) =>
-          total +
-          Number(
-            contribution.amount || 0
-          ),
-        0
-      );
-
-
-  const previousDue =
-    Math.max(
-      monthsDue - 1,
-      0
-    ) *
-    expected;
-
-
-  const previousPaid =
-    Math.min(
-      totalPaid,
-      previousDue
-    );
-
-
-  const previousOutstanding =
-    Math.max(
-      previousDue -
-      previousPaid,
-      0
-    );
-
-
-  const amountAfterPrevious =
-    Math.max(
-      totalPaid -
-      previousDue,
-      0
-    );
-
-
-  const currentPaid =
-    Math.min(
-      amountAfterPrevious,
-      expected
-    );
-
-
-  const carryForward =
-    Math.max(
-      amountAfterPrevious -
-      expected,
-      0
-    );
-
-
-  const currentOutstanding =
-    Math.max(
-      expected -
-      currentPaid,
-      0
-    );
-
-
-  let status =
-    "Outstanding";
-
-
-  if (
-    carryForward > 0
-  ) {
-
-    status =
-      "Credit";
-
-  }
-
-  else if (
-    currentPaid >= expected
-  ) {
-
-    status =
-      "Paid";
-
-  }
-
-  else if (
-    currentPaid > 0
-  ) {
-
-    status =
-      "Partial";
-
-  }
-
-  else if (
-    previousOutstanding > 0
-  ) {
-
-    status =
-      "Outstanding";
-
-  }
-
-
-  return {
-
-    previousOutstanding,
-
-    currentDue:
-      expected,
-
-    currentPaid,
-
-    carryForward,
-
-    currentOutstanding,
-
-    status,
-
-    totalPaid,
-
-    totalDue,
-
-    monthsDue
-
-  };
-
-}
-
-
-/* =========================================================
-   RENDER MONTHLY STATUS
-========================================================= */
-
-function renderMonthlyStatus() {
-
-  if (!memberStatusRows) {
-    return;
-  }
-
-
-  if (!members.length) {
-
-    memberStatusRows.innerHTML =
-      `
-        <tr>
-          <td colspan="7">
-            No members found.
-          </td>
-        </tr>
-      `;
-
-    return;
-
-  }
-
-
-  memberStatusRows.innerHTML =
-    members
-      .map(
-        member => {
-
-          const position =
-            getMemberMonthlyPosition(
-              member
-            );
-
-
-          const statusClass =
-            String(
-              position.status
-            )
-              .toLowerCase()
-              .replaceAll(
-                " ",
-                "-"
-              );
-
-
-          return `
-            <tr>
-
-              <td>
-                ${escapeHtml(
-                  member.name
-                )}
-              </td>
-
-              <td>
-                ${money(
-                  position.currentDue
-                )}
-              </td>
-
-              <td>
-                ${money(
-                  position.previousOutstanding
-                )}
-              </td>
-
-              <td>
-                ${money(
-                  position.currentPaid
-                )}
-              </td>
-
-              <td>
-                ${money(
-                  position.carryForward
-                )}
-              </td>
-
-              <td>
-                ${money(
-                  position.currentOutstanding
-                )}
-              </td>
-
-              <td>
-                <span
-                  class="contribution-status contribution-status-${escapeHtml(
-                    statusClass
-                  )}"
-                >
-                  ${escapeHtml(
-                    position.status
-                  )}
-                </span>
-              </td>
-
-            </tr>
-          `;
-
-        }
-      )
-      .join("");
-
-}
-
-
-/* =========================================================
-   GOAL DATE CHECK
-========================================================= */
-
-function goalIsWithinDate(
-  goal,
-  month
-) {
-
-  if (
-    goal.start_date &&
-    String(
-      goal.start_date
-    ).slice(0, 7) >
-      month
-  ) {
-
-    return false;
-
-  }
-
-
-  if (
-    goal.end_date &&
-    String(
-      goal.end_date
-    ).slice(0, 7) <
-      month
-  ) {
-
-    return false;
-
-  }
-
-
-  return true;
-
-}
-
-
-/* =========================================================
-   GET GOAL CONTRIBUTIONS
-========================================================= */
-
-function getGoalContributions(
-  goal
-) {
-
-  return contributions.filter(
-    contribution => {
-
-      if (
-        contribution.goal_id !==
-        goal.id
-      ) {
-
-        return false;
-
-      }
-
-
-      const month =
-        contribution.month ||
-        String(
-          contribution.contribution_date ||
-          ""
-        ).slice(0, 7);
-
-
-      return goalIsWithinDate(
-        goal,
-        month
-      );
-
-    }
-  );
-
-}
-
-
-/* =========================================================
-   RENDER GOAL PROGRESS
-========================================================= */
-
-function renderGoalProgress() {
-
-  if (!goalProgressContainer) {
-    return;
-  }
-
-
-  if (!contributionGoals.length) {
-
-    goalProgressContainer.innerHTML =
-      `
-        <div class="goal-empty">
-
-          <strong>
-            No active contribution goals
-          </strong>
-
-          <p class="muted">
-            Create a contribution goal from Group Management to track a fundraising target here.
-          </p>
-
-        </div>
-      `;
-
-    return;
-
-  }
-
-
-  const activeMembers =
-    getActiveMembers();
-
-
-  const totalMembers =
-    activeMembers.length;
-
-
-  goalProgressContainer.innerHTML =
-    contributionGoals
-      .map(
-        goal => {
-
-          const goalContributions =
-            getGoalContributions(
-              goal
-            );
-
-
-          const amountCollected =
-            goalContributions
-              .reduce(
-                (
-                  total,
-                  contribution
-                ) =>
-                  total +
-                  Number(
-                    contribution.amount || 0
-                  ),
-                0
-              );
-
-
-          const target =
-            Number(
-              goal.target_amount || 0
-            );
-
-
-          let amountPercentage =
-            target > 0
-              ? (
-                  amountCollected /
-                  target
-                ) *
-                100
-              : 0;
-
-
-          amountPercentage =
-            Math.min(
-              Math.max(
-                amountPercentage,
-                0
-              ),
-              100
-            );
-
-
-          const contributingMemberIds =
-            new Set(
-              goalContributions
-                .filter(
-                  contribution =>
-                    activeMembers.some(
-                      member =>
-                        member.id ===
-                        contribution.member_id
-                    )
-                )
-                .map(
-                  contribution =>
-                    contribution.member_id
-                )
-            );
-
-
-          const contributingMembers =
-            contributingMemberIds.size;
-
-
-          const memberPercentage =
-            totalMembers > 0
-              ? (
-                  contributingMembers /
-                  totalMembers
-                ) *
-                100
-              : 0;
-
-
-          const roundedAmountPercentage =
-            Math.round(
-              amountPercentage * 10
-            ) / 10;
-
-
-          const roundedMemberPercentage =
-            Math.round(
-              memberPercentage * 10
-            ) / 10;
-
-
-          const category =
-            goal.category ||
-            "other";
-
-
-          return `
-            <article
-              class="goal-progress-card"
-            >
-
-              <div
-                class="goal-progress-header"
-              >
-
-                <div>
-
-                  <div
-                    class="goal-category"
-                  >
-                    ${escapeHtml(
-                      category
-                    )}
-                  </div>
-
-                  <h3>
-                    ${escapeHtml(
-                      goal.goal_name
-                    )}
-                  </h3>
-
-                  ${
-                    goal.description
-                      ? `
-                        <p class="muted">
-                          ${escapeHtml(
-                            goal.description
-                          )}
-                        </p>
-                      `
-                      : ""
-                  }
-
-                </div>
-
-                <strong
-                  class="goal-percent"
-                >
-                  ${roundedAmountPercentage}%
-                </strong>
-
-              </div>
-
-
-              <div
-                class="goal-progress-label-row"
-              >
-
-                <span>
-                  Amount collected
-                </span>
-
-                <strong>
-                  ${money(
-                    amountCollected
-                  )}
-                  ${
-                    target > 0
-                      ? ` / ${money(target)}`
-                      : ""
-                  }
-                </strong>
-
-              </div>
-
-
-              <div
-                class="goal-progress-track"
-                role="progressbar"
-                aria-valuemin="0"
-                aria-valuemax="100"
-                aria-valuenow="${roundedAmountPercentage}"
-                aria-label="${escapeHtml(
-                  goal.goal_name
-                )} amount progress"
-              >
-
-                <div
-                  class="goal-progress-fill"
-                  style="width:${roundedAmountPercentage}%"
-                ></div>
-
-              </div>
-
-
-              <div
-                class="goal-members-row"
-              >
-
-                <div>
-
-                  <strong>
-                    ${contributingMembers}
-                  </strong>
-
-                  <span class="muted">
-                    of
-                    ${totalMembers}
-                    active members contributed
-                  </span>
-
-                </div>
-
-                <strong>
-                  ${roundedMemberPercentage}%
-                </strong>
-
-              </div>
-
-
-              <div
-                class="goal-member-progress-track"
-                role="progressbar"
-                aria-valuemin="0"
-                aria-valuemax="100"
-                aria-valuenow="${roundedMemberPercentage}"
-                aria-label="${escapeHtml(
-                  goal.goal_name
-                )} member participation"
-              >
-
-                <div
-                  class="goal-member-progress-fill"
-                  style="width:${roundedMemberPercentage}%"
-                ></div>
-
-              </div>
-
-
-              <div
-                class="goal-footer"
-              >
-
-                <span>
-                  ${contributingMembers}
-                  member${
-                    contributingMembers === 1
-                      ? ""
-                      : "s"
-                  }
-                  contributing
-                </span>
-
-                ${
-                  target > 0
-                    ? `
-                      <span>
-                        ${
-                          target >
-                          amountCollected
-                            ? money(
-                                target -
-                                amountCollected
-                              )
-                            : "Target reached"
-                        }
-                      </span>
-                    `
-                    : ""
-                }
-
-              </div>
-
-            </article>
-          `;
-
-        }
-      )
-      .join("");
-
-}
-
-
-/* =========================================================
-   RENDER LEDGER
-========================================================= */
-
-function renderLedger() {
-
-  if (!contributionRows) {
-    return;
-  }
-
-
-  if (!contributions.length) {
-
-    contributionRows.innerHTML =
-      `
-        <tr>
-
-          <td colspan="8">
-            No contributions recorded yet.
-          </td>
-
-        </tr>
-      `;
-
-    return;
-
-  }
-
-
-  contributionRows.innerHTML =
-    contributions
-      .map(
-        contribution => {
-
-          const memberName =
-            getMemberName(
-              contribution.member_id
-            );
-
-
-          const reference =
-            contribution.mpesa_reference ||
-            contribution.reference ||
-            "—";
-
-
-          const method =
-            contribution.payment_method ||
-            "—";
-
-
-          const type =
-            contribution.contribution_type ||
-            "—";
-
-
-          const goal =
-            contributionGoals.find(
-              item =>
-                item.id ===
-                contribution.goal_id
-            );
-
-
-          return `
-            <tr>
-
-              <td>
-                ${escapeHtml(
-                  formatDate(
-                    contribution.contribution_date
-                  )
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  memberName
-                )}
-              </td>
-
-              <td>
-                <strong>
-                  ${money(
-                    contribution.amount
-                  )}
-                </strong>
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  type
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  method
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  goal?.goal_name ||
-                  "General"
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  reference
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  contribution.notes ||
-                  "—"
-                )}
-              </td>
-
-            </tr>
-          `;
-
-        }
-      )
-      .join("");
-
-}
-
-
-/* =========================================================
-   TOGGLE MPESA
-========================================================= */
-
-function toggleMpesaReference() {
-
-  if (!methodSelect) {
-    return;
-  }
-
 
   const method =
     String(
-      methodSelect.value || ""
+      value || ""
     )
       .trim()
       .toLowerCase();
 
 
-  const isMpesa =
-    method === "mpesa" ||
+  if (
     method === "m-pesa" ||
-    method === "m_pesa";
+    method === "mpesa" ||
+    method === "m_pesa"
+  ) {
 
-
-  if (mpesaReferenceWrap) {
-
-    mpesaReferenceWrap.hidden =
-      !isMpesa;
+    return PAYMENT_METHODS.MPESA;
 
   }
 
 
-  if (mpesaReference) {
+  if (
+    method === "cash"
+  ) {
+
+    return PAYMENT_METHODS.CASH;
+
+  }
+
+
+  if (
+    method === "bank" ||
+    method === "bank transfer" ||
+    method === "bank_transfer"
+  ) {
+
+    return PAYMENT_METHODS.BANK;
+
+  }
+
+
+  return (
+    value ||
+    "—"
+  );
+
+}
+
+
+/* =========================================================
+   CONTRIBUTION TYPE DISPLAY
+========================================================= */
+
+function contributionTypeLabel(
+  item
+) {
+
+  const type =
+    String(
+      item?.contribution_type ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  if (
+    type ===
+    "monthly"
+  ) {
+
+    return "Monthly";
+
+  }
+
+
+  if (
+    type ===
+    "other"
+  ) {
+
+    return "Other";
+
+  }
+
+
+  if (
+    type ===
+    "welfare"
+  ) {
+
+    return "Welfare";
+
+  }
+
+
+  if (
+    type ===
+    "investment"
+  ) {
+
+    return "Investment";
+
+  }
+
+
+  if (
+    type ===
+    "fundraising"
+  ) {
+
+    return "Fundraising";
+
+  }
+
+
+  if (
+    type ===
+    "fine"
+  ) {
+
+    return "Fine";
+
+  }
+
+
+  if (
+    type
+  ) {
+
+    return (
+      type.charAt(0)
+        .toUpperCase() +
+      type.slice(1)
+    );
+
+  }
+
+
+  return "—";
+
+}
+
+
+/* =========================================================
+   OTHER CONTRIBUTION FIELD
+========================================================= */
+
+let otherTypeWrap =
+  null;
+
+
+let otherTypeInput =
+  null;
+
+
+/* =========================================================
+   CREATE OTHER FIELD
+========================================================= */
+
+function createOtherContributionField() {
+
+  if (
+    otherTypeWrap
+  ) {
+
+    return;
+
+  }
+
+
+  if (
+    !typeSelect
+  ) {
+
+    return;
+
+  }
+
+
+  otherTypeWrap =
+    document.createElement(
+      "div"
+    );
+
+
+  otherTypeWrap.id =
+    "otherContributionTypeWrap";
+
+
+  otherTypeWrap.className =
+    "cl-other-type-wrap";
+
+
+  otherTypeWrap.hidden =
+    true;
+
+
+  otherTypeWrap.innerHTML = `
+
+    <label
+      for="otherContributionType"
+    >
+      Specify contribution type
+      <span class="cl-required">
+        *
+      </span>
+    </label>
+
+    <input
+      id="otherContributionType"
+      name="otherContributionType"
+      type="text"
+      maxlength="120"
+      autocomplete="off"
+      placeholder="e.g. Welfare support, special collection, fine..."
+    >
+
+    <span class="cl-field-help">
+      Tell us what this contribution is for.
+    </span>
+
+  `;
+
+
+  otherTypeInput =
+    otherTypeWrap.querySelector(
+      "#otherContributionType"
+    );
+
+
+  /*
+   * Insert immediately after the
+   * contribution type field's wrapper.
+   */
+
+  const parent =
+    typeSelect.parentElement;
+
+
+  if (
+    parent?.parentElement
+  ) {
+
+    parent.parentElement
+      .insertBefore(
+        otherTypeWrap,
+        parent.nextSibling
+      );
+
+  }
+  else {
+
+    typeSelect
+      .parentElement
+      ?.appendChild(
+        otherTypeWrap
+      );
+
+  }
+
+
+  updateOtherContributionType();
+
+}
+
+
+/* =========================================================
+   UPDATE OTHER FIELD
+========================================================= */
+
+function updateOtherContributionType() {
+
+  if (
+    !typeSelect ||
+    !otherTypeWrap ||
+    !otherTypeInput
+  ) {
+
+    return;
+
+  }
+
+
+  const isOther =
+    String(
+      typeSelect.value ||
+      ""
+    )
+      .trim()
+      .toLowerCase() ===
+    "other";
+
+
+  otherTypeWrap.hidden =
+    !isOther;
+
+
+  otherTypeInput.required =
+    isOther;
+
+
+  if (
+    isOther
+  ) {
+
+    otherTypeWrap
+      .classList
+      .add(
+        "is-visible"
+      );
+
+  }
+  else {
+
+    otherTypeWrap
+      .classList
+      .remove(
+        "is-visible"
+      );
+
+
+    otherTypeInput.value =
+      "";
+
+  }
+
+}
+
+
+/* =========================================================
+   BUILD SAVED NOTES
+========================================================= */
+
+function buildContributionNotes(
+  contributionType,
+  otherDetails,
+  normalNotes
+) {
+
+  const notes =
+    String(
+      normalNotes ||
+      ""
+    )
+      .trim();
+
+
+  if (
+    String(
+      contributionType ||
+      ""
+    ).toLowerCase() !==
+    "other"
+  ) {
+
+    return notes ||
+      null;
+
+  }
+
+
+  const details =
+    String(
+      otherDetails ||
+      ""
+    )
+      .trim();
+
+
+  if (
+    !details
+  ) {
+
+    return notes ||
+      null;
+
+  }
+
+
+  const otherLine =
+    `Other contribution: ${details}`;
+
+
+  if (
+    !notes
+  ) {
+
+    return otherLine;
+
+  }
+
+
+  return (
+    `${otherLine}\n${notes}`
+  );
+
+}
+
+
+/* =========================================================
+   EXTRACT OTHER DETAILS
+========================================================= */
+
+function extractOtherDetails(
+  item
+) {
+
+  const type =
+    String(
+      item?.contribution_type ||
+      ""
+    )
+      .toLowerCase();
+
+
+  if (
+    type !==
+    "other"
+  ) {
+
+    return "";
+
+  }
+
+
+  const notes =
+    String(
+      item?.notes ||
+      ""
+    );
+
+
+  const match =
+    notes.match(
+      /Other contribution:\s*(.+?)(?:\n|$)/i
+    );
+
+
+  if (
+    match?.[1]
+  ) {
+
+    return match[1]
+      .trim();
+
+  }
+
+
+  return "";
+
+}
+
+
+/* =========================================================
+   UPDATE PAYMENT METHOD
+========================================================= */
+
+function updatePaymentMethod() {
+
+  if (
+    !methodSelect
+  ) {
+
+    return;
+
+  }
+
+
+  const method =
+    normalizePaymentMethod(
+      methodSelect.value
+    );
+
+
+  const isMpesa =
+    method ===
+    PAYMENT_METHODS.MPESA;
+
+
+  if (
+    mpesaReferenceWrap
+  ) {
+
+    mpesaReferenceWrap.style.display =
+      isMpesa
+        ? ""
+        : "none";
+
+  }
+
+
+  if (
+    mpesaReference
+  ) {
 
     mpesaReference.required =
       isMpesa;
 
-    if (!isMpesa) {
+
+    if (
+      !isMpesa
+    ) {
 
       mpesaReference.value =
         "";
@@ -2311,319 +1476,1077 @@ function toggleMpesaReference() {
 
 
 /* =========================================================
-   BIND EVENTS
+   LEDGER
 ========================================================= */
 
-function bindEvents() {
+function renderLedger() {
 
-  if (form) {
+  if (
+    !contributionRows
+  ) {
 
-    form.addEventListener(
-      "submit",
-      handleSubmit
-    );
-
-  }
-
-
-  if (methodSelect) {
-
-    methodSelect.addEventListener(
-      "change",
-      toggleMpesaReference
-    );
+    return;
 
   }
 
 
-  if (typeSelect) {
+  if (
+    !contributions.length
+  ) {
 
-    typeSelect.addEventListener(
-      "change",
-      toggleOtherContributionType
-    );
+    contributionRows.innerHTML = `
+
+      <tr>
+
+        <td
+          colspan="8"
+          class="cl-empty-table"
+        >
+
+          <div class="cl-empty-state">
+
+            <div class="cl-empty-icon">
+              +
+            </div>
+
+            <strong>
+              No contributions recorded yet
+            </strong>
+
+            <span>
+              Record the group's first contribution
+              using the form above.
+            </span>
+
+          </div>
+
+        </td>
+
+      </tr>
+
+    `;
+
+    return;
 
   }
 
 
-  toggleMpesaReference();
+  contributionRows.innerHTML =
+    contributions
+      .slice(
+        0,
+        100
+      )
+      .map(
+        item => {
 
-  toggleOtherContributionType();
+          const date =
+            item.contribution_date ||
+            item.created_at ||
+            (
+              item.month
+                ? `${item.month}-01`
+                : null
+            );
+
+
+          const reference =
+            item.mpesa_reference ||
+            item.reference ||
+            "—";
+
+
+          const paymentMethod =
+            normalizePaymentMethod(
+              item.payment_method
+            );
+
+
+          const type =
+            contributionTypeLabel(
+              item
+            );
+
+
+          const otherDetails =
+            extractOtherDetails(
+              item
+            );
+
+
+          const goalName =
+            getGoalName(
+              item.goal_id
+            );
+
+
+          return `
+
+            <tr>
+
+              <td data-label="Date">
+
+                ${escapeHtml(
+                  formatDate(
+                    date
+                  )
+                )}
+
+              </td>
+
+
+              <td data-label="Member">
+
+                <strong>
+                  ${escapeHtml(
+                    getMemberName(
+                      item.member_id
+                    )
+                  )}
+                </strong>
+
+              </td>
+
+
+              <td
+                data-label="Amount"
+                class="cl-money-cell"
+              >
+
+                <strong>
+                  ${escapeHtml(
+                    money(
+                      item.amount
+                    )
+                  )}
+                </strong>
+
+              </td>
+
+
+              <td data-label="Type">
+
+                <span
+                  class="cl-type-badge"
+                >
+
+                  ${escapeHtml(
+                    type
+                  )}
+
+                </span>
+
+                ${
+                  otherDetails
+                    ? `
+                      <small
+                        class="cl-sub-detail"
+                      >
+                        ${escapeHtml(
+                          otherDetails
+                        )}
+                      </small>
+                    `
+                    : ""
+                }
+
+              </td>
+
+
+              <td data-label="Payment">
+
+                <span
+                  class="cl-payment-badge"
+                >
+
+                  ${escapeHtml(
+                    paymentMethod
+                  )}
+
+                </span>
+
+              </td>
+
+
+              <td data-label="Goal">
+
+                ${escapeHtml(
+                  goalName
+                )}
+
+              </td>
+
+
+              <td data-label="Reference">
+
+                ${escapeHtml(
+                  reference
+                )}
+
+              </td>
+
+
+              <td data-label="Notes">
+
+                ${
+                  item.notes
+                    ? `
+                      <span
+                        class="cl-note-text"
+                      >
+                        ${escapeHtml(
+                          item.notes
+                        )}
+                      </span>
+                    `
+                    : "—"
+                }
+
+              </td>
+
+            </tr>
+
+          `;
+
+        }
+      )
+      .join("");
 
 }
 
 
 /* =========================================================
-   SUBMIT CONTRIBUTION
+   MONTHLY STATUS
 ========================================================= */
 
-async function handleSubmit(
+function renderMemberStatus() {
+
+  if (
+    !memberStatusRows
+  ) {
+
+    return;
+
+  }
+
+
+  if (
+    !members.length
+  ) {
+
+    memberStatusRows.innerHTML = `
+
+      <tr>
+
+        <td
+          colspan="5"
+          class="cl-empty-table"
+        >
+
+          No active members found.
+
+        </td>
+
+      </tr>
+
+    `;
+
+    return;
+
+  }
+
+
+  const currentMonth =
+    getCurrentMonth();
+
+
+  memberStatusRows.innerHTML =
+    members
+      .map(
+        member => {
+
+          /*
+           * Only MONTHLY contributions
+           * count toward monthly status.
+           */
+
+          const paid =
+            contributions
+              .filter(
+                item => {
+
+                  if (
+                    String(
+                      item.member_id
+                    ) !==
+                    String(
+                      member.id
+                    )
+                  ) {
+
+                    return false;
+
+                  }
+
+
+                  const type =
+                    String(
+                      item.contribution_type ||
+                      ""
+                    )
+                      .toLowerCase();
+
+
+                  if (
+                    type !==
+                    "monthly"
+                  ) {
+
+                    return false;
+
+                  }
+
+
+                  return (
+                    getContributionMonth(
+                      item
+                    ) ===
+                    currentMonth
+                  );
+
+                }
+              )
+              .reduce(
+                (
+                  total,
+                  item
+                ) =>
+                  total +
+                  Number(
+                    item.amount ||
+                    0
+                  ),
+                0
+              );
+
+
+          const expected =
+            monthlyContribution;
+
+
+          const outstanding =
+            Math.max(
+              expected -
+              paid,
+              0
+            );
+
+
+          let status =
+            "OUTSTANDING";
+
+
+          let statusClass =
+            "cl-status-outstanding";
+
+
+          if (
+            expected <= 0
+          ) {
+
+            status =
+              "NOT SET";
+
+            statusClass =
+              "cl-status-neutral";
+
+          }
+          else if (
+            paid >
+            expected
+          ) {
+
+            status =
+              "OVERPAID";
+
+            statusClass =
+              "cl-status-credit";
+
+          }
+          else if (
+            paid ===
+            expected
+          ) {
+
+            status =
+              "PAID";
+
+            statusClass =
+              "cl-status-paid";
+
+          }
+          else if (
+            paid >
+            0
+          ) {
+
+            status =
+              "PARTIAL";
+
+            statusClass =
+              "cl-status-partial";
+
+          }
+
+
+          const progress =
+            expected > 0
+              ? Math.min(
+                  (
+                    paid /
+                    expected
+                  ) *
+                  100,
+                  100
+                )
+              : 0;
+
+
+          return `
+
+            <tr>
+
+              <td
+                data-label="Member"
+              >
+
+                <strong>
+                  ${escapeHtml(
+                    member.name
+                  )}
+                </strong>
+
+              </td>
+
+
+              <td
+                data-label="Expected"
+              >
+
+                ${escapeHtml(
+                  money(
+                    expected
+                  )
+                )}
+
+              </td>
+
+
+              <td
+                data-label="Paid"
+              >
+
+                <div
+                  class="cl-paid-cell"
+                >
+
+                  <strong>
+                    ${escapeHtml(
+                      money(
+                        paid
+                      )
+                    )}
+                  </strong>
+
+                  <div
+                    class="cl-mini-progress"
+                  >
+
+                    <span
+                      style="
+                        width:${progress}%;
+                      "
+                    ></span>
+
+                  </div>
+
+                </div>
+
+              </td>
+
+
+              <td
+                data-label="Outstanding"
+              >
+
+                ${escapeHtml(
+                  money(
+                    outstanding
+                  )
+                )}
+
+              </td>
+
+
+              <td
+                data-label="Status"
+              >
+
+                <span
+                  class="cl-status-badge ${statusClass}"
+                >
+
+                  ${escapeHtml(
+                    status
+                  )}
+
+                </span>
+
+              </td>
+
+            </tr>
+
+          `;
+
+        }
+      )
+      .join("");
+
+}
+
+
+/* =========================================================
+   SUMMARY CARDS
+========================================================= */
+
+function renderSummary() {
+
+  const container =
+    document.getElementById(
+      "contributionSummary"
+    );
+
+
+  if (
+    !container
+  ) {
+
+    return;
+
+  }
+
+
+  const total =
+    contributions.reduce(
+      (
+        sum,
+        item
+      ) =>
+        sum +
+        Number(
+          item.amount ||
+          0
+        ),
+      0
+    );
+
+
+  const currentMonth =
+    getCurrentMonth();
+
+
+  const monthlyTotal =
+    contributions
+      .filter(
+        item =>
+          String(
+            item.contribution_type ||
+            ""
+          ).toLowerCase() ===
+          "monthly" &&
+          getContributionMonth(
+            item
+          ) ===
+          currentMonth
+      )
+      .reduce(
+        (
+          sum,
+          item
+        ) =>
+          sum +
+          Number(
+            item.amount ||
+            0
+          ),
+        0
+      );
+
+
+  const outstandingMembers =
+    members.filter(
+      member => {
+
+        const paid =
+          contributions
+            .filter(
+              item =>
+                String(
+                  item.member_id
+                ) ===
+                  String(
+                    member.id
+                  ) &&
+                String(
+                  item.contribution_type ||
+                  ""
+                ).toLowerCase() ===
+                  "monthly" &&
+                getContributionMonth(
+                  item
+                ) ===
+                  currentMonth
+            )
+            .reduce(
+              (
+                sum,
+                item
+              ) =>
+                sum +
+                Number(
+                  item.amount ||
+                  0
+                ),
+              0
+            );
+
+
+        return (
+          monthlyContribution >
+          0 &&
+          paid <
+          monthlyContribution
+        );
+
+      }
+    )
+    .length;
+
+
+  container.innerHTML = `
+
+    <div class="cl-contribution-summary-card">
+
+      <span>
+        TOTAL RECORDED
+      </span>
+
+      <strong>
+        ${escapeHtml(
+          money(
+            total
+          )
+        )}
+      </strong>
+
+      <small>
+        All contribution records
+      </small>
+
+    </div>
+
+
+    <div class="cl-contribution-summary-card">
+
+      <span>
+        THIS MONTH
+      </span>
+
+      <strong>
+        ${escapeHtml(
+          money(
+            monthlyTotal
+          )
+        )}
+      </strong>
+
+      <small>
+        Monthly contributions
+      </small>
+
+    </div>
+
+
+    <div class="cl-contribution-summary-card">
+
+      <span>
+        MONTHLY RATE
+      </span>
+
+      <strong>
+        ${escapeHtml(
+          money(
+            monthlyContribution
+          )
+        )}
+      </strong>
+
+      <small>
+        Expected per active member
+      </small>
+
+    </div>
+
+
+    <div class="cl-contribution-summary-card">
+
+      <span>
+        NEEDS ATTENTION
+      </span>
+
+      <strong>
+        ${escapeHtml(
+          String(
+            outstandingMembers
+          )
+        )}
+      </strong>
+
+      <small>
+        Members below monthly target
+      </small>
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================================================
+   RECORD CONTRIBUTION
+========================================================= */
+
+async function recordContribution(
   event
 ) {
 
   event.preventDefault();
 
 
-  try {
+  clearError();
 
-    clearError();
 
+  const memberId =
+    memberSelect?.value ||
+    "";
 
-    if (!groupId) {
 
-      throw new Error(
-        "No group is associated with this account."
-      );
-
-    }
-
-
-    if (!currentMember?.id) {
-
-      throw new Error(
-        "Your member account could not be identified."
-      );
-
-    }
-
-
-    /* -----------------------------------------------------
-       MEMBER
-    ----------------------------------------------------- */
-
-    const memberId =
-      memberSelect?.value;
-
-
-    if (!memberId) {
-
-      throw new Error(
-        "Please select a member."
-      );
-
-    }
-
-
-    /*
-     * Extra security:
-     * selected member must belong
-     * to current group.
-     */
-
-    const selectedMember =
-      members.find(
-        member =>
-          member.id ===
-          memberId
-      );
-
-
-    if (
-      !selectedMember ||
-      selectedMember.group_id !==
-      groupId
-    ) {
-
-      throw new Error(
-        "The selected member does not belong to this group."
-      );
-
-    }
-
-
-    /* -----------------------------------------------------
-       AMOUNT
-    ----------------------------------------------------- */
-
-    const amount =
-      Number(
-        amountInput?.value
-      );
-
-
-    if (
-      !Number.isFinite(amount) ||
-      amount <= 0
-    ) {
-
-      throw new Error(
-        "Please enter a valid contribution amount."
-      );
-
-    }
-
-
-    /* -----------------------------------------------------
-       DATE
-    ----------------------------------------------------- */
-
-    const contributionDate =
-      dateInput?.value ||
-      todayString();
-
-
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(
-      contributionDate
-    )) {
-
-      throw new Error(
-        "Please enter a valid contribution date."
-      );
-
-    }
-
-
-    /* -----------------------------------------------------
-       CONTRIBUTION TYPE
-    ----------------------------------------------------- */
-
-    let contributionType =
-      typeSelect?.value ||
-      "monthly";
-
-
-    /*
-     * OTHER TYPE
-     */
-
-    if (
-      normalizeContributionType(
-        contributionType
-      ) ===
-      "other"
-    ) {
-
-      const customType =
-        String(
-          otherTypeInput?.value ||
-          ""
-        ).trim();
-
-
-      if (!customType) {
-
-        throw new Error(
-          "Please enter the name of the other contribution."
-        );
-
-      }
-
-
-      contributionType =
-        await saveCustomContributionType(
-          customType
-        );
-
-    }
-
-
-    /* -----------------------------------------------------
-       PAYMENT METHOD
-    ----------------------------------------------------- */
-
-    const paymentMethod =
-      methodSelect?.value ||
-      "Cash";
-
-
-    /* -----------------------------------------------------
-       M-PESA
-    ----------------------------------------------------- */
-
-    const mpesaRef =
-      String(
-        mpesaReference?.value ||
-        ""
-      ).trim();
-
-
-    const paymentMethodLower =
-      paymentMethod
-        .toLowerCase();
-
-
-    if (
-      paymentMethodLower.includes(
-        "mpesa"
-      ) ||
-      paymentMethodLower.includes(
-        "m-pesa"
-      )
-    ) {
-
-      if (!mpesaRef) {
-
-        throw new Error(
-          "Please enter the M-Pesa reference."
-        );
-
-      }
-
-    }
-
-
-    /* -----------------------------------------------------
-       MONTH
-    ----------------------------------------------------- */
-
-    const month =
-      contributionDate.slice(
-        0,
-        7
-      );
-
-
-    /* -----------------------------------------------------
-       GOAL
-    ----------------------------------------------------- */
-
-    const goalId =
-      goalSelect?.value ||
-      null;
-
-
-    /* -----------------------------------------------------
-       NOTES
-    ----------------------------------------------------- */
-
-    const notes =
-      String(
-        notesInput?.value ||
-        ""
-      ).trim();
-
-
-    /* -----------------------------------------------------
-       BUTTON
-    ----------------------------------------------------- */
-
-    if (saveButton) {
-
-      saveButton.disabled =
-        true;
-
-      saveButton.textContent =
-        "Saving...";
-
-    }
-
-
-    showStatus(
-      "Recording contribution..."
+  const amount =
+    Number(
+      amountInput?.value ||
+      0
     );
 
 
-    /* -----------------------------------------------------
-       PAYLOAD
-       
-       IMPORTANT:
-       recorded_by = currentMember.id
-       NOT currentUser.id
-       because contributions.recorded_by
-       references members.id.
-    ----------------------------------------------------- */
+  const contributionDate =
+    dateInput?.value ||
+    "";
 
-    const payload = {
+
+  const contributionType =
+    String(
+      typeSelect?.value ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  const otherDetails =
+    otherTypeInput?.value
+      .trim() ||
+    "";
+
+
+  const paymentMethod =
+    normalizePaymentMethod(
+      methodSelect?.value
+    );
+
+
+  const reference =
+    mpesaReference?.value
+      .trim() ||
+    "";
+
+
+  const normalNotes =
+    notesInput?.value
+      .trim() ||
+    "";
+
+
+  const goalId =
+    goalSelect?.value ||
+    null;
+
+
+  /* =====================================================
+     VALIDATION
+  ==================================================== */
+
+  if (
+    !memberId
+  ) {
+
+    showError(
+      new Error(
+        "Please select a member."
+      )
+    );
+
+    return;
+
+  }
+
+
+  if (
+    !amount ||
+    amount <= 0
+  ) {
+
+    showError(
+      new Error(
+        "Please enter a valid amount greater than zero."
+      )
+    );
+
+    amountInput?.focus();
+
+    return;
+
+  }
+
+
+  if (
+    !contributionDate
+  ) {
+
+    showError(
+      new Error(
+        "Please select the contribution date."
+      )
+    );
+
+    dateInput?.focus();
+
+    return;
+
+  }
+
+
+  if (
+    !contributionType
+  ) {
+
+    showError(
+      new Error(
+        "Please select the contribution type."
+      )
+    );
+
+    typeSelect?.focus();
+
+    return;
+
+  }
+
+
+  /* =====================================================
+     OTHER TYPE VALIDATION
+  ==================================================== */
+
+  if (
+    contributionType ===
+    "other" &&
+    !otherDetails
+  ) {
+
+    showError(
+      new Error(
+        "Please specify what the Other contribution is for."
+      )
+    );
+
+    otherTypeInput?.focus();
+
+    return;
+
+  }
+
+
+  if (
+    !paymentMethod
+  ) {
+
+    showError(
+      new Error(
+        "Please select the payment method."
+      )
+    );
+
+    return;
+
+  }
+
+
+  /* =====================================================
+     M-PESA VALIDATION
+  ==================================================== */
+
+  if (
+    paymentMethod ===
+      PAYMENT_METHODS.MPESA &&
+    !reference
+  ) {
+
+    showError(
+      new Error(
+        "Please enter the M-Pesa reference."
+      )
+    );
+
+    mpesaReference?.focus();
+
+    return;
+
+  }
+
+
+  /* =====================================================
+     MONTH
+  ==================================================== */
+
+  const month =
+    contributionDate.slice(
+      0,
+      7
+    );
+
+
+  /* =====================================================
+     DUPLICATE MONTHLY PAYMENT WARNING
+  ==================================================== */
+
+  if (
+    contributionType ===
+    "monthly"
+  ) {
+
+    const existing =
+      contributions.some(
+        item =>
+
+          String(
+            item.member_id
+          ) ===
+            String(
+              memberId
+            ) &&
+
+          String(
+            item.contribution_type ||
+            ""
+          ).toLowerCase() ===
+            "monthly" &&
+
+          getContributionMonth(
+            item
+          ) ===
+            month
+      );
+
+
+    if (
+      existing
+    ) {
+
+      const proceed =
+        window.confirm(
+
+          `This member already has a monthly contribution for ${month}.\n\n` +
+
+          `You can still record another payment. ` +
+
+          `If the total exceeds the monthly amount, ` +
+
+          `the member will be marked OVERPAID.\n\n` +
+
+          `Continue?`
+
+        );
+
+
+      if (
+        !proceed
+      ) {
+
+        return;
+
+      }
+
+    }
+
+  }
+
+
+  /* =====================================================
+     BUILD NOTES
+  ==================================================== */
+
+  const finalNotes =
+    buildContributionNotes(
+      contributionType,
+      otherDetails,
+      normalNotes
+    );
+
+
+  /* =====================================================
+     BUTTON STATE
+  ==================================================== */
+
+  if (
+    saveButton
+  ) {
+
+    saveButton.disabled =
+      true;
+
+    saveButton.textContent =
+      "Saving...";
+
+  }
+
+
+  if (
+    statusEl
+  ) {
+
+    statusEl.textContent =
+      "Recording contribution...";
+
+  }
+
+
+  try {
+
+    /* ===================================================
+       INSERT
+    ================================================== */
+
+    const contributionData = {
 
       group_id:
         groupId,
@@ -2646,88 +2569,76 @@ async function handleSubmit(
       contribution_date:
         contributionDate,
 
-      recorded_by:
-        currentMember.id,
-
-      reference:
-        mpesaRef ||
-        null,
-
-      mpesa_reference:
-        mpesaRef ||
-        null,
-
       goal_id:
         goalId,
 
       notes:
-        notes ||
+        finalNotes,
+
+      mpesa_reference:
+        paymentMethod ===
+          PAYMENT_METHODS.MPESA
+          ? reference
+          : null,
+
+      reference:
+        reference ||
         null
 
     };
 
 
     console.log(
-      "CHAMA LIVE: contribution payload",
-      payload
+      "CHAMA LIVE: Saving contribution",
+      contributionData
     );
 
 
-    /* -----------------------------------------------------
-       INSERT
-    ----------------------------------------------------- */
-
     const {
-      data,
       error
     } =
       await supabase
-        .from("contributions")
-        .insert(
-          payload
+        .from(
+          "contributions"
         )
-        .select(`
-          id,
-          group_id,
-          member_id,
-          amount,
-          contribution_type,
-          month,
-          payment_method,
-          reference,
-          recorded_by,
-          created_at,
-          goal_id,
-          contribution_date,
-          notes,
-          mpesa_reference
-        `)
-        .single();
+        .insert(
+          contributionData
+        );
 
 
-    if (error) {
+    if (
+      error
+    ) {
+
       throw error;
+
     }
 
 
-    console.log(
-      "CHAMA LIVE: contribution recorded",
-      data
-    );
+    /* ===================================================
+       RELOAD
+    ================================================== */
+
+    await loadContributions();
 
 
-    /* -----------------------------------------------------
+    renderLedger();
+
+    renderMemberStatus();
+
+    renderSummary();
+
+
+    /* ===================================================
        RESET FORM
-    ----------------------------------------------------- */
+    ================================================== */
 
-    if (form) {
-
-      form.reset();
-
-    }
+    form?.reset();
 
 
-    if (dateInput) {
+    if (
+      dateInput
+    ) {
 
       dateInput.value =
         todayString();
@@ -2735,67 +2646,108 @@ async function handleSubmit(
     }
 
 
+    if (
+      typeSelect
+    ) {
+
+      typeSelect.value =
+        "monthly";
+
+    }
+
+
+    if (
+      methodSelect
+    ) {
+
+      methodSelect.value =
+        PAYMENT_METHODS.MPESA;
+
+    }
+
+
+    if (
+      goalSelect
+    ) {
+
+      goalSelect.value =
+        "";
+
+    }
+
+
+    updateOtherContributionType();
+
+    updatePaymentMethod();
+
+
+    if (
+      amountInput &&
+      monthlyContribution > 0
+    ) {
+
+      amountInput.value =
+        monthlyContribution;
+
+    }
+
+
+    clearError();
+
+
+    if (
+      statusEl
+    ) {
+
+      statusEl.textContent =
+        "✓ Contribution recorded successfully.";
+
+    }
+
+
     /*
-     * Re-render the custom types
-     * after reset.
+     * Brief success animation.
      */
 
-    renderContributionTypeSelect();
+    if (
+      form
+    ) {
 
-    toggleMpesaReference();
-
-    toggleOtherContributionType();
-
-
-    /* -----------------------------------------------------
-       REFRESH DATA
-    ----------------------------------------------------- */
-
-    await loadContributionTypes();
-
-    await loadContributions();
-
-    await loadContributionGoals();
+      form.classList.add(
+        "cl-save-success"
+      );
 
 
-    renderContributionTypeSelect();
+      window.setTimeout(
+        () => {
 
-    renderGoalSelect();
+          form.classList.remove(
+            "cl-save-success"
+          );
 
-    renderGoalProgress();
+        },
+        900
+      );
 
-    renderMonthlyStatus();
-
-    renderLedger();
-
-
-    showStatus(
-      "Contribution recorded successfully."
-    );
-
-
-    setTimeout(
-      () => {
-
-        showStatus("");
-
-      },
-      3000
-    );
+    }
 
   }
 
-  catch (error) {
+  catch (
+    error
+  ) {
 
-    showStatus("");
-
-    showError(error);
+    showError(
+      error
+    );
 
   }
 
   finally {
 
-    if (saveButton) {
+    if (
+      saveButton
+    ) {
 
       saveButton.disabled =
         false;
@@ -2811,42 +2763,2013 @@ async function handleSubmit(
 
 
 /* =========================================================
-   PUBLIC REFRESH
+   VISUAL ENHANCEMENT
 ========================================================= */
 
-export async function refreshContributions() {
+function injectContributionStyles() {
 
-  if (!groupId) {
+  if (
+    document.getElementById(
+      "chama-contributions-enhanced-styles"
+    )
+  ) {
+
     return;
+
   }
 
 
-  await loadMembers();
-
-  await loadContributionTypes();
-
-  await loadContributions();
-
-  await loadContributionGoals();
+  const style =
+    document.createElement(
+      "style"
+    );
 
 
-  renderMonthlyExpected();
+  style.id =
+    "chama-contributions-enhanced-styles";
 
-  renderContributionTypeSelect();
 
-  renderGoalSelect();
+  style.textContent = `
 
-  renderGoalProgress();
+    /* =====================================================
+       CHAMA LIVE CONTRIBUTIONS VISUAL SYSTEM
+    ====================================================== */
 
-  renderMonthlyStatus();
+    :root {
 
-  renderLedger();
+      --cl-green-950:
+        #063f3a;
+
+      --cl-green-900:
+        #115e59;
+
+      --cl-green-800:
+        #0f766e;
+
+      --cl-green-700:
+        #0d9488;
+
+      --cl-green-500:
+        #14b8a6;
+
+      --cl-green-100:
+        #ccfbf1;
+
+      --cl-green-50:
+        #f0fdfa;
+
+      --cl-ink:
+        #0f172a;
+
+      --cl-text:
+        #334155;
+
+      --cl-muted:
+        #64748b;
+
+      --cl-border:
+        #e2e8f0;
+
+      --cl-card:
+        #ffffff;
+
+      --cl-page:
+        #f4f8f7;
+
+      --cl-success:
+        #047857;
+
+      --cl-success-bg:
+        #ecfdf5;
+
+      --cl-warning:
+        #b45309;
+
+      --cl-warning-bg:
+        #fffbeb;
+
+      --cl-danger:
+        #be123c;
+
+      --cl-danger-bg:
+        #fff1f2;
+
+      --cl-shadow:
+        0 18px 50px
+        rgba(
+          15,
+          118,
+          110,
+          .08
+        );
+
+    }
+
+
+    /* =====================================================
+       PAGE BACKGROUND
+    ====================================================== */
+
+    body {
+
+      background:
+
+        radial-gradient(
+          circle at 5% 5%,
+          rgba(
+            20,
+            184,
+            166,
+            .08
+          ),
+          transparent 25%
+        ),
+
+        radial-gradient(
+          circle at 95% 10%,
+          rgba(
+            15,
+            118,
+            110,
+            .07
+          ),
+          transparent 25%
+        ),
+
+        linear-gradient(
+          145deg,
+          #f0fdfa 0%,
+          #f8fafc 45%,
+          #f0fdf9 100%
+        );
+
+    }
+
+
+    /* =====================================================
+       MAIN CONTENT
+    ====================================================== */
+
+    .main {
+
+      position:
+        relative;
+
+    }
+
+
+    /* =====================================================
+       CONTRIBUTION HEADER
+    ====================================================== */
+
+    .contribution-page-header {
+
+      position:
+        relative;
+
+      overflow:
+        hidden;
+
+      padding:
+        28px;
+
+      margin-bottom:
+        20px;
+
+      border-radius:
+        22px;
+
+      color:
+        #ffffff;
+
+      background:
+
+        radial-gradient(
+          circle at 85% 10%,
+          rgba(
+            94,
+            234,
+            212,
+            .24
+          ),
+          transparent 30%
+        ),
+
+        linear-gradient(
+          135deg,
+          var(--cl-green-900),
+          var(--cl-green-800) 55%,
+          var(--cl-green-700)
+        );
+
+      box-shadow:
+        0 18px 40px
+        rgba(
+          15,
+          118,
+          110,
+          .18
+        );
+
+    }
+
+
+    .contribution-page-header::after {
+
+      content:
+        "";
+
+      position:
+        absolute;
+
+      width:
+        260px;
+
+      height:
+        260px;
+
+      right:
+        -120px;
+
+      bottom:
+        -150px;
+
+      border:
+        1px solid
+        rgba(
+          255,
+          255,
+          255,
+          .13
+        );
+
+      border-radius:
+        50%;
+
+      box-shadow:
+        0 0 0 45px
+        rgba(
+          255,
+          255,
+          255,
+          .025
+        ),
+        0 0 0 90px
+        rgba(
+          255,
+          255,
+          255,
+          .02
+        );
+
+    }
+
+
+    .contribution-page-header
+    .eyebrow {
+
+      color:
+        #99f6e4;
+
+      font-weight:
+        800;
+
+      letter-spacing:
+        1.4px;
+
+    }
+
+
+    .contribution-page-header
+    h1 {
+
+      margin:
+        5px 0 8px;
+
+      color:
+        #ffffff;
+
+      font-size:
+        clamp(
+          25px,
+          4vw,
+          40px
+        );
+
+      line-height:
+        1.08;
+
+      letter-spacing:
+        -1.2px;
+
+    }
+
+
+    .contribution-page-header
+    p {
+
+      max-width:
+        650px;
+
+      margin:
+        0;
+
+      color:
+        rgba(
+          255,
+          255,
+          255,
+          .76
+        );
+
+      line-height:
+        1.65;
+
+    }
+
+
+    /* =====================================================
+       SUMMARY
+    ====================================================== */
+
+    #contributionSummary {
+
+      display:
+        grid;
+
+      grid-template-columns:
+        repeat(
+          4,
+          minmax(
+            0,
+            1fr
+          )
+        );
+
+      gap:
+        14px;
+
+      margin-bottom:
+        20px;
+
+    }
+
+
+    .cl-contribution-summary-card {
+
+      position:
+        relative;
+
+      overflow:
+        hidden;
+
+      padding:
+        19px;
+
+      border:
+        1px solid
+        rgba(
+          226,
+          232,
+          240,
+          .9
+        );
+
+      border-radius:
+        17px;
+
+      background:
+        rgba(
+          255,
+          255,
+          255,
+          .92
+        );
+
+      box-shadow:
+        var(--cl-shadow);
+
+    }
+
+
+    .cl-contribution-summary-card::before {
+
+      content:
+        "";
+
+      position:
+        absolute;
+
+      left:
+        0;
+
+      top:
+        0;
+
+      width:
+        4px;
+
+      height:
+        100%;
+
+      background:
+        linear-gradient(
+          to bottom,
+          var(--cl-green-500),
+          var(--cl-green-800)
+        );
+
+    }
+
+
+    .cl-contribution-summary-card
+    span {
+
+      display:
+        block;
+
+      color:
+        var(--cl-muted);
+
+      font-size:
+        10px;
+
+      font-weight:
+        850;
+
+      letter-spacing:
+        1px;
+
+    }
+
+
+    .cl-contribution-summary-card
+    strong {
+
+      display:
+        block;
+
+      margin:
+        7px 0 3px;
+
+      color:
+        var(--cl-ink);
+
+      font-size:
+        24px;
+
+      letter-spacing:
+        -.5px;
+
+    }
+
+
+    .cl-contribution-summary-card
+    small {
+
+      color:
+        var(--cl-muted);
+
+      font-size:
+        11px;
+
+    }
+
+
+    /* =====================================================
+       CARDS
+    ====================================================== */
+
+    .card {
+
+      border:
+        1px solid
+        rgba(
+          226,
+          232,
+          240,
+          .9
+        ) !important;
+
+      border-radius:
+        19px !important;
+
+      box-shadow:
+        var(--cl-shadow) !important;
+
+      background:
+        rgba(
+          255,
+          255,
+          255,
+          .96
+        ) !important;
+
+    }
+
+
+    /* =====================================================
+       FORM
+    ====================================================== */
+
+    #contributionForm {
+
+      position:
+        relative;
+
+    }
+
+
+    #contributionForm
+    .form-group {
+
+      margin-bottom:
+        2px;
+
+    }
+
+
+    #contributionForm
+    label {
+
+      color:
+        var(--cl-ink);
+
+      font-size:
+        12px;
+
+      font-weight:
+        750;
+
+    }
+
+
+    #contributionForm
+    input,
+    #contributionForm
+    select,
+    #contributionForm
+    textarea {
+
+      width:
+        100%;
+
+      min-height:
+        47px;
+
+      border:
+        1px solid
+        var(--cl-border);
+
+      border-radius:
+        11px;
+
+      background:
+        #ffffff;
+
+      color:
+        var(--cl-ink);
+
+      transition:
+        border-color .18s ease,
+        box-shadow .18s ease,
+        transform .18s ease;
+
+    }
+
+
+    #contributionForm
+    textarea {
+
+      min-height:
+        95px;
+
+    }
+
+
+    #contributionForm
+    input:focus,
+    #contributionForm
+    select:focus,
+    #contributionForm
+    textarea:focus {
+
+      outline:
+        none;
+
+      border-color:
+        var(--cl-green-500);
+
+      box-shadow:
+        0 0 0 4px
+        rgba(
+          20,
+          184,
+          166,
+          .10
+        );
+
+    }
+
+
+    #contributionForm
+    input:hover,
+    #contributionForm
+    select:hover,
+    #contributionForm
+    textarea:hover {
+
+      border-color:
+        #a7f3d0;
+
+    }
+
+
+    /* =====================================================
+       OTHER TYPE
+    ====================================================== */
+
+    .cl-other-type-wrap {
+
+      margin:
+        10px 0 4px;
+
+      padding:
+        14px;
+
+      border:
+        1px solid
+        #99f6e4;
+
+      border-radius:
+        13px;
+
+      background:
+        linear-gradient(
+          135deg,
+          #f0fdfa,
+          #ffffff
+        );
+
+      animation:
+        clOtherReveal .2s ease;
+
+    }
+
+
+    .cl-other-type-wrap[hidden] {
+
+      display:
+        none;
+
+    }
+
+
+    .cl-other-type-wrap
+    label {
+
+      display:
+        block;
+
+      margin-bottom:
+        7px;
+
+    }
+
+
+    .cl-other-type-wrap
+    input {
+
+      min-height:
+        48px;
+
+    }
+
+
+    .cl-field-help {
+
+      display:
+        block;
+
+      margin-top:
+        6px;
+
+      color:
+        var(--cl-muted);
+
+      font-size:
+        11px;
+
+    }
+
+
+    .cl-required {
+
+      color:
+        var(--cl-danger);
+
+    }
+
+
+    @keyframes clOtherReveal {
+
+      from {
+
+        opacity:
+          0;
+
+        transform:
+          translateY(
+            -4px
+          );
+
+      }
+
+      to {
+
+        opacity:
+          1;
+
+        transform:
+          translateY(
+            0
+          );
+
+      }
+
+    }
+
+
+    /* =====================================================
+       BUTTON
+    ====================================================== */
+
+    #saveContribution {
+
+      min-height:
+        51px;
+
+      border:
+        0 !important;
+
+      border-radius:
+        12px !important;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(--cl-green-800),
+          var(--cl-green-500)
+        ) !important;
+
+      box-shadow:
+        0 12px 24px
+        rgba(
+          15,
+          118,
+          110,
+          .18
+        );
+
+      font-weight:
+        800;
+
+      transition:
+        transform .18s ease,
+        box-shadow .18s ease,
+        opacity .18s ease;
+
+    }
+
+
+    #saveContribution:hover {
+
+      transform:
+        translateY(
+          -1px
+        );
+
+      box-shadow:
+        0 16px 30px
+        rgba(
+          15,
+          118,
+          110,
+          .23
+        );
+
+    }
+
+
+    #saveContribution:disabled {
+
+      opacity:
+        .65;
+
+      transform:
+        none;
+
+      box-shadow:
+        none;
+
+    }
+
+
+    /* =====================================================
+       TABLE WRAPPER
+    ====================================================== */
+
+    .table-wrap {
+
+      border-radius:
+        14px;
+
+      overflow-x:
+        auto;
+
+      -webkit-overflow-scrolling:
+        touch;
+
+    }
+
+
+    .table {
+
+      width:
+        100%;
+
+      border-collapse:
+        separate;
+
+      border-spacing:
+        0;
+
+    }
+
+
+    .table th {
+
+      background:
+        #f8fafc;
+
+      color:
+        #64748b;
+
+      font-size:
+        10px;
+
+      font-weight:
+        850;
+
+      letter-spacing:
+        .7px;
+
+      text-transform:
+        uppercase;
+
+      white-space:
+        nowrap;
+
+    }
+
+
+    .table td {
+
+      color:
+        var(--cl-text);
+
+      font-size:
+        12px;
+
+      vertical-align:
+        middle;
+
+    }
+
+
+    .table tbody tr {
+
+      transition:
+        background .15s ease;
+
+    }
+
+
+    .table tbody tr:hover {
+
+      background:
+        #f8fffd;
+
+    }
+
+
+    /* =====================================================
+       BADGES
+    ====================================================== */
+
+    .cl-type-badge,
+    .cl-payment-badge,
+    .cl-status-badge {
+
+      display:
+        inline-flex;
+
+      align-items:
+        center;
+
+      width:
+        fit-content;
+
+      padding:
+        5px 9px;
+
+      border-radius:
+        999px;
+
+      font-size:
+        10px;
+
+      font-weight:
+        800;
+
+      white-space:
+        nowrap;
+
+    }
+
+
+    .cl-type-badge {
+
+      color:
+        var(--cl-green-800);
+
+      background:
+        var(--cl-green-50);
+
+      border:
+        1px solid
+        #ccfbf1;
+
+    }
+
+
+    .cl-payment-badge {
+
+      color:
+        #475569;
+
+      background:
+        #f8fafc;
+
+      border:
+        1px solid
+        #e2e8f0;
+
+    }
+
+
+    .cl-status-paid {
+
+      color:
+        var(--cl-success);
+
+      background:
+        var(--cl-success-bg);
+
+    }
+
+
+    .cl-status-credit {
+
+      color:
+        var(--cl-green-800);
+
+      background:
+        var(--cl-green-100);
+
+    }
+
+
+    .cl-status-partial {
+
+      color:
+        var(--cl-warning);
+
+      background:
+        var(--cl-warning-bg);
+
+    }
+
+
+    .cl-status-outstanding {
+
+      color:
+        var(--cl-danger);
+
+      background:
+        var(--cl-danger-bg);
+
+    }
+
+
+    .cl-status-neutral {
+
+      color:
+        #475569;
+
+      background:
+        #f1f5f9;
+
+    }
+
+
+    .cl-sub-detail {
+
+      display:
+        block;
+
+      margin-top:
+        4px;
+
+      max-width:
+        180px;
+
+      color:
+        var(--cl-muted);
+
+      font-size:
+        10px;
+
+      line-height:
+        1.4;
+
+    }
+
+
+    .cl-note-text {
+
+      display:
+        block;
+
+      max-width:
+        190px;
+
+      color:
+        var(--cl-muted);
+
+      font-size:
+        10px;
+
+      line-height:
+        1.45;
+
+      white-space:
+        normal;
+
+    }
+
+
+    .cl-money-cell {
+
+      color:
+        var(--cl-green-900) !important;
+
+    }
+
+
+    /* =====================================================
+       PROGRESS
+    ====================================================== */
+
+    .cl-paid-cell {
+
+      min-width:
+        90px;
+
+    }
+
+
+    .cl-mini-progress {
+
+      width:
+        70px;
+
+      height:
+        4px;
+
+      margin-top:
+        5px;
+
+      overflow:
+        hidden;
+
+      border-radius:
+        999px;
+
+      background:
+        #e2e8f0;
+
+    }
+
+
+    .cl-mini-progress span {
+
+      display:
+        block;
+
+      height:
+        100%;
+
+      border-radius:
+        inherit;
+
+      background:
+        linear-gradient(
+          90deg,
+          var(--cl-green-800),
+          var(--cl-green-500)
+        );
+
+    }
+
+
+    /* =====================================================
+       EMPTY STATE
+    ====================================================== */
+
+    .cl-empty-table {
+
+      padding:
+        0 !important;
+
+    }
+
+
+    .cl-empty-state {
+
+      display:
+        flex;
+
+      flex-direction:
+        column;
+
+      align-items:
+        center;
+
+      justify-content:
+        center;
+
+      min-height:
+        150px;
+
+      padding:
+        25px;
+
+      text-align:
+        center;
+
+    }
+
+
+    .cl-empty-icon {
+
+      width:
+        44px;
+
+      height:
+        44px;
+
+      display:
+        grid;
+
+      place-items:
+        center;
+
+      margin-bottom:
+        10px;
+
+      border-radius:
+        14px;
+
+      background:
+        var(--cl-green-50);
+
+      color:
+        var(--cl-green-800);
+
+      font-size:
+        25px;
+
+      font-weight:
+        800;
+
+    }
+
+
+    .cl-empty-state strong {
+
+      color:
+        var(--cl-ink);
+
+      font-size:
+        13px;
+
+    }
+
+
+    .cl-empty-state span {
+
+      max-width:
+        300px;
+
+      margin-top:
+        4px;
+
+      color:
+        var(--cl-muted);
+
+      font-size:
+        11px;
+
+    }
+
+
+    /* =====================================================
+       STATUS MESSAGE
+    ====================================================== */
+
+    #status {
+
+      color:
+        var(--cl-green-800);
+
+      font-size:
+        12px;
+
+      font-weight:
+        650;
+
+    }
+
+
+    #error {
+
+      border:
+        1px solid
+        #fecdd3 !important;
+
+      border-radius:
+        12px !important;
+
+      background:
+        #fff1f2 !important;
+
+      color:
+        var(--cl-danger) !important;
+
+      font-size:
+        12px;
+
+    }
+
+
+    /* =====================================================
+       SUCCESS
+    ====================================================== */
+
+    .cl-save-success {
+
+      animation:
+        clSaveSuccess .5s ease;
+
+    }
+
+
+    @keyframes clSaveSuccess {
+
+      0% {
+
+        box-shadow:
+          0 0 0 0
+          rgba(
+            20,
+            184,
+            166,
+            .25
+          );
+
+      }
+
+      100% {
+
+        box-shadow:
+          0 0 0 12px
+          rgba(
+            20,
+            184,
+            166,
+            0
+          );
+
+      }
+
+    }
+
+
+    /* =====================================================
+       MOBILE
+    ====================================================== */
+
+    @media (
+      max-width: 900px
+    ) {
+
+      #contributionSummary {
+
+        grid-template-columns:
+          repeat(
+            2,
+            minmax(
+              0,
+              1fr
+            )
+          );
+
+      }
+
+    }
+
+
+    @media (
+      max-width: 650px
+    ) {
+
+      .contribution-page-header {
+
+        padding:
+          21px 18px;
+
+        border-radius:
+          17px;
+
+      }
+
+
+      .contribution-page-header
+      h1 {
+
+        font-size:
+          27px;
+
+      }
+
+
+      #contributionSummary {
+
+        gap:
+          9px;
+
+      }
+
+
+      .cl-contribution-summary-card {
+
+        padding:
+          14px;
+
+        border-radius:
+          14px;
+
+      }
+
+
+      .cl-contribution-summary-card
+      strong {
+
+        font-size:
+          19px;
+
+      }
+
+
+      /*
+       * Convert tables into readable
+       * mobile cards when possible.
+       */
+
+      .table-wrap {
+
+        overflow:
+          visible;
+
+      }
+
+
+      .table {
+
+        display:
+          block;
+
+      }
+
+
+      .table thead {
+
+        display:
+          none;
+
+      }
+
+
+      .table tbody {
+
+        display:
+          grid;
+
+        gap:
+          10px;
+
+      }
+
+
+      .table tr {
+
+        display:
+          grid;
+
+        grid-template-columns:
+          1fr 1fr;
+
+        gap:
+          0;
+
+        padding:
+          9px 11px;
+
+        border:
+          1px solid
+          #e2e8f0;
+
+        border-radius:
+          13px;
+
+        background:
+          #ffffff;
+
+        box-shadow:
+          0 5px 16px
+          rgba(
+            15,
+            23,
+            42,
+            .035
+          );
+
+      }
+
+
+      .table td {
+
+        display:
+          flex;
+
+        flex-direction:
+          column;
+
+        align-items:
+          flex-start;
+
+        gap:
+          3px;
+
+        min-width:
+          0;
+
+        padding:
+          8px 7px;
+
+        border:
+          0 !important;
+
+      }
+
+
+      .table td::before {
+
+        content:
+          attr(data-label);
+
+        color:
+          #94a3b8;
+
+        font-size:
+          9px;
+
+        font-weight:
+          800;
+
+        letter-spacing:
+          .55px;
+
+        text-transform:
+          uppercase;
+
+      }
+
+
+      .table td:first-child {
+
+        padding-top:
+          5px;
+
+      }
+
+
+      .cl-sub-detail,
+      .cl-note-text {
+
+        max-width:
+          100%;
+
+      }
+
+
+      .cl-mini-progress {
+
+        width:
+          100%;
+
+        max-width:
+          100px;
+
+      }
+
+    }
+
+
+    @media (
+      max-width: 390px
+    ) {
+
+      #contributionSummary {
+
+        grid-template-columns:
+          1fr 1fr;
+
+      }
+
+
+      .cl-contribution-summary-card
+      small {
+
+        display:
+          none;
+
+      }
+
+
+      .table tr {
+
+        grid-template-columns:
+          1fr;
+
+      }
+
+
+      .table td {
+
+        padding:
+          7px;
+
+      }
+
+    }
+
+
+    @media (
+      prefers-reduced-motion: reduce
+    ) {
+
+      * {
+
+        animation:
+          none !important;
+
+        transition:
+          none !important;
+
+      }
+
+    }
+
+  `;
+
+
+  document.head.appendChild(
+    style
+  );
 
 }
 
 
 /* =========================================================
-   AUTO INITIALIZE
+   ENHANCE PAGE HEADER
+========================================================= */
+
+function enhancePageHeader() {
+
+  /*
+   * Don't duplicate.
+   */
+
+  if (
+    document.getElementById(
+      "contributionPageHeader"
+    )
+  ) {
+
+    return;
+
+  }
+
+
+  const main =
+    document.querySelector(
+      ".main"
+    );
+
+
+  if (
+    !main
+  ) {
+
+    return;
+
+  }
+
+
+  const header =
+    document.createElement(
+      "section"
+    );
+
+
+  header.id =
+    "contributionPageHeader";
+
+
+  header.className =
+    "contribution-page-header";
+
+
+  header.innerHTML = `
+
+    <div class="eyebrow">
+      FINANCIAL MANAGEMENT
+    </div>
+
+    <h1>
+      Contributions
+    </h1>
+
+    <p>
+      Record member contributions, track monthly
+      commitments and keep every group payment
+      organised in one connected ledger.
+    </p>
+
+  `;
+
+
+  const firstElement =
+    main.firstElementChild;
+
+
+  /*
+   * Put the header before existing status.
+   */
+
+  main.insertBefore(
+    header,
+    firstElement
+  );
+
+
+  /*
+   * Add summary container after header.
+   */
+
+  const summary =
+    document.createElement(
+      "div"
+    );
+
+
+  summary.id =
+    "contributionSummary";
+
+
+  main.insertBefore(
+    summary,
+    firstElement
+  );
+
+}
+
+
+/* =========================================================
+   ENHANCE SECTION HEADINGS
+========================================================= */
+
+function enhanceSectionHeadings() {
+
+  document
+    .querySelectorAll(
+      ".card h2"
+    )
+    .forEach(
+      heading => {
+
+        if (
+          heading.dataset
+            .clEnhanced ===
+          "true"
+        ) {
+
+          return;
+
+        }
+
+
+        heading.dataset
+          .clEnhanced =
+          "true";
+
+
+        const parent =
+          heading.parentElement;
+
+
+        if (
+          parent
+        ) {
+
+          parent.classList.add(
+            "cl-enhanced-section-heading"
+          );
+
+        }
+
+      }
+    );
+
+}
+
+
+/* =========================================================
+   INITIALIZE
+========================================================= */
+
+export async function initContributions() {
+
+  if (
+    initialized
+  ) {
+
+    return;
+
+  }
+
+
+  initialized =
+    true;
+
+
+  try {
+
+    injectContributionStyles();
+
+    enhancePageHeader();
+
+    enhanceSectionHeadings();
+
+    createOtherContributionField();
+
+
+    clearError();
+
+
+    if (
+      statusEl
+    ) {
+
+      statusEl.textContent =
+        "Loading contributions...";
+
+    }
+
+
+    /* =====================================================
+       GROUP
+    ==================================================== */
+
+    groupId =
+      await getGroupId();
+
+
+    console.log(
+      "CHAMA LIVE GROUP ID:",
+      groupId
+    );
+
+
+    /* =====================================================
+       DATA
+    ==================================================== */
+
+    await Promise.all([
+
+      loadGroup(),
+
+      loadMembers(),
+
+      loadContributions(),
+
+      loadContributionGoals()
+
+    ]);
+
+
+    /* =====================================================
+       DEFAULT DATE
+    ==================================================== */
+
+    if (
+      dateInput
+    ) {
+
+      dateInput.value =
+        todayString();
+
+    }
+
+
+    /* =====================================================
+       DEFAULT TYPE
+    ==================================================== */
+
+    if (
+      typeSelect
+    ) {
+
+      typeSelect.value =
+        "monthly";
+
+    }
+
+
+    /* =====================================================
+       DEFAULT PAYMENT
+    ==================================================== */
+
+    if (
+      methodSelect
+    ) {
+
+      methodSelect.value =
+        PAYMENT_METHODS.MPESA;
+
+    }
+
+
+    updateOtherContributionType();
+
+    updatePaymentMethod();
+
+
+    if (
+      amountInput &&
+      monthlyContribution > 0
+    ) {
+
+      amountInput.value =
+        monthlyContribution;
+
+    }
+
+
+    /* =====================================================
+       RENDER
+    ==================================================== */
+
+    renderLedger();
+
+    renderMemberStatus();
+
+    renderSummary();
+
+
+    if (
+      statusEl
+    ) {
+
+      statusEl.textContent =
+        "Contributions loaded.";
+
+    }
+
+
+    console.log(
+      "CHAMA LIVE: Contributions ready."
+    );
+
+  }
+
+  catch (
+    error
+  ) {
+
+    initialized =
+      false;
+
+    showError(
+      error
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   EVENTS
+========================================================= */
+
+if (
+  form &&
+  !form.dataset
+    .clContributionBound
+) {
+
+  form.dataset
+    .clContributionBound =
+    "true";
+
+
+  form.addEventListener(
+    "submit",
+    recordContribution
+  );
+
+}
+
+
+if (
+  methodSelect &&
+  !methodSelect.dataset
+    .clPaymentBound
+) {
+
+  methodSelect.dataset
+    .clPaymentBound =
+    "true";
+
+
+  methodSelect.addEventListener(
+    "change",
+    updatePaymentMethod
+  );
+
+}
+
+
+if (
+  typeSelect &&
+  !typeSelect.dataset
+    .clTypeBound
+) {
+
+  typeSelect.dataset
+    .clTypeBound =
+    "true";
+
+
+  typeSelect.addEventListener(
+    "change",
+    updateOtherContributionType
+  );
+
+}
+
+
+/* =========================================================
+   DIRECT PAGE COMPATIBILITY
+   ---------------------------------------------------------
+   If contributions.js is loaded directly from HTML,
+   initialize it automatically.
+
+   If layout.js dynamically imports it and calls
+   initContributions(), this prevents duplicate loading.
 ========================================================= */
 
 if (
@@ -2857,18 +4780,37 @@ if (
   document.addEventListener(
     "DOMContentLoaded",
     () => {
-      init();
+
+      /*
+       * Only auto-start when layout.js
+       * is not responsible for initialization.
+       */
+
+      if (
+        !window.__CHAMA_LIVE_LAYOUT_LOADING__
+      ) {
+
+        initContributions();
+
+      }
+
     },
     {
-      once: true
+      once:
+        true
     }
   );
 
 }
-
 else {
 
-  init();
+  if (
+    !window.__CHAMA_LIVE_LAYOUT_LOADING__
+  ) {
+
+    initContributions();
+
+  }
 
 }
 
