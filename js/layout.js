@@ -1,7 +1,7 @@
-
 /* =========================================================
    CHAMA LIVE — GLOBAL LAYOUT
    FINAL STABLE VERSION
+   TOP NAV + MOBILE MENU + MOBILE BOTTOM NAV
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -52,6 +52,7 @@ function getCurrentPage() {
   }
 
   return page.toLowerCase();
+
 }
 
 
@@ -100,14 +101,12 @@ function displayGroup(group) {
 
 
 /* =========================================================
-   MOBILE STYLES
+   GLOBAL MOBILE STYLES
 ========================================================= */
 
 function injectMobileNavigationStyles() {
 
-  if (
-    byId("chama-global-mobile-styles")
-  ) {
+  if (byId("chama-global-mobile-styles")) {
     return;
   }
 
@@ -122,68 +121,344 @@ function injectMobileNavigationStyles() {
 
   style.textContent = `
 
+    /* =====================================================
+       MOBILE BOTTOM NAV
+    ===================================================== */
+
     .mobile-bottom-nav {
       display: none;
     }
 
+
+    /* =====================================================
+       MOBILE MENU
+    ===================================================== */
+
+    .chama-mobile-menu {
+      display: none;
+    }
+
+
+    .chama-mobile-menu-backdrop {
+      display: none;
+    }
+
+
     @media (max-width: 650px) {
 
-      .sidebar {
-        display: none !important;
-      }
-
-      .menu-toggle {
-        display: none !important;
-      }
-
-      .layout {
-        display: block !important;
-        width: 100% !important;
-      }
-
-      .main {
-        width: 100% !important;
-        max-width: 100% !important;
-        margin: 0 !important;
-        padding: 16px 14px 96px 14px !important;
-      }
+      /* ---------------------------------------------------
+         MOBILE TOPBAR
+      --------------------------------------------------- */
 
       .topbar {
         width: 100%;
         position: sticky;
         top: 0;
-        z-index: 1000;
+        z-index: 10000;
       }
+
+
+      /* ---------------------------------------------------
+         MOBILE MENU BUTTON
+      --------------------------------------------------- */
+
+      .menu-toggle {
+        display: inline-flex !important;
+
+        align-items: center;
+        justify-content: center;
+
+        width: 40px;
+        height: 40px;
+
+        padding: 0;
+
+        border: 1px solid #e5e7eb;
+
+        border-radius: 10px;
+
+        background: #ffffff;
+
+        color: #344054;
+
+        cursor: pointer;
+
+        font-size: 21px;
+
+        line-height: 1;
+
+        flex-shrink: 0;
+      }
+
+
+      .menu-toggle:hover {
+        background: #f0fdfa;
+        color: #0f766e;
+      }
+
+
+      .menu-toggle:active {
+        transform: scale(.96);
+      }
+
+
+      /* ---------------------------------------------------
+         MOBILE MENU BACKDROP
+      --------------------------------------------------- */
+
+      .chama-mobile-menu-backdrop {
+
+        position: fixed;
+
+        inset: 0;
+
+        z-index: 19998;
+
+        background:
+          rgba(15, 23, 42, .38);
+
+        backdrop-filter:
+          blur(2px);
+
+        -webkit-backdrop-filter:
+          blur(2px);
+      }
+
+
+      /* ---------------------------------------------------
+         MOBILE MENU PANEL
+      --------------------------------------------------- */
+
+      .chama-mobile-menu {
+
+        position: fixed;
+
+        top: 58px;
+
+        left: 10px;
+
+        right: 10px;
+
+        z-index: 19999;
+
+        display: none;
+
+        background: #ffffff;
+
+        border:
+          1px solid #e5e7eb;
+
+        border-radius: 16px;
+
+        box-shadow:
+          0 18px 45px
+          rgba(16, 24, 40, .18);
+
+        overflow: hidden;
+
+        max-height:
+          calc(100vh - 75px);
+
+        overflow-y: auto;
+      }
+
+
+      .chama-mobile-menu.open {
+        display: block;
+      }
+
+
+      /* ---------------------------------------------------
+         MENU HEADER
+      --------------------------------------------------- */
+
+      .chama-mobile-menu-header {
+
+        padding:
+          15px 16px;
+
+        border-bottom:
+          1px solid #edf0f4;
+
+        background:
+          #f8fafc;
+      }
+
+
+      .chama-mobile-menu-group {
+
+        font-size:
+          14px;
+
+        font-weight:
+          800;
+
+        color:
+          #101828;
+      }
+
+
+      .chama-mobile-menu-user {
+
+        margin-top:
+          2px;
+
+        font-size:
+          12px;
+
+        color:
+          #667085;
+      }
+
+
+      /* ---------------------------------------------------
+         MENU LINKS
+      --------------------------------------------------- */
+
+      .chama-mobile-menu-link {
+
+        display:
+          flex;
+
+        align-items:
+          center;
+
+        gap:
+          12px;
+
+        width:
+          100%;
+
+        min-height:
+          48px;
+
+        padding:
+          10px 16px;
+
+        text-decoration:
+          none;
+
+        color:
+          #344054;
+
+        font-size:
+          13px;
+
+        font-weight:
+          650;
+
+        border-bottom:
+          1px solid #f2f4f7;
+
+        background:
+          #ffffff;
+      }
+
+
+      .chama-mobile-menu-link:last-child {
+        border-bottom:
+          0;
+      }
+
+
+      .chama-mobile-menu-link:hover {
+        background:
+          #f0fdfa;
+
+        color:
+          #0f766e;
+      }
+
+
+      .chama-mobile-menu-link.active {
+
+        background:
+          #ecfdf5;
+
+        color:
+          #0f766e;
+
+        font-weight:
+          750;
+      }
+
+
+      .chama-mobile-menu-icon {
+
+        width:
+          30px;
+
+        height:
+          30px;
+
+        display:
+          flex;
+
+        align-items:
+          center;
+
+        justify-content:
+          center;
+
+        border-radius:
+          8px;
+
+        background:
+          #f8fafc;
+
+        font-size:
+          17px;
+
+        flex-shrink:
+          0;
+      }
+
+
+      .chama-mobile-menu-link.active
+      .chama-mobile-menu-icon {
+
+        background:
+          #d1fae5;
+      }
+
+
+      /* ---------------------------------------------------
+         MOBILE BOTTOM NAV
+      --------------------------------------------------- */
 
       .mobile-bottom-nav {
 
         position: fixed;
 
         left: 0;
+
         right: 0;
+
         bottom: 0;
 
-        z-index: 99999;
+        z-index: 15000;
 
         display: grid;
 
         grid-template-columns:
           repeat(5, minmax(0, 1fr));
 
-        height: 72px;
+        height:
+          72px;
 
         padding:
           6px 6px
           calc(6px + env(safe-area-inset-bottom));
 
         background:
-          rgba(255, 255, 255, 0.98);
+          rgba(255, 255, 255, .98);
 
         border-top:
           1px solid #e5e7eb;
 
         box-shadow:
-          0 -5px 20px rgba(0, 0, 0, 0.08);
+          0 -5px 20px
+          rgba(0, 0, 0, .08);
 
         backdrop-filter:
           blur(14px);
@@ -192,163 +467,273 @@ function injectMobileNavigationStyles() {
           blur(14px);
       }
 
+
       .mobile-nav-item {
 
-        display: flex;
+        display:
+          flex;
 
-        flex-direction: column;
+        flex-direction:
+          column;
 
-        align-items: center;
+        align-items:
+          center;
 
-        justify-content: center;
+        justify-content:
+          center;
 
-        gap: 3px;
+        gap:
+          3px;
 
-        min-width: 0;
+        min-width:
+          0;
 
-        text-decoration: none;
+        text-decoration:
+          none;
 
-        color: #64748b;
+        color:
+          #64748b;
 
-        border-radius: 13px;
+        border-radius:
+          13px;
 
         transition:
-          background 0.2s ease,
-          color 0.2s ease,
-          transform 0.2s ease;
+          background .2s ease,
+          color .2s ease,
+          transform .2s ease;
       }
 
+
       .mobile-nav-item:active {
-        transform: scale(0.96);
+        transform:
+          scale(.96);
       }
+
 
       .mobile-nav-item.active {
 
-        color: #0f766e;
+        color:
+          #0f766e;
 
         background:
-          rgba(15, 118, 110, 0.09);
+          rgba(15, 118, 110, .09);
       }
+
 
       .mobile-nav-icon {
 
-        display: flex;
+        display:
+          flex;
 
-        align-items: center;
+        align-items:
+          center;
 
-        justify-content: center;
+        justify-content:
+          center;
 
-        width: 30px;
+        width:
+          30px;
 
-        height: 30px;
+        height:
+          30px;
 
-        font-size: 21px;
+        font-size:
+          21px;
 
-        line-height: 1;
+        line-height:
+          1;
 
-        font-weight: 700;
+        font-weight:
+          700;
       }
+
 
       .mobile-nav-label {
 
-        font-size: 9px;
+        font-size:
+          9px;
 
-        line-height: 1;
+        line-height:
+          1;
 
-        font-weight: 600;
+        font-weight:
+          600;
 
-        white-space: nowrap;
+        white-space:
+          nowrap;
       }
 
-      .mobile-nav-main .mobile-nav-icon {
 
-        width: 43px;
+      .mobile-nav-main
+      .mobile-nav-icon {
 
-        height: 43px;
+        width:
+          43px;
 
-        margin-top: -18px;
+        height:
+          43px;
 
-        border-radius: 50%;
+        margin-top:
+          -18px;
 
-        background: #0f766e;
+        border-radius:
+          50%;
 
-        color: white;
+        background:
+          #0f766e;
 
-        border: 4px solid white;
+        color:
+          white;
+
+        border:
+          4px solid white;
 
         box-shadow:
           0 5px 15px
-          rgba(15, 118, 110, 0.30);
+          rgba(15, 118, 110, .30);
 
-        font-size: 25px;
+        font-size:
+          25px;
       }
 
-      .mobile-nav-main .mobile-nav-label {
-        color: #0f766e;
+
+      .mobile-nav-main
+      .mobile-nav-label {
+        color:
+          #0f766e;
       }
+
 
       .mobile-nav-main.active
       .mobile-nav-icon {
-        background: #115e59;
+        background:
+          #115e59;
       }
+
+
+      /* ---------------------------------------------------
+         CONTENT
+      --------------------------------------------------- */
+
+      .sidebar {
+        display:
+          none !important;
+      }
+
+
+      .sidebar-overlay {
+        display:
+          none !important;
+      }
+
+
+      .layout {
+        display:
+          block !important;
+
+        width:
+          100% !important;
+      }
+
+
+      .main {
+
+        width:
+          100% !important;
+
+        max-width:
+          100% !important;
+
+        margin:
+          0 !important;
+
+        padding:
+          16px 10px 96px 10px !important;
+      }
+
 
       .table-wrap {
 
-        width: 100%;
+        width:
+          100%;
 
-        max-width: 100%;
+        max-width:
+          100%;
 
-        overflow-x: auto;
+        overflow-x:
+          auto;
 
-        -webkit-overflow-scrolling: touch;
+        -webkit-overflow-scrolling:
+          touch;
       }
+
 
       .grid-2 {
         grid-template-columns:
           1fr !important;
       }
 
+
       .grid-3 {
         grid-template-columns:
           repeat(2, minmax(0, 1fr));
       }
 
+
       .card {
-        max-width: 100%;
+        max-width:
+          100%;
       }
+
     }
+
 
     @media (max-width: 390px) {
 
       .mobile-bottom-nav {
-        height: 68px;
+        height:
+          68px;
       }
+
 
       .mobile-nav-icon {
 
-        width: 27px;
+        width:
+          27px;
 
-        height: 27px;
+        height:
+          27px;
 
-        font-size: 19px;
+        font-size:
+          19px;
       }
+
 
       .mobile-nav-label {
-        font-size: 8px;
+        font-size:
+          8px;
       }
 
-      .mobile-nav-main .mobile-nav-icon {
 
-        width: 39px;
+      .mobile-nav-main
+      .mobile-nav-icon {
 
-        height: 39px;
+        width:
+          39px;
 
-        font-size: 22px;
+        height:
+          39px;
+
+        font-size:
+          22px;
       }
+
 
       .grid-3 {
-        grid-template-columns: 1fr;
+        grid-template-columns:
+          1fr;
       }
+
     }
 
   `;
@@ -358,14 +743,442 @@ function injectMobileNavigationStyles() {
 
 
   console.log(
-    "CHAMA LIVE: mobile styles ready"
+    "CHAMA LIVE: mobile navigation styles ready"
   );
 
 }
 
 
 /* =========================================================
-   MOBILE NAVIGATION
+   MOBILE MENU
+========================================================= */
+
+function setupMobileMenu() {
+
+  /*
+   * Do not create duplicate menu.
+   */
+
+  if (byId("chama-mobile-menu")) {
+    return;
+  }
+
+
+  /*
+   * Find existing menu button.
+   */
+
+  let menuButton =
+    document.querySelector(".menu-toggle");
+
+
+  /*
+   * If page does not have one,
+   * create one and put it in topbar.
+   */
+
+  if (!menuButton) {
+
+    const topbar =
+      document.querySelector(".topbar");
+
+    if (!topbar) {
+
+      console.warn(
+        "CHAMA LIVE: topbar not found; mobile menu skipped"
+      );
+
+      return;
+
+    }
+
+
+    menuButton =
+      document.createElement("button");
+
+    menuButton.className =
+      "menu-toggle";
+
+    menuButton.type =
+      "button";
+
+    menuButton.id =
+      "mobileMenuButton";
+
+    menuButton.setAttribute(
+      "aria-label",
+      "Open menu"
+    );
+
+    menuButton.setAttribute(
+      "aria-expanded",
+      "false"
+    );
+
+    menuButton.textContent =
+      "☰";
+
+
+    /*
+     * Put menu button at the beginning.
+     */
+
+    topbar.insertBefore(
+      menuButton,
+      topbar.firstChild
+    );
+
+  }
+
+
+  menuButton.id =
+    menuButton.id ||
+    "mobileMenuButton";
+
+
+  menuButton.setAttribute(
+    "aria-controls",
+    "chama-mobile-menu"
+  );
+
+
+  /* =====================================================
+     BACKDROP
+  ===================================================== */
+
+  const backdrop =
+    document.createElement("div");
+
+  backdrop.className =
+    "chama-mobile-menu-backdrop";
+
+  backdrop.id =
+    "chama-mobile-menu-backdrop";
+
+
+  /* =====================================================
+     MENU
+  ===================================================== */
+
+  const menu =
+    document.createElement("div");
+
+  menu.className =
+    "chama-mobile-menu";
+
+  menu.id =
+    "chama-mobile-menu";
+
+  menu.setAttribute(
+    "aria-label",
+    "CHAMA LIVE menu"
+  );
+
+
+  /* =====================================================
+     MENU HEADER
+  ===================================================== */
+
+  const header =
+    document.createElement("div");
+
+  header.className =
+    "chama-mobile-menu-header";
+
+
+  const group =
+    document.createElement("div");
+
+  group.className =
+    "chama-mobile-menu-group";
+
+  group.textContent =
+    currentGroup?.name ||
+    currentGroup?.group_name ||
+    "CHAMA";
+
+
+  const user =
+    document.createElement("div");
+
+  user.className =
+    "chama-mobile-menu-user";
+
+  user.textContent =
+    currentMember?.name ||
+    currentMember?.full_name ||
+    "Member";
+
+
+  header.appendChild(group);
+  header.appendChild(user);
+
+  menu.appendChild(header);
+
+
+  /* =====================================================
+     MENU ITEMS
+  ===================================================== */
+
+  const menuItems = [
+
+    {
+      href: "dashboard.html",
+      page: "dashboard.html",
+      icon: "⌂",
+      label: "Dashboard"
+    },
+
+    {
+      href: "members.html",
+      page: "members.html",
+      icon: "♙",
+      label: "Members"
+    },
+
+    {
+      href: "contributions.html",
+      page: "contributions.html",
+      icon: "+",
+      label: "Contributions"
+    },
+
+    {
+      href: "expenses.html",
+      page: "expenses.html",
+      icon: "−",
+      label: "Expenses"
+    },
+
+    {
+      href: "meetings.html",
+      page: "meetings.html",
+      icon: "◷",
+      label: "Meetings"
+    },
+
+    {
+      href: "reports.html",
+      page: "reports.html",
+      icon: "▤",
+      label: "Reports"
+    },
+
+    {
+      href: "monthly-closing.html",
+      page: "monthly-closing.html",
+      icon: "✓",
+      label: "Monthly Closing"
+    },
+
+    {
+      href: "group-management.html",
+      page: "group-management.html",
+      icon: "⚙",
+      label: "Group Management"
+    }
+
+  ];
+
+
+  const currentPage =
+    getCurrentPage();
+
+
+  menuItems.forEach(function (item) {
+
+    const link =
+      document.createElement("a");
+
+    link.href =
+      item.href;
+
+    link.className =
+      "chama-mobile-menu-link";
+
+    link.dataset.page =
+      item.page;
+
+
+    if (
+      item.page ===
+      currentPage
+    ) {
+
+      link.classList.add(
+        "active"
+      );
+
+    }
+
+
+    const icon =
+      document.createElement("span");
+
+    icon.className =
+      "chama-mobile-menu-icon";
+
+    icon.setAttribute(
+      "aria-hidden",
+      "true"
+    );
+
+    icon.textContent =
+      item.icon;
+
+
+    const label =
+      document.createElement("span");
+
+    label.textContent =
+      item.label;
+
+
+    link.appendChild(icon);
+    link.appendChild(label);
+
+    menu.appendChild(link);
+
+  });
+
+
+  document.body.appendChild(
+    backdrop
+  );
+
+  document.body.appendChild(
+    menu
+  );
+
+
+  /* =====================================================
+     OPEN / CLOSE
+  ===================================================== */
+
+  function openMenu() {
+
+    menu.classList.add(
+      "open"
+    );
+
+    backdrop.style.display =
+      "block";
+
+    menuButton.setAttribute(
+      "aria-expanded",
+      "true"
+    );
+
+    menuButton.setAttribute(
+      "aria-label",
+      "Close menu"
+    );
+
+    menuButton.textContent =
+      "×";
+
+  }
+
+
+  function closeMenu() {
+
+    menu.classList.remove(
+      "open"
+    );
+
+    backdrop.style.display =
+      "none";
+
+    menuButton.setAttribute(
+      "aria-expanded",
+      "false"
+    );
+
+    menuButton.setAttribute(
+      "aria-label",
+      "Open menu"
+    );
+
+    menuButton.textContent =
+      "☰";
+
+  }
+
+
+  menuButton.addEventListener(
+    "click",
+    function (event) {
+
+      event.preventDefault();
+
+      if (
+        menu.classList.contains("open")
+      ) {
+
+        closeMenu();
+
+      }
+      else {
+
+        openMenu();
+
+      }
+
+    }
+  );
+
+
+  backdrop.addEventListener(
+    "click",
+    function () {
+
+      closeMenu();
+
+    }
+  );
+
+
+  document.addEventListener(
+    "keydown",
+    function (event) {
+
+      if (
+        event.key === "Escape"
+      ) {
+
+        closeMenu();
+
+      }
+
+    }
+  );
+
+
+  menu
+    .querySelectorAll("a")
+    .forEach(function (link) {
+
+      link.addEventListener(
+        "click",
+        function () {
+
+          closeMenu();
+
+        }
+      );
+
+    });
+
+
+  console.log(
+    "CHAMA LIVE: mobile menu ready"
+  );
+
+}
+
+
+/* =========================================================
+   MOBILE BOTTOM NAVIGATION
 ========================================================= */
 
 function setupMobileNavigation() {
@@ -548,7 +1361,7 @@ function setupMobileNavigation() {
 
 
   console.log(
-    "CHAMA LIVE: mobile navigation ready"
+    "CHAMA LIVE: mobile bottom navigation ready"
   );
 
 }
@@ -799,10 +1612,6 @@ async function loadCurrentPageScript() {
       null;
 
 
-    /*
-     * Preferred initializer
-     */
-
     if (
       typeof pageModule.initPage ===
       "function"
@@ -812,11 +1621,6 @@ async function loadCurrentPageScript() {
         pageModule.initPage;
 
     }
-
-
-    /*
-     * Dashboard
-     */
 
     else if (
       page === "dashboard.html" &&
@@ -829,11 +1633,6 @@ async function loadCurrentPageScript() {
 
     }
 
-
-    /*
-     * Members
-     */
-
     else if (
       page === "members.html" &&
       typeof pageModule.initMembers ===
@@ -844,11 +1643,6 @@ async function loadCurrentPageScript() {
         pageModule.initMembers;
 
     }
-
-
-    /*
-     * Contributions
-     */
 
     else if (
       page === "contributions.html" &&
@@ -861,11 +1655,6 @@ async function loadCurrentPageScript() {
 
     }
 
-
-    /*
-     * Expenses
-     */
-
     else if (
       page === "expenses.html" &&
       typeof pageModule.initExpenses ===
@@ -876,11 +1665,6 @@ async function loadCurrentPageScript() {
         pageModule.initExpenses;
 
     }
-
-
-    /*
-     * Meetings
-     */
 
     else if (
       page === "meetings.html" &&
@@ -893,11 +1677,6 @@ async function loadCurrentPageScript() {
 
     }
 
-
-    /*
-     * Reports
-     */
-
     else if (
       page === "reports.html" &&
       typeof pageModule.initReports ===
@@ -908,11 +1687,6 @@ async function loadCurrentPageScript() {
         pageModule.initReports;
 
     }
-
-
-    /*
-     * Monthly closing
-     */
 
     else if (
       page === "monthly-closing.html" &&
@@ -925,11 +1699,6 @@ async function loadCurrentPageScript() {
 
     }
 
-
-    /*
-     * Group management
-     */
-
     else if (
       page === "group-management.html" &&
       typeof pageModule.initGroupManagement ===
@@ -940,11 +1709,6 @@ async function loadCurrentPageScript() {
         pageModule.initGroupManagement;
 
     }
-
-
-    /*
-     * Generic init
-     */
 
     else if (
       typeof pageModule.init ===
@@ -979,11 +1743,6 @@ async function loadCurrentPageScript() {
         page
       );
 
-
-      /*
-       * We still mark it loaded so the
-       * layout doesn't repeatedly import it.
-       */
 
       pageScriptLoaded =
         true;
@@ -1098,14 +1857,21 @@ async function initLayout() {
 
 
   /*
-   * 5. Mobile navigation
+   * 5. Full mobile menu
+   */
+
+  setupMobileMenu();
+
+
+  /*
+   * 6. Mobile bottom navigation
    */
 
   setupMobileNavigation();
 
 
   /*
-   * 6. Current page
+   * 7. Current page script
    */
 
   await loadCurrentPageScript();
@@ -1121,16 +1887,6 @@ async function initLayout() {
 /* =========================================================
    PUBLIC BOOT
 ========================================================= */
-
-/*
- * IMPORTANT:
- *
- * Every protected HTML page imports:
- *
- * import { boot } from "./js/layout.js";
- *
- * Therefore this function MUST remain exported.
- */
 
 export async function boot() {
 
@@ -1200,9 +1956,11 @@ export function getLayoutState() {
 
   return {
 
-    member: currentMember,
+    member:
+      currentMember,
 
-    group: currentGroup
+    group:
+      currentGroup
 
   };
 
