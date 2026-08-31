@@ -1,6 +1,6 @@
 /* =========================================================
    CHAMA LIVE — MEETINGS
-   COMPLETE STABLE VERSION
+   FINAL STABLE + VISUALLY ENHANCED VERSION
 
    FEATURES
    ---------------------------------------------------------
@@ -10,11 +10,13 @@
    • View meeting details
    • Mark completed
    • Cancel meeting
-   • Restore cancelled meeting to upcoming
+   • Restore cancelled meeting
    • Save minutes and resolutions
    • Delete meetings
    • Filter by status
    • Upcoming / Completed / Cancelled totals
+   • Safe rendering
+   • Group-isolated data
 
    DATABASE RULE
    ---------------------------------------------------------
@@ -62,6 +64,9 @@ const agendaInput =
 const saveButton =
   document.getElementById("saveMeeting");
 
+const cancelEdit =
+  document.getElementById("cancelEdit");
+
 const statusFilter =
   document.getElementById("statusFilter");
 
@@ -107,17 +112,14 @@ const resolutionInput =
 const saveMinutes =
   document.getElementById("saveMinutes");
 
-const cancelEdit =
-  document.getElementById("cancelEdit");
-
 
 /* =========================================================
    STATE
 ========================================================= */
 
-let groupId = null;
-
 let currentMember = null;
+
+let groupId = null;
 
 let meetings = [];
 
@@ -144,6 +146,10 @@ function escapeHtml(value) {
 }
 
 
+/* =========================================================
+   STATUS
+========================================================= */
+
 function normalizeStatus(value) {
 
   const status =
@@ -153,6 +159,7 @@ function normalizeStatus(value) {
       .trim()
       .toLowerCase();
 
+
   if (
     status === "completed"
   ) {
@@ -160,6 +167,7 @@ function normalizeStatus(value) {
     return "completed";
 
   }
+
 
   if (
     status === "cancelled"
@@ -169,10 +177,15 @@ function normalizeStatus(value) {
 
   }
 
+
   return "upcoming";
 
 }
 
+
+/* =========================================================
+   DATE
+========================================================= */
 
 function formatDate(value) {
 
@@ -182,8 +195,10 @@ function formatDate(value) {
 
   }
 
+
   const date =
     new Date(value);
+
 
   if (
     Number.isNaN(
@@ -194,6 +209,7 @@ function formatDate(value) {
     return String(value);
 
   }
+
 
   return date.toLocaleDateString(
     "en-KE",
@@ -212,6 +228,7 @@ function getToday() {
   const date =
     new Date();
 
+
   return [
     date.getFullYear(),
 
@@ -228,7 +245,25 @@ function getToday() {
 }
 
 
+/* =========================================================
+   AGENDA
+========================================================= */
+
 function agendaToArray(value) {
+
+  if (
+    Array.isArray(value)
+  ) {
+
+    return value
+      .map(
+        item =>
+          String(item ?? "").trim()
+      )
+      .filter(Boolean);
+
+  }
+
 
   return String(
     value || ""
@@ -245,20 +280,15 @@ function agendaToArray(value) {
 
 function agendaToText(value) {
 
-  if (
-    Array.isArray(value)
-  ) {
-
-    return value.join("\n");
-
-  }
-
-  return String(
-    value || ""
-  );
+  return agendaToArray(value)
+    .join("\n");
 
 }
 
+
+/* =========================================================
+   UI MESSAGES
+========================================================= */
 
 function showStatus(message) {
 
@@ -268,11 +298,30 @@ function showStatus(message) {
 
   }
 
+
   statusEl.textContent =
     message || "";
 
   statusEl.hidden =
     !message;
+
+}
+
+
+function clearError() {
+
+  if (!errorEl) {
+
+    return;
+
+  }
+
+
+  errorEl.textContent =
+    "";
+
+  errorEl.hidden =
+    true;
 
 }
 
@@ -284,30 +333,20 @@ function showError(error) {
     error
   );
 
+
+  const message =
+    error?.message ||
+    String(error) ||
+    "Unable to process meeting.";
+
+
   if (errorEl) {
 
     errorEl.textContent =
-      error?.message ||
-      String(error) ||
-      "Unable to process meeting.";
+      message;
 
     errorEl.hidden =
       false;
-
-  }
-
-}
-
-
-function clearError() {
-
-  if (errorEl) {
-
-    errorEl.textContent =
-      "";
-
-    errorEl.hidden =
-      true;
 
   }
 
@@ -323,12 +362,14 @@ function setCreateMode() {
   editingMeetingId =
     null;
 
+
   if (saveButton) {
 
     saveButton.textContent =
       "Schedule Meeting";
 
   }
+
 
   if (cancelEdit) {
 
@@ -348,22 +389,44 @@ function setEditMode(meeting) {
 
   }
 
+
   editingMeetingId =
     meeting.id;
 
-  titleInput.value =
-    meeting.title || "";
 
-  dateInput.value =
-    meeting.date || "";
+  if (titleInput) {
 
-  venueInput.value =
-    meeting.venue || "";
+    titleInput.value =
+      meeting.title || "";
 
-  agendaInput.value =
-    agendaToText(
-      meeting.agenda
-    );
+  }
+
+
+  if (dateInput) {
+
+    dateInput.value =
+      meeting.date || "";
+
+  }
+
+
+  if (venueInput) {
+
+    venueInput.value =
+      meeting.venue || "";
+
+  }
+
+
+  if (agendaInput) {
+
+    agendaInput.value =
+      agendaToText(
+        meeting.agenda
+      );
+
+  }
+
 
   if (saveButton) {
 
@@ -372,12 +435,14 @@ function setEditMode(meeting) {
 
   }
 
+
   if (cancelEdit) {
 
     cancelEdit.hidden =
       false;
 
   }
+
 
   form?.scrollIntoView({
     behavior: "smooth",
@@ -400,6 +465,7 @@ async function loadMeetings() {
     );
 
   }
+
 
   const {
     data,
@@ -436,11 +502,13 @@ async function loadMeetings() {
         }
       );
 
+
   if (error) {
 
     throw error;
 
   }
+
 
   meetings =
     data || [];
@@ -469,6 +537,7 @@ function renderMetrics() {
           meeting.status
         );
 
+
       if (
         status === "upcoming"
       ) {
@@ -483,9 +552,7 @@ function renderMetrics() {
         completed++;
 
       }
-      else if (
-        status === "cancelled"
-      ) {
+      else {
 
         cancelled++;
 
@@ -502,12 +569,14 @@ function renderMetrics() {
 
   }
 
+
   if (completedCount) {
 
     completedCount.textContent =
       completed;
 
   }
+
 
   if (cancelledCount) {
 
@@ -542,6 +611,7 @@ function getFilteredMeetings() {
           meeting.status
         );
 
+
       return (
         filter === "all" ||
         filter === status
@@ -549,6 +619,27 @@ function getFilteredMeetings() {
 
     }
   );
+
+}
+
+
+/* =========================================================
+   STATUS BADGE
+========================================================= */
+
+function statusBadge(status) {
+
+  const normalized =
+    normalizeStatus(status);
+
+
+  return `
+    <span
+      class="meeting-status meeting-status-${normalized}"
+    >
+      ${escapeHtml(normalized)}
+    </span>
+  `;
 
 }
 
@@ -575,7 +666,23 @@ function renderMeetings() {
     meetingRows.innerHTML = `
       <tr>
         <td colspan="5">
-          No meetings found.
+
+          <div class="meeting-empty-state">
+
+            <div class="meeting-empty-icon">
+              ◷
+            </div>
+
+            <strong>
+              No meetings found
+            </strong>
+
+            <div class="muted">
+              Schedule a meeting to see it here.
+            </div>
+
+          </div>
+
         </td>
       </tr>
     `;
@@ -599,7 +706,7 @@ function renderMeetings() {
           return `
             <tr>
 
-              <td>
+              <td class="meeting-date">
                 ${escapeHtml(
                   formatDate(
                     meeting.date
@@ -607,37 +714,48 @@ function renderMeetings() {
                 )}
               </td>
 
-              <td>
-                ${escapeHtml(
-                  meeting.title
-                )}
+
+              <td class="meeting-title-cell">
+
+                <div class="meeting-title-main">
+                  ${escapeHtml(
+                    meeting.title ||
+                    "Untitled Meeting"
+                  )}
+                </div>
+
               </td>
 
-              <td>
+
+              <td class="meeting-venue">
                 ${escapeHtml(
                   meeting.venue ||
                   "—"
                 )}
               </td>
 
+
               <td>
-                ${escapeHtml(
-                  status
-                )}
+                ${statusBadge(status)}
               </td>
 
+
               <td>
 
-                <button
-                  type="button"
-                  class="btn btn-secondary"
-                  data-action="view"
-                  data-id="${escapeHtml(
-                    meeting.id
-                  )}"
-                >
-                  View
-                </button>
+                <div class="meeting-actions">
+
+                  <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-action="view"
+                    data-id="${escapeHtml(
+                      meeting.id
+                    )}"
+                  >
+                    View
+                  </button>
+
+                </div>
 
               </td>
 
@@ -652,7 +770,7 @@ function renderMeetings() {
 
 
 /* =========================================================
-   DETAILS
+   RENDER DETAILS
 ========================================================= */
 
 function renderDetails() {
@@ -684,58 +802,119 @@ function renderDetails() {
 
 
   const agenda =
-    agendaToText(
+    agendaToArray(
       selectedMeeting.agenda
     );
 
 
+  const agendaHtml =
+    agenda.length
+      ? `
+        <ol class="meeting-agenda-list">
+          ${agenda
+            .map(
+              item => `
+                <li>
+                  ${escapeHtml(item)}
+                </li>
+              `
+            )
+            .join("")}
+        </ol>
+      `
+      : `
+        <div class="meeting-empty-text">
+          No agenda recorded.
+        </div>
+      `;
+
+
   meetingDetails.innerHTML = `
-    <p>
-      <strong>Meeting:</strong>
-      ${escapeHtml(
-        selectedMeeting.title
-      )}
-    </p>
 
-    <p>
-      <strong>Date:</strong>
-      ${escapeHtml(
-        formatDate(
-          selectedMeeting.date
-        )
-      )}
-    </p>
+    <div class="meeting-detail-header">
 
-    <p>
-      <strong>Venue:</strong>
-      ${escapeHtml(
-        selectedMeeting.venue ||
-        "—"
-      )}
-    </p>
+      <div>
 
-    <p>
-      <strong>Status:</strong>
-      ${escapeHtml(
-        status
-      )}
-    </p>
+        <h2 class="meeting-detail-title">
+          ${escapeHtml(
+            selectedMeeting.title ||
+            "Untitled Meeting"
+          )}
+        </h2>
 
-    <p>
-      <strong>Agenda:</strong>
-    </p>
+        <div class="muted">
+          Meeting details and official record
+        </div>
 
-    <div
-      style="
-        white-space:pre-wrap;
-        margin-bottom:15px;
-      "
-    >
-      ${escapeHtml(
-        agenda ||
-        "No agenda recorded."
-      )}
+      </div>
+
+      <div>
+        ${statusBadge(status)}
+      </div>
+
     </div>
+
+
+    <div class="meeting-detail-meta">
+
+      <div class="meeting-meta-box">
+
+        <span class="meeting-meta-label">
+          Date
+        </span>
+
+        <span class="meeting-meta-value">
+          ${escapeHtml(
+            formatDate(
+              selectedMeeting.date
+            )
+          )}
+        </span>
+
+      </div>
+
+
+      <div class="meeting-meta-box">
+
+        <span class="meeting-meta-label">
+          Venue
+        </span>
+
+        <span class="meeting-meta-value">
+          ${escapeHtml(
+            selectedMeeting.venue ||
+            "Not specified"
+          )}
+        </span>
+
+      </div>
+
+
+      <div class="meeting-meta-box">
+
+        <span class="meeting-meta-label">
+          Status
+        </span>
+
+        <span class="meeting-meta-value">
+          ${escapeHtml(status)}
+        </span>
+
+      </div>
+
+    </div>
+
+
+    <div class="meeting-agenda-box">
+
+      <div class="meeting-subtitle">
+        Agenda
+      </div>
+
+      ${agendaHtml}
+
+    </div>
+
   `;
 
 
@@ -761,9 +940,9 @@ function renderDetails() {
     false;
 
 
-  /* -------------------------------------------------------
+  /* =======================================================
      BUTTON VISIBILITY
-  ------------------------------------------------------- */
+  ====================================================== */
 
   if (completeMeeting) {
 
@@ -804,9 +983,7 @@ function renderDetails() {
    CREATE / UPDATE
 ========================================================= */
 
-async function saveMeetingForm(
-  event
-) {
+async function saveMeetingForm(event) {
 
   event.preventDefault();
 
@@ -843,8 +1020,10 @@ async function saveMeetingForm(
 
 
     const date =
-      dateInput?.value ||
-      "";
+      String(
+        dateInput?.value ||
+        ""
+      ).trim();
 
 
     const venue =
@@ -912,9 +1091,9 @@ async function saveMeetingForm(
     };
 
 
-    /* -------------------------------------------------------
+    /* =====================================================
        UPDATE
-    ------------------------------------------------------- */
+    ====================================================== */
 
     if (editingMeetingId) {
 
@@ -968,9 +1147,9 @@ async function saveMeetingForm(
     }
 
 
-    /* -------------------------------------------------------
+    /* =====================================================
        CREATE
-    ------------------------------------------------------- */
+    ====================================================== */
 
     else {
 
@@ -1020,6 +1199,10 @@ async function saveMeetingForm(
     }
 
 
+    /* =====================================================
+       RESET FORM
+    ====================================================== */
+
     form?.reset();
 
 
@@ -1033,6 +1216,10 @@ async function saveMeetingForm(
 
     setCreateMode();
 
+
+    /* =====================================================
+       REFRESH
+    ====================================================== */
 
     await loadMeetings();
 
@@ -1062,20 +1249,14 @@ async function saveMeetingForm(
 
 
     setTimeout(
-      () => {
-
-        showStatus("");
-
-      },
+      () => showStatus(""),
       3000
     );
 
   }
   catch (error) {
 
-    showError(
-      error
-    );
+    showError(error);
 
   }
   finally {
@@ -1115,6 +1296,16 @@ function viewMeeting(id) {
 
 
   renderDetails();
+
+
+  if (selectedMeeting) {
+
+    detailsCard?.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+
+  }
 
 }
 
@@ -1196,6 +1387,15 @@ async function updateMeetingStatus(
   }
 
 
+  if (!data) {
+
+    throw new Error(
+      "Meeting was not updated."
+    );
+
+  }
+
+
   selectedMeeting =
     data;
 
@@ -1215,11 +1415,7 @@ async function updateMeetingStatus(
 
 
   setTimeout(
-    () => {
-
-      showStatus("");
-
-    },
+    () => showStatus(""),
     3000
   );
 
@@ -1253,6 +1449,17 @@ async function saveMeetingMinutes() {
       resolutionInput?.value ||
       ""
     ).trim();
+
+
+  if (saveMinutes) {
+
+    saveMinutes.disabled =
+      true;
+
+    saveMinutes.textContent =
+      "Saving...";
+
+  }
 
 
   const {
@@ -1302,6 +1509,15 @@ async function saveMeetingMinutes() {
   }
 
 
+  if (!data) {
+
+    throw new Error(
+      "Minutes could not be saved."
+    );
+
+  }
+
+
   selectedMeeting =
     data;
 
@@ -1317,13 +1533,20 @@ async function saveMeetingMinutes() {
 
 
   setTimeout(
-    () => {
-
-      showStatus("");
-
-    },
+    () => showStatus(""),
     3000
   );
+
+
+  if (saveMinutes) {
+
+    saveMinutes.disabled =
+      false;
+
+    saveMinutes.textContent =
+      "Save Minutes & Resolutions";
+
+  }
 
 }
 
@@ -1402,11 +1625,7 @@ async function removeMeeting() {
 
 
   setTimeout(
-    () => {
-
-      showStatus("");
-
-    },
+    () => showStatus(""),
     3000
   );
 
@@ -1419,7 +1638,14 @@ async function removeMeeting() {
 
 function setupTableActions() {
 
-  meetingRows?.addEventListener(
+  if (!meetingRows) {
+
+    return;
+
+  }
+
+
+  meetingRows.addEventListener(
     "click",
     event => {
 
@@ -1436,9 +1662,17 @@ function setupTableActions() {
       }
 
 
+      const action =
+        String(
+          button.dataset.action ||
+          ""
+        )
+          .trim()
+          .toLowerCase();
+
+
       if (
-        button.dataset.action ===
-        "view"
+        action === "view"
       ) {
 
         viewMeeting(
@@ -1475,6 +1709,7 @@ function setupButtons() {
 
       }
 
+
       setEditMode(
         selectedMeeting
       );
@@ -1489,10 +1724,16 @@ function setupButtons() {
 
       form?.reset();
 
-      dateInput.value =
-        getToday();
+      if (dateInput) {
+
+        dateInput.value =
+          getToday();
+
+      }
 
       setCreateMode();
+
+      clearError();
 
       showStatus("");
 
@@ -1515,9 +1756,7 @@ function setupButtons() {
       }
       catch (error) {
 
-        showError(
-          error
-        );
+        showError(error);
 
       }
 
@@ -1540,9 +1779,7 @@ function setupButtons() {
       }
       catch (error) {
 
-        showError(
-          error
-        );
+        showError(error);
 
       }
 
@@ -1565,9 +1802,7 @@ function setupButtons() {
       }
       catch (error) {
 
-        showError(
-          error
-        );
+        showError(error);
 
       }
 
@@ -1588,9 +1823,7 @@ function setupButtons() {
       }
       catch (error) {
 
-        showError(
-          error
-        );
+        showError(error);
 
       }
 
@@ -1611,9 +1844,17 @@ function setupButtons() {
       }
       catch (error) {
 
-        showError(
-          error
-        );
+        showError(error);
+
+        if (saveMinutes) {
+
+          saveMinutes.disabled =
+            false;
+
+          saveMinutes.textContent =
+            "Save Minutes & Resolutions";
+
+        }
 
       }
 
@@ -1649,8 +1890,16 @@ export async function initPage() {
     );
 
 
+    /* =====================================================
+       AUTH
+    ====================================================== */
+
     await requireAuth();
 
+
+    /* =====================================================
+       MEMBER
+    ====================================================== */
 
     currentMember =
       await getMyMember();
@@ -1664,6 +1913,10 @@ export async function initPage() {
 
     }
 
+
+    /* =====================================================
+       GROUP
+    ====================================================== */
 
     groupId =
       currentMember.group_id;
@@ -1690,6 +1943,10 @@ export async function initPage() {
     );
 
 
+    /* =====================================================
+       FORM
+    ====================================================== */
+
     setCreateMode();
 
 
@@ -1712,6 +1969,10 @@ export async function initPage() {
     setupTableActions();
 
 
+    /* =====================================================
+       DATA
+    ====================================================== */
+
     await loadMeetings();
 
     renderMetrics();
@@ -1727,11 +1988,7 @@ export async function initPage() {
 
 
     setTimeout(
-      () => {
-
-        showStatus("");
-
-      },
+      () => showStatus(""),
       2000
     );
 
@@ -1748,9 +2005,7 @@ export async function initPage() {
 
     showStatus("");
 
-    showError(
-      error
-    );
+    showError(error);
 
   }
 
