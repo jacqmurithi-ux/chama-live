@@ -1,30 +1,35 @@
 /* =========================================================
    CHAMA LIVE — CONTRIBUTIONS
-   COMPLETE STABLE + VISUALLY ENHANCED VERSION
+   COMPLETE STABLE + RESPONSIVE VERSION
 
-   FEATURES
+   FIXES
    ---------------------------------------------------------
-   • Group-scoped contribution records
-   • Monthly contribution tracking
+   • Prevents page content from going outside screen
+   • Responsive tables
+   • Mobile table-card layout
+   • Correct 7-column monthly status
+   • Previous arrears calculation
+   • Carry-forward / credit calculation
+   • Correct PAID / PARTIAL / OUTSTANDING / OVERPAID status
+   • Group-scoped records
+   • Monthly contributions
    • Contribution goals
    • M-Pesa / Cash / Bank transfer
    • M-Pesa reference validation
-   • "Other" contribution type with custom details
+   • Other contribution type
    • Notes support
    • Duplicate monthly payment warning
    • Responsive contribution history
-   • Responsive monthly status
-   • CHAMA LIVE visual enhancement
    • Compatible with layout.js dynamic loading
 
-   LIVE DATABASE TABLES USED
+   DATABASE TABLES
    ---------------------------------------------------------
    public.groups
    public.members
    public.contributions
    public.contribution_goals
 
-   EXISTING CONTRIBUTIONS COLUMNS USED
+   CONTRIBUTIONS COLUMNS USED
    ---------------------------------------------------------
    group_id
    member_id
@@ -39,21 +44,6 @@
    contribution_date
    notes
    mpesa_reference
-
-   IMPORTANT
-   ---------------------------------------------------------
-   No database migration is required for "Other".
-
-   When contribution type = "other":
-
-       contribution_type = "other"
-
-       notes =
-         "Other contribution: <custom details>"
-         + optional existing notes
-
-   This keeps the database schema compatible while
-   preserving the administrator's description.
 ========================================================= */
 
 import {
@@ -71,105 +61,73 @@ console.log(
 ========================================================= */
 
 const statusEl =
-  document.getElementById(
-    "status"
-  );
+  document.getElementById("status");
 
 
 const errorEl =
-  document.getElementById(
-    "error"
-  );
+  document.getElementById("error");
 
 
 const form =
-  document.getElementById(
-    "contributionForm"
-  );
+  document.getElementById("contributionForm");
 
 
 const memberSelect =
-  document.getElementById(
-    "member"
-  );
+  document.getElementById("member");
 
 
 const amountInput =
-  document.getElementById(
-    "amount"
-  );
+  document.getElementById("amount");
 
 
 const dateInput =
-  document.getElementById(
-    "contributionDate"
-  );
+  document.getElementById("contributionDate");
 
 
 const typeSelect =
-  document.getElementById(
-    "contributionType"
-  );
+  document.getElementById("contributionType");
 
 
 const methodSelect =
-  document.getElementById(
-    "paymentMethod"
-  );
+  document.getElementById("paymentMethod");
 
 
 const mpesaReference =
-  document.getElementById(
-    "mpesaReference"
-  );
+  document.getElementById("mpesaReference");
 
 
 const mpesaReferenceWrap =
-  document.getElementById(
-    "mpesaReferenceWrap"
-  );
+  document.getElementById("mpesaReferenceWrap");
 
 
 const saveButton =
-  document.getElementById(
-    "saveContribution"
-  );
+  document.getElementById("saveContribution");
 
 
 const monthlyExpected =
-  document.getElementById(
-    "monthlyExpected"
-  );
+  document.getElementById("monthlyExpected");
 
 
 const memberStatusRows =
-  document.getElementById(
-    "memberStatusRows"
-  );
+  document.getElementById("memberStatusRows");
 
 
 const contributionRows =
-  document.getElementById(
-    "contributionRows"
-  );
+  document.getElementById("contributionRows");
 
-
-/* =========================================================
-   OPTIONAL EXISTING ELEMENTS
-========================================================= */
 
 const notesInput =
-  document.getElementById(
-    "notes"
-  );
+  document.getElementById("notes");
 
 
 const goalSelect =
+  document.getElementById("goal") ||
+  document.getElementById("contributionGoal");
+
+
+const goalProgressContainer =
   document.getElementById(
-    "goal"
-  ) ||
-  document.getElementById(
-    "contributionGoal"
+    "goalProgressContainer"
   );
 
 
@@ -177,28 +135,17 @@ const goalSelect =
    STATE
 ========================================================= */
 
-let groupId =
-  null;
+let groupId = null;
 
+let members = [];
 
-let members =
-  [];
+let contributions = [];
 
+let contributionGoals = [];
 
-let contributions =
-  [];
+let monthlyContribution = 0;
 
-
-let contributionGoals =
-  [];
-
-
-let monthlyContribution =
-  0;
-
-
-let initialized =
-  false;
+let initialized = false;
 
 
 /* =========================================================
@@ -207,14 +154,11 @@ let initialized =
 
 const PAYMENT_METHODS = {
 
-  MPESA:
-    "M-Pesa",
+  MPESA: "M-Pesa",
 
-  CASH:
-    "Cash",
+  CASH: "Cash",
 
-  BANK:
-    "Bank transfer"
+  BANK: "Bank transfer"
 
 };
 
@@ -223,30 +167,31 @@ const PAYMENT_METHODS = {
    HELPERS
 ========================================================= */
 
-function money(
-  value
-) {
+function money(value) {
 
   return new Intl.NumberFormat(
     "en-KE",
     {
-      style:
-        "currency",
-
-      currency:
-        "KES",
-
-      minimumFractionDigits:
-        0,
-
-      maximumFractionDigits:
-        2
+      style: "currency",
+      currency: "KES",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
     }
   ).format(
-    Number(
-      value || 0
-    )
+    Number(value || 0)
   );
+
+}
+
+
+function number(value) {
+
+  const result =
+    Number(value || 0);
+
+  return Number.isFinite(result)
+    ? result
+    : 0;
 
 }
 
@@ -256,28 +201,19 @@ function todayString() {
   const now =
     new Date();
 
-
   return [
 
     now.getFullYear(),
 
     String(
       now.getMonth() + 1
-    ).padStart(
-      2,
-      "0"
-    ),
+    ).padStart(2, "0"),
 
     String(
       now.getDate()
-    ).padStart(
-      2,
-      "0"
-    )
+    ).padStart(2, "0")
 
-  ].join(
-    "-"
-  );
+  ].join("-");
 
 }
 
@@ -287,23 +223,17 @@ function getCurrentMonth() {
   const now =
     new Date();
 
-
   return (
     `${now.getFullYear()}-` +
     `${String(
       now.getMonth() + 1
-    ).padStart(
-      2,
-      "0"
-    )}`
+    ).padStart(2, "0")}`
   );
 
 }
 
 
-function getContributionMonth(
-  item
-) {
+function getContributionMonth(item) {
 
   if (
     item?.contribution_date
@@ -311,10 +241,7 @@ function getContributionMonth(
 
     return String(
       item.contribution_date
-    ).slice(
-      0,
-      7
-    );
+    ).slice(0, 7);
 
   }
 
@@ -325,10 +252,7 @@ function getContributionMonth(
 
     return String(
       item.month
-    ).slice(
-      0,
-      7
-    );
+    ).slice(0, 7);
 
   }
 
@@ -342,7 +266,6 @@ function getContributionMonth(
         item.created_at
       );
 
-
     if (
       !Number.isNaN(
         date.getTime()
@@ -353,10 +276,7 @@ function getContributionMonth(
         `${date.getFullYear()}-` +
         `${String(
           date.getMonth() + 1
-        ).padStart(
-          2,
-          "0"
-        )}`
+        ).padStart(2, "0")}`
       );
 
     }
@@ -369,9 +289,7 @@ function getContributionMonth(
 }
 
 
-function formatDate(
-  value
-) {
+function formatDate(value) {
 
   if (!value) {
     return "—";
@@ -379,9 +297,7 @@ function formatDate(
 
 
   const date =
-    new Date(
-      value
-    );
+    new Date(value);
 
 
   if (
@@ -390,9 +306,7 @@ function formatDate(
     )
   ) {
 
-    return String(
-      value
-    );
+    return String(value);
 
   }
 
@@ -400,47 +314,116 @@ function formatDate(
   return date.toLocaleDateString(
     "en-KE",
     {
-      day:
-        "2-digit",
-
-      month:
-        "short",
-
-      year:
-        "numeric"
+      day: "2-digit",
+      month: "short",
+      year: "numeric"
     }
   );
 
 }
 
 
-function escapeHtml(
-  value
-) {
+function escapeHtml(value) {
 
   return String(
     value ?? ""
   )
-    .replaceAll(
-      "&",
-      "&amp;"
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
+}
+
+
+/* =========================================================
+   MONTH COMPARISON
+========================================================= */
+
+function monthToNumber(month) {
+
+  if (
+    !month ||
+    !/^\d{4}-\d{2}$/.test(
+      String(month)
     )
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-    .replaceAll(
-      "'",
-      "&#039;"
+  ) {
+
+    return null;
+
+  }
+
+
+  const [
+    year,
+    monthNumber
+  ] =
+    String(month)
+      .split("-")
+      .map(Number);
+
+
+  return (
+    year * 12 +
+    monthNumber
+  );
+
+}
+
+
+function getMonthsBetween(
+  startMonth,
+  endMonth
+) {
+
+  const start =
+    monthToNumber(
+      startMonth
     );
+
+  const end =
+    monthToNumber(
+      endMonth
+    );
+
+
+  if (
+    start === null ||
+    end === null ||
+    end < start
+  ) {
+
+    return [];
+
+  }
+
+
+  const months = [];
+
+  for (
+    let value = start;
+    value <= end;
+    value++
+  ) {
+
+    const year =
+      Math.floor(
+        (value - 1) / 12
+      );
+
+    const month =
+      ((value - 1) % 12) + 1;
+
+
+    months.push(
+      `${year}-${String(month).padStart(2, "0")}`
+    );
+
+  }
+
+
+  return months;
 
 }
 
@@ -449,9 +432,7 @@ function escapeHtml(
    STATUS / ERROR
 ========================================================= */
 
-function showError(
-  error
-) {
+function showError(error) {
 
   console.error(
     "CHAMA LIVE Contributions Error:",
@@ -543,9 +524,7 @@ async function loadGroup() {
     error
   } =
     await supabase
-      .from(
-        "groups"
-      )
+      .from("groups")
       .select(
         "monthly_contribution,name,category"
       )
@@ -564,9 +543,8 @@ async function loadGroup() {
 
 
   monthlyContribution =
-    Number(
-      data?.monthly_contribution ||
-      0
+    number(
+      data?.monthly_contribution
     );
 
 
@@ -592,11 +570,6 @@ async function loadGroup() {
 
   }
 
-
-  /*
-   * Update group heading if the page
-   * contains the global group-name hook.
-   */
 
   document
     .querySelectorAll(
@@ -626,9 +599,7 @@ async function loadMembers() {
     error
   } =
     await supabase
-      .from(
-        "members"
-      )
+      .from("members")
       .select(
         `
           id,
@@ -643,8 +614,7 @@ async function loadMembers() {
       .order(
         "name",
         {
-          ascending:
-            true
+          ascending: true
         }
       );
 
@@ -669,12 +639,8 @@ async function loadMembers() {
       );
 
 
-  if (
-    !memberSelect
-  ) {
-
+  if (!memberSelect) {
     return;
-
   }
 
 
@@ -720,21 +686,11 @@ async function loadMembers() {
 
 async function loadContributionGoals() {
 
-  contributionGoals =
-    [];
+  contributionGoals = [];
 
 
-  /*
-   * If this page has no goal selector,
-   * there is nothing to populate.
-   */
-
-  if (
-    !goalSelect
-  ) {
-
+  if (!goalSelect) {
     return;
-
   }
 
 
@@ -743,9 +699,7 @@ async function loadContributionGoals() {
     error
   } =
     await supabase
-      .from(
-        "contribution_goals"
-      )
+      .from("contribution_goals")
       .select(
         `
           id,
@@ -754,7 +708,8 @@ async function loadContributionGoals() {
           target_amount,
           status,
           start_date,
-          end_date
+          end_date,
+          created_at
         `
       )
       .eq(
@@ -768,8 +723,7 @@ async function loadContributionGoals() {
       .order(
         "created_at",
         {
-          ascending:
-            false
+          ascending: false
         }
       );
 
@@ -782,8 +736,7 @@ async function loadContributionGoals() {
 
 
   contributionGoals =
-    data ||
-    [];
+    data || [];
 
 
   goalSelect.innerHTML = `
@@ -837,9 +790,7 @@ async function loadContributions() {
     error
   } =
     await supabase
-      .from(
-        "contributions"
-      )
+      .from("contributions")
       .select(
         `
           id,
@@ -865,15 +816,13 @@ async function loadContributions() {
       .order(
         "contribution_date",
         {
-          ascending:
-            false
+          ascending: false
         }
       )
       .order(
         "created_at",
         {
-          ascending:
-            false
+          ascending: false
         }
       );
 
@@ -886,8 +835,7 @@ async function loadContributions() {
 
 
   contributions =
-    data ||
-    [];
+    data || [];
 
 }
 
@@ -896,19 +844,13 @@ async function loadContributions() {
    MEMBER NAME
 ========================================================= */
 
-function getMemberName(
-  memberId
-) {
+function getMemberName(memberId) {
 
   const member =
     members.find(
       item =>
-        String(
-          item.id
-        ) ===
-        String(
-          memberId
-        )
+        String(item.id) ===
+        String(memberId)
     );
 
 
@@ -924,9 +866,7 @@ function getMemberName(
    GOAL NAME
 ========================================================= */
 
-function getGoalName(
-  goalId
-) {
+function getGoalName(goalId) {
 
   if (!goalId) {
 
@@ -938,12 +878,8 @@ function getGoalName(
   const goal =
     contributionGoals.find(
       item =>
-        String(
-          item.id
-        ) ===
-        String(
-          goalId
-        )
+        String(item.id) ===
+        String(goalId)
     );
 
 
@@ -956,17 +892,13 @@ function getGoalName(
 
 
 /* =========================================================
-   PAYMENT METHOD NORMALIZATION
+   PAYMENT METHOD
 ========================================================= */
 
-function normalizePaymentMethod(
-  value
-) {
+function normalizePaymentMethod(value) {
 
   const method =
-    String(
-      value || ""
-    )
+    String(value || "")
       .trim()
       .toLowerCase();
 
@@ -1002,21 +934,16 @@ function normalizePaymentMethod(
   }
 
 
-  return (
-    value ||
-    "—"
-  );
+  return value || "—";
 
 }
 
 
 /* =========================================================
-   CONTRIBUTION TYPE DISPLAY
+   CONTRIBUTION TYPE
 ========================================================= */
 
-function contributionTypeLabel(
-  item
-) {
+function contributionTypeLabel(item) {
 
   const type =
     String(
@@ -1027,80 +954,38 @@ function contributionTypeLabel(
       .toLowerCase();
 
 
-  if (
-    type ===
-    "monthly"
-  ) {
+  const labels = {
 
-    return "Monthly";
+    monthly: "Monthly",
 
-  }
+    other: "Other",
 
+    welfare: "Welfare",
 
-  if (
-    type ===
-    "other"
-  ) {
+    emergency: "Emergency",
 
-    return "Other";
+    investment: "Investment",
 
-  }
+    fundraising: "Fundraising",
 
+    project: "Project",
 
-  if (
-    type ===
-    "welfare"
-  ) {
+    event: "Event",
 
-    return "Welfare";
+    fine: "Fine"
 
-  }
+  };
 
 
-  if (
-    type ===
-    "investment"
-  ) {
-
-    return "Investment";
-
-  }
-
-
-  if (
-    type ===
-    "fundraising"
-  ) {
-
-    return "Fundraising";
-
-  }
-
-
-  if (
-    type ===
-    "fine"
-  ) {
-
-    return "Fine";
-
-  }
-
-
-  if (
-    type
-  ) {
-
-    return (
-      type.charAt(0)
-        .toUpperCase() +
-      type.slice(1)
-    );
-
-  }
-
-
-  return "—";
+  return (
+    labels[type] ||
+    (
+      type
+        ? type.charAt(0).toUpperCase() +
+          type.slice(1)
+        : "—"
+    )
+  );
 
 }
 
@@ -1109,12 +994,9 @@ function contributionTypeLabel(
    OTHER CONTRIBUTION FIELD
 ========================================================= */
 
-let otherTypeWrap =
-  null;
+let otherTypeWrap = null;
 
-
-let otherTypeInput =
-  null;
+let otherTypeInput = null;
 
 
 /* =========================================================
@@ -1123,21 +1005,37 @@ let otherTypeInput =
 
 function createOtherContributionField() {
 
+  /*
+   * The HTML already contains this field.
+   * Use it instead of creating a duplicate.
+   */
+
+  otherTypeWrap =
+    document.getElementById(
+      "otherContributionTypeWrap"
+    );
+
+
+  otherTypeInput =
+    document.getElementById(
+      "otherContributionType"
+    );
+
+
   if (
-    otherTypeWrap
+    otherTypeWrap &&
+    otherTypeInput
   ) {
+
+    updateOtherContributionType();
 
     return;
 
   }
 
 
-  if (
-    !typeSelect
-  ) {
-
+  if (!typeSelect) {
     return;
-
   }
 
 
@@ -1152,7 +1050,7 @@ function createOtherContributionField() {
 
 
   otherTypeWrap.className =
-    "cl-other-type-wrap";
+    "form-group cl-other-type-wrap";
 
 
   otherTypeWrap.hidden =
@@ -1164,10 +1062,7 @@ function createOtherContributionField() {
     <label
       for="otherContributionType"
     >
-      Specify contribution type
-      <span class="cl-required">
-        *
-      </span>
+      Other Contribution Name
     </label>
 
     <input
@@ -1176,12 +1071,12 @@ function createOtherContributionField() {
       type="text"
       maxlength="120"
       autocomplete="off"
-      placeholder="e.g. Welfare support, special collection, fine..."
+      placeholder="e.g. Birthday contribution"
     >
 
-    <span class="cl-field-help">
-      Tell us what this contribution is for.
-    </span>
+    <small class="muted">
+      Enter the name of this contribution.
+    </small>
 
   `;
 
@@ -1192,32 +1087,20 @@ function createOtherContributionField() {
     );
 
 
-  /*
-   * Insert immediately after the
-   * contribution type field's wrapper.
-   */
-
-  const parent =
-    typeSelect.parentElement;
+  const formGroup =
+    typeSelect.closest(
+      ".form-group"
+    );
 
 
   if (
-    parent?.parentElement
+    formGroup?.parentElement
   ) {
 
-    parent.parentElement
+    formGroup.parentElement
       .insertBefore(
         otherTypeWrap,
-        parent.nextSibling
-      );
-
-  }
-  else {
-
-    typeSelect
-      .parentElement
-      ?.appendChild(
-        otherTypeWrap
+        formGroup.nextSibling
       );
 
   }
@@ -1247,8 +1130,7 @@ function updateOtherContributionType() {
 
   const isOther =
     String(
-      typeSelect.value ||
-      ""
+      typeSelect.value || ""
     )
       .trim()
       .toLowerCase() ===
@@ -1263,25 +1145,18 @@ function updateOtherContributionType() {
     isOther;
 
 
-  if (
-    isOther
-  ) {
+  if (isOther) {
 
-    otherTypeWrap
-      .classList
-      .add(
-        "is-visible"
-      );
+    otherTypeWrap.classList.add(
+      "is-visible"
+    );
 
   }
   else {
 
-    otherTypeWrap
-      .classList
-      .remove(
-        "is-visible"
-      );
-
+    otherTypeWrap.classList.remove(
+      "is-visible"
+    );
 
     otherTypeInput.value =
       "";
@@ -1292,7 +1167,7 @@ function updateOtherContributionType() {
 
 
 /* =========================================================
-   BUILD SAVED NOTES
+   BUILD NOTES
 ========================================================= */
 
 function buildContributionNotes(
@@ -1303,40 +1178,31 @@ function buildContributionNotes(
 
   const notes =
     String(
-      normalNotes ||
-      ""
-    )
-      .trim();
+      normalNotes || ""
+    ).trim();
 
 
   if (
     String(
-      contributionType ||
-      ""
+      contributionType || ""
     ).toLowerCase() !==
     "other"
   ) {
 
-    return notes ||
-      null;
+    return notes || null;
 
   }
 
 
   const details =
     String(
-      otherDetails ||
-      ""
-    )
-      .trim();
+      otherDetails || ""
+    ).trim();
 
 
-  if (
-    !details
-  ) {
+  if (!details) {
 
-    return notes ||
-      null;
+    return notes || null;
 
   }
 
@@ -1345,9 +1211,7 @@ function buildContributionNotes(
     `Other contribution: ${details}`;
 
 
-  if (
-    !notes
-  ) {
+  if (!notes) {
 
     return otherLine;
 
@@ -1365,22 +1229,16 @@ function buildContributionNotes(
    EXTRACT OTHER DETAILS
 ========================================================= */
 
-function extractOtherDetails(
-  item
-) {
+function extractOtherDetails(item) {
 
   const type =
     String(
       item?.contribution_type ||
       ""
-    )
-      .toLowerCase();
+    ).toLowerCase();
 
 
-  if (
-    type !==
-    "other"
-  ) {
+  if (type !== "other") {
 
     return "";
 
@@ -1400,33 +1258,22 @@ function extractOtherDetails(
     );
 
 
-  if (
-    match?.[1]
-  ) {
-
-    return match[1]
-      .trim();
-
-  }
-
-
-  return "";
+  return (
+    match?.[1]?.trim() ||
+    ""
+  );
 
 }
 
 
 /* =========================================================
-   UPDATE PAYMENT METHOD
+   PAYMENT METHOD
 ========================================================= */
 
 function updatePaymentMethod() {
 
-  if (
-    !methodSelect
-  ) {
-
+  if (!methodSelect) {
     return;
-
   }
 
 
@@ -1441,29 +1288,21 @@ function updatePaymentMethod() {
     PAYMENT_METHODS.MPESA;
 
 
-  if (
-    mpesaReferenceWrap
-  ) {
+  if (mpesaReferenceWrap) {
 
-    mpesaReferenceWrap.style.display =
-      isMpesa
-        ? ""
-        : "none";
+    mpesaReferenceWrap.hidden =
+      !isMpesa;
 
   }
 
 
-  if (
-    mpesaReference
-  ) {
+  if (mpesaReference) {
 
     mpesaReference.required =
       isMpesa;
 
 
-    if (
-      !isMpesa
-    ) {
+    if (!isMpesa) {
 
       mpesaReference.value =
         "";
@@ -1476,23 +1315,589 @@ function updatePaymentMethod() {
 
 
 /* =========================================================
-   LEDGER
+   MONTHLY CONTRIBUTIONS FOR MEMBER
 ========================================================= */
 
-function renderLedger() {
+function getMemberMonthlyContributions(
+  memberId
+) {
+
+  return contributions.filter(
+    item => {
+
+      if (
+        String(item.member_id) !==
+        String(memberId)
+      ) {
+
+        return false;
+
+      }
+
+
+      return (
+        String(
+          item.contribution_type ||
+          ""
+        ).toLowerCase() ===
+        "monthly"
+      );
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   MONTHLY PAID BY MEMBER
+========================================================= */
+
+function getMonthlyPaid(
+  memberId,
+  month
+) {
+
+  return getMemberMonthlyContributions(
+    memberId
+  )
+    .filter(
+      item =>
+        getContributionMonth(item) ===
+        month
+    )
+    .reduce(
+      (
+        total,
+        item
+      ) =>
+        total +
+        number(item.amount),
+      0
+    );
+
+}
+
+
+/* =========================================================
+   CALCULATE MEMBER MONTHLY ACCOUNT
+========================================================= */
+
+function calculateMemberMonthlyAccount(
+  memberId
+) {
+
+  const currentMonth =
+    getCurrentMonth();
+
+
+  const currentMonthNumber =
+    monthToNumber(
+      currentMonth
+    );
+
+
+  const memberContributions =
+    getMemberMonthlyContributions(
+      memberId
+    );
+
+
+  /*
+   * Find the earliest month for which
+   * this member has a monthly contribution.
+   */
+
+  let earliestMonth =
+    currentMonth;
+
+
+  memberContributions.forEach(
+    item => {
+
+      const month =
+        getContributionMonth(
+          item
+        );
+
+
+      if (
+        monthToNumber(month) !== null &&
+        monthToNumber(month) <
+        monthToNumber(earliestMonth)
+      ) {
+
+        earliestMonth =
+          month;
+
+      }
+
+    }
+  );
+
+
+  /*
+   * Also look at current month.
+   */
+
+  const months =
+    getMonthsBetween(
+      earliestMonth,
+      currentMonth
+    );
+
+
+  /*
+   * If there are no historical records,
+   * start with the current month only.
+   */
+
+  if (!months.length) {
+
+    months.push(
+      currentMonth
+    );
+
+  }
+
+
+  let credit = 0;
+
+  let arrears = 0;
+
+  let previousMonthsDue = 0;
+
+  let previousMonthsPaid = 0;
+
+
+  /*
+   * Calculate the position before
+   * the current month.
+   *
+   * Positive balance = arrears
+   * Negative balance = credit
+   */
+
+  months.forEach(
+    month => {
+
+      const monthNumber =
+        monthToNumber(month);
+
+
+      if (
+        monthNumber === null ||
+        monthNumber >=
+        currentMonthNumber
+      ) {
+
+        return;
+
+      }
+
+
+      const paid =
+        getMonthlyPaid(
+          memberId,
+          month
+        );
+
+
+      const due =
+        monthlyContribution;
+
+
+      previousMonthsDue +=
+        due;
+
+      previousMonthsPaid +=
+        paid;
+
+
+      const monthBalance =
+        due - paid;
+
+
+      /*
+       * Apply existing credit first.
+       */
+
+      if (
+        credit > 0
+      ) {
+
+        if (
+          monthBalance > 0
+        ) {
+
+          const used =
+            Math.min(
+              credit,
+              monthBalance
+            );
+
+          credit -= used;
+
+          arrears +=
+            monthBalance -
+            used;
+
+        }
+        else if (
+          monthBalance < 0
+        ) {
+
+          credit +=
+            Math.abs(
+              monthBalance
+            );
+
+        }
+
+      }
+      else {
+
+        if (
+          monthBalance > 0
+        ) {
+
+          arrears +=
+            monthBalance;
+
+        }
+        else if (
+          monthBalance < 0
+        ) {
+
+          /*
+           * A historical overpayment
+           * becomes carry-forward credit.
+           */
+
+          const overpayment =
+            Math.abs(
+              monthBalance
+            );
+
+
+          if (
+            arrears > 0
+          ) {
+
+            const used =
+              Math.min(
+                arrears,
+                overpayment
+              );
+
+            arrears -= used;
+
+            credit =
+              overpayment -
+              used;
+
+          }
+          else {
+
+            credit +=
+              overpayment;
+
+          }
+
+        }
+
+      }
+
+    }
+  );
+
+
+  /*
+   * Current month.
+   */
+
+  const currentPaid =
+    getMonthlyPaid(
+      memberId,
+      currentMonth
+    );
+
+
+  const currentDue =
+    monthlyContribution;
+
+
+  /*
+   * First use current payment
+   * against previous arrears.
+   */
+
+  let remainingCurrentPaid =
+    currentPaid;
+
+
+  let currentArrears =
+    arrears;
+
 
   if (
-    !contributionRows
+    currentArrears > 0 &&
+    remainingCurrentPaid > 0
   ) {
 
-    return;
+    const used =
+      Math.min(
+        currentArrears,
+        remainingCurrentPaid
+      );
+
+
+    currentArrears -=
+      used;
+
+    remainingCurrentPaid -=
+      used;
+
+  }
+
+
+  /*
+   * Then use remaining payment
+   * against current month's due.
+   */
+
+  let currentOutstanding =
+    currentDue;
+
+
+  if (
+    remainingCurrentPaid > 0
+  ) {
+
+    const used =
+      Math.min(
+        currentOutstanding,
+        remainingCurrentPaid
+      );
+
+
+    currentOutstanding -=
+      used;
+
+    remainingCurrentPaid -=
+      used;
+
+  }
+
+
+  /*
+   * Apply previous credit to anything
+   * still outstanding.
+   */
+
+  let carryForward =
+    credit;
+
+
+  if (
+    carryForward > 0 &&
+    currentArrears > 0
+  ) {
+
+    const used =
+      Math.min(
+        carryForward,
+        currentArrears
+      );
+
+
+    carryForward -=
+      used;
+
+    currentArrears -=
+      used;
 
   }
 
 
   if (
-    !contributions.length
+    carryForward > 0 &&
+    currentOutstanding > 0
   ) {
+
+    const used =
+      Math.min(
+        carryForward,
+        currentOutstanding
+      );
+
+
+    carryForward -=
+      used;
+
+    currentOutstanding -=
+      used;
+
+  }
+
+
+  /*
+   * Any payment remaining after
+   * all obligations is new credit.
+   */
+
+  if (
+    remainingCurrentPaid > 0
+  ) {
+
+    carryForward +=
+      remainingCurrentPaid;
+
+  }
+
+
+  /*
+   * Total amount still owed.
+   */
+
+  const outstanding =
+    Math.max(
+      currentArrears +
+      currentOutstanding,
+      0
+    );
+
+
+  /*
+   * Status.
+   */
+
+  let status =
+    "OUTSTANDING";
+
+
+  let statusClass =
+    "cl-status-outstanding";
+
+
+  if (
+    currentDue <= 0
+  ) {
+
+    status =
+      "NOT SET";
+
+    statusClass =
+      "cl-status-neutral";
+
+  }
+  else if (
+    carryForward > 0
+  ) {
+
+    status =
+      "OVERPAID";
+
+    statusClass =
+      "cl-status-credit";
+
+  }
+  else if (
+    outstanding <= 0 &&
+    currentPaid > 0
+  ) {
+
+    status =
+      "PAID";
+
+    statusClass =
+      "cl-status-paid";
+
+  }
+  else if (
+    currentPaid > 0
+  ) {
+
+    status =
+      "PARTIAL";
+
+    statusClass =
+      "cl-status-partial";
+
+  }
+
+
+  /*
+   * Progress toward current month.
+   */
+
+  const effectiveCurrentPayment =
+    Math.max(
+      currentPaid -
+      arrears,
+      0
+    );
+
+
+  const progress =
+    currentDue > 0
+      ? Math.min(
+          (
+            effectiveCurrentPayment /
+            currentDue
+          ) * 100,
+          100
+        )
+      : 0;
+
+
+  return {
+
+    currentDue,
+
+    previousArrears:
+      Math.max(
+        arrears,
+        0
+      ),
+
+    currentPaid,
+
+    carryForward:
+      Math.max(
+        carryForward,
+        0
+      ),
+
+    outstanding,
+
+    status,
+
+    statusClass,
+
+    progress,
+
+    previousMonthsDue,
+
+    previousMonthsPaid
+
+  };
+
+}
+
+
+/* =========================================================
+   LEDGER
+========================================================= */
+
+function renderLedger() {
+
+  if (!contributionRows) {
+    return;
+  }
+
+
+  if (!contributions.length) {
 
     contributionRows.innerHTML = `
 
@@ -1533,10 +1938,7 @@ function renderLedger() {
 
   contributionRows.innerHTML =
     contributions
-      .slice(
-        0,
-        100
-      )
+      .slice(0, 100)
       .map(
         item => {
 
@@ -1587,9 +1989,7 @@ function renderLedger() {
               <td data-label="Date">
 
                 ${escapeHtml(
-                  formatDate(
-                    date
-                  )
+                  formatDate(date)
                 )}
 
               </td>
@@ -1615,9 +2015,7 @@ function renderLedger() {
 
                 <strong>
                   ${escapeHtml(
-                    money(
-                      item.amount
-                    )
+                    money(item.amount)
                   )}
                 </strong>
 
@@ -1629,11 +2027,7 @@ function renderLedger() {
                 <span
                   class="cl-type-badge"
                 >
-
-                  ${escapeHtml(
-                    type
-                  )}
-
+                  ${escapeHtml(type)}
                 </span>
 
                 ${
@@ -1653,16 +2047,14 @@ function renderLedger() {
               </td>
 
 
-              <td data-label="Payment">
+              <td data-label="Payment Method">
 
                 <span
                   class="cl-payment-badge"
                 >
-
                   ${escapeHtml(
                     paymentMethod
                   )}
-
                 </span>
 
               </td>
@@ -1721,25 +2113,19 @@ function renderLedger() {
 
 function renderMemberStatus() {
 
-  if (
-    !memberStatusRows
-  ) {
-
+  if (!memberStatusRows) {
     return;
-
   }
 
 
-  if (
-    !members.length
-  ) {
+  if (!members.length) {
 
     memberStatusRows.innerHTML = `
 
       <tr>
 
         <td
-          colspan="5"
+          colspan="7"
           class="cl-empty-table"
         >
 
@@ -1756,160 +2142,15 @@ function renderMemberStatus() {
   }
 
 
-  const currentMonth =
-    getCurrentMonth();
-
-
   memberStatusRows.innerHTML =
     members
       .map(
         member => {
 
-          /*
-           * Only MONTHLY contributions
-           * count toward monthly status.
-           */
-
-          const paid =
-            contributions
-              .filter(
-                item => {
-
-                  if (
-                    String(
-                      item.member_id
-                    ) !==
-                    String(
-                      member.id
-                    )
-                  ) {
-
-                    return false;
-
-                  }
-
-
-                  const type =
-                    String(
-                      item.contribution_type ||
-                      ""
-                    )
-                      .toLowerCase();
-
-
-                  if (
-                    type !==
-                    "monthly"
-                  ) {
-
-                    return false;
-
-                  }
-
-
-                  return (
-                    getContributionMonth(
-                      item
-                    ) ===
-                    currentMonth
-                  );
-
-                }
-              )
-              .reduce(
-                (
-                  total,
-                  item
-                ) =>
-                  total +
-                  Number(
-                    item.amount ||
-                    0
-                  ),
-                0
-              );
-
-
-          const expected =
-            monthlyContribution;
-
-
-          const outstanding =
-            Math.max(
-              expected -
-              paid,
-              0
+          const account =
+            calculateMemberMonthlyAccount(
+              member.id
             );
-
-
-          let status =
-            "OUTSTANDING";
-
-
-          let statusClass =
-            "cl-status-outstanding";
-
-
-          if (
-            expected <= 0
-          ) {
-
-            status =
-              "NOT SET";
-
-            statusClass =
-              "cl-status-neutral";
-
-          }
-          else if (
-            paid >
-            expected
-          ) {
-
-            status =
-              "OVERPAID";
-
-            statusClass =
-              "cl-status-credit";
-
-          }
-          else if (
-            paid ===
-            expected
-          ) {
-
-            status =
-              "PAID";
-
-            statusClass =
-              "cl-status-paid";
-
-          }
-          else if (
-            paid >
-            0
-          ) {
-
-            status =
-              "PARTIAL";
-
-            statusClass =
-              "cl-status-partial";
-
-          }
-
-
-          const progress =
-            expected > 0
-              ? Math.min(
-                  (
-                    paid /
-                    expected
-                  ) *
-                  100,
-                  100
-                )
-              : 0;
 
 
           return `
@@ -1918,6 +2159,7 @@ function renderMemberStatus() {
 
               <td
                 data-label="Member"
+                class="cl-member-cell"
               >
 
                 <strong>
@@ -1930,12 +2172,13 @@ function renderMemberStatus() {
 
 
               <td
-                data-label="Expected"
+                data-label="Current Due"
+                class="cl-money-cell"
               >
 
                 ${escapeHtml(
                   money(
-                    expected
+                    account.currentDue
                   )
                 )}
 
@@ -1943,7 +2186,36 @@ function renderMemberStatus() {
 
 
               <td
-                data-label="Paid"
+                data-label="Previous Arrears"
+              >
+
+                ${
+                  account.previousArrears > 0
+                    ? `
+                      <span
+                        class="cl-arrears"
+                      >
+                        ${escapeHtml(
+                          money(
+                            account.previousArrears
+                          )
+                        )}
+                      </span>
+                    `
+                    : `
+                      <span
+                        class="cl-zero"
+                      >
+                        —
+                      </span>
+                    `
+                }
+
+              </td>
+
+
+              <td
+                data-label="Current Paid"
               >
 
                 <div
@@ -1953,18 +2225,19 @@ function renderMemberStatus() {
                   <strong>
                     ${escapeHtml(
                       money(
-                        paid
+                        account.currentPaid
                       )
                     )}
                   </strong>
 
                   <div
                     class="cl-mini-progress"
+                    aria-hidden="true"
                   >
 
                     <span
                       style="
-                        width:${progress}%;
+                        width:${account.progress}%;
                       "
                     ></span>
 
@@ -1976,14 +2249,59 @@ function renderMemberStatus() {
 
 
               <td
+                data-label="Carry Forward"
+              >
+
+                ${
+                  account.carryForward > 0
+                    ? `
+                      <span
+                        class="cl-carry-forward"
+                      >
+                        ${escapeHtml(
+                          money(
+                            account.carryForward
+                          )
+                        )}
+                      </span>
+                    `
+                    : `
+                      <span
+                        class="cl-zero"
+                      >
+                        —
+                      </span>
+                    `
+                }
+
+              </td>
+
+
+              <td
                 data-label="Outstanding"
               >
 
-                ${escapeHtml(
-                  money(
-                    outstanding
-                  )
-                )}
+                ${
+                  account.outstanding > 0
+                    ? `
+                      <strong
+                        class="cl-outstanding-amount"
+                      >
+                        ${escapeHtml(
+                          money(
+                            account.outstanding
+                          )
+                        )}
+                      </strong>
+                    `
+                    : `
+                      <span
+                        class="cl-zero"
+                      >
+                        —
+                      </span>
+                    `
+                }
 
               </td>
 
@@ -1993,11 +2311,11 @@ function renderMemberStatus() {
               >
 
                 <span
-                  class="cl-status-badge ${statusClass}"
+                  class="cl-status-badge ${account.statusClass}"
                 >
 
                   ${escapeHtml(
-                    status
+                    account.status
                   )}
 
                 </span>
@@ -2016,7 +2334,7 @@ function renderMemberStatus() {
 
 
 /* =========================================================
-   SUMMARY CARDS
+   SUMMARY
 ========================================================= */
 
 function renderSummary() {
@@ -2027,12 +2345,8 @@ function renderSummary() {
     );
 
 
-  if (
-    !container
-  ) {
-
+  if (!container) {
     return;
-
   }
 
 
@@ -2043,10 +2357,7 @@ function renderSummary() {
         item
       ) =>
         sum +
-        Number(
-          item.amount ||
-          0
-        ),
+        number(item.amount),
       0
     );
 
@@ -2064,9 +2375,7 @@ function renderSummary() {
             ""
           ).toLowerCase() ===
           "monthly" &&
-          getContributionMonth(
-            item
-          ) ===
+          getContributionMonth(item) ===
           currentMonth
       )
       .reduce(
@@ -2075,10 +2384,7 @@ function renderSummary() {
           item
         ) =>
           sum +
-          Number(
-            item.amount ||
-            0
-          ),
+          number(item.amount),
         0
       );
 
@@ -2087,55 +2393,25 @@ function renderSummary() {
     members.filter(
       member => {
 
-        const paid =
-          contributions
-            .filter(
-              item =>
-                String(
-                  item.member_id
-                ) ===
-                  String(
-                    member.id
-                  ) &&
-                String(
-                  item.contribution_type ||
-                  ""
-                ).toLowerCase() ===
-                  "monthly" &&
-                getContributionMonth(
-                  item
-                ) ===
-                  currentMonth
-            )
-            .reduce(
-              (
-                sum,
-                item
-              ) =>
-                sum +
-                Number(
-                  item.amount ||
-                  0
-                ),
-              0
-            );
+        const account =
+          calculateMemberMonthlyAccount(
+            member.id
+          );
 
 
         return (
-          monthlyContribution >
-          0 &&
-          paid <
-          monthlyContribution
+          account.outstanding > 0
         );
 
       }
-    )
-    .length;
+    ).length;
 
 
   container.innerHTML = `
 
-    <div class="cl-contribution-summary-card">
+    <div
+      class="cl-contribution-summary-card"
+    >
 
       <span>
         TOTAL RECORDED
@@ -2143,9 +2419,7 @@ function renderSummary() {
 
       <strong>
         ${escapeHtml(
-          money(
-            total
-          )
+          money(total)
         )}
       </strong>
 
@@ -2156,7 +2430,9 @@ function renderSummary() {
     </div>
 
 
-    <div class="cl-contribution-summary-card">
+    <div
+      class="cl-contribution-summary-card"
+    >
 
       <span>
         THIS MONTH
@@ -2164,9 +2440,7 @@ function renderSummary() {
 
       <strong>
         ${escapeHtml(
-          money(
-            monthlyTotal
-          )
+          money(monthlyTotal)
         )}
       </strong>
 
@@ -2177,7 +2451,9 @@ function renderSummary() {
     </div>
 
 
-    <div class="cl-contribution-summary-card">
+    <div
+      class="cl-contribution-summary-card"
+    >
 
       <span>
         MONTHLY RATE
@@ -2198,7 +2474,9 @@ function renderSummary() {
     </div>
 
 
-    <div class="cl-contribution-summary-card">
+    <div
+      class="cl-contribution-summary-card"
+    >
 
       <span>
         NEEDS ATTENTION
@@ -2213,7 +2491,7 @@ function renderSummary() {
       </strong>
 
       <small>
-        Members below monthly target
+        Members with outstanding balance
       </small>
 
     </div>
@@ -2224,15 +2502,186 @@ function renderSummary() {
 
 
 /* =========================================================
+   CONTRIBUTION GOALS
+========================================================= */
+
+function renderContributionGoals() {
+
+  if (!goalProgressContainer) {
+    return;
+  }
+
+
+  if (!contributionGoals.length) {
+
+    goalProgressContainer.innerHTML = `
+
+      <div class="cl-goals-empty">
+
+        <div class="cl-empty-icon">
+          +
+        </div>
+
+        <strong>
+          No active contribution goals
+        </strong>
+
+        <span>
+          Create a contribution goal to start
+          tracking progress.
+        </span>
+
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+  goalProgressContainer.innerHTML =
+    contributionGoals
+      .map(
+        goal => {
+
+          const target =
+            number(
+              goal.target_amount
+            );
+
+
+          const raised =
+            contributions
+              .filter(
+                item =>
+                  String(
+                    item.goal_id
+                  ) ===
+                  String(
+                    goal.id
+                  )
+              )
+              .reduce(
+                (
+                  sum,
+                  item
+                ) =>
+                  sum +
+                  number(
+                    item.amount
+                  ),
+                0
+              );
+
+
+          const percentage =
+            target > 0
+              ? Math.min(
+                  (
+                    raised /
+                    target
+                  ) * 100,
+                  100
+                )
+              : 0;
+
+
+          return `
+
+            <div
+              class="cl-goal-card"
+            >
+
+              <div
+                class="cl-goal-top"
+              >
+
+                <div>
+
+                  <strong>
+                    ${escapeHtml(
+                      goal.goal_name ||
+                      "Contribution Goal"
+                    )}
+                  </strong>
+
+                  ${
+                    goal.category
+                      ? `
+                        <small>
+                          ${escapeHtml(
+                            goal.category
+                          )}
+                        </small>
+                      `
+                      : ""
+                  }
+
+                </div>
+
+                <strong>
+                  ${escapeHtml(
+                    money(raised)
+                  )}
+                </strong>
+
+              </div>
+
+
+              <div
+                class="cl-goal-progress"
+              >
+
+                <span
+                  style="
+                    width:${percentage}%;
+                  "
+                ></span>
+
+              </div>
+
+
+              <div
+                class="cl-goal-bottom"
+              >
+
+                <span>
+                  ${escapeHtml(
+                    target > 0
+                      ? `${money(target)} target`
+                      : "No target set"
+                  )}
+                </span>
+
+                <strong>
+                  ${escapeHtml(
+                    `${Math.round(
+                      percentage
+                    )}%`
+                  )}
+                </strong>
+
+              </div>
+
+            </div>
+
+          `;
+
+        }
+      )
+      .join("");
+
+}
+
+
+/* =========================================================
    RECORD CONTRIBUTION
 ========================================================= */
 
-async function recordContribution(
-  event
-) {
+async function recordContribution(event) {
 
   event.preventDefault();
-
 
   clearError();
 
@@ -2243,9 +2692,8 @@ async function recordContribution(
 
 
   const amount =
-    Number(
-      amountInput?.value ||
-      0
+    number(
+      amountInput?.value
     );
 
 
@@ -2265,7 +2713,7 @@ async function recordContribution(
 
   const otherDetails =
     otherTypeInput?.value
-      .trim() ||
+      ?.trim() ||
     "";
 
 
@@ -2277,13 +2725,13 @@ async function recordContribution(
 
   const reference =
     mpesaReference?.value
-      .trim() ||
+      ?.trim() ||
     "";
 
 
   const normalNotes =
     notesInput?.value
-      .trim() ||
+      ?.trim() ||
     "";
 
 
@@ -2296,9 +2744,7 @@ async function recordContribution(
      VALIDATION
   ==================================================== */
 
-  if (
-    !memberId
-  ) {
+  if (!memberId) {
 
     showError(
       new Error(
@@ -2312,7 +2758,6 @@ async function recordContribution(
 
 
   if (
-    !amount ||
     amount <= 0
   ) {
 
@@ -2329,9 +2774,7 @@ async function recordContribution(
   }
 
 
-  if (
-    !contributionDate
-  ) {
+  if (!contributionDate) {
 
     showError(
       new Error(
@@ -2346,9 +2789,7 @@ async function recordContribution(
   }
 
 
-  if (
-    !contributionType
-  ) {
+  if (!contributionType) {
 
     showError(
       new Error(
@@ -2363,13 +2804,8 @@ async function recordContribution(
   }
 
 
-  /* =====================================================
-     OTHER TYPE VALIDATION
-  ==================================================== */
-
   if (
-    contributionType ===
-    "other" &&
+    contributionType === "other" &&
     !otherDetails
   ) {
 
@@ -2386,9 +2822,7 @@ async function recordContribution(
   }
 
 
-  if (
-    !paymentMethod
-  ) {
+  if (!paymentMethod) {
 
     showError(
       new Error(
@@ -2400,10 +2834,6 @@ async function recordContribution(
 
   }
 
-
-  /* =====================================================
-     M-PESA VALIDATION
-  ==================================================== */
 
   if (
     paymentMethod ===
@@ -2424,10 +2854,6 @@ async function recordContribution(
   }
 
 
-  /* =====================================================
-     MONTH
-  ==================================================== */
-
   const month =
     contributionDate.slice(
       0,
@@ -2436,7 +2862,7 @@ async function recordContribution(
 
 
   /* =====================================================
-     DUPLICATE MONTHLY PAYMENT WARNING
+     DUPLICATE MONTHLY WARNING
   ==================================================== */
 
   if (
@@ -2451,26 +2877,22 @@ async function recordContribution(
           String(
             item.member_id
           ) ===
-            String(
-              memberId
-            ) &&
+          String(memberId) &&
 
           String(
             item.contribution_type ||
             ""
           ).toLowerCase() ===
-            "monthly" &&
+          "monthly" &&
 
           getContributionMonth(
             item
           ) ===
-            month
+          month
       );
 
 
-    if (
-      existing
-    ) {
+    if (existing) {
 
       const proceed =
         window.confirm(
@@ -2479,31 +2901,21 @@ async function recordContribution(
 
           `You can still record another payment. ` +
 
-          `If the total exceeds the monthly amount, ` +
-
-          `the member will be marked OVERPAID.\n\n` +
+          `Any excess payment will become carry-forward credit.\n\n` +
 
           `Continue?`
 
         );
 
 
-      if (
-        !proceed
-      ) {
-
+      if (!proceed) {
         return;
-
       }
 
     }
 
   }
 
-
-  /* =====================================================
-     BUILD NOTES
-  ==================================================== */
 
   const finalNotes =
     buildContributionNotes(
@@ -2513,13 +2925,7 @@ async function recordContribution(
     );
 
 
-  /* =====================================================
-     BUTTON STATE
-  ==================================================== */
-
-  if (
-    saveButton
-  ) {
+  if (saveButton) {
 
     saveButton.disabled =
       true;
@@ -2530,9 +2936,10 @@ async function recordContribution(
   }
 
 
-  if (
-    statusEl
-  ) {
+  if (statusEl) {
+
+    statusEl.hidden =
+      false;
 
     statusEl.textContent =
       "Recording contribution...";
@@ -2541,10 +2948,6 @@ async function recordContribution(
 
 
   try {
-
-    /* ===================================================
-       INSERT
-    ================================================== */
 
     const contributionData = {
 
@@ -2598,26 +3001,16 @@ async function recordContribution(
       error
     } =
       await supabase
-        .from(
-          "contributions"
-        )
+        .from("contributions")
         .insert(
           contributionData
         );
 
 
-    if (
-      error
-    ) {
-
+    if (error) {
       throw error;
-
     }
 
-
-    /* ===================================================
-       RELOAD
-    ================================================== */
 
     await loadContributions();
 
@@ -2628,17 +3021,13 @@ async function recordContribution(
 
     renderSummary();
 
+    renderContributionGoals();
 
-    /* ===================================================
-       RESET FORM
-    ================================================== */
 
     form?.reset();
 
 
-    if (
-      dateInput
-    ) {
+    if (dateInput) {
 
       dateInput.value =
         todayString();
@@ -2646,9 +3035,7 @@ async function recordContribution(
     }
 
 
-    if (
-      typeSelect
-    ) {
+    if (typeSelect) {
 
       typeSelect.value =
         "monthly";
@@ -2656,9 +3043,7 @@ async function recordContribution(
     }
 
 
-    if (
-      methodSelect
-    ) {
+    if (methodSelect) {
 
       methodSelect.value =
         PAYMENT_METHODS.MPESA;
@@ -2666,9 +3051,7 @@ async function recordContribution(
     }
 
 
-    if (
-      goalSelect
-    ) {
+    if (goalSelect) {
 
       goalSelect.value =
         "";
@@ -2695,9 +3078,10 @@ async function recordContribution(
     clearError();
 
 
-    if (
-      statusEl
-    ) {
+    if (statusEl) {
+
+      statusEl.hidden =
+        false;
 
       statusEl.textContent =
         "✓ Contribution recorded successfully.";
@@ -2705,13 +3089,7 @@ async function recordContribution(
     }
 
 
-    /*
-     * Brief success animation.
-     */
-
-    if (
-      form
-    ) {
+    if (form) {
 
       form.classList.add(
         "cl-save-success"
@@ -2732,22 +3110,14 @@ async function recordContribution(
     }
 
   }
+  catch (error) {
 
-  catch (
-    error
-  ) {
-
-    showError(
-      error
-    );
+    showError(error);
 
   }
-
   finally {
 
-    if (
-      saveButton
-    ) {
+    if (saveButton) {
 
       saveButton.disabled =
         false;
@@ -2763,7 +3133,7 @@ async function recordContribution(
 
 
 /* =========================================================
-   VISUAL ENHANCEMENT
+   VISUAL STYLES
 ========================================================= */
 
 function injectContributionStyles() {
@@ -2792,134 +3162,65 @@ function injectContributionStyles() {
   style.textContent = `
 
     /* =====================================================
-       CHAMA LIVE CONTRIBUTIONS VISUAL SYSTEM
+       GLOBAL WIDTH PROTECTION
     ====================================================== */
 
-    :root {
-
-      --cl-green-950:
-        #063f3a;
-
-      --cl-green-900:
-        #115e59;
-
-      --cl-green-800:
-        #0f766e;
-
-      --cl-green-700:
-        #0d9488;
-
-      --cl-green-500:
-        #14b8a6;
-
-      --cl-green-100:
-        #ccfbf1;
-
-      --cl-green-50:
-        #f0fdfa;
-
-      --cl-ink:
-        #0f172a;
-
-      --cl-text:
-        #334155;
-
-      --cl-muted:
-        #64748b;
-
-      --cl-border:
-        #e2e8f0;
-
-      --cl-card:
-        #ffffff;
-
-      --cl-page:
-        #f4f8f7;
-
-      --cl-success:
-        #047857;
-
-      --cl-success-bg:
-        #ecfdf5;
-
-      --cl-warning:
-        #b45309;
-
-      --cl-warning-bg:
-        #fffbeb;
-
-      --cl-danger:
-        #be123c;
-
-      --cl-danger-bg:
-        #fff1f2;
-
-      --cl-shadow:
-        0 18px 50px
-        rgba(
-          15,
-          118,
-          110,
-          .08
-        );
-
-    }
-
-
-    /* =====================================================
-       PAGE BACKGROUND
-    ====================================================== */
-
+    html,
     body {
 
-      background:
+      width:
+        100%;
 
-        radial-gradient(
-          circle at 5% 5%,
-          rgba(
-            20,
-            184,
-            166,
-            .08
-          ),
-          transparent 25%
-        ),
+      max-width:
+        100%;
 
-        radial-gradient(
-          circle at 95% 10%,
-          rgba(
-            15,
-            118,
-            110,
-            .07
-          ),
-          transparent 25%
-        ),
-
-        linear-gradient(
-          145deg,
-          #f0fdfa 0%,
-          #f8fafc 45%,
-          #f0fdf9 100%
-        );
+      overflow-x:
+        hidden;
 
     }
 
 
-    /* =====================================================
-       MAIN CONTENT
-    ====================================================== */
+    *,
+    *::before,
+    *::after {
 
+      box-sizing:
+        border-box;
+
+    }
+
+
+    .page,
     .main {
 
-      position:
-        relative;
+      width:
+        100%;
+
+      max-width:
+        100%;
+
+      min-width:
+        0;
+
+    }
+
+
+    .card,
+    section,
+    form,
+    .card-header {
+
+      max-width:
+        100%;
+
+      min-width:
+        0;
 
     }
 
 
     /* =====================================================
-       CONTRIBUTION HEADER
+       PAGE HEADER
     ====================================================== */
 
     .contribution-page-header {
@@ -2929,6 +3230,12 @@ function injectContributionStyles() {
 
       overflow:
         hidden;
+
+      width:
+        100%;
+
+      max-width:
+        100%;
 
       padding:
         28px;
@@ -2957,9 +3264,9 @@ function injectContributionStyles() {
 
         linear-gradient(
           135deg,
-          var(--cl-green-900),
-          var(--cl-green-800) 55%,
-          var(--cl-green-700)
+          #115e59,
+          #0f766e 55%,
+          #0d9488
         );
 
       box-shadow:
@@ -3025,8 +3332,7 @@ function injectContributionStyles() {
     }
 
 
-    .contribution-page-header
-    .eyebrow {
+    .contribution-page-header .eyebrow {
 
       color:
         #99f6e4;
@@ -3037,11 +3343,13 @@ function injectContributionStyles() {
       letter-spacing:
         1.4px;
 
+      font-size:
+        11px;
+
     }
 
 
-    .contribution-page-header
-    h1 {
+    .contribution-page-header h1 {
 
       margin:
         5px 0 8px;
@@ -3065,8 +3373,7 @@ function injectContributionStyles() {
     }
 
 
-    .contribution-page-header
-    p {
+    .contribution-page-header p {
 
       max-width:
         650px;
@@ -3109,6 +3416,12 @@ function injectContributionStyles() {
       gap:
         14px;
 
+      width:
+        100%;
+
+      max-width:
+        100%;
+
       margin-bottom:
         20px;
 
@@ -3117,8 +3430,8 @@ function injectContributionStyles() {
 
     .cl-contribution-summary-card {
 
-      position:
-        relative;
+      min-width:
+        0;
 
       overflow:
         hidden;
@@ -3128,12 +3441,7 @@ function injectContributionStyles() {
 
       border:
         1px solid
-        rgba(
-          226,
-          232,
-          240,
-          .9
-        );
+        #e2e8f0;
 
       border-radius:
         17px;
@@ -3143,11 +3451,17 @@ function injectContributionStyles() {
           255,
           255,
           255,
-          .92
+          .96
         );
 
       box-shadow:
-        var(--cl-shadow);
+        0 18px 50px
+        rgba(
+          15,
+          118,
+          110,
+          .08
+        );
 
     }
 
@@ -3157,39 +3471,41 @@ function injectContributionStyles() {
       content:
         "";
 
-      position:
-        absolute;
-
-      left:
-        0;
-
-      top:
-        0;
+      display:
+        block;
 
       width:
         4px;
 
       height:
-        100%;
+        24px;
+
+      float:
+        left;
+
+      margin-right:
+        11px;
+
+      border-radius:
+        99px;
 
       background:
         linear-gradient(
           to bottom,
-          var(--cl-green-500),
-          var(--cl-green-800)
+          #14b8a6,
+          #0f766e
         );
 
     }
 
 
-    .cl-contribution-summary-card
-    span {
+    .cl-contribution-summary-card span {
 
       display:
         block;
 
       color:
-        var(--cl-muted);
+        #64748b;
 
       font-size:
         10px;
@@ -3203,8 +3519,7 @@ function injectContributionStyles() {
     }
 
 
-    .cl-contribution-summary-card
-    strong {
+    .cl-contribution-summary-card strong {
 
       display:
         block;
@@ -3213,22 +3528,24 @@ function injectContributionStyles() {
         7px 0 3px;
 
       color:
-        var(--cl-ink);
+        #0f172a;
 
       font-size:
         24px;
 
-      letter-spacing:
-        -.5px;
+      overflow:
+        hidden;
+
+      text-overflow:
+        ellipsis;
 
     }
 
 
-    .cl-contribution-summary-card
-    small {
+    .cl-contribution-summary-card small {
 
       color:
-        var(--cl-muted);
+        #64748b;
 
       font-size:
         11px;
@@ -3241,6 +3558,15 @@ function injectContributionStyles() {
     ====================================================== */
 
     .card {
+
+      width:
+        100%;
+
+      max-width:
+        100%;
+
+      overflow:
+        hidden;
 
       border:
         1px solid
@@ -3255,7 +3581,13 @@ function injectContributionStyles() {
         19px !important;
 
       box-shadow:
-        var(--cl-shadow) !important;
+        0 18px 50px
+        rgba(
+          15,
+          118,
+          110,
+          .08
+        ) !important;
 
       background:
         rgba(
@@ -3274,26 +3606,42 @@ function injectContributionStyles() {
 
     #contributionForm {
 
-      position:
-        relative;
+      width:
+        100%;
+
+      max-width:
+        100%;
+
+      min-width:
+        0;
 
     }
 
 
-    #contributionForm
-    .form-group {
+    #contributionForm .form-group {
+
+      width:
+        100%;
+
+      min-width:
+        0;
 
       margin-bottom:
-        2px;
+        12px;
 
     }
 
 
-    #contributionForm
-    label {
+    #contributionForm label {
+
+      display:
+        block;
+
+      margin-bottom:
+        6px;
 
       color:
-        var(--cl-ink);
+        #0f172a;
 
       font-size:
         12px;
@@ -3304,22 +3652,31 @@ function injectContributionStyles() {
     }
 
 
-    #contributionForm
-    input,
-    #contributionForm
-    select,
-    #contributionForm
-    textarea {
+    #contributionForm input,
+    #contributionForm select,
+    #contributionForm textarea {
+
+      display:
+        block;
 
       width:
         100%;
 
+      max-width:
+        100%;
+
+      min-width:
+        0;
+
       min-height:
         47px;
 
+      padding:
+        10px 12px;
+
       border:
         1px solid
-        var(--cl-border);
+        #e2e8f0;
 
       border-radius:
         11px;
@@ -3328,37 +3685,31 @@ function injectContributionStyles() {
         #ffffff;
 
       color:
-        var(--cl-ink);
-
-      transition:
-        border-color .18s ease,
-        box-shadow .18s ease,
-        transform .18s ease;
+        #0f172a;
 
     }
 
 
-    #contributionForm
-    textarea {
+    #contributionForm textarea {
 
       min-height:
         95px;
 
+      resize:
+        vertical;
+
     }
 
 
-    #contributionForm
-    input:focus,
-    #contributionForm
-    select:focus,
-    #contributionForm
-    textarea:focus {
+    #contributionForm input:focus,
+    #contributionForm select:focus,
+    #contributionForm textarea:focus {
 
       outline:
         none;
 
       border-color:
-        var(--cl-green-500);
+        #14b8a6;
 
       box-shadow:
         0 0 0 4px
@@ -3372,27 +3723,11 @@ function injectContributionStyles() {
     }
 
 
-    #contributionForm
-    input:hover,
-    #contributionForm
-    select:hover,
-    #contributionForm
-    textarea:hover {
-
-      border-color:
-        #a7f3d0;
-
-    }
-
-
     /* =====================================================
-       OTHER TYPE
+       OTHER
     ====================================================== */
 
     .cl-other-type-wrap {
-
-      margin:
-        10px 0 4px;
 
       padding:
         14px;
@@ -3411,9 +3746,6 @@ function injectContributionStyles() {
           #ffffff
         );
 
-      animation:
-        clOtherReveal .2s ease;
-
     }
 
 
@@ -3425,28 +3757,7 @@ function injectContributionStyles() {
     }
 
 
-    .cl-other-type-wrap
-    label {
-
-      display:
-        block;
-
-      margin-bottom:
-        7px;
-
-    }
-
-
-    .cl-other-type-wrap
-    input {
-
-      min-height:
-        48px;
-
-    }
-
-
-    .cl-field-help {
+    .cl-other-type-wrap small {
 
       display:
         block;
@@ -3455,47 +3766,10 @@ function injectContributionStyles() {
         6px;
 
       color:
-        var(--cl-muted);
+        #64748b;
 
-      font-size:
-        11px;
-
-    }
-
-
-    .cl-required {
-
-      color:
-        var(--cl-danger);
-
-    }
-
-
-    @keyframes clOtherReveal {
-
-      from {
-
-        opacity:
-          0;
-
-        transform:
-          translateY(
-            -4px
-          );
-
-      }
-
-      to {
-
-        opacity:
-          1;
-
-        transform:
-          translateY(
-            0
-          );
-
-      }
+      line-height:
+        1.5;
 
     }
 
@@ -3505,6 +3779,12 @@ function injectContributionStyles() {
     ====================================================== */
 
     #saveContribution {
+
+      width:
+        100%;
+
+      max-width:
+        100%;
 
       min-height:
         51px;
@@ -3518,8 +3798,8 @@ function injectContributionStyles() {
       background:
         linear-gradient(
           135deg,
-          var(--cl-green-800),
-          var(--cl-green-500)
+          #0f766e,
+          #14b8a6
         ) !important;
 
       box-shadow:
@@ -3534,30 +3814,6 @@ function injectContributionStyles() {
       font-weight:
         800;
 
-      transition:
-        transform .18s ease,
-        box-shadow .18s ease,
-        opacity .18s ease;
-
-    }
-
-
-    #saveContribution:hover {
-
-      transform:
-        translateY(
-          -1px
-        );
-
-      box-shadow:
-        0 16px 30px
-        rgba(
-          15,
-          118,
-          110,
-          .23
-        );
-
     }
 
 
@@ -3566,36 +3822,48 @@ function injectContributionStyles() {
       opacity:
         .65;
 
-      transform:
-        none;
-
-      box-shadow:
-        none;
-
     }
 
 
     /* =====================================================
-       TABLE WRAPPER
+       TABLE CONTAINER
     ====================================================== */
 
+    .table-wrapper,
     .table-wrap {
 
-      border-radius:
-        14px;
+      width:
+        100%;
+
+      max-width:
+        100%;
+
+      min-width:
+        0;
 
       overflow-x:
         auto;
 
+      overflow-y:
+        hidden;
+
       -webkit-overflow-scrolling:
         touch;
+
+      scrollbar-width:
+        thin;
 
     }
 
 
+    .table-wrapper table,
+    .table-wrap table,
     .table {
 
       width:
+        100%;
+
+      max-width:
         100%;
 
       border-collapse:
@@ -3607,7 +3875,26 @@ function injectContributionStyles() {
     }
 
 
+    /*
+     * Desktop tables have a minimum width.
+     * The wrapper scrolls instead of the page.
+     */
+
+    .table-wrapper table,
+    .table-wrap table {
+
+      min-width:
+        720px;
+
+    }
+
+
+    .table-wrapper th,
+    .table-wrap th,
     .table th {
+
+      padding:
+        12px 10px;
 
       background:
         #f8fafc;
@@ -3633,10 +3920,15 @@ function injectContributionStyles() {
     }
 
 
+    .table-wrapper td,
+    .table-wrap td,
     .table td {
 
+      padding:
+        12px 10px;
+
       color:
-        var(--cl-text);
+        #334155;
 
       font-size:
         12px;
@@ -3647,18 +3939,85 @@ function injectContributionStyles() {
     }
 
 
-    .table tbody tr {
+    .table-wrapper tbody tr:hover,
+    .table-wrap tbody tr:hover {
 
-      transition:
-        background .15s ease;
+      background:
+        #f8fffd;
 
     }
 
 
-    .table tbody tr:hover {
+    /* =====================================================
+       MONTHLY STATUS TABLE
+    ====================================================== */
 
-      background:
-        #f8fffd;
+    #memberStatusRows td {
+
+      white-space:
+        nowrap;
+
+    }
+
+
+    #memberStatusRows td:first-child {
+
+      min-width:
+        150px;
+
+    }
+
+
+    .cl-member-cell strong {
+
+      color:
+        #0f172a;
+
+    }
+
+
+    .cl-money-cell {
+
+      color:
+        #115e59 !important;
+
+    }
+
+
+    .cl-arrears {
+
+      color:
+        #be123c;
+
+      font-weight:
+        750;
+
+    }
+
+
+    .cl-carry-forward {
+
+      color:
+        #047857;
+
+      font-weight:
+        800;
+
+    }
+
+
+    .cl-outstanding-amount {
+
+      color:
+        #be123c;
+
+    }
+
+
+    .cl-zero {
+
+      color:
+        #94a3b8;
 
     }
 
@@ -3677,8 +4036,14 @@ function injectContributionStyles() {
       align-items:
         center;
 
+      justify-content:
+        center;
+
       width:
         fit-content;
+
+      max-width:
+        100%;
 
       padding:
         5px 9px;
@@ -3701,10 +4066,10 @@ function injectContributionStyles() {
     .cl-type-badge {
 
       color:
-        var(--cl-green-800);
+        #0f766e;
 
       background:
-        var(--cl-green-50);
+        #f0fdfa;
 
       border:
         1px solid
@@ -3731,10 +4096,10 @@ function injectContributionStyles() {
     .cl-status-paid {
 
       color:
-        var(--cl-success);
+        #047857;
 
       background:
-        var(--cl-success-bg);
+        #ecfdf5;
 
     }
 
@@ -3742,10 +4107,10 @@ function injectContributionStyles() {
     .cl-status-credit {
 
       color:
-        var(--cl-green-800);
+        #0f766e;
 
       background:
-        var(--cl-green-100);
+        #ccfbf1;
 
     }
 
@@ -3753,10 +4118,10 @@ function injectContributionStyles() {
     .cl-status-partial {
 
       color:
-        var(--cl-warning);
+        #b45309;
 
       background:
-        var(--cl-warning-bg);
+        #fffbeb;
 
     }
 
@@ -3764,10 +4129,10 @@ function injectContributionStyles() {
     .cl-status-outstanding {
 
       color:
-        var(--cl-danger);
+        #be123c;
 
       background:
-        var(--cl-danger-bg);
+        #fff1f2;
 
     }
 
@@ -3779,60 +4144,6 @@ function injectContributionStyles() {
 
       background:
         #f1f5f9;
-
-    }
-
-
-    .cl-sub-detail {
-
-      display:
-        block;
-
-      margin-top:
-        4px;
-
-      max-width:
-        180px;
-
-      color:
-        var(--cl-muted);
-
-      font-size:
-        10px;
-
-      line-height:
-        1.4;
-
-    }
-
-
-    .cl-note-text {
-
-      display:
-        block;
-
-      max-width:
-        190px;
-
-      color:
-        var(--cl-muted);
-
-      font-size:
-        10px;
-
-      line-height:
-        1.45;
-
-      white-space:
-        normal;
-
-    }
-
-
-    .cl-money-cell {
-
-      color:
-        var(--cl-green-900) !important;
 
     }
 
@@ -3886,9 +4197,242 @@ function injectContributionStyles() {
       background:
         linear-gradient(
           90deg,
-          var(--cl-green-800),
-          var(--cl-green-500)
+          #0f766e,
+          #14b8a6
         );
+
+    }
+
+
+    /* =====================================================
+       HISTORY
+    ====================================================== */
+
+    .cl-sub-detail {
+
+      display:
+        block;
+
+      max-width:
+        180px;
+
+      margin-top:
+        4px;
+
+      color:
+        #64748b;
+
+      font-size:
+        10px;
+
+      line-height:
+        1.4;
+
+      white-space:
+        normal;
+
+      overflow-wrap:
+        anywhere;
+
+    }
+
+
+    .cl-note-text {
+
+      display:
+        block;
+
+      max-width:
+        190px;
+
+      color:
+        #64748b;
+
+      font-size:
+        10px;
+
+      line-height:
+        1.45;
+
+      white-space:
+        normal;
+
+      overflow-wrap:
+        anywhere;
+
+    }
+
+
+    /* =====================================================
+       GOALS
+    ====================================================== */
+
+    .cl-goal-card {
+
+      width:
+        100%;
+
+      max-width:
+        100%;
+
+      margin-bottom:
+        10px;
+
+      padding:
+        15px;
+
+      border:
+        1px solid
+        #e2e8f0;
+
+      border-radius:
+        14px;
+
+      background:
+        #ffffff;
+
+    }
+
+
+    .cl-goal-top,
+    .cl-goal-bottom {
+
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        space-between;
+
+      gap:
+        12px;
+
+    }
+
+
+    .cl-goal-top strong {
+
+      color:
+        #0f172a;
+
+    }
+
+
+    .cl-goal-top small {
+
+      display:
+        block;
+
+      margin-top:
+        3px;
+
+      color:
+        #64748b;
+
+    }
+
+
+    .cl-goal-progress {
+
+      width:
+        100%;
+
+      height:
+        8px;
+
+      margin:
+        12px 0 8px;
+
+      overflow:
+        hidden;
+
+      border-radius:
+        99px;
+
+      background:
+        #e2e8f0;
+
+    }
+
+
+    .cl-goal-progress span {
+
+      display:
+        block;
+
+      height:
+        100%;
+
+      border-radius:
+        inherit;
+
+      background:
+        linear-gradient(
+          90deg,
+          #0f766e,
+          #14b8a6
+        );
+
+    }
+
+
+    .cl-goal-bottom {
+
+      color:
+        #64748b;
+
+      font-size:
+        11px;
+
+    }
+
+
+    .cl-goals-empty {
+
+      display:
+        flex;
+
+      flex-direction:
+        column;
+
+      align-items:
+        center;
+
+      justify-content:
+        center;
+
+      min-height:
+        150px;
+
+      padding:
+        25px;
+
+      text-align:
+        center;
+
+    }
+
+
+    .cl-goals-empty strong {
+
+      color:
+        #0f172a;
+
+    }
+
+
+    .cl-goals-empty span {
+
+      margin-top:
+        5px;
+
+      color:
+        #64748b;
+
+      font-size:
+        11px;
 
     }
 
@@ -3933,17 +4477,17 @@ function injectContributionStyles() {
 
     .cl-empty-icon {
 
-      width:
-        44px;
-
-      height:
-        44px;
-
       display:
         grid;
 
       place-items:
         center;
+
+      width:
+        44px;
+
+      height:
+        44px;
 
       margin-bottom:
         10px;
@@ -3952,10 +4496,10 @@ function injectContributionStyles() {
         14px;
 
       background:
-        var(--cl-green-50);
+        #f0fdfa;
 
       color:
-        var(--cl-green-800);
+        #0f766e;
 
       font-size:
         25px;
@@ -3966,42 +4510,17 @@ function injectContributionStyles() {
     }
 
 
-    .cl-empty-state strong {
-
-      color:
-        var(--cl-ink);
-
-      font-size:
-        13px;
-
-    }
-
-
-    .cl-empty-state span {
-
-      max-width:
-        300px;
-
-      margin-top:
-        4px;
-
-      color:
-        var(--cl-muted);
-
-      font-size:
-        11px;
-
-    }
-
-
     /* =====================================================
-       STATUS MESSAGE
+       STATUS
     ====================================================== */
 
     #status {
 
+      max-width:
+        100%;
+
       color:
-        var(--cl-green-800);
+        #0f766e;
 
       font-size:
         12px;
@@ -4009,10 +4528,19 @@ function injectContributionStyles() {
       font-weight:
         650;
 
+      overflow-wrap:
+        anywhere;
+
     }
 
 
     #error {
+
+      max-width:
+        100%;
+
+      overflow-wrap:
+        anywhere;
 
       border:
         1px solid
@@ -4025,7 +4553,7 @@ function injectContributionStyles() {
         #fff1f2 !important;
 
       color:
-        var(--cl-danger) !important;
+        #be123c !important;
 
       font-size:
         12px;
@@ -4077,7 +4605,7 @@ function injectContributionStyles() {
 
 
     /* =====================================================
-       MOBILE
+       TABLET
     ====================================================== */
 
     @media (
@@ -4100,6 +4628,10 @@ function injectContributionStyles() {
     }
 
 
+    /* =====================================================
+       MOBILE
+    ====================================================== */
+
     @media (
       max-width: 650px
     ) {
@@ -4115,8 +4647,7 @@ function injectContributionStyles() {
       }
 
 
-      .contribution-page-header
-      h1 {
+      .contribution-page-header h1 {
 
         font-size:
           27px;
@@ -4143,8 +4674,7 @@ function injectContributionStyles() {
       }
 
 
-      .cl-contribution-summary-card
-      strong {
+      .cl-contribution-summary-card strong {
 
         font-size:
           19px;
@@ -4152,11 +4682,25 @@ function injectContributionStyles() {
       }
 
 
+      .cl-contribution-summary-card small {
+
+        display:
+          block;
+
+        overflow:
+          hidden;
+
+        text-overflow:
+          ellipsis;
+
+      }
+
+
       /*
-       * Convert tables into readable
-       * mobile cards when possible.
+       * On mobile, the tables become cards.
        */
 
+      .table-wrapper,
       .table-wrap {
 
         overflow:
@@ -4165,14 +4709,21 @@ function injectContributionStyles() {
       }
 
 
+      .table-wrapper table,
+      .table-wrap table,
       .table {
 
         display:
           block;
 
+        min-width:
+          0 !important;
+
       }
 
 
+      .table-wrapper thead,
+      .table-wrap thead,
       .table thead {
 
         display:
@@ -4181,10 +4732,15 @@ function injectContributionStyles() {
       }
 
 
+      .table-wrapper tbody,
+      .table-wrap tbody,
       .table tbody {
 
         display:
           grid;
+
+        width:
+          100%;
 
         gap:
           10px;
@@ -4192,6 +4748,8 @@ function injectContributionStyles() {
       }
 
 
+      .table-wrapper tr,
+      .table-wrap tr,
       .table tr {
 
         display:
@@ -4200,11 +4758,14 @@ function injectContributionStyles() {
         grid-template-columns:
           1fr 1fr;
 
-        gap:
+        width:
+          100%;
+
+        min-width:
           0;
 
         padding:
-          9px 11px;
+          8px;
 
         border:
           1px solid
@@ -4228,6 +4789,8 @@ function injectContributionStyles() {
       }
 
 
+      .table-wrapper td,
+      .table-wrap td,
       .table td {
 
         display:
@@ -4239,8 +4802,11 @@ function injectContributionStyles() {
         align-items:
           flex-start;
 
-        gap:
-          3px;
+        justify-content:
+          center;
+
+        width:
+          100%;
 
         min-width:
           0;
@@ -4251,13 +4817,27 @@ function injectContributionStyles() {
         border:
           0 !important;
 
+        white-space:
+          normal !important;
+
+        overflow-wrap:
+          anywhere;
+
       }
 
 
+      .table-wrapper td::before,
+      .table-wrap td::before,
       .table td::before {
 
         content:
           attr(data-label);
+
+        display:
+          block;
+
+        margin-bottom:
+          3px;
 
         color:
           #94a3b8;
@@ -4277,10 +4857,10 @@ function injectContributionStyles() {
       }
 
 
-      .table td:first-child {
+      .cl-member-cell {
 
-        padding-top:
-          5px;
+        grid-column:
+          1 / -1;
 
       }
 
@@ -4304,8 +4884,30 @@ function injectContributionStyles() {
 
       }
 
+
+      .cl-type-badge,
+      .cl-payment-badge,
+      .cl-status-badge {
+
+        max-width:
+          100%;
+
+      }
+
+
+      .cl-goal-top {
+
+        align-items:
+          flex-start;
+
+      }
+
     }
 
+
+    /* =====================================================
+       SMALL PHONES
+    ====================================================== */
 
     @media (
       max-width: 390px
@@ -4319,8 +4921,23 @@ function injectContributionStyles() {
       }
 
 
-      .cl-contribution-summary-card
-      small {
+      .cl-contribution-summary-card {
+
+        padding:
+          11px;
+
+      }
+
+
+      .cl-contribution-summary-card strong {
+
+        font-size:
+          17px;
+
+      }
+
+
+      .cl-contribution-summary-card small {
 
         display:
           none;
@@ -4328,6 +4945,8 @@ function injectContributionStyles() {
       }
 
 
+      .table-wrapper tr,
+      .table-wrap tr,
       .table tr {
 
         grid-template-columns:
@@ -4336,6 +4955,8 @@ function injectContributionStyles() {
       }
 
 
+      .table-wrapper td,
+      .table-wrap td,
       .table td {
 
         padding:
@@ -4343,8 +4964,21 @@ function injectContributionStyles() {
 
       }
 
+
+      .cl-goal-top,
+      .cl-goal-bottom {
+
+        flex-wrap:
+          wrap;
+
+      }
+
     }
 
+
+    /* =====================================================
+       REDUCED MOTION
+    ====================================================== */
 
     @media (
       prefers-reduced-motion: reduce
@@ -4373,14 +5007,10 @@ function injectContributionStyles() {
 
 
 /* =========================================================
-   ENHANCE PAGE HEADER
+   PAGE HEADER
 ========================================================= */
 
 function enhancePageHeader() {
-
-  /*
-   * Don't duplicate.
-   */
 
   if (
     document.getElementById(
@@ -4395,16 +5025,12 @@ function enhancePageHeader() {
 
   const main =
     document.querySelector(
-      ".main"
+      ".main, .page"
     );
 
 
-  if (
-    !main
-  ) {
-
+  if (!main) {
     return;
-
   }
 
 
@@ -4445,19 +5071,11 @@ function enhancePageHeader() {
     main.firstElementChild;
 
 
-  /*
-   * Put the header before existing status.
-   */
-
   main.insertBefore(
     header,
     firstElement
   );
 
-
-  /*
-   * Add summary container after header.
-   */
 
   const summary =
     document.createElement(
@@ -4478,7 +5096,7 @@ function enhancePageHeader() {
 
 
 /* =========================================================
-   ENHANCE SECTION HEADINGS
+   SECTION HEADINGS
 ========================================================= */
 
 function enhanceSectionHeadings() {
@@ -4506,19 +5124,11 @@ function enhanceSectionHeadings() {
           "true";
 
 
-        const parent =
-          heading.parentElement;
-
-
-        if (
-          parent
-        ) {
-
-          parent.classList.add(
+        heading.parentElement
+          ?.classList
+          .add(
             "cl-enhanced-section-heading"
           );
-
-        }
 
       }
     );
@@ -4532,12 +5142,8 @@ function enhanceSectionHeadings() {
 
 export async function initContributions() {
 
-  if (
-    initialized
-  ) {
-
+  if (initialized) {
     return;
-
   }
 
 
@@ -4559,9 +5165,10 @@ export async function initContributions() {
     clearError();
 
 
-    if (
-      statusEl
-    ) {
+    if (statusEl) {
+
+      statusEl.hidden =
+        false;
 
       statusEl.textContent =
         "Loading contributions...";
@@ -4601,12 +5208,10 @@ export async function initContributions() {
 
 
     /* =====================================================
-       DEFAULT DATE
+       DEFAULTS
     ==================================================== */
 
-    if (
-      dateInput
-    ) {
+    if (dateInput) {
 
       dateInput.value =
         todayString();
@@ -4614,13 +5219,7 @@ export async function initContributions() {
     }
 
 
-    /* =====================================================
-       DEFAULT TYPE
-    ==================================================== */
-
-    if (
-      typeSelect
-    ) {
+    if (typeSelect) {
 
       typeSelect.value =
         "monthly";
@@ -4628,13 +5227,7 @@ export async function initContributions() {
     }
 
 
-    /* =====================================================
-       DEFAULT PAYMENT
-    ==================================================== */
-
-    if (
-      methodSelect
-    ) {
+    if (methodSelect) {
 
       methodSelect.value =
         PAYMENT_METHODS.MPESA;
@@ -4668,10 +5261,10 @@ export async function initContributions() {
 
     renderSummary();
 
+    renderContributionGoals();
 
-    if (
-      statusEl
-    ) {
+
+    if (statusEl) {
 
       statusEl.textContent =
         "Contributions loaded.";
@@ -4684,17 +5277,12 @@ export async function initContributions() {
     );
 
   }
-
-  catch (
-    error
-  ) {
+  catch (error) {
 
     initialized =
       false;
 
-    showError(
-      error
-    );
+    showError(error);
 
   }
 
@@ -4707,8 +5295,7 @@ export async function initContributions() {
 
 if (
   form &&
-  !form.dataset
-    .clContributionBound
+  !form.dataset.clContributionBound
 ) {
 
   form.dataset
@@ -4726,8 +5313,7 @@ if (
 
 if (
   methodSelect &&
-  !methodSelect.dataset
-    .clPaymentBound
+  !methodSelect.dataset.clPaymentBound
 ) {
 
   methodSelect.dataset
@@ -4745,8 +5331,7 @@ if (
 
 if (
   typeSelect &&
-  !typeSelect.dataset
-    .clTypeBound
+  !typeSelect.dataset.clTypeBound
 ) {
 
   typeSelect.dataset
@@ -4764,12 +5349,6 @@ if (
 
 /* =========================================================
    DIRECT PAGE COMPATIBILITY
-   ---------------------------------------------------------
-   If contributions.js is loaded directly from HTML,
-   initialize it automatically.
-
-   If layout.js dynamically imports it and calls
-   initContributions(), this prevents duplicate loading.
 ========================================================= */
 
 if (
@@ -4781,11 +5360,6 @@ if (
     "DOMContentLoaded",
     () => {
 
-      /*
-       * Only auto-start when layout.js
-       * is not responsible for initialization.
-       */
-
       if (
         !window.__CHAMA_LIVE_LAYOUT_LOADING__
       ) {
@@ -4796,8 +5370,7 @@ if (
 
     },
     {
-      once:
-        true
+      once: true
     }
   );
 
