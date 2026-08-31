@@ -1,6 +1,6 @@
 /* =========================================================
    CHAMA LIVE — MONTHLY CLOSING
-   CANONICAL ACCOUNTING VERSION
+   COMPLETE STABLE + VISUAL DASHBOARD VERSION
 
    Uses:
        get_monthly_accounting_summary()
@@ -17,6 +17,12 @@
 
    Carry-forward is NOT counted as current-month
    contribution progress.
+
+   Loaded dynamically by layout.js.
+
+   Required export:
+       initPage()
+       initMonthlyClosing
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -75,6 +81,18 @@ const closingStatusEl =
 const closingRows =
   document.getElementById("closingRows");
 
+const selectedMonthLabel =
+  document.getElementById("selectedMonthLabel");
+
+const collectionProgress =
+  document.getElementById("collectionProgress");
+
+const collectionProgressText =
+  document.getElementById("collectionProgressText");
+
+const collectionDifference =
+  document.getElementById("collectionDifference");
+
 
 /* =========================================================
    STATE
@@ -131,9 +149,7 @@ function escapeHtml(value) {
 function showStatus(message) {
 
   if (!statusEl) {
-
     return;
-
   }
 
   statusEl.textContent =
@@ -153,9 +169,7 @@ function showError(error) {
   );
 
   if (!errorEl) {
-
     return;
-
   }
 
   errorEl.textContent =
@@ -172,9 +186,7 @@ function showError(error) {
 function clearError() {
 
   if (!errorEl) {
-
     return;
-
   }
 
   errorEl.textContent =
@@ -206,9 +218,7 @@ function getCurrentMonth() {
 function formatMonth(value) {
 
   if (!value) {
-
     return "—";
-
   }
 
   const date =
@@ -221,9 +231,7 @@ function formatMonth(value) {
       date.getTime()
     )
   ) {
-
     return value;
-
   }
 
   return date.toLocaleDateString(
@@ -240,9 +248,7 @@ function formatMonth(value) {
 function formatDate(value) {
 
   if (!value) {
-
     return "—";
-
   }
 
   const date =
@@ -253,9 +259,7 @@ function formatDate(value) {
       date.getTime()
     )
   ) {
-
     return String(value);
-
   }
 
   return date.toLocaleDateString(
@@ -266,6 +270,27 @@ function formatDate(value) {
       day: "numeric"
     }
   );
+
+}
+
+
+/* =========================================================
+   UPDATE SELECTED MONTH
+========================================================= */
+
+function renderSelectedMonth() {
+
+  if (!selectedMonthLabel) {
+    return;
+  }
+
+  const month =
+    monthInput?.value;
+
+  selectedMonthLabel.textContent =
+    month
+      ? formatMonth(month)
+      : "Select a month";
 
 }
 
@@ -307,9 +332,7 @@ async function loadExistingClosing(
       .maybeSingle();
 
   if (error) {
-
     throw error;
-
   }
 
   currentClosing =
@@ -325,9 +348,7 @@ async function loadExistingClosing(
 async function loadClosingHistory() {
 
   if (!closingRows) {
-
     return;
-
   }
 
   const {
@@ -358,9 +379,7 @@ async function loadClosingHistory() {
       );
 
   if (error) {
-
     throw error;
-
   }
 
   if (!data?.length) {
@@ -368,82 +387,109 @@ async function loadClosingHistory() {
     closingRows.innerHTML = `
       <tr>
         <td colspan="7">
-          No monthly closings recorded yet.
+          <div class="empty-state">
+            <div class="empty-state-icon">▣</div>
+            <strong>No monthly closings yet</strong>
+            <span>
+              Closed financial months will appear here.
+            </span>
+          </div>
         </td>
       </tr>
     `;
 
     return;
-
   }
+
 
   closingRows.innerHTML =
     data
       .map(
-        closing => `
-          <tr>
+        closing => {
 
-            <td>
-              ${escapeHtml(
-                formatMonth(
-                  String(
-                    closing.closing_month
-                  ).slice(0, 7)
-                )
-              )}
-            </td>
+          const balance =
+            Number(
+              closing.closing_balance || 0
+            );
 
-            <td>
-              ${escapeHtml(
-                money(
-                  closing.total_expected
-                )
-              )}
-            </td>
+          const balanceClass =
+            balance < 0
+              ? "amount-negative"
+              : balance > 0
+                ? "amount-positive"
+                : "";
 
-            <td>
-              ${escapeHtml(
-                money(
-                  closing.total_collected
-                )
-              )}
-            </td>
 
-            <td>
-              ${escapeHtml(
-                money(
-                  closing.total_expenses
-                )
-              )}
-            </td>
+          return `
+            <tr>
 
-            <td>
-              <strong>
+              <td>
+                <strong>
+                  ${escapeHtml(
+                    formatMonth(
+                      String(
+                        closing.closing_month
+                      ).slice(0, 7)
+                    )
+                  )}
+                </strong>
+              </td>
+
+              <td>
                 ${escapeHtml(
                   money(
-                    closing.closing_balance
+                    closing.total_expected
                   )
                 )}
-              </strong>
-            </td>
+              </td>
 
-            <td>
-              ${escapeHtml(
-                formatDate(
-                  closing.closed_at
-                )
-              )}
-            </td>
+              <td>
+                <strong>
+                  ${escapeHtml(
+                    money(
+                      closing.total_collected
+                    )
+                  )}
+                </strong>
+              </td>
 
-            <td>
-              ${escapeHtml(
-                closing.notes ||
-                "—"
-              )}
-            </td>
+              <td>
+                ${escapeHtml(
+                  money(
+                    closing.total_expenses
+                  )
+                )}
+              </td>
 
-          </tr>
-        `
+              <td>
+                <strong
+                  class="${balanceClass}"
+                >
+                  ${escapeHtml(
+                    money(balance)
+                  )}
+                </strong>
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  formatDate(
+                    closing.closed_at
+                  )
+                )}
+              </td>
+
+              <td class="history-notes">
+                ${escapeHtml(
+                  closing.notes ||
+                  "—"
+                )}
+              </td>
+
+            </tr>
+          `;
+
+        }
       )
       .join("");
 
@@ -468,6 +514,8 @@ async function calculateMonth() {
     );
 
   }
+
+  renderSelectedMonth();
 
   showStatus(
     `Calculating ${formatMonth(month)}...`
@@ -503,9 +551,7 @@ async function calculateMonth() {
 
 
   if (error) {
-
     throw error;
-
   }
 
 
@@ -545,19 +591,54 @@ async function calculateMonth() {
 function renderCalculation() {
 
   if (!calculatedData) {
-
     return;
-
   }
+
+
+  const expected =
+    Number(
+      calculatedData
+        .expected_monthly_contributions ||
+      0
+    );
+
+
+  const collected =
+    Number(
+      calculatedData
+        .total_contributions_collected ||
+      0
+    );
+
+
+  const expenses =
+    Number(
+      calculatedData
+        .approved_expenses ||
+      0
+    );
+
+
+  const previousBalance =
+    Number(
+      calculatedData
+        .opening_balance ||
+      0
+    );
+
+
+  const balance =
+    Number(
+      calculatedData
+        .closing_balance ||
+      0
+    );
 
 
   if (expectedEl) {
 
     expectedEl.textContent =
-      money(
-        calculatedData
-          .expected_monthly_contributions
-      );
+      money(expected);
 
   }
 
@@ -565,10 +646,7 @@ function renderCalculation() {
   if (collectedEl) {
 
     collectedEl.textContent =
-      money(
-        calculatedData
-          .total_contributions_collected
-      );
+      money(collected);
 
   }
 
@@ -576,10 +654,7 @@ function renderCalculation() {
   if (expensesEl) {
 
     expensesEl.textContent =
-      money(
-        calculatedData
-          .approved_expenses
-      );
+      money(expenses);
 
   }
 
@@ -587,10 +662,7 @@ function renderCalculation() {
   if (previousBalanceEl) {
 
     previousBalanceEl.textContent =
-      money(
-        calculatedData
-          .opening_balance
-      );
+      money(previousBalance);
 
   }
 
@@ -598,10 +670,126 @@ function renderCalculation() {
   if (balanceEl) {
 
     balanceEl.textContent =
-      money(
-        calculatedData
-          .closing_balance
+      money(balance);
+
+  }
+
+
+  /* =====================================================
+     CONTRIBUTION PROGRESS
+  ====================================================== */
+
+  let percentage = 0;
+
+  if (expected > 0) {
+
+    percentage =
+      (collected / expected) * 100;
+
+  }
+
+
+  percentage =
+    Math.max(
+      0,
+      Math.min(
+        percentage,
+        100
+      )
+    );
+
+
+  if (collectionProgress) {
+
+    collectionProgress.style.width =
+      `${percentage}%`;
+
+  }
+
+
+  if (collectionProgressText) {
+
+    collectionProgressText.textContent =
+      `${Math.round(percentage)}% collected`;
+
+  }
+
+
+  if (collectionDifference) {
+
+    const difference =
+      collected - expected;
+
+
+    if (difference > 0) {
+
+      collectionDifference.textContent =
+        `${money(
+          difference
+        )} above expected`;
+
+      collectionDifference.className =
+        "collection-difference positive";
+
+    }
+    else if (difference < 0) {
+
+      collectionDifference.textContent =
+        `${money(
+          Math.abs(difference)
+        )} below expected`;
+
+      collectionDifference.className =
+        "collection-difference negative";
+
+    }
+    else {
+
+      collectionDifference.textContent =
+        "Fully collected";
+
+      collectionDifference.className =
+        "collection-difference positive";
+
+    }
+
+  }
+
+
+  /* =====================================================
+     BALANCE STATE
+  ====================================================== */
+
+  if (balanceEl) {
+
+    balanceEl.classList.remove(
+      "amount-positive",
+      "amount-negative",
+      "amount-neutral"
+    );
+
+
+    if (balance < 0) {
+
+      balanceEl.classList.add(
+        "amount-negative"
       );
+
+    }
+    else if (balance > 0) {
+
+      balanceEl.classList.add(
+        "amount-positive"
+      );
+
+    }
+    else {
+
+      balanceEl.classList.add(
+        "amount-neutral"
+      );
+
+    }
 
   }
 
@@ -615,9 +803,7 @@ function renderCalculation() {
 function renderClosingStatus() {
 
   if (!closingStatusEl) {
-
     return;
-
   }
 
 
@@ -627,6 +813,10 @@ function renderClosingStatus() {
       `Closed on ${formatDate(
         currentClosing.closed_at
       )}`;
+
+    closingStatusEl.className =
+      "closing-status-badge closed";
+
 
     if (closeButton) {
 
@@ -638,6 +828,7 @@ function renderClosingStatus() {
 
     }
 
+
     if (notesInput) {
 
       notesInput.value =
@@ -645,6 +836,7 @@ function renderClosingStatus() {
         "";
 
     }
+
 
     if (expectedEl) {
 
@@ -655,6 +847,7 @@ function renderClosingStatus() {
 
     }
 
+
     if (collectedEl) {
 
       collectedEl.textContent =
@@ -663,6 +856,7 @@ function renderClosingStatus() {
         );
 
     }
+
 
     if (expensesEl) {
 
@@ -673,6 +867,7 @@ function renderClosingStatus() {
 
     }
 
+
     if (balanceEl) {
 
       balanceEl.textContent =
@@ -682,11 +877,29 @@ function renderClosingStatus() {
 
     }
 
+
+    const finalizeSection =
+      document.getElementById(
+        "finalizeSection"
+      );
+
+    if (finalizeSection) {
+
+      finalizeSection.classList.add(
+        "already-closed"
+      );
+
+    }
+
   }
   else {
 
     closingStatusEl.textContent =
       "Open";
+
+    closingStatusEl.className =
+      "closing-status-badge open";
+
 
     if (closeButton) {
 
@@ -695,6 +908,20 @@ function renderClosingStatus() {
 
       closeButton.textContent =
         "Close Month";
+
+    }
+
+
+    const finalizeSection =
+      document.getElementById(
+        "finalizeSection"
+      );
+
+    if (finalizeSection) {
+
+      finalizeSection.classList.remove(
+        "already-closed"
+      );
 
     }
 
@@ -770,9 +997,7 @@ async function closeMonth() {
 
 
     if (!confirmed) {
-
       return;
-
     }
 
 
@@ -935,46 +1160,81 @@ async function closeMonth() {
 
 function setupEvents() {
 
-  monthInput?.addEventListener(
-    "change",
-    () => {
+  if (
+    monthInput &&
+    monthInput.dataset.bound !== "true"
+  ) {
 
-      calculatedData =
-        null;
-
-      currentClosing =
-        null;
-
-      calculateMonth()
-        .catch(
-          showError
-        );
-
-    }
-  );
+    monthInput.dataset.bound =
+      "true";
 
 
-  calculateButton?.addEventListener(
-    "click",
-    () => {
+    monthInput.addEventListener(
+      "change",
+      () => {
 
-      calculateMonth()
-        .catch(
-          showError
-        );
+        calculatedData =
+          null;
 
-    }
-  );
+        currentClosing =
+          null;
+
+        renderSelectedMonth();
+
+        calculateMonth()
+          .catch(
+            showError
+          );
+
+      }
+    );
+
+  }
 
 
-  closeButton?.addEventListener(
-    "click",
-    () => {
+  if (
+    calculateButton &&
+    calculateButton.dataset.bound !== "true"
+  ) {
 
-      closeMonth();
+    calculateButton.dataset.bound =
+      "true";
 
-    }
-  );
+
+    calculateButton.addEventListener(
+      "click",
+      () => {
+
+        calculateMonth()
+          .catch(
+            showError
+          );
+
+      }
+    );
+
+  }
+
+
+  if (
+    closeButton &&
+    closeButton.dataset.bound !== "true"
+  ) {
+
+    closeButton.dataset.bound =
+      "true";
+
+
+    closeButton.addEventListener(
+      "click",
+      () => {
+
+        closeMonth();
+
+      }
+    );
+
+  }
 
 }
 
@@ -986,9 +1246,7 @@ function setupEvents() {
 export async function initPage() {
 
   if (initialized) {
-
     return;
-
   }
 
 
@@ -1051,6 +1309,8 @@ export async function initPage() {
 
     }
 
+
+    renderSelectedMonth();
 
     setupEvents();
 
