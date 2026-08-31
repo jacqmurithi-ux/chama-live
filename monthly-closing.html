@@ -923,7 +923,7 @@
 
 
 
-        <!-- COLLECTED -->
+        <!-- APPLIED -->
 
         <div class="closing-metric-card">
 
@@ -932,18 +932,99 @@
           </div>
 
           <span class="closing-metric-label">
-            Total Collected
+            Applied This Month
           </span>
 
           <span
-            id="totalCollected"
+            id="appliedThisMonth"
             class="closing-metric-value"
           >
             KSh 0
           </span>
 
           <span class="metric-subtext">
-            Contributions received
+            Applied to current month obligations
+          </span>
+
+        </div>
+
+
+
+        <!-- OTHER SAVINGS -->
+
+        <div class="closing-metric-card">
+
+          <div class="closing-metric-icon">
+            ☆
+          </div>
+
+          <span class="closing-metric-label">
+            Other Savings
+          </span>
+
+          <span
+            id="otherSavings"
+            class="closing-metric-value"
+          >
+            KSh 0
+          </span>
+
+          <span class="metric-subtext">
+            Savings recorded outside monthly contributions
+          </span>
+
+        </div>
+
+
+
+        <!-- OUTSTANDING -->
+
+        <div class="closing-metric-card">
+
+          <div class="closing-metric-icon">
+            !
+          </div>
+
+          <span class="closing-metric-label">
+            Monthly Outstanding
+          </span>
+
+          <span
+            id="currentOutstanding"
+            class="closing-metric-value"
+          >
+            KSh 0
+          </span>
+
+          <span class="metric-subtext">
+            Remaining current-month obligation
+          </span>
+
+        </div>
+
+
+
+        <!-- CASH RECEIVED -->
+
+        <div class="closing-metric-card">
+
+          <div class="closing-metric-icon">
+            ✓
+          </div>
+
+          <span class="closing-metric-label">
+            Actual Cash Received
+          </span>
+
+          <span
+            id="cashReceived"
+            class="closing-metric-value"
+          >
+            KSh 0
+          </span>
+
+          <span class="metric-subtext">
+            Contribution cash received during this month
           </span>
 
         </div>
@@ -1002,12 +1083,39 @@
 
         </div>
 
+
+
+        <!-- CARRY FORWARD -->
+
+        <div class="closing-metric-card">
+
+          <div class="closing-metric-icon">
+            ↪
+          </div>
+
+          <span class="closing-metric-label">
+            Carry-forward Credit
+          </span>
+
+          <span
+            id="carryForward"
+            class="closing-metric-value"
+          >
+            KSh 0
+          </span>
+
+          <span class="metric-subtext">
+            Credit carried into future obligations
+          </span>
+
+        </div>
+
       </div>
 
 
 
       <!-- =================================================
-           COLLECTION PROGRESS
+           CONTRIBUTION PROGRESS
       ================================================== -->
 
       <div class="collection-progress-card">
@@ -1015,11 +1123,11 @@
         <div class="collection-progress-head">
 
           <span class="collection-progress-title">
-            Contribution Collection
+            Contribution Application
           </span>
 
           <span id="collectionProgressText">
-            0% collected
+            0% applied
           </span>
 
         </div>
@@ -1030,6 +1138,10 @@
           <div
             id="collectionProgress"
             class="collection-progress"
+            role="progressbar"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="0"
           ></div>
 
         </div>
@@ -1037,8 +1149,12 @@
 
         <div class="collection-progress-footer">
 
-          <span class="muted">
-            Current month collection progress
+          <span
+            id="collectionProgressDescription"
+            class="muted"
+          >
+            Current-month obligations satisfied by payment
+            allocations.
           </span>
 
           <span
@@ -1074,7 +1190,7 @@
         <p class="closing-balance-equation">
 
           Previous closing balance
-          + contributions collected
+          + actual cash contributions received
           − approved expenses
           = closing balance.
 
@@ -1130,10 +1246,11 @@
           </strong>
 
           <p>
-            Make sure all contributions and approved
-            expenses for this month have been recorded
-            correctly. Once closed, this month becomes the
-            official monthly financial record.
+            Make sure all monthly contributions, other
+            savings and approved expenses for this month
+            have been recorded correctly. Once closed,
+            this month becomes the official monthly
+            financial record.
           </p>
 
         </div>
