@@ -1,4 +1,5 @@
 <!doctype html>
+
 <html lang="en">
 
 <head>
@@ -19,11 +20,228 @@
     href="css/app.css"
   >
 
+
   <style>
 
     /* =====================================================
-       REPORT FILTERS
+       REPORT PAGE
     ====================================================== */
+
+    .reports-page {
+
+      max-width: 1400px;
+
+      margin: 0 auto;
+
+    }
+
+
+    /* =====================================================
+       HERO
+    ====================================================== */
+
+    .reports-hero {
+
+      position: relative;
+
+      overflow: hidden;
+
+      padding: 28px;
+
+      margin-bottom: 20px;
+
+      border-radius: 18px;
+
+      background:
+        linear-gradient(
+          135deg,
+          #111827,
+          #1f2937
+        );
+
+      color: white;
+
+      box-shadow:
+        0 10px 30px
+        rgba(0, 0, 0, 0.12);
+
+    }
+
+
+    .reports-hero::after {
+
+      content: "";
+
+      position: absolute;
+
+      width: 180px;
+
+      height: 180px;
+
+      border-radius: 50%;
+
+      right: -70px;
+
+      top: -70px;
+
+      background:
+        rgba(255,255,255,0.08);
+
+    }
+
+
+    .reports-hero-content {
+
+      position: relative;
+
+      z-index: 1;
+
+    }
+
+
+    .reports-eyebrow {
+
+      display: inline-flex;
+
+      align-items: center;
+
+      gap: 7px;
+
+      margin-bottom: 8px;
+
+      font-size: 12px;
+
+      font-weight: 800;
+
+      letter-spacing: 1px;
+
+      text-transform: uppercase;
+
+      opacity: 0.75;
+
+    }
+
+
+    .reports-hero h1 {
+
+      margin: 0 0 8px;
+
+      font-size: 32px;
+
+      line-height: 1.1;
+
+    }
+
+
+    .reports-hero p {
+
+      margin: 0;
+
+      max-width: 700px;
+
+      color: rgba(255,255,255,0.75);
+
+    }
+
+
+    /* =====================================================
+       STATUS / ERROR
+    ====================================================== */
+
+    #status {
+
+      padding: 14px 16px;
+
+      margin-bottom: 20px;
+
+      border-radius: 12px;
+
+      font-weight: 700;
+
+      background: #f3f4f6;
+
+    }
+
+
+    #error {
+
+      padding: 14px 16px;
+
+      margin-bottom: 20px;
+
+      border-radius: 12px;
+
+    }
+
+
+    /* =====================================================
+       FILTER CARD
+    ====================================================== */
+
+    .report-filter-card {
+
+      padding: 22px;
+
+      margin-bottom: 20px;
+
+      border-radius: 16px;
+
+    }
+
+
+    .section-heading {
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: space-between;
+
+      gap: 15px;
+
+      margin-bottom: 18px;
+
+    }
+
+
+    .section-heading h2 {
+
+      margin: 0;
+
+    }
+
+
+    .section-heading p {
+
+      margin: 4px 0 0;
+
+    }
+
+
+    .section-icon {
+
+      width: 42px;
+
+      height: 42px;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      flex-shrink: 0;
+
+      border-radius: 12px;
+
+      font-size: 20px;
+
+      font-weight: 800;
+
+      background: #f3f4f6;
+
+    }
+
 
     .report-filters {
 
@@ -32,9 +250,7 @@
       grid-template-columns:
         repeat(2, minmax(0, 1fr));
 
-      gap: 14px;
-
-      align-items: end;
+      gap: 15px;
 
     }
 
@@ -47,74 +263,545 @@
 
       flex-wrap: wrap;
 
-      margin-top: 14px;
+      margin-top: 16px;
 
     }
 
 
     /* =====================================================
-       REPORT TABLES
+       SUMMARY GRID
     ====================================================== */
+
+    .report-summary-grid {
+
+      display: grid;
+
+      grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+      gap: 16px;
+
+    }
+
+
+    .report-summary-card {
+
+      position: relative;
+
+      overflow: hidden;
+
+      min-height: 132px;
+
+      padding: 20px;
+
+      border-radius: 16px;
+
+      transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease;
+
+    }
+
+
+    .report-summary-card:hover {
+
+      transform: translateY(-2px);
+
+      box-shadow:
+        0 10px 24px
+        rgba(0,0,0,0.08);
+
+    }
+
+
+    .report-summary-top {
+
+      display: flex;
+
+      align-items: flex-start;
+
+      justify-content: space-between;
+
+      gap: 10px;
+
+    }
+
+
+    .report-summary-label {
+
+      font-size: 13px;
+
+      font-weight: 700;
+
+      opacity: 0.7;
+
+    }
+
+
+    .report-summary-value {
+
+      margin-top: 10px;
+
+      font-size: 25px;
+
+      font-weight: 850;
+
+      line-height: 1.1;
+
+      word-break: break-word;
+
+    }
+
+
+    .report-summary-icon {
+
+      width: 38px;
+
+      height: 38px;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      border-radius: 11px;
+
+      font-size: 17px;
+
+      font-weight: 900;
+
+      background: #f3f4f6;
+
+    }
+
+
+    .report-summary-card.balance-card {
+
+      border: 1px solid
+        rgba(0,0,0,0.06);
+
+    }
+
+
+    #currentBalance.negative {
+
+      color: #b42318;
+
+    }
+
+
+    #currentBalance.positive {
+
+      color: #147a45;
+
+    }
+
+
+    /* =====================================================
+       REPORT SECTIONS
+    ====================================================== */
+
+    .report-section {
+
+      margin-top: 20px;
+
+      padding: 22px;
+
+      border-radius: 16px;
+
+    }
+
+
+    .report-section-header {
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: space-between;
+
+      gap: 15px;
+
+      margin-bottom: 18px;
+
+    }
+
+
+    .report-section-title {
+
+      display: flex;
+
+      align-items: center;
+
+      gap: 12px;
+
+    }
+
+
+    .report-section-title h2 {
+
+      margin: 0;
+
+    }
+
+
+    .report-section-title p {
+
+      margin: 4px 0 0;
+
+    }
+
+
+    /* =====================================================
+       TABLE
+    ====================================================== */
+
+    .report-table-wrap {
+
+      overflow-x: auto;
+
+      border-radius: 12px;
+
+      border: 1px solid
+        rgba(0,0,0,0.07);
+
+    }
+
 
     .report-table {
 
       width: 100%;
 
+      min-width: 700px;
+
+      border-collapse: collapse;
+
     }
 
 
-    .report-table th,
-    .report-table td {
+    .report-table th {
+
+      padding: 13px 15px;
+
+      text-align: left;
+
+      font-size: 12px;
+
+      font-weight: 800;
+
+      letter-spacing: 0.3px;
+
+      text-transform: uppercase;
+
+      background: #f8fafc;
 
       white-space: nowrap;
 
+    }
+
+
+    .report-table td {
+
+      padding: 14px 15px;
+
       vertical-align: middle;
 
+      border-top: 1px solid
+        rgba(0,0,0,0.06);
+
+      white-space: nowrap;
+
     }
 
 
-    .report-table td strong {
+    .report-table tbody tr {
+
+      transition:
+        background 0.15s ease;
+
+    }
+
+
+    .report-table tbody tr:hover {
+
+      background: #fafafa;
+
+    }
+
+
+    .money-value {
+
+      font-weight: 850;
+
+    }
+
+
+    .table-count {
+
+      display: inline-flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      min-width: 30px;
+
+      height: 28px;
+
+      padding: 0 9px;
+
+      border-radius: 999px;
+
+      font-size: 12px;
 
       font-weight: 800;
 
+      background: #f3f4f6;
+
     }
 
 
     /* =====================================================
-       BALANCE
+       TYPE PILL
     ====================================================== */
 
-    .report-balance {
+    .type-pill {
 
-      font-size: 24px;
+      display: inline-flex;
+
+      align-items: center;
+
+      padding: 5px 9px;
+
+      border-radius: 999px;
+
+      font-size: 11px;
 
       font-weight: 800;
 
-    }
+      text-transform: capitalize;
 
-
-    /* =====================================================
-       REPORT STATUS
-    ====================================================== */
-
-    #status {
-
-      padding: 14px;
-
-      border-radius: 10px;
-
-      font-weight: 600;
+      background: #f3f4f6;
 
     }
 
 
     /* =====================================================
-       REPORT ERROR
+       STATUS BADGES
     ====================================================== */
 
-    #error {
+    .report-status {
 
-      border-radius: 10px;
+      display: inline-flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      padding: 6px 10px;
+
+      border-radius: 999px;
+
+      font-size: 11px;
+
+      font-weight: 800;
+
+      text-transform: capitalize;
+
+    }
+
+
+    .report-status-approved {
+
+      background: #dcfce7;
+
+      color: #166534;
+
+    }
+
+
+    .report-status-pending {
+
+      background: #fef3c7;
+
+      color: #92400e;
+
+    }
+
+
+    .report-status-rejected {
+
+      background: #fee2e2;
+
+      color: #991b1b;
+
+    }
+
+
+    /* =====================================================
+       PERSON CELL
+    ====================================================== */
+
+    .person-cell {
+
+      display: inline-flex;
+
+      align-items: center;
+
+      gap: 9px;
+
+    }
+
+
+    .avatar-small {
+
+      width: 30px;
+
+      height: 30px;
+
+      display: inline-flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      flex-shrink: 0;
+
+      border-radius: 50%;
+
+      font-size: 12px;
+
+      font-weight: 800;
+
+      background: #e5e7eb;
+
+    }
+
+
+    /* =====================================================
+       EMPTY STATE
+    ====================================================== */
+
+    .report-empty {
+
+      padding: 0 !important;
+
+      white-space: normal !important;
+
+    }
+
+
+    .empty-state {
+
+      display: flex;
+
+      flex-direction: column;
+
+      align-items: center;
+
+      justify-content: center;
+
+      gap: 5px;
+
+      min-height: 150px;
+
+      padding: 25px;
+
+      text-align: center;
+
+    }
+
+
+    .empty-icon {
+
+      width: 42px;
+
+      height: 42px;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      margin-bottom: 5px;
+
+      border-radius: 50%;
+
+      font-weight: 900;
+
+      background: #f3f4f6;
+
+    }
+
+
+    .empty-state strong {
+
+      font-size: 14px;
+
+    }
+
+
+    .empty-state span {
+
+      max-width: 360px;
+
+      font-size: 13px;
+
+      opacity: 0.65;
+
+    }
+
+
+    /* =====================================================
+       MINI SUMMARY
+    ====================================================== */
+
+    .report-mini-grid {
+
+      display: grid;
+
+      grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+      gap: 14px;
+
+    }
+
+
+    .report-mini-card {
+
+      padding: 18px;
+
+      border-radius: 14px;
+
+      border: 1px solid
+        rgba(0,0,0,0.06);
+
+      background: #fafafa;
+
+    }
+
+
+    .report-mini-label {
+
+      font-size: 12px;
+
+      font-weight: 700;
+
+      opacity: 0.65;
+
+    }
+
+
+    .report-mini-value {
+
+      margin-top: 7px;
+
+      font-size: 23px;
+
+      font-weight: 850;
 
     }
 
@@ -123,26 +810,110 @@
        RESPONSIVE
     ====================================================== */
 
+    @media (max-width: 950px) {
+
+      .report-summary-grid {
+
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+
+      }
+
+
+      .report-mini-grid {
+
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+
+      }
+
+    }
+
+
     @media (max-width: 700px) {
+
+      .reports-hero {
+
+        padding: 22px;
+
+        border-radius: 15px;
+
+      }
+
+
+      .reports-hero h1 {
+
+        font-size: 26px;
+
+      }
+
 
       .report-filters {
 
-        grid-template-columns:
-          1fr;
+        grid-template-columns: 1fr;
 
       }
 
 
-      .report-table {
+      .report-summary-grid {
 
-        min-width: 650px;
+        grid-template-columns: 1fr;
 
       }
 
 
-      .report-balance {
+      .report-mini-grid {
 
-        font-size: 21px;
+        grid-template-columns: 1fr 1fr;
+
+      }
+
+
+      .report-section,
+      .report-filter-card {
+
+        padding: 17px;
+
+        border-radius: 14px;
+
+      }
+
+
+      .report-section-header {
+
+        align-items: flex-start;
+
+      }
+
+
+      .report-summary-value {
+
+        font-size: 22px;
+
+      }
+
+    }
+
+
+    @media (max-width: 430px) {
+
+      .report-mini-grid {
+
+        grid-template-columns: 1fr;
+
+      }
+
+
+      .report-filter-actions {
+
+        flex-direction: column;
+
+      }
+
+
+      .report-filter-actions .btn {
+
+        width: 100%;
 
       }
 
@@ -165,6 +936,7 @@
   <div class="brand">
 
     CHAMA
+
     <span>
       LIVE
     </span>
@@ -248,731 +1020,849 @@
 
   <main class="main">
 
+    <div class="reports-page">
 
-    <!-- =================================================
-         PAGE HEADER
-    ================================================== -->
 
-    <div class="page-head">
+      <!-- =================================================
+           HERO
+      ================================================== -->
 
-      <div>
+      <section class="reports-hero">
 
-        <h1>
-          Reports
-        </h1>
+        <div class="reports-hero-content">
 
-        <p class="muted">
+          <div class="reports-eyebrow">
+            CHAMA LIVE • FINANCIAL CONTROL
+          </div>
 
-          Financial, membership and meeting reports.
+          <h1>
+            Reports
+          </h1>
 
-        </p>
+          <p>
+            Get a clear view of your chama's
+            finances, membership activity and
+            meetings.
+          </p>
 
-      </div>
+        </div>
+
+      </section>
+
+
+
+      <!-- =================================================
+           STATUS
+      ================================================== -->
+
+      <div
+        id="status"
+        hidden
+      ></div>
+
+
+
+      <!-- =================================================
+           ERROR
+      ================================================== -->
+
+      <div
+        id="error"
+        class="error"
+        hidden
+      ></div>
+
+
+
+      <!-- =================================================
+           REPORT PERIOD
+      ================================================== -->
+
+      <section class="card report-filter-card">
+
+        <div class="section-heading">
+
+          <div>
+
+            <h2>
+              Report Period
+            </h2>
+
+            <p class="muted">
+              Select the period you want to analyse.
+            </p>
+
+          </div>
+
+          <div class="section-icon">
+            ◷
+          </div>
+
+        </div>
+
+
+        <div class="report-filters">
+
+
+          <div class="form-group">
+
+            <label for="fromDate">
+              From Date
+            </label>
+
+            <input
+              id="fromDate"
+              type="date"
+            >
+
+          </div>
+
+
+
+          <div class="form-group">
+
+            <label for="toDate">
+              To Date
+            </label>
+
+            <input
+              id="toDate"
+              type="date"
+            >
+
+          </div>
+
+
+        </div>
+
+
+        <div class="report-filter-actions">
+
+          <button
+            class="btn btn-primary"
+            id="applyFilters"
+            type="button"
+          >
+            Generate Report
+          </button>
+
+
+          <button
+            class="btn btn-secondary"
+            id="resetFilters"
+            type="button"
+          >
+            Reset Period
+          </button>
+
+        </div>
+
+      </section>
+
+
+
+      <!-- =================================================
+           FINANCIAL SUMMARY
+      ================================================== -->
+
+      <section class="report-section card">
+
+        <div class="report-section-header">
+
+          <div class="report-section-title">
+
+            <div class="section-icon">
+              KSh
+            </div>
+
+            <div>
+
+              <h2>
+                Financial Summary
+              </h2>
+
+              <p class="muted">
+                Financial position for the selected period.
+              </p>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="report-summary-grid">
+
+
+          <!-- TOTAL CONTRIBUTIONS -->
+
+          <div class="report-summary-card card">
+
+            <div class="report-summary-top">
+
+              <div>
+
+                <div class="report-summary-label">
+                  Total Contributions
+                </div>
+
+                <div
+                  class="report-summary-value"
+                  id="totalContributions"
+                >
+                  KSh 0
+                </div>
+
+              </div>
+
+              <div class="report-summary-icon">
+                +
+              </div>
+
+            </div>
+
+          </div>
+
+
+
+          <!-- APPROVED EXPENSES -->
+
+          <div class="report-summary-card card">
+
+            <div class="report-summary-top">
+
+              <div>
+
+                <div class="report-summary-label">
+                  Approved Expenses
+                </div>
+
+                <div
+                  class="report-summary-value"
+                  id="approvedExpenses"
+                >
+                  KSh 0
+                </div>
+
+              </div>
+
+              <div class="report-summary-icon">
+                −
+              </div>
+
+            </div>
+
+          </div>
+
+
+
+          <!-- BALANCE -->
+
+          <div
+            class="report-summary-card balance-card card"
+          >
+
+            <div class="report-summary-top">
+
+              <div>
+
+                <div class="report-summary-label">
+                  Current Balance
+                </div>
+
+                <div
+                  class="report-summary-value"
+                  id="currentBalance"
+                >
+                  KSh 0
+                </div>
+
+              </div>
+
+              <div class="report-summary-icon">
+                =
+              </div>
+
+            </div>
+
+          </div>
+
+
+
+          <!-- PENDING -->
+
+          <div class="report-summary-card card">
+
+            <div class="report-summary-top">
+
+              <div>
+
+                <div class="report-summary-label">
+                  Pending Expenses
+                </div>
+
+                <div
+                  class="report-summary-value"
+                  id="pendingExpenses"
+                >
+                  KSh 0
+                </div>
+
+              </div>
+
+              <div class="report-summary-icon">
+                …
+              </div>
+
+            </div>
+
+          </div>
+
+
+
+          <!-- REJECTED -->
+
+          <div class="report-summary-card card">
+
+            <div class="report-summary-top">
+
+              <div>
+
+                <div class="report-summary-label">
+                  Rejected Expenses
+                </div>
+
+                <div
+                  class="report-summary-value"
+                  id="rejectedExpenses"
+                >
+                  KSh 0
+                </div>
+
+              </div>
+
+              <div class="report-summary-icon">
+                !
+              </div>
+
+            </div>
+
+          </div>
+
+
+
+          <!-- ACTIVE MEMBERS -->
+
+          <div class="report-summary-card card">
+
+            <div class="report-summary-top">
+
+              <div>
+
+                <div class="report-summary-label">
+                  Active Members
+                </div>
+
+                <div
+                  class="report-summary-value"
+                  id="activeMembers"
+                >
+                  0
+                </div>
+
+              </div>
+
+              <div class="report-summary-icon">
+                ♙
+              </div>
+
+            </div>
+
+          </div>
+
+
+        </div>
+
+
+        <!-- MINI REPORT STATS -->
+
+        <div
+          class="report-mini-grid"
+          style="margin-top:16px;"
+        >
+
+          <div class="report-mini-card">
+
+            <div class="report-mini-label">
+              Contribution Entries
+            </div>
+
+            <div
+              class="report-mini-value"
+              id="reportContributionEntries"
+            >
+              0
+            </div>
+
+          </div>
+
+
+          <div class="report-mini-card">
+
+            <div class="report-mini-label">
+              Expense Entries
+            </div>
+
+            <div
+              class="report-mini-value"
+              id="reportExpenseEntries"
+            >
+              0
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+
+      <!-- =================================================
+           MEETING SUMMARY
+      ================================================== -->
+
+      <section class="report-section card">
+
+        <div class="report-section-header">
+
+          <div class="report-section-title">
+
+            <div class="section-icon">
+              ◷
+            </div>
+
+            <div>
+
+              <h2>
+                Meeting Summary
+              </h2>
+
+              <p class="muted">
+                Meeting activity during the selected period.
+              </p>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="report-summary-grid">
+
+
+          <div class="report-summary-card card">
+
+            <div class="report-summary-label">
+              Total Meetings
+            </div>
+
+            <div
+              class="report-summary-value"
+              id="totalMeetings"
+            >
+              0
+            </div>
+
+          </div>
+
+
+          <div class="report-summary-card card">
+
+            <div class="report-summary-label">
+              Upcoming
+            </div>
+
+            <div
+              class="report-summary-value"
+              id="upcomingMeetings"
+            >
+              0
+            </div>
+
+          </div>
+
+
+          <div class="report-summary-card card">
+
+            <div class="report-summary-label">
+              Completed
+            </div>
+
+            <div
+              class="report-summary-value"
+              id="completedMeetings"
+            >
+              0
+            </div>
+
+          </div>
+
+
+          <div class="report-summary-card card">
+
+            <div class="report-summary-label">
+              Cancelled
+            </div>
+
+            <div
+              class="report-summary-value"
+              id="cancelledMeetings"
+            >
+              0
+            </div>
+
+          </div>
+
+
+        </div>
+
+      </section>
+
+
+
+      <!-- =================================================
+           CONTRIBUTION BREAKDOWN
+      ================================================== -->
+
+      <section class="report-section card">
+
+        <div class="report-section-header">
+
+          <div class="report-section-title">
+
+            <div class="section-icon">
+              +
+            </div>
+
+            <div>
+
+              <h2>
+                Contribution Breakdown
+              </h2>
+
+              <p class="muted">
+                Contributions grouped by month.
+              </p>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="report-table-wrap">
+
+          <table class="report-table">
+
+            <thead>
+
+              <tr>
+
+                <th>
+                  Month
+                </th>
+
+                <th>
+                  Entries
+                </th>
+
+                <th>
+                  Amount
+                </th>
+
+              </tr>
+
+            </thead>
+
+
+            <tbody
+              id="contributionBreakdownRows"
+            >
+
+              <tr>
+
+                <td colspan="3">
+                  Loading...
+                </td>
+
+              </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </section>
+
+
+
+      <!-- =================================================
+           EXPENSE BREAKDOWN
+      ================================================== -->
+
+      <section class="report-section card">
+
+        <div class="report-section-header">
+
+          <div class="report-section-title">
+
+            <div class="section-icon">
+              −
+            </div>
+
+            <div>
+
+              <h2>
+                Approved Expense Breakdown
+              </h2>
+
+              <p class="muted">
+                Approved expenses grouped by month.
+              </p>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="report-table-wrap">
+
+          <table class="report-table">
+
+            <thead>
+
+              <tr>
+
+                <th>
+                  Month
+                </th>
+
+                <th>
+                  Entries
+                </th>
+
+                <th>
+                  Amount
+                </th>
+
+              </tr>
+
+            </thead>
+
+
+            <tbody
+              id="expenseBreakdownRows"
+            >
+
+              <tr>
+
+                <td colspan="3">
+                  Loading...
+                </td>
+
+              </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </section>
+
+
+
+      <!-- =================================================
+           CONTRIBUTION REPORT
+      ================================================== -->
+
+      <section class="report-section card">
+
+        <div class="report-section-header">
+
+          <div class="report-section-title">
+
+            <div class="section-icon">
+              +
+            </div>
+
+            <div>
+
+              <h2>
+                Contribution Report
+              </h2>
+
+              <p class="muted">
+                Contributions recorded within the
+                selected reporting period.
+              </p>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="report-table-wrap">
+
+          <table class="report-table">
+
+            <thead>
+
+              <tr>
+
+                <th>
+                  Date
+                </th>
+
+                <th>
+                  Recorded By
+                </th>
+
+                <th>
+                  Amount
+                </th>
+
+                <th>
+                  Type
+                </th>
+
+                <th>
+                  Payment Method
+                </th>
+
+              </tr>
+
+            </thead>
+
+
+            <tbody
+              id="contributionReportRows"
+            >
+
+              <tr>
+
+                <td colspan="5">
+                  Loading...
+                </td>
+
+              </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </section>
+
+
+
+      <!-- =================================================
+           EXPENSE REPORT
+      ================================================== -->
+
+      <section class="report-section card">
+
+        <div class="report-section-header">
+
+          <div class="report-section-title">
+
+            <div class="section-icon">
+              −
+            </div>
+
+            <div>
+
+              <h2>
+                Approved Expense Report
+              </h2>
+
+              <p class="muted">
+                Approved expenses within the
+                selected reporting period.
+              </p>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="report-table-wrap">
+
+          <table class="report-table">
+
+            <thead>
+
+              <tr>
+
+                <th>
+                  Date
+                </th>
+
+                <th>
+                  Description
+                </th>
+
+                <th>
+                  Category
+                </th>
+
+                <th>
+                  Amount
+                </th>
+
+                <th>
+                  Recorded By
+                </th>
+
+              </tr>
+
+            </thead>
+
+
+            <tbody
+              id="expenseReportRows"
+            >
+
+              <tr>
+
+                <td colspan="5">
+                  Loading...
+                </td>
+
+              </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </section>
+
 
     </div>
-
-
-
-    <!-- =================================================
-         STATUS
-    ================================================== -->
-
-    <div
-      id="status"
-      class="card"
-      style="margin-bottom:20px;"
-      hidden
-    ></div>
-
-
-
-    <!-- =================================================
-         ERROR
-    ================================================== -->
-
-    <div
-      id="error"
-      class="error"
-      hidden
-      style="margin-bottom:20px;"
-    ></div>
-
-
-
-    <!-- =================================================
-         REPORT PERIOD
-    ================================================== -->
-
-    <section class="card">
-
-      <h2>
-        Report Period
-      </h2>
-
-      <br>
-
-
-      <div class="report-filters">
-
-
-        <!-- FROM DATE -->
-
-        <div class="form-group">
-
-          <label
-            for="fromDate"
-            class="muted"
-          >
-
-            From Date
-
-          </label>
-
-
-          <input
-            id="fromDate"
-            type="date"
-          >
-
-        </div>
-
-
-
-        <!-- TO DATE -->
-
-        <div class="form-group">
-
-          <label
-            for="toDate"
-            class="muted"
-          >
-
-            To Date
-
-          </label>
-
-
-          <input
-            id="toDate"
-            type="date"
-          >
-
-        </div>
-
-
-      </div>
-
-
-
-      <div class="report-filter-actions">
-
-        <button
-          class="btn btn-primary"
-          id="applyFilters"
-          type="button"
-        >
-
-          Generate Report
-
-        </button>
-
-
-        <button
-          class="btn btn-secondary"
-          id="resetFilters"
-          type="button"
-        >
-
-          Reset Period
-
-        </button>
-
-      </div>
-
-    </section>
-
-
-
-    <br>
-
-
-
-    <!-- =================================================
-         FINANCIAL SUMMARY
-    ================================================== -->
-
-    <section class="card">
-
-      <h2>
-        Financial Summary
-      </h2>
-
-      <br>
-
-
-      <div class="grid grid-3">
-
-
-        <!-- CONTRIBUTIONS -->
-
-        <div class="card">
-
-          <div class="muted">
-
-            Total Contributions
-
-          </div>
-
-
-          <div
-            class="metric"
-            id="totalContributions"
-          >
-
-            KSh 0
-
-          </div>
-
-        </div>
-
-
-
-        <!-- APPROVED EXPENSES -->
-
-        <div class="card">
-
-          <div class="muted">
-
-            Approved Expenses
-
-          </div>
-
-
-          <div
-            class="metric"
-            id="approvedExpenses"
-          >
-
-            KSh 0
-
-          </div>
-
-        </div>
-
-
-
-        <!-- BALANCE -->
-
-        <div class="card">
-
-          <div class="muted">
-
-            Current Balance
-
-          </div>
-
-
-          <div
-            class="report-balance"
-            id="currentBalance"
-          >
-
-            KSh 0
-
-          </div>
-
-        </div>
-
-
-
-        <!-- PENDING -->
-
-        <div class="card">
-
-          <div class="muted">
-
-            Pending Expenses
-
-          </div>
-
-
-          <div
-            class="metric"
-            id="pendingExpenses"
-          >
-
-            KSh 0
-
-          </div>
-
-        </div>
-
-
-
-        <!-- REJECTED -->
-
-        <div class="card">
-
-          <div class="muted">
-
-            Rejected Expenses
-
-          </div>
-
-
-          <div
-            class="metric"
-            id="rejectedExpenses"
-          >
-
-            KSh 0
-
-          </div>
-
-        </div>
-
-
-
-        <!-- ACTIVE MEMBERS -->
-
-        <div class="card">
-
-          <div class="muted">
-
-            Active Report Members
-
-          </div>
-
-
-          <div
-            class="metric"
-            id="activeMembers"
-          >
-
-            0
-
-          </div>
-
-        </div>
-
-
-      </div>
-
-    </section>
-
-
-
-    <br>
-
-
-
-    <!-- =================================================
-         MEETING SUMMARY
-    ================================================== -->
-
-    <section class="card">
-
-      <h2>
-        Meeting Summary
-      </h2>
-
-      <br>
-
-
-      <div class="grid grid-3">
-
-
-        <!-- TOTAL -->
-
-        <div class="card">
-
-          <div class="muted">
-
-            Total Meetings
-
-          </div>
-
-
-          <div
-            class="metric"
-            id="totalMeetings"
-          >
-
-            0
-
-          </div>
-
-        </div>
-
-
-
-        <!-- UPCOMING -->
-
-        <div class="card">
-
-          <div class="muted">
-
-            Upcoming
-
-          </div>
-
-
-          <div
-            class="metric"
-            id="upcomingMeetings"
-          >
-
-            0
-
-          </div>
-
-        </div>
-
-
-
-        <!-- COMPLETED -->
-
-        <div class="card">
-
-          <div class="muted">
-
-            Completed
-
-          </div>
-
-
-          <div
-            class="metric"
-            id="completedMeetings"
-          >
-
-            0
-
-          </div>
-
-        </div>
-
-
-
-        <!-- CANCELLED -->
-
-        <div class="card">
-
-          <div class="muted">
-
-            Cancelled
-
-          </div>
-
-
-          <div
-            class="metric"
-            id="cancelledMeetings"
-          >
-
-            0
-
-          </div>
-
-        </div>
-
-
-      </div>
-
-    </section>
-
-
-
-    <br>
-
-
-
-    <!-- =================================================
-         CONTRIBUTION BREAKDOWN
-    ================================================== -->
-
-    <section class="card">
-
-      <h2>
-        Contribution Breakdown
-      </h2>
-
-      <br>
-
-
-      <div class="table-wrap">
-
-        <table class="table report-table">
-
-          <thead>
-
-            <tr>
-
-              <th>
-                Month
-              </th>
-
-              <th>
-                Entries
-              </th>
-
-              <th>
-                Amount
-              </th>
-
-            </tr>
-
-          </thead>
-
-
-          <tbody
-            id="contributionBreakdownRows"
-          >
-
-            <tr>
-
-              <td colspan="3">
-
-                Loading...
-
-              </td>
-
-            </tr>
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-    </section>
-
-
-
-    <br>
-
-
-
-    <!-- =================================================
-         APPROVED EXPENSE BREAKDOWN
-    ================================================== -->
-
-    <section class="card">
-
-      <h2>
-        Approved Expense Breakdown
-      </h2>
-
-      <br>
-
-
-      <div class="table-wrap">
-
-        <table class="table report-table">
-
-          <thead>
-
-            <tr>
-
-              <th>
-                Month
-              </th>
-
-              <th>
-                Entries
-              </th>
-
-              <th>
-                Amount
-              </th>
-
-            </tr>
-
-          </thead>
-
-
-          <tbody
-            id="expenseBreakdownRows"
-          >
-
-            <tr>
-
-              <td colspan="3">
-
-                Loading...
-
-              </td>
-
-            </tr>
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-    </section>
-
-
-
-    <br>
-
-
-
-    <!-- =================================================
-         CONTRIBUTION REPORT
-    ================================================== -->
-
-    <section class="card">
-
-      <h2>
-        Contribution Report
-      </h2>
-
-
-      <p class="muted">
-
-        Contributions recorded within the
-        selected reporting period.
-
-      </p>
-
-
-      <div class="table-wrap">
-
-        <table class="table report-table">
-
-          <thead>
-
-            <tr>
-
-              <th>
-                Date
-              </th>
-
-              <th>
-                Recorded By
-              </th>
-
-              <th>
-                Amount
-              </th>
-
-              <th>
-                Type
-              </th>
-
-              <th>
-                Payment Method
-              </th>
-
-            </tr>
-
-          </thead>
-
-
-          <tbody
-            id="contributionReportRows"
-          >
-
-            <tr>
-
-              <td colspan="5">
-
-                Loading...
-
-              </td>
-
-            </tr>
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-    </section>
-
-
-
-    <br>
-
-
-
-    <!-- =================================================
-         APPROVED EXPENSE REPORT
-    ================================================== -->
-
-    <section class="card">
-
-      <h2>
-        Approved Expense Report
-      </h2>
-
-
-      <p class="muted">
-
-        Approved expenses within the selected
-        reporting period.
-
-      </p>
-
-
-      <div class="table-wrap">
-
-        <table class="table report-table">
-
-          <thead>
-
-            <tr>
-
-              <th>
-                Date
-              </th>
-
-              <th>
-                Description
-              </th>
-
-              <th>
-                Category
-              </th>
-
-              <th>
-                Amount
-              </th>
-
-              <th>
-                Recorded By
-              </th>
-
-            </tr>
-
-          </thead>
-
-
-          <tbody
-            id="expenseReportRows"
-          >
-
-            <tr>
-
-              <td colspan="5">
-
-                Loading...
-
-              </td>
-
-            </tr>
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-    </section>
-
 
   </main>
 
@@ -982,13 +1872,6 @@
 
 <!-- =====================================================
      PAGE BOOT
-
-     layout.js dynamically loads reports.js.
-
-     layout.js then calls:
-
-         initReports()
-
 ====================================================== -->
 
 <script type="module">
