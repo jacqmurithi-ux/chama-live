@@ -1,6 +1,7 @@
 /* =========================================================
    CHAMA LIVE — MEMBERS
-   COMPLETE MEMBERS MANAGEMENT + LOGIN INVITATION FLOW
+   COMPLETE MEMBERS MANAGEMENT
+   VISUAL + RESPONSIVE VERSION
 
    File:
    /js/members.js
@@ -15,7 +16,10 @@
    - Login status
    - Send / resend Supabase Auth invitation
    - Supabase Edge Function integration
-   - Displays actual Edge Function errors
+   - Responsive member cards
+   - Desktop member table
+   - Dashboard-style statistics
+   - Actual Edge Function errors
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -61,7 +65,10 @@ function byId(id) {
 
 function escapeHtml(value) {
 
-  if (value === null || value === undefined) {
+  if (
+    value === null ||
+    value === undefined
+  ) {
     return "";
   }
 
@@ -99,19 +106,163 @@ function formatDate(value) {
 
 
 /* =========================================================
+   INITIALS
+========================================================= */
+
+function getInitials(name) {
+
+  const value =
+    String(name || "")
+      .trim();
+
+  if (!value) {
+    return "M";
+  }
+
+  const parts =
+    value
+      .split(/\s+/)
+      .filter(Boolean);
+
+  if (parts.length === 1) {
+    return parts[0]
+      .substring(0, 2)
+      .toUpperCase();
+  }
+
+  return (
+    parts[0][0] +
+    parts[parts.length - 1][0]
+  ).toUpperCase();
+}
+
+
+/* =========================================================
+   DISPLAY ROLE
+========================================================= */
+
+function displayRole(role) {
+
+  const value =
+    String(role || "member")
+      .trim()
+      .toLowerCase();
+
+  const labels = {
+
+    admin: "Admin",
+
+    member: "Member",
+
+    chairperson: "Chairperson",
+
+    secretary: "Secretary",
+
+    treasurer: "Treasurer"
+
+  };
+
+  return (
+    labels[value] ||
+    value.charAt(0).toUpperCase() +
+    value.slice(1)
+  );
+}
+
+
+/* =========================================================
+   ROLE BADGE
+========================================================= */
+
+function roleBadgeHtml(role) {
+
+  const value =
+    String(role || "member")
+      .trim()
+      .toLowerCase();
+
+  let className =
+    "member-role-badge";
+
+  if (value === "admin") {
+    className += " role-admin";
+  }
+
+  else if (value === "chairperson") {
+    className += " role-chairperson";
+  }
+
+  else if (value === "secretary") {
+    className += " role-secretary";
+  }
+
+  else if (value === "treasurer") {
+    className += " role-treasurer";
+  }
+
+  else {
+    className += " role-member";
+  }
+
+  return `
+    <span class="${className}">
+      ${escapeHtml(displayRole(role))}
+    </span>
+  `;
+}
+
+
+/* =========================================================
+   ACCOUNT STATUS BADGE
+========================================================= */
+
+function accountStatusHtml(status) {
+
+  const value =
+    String(status || "active")
+      .trim()
+      .toLowerCase();
+
+  if (value === "active") {
+
+    return `
+      <span class="member-status-badge status-active">
+        <span class="status-dot"></span>
+        Active
+      </span>
+    `;
+  }
+
+  return `
+    <span class="member-status-badge status-inactive">
+      <span class="status-dot"></span>
+      ${escapeHtml(
+        value.charAt(0).toUpperCase() +
+        value.slice(1)
+      )}
+    </span>
+  `;
+}
+
+
+/* =========================================================
    STATUS MESSAGE
 ========================================================= */
 
 function showStatus(message) {
 
-  const element = byId("status");
+  const element =
+    byId("status");
 
   if (!element) {
     return;
   }
 
-  element.textContent = message || "";
-  element.hidden = !message;
+  element.textContent =
+    message || "";
+
+  element.hidden =
+    !message;
 }
 
 
@@ -126,38 +277,66 @@ function showError(error) {
     error
   );
 
-  const element = byId("error");
+  const element =
+    byId("error");
 
   if (!element) {
     return;
   }
 
-  let message = "Something went wrong.";
+  let message =
+    "Something went wrong.";
 
   if (error) {
 
-    if (typeof error === "string") {
+    if (
+      typeof error === "string"
+    ) {
+
       message = error;
     }
 
-    else if (error.message) {
-      message = error.message;
+    else if (
+      error.message
+    ) {
+
+      message =
+        error.message;
     }
 
     else {
 
       try {
-        message = JSON.stringify(error);
+
+        message =
+          JSON.stringify(error);
+
       }
 
       catch {
-        message = String(error);
+
+        message =
+          String(error);
       }
     }
   }
 
-  element.textContent = message;
-  element.hidden = false;
+  element.innerHTML = `
+    <div class="error-icon">!</div>
+
+    <div>
+      <strong>
+        Something went wrong
+      </strong>
+
+      <div class="error-detail">
+        ${escapeHtml(message)}
+      </div>
+    </div>
+  `;
+
+  element.hidden =
+    false;
 }
 
 
@@ -167,14 +346,18 @@ function showError(error) {
 
 function clearError() {
 
-  const element = byId("error");
+  const element =
+    byId("error");
 
   if (!element) {
     return;
   }
 
-  element.textContent = "";
-  element.hidden = true;
+  element.innerHTML =
+    "";
+
+  element.hidden =
+    true;
 }
 
 
@@ -187,34 +370,21 @@ function showFormMessage(
   type = "success"
 ) {
 
-  const element = byId("formMessage");
+  const element =
+    byId("formMessage");
 
   if (!element) {
     return;
   }
 
-  element.textContent = message || "";
+  element.textContent =
+    message || "";
+
+  element.className =
+    `form-message ${type}`;
 
   element.style.display =
-    message ? "block" : "none";
-
-  if (type === "error") {
-
-    element.style.background =
-      "rgba(220, 38, 38, .12)";
-
-    element.style.color =
-      "#b91c1c";
-  }
-
-  else {
-
-    element.style.background =
-      "rgba(22, 163, 74, .12)";
-
-    element.style.color =
-      "#166534";
-  }
+    message ? "flex" : "none";
 }
 
 
@@ -224,14 +394,18 @@ function showFormMessage(
 
 function clearFormMessage() {
 
-  const element = byId("formMessage");
+  const element =
+    byId("formMessage");
 
   if (!element) {
     return;
   }
 
-  element.textContent = "";
-  element.style.display = "none";
+  element.textContent =
+    "";
+
+  element.style.display =
+    "none";
 }
 
 
@@ -243,7 +417,8 @@ function findMember(memberId) {
 
   return members.find(
     member =>
-      String(member.id) === String(memberId)
+      String(member.id) ===
+      String(memberId)
   );
 }
 
@@ -258,58 +433,52 @@ function getLoginStatus(member) {
     return "No Login";
   }
 
-  /*
-   * Account fully activated
-   */
 
   if (member.activated_at) {
     return "Active";
   }
 
-  /*
-   * Check onboarding status first
-   */
 
   const onboarding =
     String(
       member.onboarding_status || ""
-    ).toLowerCase();
+    )
+      .toLowerCase();
+
 
   if (
     onboarding === "activated" ||
     onboarding === "active"
   ) {
+
     return "Active";
   }
 
-  /*
-   * Invitation has been created
-   */
 
   if (
     onboarding === "invited" ||
     member.invited_at
   ) {
+
     return "Invitation Sent";
   }
 
-  /*
-   * Auth account linked but not activated
-   */
 
   if (
     member.auth_user_id ||
     member.user_id
   ) {
+
     return "Invitation Sent";
   }
+
 
   return "No Login";
 }
 
 
 /* =========================================================
-   LOGIN STATUS HTML
+   LOGIN STATUS BADGE
 ========================================================= */
 
 function loginStatusHtml(member) {
@@ -317,56 +486,34 @@ function loginStatusHtml(member) {
   const status =
     getLoginStatus(member);
 
+
   if (status === "Active") {
 
     return `
-      <span
-        style="
-          display:inline-block;
-          padding:5px 9px;
-          border-radius:999px;
-          background:rgba(22,163,74,.12);
-          color:#166534;
-          font-size:12px;
-          font-weight:600;
-        "
-      >
+      <span class="login-badge login-active">
+        <span class="login-icon">✓</span>
         Active
       </span>
     `;
   }
 
-  if (status === "Invitation Sent") {
+
+  if (
+    status === "Invitation Sent"
+  ) {
 
     return `
-      <span
-        style="
-          display:inline-block;
-          padding:5px 9px;
-          border-radius:999px;
-          background:rgba(234,179,8,.15);
-          color:#854d0e;
-          font-size:12px;
-          font-weight:600;
-        "
-      >
+      <span class="login-badge login-invited">
+        <span class="login-icon">✉</span>
         Invitation Sent
       </span>
     `;
   }
 
+
   return `
-    <span
-      style="
-        display:inline-block;
-        padding:5px 9px;
-        border-radius:999px;
-        background:rgba(100,116,139,.12);
-        color:#475569;
-        font-size:12px;
-        font-weight:600;
-      "
-    >
+    <span class="login-badge login-none">
+      <span class="login-icon">○</span>
       No Login
     </span>
   `;
@@ -388,7 +535,9 @@ export async function init() {
     return;
   }
 
-  initialized = true;
+  initialized =
+    true;
+
 
   try {
 
@@ -398,12 +547,14 @@ export async function init() {
       "Loading members..."
     );
 
+
     /* =====================================================
        AUTH
     ===================================================== */
 
     currentUser =
       await requireAuth();
+
 
     if (!currentUser) {
 
@@ -420,6 +571,7 @@ export async function init() {
     currentMember =
       await getMyMember();
 
+
     if (!currentMember) {
 
       throw new Error(
@@ -427,12 +579,14 @@ export async function init() {
       );
     }
 
+
     if (!currentMember.group_id) {
 
       throw new Error(
         "Your member record has no group."
       );
     }
+
 
     groupId =
       currentMember.group_id;
@@ -444,6 +598,7 @@ export async function init() {
 
     currentGroup =
       await getMyGroup();
+
 
     if (!currentGroup) {
 
@@ -458,6 +613,7 @@ export async function init() {
       currentMember
     );
 
+
     console.log(
       "CHAMA LIVE: current group",
       currentGroup
@@ -465,7 +621,23 @@ export async function init() {
 
 
     /* =====================================================
-       LOAD MEMBERS
+       DISPLAY GROUP
+    ===================================================== */
+
+    const groupName =
+      byId("membersGroupName");
+
+    if (groupName) {
+
+      groupName.textContent =
+        currentGroup.name ||
+        currentGroup.group_name ||
+        "Your Group";
+    }
+
+
+    /* =====================================================
+       LOAD
     ===================================================== */
 
     await loadMembers();
@@ -478,6 +650,7 @@ export async function init() {
 
     showStatus("");
 
+
     console.log(
       "CHAMA LIVE: members initialized successfully"
     );
@@ -486,7 +659,8 @@ export async function init() {
 
   catch (error) {
 
-    initialized = false;
+    initialized =
+      false;
 
     showStatus("");
 
@@ -508,9 +682,6 @@ async function loadMembers() {
     );
   }
 
-  /*
-   * Full query
-   */
 
   const result =
     await supabase
@@ -545,9 +716,9 @@ async function loadMembers() {
       );
 
 
-  /*
-   * Compatibility fallback
-   */
+  /* =====================================================
+     COMPATIBILITY FALLBACK
+  ===================================================== */
 
   if (result.error) {
 
@@ -555,6 +726,7 @@ async function loadMembers() {
       "CHAMA LIVE: full member query failed",
       result.error
     );
+
 
     const retry =
       await supabase
@@ -585,14 +757,17 @@ async function loadMembers() {
           }
         );
 
+
     if (retry.error) {
       throw retry.error;
     }
+
 
     members =
       Array.isArray(retry.data)
         ? retry.data
         : [];
+
 
     return members;
   }
@@ -609,6 +784,7 @@ async function loadMembers() {
     members.length
   );
 
+
   return members;
 }
 
@@ -622,10 +798,13 @@ function createMemberRow(member) {
   const id =
     escapeHtml(member.id);
 
+
   const memberNumber =
     escapeHtml(
-      member.member_number || "—"
+      member.member_number ||
+      "—"
     );
+
 
   const membershipNumber =
     escapeHtml(
@@ -634,33 +813,41 @@ function createMemberRow(member) {
       "—"
     );
 
+
   const name =
     escapeHtml(
-      member.name || "—"
+      member.name ||
+      "—"
     );
+
 
   const phone =
     escapeHtml(
-      member.phone || "—"
+      member.phone ||
+      "—"
     );
+
 
   const email =
     escapeHtml(
-      member.email || "—"
+      member.email ||
+      "—"
     );
+
 
   const role =
-    escapeHtml(
-      member.role || "member"
-    );
+    member.role ||
+    "member";
+
 
   const status =
-    escapeHtml(
-      member.status || "active"
-    );
+    member.status ||
+    "active";
+
 
   const loginStatus =
     loginStatusHtml(member);
+
 
   const hasEmail =
     Boolean(
@@ -669,34 +856,30 @@ function createMemberRow(member) {
       ).trim()
     );
 
+
   const loginStatusValue =
     getLoginStatus(member);
 
-  let invitationButton = "";
 
+  let invitationButton =
+    "";
 
-  /*
-   * Member has no email
-   */
 
   if (!hasEmail) {
 
     invitationButton = `
       <button
         type="button"
-        class="btn btn-secondary"
+        class="member-action invitation-disabled"
         disabled
         title="Add an email address first"
       >
+        <span>✉</span>
         No Email
       </button>
     `;
   }
 
-
-  /*
-   * Member already activated
-   */
 
   else if (
     loginStatusValue === "Active"
@@ -705,19 +888,16 @@ function createMemberRow(member) {
     invitationButton = `
       <button
         type="button"
-        class="btn btn-secondary"
+        class="member-action invitation-disabled"
         disabled
         title="This member account is already active"
       >
-        Account Active
+        <span>✓</span>
+        Active
       </button>
     `;
   }
 
-
-  /*
-   * Invitation sent previously
-   */
 
   else if (
     loginStatusValue ===
@@ -727,30 +907,28 @@ function createMemberRow(member) {
     invitationButton = `
       <button
         type="button"
-        class="btn btn-secondary"
+        class="member-action invitation-action"
         data-action="invite"
         data-member-id="${id}"
       >
-        Resend Invitation
+        <span>↻</span>
+        Resend
       </button>
     `;
   }
 
-
-  /*
-   * New invitation
-   */
 
   else {
 
     invitationButton = `
       <button
         type="button"
-        class="btn btn-primary"
+        class="member-action invitation-primary"
         data-action="invite"
         data-member-id="${id}"
       >
-        Send Invitation
+        <span>✉</span>
+        Invite
       </button>
     `;
   }
@@ -759,49 +937,103 @@ function createMemberRow(member) {
   return `
     <tr data-member-id="${id}">
 
-      <td>${memberNumber}</td>
+      <td>
+        <span class="member-number">
+          ${memberNumber}
+        </span>
+      </td>
 
-      <td>${membershipNumber}</td>
 
-      <td>${name}</td>
+      <td>
+        <span class="membership-number">
+          ${membershipNumber}
+        </span>
+      </td>
 
-      <td>${phone}</td>
-
-      <td>${email}</td>
-
-      <td>${role}</td>
-
-      <td>${status}</td>
-
-      <td>${loginStatus}</td>
 
       <td>
 
-        <div
-          style="
-            display:flex;
-            gap:6px;
-            flex-wrap:wrap;
-          "
-        >
+        <div class="member-table-profile">
+
+          <div class="member-avatar">
+            ${escapeHtml(
+              getInitials(member.name)
+            )}
+          </div>
+
+          <div class="member-table-name">
+
+            <strong>
+              ${name}
+            </strong>
+
+            <span>
+              Joined ${escapeHtml(
+                formatDate(member.join_date)
+              )}
+            </span>
+
+          </div>
+
+        </div>
+
+      </td>
+
+
+      <td>
+        <span class="member-contact">
+          ${phone}
+        </span>
+      </td>
+
+
+      <td>
+        <span class="member-contact email-contact">
+          ${email}
+        </span>
+      </td>
+
+
+      <td>
+        ${roleBadgeHtml(role)}
+      </td>
+
+
+      <td>
+        ${accountStatusHtml(status)}
+      </td>
+
+
+      <td>
+        ${loginStatus}
+      </td>
+
+
+      <td>
+
+        <div class="member-actions">
 
           <button
             type="button"
-            class="btn btn-secondary"
+            class="member-action view-action"
             data-action="view"
             data-member-id="${id}"
           >
+            <span>◉</span>
             View
           </button>
 
+
           <button
             type="button"
-            class="btn btn-primary"
+            class="member-action edit-action"
             data-action="edit"
             data-member-id="${id}"
           >
+            <span>✎</span>
             Edit
           </button>
+
 
           ${invitationButton}
 
@@ -810,6 +1042,258 @@ function createMemberRow(member) {
       </td>
 
     </tr>
+  `;
+}
+
+
+/* =========================================================
+   CREATE MOBILE MEMBER CARD
+========================================================= */
+
+function createMemberCard(member) {
+
+  const id =
+    escapeHtml(member.id);
+
+
+  const memberNumber =
+    escapeHtml(
+      member.member_number ||
+      "—"
+    );
+
+
+  const membershipNumber =
+    escapeHtml(
+      member.membership_number ||
+      member.member_number ||
+      "—"
+    );
+
+
+  const name =
+    escapeHtml(
+      member.name ||
+      "Member"
+    );
+
+
+  const phone =
+    escapeHtml(
+      member.phone ||
+      "—"
+    );
+
+
+  const email =
+    escapeHtml(
+      member.email ||
+      "—"
+    );
+
+
+  const status =
+    member.status ||
+    "active";
+
+
+  const loginStatus =
+    getLoginStatus(member);
+
+
+  let invitationButton =
+    "";
+
+
+  if (!member.email) {
+
+    invitationButton = `
+      <button
+        type="button"
+        class="mobile-action disabled-action"
+        disabled
+      >
+        ✉ No Email
+      </button>
+    `;
+  }
+
+  else if (
+    loginStatus === "Active"
+  ) {
+
+    invitationButton = `
+      <button
+        type="button"
+        class="mobile-action disabled-action"
+        disabled
+      >
+        ✓ Account Active
+      </button>
+    `;
+  }
+
+  else if (
+    loginStatus === "Invitation Sent"
+  ) {
+
+    invitationButton = `
+      <button
+        type="button"
+        class="mobile-action invite-mobile"
+        data-action="invite"
+        data-member-id="${id}"
+      >
+        ↻ Resend
+      </button>
+    `;
+  }
+
+  else {
+
+    invitationButton = `
+      <button
+        type="button"
+        class="mobile-action invite-mobile"
+        data-action="invite"
+        data-member-id="${id}"
+      >
+        ✉ Invite
+      </button>
+    `;
+  }
+
+
+  return `
+    <article
+      class="member-card"
+      data-member-id="${id}"
+    >
+
+      <div class="member-card-top">
+
+        <div class="member-card-profile">
+
+          <div class="member-avatar large">
+            ${escapeHtml(
+              getInitials(member.name)
+            )}
+          </div>
+
+          <div>
+
+            <h3>
+              ${name}
+            </h3>
+
+            <div class="member-card-number">
+              #${memberNumber}
+            </div>
+
+          </div>
+
+        </div>
+
+
+        ${accountStatusHtml(status)}
+
+      </div>
+
+
+      <div class="member-card-badges">
+
+        ${roleBadgeHtml(member.role)}
+
+        ${loginStatusHtml(member)}
+
+      </div>
+
+
+      <div class="member-card-info">
+
+        <div class="member-info-item">
+
+          <span class="info-label">
+            Membership No.
+          </span>
+
+          <strong>
+            ${membershipNumber}
+          </strong>
+
+        </div>
+
+
+        <div class="member-info-item">
+
+          <span class="info-label">
+            Phone
+          </span>
+
+          <strong>
+            ${phone}
+          </strong>
+
+        </div>
+
+
+        <div class="member-info-item full">
+
+          <span class="info-label">
+            Email
+          </span>
+
+          <strong class="mobile-email">
+            ${email}
+          </strong>
+
+        </div>
+
+
+        <div class="member-info-item">
+
+          <span class="info-label">
+            Joined
+          </span>
+
+          <strong>
+            ${escapeHtml(
+              formatDate(member.join_date)
+            )}
+          </strong>
+
+        </div>
+
+      </div>
+
+
+      <div class="member-card-actions">
+
+        <button
+          type="button"
+          class="mobile-action view-mobile"
+          data-action="view"
+          data-member-id="${id}"
+        >
+          ◉ View
+        </button>
+
+
+        <button
+          type="button"
+          class="mobile-action edit-mobile"
+          data-action="edit"
+          data-member-id="${id}"
+        >
+          ✎ Edit
+        </button>
+
+
+        ${invitationButton}
+
+      </div>
+
+    </article>
   `;
 }
 
@@ -825,42 +1309,122 @@ function renderMembers(
   const tbody =
     byId("memberRows");
 
-  if (!tbody) {
 
-    console.warn(
-      "CHAMA LIVE: #memberRows not found"
-    );
+  const cards =
+    byId("memberCards");
 
-    return;
-  }
 
   const rows =
     Array.isArray(list)
       ? list
       : [];
 
-  if (rows.length === 0) {
 
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="9">
-          No members registered yet.
-        </td>
-      </tr>
-    `;
+  /* =====================================================
+     DESKTOP TABLE
+  ===================================================== */
 
-    return;
+  if (tbody) {
+
+    if (rows.length === 0) {
+
+      tbody.innerHTML = `
+        <tr>
+
+          <td
+            colspan="9"
+            class="empty-table-cell"
+          >
+
+            <div class="empty-state">
+
+              <div class="empty-state-icon">
+                ♙
+              </div>
+
+              <h3>
+                No members found
+              </h3>
+
+              <p>
+                Add your first group member to get started.
+              </p>
+
+            </div>
+
+          </td>
+
+        </tr>
+      `;
+    }
+
+    else {
+
+      tbody.innerHTML =
+        rows
+          .map(createMemberRow)
+          .join("");
+    }
   }
 
-  tbody.innerHTML =
-    rows
-      .map(createMemberRow)
-      .join("");
+
+  /* =====================================================
+     MOBILE CARDS
+  ===================================================== */
+
+  if (cards) {
+
+    if (rows.length === 0) {
+
+      cards.innerHTML = `
+        <div class="empty-state mobile-empty">
+
+          <div class="empty-state-icon">
+            ♙
+          </div>
+
+          <h3>
+            No members found
+          </h3>
+
+          <p>
+            Add your first group member to get started.
+          </p>
+
+        </div>
+      `;
+    }
+
+    else {
+
+      cards.innerHTML =
+        rows
+          .map(createMemberCard)
+          .join("");
+    }
+  }
+
+
+  /* =====================================================
+     RESULT COUNT
+  ===================================================== */
+
+  const resultCount =
+    byId("memberResultCount");
+
+
+  if (resultCount) {
+
+    resultCount.textContent =
+      rows.length === members.length
+        ? `${rows.length} members`
+        : `${rows.length} of ${members.length} members`;
+  }
 }
 
 
 /* =========================================================
-   MEMBER COUNT
+   MEMBER COUNT / STATISTICS
 ========================================================= */
 
 function updateMemberCount() {
@@ -868,41 +1432,92 @@ function updateMemberCount() {
   const total =
     members.length;
 
+
   const active =
     members.filter(
       member =>
         String(
           member.status || ""
-        ).toLowerCase() ===
+        )
+          .toLowerCase() ===
         "active"
     ).length;
 
 
-  const count =
-    byId("memberCount");
-
-  if (count) {
-    count.textContent =
-      String(total);
-  }
-
-
-  const totalMembers =
-    byId("membersCount");
-
-  if (totalMembers) {
-    totalMembers.textContent =
-      String(total);
-  }
+  const inactive =
+    members.filter(
+      member =>
+        String(
+          member.status || ""
+        )
+          .toLowerCase() !==
+        "active"
+    ).length;
 
 
-  const activeMembers =
-    byId("activeMembers");
+  const loginActive =
+    members.filter(
+      member =>
+        getLoginStatus(member) ===
+        "Active"
+    ).length;
 
-  if (activeMembers) {
-    activeMembers.textContent =
-      String(active);
-  }
+
+  const invitations =
+    members.filter(
+      member =>
+        getLoginStatus(member) ===
+        "Invitation Sent"
+    ).length;
+
+
+  const noLogin =
+    members.filter(
+      member =>
+        getLoginStatus(member) ===
+        "No Login"
+    ).length;
+
+
+  const values = {
+
+    memberCount:
+      total,
+
+    membersCount:
+      total,
+
+    activeMembers:
+      active,
+
+    inactiveMembers:
+      inactive,
+
+    loginMembers:
+      loginActive,
+
+    invitedMembers:
+      invitations,
+
+    noLoginMembers:
+      noLogin
+  };
+
+
+  Object.entries(values)
+    .forEach(
+      ([id, value]) => {
+
+        const element =
+          byId(id);
+
+        if (element) {
+
+          element.textContent =
+            String(value);
+        }
+      }
+    );
 }
 
 
@@ -916,29 +1531,48 @@ function bindEvents() {
     return;
   }
 
-  eventsBound = true;
+  eventsBound =
+    true;
 
 
   const addButton =
     byId("addMemberButton");
 
+
   const closeButton =
     byId("closeAddMember");
+
 
   const cancelButton =
     byId("cancelAddMember");
 
+
   const form =
     byId("addMemberForm");
+
 
   const search =
     byId("memberSearch");
 
+
+  const clearSearch =
+    byId("clearMemberSearch");
+
+
   const closeModalButton =
     byId("closeMemberModal");
 
+
+  const modalBackdrop =
+    byId("memberModal");
+
+
   const tbody =
     byId("memberRows");
+
+
+  const cards =
+    byId("memberCards");
 
 
   if (addButton) {
@@ -986,9 +1620,34 @@ function bindEvents() {
   }
 
 
+  if (clearSearch) {
+
+    clearSearch.addEventListener(
+      "click",
+      () => {
+
+        if (search) {
+          search.value = "";
+        }
+
+        renderMembers();
+      }
+    );
+  }
+
+
   if (tbody) {
 
     tbody.addEventListener(
+      "click",
+      handleTableAction
+    );
+  }
+
+
+  if (cards) {
+
+    cards.addEventListener(
       "click",
       handleTableAction
     );
@@ -1000,6 +1659,24 @@ function bindEvents() {
     closeModalButton.addEventListener(
       "click",
       closeMemberModal
+    );
+  }
+
+
+  if (modalBackdrop) {
+
+    modalBackdrop.addEventListener(
+      "click",
+      event => {
+
+        if (
+          event.target ===
+          modalBackdrop
+        ) {
+
+          closeMemberModal();
+        }
+      }
     );
   }
 
@@ -1041,7 +1718,16 @@ function handleSearch(event) {
       .toLowerCase();
 
 
+  const searchEmpty =
+    byId("searchEmpty");
+
+
   if (!query) {
+
+    if (searchEmpty) {
+      searchEmpty.hidden =
+        true;
+    }
 
     renderMembers();
 
@@ -1056,12 +1742,19 @@ function handleSearch(event) {
         const values = [
 
           member.member_number,
+
           member.membership_number,
+
           member.name,
+
           member.phone,
+
           member.email,
+
           member.role,
+
           member.status,
+
           member.onboarding_status
 
         ];
@@ -1086,11 +1779,18 @@ function handleSearch(event) {
 
 
   renderMembers(filtered);
+
+
+  if (searchEmpty) {
+
+    searchEmpty.hidden =
+      filtered.length !== 0;
+  }
 }
 
 
 /* =========================================================
-   TABLE ACTIONS
+   TABLE / CARD ACTIONS
 ========================================================= */
 
 function handleTableAction(event) {
@@ -1099,6 +1799,7 @@ function handleTableAction(event) {
     event.target.closest(
       "[data-action]"
     );
+
 
   if (!button) {
     return;
@@ -1109,6 +1810,7 @@ function handleTableAction(event) {
     button.getAttribute(
       "data-member-id"
     );
+
 
   const action =
     button.getAttribute(
@@ -1153,34 +1855,41 @@ function handleTableAction(event) {
 
 function openAddMember() {
 
-  editingMemberId = null;
+  editingMemberId =
+    null;
 
 
   const panel =
     byId("addMemberPanel");
 
+
   const title =
     byId("memberFormTitle");
 
+
   const description =
     byId("memberFormDescription");
+
 
   const form =
     byId("addMemberForm");
 
 
   if (panel) {
-    panel.hidden = false;
+    panel.hidden =
+      false;
   }
 
 
   if (title) {
+
     title.textContent =
       "Add Member";
   }
 
 
   if (description) {
+
     description.textContent =
       "Register a new member in your group.";
   }
@@ -1197,8 +1906,19 @@ function openAddMember() {
   const memberNumber =
     byId("memberNumber");
 
+
   if (memberNumber) {
+
     memberNumber.focus();
+  }
+
+
+  if (panel) {
+
+    panel.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
   }
 }
 
@@ -1209,19 +1929,24 @@ function openAddMember() {
 
 function closeMemberForm() {
 
-  editingMemberId = null;
+  editingMemberId =
+    null;
 
 
   const panel =
     byId("addMemberPanel");
 
+
   if (panel) {
-    panel.hidden = true;
+
+    panel.hidden =
+      true;
   }
 
 
   const form =
     byId("addMemberForm");
+
 
   if (form) {
     form.reset();
@@ -1240,6 +1965,7 @@ function openEditMember(memberId) {
 
   const member =
     findMember(memberId);
+
 
   if (!member) {
 
@@ -1260,25 +1986,31 @@ function openEditMember(memberId) {
   const panel =
     byId("addMemberPanel");
 
+
   const title =
     byId("memberFormTitle");
+
 
   const description =
     byId("memberFormDescription");
 
 
   if (panel) {
-    panel.hidden = false;
+
+    panel.hidden =
+      false;
   }
 
 
   if (title) {
+
     title.textContent =
       "Edit Member";
   }
 
 
   if (description) {
+
     description.textContent =
       "Update the member information.";
   }
@@ -1287,17 +2019,22 @@ function openEditMember(memberId) {
   const memberNumber =
     byId("memberNumber");
 
+
   const memberName =
     byId("memberName");
+
 
   const memberPhone =
     byId("memberPhone");
 
+
   const memberEmail =
     byId("memberEmail");
 
+
   const memberRole =
     byId("memberRole");
+
 
   const memberStatus =
     byId("memberStatus");
@@ -1313,32 +2050,42 @@ function openEditMember(memberId) {
 
 
   if (memberName) {
+
     memberName.value =
-      member.name || "";
+      member.name ||
+      "";
   }
 
 
   if (memberPhone) {
+
     memberPhone.value =
-      member.phone || "";
+      member.phone ||
+      "";
   }
 
 
   if (memberEmail) {
+
     memberEmail.value =
-      member.email || "";
+      member.email ||
+      "";
   }
 
 
   if (memberRole) {
+
     memberRole.value =
-      member.role || "member";
+      member.role ||
+      "member";
   }
 
 
   if (memberStatus) {
+
     memberStatus.value =
-      member.status || "active";
+      member.status ||
+      "active";
   }
 
 
@@ -1364,17 +2111,22 @@ function getFormValues() {
   const memberNumberElement =
     byId("memberNumber");
 
+
   const nameElement =
     byId("memberName");
+
 
   const phoneElement =
     byId("memberPhone");
 
+
   const emailElement =
     byId("memberEmail");
 
+
   const roleElement =
     byId("memberRole");
+
 
   const statusElement =
     byId("memberStatus");
@@ -1387,15 +2139,18 @@ function getFormValues() {
         ? memberNumberElement.value.trim()
         : "",
 
+
     name:
       nameElement
         ? nameElement.value.trim()
         : "",
 
+
     phone:
       phoneElement
         ? phoneElement.value.trim()
         : "",
+
 
     email:
       emailElement
@@ -1404,10 +2159,12 @@ function getFormValues() {
             .toLowerCase()
         : "",
 
+
     role:
       roleElement
         ? roleElement.value
         : "member",
+
 
     status:
       statusElement
@@ -1493,6 +2250,7 @@ async function checkDuplicateMemberNumber(
 
 
   if (result.error) {
+
     throw result.error;
   }
 
@@ -1516,6 +2274,8 @@ function generateMembershipNumber(
     memberNumber || ""
   ).trim();
 }
+
+
 /* =========================================================
    SAVE MEMBER
 ========================================================= */
@@ -1525,24 +2285,31 @@ async function saveMember(event) {
   event.preventDefault();
 
   clearError();
+
   clearFormMessage();
+
 
   const saveButton =
     byId("saveMemberButton");
 
+
   const wasEditing =
     Boolean(editingMemberId);
+
 
   try {
 
     const values =
       getFormValues();
 
+
     validateForm(values);
+
 
     if (saveButton) {
 
-      saveButton.disabled = true;
+      saveButton.disabled =
+        true;
 
       saveButton.textContent =
         wasEditing
@@ -1552,13 +2319,14 @@ async function saveMember(event) {
 
 
     /* =====================================================
-       CHECK DUPLICATE MEMBER NUMBER
+       DUPLICATE NUMBER
     ===================================================== */
 
     const duplicate =
       await checkDuplicateMemberNumber(
         values.memberNumber
       );
+
 
     if (duplicate) {
 
@@ -1571,7 +2339,7 @@ async function saveMember(event) {
 
 
     /* =====================================================
-       UPDATE EXISTING MEMBER
+       UPDATE
     ===================================================== */
 
     if (wasEditing) {
@@ -1593,7 +2361,8 @@ async function saveMember(event) {
           values.phone,
 
         email:
-          values.email || null,
+          values.email ||
+          null,
 
         role:
           values.role,
@@ -1618,6 +2387,7 @@ async function saveMember(event) {
 
 
       if (result.error) {
+
         throw result.error;
       }
 
@@ -1630,7 +2400,7 @@ async function saveMember(event) {
 
 
     /* =====================================================
-       CREATE NEW MEMBER
+       CREATE
     ===================================================== */
 
     else {
@@ -1667,7 +2437,8 @@ async function saveMember(event) {
           values.phone,
 
         email:
-          values.email || null,
+          values.email ||
+          null,
 
         role:
           values.role,
@@ -1711,6 +2482,7 @@ async function saveMember(event) {
 
 
       if (result.error) {
+
         throw result.error;
       }
 
@@ -1731,7 +2503,7 @@ async function saveMember(event) {
 
 
     /* =====================================================
-       REFRESH TABLE
+       REFRESH
     ===================================================== */
 
     await loadMembers();
@@ -1740,10 +2512,6 @@ async function saveMember(event) {
 
     updateMemberCount();
 
-
-    /*
-     * Keep the success message visible briefly.
-     */
 
     setTimeout(
       () => {
@@ -1777,7 +2545,8 @@ async function saveMember(event) {
 
     if (saveButton) {
 
-      saveButton.disabled = false;
+      saveButton.disabled =
+        false;
 
       saveButton.textContent =
         wasEditing
@@ -1801,10 +2570,6 @@ async function extractFunctionError(
     functionError?.message ||
     "The invitation could not be sent.";
 
-
-  /* =====================================================
-     FUNCTION DATA
-  ===================================================== */
 
   if (
     functionData &&
@@ -1838,19 +2603,11 @@ async function extractFunctionError(
   }
 
 
-  /* =====================================================
-     SUPABASE RESPONSE CONTEXT
-  ===================================================== */
-
   const context =
     functionError?.context;
 
 
   if (context) {
-
-    /*
-     * Try JSON first.
-     */
 
     try {
 
@@ -1862,6 +2619,7 @@ async function extractFunctionError(
         const cloned =
           context.clone();
 
+
         if (
           typeof cloned.json ===
           "function"
@@ -1869,6 +2627,7 @@ async function extractFunctionError(
 
           const body =
             await cloned.json();
+
 
           console.error(
             "CHAMA LIVE: Edge Function JSON error",
@@ -1927,10 +2686,6 @@ async function extractFunctionError(
     }
 
 
-    /*
-     * Try text.
-     */
-
     try {
 
       if (
@@ -1940,6 +2695,7 @@ async function extractFunctionError(
 
         const cloned =
           context.clone();
+
 
         if (
           typeof cloned.text ===
@@ -2015,10 +2771,6 @@ async function extractFunctionError(
     }
   }
 
-
-  /* =====================================================
-     HTTP STATUS
-  ===================================================== */
 
   if (
     functionError?.status
@@ -2096,18 +2848,15 @@ async function sendMemberInvitation(
   const originalText =
     button
       ? button.textContent
-      : "Send Invitation";
+      : "Invite";
 
 
   try {
 
-    /* =====================================================
-       BUTTON STATE
-    ===================================================== */
-
     if (button) {
 
-      button.disabled = true;
+      button.disabled =
+        true;
 
       button.textContent =
         "Sending...";
@@ -2122,15 +2871,18 @@ async function sendMemberInvitation(
     console.log(
       "CHAMA LIVE: preparing member invitation",
       {
-        memberId: member.id,
+        memberId:
+          member.id,
+
         email,
+
         groupId
       }
     );
 
 
     /* =====================================================
-       VERIFY CURRENT SESSION
+       SESSION
     ===================================================== */
 
     const {
@@ -2157,14 +2909,8 @@ async function sendMemberInvitation(
     }
 
 
-    console.log(
-      "CHAMA LIVE: authenticated user:",
-      session.user?.id
-    );
-
-
     /* =====================================================
-       CALL SUPABASE EDGE FUNCTION
+       EDGE FUNCTION
     ===================================================== */
 
     const result =
@@ -2184,10 +2930,6 @@ async function sendMemberInvitation(
       result
     );
 
-
-    /* =====================================================
-       HANDLE SUPABASE FUNCTION ERROR
-    ===================================================== */
 
     if (result.error) {
 
@@ -2209,10 +2951,6 @@ async function sendMemberInvitation(
       );
     }
 
-
-    /* =====================================================
-       HANDLE SERVER-SIDE FAILURE
-    ===================================================== */
 
     if (
       result.data &&
@@ -2248,31 +2986,10 @@ async function sendMemberInvitation(
     }
 
 
-    /* =====================================================
-       SUCCESS
-    ===================================================== */
-
     console.log(
       "CHAMA LIVE: invitation sent successfully",
       result.data
     );
-
-
-    /*
-     * Important:
-     *
-     * We do NOT directly modify:
-     *
-     * auth_user_id
-     * user_id
-     * invited_at
-     * onboarding_status
-     *
-     * from the browser.
-     *
-     * The Edge Function is responsible for
-     * maintaining those values.
-     */
 
 
     showStatus(
@@ -2281,7 +2998,7 @@ async function sendMemberInvitation(
 
 
     /* =====================================================
-       REFRESH MEMBERS
+       REFRESH
     ===================================================== */
 
     await loadMembers();
@@ -2292,7 +3009,7 @@ async function sendMemberInvitation(
 
 
     /* =====================================================
-       REFRESH OPEN MEMBER MODAL
+       REFRESH MODAL
     ===================================================== */
 
     const modal =
@@ -2309,6 +3026,14 @@ async function sendMemberInvitation(
       );
     }
 
+
+    setTimeout(
+      () => {
+        showStatus("");
+      },
+      3500
+    );
+
   }
 
 
@@ -2319,10 +3044,6 @@ async function sendMemberInvitation(
       error
     );
 
-
-    /*
-     * Display the actual server error.
-     */
 
     showError(
       new Error(
@@ -2340,12 +3061,9 @@ async function sendMemberInvitation(
 
     if (button) {
 
-      button.disabled = false;
+      button.disabled =
+        false;
 
-
-      /*
-       * Get latest member state.
-       */
 
       const updatedMember =
         findMember(memberId);
@@ -2358,14 +3076,14 @@ async function sendMemberInvitation(
       ) {
 
         button.textContent =
-          "Resend Invitation";
+          "↻ Resend";
       }
 
       else {
 
         button.textContent =
           originalText ||
-          "Send Invitation";
+          "Invite";
       }
     }
   }
@@ -2397,29 +3115,45 @@ function openMemberModal(memberId) {
   const name =
     byId("viewMemberName");
 
+
+  const initials =
+    byId("viewMemberInitials");
+
+
   const number =
     byId("viewMemberNumber");
+
 
   const membershipNumber =
     byId("viewMembershipNumber");
 
+
   const phone =
     byId("viewMemberPhone");
+
 
   const email =
     byId("viewMemberEmail");
 
+
   const role =
     byId("viewMemberRole");
+
 
   const status =
     byId("viewMemberStatus");
 
+
   const loginStatus =
     byId("viewMemberLoginStatus");
 
+
   const joinDate =
     byId("viewMemberJoinDate");
+
+
+  const group =
+    byId("viewMemberGroup");
 
 
   if (name) {
@@ -2427,6 +3161,13 @@ function openMemberModal(memberId) {
     name.textContent =
       member.name ||
       "Member";
+  }
+
+
+  if (initials) {
+
+    initials.textContent =
+      getInitials(member.name);
   }
 
 
@@ -2465,24 +3206,28 @@ function openMemberModal(memberId) {
 
   if (role) {
 
-    role.textContent =
-      member.role ||
-      "member";
+    role.innerHTML =
+      roleBadgeHtml(
+        member.role
+      );
   }
 
 
   if (status) {
 
-    status.textContent =
-      member.status ||
-      "—";
+    status.innerHTML =
+      accountStatusHtml(
+        member.status
+      );
   }
 
 
   if (loginStatus) {
 
-    loginStatus.textContent =
-      getLoginStatus(member);
+    loginStatus.innerHTML =
+      loginStatusHtml(
+        member
+      );
   }
 
 
@@ -2492,6 +3237,15 @@ function openMemberModal(memberId) {
       formatDate(
         member.join_date
       );
+  }
+
+
+  if (group) {
+
+    group.textContent =
+      currentGroup?.name ||
+      currentGroup?.group_name ||
+      "Current Group";
   }
 
 
@@ -2509,10 +3263,17 @@ function openMemberModal(memberId) {
   }
 
 
-  modal.hidden = false;
+  modal.hidden =
+    false;
+
 
   modal.style.display =
     "flex";
+
+
+  document.body.classList.add(
+    "modal-open"
+  );
 
 
   const closeButton =
@@ -2520,7 +3281,13 @@ function openMemberModal(memberId) {
 
 
   if (closeButton) {
-    closeButton.focus();
+
+    setTimeout(
+      () => {
+        closeButton.focus();
+      },
+      50
+    );
   }
 }
 
@@ -2540,10 +3307,17 @@ function closeMemberModal() {
   }
 
 
-  modal.hidden = true;
+  modal.hidden =
+    true;
+
 
   modal.style.display =
     "none";
+
+
+  document.body.classList.remove(
+    "modal-open"
+  );
 }
 
 
@@ -2607,4 +3381,3 @@ export const loadPage =
 console.log(
   "CHAMA LIVE: members.js ready"
 );
-
