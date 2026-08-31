@@ -10,14 +10,400 @@
     content="width=device-width, initial-scale=1"
   >
 
-  <title>
-    Meetings — CHAMA LIVE
-  </title>
+  <title>Meetings — CHAMA LIVE</title>
 
   <link
     rel="stylesheet"
     href="css/app.css"
   >
+
+  <style>
+
+    /* =====================================================
+       MEETINGS PAGE
+    ====================================================== */
+
+    .meeting-page {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+
+    /* =====================================================
+       METRIC CARDS
+    ====================================================== */
+
+    .meeting-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .meeting-metric-card {
+      position: relative;
+      overflow: hidden;
+      padding: 22px;
+      border-radius: 16px;
+      border: 1px solid rgba(0,0,0,.06);
+      background: #fff;
+      box-shadow: 0 8px 24px rgba(0,0,0,.06);
+    }
+
+    .meeting-metric-card::after {
+      content: "";
+      position: absolute;
+      right: -25px;
+      bottom: -35px;
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: rgba(0,0,0,.025);
+    }
+
+    .meeting-metric-label {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .meeting-metric-value {
+      font-size: 32px;
+      line-height: 1;
+      font-weight: 800;
+    }
+
+
+    /* =====================================================
+       SECTION CARDS
+    ====================================================== */
+
+    .meeting-section {
+      margin-bottom: 24px;
+    }
+
+    .meeting-section-header {
+      margin-bottom: 20px;
+    }
+
+    .meeting-section-header h2 {
+      margin-bottom: 5px;
+    }
+
+
+    /* =====================================================
+       FORM GRID
+    ====================================================== */
+
+    .meeting-form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .meeting-form-full {
+      grid-column: 1 / -1;
+    }
+
+    .meeting-form-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 5px;
+    }
+
+
+    /* =====================================================
+       FILTER BAR
+    ====================================================== */
+
+    .meeting-filter-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .meeting-filter-label {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+
+    /* =====================================================
+       STATUS BADGES
+    ====================================================== */
+
+    .meeting-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      white-space: nowrap;
+    }
+
+    .meeting-status::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .meeting-status-upcoming {
+      background: #e8f1ff;
+      color: #2457a6;
+    }
+
+    .meeting-status-completed {
+      background: #dcf7e8;
+      color: #176b3a;
+    }
+
+    .meeting-status-cancelled {
+      background: #fde2e2;
+      color: #9b1c1c;
+    }
+
+
+    /* =====================================================
+       TABLE
+    ====================================================== */
+
+    .meeting-table td {
+      vertical-align: middle;
+    }
+
+    .meeting-date {
+      white-space: nowrap;
+      font-weight: 600;
+    }
+
+    .meeting-title-cell {
+      min-width: 180px;
+    }
+
+    .meeting-title-main {
+      font-weight: 700;
+    }
+
+    .meeting-venue {
+      color: inherit;
+    }
+
+    .meeting-actions {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+
+
+    /* =====================================================
+       DETAILS
+    ====================================================== */
+
+    .meeting-details-card {
+      border: 1px solid rgba(0,0,0,.07);
+    }
+
+    .meeting-detail-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .meeting-detail-title {
+      margin: 0 0 5px;
+      font-size: 24px;
+    }
+
+    .meeting-detail-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    .meeting-meta-box {
+      padding: 14px;
+      border-radius: 12px;
+      background: rgba(0,0,0,.025);
+    }
+
+    .meeting-meta-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      margin-bottom: 5px;
+      opacity: .65;
+    }
+
+    .meeting-meta-value {
+      font-weight: 700;
+    }
+
+
+    /* =====================================================
+       AGENDA
+    ====================================================== */
+
+    .meeting-agenda-box {
+      margin-bottom: 22px;
+    }
+
+    .meeting-subtitle {
+      font-size: 15px;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+
+    .meeting-agenda-list {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .meeting-agenda-list li {
+      margin-bottom: 7px;
+    }
+
+    .meeting-empty-text {
+      opacity: .65;
+      font-style: italic;
+    }
+
+
+    /* =====================================================
+       DETAIL ACTIONS
+    ====================================================== */
+
+    .meeting-detail-actions {
+      display: flex;
+      gap: 9px;
+      flex-wrap: wrap;
+      padding: 18px 0;
+      border-top: 1px solid rgba(0,0,0,.07);
+      border-bottom: 1px solid rgba(0,0,0,.07);
+      margin-bottom: 22px;
+    }
+
+
+    /* =====================================================
+       MINUTES / RESOLUTION
+    ====================================================== */
+
+    .meeting-record-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .meeting-record-box {
+      min-width: 0;
+    }
+
+    .meeting-save-row {
+      display: flex;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+
+    /* =====================================================
+       EMPTY STATE
+    ====================================================== */
+
+    .meeting-empty-state {
+      text-align: center;
+      padding: 35px 20px;
+    }
+
+    .meeting-empty-icon {
+      font-size: 30px;
+      margin-bottom: 8px;
+      opacity: .55;
+    }
+
+
+    /* =====================================================
+       MOBILE
+    ====================================================== */
+
+    @media (max-width: 900px) {
+
+      .meeting-metrics {
+        grid-template-columns: 1fr;
+      }
+
+      .meeting-form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .meeting-form-full {
+        grid-column: auto;
+      }
+
+      .meeting-detail-meta {
+        grid-template-columns: 1fr;
+      }
+
+      .meeting-record-grid {
+        grid-template-columns: 1fr;
+      }
+
+    }
+
+
+    @media (max-width: 700px) {
+
+      .meeting-metric-card {
+        padding: 18px;
+      }
+
+      .meeting-metric-value {
+        font-size: 28px;
+      }
+
+      .meeting-actions {
+        flex-direction: column;
+      }
+
+      .meeting-actions .btn {
+        width: 100%;
+      }
+
+      .meeting-detail-actions {
+        flex-direction: column;
+      }
+
+      .meeting-detail-actions .btn {
+        width: 100%;
+      }
+
+      .meeting-save-row {
+        justify-content: stretch;
+      }
+
+      .meeting-save-row .btn {
+        width: 100%;
+      }
+
+    }
+
+  </style>
 
 </head>
 
@@ -46,9 +432,9 @@
 <div class="layout">
 
 
-  <!-- ==================================================
+  <!-- ===================================================
        SIDEBAR
-  =================================================== -->
+  ==================================================== -->
 
   <aside class="sidebar">
 
@@ -95,479 +481,507 @@
 
 
 
-  <!-- ==================================================
+  <!-- ===================================================
        MAIN
-  =================================================== -->
+  ==================================================== -->
 
   <main class="main">
 
-
-    <div class="page-head">
-
-      <div>
-
-        <h1>
-          Meetings
-        </h1>
-
-        <p class="muted">
-          Plan, record and manage group meetings.
-        </p>
-
-      </div>
-
-    </div>
+    <div class="meeting-page">
 
 
+      <!-- =================================================
+           PAGE HEADER
+      ================================================== -->
 
-    <!-- ==================================================
-         STATUS
-    =================================================== -->
+      <div class="page-head">
 
-    <div
-      id="status"
-      class="card"
-      style="margin-bottom:20px;"
-      hidden
-    ></div>
+        <div>
 
+          <h1>
+            Meetings
+          </h1>
 
+          <p class="muted">
+            Plan, record and manage group meetings.
+          </p>
 
-    <!-- ==================================================
-         ERROR
-    =================================================== -->
-
-    <div
-      id="error"
-      class="error"
-      hidden
-      style="margin-bottom:20px;"
-    ></div>
-
-
-
-    <!-- ==================================================
-         METRICS
-    =================================================== -->
-
-    <div class="grid grid-3">
-
-
-      <div class="card">
-
-        <div class="muted">
-          Upcoming
-        </div>
-
-        <div
-          class="metric"
-          id="upcomingCount"
-        >
-          0
         </div>
 
       </div>
 
 
 
-      <div class="card">
+      <!-- =================================================
+           STATUS
+      ================================================== -->
 
-        <div class="muted">
-          Completed
+      <div
+        id="status"
+        class="card"
+        style="margin-bottom:20px;"
+        hidden
+      ></div>
+
+
+
+      <!-- =================================================
+           ERROR
+      ================================================== -->
+
+      <div
+        id="error"
+        class="error"
+        hidden
+        style="margin-bottom:20px;"
+      ></div>
+
+
+
+      <!-- =================================================
+           METRICS
+      ================================================== -->
+
+      <div class="meeting-metrics">
+
+
+        <div class="meeting-metric-card">
+
+          <div class="meeting-metric-label muted">
+            Upcoming
+          </div>
+
+          <div
+            class="meeting-metric-value"
+            id="upcomingCount"
+          >
+            0
+          </div>
+
         </div>
 
-        <div
-          class="metric"
-          id="completedCount"
-        >
-          0
+
+
+        <div class="meeting-metric-card">
+
+          <div class="meeting-metric-label muted">
+            Completed
+          </div>
+
+          <div
+            class="meeting-metric-value"
+            id="completedCount"
+          >
+            0
+          </div>
+
         </div>
+
+
+
+        <div class="meeting-metric-card">
+
+          <div class="meeting-metric-label muted">
+            Cancelled
+          </div>
+
+          <div
+            class="meeting-metric-value"
+            id="cancelledCount"
+          >
+            0
+          </div>
+
+        </div>
+
 
       </div>
 
 
 
-      <div class="card">
+      <!-- =================================================
+           SCHEDULE MEETING
+      ================================================== -->
 
-        <div class="muted">
-          Cancelled
-        </div>
+      <section class="card meeting-section">
 
-        <div
-          class="metric"
-          id="cancelledCount"
-        >
-          0
-        </div>
+        <div class="meeting-section-header">
 
-      </div>
-
-    </div>
-
-
-
-    <br>
-
-
-
-    <!-- ==================================================
-         SCHEDULE MEETING
-    =================================================== -->
-
-    <section class="card">
-
-      <h2>
-        Schedule Meeting
-      </h2>
-
-      <br>
-
-
-      <form id="meetingForm">
-
-
-        <div class="form-group">
-
-          <label for="title">
-            Meeting Title
-          </label>
-
-          <input
-            id="title"
-            name="title"
-            type="text"
-            required
-            placeholder="e.g. Monthly Chama Meeting"
-          >
-
-        </div>
-
-
-
-        <div class="form-group">
-
-          <label for="meetingDate">
-            Date
-          </label>
-
-          <input
-            id="meetingDate"
-            name="date"
-            type="date"
-            required
-          >
-
-        </div>
-
-
-
-        <div class="form-group">
-
-          <label for="venue">
-            Venue
-          </label>
-
-          <input
-            id="venue"
-            name="venue"
-            type="text"
-            placeholder="e.g. Timau"
-          >
-
-        </div>
-
-
-
-        <div class="form-group">
-
-          <label for="agenda">
-            Agenda
-          </label>
-
-          <textarea
-            id="agenda"
-            name="agenda"
-            rows="5"
-            placeholder="Enter one agenda item per line..."
-          ></textarea>
-
-        </div>
-
-
-
-        <div
-          style="
-            display:flex;
-            gap:10px;
-            flex-wrap:wrap;
-          "
-        >
-
-          <button
-            class="btn btn-primary"
-            id="saveMeeting"
-            type="submit"
-          >
+          <h2>
             Schedule Meeting
-          </button>
+          </h2>
 
+          <p class="muted">
+            Create a meeting and add its agenda.
+          </p>
+
+        </div>
+
+
+        <form id="meetingForm">
+
+          <div class="meeting-form-grid">
+
+
+            <!-- TITLE -->
+
+            <div class="form-group">
+
+              <label for="title">
+                Meeting Title
+              </label>
+
+              <input
+                id="title"
+                name="title"
+                type="text"
+                required
+                maxlength="255"
+                placeholder="e.g. Monthly Chama Meeting"
+              >
+
+            </div>
+
+
+
+            <!-- DATE -->
+
+            <div class="form-group">
+
+              <label for="meetingDate">
+                Date
+              </label>
+
+              <input
+                id="meetingDate"
+                name="date"
+                type="date"
+                required
+              >
+
+            </div>
+
+
+
+            <!-- VENUE -->
+
+            <div class="form-group">
+
+              <label for="venue">
+                Venue
+              </label>
+
+              <input
+                id="venue"
+                name="venue"
+                type="text"
+                maxlength="255"
+                placeholder="e.g. Timau Primary"
+              >
+
+            </div>
+
+
+
+            <!-- AGENDA -->
+
+            <div class="form-group meeting-form-full">
+
+              <label for="agenda">
+                Agenda
+              </label>
+
+              <textarea
+                id="agenda"
+                name="agenda"
+                rows="6"
+                placeholder="Enter one agenda item per line..."
+              ></textarea>
+
+              <small class="muted">
+                Add each agenda item on a separate line.
+              </small>
+
+            </div>
+
+
+          </div>
+
+
+
+          <div class="meeting-form-actions">
+
+            <button
+              class="btn btn-primary"
+              id="saveMeeting"
+              type="submit"
+            >
+              Schedule Meeting
+            </button>
+
+            <button
+              class="btn btn-secondary"
+              id="cancelEdit"
+              type="button"
+              hidden
+            >
+              Cancel Edit
+            </button>
+
+          </div>
+
+
+        </form>
+
+      </section>
+
+
+
+      <!-- =================================================
+           MEETING RECORDS
+      ================================================== -->
+
+      <section class="card meeting-section">
+
+        <div class="meeting-section-header">
+
+          <h2>
+            Meeting Records
+          </h2>
+
+          <p class="muted">
+            View and manage your group's meeting history.
+          </p>
+
+        </div>
+
+
+        <div class="meeting-filter-bar">
+
+          <div class="meeting-filter-label">
+            Filter meetings
+          </div>
+
+          <select
+            id="statusFilter"
+            aria-label="Filter meetings by status"
+          >
+
+            <option value="all">
+              All Meetings
+            </option>
+
+            <option value="upcoming">
+              Upcoming
+            </option>
+
+            <option value="completed">
+              Completed
+            </option>
+
+            <option value="cancelled">
+              Cancelled
+            </option>
+
+          </select>
+
+        </div>
+
+
+
+        <div class="table-wrap">
+
+          <table class="table meeting-table">
+
+            <thead>
+
+              <tr>
+
+                <th>
+                  Date
+                </th>
+
+                <th>
+                  Meeting
+                </th>
+
+                <th>
+                  Venue
+                </th>
+
+                <th>
+                  Status
+                </th>
+
+                <th>
+                  Actions
+                </th>
+
+              </tr>
+
+            </thead>
+
+
+            <tbody id="meetingRows">
+
+              <tr>
+
+                <td colspan="5">
+                  Loading...
+                </td>
+
+              </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </section>
+
+
+
+      <!-- =================================================
+           MEETING DETAILS
+      ================================================== -->
+
+      <section
+        class="card meeting-section meeting-details-card"
+        id="detailsCard"
+        hidden
+      >
+
+        <div id="meetingDetails"></div>
+
+
+        <!-- ACTIONS -->
+
+        <div class="meeting-detail-actions">
 
           <button
             class="btn btn-secondary"
-            id="cancelEdit"
+            id="editMeeting"
+            type="button"
+          >
+            Edit Meeting
+          </button>
+
+          <button
+            class="btn btn-secondary"
+            id="completeMeeting"
+            type="button"
+          >
+            Mark Completed
+          </button>
+
+          <button
+            class="btn btn-secondary"
+            id="cancelMeeting"
+            type="button"
+          >
+            Cancel Meeting
+          </button>
+
+          <button
+            class="btn btn-secondary"
+            id="restoreMeeting"
             type="button"
             hidden
           >
-            Cancel Edit
+            Restore Meeting
+          </button>
+
+          <button
+            class="btn btn-secondary"
+            id="deleteMeeting"
+            type="button"
+          >
+            Delete Meeting
           </button>
 
         </div>
 
 
-      </form>
 
-    </section>
+        <!-- MINUTES / RESOLUTIONS -->
 
+        <div class="meeting-section-header">
 
+          <h2>
+            Meeting Record
+          </h2>
 
-    <br>
+          <p class="muted">
+            Save the official minutes and resolutions for this meeting.
+          </p>
 
+        </div>
 
 
-    <!-- ==================================================
-         MEETING RECORDS
-    =================================================== -->
+        <div class="meeting-record-grid">
 
-    <section class="card">
 
-      <h2>
-        Meeting Records
-      </h2>
+          <div class="meeting-record-box">
 
-      <br>
+            <div class="form-group">
 
+              <label for="minutes">
+                Meeting Minutes
+              </label>
 
-      <div
-        style="
-          display:flex;
-          gap:10px;
-          flex-wrap:wrap;
-          margin-bottom:20px;
-        "
-      >
+              <textarea
+                id="minutes"
+                rows="9"
+                placeholder="Enter meeting minutes..."
+              ></textarea>
 
-        <select
-          id="statusFilter"
-        >
+            </div>
 
-          <option value="all">
-            All Meetings
-          </option>
+          </div>
 
-          <option value="upcoming">
-            Upcoming
-          </option>
 
-          <option value="completed">
-            Completed
-          </option>
 
-          <option value="cancelled">
-            Cancelled
-          </option>
+          <div class="meeting-record-box">
 
-        </select>
+            <div class="form-group">
 
-      </div>
+              <label for="resolution">
+                Resolutions
+              </label>
 
+              <textarea
+                id="resolution"
+                rows="9"
+                placeholder="Enter resolutions and decisions..."
+              ></textarea>
 
+            </div>
 
-      <div class="table-wrap">
+          </div>
 
-        <table class="table">
 
-          <thead>
+        </div>
 
-            <tr>
 
-              <th>
-                Date
-              </th>
 
-              <th>
-                Meeting
-              </th>
+        <div class="meeting-save-row">
 
-              <th>
-                Venue
-              </th>
+          <button
+            class="btn btn-primary"
+            id="saveMinutes"
+            type="button"
+          >
+            Save Minutes &amp; Resolutions
+          </button>
 
-              <th>
-                Status
-              </th>
+        </div>
 
-              <th>
-                Actions
-              </th>
 
-            </tr>
+      </section>
 
-          </thead>
 
-
-          <tbody id="meetingRows">
-
-            <tr>
-
-              <td colspan="5">
-                Loading...
-              </td>
-
-            </tr>
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-    </section>
-
-
-
-    <br>
-
-
-
-    <!-- ==================================================
-         DETAILS
-    =================================================== -->
-
-    <section
-      class="card"
-      id="detailsCard"
-      hidden
-    >
-
-      <h2>
-        Meeting Details
-      </h2>
-
-      <br>
-
-
-      <div id="meetingDetails"></div>
-
-
-      <hr>
-
-
-      <!-- ACTIONS -->
-
-      <div
-        style="
-          display:flex;
-          gap:10px;
-          flex-wrap:wrap;
-          margin:15px 0;
-        "
-      >
-
-        <button
-          class="btn btn-secondary"
-          id="editMeeting"
-          type="button"
-        >
-          Edit Meeting
-        </button>
-
-
-        <button
-          class="btn btn-secondary"
-          id="completeMeeting"
-          type="button"
-        >
-          Mark Completed
-        </button>
-
-
-        <button
-          class="btn btn-secondary"
-          id="cancelMeeting"
-          type="button"
-        >
-          Cancel Meeting
-        </button>
-
-
-        <button
-          class="btn btn-secondary"
-          id="restoreMeeting"
-          type="button"
-          hidden
-        >
-          Restore Meeting
-        </button>
-
-
-        <button
-          class="btn btn-secondary"
-          id="deleteMeeting"
-          type="button"
-        >
-          Delete Meeting
-        </button>
-
-      </div>
-
-
-      <br>
-
-
-      <!-- MINUTES -->
-
-      <div class="form-group">
-
-        <label for="minutes">
-          Meeting Minutes
-        </label>
-
-        <textarea
-          id="minutes"
-          rows="7"
-          placeholder="Enter meeting minutes..."
-        ></textarea>
-
-      </div>
-
-
-      <!-- RESOLUTIONS -->
-
-      <div class="form-group">
-
-        <label for="resolution">
-          Resolutions
-        </label>
-
-        <textarea
-          id="resolution"
-          rows="7"
-          placeholder="Enter resolutions and decisions..."
-        ></textarea>
-
-      </div>
-
-
-      <button
-        class="btn btn-primary"
-        id="saveMinutes"
-        type="button"
-      >
-        Save Minutes & Resolutions
-      </button>
-
-    </section>
-
+    </div>
 
   </main>
 
