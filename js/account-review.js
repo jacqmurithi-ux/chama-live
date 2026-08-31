@@ -5,34 +5,24 @@
 
    Flow:
    ---------------------------------------------------------
+   Group Registration
+        ↓
+   Administrator Email
+        ↓
+   Member Lookup
+        ↓
+   Verify Registered Admin
+        ↓
+   Read onboarding_status
+        ↓
+   Display:
 
-   Registered Administrator Email
-                ↓
-        Validate Email
-                ↓
-       Find Member Record
-                ↓
-       Verify Administrator
-                ↓
-          Find Group
-                ↓
-     Check Application Status
-                ↓
-   Pending / Approved / Rejected / Suspended
-
-
-   SECURITY PRINCIPLE
-   ---------------------------------------------------------
-
-   The page does not automatically expose application
-   details.
-
-   A registered administrator email must first be entered.
-
-   Only records linked to a group administrator are used.
+      pending
+      approved / active
+      rejected
+      suspended
 
 ========================================================= */
-
 
 import {
   supabase
@@ -56,11 +46,11 @@ const form =
 
 const emailInput =
   document.getElementById(
-    "email"
+    "adminEmail"
   );
 
 
-const button =
+const checkButton =
   document.getElementById(
     "checkStatusButton"
   );
@@ -78,39 +68,9 @@ const statusBox =
   );
 
 
-const resultBox =
+const reviewResult =
   document.getElementById(
-    "statusResult"
-  );
-
-
-const groupNameElement =
-  document.getElementById(
-    "groupName"
-  );
-
-
-const adminNameElement =
-  document.getElementById(
-    "adminName"
-  );
-
-
-const adminEmailElement =
-  document.getElementById(
-    "adminEmail"
-  );
-
-
-const groupCategoryElement =
-  document.getElementById(
-    "groupCategory"
-  );
-
-
-const accountStatusElement =
-  document.getElementById(
-    "accountStatus"
+    "reviewResult"
   );
 
 
@@ -120,79 +80,28 @@ const statusBadge =
   );
 
 
-const statusMessage =
+const groupNameElement =
+  document.getElementById(
+    "groupName"
+  );
+
+
+const registeredEmailElement =
+  document.getElementById(
+    "registeredEmail"
+  );
+
+
+const statusMessageElement =
   document.getElementById(
     "statusMessage"
   );
 
 
-const statusActions =
+const statusAction =
   document.getElementById(
-    "statusActions"
+    "statusAction"
   );
-
-
-/* =========================================================
-   STORAGE KEY
-
-   Used only to remember the email convenience value.
-
-   No sensitive group data is stored here.
-========================================================= */
-
-const REVIEW_EMAIL_KEY =
-  "chama_live_review_email";
-
-
-/* =========================================================
-   STATUS TYPES
-========================================================= */
-
-const STATUS = {
-
-  PENDING:
-    "pending",
-
-  APPROVED:
-    "approved",
-
-  REJECTED:
-    "rejected",
-
-  SUSPENDED:
-    "suspended"
-
-};
-
-
-/* =========================================================
-   INITIAL UI
-========================================================= */
-
-function clearMessages() {
-
-  if (errorBox) {
-
-    errorBox.textContent =
-      "";
-
-    errorBox.hidden =
-      true;
-
-  }
-
-
-  if (statusBox) {
-
-    statusBox.textContent =
-      "";
-
-    statusBox.hidden =
-      true;
-
-  }
-
-}
 
 
 /* =========================================================
@@ -203,36 +112,37 @@ function showError(
   message
 ) {
 
-  const cleanMessage =
+  if (!errorBox) {
+    return;
+  }
+
+
+  errorBox.textContent =
     String(
       message ||
-      "Unable to check your application status."
+      "Unable to check application status."
     );
 
 
-  console.error(
-    "CHAMA LIVE account review:",
-    cleanMessage
-  );
+  errorBox.hidden =
+    false;
+
+}
 
 
-  if (errorBox) {
+function clearError() {
 
-    errorBox.textContent =
-      cleanMessage;
-
-    errorBox.hidden =
-      false;
-
+  if (!errorBox) {
+    return;
   }
 
 
-  if (statusBox) {
+  errorBox.textContent =
+    "";
 
-    statusBox.hidden =
-      true;
 
-  }
+  errorBox.hidden =
+    true;
 
 }
 
@@ -259,13 +169,22 @@ function showStatus(
   statusBox.hidden =
     !message;
 
+}
 
-  if (errorBox) {
 
-    errorBox.hidden =
-      true;
+function clearStatus() {
 
+  if (!statusBox) {
+    return;
   }
+
+
+  statusBox.textContent =
+    "";
+
+
+  statusBox.hidden =
+    true;
 
 }
 
@@ -278,73 +197,79 @@ function setLoading(
   loading
 ) {
 
-  if (!button) {
+  if (!checkButton) {
     return;
   }
 
 
-  button.disabled =
+  checkButton.disabled =
     loading;
 
 
-  button.textContent =
+  checkButton.textContent =
     loading
-      ? "Checking application..."
+      ? "Checking status..."
       : "Check Application Status";
 
 }
 
 
 /* =========================================================
-   HIDE RESULT
+   CLEAR RESULT
 ========================================================= */
 
-function hideResult() {
+function clearResult() {
 
-  if (!resultBox) {
+  if (!reviewResult) {
     return;
   }
 
 
-  resultBox.hidden =
+  reviewResult.hidden =
     true;
 
-}
+
+  if (groupNameElement) {
+
+    groupNameElement.textContent =
+      "";
+
+  }
 
 
-/* =========================================================
-   EMAIL VALIDATION
-========================================================= */
+  if (registeredEmailElement) {
 
-function isValidEmail(
-  email
-) {
+    registeredEmailElement.textContent =
+      "";
 
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-    String(
-      email || ""
-    ).trim()
-  );
+  }
+
+
+  if (statusMessageElement) {
+
+    statusMessageElement.textContent =
+      "";
+
+  }
+
+
+  if (statusAction) {
+
+    statusAction.hidden =
+      true;
+
+  }
 
 }
 
 
 /* =========================================================
    NORMALIZE STATUS
-
-   Multiple database versions may exist.
-
-   This normalizes:
-
-   onboarding_status
-   member.status
-   group.status
 ========================================================= */
 
 function normalizeStatus(
   onboardingStatus,
-  memberStatus,
-  groupStatus
+  memberStatus
 ) {
 
   const onboarding =
@@ -363,35 +288,16 @@ function normalizeStatus(
       .toLowerCase();
 
 
-  const group =
-    String(
-      groupStatus || ""
-    )
-      .trim()
-      .toLowerCase();
-
-
-  console.log(
-    "CHAMA LIVE: normalizing status",
-    {
-      onboarding,
-      member,
-      group
-    }
-  );
-
-
   /* =====================================================
      SUSPENDED
   ===================================================== */
 
   if (
     onboarding === "suspended" ||
-    member === "suspended" ||
-    group === "suspended"
+    member === "suspended"
   ) {
 
-    return STATUS.SUSPENDED;
+    return "suspended";
 
   }
 
@@ -402,14 +308,10 @@ function normalizeStatus(
 
   if (
     onboarding === "rejected" ||
-    onboarding === "declined" ||
-    member === "rejected" ||
-    member === "declined" ||
-    group === "rejected" ||
-    group === "declined"
+    member === "rejected"
   ) {
 
-    return STATUS.REJECTED;
+    return "rejected";
 
   }
 
@@ -420,17 +322,16 @@ function normalizeStatus(
 
   if (
     onboarding === "approved" ||
-    onboarding === "active" ||
-    onboarding === "activated"
+    onboarding === "active"
   ) {
 
-    return STATUS.APPROVED;
+    return "approved";
 
   }
 
 
   /*
-   * Legacy records where the member is active.
+   * Legacy records.
    */
 
   if (
@@ -439,162 +340,125 @@ function normalizeStatus(
     onboarding !== "submitted"
   ) {
 
-    return STATUS.APPROVED;
-
-  }
-
-
-  /*
-   * Group active fallback.
-   */
-
-  if (
-    group === "active" &&
-    onboarding !== "pending" &&
-    onboarding !== "submitted"
-  ) {
-
-    return STATUS.APPROVED;
+    return "approved";
 
   }
 
 
   /* =====================================================
-     DEFAULT
+     PENDING
   ===================================================== */
 
-  return STATUS.PENDING;
+  return "pending";
 
 }
 
 
 /* =========================================================
-   FORMAT STATUS LABEL
+   STATUS CONFIGURATION
 ========================================================= */
 
-function getStatusLabel(
+function getStatusConfiguration(
   status
 ) {
 
-  switch (status) {
-
-    case STATUS.APPROVED:
-      return "Active / Approved";
+  const configs = {
 
 
-    case STATUS.REJECTED:
-      return "Rejected";
+    pending: {
+
+      label:
+        "Pending Review",
+
+      className:
+        "status-pending",
+
+      message:
+        "Your group application has been received and is currently awaiting review. Your administrator account remains restricted until the application is approved.",
+
+      showLogin:
+        false
+
+    },
 
 
-    case STATUS.SUSPENDED:
-      return "Suspended";
+    approved: {
+
+      label:
+        "Active",
+
+      className:
+        "status-approved",
+
+      message:
+        "Your group application has been approved. Your administrator account is active and you can now sign in to access your CHAMA LIVE Dashboard.",
+
+      showLogin:
+        true
+
+    },
 
 
-    case STATUS.PENDING:
-    default:
-      return "Pending Review";
+    rejected: {
 
-  }
+      label:
+        "Rejected",
 
-}
+      className:
+        "status-rejected",
 
+      message:
+        "Your group application was not approved. Please contact the CHAMA LIVE administrator if you need clarification or assistance.",
 
-/* =========================================================
-   FORMAT CATEGORY
-========================================================= */
+      showLogin:
+        false
 
-function formatCategory(
-  category
-) {
-
-  const value =
-    String(
-      category || ""
-    )
-      .trim()
-      .toLowerCase();
+    },
 
 
-  const categories = {
+    suspended: {
 
-    chama:
-      "Chama",
+      label:
+        "Suspended",
 
-    welfare:
-      "Welfare Group",
+      className:
+        "status-suspended",
 
-    investment:
-      "Investment Group",
+      message:
+        "This group account is currently suspended. Dashboard access is temporarily unavailable. Please contact the CHAMA LIVE administrator for assistance.",
 
-    savings:
-      "Savings Group",
+      showLogin:
+        false
 
-    self_help:
-      "Self Help Group",
-
-    cbo:
-      "CBO",
-
-    other:
-      "Other"
+    }
 
   };
 
 
-  if (
-    categories[value]
-  ) {
-
-    return categories[value];
-
-  }
-
-
-  if (!value) {
-    return "—";
-  }
-
-
-  return value
-    .replace(
-      /_/g,
-      " "
-    )
-    .replace(
-      /\b\w/g,
-      character =>
-        character.toUpperCase()
-    );
+  return (
+    configs[status] ||
+    configs.pending
+  );
 
 }
 
 
 /* =========================================================
-   FIND MEMBER BY REGISTERED EMAIL
-
-   IMPORTANT:
-
-   We search the members table.
-
-   The registered administrator should have:
-
-   members.email = registration email
-
-   Then we verify that the member has a group_id.
-
+   FIND ADMIN APPLICATION
 ========================================================= */
 
-async function findMemberByEmail(
+async function findApplicationByEmail(
   email
 ) {
 
-  console.log(
-    "CHAMA LIVE: searching member by email"
-  );
-
-
   /*
-   * Primary query.
+   * Primary lookup:
+   *
+   * members.email
+   *
+   * The registration system stores
+   * the administrator email against
+   * the administrator member record.
    */
 
   const {
@@ -606,21 +470,21 @@ async function findMemberByEmail(
       .select(`
         id,
         group_id,
-        user_id,
-        auth_user_id,
-        member_number,
-        membership_number,
         name,
         email,
-        phone,
         role,
         status,
         onboarding_status,
-        join_date,
-        activated_at,
-        created_at
+        member_number,
+        membership_number,
+        created_at,
+        groups (
+          id,
+          name,
+          status
+        )
       `)
-      .ilike(
+      .eq(
         "email",
         email
       )
@@ -630,7 +494,7 @@ async function findMemberByEmail(
   if (error) {
 
     console.error(
-      "CHAMA LIVE: member lookup error",
+      "CHAMA LIVE: application lookup error",
       error
     );
 
@@ -651,10 +515,13 @@ async function findMemberByEmail(
 
 
   /*
-   * Prefer administrator records.
+   * Find the administrator record.
+   *
+   * Different historical role values
+   * are supported for compatibility.
    */
 
-  const administratorRoles = [
+  const adminRoles = [
 
     "admin",
 
@@ -662,17 +529,15 @@ async function findMemberByEmail(
 
     "group_admin",
 
-    "chairperson",
-
-    "owner"
+    "chairperson"
 
   ];
 
 
-  const adminMember =
+  let application =
     data.find(
       member =>
-        administratorRoles.includes(
+        adminRoles.includes(
           String(
             member.role || ""
           )
@@ -683,594 +548,35 @@ async function findMemberByEmail(
 
 
   /*
-   * If an exact admin role was found.
-   */
-
-  if (adminMember) {
-
-    return adminMember;
-
-  }
-
-
-  /*
-   * Compatibility fallback.
-
-   * Some older CHAMA LIVE records may not
-   * have role populated correctly.
-
-   * If exactly one member owns this email,
-   * return it.
+   * If only one member record matches
+   * the email, use it.
    */
 
   if (
+    !application &&
     data.length === 1
   ) {
 
-    return data[0];
+    application =
+      data[0];
 
   }
 
 
   /*
-   * If multiple records exist but no admin
-   * record can be identified, fail closed.
+   * Compatibility fallback:
+   * use first matching record.
    */
 
-  return null;
+  if (!application) {
 
-}
-
-
-/* =========================================================
-   GET GROUP
-========================================================= */
-
-async function getGroup(
-  groupId
-) {
-
-  if (!groupId) {
-
-    throw new Error(
-      "This account is not linked to a group."
-    );
+    application =
+      data[0];
 
   }
 
 
-  /*
-   * Try complete expected schema.
-   */
-
-  let result =
-    await supabase
-      .from("groups")
-      .select(`
-        id,
-        name,
-        group_name,
-        category,
-        type,
-        country,
-        status,
-        onboarding_status,
-        access_code,
-        created_at,
-        activated_at
-      `)
-      .eq(
-        "id",
-        groupId
-      )
-      .maybeSingle();
-
-
-  /*
-   * Compatibility fallback for installations
-   * where one or more optional columns do not
-   * exist.
-   */
-
-  if (result.error) {
-
-    console.warn(
-      "CHAMA LIVE: full group query failed, using compatibility query",
-      result.error
-    );
-
-
-    result =
-      await supabase
-        .from("groups")
-        .select(`
-          *
-        `)
-        .eq(
-          "id",
-          groupId
-        )
-        .maybeSingle();
-
-  }
-
-
-  if (result.error) {
-
-    throw result.error;
-
-  }
-
-
-  if (!result.data) {
-
-    throw new Error(
-      "The group linked to this account could not be found."
-    );
-
-  }
-
-
-  return result.data;
-
-}
-
-
-/* =========================================================
-   VERIFY ADMINISTRATOR
-
-   Security layer.
-
-   A member record must:
-
-   1. Have a group_id
-   2. Match the requested email
-   3. Be identifiable as the administrator,
-      OR be the unique matching member record.
-
-========================================================= */
-
-function verifyAdministrator(
-  member,
-  requestedEmail
-) {
-
-  if (!member) {
-
-    return false;
-
-  }
-
-
-  const storedEmail =
-    String(
-      member.email || ""
-    )
-      .trim()
-      .toLowerCase();
-
-
-  const email =
-    String(
-      requestedEmail || ""
-    )
-      .trim()
-      .toLowerCase();
-
-
-  if (
-    !storedEmail ||
-    storedEmail !== email
-  ) {
-
-    return false;
-
-  }
-
-
-  if (!member.group_id) {
-
-    return false;
-
-  }
-
-
-  return true;
-
-}
-
-
-/* =========================================================
-   GET APPLICATION
-========================================================= */
-
-async function getApplicationStatus(
-  email
-) {
-
-  /* =====================================================
-     FIND MEMBER
-  ===================================================== */
-
-  const member =
-    await findMemberByEmail(
-      email
-    );
-
-
-  if (!member) {
-
-    return null;
-
-  }
-
-
-  /* =====================================================
-     VERIFY EMAIL / GROUP LINK
-  ===================================================== */
-
-  if (
-    !verifyAdministrator(
-      member,
-      email
-    )
-  ) {
-
-    return null;
-
-  }
-
-
-  /* =====================================================
-     GET GROUP
-  ===================================================== */
-
-  const group =
-    await getGroup(
-      member.group_id
-    );
-
-
-  /* =====================================================
-     STATUS
-  ===================================================== */
-
-  const normalizedStatus =
-    normalizeStatus(
-
-      member.onboarding_status,
-
-      member.status,
-
-      group.onboarding_status ||
-      group.status
-
-    );
-
-
-  return {
-
-    member,
-
-    group,
-
-    status:
-      normalizedStatus
-
-  };
-
-}
-
-
-/* =========================================================
-   SET BADGE
-========================================================= */
-
-function setStatusBadge(
-  status
-) {
-
-  if (!statusBadge) {
-    return;
-  }
-
-
-  statusBadge.className =
-    "cl-status-badge";
-
-
-  switch (status) {
-
-    case STATUS.APPROVED:
-
-      statusBadge.classList.add(
-        "status-approved"
-      );
-
-      break;
-
-
-    case STATUS.REJECTED:
-
-      statusBadge.classList.add(
-        "status-rejected"
-      );
-
-      break;
-
-
-    case STATUS.SUSPENDED:
-
-      statusBadge.classList.add(
-        "status-suspended"
-      );
-
-      break;
-
-
-    case STATUS.PENDING:
-    default:
-
-      statusBadge.classList.add(
-        "status-pending"
-      );
-
-      break;
-
-  }
-
-
-  statusBadge.textContent =
-    getStatusLabel(
-      status
-    );
-
-}
-
-
-/* =========================================================
-   SET STATUS MESSAGE
-========================================================= */
-
-function setStatusMessage(
-  status
-) {
-
-  if (!statusMessage) {
-    return;
-  }
-
-
-  statusMessage.className =
-    "cl-status-message";
-
-
-  switch (status) {
-
-    /* ===================================================
-       APPROVED
-    ==================================================== */
-
-    case STATUS.APPROVED:
-
-      statusMessage.classList.add(
-        "message-approved"
-      );
-
-
-      statusMessage.innerHTML = `
-        <strong>
-          Your group account has been approved.
-        </strong>
-        <br>
-        Your administrator account is active.
-        You can now sign in and access your
-        CHAMA LIVE Dashboard.
-      `;
-
-      break;
-
-
-    /* ===================================================
-       REJECTED
-    ==================================================== */
-
-    case STATUS.REJECTED:
-
-      statusMessage.classList.add(
-        "message-rejected"
-      );
-
-
-      statusMessage.innerHTML = `
-        <strong>
-          Your group application was not approved.
-        </strong>
-        <br>
-        Please contact the CHAMA LIVE administrator
-        for more information about your application.
-      `;
-
-      break;
-
-
-    /* ===================================================
-       SUSPENDED
-    ==================================================== */
-
-    case STATUS.SUSPENDED:
-
-      statusMessage.classList.add(
-        "message-suspended"
-      );
-
-
-      statusMessage.innerHTML = `
-        <strong>
-          This group account is currently suspended.
-        </strong>
-        <br>
-        Dashboard access is temporarily restricted.
-        Please contact the CHAMA LIVE administrator
-        for assistance.
-      `;
-
-      break;
-
-
-    /* ===================================================
-       PENDING
-    ==================================================== */
-
-    case STATUS.PENDING:
-    default:
-
-      statusMessage.classList.add(
-        "message-pending"
-      );
-
-
-      statusMessage.innerHTML = `
-        <strong>
-          Your application is currently under review.
-        </strong>
-        <br>
-        Your administrator account remains restricted
-        until the group registration has been approved.
-        Please check this page again later.
-      `;
-
-      break;
-
-  }
-
-}
-
-
-/* =========================================================
-   SET ACTIONS
-========================================================= */
-
-function setStatusActions(
-  status
-) {
-
-  if (!statusActions) {
-    return;
-  }
-
-
-  statusActions.innerHTML =
-    "";
-
-
-  /* =====================================================
-     APPROVED
-  ===================================================== */
-
-  if (
-    status === STATUS.APPROVED
-  ) {
-
-    const signIn =
-      document.createElement(
-        "a"
-      );
-
-
-    signIn.href =
-      "login.html";
-
-
-    signIn.className =
-      "cl-action-primary";
-
-
-    signIn.textContent =
-      "Sign In to Dashboard";
-
-
-    statusActions.appendChild(
-      signIn
-    );
-
-
-    return;
-
-  }
-
-
-  /* =====================================================
-     PENDING
-  ===================================================== */
-
-  if (
-    status === STATUS.PENDING
-  ) {
-
-    const refresh =
-      document.createElement(
-        "button"
-      );
-
-
-    refresh.type =
-      "button";
-
-
-    refresh.className =
-      "cl-action-secondary";
-
-
-    refresh.textContent =
-      "Check Again";
-
-
-    refresh.addEventListener(
-      "click",
-      () => {
-
-        form?.requestSubmit();
-
-      }
-    );
-
-
-    statusActions.appendChild(
-      refresh
-    );
-
-
-    return;
-
-  }
-
-
-  /* =====================================================
-     REJECTED / SUSPENDED
-  ===================================================== */
-
-  const home =
-    document.createElement(
-      "a"
-    );
-
-
-  home.href =
-    "index.html";
-
-
-  home.className =
-    "cl-action-secondary";
-
-
-  home.textContent =
-    "Back to CHAMA LIVE";
-
-
-  statusActions.appendChild(
-    home
-  );
+  return application;
 
 }
 
@@ -1279,55 +585,58 @@ function setStatusActions(
    DISPLAY RESULT
 ========================================================= */
 
-function displayResult(
-  application,
-  email
+function displayApplication(
+  application
 ) {
 
   if (!application) {
+
+    showError(
+      "No group application was found for this email address. Please make sure you are using the administrator email registered during group creation."
+    );
+
+
     return;
+
   }
 
 
-  const {
-    member,
-    group,
-    status
-  } =
-    application;
+  const normalizedStatus =
+    normalizeStatus(
+      application.onboarding_status,
+      application.status
+    );
 
 
-  /*
-   * Group name compatibility.
-   */
+  const config =
+    getStatusConfiguration(
+      normalizedStatus
+    );
+
 
   const groupName =
-    group.name ||
-    group.group_name ||
-    "CHAMA LIVE Group";
-
-
-  /*
-   * Category compatibility.
-   */
-
-  const category =
-    group.category ||
-    group.type ||
-    "—";
-
-
-  /*
-   * Administrator name compatibility.
-   */
-
-  const adminName =
-    member.name ||
-    "Registered Administrator";
+    application.groups?.name ||
+    "Your CHAMA LIVE Group";
 
 
   /* =====================================================
-     POPULATE
+     STATUS BADGE
+  ===================================================== */
+
+  if (statusBadge) {
+
+    statusBadge.textContent =
+      config.label;
+
+
+    statusBadge.className =
+      `cl-status-badge ${config.className}`;
+
+  }
+
+
+  /* =====================================================
+     GROUP
   ===================================================== */
 
   if (groupNameElement) {
@@ -1338,72 +647,54 @@ function displayResult(
   }
 
 
-  if (adminNameElement) {
+  /* =====================================================
+     EMAIL
+  ===================================================== */
 
-    adminNameElement.textContent =
-      adminName;
+  if (registeredEmailElement) {
 
-  }
-
-
-  if (adminEmailElement) {
-
-    adminEmailElement.textContent =
-      email;
-
-  }
-
-
-  if (groupCategoryElement) {
-
-    groupCategoryElement.textContent =
-      formatCategory(
-        category
-      );
-
-  }
-
-
-  if (accountStatusElement) {
-
-    accountStatusElement.textContent =
-      getStatusLabel(
-        status
-      );
+    registeredEmailElement.textContent =
+      application.email ||
+      "";
 
   }
 
 
   /* =====================================================
-     STATUS UI
+     MESSAGE
   ===================================================== */
 
-  setStatusBadge(
-    status
-  );
+  if (statusMessageElement) {
 
+    statusMessageElement.textContent =
+      config.message;
 
-  setStatusMessage(
-    status
-  );
-
-
-  setStatusActions(
-    status
-  );
+  }
 
 
   /* =====================================================
-     SHOW
+     ACTION
   ===================================================== */
 
-  if (resultBox) {
+  if (statusAction) {
 
-    resultBox.hidden =
+    statusAction.hidden =
+      !config.showLogin;
+
+  }
+
+
+  /* =====================================================
+     SHOW RESULT
+  ===================================================== */
+
+  if (reviewResult) {
+
+    reviewResult.hidden =
       false;
 
 
-    resultBox.scrollIntoView({
+    reviewResult.scrollIntoView({
 
       behavior:
         "smooth",
@@ -1419,44 +710,52 @@ function displayResult(
 
 
 /* =========================================================
-   FORM SUBMISSION
+   CHECK APPLICATION
 ========================================================= */
 
 async function checkApplicationStatus() {
 
-  clearMessages();
+  clearError();
 
-  hideResult();
+  clearStatus();
+
+  clearResult();
 
 
   const email =
     String(
-      emailInput?.value || ""
+      emailInput?.value ||
+      ""
     )
       .trim()
       .toLowerCase();
 
 
   /* =====================================================
-     VALIDATE
+     VALIDATE EMAIL
   ===================================================== */
 
   if (!email) {
 
     showError(
-      "Please enter the administrator email used during group registration."
+      "Please enter the administrator email address."
     );
 
 
     emailInput?.focus();
+
 
     return;
 
   }
 
 
+  const emailPattern =
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+
   if (
-    !isValidEmail(
+    !emailPattern.test(
       email
     )
   ) {
@@ -1467,6 +766,7 @@ async function checkApplicationStatus() {
 
 
     emailInput?.focus();
+
 
     return;
 
@@ -1481,92 +781,39 @@ async function checkApplicationStatus() {
   try {
 
     showStatus(
-      "Checking your registered group application..."
+      "Checking your group application..."
     );
 
 
-    /* ===================================================
-       LOOKUP
-    ==================================================== */
-
     const application =
-      await getApplicationStatus(
+      await findApplicationByEmail(
         email
       );
 
 
-    /* ===================================================
-       NOT FOUND
-
-       Deliberately generic.
-
-       We do not reveal whether an arbitrary
-       email exists in the system.
-    ==================================================== */
-
-    if (!application) {
-
-      throw new Error(
-        "We could not find a group administrator application associated with that email address. Please use the exact email entered during group registration."
-      );
-
-    }
+    clearStatus();
 
 
-    /* ===================================================
-       STORE EMAIL CONVENIENCE
-    ==================================================== */
-
-    localStorage.setItem(
-      REVIEW_EMAIL_KEY,
-      email
+    displayApplication(
+      application
     );
 
-
-    /* ===================================================
-       DISPLAY
-    ==================================================== */
-
-    clearMessages();
-
-
-    displayResult(
-      application,
-      email
-    );
-
-
-    console.log(
-      "CHAMA LIVE: application status loaded",
-      {
-        status:
-          application.status,
-
-        groupId:
-          application.group?.id,
-
-        memberId:
-          application.member?.id
-      }
-    );
 
   }
 
   catch (error) {
 
     console.error(
-      "CHAMA LIVE: application lookup failed",
+      "CHAMA LIVE: status lookup failed",
       error
     );
 
 
-    hideResult();
+    clearStatus();
 
 
     showError(
-      normalizeError(
-        error
-      )
+      "Unable to check your application status right now. Please try again later."
     );
 
   }
@@ -1583,86 +830,7 @@ async function checkApplicationStatus() {
 
 
 /* =========================================================
-   ERROR NORMALIZATION
-========================================================= */
-
-function normalizeError(
-  error
-) {
-
-  const message =
-    String(
-      error?.message ||
-      error ||
-      ""
-    );
-
-
-  const lower =
-    message.toLowerCase();
-
-
-  if (
-    lower.includes(
-      "row-level security"
-    ) ||
-    lower.includes(
-      "permission denied"
-    )
-  ) {
-
-    return (
-      "Unable to verify this application status at the moment. " +
-      "Please contact the CHAMA LIVE administrator."
-    );
-
-  }
-
-
-  if (
-    lower.includes(
-      "failed to fetch"
-    ) ||
-    lower.includes(
-      "network"
-    )
-  ) {
-
-    return (
-      "Unable to connect to CHAMA LIVE. " +
-      "Please check your internet connection and try again."
-    );
-
-  }
-
-
-  if (
-    lower.includes(
-      "does not exist"
-    ) ||
-    lower.includes(
-      "column"
-    )
-  ) {
-
-    return (
-      "The account review service is being updated. " +
-      "Please contact the CHAMA LIVE administrator."
-    );
-
-  }
-
-
-  return (
-    message ||
-    "Unable to check your application status."
-  );
-
-}
-
-
-/* =========================================================
-   FORM EVENT
+   FORM SUBMISSION
 ========================================================= */
 
 if (form) {
@@ -1673,6 +841,7 @@ if (form) {
 
       event.preventDefault();
 
+
       checkApplicationStatus();
 
     }
@@ -1682,70 +851,70 @@ if (form) {
 
 
 /* =========================================================
-   PREFILL EMAIL
-
-   Email may have been saved when:
-
-   login.js detects pending status
-         ↓
-   redirects to account-review.html
-
+   EMAIL FROM REGISTRATION FLOW
 ========================================================= */
 
-function prefillSavedEmail() {
+/*
+ * When redirected from signup.js or login.js,
+ * the registered email can be stored locally.
+ *
+ * This is only for convenience.
+ *
+ * The database is always queried again.
+ */
+
+function loadStoredEmail() {
 
   try {
 
-    /*
-     * First check the new lookup storage.
-     */
-
-    let savedEmail =
+    const stored =
       localStorage.getItem(
-        REVIEW_EMAIL_KEY
+        "chama_live_review_application"
       );
 
 
-    /*
-     * Compatibility with existing login.js.
-     */
-
-    if (!savedEmail) {
-
-      const reviewApplication =
-        localStorage.getItem(
-          "chama_live_review_application"
-        );
-
-
-      if (reviewApplication) {
-
-        const parsed =
-          JSON.parse(
-            reviewApplication
-          );
-
-
-        savedEmail =
-          parsed?.email ||
-          "";
-
-      }
-
+    if (!stored) {
+      return;
     }
 
 
+    const application =
+      JSON.parse(
+        stored
+      );
+
+
+    const email =
+      String(
+        application?.email ||
+        ""
+      )
+        .trim()
+        .toLowerCase();
+
+
     if (
-      savedEmail &&
+      email &&
       emailInput
     ) {
 
       emailInput.value =
-        String(
-          savedEmail
-        )
-          .trim()
-          .toLowerCase();
+        email;
+
+
+      /*
+       * Automatically check status
+       * when arriving from login/signup.
+       */
+
+      setTimeout(
+        () => {
+
+          checkApplicationStatus();
+
+        },
+        250
+      );
 
     }
 
@@ -1754,7 +923,7 @@ function prefillSavedEmail() {
   catch (error) {
 
     console.warn(
-      "CHAMA LIVE: unable to prefill review email",
+      "CHAMA LIVE: unable to load stored application",
       error
     );
 
@@ -1764,32 +933,10 @@ function prefillSavedEmail() {
 
 
 /* =========================================================
-   EMAIL INPUT
-
-   Clear old results when email changes.
-========================================================= */
-
-if (emailInput) {
-
-  emailInput.addEventListener(
-    "input",
-    () => {
-
-      clearMessages();
-
-      hideResult();
-
-    }
-  );
-
-}
-
-
-/* =========================================================
    INITIALIZE
 ========================================================= */
 
-prefillSavedEmail();
+loadStoredEmail();
 
 
 console.log(
