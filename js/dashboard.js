@@ -1,16 +1,20 @@
 /* =========================================================
    CHAMA LIVE — DASHBOARD
    COMPLETE STABLE VERSION
-
-   IMPORTANT
    ---------------------------------------------------------
-   1. No contributions -> members embedded relationship.
-   2. expenses uses approval_status, NOT status.
-   3. Monthly member accounting uses:
+   HTML IDS MATCH dashboard.html
+
+   IMPORTANT DATABASE RULES
+   ---------------------------------------------------------
+   1. contributions -> members are loaded separately.
+   2. Do NOT use members(...) embedding on contributions.
+   3. expenses uses approval_status, NOT status.
+   4. Monthly accounting uses:
         get_canonical_member_monthly_status()
-   4. Dashboard queries are group-scoped.
-   5. Contribution/member data are loaded separately.
-   6. No database/schema changes are made here.
+   5. All dashboard queries are group-scoped.
+   6. No database/schema changes are performed here.
+   7. Each dashboard section fails independently so one
+      optional section cannot break the whole dashboard.
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -55,14 +59,23 @@ function escapeHtml(value) {
 }
 
 
-function money(value) {
+function number(value) {
 
-  const amount =
-    Number(value || 0);
+  const result =
+    Number(value);
+
+  return Number.isFinite(result)
+    ? result
+    : 0;
+
+}
+
+
+function money(value) {
 
   return (
     "KSh " +
-    amount.toLocaleString(
+    number(value).toLocaleString(
       "en-KE",
       {
         minimumFractionDigits: 0,
@@ -74,9 +87,15 @@ function money(value) {
 }
 
 
-function number(value) {
+function setText(id, value) {
 
-  return Number(value || 0);
+  const element =
+    byId(id);
+
+  if (element) {
+    element.textContent =
+      value;
+  }
 
 }
 
@@ -97,14 +116,42 @@ function currentMonthText() {
 }
 
 
-function setText(id, value) {
+function formatDate(value) {
 
-  const element =
-    byId(id);
-
-  if (element) {
-    element.textContent = value;
+  if (!value) {
+    return "—";
   }
+
+  const date =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return String(value);
+  }
+
+  return date.toLocaleDateString(
+    "en-KE",
+    {
+      day: "2-digit",
+      month: "short",
+      year: "numeric"
+    }
+  );
+
+}
+
+
+function normalizeStatus(value) {
+
+  return String(
+    value || ""
+  )
+    .trim()
+    .toLowerCase();
 
 }
 
@@ -119,8 +166,10 @@ function setStatus(message) {
     byId("status");
 
   if (element) {
+
     element.textContent =
       message || "";
+
   }
 
 }
@@ -150,27 +199,28 @@ function clearError() {
   const errorBox =
     byId("error");
 
-  if (errorBox) {
-
-    errorBox.hidden =
-      true;
-
-    errorBox.textContent =
-      "";
-
+  if (!errorBox) {
+    return;
   }
+
+  errorBox.hidden =
+    true;
+
+  errorBox.textContent =
+    "";
 
 }
 
 
 /* =========================================================
-   GROUP / MEMBER
+   CONTEXT
 ========================================================= */
 
 async function loadContext() {
 
   currentMember =
     await getCurrentMember();
+
 
   if (!currentMember) {
 
@@ -181,22 +231,23 @@ async function loadContext() {
   }
 
 
-  currentGroup =
-    await getCurrentGroup();
-
-  if (!currentGroup) {
+  if (!currentMember.group_id) {
 
     throw new Error(
-      "Group information could not be found."
+      "Your member record has no group."
     );
 
   }
 
 
-  if (!currentMember.group_id) {
+  currentGroup =
+    await getCurrentGroup();
+
+
+  if (!currentGroup) {
 
     throw new Error(
-      "Your member record has no group."
+      "Group information could not be found."
     );
 
   }
@@ -254,15 +305,13 @@ async function loadContext() {
     });
 
 
-  return {
-    groupId
-  };
+  return groupId;
 
 }
 
 
 /* =========================================================
-   LOAD MEMBERS
+   MEMBERS
 ========================================================= */
 
 async function loadMembers(groupId) {
@@ -299,7 +348,7 @@ async function loadMembers(groupId) {
 
 
 /* =========================================================
-   LOAD MONTHLY CANONICAL STATUS
+   MONTHLY CANONICAL STATUS
 ========================================================= */
 
 async function loadMonthlyStatus(groupId) {
@@ -321,17 +370,16 @@ async function loadMonthlyStatus(groupId) {
     data,
     error
   } =
-    await supabase
-      .rpc(
-        "get_canonical_member_monthly_status",
-        {
-          p_group_id:
-            groupId,
+    await supabase.rpc(
+      "get_canonical_member_monthly_status",
+      {
+        p_group_id:
+          groupId,
 
-          p_month:
-            month
-        }
-      );
+        p_month:
+          month
+      }
+    );
 
 
   if (error) {
@@ -345,21 +393,76 @@ async function loadMonthlyStatus(groupId) {
 
 
 /* =========================================================
+   MEMBER STATUS BADGE
+========================================================= */
+
+function statusClass(status) {
+
+  const normalized =
+    normalizeStatus(status);
+
+
+  if (
+    normalized === "paid" ||
+    normalized === "cleared"
+  ) {
+
+    return "status-paid";
+
+  }
+
+
+  if (
+    normalized === "credit" ||
+    normalized === "overpaid"
+  ) {
+
+    return "status-credit";
+
+  }
+
+
+  if (
+    normalized === "partial"
+  ) {
+
+    return "status-partial";
+
+  }
+
+
+  if (
+    normalized === "outstanding" ||
+    normalized === "pending"
+  ) {
+
+    return "status-outstanding";
+
+  }
+
+
+  return "status-neutral";
+
+}
+
+
+/* =========================================================
    RENDER MEMBER STATUS
+   ---------------------------------------------------------
+   HTML ID:
+       memberStatusRows
 ========================================================= */
 
 function renderMemberStatus(rows) {
 
   const tableBody =
-    document.querySelector(
-      "#memberStatusBody"
-    );
+    byId("memberStatusRows");
 
 
   if (!tableBody) {
 
     console.warn(
-      "CHAMA LIVE: #memberStatusBody not found"
+      "CHAMA LIVE: #memberStatusRows not found"
     );
 
     return;
@@ -387,51 +490,9 @@ function renderMemberStatus(rows) {
 
       const status =
         String(
-          row.status || "Outstanding"
+          row.status ||
+          "Outstanding"
         );
-
-
-      const normalized =
-        status.toLowerCase();
-
-
-      let statusClass =
-        "status-neutral";
-
-
-      if (
-        normalized === "paid" ||
-        normalized === "cleared"
-      ) {
-
-        statusClass =
-          "status-paid";
-
-      }
-      else if (
-        normalized === "credit"
-      ) {
-
-        statusClass =
-          "status-credit";
-
-      }
-      else if (
-        normalized === "partial"
-      ) {
-
-        statusClass =
-          "status-partial";
-
-      }
-      else if (
-        normalized === "outstanding"
-      ) {
-
-        statusClass =
-          "status-outstanding";
-
-      }
 
 
       const carry =
@@ -491,11 +552,13 @@ function renderMemberStatus(rows) {
           </td>
 
           <td>
+
             <span
-              class="status-badge ${statusClass}"
+              class="status-badge ${statusClass(status)}"
             >
               ${escapeHtml(status)}
             </span>
+
           </td>
 
         </tr>
@@ -507,17 +570,25 @@ function renderMemberStatus(rows) {
 
 
 /* =========================================================
-   CALCULATE MONTHLY SUMMARY
+   MONTHLY SUMMARY
 ========================================================= */
 
 function calculateMonthlySummary(rows) {
 
-  let monthlyDue = 0;
-  let appliedThisMonth = 0;
-  let carryForward = 0;
-  let outstanding = 0;
-  let previousOutstanding = 0;
-  let contributedMembers = 0;
+  let monthlyDue =
+    0;
+
+  let appliedThisMonth =
+    0;
+
+  let carryForward =
+    0;
+
+  let outstanding =
+    0;
+
+  let contributedMembers =
+    0;
 
 
   rows.forEach(function (row) {
@@ -546,12 +617,6 @@ function calculateMonthlySummary(rows) {
       );
 
 
-    const previous =
-      number(
-        row.previous_outstanding
-      );
-
-
     monthlyDue +=
       due;
 
@@ -567,16 +632,6 @@ function calculateMonthlySummary(rows) {
     outstanding +=
       currentOutstanding;
 
-
-    previousOutstanding +=
-      previous;
-
-
-    /*
-     * A member counts as contributed
-     * when money was actually applied
-     * toward their current obligation.
-     */
 
     if (applied > 0) {
 
@@ -597,8 +652,6 @@ function calculateMonthlySummary(rows) {
 
     outstanding,
 
-    previousOutstanding,
-
     contributedMembers
 
   };
@@ -608,6 +661,20 @@ function calculateMonthlySummary(rows) {
 
 /* =========================================================
    RENDER MONTHLY SUMMARY
+   ---------------------------------------------------------
+   HTML IDS:
+       monthlyExpected
+       monthlyCollected
+       progressMonth
+       progressPercentage
+       progressBar
+       progressText
+       contributorsCount
+       contributorsPercentage
+       monthlyOutstanding
+       progressApplied
+       progressCarryForward
+       progressOutstanding
 ========================================================= */
 
 function renderMonthlySummary(
@@ -632,40 +699,8 @@ function renderMonthlySummary(
 
 
   setText(
-    "membersContributed",
-    `${summary.contributedMembers} / ${totalMembers}`
-  );
-
-
-  setText(
-    "currentOutstanding",
-    money(
-      summary.outstanding
-    )
-  );
-
-
-  setText(
-    "appliedThisMonth",
-    money(
-      summary.appliedThisMonth
-    )
-  );
-
-
-  setText(
-    "carryForwardCredit",
-    money(
-      summary.carryForward
-    )
-  );
-
-
-  setText(
-    "outstandingAmount",
-    money(
-      summary.outstanding
-    )
+    "progressMonth",
+    currentMonthText()
   );
 
 
@@ -689,13 +724,19 @@ function renderMonthlySummary(
 
 
   setText(
-    "contributionPercentage",
+    "progressPercentage",
     `${Math.round(safeRate)}%`
   );
 
 
+  setText(
+    "progressText",
+    `${money(summary.appliedThisMonth)} / ${money(summary.monthlyDue)}`
+  );
+
+
   const progressBar =
-    byId("contributionProgress");
+    byId("progressBar");
 
 
   if (progressBar) {
@@ -706,9 +747,27 @@ function renderMonthlySummary(
   }
 
 
+  const progressContainer =
+    document.querySelector(
+      '[role="progressbar"]'
+    );
+
+
+  if (progressContainer) {
+
+    progressContainer.setAttribute(
+      "aria-valuenow",
+      String(
+        Math.round(safeRate)
+      )
+    );
+
+  }
+
+
   setText(
-    "contributionAppliedDisplay",
-    `${money(summary.appliedThisMonth)} / ${money(summary.monthlyDue)}`
+    "contributorsCount",
+    `${summary.contributedMembers} / ${totalMembers}`
   );
 
 
@@ -722,33 +781,49 @@ function renderMonthlySummary(
 
 
   setText(
-    "memberParticipation",
+    "contributorsPercentage",
     `${Math.round(participation)}%`
   );
 
 
   setText(
-    "memberParticipationCount",
-    `${summary.contributedMembers} / ${totalMembers}`
+    "monthlyOutstanding",
+    money(
+      summary.outstanding
+    )
+  );
+
+
+  setText(
+    "progressApplied",
+    money(
+      summary.appliedThisMonth
+    )
+  );
+
+
+  setText(
+    "progressCarryForward",
+    money(
+      summary.carryForward
+    )
+  );
+
+
+  setText(
+    "progressOutstanding",
+    money(
+      summary.outstanding
+    )
   );
 
 }
 
 
 /* =========================================================
-   LOAD RECENT CONTRIBUTIONS
+   RECENT CONTRIBUTIONS
    ---------------------------------------------------------
-   IMPORTANT:
-   Do NOT use:
-       members(...)
-   here.
-
-   There are multiple relationships between
-   contributions and members.
-
-   We therefore:
-       1. fetch contributions only
-       2. fetch required member names separately
+   NO embedded members relationship.
 ========================================================= */
 
 async function loadRecentContributions(groupId) {
@@ -760,7 +835,14 @@ async function loadRecentContributions(groupId) {
     await supabase
       .from("contributions")
       .select(
-        "id,member_id,amount,contribution_date,created_at"
+        `
+        id,
+        member_id,
+        amount,
+        contribution_type,
+        contribution_date,
+        created_at
+        `
       )
       .eq(
         "group_id",
@@ -808,7 +890,16 @@ async function loadRecentContributions(groupId) {
 
 
   if (!memberIds.length) {
-    return rows;
+
+    return rows.map(function (row) {
+
+      return {
+        ...row,
+        member_name: "Member"
+      };
+
+    });
+
   }
 
 
@@ -869,18 +960,27 @@ async function loadRecentContributions(groupId) {
 
 /* =========================================================
    RENDER RECENT CONTRIBUTIONS
+   ---------------------------------------------------------
+   HTML ID:
+       recentContributionRows
 ========================================================= */
 
 function renderRecentContributions(rows) {
 
   const body =
-    document.querySelector(
-      "#recentContributionsBody"
+    byId(
+      "recentContributionRows"
     );
 
 
   if (!body) {
+
+    console.warn(
+      "CHAMA LIVE: #recentContributionRows not found"
+    );
+
     return;
+
   }
 
 
@@ -912,7 +1012,8 @@ function renderRecentContributions(rows) {
 
           <td>
             ${escapeHtml(
-              row.member_name
+              row.member_name ||
+              "Member"
             )}
           </td>
 
@@ -937,13 +1038,13 @@ function renderRecentContributions(rows) {
 
 
 /* =========================================================
-   LOAD RECENT EXPENSES
+   RECENT EXPENSES
    ---------------------------------------------------------
-   Correct schema column:
-       approval_status
+   IMPORTANT:
+       expenses.status DOES NOT EXIST.
 
-   NOT:
-       status
+   Actual database column:
+       approval_status
 ========================================================= */
 
 async function loadRecentExpenses(groupId) {
@@ -955,7 +1056,14 @@ async function loadRecentExpenses(groupId) {
     await supabase
       .from("expenses")
       .select(
-        "id,description,amount,date,approval_status"
+        `
+        id,
+        description,
+        amount,
+        date,
+        approval_status,
+        created_at
+        `
       )
       .eq(
         "group_id",
@@ -988,18 +1096,27 @@ async function loadRecentExpenses(groupId) {
 
 /* =========================================================
    RENDER RECENT EXPENSES
+   ---------------------------------------------------------
+   HTML ID:
+       recentExpenseRows
 ========================================================= */
 
 function renderRecentExpenses(rows) {
 
   const body =
-    document.querySelector(
-      "#recentExpensesBody"
+    byId(
+      "recentExpenseRows"
     );
 
 
   if (!body) {
+
+    console.warn(
+      "CHAMA LIVE: #recentExpenseRows not found"
+    );
+
     return;
+
   }
 
 
@@ -1027,11 +1144,12 @@ function renderRecentExpenses(rows) {
 
 
       const normalized =
-        String(status)
-          .toLowerCase();
+        normalizeStatus(
+          status
+        );
 
 
-      let statusClass =
+      let badgeClass =
         "status-neutral";
 
 
@@ -1039,7 +1157,7 @@ function renderRecentExpenses(rows) {
         normalized === "approved"
       ) {
 
-        statusClass =
+        badgeClass =
           "status-paid";
 
       }
@@ -1047,7 +1165,7 @@ function renderRecentExpenses(rows) {
         normalized === "pending"
       ) {
 
-        statusClass =
+        badgeClass =
           "status-pending";
 
       }
@@ -1072,7 +1190,7 @@ function renderRecentExpenses(rows) {
           <td>
 
             <span
-              class="status-badge ${statusClass}"
+              class="status-badge ${badgeClass}"
             >
               ${escapeHtml(status)}
             </span>
@@ -1088,7 +1206,7 @@ function renderRecentExpenses(rows) {
 
 
 /* =========================================================
-   LOAD UPCOMING MEETINGS
+   MEETINGS
 ========================================================= */
 
 async function loadUpcomingMeetings(groupId) {
@@ -1096,7 +1214,10 @@ async function loadUpcomingMeetings(groupId) {
   const today =
     new Date()
       .toISOString()
-      .slice(0, 10);
+      .slice(
+        0,
+        10
+      );
 
 
   const {
@@ -1106,7 +1227,13 @@ async function loadUpcomingMeetings(groupId) {
     await supabase
       .from("meetings")
       .select(
-        "id,title,date,venue,status"
+        `
+        id,
+        title,
+        date,
+        venue,
+        status
+        `
       )
       .eq(
         "group_id",
@@ -1136,19 +1263,28 @@ async function loadUpcomingMeetings(groupId) {
 
 
 /* =========================================================
-   RENDER UPCOMING MEETINGS
+   RENDER MEETINGS
+   ---------------------------------------------------------
+   HTML ID:
+       upcomingMeetingRows
 ========================================================= */
 
 function renderUpcomingMeetings(rows) {
 
   const body =
-    document.querySelector(
-      "#upcomingMeetingsBody"
+    byId(
+      "upcomingMeetingRows"
     );
 
 
   if (!body) {
+
+    console.warn(
+      "CHAMA LIVE: #upcomingMeetingRows not found"
+    );
+
     return;
+
   }
 
 
@@ -1170,12 +1306,41 @@ function renderUpcomingMeetings(rows) {
   body.innerHTML =
     rows.map(function (row) {
 
+      const status =
+        row.status ||
+        "Scheduled";
+
+
+      const normalized =
+        normalizeStatus(
+          status
+        );
+
+
+      let badgeClass =
+        "status-neutral";
+
+
+      if (
+        normalized === "scheduled" ||
+        normalized === "confirmed" ||
+        normalized === "upcoming"
+      ) {
+
+        badgeClass =
+          "status-paid";
+
+      }
+
+
       return `
         <tr>
 
           <td>
             ${escapeHtml(
-              formatDate(row.date)
+              formatDate(
+                row.date
+              )
             )}
           </td>
 
@@ -1194,14 +1359,13 @@ function renderUpcomingMeetings(rows) {
           </td>
 
           <td>
+
             <span
-              class="status-badge status-neutral"
+              class="status-badge ${badgeClass}"
             >
-              ${escapeHtml(
-                row.status ||
-                "Scheduled"
-              )}
+              ${escapeHtml(status)}
             </span>
+
           </td>
 
         </tr>
@@ -1213,117 +1377,75 @@ function renderUpcomingMeetings(rows) {
 
 
 /* =========================================================
-   FORMAT DATE
+   LOAD TOTAL CONTRIBUTIONS
 ========================================================= */
 
-function formatDate(value) {
+async function loadTotalContributions(groupId) {
 
-  if (!value) {
-    return "—";
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("contributions")
+      .select(
+        "amount,contribution_date"
+      )
+      .eq(
+        "group_id",
+        groupId
+      );
+
+
+  if (error) {
+    throw error;
   }
 
 
-  const date =
-    new Date(value);
-
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-
-    return String(value);
-
-  }
-
-
-  return date.toLocaleDateString(
-    "en-KE",
-    {
-      day: "2-digit",
-      month: "short",
-      year: "numeric"
-    }
-  );
+  return data || [];
 
 }
 
 
 /* =========================================================
-   LOAD GROUP BALANCE
-   ---------------------------------------------------------
-   Balance =
-       received contributions
-       -
-       approved expenses
-
-   This is a dashboard cash balance.
-   It is separate from monthly obligation status.
+   LOAD APPROVED EXPENSE TOTAL
 ========================================================= */
 
-async function loadCurrentBalance(groupId) {
+async function loadApprovedExpenseTotal(groupId) {
 
-  const [
-    contributionsResult,
-    expensesResult
-  ] =
-    await Promise.all([
-
-      supabase
-        .from("contributions")
-        .select(
-          "amount"
-        )
-        .eq(
-          "group_id",
-          groupId
-        ),
-
-      supabase
-        .from("expenses")
-        .select(
-          "amount"
-        )
-        .eq(
-          "group_id",
-          groupId
-        )
-        .eq(
-          "approval_status",
-          "approved"
-        )
-
-    ]);
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("expenses")
+      .select(
+        "amount,approval_status"
+      )
+      .eq(
+        "group_id",
+        groupId
+      )
+      .eq(
+        "approval_status",
+        "approved"
+      );
 
 
-  if (
-    contributionsResult.error
-  ) {
-
-    throw contributionsResult.error;
-
+  if (error) {
+    throw error;
   }
 
 
-  if (
-    expensesResult.error
-  ) {
-
-    throw expensesResult.error;
-
-  }
-
-
-  const contributionTotal =
-    (
-      contributionsResult.data ||
-      []
-    ).reduce(
-      function (sum, row) {
+  return (data || [])
+    .reduce(
+      function (
+        total,
+        row
+      ) {
 
         return (
-          sum +
+          total +
           number(row.amount)
         );
 
@@ -1331,16 +1453,39 @@ async function loadCurrentBalance(groupId) {
       0
     );
 
+}
 
-  const expenseTotal =
-    (
-      expensesResult.data ||
-      []
-    ).reduce(
-      function (sum, row) {
+
+/* =========================================================
+   CURRENT BALANCE
+========================================================= */
+
+async function calculateCurrentBalance(groupId) {
+
+  const [
+    contributions,
+    approvedExpenses
+  ] =
+    await Promise.all([
+      loadTotalContributions(
+        groupId
+      ),
+
+      loadApprovedExpenseTotal(
+        groupId
+      )
+    ]);
+
+
+  const totalContributions =
+    contributions.reduce(
+      function (
+        total,
+        row
+      ) {
 
         return (
-          sum +
+          total +
           number(row.amount)
         );
 
@@ -1350,64 +1495,143 @@ async function loadCurrentBalance(groupId) {
 
 
   return (
-    contributionTotal -
-    expenseTotal
+    totalContributions -
+    approvedExpenses
   );
 
 }
 
 
 /* =========================================================
-   RENDER MEMBER COUNTS
+   ACTIVE MEMBER COUNT
 ========================================================= */
 
-function renderMemberCounts(members) {
+function countActiveMembers(
+  members
+) {
 
-  const total =
+  if (!members.length) {
+    return 0;
+  }
+
+
+  const activeStatuses =
+    new Set([
+      "active",
+      "approved"
+    ]);
+
+
+  const hasStatus =
+    members.some(function (member) {
+
+      return (
+        member.status !== null &&
+        member.status !== undefined &&
+        String(
+          member.status
+        ).trim() !== ""
+      );
+
+    });
+
+
+  if (!hasStatus) {
+
+    return members.length;
+
+  }
+
+
+  return members.filter(
+    function (member) {
+
+      return activeStatuses.has(
+        normalizeStatus(
+          member.status
+        )
+      );
+
+    }
+  ).length;
+
+}
+
+
+/* =========================================================
+   DASHBOARD METRICS
+========================================================= */
+
+function renderMemberMetrics(
+  members
+) {
+
+  const totalMembers =
     members.length;
 
 
-  const active =
-    members.filter(
-      function (member) {
-
-        return (
-          String(
-            member.status ||
-            ""
-          ).toLowerCase() ===
-          "active"
-        );
-
-      }
-    ).length;
+  const activeMembers =
+    countActiveMembers(
+      members
+    );
 
 
   setText(
     "activeMembers",
-    active
+    String(activeMembers)
   );
 
 
   setText(
     "membersCount",
-    total
+    String(totalMembers)
   );
-
-
-  return {
-    total,
-    active
-  };
 
 }
 
 
 /* =========================================================
-   DASHBOARD LOAD
+   SAFE SECTION LOADER
 ========================================================= */
 
-async function loadDashboard() {
+async function runSection(
+  name,
+  loader
+) {
+
+  try {
+
+    return await loader();
+
+  }
+  catch (error) {
+
+    console.error(
+      `CHAMA LIVE: ${name} failed`,
+      error
+    );
+
+    return {
+      __error:
+        error?.message ||
+        String(error)
+    };
+
+  }
+
+}
+
+
+/* =========================================================
+   INITIALIZE DASHBOARD
+========================================================= */
+
+export async function initDashboard() {
+
+  console.log(
+    "CHAMA LIVE: initializing dashboard"
+  );
+
 
   clearError();
 
@@ -1419,132 +1643,285 @@ async function loadDashboard() {
 
   try {
 
-    /*
-     * 1. Get current group/member context.
-     */
+    /* -----------------------------------------------------
+       1. CONTEXT
+    ----------------------------------------------------- */
 
-    const {
-      groupId
-    } =
+    const groupId =
       await loadContext();
 
 
-    /*
-     * 2. Load independent data sets.
-     *
-     * Promise.all is safe because none of
-     * these queries uses an ambiguous
-     * contributions -> members embed.
-     */
+    /* -----------------------------------------------------
+       2. MEMBERS
+    ----------------------------------------------------- */
 
-    const [
-      members,
-      monthlyStatus,
-      recentContributions,
-      recentExpenses,
-      upcomingMeetings,
-      currentBalance
-    ] =
-      await Promise.all([
-
-        loadMembers(
-          groupId
-        ),
-
-        loadMonthlyStatus(
-          groupId
-        ),
-
-        loadRecentContributions(
-          groupId
-        ),
-
-        loadRecentExpenses(
-          groupId
-        ),
-
-        loadUpcomingMeetings(
-          groupId
-        ),
-
-        loadCurrentBalance(
-          groupId
-        )
-
-      ]);
-
-
-    /*
-     * 3. Members.
-     */
-
-    const memberSummary =
-      renderMemberCounts(
-        members
+    const members =
+      await loadMembers(
+        groupId
       );
 
 
-    /*
-     * 4. Canonical monthly status.
-     */
-
-    renderMemberStatus(
-      monthlyStatus
+    renderMemberMetrics(
+      members
     );
 
 
-    const summary =
-      calculateMonthlySummary(
+    /* -----------------------------------------------------
+       3. CANONICAL MONTHLY STATUS
+    ----------------------------------------------------- */
+
+    const monthlyStatus =
+      await runSection(
+        "monthly status",
+        function () {
+
+          return loadMonthlyStatus(
+            groupId
+          );
+
+        }
+      );
+
+
+    if (
+      monthlyStatus &&
+      !monthlyStatus.__error
+    ) {
+
+      const summary =
+        calculateMonthlySummary(
+          monthlyStatus
+        );
+
+
+      renderMonthlySummary(
+        summary,
+        members.length
+      );
+
+
+      renderMemberStatus(
         monthlyStatus
       );
 
+    }
+    else {
 
-    renderMonthlySummary(
-      summary,
-      memberSummary.total
-    );
-
-
-    /*
-     * 5. Recent contributions.
-     */
-
-    renderRecentContributions(
-      recentContributions
-    );
+      const body =
+        byId(
+          "memberStatusRows"
+        );
 
 
-    /*
-     * 6. Recent expenses.
-     */
+      if (body) {
 
-    renderRecentExpenses(
-      recentExpenses
-    );
+        body.innerHTML = `
+          <tr>
+            <td colspan="7">
+              Unable to load contribution status.
+            </td>
+          </tr>
+        `;
 
-
-    /*
-     * 7. Upcoming meetings.
-     */
-
-    renderUpcomingMeetings(
-      upcomingMeetings
-    );
+      }
 
 
-    /*
-     * 8. Group balance.
-     */
+      console.error(
+        "CHAMA LIVE: monthly status error",
+        monthlyStatus?.__error
+      );
 
-    setText(
-      "currentBalance",
-      money(currentBalance)
-    );
+    }
 
 
-    /*
-     * 9. Successful completion.
-     */
+    /* -----------------------------------------------------
+       4. CURRENT BALANCE
+    ----------------------------------------------------- */
+
+    const balanceResult =
+      await runSection(
+        "current balance",
+        function () {
+
+          return calculateCurrentBalance(
+            groupId
+          );
+
+        }
+      );
+
+
+    if (
+      typeof balanceResult ===
+      "number"
+    ) {
+
+      setText(
+        "currentBalance",
+        money(
+          balanceResult
+        )
+      );
+
+    }
+
+
+    /* -----------------------------------------------------
+       5. RECENT CONTRIBUTIONS
+    ----------------------------------------------------- */
+
+    const recentContributions =
+      await runSection(
+        "recent contributions",
+        function () {
+
+          return loadRecentContributions(
+            groupId
+          );
+
+        }
+      );
+
+
+    if (
+      Array.isArray(
+        recentContributions
+      )
+    ) {
+
+      renderRecentContributions(
+        recentContributions
+      );
+
+    }
+    else {
+
+      const body =
+        byId(
+          "recentContributionRows"
+        );
+
+
+      if (body) {
+
+        body.innerHTML = `
+          <tr>
+            <td colspan="3">
+              Unable to load recent contributions.
+            </td>
+          </tr>
+        `;
+
+      }
+
+    }
+
+
+    /* -----------------------------------------------------
+       6. RECENT EXPENSES
+    ----------------------------------------------------- */
+
+    const recentExpenses =
+      await runSection(
+        "recent expenses",
+        function () {
+
+          return loadRecentExpenses(
+            groupId
+          );
+
+        }
+      );
+
+
+    if (
+      Array.isArray(
+        recentExpenses
+      )
+    ) {
+
+      renderRecentExpenses(
+        recentExpenses
+      );
+
+    }
+    else {
+
+      const body =
+        byId(
+          "recentExpenseRows"
+        );
+
+
+      if (body) {
+
+        body.innerHTML = `
+          <tr>
+            <td colspan="3">
+              Unable to load recent expenses.
+            </td>
+          </tr>
+        `;
+
+      }
+
+    }
+
+
+    /* -----------------------------------------------------
+       7. UPCOMING MEETINGS
+    ----------------------------------------------------- */
+
+    const meetings =
+      await runSection(
+        "upcoming meetings",
+        function () {
+
+          return loadUpcomingMeetings(
+            groupId
+          );
+
+        }
+      );
+
+
+    if (
+      Array.isArray(
+        meetings
+      )
+    ) {
+
+      renderUpcomingMeetings(
+        meetings
+      );
+
+    }
+    else {
+
+      const body =
+        byId(
+          "upcomingMeetingRows"
+        );
+
+
+      if (body) {
+
+        body.innerHTML = `
+          <tr>
+            <td colspan="4">
+              Unable to load upcoming meetings.
+            </td>
+          </tr>
+        `;
+
+      }
+
+    }
+
+
+    /* -----------------------------------------------------
+       COMPLETE
+    ----------------------------------------------------- */
 
     setStatus(
       "Dashboard loaded."
@@ -1552,26 +1929,21 @@ async function loadDashboard() {
 
 
     console.log(
-      "CHAMA LIVE: dashboard loaded successfully",
-      {
-        members: members.length,
-        monthlyStatus: monthlyStatus.length,
-        recentContributions:
-          recentContributions.length,
-        recentExpenses:
-          recentExpenses.length,
-        upcomingMeetings:
-          upcomingMeetings.length,
-        currentBalance
-      }
+      "CHAMA LIVE: dashboard initialized successfully"
     );
 
   }
   catch (error) {
 
     console.error(
-      "CHAMA LIVE: dashboard failed",
+      "CHAMA LIVE: dashboard initialization failed",
       error
+    );
+
+
+    showError(
+      error?.message ||
+      "Dashboard could not be loaded."
     );
 
 
@@ -1579,47 +1951,21 @@ async function loadDashboard() {
       "Dashboard could not be loaded."
     );
 
-
-    showError(
-      error?.message ||
-      "Unable to load dashboard."
-    );
-
   }
 
 }
 
 
 /* =========================================================
-   PUBLIC INITIALIZER
-========================================================= */
-
-export async function initDashboard() {
-
-  console.log(
-    "CHAMA LIVE: initDashboard()"
-  );
-
-
-  await loadDashboard();
-
-}
-
-
-/* =========================================================
-   GENERIC INITIALIZER
+   OPTIONAL GENERIC INIT
 ========================================================= */
 
 export async function init() {
 
-  await initDashboard();
+  return initDashboard();
 
 }
 
-
-/* =========================================================
-   READY
-========================================================= */
 
 console.log(
   "CHAMA LIVE: dashboard.js ready"
