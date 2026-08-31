@@ -1,23 +1,37 @@
 /* =========================================================
    CHAMA LIVE — GROUP MANAGEMENT
-   FINAL SCHEMA-ALIGNED VERSION
+   COMPLETE VISUAL + SCHEMA-ALIGNED VERSION
 
-   IMPORTANT DATABASE ALIGNMENT
+   DATABASE
    ---------------------------------------------------------
-   groups.category           -> group type/category
-   groups.monthly_contribution
-   groups.country
    groups.name
+   groups.category
+   groups.country
+   groups.monthly_contribution
 
-   THERE IS NO groups.type COLUMN.
+   IMPORTANT:
+       There is NO groups.type column.
 
-   Group context:
+       UI:
+           Group Type
+
+       DATABASE:
+           groups.category
+
+   GROUP CONTEXT
+   ---------------------------------------------------------
        currentMember.group_id
+                ↓
+             groups.id
 
-   Therefore:
-       member -> group_id -> groups.id
-
-   No schema redesign required.
+   This keeps Group Management consistent with:
+       Dashboard
+       Members
+       Contributions
+       Expenses
+       Meetings
+       Reports
+       Monthly Closing
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -60,6 +74,11 @@ const monthlyContributionInput =
     "monthlyContribution"
   );
 
+const contributionPreviewEl =
+  document.getElementById(
+    "contributionPreview"
+  );
+
 const saveButton =
   document.getElementById("saveGroup");
 
@@ -70,7 +89,9 @@ const memberCountEl =
   document.getElementById("memberCount");
 
 const currentGroupNameEl =
-  document.getElementById("currentGroupName");
+  document.getElementById(
+    "currentGroupName"
+  );
 
 
 /* =========================================================
@@ -89,7 +110,7 @@ let initialized = false;
 
 
 /* =========================================================
-   HELPERS
+   MONEY FORMATTER
 ========================================================= */
 
 function money(value) {
@@ -121,7 +142,6 @@ function showStatus(message) {
 
   }
 
-
   statusEl.textContent =
     message || "";
 
@@ -130,6 +150,10 @@ function showStatus(message) {
 
 }
 
+
+/* =========================================================
+   ERROR
+========================================================= */
 
 function showError(error) {
 
@@ -148,21 +172,23 @@ function showError(error) {
 
   let message =
     error?.message ||
+    String(error) ||
     "Unable to process group information.";
 
 
   /*
-     Make the common schema problem clearer.
+     Friendly handling of the old
+     groups.type schema mistake.
   */
 
   if (
-    message.includes(
+    message.toLowerCase().includes(
       "groups.type"
     )
   ) {
 
     message =
-      "Group Management is using an outdated database field. The group type is stored as 'category'.";
+      "The group type must use the database field 'category'. This page has been aligned to that schema.";
 
   }
 
@@ -176,6 +202,10 @@ function showError(error) {
 }
 
 
+/* =========================================================
+   CLEAR ERROR
+========================================================= */
+
 function clearError() {
 
   if (!errorEl) {
@@ -183,7 +213,6 @@ function clearError() {
     return;
 
   }
-
 
   errorEl.textContent =
     "";
@@ -210,11 +239,18 @@ async function loadGroup() {
 
 
   /*
-     IMPORTANT:
+     IMPORTANT
 
-     Use groups.category.
+     The canonical group fields are:
 
-     DO NOT use groups.type.
+       id
+       name
+       category
+       country
+       monthly_contribution
+       created_at
+
+     DO NOT change category to type.
   */
 
   const {
@@ -316,6 +352,32 @@ async function loadMemberCount() {
 
 
 /* =========================================================
+   UPDATE CONTRIBUTION PREVIEW
+========================================================= */
+
+function updateContributionPreview() {
+
+  if (!contributionPreviewEl) {
+
+    return;
+
+  }
+
+
+  const amount =
+    Number(
+      monthlyContributionInput?.value ||
+      0
+    );
+
+
+  contributionPreviewEl.textContent =
+    money(amount);
+
+}
+
+
+/* =========================================================
    RENDER GROUP
 ========================================================= */
 
@@ -328,6 +390,10 @@ function renderGroup() {
   }
 
 
+  /* -------------------------------------------------------
+     GROUP NAME
+  ------------------------------------------------------- */
+
   if (groupNameInput) {
 
     groupNameInput.value =
@@ -337,15 +403,15 @@ function renderGroup() {
   }
 
 
-  /*
-     DATABASE FIELD:
+  /* -------------------------------------------------------
+     GROUP TYPE
 
-         category
-
-     UI FIELD:
-
+     UI:
          groupType
-  */
+
+     DATABASE:
+         category
+  ------------------------------------------------------- */
 
   if (groupTypeInput) {
 
@@ -358,18 +424,11 @@ function renderGroup() {
         .toLowerCase();
 
 
-    /*
-       Only select an existing option.
-
-       This prevents the form from silently
-       showing a blank value if the database
-       contains an unexpected category.
-    */
-
     const optionExists =
       Array.from(
         groupTypeInput.options
-      ).some(
+      )
+      .some(
         option =>
           option.value ===
           category
@@ -384,11 +443,6 @@ function renderGroup() {
     }
     else {
 
-      /*
-         Keep the first/default option
-         when an unknown legacy value exists.
-      */
-
       groupTypeInput.value =
         "other";
 
@@ -396,6 +450,10 @@ function renderGroup() {
 
   }
 
+
+  /* -------------------------------------------------------
+     COUNTRY
+  ------------------------------------------------------- */
 
   if (countryInput) {
 
@@ -405,6 +463,10 @@ function renderGroup() {
 
   }
 
+
+  /* -------------------------------------------------------
+     MONTHLY CONTRIBUTION
+  ------------------------------------------------------- */
 
   if (
     monthlyContributionInput
@@ -419,6 +481,10 @@ function renderGroup() {
   }
 
 
+  /* -------------------------------------------------------
+     GROUP ID
+  ------------------------------------------------------- */
+
   if (groupIdEl) {
 
     groupIdEl.textContent =
@@ -428,6 +494,10 @@ function renderGroup() {
   }
 
 
+  /* -------------------------------------------------------
+     GROUP NAME OVERVIEW
+  ------------------------------------------------------- */
+
   if (currentGroupNameEl) {
 
     currentGroupNameEl.textContent =
@@ -436,6 +506,9 @@ function renderGroup() {
 
   }
 
+
+  updateContributionPreview();
+
 }
 
 
@@ -443,9 +516,7 @@ function renderGroup() {
    SAVE GROUP
 ========================================================= */
 
-async function saveGroup(
-  event
-) {
+async function saveGroup(event) {
 
   event.preventDefault();
 
@@ -466,6 +537,10 @@ async function saveGroup(
     }
 
 
+    /* -------------------------------------------------------
+       READ FORM
+    ------------------------------------------------------- */
+
     const name =
       String(
         groupNameInput?.value ||
@@ -475,11 +550,13 @@ async function saveGroup(
 
 
     /*
-       UI calls this Group Type.
+       UI label:
 
-       DATABASE stores it in:
+           Group Type
 
-           groups.category
+       Database:
+
+           category
     */
 
     const category =
@@ -540,8 +617,7 @@ async function saveGroup(
     if (
       !Number.isFinite(
         monthlyContribution
-      ) ||
-      monthlyContribution < 0
+      )
     ) {
 
       throw new Error(
@@ -550,6 +626,21 @@ async function saveGroup(
 
     }
 
+
+    if (
+      monthlyContribution < 0
+    ) {
+
+      throw new Error(
+        "Monthly contribution cannot be negative."
+      );
+
+    }
+
+
+    /* -------------------------------------------------------
+       BUTTON STATE
+    ------------------------------------------------------- */
 
     if (saveButton) {
 
@@ -567,11 +658,12 @@ async function saveGroup(
     );
 
 
-    /*
-       IMPORTANT DATABASE PAYLOAD
+    /* -------------------------------------------------------
+       DATABASE PAYLOAD
 
-       category, NOT type.
-    */
+       IMPORTANT:
+           category NOT type.
+    ------------------------------------------------------- */
 
     const payload = {
 
@@ -598,6 +690,10 @@ async function saveGroup(
       }
     );
 
+
+    /* -------------------------------------------------------
+       UPDATE GROUP
+    ------------------------------------------------------- */
 
     const {
       data,
@@ -643,11 +739,15 @@ async function saveGroup(
       data;
 
 
+    /* -------------------------------------------------------
+       RENDER UPDATED DATA
+    ------------------------------------------------------- */
+
     renderGroup();
 
 
     showStatus(
-      "Group information updated successfully."
+      "✓ Group information updated successfully."
     );
 
 
@@ -659,6 +759,7 @@ async function saveGroup(
       },
       3000
     );
+
 
   }
   catch (error) {
@@ -683,6 +784,34 @@ async function saveGroup(
     }
 
   }
+
+}
+
+
+/* =========================================================
+   SETUP EVENTS
+========================================================= */
+
+function setupEvents() {
+
+  form?.addEventListener(
+    "submit",
+    saveGroup
+  );
+
+
+  monthlyContributionInput
+    ?.addEventListener(
+      "input",
+      updateContributionPreview
+    );
+
+
+  monthlyContributionInput
+    ?.addEventListener(
+      "change",
+      updateContributionPreview
+    );
 
 }
 
@@ -754,11 +883,11 @@ export async function initPage() {
     /* -------------------------------------------------------
        GROUP CONTEXT
        
-       THIS IS THE COMMON CHAMA LIVE CONTEXT.
+       Canonical CHAMA LIVE relationship:
 
-       currentMember.group_id
-              ↓
-       groups.id
+           member.group_id
+                  ↓
+             groups.id
     ------------------------------------------------------- */
 
     groupId =
@@ -793,10 +922,7 @@ export async function initPage() {
        EVENTS
     ------------------------------------------------------- */
 
-    form?.addEventListener(
-      "submit",
-      saveGroup
-    );
+    setupEvents();
 
 
     /* -------------------------------------------------------
@@ -807,6 +933,10 @@ export async function initPage() {
 
     await loadMemberCount();
 
+
+    /* -------------------------------------------------------
+       RENDER
+    ------------------------------------------------------- */
 
     renderGroup();
 
