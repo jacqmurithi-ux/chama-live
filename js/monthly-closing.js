@@ -25,6 +25,12 @@
 
    Carry-forward remains separate.
 
+   INITIALIZATION
+   ---------------------------------------------------------
+   layout.js is the sole page bootloader.
+
+   This module MUST NOT auto-boot itself.
+
    Required exports:
        initPage()
        initMonthlyClosing
@@ -603,8 +609,10 @@ async function getOpeningBalance(
   }
 
 
-  if (previousPeriod?.closing_balance !== null &&
-      previousPeriod?.closing_balance !== undefined) {
+  if (
+    previousPeriod?.closing_balance !== null &&
+    previousPeriod?.closing_balance !== undefined
+  ) {
 
     return Number(
       previousPeriod.closing_balance || 0
@@ -658,10 +666,8 @@ async function getOpeningBalance(
 
 
   if (
-    previousClosing?.closing_balance !==
-      null &&
-    previousClosing?.closing_balance !==
-      undefined
+    previousClosing?.closing_balance !== null &&
+    previousClosing?.closing_balance !== undefined
   ) {
 
     return Number(
@@ -1980,38 +1986,41 @@ export async function initPage() {
 }
 
 
+/* =========================================================
+   BACKWARD-COMPATIBLE EXPORT
+========================================================= */
+
 export const initMonthlyClosing =
   initPage;
 
 
 /* =========================================================
-   AUTO BOOT
+   NO AUTO BOOT
+=========================================================
+
+   layout.js is the sole page bootloader.
+
+   Flow:
+
+       monthly-closing.html
+              ↓
+          layout.js
+              ↓
+       dynamic import()
+              ↓
+          initPage()
+
+   Do NOT call initPage() automatically here.
+
+   This prevents:
+
+       duplicate authentication
+       duplicate RPC calls
+       duplicate rendering
+       duplicate event initialization
+       race conditions between page loaders
+
 ========================================================= */
-
-if (
-  document.readyState ===
-  "loading"
-) {
-
-  document.addEventListener(
-    "DOMContentLoaded",
-    () => {
-
-      initPage();
-
-    },
-    {
-      once: true
-    }
-  );
-
-}
-else {
-
-  initPage();
-
-}
-
 
 console.log(
   "CHAMA LIVE: monthly-closing.js ready"
