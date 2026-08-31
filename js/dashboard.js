@@ -1,61 +1,24 @@
 /* =========================================================
    CHAMA LIVE — DASHBOARD
-   FINAL STABLE VERSION
-   ---------------------------------------------------------
-   READ-ONLY DASHBOARD
-
-   ACCOUNTING SOURCE OF TRUTH
-   ---------------------------------------------------------
-   obligation
-       ↓
-   payment
-       ↓
-   allocation
-       ↓
-   canonical monthly status RPC
+   COMPLETE STABLE VERSION
 
    IMPORTANT
    ---------------------------------------------------------
-   Dashboard must NOT invent accounting logic.
-
-   Raw contributions are used only for:
-       - recent contribution display
-       - actual cash received summary
-
-   Monthly contribution figures come from:
-       get_canonical_member_monthly_status
-
-   IMPORTANT SUPABASE RELATIONSHIP RULE
-   ---------------------------------------------------------
-   contributions has more than one relationship to members.
-
-   Therefore Recent Contributions MUST explicitly use:
-
-       members!contributions_member_id_fkey
-
-   This means:
-
-       contributions.member_id
-              ↓
-       members.id
-
-   Expenses are read using columns known to exist:
-
-       description
-       amount
-       expense_date
-
-   Do NOT assume:
-
-       expenses.status
-
+   1. No contributions -> members embedded relationship.
+   2. expenses uses approval_status, NOT status.
+   3. Monthly member accounting uses:
+        get_canonical_member_monthly_status()
+   4. Dashboard queries are group-scoped.
+   5. Contribution/member data are loaded separately.
+   6. No database/schema changes are made here.
 ========================================================= */
 
 import { supabase } from "./supabase.js";
 
 import {
-  getLayoutState
-} from "./layout.js";
+  getCurrentMember,
+  getCurrentGroup
+} from "./auth.js";
 
 
 console.log(
@@ -70,16 +33,24 @@ console.log(
 let currentMember = null;
 let currentGroup = null;
 
-let dashboardInitialized = false;
-
 
 /* =========================================================
    HELPERS
 ========================================================= */
 
 function byId(id) {
-
   return document.getElementById(id);
+}
+
+
+function escapeHtml(value) {
+
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 
 }
 
@@ -103,190 +74,78 @@ function money(value) {
 }
 
 
-function numberValue(value) {
+function number(value) {
 
-  const amount =
-    Number(value || 0);
-
-  return amount.toLocaleString(
-    "en-KE",
-    {
-      maximumFractionDigits: 2
-    }
-  );
+  return Number(value || 0);
 
 }
 
 
-function escapeHtml(value) {
-
-  return String(
-    value ?? ""
-  )
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-
-}
-
-
-/* =========================================================
-   DATE HELPERS
-========================================================= */
-
-function getCurrentMonthKey() {
+function currentMonthText() {
 
   const now =
     new Date();
 
-  const year =
-    now.getFullYear();
-
-  const month =
+  return (
+    now.getFullYear() +
+    "-" +
     String(
       now.getMonth() + 1
-    ).padStart(2, "0");
-
-  return `${year}-${month}`;
-
-}
-
-
-function formatDate(value) {
-
-  if (!value) {
-
-    return "—";
-
-  }
-
-  const date =
-    new Date(value);
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-
-    return String(value);
-
-  }
-
-  return date.toLocaleDateString(
-    "en-KE",
-    {
-      day: "2-digit",
-      month: "short",
-      year: "numeric"
-    }
+    ).padStart(2, "0")
   );
 
 }
 
 
-/* =========================================================
-   STATUS HELPERS
-========================================================= */
+function setText(id, value) {
 
-function normalizeStatus(status) {
+  const element =
+    byId(id);
 
-  return String(
-    status || ""
-  )
-    .trim()
-    .toLowerCase();
-
-}
-
-
-function statusLabel(status) {
-
-  const normalized =
-    normalizeStatus(status);
-
-  switch (normalized) {
-
-    case "cleared":
-      return "Cleared";
-
-    case "paid":
-      return "Paid";
-
-    case "credit":
-      return "Credit";
-
-    case "partial":
-      return "Partial";
-
-    case "outstanding":
-      return "Outstanding";
-
-    case "pending":
-      return "Pending";
-
-    case "approved":
-      return "Approved";
-
-    default:
-
-      return status
-        ? String(status)
-        : "—";
-
-  }
-
-}
-
-
-function statusClass(status) {
-
-  const normalized =
-    normalizeStatus(status);
-
-  switch (normalized) {
-
-    case "cleared":
-      return "status-cleared";
-
-    case "paid":
-      return "status-paid";
-
-    case "credit":
-      return "status-credit";
-
-    case "partial":
-      return "status-partial";
-
-    case "outstanding":
-      return "status-outstanding";
-
-    case "pending":
-      return "status-pending";
-
-    case "approved":
-      return "status-paid";
-
-    default:
-      return "status-neutral";
-
+  if (element) {
+    element.textContent = value;
   }
 
 }
 
 
 /* =========================================================
-   ERROR DISPLAY
+   STATUS
 ========================================================= */
+
+function setStatus(message) {
+
+  const element =
+    byId("status");
+
+  if (element) {
+    element.textContent =
+      message || "";
+  }
+
+}
+
 
 function showError(message) {
 
-  console.error(
-    "CHAMA LIVE DASHBOARD:",
-    message
-  );
+  const errorBox =
+    byId("error");
+
+  if (!errorBox) {
+    return;
+  }
+
+  errorBox.hidden =
+    false;
+
+  errorBox.textContent =
+    message ||
+    "Dashboard could not be loaded.";
+
+}
+
+
+function clearError() {
 
   const errorBox =
     byId("error");
@@ -294,36 +153,10 @@ function showError(message) {
   if (errorBox) {
 
     errorBox.hidden =
-      false;
+      true;
 
     errorBox.textContent =
-      message ||
-      "Unable to load dashboard.";
-
-  }
-
-  const status =
-    byId("status");
-
-  if (status) {
-
-    status.textContent =
-      "Dashboard could not be loaded.";
-
-  }
-
-}
-
-
-function setStatus(message) {
-
-  const status =
-    byId("status");
-
-  if (status) {
-
-    status.textContent =
-      message;
+      "";
 
   }
 
@@ -331,70 +164,65 @@ function setStatus(message) {
 
 
 /* =========================================================
-   LOAD LAYOUT CONTEXT
+   GROUP / MEMBER
 ========================================================= */
 
-function loadContext() {
-
-  const state =
-    getLayoutState();
+async function loadContext() {
 
   currentMember =
-    state?.member ||
-    null;
-
-  currentGroup =
-    state?.group ||
-    null;
+    await getCurrentMember();
 
   if (!currentMember) {
 
     throw new Error(
-      "Current member could not be loaded."
+      "No member record is linked to this account."
     );
 
   }
+
+
+  currentGroup =
+    await getCurrentGroup();
 
   if (!currentGroup) {
 
     throw new Error(
-      "Current group could not be loaded."
+      "Group information could not be found."
     );
 
   }
 
-  if (!currentGroup.id) {
+
+  if (!currentMember.group_id) {
 
     throw new Error(
-      "Current group has no valid ID."
+      "Your member record has no group."
     );
 
   }
 
-  console.log(
-    "CHAMA LIVE DASHBOARD: context loaded",
-    {
-      member:
-        currentMember,
 
-      group:
-        currentGroup
-    }
-  );
-
-}
+  const groupId =
+    currentMember.group_id;
 
 
-/* =========================================================
-   GROUP DISPLAY
-========================================================= */
+  if (
+    currentGroup.id &&
+    currentGroup.id !== groupId
+  ) {
 
-function updateGroupDisplay() {
+    throw new Error(
+      "Member and group context do not match."
+    );
+
+  }
+
 
   const groupName =
-    currentGroup?.name ||
-    currentGroup?.group_name ||
+    currentGroup.name ||
+    currentGroup.group_name ||
     "CHAMA";
+
 
   document
     .querySelectorAll(
@@ -407,14 +235,37 @@ function updateGroupDisplay() {
 
     });
 
+
+  const memberName =
+    currentMember.name ||
+    currentMember.full_name ||
+    "Member";
+
+
+  document
+    .querySelectorAll(
+      "[data-user-name]"
+    )
+    .forEach(function (element) {
+
+      element.textContent =
+        memberName;
+
+    });
+
+
+  return {
+    groupId
+  };
+
 }
 
 
 /* =========================================================
-   MEMBER COUNT
+   LOAD MEMBERS
 ========================================================= */
 
-async function loadMemberCount() {
+async function loadMembers(groupId) {
 
   const {
     data,
@@ -423,217 +274,102 @@ async function loadMemberCount() {
     await supabase
       .from("members")
       .select(
-        "id,status"
+        "id,name,member_number,status,group_id"
       )
       .eq(
         "group_id",
-        currentGroup.id
+        groupId
+      )
+      .order(
+        "name",
+        {
+          ascending: true
+        }
       );
 
+
   if (error) {
-
     throw error;
-
   }
 
-  const members =
-    Array.isArray(data)
-      ? data
-      : [];
 
-  const total =
-    members.length;
-
-  const active =
-    members.filter(
-      function (member) {
-
-        const status =
-          normalizeStatus(
-            member.status
-          );
-
-        return (
-          status === "active" ||
-          status === ""
-        );
-
-      }
-    ).length;
-
-  const activeElement =
-    byId("activeMembers");
-
-  if (activeElement) {
-
-    activeElement.textContent =
-      numberValue(active);
-
-  }
-
-  const totalElement =
-    byId("membersCount");
-
-  if (totalElement) {
-
-    totalElement.textContent =
-      numberValue(total);
-
-  }
-
-  return {
-    total,
-    active
-  };
+  return data || [];
 
 }
 
 
 /* =========================================================
-   CANONICAL MONTHLY STATUS
+   LOAD MONTHLY CANONICAL STATUS
 ========================================================= */
 
-async function loadCanonicalMonthlyStatus() {
+async function loadMonthlyStatus(groupId) {
+
+  const month =
+    currentMonthText();
+
 
   console.log(
-    "CHAMA LIVE DASHBOARD: requesting canonical monthly status"
+    "CHAMA LIVE: loading canonical monthly status",
+    {
+      groupId,
+      month
+    }
   );
+
 
   const {
     data,
     error
   } =
-    await supabase.rpc(
-      "get_canonical_member_monthly_status",
-      {
-        p_group_id:
-          currentGroup.id,
+    await supabase
+      .rpc(
+        "get_canonical_member_monthly_status",
+        {
+          p_group_id:
+            groupId,
 
-        p_month:
-          getCurrentMonthKey()
-      }
-    );
+          p_month:
+            month
+        }
+      );
+
 
   if (error) {
-
     throw error;
-
   }
 
-  const rows =
-    Array.isArray(data)
-      ? data
-      : [];
 
-  console.log(
-    "CHAMA LIVE DASHBOARD: canonical monthly rows",
-    rows
-  );
-
-  return rows;
+  return data || [];
 
 }
 
 
 /* =========================================================
-   NORMALIZE MONTHLY ROW
-========================================================= */
-
-function normalizeMonthlyRow(row) {
-
-  return {
-
-    memberId:
-      row.member_id ||
-      row.member_uuid ||
-      row.id ||
-      null,
-
-    memberName:
-      row.member_name ||
-      row.name ||
-      row.full_name ||
-      "Member",
-
-    monthlyDue:
-      Number(
-        row.monthly_due ??
-        row.due_amount ??
-        row.obligation_amount ??
-        0
-      ),
-
-    previousOutstanding:
-      Number(
-        row.previous_outstanding ??
-        row.opening_outstanding ??
-        row.prior_outstanding ??
-        0
-      ),
-
-    appliedThisMonth:
-      Number(
-        row.applied_this_month ??
-        row.monthly_applied ??
-        row.applied_amount ??
-        0
-      ),
-
-    carryForward:
-      Number(
-        row.carry_forward ??
-        row.credit ??
-        row.carry_forward_credit ??
-        0
-      ),
-
-    currentOutstanding:
-      Number(
-        row.current_outstanding ??
-        row.outstanding ??
-        0
-      ),
-
-    status:
-      row.status ||
-      row.payment_status ||
-      "Outstanding"
-
-  };
-
-}
-
-
-/* =========================================================
-   MEMBER STATUS TABLE
+   RENDER MEMBER STATUS
 ========================================================= */
 
 function renderMemberStatus(rows) {
 
-  const body =
+  const tableBody =
     document.querySelector(
-      "#memberStatusTableBody"
-    ) ||
-    document.querySelector(
-      "#memberStatus tbody"
-    ) ||
-    document.querySelector(
-      ".member-status-table tbody"
+      "#memberStatusBody"
     );
 
-  if (!body) {
+
+  if (!tableBody) {
 
     console.warn(
-      "CHAMA LIVE DASHBOARD: member status table body not found"
+      "CHAMA LIVE: #memberStatusBody not found"
     );
 
     return;
 
   }
 
+
   if (!rows.length) {
 
-    body.innerHTML = `
+    tableBody.innerHTML = `
       <tr>
         <td colspan="7">
           No member contribution status available.
@@ -645,79 +381,127 @@ function renderMemberStatus(rows) {
 
   }
 
-  body.innerHTML =
-    rows
-      .map(function (rawRow) {
 
-        const row =
-          normalizeMonthlyRow(
-            rawRow
-          );
+  tableBody.innerHTML =
+    rows.map(function (row) {
 
-        const status =
-          statusLabel(
-            row.status
-          );
+      const status =
+        String(
+          row.status || "Outstanding"
+        );
 
-        const css =
-          statusClass(
-            row.status
-          );
 
-        return `
-          <tr>
+      const normalized =
+        status.toLowerCase();
 
-            <td>
-              ${escapeHtml(
-                row.memberName
-              )}
-            </td>
 
-            <td>
-              ${money(
-                row.monthlyDue
-              )}
-            </td>
+      let statusClass =
+        "status-neutral";
 
-            <td>
-              ${money(
-                row.previousOutstanding
-              )}
-            </td>
 
-            <td class="applied-value">
-              ${money(
-                row.appliedThisMonth
-              )}
-            </td>
+      if (
+        normalized === "paid" ||
+        normalized === "cleared"
+      ) {
 
-            <td class="credit-value">
-              ${money(
-                row.carryForward
-              )}
-            </td>
+        statusClass =
+          "status-paid";
 
-            <td class="outstanding-value">
-              ${money(
-                row.currentOutstanding
-              )}
-            </td>
+      }
+      else if (
+        normalized === "credit"
+      ) {
 
-            <td>
-              <span
-                class="status-badge ${css}"
-              >
-                ${escapeHtml(
-                  status
-                )}
-              </span>
-            </td>
+        statusClass =
+          "status-credit";
 
-          </tr>
-        `;
+      }
+      else if (
+        normalized === "partial"
+      ) {
 
-      })
-      .join("");
+        statusClass =
+          "status-partial";
+
+      }
+      else if (
+        normalized === "outstanding"
+      ) {
+
+        statusClass =
+          "status-outstanding";
+
+      }
+
+
+      const carry =
+        number(
+          row.carry_forward
+        );
+
+
+      const outstanding =
+        number(
+          row.current_outstanding
+        );
+
+
+      return `
+        <tr>
+
+          <td>
+            ${escapeHtml(
+              row.member_name ||
+              "Member"
+            )}
+          </td>
+
+          <td>
+            ${money(
+              row.monthly_due
+            )}
+          </td>
+
+          <td>
+            ${money(
+              row.previous_outstanding
+            )}
+          </td>
+
+          <td class="applied-value">
+            ${money(
+              row.applied_this_month
+            )}
+          </td>
+
+          <td class="${
+            carry > 0
+              ? "credit-value"
+              : ""
+          }">
+            ${money(carry)}
+          </td>
+
+          <td class="${
+            outstanding > 0
+              ? "outstanding-value"
+              : ""
+          }">
+            ${money(outstanding)}
+          </td>
+
+          <td>
+            <span
+              class="status-badge ${statusClass}"
+            >
+              ${escapeHtml(status)}
+            </span>
+          </td>
+
+        </tr>
+      `;
+
+    }).join("");
 
 }
 
@@ -726,71 +510,96 @@ function renderMemberStatus(rows) {
    CALCULATE MONTHLY SUMMARY
 ========================================================= */
 
-function calculateDashboardSummary(rows) {
+function calculateMonthlySummary(rows) {
 
-  let monthlyExpected =
-    0;
+  let monthlyDue = 0;
+  let appliedThisMonth = 0;
+  let carryForward = 0;
+  let outstanding = 0;
+  let previousOutstanding = 0;
+  let contributedMembers = 0;
 
-  let monthlyApplied =
-    0;
 
-  let carryForward =
-    0;
+  rows.forEach(function (row) {
 
-  let currentOutstanding =
-    0;
-
-  let previousOutstanding =
-    0;
-
-  let membersContributed =
-    0;
-
-  rows.forEach(function (rawRow) {
-
-    const row =
-      normalizeMonthlyRow(
-        rawRow
+    const due =
+      number(
+        row.monthly_due
       );
 
-    monthlyExpected +=
-      row.monthlyDue;
 
-    monthlyApplied +=
-      row.appliedThisMonth;
+    const applied =
+      number(
+        row.applied_this_month
+      );
+
+
+    const credit =
+      number(
+        row.carry_forward
+      );
+
+
+    const currentOutstanding =
+      number(
+        row.current_outstanding
+      );
+
+
+    const previous =
+      number(
+        row.previous_outstanding
+      );
+
+
+    monthlyDue +=
+      due;
+
+
+    appliedThisMonth +=
+      applied;
+
 
     carryForward +=
-      row.carryForward;
+      credit;
 
-    currentOutstanding +=
-      row.currentOutstanding;
+
+    outstanding +=
+      currentOutstanding;
+
 
     previousOutstanding +=
-      row.previousOutstanding;
+      previous;
 
-    if (
-      row.appliedThisMonth > 0
-    ) {
 
-      membersContributed++;
+    /*
+     * A member counts as contributed
+     * when money was actually applied
+     * toward their current obligation.
+     */
+
+    if (applied > 0) {
+
+      contributedMembers++;
 
     }
 
   });
 
+
   return {
 
-    monthlyExpected,
+    monthlyDue,
 
-    monthlyApplied,
+    appliedThisMonth,
 
     carryForward,
 
-    currentOutstanding,
+    outstanding,
 
     previousOutstanding,
 
-    membersContributed
+    contributedMembers
 
   };
 
@@ -798,359 +607,164 @@ function calculateDashboardSummary(rows) {
 
 
 /* =========================================================
-   FIND PROGRESS ELEMENT
+   RENDER MONTHLY SUMMARY
 ========================================================= */
 
-function findProgressElement() {
-
-  return (
-    byId(
-      "contributionProgressBar"
-    ) ||
-
-    byId(
-      "progressBar"
-    ) ||
-
-    document.querySelector(
-      ".progress-bar"
-    )
-  );
-
-}
-
-
-function findProgressPercentageElement() {
-
-  return (
-    byId(
-      "contributionPercentage"
-    ) ||
-
-    byId(
-      "progressPercentage"
-    ) ||
-
-    document.querySelector(
-      ".progress-percentage"
-    )
-  );
-
-}
-
-
-function findProgressAmountElement() {
-
-  return (
-    byId(
-      "contributionProgressAmount"
-    ) ||
-
-    byId(
-      "progressAmount"
-    ) ||
-
-    document.querySelector(
-      ".progress-footer strong"
-    )
-  );
-
-}
-
-
-/* =========================================================
-   RENDER SUMMARY
-========================================================= */
-
-function renderSummary(
+function renderMonthlySummary(
   summary,
-  memberCounts
+  totalMembers
 ) {
 
-  const {
-    monthlyExpected,
-    monthlyApplied,
-    carryForward,
-    currentOutstanding,
-    membersContributed
-  } =
-    summary;
-
-  /* -------------------------------------------------------
-     MONTHLY EXPECTED
-  ------------------------------------------------------- */
-
-  const expectedElement =
-    byId(
-      "monthlyExpected"
-    );
-
-  if (expectedElement) {
-
-    expectedElement.textContent =
-      money(
-        monthlyExpected
-      );
-
-  }
+  setText(
+    "monthlyExpected",
+    money(
+      summary.monthlyDue
+    )
+  );
 
 
-  /* -------------------------------------------------------
-     MONTHLY APPLIED
-  ------------------------------------------------------- */
-
-  const appliedElement =
-    byId(
-      "monthlyCollected"
-    );
-
-  if (appliedElement) {
-
-    appliedElement.textContent =
-      money(
-        monthlyApplied
-      );
-
-  }
+  setText(
+    "monthlyCollected",
+    money(
+      summary.appliedThisMonth
+    )
+  );
 
 
-  /* -------------------------------------------------------
-     PROGRESS
-  ------------------------------------------------------- */
+  setText(
+    "membersContributed",
+    `${summary.contributedMembers} / ${totalMembers}`
+  );
 
-  let percentage =
-    0;
 
-  if (
-    monthlyExpected > 0
-  ) {
+  setText(
+    "currentOutstanding",
+    money(
+      summary.outstanding
+    )
+  );
 
-    percentage =
-      (
-        monthlyApplied /
-        monthlyExpected
-      ) * 100;
 
-  }
+  setText(
+    "appliedThisMonth",
+    money(
+      summary.appliedThisMonth
+    )
+  );
 
-  percentage =
+
+  setText(
+    "carryForwardCredit",
+    money(
+      summary.carryForward
+    )
+  );
+
+
+  setText(
+    "outstandingAmount",
+    money(
+      summary.outstanding
+    )
+  );
+
+
+  const rate =
+    summary.monthlyDue > 0
+      ? (
+          summary.appliedThisMonth /
+          summary.monthlyDue
+        ) * 100
+      : 0;
+
+
+  const safeRate =
     Math.max(
       0,
       Math.min(
         100,
-        percentage
+        rate
       )
     );
 
+
+  setText(
+    "contributionPercentage",
+    `${Math.round(safeRate)}%`
+  );
+
+
   const progressBar =
-    findProgressElement();
+    byId("contributionProgress");
+
 
   if (progressBar) {
 
     progressBar.style.width =
-      `${percentage}%`;
-
-  }
-
-  const percentageElement =
-    findProgressPercentageElement();
-
-  if (percentageElement) {
-
-    percentageElement.textContent =
-      `${Math.round(
-        percentage
-      )}%`;
-
-  }
-
-  const amountElement =
-    findProgressAmountElement();
-
-  if (amountElement) {
-
-    amountElement.textContent =
-      `${money(
-        monthlyApplied
-      )} / ${money(
-        monthlyExpected
-      )}`;
+      `${safeRate}%`;
 
   }
 
 
-  /* -------------------------------------------------------
-     MEMBER PARTICIPATION
-  ------------------------------------------------------- */
-
-  const contributedElement =
-    byId(
-      "membersContributed"
-    );
-
-  if (contributedElement) {
-
-    contributedElement.textContent =
-      `${membersContributed} / ${
-        memberCounts.active
-      }`;
-
-  }
-
-  const participationElement =
-    byId(
-      "memberParticipation"
-    );
-
-  if (participationElement) {
-
-    const participation =
-      memberCounts.active > 0
-        ? (
-            membersContributed /
-            memberCounts.active
-          ) * 100
-        : 0;
-
-    participationElement.textContent =
-      `${Math.round(
-        participation
-      )}%`;
-
-  }
+  setText(
+    "contributionAppliedDisplay",
+    `${money(summary.appliedThisMonth)} / ${money(summary.monthlyDue)}`
+  );
 
 
-  /* -------------------------------------------------------
-     CURRENT OUTSTANDING
-  ------------------------------------------------------- */
-
-  const outstandingElement =
-    byId(
-      "currentOutstanding"
-    );
-
-  if (outstandingElement) {
-
-    outstandingElement.textContent =
-      money(
-        currentOutstanding
-      );
-
-  }
+  const participation =
+    totalMembers > 0
+      ? (
+          summary.contributedMembers /
+          totalMembers
+        ) * 100
+      : 0;
 
 
-  /* -------------------------------------------------------
-     APPLIED THIS MONTH
-  ------------------------------------------------------- */
-
-  const appliedSummaryElement =
-    byId(
-      "appliedThisMonth"
-    );
-
-  if (appliedSummaryElement) {
-
-    appliedSummaryElement.textContent =
-      money(
-        monthlyApplied
-      );
-
-  }
+  setText(
+    "memberParticipation",
+    `${Math.round(participation)}%`
+  );
 
 
-  /* -------------------------------------------------------
-     CARRY FORWARD
-  ------------------------------------------------------- */
-
-  const carryForwardElement =
-    byId(
-      "carryForward"
-    );
-
-  if (carryForwardElement) {
-
-    carryForwardElement.textContent =
-      money(
-        carryForward
-      );
-
-  }
-
-
-  /* -------------------------------------------------------
-     OUTSTANDING SUMMARY
-  ------------------------------------------------------- */
-
-  const outstandingSummaryElement =
-    byId(
-      "outstandingSummary"
-    );
-
-  if (outstandingSummaryElement) {
-
-    outstandingSummaryElement.textContent =
-      money(
-        currentOutstanding
-      );
-
-  }
+  setText(
+    "memberParticipationCount",
+    `${summary.contributedMembers} / ${totalMembers}`
+  );
 
 }
 
 
 /* =========================================================
-   RECENT CONTRIBUTIONS
+   LOAD RECENT CONTRIBUTIONS
    ---------------------------------------------------------
    IMPORTANT:
+   Do NOT use:
+       members(...)
+   here.
 
-   There are multiple relationships between:
+   There are multiple relationships between
+   contributions and members.
 
-       contributions
-       members
-
-   Therefore we MUST specify:
-
-       members!contributions_member_id_fkey
-
-   This selects:
-
-       contributions.member_id
-              ↓
-       members.id
-
-   It does NOT use:
-
-       contributions.recorded_by
+   We therefore:
+       1. fetch contributions only
+       2. fetch required member names separately
 ========================================================= */
 
-async function loadRecentContributions() {
-
-  console.log(
-    "CHAMA LIVE DASHBOARD: loading recent contributions"
-  );
+async function loadRecentContributions(groupId) {
 
   const {
-    data,
+    data: contributions,
     error
   } =
     await supabase
       .from("contributions")
       .select(
-        `
-          id,
-          amount,
-          contribution_date,
-          member_id,
-          members!contributions_member_id_fkey (
-            id,
-            name,
-            full_name
-          )
-        `
+        "id,member_id,amount,contribution_date,created_at"
       )
       .eq(
         "group_id",
-        currentGroup.id
+        groupId
       )
       .order(
         "contribution_date",
@@ -1158,29 +772,97 @@ async function loadRecentContributions() {
           ascending: false
         }
       )
+      .order(
+        "created_at",
+        {
+          ascending: false
+        }
+      )
       .limit(5);
 
+
   if (error) {
-
     throw error;
-
   }
 
+
   const rows =
-    Array.isArray(data)
-      ? data
-      : [];
+    contributions || [];
 
-  console.log(
-    "CHAMA LIVE DASHBOARD: recent contributions",
-    rows
-  );
 
-  renderRecentContributions(
-    rows
-  );
+  if (!rows.length) {
+    return [];
+  }
 
-  return rows;
+
+  const memberIds =
+    [
+      ...new Set(
+        rows
+          .map(function (row) {
+            return row.member_id;
+          })
+          .filter(Boolean)
+      )
+    ];
+
+
+  if (!memberIds.length) {
+    return rows;
+  }
+
+
+  const {
+    data: members,
+    error: memberError
+  } =
+    await supabase
+      .from("members")
+      .select(
+        "id,name"
+      )
+      .in(
+        "id",
+        memberIds
+      );
+
+
+  if (memberError) {
+    throw memberError;
+  }
+
+
+  const memberMap =
+    new Map();
+
+
+  (members || [])
+    .forEach(function (member) {
+
+      memberMap.set(
+        member.id,
+        member.name ||
+        "Member"
+      );
+
+    });
+
+
+  return rows.map(function (row) {
+
+    return {
+
+      ...row,
+
+      member_name:
+        memberMap.get(
+          row.member_id
+        ) ||
+        "Member"
+
+    };
+
+  });
 
 }
 
@@ -1189,37 +871,25 @@ async function loadRecentContributions() {
    RENDER RECENT CONTRIBUTIONS
 ========================================================= */
 
-function renderRecentContributions(
-  rows
-) {
+function renderRecentContributions(rows) {
 
   const body =
     document.querySelector(
       "#recentContributionsBody"
-    ) ||
-    document.querySelector(
-      "#recentContributions tbody"
-    ) ||
-    document.querySelector(
-      ".contributions-card tbody"
     );
+
 
   if (!body) {
-
-    console.warn(
-      "CHAMA LIVE DASHBOARD: recent contributions table body not found"
-    );
-
     return;
-
   }
+
 
   if (!rows.length) {
 
     body.innerHTML = `
       <tr>
         <td colspan="3">
-          No recent contributions.
+          No contributions recorded yet.
         </td>
       </tr>
     `;
@@ -1228,67 +898,55 @@ function renderRecentContributions(
 
   }
 
+
   body.innerHTML =
-    rows
-      .map(function (row) {
+    rows.map(function (row) {
 
-        const member =
-          Array.isArray(
-            row.members
-          )
-            ? row.members[0]
-            : row.members;
+      const date =
+        row.contribution_date ||
+        row.created_at;
 
-        const memberName =
-          member?.name ||
-          member?.full_name ||
-          "Member";
 
-        return `
-          <tr>
+      return `
+        <tr>
 
-            <td>
-              ${escapeHtml(
-                memberName
-              )}
-            </td>
+          <td>
+            ${escapeHtml(
+              row.member_name
+            )}
+          </td>
 
-            <td>
-              ${money(
-                row.amount
-              )}
-            </td>
+          <td>
+            ${money(
+              row.amount
+            )}
+          </td>
 
-            <td>
-              ${formatDate(
-                row.contribution_date
-              )}
-            </td>
+          <td>
+            ${escapeHtml(
+              formatDate(date)
+            )}
+          </td>
 
-          </tr>
-        `;
+        </tr>
+      `;
 
-      })
-      .join("");
+    }).join("");
 
 }
 
 
 /* =========================================================
-   RECENT EXPENSES
+   LOAD RECENT EXPENSES
    ---------------------------------------------------------
-   IMPORTANT:
+   Correct schema column:
+       approval_status
 
-   expenses.status does NOT exist.
-
-   Therefore only known columns are selected.
+   NOT:
+       status
 ========================================================= */
 
-async function loadRecentExpenses() {
-
-  console.log(
-    "CHAMA LIVE DASHBOARD: loading recent expenses"
-  );
+async function loadRecentExpenses(groupId) {
 
   const {
     data,
@@ -1297,46 +955,33 @@ async function loadRecentExpenses() {
     await supabase
       .from("expenses")
       .select(
-        `
-          id,
-          description,
-          amount,
-          expense_date
-        `
+        "id,description,amount,date,approval_status"
       )
       .eq(
         "group_id",
-        currentGroup.id
+        groupId
       )
       .order(
-        "expense_date",
+        "date",
+        {
+          ascending: false
+        }
+      )
+      .order(
+        "created_at",
         {
           ascending: false
         }
       )
       .limit(5);
 
+
   if (error) {
-
     throw error;
-
   }
 
-  const rows =
-    Array.isArray(data)
-      ? data
-      : [];
 
-  console.log(
-    "CHAMA LIVE DASHBOARD: recent expenses",
-    rows
-  );
-
-  renderRecentExpenses(
-    rows
-  );
-
-  return rows;
+  return data || [];
 
 }
 
@@ -1345,37 +990,25 @@ async function loadRecentExpenses() {
    RENDER RECENT EXPENSES
 ========================================================= */
 
-function renderRecentExpenses(
-  rows
-) {
+function renderRecentExpenses(rows) {
 
   const body =
     document.querySelector(
       "#recentExpensesBody"
-    ) ||
-    document.querySelector(
-      "#recentExpenses tbody"
-    ) ||
-    document.querySelector(
-      ".expenses-card tbody"
     );
+
 
   if (!body) {
-
-    console.warn(
-      "CHAMA LIVE DASHBOARD: recent expenses table body not found"
-    );
-
     return;
-
   }
+
 
   if (!rows.length) {
 
     body.innerHTML = `
       <tr>
         <td colspan="3">
-          No recent expenses.
+          No expenses recorded yet.
         </td>
       </tr>
     `;
@@ -1384,189 +1017,87 @@ function renderRecentExpenses(
 
   }
 
+
   body.innerHTML =
-    rows
-      .map(function (row) {
+    rows.map(function (row) {
 
-        return `
-          <tr>
+      const status =
+        row.approval_status ||
+        "Pending";
 
-            <td>
-              ${escapeHtml(
-                row.description ||
-                "Expense"
-              )}
-            </td>
 
-            <td>
-              ${money(
-                row.amount
-              )}
-            </td>
+      const normalized =
+        String(status)
+          .toLowerCase();
 
-            <td>
-              ${formatDate(
-                row.expense_date
-              )}
-            </td>
 
-          </tr>
-        `;
+      let statusClass =
+        "status-neutral";
 
-      })
-      .join("");
+
+      if (
+        normalized === "approved"
+      ) {
+
+        statusClass =
+          "status-paid";
+
+      }
+      else if (
+        normalized === "pending"
+      ) {
+
+        statusClass =
+          "status-pending";
+
+      }
+
+
+      return `
+        <tr>
+
+          <td>
+            ${escapeHtml(
+              row.description ||
+              "Expense"
+            )}
+          </td>
+
+          <td>
+            ${money(
+              row.amount
+            )}
+          </td>
+
+          <td>
+
+            <span
+              class="status-badge ${statusClass}"
+            >
+              ${escapeHtml(status)}
+            </span>
+
+          </td>
+
+        </tr>
+      `;
+
+    }).join("");
 
 }
 
 
 /* =========================================================
-   CURRENT BALANCE
-   ---------------------------------------------------------
-   Balance is based on actual cash received minus
-   actual approved/recorded expenses.
-
-   No expenses.status is assumed.
+   LOAD UPCOMING MEETINGS
 ========================================================= */
 
-async function loadCurrentBalance() {
+async function loadUpcomingMeetings(groupId) {
 
-  console.log(
-    "CHAMA LIVE DASHBOARD: calculating current balance"
-  );
+  const today =
+    new Date()
+      .toISOString()
+      .slice(0, 10);
 
-  const {
-    data: contributionRows,
-    error: contributionError
-  } =
-    await supabase
-      .from("contributions")
-      .select(
-        "amount"
-      )
-      .eq(
-        "group_id",
-        currentGroup.id
-      );
-
-  if (contributionError) {
-
-    throw contributionError;
-
-  }
-
-  const {
-    data: expenseRows,
-    error: expenseError
-  } =
-    await supabase
-      .from("expenses")
-      .select(
-        "amount"
-      )
-      .eq(
-        "group_id",
-        currentGroup.id
-      );
-
-  if (expenseError) {
-
-    throw expenseError;
-
-  }
-
-  const totalContributions =
-    (
-      Array.isArray(
-        contributionRows
-      )
-        ? contributionRows
-        : []
-    ).reduce(
-      function (
-        total,
-        row
-      ) {
-
-        return (
-          total +
-          Number(
-            row.amount || 0
-          )
-        );
-
-      },
-      0
-    );
-
-  const totalExpenses =
-    (
-      Array.isArray(
-        expenseRows
-      )
-        ? expenseRows
-        : []
-    ).reduce(
-      function (
-        total,
-        row
-      ) {
-
-        return (
-          total +
-          Number(
-            row.amount || 0
-          )
-        );
-
-      },
-      0
-    );
-
-  const balance =
-    totalContributions -
-    totalExpenses;
-
-  const balanceElement =
-    byId(
-      "currentBalance"
-    );
-
-  if (balanceElement) {
-
-    balanceElement.textContent =
-      money(
-        balance
-      );
-
-  }
-
-  console.log(
-    "CHAMA LIVE DASHBOARD: balance",
-    {
-      totalContributions,
-      totalExpenses,
-      balance
-    }
-  );
-
-  return {
-    totalContributions,
-    totalExpenses,
-    balance
-  };
-
-}
-
-
-/* =========================================================
-   UPCOMING MEETINGS
-========================================================= */
-
-async function loadUpcomingMeetings() {
-
-  console.log(
-    "CHAMA LIVE DASHBOARD: loading upcoming meetings"
-  );
 
   const {
     data,
@@ -1575,62 +1106,31 @@ async function loadUpcomingMeetings() {
     await supabase
       .from("meetings")
       .select(
-        `
-          id,
-          meeting_date,
-          title,
-          venue,
-          status
-        `
+        "id,title,date,venue,status"
       )
       .eq(
         "group_id",
-        currentGroup.id
+        groupId
       )
       .gte(
-        "meeting_date",
-        new Date().toISOString()
+        "date",
+        today
       )
       .order(
-        "meeting_date",
+        "date",
         {
           ascending: true
         }
       )
       .limit(5);
 
+
   if (error) {
-
-    /*
-     * Some existing schemas may use a different
-     * meeting title column. Do not make the
-     * entire dashboard fail because meetings
-     * are unavailable.
-     */
-
-    console.warn(
-      "CHAMA LIVE DASHBOARD: meetings query failed",
-      error
-    );
-
-    renderUpcomingMeetings(
-      []
-    );
-
-    return [];
-
+    throw error;
   }
 
-  const rows =
-    Array.isArray(data)
-      ? data
-      : [];
 
-  renderUpcomingMeetings(
-    rows
-  );
-
-  return rows;
+  return data || [];
 
 }
 
@@ -1639,30 +1139,18 @@ async function loadUpcomingMeetings() {
    RENDER UPCOMING MEETINGS
 ========================================================= */
 
-function renderUpcomingMeetings(
-  rows
-) {
+function renderUpcomingMeetings(rows) {
 
   const body =
     document.querySelector(
       "#upcomingMeetingsBody"
-    ) ||
-    document.querySelector(
-      "#upcomingMeetings tbody"
-    ) ||
-    document.querySelector(
-      ".meetings-card tbody"
     );
+
 
   if (!body) {
-
-    console.warn(
-      "CHAMA LIVE DASHBOARD: meetings table body not found"
-    );
-
     return;
-
   }
+
 
   if (!rows.length) {
 
@@ -1678,268 +1166,419 @@ function renderUpcomingMeetings(
 
   }
 
+
   body.innerHTML =
-    rows
-      .map(function (row) {
+    rows.map(function (row) {
 
-        return `
-          <tr>
+      return `
+        <tr>
 
-            <td>
-              ${formatDate(
-                row.meeting_date
-              )}
-            </td>
+          <td>
+            ${escapeHtml(
+              formatDate(row.date)
+            )}
+          </td>
 
-            <td>
+          <td>
+            ${escapeHtml(
+              row.title ||
+              "Meeting"
+            )}
+          </td>
+
+          <td>
+            ${escapeHtml(
+              row.venue ||
+              "—"
+            )}
+          </td>
+
+          <td>
+            <span
+              class="status-badge status-neutral"
+            >
               ${escapeHtml(
-                row.title ||
-                row.meeting_name ||
-                "Meeting"
+                row.status ||
+                "Scheduled"
               )}
-            </td>
+            </span>
+          </td>
 
-            <td>
-              ${escapeHtml(
-                row.venue ||
-                "—"
-              )}
-            </td>
+        </tr>
+      `;
 
-            <td>
-              <span
-                class="status-badge ${
-                  statusClass(
-                    row.status
-                  )
-                }"
-              >
-                ${escapeHtml(
-                  statusLabel(
-                    row.status
-                  )
-                )}
-              </span>
-            </td>
-
-          </tr>
-        `;
-
-      })
-      .join("");
+    }).join("");
 
 }
 
 
 /* =========================================================
-   INITIALIZE DASHBOARD
+   FORMAT DATE
 ========================================================= */
 
-export async function initDashboard() {
+function formatDate(value) {
 
-  if (dashboardInitialized) {
+  if (!value) {
+    return "—";
+  }
 
-    console.warn(
-      "CHAMA LIVE DASHBOARD: already initialized"
-    );
 
-    return;
+  const date =
+    new Date(value);
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+
+    return String(value);
 
   }
 
-  dashboardInitialized =
-    true;
 
-  console.log(
-    "CHAMA LIVE DASHBOARD: initialization started"
+  return date.toLocaleDateString(
+    "en-KE",
+    {
+      day: "2-digit",
+      month: "short",
+      year: "numeric"
+    }
   );
+
+}
+
+
+/* =========================================================
+   LOAD GROUP BALANCE
+   ---------------------------------------------------------
+   Balance =
+       received contributions
+       -
+       approved expenses
+
+   This is a dashboard cash balance.
+   It is separate from monthly obligation status.
+========================================================= */
+
+async function loadCurrentBalance(groupId) {
+
+  const [
+    contributionsResult,
+    expensesResult
+  ] =
+    await Promise.all([
+
+      supabase
+        .from("contributions")
+        .select(
+          "amount"
+        )
+        .eq(
+          "group_id",
+          groupId
+        ),
+
+      supabase
+        .from("expenses")
+        .select(
+          "amount"
+        )
+        .eq(
+          "group_id",
+          groupId
+        )
+        .eq(
+          "approval_status",
+          "approved"
+        )
+
+    ]);
+
+
+  if (
+    contributionsResult.error
+  ) {
+
+    throw contributionsResult.error;
+
+  }
+
+
+  if (
+    expensesResult.error
+  ) {
+
+    throw expensesResult.error;
+
+  }
+
+
+  const contributionTotal =
+    (
+      contributionsResult.data ||
+      []
+    ).reduce(
+      function (sum, row) {
+
+        return (
+          sum +
+          number(row.amount)
+        );
+
+      },
+      0
+    );
+
+
+  const expenseTotal =
+    (
+      expensesResult.data ||
+      []
+    ).reduce(
+      function (sum, row) {
+
+        return (
+          sum +
+          number(row.amount)
+        );
+
+      },
+      0
+    );
+
+
+  return (
+    contributionTotal -
+    expenseTotal
+  );
+
+}
+
+
+/* =========================================================
+   RENDER MEMBER COUNTS
+========================================================= */
+
+function renderMemberCounts(members) {
+
+  const total =
+    members.length;
+
+
+  const active =
+    members.filter(
+      function (member) {
+
+        return (
+          String(
+            member.status ||
+            ""
+          ).toLowerCase() ===
+          "active"
+        );
+
+      }
+    ).length;
+
+
+  setText(
+    "activeMembers",
+    active
+  );
+
+
+  setText(
+    "membersCount",
+    total
+  );
+
+
+  return {
+    total,
+    active
+  };
+
+}
+
+
+/* =========================================================
+   DASHBOARD LOAD
+========================================================= */
+
+async function loadDashboard() {
+
+  clearError();
+
+
+  setStatus(
+    "Loading dashboard..."
+  );
+
 
   try {
 
-    setStatus(
-      "Loading dashboard..."
+    /*
+     * 1. Get current group/member context.
+     */
+
+    const {
+      groupId
+    } =
+      await loadContext();
+
+
+    /*
+     * 2. Load independent data sets.
+     *
+     * Promise.all is safe because none of
+     * these queries uses an ambiguous
+     * contributions -> members embed.
+     */
+
+    const [
+      members,
+      monthlyStatus,
+      recentContributions,
+      recentExpenses,
+      upcomingMeetings,
+      currentBalance
+    ] =
+      await Promise.all([
+
+        loadMembers(
+          groupId
+        ),
+
+        loadMonthlyStatus(
+          groupId
+        ),
+
+        loadRecentContributions(
+          groupId
+        ),
+
+        loadRecentExpenses(
+          groupId
+        ),
+
+        loadUpcomingMeetings(
+          groupId
+        ),
+
+        loadCurrentBalance(
+          groupId
+        )
+
+      ]);
+
+
+    /*
+     * 3. Members.
+     */
+
+    const memberSummary =
+      renderMemberCounts(
+        members
+      );
+
+
+    /*
+     * 4. Canonical monthly status.
+     */
+
+    renderMemberStatus(
+      monthlyStatus
     );
-
-    loadContext();
-
-    updateGroupDisplay();
-
-
-    /* -----------------------------------------------------
-       MEMBER COUNT
-    ----------------------------------------------------- */
-
-    const memberCounts =
-      await loadMemberCount();
-
-
-    /* -----------------------------------------------------
-       CANONICAL ACCOUNTING
-    ----------------------------------------------------- */
-
-    const monthlyRows =
-      await loadCanonicalMonthlyStatus();
 
 
     const summary =
-      calculateDashboardSummary(
-        monthlyRows
+      calculateMonthlySummary(
+        monthlyStatus
       );
 
 
-    renderMemberStatus(
-      monthlyRows
-    );
-
-
-    renderSummary(
+    renderMonthlySummary(
       summary,
-      memberCounts
+      memberSummary.total
     );
 
 
-    /* -----------------------------------------------------
-       ACTUAL CASH BALANCE
-    ----------------------------------------------------- */
+    /*
+     * 5. Recent contributions.
+     */
 
-    await loadCurrentBalance();
-
-
-    /* -----------------------------------------------------
-       RECENT ACTIVITY
-
-       These are independent dashboard sections.
-
-       A failure in one should not destroy
-       the canonical contribution status.
-    ----------------------------------------------------- */
-
-    try {
-
-      await loadRecentContributions();
-
-    }
-    catch (error) {
-
-      console.error(
-        "CHAMA LIVE DASHBOARD: recent contributions failed",
-        error
-      );
-
-      const body =
-        document.querySelector(
-          "#recentContributionsBody"
-        ) ||
-        document.querySelector(
-          "#recentContributions tbody"
-        ) ||
-        document.querySelector(
-          ".contributions-card tbody"
-        );
-
-      if (body) {
-
-        body.innerHTML = `
-          <tr>
-            <td colspan="3">
-              Unable to load recent contributions.
-            </td>
-          </tr>
-        `;
-
-      }
-
-    }
+    renderRecentContributions(
+      recentContributions
+    );
 
 
-    try {
+    /*
+     * 6. Recent expenses.
+     */
 
-      await loadRecentExpenses();
-
-    }
-    catch (error) {
-
-      console.error(
-        "CHAMA LIVE DASHBOARD: recent expenses failed",
-        error
-      );
-
-      const body =
-        document.querySelector(
-          "#recentExpensesBody"
-        ) ||
-        document.querySelector(
-          "#recentExpenses tbody"
-        ) ||
-        document.querySelector(
-          ".expenses-card tbody"
-        );
-
-      if (body) {
-
-        body.innerHTML = `
-          <tr>
-            <td colspan="3">
-              Unable to load recent expenses.
-            </td>
-          </tr>
-        `;
-
-      }
-
-    }
+    renderRecentExpenses(
+      recentExpenses
+    );
 
 
-    try {
+    /*
+     * 7. Upcoming meetings.
+     */
 
-      await loadUpcomingMeetings();
-
-    }
-    catch (error) {
-
-      console.error(
-        "CHAMA LIVE DASHBOARD: meetings failed",
-        error
-      );
-
-    }
+    renderUpcomingMeetings(
+      upcomingMeetings
+    );
 
 
-    /* -----------------------------------------------------
-       COMPLETE
-    ----------------------------------------------------- */
+    /*
+     * 8. Group balance.
+     */
+
+    setText(
+      "currentBalance",
+      money(currentBalance)
+    );
+
+
+    /*
+     * 9. Successful completion.
+     */
 
     setStatus(
       "Dashboard loaded."
     );
 
-    const errorBox =
-      byId("error");
-
-    if (errorBox) {
-
-      errorBox.hidden =
-        true;
-
-      errorBox.textContent =
-        "";
-
-    }
 
     console.log(
-      "CHAMA LIVE DASHBOARD: initialization completed"
+      "CHAMA LIVE: dashboard loaded successfully",
+      {
+        members: members.length,
+        monthlyStatus: monthlyStatus.length,
+        recentContributions:
+          recentContributions.length,
+        recentExpenses:
+          recentExpenses.length,
+        upcomingMeetings:
+          upcomingMeetings.length,
+        currentBalance
+      }
     );
 
   }
   catch (error) {
 
-    dashboardInitialized =
-      false;
-
     console.error(
-      "CHAMA LIVE DASHBOARD: initialization failed",
+      "CHAMA LIVE: dashboard failed",
       error
     );
+
+
+    setStatus(
+      "Dashboard could not be loaded."
+    );
+
 
     showError(
       error?.message ||
@@ -1952,17 +1591,35 @@ export async function initDashboard() {
 
 
 /* =========================================================
-   GENERIC INITIALIZER
-   ---------------------------------------------------------
-   layout.js supports initPage(), so export it too.
+   PUBLIC INITIALIZER
 ========================================================= */
 
-export async function initPage() {
+export async function initDashboard() {
+
+  console.log(
+    "CHAMA LIVE: initDashboard()"
+  );
+
+
+  await loadDashboard();
+
+}
+
+
+/* =========================================================
+   GENERIC INITIALIZER
+========================================================= */
+
+export async function init() {
 
   await initDashboard();
 
 }
 
+
+/* =========================================================
+   READY
+========================================================= */
 
 console.log(
   "CHAMA LIVE: dashboard.js ready"
