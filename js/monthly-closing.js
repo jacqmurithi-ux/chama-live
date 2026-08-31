@@ -1,37 +1,38 @@
 /* =========================================================
    CHAMA LIVE — MONTHLY CLOSING
-   COMPLETE CANONICAL 2B VERSION
-   ---------------------------------------------------------
-   IMPORTANT
+   COMPLETE PRODUCTION CANONICAL 2B VERSION
 
-   Calculation source:
+   Accounting source:
        get_canonical_monthly_accounting_summary()
+
+   Member accounting source:
        get_canonical_member_monthly_status()
 
-   Final closing source:
-       close_financial_month()
+   Cash closing:
+       Opening Balance
+       + Contributions Received
+       - Approved Expenses
+       = Closing Balance
 
-   IMPORTANT IDENTITY RULE
+   Contribution progress:
+       Applied To Current Month Obligations
+       / Expected Monthly Obligations
+
+   IDENTITY RULE:
+       monthly_closings.closed_by = auth.uid()
+
+       Therefore:
+           closed_by = currentUser.id
+
+       NOT:
+           currentMember.id
+
+   IMPORTANT
    ---------------------------------------------------------
-   monthly_closings.closed_by is resolved by the database
-   through close_financial_month().
+   Total cash received is NOT automatically the amount
+   applied to the current month's obligations.
 
-   DO NOT directly insert auth.uid() into monthly_closings.
-
-   The frontend therefore does NOT perform:
-
-       INSERT INTO monthly_closings
-
-   Instead it calls:
-
-       close_financial_month(
-         group_id,
-         YYYY-MM
-       )
-
-   This preserves the existing RLS/security model.
-
-   No database changes are performed by this file.
+   Carry-forward remains separate.
 
    Required exports:
        initPage()
@@ -226,7 +227,7 @@ function clearError() {
 
 
 /* =========================================================
-   MONTH
+   MONTH HELPERS
 ========================================================= */
 
 function getCurrentMonth() {
@@ -306,35 +307,6 @@ function formatDate(value) {
 
 
 /* =========================================================
-   MONTH END
-========================================================= */
-
-function getMonthEnd(month) {
-
-  const date =
-    new Date(
-      `${month}-01T00:00:00`
-    );
-
-  date.setMonth(
-    date.getMonth() + 1
-  );
-
-  return [
-    date.getFullYear(),
-
-    String(
-      date.getMonth() + 1
-    ).padStart(2, "0"),
-
-    "01"
-
-  ].join("-");
-
-}
-
-
-/* =========================================================
    SELECTED MONTH
 ========================================================= */
 
@@ -402,7 +374,7 @@ async function loadExistingClosing(
 
 
 /* =========================================================
-   LOAD HISTORY
+   LOAD CLOSING HISTORY
 ========================================================= */
 
 async function loadClosingHistory() {
@@ -484,7 +456,6 @@ async function loadClosingHistory() {
             Number(
               closing.closing_balance || 0
             );
-
 
           const balanceClass =
             balance < 0
@@ -571,7 +542,7 @@ async function loadClosingHistory() {
 
 
 /* =========================================================
-   GET OPENING BALANCE
+   OPENING BALANCE
 ========================================================= */
 
 async function getOpeningBalance(
@@ -589,8 +560,7 @@ async function getOpeningBalance(
 
   const {
     data: previousPeriod,
-    error:
-      previousPeriodError
+    error: previousPeriodError
   } =
     await supabase
       .from("financial_periods")
@@ -636,10 +606,8 @@ async function getOpeningBalance(
 
 
   if (
-    previousPeriod?.closing_balance !==
-      null &&
-    previousPeriod?.closing_balance !==
-      undefined
+    previousPeriod?.closing_balance !== null &&
+    previousPeriod?.closing_balance !== undefined
   ) {
 
     return Number(
@@ -656,8 +624,7 @@ async function getOpeningBalance(
 
   const {
     data: previousClosing,
-    error:
-      previousClosingError
+    error: previousClosingError
   } =
     await supabase
       .from("monthly_closings")
@@ -694,10 +661,8 @@ async function getOpeningBalance(
 
 
   if (
-    previousClosing?.closing_balance !==
-      null &&
-    previousClosing?.closing_balance !==
-      undefined
+    previousClosing?.closing_balance !== null &&
+    previousClosing?.closing_balance !== undefined
   ) {
 
     return Number(
@@ -714,8 +679,7 @@ async function getOpeningBalance(
 
   const {
     data: group,
-    error:
-      groupError
+    error: groupError
   } =
     await supabase
       .from("groups")
@@ -755,19 +719,19 @@ async function loadCanonicalAccounting(
 
 
   /*
-     --------------------------------------------------------
-     CANONICAL MEMBER STATUS
-     --------------------------------------------------------
+     =====================================================
+     CANONICAL 2B ENGINE
 
-     Authoritative 2B member-level accounting:
+     Obligation
+          ↓
+     Payment
+          ↓
+     Allocation
+          ↓
+     Arrears / Credit
 
-       Obligation
-          ↓
-       Payment
-          ↓
-       Allocation
-          ↓
-       Arrears / Credit
+     This is the authoritative contribution source.
+     =====================================================
   */
 
   const {
@@ -778,11 +742,8 @@ async function loadCanonicalAccounting(
       .rpc(
         "get_canonical_member_monthly_status",
         {
-          p_group_id:
-            groupId,
-
-          p_month:
-            month
+          p_group_id: groupId,
+          p_month: month
         }
       );
 
@@ -796,12 +757,6 @@ async function loadCanonicalAccounting(
     statusData || [];
 
 
-  /*
-     --------------------------------------------------------
-     CANONICAL MONTHLY SUMMARY
-     --------------------------------------------------------
-  */
-
   const {
     data: summaryData,
     error: summaryError
@@ -810,11 +765,8 @@ async function loadCanonicalAccounting(
       .rpc(
         "get_canonical_monthly_accounting_summary",
         {
-          p_group_id:
-            groupId,
-
-          p_month:
-            month
+          p_group_id: groupId,
+          p_month: month
         }
       );
 
@@ -834,20 +786,34 @@ async function loadCanonicalAccounting(
 
 
   /*
-     --------------------------------------------------------
-     APPROVED EXPENSES
-     --------------------------------------------------------
-
-     Contribution accounting remains canonical.
-
-     Expenses are independently read for cash closing.
+     Expenses are separate from contribution
+     accounting and therefore loaded independently.
   */
 
   const monthStart =
     `${month}-01`;
 
+  const date =
+    new Date(
+      `${month}-01T00:00:00`
+    );
+
+  date.setMonth(
+    date.getMonth() + 1
+  );
+
+
   const monthEnd =
-    getMonthEnd(month);
+    [
+      date.getFullYear(),
+
+      String(
+        date.getMonth() + 1
+      ).padStart(2, "0"),
+
+      "01"
+
+    ].join("-");
 
 
   const {
@@ -897,12 +863,6 @@ async function loadCanonicalAccounting(
       );
 
 
-  /*
-     --------------------------------------------------------
-     OPENING BALANCE
-     --------------------------------------------------------
-  */
-
   const openingBalance =
     await getOpeningBalance(
       month
@@ -910,9 +870,14 @@ async function loadCanonicalAccounting(
 
 
   /*
-     --------------------------------------------------------
-     CANONICAL VALUES
-     --------------------------------------------------------
+     CASH ACCOUNTING
+
+     Opening Balance
+     + Cash Contributions Received
+     - Approved Expenses
+     = Closing Balance
+
+     Applied amount is NOT substituted for cash received.
   */
 
   const totalCollected =
@@ -955,36 +920,11 @@ async function loadCanonicalAccounting(
     );
 
 
-  /*
-     --------------------------------------------------------
-     CASH CLOSING
-     --------------------------------------------------------
-
-       Opening Balance
-       + Cash Contributions Received
-       - Approved Expenses
-       = Closing Balance
-
-     IMPORTANT:
-
-       applied_this_month
-
-     is NOT used as cash received.
-
-     Application is for obligation accounting.
-  */
-
   const closingBalance =
     openingBalance +
     totalCollected -
     approvedExpenses;
 
-
-  /*
-     --------------------------------------------------------
-     COLLECTION RATE
-     --------------------------------------------------------
-  */
 
   let collectionRate = 0;
 
@@ -1004,41 +944,6 @@ async function loadCanonicalAccounting(
       );
 
   }
-
-
-  /*
-     --------------------------------------------------------
-     MEMBER COUNTS
-     --------------------------------------------------------
-  */
-
-  const activeMembers =
-    Number(
-      summaryData.active_members ??
-      canonicalStatus.length ??
-      0
-    );
-
-
-  const membersPaid =
-    Number(
-      summaryData.members_paid ??
-      0
-    );
-
-
-  const partialPayments =
-    Number(
-      summaryData.partial_payments ??
-      0
-    );
-
-
-  const outstandingMembers =
-    Number(
-      summaryData.outstanding_members ??
-      0
-    );
 
 
   calculatedData = {
@@ -1070,16 +975,29 @@ async function loadCanonicalAccounting(
       closingBalance,
 
     active_members:
-      activeMembers,
+      Number(
+        summaryData.active_members ||
+        canonicalStatus.length ||
+        0
+      ),
 
     members_paid:
-      membersPaid,
+      Number(
+        summaryData.members_paid ||
+        0
+      ),
 
     partial_payments:
-      partialPayments,
+      Number(
+        summaryData.partial_payments ||
+        0
+      ),
 
     outstanding_members:
-      outstandingMembers,
+      Number(
+        summaryData.outstanding_members ||
+        0
+      ),
 
     collection_rate:
       Number(
@@ -1133,14 +1051,6 @@ function renderCalculation() {
     Number(
       calculatedData
         .carry_forward ||
-      0
-    );
-
-
-  const outstanding =
-    Number(
-      calculatedData
-        .current_outstanding ||
       0
     );
 
@@ -1210,11 +1120,8 @@ function renderCalculation() {
 
 
   /*
-     --------------------------------------------------------
-     COLLECTION PROGRESS
-     --------------------------------------------------------
-
-     Uses applied amount, NOT cash received.
+     Contribution progress uses canonical
+     APPLIED amount, not total cash received.
   */
 
   let percentage = 0;
@@ -1301,12 +1208,6 @@ function renderCalculation() {
   }
 
 
-  /*
-     --------------------------------------------------------
-     BALANCE CLASS
-     --------------------------------------------------------
-  */
-
   if (balanceEl) {
 
     balanceEl.classList.remove(
@@ -1342,9 +1243,7 @@ function renderCalculation() {
 
 
   /*
-     --------------------------------------------------------
-     OPTIONAL EXTENDED ELEMENTS
-     --------------------------------------------------------
+     Optional elements supported by the existing UI.
   */
 
   const appliedEl =
@@ -1381,85 +1280,14 @@ function renderCalculation() {
   if (outstandingEl) {
 
     outstandingEl.textContent =
-      money(outstanding);
-
-  }
-
-
-  /*
-     Optional active member display.
-  */
-
-  const activeMembersEl =
-    document.getElementById(
-      "activeMembers"
-    );
-
-  if (activeMembersEl) {
-
-    activeMembersEl.textContent =
-      String(
-        calculatedData.active_members
+      money(
+        Number(
+          calculatedData
+            .current_outstanding || 0
+        )
       );
 
   }
-
-
-  /*
-     Optional member payment counts.
-  */
-
-  const membersPaidEl =
-    document.getElementById(
-      "membersPaid"
-    );
-
-  if (membersPaidEl) {
-
-    membersPaidEl.textContent =
-      String(
-        calculatedData.members_paid
-      );
-
-  }
-
-
-  const partialPaymentsEl =
-    document.getElementById(
-      "partialPayments"
-    );
-
-  if (partialPaymentsEl) {
-
-    partialPaymentsEl.textContent =
-      String(
-        calculatedData.partial_payments
-      );
-
-  }
-
-
-  const outstandingMembersEl =
-    document.getElementById(
-      "outstandingMembers"
-    );
-
-  if (outstandingMembersEl) {
-
-    outstandingMembersEl.textContent =
-      String(
-        calculatedData.outstanding_members
-      );
-
-  }
-
-
-  /*
-     Keep outstanding variable intentionally
-     referenced for optional UI compatibility.
-  */
-
-  void outstanding;
 
 }
 
@@ -1502,83 +1330,6 @@ function renderClosingStatus() {
       notesInput.value =
         currentClosing.notes ||
         "";
-
-    }
-
-
-    if (expectedEl) {
-
-      expectedEl.textContent =
-        money(
-          currentClosing.total_expected
-        );
-
-    }
-
-
-    if (collectedEl) {
-
-      collectedEl.textContent =
-        money(
-          currentClosing.total_collected
-        );
-
-    }
-
-
-    if (expensesEl) {
-
-      expensesEl.textContent =
-        money(
-          currentClosing.total_expenses
-        );
-
-    }
-
-
-    if (balanceEl) {
-
-      balanceEl.textContent =
-        money(
-          currentClosing.closing_balance
-        );
-
-
-      const balance =
-        Number(
-          currentClosing.closing_balance ||
-          0
-        );
-
-
-      balanceEl.classList.remove(
-        "amount-positive",
-        "amount-negative",
-        "amount-neutral"
-      );
-
-
-      if (balance < 0) {
-
-        balanceEl.classList.add(
-          "amount-negative"
-        );
-
-      }
-      else if (balance > 0) {
-
-        balanceEl.classList.add(
-          "amount-positive"
-        );
-
-      }
-      else {
-
-        balanceEl.classList.add(
-          "amount-neutral"
-        );
-
-      }
 
     }
 
@@ -1645,6 +1396,7 @@ async function calculateMonth() {
 
     clearError();
 
+
     const month =
       monthInput?.value;
 
@@ -1663,9 +1415,6 @@ async function calculateMonth() {
 
     currentClosing =
       null;
-
-    canonicalStatus =
-      [];
 
 
     renderSelectedMonth();
@@ -1702,25 +1451,6 @@ async function calculateMonth() {
 
 /* =========================================================
    CLOSE MONTH
-   ---------------------------------------------------------
-   IMPORTANT
-
-   This function DOES NOT insert directly into
-   monthly_closings.
-
-   It calls:
-
-       close_financial_month()
-
-   The database RPC handles:
-
-       authorization
-       financial period creation
-       canonical report
-       member identity resolution
-       monthly_closings insert
-       duplicate protection
-       financial period closing
 ========================================================= */
 
 async function closeMonth() {
@@ -1743,24 +1473,35 @@ async function closeMonth() {
     }
 
 
+    /*
+       Protect against stale UI state.
+
+       Always check the database again before insert.
+    */
+
+    await loadExistingClosing(
+      month
+    );
+
+
     if (currentClosing) {
 
+      renderClosingStatus();
+
       throw new Error(
-        "This month has already been closed."
+        "This financial month has already been closed."
       );
 
     }
 
 
-    /*
-       Always calculate immediately before closing.
+    if (!calculatedData) {
 
-       This prevents closing with stale browser data.
-    */
+      await loadCanonicalAccounting(
+        month
+      );
 
-    await loadCanonicalAccounting(
-      month
-    );
+    }
 
 
     if (!calculatedData) {
@@ -1771,12 +1512,6 @@ async function closeMonth() {
 
     }
 
-
-    /*
-       ------------------------------------------------------
-       CONFIRMATION
-       ------------------------------------------------------
-    */
 
     const confirmed =
       window.confirm(
@@ -1856,56 +1591,94 @@ async function closeMonth() {
 
 
     /*
-       ------------------------------------------------------
-       CANONICAL FINANCIAL CLOSING RPC
-       ------------------------------------------------------
+       =====================================================
+       CRITICAL IDENTITY RULE
 
-       Do NOT directly insert into monthly_closings.
+       closed_by must use the authenticated user UUID.
 
-       The RPC resolves closed_by from auth identity
-       and performs the protected database operation.
+       currentMember.id is the members table UUID.
+       currentUser.id is auth.uid().
+
+       The RLS policy expects auth.uid().
+       =====================================================
     */
+
+    const payload = {
+
+      group_id:
+        groupId,
+
+      closing_month:
+        `${month}-01`,
+
+      closed_by:
+        currentUser.id,
+
+      closed_at:
+        new Date().toISOString(),
+
+      total_expected:
+        Number(
+          calculatedData
+            .expected_monthly_contributions ||
+          0
+        ),
+
+      total_collected:
+        Number(
+          calculatedData
+            .total_contributions_collected ||
+          0
+        ),
+
+      total_expenses:
+        Number(
+          calculatedData
+            .approved_expenses ||
+          0
+        ),
+
+      closing_balance:
+        Number(
+          calculatedData
+            .closing_balance ||
+          0
+        ),
+
+      notes:
+        notesInput?.value?.trim() ||
+        null
+
+    };
+
 
     const {
       data,
       error
     } =
       await supabase
-        .rpc(
-          "close_financial_month",
-          {
-            p_group_id:
-              groupId,
-
-            p_month:
-              month
-          }
-        );
+        .from("monthly_closings")
+        .insert(
+          payload
+        )
+        .select(`
+          id,
+          group_id,
+          closing_month,
+          closed_by,
+          closed_at,
+          total_expected,
+          total_collected,
+          total_expenses,
+          closing_balance,
+          notes
+        `)
+        .single();
 
 
     if (error) {
 
-      console.error(
-        "CHAMA LIVE: close_financial_month failed:",
-        error
-      );
-
-      /*
-         Translate common duplicate/closed errors
-         into a user-friendly message.
-      */
-
-      const message =
-        String(
-          error.message ||
-          ""
-        );
-
-
       if (
-        /already closed/i.test(
-          message
-        ) ||
         error.code === "23505"
       ) {
 
@@ -1915,46 +1688,13 @@ async function closeMonth() {
 
       }
 
-
       throw error;
 
     }
 
 
-    /*
-       ------------------------------------------------------
-       RPC SUCCESS
-       ------------------------------------------------------
-
-       The RPC returns get_monthly_financial_report().
-    */
-
-    console.log(
-      "CHAMA LIVE: close_financial_month succeeded",
-      data
-    );
-
-
-    /*
-       Reload the actual database row rather than
-       constructing currentClosing locally.
-
-       This guarantees that the page displays the
-       official record actually written by the database.
-    */
-
-    await loadExistingClosing(
-      month
-    );
-
-
-    /*
-       Refresh canonical calculation and history.
-    */
-
-    await loadCanonicalAccounting(
-      month
-    );
+    currentClosing =
+      data;
 
 
     renderClosingStatus();
@@ -1966,21 +1706,6 @@ async function closeMonth() {
       `${formatMonth(
         month
       )} closed successfully.`
-    );
-
-
-    /*
-       Clear the status after a short delay,
-       preserving the current UI behavior.
-    */
-
-    setTimeout(
-      () => {
-
-        showStatus("");
-
-      },
-      3000
     );
 
   }
@@ -2037,9 +1762,7 @@ function setupEvents() {
         canonicalStatus =
           [];
 
-
         renderSelectedMonth();
-
 
         calculateMonth();
 
@@ -2117,12 +1840,6 @@ export async function initPage() {
     );
 
 
-    /*
-       ------------------------------------------------------
-       AUTHENTICATION
-       ------------------------------------------------------
-    */
-
     currentUser =
       await requireAuth();
 
@@ -2135,12 +1852,6 @@ export async function initPage() {
 
     }
 
-
-    /*
-       ------------------------------------------------------
-       MEMBER
-       ------------------------------------------------------
-    */
 
     currentMember =
       await getMyMember();
@@ -2155,12 +1866,6 @@ export async function initPage() {
     }
 
 
-    /*
-       ------------------------------------------------------
-       GROUP
-       ------------------------------------------------------
-    */
-
     groupId =
       currentMember.group_id;
 
@@ -2173,12 +1878,6 @@ export async function initPage() {
 
     }
 
-
-    /*
-       ------------------------------------------------------
-       DEFAULT MONTH
-       ------------------------------------------------------
-    */
 
     if (monthInput) {
 
@@ -2193,20 +1892,7 @@ export async function initPage() {
     setupEvents();
 
 
-    /*
-       ------------------------------------------------------
-       INITIAL CALCULATION
-       ------------------------------------------------------
-    */
-
     await calculateMonth();
-
-
-    /*
-       ------------------------------------------------------
-       HISTORY
-       ------------------------------------------------------
-    */
 
     await loadClosingHistory();
 
@@ -2258,7 +1944,7 @@ export async function initPage() {
 
 
 /* =========================================================
-   REQUIRED EXPORT
+   COMPATIBILITY EXPORT
 ========================================================= */
 
 export const initMonthlyClosing =
