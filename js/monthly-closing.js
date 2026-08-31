@@ -1,64 +1,42 @@
 /* =========================================================
    CHAMA LIVE — MONTHLY CLOSING
-   TEMPORARY AUTH / RLS DIAGNOSTIC VERSION
-
-   PURPOSE
+   COMPLETE CANONICAL 2B VERSION
    ---------------------------------------------------------
-   Diagnose why monthly_closings INSERT is being rejected
-   by Row Level Security.
+   IMPORTANT
 
-   THIS FILE DOES NOT:
-       - change the database
-       - change RLS
-       - change migrations
-       - execute production SQL
-       - modify accounting logic
+   Calculation source:
+       get_canonical_monthly_accounting_summary()
+       get_canonical_member_monthly_status()
 
-   It DOES:
-       - preserve the existing Monthly Closing UI
-       - preserve canonical 2B accounting RPCs
-       - preserve group/auth behaviour
-       - inspect the authenticated Supabase user
-       - inspect the linked member
-       - test cl_user_has_role()
-       - display the exact authorization values
-       - preserve the corrected closed_by = currentUser.id
+   Final closing source:
+       close_financial_month()
 
-   LIVE RLS INSERT POLICY REQUIRES:
+   IMPORTANT IDENTITY RULE
+   ---------------------------------------------------------
+   monthly_closings.closed_by is resolved by the database
+   through close_financial_month().
 
-       cl_user_has_role(
-           group_id,
-           ['admin','treasurer']
+   DO NOT directly insert auth.uid() into monthly_closings.
+
+   The frontend therefore does NOT perform:
+
+       INSERT INTO monthly_closings
+
+   Instead it calls:
+
+       close_financial_month(
+         group_id,
+         YYYY-MM
        )
 
-       AND
+   This preserves the existing RLS/security model.
 
-       closed_by = auth.uid()
+   No database changes are performed by this file.
 
-       AND
-
-       closing_month = first day of month
-
-       AND
-
-       total_expected >= 0
-
-       AND
-
-       total_collected >= 0
-
-       AND
-
-       total_expenses >= 0
-
-   IMPORTANT
-   ---------------------------------------------------------
-   This is a TEMPORARY diagnostic build.
-
-   Remove this diagnostic version after the RLS issue
-   has been identified.
+   Required exports:
+       initPage()
+       initMonthlyClosing
 ========================================================= */
-
 
 import { supabase } from "./supabase.js";
 
@@ -69,7 +47,7 @@ import {
 
 
 console.log(
-  "CHAMA LIVE: monthly-closing.js TEMPORARY DIAGNOSTIC loaded"
+  "CHAMA LIVE: monthly-closing.js loaded"
 );
 
 
@@ -150,8 +128,6 @@ let calculatedData = null;
 let canonicalStatus = [];
 
 let initialized = false;
-
-let authorizationDiagnostic = null;
 
 
 /* =========================================================
@@ -250,779 +226,6 @@ function clearError() {
 
 
 /* =========================================================
-   TEMPORARY AUTH / RLS DIAGNOSTIC PANEL
-========================================================= */
-
-function ensureDiagnosticPanel() {
-
-  let panel =
-    document.getElementById(
-      "monthlyClosingDiagnostic"
-    );
-
-
-  if (panel) {
-    return panel;
-  }
-
-
-  panel =
-    document.createElement("section");
-
-  panel.id =
-    "monthlyClosingDiagnostic";
-
-  panel.style.margin =
-    "20px 0";
-
-  panel.style.padding =
-    "16px";
-
-  panel.style.border =
-    "2px solid #b91c1c";
-
-  panel.style.borderRadius =
-    "10px";
-
-  panel.style.background =
-    "#fff7f7";
-
-  panel.innerHTML = `
-    <h3 style="margin-top:0;">
-      Temporary Authorization Diagnostic
-    </h3>
-
-    <p style="margin-bottom:12px;">
-      This panel is temporary and is being used to
-      diagnose the Monthly Closing RLS INSERT failure.
-    </p>
-
-    <div
-      id="monthlyClosingDiagnosticContent"
-      style="
-        font-family:monospace;
-        font-size:13px;
-        line-height:1.7;
-        white-space:pre-wrap;
-      "
-    >
-      Running diagnostic...
-    </div>
-  `;
-
-
-  /*
-     Insert near the top of the page so it is easy
-     to see without changing the existing HTML.
-  */
-
-  const firstMainSection =
-    document.querySelector(
-      "main"
-    );
-
-
-  if (firstMainSection) {
-
-    firstMainSection.prepend(
-      panel
-    );
-
-  }
-  else {
-
-    document.body.prepend(
-      panel
-    );
-
-  }
-
-
-  return panel;
-
-}
-
-
-function renderDiagnostic(
-  diagnostic
-) {
-
-  authorizationDiagnostic =
-    diagnostic;
-
-
-  const panel =
-    ensureDiagnosticPanel();
-
-
-  const content =
-    panel.querySelector(
-      "#monthlyClosingDiagnosticContent"
-    );
-
-
-  if (!content) {
-    return;
-  }
-
-
-  const lines = [
-
-    "AUTHENTICATED USER",
-
-    `auth.uid(): ${diagnostic.auth_uid || "NULL"}`,
-
-    `currentUser.id: ${diagnostic.current_user_id || "NULL"}`,
-
-    `auth identity match: ${
-      diagnostic.auth_user_matches
-        ? "PASS"
-        : "FAIL"
-    }`,
-
-    "",
-
-    "MEMBER",
-
-    `member.id: ${diagnostic.member_id || "NULL"}`,
-
-    `member.user_id: ${diagnostic.member_user_id || "NULL"}`,
-
-    `member.auth_user_id: ${
-      diagnostic.member_auth_user_id || "NULL"
-    }`,
-
-    `member.user_id matches auth.uid(): ${
-      diagnostic.member_user_matches
-        ? "PASS"
-        : "FAIL"
-    }`,
-
-    `member.auth_user_id matches auth.uid(): ${
-      diagnostic.member_auth_user_matches
-        ? "PASS"
-        : "FAIL"
-    }`,
-
-    "",
-
-    "GROUP",
-
-    `group_id: ${diagnostic.group_id || "NULL"}`,
-
-    `member.group_id: ${
-      diagnostic.member_group_id || "NULL"
-    }`,
-
-    `group match: ${
-      diagnostic.group_matches
-        ? "PASS"
-        : "FAIL"
-    }`,
-
-    "",
-
-    "MEMBER STATUS",
-
-    `role: ${diagnostic.role || "NULL"}`,
-
-    `status: ${diagnostic.status || "NULL"}`,
-
-    `onboarding_status: ${
-      diagnostic.onboarding_status || "NULL"
-    }`,
-
-    "",
-
-    "ROLE CHECK",
-
-    "Required roles: admin, treasurer",
-
-    `cl_user_has_role(): ${
-      diagnostic.role_check === true
-        ? "PASS"
-        : diagnostic.role_check === false
-          ? "FAIL"
-          : "ERROR"
-    }`,
-
-    "",
-
-    "MONTHLY CLOSING INSERT VALUES",
-
-    `closing_month: ${
-      diagnostic.closing_month || "NULL"
-    }`,
-
-    `closed_by: ${
-      diagnostic.closed_by || "NULL"
-    }`,
-
-    `closed_by === auth.uid(): ${
-      diagnostic.closed_by_matches_auth
-        ? "PASS"
-        : "FAIL"
-    }`,
-
-    `total_expected: ${
-      diagnostic.total_expected
-    }`,
-
-    `total_collected: ${
-      diagnostic.total_collected
-    }`,
-
-    `total_expenses: ${
-      diagnostic.total_expenses
-    }`,
-
-    "",
-
-    "FINAL DIAGNOSTIC",
-
-    diagnostic.insert_should_pass
-      ? "All visible RLS predicates appear satisfied."
-      : "At least one RLS predicate is failing.",
-
-    "",
-
-    `Diagnostic time: ${
-      new Date().toISOString()
-    }`
-
-  ];
-
-
-  content.textContent =
-    lines.join("\n");
-
-
-  console.group(
-    "CHAMA LIVE — Monthly Closing RLS Diagnostic"
-  );
-
-  console.table(
-    diagnostic
-  );
-
-  console.groupEnd();
-
-}
-
-
-/* =========================================================
-   RUN AUTHENTICATED RLS DIAGNOSTIC
-========================================================= */
-
-async function runAuthorizationDiagnostic() {
-
-  try {
-
-    /*
-       Get the actual Supabase auth session.
-
-       This is deliberately independent from
-       getMyMember(), because we need to establish
-       exactly which identity Supabase is using.
-    */
-
-    const {
-      data: authData,
-      error: authError
-    } =
-      await supabase.auth.getUser();
-
-
-    if (authError) {
-      throw authError;
-    }
-
-
-    const authUser =
-      authData?.user || null;
-
-
-    if (!authUser?.id) {
-
-      throw new Error(
-        "Authenticated Supabase user could not be determined."
-      );
-
-    }
-
-
-    /*
-       Query the member using the authenticated
-       user's identity.
-
-       We inspect both identity columns because the
-       live role helper accepts either:
-           members.user_id
-           members.auth_user_id
-    */
-
-    const {
-      data: memberRows,
-      error: memberError
-    } =
-      await supabase
-        .from("members")
-        .select(`
-          id,
-          group_id,
-          user_id,
-          auth_user_id,
-          name,
-          role,
-          status,
-          onboarding_status
-        `)
-        .or(
-          `user_id.eq.${authUser.id},auth_user_id.eq.${authUser.id}`
-        );
-
-
-    if (memberError) {
-      throw memberError;
-    }
-
-
-    const matchingMembers =
-      memberRows || [];
-
-
-    const member =
-      matchingMembers.find(
-        row =>
-          row.user_id === authUser.id ||
-          row.auth_user_id === authUser.id
-      ) ||
-      null;
-
-
-    if (!member) {
-
-      renderDiagnostic({
-
-        auth_uid:
-          authUser.id,
-
-        current_user_id:
-          currentUser?.id || null,
-
-        auth_user_matches:
-          currentUser?.id === authUser.id,
-
-        member_id:
-          null,
-
-        member_user_id:
-          null,
-
-        member_auth_user_id:
-          null,
-
-        member_user_matches:
-          false,
-
-        member_auth_user_matches:
-          false,
-
-        group_id:
-          groupId,
-
-        member_group_id:
-          null,
-
-        group_matches:
-          false,
-
-        role:
-          null,
-
-        status:
-          null,
-
-        onboarding_status:
-          null,
-
-        role_check:
-          null,
-
-        closing_month:
-          monthInput?.value
-            ? `${monthInput.value}-01`
-            : null,
-
-        closed_by:
-          currentUser?.id || null,
-
-        closed_by_matches_auth:
-          currentUser?.id === authUser.id,
-
-        total_expected:
-          calculatedData?.expected_monthly_contributions || 0,
-
-        total_collected:
-          calculatedData?.total_contributions_collected || 0,
-
-        total_expenses:
-          calculatedData?.approved_expenses || 0,
-
-        insert_should_pass:
-          false
-
-      });
-
-
-      throw new Error(
-        "No members record matches the authenticated user."
-      );
-
-    }
-
-
-    /*
-       Call the actual live helper.
-
-       This is the same function referenced by
-       the monthly_closings INSERT RLS policy.
-    */
-
-    let roleCheck =
-      null;
-
-    let roleCheckError =
-      null;
-
-
-    const {
-      data: roleData,
-      error: roleError
-    } =
-      await supabase
-        .rpc(
-          "cl_user_has_role",
-          {
-            p_group_id:
-              member.group_id,
-
-            p_roles:
-              [
-                "admin",
-                "treasurer"
-              ]
-          }
-        );
-
-
-    if (roleError) {
-
-      roleCheckError =
-        roleError;
-
-    }
-    else {
-
-      roleCheck =
-        roleData === true;
-
-    }
-
-
-    const selectedMonth =
-      monthInput?.value || null;
-
-
-    const closingMonth =
-      selectedMonth
-        ? `${selectedMonth}-01`
-        : null;
-
-
-    const closedBy =
-      currentUser?.id ||
-      authUser.id ||
-      null;
-
-
-    const expected =
-      Number(
-        calculatedData
-          ?.expected_monthly_contributions ||
-        0
-      );
-
-
-    const collected =
-      Number(
-        calculatedData
-          ?.total_contributions_collected ||
-        0
-      );
-
-
-    const expenses =
-      Number(
-        calculatedData
-          ?.approved_expenses ||
-        0
-      );
-
-
-    const authUserMatches =
-      currentUser?.id ===
-      authUser.id;
-
-
-    const memberUserMatches =
-      member.user_id ===
-      authUser.id;
-
-
-    const memberAuthUserMatches =
-      member.auth_user_id ===
-      authUser.id;
-
-
-    const groupMatches =
-      groupId ===
-      member.group_id;
-
-
-    const closedByMatchesAuth =
-      closedBy ===
-      authUser.id;
-
-
-    const monthIsFirstDay =
-      Boolean(
-        closingMonth &&
-        closingMonth.endsWith("-01")
-      );
-
-
-    const numericValuesValid =
-      expected >= 0 &&
-      collected >= 0 &&
-      expenses >= 0;
-
-
-    const insertShouldPass =
-      Boolean(
-        roleCheck === true &&
-        closedByMatchesAuth &&
-        monthIsFirstDay &&
-        numericValuesValid
-      );
-
-
-    renderDiagnostic({
-
-      auth_uid:
-        authUser.id,
-
-      current_user_id:
-        currentUser?.id || null,
-
-      auth_user_matches:
-        authUserMatches,
-
-      member_id:
-        member.id,
-
-      member_user_id:
-        member.user_id,
-
-      member_auth_user_id:
-        member.auth_user_id,
-
-      member_user_matches:
-        memberUserMatches,
-
-      member_auth_user_matches:
-        memberAuthUserMatches,
-
-      group_id:
-        groupId,
-
-      member_group_id:
-        member.group_id,
-
-      group_matches:
-        groupMatches,
-
-      role:
-        member.role,
-
-      status:
-        member.status,
-
-      onboarding_status:
-        member.onboarding_status,
-
-      role_check:
-        roleCheck,
-
-      role_check_error:
-        roleCheckError?.message ||
-        null,
-
-      closing_month:
-        closingMonth,
-
-      closed_by:
-        closedBy,
-
-      closed_by_matches_auth:
-        closedByMatchesAuth,
-
-      total_expected:
-        expected,
-
-      total_collected:
-        collected,
-
-      total_expenses:
-        expenses,
-
-      month_is_first_day:
-        monthIsFirstDay,
-
-      numeric_values_valid:
-        numericValuesValid,
-
-      insert_should_pass:
-        insertShouldPass
-
-    });
-
-
-    /*
-       Also log the actual role-helper result clearly.
-    */
-
-    if (roleCheckError) {
-
-      console.error(
-        "CHAMA LIVE: cl_user_has_role diagnostic failed:",
-        roleCheckError
-      );
-
-    }
-    else {
-
-      console.log(
-        "CHAMA LIVE: cl_user_has_role result:",
-        roleCheck
-      );
-
-    }
-
-
-  }
-  catch (error) {
-
-    console.error(
-      "CHAMA LIVE authorization diagnostic:",
-      error
-    );
-
-
-    renderDiagnostic({
-
-      auth_uid:
-        currentUser?.id || null,
-
-      current_user_id:
-        currentUser?.id || null,
-
-      auth_user_matches:
-        false,
-
-      member_id:
-        currentMember?.id || null,
-
-      member_user_id:
-        currentMember?.user_id || null,
-
-      member_auth_user_id:
-        currentMember?.auth_user_id || null,
-
-      member_user_matches:
-        false,
-
-      member_auth_user_matches:
-        false,
-
-      group_id:
-        groupId,
-
-      member_group_id:
-        currentMember?.group_id || null,
-
-      group_matches:
-        false,
-
-      role:
-        currentMember?.role || null,
-
-      status:
-        currentMember?.status || null,
-
-      onboarding_status:
-        currentMember?.onboarding_status || null,
-
-      role_check:
-        null,
-
-      role_check_error:
-        error?.message ||
-        String(error),
-
-      closing_month:
-        monthInput?.value
-          ? `${monthInput.value}-01`
-          : null,
-
-      closed_by:
-        currentUser?.id || null,
-
-      closed_by_matches_auth:
-        false,
-
-      total_expected:
-        Number(
-          calculatedData
-            ?.expected_monthly_contributions ||
-          0
-        ),
-
-      total_collected:
-        Number(
-          calculatedData
-            ?.total_contributions_collected ||
-          0
-        ),
-
-      total_expenses:
-        Number(
-          calculatedData
-            ?.approved_expenses ||
-          0
-        ),
-
-      insert_should_pass:
-        false
-
-    });
-
-  }
-
-}
-
-
-/* =========================================================
    MONTH
 ========================================================= */
 
@@ -1098,6 +301,35 @@ function formatDate(value) {
       day: "numeric"
     }
   );
+
+}
+
+
+/* =========================================================
+   MONTH END
+========================================================= */
+
+function getMonthEnd(month) {
+
+  const date =
+    new Date(
+      `${month}-01T00:00:00`
+    );
+
+  date.setMonth(
+    date.getMonth() + 1
+  );
+
+  return [
+    date.getFullYear(),
+
+    String(
+      date.getMonth() + 1
+    ).padStart(2, "0"),
+
+    "01"
+
+  ].join("-");
 
 }
 
@@ -1350,6 +582,11 @@ async function getOpeningBalance(
     `${month}-01`;
 
 
+  /*
+     First preference:
+     previously closed financial period.
+  */
+
   const {
     data: previousPeriod,
     error:
@@ -1399,8 +636,10 @@ async function getOpeningBalance(
 
 
   if (
-    previousPeriod?.closing_balance !== null &&
-    previousPeriod?.closing_balance !== undefined
+    previousPeriod?.closing_balance !==
+      null &&
+    previousPeriod?.closing_balance !==
+      undefined
   ) {
 
     return Number(
@@ -1409,6 +648,11 @@ async function getOpeningBalance(
 
   }
 
+
+  /*
+     Second preference:
+     previous monthly closing.
+  */
 
   const {
     data: previousClosing,
@@ -1463,6 +707,11 @@ async function getOpeningBalance(
   }
 
 
+  /*
+     Final fallback:
+     group opening balance.
+  */
+
   const {
     data: group,
     error:
@@ -1505,6 +754,22 @@ async function loadCanonicalAccounting(
   );
 
 
+  /*
+     --------------------------------------------------------
+     CANONICAL MEMBER STATUS
+     --------------------------------------------------------
+
+     Authoritative 2B member-level accounting:
+
+       Obligation
+          ↓
+       Payment
+          ↓
+       Allocation
+          ↓
+       Arrears / Credit
+  */
+
   const {
     data: statusData,
     error: statusError
@@ -1530,6 +795,12 @@ async function loadCanonicalAccounting(
   canonicalStatus =
     statusData || [];
 
+
+  /*
+     --------------------------------------------------------
+     CANONICAL MONTHLY SUMMARY
+     --------------------------------------------------------
+  */
 
   const {
     data: summaryData,
@@ -1562,30 +833,21 @@ async function loadCanonicalAccounting(
   }
 
 
+  /*
+     --------------------------------------------------------
+     APPROVED EXPENSES
+     --------------------------------------------------------
+
+     Contribution accounting remains canonical.
+
+     Expenses are independently read for cash closing.
+  */
+
   const monthStart =
     `${month}-01`;
 
-  const date =
-    new Date(
-      `${month}-01T00:00:00`
-    );
-
-  date.setMonth(
-    date.getMonth() + 1
-  );
-
-
   const monthEnd =
-    [
-      date.getFullYear(),
-
-      String(
-        date.getMonth() + 1
-      ).padStart(2, "0"),
-
-      "01"
-
-    ].join("-");
+    getMonthEnd(month);
 
 
   const {
@@ -1635,11 +897,23 @@ async function loadCanonicalAccounting(
       );
 
 
+  /*
+     --------------------------------------------------------
+     OPENING BALANCE
+     --------------------------------------------------------
+  */
+
   const openingBalance =
     await getOpeningBalance(
       month
     );
 
+
+  /*
+     --------------------------------------------------------
+     CANONICAL VALUES
+     --------------------------------------------------------
+  */
 
   const totalCollected =
     Number(
@@ -1681,11 +955,36 @@ async function loadCanonicalAccounting(
     );
 
 
+  /*
+     --------------------------------------------------------
+     CASH CLOSING
+     --------------------------------------------------------
+
+       Opening Balance
+       + Cash Contributions Received
+       - Approved Expenses
+       = Closing Balance
+
+     IMPORTANT:
+
+       applied_this_month
+
+     is NOT used as cash received.
+
+     Application is for obligation accounting.
+  */
+
   const closingBalance =
     openingBalance +
     totalCollected -
     approvedExpenses;
 
+
+  /*
+     --------------------------------------------------------
+     COLLECTION RATE
+     --------------------------------------------------------
+  */
 
   let collectionRate = 0;
 
@@ -1705,6 +1004,41 @@ async function loadCanonicalAccounting(
       );
 
   }
+
+
+  /*
+     --------------------------------------------------------
+     MEMBER COUNTS
+     --------------------------------------------------------
+  */
+
+  const activeMembers =
+    Number(
+      summaryData.active_members ??
+      canonicalStatus.length ??
+      0
+    );
+
+
+  const membersPaid =
+    Number(
+      summaryData.members_paid ??
+      0
+    );
+
+
+  const partialPayments =
+    Number(
+      summaryData.partial_payments ??
+      0
+    );
+
+
+  const outstandingMembers =
+    Number(
+      summaryData.outstanding_members ??
+      0
+    );
 
 
   calculatedData = {
@@ -1736,29 +1070,16 @@ async function loadCanonicalAccounting(
       closingBalance,
 
     active_members:
-      Number(
-        summaryData.active_members ||
-        canonicalStatus.length ||
-        0
-      ),
+      activeMembers,
 
     members_paid:
-      Number(
-        summaryData.members_paid ||
-        0
-      ),
+      membersPaid,
 
     partial_payments:
-      Number(
-        summaryData.partial_payments ||
-        0
-      ),
+      partialPayments,
 
     outstanding_members:
-      Number(
-        summaryData.outstanding_members ||
-        0
-      ),
+      outstandingMembers,
 
     collection_rate:
       Number(
@@ -1888,6 +1209,14 @@ function renderCalculation() {
   }
 
 
+  /*
+     --------------------------------------------------------
+     COLLECTION PROGRESS
+     --------------------------------------------------------
+
+     Uses applied amount, NOT cash received.
+  */
+
   let percentage = 0;
 
 
@@ -1972,6 +1301,12 @@ function renderCalculation() {
   }
 
 
+  /*
+     --------------------------------------------------------
+     BALANCE CLASS
+     --------------------------------------------------------
+  */
+
   if (balanceEl) {
 
     balanceEl.classList.remove(
@@ -2005,6 +1340,12 @@ function renderCalculation() {
 
   }
 
+
+  /*
+     --------------------------------------------------------
+     OPTIONAL EXTENDED ELEMENTS
+     --------------------------------------------------------
+  */
 
   const appliedEl =
     document.getElementById(
@@ -2043,6 +1384,82 @@ function renderCalculation() {
       money(outstanding);
 
   }
+
+
+  /*
+     Optional active member display.
+  */
+
+  const activeMembersEl =
+    document.getElementById(
+      "activeMembers"
+    );
+
+  if (activeMembersEl) {
+
+    activeMembersEl.textContent =
+      String(
+        calculatedData.active_members
+      );
+
+  }
+
+
+  /*
+     Optional member payment counts.
+  */
+
+  const membersPaidEl =
+    document.getElementById(
+      "membersPaid"
+    );
+
+  if (membersPaidEl) {
+
+    membersPaidEl.textContent =
+      String(
+        calculatedData.members_paid
+      );
+
+  }
+
+
+  const partialPaymentsEl =
+    document.getElementById(
+      "partialPayments"
+    );
+
+  if (partialPaymentsEl) {
+
+    partialPaymentsEl.textContent =
+      String(
+        calculatedData.partial_payments
+      );
+
+  }
+
+
+  const outstandingMembersEl =
+    document.getElementById(
+      "outstandingMembers"
+    );
+
+  if (outstandingMembersEl) {
+
+    outstandingMembersEl.textContent =
+      String(
+        calculatedData.outstanding_members
+      );
+
+  }
+
+
+  /*
+     Keep outstanding variable intentionally
+     referenced for optional UI compatibility.
+  */
+
+  void outstanding;
 
 }
 
@@ -2125,6 +1542,43 @@ function renderClosingStatus() {
         money(
           currentClosing.closing_balance
         );
+
+
+      const balance =
+        Number(
+          currentClosing.closing_balance ||
+          0
+        );
+
+
+      balanceEl.classList.remove(
+        "amount-positive",
+        "amount-negative",
+        "amount-neutral"
+      );
+
+
+      if (balance < 0) {
+
+        balanceEl.classList.add(
+          "amount-negative"
+        );
+
+      }
+      else if (balance > 0) {
+
+        balanceEl.classList.add(
+          "amount-positive"
+        );
+
+      }
+      else {
+
+        balanceEl.classList.add(
+          "amount-neutral"
+        );
+
+      }
 
     }
 
@@ -2210,6 +1664,9 @@ async function calculateMonth() {
     currentClosing =
       null;
 
+    canonicalStatus =
+      [];
+
 
     renderSelectedMonth();
 
@@ -2225,15 +1682,6 @@ async function calculateMonth() {
 
 
     renderClosingStatus();
-
-
-    /*
-       Run after accounting has been calculated so
-       the diagnostic can also inspect the exact values
-       that would be inserted into monthly_closings.
-    */
-
-    await runAuthorizationDiagnostic();
 
 
     showStatus(
@@ -2254,6 +1702,25 @@ async function calculateMonth() {
 
 /* =========================================================
    CLOSE MONTH
+   ---------------------------------------------------------
+   IMPORTANT
+
+   This function DOES NOT insert directly into
+   monthly_closings.
+
+   It calls:
+
+       close_financial_month()
+
+   The database RPC handles:
+
+       authorization
+       financial period creation
+       canonical report
+       member identity resolution
+       monthly_closings insert
+       duplicate protection
+       financial period closing
 ========================================================= */
 
 async function closeMonth() {
@@ -2276,33 +1743,6 @@ async function closeMonth() {
     }
 
 
-    if (!currentUser?.id) {
-
-      throw new Error(
-        "Your authenticated user session is unavailable."
-      );
-
-    }
-
-
-    if (!currentMember?.id) {
-
-      throw new Error(
-        "Your member record is unavailable."
-      );
-
-    }
-
-
-    if (!groupId) {
-
-      throw new Error(
-        "Your member record is not linked to a group."
-      );
-
-    }
-
-
     if (currentClosing) {
 
       throw new Error(
@@ -2312,13 +1752,15 @@ async function closeMonth() {
     }
 
 
-    if (!calculatedData) {
+    /*
+       Always calculate immediately before closing.
 
-      await loadCanonicalAccounting(
-        month
-      );
+       This prevents closing with stale browser data.
+    */
 
-    }
+    await loadCanonicalAccounting(
+      month
+    );
 
 
     if (!calculatedData) {
@@ -2331,15 +1773,10 @@ async function closeMonth() {
 
 
     /*
-       Re-run diagnostic immediately before INSERT.
-
-       This ensures the displayed diagnostic reflects
-       the current authenticated session and current
-       calculated values.
+       ------------------------------------------------------
+       CONFIRMATION
+       ------------------------------------------------------
     */
-
-    await runAuthorizationDiagnostic();
-
 
     const confirmed =
       window.confirm(
@@ -2419,127 +1856,61 @@ async function closeMonth() {
 
 
     /*
-     ========================================================
-     CORRECT IDENTITY
-     ========================================================
+       ------------------------------------------------------
+       CANONICAL FINANCIAL CLOSING RPC
+       ------------------------------------------------------
 
-     closed_by MUST be auth.uid().
+       Do NOT directly insert into monthly_closings.
 
-     currentMember.id is NOT used.
+       The RPC resolves closed_by from auth identity
+       and performs the protected database operation.
     */
-
-    const payload = {
-
-      group_id:
-        groupId,
-
-      closing_month:
-        `${month}-01`,
-
-      closed_by:
-        currentUser.id,
-
-      closed_at:
-        new Date().toISOString(),
-
-      total_expected:
-        Number(
-          calculatedData
-            .expected_monthly_contributions ||
-          0
-        ),
-
-      total_collected:
-        Number(
-          calculatedData
-            .total_contributions_collected ||
-          0
-        ),
-
-      total_expenses:
-        Number(
-          calculatedData
-            .approved_expenses ||
-          0
-        ),
-
-      closing_balance:
-        Number(
-          calculatedData
-            .closing_balance ||
-          0
-        ),
-
-      notes:
-        notesInput?.value?.trim() ||
-        null
-
-    };
-
-
-    console.log(
-      "CHAMA LIVE: monthly closing INSERT payload",
-      payload
-    );
-
 
     const {
       data,
       error
     } =
       await supabase
-        .from("monthly_closings")
-        .insert(
-          payload
-        )
-        .select(`
-          id,
-          group_id,
-          closing_month,
-          closed_by,
-          closed_at,
-          total_expected,
-          total_collected,
-          total_expenses,
-          closing_balance,
-          notes
-        `)
-        .single();
+        .rpc(
+          "close_financial_month",
+          {
+            p_group_id:
+              groupId,
+
+            p_month:
+              month
+          }
+        );
 
 
     if (error) {
 
       console.error(
-        "CHAMA LIVE: monthly_closings INSERT failed",
-        {
-          error,
-          payload,
-          authorizationDiagnostic
-        }
+        "CHAMA LIVE: close_financial_month failed:",
+        error
       );
+
+      /*
+         Translate common duplicate/closed errors
+         into a user-friendly message.
+      */
+
+      const message =
+        String(
+          error.message ||
+          ""
+        );
 
 
       if (
-        error.code ===
-        "23505"
+        /already closed/i.test(
+          message
+        ) ||
+        error.code === "23505"
       ) {
 
         throw new Error(
           "This financial month has already been closed."
-        );
-
-      }
-
-
-      if (
-        error.code ===
-        "42501"
-      ) {
-
-        throw new Error(
-          "RLS rejected the monthly closing INSERT. " +
-          "Check the Temporary Authorization Diagnostic panel " +
-          "and browser console for the exact failing predicate."
         );
 
       }
@@ -2550,17 +1921,40 @@ async function closeMonth() {
     }
 
 
-    if (!data) {
+    /*
+       ------------------------------------------------------
+       RPC SUCCESS
+       ------------------------------------------------------
 
-      throw new Error(
-        "The monthly closing was not returned after insertion."
-      );
+       The RPC returns get_monthly_financial_report().
+    */
 
-    }
+    console.log(
+      "CHAMA LIVE: close_financial_month succeeded",
+      data
+    );
 
 
-    currentClosing =
-      data;
+    /*
+       Reload the actual database row rather than
+       constructing currentClosing locally.
+
+       This guarantees that the page displays the
+       official record actually written by the database.
+    */
+
+    await loadExistingClosing(
+      month
+    );
+
+
+    /*
+       Refresh canonical calculation and history.
+    */
+
+    await loadCanonicalAccounting(
+      month
+    );
 
 
     renderClosingStatus();
@@ -2574,6 +1968,20 @@ async function closeMonth() {
       )} closed successfully.`
     );
 
+
+    /*
+       Clear the status after a short delay,
+       preserving the current UI behavior.
+    */
+
+    setTimeout(
+      () => {
+
+        showStatus("");
+
+      },
+      3000
+    );
 
   }
   catch (error) {
@@ -2629,10 +2037,9 @@ function setupEvents() {
         canonicalStatus =
           [];
 
-        authorizationDiagnostic =
-          null;
 
         renderSelectedMonth();
+
 
         calculateMonth();
 
@@ -2711,7 +2118,9 @@ export async function initPage() {
 
 
     /*
-       Require the authenticated application user.
+       ------------------------------------------------------
+       AUTHENTICATION
+       ------------------------------------------------------
     */
 
     currentUser =
@@ -2728,7 +2137,9 @@ export async function initPage() {
 
 
     /*
-       Load the CHAMA member linked to this account.
+       ------------------------------------------------------
+       MEMBER
+       ------------------------------------------------------
     */
 
     currentMember =
@@ -2744,6 +2155,12 @@ export async function initPage() {
     }
 
 
+    /*
+       ------------------------------------------------------
+       GROUP
+       ------------------------------------------------------
+    */
+
     groupId =
       currentMember.group_id;
 
@@ -2756,6 +2173,12 @@ export async function initPage() {
 
     }
 
+
+    /*
+       ------------------------------------------------------
+       DEFAULT MONTH
+       ------------------------------------------------------
+    */
 
     if (monthInput) {
 
@@ -2771,23 +2194,21 @@ export async function initPage() {
 
 
     /*
-       Calculate first.
-
-       This also runs the authenticated diagnostic.
+       ------------------------------------------------------
+       INITIAL CALCULATION
+       ------------------------------------------------------
     */
 
     await calculateMonth();
 
 
-    await loadClosingHistory();
-
-
     /*
-       Run once more after all initialization has
-       completed so the diagnostic is definitely visible.
+       ------------------------------------------------------
+       HISTORY
+       ------------------------------------------------------
     */
 
-    await runAuthorizationDiagnostic();
+    await loadClosingHistory();
 
 
     showStatus(
@@ -2806,7 +2227,7 @@ export async function initPage() {
 
 
     console.log(
-      "CHAMA LIVE: monthly closing diagnostic initialized",
+      "CHAMA LIVE: monthly closing initialized",
       {
         groupId,
 
@@ -2835,6 +2256,10 @@ export async function initPage() {
 
 }
 
+
+/* =========================================================
+   REQUIRED EXPORT
+========================================================= */
 
 export const initMonthlyClosing =
   initPage;
@@ -2870,5 +2295,5 @@ else {
 
 
 console.log(
-  "CHAMA LIVE: monthly-closing.js TEMPORARY DIAGNOSTIC ready"
+  "CHAMA LIVE: monthly-closing.js ready"
 );
