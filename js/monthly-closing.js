@@ -1,7 +1,7 @@
 /* =========================================================
    CHAMA LIVE — MONTHLY CLOSING
-   COMPLETE PRODUCTION CANONICAL 2B VERSION
-
+   CANONICAL 2B VERSION
+   ---------------------------------------------------------
    Accounting source:
        get_canonical_monthly_accounting_summary()
 
@@ -10,29 +10,50 @@
 
    Cash closing:
        Opening Balance
-       + Contributions Received
+       + Actual Cash Contributions Received
        - Approved Expenses
        = Closing Balance
 
-   Contribution progress:
+   Contribution accounting:
+       Expected Monthly Obligations
        Applied To Current Month Obligations
-       / Expected Monthly Obligations
+       Outstanding
+       Carry-forward
 
-   IDENTITY RULE:
-       monthly_closings.closed_by = auth.uid()
-
-       Therefore:
-           closed_by = currentUser.id
-
-       NOT:
-           currentMember.id
-
-   IMPORTANT
+   IMPORTANT 2B RULE
    ---------------------------------------------------------
-   Total cash received is NOT automatically the amount
-   applied to the current month's obligations.
+   "Total Collected" means ACTUAL CASH RECEIVED during
+   the selected financial month.
 
-   Carry-forward remains separate.
+   "Applied This Month" means the amount allocated against
+   the selected month's obligations.
+
+   These are NOT necessarily the same amount.
+
+   Example:
+       August cash payment
+            ↓
+       September obligation
+            ↓
+       September allocation
+
+   Therefore:
+
+       September Cash Received = KES 0
+       September Applied       = KES 300
+
+   Collection progress is based on APPLICATION against
+   current-month obligations, not blindly on cash received.
+
+   RLS IDENTITY RULE
+   ---------------------------------------------------------
+   monthly_closings.closed_by references auth.users.id.
+
+   Therefore:
+       closed_by = currentUser.id
+
+   NOT:
+       closed_by = currentMember.id
 
    Required exports:
        initPage()
@@ -227,7 +248,7 @@ function clearError() {
 
 
 /* =========================================================
-   MONTH HELPERS
+   MONTH
 ========================================================= */
 
 function getCurrentMonth() {
@@ -328,6 +349,111 @@ function renderSelectedMonth() {
 
 
 /* =========================================================
+   OPTIONAL 2B ELEMENTS
+   ---------------------------------------------------------
+   These are rendered only when the corresponding IDs exist
+   in the current UI.
+
+   This allows the current UI to remain unchanged while
+   supporting explicit 2B accounting fields if present.
+========================================================= */
+
+function renderOptionalAccountingFields(data) {
+
+  if (!data) {
+    return;
+  }
+
+
+  const appliedEl =
+    document.getElementById(
+      "appliedThisMonth"
+    );
+
+  if (appliedEl) {
+
+    appliedEl.textContent =
+      money(
+        data.applied_this_month
+      );
+
+  }
+
+
+  const carryForwardEl =
+    document.getElementById(
+      "carryForward"
+    );
+
+  if (carryForwardEl) {
+
+    carryForwardEl.textContent =
+      money(
+        data.carry_forward
+      );
+
+  }
+
+
+  const outstandingEl =
+    document.getElementById(
+      "currentOutstanding"
+    );
+
+  if (outstandingEl) {
+
+    outstandingEl.textContent =
+      money(
+        data.current_outstanding
+      );
+
+  }
+
+
+  const cashReceivedEl =
+    document.getElementById(
+      "cashReceived"
+    );
+
+  if (cashReceivedEl) {
+
+    cashReceivedEl.textContent =
+      money(
+        data.total_contributions_collected
+      );
+
+  }
+
+
+  const collectionLabelEl =
+    document.getElementById(
+      "collectionProgressLabel"
+    );
+
+  if (collectionLabelEl) {
+
+    collectionLabelEl.textContent =
+      "Applied to current month obligations";
+
+  }
+
+
+  const collectedLabelEl =
+    document.getElementById(
+      "totalCollectedLabel"
+    );
+
+  if (collectedLabelEl) {
+
+    collectedLabelEl.textContent =
+      "Actual cash received";
+
+  }
+
+}
+
+
+/* =========================================================
    LOAD EXISTING CLOSING
 ========================================================= */
 
@@ -374,7 +500,7 @@ async function loadExistingClosing(
 
 
 /* =========================================================
-   LOAD CLOSING HISTORY
+   LOAD HISTORY
 ========================================================= */
 
 async function loadClosingHistory() {
@@ -456,6 +582,7 @@ async function loadClosingHistory() {
             Number(
               closing.closing_balance || 0
             );
+
 
           const balanceClass =
             balance < 0
@@ -542,7 +669,7 @@ async function loadClosingHistory() {
 
 
 /* =========================================================
-   OPENING BALANCE
+   GET OPENING BALANCE
 ========================================================= */
 
 async function getOpeningBalance(
@@ -560,7 +687,8 @@ async function getOpeningBalance(
 
   const {
     data: previousPeriod,
-    error: previousPeriodError
+    error:
+      previousPeriodError
   } =
     await supabase
       .from("financial_periods")
@@ -592,10 +720,16 @@ async function getOpeningBalance(
 
 
   if (
-    previousPeriodError &&
-    previousPeriodError.code !==
-      "PGRST116"
+    previousPeriodError
   ) {
+
+    /*
+       Some installations may not expose
+       financial_periods through the current
+       client role.
+
+       Fall back to monthly_closings.
+    */
 
     console.warn(
       "CHAMA LIVE: financial_periods lookup:",
@@ -606,8 +740,10 @@ async function getOpeningBalance(
 
 
   if (
-    previousPeriod?.closing_balance !== null &&
-    previousPeriod?.closing_balance !== undefined
+    previousPeriod?.closing_balance !==
+      null &&
+    previousPeriod?.closing_balance !==
+      undefined
   ) {
 
     return Number(
@@ -619,12 +755,13 @@ async function getOpeningBalance(
 
   /*
      Second preference:
-     previous monthly closing.
+     monthly_closings.
   */
 
   const {
     data: previousClosing,
-    error: previousClosingError
+    error:
+      previousClosingError
   } =
     await supabase
       .from("monthly_closings")
@@ -661,8 +798,10 @@ async function getOpeningBalance(
 
 
   if (
-    previousClosing?.closing_balance !== null &&
-    previousClosing?.closing_balance !== undefined
+    previousClosing?.closing_balance !==
+      null &&
+    previousClosing?.closing_balance !==
+      undefined
   ) {
 
     return Number(
@@ -679,7 +818,8 @@ async function getOpeningBalance(
 
   const {
     data: group,
-    error: groupError
+    error:
+      groupError
   } =
     await supabase
       .from("groups")
@@ -718,21 +858,9 @@ async function loadCanonicalAccounting(
   );
 
 
-  /*
-     =====================================================
-     CANONICAL 2B ENGINE
-
-     Obligation
-          ↓
-     Payment
-          ↓
-     Allocation
-          ↓
-     Arrears / Credit
-
-     This is the authoritative contribution source.
-     =====================================================
-  */
+  /* ---------------------------------------------------------
+     CANONICAL MEMBER STATUS
+  --------------------------------------------------------- */
 
   const {
     data: statusData,
@@ -742,8 +870,11 @@ async function loadCanonicalAccounting(
       .rpc(
         "get_canonical_member_monthly_status",
         {
-          p_group_id: groupId,
-          p_month: month
+          p_group_id:
+            groupId,
+
+          p_month:
+            month
         }
       );
 
@@ -757,6 +888,10 @@ async function loadCanonicalAccounting(
     statusData || [];
 
 
+  /* ---------------------------------------------------------
+     CANONICAL MONTHLY SUMMARY
+  --------------------------------------------------------- */
+
   const {
     data: summaryData,
     error: summaryError
@@ -765,8 +900,11 @@ async function loadCanonicalAccounting(
       .rpc(
         "get_canonical_monthly_accounting_summary",
         {
-          p_group_id: groupId,
-          p_month: month
+          p_group_id:
+            groupId,
+
+          p_month:
+            month
         }
       );
 
@@ -786,29 +924,52 @@ async function loadCanonicalAccounting(
 
 
   /*
-     Expenses are separate from contribution
-     accounting and therefore loaded independently.
+     The RPC may return either a single object
+     or a one-row array depending on the Supabase
+     function configuration.
+
+     Normalize both shapes.
   */
+
+  const summary =
+    Array.isArray(summaryData)
+      ? summaryData[0]
+      : summaryData;
+
+
+  if (!summary) {
+
+    throw new Error(
+      "The canonical accounting summary is empty."
+    );
+
+  }
+
+
+  /* ---------------------------------------------------------
+     APPROVED EXPENSES
+  --------------------------------------------------------- */
 
   const monthStart =
     `${month}-01`;
 
-  const date =
+  const monthDate =
     new Date(
       `${month}-01T00:00:00`
     );
 
-  date.setMonth(
-    date.getMonth() + 1
+
+  monthDate.setMonth(
+    monthDate.getMonth() + 1
   );
 
 
   const monthEnd =
     [
-      date.getFullYear(),
+      monthDate.getFullYear(),
 
       String(
-        date.getMonth() + 1
+        monthDate.getMonth() + 1
       ).padStart(2, "0"),
 
       "01"
@@ -863,68 +1024,116 @@ async function loadCanonicalAccounting(
       );
 
 
+  /* ---------------------------------------------------------
+     OPENING BALANCE
+  --------------------------------------------------------- */
+
   const openingBalance =
     await getOpeningBalance(
       month
     );
 
 
+  /* ---------------------------------------------------------
+     CANONICAL 2B VALUES
+  --------------------------------------------------------- */
+
   /*
-     CASH ACCOUNTING
+     ACTUAL CASH RECEIVED
 
-     Opening Balance
-     + Cash Contributions Received
-     - Approved Expenses
-     = Closing Balance
+     This is the amount of contribution cash
+     recorded during the selected month.
 
-     Applied amount is NOT substituted for cash received.
+     It is used for CASH CLOSING.
   */
 
   const totalCollected =
     Number(
-      summaryData
+      summary
         .total_contributions_collected ||
       0
     );
 
 
+  /*
+     EXPECTED MONTHLY OBLIGATIONS
+  */
+
   const expected =
     Number(
-      summaryData
+      summary
         .expected_monthly_contributions ||
       0
     );
 
 
+  /*
+     APPLICATION AGAINST CURRENT MONTH
+
+     This can come from earlier payments/carry-forward.
+  */
+
   const applied =
     Number(
-      summaryData
+      summary
         .applied_this_month ||
       0
     );
 
 
+  /*
+     CARRY-FORWARD CREDIT
+  */
+
   const carryForward =
     Number(
-      summaryData
+      summary
         .carry_forward ||
       0
     );
 
 
+  /*
+     CURRENT OUTSTANDING
+  */
+
   const outstanding =
     Number(
-      summaryData
+      summary
         .current_outstanding ||
       0
     );
 
+
+  /* ---------------------------------------------------------
+     CASH CLOSING
+  ---------------------------------------------------------
+
+     IMPORTANT:
+
+       opening
+       + actual cash received
+       - approved expenses
+
+     NOT:
+
+       opening
+       + applied amount
+       - expenses
+
+     Application is an obligation-accounting concept,
+     not a cash-flow concept.
+  --------------------------------------------------------- */
 
   const closingBalance =
     openingBalance +
     totalCollected -
     approvedExpenses;
 
+
+  /* ---------------------------------------------------------
+     APPLICATION RATE
+  --------------------------------------------------------- */
 
   let collectionRate = 0;
 
@@ -976,26 +1185,26 @@ async function loadCanonicalAccounting(
 
     active_members:
       Number(
-        summaryData.active_members ||
-        canonicalStatus.length ||
+        summary.active_members ??
+        canonicalStatus.length ??
         0
       ),
 
     members_paid:
       Number(
-        summaryData.members_paid ||
+        summary.members_paid ??
         0
       ),
 
     partial_payments:
       Number(
-        summaryData.partial_payments ||
+        summary.partial_payments ??
         0
       ),
 
     outstanding_members:
       Number(
-        summaryData.outstanding_members ||
+        summary.outstanding_members ??
         0
       ),
 
@@ -1031,6 +1240,10 @@ function renderCalculation() {
     );
 
 
+  /*
+     ACTUAL CASH RECEIVED
+  */
+
   const collected =
     Number(
       calculatedData
@@ -1038,6 +1251,10 @@ function renderCalculation() {
       0
     );
 
+
+  /*
+     AMOUNT APPLIED TO CURRENT MONTH
+  */
 
   const applied =
     Number(
@@ -1051,6 +1268,14 @@ function renderCalculation() {
     Number(
       calculatedData
         .carry_forward ||
+      0
+    );
+
+
+  const outstanding =
+    Number(
+      calculatedData
+        .current_outstanding ||
       0
     );
 
@@ -1079,6 +1304,10 @@ function renderCalculation() {
     );
 
 
+  /* ---------------------------------------------------------
+     SUMMARY CARDS
+  --------------------------------------------------------- */
+
   if (expectedEl) {
 
     expectedEl.textContent =
@@ -1086,6 +1315,11 @@ function renderCalculation() {
 
   }
 
+
+  /*
+     "Total Collected" intentionally shows
+     actual cash received.
+  */
 
   if (collectedEl) {
 
@@ -1119,10 +1353,27 @@ function renderCalculation() {
   }
 
 
-  /*
-     Contribution progress uses canonical
-     APPLIED amount, not total cash received.
-  */
+  /* ---------------------------------------------------------
+     APPLICATION PROGRESS
+  ---------------------------------------------------------
+
+     IMPORTANT:
+
+     The percentage is based on:
+
+         applied / expected
+
+     It must therefore say:
+
+         "applied"
+
+     and NOT:
+
+         "collected"
+
+     because an allocation can originate from
+     an earlier cash payment.
+  --------------------------------------------------------- */
 
   let percentage = 0;
 
@@ -1153,6 +1404,15 @@ function renderCalculation() {
     collectionProgress.style.width =
       `${percentage}%`;
 
+    collectionProgress.setAttribute(
+      "aria-valuenow",
+      String(
+        Math.round(
+          percentage
+        )
+      )
+    );
+
   }
 
 
@@ -1161,10 +1421,15 @@ function renderCalculation() {
     collectionProgressText.textContent =
       `${Math.round(
         percentage
-      )}% collected`;
+      )}% applied`;
 
   }
 
+
+  /*
+     Difference is also based on APPLICATION
+     against current-month expected obligations.
+  */
 
   if (collectionDifference) {
 
@@ -1198,7 +1463,7 @@ function renderCalculation() {
     else {
 
       collectionDifference.textContent =
-        "Fully collected";
+        "Fully applied";
 
       collectionDifference.className =
         "collection-difference positive";
@@ -1207,6 +1472,10 @@ function renderCalculation() {
 
   }
 
+
+  /* ---------------------------------------------------------
+     BALANCE CLASS
+  --------------------------------------------------------- */
 
   if (balanceEl) {
 
@@ -1242,49 +1511,120 @@ function renderCalculation() {
   }
 
 
+  /* ---------------------------------------------------------
+     OPTIONAL 2B FIELDS
+  --------------------------------------------------------- */
+
+  renderOptionalAccountingFields(
+    calculatedData
+  );
+
+
   /*
-     Optional elements supported by the existing UI.
+     Optional explanatory labels.
+
+     These only affect elements that explicitly exist
+     in the current HTML, so the existing UI remains intact.
   */
 
-  const appliedEl =
+  const progressDescription =
     document.getElementById(
-      "appliedThisMonth"
+      "collectionProgressDescription"
     );
 
-  if (appliedEl) {
+  if (progressDescription) {
 
-    appliedEl.textContent =
-      money(applied);
+    progressDescription.textContent =
+      "Current-month obligations satisfied by payment allocations.";
 
   }
 
 
-  const carryForwardEl =
+  const cashDescription =
     document.getElementById(
-      "carryForward"
+      "cashCollectedDescription"
     );
 
-  if (carryForwardEl) {
+  if (cashDescription) {
 
-    carryForwardEl.textContent =
-      money(carryForward);
+    cashDescription.textContent =
+      "Actual contribution cash received during this month.";
 
   }
 
 
-  const outstandingEl =
+  const appliedDescription =
     document.getElementById(
-      "currentOutstanding"
+      "appliedDescription"
     );
 
-  if (outstandingEl) {
+  if (appliedDescription) {
 
-    outstandingEl.textContent =
-      money(
-        Number(
-          calculatedData
-            .current_outstanding || 0
-        )
+    appliedDescription.textContent =
+      "Payments allocated against this month's obligations.";
+
+  }
+
+
+  /*
+     Optional current accounting values.
+  */
+
+  const activeMembersEl =
+    document.getElementById(
+      "activeMembers"
+    );
+
+  if (activeMembersEl) {
+
+    activeMembersEl.textContent =
+      String(
+        calculatedData.active_members
+      );
+
+  }
+
+
+  const paidMembersEl =
+    document.getElementById(
+      "membersPaid"
+    );
+
+  if (paidMembersEl) {
+
+    paidMembersEl.textContent =
+      String(
+        calculatedData.members_paid
+      );
+
+  }
+
+
+  const partialMembersEl =
+    document.getElementById(
+      "partialPayments"
+    );
+
+  if (partialMembersEl) {
+
+    partialMembersEl.textContent =
+      String(
+        calculatedData.partial_payments
+      );
+
+  }
+
+
+  const outstandingMembersEl =
+    document.getElementById(
+      "outstandingMembers"
+    );
+
+  if (outstandingMembersEl) {
+
+    outstandingMembersEl.textContent =
+      String(
+        calculatedData.outstanding_members
       );
 
   }
@@ -1330,6 +1670,52 @@ function renderClosingStatus() {
       notesInput.value =
         currentClosing.notes ||
         "";
+
+    }
+
+
+    if (expectedEl) {
+
+      expectedEl.textContent =
+        money(
+          currentClosing.total_expected
+        );
+
+    }
+
+
+    if (collectedEl) {
+
+      /*
+         Historical monthly_closings.total_collected
+         represents actual cash collected for that
+         closed financial period.
+      */
+
+      collectedEl.textContent =
+        money(
+          currentClosing.total_collected
+        );
+
+    }
+
+
+    if (expensesEl) {
+
+      expensesEl.textContent =
+        money(
+          currentClosing.total_expenses
+        );
+
+    }
+
+
+    if (balanceEl) {
+
+      balanceEl.textContent =
+        money(
+          currentClosing.closing_balance
+        );
 
     }
 
@@ -1396,7 +1782,6 @@ async function calculateMonth() {
 
     clearError();
 
-
     const month =
       monthInput?.value;
 
@@ -1415,6 +1800,9 @@ async function calculateMonth() {
 
     currentClosing =
       null;
+
+    canonicalStatus =
+      [];
 
 
     renderSelectedMonth();
@@ -1473,10 +1861,43 @@ async function closeMonth() {
     }
 
 
-    /*
-       Protect against stale UI state.
+    if (currentClosing) {
 
-       Always check the database again before insert.
+      throw new Error(
+        "This month has already been closed."
+      );
+
+    }
+
+
+    /*
+       Recalculate before closing.
+
+       This prevents stale values from being
+       written if another contribution or expense
+       was recorded after the last calculation.
+    */
+
+    await loadCanonicalAccounting(
+      month
+    );
+
+
+    if (!calculatedData) {
+
+      throw new Error(
+        "Unable to calculate the month."
+      );
+
+    }
+
+
+    /*
+       Check again immediately before INSERT.
+
+       This prevents duplicate closing records
+       when another session has already closed
+       the month.
     */
 
     await loadExistingClosing(
@@ -1495,24 +1916,6 @@ async function closeMonth() {
     }
 
 
-    if (!calculatedData) {
-
-      await loadCanonicalAccounting(
-        month
-      );
-
-    }
-
-
-    if (!calculatedData) {
-
-      throw new Error(
-        "Unable to calculate the month."
-      );
-
-    }
-
-
     const confirmed =
       window.confirm(
 
@@ -1526,13 +1929,13 @@ async function closeMonth() {
             .expected_monthly_contributions
         )}\n` +
 
-        `Cash contributions received: ` +
+        `Actual cash contributions received: ` +
         `${money(
           calculatedData
             .total_contributions_collected
         )}\n` +
 
-        `Applied to monthly obligations: ` +
+        `Applied to current-month obligations: ` +
         `${money(
           calculatedData
             .applied_this_month
@@ -1556,7 +1959,13 @@ async function closeMonth() {
             .approved_expenses
         )}\n` +
 
-        `Closing balance: ` +
+        `Opening balance: ` +
+        `${money(
+          calculatedData
+            .opening_balance
+        )}\n` +
+
+        `Closing cash balance: ` +
         `${money(
           calculatedData
             .closing_balance
@@ -1569,6 +1978,33 @@ async function closeMonth() {
 
     if (!confirmed) {
       return;
+    }
+
+
+    if (!currentUser?.id) {
+
+      throw new Error(
+        "Authenticated user identity is unavailable."
+      );
+
+    }
+
+
+    if (!currentMember?.id) {
+
+      throw new Error(
+        "Current member identity is unavailable."
+      );
+
+    }
+
+
+    if (!groupId) {
+
+      throw new Error(
+        "Current group identity is unavailable."
+      );
+
     }
 
 
@@ -1590,18 +2026,22 @@ async function closeMonth() {
     );
 
 
-    /*
-       =====================================================
-       CRITICAL IDENTITY RULE
+    /* =====================================================
+       RLS IDENTITY FIX
 
-       closed_by must use the authenticated user UUID.
+       monthly_closings.closed_by references
+       auth.users.id.
 
-       currentMember.id is the members table UUID.
-       currentUser.id is auth.uid().
+       Therefore:
 
-       The RLS policy expects auth.uid().
-       =====================================================
-    */
+           currentUser.id
+
+       is REQUIRED.
+
+       Do NOT use:
+
+           currentMember.id
+    ===================================================== */
 
     const payload = {
 
@@ -1624,6 +2064,10 @@ async function closeMonth() {
           0
         ),
 
+      /*
+         This is ACTUAL CASH RECEIVED.
+      */
+
       total_collected:
         Number(
           calculatedData
@@ -1638,6 +2082,14 @@ async function closeMonth() {
           0
         ),
 
+      /*
+         Cash closing formula:
+
+           opening
+           + actual cash received
+           - approved expenses
+      */
+
       closing_balance:
         Number(
           calculatedData
@@ -1650,6 +2102,43 @@ async function closeMonth() {
         null
 
     };
+
+
+    console.log(
+      "CHAMA LIVE: monthly closing insert",
+      {
+        groupId:
+          payload.group_id,
+
+        closingMonth:
+          payload.closing_month,
+
+        closedBy:
+          payload.closed_by,
+
+        currentUserId:
+          currentUser.id,
+
+        currentMemberId:
+          currentMember.id,
+
+        closedByMatchesAuthUser:
+          payload.closed_by ===
+          currentUser.id,
+
+        expected:
+          payload.total_expected,
+
+        actualCashReceived:
+          payload.total_collected,
+
+        approvedExpenses:
+          payload.total_expenses,
+
+        closingBalance:
+          payload.closing_balance
+      }
+    );
 
 
     const {
@@ -1678,8 +2167,13 @@ async function closeMonth() {
 
     if (error) {
 
+      /*
+         PostgreSQL unique violation.
+      */
+
       if (
-        error.code === "23505"
+        error.code ===
+        "23505"
       ) {
 
         throw new Error(
@@ -1687,6 +2181,28 @@ async function closeMonth() {
         );
 
       }
+
+
+      /*
+         RLS diagnostic message.
+
+         We do not bypass RLS.
+
+         The authenticated user ID is deliberately
+         used as closed_by.
+      */
+
+      if (
+        error.code ===
+        "42501"
+      ) {
+
+        throw new Error(
+          "Monthly Closing was blocked by database authorization. The closing identity must match the authenticated user."
+        );
+
+      }
+
 
       throw error;
 
@@ -1707,6 +2223,17 @@ async function closeMonth() {
         month
       )} closed successfully.`
     );
+
+
+    setTimeout(
+      () => {
+
+        showStatus("");
+
+      },
+      3000
+    );
+
 
   }
   catch (error) {
@@ -1761,6 +2288,7 @@ function setupEvents() {
 
         canonicalStatus =
           [];
+
 
         renderSelectedMonth();
 
@@ -1840,6 +2368,10 @@ export async function initPage() {
     );
 
 
+    /* -----------------------------------------------------
+       AUTHENTICATION
+    ----------------------------------------------------- */
+
     currentUser =
       await requireAuth();
 
@@ -1852,6 +2384,19 @@ export async function initPage() {
 
     }
 
+
+    if (!currentUser.id) {
+
+      throw new Error(
+        "Authenticated user ID is unavailable."
+      );
+
+    }
+
+
+    /* -----------------------------------------------------
+       MEMBER
+    ----------------------------------------------------- */
 
     currentMember =
       await getMyMember();
@@ -1866,6 +2411,19 @@ export async function initPage() {
     }
 
 
+    if (!currentMember.id) {
+
+      throw new Error(
+        "Current member ID is unavailable."
+      );
+
+    }
+
+
+    /* -----------------------------------------------------
+       GROUP
+    ----------------------------------------------------- */
+
     groupId =
       currentMember.group_id;
 
@@ -1878,6 +2436,10 @@ export async function initPage() {
 
     }
 
+
+    /* -----------------------------------------------------
+       MONTH
+    ----------------------------------------------------- */
 
     if (monthInput) {
 
@@ -1892,7 +2454,16 @@ export async function initPage() {
     setupEvents();
 
 
+    /* -----------------------------------------------------
+       INITIAL CALCULATION
+    ----------------------------------------------------- */
+
     await calculateMonth();
+
+
+    /* -----------------------------------------------------
+       HISTORY
+    ----------------------------------------------------- */
 
     await loadClosingHistory();
 
@@ -1920,8 +2491,14 @@ export async function initPage() {
         memberId:
           currentMember.id,
 
-        userId:
+        authenticatedUserId:
           currentUser.id,
+
+        memberUserId:
+          currentMember.user_id,
+
+        memberAuthUserId:
+          currentMember.auth_user_id,
 
         canonicalMembers:
           canonicalStatus.length
@@ -1944,7 +2521,7 @@ export async function initPage() {
 
 
 /* =========================================================
-   COMPATIBILITY EXPORT
+   REQUIRED EXPORT
 ========================================================= */
 
 export const initMonthlyClosing =
