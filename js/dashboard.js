@@ -1,7 +1,7 @@
 /* =========================================================
    CHAMA LIVE — DASHBOARD
    COMPLETE UPDATED VERSION
-
+   ---------------------------------------------------------
    READ-ONLY DASHBOARD
 
    Responsibilities
@@ -48,15 +48,18 @@
 
    CANONICAL ACCOUNTING
    ---------------------------------------------------------
-   Monthly contribution status is obtained ONLY from:
+   Primary RPC:
 
        public.get_canonical_member_monthly_status(
            p_group_id uuid,
            p_month text
        )
 
-   IMPORTANT:
-   The live database signature is:
+   Live signature:
+
+       get_canonical_member_monthly_status(uuid,text)
+
+   Parameters:
 
        p_group_id
        p_month
@@ -65,27 +68,23 @@
 
        p_month_start
 
-   The RPC returns:
+   Temporary compatibility fallback:
 
-       member_id
-       member_number
-       member_name
-       monthly_due
-       previous_outstanding
-       previous_credit
-       current_month_payment
-       applied_this_month
-       carry_forward
-       current_outstanding
-       total_paid_to_date
-       total_due_to_date
-       status
+       public.get_monthly_contribution_status(
+           p_group_id uuid,
+           p_month text
+       )
 
-   The dashboard does NOT independently calculate:
+   This fallback is ONLY used when the canonical RPC is
+   unavailable through the Supabase/PostgREST schema cache.
+
+   The dashboard never calculates:
    - arrears
    - payment allocation
    - carry-forward
    - current outstanding
+
+   Those values always come from an RPC.
 
    MEETINGS SCHEMA
    ---------------------------------------------------------
@@ -130,67 +129,33 @@ let monthlyStatusRows = [];
    DOM HELPERS
 ========================================================= */
 
-function byId(
-  id
-) {
-
-  return document.getElementById(
-    id
-  );
-
+function byId(id) {
+  return document.getElementById(id);
 }
 
 
-function safeText(
-  value
-) {
+function safeText(value) {
 
   if (
     value === null ||
     value === undefined ||
     value === ""
   ) {
-
     return "—";
-
   }
 
-
-  return String(
-    value
-  );
-
+  return String(value);
 }
 
 
-function escapeHtml(
-  value
-) {
+function escapeHtml(value) {
 
-  return String(
-    value ?? ""
-  )
-    .replace(
-      /&/g,
-      "&amp;"
-    )
-    .replace(
-      /</g,
-      "&lt;"
-    )
-    .replace(
-      />/g,
-      "&gt;"
-    )
-    .replace(
-      /"/g,
-      "&quot;"
-    )
-    .replace(
-      /'/g,
-      "&#039;"
-    );
-
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 
@@ -198,55 +163,33 @@ function escapeHtml(
    PAGE STATUS
 ========================================================= */
 
-function setLoadingStatus(
-  message
-) {
+function setLoadingStatus(message) {
 
-  const element =
-    byId("status");
-
+  const element = byId("status");
 
   if (element) {
-
-    element.textContent =
-      message;
-
+    element.textContent = message;
   }
-
 }
 
 
 function setReadyStatus() {
 
-  const element =
-    byId("status");
-
+  const element = byId("status");
 
   if (element) {
-
-    element.textContent =
-      "";
-
+    element.textContent = "";
   }
-
 }
 
 
-function setPartialStatus(
-  message
-) {
+function setPartialStatus(message) {
 
-  const element =
-    byId("status");
-
+  const element = byId("status");
 
   if (element) {
-
-    element.textContent =
-      message;
-
+    element.textContent = message;
   }
-
 }
 
 
@@ -256,95 +199,47 @@ function setPartialStatus(
 
 function getCurrentMonth() {
 
-  const now =
-    new Date();
+  const now = new Date();
 
+  const year = now.getFullYear();
 
-  const year =
-    now.getFullYear();
-
-
-  const month =
-    String(
-      now.getMonth() + 1
-    )
-      .padStart(
-        2,
-        "0"
-      );
-
+  const month = String(
+    now.getMonth() + 1
+  ).padStart(2, "0");
 
   return `${year}-${month}`;
-
 }
 
 
-function getCurrentMonthStart() {
-
-  return `${getCurrentMonth()}-01`;
-
-}
-
-
-function formatDate(
-  value
-) {
+function formatDate(value) {
 
   if (!value) {
-
     return "—";
-
   }
 
-
-  const raw =
-    String(
-      value
-    );
-
+  const raw = String(value);
 
   /*
    * PostgreSQL DATE values should not be
-   * shifted through a UTC conversion.
+   * shifted through UTC conversion.
    */
 
-  if (
-    /^\d{4}-\d{2}-\d{2}$/.test(
-      raw
-    )
-  ) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
 
     const [
       year,
       month,
       day
-    ] =
-      raw.split("-");
-
+    ] = raw.split("-");
 
     return `${day}/${month}/${year}`;
-
   }
 
+  const date = new Date(value);
 
-  const date =
-    new Date(
-      value
-    );
-
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-
-    return safeText(
-      value
-    );
-
+  if (Number.isNaN(date.getTime())) {
+    return safeText(value);
   }
-
 
   return date.toLocaleDateString(
     "en-KE",
@@ -354,45 +249,24 @@ function formatDate(
       year: "numeric"
     }
   );
-
 }
 
 
-function formatMonth(
-  value
-) {
+function formatMonth(value) {
 
   if (!value) {
-
     return "Current month";
-
   }
 
+  const raw = String(value);
 
-  const raw =
-    String(
-      value
-    );
+  const date = new Date(
+    `${raw}-01T00:00:00`
+  );
 
-
-  const date =
-    new Date(
-      `${raw}-01T00:00:00`
-    );
-
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-
-    return safeText(
-      value
-    );
-
+  if (Number.isNaN(date.getTime())) {
+    return safeText(value);
   }
-
 
   return date.toLocaleDateString(
     "en-KE",
@@ -401,7 +275,6 @@ function formatMonth(
       year: "numeric"
     }
   );
-
 }
 
 
@@ -409,87 +282,46 @@ function formatMonth(
    NUMBER HELPERS
 ========================================================= */
 
-function numberValue(
-  value
-) {
+function numberValue(value) {
 
-  const number =
-    Number(
-      value
-    );
+  const number = Number(value);
 
-
-  if (
-    !Number.isFinite(
-      number
-    )
-  ) {
-
+  if (!Number.isFinite(number)) {
     return 0;
-
   }
 
-
   return number;
-
 }
 
 
-function roundMoney(
-  value
-) {
+function roundMoney(value) {
 
   return Math.round(
     (
-      numberValue(
-        value
-      ) +
+      numberValue(value) +
       Number.EPSILON
-    ) *
-    100
+    ) * 100
   ) / 100;
-
 }
 
 
-function percentage(
-  numerator,
-  denominator
-) {
+function percentage(numerator, denominator) {
 
-  const top =
-    numberValue(
-      numerator
-    );
+  const top = numberValue(numerator);
 
+  const bottom = numberValue(denominator);
 
-  const bottom =
-    numberValue(
-      denominator
-    );
-
-
-  if (
-    bottom <= 0
-  ) {
-
+  if (bottom <= 0) {
     return 0;
-
   }
-
 
   return Math.min(
     100,
     Math.max(
       0,
-      (
-        top /
-        bottom
-      ) *
-      100
+      (top / bottom) * 100
     )
   );
-
 }
 
 
@@ -497,16 +329,11 @@ function percentage(
    MEMBER HELPERS
 ========================================================= */
 
-function memberName(
-  member
-) {
+function memberName(member) {
 
   if (!member) {
-
     return "Unknown member";
-
   }
-
 
   return (
     member.name ||
@@ -515,35 +342,23 @@ function memberName(
     member.email ||
     "Unknown member"
   );
-
 }
 
 
-function findMemberName(
-  memberId
-) {
+function findMemberName(memberId) {
 
   if (!memberId) {
-
     return "Unknown member";
-
   }
 
-
-  const member =
-    groupMembers.find(
-      item =>
-        item.id ===
-        memberId
-    );
-
+  const member = groupMembers.find(
+    item =>
+      item.id === memberId
+  );
 
   return member
-    ? memberName(
-        member
-      )
+    ? memberName(member)
     : "Unknown member";
-
 }
 
 
@@ -551,100 +366,56 @@ function findMemberName(
    STATUS HELPERS
 ========================================================= */
 
-function statusClass(
-  status
-) {
+function statusClass(status) {
 
-  const value =
-    String(
-      status || ""
-    )
-      .trim()
-      .toLowerCase();
+  const value = String(
+    status || ""
+  )
+    .trim()
+    .toLowerCase();
 
-
-  if (
-    value === "credit"
-  ) {
-
+  if (value === "credit") {
     return "status-credit";
-
   }
 
-
-  if (
-    value === "paid"
-  ) {
-
+  if (value === "paid") {
     return "status-paid";
-
   }
 
-
-  if (
-    value === "cleared"
-  ) {
-
+  if (value === "cleared") {
     return "status-cleared";
-
   }
 
-
-  if (
-    value === "partial"
-  ) {
-
+  if (value === "partial") {
     return "status-partial";
-
   }
 
-
-  if (
-    value === "pending"
-  ) {
-
+  if (value === "pending") {
     return "status-pending";
-
   }
 
-
-  if (
-    value === "outstanding"
-  ) {
-
+  if (value === "outstanding") {
     return "status-outstanding";
-
   }
-
 
   return "status-neutral";
-
 }
 
 
-function statusLabel(
-  status
-) {
+function statusLabel(status) {
 
   if (!status) {
-
     return "—";
-
   }
 
-
-  const value =
-    String(
-      status
-    )
-      .trim();
-
+  const value = String(
+    status
+  ).trim();
 
   return (
     value.charAt(0).toUpperCase() +
     value.slice(1)
   );
-
 }
 
 
@@ -656,18 +427,13 @@ function renderGroupHeader() {
 
   setText(
     "[data-group-name]",
-    currentGroup?.name ||
-      "CHAMA"
+    currentGroup?.name || "CHAMA"
   );
-
 
   setText(
     "[data-user-name]",
-    memberName(
-      currentMember
-    )
+    memberName(currentMember)
   );
-
 }
 
 
@@ -680,57 +446,51 @@ async function loadMembers() {
   const groupId =
     currentGroup?.id;
 
-
   if (!groupId) {
-
     throw new Error(
       "Current group could not be resolved."
     );
-
   }
-
 
   const {
     data,
     error
-  } =
-    await supabase
-      .from("members")
-      .select(`
-        id,
-        group_id,
-        name,
-        status,
-        onboarding_status,
-        member_number,
-        membership_number
-      `)
-      .eq(
-        "group_id",
-        groupId
-      )
-      .order(
-        "created_at",
-        {
-          ascending: true
-        }
-      );
-
+  } = await supabase
+    .from("members")
+    .select(`
+      id,
+      group_id,
+      name,
+      status,
+      onboarding_status,
+      member_number,
+      membership_number,
+      created_at
+    `)
+    .eq(
+      "group_id",
+      groupId
+    )
+    .order(
+      "created_at",
+      {
+        ascending: true
+      }
+    );
 
   if (error) {
-
     throw error;
-
   }
 
-
   groupMembers =
-    Array.isArray(
-      data
-    )
+    Array.isArray(data)
       ? data
       : [];
 
+  /*
+   * Active member definition remains compatible
+   * with existing CHAMA LIVE member records.
+   */
 
   activeMembers =
     groupMembers.filter(
@@ -743,22 +503,12 @@ async function loadMembers() {
             .trim()
             .toLowerCase();
 
-
         const onboarding =
           String(
             member.onboarding_status || ""
           )
             .trim()
             .toLowerCase();
-
-
-        /*
-         * Treat active/approved records as
-         * active members.
-         *
-         * Blank onboarding_status remains
-         * compatible with older records.
-         */
 
         return (
           status === "active" &&
@@ -768,31 +518,23 @@ async function loadMembers() {
             onboarding === "approved"
           )
         );
-
       }
     );
-
 
   setText(
     "#activeMembers",
     activeMembers.length
   );
 
-
   setText(
     "#membersCount",
     groupMembers.length
   );
 
-
   return {
-    members:
-      groupMembers,
-
-    activeMembers:
-      activeMembers
+    members: groupMembers,
+    activeMembers: activeMembers
   };
-
 }
 
 
@@ -800,149 +542,272 @@ async function loadMembers() {
    CANONICAL MONTHLY ACCOUNTING
 ========================================================= */
 
+function isSchemaCacheFunctionError(error) {
+
+  if (!error) {
+    return false;
+  }
+
+  const message =
+    String(
+      error.message ||
+      error.details ||
+      error.hint ||
+      error
+    ).toLowerCase();
+
+  return (
+    message.includes("schema cache") ||
+    message.includes("could not find the function") ||
+    message.includes("function public.get_canonical_member_monthly_status") ||
+    message.includes("p_group_id") &&
+    message.includes("p_month")
+  );
+}
+
+
+/* =========================================================
+   CALL PRIMARY CANONICAL RPC
+========================================================= */
+
+async function callCanonicalMonthlyStatus(
+  groupId,
+  month
+) {
+
+  console.log(
+    "CHAMA LIVE: calling canonical monthly RPC",
+    {
+      function:
+        "get_canonical_member_monthly_status",
+
+      p_group_id:
+        groupId,
+
+      p_month:
+        month
+    }
+  );
+
+  const {
+    data,
+    error
+  } = await supabase.rpc(
+    "get_canonical_member_monthly_status",
+    {
+      p_group_id: groupId,
+      p_month: month
+    }
+  );
+
+  if (error) {
+    throw error;
+  }
+
+  return Array.isArray(data)
+    ? data
+    : [];
+}
+
+
+/* =========================================================
+   FALLBACK MONTHLY RPC
+========================================================= */
+
+async function callFallbackMonthlyStatus(
+  groupId,
+  month
+) {
+
+  console.warn(
+    "CHAMA LIVE: canonical RPC unavailable through schema cache."
+  );
+
+  console.warn(
+    "CHAMA LIVE: using get_monthly_contribution_status temporarily."
+  );
+
+  const {
+    data,
+    error
+  } = await supabase.rpc(
+    "get_monthly_contribution_status",
+    {
+      p_group_id: groupId,
+      p_month: month
+    }
+  );
+
+  if (error) {
+    throw error;
+  }
+
+  return Array.isArray(data)
+    ? data
+    : [];
+}
+
+
+/* =========================================================
+   LOAD MONTHLY CONTRIBUTION STATUS
+========================================================= */
+
 async function loadMonthlyContributionStatus() {
 
   const groupId =
     currentGroup?.id;
 
-
   if (!groupId) {
-
     throw new Error(
       "Current group could not be resolved."
     );
-
   }
-
-
-  /*
-   * IMPORTANT:
-   *
-   * The live RPC signature is:
-   *
-   * get_canonical_member_monthly_status(
-   *     p_group_id uuid,
-   *     p_month text
-   * )
-   *
-   * Do NOT send p_month_start.
-   */
 
   const month =
     getCurrentMonth();
 
+  let data = null;
 
-  const {
-    data,
-    error
-  } =
-    await supabase.rpc(
-      "get_canonical_member_monthly_status",
-      {
-        p_group_id:
-          groupId,
+  let canonicalUsed = false;
 
-        p_month:
-          month
-      }
-    );
+  /*
+   * -------------------------------------------------------
+   * PRIMARY:
+   *
+   * get_canonical_member_monthly_status
+   * -------------------------------------------------------
+   */
 
+  try {
 
-  if (error) {
+    data =
+      await callCanonicalMonthlyStatus(
+        groupId,
+        month
+      );
 
-    throw error;
+    canonicalUsed = true;
 
   }
 
+  catch (canonicalError) {
+
+    console.error(
+      "CHAMA LIVE: canonical monthly RPC failed",
+      canonicalError
+    );
+
+    /*
+     * -----------------------------------------------------
+     * TEMPORARY COMPATIBILITY FALLBACK
+     *
+     * Only use fallback for schema-cache/API exposure
+     * problems.
+     *
+     * Do NOT hide genuine database/accounting errors.
+     * -----------------------------------------------------
+     */
+
+    if (
+      !isSchemaCacheFunctionError(
+        canonicalError
+      )
+    ) {
+
+      throw canonicalError;
+    }
+
+    data =
+      await callFallbackMonthlyStatus(
+        groupId,
+        month
+      );
+  }
 
   monthlyStatusRows =
-    Array.isArray(
-      data
-    )
+    Array.isArray(data)
       ? data
       : [];
-
 
   renderMonthlyContributionStatus(
     monthlyStatusRows,
     month
   );
 
+  /*
+   * Expose which RPC supplied the dashboard data
+   * for debugging without changing accounting.
+   */
+
+  if (!canonicalUsed) {
+
+    setPartialStatus(
+      "Dashboard loaded. Monthly accounting RPC is using temporary compatibility mode while the Supabase schema cache refreshes."
+    );
+
+  }
 
   return monthlyStatusRows;
-
 }
 
 
 /* =========================================================
-   NORMALIZE CANONICAL ROW
+   NORMALIZE MONTHLY ACCOUNTING ROW
 ========================================================= */
 
-function normalizeContributionRow(
-  row
-) {
+function normalizeContributionRow(row) {
 
   const monthlyDue =
     numberValue(
       row.monthly_due
     );
 
-
   const previousOutstanding =
     numberValue(
       row.previous_outstanding
     );
-
 
   const previousCredit =
     numberValue(
       row.previous_credit
     );
 
-
   const currentMonthPayment =
     numberValue(
       row.current_month_payment
     );
-
 
   const appliedThisMonth =
     numberValue(
       row.applied_this_month
     );
 
-
   const carryForward =
     numberValue(
       row.carry_forward
     );
-
 
   const currentOutstanding =
     numberValue(
       row.current_outstanding
     );
 
+  /*
+   * The RPC is authoritative.
+   *
+   * Fallback status is used ONLY if the RPC
+   * returned no status.
+   */
 
   let status =
-    row.status;
-
-
-  /*
-   * The canonical RPC is authoritative.
-   *
-   * Fallback status is only used if the RPC
-   * returns a null/empty status.
-   */
+    row.status ||
+    row.contribution_status;
 
   if (!status) {
 
-    if (
-      carryForward > 0
-    ) {
+    if (carryForward > 0) {
 
-      status =
-        "credit";
+      status = "credit";
 
     }
 
@@ -951,8 +816,7 @@ function normalizeContributionRow(
       appliedThisMonth >= monthlyDue
     ) {
 
-      status =
-        "paid";
+      status = "paid";
 
     }
 
@@ -960,20 +824,15 @@ function normalizeContributionRow(
       appliedThisMonth > 0
     ) {
 
-      status =
-        "partial";
+      status = "partial";
 
     }
 
     else {
 
-      status =
-        "outstanding";
-
+      status = "outstanding";
     }
-
   }
-
 
   return {
 
@@ -1035,14 +894,10 @@ function normalizeContributionRow(
       ),
 
     status:
-      String(
-        status
-      )
+      String(status)
         .trim()
         .toLowerCase()
-
   };
-
 }
 
 
@@ -1060,31 +915,22 @@ function renderMonthlyContributionStatus(
       normalizeContributionRow
     );
 
-
   const tbody =
     byId(
       "memberStatusRows"
     );
 
-
   setText(
     "#progressMonth",
-    formatMonth(
-      month
-    )
+    formatMonth(month)
   );
 
-
   if (!tbody) {
-
+    updateContributionSummary(rows);
     return;
-
   }
 
-
-  if (
-    rows.length === 0
-  ) {
+  if (rows.length === 0) {
 
     tbody.innerHTML = `
       <tr>
@@ -1094,16 +940,10 @@ function renderMonthlyContributionStatus(
       </tr>
     `;
 
-
-    updateContributionSummary(
-      rows
-    );
-
+    updateContributionSummary(rows);
 
     return;
-
   }
-
 
   tbody.innerHTML =
     rows
@@ -1114,7 +954,6 @@ function renderMonthlyContributionStatus(
             statusClass(
               row.status
             );
-
 
           return `
             <tr>
@@ -1169,16 +1008,11 @@ function renderMonthlyContributionStatus(
 
             </tr>
           `;
-
         }
       )
       .join("");
 
-
-  updateContributionSummary(
-    rows
-  );
-
+  updateContributionSummary(rows);
 }
 
 
@@ -1186,9 +1020,7 @@ function renderMonthlyContributionStatus(
    CONTRIBUTION SUMMARY
 ========================================================= */
 
-function updateContributionSummary(
-  rows
-) {
+function updateContributionSummary(rows) {
 
   const monthlyExpected =
     rows.reduce(
@@ -1203,7 +1035,6 @@ function updateContributionSummary(
       0
     );
 
-
   const monthlyApplied =
     rows.reduce(
       (
@@ -1216,7 +1047,6 @@ function updateContributionSummary(
         ),
       0
     );
-
 
   const carryForward =
     rows.reduce(
@@ -1231,7 +1061,6 @@ function updateContributionSummary(
       0
     );
 
-
   const outstanding =
     rows.reduce(
       (
@@ -1245,13 +1074,11 @@ function updateContributionSummary(
       0
     );
 
-
   /*
-   * Participation is based on actual
-   * payment received in the current month.
+   * Participation is based on actual payment
+   * received during the current month.
    *
-   * Do not count carry-forward by itself
-   * as a new contribution.
+   * Carry-forward alone is NOT a new payment.
    */
 
   const contributors =
@@ -1262,10 +1089,8 @@ function updateContributionSummary(
         ) > 0
     ).length;
 
-
   const memberCount =
     rows.length;
-
 
   const collectionRate =
     percentage(
@@ -1273,13 +1098,11 @@ function updateContributionSummary(
       monthlyExpected
     );
 
-
   const participationRate =
     percentage(
       contributors,
       memberCount
     );
-
 
   setText(
     "#monthlyExpected",
@@ -1288,14 +1111,12 @@ function updateContributionSummary(
     )
   );
 
-
   setText(
     "#monthlyCollected",
     money(
       monthlyApplied
     )
   );
-
 
   setText(
     "#monthlyOutstanding",
@@ -1304,12 +1125,10 @@ function updateContributionSummary(
     )
   );
 
-
   setText(
     "#contributorsCount",
     `${contributors} / ${memberCount}`
   );
-
 
   setText(
     "#contributorsPercentage",
@@ -1318,14 +1137,12 @@ function updateContributionSummary(
     )}%`
   );
 
-
   setText(
     "#progressPercentage",
     `${Math.round(
       collectionRate
     )}%`
   );
-
 
   setText(
     "#progressText",
@@ -1336,14 +1153,12 @@ function updateContributionSummary(
     )}`
   );
 
-
   setText(
     "#progressApplied",
     money(
       monthlyApplied
     )
   );
-
 
   setText(
     "#progressCarryForward",
@@ -1352,7 +1167,6 @@ function updateContributionSummary(
     )
   );
 
-
   setText(
     "#progressOutstanding",
     money(
@@ -1360,24 +1174,19 @@ function updateContributionSummary(
     )
   );
 
-
   const progressBar =
     byId(
       "progressBar"
     );
 
-
   const progressContainer =
     progressBar?.parentElement;
-
 
   if (progressBar) {
 
     progressBar.style.width =
       `${collectionRate}%`;
-
   }
-
 
   if (progressContainer) {
 
@@ -1389,9 +1198,7 @@ function updateContributionSummary(
         )
       )
     );
-
   }
-
 }
 
 
@@ -1404,15 +1211,12 @@ async function loadGroupBalance() {
   const groupId =
     currentGroup?.id;
 
-
   if (!groupId) {
 
     throw new Error(
       "Current group could not be resolved."
     );
-
   }
-
 
   /*
    * Contributions
@@ -1431,15 +1235,12 @@ async function loadGroupBalance() {
         groupId
       );
 
-
   if (
     contributionResult.error
   ) {
 
     throw contributionResult.error;
-
   }
-
 
   const totalContributions =
     (
@@ -1457,10 +1258,9 @@ async function loadGroupBalance() {
         0
       );
 
-
   /*
-   * Approved expenses only reduce the
-   * available group balance.
+   * Approved expenses only reduce
+   * the available group balance.
    */
 
   const expenseResult =
@@ -1474,15 +1274,12 @@ async function loadGroupBalance() {
         groupId
       );
 
-
   if (
     expenseResult.error
   ) {
 
     throw expenseResult.error;
-
   }
-
 
   const approvedExpenses =
     (
@@ -1498,19 +1295,9 @@ async function loadGroupBalance() {
               .trim()
               .toLowerCase();
 
-
-          /*
-           * Keep approved expenses only.
-           *
-           * For installations where approval_status
-           * is blank/null, do not treat the expense
-           * as approved automatically.
-           */
-
           return (
             status === "approved"
           );
-
         }
       )
       .reduce(
@@ -1525,12 +1312,10 @@ async function loadGroupBalance() {
         0
       );
 
-
   const openingBalance =
     numberValue(
       currentGroup?.opening_balance
     );
-
 
   const balance =
     roundMoney(
@@ -1539,14 +1324,12 @@ async function loadGroupBalance() {
       approvedExpenses
     );
 
-
   setText(
     "#currentBalance",
     money(
       balance
     )
   );
-
 
   return {
 
@@ -1561,9 +1344,7 @@ async function loadGroupBalance() {
 
     balance:
       balance
-
   };
-
 }
 
 
@@ -1576,15 +1357,12 @@ async function loadRecentContributions() {
   const groupId =
     currentGroup?.id;
 
-
   if (!groupId) {
 
     throw new Error(
       "Current group could not be resolved."
     );
-
   }
-
 
   const {
     data,
@@ -1619,38 +1397,25 @@ async function loadRecentContributions() {
         10
       );
 
-
   if (error) {
-
     throw error;
-
   }
 
-
   const rows =
-    Array.isArray(
-      data
-    )
+    Array.isArray(data)
       ? data
       : [];
-
 
   const tbody =
     byId(
       "recentContributionRows"
     );
 
-
   if (!tbody) {
-
     return rows;
-
   }
 
-
-  if (
-    rows.length === 0
-  ) {
+  if (rows.length === 0) {
 
     tbody.innerHTML = `
       <tr>
@@ -1660,11 +1425,8 @@ async function loadRecentContributions() {
       </tr>
     `;
 
-
     return rows;
-
   }
-
 
   tbody.innerHTML =
     rows
@@ -1697,14 +1459,11 @@ async function loadRecentContributions() {
 
             </tr>
           `;
-
         }
       )
       .join("");
 
-
   return rows;
-
 }
 
 
@@ -1717,15 +1476,12 @@ async function loadRecentExpenses() {
   const groupId =
     currentGroup?.id;
 
-
   if (!groupId) {
 
     throw new Error(
       "Current group could not be resolved."
     );
-
   }
-
 
   const {
     data,
@@ -1738,7 +1494,8 @@ async function loadRecentExpenses() {
         description,
         amount,
         date,
-        approval_status
+        approval_status,
+        created_at
       `)
       .eq(
         "group_id",
@@ -1760,38 +1517,25 @@ async function loadRecentExpenses() {
         10
       );
 
-
   if (error) {
-
     throw error;
-
   }
 
-
   const rows =
-    Array.isArray(
-      data
-    )
+    Array.isArray(data)
       ? data
       : [];
-
 
   const tbody =
     byId(
       "recentExpenseRows"
     );
 
-
   if (!tbody) {
-
     return rows;
-
   }
 
-
-  if (
-    rows.length === 0
-  ) {
+  if (rows.length === 0) {
 
     tbody.innerHTML = `
       <tr>
@@ -1801,11 +1545,8 @@ async function loadRecentExpenses() {
       </tr>
     `;
 
-
     return rows;
-
   }
-
 
   tbody.innerHTML =
     rows
@@ -1820,12 +1561,10 @@ async function loadRecentExpenses() {
               .trim()
               .toLowerCase();
 
-
           const badgeClass =
             statusClass(
               status
             );
-
 
           return `
             <tr>
@@ -1857,14 +1596,11 @@ async function loadRecentExpenses() {
 
             </tr>
           `;
-
         }
       )
       .join("");
 
-
   return rows;
-
 }
 
 
@@ -1877,20 +1613,17 @@ async function loadUpcomingMeetings() {
   const groupId =
     currentGroup?.id;
 
-
   if (!groupId) {
 
     throw new Error(
       "Current group could not be resolved."
     );
-
   }
-
 
   /*
    * IMPORTANT:
    *
-   * The live meetings table uses:
+   * Live meetings table uses:
    *
    *     date
    *
@@ -1902,16 +1635,17 @@ async function loadUpcomingMeetings() {
   const today =
     new Date();
 
-
   const todayString =
     [
       today.getFullYear(),
+
       String(
         today.getMonth() + 1
       ).padStart(
         2,
         "0"
       ),
+
       String(
         today.getDate()
       ).padStart(
@@ -1919,7 +1653,6 @@ async function loadUpcomingMeetings() {
         "0"
       )
     ].join("-");
-
 
   const {
     data,
@@ -1952,38 +1685,25 @@ async function loadUpcomingMeetings() {
         10
       );
 
-
   if (error) {
-
     throw error;
-
   }
 
-
   const rows =
-    Array.isArray(
-      data
-    )
+    Array.isArray(data)
       ? data
       : [];
-
 
   const tbody =
     byId(
       "upcomingMeetingRows"
     );
 
-
   if (!tbody) {
-
     return rows;
-
   }
 
-
-  if (
-    rows.length === 0
-  ) {
+  if (rows.length === 0) {
 
     tbody.innerHTML = `
       <tr>
@@ -1993,11 +1713,8 @@ async function loadUpcomingMeetings() {
       </tr>
     `;
 
-
     return rows;
-
   }
-
 
   tbody.innerHTML =
     rows
@@ -2012,12 +1729,10 @@ async function loadUpcomingMeetings() {
               .trim()
               .toLowerCase();
 
-
           const badgeClass =
             statusClass(
               status
             );
-
 
           return `
             <tr>
@@ -2056,14 +1771,11 @@ async function loadUpcomingMeetings() {
 
             </tr>
           `;
-
         }
       )
       .join("");
 
-
   return rows;
-
 }
 
 
@@ -2077,18 +1789,18 @@ function renderSectionError(
   colspan
 ) {
 
+  if (!elementId) {
+    return;
+  }
+
   const tbody =
     byId(
       elementId
     );
 
-
   if (!tbody) {
-
     return;
-
   }
-
 
   tbody.innerHTML = `
     <tr>
@@ -2101,7 +1813,6 @@ function renderSectionError(
       </td>
     </tr>
   `;
-
 }
 
 
@@ -2129,18 +1840,14 @@ async function runSection(
       error
     );
 
-
     renderSectionError(
       errorElementId,
       `${name} could not be loaded.`,
       colspan
     );
 
-
     return null;
-
   }
-
 }
 
 
@@ -2156,7 +1863,6 @@ async function loadDashboard() {
     "Loading dashboard..."
   );
 
-
   /*
    * -------------------------------------------------------
    * AUTHENTICATION
@@ -2165,7 +1871,6 @@ async function loadDashboard() {
 
   currentUser =
     await requireAuth();
-
 
   /*
    * -------------------------------------------------------
@@ -2176,7 +1881,6 @@ async function loadDashboard() {
   currentMember =
     await getMyMember();
 
-
   /*
    * -------------------------------------------------------
    * CURRENT GROUP
@@ -2186,59 +1890,26 @@ async function loadDashboard() {
   currentGroup =
     await getMyGroup();
 
-
   if (!currentGroup?.id) {
 
     throw new Error(
       "Your current group could not be resolved."
     );
-
   }
 
-
   renderGroupHeader();
-
 
   /*
    * -------------------------------------------------------
    * MEMBERS FIRST
-   *
-   * Recent contribution names depend on this
-   * member map.
    * -------------------------------------------------------
    */
 
-  let membersLoaded =
-    false;
-
-
-  try {
-
-    await loadMembers();
-
-    membersLoaded =
-      true;
-
-  }
-
-  catch (error) {
-
-    console.error(
-      "CHAMA LIVE: members failed",
-      error
-    );
-
-    throw error;
-
-  }
-
+  await loadMembers();
 
   /*
    * -------------------------------------------------------
    * INDEPENDENT DASHBOARD SECTIONS
-   *
-   * One failed section should NOT prevent the
-   * other sections from displaying.
    * -------------------------------------------------------
    */
 
@@ -2282,10 +1953,9 @@ async function loadDashboard() {
 
     ]);
 
-
   /*
    * -------------------------------------------------------
-   * DETERMINE WHETHER ANY SECTION FAILED
+   * CHECK UNEXPECTED FAILURES
    * -------------------------------------------------------
    */
 
@@ -2296,30 +1966,32 @@ async function loadDashboard() {
         "rejected"
     );
 
-
-  /*
-   * The runSection wrapper normally converts
-   * failures into fulfilled null results.
-   *
-   * Keep this check for unexpected failures.
-   */
-
   if (failed) {
 
     setPartialStatus(
-      "Dashboard loaded with some sections unavailable."
+      "Dashboard loaded with some unavailable sections."
     );
 
   }
+  else {
 
-  else if (
-    membersLoaded
-  ) {
+    /*
+     * Do not erase the compatibility warning
+     * produced by the monthly RPC fallback.
+     */
 
-    setReadyStatus();
+    const statusText =
+      byId("status")?.textContent || "";
 
+    if (
+      !statusText.includes(
+        "temporary compatibility mode"
+      )
+    ) {
+
+      setReadyStatus();
+    }
   }
-
 }
 
 
@@ -2342,33 +2014,15 @@ async function bootDashboard() {
       error
     );
 
-
     setLoadingStatus(
       "Dashboard failed to load."
     );
 
-
     showError(
       error
     );
-
   }
-
 }
-
-
-/* =========================================================
-   INITIALIZE
-========================================================= */
-
-document.addEventListener(
-  "DOMContentLoaded",
-  () => {
-
-    bootDashboard();
-
-  }
-);
 
 
 /* =========================================================
@@ -2382,13 +2036,9 @@ function initializeLogout() {
       "logout"
     );
 
-
   if (!logoutButton) {
-
     return;
-
   }
-
 
   logoutButton.addEventListener(
     "click",
@@ -2397,10 +2047,8 @@ function initializeLogout() {
       logoutButton.disabled =
         true;
 
-
       logoutButton.textContent =
         "Signing out...";
-
 
       try {
 
@@ -2409,13 +2057,9 @@ function initializeLogout() {
         } =
           await supabase.auth.signOut();
 
-
         if (error) {
-
           throw error;
-
         }
-
 
         window.location.replace(
           "login.html"
@@ -2430,32 +2074,32 @@ function initializeLogout() {
           error
         );
 
-
         logoutButton.disabled =
           false;
-
 
         logoutButton.textContent =
           "Sign out";
 
-
         showError(
           error
         );
-
       }
-
     }
   );
-
 }
 
+
+/* =========================================================
+   INITIALIZE
+========================================================= */
 
 document.addEventListener(
   "DOMContentLoaded",
   () => {
 
     initializeLogout();
+
+    bootDashboard();
 
   }
 );
@@ -2466,5 +2110,5 @@ document.addEventListener(
 ========================================================= */
 
 console.log(
-  "CHAMA LIVE: dashboard.js loaded"
+  "CHAMA LIVE: dashboard.js loaded — canonical RPC primary, compatibility fallback enabled"
 );
