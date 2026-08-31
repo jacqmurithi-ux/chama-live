@@ -1,17 +1,16 @@
 /* =========================================================
    CHAMA LIVE — AUTHENTICATION & CURRENT GROUP
+   CANONICAL GROUP-SCOPED AUTHENTICATION
 
-   Group-scoped authentication.
-
-   Architecture:
+   SECURITY MODEL
    ---------------------------------------------------------
    Supabase Auth user
           ↓
-   members.auth_user_id
-          ↓
-   members.user_id fallback
+   public.get_my_member()
           ↓
    members.group_id
+          ↓
+   public.my_group_id()
           ↓
    groups.id
 
@@ -20,6 +19,10 @@
    - localStorage
    - form fields
    - query parameters
+   - arbitrary JavaScript state
+
+   The authenticated database functions determine identity
+   and group membership.
 ========================================================= */
 
 import {
@@ -65,6 +68,11 @@ const PUBLIC_PAGES = [
   "reset-password.html"
 
 ];
+
+
+export {
+  PUBLIC_PAGES
+};
 
 
 /* =========================================================
@@ -171,6 +179,58 @@ export async function getCurrentUser() {
 
 
 /* =========================================================
+   AUTHENTICATED MEMBER
+========================================================= */
+
+/*
+ * IMPORTANT
+ * ---------------------------------------------------------
+ * Do not query members using a browser-supplied user id
+ * as the authorization mechanism.
+ *
+ * get_my_member() derives the authenticated identity
+ * inside PostgreSQL from auth.uid().
+ */
+
+async function getMemberByAuthUser() {
+
+  const {
+    data,
+    error
+  } =
+    await supabase.rpc(
+      "get_my_member"
+    );
+
+
+  if (error) {
+
+    console.error(
+      "CHAMA LIVE: get_my_member RPC failed",
+      error
+    );
+
+    throw error;
+
+  }
+
+
+  if (
+    !data ||
+    data.length === 0
+  ) {
+
+    return null;
+
+  }
+
+
+  return data[0];
+
+}
+
+
+/* =========================================================
    REQUIRE AUTH
 ========================================================= */
 
@@ -204,14 +264,12 @@ export async function requireAuth() {
 
 
   /*
-   * Protected pages also verify that the
-   * account is approved/active.
+   * Resolve member through the authenticated
+   * database function.
    */
 
   const member =
-    await getMemberByAuthUser(
-      session.user.id
-    );
+    await getMemberByAuthUser();
 
 
   if (!member) {
@@ -258,18 +316,14 @@ export async function requireAuth() {
       .toLowerCase();
 
 
-  /*
-   * Pending accounts cannot enter
-   * protected application pages.
-   */
+  /* -------------------------------------------------------
+     PENDING
+  ------------------------------------------------------- */
 
   if (
-    onboardingStatus ===
-      "pending" ||
-    onboardingStatus ===
-      "submitted" ||
-    memberStatus ===
-      "pending"
+    onboardingStatus === "pending" ||
+    onboardingStatus === "submitted" ||
+    memberStatus === "pending"
   ) {
 
     redirectToReview();
@@ -281,15 +335,13 @@ export async function requireAuth() {
   }
 
 
-  /*
-   * Rejected accounts cannot enter.
-   */
+  /* -------------------------------------------------------
+     REJECTED
+  ------------------------------------------------------- */
 
   if (
-    onboardingStatus ===
-      "rejected" ||
-    memberStatus ===
-      "rejected"
+    onboardingStatus === "rejected" ||
+    memberStatus === "rejected"
   ) {
 
     await supabase.auth.signOut();
@@ -303,15 +355,13 @@ export async function requireAuth() {
   }
 
 
-  /*
-   * Suspended/inactive accounts cannot enter.
-   */
+  /* -------------------------------------------------------
+     SUSPENDED / INACTIVE
+  ------------------------------------------------------- */
 
   if (
-    memberStatus ===
-      "suspended" ||
-    memberStatus ===
-      "inactive"
+    memberStatus === "suspended" ||
+    memberStatus === "inactive"
   ) {
 
     await supabase.auth.signOut();
@@ -331,145 +381,13 @@ export async function requireAuth() {
 
 
 /* =========================================================
-   MEMBER QUERY
-========================================================= */
-
-async function getMemberByAuthUser(
-  userId
-) {
-
-  let {
-    data,
-    error
-  } =
-    await supabase
-      .from("members")
-      .select(`
-        id,
-        group_id,
-        user_id,
-        auth_user_id,
-        member_number,
-        membership_number,
-        name,
-        phone,
-        email,
-        role,
-        join_date,
-        status,
-        onboarding_status,
-        invited_at,
-        activated_at,
-        created_at
-      `)
-      .eq(
-        "auth_user_id",
-        userId
-      )
-      .order(
-        "created_at",
-        {
-          ascending: true
-        }
-      )
-      .limit(1);
-
-
-  /*
-   * Compatibility fallback.
-   */
-
-  if (
-    (!data || data.length === 0) &&
-    !error
-  ) {
-
-    const fallback =
-      await supabase
-        .from("members")
-        .select(`
-          id,
-          group_id,
-          user_id,
-          auth_user_id,
-          member_number,
-          membership_number,
-          name,
-          phone,
-          email,
-          role,
-          join_date,
-          status,
-          onboarding_status,
-          invited_at,
-          activated_at,
-          created_at
-        `)
-        .eq(
-          "user_id",
-          userId
-        )
-        .order(
-          "created_at",
-          {
-            ascending: true
-          }
-        )
-        .limit(1);
-
-
-    if (fallback.error) {
-      throw fallback.error;
-    }
-
-
-    data =
-      fallback.data;
-
-  }
-
-
-  if (error) {
-
-    console.error(
-      "CHAMA LIVE: member lookup failed",
-      error
-    );
-
-    throw error;
-
-  }
-
-
-  if (
-    !data ||
-    data.length === 0
-  ) {
-
-    return null;
-
-  }
-
-
-  return data[0];
-
-}
-
-
-/* =========================================================
    GET MY MEMBER
 ========================================================= */
 
 export async function getMyMember() {
 
-  const user =
-    await getCurrentUser();
-
-
   const member =
-    await getMemberByAuthUser(
-      user.id
-    );
+    await getMemberByAuthUser();
 
 
   if (!member) {
@@ -501,11 +419,28 @@ export async function getMyMember() {
 
 export async function getMyGroupId() {
 
-  const member =
-    await getMyMember();
+  const {
+    data,
+    error
+  } =
+    await supabase.rpc(
+      "my_group_id"
+    );
 
 
-  if (!member.group_id) {
+  if (error) {
+
+    console.error(
+      "CHAMA LIVE: my_group_id RPC failed",
+      error
+    );
+
+    throw error;
+
+  }
+
+
+  if (!data) {
 
     throw new Error(
       "No group is associated with your member account."
@@ -514,7 +449,7 @@ export async function getMyGroupId() {
   }
 
 
-  return member.group_id;
+  return data;
 
 }
 
@@ -641,10 +576,20 @@ export function money(
   amount
 ) {
 
-  return (
-    "KSh " +
+  const numericAmount =
     Number(
       amount || 0
+    );
+
+
+  return (
+    "KSh " +
+    (
+      Number.isFinite(
+        numericAmount
+      )
+        ? numericAmount
+        : 0
     ).toLocaleString(
       "en-KE",
       {
