@@ -1,14 +1,26 @@
 /* =========================================================
    CHAMA LIVE — REPORTS
-   COMPLETE STABLE VERSION
+   COMPLETE STABLE + VISUALLY ENHANCED VERSION
 
    GROUP-SCOPED REPORTING
+   ---------------------------------------------------------
    Uses:
        members.name
        members.id
        members.group_id
 
-   Loaded dynamically by layout.js.
+   FEATURES
+   ---------------------------------------------------------
+   • Group-scoped financial reports
+   • Membership summary
+   • Meeting summary
+   • Contribution breakdown
+   • Expense breakdown
+   • Detailed contribution report
+   • Detailed approved expense report
+   • Date-range filtering
+   • Reset reporting period
+   • Group/member context verification
 
    Required export:
        initReports()
@@ -42,7 +54,7 @@ let meetings = [];
 
 
 /* =========================================================
-   DOM
+   DOM HELPERS
 ========================================================= */
 
 function el(id) {
@@ -51,11 +63,13 @@ function el(id) {
 
 
 function setText(id, value) {
+
   const element = el(id);
 
   if (element) {
     element.textContent = value ?? "—";
   }
+
 }
 
 
@@ -64,15 +78,21 @@ function setText(id, value) {
 ========================================================= */
 
 function money(value) {
-  const amount = Number(value || 0);
+
+  const amount =
+    Number(value || 0);
 
   return (
     "KSh " +
-    amount.toLocaleString("en-KE", {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2
-    })
+    amount.toLocaleString(
+      "en-KE",
+      {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      }
+    )
   );
+
 }
 
 
@@ -81,12 +101,14 @@ function money(value) {
 ========================================================= */
 
 function escapeHtml(value) {
+
   return String(value ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+
 }
 
 
@@ -95,35 +117,44 @@ function escapeHtml(value) {
 ========================================================= */
 
 function showError(error) {
+
   console.error(
     "CHAMA LIVE: Reports error",
     error
   );
 
-  const errorElement = el("error");
+  const errorElement =
+    el("error");
 
   if (!errorElement) {
     return;
   }
 
-  errorElement.hidden = false;
+  errorElement.hidden =
+    false;
 
   errorElement.textContent =
     error?.message ||
     "Unable to load reports.";
+
 }
 
 
 function clearError() {
-  const errorElement = el("error");
+
+  const errorElement =
+    el("error");
 
   if (!errorElement) {
     return;
   }
 
-  errorElement.hidden = true;
+  errorElement.hidden =
+    true;
 
-  errorElement.textContent = "";
+  errorElement.textContent =
+    "";
+
 }
 
 
@@ -132,29 +163,38 @@ function clearError() {
 ========================================================= */
 
 function showStatus(message) {
-  const statusElement = el("status");
+
+  const statusElement =
+    el("status");
 
   if (!statusElement) {
     return;
   }
 
-  statusElement.hidden = false;
+  statusElement.hidden =
+    !message;
 
   statusElement.textContent =
     message || "";
+
 }
 
 
 function clearStatus() {
-  const statusElement = el("status");
+
+  const statusElement =
+    el("status");
 
   if (!statusElement) {
     return;
   }
 
-  statusElement.hidden = true;
+  statusElement.hidden =
+    true;
 
-  statusElement.textContent = "";
+  statusElement.textContent =
+    "";
+
 }
 
 
@@ -163,37 +203,59 @@ function clearStatus() {
 ========================================================= */
 
 function today() {
-  const date = new Date();
+
+  const date =
+    new Date();
 
   return [
     date.getFullYear(),
-    String(date.getMonth() + 1).padStart(2, "0"),
-    String(date.getDate()).padStart(2, "0")
+
+    String(
+      date.getMonth() + 1
+    ).padStart(2, "0"),
+
+    String(
+      date.getDate()
+    ).padStart(2, "0")
+
   ].join("-");
+
 }
 
 
 function firstDayOfMonth() {
-  const date = new Date();
+
+  const date =
+    new Date();
 
   return [
     date.getFullYear(),
-    String(date.getMonth() + 1).padStart(2, "0"),
+
+    String(
+      date.getMonth() + 1
+    ).padStart(2, "0"),
+
     "01"
+
   ].join("-");
+
 }
 
 
 function normalizeDate(value) {
+
   if (!value) {
     return "";
   }
 
-  return String(value).substring(0, 10);
+  return String(value)
+    .substring(0, 10);
+
 }
 
 
 function formatDate(value) {
+
   const dateValue =
     normalizeDate(value);
 
@@ -202,9 +264,15 @@ function formatDate(value) {
   }
 
   const date =
-    new Date(`${dateValue}T00:00:00`);
+    new Date(
+      `${dateValue}T00:00:00`
+    );
 
-  if (Number.isNaN(date.getTime())) {
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
     return dateValue;
   }
 
@@ -216,28 +284,38 @@ function formatDate(value) {
       day: "numeric"
     }
   );
+
 }
 
 
 function monthKey(value) {
+
   const date =
     normalizeDate(value);
 
   return date
     ? date.substring(0, 7)
     : "";
+
 }
 
 
 function formatMonth(value) {
+
   if (!value) {
     return "—";
   }
 
   const date =
-    new Date(`${value}-01T00:00:00`);
+    new Date(
+      `${value}-01T00:00:00`
+    );
 
-  if (Number.isNaN(date.getTime())) {
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
     return value;
   }
 
@@ -248,6 +326,7 @@ function formatMonth(value) {
       month: "long"
     }
   );
+
 }
 
 
@@ -256,7 +335,9 @@ function formatMonth(value) {
 ========================================================= */
 
 function getDateRange() {
+
   return {
+
     from:
       normalizeDate(
         el("fromDate")?.value
@@ -266,7 +347,9 @@ function getDateRange() {
       normalizeDate(
         el("toDate")?.value
       )
+
   };
+
 }
 
 
@@ -275,6 +358,7 @@ function inDateRange(
   from,
   to
 ) {
+
   const date =
     normalizeDate(value);
 
@@ -282,37 +366,54 @@ function inDateRange(
     return false;
   }
 
-  if (from && date < from) {
+  if (
+    from &&
+    date < from
+  ) {
     return false;
   }
 
-  if (to && date > to) {
+  if (
+    to &&
+    date > to
+  ) {
     return false;
   }
 
   return true;
+
 }
 
 
 function validateDateRange() {
+
   const {
     from,
     to
-  } = getDateRange();
+  } =
+    getDateRange();
 
-  if (from && to && from > to) {
+  if (
+    from &&
+    to &&
+    from > to
+  ) {
+
     throw new Error(
       "From Date cannot be later than To Date."
     );
+
   }
+
 }
 
 
 /* =========================================================
-   SET DEFAULT DATES
+   DEFAULT DATES
 ========================================================= */
 
 function setDefaultDates() {
+
   const fromInput =
     el("fromDate");
 
@@ -320,19 +421,24 @@ function setDefaultDates() {
     el("toDate");
 
   if (fromInput) {
+
     fromInput.value =
       firstDayOfMonth();
+
   }
 
   if (toInput) {
+
     toInput.value =
       today();
+
   }
+
 }
 
 
 /* =========================================================
-   CURRENT GROUP CONTEXT
+   GROUP CONTEXT
 ========================================================= */
 
 async function loadContext() {
@@ -344,15 +450,19 @@ async function loadContext() {
     await getMyMember();
 
   if (!currentMember) {
+
     throw new Error(
       "No member record is linked to this account."
     );
+
   }
 
   if (!currentMember.group_id) {
+
     throw new Error(
       "Your member record has no group."
     );
+
   }
 
   currentGroupId =
@@ -362,56 +472,56 @@ async function loadContext() {
     await getMyGroup();
 
   if (!currentGroup) {
+
     throw new Error(
       "Group information could not be found."
     );
+
   }
 
   if (
     String(currentGroup.id) !==
     String(currentGroupId)
   ) {
+
     throw new Error(
       "Current group context could not be verified."
     );
+
   }
 
   renderContext();
 
-  console.log(
-    "CHAMA LIVE: Reports group context",
-    {
-      userId: currentUser?.id,
-      memberId: currentMember?.id,
-      groupId: currentGroupId,
-      groupName: currentGroup?.name
-    }
-  );
 }
 
-
-/* =========================================================
-   RENDER GROUP CONTEXT
-========================================================= */
 
 function renderContext() {
 
   document
-    .querySelectorAll("[data-group-name]")
+    .querySelectorAll(
+      "[data-group-name]"
+    )
     .forEach(element => {
+
       element.textContent =
         currentGroup?.name ||
         "CHAMA";
+
     });
 
 
   document
-    .querySelectorAll("[data-user-name]")
+    .querySelectorAll(
+      "[data-user-name]"
+    )
     .forEach(element => {
+
       element.textContent =
         currentMember?.name ||
         "Member";
+
     });
+
 }
 
 
@@ -457,6 +567,7 @@ async function loadMembers() {
 
   members =
     result.data || [];
+
 }
 
 
@@ -500,6 +611,7 @@ async function loadContributions() {
 
   contributions =
     result.data || [];
+
 }
 
 
@@ -541,6 +653,7 @@ async function loadExpenses() {
 
   expenses =
     result.data || [];
+
 }
 
 
@@ -582,11 +695,12 @@ async function loadMeetings() {
 
   meetings =
     result.data || [];
+
 }
 
 
 /* =========================================================
-   LOAD REPORT DATA
+   LOAD DATA
 ========================================================= */
 
 async function loadData() {
@@ -603,6 +717,7 @@ async function loadData() {
   ]);
 
   clearStatus();
+
 }
 
 
@@ -627,11 +742,12 @@ function memberName(memberId) {
     member?.name ||
     "Unknown member"
   );
+
 }
 
 
 /* =========================================================
-   FILTERED CONTRIBUTIONS
+   FILTERED DATA
 ========================================================= */
 
 function filteredContributions() {
@@ -639,7 +755,8 @@ function filteredContributions() {
   const {
     from,
     to
-  } = getDateRange();
+  } =
+    getDateRange();
 
   return contributions.filter(
     contribution =>
@@ -649,19 +766,17 @@ function filteredContributions() {
         to
       )
   );
+
 }
 
-
-/* =========================================================
-   FILTERED EXPENSES
-========================================================= */
 
 function filteredExpenses() {
 
   const {
     from,
     to
-  } = getDateRange();
+  } =
+    getDateRange();
 
   return expenses.filter(
     expense =>
@@ -671,19 +786,17 @@ function filteredExpenses() {
         to
       )
   );
+
 }
 
-
-/* =========================================================
-   FILTERED MEETINGS
-========================================================= */
 
 function filteredMeetings() {
 
   const {
     from,
     to
-  } = getDateRange();
+  } =
+    getDateRange();
 
   return meetings.filter(
     meeting =>
@@ -693,6 +806,7 @@ function filteredMeetings() {
         to
       )
   );
+
 }
 
 
@@ -707,6 +821,37 @@ function expenseStatus(expense) {
   )
     .trim()
     .toLowerCase();
+
+}
+
+
+/* =========================================================
+   STATUS BADGE
+========================================================= */
+
+function statusBadge(status) {
+
+  const normalized =
+    String(status || "")
+      .trim()
+      .toLowerCase();
+
+  const label =
+    normalized
+      ? normalized.charAt(0).toUpperCase() +
+        normalized.slice(1)
+      : "Unknown";
+
+  return `
+    <span
+      class="report-status report-status-${escapeHtml(
+        normalized || "unknown"
+      )}"
+    >
+      ${escapeHtml(label)}
+    </span>
+  `;
+
 }
 
 
@@ -815,6 +960,24 @@ function renderFinancialSummary() {
   );
 
 
+  const balanceElement =
+    el("currentBalance");
+
+  if (balanceElement) {
+
+    balanceElement.classList.toggle(
+      "negative",
+      balance < 0
+    );
+
+    balanceElement.classList.toggle(
+      "positive",
+      balance >= 0
+    );
+
+  }
+
+
   const activeMembers =
     members.filter(
       member =>
@@ -831,6 +994,18 @@ function renderFinancialSummary() {
     "activeMembers",
     activeMembers
   );
+
+
+  setText(
+    "reportContributionEntries",
+    contributionRows.length
+  );
+
+  setText(
+    "reportExpenseEntries",
+    expenseRows.length
+  );
+
 }
 
 
@@ -876,17 +1051,20 @@ function renderMeetingSummary() {
     "cancelledMeetings",
     countStatus("cancelled")
   );
+
 }
 
 
 /* =========================================================
-   CONTRIBUTION MONTHLY BREAKDOWN
+   CONTRIBUTION BREAKDOWN
 ========================================================= */
 
 function renderContributionBreakdown() {
 
   const container =
-    el("contributionBreakdownRows");
+    el(
+      "contributionBreakdownRows"
+    );
 
   if (!container) {
     return;
@@ -933,60 +1111,82 @@ function renderContributionBreakdown() {
       .reverse();
 
 
-  if (months.length === 0) {
+  if (!months.length) {
 
     container.innerHTML = `
       <tr>
-        <td colspan="3">
-          No contributions found for this period.
+        <td
+          colspan="3"
+          class="report-empty"
+        >
+          <div class="empty-state">
+            <div class="empty-icon">₿</div>
+            <strong>No contribution data</strong>
+            <span>
+              No contributions were recorded
+              for this reporting period.
+            </span>
+          </div>
         </td>
       </tr>
     `;
 
     return;
+
   }
 
 
   container.innerHTML =
-    months.map(month => {
+    months
+      .map(month => {
 
-      const row =
-        grouped[month];
+        const row =
+          grouped[month];
 
-      return `
-        <tr>
-          <td>
-            ${escapeHtml(
-              formatMonth(month)
-            )}
-          </td>
+        return `
+          <tr>
 
-          <td>
-            ${row.entries}
-          </td>
+            <td>
+              <strong>
+                ${escapeHtml(
+                  formatMonth(month)
+                )}
+              </strong>
+            </td>
 
-          <td>
-            <strong>
-              ${escapeHtml(
-                money(row.amount)
-              )}
-            </strong>
-          </td>
-        </tr>
-      `;
+            <td>
+              <span class="table-count">
+                ${row.entries}
+              </span>
+            </td>
 
-    }).join("");
+            <td>
+              <strong class="money-value">
+                ${escapeHtml(
+                  money(row.amount)
+                )}
+              </strong>
+            </td>
+
+          </tr>
+        `;
+
+      })
+      .join("");
+
 }
 
 
 /* =========================================================
-   EXPENSE MONTHLY BREAKDOWN
+   EXPENSE BREAKDOWN
 ========================================================= */
 
 function renderExpenseBreakdown() {
 
   const container =
-    el("expenseBreakdownRows");
+    el(
+      "expenseBreakdownRows"
+    );
 
   if (!container) {
     return;
@@ -1036,60 +1236,82 @@ function renderExpenseBreakdown() {
       .reverse();
 
 
-  if (months.length === 0) {
+  if (!months.length) {
 
     container.innerHTML = `
       <tr>
-        <td colspan="3">
-          No approved expenses found for this period.
+        <td
+          colspan="3"
+          class="report-empty"
+        >
+          <div class="empty-state">
+            <div class="empty-icon">—</div>
+            <strong>No approved expenses</strong>
+            <span>
+              No approved expenses were found
+              for this reporting period.
+            </span>
+          </div>
         </td>
       </tr>
     `;
 
     return;
+
   }
 
 
   container.innerHTML =
-    months.map(month => {
+    months
+      .map(month => {
 
-      const row =
-        grouped[month];
+        const row =
+          grouped[month];
 
-      return `
-        <tr>
-          <td>
-            ${escapeHtml(
-              formatMonth(month)
-            )}
-          </td>
+        return `
+          <tr>
 
-          <td>
-            ${row.entries}
-          </td>
+            <td>
+              <strong>
+                ${escapeHtml(
+                  formatMonth(month)
+                )}
+              </strong>
+            </td>
 
-          <td>
-            <strong>
-              ${escapeHtml(
-                money(row.amount)
-              )}
-            </strong>
-          </td>
-        </tr>
-      `;
+            <td>
+              <span class="table-count">
+                ${row.entries}
+              </span>
+            </td>
 
-    }).join("");
+            <td>
+              <strong class="money-value">
+                ${escapeHtml(
+                  money(row.amount)
+                )}
+              </strong>
+            </td>
+
+          </tr>
+        `;
+
+      })
+      .join("");
+
 }
 
 
 /* =========================================================
-   CONTRIBUTION REPORT TABLE
+   CONTRIBUTION REPORT
 ========================================================= */
 
 function renderContributionReport() {
 
   const container =
-    el("contributionReportRows");
+    el(
+      "contributionReportRows"
+    );
 
   if (!container) {
     return;
@@ -1100,22 +1322,34 @@ function renderContributionReport() {
     filteredContributions();
 
 
-  if (rows.length === 0) {
+  if (!rows.length) {
 
     container.innerHTML = `
       <tr>
-        <td colspan="5">
-          No contributions found for this period.
+        <td
+          colspan="5"
+          class="report-empty"
+        >
+          <div class="empty-state">
+            <div class="empty-icon">+</div>
+            <strong>No contributions</strong>
+            <span>
+              No contributions were recorded
+              during the selected period.
+            </span>
+          </div>
         </td>
       </tr>
     `;
 
     return;
+
   }
 
 
   container.innerHTML =
-    rows.slice(0, 200)
+    rows
+      .slice(0, 200)
       .map(row => {
 
         return `
@@ -1130,15 +1364,33 @@ function renderContributionReport() {
             </td>
 
             <td>
-              ${escapeHtml(
-                memberName(
-                  row.recorded_by
-                )
-              )}
+              <div class="person-cell">
+
+                <span class="avatar-small">
+                  ${escapeHtml(
+                    String(
+                      memberName(
+                        row.recorded_by
+                      )
+                    )
+                      .charAt(0)
+                      .toUpperCase()
+                  )}
+                </span>
+
+                <span>
+                  ${escapeHtml(
+                    memberName(
+                      row.recorded_by
+                    )
+                  )}
+                </span>
+
+              </div>
             </td>
 
             <td>
-              <strong>
+              <strong class="money-value">
                 ${escapeHtml(
                   money(row.amount)
                 )}
@@ -1146,10 +1398,12 @@ function renderContributionReport() {
             </td>
 
             <td>
-              ${escapeHtml(
-                row.contribution_type ||
-                "Contribution"
-              )}
+              <span class="type-pill">
+                ${escapeHtml(
+                  row.contribution_type ||
+                  "Contribution"
+                )}
+              </span>
             </td>
 
             <td>
@@ -1162,18 +1416,22 @@ function renderContributionReport() {
           </tr>
         `;
 
-      }).join("");
+      })
+      .join("");
+
 }
 
 
 /* =========================================================
-   EXPENSE REPORT TABLE
+   EXPENSE REPORT
 ========================================================= */
 
 function renderExpenseReport() {
 
   const container =
-    el("expenseReportRows");
+    el(
+      "expenseReportRows"
+    );
 
   if (!container) {
     return;
@@ -1189,22 +1447,34 @@ function renderExpenseReport() {
       );
 
 
-  if (rows.length === 0) {
+  if (!rows.length) {
 
     container.innerHTML = `
       <tr>
-        <td colspan="5">
-          No approved expenses found for this period.
+        <td
+          colspan="5"
+          class="report-empty"
+        >
+          <div class="empty-state">
+            <div class="empty-icon">—</div>
+            <strong>No approved expenses</strong>
+            <span>
+              No approved expenses were recorded
+              during the selected period.
+            </span>
+          </div>
         </td>
       </tr>
     `;
 
     return;
+
   }
 
 
   container.innerHTML =
-    rows.slice(0, 200)
+    rows
+      .slice(0, 200)
       .map(row => {
 
         return `
@@ -1217,21 +1487,25 @@ function renderExpenseReport() {
             </td>
 
             <td>
-              ${escapeHtml(
-                row.description ||
-                "—"
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                row.category ||
-                "—"
-              )}
-            </td>
-
-            <td>
               <strong>
+                ${escapeHtml(
+                  row.description ||
+                  "—"
+                )}
+              </strong>
+            </td>
+
+            <td>
+              <span class="type-pill">
+                ${escapeHtml(
+                  row.category ||
+                  "—"
+                )}
+              </span>
+            </td>
+
+            <td>
+              <strong class="money-value">
                 ${escapeHtml(
                   money(row.amount)
                 )}
@@ -1239,17 +1513,37 @@ function renderExpenseReport() {
             </td>
 
             <td>
-              ${escapeHtml(
-                memberName(
-                  row.recorded_by
-                )
-              )}
+              <div class="person-cell">
+
+                <span class="avatar-small">
+                  ${escapeHtml(
+                    String(
+                      memberName(
+                        row.recorded_by
+                      )
+                    )
+                      .charAt(0)
+                      .toUpperCase()
+                  )}
+                </span>
+
+                <span>
+                  ${escapeHtml(
+                    memberName(
+                      row.recorded_by
+                    )
+                  )}
+                </span>
+
+              </div>
             </td>
 
           </tr>
         `;
 
-      }).join("");
+      })
+      .join("");
+
 }
 
 
@@ -1272,6 +1566,7 @@ function renderReports() {
   renderContributionReport();
 
   renderExpenseReport();
+
 }
 
 
@@ -1295,7 +1590,7 @@ function applyFilters() {
 
     setTimeout(
       clearStatus,
-      1500
+      1800
     );
 
   }
@@ -1304,6 +1599,7 @@ function applyFilters() {
     showError(error);
 
   }
+
 }
 
 
@@ -1327,6 +1623,7 @@ function resetFilters() {
     clearStatus,
     1500
   );
+
 }
 
 
@@ -1373,6 +1670,7 @@ function setupEvents() {
     );
 
   }
+
 }
 
 
@@ -1405,11 +1703,20 @@ export async function initReports() {
     console.log(
       "CHAMA LIVE: Reports initialized",
       {
-        groupId: currentGroupId,
-        members: members.length,
-        contributions: contributions.length,
-        expenses: expenses.length,
-        meetings: meetings.length
+        groupId:
+          currentGroupId,
+
+        members:
+          members.length,
+
+        contributions:
+          contributions.length,
+
+        expenses:
+          expenses.length,
+
+        meetings:
+          meetings.length
       }
     );
 
@@ -1424,6 +1731,7 @@ export async function initReports() {
     );
 
   }
+
 }
 
 
@@ -1438,7 +1746,9 @@ export async function refreshReports() {
     clearError();
 
     if (!currentGroupId) {
+
       await loadContext();
+
     }
 
     await loadData();
@@ -1451,6 +1761,7 @@ export async function refreshReports() {
     showError(error);
 
   }
+
 }
 
 
