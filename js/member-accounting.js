@@ -648,6 +648,25 @@ function hasCredit(row) {
 }
 
 
+/*
+  "Needs Attention" means the member currently
+  requires follow-up because they are:
+
+    - Partial
+    - Outstanding
+
+  A Credit member does NOT need attention merely
+  because they have a carry-forward balance.
+
+  Example:
+    Due:       KES 400
+    Paid:      KES 600
+    Credit:    KES 200
+    Status:    Credit
+
+  This is a healthy positive position, so the
+  member must NOT be counted under Attention.
+*/
 function needsAttention(row) {
   const status =
     normalizeStatus(
@@ -656,13 +675,7 @@ function needsAttention(row) {
 
   return (
     status === "partial" ||
-    status === "outstanding" ||
-    (
-      status === "credit" &&
-      numberValue(
-        row?.carry_forward
-      ) > 0
-    )
+    status === "outstanding"
   );
 }
 
