@@ -1,37 +1,45 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8"><meta
+name="viewport"
+content="width=device-width, initial-scale=1.0"
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
+«»
 
-  <title>Member Accounting | CHAMA LIVE</title>
+<meta
+name="description"
+content="CHAMA LIVE member contribution accounting and statements"
 
-  <meta
-    name="description"
-    content="CHAMA LIVE member contribution accounting, arrears, credits and statements."
-  >
+«»
 
-  <link rel="stylesheet" href="./css/app.css">
+  <title>Member Accounting — CHAMA LIVE</title>  <link
+    rel="stylesheet"
+    href="./css/app.css"
+  >  <style>
+    /* =========================================================
+       CHAMA LIVE — MEMBER ACCOUNTING
+       ADDITIVE MVP PAGE STYLES
+       ========================================================= */
 
-  <style>
     :root {
       --ma-bg: #f5f7fb;
       --ma-card: #ffffff;
       --ma-border: #e5e7eb;
       --ma-text: #172033;
-      --ma-muted: #64748b;
+      --ma-muted: #667085;
       --ma-primary: #2563eb;
       --ma-primary-dark: #1d4ed8;
       --ma-success: #15803d;
       --ma-warning: #b45309;
-      --ma-danger: #dc2626;
-      --ma-info: #0369a1;
+      --ma-danger: #b91c1c;
+      --ma-purple: #7c3aed;
+      --ma-shadow:
+        0 12px 30px rgba(15, 23, 42, 0.08);
       --ma-radius: 18px;
-      --ma-shadow: 0 12px 35px rgba(15, 23, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
     }
 
     body {
@@ -47,11 +55,21 @@
         sans-serif;
     }
 
-    .ma-page {
-      max-width: 1500px;
-      margin: 0 auto;
-      padding: 24px;
+    button,
+    input,
+    select {
+      font: inherit;
     }
+
+    .member-accounting-page {
+      width: min(1500px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 24px 0 50px;
+    }
+
+    /* =========================================================
+       HERO
+       ========================================================= */
 
     .ma-hero {
       position: relative;
@@ -64,19 +82,20 @@
         linear-gradient(
           135deg,
           #0f172a 0%,
-          #1e3a8a 55%,
+          #1e3a8a 52%,
           #2563eb 100%
         );
-      box-shadow: var(--ma-shadow);
+      box-shadow:
+        0 18px 45px rgba(15, 23, 42, 0.18);
     }
 
     .ma-hero::after {
       content: "";
       position: absolute;
-      width: 220px;
-      height: 220px;
-      right: -70px;
-      top: -90px;
+      width: 260px;
+      height: 260px;
+      right: -90px;
+      top: -110px;
       border-radius: 50%;
       background: rgba(255, 255, 255, 0.08);
     }
@@ -90,340 +109,448 @@
       margin: 0 0 7px;
       font-size: 12px;
       font-weight: 800;
-      letter-spacing: 0.12em;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
-      opacity: 0.8;
+      opacity: 0.82;
     }
 
-    .ma-hero h1 {
+    .ma-title {
       margin: 0;
-      font-size: clamp(28px, 5vw, 42px);
+      font-size: clamp(25px, 4vw, 38px);
       line-height: 1.1;
+      font-weight: 850;
     }
 
-    .ma-hero p {
+    .ma-subtitle {
+      max-width: 800px;
       margin: 10px 0 0;
-      max-width: 780px;
-      color: rgba(255, 255, 255, 0.84);
-      line-height: 1.6;
+      font-size: 15px;
+      line-height: 1.65;
+      color: rgba(255, 255, 255, 0.82);
     }
 
-    .ma-group {
+    .ma-group-name {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: 7px;
       margin-top: 18px;
-      padding: 8px 12px;
+      padding: 8px 13px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.1);
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 750;
     }
+
+    /* =========================================================
+       STATUS
+       ========================================================= */
+
+    .ma-status {
+      min-height: 0;
+      margin-bottom: 14px;
+      color: var(--ma-muted);
+      font-size: 13px;
+    }
+
+    .ma-status:empty {
+      display: none;
+    }
+
+    .ma-status.error {
+      padding: 12px 14px;
+      border: 1px solid #fecaca;
+      border-radius: 12px;
+      background: #fef2f2;
+      color: var(--ma-danger);
+    }
+
+    /* =========================================================
+       FILTER CARD
+       ========================================================= */
 
     .ma-card {
       background: var(--ma-card);
       border: 1px solid var(--ma-border);
       border-radius: var(--ma-radius);
       box-shadow: var(--ma-shadow);
+    }
+
+    .ma-filter-card {
+      padding: 20px;
       margin-bottom: 20px;
     }
 
-    .ma-card-header {
-      padding: 20px 22px 10px;
+    .ma-section-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 15px;
+      margin-bottom: 16px;
     }
 
-    .ma-card-header h2 {
+    .ma-section-heading h2 {
       margin: 0;
-      font-size: 19px;
+      font-size: 18px;
+      font-weight: 800;
     }
 
-    .ma-card-header p {
+    .ma-section-heading p {
       margin: 5px 0 0;
       color: var(--ma-muted);
       font-size: 13px;
+      line-height: 1.5;
     }
 
-    .ma-card-body {
-      padding: 18px 22px 22px;
-    }
-
-    .ma-filters {
+    .ma-filter-grid {
       display: grid;
       grid-template-columns:
-        repeat(4, minmax(0, 1fr));
+        minmax(170px, 1fr)
+        minmax(170px, 1fr)
+        minmax(170px, 1fr)
+        minmax(220px, 1.4fr);
       gap: 14px;
     }
 
     .ma-field {
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
+      min-width: 0;
     }
 
     .ma-field label {
+      display: block;
+      margin-bottom: 7px;
+      color: #344054;
       font-size: 12px;
       font-weight: 800;
-      color: #475569;
     }
 
     .ma-field input,
     .ma-field select {
       width: 100%;
-      box-sizing: border-box;
-      min-height: 44px;
-      padding: 10px 12px;
-      border: 1px solid #dbe1ea;
+      min-height: 43px;
+      padding: 9px 12px;
+      border: 1px solid #d0d5dd;
       border-radius: 11px;
+      outline: none;
       background: #fff;
       color: var(--ma-text);
-      font: inherit;
-      outline: none;
+      transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
     }
 
     .ma-field input:focus,
     .ma-field select:focus {
       border-color: var(--ma-primary);
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      box-shadow:
+        0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    /* =========================================================
+       QUICK FILTERS
+       ========================================================= */
+
+    .ma-quick-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #eef0f3;
+    }
+
+    .ma-quick-button {
+      min-height: 37px;
+      padding: 7px 13px;
+      border: 1px solid #d0d5dd;
+      border-radius: 999px;
+      background: #fff;
+      color: #344054;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 800;
+      transition:
+        transform 0.12s ease,
+        background 0.12s ease,
+        border-color 0.12s ease;
+    }
+
+    .ma-quick-button:hover {
+      transform: translateY(-1px);
+      border-color: #98a2b3;
+    }
+
+    .ma-quick-button.active {
+      border-color: var(--ma-primary);
+      background: #eff6ff;
+      color: var(--ma-primary-dark);
+    }
+
+    /* =========================================================
+       SUMMARY
+       ========================================================= */
+
+    .ma-summary-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .ma-summary-card {
+      padding: 17px;
+      background: #fff;
+      border: 1px solid var(--ma-border);
+      border-radius: 16px;
+      box-shadow:
+        0 8px 22px rgba(15, 23, 42, 0.055);
+    }
+
+    .ma-summary-label {
+      color: var(--ma-muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .ma-summary-value {
+      margin-top: 6px;
+      font-size: 23px;
+      font-weight: 850;
+      line-height: 1.15;
+    }
+
+    .ma-summary-note {
+      margin-top: 5px;
+      color: var(--ma-muted);
+      font-size: 11px;
+    }
+
+    /* =========================================================
+       ACTION BAR
+       ========================================================= */
+
+    .ma-action-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 15px 18px;
+      margin-bottom: 14px;
+      background: #fff;
+      border: 1px solid var(--ma-border);
+      border-radius: 15px;
+      box-shadow:
+        0 7px 20px rgba(15, 23, 42, 0.045);
+    }
+
+    .ma-result-count {
+      color: var(--ma-muted);
+      font-size: 13px;
+      font-weight: 700;
     }
 
     .ma-actions {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 18px;
-    }
-
-    .ma-btn {
-      min-height: 42px;
-      border: 0;
-      border-radius: 10px;
-      padding: 9px 15px;
-      cursor: pointer;
-      font: inherit;
-      font-size: 13px;
-      font-weight: 800;
-    }
-
-    .ma-btn-primary {
-      color: #fff;
-      background: var(--ma-primary);
-    }
-
-    .ma-btn-primary:hover {
-      background: var(--ma-primary-dark);
-    }
-
-    .ma-btn-light {
-      color: #334155;
-      background: #eef2f7;
-    }
-
-    .ma-btn-success {
-      color: #fff;
-      background: var(--ma-success);
-    }
-
-    .ma-btn-outline {
-      color: var(--ma-primary);
-      background: #fff;
-      border: 1px solid #bfdbfe;
-    }
-
-    .ma-quick {
-      display: flex;
-      flex-wrap: wrap;
       gap: 8px;
-      margin-top: 15px;
     }
 
-    .ma-quick button {
-      border: 1px solid #dbe1ea;
-      background: #fff;
-      color: #475569;
-      border-radius: 999px;
+    .ma-button {
+      min-height: 39px;
       padding: 8px 13px;
+      border: 1px solid #d0d5dd;
+      border-radius: 10px;
+      background: #fff;
+      color: #344054;
       cursor: pointer;
       font-size: 12px;
       font-weight: 800;
+      transition:
+        transform 0.12s ease,
+        box-shadow 0.12s ease,
+        background 0.12s ease;
     }
 
-    .ma-quick button.active {
-      color: #fff;
-      background: var(--ma-primary);
+    .ma-button:hover {
+      transform: translateY(-1px);
+      box-shadow:
+        0 4px 10px rgba(15, 23, 42, 0.08);
+    }
+
+    .ma-button.primary {
       border-color: var(--ma-primary);
+      background: var(--ma-primary);
+      color: #fff;
     }
 
-    .ma-summary {
-      display: grid;
-      grid-template-columns:
-        repeat(6, minmax(0, 1fr));
-      gap: 12px;
-      margin-bottom: 20px;
+    .ma-button.primary:hover {
+      background: var(--ma-primary-dark);
     }
 
-    .ma-stat {
-      background: #fff;
-      border: 1px solid var(--ma-border);
-      border-radius: 15px;
-      padding: 17px;
-      box-shadow: var(--ma-shadow);
-    }
+    /* =========================================================
+       TABLE
+       ========================================================= */
 
-    .ma-stat-label {
-      color: var(--ma-muted);
-      font-size: 11px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    .ma-stat-value {
-      margin-top: 6px;
-      font-size: 22px;
-      font-weight: 900;
-    }
-
-    .ma-status {
-      margin-bottom: 15px;
-      padding: 11px 14px;
-      border-radius: 10px;
-      font-size: 13px;
-      font-weight: 700;
-      background: #eff6ff;
-      color: #1d4ed8;
-    }
-
-    .ma-status.error {
-      background: #fef2f2;
-      color: #b91c1c;
-    }
-
-    .ma-status.success {
-      background: #f0fdf4;
-      color: #15803d;
+    .ma-table-card {
+      overflow: hidden;
     }
 
     .ma-table-wrap {
+      width: 100%;
       overflow-x: auto;
-      border: 1px solid var(--ma-border);
-      border-radius: 14px;
+      -webkit-overflow-scrolling: touch;
     }
 
     .ma-table {
       width: 100%;
-      min-width: 1250px;
+      min-width: 1120px;
       border-collapse: collapse;
-      font-size: 12px;
     }
 
     .ma-table th {
-      padding: 12px 10px;
-      text-align: left;
-      background: #f8fafc;
-      color: #475569;
+      padding: 12px 13px;
       border-bottom: 1px solid var(--ma-border);
-      font-size: 11px;
+      background: #f8fafc;
+      color: #475467;
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: 0.05em;
+      text-align: left;
       text-transform: uppercase;
-      letter-spacing: 0.03em;
       white-space: nowrap;
     }
 
     .ma-table td {
-      padding: 12px 10px;
-      border-bottom: 1px solid #edf0f4;
+      padding: 13px;
+      border-bottom: 1px solid #eef0f3;
+      color: #344054;
+      font-size: 12px;
       vertical-align: middle;
+      white-space: nowrap;
     }
 
-    .ma-table tr:last-child td {
-      border-bottom: 0;
+    .ma-table tbody tr {
+      cursor: pointer;
+      transition: background 0.12s ease;
+    }
+
+    .ma-table tbody tr:hover {
+      background: #f8fbff;
     }
 
     .ma-member-name {
+      color: var(--ma-text);
       font-weight: 800;
     }
 
     .ma-member-number {
       margin-top: 3px;
       color: var(--ma-muted);
-      font-size: 11px;
+      font-size: 10px;
     }
 
-    .ma-number {
-      text-align: right;
-      white-space: nowrap;
+    .ma-money {
       font-variant-numeric: tabular-nums;
+      font-weight: 750;
     }
+
+    /* =========================================================
+       STATUS BADGES
+       ========================================================= */
 
     .ma-badge {
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      min-height: 25px;
+      padding: 4px 9px;
       border-radius: 999px;
-      padding: 5px 9px;
       font-size: 10px;
-      font-weight: 900;
-      white-space: nowrap;
+      font-weight: 850;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
     }
 
-    .ma-badge-paid {
-      color: #166534;
-      background: #dcfce7;
+    .ma-badge.paid {
+      background: #ecfdf3;
+      color: var(--ma-success);
     }
 
-    .ma-badge-partial {
-      color: #92400e;
-      background: #fef3c7;
+    .ma-badge.partial {
+      background: #fff7ed;
+      color: var(--ma-warning);
     }
 
-    .ma-badge-outstanding {
-      color: #991b1b;
-      background: #fee2e2;
+    .ma-badge.outstanding {
+      background: #fef2f2;
+      color: var(--ma-danger);
     }
 
-    .ma-badge-credit {
-      color: #075985;
-      background: #e0f2fe;
+    .ma-badge.credit {
+      background: #f5f3ff;
+      color: var(--ma-purple);
     }
 
-    .ma-badge-neutral {
-      color: #475569;
-      background: #f1f5f9;
+    .ma-badge.no-payment {
+      background: #f2f4f7;
+      color: #475467;
     }
 
     .ma-empty {
-      padding: 40px 20px;
+      padding: 42px 20px;
       text-align: center;
       color: var(--ma-muted);
     }
 
+    .ma-empty strong {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--ma-text);
+      font-size: 15px;
+    }
+
+    /* =========================================================
+       STATEMENT PANEL
+       ========================================================= */
+
     .ma-statement {
       display: none;
+      margin-top: 22px;
+      padding: 22px;
     }
 
     .ma-statement.visible {
       display: block;
     }
 
-    .ma-statement-head {
+    .ma-statement-header {
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
-      gap: 20px;
+      gap: 15px;
       margin-bottom: 18px;
     }
 
     .ma-statement-title {
       margin: 0;
-      font-size: 22px;
+      font-size: 21px;
+      font-weight: 850;
     }
 
     .ma-statement-meta {
       margin-top: 5px;
       color: var(--ma-muted);
-      font-size: 13px;
+      font-size: 12px;
     }
 
-    .ma-statement-totals {
+    .ma-statement-close {
+      flex: 0 0 auto;
+    }
+
+    .ma-statement-summary {
       display: grid;
       grid-template-columns:
         repeat(4, minmax(0, 1fr));
@@ -431,123 +558,145 @@
       margin-bottom: 18px;
     }
 
-    .ma-statement-total {
-      padding: 14px;
-      border: 1px solid var(--ma-border);
+    .ma-statement-mini {
+      padding: 13px;
+      border: 1px solid #eef0f3;
       border-radius: 12px;
       background: #f8fafc;
     }
 
-    .ma-statement-total span {
+    .ma-statement-mini span {
       display: block;
       color: var(--ma-muted);
-      font-size: 11px;
-      font-weight: 700;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
     }
 
-    .ma-statement-total strong {
+    .ma-statement-mini strong {
       display: block;
       margin-top: 5px;
-      font-size: 18px;
+      font-size: 16px;
     }
 
-    .ma-footer-note {
-      margin-top: 14px;
+    .ma-statement-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .ma-statement-table th,
+    .ma-statement-table td {
+      padding: 11px;
+      border-bottom: 1px solid #eef0f3;
+      text-align: left;
+      font-size: 12px;
+    }
+
+    .ma-statement-table th {
+      background: #f8fafc;
+      color: #475467;
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+
+    /* =========================================================
+       LOADING
+       ========================================================= */
+
+    .ma-loading {
+      padding: 38px 20px;
+      text-align: center;
       color: var(--ma-muted);
-      font-size: 11px;
-      line-height: 1.5;
+      font-size: 13px;
     }
 
-    @media (max-width: 1100px) {
-      .ma-filters {
-        grid-template-columns:
-          repeat(2, minmax(0, 1fr));
-      }
+    .ma-spinner {
+      width: 25px;
+      height: 25px;
+      margin: 0 auto 10px;
+      border: 3px solid #dbeafe;
+      border-top-color: var(--ma-primary);
+      border-radius: 50%;
+      animation: ma-spin 0.8s linear infinite;
+    }
 
-      .ma-summary {
-        grid-template-columns:
-          repeat(3, minmax(0, 1fr));
-      }
-
-      .ma-statement-totals {
-        grid-template-columns:
-          repeat(2, minmax(0, 1fr));
+    @keyframes ma-spin {
+      to {
+        transform: rotate(360deg);
       }
     }
 
-    @media (max-width: 700px) {
-      .ma-page {
-        padding: 12px;
-      }
+    /* =========================================================
+       PRINT
+       ========================================================= */
 
-      .ma-hero {
-        padding: 23px 19px;
-        border-radius: 18px;
-      }
-
-      .ma-card-body,
-      .ma-card-header {
-        padding-left: 15px;
-        padding-right: 15px;
-      }
-
-      .ma-filters {
-        grid-template-columns: 1fr;
-      }
-
-      .ma-summary {
-        grid-template-columns:
-          repeat(2, minmax(0, 1fr));
-      }
-
-      .ma-statement-head {
-        flex-direction: column;
-      }
-
-      .ma-statement-totals {
-        grid-template-columns: 1fr;
-      }
-
-      .ma-actions .ma-btn {
-        flex: 1 1 140px;
-      }
+    .ma-print-header {
+      display: none;
     }
 
     @media print {
       body {
-        background: #fff !important;
+        background: #fff;
       }
 
-      .ma-page {
-        max-width: none;
-        padding: 0;
-      }
-
-      .ma-hero {
-        color: #000 !important;
-        background: #fff !important;
-        border: 2px solid #111;
-        box-shadow: none;
-      }
-
-      .ma-hero p,
-      .ma-group,
-      .ma-eyebrow {
-        color: #000 !important;
-      }
-
-      .ma-card,
-      .ma-stat {
-        box-shadow: none !important;
-      }
-
-      .no-print {
+      .ma-no-print,
+      nav,
+      header:not(.ma-print-header),
+      .ma-hero,
+      .ma-filter-card,
+      .ma-action-bar,
+      .ma-status,
+      .ma-quick-filters,
+      .ma-statement-close {
         display: none !important;
       }
 
-      .ma-table-wrap {
-        overflow: visible;
-        border: 1px solid #999;
+      .member-accounting-page {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+      }
+
+      .ma-print-header {
+        display: block;
+        margin-bottom: 18px;
+        padding-bottom: 14px;
+        border-bottom: 2px solid #111827;
+      }
+
+      .ma-print-brand {
+        font-size: 23px;
+        font-weight: 900;
+      }
+
+      .ma-print-title {
+        margin-top: 3px;
+        font-size: 17px;
+        font-weight: 800;
+      }
+
+      .ma-print-meta {
+        margin-top: 7px;
+        color: #475467;
+        font-size: 11px;
+      }
+
+      .ma-summary-grid {
+        grid-template-columns:
+          repeat(4, 1fr);
+          gap: 8px;
+          box-shadow: none;
+      }
+
+      .ma-summary-card {
+        padding: 10px;
+        border: 1px solid #d0d5dd;
+        box-shadow: none;
+      }
+
+      .ma-table-card {
+        border: 0;
+        box-shadow: none;
       }
 
       .ma-table {
@@ -557,456 +706,696 @@
 
       .ma-table th,
       .ma-table td {
-        padding: 6px;
+        padding: 7px;
+        font-size: 9px;
+      }
+
+      .ma-table tbody tr:hover {
+        background: transparent;
       }
 
       .ma-statement {
-        display: block !important;
-        page-break-before: always;
+        display: none !important;
+      }
+
+      @page {
+        size: landscape;
+        margin: 12mm;
       }
     }
-  </style>
-</head>
 
-<body>
+    /* =========================================================
+       MOBILE
+       ========================================================= */
 
-  <main class="ma-page">
+    @media (max-width: 1050px) {
+      .ma-filter-grid {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
 
-    <section class="ma-hero">
-      <div class="ma-hero-content">
+      .ma-summary-grid {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+    }
 
-        <p class="ma-eyebrow">
-          CHAMA LIVE • Financial Management
-        </p>
+    @media (max-width: 720px) {
+      .member-accounting-page {
+        width: min(100% - 18px, 1500px);
+        padding-top: 10px;
+      }
 
-        <h1>Member Accounting</h1>
+      .ma-hero {
+        padding: 22px 18px;
+        border-radius: 19px;
+      }
 
-        <p>
-          View monthly obligations, payments, arrears,
-          applied contributions and carry-forward credit
-          using the canonical CHAMA LIVE accounting engine.
-        </p>
+      .ma-title {
+        font-size: 27px;
+      }
 
-        <div
-          class="ma-group"
-          id="groupLabel"
-        >
-          Loading current group…
-        </div>
+      .ma-subtitle {
+        font-size: 13px;
+      }
 
-      </div>
-    </section>
+      .ma-filter-card {
+        padding: 15px;
+      }
 
-    <section class="ma-card no-print">
+      .ma-filter-grid {
+        grid-template-columns: 1fr;
+      }
 
-      <div class="ma-card-header">
-        <h2>Accounting Filters</h2>
+      .ma-summary-grid {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+        gap: 9px;
+      }
 
-        <p>
-          Select the accounting month and members you want
-          to review or export.
-        </p>
-      </div>
+      .ma-summary-card {
+        padding: 13px;
+      }
 
-      <div class="ma-card-body">
+      .ma-summary-value {
+        font-size: 19px;
+      }
 
-        <div class="ma-filters">
+      .ma-action-bar {
+        align-items: stretch;
+        flex-direction: column;
+      }
 
-          <div class="ma-field">
-            <label for="accountingMonth">
-              Accounting Month
-            </label>
+      .ma-actions {
+        width: 100%;
+      }
 
-            <input
-              id="accountingMonth"
-              type="month"
-            >
-          </div>
+      .ma-actions .ma-button {
+        flex: 1;
+      }
 
-          <div class="ma-field">
-            <label for="memberFilter">
-              Member
-            </label>
+      .ma-statement-summary {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
 
-            <select id="memberFilter">
-              <option value="all">
-                All Members
-              </option>
-            </select>
-          </div>
+      .ma-statement-header {
+        flex-direction: column;
+      }
+    }
 
-          <div class="ma-field">
-            <label for="statusFilter">
-              Status
-            </label>
+    @media (max-width: 430px) {
+      .ma-summary-grid {
+        grid-template-columns: 1fr;
+      }
 
-            <select id="statusFilter">
-              <option value="all">
-                All Statuses
-              </option>
+      .ma-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
 
-              <option value="paid">
-                Paid
-              </option>
+      .ma-actions .ma-button {
+        width: 100%;
+      }
 
-              <option value="partial">
-                Partial
-              </option>
+      .ma-statement-summary {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style></head><body>  <!-- =========================================================
+       OPTIONAL EXISTING APP NAV
+       layout.js will initialise the shared CHAMA LIVE shell
+       where applicable.
+       ========================================================= -->  <main class="member-accounting-page"><!-- =======================================================
+     PRINT HEADER
+     ======================================================= -->
 
-              <option value="outstanding">
-                Arrears / Outstanding
-              </option>
+<header class="ma-print-header">
+  <div class="ma-print-brand">
+    CHAMA LIVE
+  </div>
 
-              <option value="credit">
-                Carry-forward / Credit
-              </option>
+  <div class="ma-print-title">
+    Member Contribution Accounting
+  </div>
 
-              <option value="no_payment">
-                No Payment
-              </option>
-            </select>
-          </div>
+  <div
+    id="printMeta"
+    class="ma-print-meta"
+  >
+    Reporting period and group information
+  </div>
+</header>
 
-          <div class="ma-field">
-            <label for="searchMember">
-              Search Member
-            </label>
+<!-- =======================================================
+     HERO
+     ======================================================= -->
 
-            <input
-              id="searchMember"
-              type="search"
-              placeholder="Name or member number"
-              autocomplete="off"
-            >
-          </div>
+<section class="ma-hero">
+  <div class="ma-hero-content">
 
-        </div>
+    <p class="ma-eyebrow">
+      CHAMA LIVE • Financial Management
+    </p>
 
-        <div class="ma-quick">
+    <h1 class="ma-title">
+      Member Accounting
+    </h1>
 
-          <button
-            type="button"
-            data-quick="all"
-            class="active"
-          >
-            All Members
-          </button>
-
-          <button
-            type="button"
-            data-quick="attention"
-          >
-            Needs Attention
-          </button>
-
-          <button
-            type="button"
-            data-quick="arrears"
-          >
-            Has Arrears
-          </button>
-
-          <button
-            type="button"
-            data-quick="credit"
-          >
-            Has Credit
-          </button>
-
-        </div>
-
-        <div class="ma-actions">
-
-          <button
-            type="button"
-            class="ma-btn ma-btn-primary"
-            id="refreshButton"
-          >
-            Refresh Accounting
-          </button>
-
-          <button
-            type="button"
-            class="ma-btn ma-btn-light"
-            id="resetButton"
-          >
-            Reset Filters
-          </button>
-
-          <button
-            type="button"
-            class="ma-btn ma-btn-outline"
-            id="printButton"
-          >
-            Print
-          </button>
-
-          <button
-            type="button"
-            class="ma-btn ma-btn-success"
-            id="csvButton"
-          >
-            Download CSV
-          </button>
-
-          <button
-            type="button"
-            class="ma-btn ma-btn-success"
-            id="excelButton"
-          >
-            Download Excel
-          </button>
-
-        </div>
-
-      </div>
-
-    </section>
+    <p class="ma-subtitle">
+      Track monthly obligations, payments, allocations,
+      arrears and carry-forward balances using the
+      chama's canonical accounting records.
+    </p>
 
     <div
-      id="statusMessage"
-      class="ma-status"
-      role="status"
+      id="groupName"
+      class="ma-group-name"
     >
-      Loading member accounting…
+      Loading group…
     </div>
 
-    <section class="ma-summary">
+  </div>
+</section>
 
-      <div class="ma-stat">
-        <div class="ma-stat-label">
-          Members
-        </div>
-        <div
-          class="ma-stat-value"
-          id="statMembers"
-        >
-          0
-        </div>
-      </div>
+<!-- =======================================================
+     STATUS
+     ======================================================= -->
 
-      <div class="ma-stat">
-        <div class="ma-stat-label">
-          Monthly Due
-        </div>
-        <div
-          class="ma-stat-value"
-          id="statDue"
-        >
-          KES 0.00
-        </div>
-      </div>
+<div
+  id="pageStatus"
+  class="ma-status"
+  aria-live="polite"
+></div>
 
-      <div class="ma-stat">
-        <div class="ma-stat-label">
-          Applied
-        </div>
-        <div
-          class="ma-stat-value"
-          id="statApplied"
-        >
-          KES 0.00
-        </div>
-      </div>
+<!-- =======================================================
+     FILTERS
+     ======================================================= -->
 
-      <div class="ma-stat">
-        <div class="ma-stat-label">
-          Outstanding
-        </div>
-        <div
-          class="ma-stat-value"
-          id="statOutstanding"
-        >
-          KES 0.00
-        </div>
-      </div>
+<section class="ma-card ma-filter-card">
 
-      <div class="ma-stat">
-        <div class="ma-stat-label">
-          Carry-forward
-        </div>
-        <div
-          class="ma-stat-value"
-          id="statCredit"
-        >
-          KES 0.00
-        </div>
-      </div>
+  <div class="ma-section-heading">
+    <div>
+      <h2>
+        Member Accounting Filters
+      </h2>
 
-      <div class="ma-stat">
-        <div class="ma-stat-label">
-          Needs Attention
-        </div>
-        <div
-          class="ma-stat-value"
-          id="statAttention"
-        >
-          0
-        </div>
-      </div>
+      <p>
+        Select the accounting month and narrow the
+        member list by status.
+      </p>
+    </div>
+  </div>
 
-    </section>
+  <div class="ma-filter-grid">
 
-    <section class="ma-card">
+    <div class="ma-field">
+      <label for="accountingMonth">
+        Accounting Month
+      </label>
 
-      <div class="ma-card-header">
-        <h2>
-          Member Monthly Accounting
-        </h2>
+      <input
+        id="accountingMonth"
+        type="month"
+      >
+    </div>
 
-        <p id="tablePeriod">
-          Accounting month
-        </p>
-      </div>
+    <div class="ma-field">
+      <label for="memberFilter">
+        Member
+      </label>
 
-      <div class="ma-card-body">
+      <select id="memberFilter">
+        <option value="">
+          All Members
+        </option>
+      </select>
+    </div>
 
-        <div class="ma-table-wrap">
+    <div class="ma-field">
+      <label for="statusFilter">
+        Accounting Status
+      </label>
 
-          <table class="ma-table">
+      <select id="statusFilter">
+        <option value="all">
+          All Statuses
+        </option>
 
-            <thead>
-              <tr>
-                <th>Member</th>
-                <th>Due</th>
-                <th>Previous Arrears</th>
-                <th>Previous Credit</th>
-                <th>Current Payment</th>
-                <th>Applied</th>
-                <th>Carry-forward</th>
-                <th>Outstanding</th>
-                <th>Total Paid</th>
-                <th>Total Due</th>
-                <th>Status</th>
-              </tr>
-            </thead>
+        <option value="paid">
+          Paid
+        </option>
 
-            <tbody id="memberAccountingBody">
+        <option value="partial">
+          Partial
+        </option>
 
-              <tr>
-                <td
-                  colspan="11"
-                  class="ma-empty"
-                >
-                  Loading…
-                </td>
-              </tr>
+        <option value="outstanding">
+          Arrears / Outstanding
+        </option>
 
-            </tbody>
+        <option value="credit">
+          Credit / Carry-forward
+        </option>
 
-          </table>
+        <option value="no-payment">
+          No Payment
+        </option>
+      </select>
+    </div>
 
-        </div>
+    <div class="ma-field">
+      <label for="memberSearch">
+        Search Member
+      </label>
 
-        <div class="ma-footer-note">
-          Accounting values are supplied by the canonical
-          CHAMA LIVE 2B accounting RPCs. This page does not
-          independently calculate arrears, allocation or
-          carry-forward.
-        </div>
+      <input
+        id="memberSearch"
+        type="search"
+        placeholder="Search by name or member number…"
+        autocomplete="off"
+      >
+    </div>
 
-      </div>
+  </div>
 
-    </section>
+  <div
+    class="ma-quick-filters"
+    aria-label="Quick member filters"
+  >
 
-    <section
-      class="ma-card ma-statement"
-      id="statementSection"
+    <button
+      type="button"
+      class="ma-quick-button active"
+      data-quick-filter="all"
     >
+      All Members
+    </button>
 
-      <div class="ma-card-body">
+    <button
+      type="button"
+      class="ma-quick-button"
+      data-quick-filter="attention"
+    >
+      Needs Attention
+    </button>
 
-        <div class="ma-statement-head">
+    <button
+      type="button"
+      class="ma-quick-button"
+      data-quick-filter="arrears"
+    >
+      Has Arrears
+    </button>
 
-          <div>
-            <h2
-              class="ma-statement-title"
-              id="statementTitle"
-            >
-              Member Statement
-            </h2>
+    <button
+      type="button"
+      class="ma-quick-button"
+      data-quick-filter="credit"
+    >
+      Has Credit
+    </button>
 
-            <div
-              class="ma-statement-meta"
-              id="statementMeta"
-            >
-            </div>
-          </div>
+  </div>
 
-          <button
-            type="button"
-            class="ma-btn ma-btn-outline no-print"
-            id="closeStatementButton"
+</section>
+
+<!-- =======================================================
+     SUMMARY
+     ======================================================= -->
+
+<section
+  id="accountingSummary"
+  class="ma-summary-grid"
+  aria-label="Member accounting summary"
+>
+
+  <article class="ma-summary-card">
+    <div class="ma-summary-label">
+      Members
+    </div>
+
+    <div
+      id="summaryMembers"
+      class="ma-summary-value"
+    >
+      0
+    </div>
+
+    <div class="ma-summary-note">
+      Active members in current view
+    </div>
+  </article>
+
+  <article class="ma-summary-card">
+    <div class="ma-summary-label">
+      Monthly Due
+    </div>
+
+    <div
+      id="summaryDue"
+      class="ma-summary-value"
+    >
+      KES 0.00
+    </div>
+
+    <div class="ma-summary-note">
+      Current accounting obligations
+    </div>
+  </article>
+
+  <article class="ma-summary-card">
+    <div class="ma-summary-label">
+      Applied
+    </div>
+
+    <div
+      id="summaryApplied"
+      class="ma-summary-value"
+    >
+      KES 0.00
+    </div>
+
+    <div class="ma-summary-note">
+      Amount applied to current month
+    </div>
+  </article>
+
+  <article class="ma-summary-card">
+    <div class="ma-summary-label">
+      Outstanding
+    </div>
+
+    <div
+      id="summaryOutstanding"
+      class="ma-summary-value"
+    >
+      KES 0.00
+    </div>
+
+    <div class="ma-summary-note">
+      Current monthly outstanding
+    </div>
+  </article>
+
+</section>
+
+<!-- =======================================================
+     ACTION BAR
+     ======================================================= -->
+
+<section class="ma-action-bar">
+
+  <div
+    id="resultCount"
+    class="ma-result-count"
+  >
+    0 members
+  </div>
+
+  <div class="ma-actions">
+
+    <button
+      id="printButton"
+      type="button"
+      class="ma-button primary"
+    >
+      Print
+    </button>
+
+    <button
+      id="csvButton"
+      type="button"
+      class="ma-button"
+    >
+      CSV
+    </button>
+
+    <button
+      id="excelButton"
+      type="button"
+      class="ma-button"
+    >
+      Excel
+    </button>
+
+  </div>
+
+</section>
+
+<!-- =======================================================
+     ACCOUNTING TABLE
+     ======================================================= -->
+
+<section class="ma-card ma-table-card">
+
+  <div class="ma-table-wrap">
+
+    <table class="ma-table">
+
+      <thead>
+        <tr>
+          <th>
+            Member
+          </th>
+
+          <th>
+            Month
+          </th>
+
+          <th>
+            Monthly Due
+          </th>
+
+          <th>
+            Previous Arrears
+          </th>
+
+          <th>
+            Previous Credit
+          </th>
+
+          <th>
+            Current Payment
+          </th>
+
+          <th>
+            Applied
+          </th>
+
+          <th>
+            Carry-forward
+          </th>
+
+          <th>
+            Outstanding
+          </th>
+
+          <th>
+            Total Paid
+          </th>
+
+          <th>
+            Total Due
+          </th>
+
+          <th>
+            Status
+          </th>
+        </tr>
+      </thead>
+
+      <tbody id="memberAccountingTableBody">
+
+        <tr>
+          <td
+            colspan="12"
+            class="ma-loading"
           >
-            Close Statement
-          </button>
+            <div class="ma-spinner"></div>
+            Loading member accounting…
+          </td>
+        </tr>
 
-        </div>
+      </tbody>
 
-        <div class="ma-statement-totals">
+    </table>
 
-          <div class="ma-statement-total">
-            <span>Total Due</span>
-            <strong id="statementDue">
-              KES 0.00
-            </strong>
-          </div>
+  </div>
 
-          <div class="ma-statement-total">
-            <span>Total Paid</span>
-            <strong id="statementPaid">
-              KES 0.00
-            </strong>
-          </div>
+</section>
 
-          <div class="ma-statement-total">
-            <span>Outstanding</span>
-            <strong id="statementOutstanding">
-              KES 0.00
-            </strong>
-          </div>
+<!-- =======================================================
+     MEMBER STATEMENT
+     ======================================================= -->
 
-          <div class="ma-statement-total">
-            <span>Carry-forward</span>
-            <strong id="statementCredit">
-              KES 0.00
-            </strong>
-          </div>
+<section
+  id="memberStatement"
+  class="ma-card ma-statement"
+>
 
-        </div>
+  <div class="ma-statement-header">
 
-        <div class="ma-table-wrap">
+    <div>
+      <h2
+        id="statementTitle"
+        class="ma-statement-title"
+      >
+        Member Statement
+      </h2>
 
-          <table class="ma-table">
+      <div
+        id="statementMeta"
+        class="ma-statement-meta"
+      ></div>
+    </div>
 
-            <thead>
-              <tr>
-                <th>Month</th>
-                <th>Due</th>
-                <th>Applied</th>
-                <th>Arrears</th>
-                <th>Credit</th>
-                <th>Status</th>
-              </tr>
-            </thead>
+    <button
+      id="closeStatementButton"
+      type="button"
+      class="ma-button ma-statement-close"
+    >
+      Close Statement
+    </button>
 
-            <tbody id="statementBody">
-            </tbody>
+  </div>
 
-          </table>
+  <div
+    id="statementSummary"
+    class="ma-statement-summary"
+  ></div>
 
-        </div>
+  <div class="ma-table-wrap">
 
-      </div>
+    <table class="ma-statement-table">
 
-    </section>
+      <thead>
+        <tr>
+          <th>
+            Month
+          </th>
 
-  </main>
+          <th>
+            Due
+          </th>
 
-  <script
-    type="module"
-    src="./js/member-accounting.js"
-  ></script>
+          <th>
+            Applied
+          </th>
 
-</body>
+          <th>
+            Previous Arrears
+          </th>
+
+          <th>
+            Previous Credit
+          </th>
+
+          <th>
+            Carry-forward
+          </th>
+
+          <th>
+            Outstanding
+          </th>
+
+          <th>
+            Status
+          </th>
+        </tr>
+      </thead>
+
+      <tbody id="statementTableBody">
+      </tbody>
+
+    </table>
+
+  </div>
+
+</section>
+
+  </main>  <!-- =========================================================
+       SHARED APP LAYOUT
+       ========================================================= -->  <script type="module">
+    /*
+      CHAMA LIVE page bootstrap.
+
+      The new page is intentionally additive.
+      member-accounting.js owns the member accounting UI.
+    */
+
+    import {
+      getCurrentMember,
+      getCurrentGroup,
+      requireAuth
+    } from "./js/auth.js";
+
+    import "./js/member-accounting.js";
+
+    const groupNameEl =
+      document.getElementById("groupName");
+
+    const printMetaEl =
+      document.getElementById("printMeta");
+
+    async function initialiseMemberAccountingPage() {
+      try {
+        await requireAuth();
+
+        const member =
+          await getCurrentMember();
+
+        const group =
+          await getCurrentGroup();
+
+        if (groupNameEl) {
+          groupNameEl.textContent =
+            group?.name ||
+            group?.group_name ||
+            "Current Group";
+        }
+
+        if (printMetaEl) {
+          const now =
+            new Date().toLocaleString(
+              "en-KE",
+              {
+                dateStyle: "medium",
+                timeStyle: "short"
+              }
+            );
+
+          printMetaEl.textContent =
+            `Group: ${
+              group?.name ||
+              group?.group_name ||
+              "Current Group"
+            } • Generated: ${now}`;
+        }
+
+        window.CHAMA_LIVE_MEMBER_ACCOUNTING_CONTEXT = {
+          member,
+          group
+        };
+
+      } catch (error) {
+        console.error(
+          "CHAMA LIVE member accounting bootstrap error:",
+          error
+        );
+
+        const statusEl =
+          document.getElementById("pageStatus");
+
+        if (statusEl) {
+          statusEl.classList.add("error");
+          statusEl.textContent =
+            error?.message ||
+            "Unable to load member accounting.";
+        }
+      }
+    }
+
+    initialiseMemberAccountingPage();
+  </script></body>
 </html>
