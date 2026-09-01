@@ -26,11 +26,10 @@
 
   <style>
 
-    /*
-     * =====================================================
-     * PAGE WIDTH PROTECTION
-     * =====================================================
-     */
+    /* =====================================================
+       CONTRIBUTIONS PAGE
+       SHARED CHAMA LIVE LAYOUT
+    ====================================================== */
 
     html,
     body {
@@ -38,6 +37,7 @@
       width: 100%;
       max-width: 100%;
       margin: 0;
+
       overflow-x: hidden;
 
     }
@@ -48,6 +48,15 @@
     *::after {
 
       box-sizing: border-box;
+
+    }
+
+
+    .main {
+
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
 
     }
 
@@ -66,24 +75,313 @@
       width: 100%;
       max-width: 100%;
       min-width: 0;
+
       overflow: hidden;
 
     }
 
 
-    /*
-     * =====================================================
-     * TABLE WRAPPER
-     * =====================================================
-     */
+    /* =====================================================
+       CONTRIBUTION PAGE HEADER
+    ====================================================== */
+
+    .contributions-page-header {
+
+      width: 100%;
+      max-width: 1500px;
+
+      margin:
+        0 auto 24px;
+
+    }
+
+
+    .contributions-page-header .eyebrow {
+
+      margin-bottom: 5px;
+
+      color: #0f766e;
+
+      font-size: 11px;
+
+      font-weight: 800;
+
+      letter-spacing: 1.3px;
+
+    }
+
+
+    .contributions-page-header h1 {
+
+      margin:
+        0 0 7px;
+
+      color: #0f172a;
+
+      font-size:
+        clamp(25px, 4vw, 34px);
+
+      line-height: 1.15;
+
+    }
+
+
+    .contributions-page-header p {
+
+      margin: 0;
+
+      max-width: 720px;
+
+    }
+
+
+    /* =====================================================
+       SUMMARY
+    ====================================================== */
+
+    #contributionSummary {
+
+      display: grid;
+
+      grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+      gap: 14px;
+
+      width: 100%;
+
+      max-width: 1500px;
+
+      margin:
+        0 auto 20px;
+
+    }
+
+
+    .cl-contribution-summary-card {
+
+      min-width: 0;
+
+      padding: 18px;
+
+      border:
+        1px solid #e2e8f0;
+
+      border-radius: 16px;
+
+      background: #ffffff;
+
+      box-shadow:
+        0 8px 25px
+        rgba(15, 23, 42, .05);
+
+    }
+
+
+    .cl-contribution-summary-card span {
+
+      display: block;
+
+      color: #64748b;
+
+      font-size: 10px;
+
+      font-weight: 800;
+
+      letter-spacing: .8px;
+
+    }
+
+
+    .cl-contribution-summary-card strong {
+
+      display: block;
+
+      margin:
+        7px 0 3px;
+
+      color: #0f172a;
+
+      font-size: 23px;
+
+      overflow: hidden;
+
+      text-overflow: ellipsis;
+
+    }
+
+
+    .cl-contribution-summary-card small {
+
+      color: #64748b;
+
+      font-size: 11px;
+
+    }
+
+
+    /* =====================================================
+       FORM
+    ====================================================== */
+
+    #contributionForm {
+
+      width: 100%;
+
+      max-width: 100%;
+
+    }
+
+
+    #contributionForm .form-group {
+
+      width: 100%;
+
+      min-width: 0;
+
+      margin-bottom: 13px;
+
+    }
+
+
+    #contributionForm label {
+
+      display: block;
+
+      margin-bottom: 6px;
+
+      color: #0f172a;
+
+      font-size: 12px;
+
+      font-weight: 750;
+
+    }
+
+
+    #contributionForm input,
+    #contributionForm select,
+    #contributionForm textarea {
+
+      display: block;
+
+      width: 100%;
+
+      max-width: 100%;
+
+      min-width: 0;
+
+      min-height: 46px;
+
+      padding:
+        10px 12px;
+
+      border:
+        1px solid #e2e8f0;
+
+      border-radius: 10px;
+
+      background: #ffffff;
+
+      color: #0f172a;
+
+      font: inherit;
+
+    }
+
+
+    #contributionForm textarea {
+
+      min-height: 95px;
+
+      resize: vertical;
+
+    }
+
+
+    #contributionForm input:focus,
+    #contributionForm select:focus,
+    #contributionForm textarea:focus {
+
+      outline: none;
+
+      border-color: #14b8a6;
+
+      box-shadow:
+        0 0 0 4px
+        rgba(20, 184, 166, .10);
+
+    }
+
+
+    /* =====================================================
+       OTHER CONTRIBUTION
+    ====================================================== */
+
+    .cl-other-type-wrap {
+
+      padding: 14px;
+
+      border:
+        1px solid #99f6e4;
+
+      border-radius: 12px;
+
+      background:
+        #f0fdfa;
+
+    }
+
+
+    .cl-other-type-wrap[hidden] {
+
+      display: none;
+
+    }
+
+
+    .cl-other-type-wrap small {
+
+      display: block;
+
+      margin-top: 5px;
+
+    }
+
+
+    /* =====================================================
+       SAVE BUTTON
+    ====================================================== */
+
+    #saveContribution {
+
+      width: 100%;
+
+      min-height: 49px;
+
+      border: 0;
+
+      border-radius: 11px;
+
+      font-weight: 800;
+
+    }
+
+
+    /* =====================================================
+       TABLES
+    ====================================================== */
 
     .table-wrapper {
 
       width: 100%;
+
       max-width: 100%;
+
       min-width: 0;
 
       overflow-x: auto;
+
       overflow-y: hidden;
 
       -webkit-overflow-scrolling: touch;
@@ -94,18 +392,533 @@
     .table-wrapper table {
 
       width: 100%;
+
       min-width: 720px;
 
     }
 
 
-    /*
-     * =====================================================
-     * MOBILE TABLES
-     * =====================================================
-     */
+    .table-wrapper th {
+
+      white-space: nowrap;
+
+    }
+
+
+    /* =====================================================
+       MONTHLY STATUS
+    ====================================================== */
+
+    #memberStatusRows td {
+
+      vertical-align: middle;
+
+    }
+
+
+    .cl-member-cell strong {
+
+      color: #0f172a;
+
+    }
+
+
+    .cl-money-cell {
+
+      color: #115e59;
+
+      font-weight: 700;
+
+    }
+
+
+    .cl-arrears {
+
+      color: #be123c;
+
+      font-weight: 750;
+
+    }
+
+
+    .cl-carry-forward {
+
+      color: #047857;
+
+      font-weight: 800;
+
+    }
+
+
+    .cl-outstanding-amount {
+
+      color: #be123c;
+
+      font-weight: 800;
+
+    }
+
+
+    .cl-zero {
+
+      color: #94a3b8;
+
+    }
+
+
+    /* =====================================================
+       STATUS BADGES
+    ====================================================== */
+
+    .cl-type-badge,
+    .cl-payment-badge,
+    .cl-status-badge {
+
+      display: inline-flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      width: fit-content;
+
+      max-width: 100%;
+
+      padding:
+        5px 9px;
+
+      border-radius: 999px;
+
+      font-size: 10px;
+
+      font-weight: 800;
+
+      white-space: nowrap;
+
+    }
+
+
+    .cl-type-badge {
+
+      color: #0f766e;
+
+      background: #f0fdfa;
+
+      border:
+        1px solid #ccfbf1;
+
+    }
+
+
+    .cl-payment-badge {
+
+      color: #475569;
+
+      background: #f8fafc;
+
+      border:
+        1px solid #e2e8f0;
+
+    }
+
+
+    .cl-status-paid {
+
+      color: #047857;
+
+      background: #ecfdf5;
+
+    }
+
+
+    .cl-status-credit {
+
+      color: #0f766e;
+
+      background: #ccfbf1;
+
+    }
+
+
+    .cl-status-partial {
+
+      color: #b45309;
+
+      background: #fffbeb;
+
+    }
+
+
+    .cl-status-outstanding {
+
+      color: #be123c;
+
+      background: #fff1f2;
+
+    }
+
+
+    .cl-status-neutral {
+
+      color: #475569;
+
+      background: #f1f5f9;
+
+    }
+
+
+    /* =====================================================
+       PAYMENT PROGRESS
+    ====================================================== */
+
+    .cl-paid-cell {
+
+      min-width: 100px;
+
+    }
+
+
+    .cl-mini-progress {
+
+      width: 80px;
+
+      height: 4px;
+
+      margin-top: 5px;
+
+      overflow: hidden;
+
+      border-radius: 999px;
+
+      background: #e2e8f0;
+
+    }
+
+
+    .cl-mini-progress span {
+
+      display: block;
+
+      height: 100%;
+
+      border-radius: inherit;
+
+      background:
+        linear-gradient(
+          90deg,
+          #0f766e,
+          #14b8a6
+        );
+
+    }
+
+
+    /* =====================================================
+       HISTORY
+    ====================================================== */
+
+    .cl-sub-detail {
+
+      display: block;
+
+      max-width: 180px;
+
+      margin-top: 4px;
+
+      color: #64748b;
+
+      font-size: 10px;
+
+      line-height: 1.4;
+
+      white-space: normal;
+
+      overflow-wrap: anywhere;
+
+    }
+
+
+    .cl-note-text {
+
+      display: block;
+
+      max-width: 190px;
+
+      color: #64748b;
+
+      font-size: 10px;
+
+      line-height: 1.45;
+
+      white-space: normal;
+
+      overflow-wrap: anywhere;
+
+    }
+
+
+    /* =====================================================
+       GOALS
+    ====================================================== */
+
+    .cl-goal-card {
+
+      width: 100%;
+
+      margin-bottom: 10px;
+
+      padding: 15px;
+
+      border:
+        1px solid #e2e8f0;
+
+      border-radius: 14px;
+
+      background: #ffffff;
+
+    }
+
+
+    .cl-goal-top,
+    .cl-goal-bottom {
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: space-between;
+
+      gap: 12px;
+
+    }
+
+
+    .cl-goal-top strong {
+
+      color: #0f172a;
+
+    }
+
+
+    .cl-goal-top small {
+
+      display: block;
+
+      margin-top: 3px;
+
+      color: #64748b;
+
+    }
+
+
+    .cl-goal-progress {
+
+      width: 100%;
+
+      height: 8px;
+
+      margin:
+        12px 0 8px;
+
+      overflow: hidden;
+
+      border-radius: 999px;
+
+      background: #e2e8f0;
+
+    }
+
+
+    .cl-goal-progress span {
+
+      display: block;
+
+      height: 100%;
+
+      border-radius: inherit;
+
+      background:
+        linear-gradient(
+          90deg,
+          #0f766e,
+          #14b8a6
+        );
+
+    }
+
+
+    .cl-goal-bottom {
+
+      color: #64748b;
+
+      font-size: 11px;
+
+    }
+
+
+    .cl-goals-empty {
+
+      display: flex;
+
+      flex-direction: column;
+
+      align-items: center;
+
+      justify-content: center;
+
+      min-height: 150px;
+
+      padding: 25px;
+
+      text-align: center;
+
+    }
+
+
+    .cl-goals-empty strong {
+
+      color: #0f172a;
+
+    }
+
+
+    .cl-goals-empty span {
+
+      margin-top: 5px;
+
+      color: #64748b;
+
+      font-size: 11px;
+
+    }
+
+
+    .cl-empty-icon {
+
+      display: grid;
+
+      place-items: center;
+
+      width: 44px;
+
+      height: 44px;
+
+      margin-bottom: 10px;
+
+      border-radius: 14px;
+
+      background: #f0fdfa;
+
+      color: #0f766e;
+
+      font-size: 24px;
+
+      font-weight: 800;
+
+    }
+
+
+    /* =====================================================
+       STATUS / ERROR
+    ====================================================== */
+
+    #status {
+
+      width: 100%;
+
+      margin-bottom: 14px;
+
+      color: #0f766e;
+
+      font-size: 12px;
+
+      font-weight: 650;
+
+      overflow-wrap: anywhere;
+
+    }
+
+
+    #error {
+
+      width: 100%;
+
+      margin-bottom: 18px;
+
+      overflow-wrap: anywhere;
+
+    }
+
+
+    /* =====================================================
+       TABLET
+    ====================================================== */
+
+    @media (max-width: 900px) {
+
+      #contributionSummary {
+
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+
+      }
+
+    }
+
+
+    /* =====================================================
+       MOBILE
+    ====================================================== */
 
     @media (max-width: 650px) {
+
+      .contributions-page-header {
+
+        margin-bottom: 18px;
+
+      }
+
+
+      .contributions-page-header h1 {
+
+        font-size: 25px;
+
+      }
+
+
+      #contributionSummary {
+
+        gap: 9px;
+
+      }
+
+
+      .cl-contribution-summary-card {
+
+        padding: 14px;
+
+        border-radius: 14px;
+
+      }
+
+
+      .cl-contribution-summary-card strong {
+
+        font-size: 19px;
+
+      }
+
+
+      .cl-contribution-summary-card small {
+
+        display: block;
+
+        overflow: hidden;
+
+        text-overflow: ellipsis;
+
+      }
+
 
       .table-wrapper {
 
@@ -117,6 +930,7 @@
       .table-wrapper table {
 
         display: block;
+
         min-width: 0;
 
       }
@@ -132,7 +946,9 @@
       .table-wrapper tbody {
 
         display: grid;
+
         width: 100%;
+
         gap: 10px;
 
       }
@@ -146,13 +962,13 @@
           1fr 1fr;
 
         width: 100%;
+
         min-width: 0;
 
         padding: 8px;
 
         border:
-          1px solid
-          #e2e8f0;
+          1px solid #e2e8f0;
 
         border-radius: 13px;
 
@@ -169,9 +985,14 @@
 
         align-items: flex-start;
 
+        justify-content: center;
+
+        width: 100%;
+
         min-width: 0;
 
-        padding: 8px 7px;
+        padding:
+          8px 7px;
 
         border: 0 !important;
 
@@ -187,6 +1008,8 @@
         content:
           attr(data-label);
 
+        display: block;
+
         margin-bottom: 3px;
 
         color: #94a3b8;
@@ -201,14 +1024,114 @@
 
       }
 
+
+      .cl-member-cell {
+
+        grid-column:
+          1 / -1;
+
+      }
+
+
+      .cl-sub-detail,
+      .cl-note-text {
+
+        max-width: 100%;
+
+      }
+
+
+      .cl-mini-progress {
+
+        width: 100%;
+
+        max-width: 100px;
+
+      }
+
+
+      .cl-goal-top,
+      .cl-goal-bottom {
+
+        align-items: flex-start;
+
+      }
+
     }
 
 
+    /* =====================================================
+       SMALL PHONES
+    ====================================================== */
+
     @media (max-width: 390px) {
+
+      #contributionSummary {
+
+        grid-template-columns:
+          1fr 1fr;
+
+      }
+
+
+      .cl-contribution-summary-card {
+
+        padding: 11px;
+
+      }
+
+
+      .cl-contribution-summary-card strong {
+
+        font-size: 17px;
+
+      }
+
+
+      .cl-contribution-summary-card small {
+
+        display: none;
+
+      }
+
 
       .table-wrapper tr {
 
         grid-template-columns: 1fr;
+
+      }
+
+
+      .table-wrapper td {
+
+        padding: 7px;
+
+      }
+
+
+      .cl-goal-top,
+      .cl-goal-bottom {
+
+        flex-wrap: wrap;
+
+      }
+
+    }
+
+
+    /* =====================================================
+       REDUCED MOTION
+    ====================================================== */
+
+    @media (
+      prefers-reduced-motion: reduce
+    ) {
+
+      * {
+
+        animation: none !important;
+
+        transition: none !important;
 
       }
 
@@ -221,588 +1144,739 @@
 
 <body>
 
-<header class="topbar">
-
-  <div class="brand">
-    CHAMA <span>LIVE</span>
-  </div>
-
-</header>
-
-
-<main class="page">
-
 
   <!-- =====================================================
-       STATUS
+       SHARED CHAMA LIVE TOP BAR
   ====================================================== -->
 
-  <div
-    id="status"
-    class="status"
-    hidden
-    aria-live="polite"
-  ></div>
+  <header class="topbar">
+
+    <div class="topbar-inner">
 
 
-  <div
-    id="error"
-    class="error"
-    hidden
-    role="alert"
-  ></div>
+      <!-- BRAND -->
 
+      <div class="brand">
 
-  <!-- =====================================================
-       RECORD CONTRIBUTION
-  ====================================================== -->
-
-  <section class="card">
-
-    <div class="card-header">
-
-      <div>
-
-        <h2>
-          Record Contribution
-        </h2>
-
-        <p class="muted">
-          Record a contribution for a group member.
-        </p>
+        CHAMA
+        <span>LIVE</span>
 
       </div>
 
-    </div>
+
+      <!-- =================================================
+           SHARED TOP NAVIGATION
+      ================================================== -->
+
+      <nav class="top-nav">
+
+        <a
+          href="dashboard.html"
+        >
+          Dashboard
+        </a>
 
 
-    <form
-      id="contributionForm"
-      novalidate
-    >
+        <a
+          href="members.html"
+        >
+          Members
+        </a>
 
 
-      <!-- MEMBER -->
+        <a
+          href="contributions.html"
+          class="active"
+        >
+          Contributions
+        </a>
 
-      <div class="form-group">
 
-        <label for="member">
+        <a
+          href="expenses.html"
+        >
+          Expenses
+        </a>
+
+
+        <a
+          href="meetings.html"
+        >
+          Meetings
+        </a>
+
+
+        <a
+          href="reports.html"
+        >
+          Reports
+        </a>
+
+
+        <a
+          href="monthly-closing.html"
+        >
+          Monthly Closing
+        </a>
+
+
+        <a
+          href="group-management.html"
+        >
+          Group Management
+        </a>
+
+      </nav>
+
+
+      <!-- =================================================
+           USER / LOGOUT
+      ================================================== -->
+
+      <div class="topbar-actions">
+
+        <span
+          data-user-name
+          class="muted user-name"
+        >
           Member
-        </label>
+        </span>
 
-        <select
-          id="member"
-          name="member"
-          required
-        >
-
-          <option value="">
-            Select member
-          </option>
-
-        </select>
-
-      </div>
-
-
-      <!-- AMOUNT -->
-
-      <div class="form-group">
-
-        <label for="amount">
-          Amount
-        </label>
-
-        <input
-          id="amount"
-          name="amount"
-          type="number"
-          min="0.01"
-          step="0.01"
-          placeholder="200"
-          required
-        >
-
-      </div>
-
-
-      <!-- DATE -->
-
-      <div class="form-group">
-
-        <label for="contributionDate">
-          Contribution Date
-        </label>
-
-        <input
-          id="contributionDate"
-          name="contributionDate"
-          type="date"
-          required
-        >
-
-      </div>
-
-
-      <!-- CONTRIBUTION TYPE -->
-
-      <div class="form-group">
-
-        <label for="contributionType">
-          Contribution Type
-        </label>
-
-        <select
-          id="contributionType"
-          name="contributionType"
-          required
-        >
-
-          <option value="monthly">
-            Monthly Contribution
-          </option>
-
-          <option value="welfare">
-            Welfare
-          </option>
-
-          <option value="emergency">
-            Emergency
-          </option>
-
-          <option value="fundraising">
-            Fundraising
-          </option>
-
-          <option value="project">
-            Project
-          </option>
-
-          <option value="event">
-            Event
-          </option>
-
-          <option value="other">
-            Other
-          </option>
-
-        </select>
-
-      </div>
-
-
-      <!-- OTHER CONTRIBUTION -->
-
-      <div
-        id="otherContributionTypeWrap"
-        class="form-group cl-other-type-wrap"
-        hidden
-      >
-
-        <label
-          for="otherContributionType"
-        >
-          Other Contribution Name
-        </label>
-
-        <input
-          id="otherContributionType"
-          name="otherContributionType"
-          type="text"
-          maxlength="120"
-          autocomplete="off"
-          placeholder="e.g. Birthday contribution"
-        >
-
-        <small class="muted">
-
-          Enter the name of this contribution.
-
-        </small>
-
-      </div>
-
-
-      <!-- PAYMENT METHOD -->
-
-      <div class="form-group">
-
-        <label for="paymentMethod">
-          Payment Method
-        </label>
-
-        <select
-          id="paymentMethod"
-          name="paymentMethod"
-          required
-        >
-
-          <option value="M-Pesa">
-            M-Pesa
-          </option>
-
-          <option value="Cash">
-            Cash
-          </option>
-
-          <option value="Bank transfer">
-            Bank transfer
-          </option>
-
-        </select>
-
-      </div>
-
-
-      <!-- M-PESA REFERENCE -->
-
-      <div
-        id="mpesaReferenceWrap"
-        class="form-group"
-        hidden
-      >
-
-        <label for="mpesaReference">
-          M-Pesa Reference
-        </label>
-
-        <input
-          id="mpesaReference"
-          name="mpesaReference"
-          type="text"
-          maxlength="100"
-          autocomplete="off"
-          placeholder="e.g. QWE123XYZ"
-        >
-
-      </div>
-
-
-      <!-- CONTRIBUTION GOAL -->
-
-      <div class="form-group">
-
-        <label for="goal">
-          Contribution Goal
-        </label>
-
-        <select
-          id="goal"
-          name="goal"
-        >
-
-          <option value="">
-            General contribution
-          </option>
-
-        </select>
-
-      </div>
-
-
-      <!-- NOTES -->
-
-      <div class="form-group">
-
-        <label for="notes">
-          Notes
-        </label>
-
-        <textarea
-          id="notes"
-          name="notes"
-          rows="3"
-          maxlength="500"
-          placeholder="Optional notes about this contribution"
-        ></textarea>
-
-      </div>
-
-
-      <!-- SAVE -->
-
-      <div class="form-actions">
 
         <button
-          id="saveContribution"
-          type="submit"
-          class="button button-primary"
+          id="logout"
+          class="btn btn-secondary"
+          type="button"
         >
-
-          Record Contribution
-
+          Sign out
         </button>
 
       </div>
 
-    </form>
+    </div>
 
-  </section>
-
-
-  <!-- =====================================================
-       MONTHLY CONTRIBUTION
-  ====================================================== -->
-
-  <section class="card">
-
-    <h2>
-      Monthly Contribution
-    </h2>
-
-    <p class="muted">
-
-      Expected monthly contribution:
-
-      <strong id="monthlyExpected">
-        KSh 0
-      </strong>
-
-    </p>
-
-  </section>
+  </header>
 
 
   <!-- =====================================================
-       MONTHLY STATUS
+       SHARED APPLICATION LAYOUT
   ====================================================== -->
 
-  <section class="card">
+  <div class="layout">
 
-    <div class="card-header">
 
-      <div>
+    <!-- ===================================================
+         CONTRIBUTIONS MAIN CONTENT
+    ==================================================== -->
 
-        <h2>
-          Monthly Contribution Status
-        </h2>
+    <main class="main">
+
+
+      <!-- =================================================
+           STATUS
+      ================================================== -->
+
+      <div
+        id="status"
+        class="status"
+        hidden
+        aria-live="polite"
+      ></div>
+
+
+      <!-- =================================================
+           ERROR
+      ================================================== -->
+
+      <div
+        id="error"
+        class="error"
+        hidden
+        role="alert"
+      ></div>
+
+
+      <!-- =================================================
+           PAGE HEADER
+      ================================================== -->
+
+      <section class="contributions-page-header">
+
+        <div class="eyebrow">
+          FINANCIAL MANAGEMENT
+        </div>
+
+
+        <h1>
+          Contributions
+        </h1>
+
 
         <p class="muted">
 
-          Current month payments, previous arrears
-          and carry-forward credit.
+          Record member contributions, track monthly
+          commitments and keep every group payment
+          organised in one connected ledger.
 
         </p>
 
-      </div>
-
-    </div>
+      </section>
 
 
-    <div class="table-wrapper">
+      <!-- =================================================
+           RECORD CONTRIBUTION
+      ================================================== -->
 
-      <table>
+      <section class="card">
 
-        <thead>
+        <div class="card-header">
 
-          <tr>
+          <div>
 
-            <th>
+            <h2>
+              Record Contribution
+            </h2>
+
+            <p class="muted">
+              Record a contribution for a group member.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <form
+          id="contributionForm"
+          novalidate
+        >
+
+
+          <!-- MEMBER -->
+
+          <div class="form-group">
+
+            <label for="member">
               Member
-            </th>
+            </label>
 
-            <th>
-              Current Due
-            </th>
+            <select
+              id="member"
+              name="member"
+              required
+            >
 
-            <th>
-              Previous Arrears
-            </th>
+              <option value="">
+                Select member
+              </option>
 
-            <th>
-              Current Paid
-            </th>
+            </select>
 
-            <th>
-              Carry Forward
-            </th>
-
-            <th>
-              Outstanding
-            </th>
-
-            <th>
-              Status
-            </th>
-
-          </tr>
-
-        </thead>
+          </div>
 
 
-        <tbody id="memberStatusRows">
+          <!-- AMOUNT -->
 
-          <tr>
+          <div class="form-group">
 
-            <td colspan="7">
-              Loading...
-            </td>
-
-          </tr>
-
-        </tbody>
-
-      </table>
-
-    </div>
-
-  </section>
-
-
-  <!-- =====================================================
-       CONTRIBUTION GOALS
-  ====================================================== -->
-
-  <section class="card">
-
-    <div class="card-header">
-
-      <div>
-
-        <h2>
-          Contribution Goals
-        </h2>
-
-        <p class="muted">
-
-          Track progress toward active group goals.
-
-        </p>
-
-      </div>
-
-    </div>
-
-
-    <div
-      id="goalProgressContainer"
-    >
-
-      <p class="muted">
-        Loading contribution goals...
-      </p>
-
-    </div>
-
-  </section>
-
-
-  <!-- =====================================================
-       CONTRIBUTION HISTORY
-  ====================================================== -->
-
-  <section class="card">
-
-    <div class="card-header">
-
-      <div>
-
-        <h2>
-          Contribution History
-        </h2>
-
-        <p class="muted">
-
-          Recent contribution records for this group.
-
-        </p>
-
-      </div>
-
-    </div>
-
-
-    <div class="table-wrapper">
-
-      <table>
-
-        <thead>
-
-          <tr>
-
-            <th>
-              Date
-            </th>
-
-            <th>
-              Member
-            </th>
-
-            <th>
+            <label for="amount">
               Amount
-            </th>
+            </label>
 
-            <th>
-              Type
-            </th>
+            <input
+              id="amount"
+              name="amount"
+              type="number"
+              min="0.01"
+              step="0.01"
+              placeholder="200"
+              required
+            >
 
-            <th>
+          </div>
+
+
+          <!-- DATE -->
+
+          <div class="form-group">
+
+            <label for="contributionDate">
+              Contribution Date
+            </label>
+
+            <input
+              id="contributionDate"
+              name="contributionDate"
+              type="date"
+              required
+            >
+
+          </div>
+
+
+          <!-- CONTRIBUTION TYPE -->
+
+          <div class="form-group">
+
+            <label for="contributionType">
+              Contribution Type
+            </label>
+
+            <select
+              id="contributionType"
+              name="contributionType"
+              required
+            >
+
+              <option value="monthly">
+                Monthly Contribution
+              </option>
+
+              <option value="welfare">
+                Welfare
+              </option>
+
+              <option value="emergency">
+                Emergency
+              </option>
+
+              <option value="fundraising">
+                Fundraising
+              </option>
+
+              <option value="project">
+                Project
+              </option>
+
+              <option value="event">
+                Event
+              </option>
+
+              <option value="other">
+                Other
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <!-- OTHER CONTRIBUTION -->
+
+          <div
+            id="otherContributionTypeWrap"
+            class="form-group cl-other-type-wrap"
+            hidden
+          >
+
+            <label
+              for="otherContributionType"
+            >
+              Other Contribution Name
+            </label>
+
+            <input
+              id="otherContributionType"
+              name="otherContributionType"
+              type="text"
+              maxlength="120"
+              autocomplete="off"
+              placeholder="e.g. Birthday contribution"
+            >
+
+            <small class="muted">
+              Enter the name of this contribution.
+            </small>
+
+          </div>
+
+
+          <!-- PAYMENT METHOD -->
+
+          <div class="form-group">
+
+            <label for="paymentMethod">
               Payment Method
-            </th>
+            </label>
 
-            <th>
-              Goal
-            </th>
+            <select
+              id="paymentMethod"
+              name="paymentMethod"
+              required
+            >
 
-            <th>
-              Reference
-            </th>
+              <option value="M-Pesa">
+                M-Pesa
+              </option>
 
-            <th>
+              <option value="Cash">
+                Cash
+              </option>
+
+              <option value="Bank transfer">
+                Bank transfer
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <!-- M-PESA REFERENCE -->
+
+          <div
+            id="mpesaReferenceWrap"
+            class="form-group"
+            hidden
+          >
+
+            <label for="mpesaReference">
+              M-Pesa Reference
+            </label>
+
+            <input
+              id="mpesaReference"
+              name="mpesaReference"
+              type="text"
+              maxlength="100"
+              autocomplete="off"
+              placeholder="e.g. QWE123XYZ"
+            >
+
+          </div>
+
+
+          <!-- CONTRIBUTION GOAL -->
+
+          <div class="form-group">
+
+            <label for="goal">
+              Contribution Goal
+            </label>
+
+            <select
+              id="goal"
+              name="goal"
+            >
+
+              <option value="">
+                General contribution
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <!-- NOTES -->
+
+          <div class="form-group">
+
+            <label for="notes">
               Notes
-            </th>
+            </label>
 
-          </tr>
+            <textarea
+              id="notes"
+              name="notes"
+              rows="3"
+              maxlength="500"
+              placeholder="Optional notes about this contribution"
+            ></textarea>
 
-        </thead>
+          </div>
 
 
-        <tbody id="contributionRows">
+          <!-- SAVE -->
 
-          <tr>
+          <div class="form-actions">
 
-            <td colspan="8">
-              Loading contributions...
-            </td>
+            <button
+              id="saveContribution"
+              type="submit"
+              class="button button-primary"
+            >
+              Record Contribution
+            </button>
 
-          </tr>
+          </div>
 
-        </tbody>
+        </form>
 
-      </table>
+      </section>
 
-    </div>
 
-  </section>
+      <!-- =================================================
+           MONTHLY CONTRIBUTION
+      ================================================== -->
+
+      <section class="card">
+
+        <h2>
+          Monthly Contribution
+        </h2>
+
+        <p class="muted">
+
+          Expected monthly contribution:
+
+          <strong id="monthlyExpected">
+            KSh 0
+          </strong>
+
+        </p>
+
+      </section>
+
+
+      <!-- =================================================
+           MONTHLY STATUS
+      ================================================== -->
+
+      <section class="card">
+
+        <div class="card-header">
+
+          <div>
+
+            <h2>
+              Monthly Contribution Status
+            </h2>
+
+            <p class="muted">
+
+              Current month payments, previous arrears
+              and carry-forward credit.
+
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="table-wrapper">
+
+          <table>
+
+            <thead>
+
+              <tr>
+
+                <th>
+                  Member
+                </th>
+
+                <th>
+                  Current Due
+                </th>
+
+                <th>
+                  Previous Arrears
+                </th>
+
+                <th>
+                  Current Paid
+                </th>
+
+                <th>
+                  Carry Forward
+                </th>
+
+                <th>
+                  Outstanding
+                </th>
+
+                <th>
+                  Status
+                </th>
+
+              </tr>
+
+            </thead>
+
+
+            <tbody id="memberStatusRows">
+
+              <tr>
+
+                <td colspan="7">
+                  Loading...
+                </td>
+
+              </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           CONTRIBUTION GOALS
+      ================================================== -->
+
+      <section class="card">
+
+        <div class="card-header">
+
+          <div>
+
+            <h2>
+              Contribution Goals
+            </h2>
+
+            <p class="muted">
+
+              Track progress toward active group goals.
+
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div id="goalProgressContainer">
+
+          <p class="muted">
+            Loading contribution goals...
+          </p>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           CONTRIBUTION HISTORY
+      ================================================== -->
+
+      <section class="card">
+
+        <div class="card-header">
+
+          <div>
+
+            <h2>
+              Contribution History
+            </h2>
+
+            <p class="muted">
+
+              Recent contribution records for this group.
+
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="table-wrapper">
+
+          <table>
+
+            <thead>
+
+              <tr>
+
+                <th>
+                  Date
+                </th>
+
+                <th>
+                  Member
+                </th>
+
+                <th>
+                  Amount
+                </th>
+
+                <th>
+                  Type
+                </th>
+
+                <th>
+                  Payment Method
+                </th>
+
+                <th>
+                  Goal
+                </th>
+
+                <th>
+                  Reference
+                </th>
+
+                <th>
+                  Notes
+                </th>
+
+              </tr>
+
+            </thead>
+
+
+            <tbody id="contributionRows">
+
+              <tr>
+
+                <td colspan="8">
+                  Loading contributions...
+                </td>
+
+              </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           GROUP INFORMATION
+      ================================================== -->
+
+      <section class="card">
+
+        <p class="muted">
+
+          All contribution records are scoped to the
+          currently authenticated group.
+
+        </p>
+
+      </section>
+
+
+    </main>
+
+  </div>
 
 
   <!-- =====================================================
-       GROUP INFORMATION
+       SHARED PAGE BOOT
+       layout.js loads contributions.js automatically
+       for contributions.html.
   ====================================================== -->
 
-  <section class="card">
+  <script type="module">
 
-    <p class="muted">
+    import {
+      boot
+    } from "./js/layout.js";
 
-      All contribution records are scoped to the
-      currently authenticated group.
+    boot();
 
-    </p>
+  </script>
 
-  </section>
-
-
-  <!-- =====================================================
-       SCRIPT
-  ====================================================== -->
-
-  <script
-    type="module"
-    src="js/contributions.js"
-  ></script>
-
-
-</main>
 
 </body>
 
