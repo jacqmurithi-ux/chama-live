@@ -5,6 +5,7 @@
    ACCOUNTING MONTH UPDATE
    ---------------------------------------------------------
    • Accounting Month is explicit page state.
+   • Selected month is refreshed through the canonical RPC.
    • Monthly status is loaded for selected month.
    • No frontend arrears calculation.
    • No frontend allocation calculation.
@@ -82,7 +83,6 @@ const goalProgressContainer =
 
 
 /*
- * NEW:
  * Explicit accounting month selector.
  */
 
@@ -117,7 +117,6 @@ let initialized = false;
 
 
 /*
- * NEW:
  * The selected accounting month is the month
  * displayed by canonical monthly accounting.
  *
@@ -285,7 +284,8 @@ function shiftMonth(
     year,
     monthNumber
   ] =
-    String(month).split("-")
+    String(month)
+      .split("-")
       .map(Number);
 
   const date =
@@ -303,14 +303,13 @@ function shiftMonth(
 
 
 /*
- * Build a reasonable month range.
-
- * We deliberately include previous months
- * because arrears may originate there.
-
- * We also include future months so the user
- * can inspect future obligations such as
- * October 2026 without changing the database.
+ * Build accounting month options.
+ *
+ * Previous months are included because arrears
+ * may originate there.
+ *
+ * Future months are included so the user can
+ * inspect future obligations such as October.
  */
 
 function buildAccountingMonthOptions() {
@@ -396,9 +395,6 @@ function renderAccountingMonthLabel() {
 
 /*
  * Return the month selected by the user.
-
- * This validates the value before the RPC
- * receives it.
  */
 
 function getSelectedAccountingMonth() {
@@ -1053,8 +1049,9 @@ function getCanonicalMemberStatus(
 
 
 /*
- * Refresh canonical accounting after
- * a monthly contribution is recorded.
+ * Refresh canonical accounting for one member.
+ *
+ * Used after recording a monthly contribution.
  */
 
 async function refreshCanonicalMember(
@@ -1135,6 +1132,86 @@ async function refreshCanonicalMember(
 }
 
 
+/*
+ * NEW:
+ * Refresh canonical accounting for the current group
+ * through the selected accounting month.
+ *
+ * This deliberately uses the existing canonical RPC
+ * with p_member_id = null so every active/member
+ * accounting chain can be brought through the selected
+ * month before the status RPC is read.
+ *
+ * No manual obligation or allocation is performed here.
+ */
+
+async function refreshCanonicalAccountingThroughMonth(
+  month
+) {
+
+  if (!groupId) {
+
+    throw new Error(
+      "No current group is available."
+    );
+
+  }
+
+
+  if (
+    !/^\d{4}-\d{2}$/.test(
+      String(month || "")
+    )
+  ) {
+
+    throw new Error(
+      "Accounting month must use YYYY-MM format."
+    );
+
+  }
+
+
+  const {
+    data,
+    error
+  } =
+    await supabase.rpc(
+      "refresh_canonical_contribution_accounting",
+      {
+        p_group_id:
+          groupId,
+
+        p_through_month:
+          month,
+
+        p_member_id:
+          null
+      }
+    );
+
+
+  if (error) {
+
+    throw error;
+
+  }
+
+
+  console.log(
+    "CHAMA LIVE: Canonical group accounting refreshed",
+    {
+      groupId,
+      month,
+      result: data
+    }
+  );
+
+
+  return data;
+
+}
+
+
 /* =========================================================
    ACCOUNTING MONTH
 ========================================================= */
@@ -1161,9 +1238,9 @@ async function changeAccountingMonth() {
       false;
 
     statusEl.textContent =
-      `Loading ${formatAccountingMonth(
+      `Refreshing ${formatAccountingMonth(
         accountingMonth
-      )} accounting...`;
+      )} canonical accounting...`;
 
   }
 
@@ -1176,11 +1253,11 @@ async function changeAccountingMonth() {
 
         <td colspan="7">
 
-          Loading ${escapeHtml(
+          Refreshing ${escapeHtml(
             formatAccountingMonth(
               accountingMonth
             )
-          )} accounting...
+          )} canonical accounting...
 
         </td>
 
@@ -1191,7 +1268,33 @@ async function changeAccountingMonth() {
   }
 
 
+  /*
+   * IMPORTANT:
+   *
+   * Selecting an accounting month is not merely a
+   * display operation.
+   *
+   * The canonical obligation/allocation chain must
+   * first exist through the selected month.
+   *
+   * We therefore call the EXISTING canonical refresh
+   * RPC and let Supabase perform all obligation and
+   * allocation work.
+   *
+   * The frontend does not calculate or create any
+   * accounting values itself.
+   */
+
   try {
+
+    await refreshCanonicalAccountingThroughMonth(
+      accountingMonth
+    );
+
+
+    /*
+     * Read the canonical result only after refresh.
+     */
 
     await loadCanonicalMemberStatus(
       accountingMonth
@@ -1895,7 +1998,7 @@ function canonicalStatusClass(
 /*
  * Progress is visual only.
  *
- * The amount applied is still supplied by
+ * The amount applied is supplied by
  * the canonical RPC.
  */
 
@@ -2357,13 +2460,8 @@ function renderSummary() {
 
 
   /*
-   * IMPORTANT:
-   *
-   * THIS MONTH is now the selected
+   * THIS MONTH means the selected
    * accounting month.
-   *
-   * It is not silently tied to the
-   * browser's current month.
    */
 
   const selectedMonth =
@@ -3058,9 +3156,6 @@ async function recordContribution(event) {
        * After recording a contribution,
        * automatically display the contribution's
        * accounting month.
-       *
-       * This makes a contribution dated October
-       * immediately visible under October.
        */
 
       accountingMonth =
@@ -3286,7 +3381,6 @@ export async function initContributions() {
     /*
      * CANONICAL ACCOUNTING
      *
-     * IMPORTANT:
      * Uses selected accountingMonth.
      */
 
@@ -3459,7 +3553,6 @@ if (
 
 
 /*
- * NEW:
  * Accounting month selector.
  */
 
