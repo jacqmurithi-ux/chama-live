@@ -406,6 +406,112 @@
 
 
     /* =====================================================
+       ACCOUNTING MONTH SELECTOR
+    ====================================================== */
+
+    .cl-accounting-month-control {
+
+      display: grid;
+
+      grid-template-columns:
+        minmax(160px, 220px)
+        minmax(180px, 260px)
+        auto;
+
+      align-items: end;
+
+      gap: 12px;
+
+      margin:
+        0 0 18px;
+
+      padding: 14px;
+
+      border:
+        1px solid #ccfbf1;
+
+      border-radius: 14px;
+
+      background:
+        #f0fdfa;
+
+    }
+
+
+    .cl-accounting-month-control label {
+
+      display: block;
+
+      margin-bottom: 6px;
+
+      color: #0f172a;
+
+      font-size: 12px;
+
+      font-weight: 800;
+
+    }
+
+
+    .cl-accounting-month-control select {
+
+      display: block;
+
+      width: 100%;
+
+      min-height: 44px;
+
+      padding:
+        9px 11px;
+
+      border:
+        1px solid #99f6e4;
+
+      border-radius: 10px;
+
+      background: #ffffff;
+
+      color: #0f172a;
+
+      font: inherit;
+
+      font-weight: 700;
+
+    }
+
+
+    .cl-accounting-month-control select:focus {
+
+      outline: none;
+
+      border-color: #14b8a6;
+
+      box-shadow:
+        0 0 0 4px
+        rgba(20, 184, 166, .10);
+
+    }
+
+
+    .cl-accounting-month-viewing {
+
+      align-self: center;
+
+      color: #475569;
+
+      font-size: 11px;
+
+    }
+
+
+    .cl-accounting-month-viewing strong {
+
+      color: #0f766e;
+
+    }
+
+
+    /* =====================================================
        MONTHLY STATUS
     ====================================================== */
 
@@ -863,6 +969,22 @@
 
       }
 
+
+      .cl-accounting-month-control {
+
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+
+      }
+
+
+      .cl-accounting-month-viewing {
+
+        grid-column:
+          1 / -1;
+
+      }
+
     }
 
 
@@ -916,6 +1038,24 @@
         overflow: hidden;
 
         text-overflow: ellipsis;
+
+      }
+
+
+      .cl-accounting-month-control {
+
+        grid-template-columns: 1fr;
+
+        gap: 8px;
+
+        padding: 13px;
+
+      }
+
+
+      .cl-accounting-month-viewing {
+
+        grid-column: auto;
 
       }
 
@@ -1645,10 +1785,57 @@
 
             <p class="muted">
 
-              Current month payments, previous arrears
-              and carry-forward credit.
+              Canonical monthly accounting for the
+              selected accounting month.
 
             </p>
+
+          </div>
+
+        </div>
+
+
+        <!-- =================================================
+             ACCOUNTING MONTH SELECTOR
+        ================================================== -->
+
+        <div
+          class="cl-accounting-month-control"
+        >
+
+          <div>
+
+            <label
+              for="accountingMonth"
+            >
+              Accounting Month
+            </label>
+
+            <select
+              id="accountingMonth"
+              aria-label="Accounting Month"
+            >
+
+              <option value="">
+                Loading months...
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div
+            class="cl-accounting-month-viewing"
+          >
+
+            Viewing:
+
+            <strong
+              id="selectedAccountingMonthLabel"
+            >
+              September 2026
+            </strong>
 
           </div>
 
