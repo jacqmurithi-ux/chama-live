@@ -1,49 +1,41 @@
 /* =========================================================
    CHAMA LIVE — CONTRIBUTIONS
-   COMPLETE STABLE + RESPONSIVE VERSION
+   CANONICAL 2B ACCOUNTING VERSION
 
-   FIXES
+   RESPONSIBILITIES
    ---------------------------------------------------------
-   • Prevents page content from going outside screen
-   • Responsive tables
-   • Mobile table-card layout
-   • Correct 7-column monthly status
-   • Previous arrears calculation
-   • Carry-forward / credit calculation
-   • Correct PAID / PARTIAL / OUTSTANDING / OVERPAID status
-   • Group-scoped records
-   • Monthly contributions
-   • Contribution goals
+   • Record contributions
+   • Display contribution history
+   • Display contribution goals
+   • Display canonical monthly member accounting
+   • Use contribution_obligations →
+     contributions → contribution_allocations
+     as the accounting source of truth
+   • Responsive tables / mobile cards
    • M-Pesa / Cash / Bank transfer
-   • M-Pesa reference validation
    • Other contribution type
    • Notes support
    • Duplicate monthly payment warning
-   • Responsive contribution history
    • Compatible with layout.js dynamic loading
 
-   DATABASE TABLES
+   CANONICAL 2B RULE
    ---------------------------------------------------------
-   public.groups
-   public.members
-   public.contributions
-   public.contribution_goals
+   contributions
+        ↓
+   refresh_canonical_contribution_accounting()
+        ↓
+   contribution_obligations
+        ↓
+   contribution_allocations
+        ↓
+   get_canonical_member_monthly_status()
 
-   CONTRIBUTIONS COLUMNS USED
+   IMPORTANT
    ---------------------------------------------------------
-   group_id
-   member_id
-   amount
-   contribution_type
-   month
-   payment_method
-   reference
-   recorded_by
-   created_at
-   goal_id
-   contribution_date
-   notes
-   mpesa_reference
+   The frontend does NOT calculate arrears, credit,
+   allocation or outstanding balances itself.
+
+   The canonical Supabase RPC is authoritative.
 ========================================================= */
 
 import {
@@ -142,6 +134,8 @@ let members = [];
 let contributions = [];
 
 let contributionGoals = [];
+
+let canonicalMemberStatus = [];
 
 let monthlyContribution = 0;
 
@@ -338,97 +332,6 @@ function escapeHtml(value) {
 
 
 /* =========================================================
-   MONTH COMPARISON
-========================================================= */
-
-function monthToNumber(month) {
-
-  if (
-    !month ||
-    !/^\d{4}-\d{2}$/.test(
-      String(month)
-    )
-  ) {
-
-    return null;
-
-  }
-
-
-  const [
-    year,
-    monthNumber
-  ] =
-    String(month)
-      .split("-")
-      .map(Number);
-
-
-  return (
-    year * 12 +
-    monthNumber
-  );
-
-}
-
-
-function getMonthsBetween(
-  startMonth,
-  endMonth
-) {
-
-  const start =
-    monthToNumber(
-      startMonth
-    );
-
-  const end =
-    monthToNumber(
-      endMonth
-    );
-
-
-  if (
-    start === null ||
-    end === null ||
-    end < start
-  ) {
-
-    return [];
-
-  }
-
-
-  const months = [];
-
-  for (
-    let value = start;
-    value <= end;
-    value++
-  ) {
-
-    const year =
-      Math.floor(
-        (value - 1) / 12
-      );
-
-    const month =
-      ((value - 1) % 12) + 1;
-
-
-    months.push(
-      `${year}-${String(month).padStart(2, "0")}`
-    );
-
-  }
-
-
-  return months;
-
-}
-
-
-/* =========================================================
    STATUS / ERROR
 ========================================================= */
 
@@ -590,6 +493,9 @@ async function loadGroup() {
 
 /* =========================================================
    LOAD MEMBERS
+   ---------------------------------------------------------
+   Membership accounting is controlled by members.status.
+   onboarding_status is deliberately NOT used here.
 ========================================================= */
 
 async function loadMembers() {
@@ -841,6 +747,163 @@ async function loadContributions() {
 
 
 /* =========================================================
+   CANONICAL 2B STATUS
+========================================================= */
+
+/*
+ * Read canonical monthly status.
+ *
+ * IMPORTANT:
+ * This function is read-only.
+ * It does NOT perform accounting calculations.
+ */
+
+async function loadCanonicalMemberStatus(
+  month = getCurrentMonth()
+) {
+
+  if (!groupId) {
+    canonicalMemberStatus = [];
+    return [];
+  }
+
+
+  const {
+    data,
+    error
+  } =
+    await supabase.rpc(
+      "get_canonical_member_monthly_status",
+      {
+        p_group_id:
+          groupId,
+
+        p_month:
+          month
+      }
+    );
+
+
+  if (error) {
+
+    throw error;
+
+  }
+
+
+  canonicalMemberStatus =
+    data || [];
+
+
+  return canonicalMemberStatus;
+
+}
+
+
+/*
+ * Find canonical status for one member.
+ */
+
+function getCanonicalMemberStatus(
+  memberId
+) {
+
+  return canonicalMemberStatus.find(
+    item =>
+      String(item.member_id) ===
+      String(memberId)
+  ) || null;
+
+}
+
+
+/*
+ * Refresh canonical accounting after
+ * a monthly contribution is recorded.
+ *
+ * This is the ONLY frontend accounting
+ * refresh required after a contribution write.
+ */
+
+async function refreshCanonicalMember(
+  memberId,
+  month
+) {
+
+  if (!groupId) {
+
+    throw new Error(
+      "No current group is available."
+    );
+
+  }
+
+
+  if (!memberId) {
+
+    throw new Error(
+      "No contribution member was supplied."
+    );
+
+  }
+
+
+  if (
+    !/^\d{4}-\d{2}$/.test(
+      String(month || "")
+    )
+  ) {
+
+    throw new Error(
+      "Contribution month must use YYYY-MM format."
+    );
+
+  }
+
+
+  const {
+    data,
+    error
+  } =
+    await supabase.rpc(
+      "refresh_canonical_contribution_accounting",
+      {
+        p_group_id:
+          groupId,
+
+        p_through_month:
+          month,
+
+        p_member_id:
+          memberId
+      }
+    );
+
+
+  if (error) {
+
+    throw error;
+
+  }
+
+
+  console.log(
+    "CHAMA LIVE: Canonical contribution accounting refreshed",
+    {
+      groupId,
+      memberId,
+      month,
+      result: data
+    }
+  );
+
+
+  return data;
+
+}
+
+
+/* =========================================================
    MEMBER NAME
 ========================================================= */
 
@@ -999,16 +1062,7 @@ let otherTypeWrap = null;
 let otherTypeInput = null;
 
 
-/* =========================================================
-   CREATE OTHER FIELD
-========================================================= */
-
 function createOtherContributionField() {
-
-  /*
-   * The HTML already contains this field.
-   * Use it instead of creating a duplicate.
-   */
 
   otherTypeWrap =
     document.getElementById(
@@ -1218,9 +1272,7 @@ function buildContributionNotes(
   }
 
 
-  return (
-    `${otherLine}\n${notes}`
-  );
+  return `${otherLine}\n${notes}`;
 
 }
 
@@ -1267,7 +1319,7 @@ function extractOtherDetails(item) {
 
 
 /* =========================================================
-   PAYMENT METHOD
+   PAYMENT METHOD UI
 ========================================================= */
 
 function updatePaymentMethod() {
@@ -1310,578 +1362,6 @@ function updatePaymentMethod() {
     }
 
   }
-
-}
-
-
-/* =========================================================
-   MONTHLY CONTRIBUTIONS FOR MEMBER
-========================================================= */
-
-function getMemberMonthlyContributions(
-  memberId
-) {
-
-  return contributions.filter(
-    item => {
-
-      if (
-        String(item.member_id) !==
-        String(memberId)
-      ) {
-
-        return false;
-
-      }
-
-
-      return (
-        String(
-          item.contribution_type ||
-          ""
-        ).toLowerCase() ===
-        "monthly"
-      );
-
-    }
-  );
-
-}
-
-
-/* =========================================================
-   MONTHLY PAID BY MEMBER
-========================================================= */
-
-function getMonthlyPaid(
-  memberId,
-  month
-) {
-
-  return getMemberMonthlyContributions(
-    memberId
-  )
-    .filter(
-      item =>
-        getContributionMonth(item) ===
-        month
-    )
-    .reduce(
-      (
-        total,
-        item
-      ) =>
-        total +
-        number(item.amount),
-      0
-    );
-
-}
-
-
-/* =========================================================
-   CALCULATE MEMBER MONTHLY ACCOUNT
-========================================================= */
-
-function calculateMemberMonthlyAccount(
-  memberId
-) {
-
-  const currentMonth =
-    getCurrentMonth();
-
-
-  const currentMonthNumber =
-    monthToNumber(
-      currentMonth
-    );
-
-
-  const memberContributions =
-    getMemberMonthlyContributions(
-      memberId
-    );
-
-
-  /*
-   * Find the earliest month for which
-   * this member has a monthly contribution.
-   */
-
-  let earliestMonth =
-    currentMonth;
-
-
-  memberContributions.forEach(
-    item => {
-
-      const month =
-        getContributionMonth(
-          item
-        );
-
-
-      if (
-        monthToNumber(month) !== null &&
-        monthToNumber(month) <
-        monthToNumber(earliestMonth)
-      ) {
-
-        earliestMonth =
-          month;
-
-      }
-
-    }
-  );
-
-
-  /*
-   * Also look at current month.
-   */
-
-  const months =
-    getMonthsBetween(
-      earliestMonth,
-      currentMonth
-    );
-
-
-  /*
-   * If there are no historical records,
-   * start with the current month only.
-   */
-
-  if (!months.length) {
-
-    months.push(
-      currentMonth
-    );
-
-  }
-
-
-  let credit = 0;
-
-  let arrears = 0;
-
-  let previousMonthsDue = 0;
-
-  let previousMonthsPaid = 0;
-
-
-  /*
-   * Calculate the position before
-   * the current month.
-   *
-   * Positive balance = arrears
-   * Negative balance = credit
-   */
-
-  months.forEach(
-    month => {
-
-      const monthNumber =
-        monthToNumber(month);
-
-
-      if (
-        monthNumber === null ||
-        monthNumber >=
-        currentMonthNumber
-      ) {
-
-        return;
-
-      }
-
-
-      const paid =
-        getMonthlyPaid(
-          memberId,
-          month
-        );
-
-
-      const due =
-        monthlyContribution;
-
-
-      previousMonthsDue +=
-        due;
-
-      previousMonthsPaid +=
-        paid;
-
-
-      const monthBalance =
-        due - paid;
-
-
-      /*
-       * Apply existing credit first.
-       */
-
-      if (
-        credit > 0
-      ) {
-
-        if (
-          monthBalance > 0
-        ) {
-
-          const used =
-            Math.min(
-              credit,
-              monthBalance
-            );
-
-          credit -= used;
-
-          arrears +=
-            monthBalance -
-            used;
-
-        }
-        else if (
-          monthBalance < 0
-        ) {
-
-          credit +=
-            Math.abs(
-              monthBalance
-            );
-
-        }
-
-      }
-      else {
-
-        if (
-          monthBalance > 0
-        ) {
-
-          arrears +=
-            monthBalance;
-
-        }
-        else if (
-          monthBalance < 0
-        ) {
-
-          /*
-           * A historical overpayment
-           * becomes carry-forward credit.
-           */
-
-          const overpayment =
-            Math.abs(
-              monthBalance
-            );
-
-
-          if (
-            arrears > 0
-          ) {
-
-            const used =
-              Math.min(
-                arrears,
-                overpayment
-              );
-
-            arrears -= used;
-
-            credit =
-              overpayment -
-              used;
-
-          }
-          else {
-
-            credit +=
-              overpayment;
-
-          }
-
-        }
-
-      }
-
-    }
-  );
-
-
-  /*
-   * Current month.
-   */
-
-  const currentPaid =
-    getMonthlyPaid(
-      memberId,
-      currentMonth
-    );
-
-
-  const currentDue =
-    monthlyContribution;
-
-
-  /*
-   * First use current payment
-   * against previous arrears.
-   */
-
-  let remainingCurrentPaid =
-    currentPaid;
-
-
-  let currentArrears =
-    arrears;
-
-
-  if (
-    currentArrears > 0 &&
-    remainingCurrentPaid > 0
-  ) {
-
-    const used =
-      Math.min(
-        currentArrears,
-        remainingCurrentPaid
-      );
-
-
-    currentArrears -=
-      used;
-
-    remainingCurrentPaid -=
-      used;
-
-  }
-
-
-  /*
-   * Then use remaining payment
-   * against current month's due.
-   */
-
-  let currentOutstanding =
-    currentDue;
-
-
-  if (
-    remainingCurrentPaid > 0
-  ) {
-
-    const used =
-      Math.min(
-        currentOutstanding,
-        remainingCurrentPaid
-      );
-
-
-    currentOutstanding -=
-      used;
-
-    remainingCurrentPaid -=
-      used;
-
-  }
-
-
-  /*
-   * Apply previous credit to anything
-   * still outstanding.
-   */
-
-  let carryForward =
-    credit;
-
-
-  if (
-    carryForward > 0 &&
-    currentArrears > 0
-  ) {
-
-    const used =
-      Math.min(
-        carryForward,
-        currentArrears
-      );
-
-
-    carryForward -=
-      used;
-
-    currentArrears -=
-      used;
-
-  }
-
-
-  if (
-    carryForward > 0 &&
-    currentOutstanding > 0
-  ) {
-
-    const used =
-      Math.min(
-        carryForward,
-        currentOutstanding
-      );
-
-
-    carryForward -=
-      used;
-
-    currentOutstanding -=
-      used;
-
-  }
-
-
-  /*
-   * Any payment remaining after
-   * all obligations is new credit.
-   */
-
-  if (
-    remainingCurrentPaid > 0
-  ) {
-
-    carryForward +=
-      remainingCurrentPaid;
-
-  }
-
-
-  /*
-   * Total amount still owed.
-   */
-
-  const outstanding =
-    Math.max(
-      currentArrears +
-      currentOutstanding,
-      0
-    );
-
-
-  /*
-   * Status.
-   */
-
-  let status =
-    "OUTSTANDING";
-
-
-  let statusClass =
-    "cl-status-outstanding";
-
-
-  if (
-    currentDue <= 0
-  ) {
-
-    status =
-      "NOT SET";
-
-    statusClass =
-      "cl-status-neutral";
-
-  }
-  else if (
-    carryForward > 0
-  ) {
-
-    status =
-      "OVERPAID";
-
-    statusClass =
-      "cl-status-credit";
-
-  }
-  else if (
-    outstanding <= 0 &&
-    currentPaid > 0
-  ) {
-
-    status =
-      "PAID";
-
-    statusClass =
-      "cl-status-paid";
-
-  }
-  else if (
-    currentPaid > 0
-  ) {
-
-    status =
-      "PARTIAL";
-
-    statusClass =
-      "cl-status-partial";
-
-  }
-
-
-  /*
-   * Progress toward current month.
-   */
-
-  const effectiveCurrentPayment =
-    Math.max(
-      currentPaid -
-      arrears,
-      0
-    );
-
-
-  const progress =
-    currentDue > 0
-      ? Math.min(
-          (
-            effectiveCurrentPayment /
-            currentDue
-          ) * 100,
-          100
-        )
-      : 0;
-
-
-  return {
-
-    currentDue,
-
-    previousArrears:
-      Math.max(
-        arrears,
-        0
-      ),
-
-    currentPaid,
-
-    carryForward:
-      Math.max(
-        carryForward,
-        0
-      ),
-
-    outstanding,
-
-    status,
-
-    statusClass,
-
-    progress,
-
-    previousMonthsDue,
-
-    previousMonthsPaid
-
-  };
 
 }
 
@@ -2108,7 +1588,150 @@ function renderLedger() {
 
 
 /* =========================================================
+   CANONICAL STATUS HELPERS
+========================================================= */
+
+function canonicalStatusLabel(
+  status
+) {
+
+  const value =
+    String(
+      status || ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  const labels = {
+
+    paid: "PAID",
+
+    partial: "PARTIAL",
+
+    outstanding: "OUTSTANDING",
+
+    credit: "OVERPAID"
+
+  };
+
+
+  return (
+    labels[value] ||
+    (
+      value
+        ? value.toUpperCase()
+        : "NOT SET"
+    )
+  );
+
+}
+
+
+function canonicalStatusClass(
+  status
+) {
+
+  const value =
+    String(
+      status || ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  if (
+    value === "paid"
+  ) {
+
+    return "cl-status-paid";
+
+  }
+
+
+  if (
+    value === "partial"
+  ) {
+
+    return "cl-status-partial";
+
+  }
+
+
+  if (
+    value === "credit"
+  ) {
+
+    return "cl-status-credit";
+
+  }
+
+
+  if (
+    value === "outstanding"
+  ) {
+
+    return "cl-status-outstanding";
+
+  }
+
+
+  return "cl-status-neutral";
+
+}
+
+
+/*
+ * Canonical current-month progress.
+ *
+ * IMPORTANT:
+ * applied_this_month comes from the canonical
+ * allocation chain. It is NOT calculated here.
+ */
+
+function canonicalProgress(
+  account
+) {
+
+  const due =
+    number(
+      account?.monthly_due
+    );
+
+
+  const applied =
+    number(
+      account?.applied_this_month
+    );
+
+
+  if (
+    due <= 0
+  ) {
+
+    return 0;
+
+  }
+
+
+  return Math.min(
+    Math.max(
+      (
+        applied /
+        due
+      ) * 100,
+      0
+    ),
+    100
+  );
+
+}
+
+
+/* =========================================================
    MONTHLY STATUS
+   ---------------------------------------------------------
+   CANONICAL 2B IS THE ONLY AUTHORITY.
 ========================================================= */
 
 function renderMemberStatus() {
@@ -2142,14 +1765,169 @@ function renderMemberStatus() {
   }
 
 
+  /*
+   * If canonical data has not loaded,
+   * fail visibly instead of silently reverting
+   * to the old JavaScript accounting.
+   */
+
+  if (!canonicalMemberStatus.length) {
+
+    memberStatusRows.innerHTML = `
+
+      <tr>
+
+        <td
+          colspan="7"
+          class="cl-empty-table"
+        >
+
+          Monthly accounting status is
+          temporarily unavailable.
+
+        </td>
+
+      </tr>
+
+    `;
+
+    return;
+
+  }
+
+
   memberStatusRows.innerHTML =
     members
       .map(
         member => {
 
           const account =
-            calculateMemberMonthlyAccount(
+            getCanonicalMemberStatus(
               member.id
+            );
+
+
+          /*
+           * A missing canonical row is not
+           * replaced with a frontend calculation.
+           */
+
+          if (!account) {
+
+            return `
+
+              <tr>
+
+                <td
+                  data-label="Member"
+                  class="cl-member-cell"
+                >
+
+                  <strong>
+                    ${escapeHtml(
+                      member.name
+                    )}
+                  </strong>
+
+                </td>
+
+
+                <td
+                  data-label="Current Due"
+                  class="cl-money-cell"
+                >
+                  —
+                </td>
+
+
+                <td data-label="Previous Arrears">
+                  —
+                </td>
+
+
+                <td data-label="Current Paid">
+                  —
+                </td>
+
+
+                <td data-label="Carry Forward">
+                  —
+                </td>
+
+
+                <td data-label="Outstanding">
+                  —
+                </td>
+
+
+                <td data-label="Status">
+
+                  <span
+                    class="cl-status-badge cl-status-neutral"
+                  >
+                    NOT AVAILABLE
+                  </span>
+
+                </td>
+
+              </tr>
+
+            `;
+
+          }
+
+
+          const monthlyDue =
+            number(
+              account.monthly_due
+            );
+
+
+          const previousArrears =
+            number(
+              account.previous_outstanding
+            );
+
+
+          const currentPaid =
+            number(
+              account.current_month_payment
+            );
+
+
+          const appliedThisMonth =
+            number(
+              account.applied_this_month
+            );
+
+
+          const carryForward =
+            number(
+              account.carry_forward
+            );
+
+
+          const outstanding =
+            number(
+              account.current_outstanding
+            );
+
+
+          const progress =
+            canonicalProgress(
+              account
+            );
+
+
+          const status =
+            canonicalStatusLabel(
+              account.status
+            );
+
+
+          const statusClass =
+            canonicalStatusClass(
+              account.status
             );
 
 
@@ -2177,9 +1955,7 @@ function renderMemberStatus() {
               >
 
                 ${escapeHtml(
-                  money(
-                    account.currentDue
-                  )
+                  money(monthlyDue)
                 )}
 
               </td>
@@ -2190,14 +1966,14 @@ function renderMemberStatus() {
               >
 
                 ${
-                  account.previousArrears > 0
+                  previousArrears > 0
                     ? `
                       <span
                         class="cl-arrears"
                       >
                         ${escapeHtml(
                           money(
-                            account.previousArrears
+                            previousArrears
                           )
                         )}
                       </span>
@@ -2225,7 +2001,7 @@ function renderMemberStatus() {
                   <strong>
                     ${escapeHtml(
                       money(
-                        account.currentPaid
+                        currentPaid
                       )
                     )}
                   </strong>
@@ -2237,11 +2013,22 @@ function renderMemberStatus() {
 
                     <span
                       style="
-                        width:${account.progress}%;
+                        width:${progress}%;
                       "
                     ></span>
 
                   </div>
+
+                  <small
+                    class="cl-sub-detail"
+                  >
+                    Applied:
+                    ${escapeHtml(
+                      money(
+                        appliedThisMonth
+                      )
+                    )}
+                  </small>
 
                 </div>
 
@@ -2253,14 +2040,14 @@ function renderMemberStatus() {
               >
 
                 ${
-                  account.carryForward > 0
+                  carryForward > 0
                     ? `
                       <span
                         class="cl-carry-forward"
                       >
                         ${escapeHtml(
                           money(
-                            account.carryForward
+                            carryForward
                           )
                         )}
                       </span>
@@ -2282,14 +2069,14 @@ function renderMemberStatus() {
               >
 
                 ${
-                  account.outstanding > 0
+                  outstanding > 0
                     ? `
                       <strong
                         class="cl-outstanding-amount"
                       >
                         ${escapeHtml(
                           money(
-                            account.outstanding
+                            outstanding
                           )
                         )}
                       </strong>
@@ -2311,11 +2098,11 @@ function renderMemberStatus() {
               >
 
                 <span
-                  class="cl-status-badge ${account.statusClass}"
+                  class="cl-status-badge ${statusClass}"
                 >
 
                   ${escapeHtml(
-                    account.status
+                    status
                   )}
 
                 </span>
@@ -2349,6 +2136,12 @@ function renderSummary() {
     return;
   }
 
+
+  /*
+   * Total recorded is a raw ledger figure.
+   * This is deliberately separate from canonical
+   * monthly allocation accounting.
+   */
 
   const total =
     contributions.reduce(
@@ -2389,21 +2182,19 @@ function renderSummary() {
       );
 
 
+  /*
+   * NEEDS ATTENTION is canonical.
+   *
+   * We deliberately do not use the old
+   * calculateMemberMonthlyAccount() function.
+   */
+
   const outstandingMembers =
-    members.filter(
-      member => {
-
-        const account =
-          calculateMemberMonthlyAccount(
-            member.id
-          );
-
-
-        return (
-          account.outstanding > 0
-        );
-
-      }
+    canonicalMemberStatus.filter(
+      account =>
+        number(
+          account.current_outstanding
+        ) > 0
     ).length;
 
 
@@ -2445,7 +2236,7 @@ function renderSummary() {
       </strong>
 
       <small>
-        Monthly contributions
+        Monthly contributions recorded
       </small>
 
     </div>
@@ -2491,7 +2282,7 @@ function renderSummary() {
       </strong>
 
       <small>
-        Members with outstanding balance
+        Canonical outstanding members
       </small>
 
     </div>
@@ -2861,6 +2652,23 @@ async function recordContribution(event) {
     );
 
 
+  if (
+    !/^\d{4}-\d{2}$/.test(
+      month
+    )
+  ) {
+
+    showError(
+      new Error(
+        "Please enter a valid contribution date."
+      )
+    );
+
+    return;
+
+  }
+
+
   /* =====================================================
      DUPLICATE MONTHLY WARNING
   ==================================================== */
@@ -2997,6 +2805,11 @@ async function recordContribution(event) {
     );
 
 
+    /*
+     * STEP 1
+     * Record the raw contribution.
+     */
+
     const {
       error
     } =
@@ -3008,12 +2821,79 @@ async function recordContribution(event) {
 
 
     if (error) {
+
       throw error;
+
     }
 
 
+    /*
+     * STEP 2
+     *
+     * Monthly contributions MUST refresh
+     * canonical 2B accounting.
+     *
+     * Other contribution types do not enter
+     * the monthly obligation allocation chain.
+     */
+
+    if (
+      contributionType ===
+      "monthly"
+    ) {
+
+      if (statusEl) {
+
+        statusEl.textContent =
+          "Updating canonical monthly accounting...";
+
+      }
+
+
+      await refreshCanonicalMember(
+        memberId,
+        month
+      );
+
+
+      /*
+       * STEP 3
+       *
+       * Read the freshly refreshed canonical
+       * monthly state.
+       */
+
+      await loadCanonicalMemberStatus(
+        month
+      );
+
+    }
+    else {
+
+      /*
+       * Keep the current month's canonical
+       * status available for the page.
+       */
+
+      await loadCanonicalMemberStatus(
+        getCurrentMonth()
+      );
+
+    }
+
+
+    /*
+     * STEP 4
+     * Reload raw ledger data.
+     */
+
     await loadContributions();
 
+
+    /*
+     * STEP 5
+     * Render everything from the refreshed state.
+     */
 
     renderLedger();
 
@@ -3023,6 +2903,10 @@ async function recordContribution(event) {
 
     renderContributionGoals();
 
+
+    /*
+     * Reset form.
+     */
 
     form?.reset();
 
@@ -3084,7 +2968,7 @@ async function recordContribution(event) {
         false;
 
       statusEl.textContent =
-        "✓ Contribution recorded successfully.";
+        "✓ Contribution recorded and canonical accounting refreshed.";
 
     }
 
@@ -3874,11 +3758,6 @@ function injectContributionStyles() {
 
     }
 
-
-    /*
-     * Desktop tables have a minimum width.
-     * The wrapper scrolls instead of the page.
-     */
 
     .table-wrapper table,
     .table-wrap table {
@@ -4696,10 +4575,6 @@ function injectContributionStyles() {
       }
 
 
-      /*
-       * On mobile, the tables become cards.
-       */
-
       .table-wrapper,
       .table-wrap {
 
@@ -5205,6 +5080,18 @@ export async function initContributions() {
       loadContributionGoals()
 
     ]);
+
+
+    /* =====================================================
+       CANONICAL MONTHLY ACCOUNTING
+       -----------------------------------------------------
+       READ ONLY.
+       No frontend accounting calculation.
+    ==================================================== */
+
+    await loadCanonicalMemberStatus(
+      getCurrentMonth()
+    );
 
 
     /* =====================================================
