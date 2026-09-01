@@ -9,11 +9,11 @@
 
      Canonical source:
        Obligation
-          ↓
+           ↓
        Payment
-          ↓
+           ↓
        Allocation
-          ↓
+           ↓
        Arrears / Credit
 
    Existing canonical RPCs:
@@ -352,7 +352,8 @@ function formatMonth(month) {
   const [
     year,
     monthNumber
-  ] = String(month).split("-");
+  ] =
+    String(month).split("-");
 
   const date =
     new Date(
@@ -785,7 +786,12 @@ function renderTable() {
     filteredRows
       .map(
         row => `
-          <tr>
+          <tr
+            data-member-id="${escapeHtml(
+              rowMemberId(row)
+            )}"
+            title="Double-click to open member statement"
+          >
 
             <td>
               <div class="ma-member-name">
@@ -1132,19 +1138,20 @@ function setupQuickFilters() {
    MEMBER STATEMENT
    ========================================================= */
 
-function buildStatementRows(memberId) {
-  const rows =
-    allRows.filter(
-      row =>
-        rowMemberId(row) ===
-        memberId
-    );
-
-  return rows;
+function buildStatementRows(
+  memberId
+) {
+  return allRows.filter(
+    row =>
+      rowMemberId(row) ===
+      memberId
+  );
 }
 
 
-function openStatement(memberId) {
+function openStatement(
+  memberId
+) {
   const rows =
     buildStatementRows(
       memberId
@@ -1174,6 +1181,7 @@ function openStatement(memberId) {
         memberNumber
           ? `Member No. ${memberNumber}`
           : "",
+
         currentGroup?.name
           ? currentGroup.name
           : "Current Group"
@@ -1325,42 +1333,58 @@ function exportCsv() {
   ];
 
   const lines = [
-    headers.map(csvValue).join(",")
+    headers
+      .map(csvValue)
+      .join(",")
   ];
 
-  for (const row of filteredRows) {
+  for (
+    const row of filteredRows
+  ) {
     lines.push(
       [
         rowMemberNumber(row),
+
         rowMemberName(row),
+
         accountingMonth,
+
         numberValue(
           row?.monthly_due
         ).toFixed(2),
+
         numberValue(
           row?.previous_outstanding
         ).toFixed(2),
+
         numberValue(
           row?.previous_credit
         ).toFixed(2),
+
         numberValue(
           row?.current_month_payment
         ).toFixed(2),
+
         numberValue(
           row?.applied_this_month
         ).toFixed(2),
+
         numberValue(
           row?.carry_forward
         ).toFixed(2),
+
         numberValue(
           row?.current_outstanding
         ).toFixed(2),
+
         numberValue(
           row?.total_paid_to_date
         ).toFixed(2),
+
         numberValue(
           row?.total_due_to_date
         ).toFixed(2),
+
         statusLabel(
           row?.status
         )
@@ -1416,59 +1440,87 @@ function exportExcel() {
       .map(
         row => `
           <tr>
-            <td>${escapeHtml(
-              rowMemberNumber(row)
-            )}</td>
 
-            <td>${escapeHtml(
-              rowMemberName(row)
-            )}</td>
+            <td>
+              ${escapeHtml(
+                rowMemberNumber(row)
+              )}
+            </td>
 
-            <td>${escapeHtml(
-              accountingMonth
-            )}</td>
+            <td>
+              ${escapeHtml(
+                rowMemberName(row)
+              )}
+            </td>
 
-            <td>${numberValue(
-              row?.monthly_due
-            ).toFixed(2)}</td>
+            <td>
+              ${escapeHtml(
+                accountingMonth
+              )}
+            </td>
 
-            <td>${numberValue(
-              row?.previous_outstanding
-            ).toFixed(2)}</td>
+            <td>
+              ${numberValue(
+                row?.monthly_due
+              ).toFixed(2)}
+            </td>
 
-            <td>${numberValue(
-              row?.previous_credit
-            ).toFixed(2)}</td>
+            <td>
+              ${numberValue(
+                row?.previous_outstanding
+              ).toFixed(2)}
+            </td>
 
-            <td>${numberValue(
-              row?.current_month_payment
-            ).toFixed(2)}</td>
+            <td>
+              ${numberValue(
+                row?.previous_credit
+              ).toFixed(2)}
+            </td>
 
-            <td>${numberValue(
-              row?.applied_this_month
-            ).toFixed(2)}</td>
+            <td>
+              ${numberValue(
+                row?.current_month_payment
+              ).toFixed(2)}
+            </td>
 
-            <td>${numberValue(
-              row?.carry_forward
-            ).toFixed(2)}</td>
+            <td>
+              ${numberValue(
+                row?.applied_this_month
+              ).toFixed(2)}
+            </td>
 
-            <td>${numberValue(
-              row?.current_outstanding
-            ).toFixed(2)}</td>
+            <td>
+              ${numberValue(
+                row?.carry_forward
+              ).toFixed(2)}
+            </td>
 
-            <td>${numberValue(
-              row?.total_paid_to_date
-            ).toFixed(2)}</td>
+            <td>
+              ${numberValue(
+                row?.current_outstanding
+              ).toFixed(2)}
+            </td>
 
-            <td>${numberValue(
-              row?.total_due_to_date
-            ).toFixed(2)}</td>
+            <td>
+              ${numberValue(
+                row?.total_paid_to_date
+              ).toFixed(2)}
+            </td>
 
-            <td>${escapeHtml(
-              statusLabel(
-                row?.status
-              )
-            )}</td>
+            <td>
+              ${numberValue(
+                row?.total_due_to_date
+              ).toFixed(2)}
+            </td>
+
+            <td>
+              ${escapeHtml(
+                statusLabel(
+                  row?.status
+                )
+              )}
+            </td>
+
           </tr>
         `
       )
@@ -1476,8 +1528,11 @@ function exportExcel() {
 
   const html = `
     <!DOCTYPE html>
+
     <html>
+
       <head>
+
         <meta charset="UTF-8">
 
         <title>
@@ -1485,6 +1540,7 @@ function exportExcel() {
         </title>
 
         <style>
+
           body {
             font-family: Arial, sans-serif;
           }
@@ -1513,7 +1569,9 @@ function exportExcel() {
             background: #eee;
             font-weight: bold;
           }
+
         </style>
+
       </head>
 
       <body>
@@ -1523,7 +1581,8 @@ function exportExcel() {
         </h1>
 
         <p>
-          Group: ${escapeHtml(
+          Group:
+          ${escapeHtml(
             groupName
           )}
         </p>
@@ -1540,30 +1599,75 @@ function exportExcel() {
         <table>
 
           <thead>
+
             <tr>
-              <th>Member Number</th>
-              <th>Member Name</th>
-              <th>Accounting Month</th>
-              <th>Monthly Due</th>
-              <th>Previous Arrears</th>
-              <th>Previous Credit</th>
-              <th>Current Payment</th>
-              <th>Applied This Month</th>
-              <th>Carry Forward</th>
-              <th>Current Outstanding</th>
-              <th>Total Paid To Date</th>
-              <th>Total Due To Date</th>
-              <th>Status</th>
+
+              <th>
+                Member Number
+              </th>
+
+              <th>
+                Member Name
+              </th>
+
+              <th>
+                Accounting Month
+              </th>
+
+              <th>
+                Monthly Due
+              </th>
+
+              <th>
+                Previous Arrears
+              </th>
+
+              <th>
+                Previous Credit
+              </th>
+
+              <th>
+                Current Payment
+              </th>
+
+              <th>
+                Applied This Month
+              </th>
+
+              <th>
+                Carry Forward
+              </th>
+
+              <th>
+                Current Outstanding
+              </th>
+
+              <th>
+                Total Paid To Date
+              </th>
+
+              <th>
+                Total Due To Date
+              </th>
+
+              <th>
+                Status
+              </th>
+
             </tr>
+
           </thead>
 
           <tbody>
+
             ${rowsHtml}
+
           </tbody>
 
         </table>
 
       </body>
+
     </html>
   `;
 
@@ -1653,15 +1757,18 @@ function printAccounting() {
    ========================================================= */
 
 function setupEvents() {
+
   accountingMonthEl?.addEventListener(
     "change",
     async () => {
+
       accountingMonth =
         accountingMonthEl.value;
 
       await loadAccounting({
         refresh: true
       });
+
     }
   );
 
@@ -1693,9 +1800,11 @@ function setupEvents() {
   refreshButton?.addEventListener(
     "click",
     async () => {
+
       await loadAccounting({
         refresh: true
       });
+
     }
   );
 
@@ -1743,14 +1852,17 @@ function setupEvents() {
   /*
     Row-click statement support.
 
-    The current table intentionally does not add another
-    button column so exports remain clean.
+    The table does not add a separate button column,
+    keeping the exported table clean.
 
-    Double-clicking a member row opens the statement.
+    Double-click any member row to open that
+    member's current accounting statement.
   */
+
   memberAccountingBody?.addEventListener(
     "dblclick",
     event => {
+
       const rowElement =
         event.target.closest(
           "tr[data-member-id]"
@@ -1763,64 +1875,7 @@ function setupEvents() {
       openStatement(
         rowElement.dataset.memberId
       );
-    }
-  );
-}
 
-
-/* =========================================================
-   ENHANCE TABLE ROWS WITH MEMBER IDS
-   ========================================================= */
-
-function attachRowStatementSupport() {
-  if (!memberAccountingBody) {
-    return;
-  }
-
-  const rows =
-    memberAccountingBody.querySelectorAll(
-      "tr"
-    );
-
-  rows.forEach(
-    (tr, index) => {
-      const source =
-        filteredRows[index];
-
-      if (!source) {
-        return;
-      }
-
-      tr.dataset.memberId =
-        rowMemberId(source);
-
-      tr.title =
-        "Double-click to open member statement";
-    }
-  );
-}
-
-
-/* =========================================================
-   OBSERVE TABLE CHANGES
-   ========================================================= */
-
-function setupTableObserver() {
-  if (!memberAccountingBody) {
-    return;
-  }
-
-  const observer =
-    new MutationObserver(
-      () => {
-        attachRowStatementSupport();
-      }
-    );
-
-  observer.observe(
-    memberAccountingBody,
-    {
-      childList: true
     }
   );
 }
@@ -1831,7 +1886,9 @@ function setupTableObserver() {
    ========================================================= */
 
 async function initMemberAccounting() {
+
   try {
+
     accountingMonth =
       accountingMonthEl?.value ||
       getCurrentMonth();
@@ -1841,11 +1898,14 @@ async function initMemberAccounting() {
         accountingMonth;
     }
 
+
     setupQuickFilters();
+
     setupEvents();
-    setupTableObserver();
+
 
     await loadContext();
+
 
     await loadAccounting({
       refresh: true
@@ -1853,6 +1913,7 @@ async function initMemberAccounting() {
 
   }
   catch (error) {
+
     console.error(
       "CHAMA LIVE Member Accounting initialization error:",
       error
@@ -1863,7 +1924,9 @@ async function initMemberAccounting() {
       "Unable to initialise Member Accounting.",
       "error"
     );
+
   }
+
 }
 
 
