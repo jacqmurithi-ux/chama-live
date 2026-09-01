@@ -8,23 +8,23 @@ content="width=device-width, initial-scale=1.0"
 
 <meta
 name="description"
-content="CHAMA LIVE member contribution accounting and statements"
+content="CHAMA LIVE member accounting, arrears, credit and member statements"
 
 «»
 
-  <title>Member Accounting — CHAMA LIVE</title>  <link
+  <title>Member Accounting | CHAMA LIVE</title>  <link
     rel="stylesheet"
     href="./css/app.css"
   >  <style>
     /* =========================================================
        CHAMA LIVE — MEMBER ACCOUNTING
-       ADDITIVE MVP PAGE STYLES
+       ADDITIVE MVP PAGE
        ========================================================= */
 
     :root {
       --ma-bg: #f5f7fb;
       --ma-card: #ffffff;
-      --ma-border: #e5e7eb;
+      --ma-border: #e4e7ec;
       --ma-text: #172033;
       --ma-muted: #667085;
       --ma-primary: #2563eb;
@@ -33,8 +33,7 @@ content="CHAMA LIVE member contribution accounting and statements"
       --ma-warning: #b45309;
       --ma-danger: #b91c1c;
       --ma-purple: #7c3aed;
-      --ma-shadow:
-        0 12px 30px rgba(15, 23, 42, 0.08);
+      --ma-shadow: 0 10px 28px rgba(15, 23, 42, .07);
       --ma-radius: 18px;
     }
 
@@ -64,7 +63,7 @@ content="CHAMA LIVE member contribution accounting and statements"
     .member-accounting-page {
       width: min(1500px, calc(100% - 28px));
       margin: 0 auto;
-      padding: 24px 0 50px;
+      padding: 24px 0 55px;
     }
 
     /* =========================================================
@@ -74,9 +73,9 @@ content="CHAMA LIVE member contribution accounting and statements"
     .ma-hero {
       position: relative;
       overflow: hidden;
-      border-radius: 24px;
+      margin-bottom: 20px;
       padding: 30px;
-      margin-bottom: 22px;
+      border-radius: 24px;
       color: #fff;
       background:
         linear-gradient(
@@ -86,18 +85,18 @@ content="CHAMA LIVE member contribution accounting and statements"
           #2563eb 100%
         );
       box-shadow:
-        0 18px 45px rgba(15, 23, 42, 0.18);
+        0 18px 45px rgba(15, 23, 42, .17);
     }
 
     .ma-hero::after {
       content: "";
       position: absolute;
-      width: 260px;
-      height: 260px;
-      right: -90px;
-      top: -110px;
+      width: 300px;
+      height: 300px;
+      right: -120px;
+      top: -150px;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.08);
+      background: rgba(255,255,255,.08);
     }
 
     .ma-hero-content {
@@ -106,40 +105,38 @@ content="CHAMA LIVE member contribution accounting and statements"
     }
 
     .ma-eyebrow {
-      margin: 0 0 7px;
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: 0.14em;
+      margin: 0 0 8px;
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing: .14em;
       text-transform: uppercase;
-      opacity: 0.82;
+      opacity: .82;
     }
 
     .ma-title {
       margin: 0;
-      font-size: clamp(25px, 4vw, 38px);
-      line-height: 1.1;
-      font-weight: 850;
+      font-size: clamp(26px, 4vw, 40px);
+      line-height: 1.08;
+      font-weight: 900;
     }
 
     .ma-subtitle {
-      max-width: 800px;
-      margin: 10px 0 0;
-      font-size: 15px;
+      max-width: 850px;
+      margin: 11px 0 0;
+      color: rgba(255,255,255,.82);
+      font-size: 14px;
       line-height: 1.65;
-      color: rgba(255, 255, 255, 0.82);
     }
 
-    .ma-group-name {
+    .ma-group-label {
       display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      margin-top: 18px;
+      margin-top: 17px;
       padding: 8px 13px;
-      border: 1px solid rgba(255, 255, 255, 0.18);
+      border: 1px solid rgba(255,255,255,.18);
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.1);
-      font-size: 13px;
-      font-weight: 750;
+      background: rgba(255,255,255,.1);
+      font-size: 12px;
+      font-weight: 800;
     }
 
     /* =========================================================
@@ -148,57 +145,66 @@ content="CHAMA LIVE member contribution accounting and statements"
 
     .ma-status {
       min-height: 0;
-      margin-bottom: 14px;
+      margin: 0 0 14px;
       color: var(--ma-muted);
       font-size: 13px;
+      font-weight: 600;
     }
 
     .ma-status:empty {
       display: none;
     }
 
+    .ma-status.success {
+      padding: 10px 13px;
+      border: 1px solid #bbf7d0;
+      border-radius: 11px;
+      background: #f0fdf4;
+      color: var(--ma-success);
+    }
+
     .ma-status.error {
-      padding: 12px 14px;
+      padding: 11px 13px;
       border: 1px solid #fecaca;
-      border-radius: 12px;
+      border-radius: 11px;
       background: #fef2f2;
       color: var(--ma-danger);
     }
 
     /* =========================================================
-       FILTER CARD
+       COMMON CARD
        ========================================================= */
 
     .ma-card {
-      background: var(--ma-card);
       border: 1px solid var(--ma-border);
       border-radius: var(--ma-radius);
+      background: var(--ma-card);
       box-shadow: var(--ma-shadow);
     }
 
+    /* =========================================================
+       FILTERS
+       ========================================================= */
+
     .ma-filter-card {
+      margin-bottom: 18px;
       padding: 20px;
-      margin-bottom: 20px;
     }
 
-    .ma-section-heading {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 15px;
+    .ma-heading {
       margin-bottom: 16px;
     }
 
-    .ma-section-heading h2 {
+    .ma-heading h2 {
       margin: 0;
       font-size: 18px;
-      font-weight: 800;
+      font-weight: 850;
     }
 
-    .ma-section-heading p {
+    .ma-heading p {
       margin: 5px 0 0;
       color: var(--ma-muted);
-      font-size: 13px;
+      font-size: 12px;
       line-height: 1.5;
     }
 
@@ -206,22 +212,18 @@ content="CHAMA LIVE member contribution accounting and statements"
       display: grid;
       grid-template-columns:
         minmax(170px, 1fr)
-        minmax(170px, 1fr)
-        minmax(170px, 1fr)
-        minmax(220px, 1.4fr);
-      gap: 14px;
-    }
-
-    .ma-field {
-      min-width: 0;
+        minmax(190px, 1fr)
+        minmax(190px, 1fr)
+        minmax(230px, 1.4fr);
+      gap: 13px;
     }
 
     .ma-field label {
       display: block;
       margin-bottom: 7px;
       color: #344054;
-      font-size: 12px;
-      font-weight: 800;
+      font-size: 11px;
+      font-weight: 850;
     }
 
     .ma-field input,
@@ -234,21 +236,13 @@ content="CHAMA LIVE member contribution accounting and statements"
       outline: none;
       background: #fff;
       color: var(--ma-text);
-      transition:
-        border-color 0.15s ease,
-        box-shadow 0.15s ease;
     }
 
     .ma-field input:focus,
     .ma-field select:focus {
       border-color: var(--ma-primary);
-      box-shadow:
-        0 0 0 3px rgba(37, 99, 235, 0.12);
+      box-shadow: 0 0 0 3px rgba(37,99,235,.12);
     }
-
-    /* =========================================================
-       QUICK FILTERS
-       ========================================================= */
 
     .ma-quick-filters {
       display: flex;
@@ -259,125 +253,51 @@ content="CHAMA LIVE member contribution accounting and statements"
       border-top: 1px solid #eef0f3;
     }
 
-    .ma-quick-button {
-      min-height: 37px;
+    .ma-quick {
+      min-height: 36px;
       padding: 7px 13px;
       border: 1px solid #d0d5dd;
       border-radius: 999px;
       background: #fff;
       color: #344054;
       cursor: pointer;
-      font-size: 12px;
-      font-weight: 800;
-      transition:
-        transform 0.12s ease,
-        background 0.12s ease,
-        border-color 0.12s ease;
+      font-size: 11px;
+      font-weight: 850;
     }
 
-    .ma-quick-button:hover {
-      transform: translateY(-1px);
-      border-color: #98a2b3;
-    }
-
-    .ma-quick-button.active {
+    .ma-quick:hover,
+    .ma-quick.active {
       border-color: var(--ma-primary);
       background: #eff6ff;
       color: var(--ma-primary-dark);
     }
 
-    /* =========================================================
-       SUMMARY
-       ========================================================= */
-
-    .ma-summary-grid {
-      display: grid;
-      grid-template-columns:
-        repeat(4, minmax(0, 1fr));
-      gap: 14px;
-      margin-bottom: 20px;
-    }
-
-    .ma-summary-card {
-      padding: 17px;
-      background: #fff;
-      border: 1px solid var(--ma-border);
-      border-radius: 16px;
-      box-shadow:
-        0 8px 22px rgba(15, 23, 42, 0.055);
-    }
-
-    .ma-summary-label {
-      color: var(--ma-muted);
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-    }
-
-    .ma-summary-value {
-      margin-top: 6px;
-      font-size: 23px;
-      font-weight: 850;
-      line-height: 1.15;
-    }
-
-    .ma-summary-note {
-      margin-top: 5px;
-      color: var(--ma-muted);
-      font-size: 11px;
-    }
-
-    /* =========================================================
-       ACTION BAR
-       ========================================================= */
-
-    .ma-action-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-      padding: 15px 18px;
-      margin-bottom: 14px;
-      background: #fff;
-      border: 1px solid var(--ma-border);
-      border-radius: 15px;
-      box-shadow:
-        0 7px 20px rgba(15, 23, 42, 0.045);
-    }
-
-    .ma-result-count {
-      color: var(--ma-muted);
-      font-size: 13px;
-      font-weight: 700;
-    }
-
-    .ma-actions {
+    .ma-filter-actions {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
+      margin-top: 15px;
     }
+
+    /* =========================================================
+       BUTTONS
+       ========================================================= */
 
     .ma-button {
       min-height: 39px;
-      padding: 8px 13px;
+      padding: 8px 14px;
       border: 1px solid #d0d5dd;
       border-radius: 10px;
       background: #fff;
       color: #344054;
       cursor: pointer;
-      font-size: 12px;
-      font-weight: 800;
-      transition:
-        transform 0.12s ease,
-        box-shadow 0.12s ease,
-        background 0.12s ease;
+      font-size: 11px;
+      font-weight: 850;
     }
 
     .ma-button:hover {
+      box-shadow: 0 4px 12px rgba(15,23,42,.08);
       transform: translateY(-1px);
-      box-shadow:
-        0 4px 10px rgba(15, 23, 42, 0.08);
     }
 
     .ma-button.primary {
@@ -391,12 +311,85 @@ content="CHAMA LIVE member contribution accounting and statements"
     }
 
     /* =========================================================
-       TABLE
+       SUMMARY
+       ========================================================= */
+
+    .ma-summary {
+      display: grid;
+      grid-template-columns:
+        repeat(6, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .ma-stat {
+      padding: 15px;
+      border: 1px solid var(--ma-border);
+      border-radius: 15px;
+      background: #fff;
+      box-shadow: 0 7px 20px rgba(15,23,42,.045);
+    }
+
+    .ma-stat-label {
+      color: var(--ma-muted);
+      font-size: 9px;
+      font-weight: 850;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .ma-stat-value {
+      margin-top: 6px;
+      font-size: 19px;
+      font-weight: 900;
+      line-height: 1.15;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .ma-stat-note {
+      margin-top: 4px;
+      color: var(--ma-muted);
+      font-size: 9px;
+    }
+
+    /* =========================================================
+       TABLE HEADER
        ========================================================= */
 
     .ma-table-card {
       overflow: hidden;
     }
+
+    .ma-table-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--ma-border);
+    }
+
+    .ma-table-title {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 850;
+    }
+
+    .ma-table-period {
+      margin-top: 4px;
+      color: var(--ma-muted);
+      font-size: 11px;
+    }
+
+    .ma-table-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    /* =========================================================
+       MAIN TABLE
+       ========================================================= */
 
     .ma-table-wrap {
       width: 100%;
@@ -406,120 +399,113 @@ content="CHAMA LIVE member contribution accounting and statements"
 
     .ma-table {
       width: 100%;
-      min-width: 1120px;
+      min-width: 1100px;
       border-collapse: collapse;
     }
 
     .ma-table th {
-      padding: 12px 13px;
+      padding: 11px 12px;
       border-bottom: 1px solid var(--ma-border);
       background: #f8fafc;
       color: #475467;
-      font-size: 10px;
-      font-weight: 850;
-      letter-spacing: 0.05em;
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: .04em;
       text-align: left;
       text-transform: uppercase;
       white-space: nowrap;
     }
 
     .ma-table td {
-      padding: 13px;
+      padding: 12px;
       border-bottom: 1px solid #eef0f3;
       color: #344054;
-      font-size: 12px;
+      font-size: 11px;
       vertical-align: middle;
       white-space: nowrap;
     }
 
     .ma-table tbody tr {
       cursor: pointer;
-      transition: background 0.12s ease;
     }
 
     .ma-table tbody tr:hover {
       background: #f8fbff;
     }
 
+    .ma-number {
+      font-variant-numeric: tabular-nums;
+      font-weight: 750;
+    }
+
     .ma-member-name {
       color: var(--ma-text);
-      font-weight: 800;
+      font-weight: 850;
     }
 
     .ma-member-number {
       margin-top: 3px;
       color: var(--ma-muted);
-      font-size: 10px;
-    }
-
-    .ma-money {
-      font-variant-numeric: tabular-nums;
-      font-weight: 750;
+      font-size: 9px;
     }
 
     /* =========================================================
-       STATUS BADGES
+       BADGES
        ========================================================= */
 
     .ma-badge {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-height: 25px;
-      padding: 4px 9px;
+      min-height: 24px;
+      padding: 4px 8px;
       border-radius: 999px;
-      font-size: 10px;
-      font-weight: 850;
-      letter-spacing: 0.03em;
+      font-size: 9px;
+      font-weight: 900;
       text-transform: uppercase;
     }
 
-    .ma-badge.paid {
+    .ma-badge-paid {
       background: #ecfdf3;
       color: var(--ma-success);
     }
 
-    .ma-badge.partial {
+    .ma-badge-partial {
       background: #fff7ed;
       color: var(--ma-warning);
     }
 
-    .ma-badge.outstanding {
+    .ma-badge-outstanding {
       background: #fef2f2;
       color: var(--ma-danger);
     }
 
-    .ma-badge.credit {
+    .ma-badge-credit {
       background: #f5f3ff;
       color: var(--ma-purple);
     }
 
-    .ma-badge.no-payment {
+    .ma-badge-neutral {
       background: #f2f4f7;
       color: #475467;
     }
 
     .ma-empty {
-      padding: 42px 20px;
+      padding: 45px 20px !important;
       text-align: center;
       color: var(--ma-muted);
-    }
-
-    .ma-empty strong {
-      display: block;
-      margin-bottom: 5px;
-      color: var(--ma-text);
-      font-size: 15px;
+      font-size: 13px !important;
+      cursor: default !important;
     }
 
     /* =========================================================
-       STATEMENT PANEL
+       STATEMENT
        ========================================================= */
 
     .ma-statement {
       display: none;
-      margin-top: 22px;
-      padding: 22px;
+      margin-top: 20px;
+      padding: 20px;
     }
 
     .ma-statement.visible {
@@ -531,23 +517,19 @@ content="CHAMA LIVE member contribution accounting and statements"
       align-items: flex-start;
       justify-content: space-between;
       gap: 15px;
-      margin-bottom: 18px;
+      margin-bottom: 17px;
     }
 
     .ma-statement-title {
       margin: 0;
-      font-size: 21px;
-      font-weight: 850;
+      font-size: 20px;
+      font-weight: 900;
     }
 
     .ma-statement-meta {
       margin-top: 5px;
       color: var(--ma-muted);
-      font-size: 12px;
-    }
-
-    .ma-statement-close {
-      flex: 0 0 auto;
+      font-size: 11px;
     }
 
     .ma-statement-summary {
@@ -555,47 +537,50 @@ content="CHAMA LIVE member contribution accounting and statements"
       grid-template-columns:
         repeat(4, minmax(0, 1fr));
       gap: 10px;
-      margin-bottom: 18px;
+      margin-bottom: 17px;
     }
 
-    .ma-statement-mini {
+    .ma-statement-stat {
       padding: 13px;
       border: 1px solid #eef0f3;
       border-radius: 12px;
       background: #f8fafc;
     }
 
-    .ma-statement-mini span {
+    .ma-statement-stat span {
       display: block;
       color: var(--ma-muted);
-      font-size: 10px;
-      font-weight: 800;
+      font-size: 9px;
+      font-weight: 850;
       text-transform: uppercase;
     }
 
-    .ma-statement-mini strong {
+    .ma-statement-stat strong {
       display: block;
       margin-top: 5px;
       font-size: 16px;
+      font-weight: 900;
     }
 
     .ma-statement-table {
       width: 100%;
+      min-width: 650px;
       border-collapse: collapse;
     }
 
     .ma-statement-table th,
     .ma-statement-table td {
-      padding: 11px;
+      padding: 10px 11px;
       border-bottom: 1px solid #eef0f3;
       text-align: left;
-      font-size: 12px;
+      font-size: 11px;
     }
 
     .ma-statement-table th {
       background: #f8fafc;
       color: #475467;
-      font-size: 10px;
+      font-size: 9px;
+      font-weight: 900;
       text-transform: uppercase;
     }
 
@@ -604,10 +589,10 @@ content="CHAMA LIVE member contribution accounting and statements"
        ========================================================= */
 
     .ma-loading {
-      padding: 38px 20px;
+      padding: 40px !important;
       text-align: center;
       color: var(--ma-muted);
-      font-size: 13px;
+      cursor: default !important;
     }
 
     .ma-spinner {
@@ -617,7 +602,7 @@ content="CHAMA LIVE member contribution accounting and statements"
       border: 3px solid #dbeafe;
       border-top-color: var(--ma-primary);
       border-radius: 50%;
-      animation: ma-spin 0.8s linear infinite;
+      animation: ma-spin .8s linear infinite;
     }
 
     @keyframes ma-spin {
@@ -640,58 +625,56 @@ content="CHAMA LIVE member contribution accounting and statements"
       }
 
       .ma-no-print,
-      nav,
-      header:not(.ma-print-header),
       .ma-hero,
       .ma-filter-card,
-      .ma-action-bar,
+      .ma-table-actions,
       .ma-status,
-      .ma-quick-filters,
-      .ma-statement-close {
+      .ma-statement {
         display: none !important;
       }
 
       .member-accounting-page {
         width: 100%;
-        margin: 0;
         padding: 0;
+        margin: 0;
       }
 
       .ma-print-header {
         display: block;
-        margin-bottom: 18px;
-        padding-bottom: 14px;
+        padding-bottom: 12px;
+        margin-bottom: 15px;
         border-bottom: 2px solid #111827;
       }
 
       .ma-print-brand {
-        font-size: 23px;
+        font-size: 22px;
         font-weight: 900;
       }
 
       .ma-print-title {
         margin-top: 3px;
-        font-size: 17px;
-        font-weight: 800;
+        font-size: 16px;
+        font-weight: 850;
       }
 
       .ma-print-meta {
-        margin-top: 7px;
+        margin-top: 6px;
         color: #475467;
-        font-size: 11px;
+        font-size: 10px;
       }
 
-      .ma-summary-grid {
-        grid-template-columns:
-          repeat(4, 1fr);
-          gap: 8px;
-          box-shadow: none;
+      .ma-summary {
+        grid-template-columns: repeat(6, 1fr);
+        gap: 6px;
       }
 
-      .ma-summary-card {
-        padding: 10px;
-        border: 1px solid #d0d5dd;
+      .ma-stat {
+        padding: 8px;
         box-shadow: none;
+      }
+
+      .ma-stat-value {
+        font-size: 13px;
       }
 
       .ma-table-card {
@@ -699,50 +682,46 @@ content="CHAMA LIVE member contribution accounting and statements"
         box-shadow: none;
       }
 
+      .ma-table-header {
+        padding: 0 0 8px;
+        border: 0;
+      }
+
       .ma-table {
         min-width: 0;
-        font-size: 9px;
       }
 
       .ma-table th,
       .ma-table td {
-        padding: 7px;
-        font-size: 9px;
-      }
-
-      .ma-table tbody tr:hover {
-        background: transparent;
-      }
-
-      .ma-statement {
-        display: none !important;
+        padding: 6px;
+        font-size: 8px;
       }
 
       @page {
         size: landscape;
-        margin: 12mm;
+        margin: 10mm;
       }
     }
 
     /* =========================================================
-       MOBILE
+       RESPONSIVE
        ========================================================= */
 
-    @media (max-width: 1050px) {
-      .ma-filter-grid {
+    @media (max-width: 1150px) {
+      .ma-summary {
         grid-template-columns:
-          repeat(2, minmax(0, 1fr));
+          repeat(3, minmax(0, 1fr));
       }
 
-      .ma-summary-grid {
+      .ma-filter-grid {
         grid-template-columns:
           repeat(2, minmax(0, 1fr));
       }
     }
 
-    @media (max-width: 720px) {
+    @media (max-width: 700px) {
       .member-accounting-page {
-        width: min(100% - 18px, 1500px);
+        width: calc(100% - 18px);
         padding-top: 10px;
       }
 
@@ -767,66 +746,56 @@ content="CHAMA LIVE member contribution accounting and statements"
         grid-template-columns: 1fr;
       }
 
-      .ma-summary-grid {
+      .ma-summary {
         grid-template-columns:
           repeat(2, minmax(0, 1fr));
         gap: 9px;
       }
 
-      .ma-summary-card {
-        padding: 13px;
-      }
-
-      .ma-summary-value {
-        font-size: 19px;
-      }
-
-      .ma-action-bar {
-        align-items: stretch;
+      .ma-table-header {
+        align-items: flex-start;
         flex-direction: column;
       }
 
-      .ma-actions {
+      .ma-table-actions {
         width: 100%;
       }
 
-      .ma-actions .ma-button {
+      .ma-table-actions .ma-button {
         flex: 1;
+      }
+
+      .ma-statement-header {
+        flex-direction: column;
       }
 
       .ma-statement-summary {
         grid-template-columns:
           repeat(2, minmax(0, 1fr));
       }
-
-      .ma-statement-header {
-        flex-direction: column;
-      }
     }
 
     @media (max-width: 430px) {
-      .ma-summary-grid {
+      .ma-summary {
         grid-template-columns: 1fr;
-      }
-
-      .ma-actions {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-      }
-
-      .ma-actions .ma-button {
-        width: 100%;
       }
 
       .ma-statement-summary {
         grid-template-columns: 1fr;
       }
+
+      .ma-filter-actions,
+      .ma-table-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        width: 100%;
+      }
+
+      .ma-button {
+        width: 100%;
+      }
     }
-  </style></head><body>  <!-- =========================================================
-       OPTIONAL EXISTING APP NAV
-       layout.js will initialise the shared CHAMA LIVE shell
-       where applicable.
-       ========================================================= -->  <main class="member-accounting-page"><!-- =======================================================
+  </style></head><body>  <main class="member-accounting-page"><!-- =======================================================
      PRINT HEADER
      ======================================================= -->
 
@@ -843,7 +812,7 @@ content="CHAMA LIVE member contribution accounting and statements"
     id="printMeta"
     class="ma-print-meta"
   >
-    Reporting period and group information
+    Member accounting report
   </div>
 </header>
 
@@ -863,14 +832,14 @@ content="CHAMA LIVE member contribution accounting and statements"
     </h1>
 
     <p class="ma-subtitle">
-      Track monthly obligations, payments, allocations,
-      arrears and carry-forward balances using the
-      chama's canonical accounting records.
+      View each active member's monthly obligation,
+      payment, application, arrears and carry-forward
+      position from the canonical chama accounting system.
     </p>
 
     <div
-      id="groupName"
-      class="ma-group-name"
+      id="groupLabel"
+      class="ma-group-label"
     >
       Loading group…
     </div>
@@ -879,32 +848,30 @@ content="CHAMA LIVE member contribution accounting and statements"
 </section>
 
 <!-- =======================================================
-     STATUS
+     STATUS MESSAGE
      ======================================================= -->
 
 <div
-  id="pageStatus"
+  id="statusMessage"
   class="ma-status"
   aria-live="polite"
 ></div>
 
 <!-- =======================================================
-     FILTERS
+     FILTER CARD
      ======================================================= -->
 
 <section class="ma-card ma-filter-card">
 
-  <div class="ma-section-heading">
-    <div>
-      <h2>
-        Member Accounting Filters
-      </h2>
+  <div class="ma-heading">
+    <h2>
+      Accounting Filters
+    </h2>
 
-      <p>
-        Select the accounting month and narrow the
-        member list by status.
-      </p>
-    </div>
+    <p>
+      Select a month, member or status. Search by member
+      name or member number, or use a quick filter.
+    </p>
   </div>
 
   <div class="ma-filter-grid">
@@ -926,7 +893,7 @@ content="CHAMA LIVE member contribution accounting and statements"
       </label>
 
       <select id="memberFilter">
-        <option value="">
+        <option value="all">
           All Members
         </option>
       </select>
@@ -934,7 +901,7 @@ content="CHAMA LIVE member contribution accounting and statements"
 
     <div class="ma-field">
       <label for="statusFilter">
-        Accounting Status
+        Status
       </label>
 
       <select id="statusFilter">
@@ -958,21 +925,21 @@ content="CHAMA LIVE member contribution accounting and statements"
           Credit / Carry-forward
         </option>
 
-        <option value="no-payment">
+        <option value="no_payment">
           No Payment
         </option>
       </select>
     </div>
 
     <div class="ma-field">
-      <label for="memberSearch">
+      <label for="searchMember">
         Search Member
       </label>
 
       <input
-        id="memberSearch"
+        id="searchMember"
         type="search"
-        placeholder="Search by name or member number…"
+        placeholder="Name or member number…"
         autocomplete="off"
       >
     </div>
@@ -981,39 +948,59 @@ content="CHAMA LIVE member contribution accounting and statements"
 
   <div
     class="ma-quick-filters"
-    aria-label="Quick member filters"
+    aria-label="Quick filters"
   >
 
     <button
       type="button"
-      class="ma-quick-button active"
-      data-quick-filter="all"
+      class="ma-quick active"
+      data-quick="all"
     >
       All Members
     </button>
 
     <button
       type="button"
-      class="ma-quick-button"
-      data-quick-filter="attention"
+      class="ma-quick"
+      data-quick="attention"
     >
       Needs Attention
     </button>
 
     <button
       type="button"
-      class="ma-quick-button"
-      data-quick-filter="arrears"
+      class="ma-quick"
+      data-quick="arrears"
     >
       Has Arrears
     </button>
 
     <button
       type="button"
-      class="ma-quick-button"
-      data-quick-filter="credit"
+      class="ma-quick"
+      data-quick="credit"
     >
       Has Credit
+    </button>
+
+  </div>
+
+  <div class="ma-filter-actions">
+
+    <button
+      id="refreshButton"
+      type="button"
+      class="ma-button primary"
+    >
+      Refresh Accounting
+    </button>
+
+    <button
+      id="resetButton"
+      type="button"
+      class="ma-button"
+    >
+      Reset Filters
     </button>
 
   </div>
@@ -1025,121 +1012,111 @@ content="CHAMA LIVE member contribution accounting and statements"
      ======================================================= -->
 
 <section
-  id="accountingSummary"
-  class="ma-summary-grid"
-  aria-label="Member accounting summary"
+  class="ma-summary"
+  aria-label="Accounting summary"
 >
 
-  <article class="ma-summary-card">
-    <div class="ma-summary-label">
+  <article class="ma-stat">
+    <div class="ma-stat-label">
       Members
     </div>
 
     <div
-      id="summaryMembers"
-      class="ma-summary-value"
+      id="statMembers"
+      class="ma-stat-value"
     >
       0
     </div>
 
-    <div class="ma-summary-note">
-      Active members in current view
+    <div class="ma-stat-note">
+      Members in current view
     </div>
   </article>
 
-  <article class="ma-summary-card">
-    <div class="ma-summary-label">
+  <article class="ma-stat">
+    <div class="ma-stat-label">
       Monthly Due
     </div>
 
     <div
-      id="summaryDue"
-      class="ma-summary-value"
+      id="statDue"
+      class="ma-stat-value"
     >
       KES 0.00
     </div>
 
-    <div class="ma-summary-note">
-      Current accounting obligations
+    <div class="ma-stat-note">
+      Current obligations
     </div>
   </article>
 
-  <article class="ma-summary-card">
-    <div class="ma-summary-label">
+  <article class="ma-stat">
+    <div class="ma-stat-label">
       Applied
     </div>
 
     <div
-      id="summaryApplied"
-      class="ma-summary-value"
+      id="statApplied"
+      class="ma-stat-value"
     >
       KES 0.00
     </div>
 
-    <div class="ma-summary-note">
-      Amount applied to current month
+    <div class="ma-stat-note">
+      Applied this month
     </div>
   </article>
 
-  <article class="ma-summary-card">
-    <div class="ma-summary-label">
+  <article class="ma-stat">
+    <div class="ma-stat-label">
       Outstanding
     </div>
 
     <div
-      id="summaryOutstanding"
-      class="ma-summary-value"
+      id="statOutstanding"
+      class="ma-stat-value"
     >
       KES 0.00
     </div>
 
-    <div class="ma-summary-note">
-      Current monthly outstanding
+    <div class="ma-stat-note">
+      Current outstanding
     </div>
   </article>
 
-</section>
+  <article class="ma-stat">
+    <div class="ma-stat-label">
+      Credit
+    </div>
 
-<!-- =======================================================
-     ACTION BAR
-     ======================================================= -->
-
-<section class="ma-action-bar">
-
-  <div
-    id="resultCount"
-    class="ma-result-count"
-  >
-    0 members
-  </div>
-
-  <div class="ma-actions">
-
-    <button
-      id="printButton"
-      type="button"
-      class="ma-button primary"
+    <div
+      id="statCredit"
+      class="ma-stat-value"
     >
-      Print
-    </button>
+      KES 0.00
+    </div>
 
-    <button
-      id="csvButton"
-      type="button"
-      class="ma-button"
+    <div class="ma-stat-note">
+      Carry-forward credit
+    </div>
+  </article>
+
+  <article class="ma-stat">
+    <div class="ma-stat-label">
+      Attention
+    </div>
+
+    <div
+      id="statAttention"
+      class="ma-stat-value"
     >
-      CSV
-    </button>
+      0
+    </div>
 
-    <button
-      id="excelButton"
-      type="button"
-      class="ma-button"
-    >
-      Excel
-    </button>
-
-  </div>
+    <div class="ma-stat-note">
+      Partial / outstanding
+    </div>
+  </article>
 
 </section>
 
@@ -1149,18 +1126,60 @@ content="CHAMA LIVE member contribution accounting and statements"
 
 <section class="ma-card ma-table-card">
 
+  <div class="ma-table-header">
+
+    <div>
+      <h2 class="ma-table-title">
+        Member Accounting
+      </h2>
+
+      <div
+        id="tablePeriod"
+        class="ma-table-period"
+      >
+        Loading accounting period…
+      </div>
+    </div>
+
+    <div class="ma-table-actions">
+
+      <button
+        id="printButton"
+        type="button"
+        class="ma-button primary"
+      >
+        Print
+      </button>
+
+      <button
+        id="csvButton"
+        type="button"
+        class="ma-button"
+      >
+        CSV
+      </button>
+
+      <button
+        id="excelButton"
+        type="button"
+        class="ma-button"
+      >
+        Excel
+      </button>
+
+    </div>
+
+  </div>
+
   <div class="ma-table-wrap">
 
     <table class="ma-table">
 
       <thead>
         <tr>
-          <th>
-            Member
-          </th>
 
           <th>
-            Month
+            Member
           </th>
 
           <th>
@@ -1202,14 +1221,15 @@ content="CHAMA LIVE member contribution accounting and statements"
           <th>
             Status
           </th>
+
         </tr>
       </thead>
 
-      <tbody id="memberAccountingTableBody">
+      <tbody id="memberAccountingBody">
 
         <tr>
           <td
-            colspan="12"
+            colspan="11"
             class="ma-loading"
           >
             <div class="ma-spinner"></div>
@@ -1230,13 +1250,14 @@ content="CHAMA LIVE member contribution accounting and statements"
      ======================================================= -->
 
 <section
-  id="memberStatement"
+  id="statementSection"
   class="ma-card ma-statement"
 >
 
   <div class="ma-statement-header">
 
     <div>
+
       <h2
         id="statementTitle"
         class="ma-statement-title"
@@ -1248,22 +1269,62 @@ content="CHAMA LIVE member contribution accounting and statements"
         id="statementMeta"
         class="ma-statement-meta"
       ></div>
+
     </div>
 
     <button
       id="closeStatementButton"
       type="button"
-      class="ma-button ma-statement-close"
+      class="ma-button"
     >
       Close Statement
     </button>
 
   </div>
 
-  <div
-    id="statementSummary"
-    class="ma-statement-summary"
-  ></div>
+  <div class="ma-statement-summary">
+
+    <article class="ma-statement-stat">
+      <span>
+        Total Due
+      </span>
+
+      <strong id="statementDue">
+        KES 0.00
+      </strong>
+    </article>
+
+    <article class="ma-statement-stat">
+      <span>
+        Total Paid
+      </span>
+
+      <strong id="statementPaid">
+        KES 0.00
+      </strong>
+    </article>
+
+    <article class="ma-statement-stat">
+      <span>
+        Outstanding
+      </span>
+
+      <strong id="statementOutstanding">
+        KES 0.00
+      </strong>
+    </article>
+
+    <article class="ma-statement-stat">
+      <span>
+        Carry-forward
+      </span>
+
+      <strong id="statementCredit">
+        KES 0.00
+      </strong>
+    </article>
+
+  </div>
 
   <div class="ma-table-wrap">
 
@@ -1271,6 +1332,7 @@ content="CHAMA LIVE member contribution accounting and statements"
 
       <thead>
         <tr>
+
           <th>
             Month
           </th>
@@ -1284,11 +1346,7 @@ content="CHAMA LIVE member contribution accounting and statements"
           </th>
 
           <th>
-            Previous Arrears
-          </th>
-
-          <th>
-            Previous Credit
+            Outstanding
           </th>
 
           <th>
@@ -1296,16 +1354,13 @@ content="CHAMA LIVE member contribution accounting and statements"
           </th>
 
           <th>
-            Outstanding
-          </th>
-
-          <th>
             Status
           </th>
+
         </tr>
       </thead>
 
-      <tbody id="statementTableBody">
+      <tbody id="statementBody">
       </tbody>
 
     </table>
@@ -1315,87 +1370,62 @@ content="CHAMA LIVE member contribution accounting and statements"
 </section>
 
   </main>  <!-- =========================================================
-       SHARED APP LAYOUT
+       PAGE SCRIPT
        ========================================================= -->  <script type="module">
     /*
-      CHAMA LIVE page bootstrap.
+      CHAMA LIVE — Member Accounting
 
-      The new page is intentionally additive.
-      member-accounting.js owns the member accounting UI.
+      This page intentionally loads the existing
+      member-accounting.js module directly.
+
+      No new accounting logic is implemented here.
+      All accounting data comes from the canonical
+      Supabase RPCs used by member-accounting.js.
     */
-
-    import {
-      getCurrentMember,
-      getCurrentGroup,
-      requireAuth
-    } from "./js/auth.js";
 
     import "./js/member-accounting.js";
 
-    const groupNameEl =
-      document.getElementById("groupName");
+    /*
+      Print metadata is populated from the visible
+      CHAMA LIVE group label after the page loads.
+    */
 
-    const printMetaEl =
-      document.getElementById("printMeta");
+    window.addEventListener(
+      "beforeprint",
+      () => {
+        const groupLabel =
+          document.getElementById("groupLabel");
 
-    async function initialiseMemberAccountingPage() {
-      try {
-        await requireAuth();
+        const tablePeriod =
+          document.getElementById("tablePeriod");
 
-        const member =
-          await getCurrentMember();
+        const printMeta =
+          document.getElementById("printMeta");
+
+        if (!printMeta) {
+          return;
+        }
 
         const group =
-          await getCurrentGroup();
+          groupLabel?.textContent?.trim() ||
+          "Current Group";
 
-        if (groupNameEl) {
-          groupNameEl.textContent =
-            group?.name ||
-            group?.group_name ||
-            "Current Group";
-        }
+        const period =
+          tablePeriod?.textContent?.trim() ||
+          "Current Accounting Period";
 
-        if (printMetaEl) {
-          const now =
-            new Date().toLocaleString(
-              "en-KE",
-              {
-                dateStyle: "medium",
-                timeStyle: "short"
-              }
-            );
+        const generated =
+          new Intl.DateTimeFormat(
+            "en-KE",
+            {
+              dateStyle: "medium",
+              timeStyle: "short"
+            }
+          ).format(new Date());
 
-          printMetaEl.textContent =
-            `Group: ${
-              group?.name ||
-              group?.group_name ||
-              "Current Group"
-            } • Generated: ${now}`;
-        }
-
-        window.CHAMA_LIVE_MEMBER_ACCOUNTING_CONTEXT = {
-          member,
-          group
-        };
-
-      } catch (error) {
-        console.error(
-          "CHAMA LIVE member accounting bootstrap error:",
-          error
-        );
-
-        const statusEl =
-          document.getElementById("pageStatus");
-
-        if (statusEl) {
-          statusEl.classList.add("error");
-          statusEl.textContent =
-            error?.message ||
-            "Unable to load member accounting.";
-        }
+        printMeta.textContent =
+          `${group} • ${period} • Generated ${generated}`;
       }
-    }
-
-    initialiseMemberAccountingPage();
+    );
   </script></body>
 </html>
