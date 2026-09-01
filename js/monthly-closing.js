@@ -463,7 +463,7 @@ async function loadOtherSavings(month) {
       .select(`
         id,
         amount,
-        date,
+        contribution_date,
         contribution_type
       `)
       .eq(
@@ -471,11 +471,11 @@ async function loadOtherSavings(month) {
         groupId
       )
       .gte(
-        "date",
+        "contribution_date",
         monthStart
       )
       .lt(
-        "date",
+        "contribution_date",
         monthEnd
       )
       .eq(
