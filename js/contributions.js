@@ -2,40 +2,14 @@
    CHAMA LIVE — CONTRIBUTIONS
    CANONICAL 2B ACCOUNTING VERSION
 
-   RESPONSIBILITIES
+   ACCOUNTING MONTH UPDATE
    ---------------------------------------------------------
-   • Record contributions
-   • Display contribution history
-   • Display contribution goals
-   • Display canonical monthly member accounting
-   • Use contribution_obligations →
-     contributions → contribution_allocations
-     as the accounting source of truth
-   • Responsive tables / mobile cards
-   • M-Pesa / Cash / Bank transfer
-   • Other contribution type
-   • Notes support
-   • Duplicate monthly payment warning
-   • Compatible with layout.js dynamic loading
-
-   CANONICAL 2B RULE
-   ---------------------------------------------------------
-   contributions
-        ↓
-   refresh_canonical_contribution_accounting()
-        ↓
-   contribution_obligations
-        ↓
-   contribution_allocations
-        ↓
-   get_canonical_member_monthly_status()
-
-   IMPORTANT
-   ---------------------------------------------------------
-   The frontend does NOT calculate arrears, credit,
-   allocation or outstanding balances itself.
-
-   The canonical Supabase RPC is authoritative.
+   • Accounting Month is explicit page state.
+   • Monthly status is loaded for selected month.
+   • No frontend arrears calculation.
+   • No frontend allocation calculation.
+   • No frontend carry-forward calculation.
+   • Supabase canonical RPC remains authoritative.
 ========================================================= */
 
 import {
@@ -55,71 +29,71 @@ console.log(
 const statusEl =
   document.getElementById("status");
 
-
 const errorEl =
   document.getElementById("error");
-
 
 const form =
   document.getElementById("contributionForm");
 
-
 const memberSelect =
   document.getElementById("member");
-
 
 const amountInput =
   document.getElementById("amount");
 
-
 const dateInput =
   document.getElementById("contributionDate");
-
 
 const typeSelect =
   document.getElementById("contributionType");
 
-
 const methodSelect =
   document.getElementById("paymentMethod");
-
 
 const mpesaReference =
   document.getElementById("mpesaReference");
 
-
 const mpesaReferenceWrap =
   document.getElementById("mpesaReferenceWrap");
-
 
 const saveButton =
   document.getElementById("saveContribution");
 
-
 const monthlyExpected =
   document.getElementById("monthlyExpected");
-
 
 const memberStatusRows =
   document.getElementById("memberStatusRows");
 
-
 const contributionRows =
   document.getElementById("contributionRows");
 
-
 const notesInput =
   document.getElementById("notes");
-
 
 const goalSelect =
   document.getElementById("goal") ||
   document.getElementById("contributionGoal");
 
-
 const goalProgressContainer =
   document.getElementById(
     "goalProgressContainer"
+  );
+
+
+/*
+ * NEW:
+ * Explicit accounting month selector.
+ */
+
+const accountingMonthSelect =
+  document.getElementById(
+    "accountingMonth"
+  );
+
+const selectedAccountingMonthLabel =
+  document.getElementById(
+    "selectedAccountingMonthLabel"
   );
 
 
@@ -140,6 +114,19 @@ let canonicalMemberStatus = [];
 let monthlyContribution = 0;
 
 let initialized = false;
+
+
+/*
+ * NEW:
+ * The selected accounting month is the month
+ * displayed by canonical monthly accounting.
+ *
+ * Default:
+ * current local month.
+ */
+
+let accountingMonth =
+  getCurrentMonth();
 
 
 /* =========================================================
@@ -227,6 +214,217 @@ function getCurrentMonth() {
 }
 
 
+/*
+ * Convert YYYY-MM to a readable month label.
+ */
+
+function formatAccountingMonth(month) {
+
+  if (
+    !/^\d{4}-\d{2}$/.test(
+      String(month || "")
+    )
+  ) {
+
+    return String(
+      month || ""
+    );
+
+  }
+
+  const [
+    year,
+    monthNumber
+  ] =
+    String(month).split("-");
+
+  const date =
+    new Date(
+      Number(year),
+      Number(monthNumber) - 1,
+      1
+    );
+
+  return date.toLocaleDateString(
+    "en-KE",
+    {
+      month: "long",
+      year: "numeric"
+    }
+  );
+
+}
+
+
+/*
+ * Return YYYY-MM for a Date object.
+ */
+
+function monthKeyFromDate(date) {
+
+  return (
+    `${date.getFullYear()}-` +
+    `${String(
+      date.getMonth() + 1
+    ).padStart(2, "0")}`
+  );
+
+}
+
+
+/*
+ * Add/subtract months from YYYY-MM.
+ */
+
+function shiftMonth(
+  month,
+  offset
+) {
+
+  const [
+    year,
+    monthNumber
+  ] =
+    String(month).split("-")
+      .map(Number);
+
+  const date =
+    new Date(
+      year,
+      monthNumber - 1 + offset,
+      1
+    );
+
+  return monthKeyFromDate(
+    date
+  );
+
+}
+
+
+/*
+ * Build a reasonable month range.
+
+ * We deliberately include previous months
+ * because arrears may originate there.
+
+ * We also include future months so the user
+ * can inspect future obligations such as
+ * October 2026 without changing the database.
+ */
+
+function buildAccountingMonthOptions() {
+
+  if (!accountingMonthSelect) {
+    return;
+  }
+
+  const current =
+    getCurrentMonth();
+
+  const start =
+    shiftMonth(
+      current,
+      -12
+    );
+
+  const end =
+    shiftMonth(
+      current,
+      6
+    );
+
+  const options = [];
+
+  let cursor =
+    start;
+
+  while (
+    cursor <= end
+  ) {
+
+    options.push(cursor);
+
+    cursor =
+      shiftMonth(
+        cursor,
+        1
+      );
+
+  }
+
+  accountingMonthSelect.innerHTML =
+    options
+      .map(
+        month => `
+          <option value="${month}">
+            ${escapeHtml(
+              formatAccountingMonth(
+                month
+              )
+            )}
+          </option>
+        `
+      )
+      .join("");
+
+  accountingMonthSelect.value =
+    accountingMonth;
+
+}
+
+
+/*
+ * Update visible selected-month label.
+ */
+
+function renderAccountingMonthLabel() {
+
+  if (
+    !selectedAccountingMonthLabel
+  ) {
+    return;
+  }
+
+  selectedAccountingMonthLabel.textContent =
+    formatAccountingMonth(
+      accountingMonth
+    );
+
+}
+
+
+/*
+ * Return the month selected by the user.
+
+ * This validates the value before the RPC
+ * receives it.
+ */
+
+function getSelectedAccountingMonth() {
+
+  const value =
+    String(
+      accountingMonthSelect?.value ||
+      accountingMonth ||
+      getCurrentMonth()
+    );
+
+  if (
+    !/^\d{4}-\d{2}$/.test(
+      value
+    )
+  ) {
+
+    return getCurrentMonth();
+
+  }
+
+  return value;
+
+}
+
+
 function getContributionMonth(item) {
 
   if (
@@ -266,11 +464,8 @@ function getContributionMonth(item) {
       )
     ) {
 
-      return (
-        `${date.getFullYear()}-` +
-        `${String(
-          date.getMonth() + 1
-        ).padStart(2, "0")}`
+      return monthKeyFromDate(
+        date
       );
 
     }
@@ -322,11 +517,26 @@ function escapeHtml(value) {
   return String(
     value ?? ""
   )
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
 
 }
 
@@ -356,6 +566,9 @@ function showError(error) {
 
 
   if (statusEl) {
+
+    statusEl.hidden =
+      false;
 
     statusEl.textContent =
       "Unable to complete the contribution request.";
@@ -751,20 +964,42 @@ async function loadContributions() {
 ========================================================= */
 
 /*
- * Read canonical monthly status.
- *
  * IMPORTANT:
- * This function is read-only.
- * It does NOT perform accounting calculations.
+ *
+ * This function does NOT calculate:
+ *
+ * • arrears
+ * • credit
+ * • allocations
+ * • outstanding
+ *
+ * It only asks the canonical RPC for the
+ * selected accounting month.
  */
 
 async function loadCanonicalMemberStatus(
-  month = getCurrentMonth()
+  month = accountingMonth
 ) {
 
   if (!groupId) {
+
     canonicalMemberStatus = [];
+
     return [];
+
+  }
+
+
+  if (
+    !/^\d{4}-\d{2}$/.test(
+      String(month || "")
+    )
+  ) {
+
+    throw new Error(
+      "Accounting month must use YYYY-MM format."
+    );
+
   }
 
 
@@ -820,9 +1055,6 @@ function getCanonicalMemberStatus(
 /*
  * Refresh canonical accounting after
  * a monthly contribution is recorded.
- *
- * This is the ONLY frontend accounting
- * refresh required after a contribution write.
  */
 
 async function refreshCanonicalMember(
@@ -899,6 +1131,93 @@ async function refreshCanonicalMember(
 
 
   return data;
+
+}
+
+
+/* =========================================================
+   ACCOUNTING MONTH
+========================================================= */
+
+async function changeAccountingMonth() {
+
+  const selected =
+    getSelectedAccountingMonth();
+
+
+  accountingMonth =
+    selected;
+
+
+  renderAccountingMonthLabel();
+
+
+  clearError();
+
+
+  if (statusEl) {
+
+    statusEl.hidden =
+      false;
+
+    statusEl.textContent =
+      `Loading ${formatAccountingMonth(
+        accountingMonth
+      )} accounting...`;
+
+  }
+
+
+  if (memberStatusRows) {
+
+    memberStatusRows.innerHTML = `
+
+      <tr>
+
+        <td colspan="7">
+
+          Loading ${escapeHtml(
+            formatAccountingMonth(
+              accountingMonth
+            )
+          )} accounting...
+
+        </td>
+
+      </tr>
+
+    `;
+
+  }
+
+
+  try {
+
+    await loadCanonicalMemberStatus(
+      accountingMonth
+    );
+
+
+    renderMemberStatus();
+
+    renderSummary();
+
+
+    if (statusEl) {
+
+      statusEl.textContent =
+        `${formatAccountingMonth(
+          accountingMonth
+        )} accounting loaded.`;
+
+    }
+
+  }
+  catch (error) {
+
+    showError(error);
+
+  }
 
 }
 
@@ -1027,8 +1346,6 @@ function contributionTypeLabel(item) {
 
     emergency: "Emergency",
 
-    investment: "Investment",
-
     fundraising: "Fundraising",
 
     project: "Project",
@@ -1076,90 +1393,6 @@ function createOtherContributionField() {
     );
 
 
-  if (
-    otherTypeWrap &&
-    otherTypeInput
-  ) {
-
-    updateOtherContributionType();
-
-    return;
-
-  }
-
-
-  if (!typeSelect) {
-    return;
-  }
-
-
-  otherTypeWrap =
-    document.createElement(
-      "div"
-    );
-
-
-  otherTypeWrap.id =
-    "otherContributionTypeWrap";
-
-
-  otherTypeWrap.className =
-    "form-group cl-other-type-wrap";
-
-
-  otherTypeWrap.hidden =
-    true;
-
-
-  otherTypeWrap.innerHTML = `
-
-    <label
-      for="otherContributionType"
-    >
-      Other Contribution Name
-    </label>
-
-    <input
-      id="otherContributionType"
-      name="otherContributionType"
-      type="text"
-      maxlength="120"
-      autocomplete="off"
-      placeholder="e.g. Birthday contribution"
-    >
-
-    <small class="muted">
-      Enter the name of this contribution.
-    </small>
-
-  `;
-
-
-  otherTypeInput =
-    otherTypeWrap.querySelector(
-      "#otherContributionType"
-    );
-
-
-  const formGroup =
-    typeSelect.closest(
-      ".form-group"
-    );
-
-
-  if (
-    formGroup?.parentElement
-  ) {
-
-    formGroup.parentElement
-      .insertBefore(
-        otherTypeWrap,
-        formGroup.nextSibling
-      );
-
-  }
-
-
   updateOtherContributionType();
 
 }
@@ -1199,18 +1432,7 @@ function updateOtherContributionType() {
     isOther;
 
 
-  if (isOther) {
-
-    otherTypeWrap.classList.add(
-      "is-visible"
-    );
-
-  }
-  else {
-
-    otherTypeWrap.classList.remove(
-      "is-visible"
-    );
+  if (!isOther) {
 
     otherTypeInput.value =
       "";
@@ -1272,7 +1494,9 @@ function buildContributionNotes(
   }
 
 
-  return `${otherLine}\n${notes}`;
+  return (
+    `${otherLine}\n${notes}`
+  );
 
 }
 
@@ -1290,7 +1514,9 @@ function extractOtherDetails(item) {
     ).toLowerCase();
 
 
-  if (type !== "other") {
+  if (
+    type !== "other"
+  ) {
 
     return "";
 
@@ -1388,22 +1614,7 @@ function renderLedger() {
           class="cl-empty-table"
         >
 
-          <div class="cl-empty-state">
-
-            <div class="cl-empty-icon">
-              +
-            </div>
-
-            <strong>
-              No contributions recorded yet
-            </strong>
-
-            <span>
-              Record the group's first contribution
-              using the form above.
-            </span>
-
-          </div>
+          No contributions recorded yet.
 
         </td>
 
@@ -1682,11 +1893,10 @@ function canonicalStatusClass(
 
 
 /*
- * Canonical current-month progress.
+ * Progress is visual only.
  *
- * IMPORTANT:
- * applied_this_month comes from the canonical
- * allocation chain. It is NOT calculated here.
+ * The amount applied is still supplied by
+ * the canonical RPC.
  */
 
 function canonicalProgress(
@@ -1730,8 +1940,6 @@ function canonicalProgress(
 
 /* =========================================================
    MONTHLY STATUS
-   ---------------------------------------------------------
-   CANONICAL 2B IS THE ONLY AUTHORITY.
 ========================================================= */
 
 function renderMemberStatus() {
@@ -1765,12 +1973,6 @@ function renderMemberStatus() {
   }
 
 
-  /*
-   * If canonical data has not loaded,
-   * fail visibly instead of silently reverting
-   * to the old JavaScript accounting.
-   */
-
   if (!canonicalMemberStatus.length) {
 
     memberStatusRows.innerHTML = `
@@ -1782,8 +1984,13 @@ function renderMemberStatus() {
           class="cl-empty-table"
         >
 
-          Monthly accounting status is
-          temporarily unavailable.
+          No canonical accounting rows are
+          available for
+          ${escapeHtml(
+            formatAccountingMonth(
+              accountingMonth
+            )
+          )}.
 
         </td>
 
@@ -1808,8 +2015,9 @@ function renderMemberStatus() {
 
 
           /*
-           * A missing canonical row is not
-           * replaced with a frontend calculation.
+           * Never replace missing canonical
+           * accounting data with frontend
+           * calculations.
            */
 
           if (!account) {
@@ -1832,10 +2040,7 @@ function renderMemberStatus() {
                 </td>
 
 
-                <td
-                  data-label="Current Due"
-                  class="cl-money-cell"
-                >
+                <td data-label="Current Due">
                   —
                 </td>
 
@@ -2022,12 +2227,14 @@ function renderMemberStatus() {
                   <small
                     class="cl-sub-detail"
                   >
+
                     Applied:
                     ${escapeHtml(
                       money(
                         appliedThisMonth
                       )
                     )}
+
                   </small>
 
                 </div>
@@ -2137,12 +2344,6 @@ function renderSummary() {
   }
 
 
-  /*
-   * Total recorded is a raw ledger figure.
-   * This is deliberately separate from canonical
-   * monthly allocation accounting.
-   */
-
   const total =
     contributions.reduce(
       (
@@ -2155,8 +2356,18 @@ function renderSummary() {
     );
 
 
-  const currentMonth =
-    getCurrentMonth();
+  /*
+   * IMPORTANT:
+   *
+   * THIS MONTH is now the selected
+   * accounting month.
+   *
+   * It is not silently tied to the
+   * browser's current month.
+   */
+
+  const selectedMonth =
+    accountingMonth;
 
 
   const monthlyTotal =
@@ -2169,7 +2380,7 @@ function renderSummary() {
           ).toLowerCase() ===
           "monthly" &&
           getContributionMonth(item) ===
-          currentMonth
+          selectedMonth
       )
       .reduce(
         (
@@ -2181,13 +2392,6 @@ function renderSummary() {
         0
       );
 
-
-  /*
-   * NEEDS ATTENTION is canonical.
-   *
-   * We deliberately do not use the old
-   * calculateMemberMonthlyAccount() function.
-   */
 
   const outstandingMembers =
     canonicalMemberStatus.filter(
@@ -2226,7 +2430,11 @@ function renderSummary() {
     >
 
       <span>
-        THIS MONTH
+        ${escapeHtml(
+          formatAccountingMonth(
+            selectedMonth
+          )
+        ).toUpperCase()}
       </span>
 
       <strong>
@@ -2308,10 +2516,6 @@ function renderContributionGoals() {
     goalProgressContainer.innerHTML = `
 
       <div class="cl-goals-empty">
-
-        <div class="cl-empty-icon">
-          +
-        </div>
 
         <strong>
           No active contribution goals
@@ -2531,10 +2735,6 @@ async function recordContribution(event) {
     null;
 
 
-  /* =====================================================
-     VALIDATION
-  ==================================================== */
-
   if (!memberId) {
 
     showError(
@@ -2669,9 +2869,12 @@ async function recordContribution(event) {
   }
 
 
-  /* =====================================================
-     DUPLICATE MONTHLY WARNING
-  ==================================================== */
+  /*
+   * Duplicate warning remains a warning only.
+   *
+   * A second monthly payment is legitimate
+   * and may become carry-forward.
+   */
 
   if (
     contributionType ===
@@ -2799,15 +3002,10 @@ async function recordContribution(event) {
     };
 
 
-    console.log(
-      "CHAMA LIVE: Saving contribution",
-      contributionData
-    );
-
-
     /*
      * STEP 1
-     * Record the raw contribution.
+     *
+     * Raw contribution record.
      */
 
     const {
@@ -2830,11 +3028,11 @@ async function recordContribution(event) {
     /*
      * STEP 2
      *
-     * Monthly contributions MUST refresh
-     * canonical 2B accounting.
+     * Monthly contribution:
+     * refresh canonical accounting through
+     * the contribution's month.
      *
-     * Other contribution types do not enter
-     * the monthly obligation allocation chain.
+     * No manual allocation is performed.
      */
 
     if (
@@ -2857,42 +3055,65 @@ async function recordContribution(event) {
 
 
       /*
-       * STEP 3
+       * After recording a contribution,
+       * automatically display the contribution's
+       * accounting month.
        *
-       * Read the freshly refreshed canonical
-       * monthly state.
+       * This makes a contribution dated October
+       * immediately visible under October.
        */
 
+      accountingMonth =
+        month;
+
+
+      if (
+        accountingMonthSelect
+      ) {
+
+        accountingMonthSelect.value =
+          accountingMonth;
+
+      }
+
+
+      renderAccountingMonthLabel();
+
+
       await loadCanonicalMemberStatus(
-        month
+        accountingMonth
       );
 
     }
     else {
 
       /*
-       * Keep the current month's canonical
-       * status available for the page.
+       * Non-monthly contributions do not enter
+       * canonical monthly obligation allocation.
+       *
+       * Keep the user's selected accounting month.
        */
 
       await loadCanonicalMemberStatus(
-        getCurrentMonth()
+        accountingMonth
       );
 
     }
 
 
     /*
-     * STEP 4
-     * Reload raw ledger data.
+     * STEP 3
+     *
+     * Reload raw ledger.
      */
 
     await loadContributions();
 
 
     /*
-     * STEP 5
-     * Render everything from the refreshed state.
+     * STEP 4
+     *
+     * Render.
      */
 
     renderLedger();
@@ -2968,28 +3189,9 @@ async function recordContribution(event) {
         false;
 
       statusEl.textContent =
-        "✓ Contribution recorded and canonical accounting refreshed.";
-
-    }
-
-
-    if (form) {
-
-      form.classList.add(
-        "cl-save-success"
-      );
-
-
-      window.setTimeout(
-        () => {
-
-          form.classList.remove(
-            "cl-save-success"
-          );
-
-        },
-        900
-      );
+        `✓ Contribution recorded. ${formatAccountingMonth(
+          accountingMonth
+        )} canonical accounting refreshed.`;
 
     }
 
@@ -3017,2001 +3219,6 @@ async function recordContribution(event) {
 
 
 /* =========================================================
-   VISUAL STYLES
-========================================================= */
-
-function injectContributionStyles() {
-
-  if (
-    document.getElementById(
-      "chama-contributions-enhanced-styles"
-    )
-  ) {
-
-    return;
-
-  }
-
-
-  const style =
-    document.createElement(
-      "style"
-    );
-
-
-  style.id =
-    "chama-contributions-enhanced-styles";
-
-
-  style.textContent = `
-
-    /* =====================================================
-       GLOBAL WIDTH PROTECTION
-    ====================================================== */
-
-    html,
-    body {
-
-      width:
-        100%;
-
-      max-width:
-        100%;
-
-      overflow-x:
-        hidden;
-
-    }
-
-
-    *,
-    *::before,
-    *::after {
-
-      box-sizing:
-        border-box;
-
-    }
-
-
-    .page,
-    .main {
-
-      width:
-        100%;
-
-      max-width:
-        100%;
-
-      min-width:
-        0;
-
-    }
-
-
-    .card,
-    section,
-    form,
-    .card-header {
-
-      max-width:
-        100%;
-
-      min-width:
-        0;
-
-    }
-
-
-    /* =====================================================
-       PAGE HEADER
-    ====================================================== */
-
-    .contribution-page-header {
-
-      position:
-        relative;
-
-      overflow:
-        hidden;
-
-      width:
-        100%;
-
-      max-width:
-        100%;
-
-      padding:
-        28px;
-
-      margin-bottom:
-        20px;
-
-      border-radius:
-        22px;
-
-      color:
-        #ffffff;
-
-      background:
-
-        radial-gradient(
-          circle at 85% 10%,
-          rgba(
-            94,
-            234,
-            212,
-            .24
-          ),
-          transparent 30%
-        ),
-
-        linear-gradient(
-          135deg,
-          #115e59,
-          #0f766e 55%,
-          #0d9488
-        );
-
-      box-shadow:
-        0 18px 40px
-        rgba(
-          15,
-          118,
-          110,
-          .18
-        );
-
-    }
-
-
-    .contribution-page-header::after {
-
-      content:
-        "";
-
-      position:
-        absolute;
-
-      width:
-        260px;
-
-      height:
-        260px;
-
-      right:
-        -120px;
-
-      bottom:
-        -150px;
-
-      border:
-        1px solid
-        rgba(
-          255,
-          255,
-          255,
-          .13
-        );
-
-      border-radius:
-        50%;
-
-      box-shadow:
-        0 0 0 45px
-        rgba(
-          255,
-          255,
-          255,
-          .025
-        ),
-        0 0 0 90px
-        rgba(
-          255,
-          255,
-          255,
-          .02
-        );
-
-    }
-
-
-    .contribution-page-header .eyebrow {
-
-      color:
-        #99f6e4;
-
-      font-weight:
-        800;
-
-      letter-spacing:
-        1.4px;
-
-      font-size:
-        11px;
-
-    }
-
-
-    .contribution-page-header h1 {
-
-      margin:
-        5px 0 8px;
-
-      color:
-        #ffffff;
-
-      font-size:
-        clamp(
-          25px,
-          4vw,
-          40px
-        );
-
-      line-height:
-        1.08;
-
-      letter-spacing:
-        -1.2px;
-
-    }
-
-
-    .contribution-page-header p {
-
-      max-width:
-        650px;
-
-      margin:
-        0;
-
-      color:
-        rgba(
-          255,
-          255,
-          255,
-          .76
-        );
-
-      line-height:
-        1.65;
-
-    }
-
-
-    /* =====================================================
-       SUMMARY
-    ====================================================== */
-
-    #contributionSummary {
-
-      display:
-        grid;
-
-      grid-template-columns:
-        repeat(
-          4,
-          minmax(
-            0,
-            1fr
-          )
-        );
-
-      gap:
-        14px;
-
-      width:
-        100%;
-
-      max-width:
-        100%;
-
-      margin-bottom:
-        20px;
-
-    }
-
-
-    .cl-contribution-summary-card {
-
-      min-width:
-        0;
-
-      overflow:
-        hidden;
-
-      padding:
-        19px;
-
-      border:
-        1px solid
-        #e2e8f0;
-
-      border-radius:
-        17px;
-
-      background:
-        rgba(
-          255,
-          255,
-          255,
-          .96
-        );
-
-      box-shadow:
-        0 18px 50px
-        rgba(
-          15,
-          118,
-          110,
-          .08
-        );
-
-    }
-
-
-    .cl-contribution-summary-card::before {
-
-      content:
-        "";
-
-      display:
-        block;
-
-      width:
-        4px;
-
-      height:
-        24px;
-
-      float:
-        left;
-
-      margin-right:
-        11px;
-
-      border-radius:
-        99px;
-
-      background:
-        linear-gradient(
-          to bottom,
-          #14b8a6,
-          #0f766e
-        );
-
-    }
-
-
-    .cl-contribution-summary-card span {
-
-      display:
-        block;
-
-      color:
-        #64748b;
-
-      font-size:
-        10px;
-
-      font-weight:
-        850;
-
-      letter-spacing:
-        1px;
-
-    }
-
-
-    .cl-contribution-summary-card strong {
-
-      display:
-        block;
-
-      margin:
-        7px 0 3px;
-
-      color:
-        #0f172a;
-
-      font-size:
-        24px;
-
-      overflow:
-        hidden;
-
-      text-overflow:
-        ellipsis;
-
-    }
-
-
-    .cl-contribution-summary-card small {
-
-      color:
-        #64748b;
-
-      font-size:
-        11px;
-
-    }
-
-
-    /* =====================================================
-       CARDS
-    ====================================================== */
-
-    .card {
-
-      width:
-        100%;
-
-      max-width:
-        100%;
-
-      overflow:
-        hidden;
-
-      border:
-        1px solid
-        rgba(
-          226,
-          232,
-          240,
-          .9
-        ) !important;
-
-      border-radius:
-        19px !important;
-
-      box-shadow:
-        0 18px 50px
-        rgba(
-          15,
-          118,
-          110,
-          .08
-        ) !important;
-
-      background:
-        rgba(
-          255,
-          255,
-          255,
-          .96
-        ) !important;
-
-    }
-
-
-    /* =====================================================
-       FORM
-    ====================================================== */
-
-    #contributionForm {
-
-      width:
-        100%;
-
-      max-width:
-        100%;
-
-      min-width:
-        0;
-
-    }
-
-
-    #contributionForm .form-group {
-
-      width:
-        100%;
-
-      min-width:
-        0;
-
-      margin-bottom:
-        12px;
-
-    }
-
-
-    #contributionForm label {
-
-      display:
-        block;
-
-      margin-bottom:
-        6px;
-
-      color:
-        #0f172a;
-
-      font-size:
-        12px;
-
-      font-weight:
-        750;
-
-    }
-
-
-    #contributionForm input,
-    #contributionForm select,
-    #contributionForm textarea {
-
-      display:
-        block;
-
-      width:
-        100%;
-
-      max-width:
-        100%;
-
-      min-width:
-        0;
-
-      min-height:
-        47px;
-
-      padding:
-        10px 12px;
-
-      border:
-        1px solid
-        #e2e8f0;
-
-      border-radius:
-        11px;
-
-      background:
-        #ffffff;
-
-      color:
-        #0f172a;
-
-    }
-
-
-    #contributionForm textarea {
-
-      min-height:
-        95px;
-
-      resize:
-        vertical;
-
-    }
-
-
-    #contributionForm input:focus,
-    #contributionForm select:focus,
-    #contributionForm textarea:focus {
-
-      outline:
-        none;
-
-      border-color:
-        #14b8a6;
-
-      box-shadow:
-        0 0 0 4px
-        rgba(
-          20,
-          184,
-          166,
-          .10
-        );
-
-    }
-
-
-    /* =====================================================
-       OTHER
-    ====================================================== */
-
-    .cl-other-type-wrap {
-
-      padding:
-        14px;
-
-      border:
-        1px solid
-        #99f6e4;
-
-      border-radius:
-        13px;
-
-      background:
-        linear-gradient(
-          135deg,
-          #f0fdfa,
-          #ffffff
-        );
-
-    }
-
-
-    .cl-other-type-wrap[hidden] {
-
-      display:
-        none;
-
-    }
-
-
-    .cl-other-type-wrap small {
-
-      display:
-        block;
-
-      margin-top:
-        6px;
-
-      color:
-        #64748b;
-
-      line-height:
-        1.5;
-
-    }
-
-
-    /* =====================================================
-       BUTTON
-    ====================================================== */
-
-    #saveContribution {
-
-      width:
-        100%;
-
-      max-width:
-        100%;
-
-      min-height:
-        51px;
-
-      border:
-        0 !important;
-
-      border-radius:
-        12px !important;
-
-      background:
-        linear-gradient(
-          135deg,
-          #0f766e,
-          #14b8a6
-        ) !important;
-
-      box-shadow:
-        0 12px 24px
-        rgba(
-          15,
-          118,
-          110,
-          .18
-        );
-
-      font-weight:
-        800;
-
-    }
-
-
-    #saveContribution:disabled {
-
-      opacity:
-        .65;
-
-    }
-
-
-    /* =====================================================
-       TABLE CONTAINER
-    ====================================================== */
-
-    .table-wrapper,
-    .table-wrap {
-
-      width:
-        100%;
-
-      max-width:
-        100%;
-
-      min-width:
-        0;
-
-      overflow-x:
-        auto;
-
-      overflow-y:
-        hidden;
-
-      -webkit-overflow-scrolling:
-        touch;
-
-      scrollbar-width:
-        thin;
-
-    }
-
-
-    .table-wrapper table,
-    .table-wrap table,
-    .table {
-
-      width:
-        100%;
-
-      max-width:
-        100%;
-
-      border-collapse:
-        separate;
-
-      border-spacing:
-        0;
-
-    }
-
-
-    .table-wrapper table,
-    .table-wrap table {
-
-      min-width:
-        720px;
-
-    }
-
-
-    .table-wrapper th,
-    .table-wrap th,
-    .table th {
-
-      padding:
-        12px 10px;
-
-      background:
-        #f8fafc;
-
-      color:
-        #64748b;
-
-      font-size:
-        10px;
-
-      font-weight:
-        850;
-
-      letter-spacing:
-        .7px;
-
-      text-transform:
-        uppercase;
-
-      white-space:
-        nowrap;
-
-    }
-
-
-    .table-wrapper td,
-    .table-wrap td,
-    .table td {
-
-      padding:
-        12px 10px;
-
-      color:
-        #334155;
-
-      font-size:
-        12px;
-
-      vertical-align:
-        middle;
-
-    }
-
-
-    .table-wrapper tbody tr:hover,
-    .table-wrap tbody tr:hover {
-
-      background:
-        #f8fffd;
-
-    }
-
-
-    /* =====================================================
-       MONTHLY STATUS TABLE
-    ====================================================== */
-
-    #memberStatusRows td {
-
-      white-space:
-        nowrap;
-
-    }
-
-
-    #memberStatusRows td:first-child {
-
-      min-width:
-        150px;
-
-    }
-
-
-    .cl-member-cell strong {
-
-      color:
-        #0f172a;
-
-    }
-
-
-    .cl-money-cell {
-
-      color:
-        #115e59 !important;
-
-    }
-
-
-    .cl-arrears {
-
-      color:
-        #be123c;
-
-      font-weight:
-        750;
-
-    }
-
-
-    .cl-carry-forward {
-
-      color:
-        #047857;
-
-      font-weight:
-        800;
-
-    }
-
-
-    .cl-outstanding-amount {
-
-      color:
-        #be123c;
-
-    }
-
-
-    .cl-zero {
-
-      color:
-        #94a3b8;
-
-    }
-
-
-    /* =====================================================
-       BADGES
-    ====================================================== */
-
-    .cl-type-badge,
-    .cl-payment-badge,
-    .cl-status-badge {
-
-      display:
-        inline-flex;
-
-      align-items:
-        center;
-
-      justify-content:
-        center;
-
-      width:
-        fit-content;
-
-      max-width:
-        100%;
-
-      padding:
-        5px 9px;
-
-      border-radius:
-        999px;
-
-      font-size:
-        10px;
-
-      font-weight:
-        800;
-
-      white-space:
-        nowrap;
-
-    }
-
-
-    .cl-type-badge {
-
-      color:
-        #0f766e;
-
-      background:
-        #f0fdfa;
-
-      border:
-        1px solid
-        #ccfbf1;
-
-    }
-
-
-    .cl-payment-badge {
-
-      color:
-        #475569;
-
-      background:
-        #f8fafc;
-
-      border:
-        1px solid
-        #e2e8f0;
-
-    }
-
-
-    .cl-status-paid {
-
-      color:
-        #047857;
-
-      background:
-        #ecfdf5;
-
-    }
-
-
-    .cl-status-credit {
-
-      color:
-        #0f766e;
-
-      background:
-        #ccfbf1;
-
-    }
-
-
-    .cl-status-partial {
-
-      color:
-        #b45309;
-
-      background:
-        #fffbeb;
-
-    }
-
-
-    .cl-status-outstanding {
-
-      color:
-        #be123c;
-
-      background:
-        #fff1f2;
-
-    }
-
-
-    .cl-status-neutral {
-
-      color:
-        #475569;
-
-      background:
-        #f1f5f9;
-
-    }
-
-
-    /* =====================================================
-       PROGRESS
-    ====================================================== */
-
-    .cl-paid-cell {
-
-      min-width:
-        90px;
-
-    }
-
-
-    .cl-mini-progress {
-
-      width:
-        70px;
-
-      height:
-        4px;
-
-      margin-top:
-        5px;
-
-      overflow:
-        hidden;
-
-      border-radius:
-        999px;
-
-      background:
-        #e2e8f0;
-
-    }
-
-
-    .cl-mini-progress span {
-
-      display:
-        block;
-
-      height:
-        100%;
-
-      border-radius:
-        inherit;
-
-      background:
-        linear-gradient(
-          90deg,
-          #0f766e,
-          #14b8a6
-        );
-
-    }
-
-
-    /* =====================================================
-       HISTORY
-    ====================================================== */
-
-    .cl-sub-detail {
-
-      display:
-        block;
-
-      max-width:
-        180px;
-
-      margin-top:
-        4px;
-
-      color:
-        #64748b;
-
-      font-size:
-        10px;
-
-      line-height:
-        1.4;
-
-      white-space:
-        normal;
-
-      overflow-wrap:
-        anywhere;
-
-    }
-
-
-    .cl-note-text {
-
-      display:
-        block;
-
-      max-width:
-        190px;
-
-      color:
-        #64748b;
-
-      font-size:
-        10px;
-
-      line-height:
-        1.45;
-
-      white-space:
-        normal;
-
-      overflow-wrap:
-        anywhere;
-
-    }
-
-
-    /* =====================================================
-       GOALS
-    ====================================================== */
-
-    .cl-goal-card {
-
-      width:
-        100%;
-
-      max-width:
-        100%;
-
-      margin-bottom:
-        10px;
-
-      padding:
-        15px;
-
-      border:
-        1px solid
-        #e2e8f0;
-
-      border-radius:
-        14px;
-
-      background:
-        #ffffff;
-
-    }
-
-
-    .cl-goal-top,
-    .cl-goal-bottom {
-
-      display:
-        flex;
-
-      align-items:
-        center;
-
-      justify-content:
-        space-between;
-
-      gap:
-        12px;
-
-    }
-
-
-    .cl-goal-top strong {
-
-      color:
-        #0f172a;
-
-    }
-
-
-    .cl-goal-top small {
-
-      display:
-        block;
-
-      margin-top:
-        3px;
-
-      color:
-        #64748b;
-
-    }
-
-
-    .cl-goal-progress {
-
-      width:
-        100%;
-
-      height:
-        8px;
-
-      margin:
-        12px 0 8px;
-
-      overflow:
-        hidden;
-
-      border-radius:
-        99px;
-
-      background:
-        #e2e8f0;
-
-    }
-
-
-    .cl-goal-progress span {
-
-      display:
-        block;
-
-      height:
-        100%;
-
-      border-radius:
-        inherit;
-
-      background:
-        linear-gradient(
-          90deg,
-          #0f766e,
-          #14b8a6
-        );
-
-    }
-
-
-    .cl-goal-bottom {
-
-      color:
-        #64748b;
-
-      font-size:
-        11px;
-
-    }
-
-
-    .cl-goals-empty {
-
-      display:
-        flex;
-
-      flex-direction:
-        column;
-
-      align-items:
-        center;
-
-      justify-content:
-        center;
-
-      min-height:
-        150px;
-
-      padding:
-        25px;
-
-      text-align:
-        center;
-
-    }
-
-
-    .cl-goals-empty strong {
-
-      color:
-        #0f172a;
-
-    }
-
-
-    .cl-goals-empty span {
-
-      margin-top:
-        5px;
-
-      color:
-        #64748b;
-
-      font-size:
-        11px;
-
-    }
-
-
-    /* =====================================================
-       EMPTY STATE
-    ====================================================== */
-
-    .cl-empty-table {
-
-      padding:
-        0 !important;
-
-    }
-
-
-    .cl-empty-state {
-
-      display:
-        flex;
-
-      flex-direction:
-        column;
-
-      align-items:
-        center;
-
-      justify-content:
-        center;
-
-      min-height:
-        150px;
-
-      padding:
-        25px;
-
-      text-align:
-        center;
-
-    }
-
-
-    .cl-empty-icon {
-
-      display:
-        grid;
-
-      place-items:
-        center;
-
-      width:
-        44px;
-
-      height:
-        44px;
-
-      margin-bottom:
-        10px;
-
-      border-radius:
-        14px;
-
-      background:
-        #f0fdfa;
-
-      color:
-        #0f766e;
-
-      font-size:
-        25px;
-
-      font-weight:
-        800;
-
-    }
-
-
-    /* =====================================================
-       STATUS
-    ====================================================== */
-
-    #status {
-
-      max-width:
-        100%;
-
-      color:
-        #0f766e;
-
-      font-size:
-        12px;
-
-      font-weight:
-        650;
-
-      overflow-wrap:
-        anywhere;
-
-    }
-
-
-    #error {
-
-      max-width:
-        100%;
-
-      overflow-wrap:
-        anywhere;
-
-      border:
-        1px solid
-        #fecdd3 !important;
-
-      border-radius:
-        12px !important;
-
-      background:
-        #fff1f2 !important;
-
-      color:
-        #be123c !important;
-
-      font-size:
-        12px;
-
-    }
-
-
-    /* =====================================================
-       SUCCESS
-    ====================================================== */
-
-    .cl-save-success {
-
-      animation:
-        clSaveSuccess .5s ease;
-
-    }
-
-
-    @keyframes clSaveSuccess {
-
-      0% {
-
-        box-shadow:
-          0 0 0 0
-          rgba(
-            20,
-            184,
-            166,
-            .25
-          );
-
-      }
-
-      100% {
-
-        box-shadow:
-          0 0 0 12px
-          rgba(
-            20,
-            184,
-            166,
-            0
-          );
-
-      }
-
-    }
-
-
-    /* =====================================================
-       TABLET
-    ====================================================== */
-
-    @media (
-      max-width: 900px
-    ) {
-
-      #contributionSummary {
-
-        grid-template-columns:
-          repeat(
-            2,
-            minmax(
-              0,
-              1fr
-            )
-          );
-
-      }
-
-    }
-
-
-    /* =====================================================
-       MOBILE
-    ====================================================== */
-
-    @media (
-      max-width: 650px
-    ) {
-
-      .contribution-page-header {
-
-        padding:
-          21px 18px;
-
-        border-radius:
-          17px;
-
-      }
-
-
-      .contribution-page-header h1 {
-
-        font-size:
-          27px;
-
-      }
-
-
-      #contributionSummary {
-
-        gap:
-          9px;
-
-      }
-
-
-      .cl-contribution-summary-card {
-
-        padding:
-          14px;
-
-        border-radius:
-          14px;
-
-      }
-
-
-      .cl-contribution-summary-card strong {
-
-        font-size:
-          19px;
-
-      }
-
-
-      .cl-contribution-summary-card small {
-
-        display:
-          block;
-
-        overflow:
-          hidden;
-
-        text-overflow:
-          ellipsis;
-
-      }
-
-
-      .table-wrapper,
-      .table-wrap {
-
-        overflow:
-          visible;
-
-      }
-
-
-      .table-wrapper table,
-      .table-wrap table,
-      .table {
-
-        display:
-          block;
-
-        min-width:
-          0 !important;
-
-      }
-
-
-      .table-wrapper thead,
-      .table-wrap thead,
-      .table thead {
-
-        display:
-          none;
-
-      }
-
-
-      .table-wrapper tbody,
-      .table-wrap tbody,
-      .table tbody {
-
-        display:
-          grid;
-
-        width:
-          100%;
-
-        gap:
-          10px;
-
-      }
-
-
-      .table-wrapper tr,
-      .table-wrap tr,
-      .table tr {
-
-        display:
-          grid;
-
-        grid-template-columns:
-          1fr 1fr;
-
-        width:
-          100%;
-
-        min-width:
-          0;
-
-        padding:
-          8px;
-
-        border:
-          1px solid
-          #e2e8f0;
-
-        border-radius:
-          13px;
-
-        background:
-          #ffffff;
-
-        box-shadow:
-          0 5px 16px
-          rgba(
-            15,
-            23,
-            42,
-            .035
-          );
-
-      }
-
-
-      .table-wrapper td,
-      .table-wrap td,
-      .table td {
-
-        display:
-          flex;
-
-        flex-direction:
-          column;
-
-        align-items:
-          flex-start;
-
-        justify-content:
-          center;
-
-        width:
-          100%;
-
-        min-width:
-          0;
-
-        padding:
-          8px 7px;
-
-        border:
-          0 !important;
-
-        white-space:
-          normal !important;
-
-        overflow-wrap:
-          anywhere;
-
-      }
-
-
-      .table-wrapper td::before,
-      .table-wrap td::before,
-      .table td::before {
-
-        content:
-          attr(data-label);
-
-        display:
-          block;
-
-        margin-bottom:
-          3px;
-
-        color:
-          #94a3b8;
-
-        font-size:
-          9px;
-
-        font-weight:
-          800;
-
-        letter-spacing:
-          .55px;
-
-        text-transform:
-          uppercase;
-
-      }
-
-
-      .cl-member-cell {
-
-        grid-column:
-          1 / -1;
-
-      }
-
-
-      .cl-sub-detail,
-      .cl-note-text {
-
-        max-width:
-          100%;
-
-      }
-
-
-      .cl-mini-progress {
-
-        width:
-          100%;
-
-        max-width:
-          100px;
-
-      }
-
-
-      .cl-type-badge,
-      .cl-payment-badge,
-      .cl-status-badge {
-
-        max-width:
-          100%;
-
-      }
-
-
-      .cl-goal-top {
-
-        align-items:
-          flex-start;
-
-      }
-
-    }
-
-
-    /* =====================================================
-       SMALL PHONES
-    ====================================================== */
-
-    @media (
-      max-width: 390px
-    ) {
-
-      #contributionSummary {
-
-        grid-template-columns:
-          1fr 1fr;
-
-      }
-
-
-      .cl-contribution-summary-card {
-
-        padding:
-          11px;
-
-      }
-
-
-      .cl-contribution-summary-card strong {
-
-        font-size:
-          17px;
-
-      }
-
-
-      .cl-contribution-summary-card small {
-
-        display:
-          none;
-
-      }
-
-
-      .table-wrapper tr,
-      .table-wrap tr,
-      .table tr {
-
-        grid-template-columns:
-          1fr;
-
-      }
-
-
-      .table-wrapper td,
-      .table-wrap td,
-      .table td {
-
-        padding:
-          7px;
-
-      }
-
-
-      .cl-goal-top,
-      .cl-goal-bottom {
-
-        flex-wrap:
-          wrap;
-
-      }
-
-    }
-
-
-    /* =====================================================
-       REDUCED MOTION
-    ====================================================== */
-
-    @media (
-      prefers-reduced-motion: reduce
-    ) {
-
-      * {
-
-        animation:
-          none !important;
-
-        transition:
-          none !important;
-
-      }
-
-    }
-
-  `;
-
-
-  document.head.appendChild(
-    style
-  );
-
-}
-
-
-/* =========================================================
-   PAGE HEADER
-========================================================= */
-
-function enhancePageHeader() {
-
-  if (
-    document.getElementById(
-      "contributionPageHeader"
-    )
-  ) {
-
-    return;
-
-  }
-
-
-  const main =
-    document.querySelector(
-      ".main, .page"
-    );
-
-
-  if (!main) {
-    return;
-  }
-
-
-  const header =
-    document.createElement(
-      "section"
-    );
-
-
-  header.id =
-    "contributionPageHeader";
-
-
-  header.className =
-    "contribution-page-header";
-
-
-  header.innerHTML = `
-
-    <div class="eyebrow">
-      FINANCIAL MANAGEMENT
-    </div>
-
-    <h1>
-      Contributions
-    </h1>
-
-    <p>
-      Record member contributions, track monthly
-      commitments and keep every group payment
-      organised in one connected ledger.
-    </p>
-
-  `;
-
-
-  const firstElement =
-    main.firstElementChild;
-
-
-  main.insertBefore(
-    header,
-    firstElement
-  );
-
-
-  const summary =
-    document.createElement(
-      "div"
-    );
-
-
-  summary.id =
-    "contributionSummary";
-
-
-  main.insertBefore(
-    summary,
-    firstElement
-  );
-
-}
-
-
-/* =========================================================
-   SECTION HEADINGS
-========================================================= */
-
-function enhanceSectionHeadings() {
-
-  document
-    .querySelectorAll(
-      ".card h2"
-    )
-    .forEach(
-      heading => {
-
-        if (
-          heading.dataset
-            .clEnhanced ===
-          "true"
-        ) {
-
-          return;
-
-        }
-
-
-        heading.dataset
-          .clEnhanced =
-          "true";
-
-
-        heading.parentElement
-          ?.classList
-          .add(
-            "cl-enhanced-section-heading"
-          );
-
-      }
-    );
-
-}
-
-
-/* =========================================================
    INITIALIZE
 ========================================================= */
 
@@ -5028,16 +3235,16 @@ export async function initContributions() {
 
   try {
 
-    injectContributionStyles();
-
-    enhancePageHeader();
-
-    enhanceSectionHeadings();
-
-    createOtherContributionField();
-
-
     clearError();
+
+
+    /*
+     * Build month selector before loading data.
+     */
+
+    buildAccountingMonthOptions();
+
+    renderAccountingMonthLabel();
 
 
     if (statusEl) {
@@ -5051,23 +3258,17 @@ export async function initContributions() {
     }
 
 
-    /* =====================================================
-       GROUP
-    ==================================================== */
+    /*
+     * GROUP
+     */
 
     groupId =
       await getGroupId();
 
 
-    console.log(
-      "CHAMA LIVE GROUP ID:",
-      groupId
-    );
-
-
-    /* =====================================================
-       DATA
-    ==================================================== */
+    /*
+     * DATA
+     */
 
     await Promise.all([
 
@@ -5082,21 +3283,21 @@ export async function initContributions() {
     ]);
 
 
-    /* =====================================================
-       CANONICAL MONTHLY ACCOUNTING
-       -----------------------------------------------------
-       READ ONLY.
-       No frontend accounting calculation.
-    ==================================================== */
+    /*
+     * CANONICAL ACCOUNTING
+     *
+     * IMPORTANT:
+     * Uses selected accountingMonth.
+     */
 
     await loadCanonicalMemberStatus(
-      getCurrentMonth()
+      accountingMonth
     );
 
 
-    /* =====================================================
-       DEFAULTS
-    ==================================================== */
+    /*
+     * DEFAULT FORM VALUES
+     */
 
     if (dateInput) {
 
@@ -5122,6 +3323,8 @@ export async function initContributions() {
     }
 
 
+    createOtherContributionField();
+
     updateOtherContributionType();
 
     updatePaymentMethod();
@@ -5138,9 +3341,11 @@ export async function initContributions() {
     }
 
 
-    /* =====================================================
-       RENDER
-    ==================================================== */
+    /*
+     * RENDER
+     */
+
+    renderAccountingMonthLabel();
 
     renderLedger();
 
@@ -5154,13 +3359,19 @@ export async function initContributions() {
     if (statusEl) {
 
       statusEl.textContent =
-        "Contributions loaded.";
+        `${formatAccountingMonth(
+          accountingMonth
+        )} accounting loaded.`;
 
     }
 
 
     console.log(
-      "CHAMA LIVE: Contributions ready."
+      "CHAMA LIVE: Contributions ready.",
+      {
+        groupId,
+        accountingMonth
+      }
     );
 
   }
@@ -5180,6 +3391,11 @@ export async function initContributions() {
    EVENTS
 ========================================================= */
 
+
+/*
+ * Contribution form.
+ */
+
 if (
   form &&
   !form.dataset.clContributionBound
@@ -5197,6 +3413,10 @@ if (
 
 }
 
+
+/*
+ * Payment method.
+ */
 
 if (
   methodSelect &&
@@ -5216,6 +3436,10 @@ if (
 }
 
 
+/*
+ * Contribution type.
+ */
+
 if (
   typeSelect &&
   !typeSelect.dataset.clTypeBound
@@ -5229,6 +3453,30 @@ if (
   typeSelect.addEventListener(
     "change",
     updateOtherContributionType
+  );
+
+}
+
+
+/*
+ * NEW:
+ * Accounting month selector.
+ */
+
+if (
+  accountingMonthSelect &&
+  !accountingMonthSelect.dataset
+    .clAccountingMonthBound
+) {
+
+  accountingMonthSelect.dataset
+    .clAccountingMonthBound =
+    "true";
+
+
+  accountingMonthSelect.addEventListener(
+    "change",
+    changeAccountingMonth
   );
 
 }
