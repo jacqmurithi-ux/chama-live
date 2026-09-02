@@ -1,76 +1,27 @@
 /* =========================================================
    CHAMA LIVE — MEMBERS
-   COMPLETE MEMBERS MANAGEMENT
-   VISUAL + RESPONSIVE VERSION
-
-   File:
-   /js/members.js
-
-   Features:
-   - Load members
-   - Add member
-   - Edit member
-   - Search members
-   - View member
-   - Membership number support
-   - Login status
-   - Send / resend Supabase Auth invitation
-   - Supabase Edge Function integration
-   - Responsive member cards
-   - Desktop member table
-   - Dashboard-style statistics
-   - Actual Edge Function errors
+   Pilot-ready members management
+   National ID support
 ========================================================= */
 
 import { supabase } from "./supabase.js";
-
-import {
-  requireAuth,
-  getMyMember,
-  getMyGroup
-} from "./auth.js";
-
-
-console.log("CHAMA LIVE: members.js loaded");
-
-
-/* =========================================================
-   STATE
-========================================================= */
+import { requireAuth, getMyMember, getMyGroup } from "./auth.js";
 
 let currentUser = null;
 let currentMember = null;
 let currentGroup = null;
 let groupId = null;
-
 let members = [];
 let editingMemberId = null;
-
 let initialized = false;
 let eventsBound = false;
-
-
-/* =========================================================
-   HELPERS
-========================================================= */
 
 function byId(id) {
   return document.getElementById(id);
 }
 
-
-/* =========================================================
-   ESCAPE HTML
-========================================================= */
-
 function escapeHtml(value) {
-
-  if (
-    value === null ||
-    value === undefined
-  ) {
-    return "";
-  }
+  if (value === null || value === undefined) return "";
 
   return String(value)
     .replace(/&/g, "&amp;")
@@ -80,16 +31,8 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
-
-/* =========================================================
-   FORMAT DATE
-========================================================= */
-
 function formatDate(value) {
-
-  if (!value) {
-    return "—";
-  }
+  if (!value) return "—";
 
   const date = new Date(value);
 
@@ -104,30 +47,15 @@ function formatDate(value) {
   });
 }
 
-
-/* =========================================================
-   INITIALS
-========================================================= */
-
 function getInitials(name) {
+  const value = String(name || "").trim();
 
-  const value =
-    String(name || "")
-      .trim();
+  if (!value) return "M";
 
-  if (!value) {
-    return "M";
-  }
-
-  const parts =
-    value
-      .split(/\s+/)
-      .filter(Boolean);
+  const parts = value.split(/\s+/).filter(Boolean);
 
   if (parts.length === 1) {
-    return parts[0]
-      .substring(0, 2)
-      .toUpperCase();
+    return parts[0].substring(0, 2).toUpperCase();
   }
 
   return (
@@ -136,95 +64,52 @@ function getInitials(name) {
   ).toUpperCase();
 }
 
-
-/* =========================================================
-   DISPLAY ROLE
-========================================================= */
-
 function displayRole(role) {
-
-  const value =
-    String(role || "member")
-      .trim()
-      .toLowerCase();
+  const value = String(role || "member")
+    .trim()
+    .toLowerCase();
 
   const labels = {
-
     admin: "Admin",
-
     member: "Member",
-
     chairperson: "Chairperson",
-
     secretary: "Secretary",
-
     treasurer: "Treasurer"
-
   };
 
   return (
     labels[value] ||
-    value.charAt(0).toUpperCase() +
-    value.slice(1)
+    value.charAt(0).toUpperCase() + value.slice(1)
   );
 }
 
-
-/* =========================================================
-   ROLE BADGE
-========================================================= */
-
 function roleBadgeHtml(role) {
+  const value = String(role || "member")
+    .trim()
+    .toLowerCase();
 
-  const value =
-    String(role || "member")
-      .trim()
-      .toLowerCase();
-
-  let className =
-    "member-role-badge";
-
-  if (value === "admin") {
-    className += " role-admin";
-  }
-
-  else if (value === "chairperson") {
-    className += " role-chairperson";
-  }
-
-  else if (value === "secretary") {
-    className += " role-secretary";
-  }
-
-  else if (value === "treasurer") {
-    className += " role-treasurer";
-  }
-
-  else {
-    className += " role-member";
-  }
+  const suffix = [
+    "admin",
+    "chairperson",
+    "secretary",
+    "treasurer"
+  ].includes(value)
+    ? ` role-${value}`
+    : " role-member";
 
   return `
-    <span class="${className}">
+    <span class="member-role-badge${suffix}">
       ${escapeHtml(displayRole(role))}
     </span>
   `;
 }
 
-
-/* =========================================================
-   ACCOUNT STATUS BADGE
-========================================================= */
-
 function accountStatusHtml(status) {
-
-  const value =
-    String(status || "active")
-      .trim()
-      .toLowerCase();
+  const value = String(status || "active")
+    .trim()
+    .toLowerCase();
 
   if (value === "active") {
-
     return `
       <span class="member-status-badge status-active">
         <span class="status-dot"></span>
@@ -237,258 +122,51 @@ function accountStatusHtml(status) {
     <span class="member-status-badge status-inactive">
       <span class="status-dot"></span>
       ${escapeHtml(
-        value.charAt(0).toUpperCase() +
-        value.slice(1)
+        value.charAt(0).toUpperCase() + value.slice(1)
       )}
     </span>
   `;
 }
 
-
-/* =========================================================
-   STATUS MESSAGE
-========================================================= */
-
-function showStatus(message) {
-
-  const element =
-    byId("status");
-
-  if (!element) {
-    return;
-  }
-
-  element.textContent =
-    message || "";
-
-  element.hidden =
-    !message;
-}
-
-
-/* =========================================================
-   ERROR MESSAGE
-========================================================= */
-
-function showError(error) {
-
-  console.error(
-    "CHAMA LIVE: Members error",
-    error
-  );
-
-  const element =
-    byId("error");
-
-  if (!element) {
-    return;
-  }
-
-  let message =
-    "Something went wrong.";
-
-  if (error) {
-
-    if (
-      typeof error === "string"
-    ) {
-
-      message = error;
-    }
-
-    else if (
-      error.message
-    ) {
-
-      message =
-        error.message;
-    }
-
-    else {
-
-      try {
-
-        message =
-          JSON.stringify(error);
-
-      }
-
-      catch {
-
-        message =
-          String(error);
-      }
-    }
-  }
-
-  element.innerHTML = `
-    <div class="error-icon">!</div>
-
-    <div>
-      <strong>
-        Something went wrong
-      </strong>
-
-      <div class="error-detail">
-        ${escapeHtml(message)}
-      </div>
-    </div>
-  `;
-
-  element.hidden =
-    false;
-}
-
-
-/* =========================================================
-   CLEAR ERROR
-========================================================= */
-
-function clearError() {
-
-  const element =
-    byId("error");
-
-  if (!element) {
-    return;
-  }
-
-  element.innerHTML =
-    "";
-
-  element.hidden =
-    true;
-}
-
-
-/* =========================================================
-   FORM MESSAGE
-========================================================= */
-
-function showFormMessage(
-  message,
-  type = "success"
-) {
-
-  const element =
-    byId("formMessage");
-
-  if (!element) {
-    return;
-  }
-
-  element.textContent =
-    message || "";
-
-  element.className =
-    `form-message ${type}`;
-
-  element.style.display =
-    message ? "flex" : "none";
-}
-
-
-/* =========================================================
-   CLEAR FORM MESSAGE
-========================================================= */
-
-function clearFormMessage() {
-
-  const element =
-    byId("formMessage");
-
-  if (!element) {
-    return;
-  }
-
-  element.textContent =
-    "";
-
-  element.style.display =
-    "none";
-}
-
-
-/* =========================================================
-   FIND MEMBER
-========================================================= */
-
-function findMember(memberId) {
-
-  return members.find(
-    member =>
-      String(member.id) ===
-      String(memberId)
-  );
-}
-
-
-/* =========================================================
-   LOGIN STATUS
-========================================================= */
-
 function getLoginStatus(member) {
-
-  if (!member) {
-    return "No Login";
-  }
-
+  if (!member) return "No Login";
 
   if (member.activated_at) {
     return "Active";
   }
 
-
-  const onboarding =
-    String(
-      member.onboarding_status || ""
-    )
-      .toLowerCase();
-
+  const onboarding = String(
+    member.onboarding_status || ""
+  ).toLowerCase();
 
   if (
     onboarding === "activated" ||
     onboarding === "active"
   ) {
-
     return "Active";
   }
-
 
   if (
     onboarding === "invited" ||
     member.invited_at
   ) {
-
     return "Invitation Sent";
   }
-
 
   if (
     member.auth_user_id ||
     member.user_id
   ) {
-
     return "Invitation Sent";
   }
-
 
   return "No Login";
 }
 
-
-/* =========================================================
-   LOGIN STATUS BADGE
-========================================================= */
-
 function loginStatusHtml(member) {
-
-  const status =
-    getLoginStatus(member);
-
+  const status = getLoginStatus(member);
 
   if (status === "Active") {
-
     return `
       <span class="login-badge login-active">
         <span class="login-icon">✓</span>
@@ -497,11 +175,7 @@ function loginStatusHtml(member) {
     `;
   }
 
-
-  if (
-    status === "Invitation Sent"
-  ) {
-
+  if (status === "Invitation Sent") {
     return `
       <span class="login-badge login-invited">
         <span class="login-icon">✉</span>
@@ -509,7 +183,6 @@ function loginStatusHtml(member) {
       </span>
     `;
   }
-
 
   return `
     <span class="login-badge login-none">
@@ -519,169 +192,252 @@ function loginStatusHtml(member) {
   `;
 }
 
+function showStatus(message) {
+  const node = byId("status");
+
+  if (!node) return;
+
+  node.textContent = message || "";
+  node.hidden = !message;
+}
+
+function showError(error) {
+  console.error(
+    "CHAMA LIVE: Members error",
+    error
+  );
+
+  const node = byId("error");
+
+  if (!node) return;
+
+  const message =
+    typeof error === "string"
+      ? error
+      : error?.message ||
+        String(
+          error || "Something went wrong."
+        );
+
+  node.innerHTML = `
+    <div class="error-icon">!</div>
+    <div>
+      <strong>Something went wrong</strong>
+      <div class="error-detail">
+        ${escapeHtml(message)}
+      </div>
+    </div>
+  `;
+
+  node.hidden = false;
+}
+
+function clearError() {
+  const node = byId("error");
+
+  if (!node) return;
+
+  node.innerHTML = "";
+  node.hidden = true;
+}
+
+function showFormMessage(
+  message,
+  type = "success"
+) {
+  const node = byId("formMessage");
+
+  if (!node) return;
+
+  node.textContent = message || "";
+  node.className = `form-message ${type}`;
+  node.style.display = message
+    ? "flex"
+    : "none";
+}
+
+function clearFormMessage() {
+  const node = byId("formMessage");
+
+  if (!node) return;
+
+  node.textContent = "";
+  node.style.display = "none";
+}
+
+function findMember(memberId) {
+  return members.find(
+    member =>
+      String(member.id) ===
+      String(memberId)
+  );
+}
 
 /* =========================================================
-   INITIALIZE
+   NATIONAL ID UI
+   Existing members may remain blank.
+   New members must provide National ID.
 ========================================================= */
 
-export async function init() {
+function ensureNationalIdUI() {
+  const form = byId("addMemberForm");
+  const memberNumber = byId("memberNumber");
 
-  if (initialized) {
+  /*
+    Add National ID field dynamically so the existing
+    members.html structure does not have to be changed.
+  */
+  if (
+    form &&
+    !byId("memberNationalId")
+  ) {
+    const field =
+      document.createElement("div");
 
-    console.log(
-      "CHAMA LIVE: members already initialized"
-    );
+    field.className =
+      "member-form-field";
 
-    return;
+    field.innerHTML = `
+      <label
+        class="form-section-label"
+        for="memberNationalId"
+      >
+        National ID
+      </label>
+
+      <input
+        id="memberNationalId"
+        name="memberNationalId"
+        type="text"
+        inputmode="numeric"
+        autocomplete="off"
+        maxlength="30"
+        placeholder="National ID number"
+      >
+
+      <small class="muted member-form-hint">
+        Required when adding a new member.
+      </small>
+    `;
+
+    const anchor =
+      memberNumber?.closest(
+        ".member-form-field"
+      );
+
+    if (anchor?.parentElement) {
+      anchor.parentElement.insertBefore(
+        field,
+        anchor.nextElementSibling
+      );
+    } else {
+      form
+        .querySelector(
+          ".member-form-grid"
+        )
+        ?.appendChild(field);
+    }
   }
 
-  initialized =
-    true;
-
-
-  try {
-
-    clearError();
-
-    showStatus(
-      "Loading members..."
+  /*
+    Add National ID column to the existing
+    Members table.
+  */
+  const table =
+    document.querySelector(
+      ".members-table"
     );
 
-
-    /* =====================================================
-       AUTH
-    ===================================================== */
-
-    currentUser =
-      await requireAuth();
-
-
-    if (!currentUser) {
-
-      throw new Error(
-        "You are not logged in."
-      );
-    }
-
-
-    /* =====================================================
-       CURRENT MEMBER
-    ===================================================== */
-
-    currentMember =
-      await getMyMember();
-
-
-    if (!currentMember) {
-
-      throw new Error(
-        "No member record is linked to this account."
-      );
-    }
-
-
-    if (!currentMember.group_id) {
-
-      throw new Error(
-        "Your member record has no group."
-      );
-    }
-
-
-    groupId =
-      currentMember.group_id;
-
-
-    /* =====================================================
-       CURRENT GROUP
-    ===================================================== */
-
-    currentGroup =
-      await getMyGroup();
-
-
-    if (!currentGroup) {
-
-      throw new Error(
-        "Group information could not be found."
-      );
-    }
-
-
-    console.log(
-      "CHAMA LIVE: current member",
-      currentMember
+  const headRow =
+    table?.querySelector(
+      "thead tr"
     );
 
+  if (
+    headRow &&
+    !headRow.querySelector(
+      "[data-national-id-header]"
+    )
+  ) {
+    const th =
+      document.createElement("th");
 
-    console.log(
-      "CHAMA LIVE: current group",
-      currentGroup
-    );
+    th.dataset.nationalIdHeader =
+      "true";
 
+    th.textContent =
+      "National ID";
 
-    /* =====================================================
-       DISPLAY GROUP
-    ===================================================== */
+    const memberHeader =
+      [...headRow.children].find(
+        cell =>
+          cell.textContent.trim() ===
+          "Member No."
+      );
 
-    const groupName =
-      byId("membersGroupName");
-
-    if (groupName) {
-
-      groupName.textContent =
-        currentGroup.name ||
-        currentGroup.group_name ||
-        "Your Group";
+    if (
+      memberHeader?.nextElementSibling
+    ) {
+      headRow.insertBefore(
+        th,
+        memberHeader.nextElementSibling
+      );
+    } else {
+      headRow.appendChild(th);
     }
-
-
-    /* =====================================================
-       LOAD
-    ===================================================== */
-
-    await loadMembers();
-
-    renderMembers();
-
-    updateMemberCount();
-
-    bindEvents();
-
-    showStatus("");
-
-
-    console.log(
-      "CHAMA LIVE: members initialized successfully"
-    );
-
   }
 
-  catch (error) {
+  /*
+    Add National ID to the member detail modal.
+  */
+  const modalGrid =
+    document.querySelector(
+      ".member-detail-grid"
+    );
 
-    initialized =
-      false;
+  if (
+    modalGrid &&
+    !byId("viewMemberNationalId")
+  ) {
+    const detail =
+      document.createElement("div");
 
-    showStatus("");
+    detail.className =
+      "member-detail";
 
-    showError(error);
+    detail.innerHTML = `
+      <span class="member-detail-label">
+        National ID
+      </span>
+
+      <span
+        class="member-detail-value"
+        id="viewMemberNationalId"
+      >
+        —
+      </span>
+    `;
+
+    const first =
+      modalGrid.firstElementChild;
+
+    if (first?.nextElementSibling) {
+      modalGrid.insertBefore(
+        detail,
+        first.nextElementSibling
+      );
+    } else {
+      modalGrid.appendChild(detail);
+    }
   }
 }
 
-
-/* =========================================================
-   LOAD MEMBERS
-========================================================= */
-
 async function loadMembers() {
-
   if (!groupId) {
-
     throw new Error(
       "No group is associated with this account."
     );
   }
-
 
   const result =
     await supabase
@@ -693,6 +449,7 @@ async function loadMembers() {
         auth_user_id,
         member_number,
         membership_number,
+        national_id,
         name,
         phone,
         email,
@@ -704,10 +461,7 @@ async function loadMembers() {
         activated_at,
         created_at
       `)
-      .eq(
-        "group_id",
-        groupId
-      )
+      .eq("group_id", groupId)
       .order(
         "created_at",
         {
@@ -715,96 +469,27 @@ async function loadMembers() {
         }
       );
 
-
-  /* =====================================================
-     COMPATIBILITY FALLBACK
-  ===================================================== */
-
   if (result.error) {
-
-    console.warn(
-      "CHAMA LIVE: full member query failed",
-      result.error
-    );
-
-
-    const retry =
-      await supabase
-        .from("members")
-        .select(`
-          id,
-          group_id,
-          user_id,
-          auth_user_id,
-          member_number,
-          membership_number,
-          name,
-          phone,
-          email,
-          role,
-          join_date,
-          status,
-          created_at
-        `)
-        .eq(
-          "group_id",
-          groupId
-        )
-        .order(
-          "created_at",
-          {
-            ascending: true
-          }
-        );
-
-
-    if (retry.error) {
-      throw retry.error;
-    }
-
-
-    members =
-      Array.isArray(retry.data)
-        ? retry.data
-        : [];
-
-
-    return members;
+    throw result.error;
   }
-
 
   members =
     Array.isArray(result.data)
       ? result.data
       : [];
 
-
-  console.log(
-    "CHAMA LIVE: loaded members:",
-    members.length
-  );
-
-
   return members;
 }
 
-
-/* =========================================================
-   CREATE MEMBER ROW
-========================================================= */
-
 function createMemberRow(member) {
-
   const id =
     escapeHtml(member.id);
-
 
   const memberNumber =
     escapeHtml(
       member.member_number ||
       "—"
     );
-
 
   const membershipNumber =
     escapeHtml(
@@ -813,6 +498,11 @@ function createMemberRow(member) {
       "—"
     );
 
+  const nationalId =
+    escapeHtml(
+      member.national_id ||
+      "—"
+    );
 
   const name =
     escapeHtml(
@@ -820,13 +510,11 @@ function createMemberRow(member) {
       "—"
     );
 
-
   const phone =
     escapeHtml(
       member.phone ||
       "—"
     );
-
 
   const email =
     escapeHtml(
@@ -834,20 +522,8 @@ function createMemberRow(member) {
       "—"
     );
 
-
-  const role =
-    member.role ||
-    "member";
-
-
-  const status =
-    member.status ||
-    "active";
-
-
   const loginStatus =
-    loginStatusHtml(member);
-
+    getLoginStatus(member);
 
   const hasEmail =
     Boolean(
@@ -856,54 +532,37 @@ function createMemberRow(member) {
       ).trim()
     );
 
+  let invitationButton = `
+    <button
+      type="button"
+      class="member-action invitation-disabled"
+      disabled
+      title="Add an email address first"
+    >
+      <span>✉</span>
+      No Email
+    </button>
+  `;
 
-  const loginStatusValue =
-    getLoginStatus(member);
-
-
-  let invitationButton =
-    "";
-
-
-  if (!hasEmail) {
-
-    invitationButton = `
-      <button
-        type="button"
-        class="member-action invitation-disabled"
-        disabled
-        title="Add an email address first"
-      >
-        <span>✉</span>
-        No Email
-      </button>
-    `;
-  }
-
-
-  else if (
-    loginStatusValue === "Active"
+  if (
+    hasEmail &&
+    loginStatus === "Active"
   ) {
-
     invitationButton = `
       <button
         type="button"
         class="member-action invitation-disabled"
         disabled
-        title="This member account is already active"
       >
         <span>✓</span>
         Active
       </button>
     `;
-  }
-
-
-  else if (
-    loginStatusValue ===
-    "Invitation Sent"
+  } else if (
+    hasEmail &&
+    loginStatus ===
+      "Invitation Sent"
   ) {
-
     invitationButton = `
       <button
         type="button"
@@ -915,11 +574,7 @@ function createMemberRow(member) {
         Resend
       </button>
     `;
-  }
-
-
-  else {
-
+  } else if (hasEmail) {
     invitationButton = `
       <button
         type="button"
@@ -933,7 +588,6 @@ function createMemberRow(member) {
     `;
   }
 
-
   return `
     <tr data-member-id="${id}">
 
@@ -943,6 +597,11 @@ function createMemberRow(member) {
         </span>
       </td>
 
+      <td>
+        <span class="member-contact">
+          ${nationalId}
+        </span>
+      </td>
 
       <td>
         <span class="membership-number">
@@ -950,9 +609,7 @@ function createMemberRow(member) {
         </span>
       </td>
 
-
       <td>
-
         <div class="member-table-profile">
 
           <div class="member-avatar">
@@ -968,17 +625,18 @@ function createMemberRow(member) {
             </strong>
 
             <span>
-              Joined ${escapeHtml(
-                formatDate(member.join_date)
+              Joined
+              ${escapeHtml(
+                formatDate(
+                  member.join_date
+                )
               )}
             </span>
 
           </div>
 
         </div>
-
       </td>
-
 
       <td>
         <span class="member-contact">
@@ -986,28 +644,31 @@ function createMemberRow(member) {
         </span>
       </td>
 
-
       <td>
-        <span class="member-contact email-contact">
+        <span
+          class="member-contact email-contact"
+        >
           ${email}
         </span>
       </td>
 
-
       <td>
-        ${roleBadgeHtml(role)}
+        ${roleBadgeHtml(
+          member.role
+        )}
       </td>
 
-
       <td>
-        ${accountStatusHtml(status)}
+        ${accountStatusHtml(
+          member.status
+        )}
       </td>
 
-
       <td>
-        ${loginStatus}
+        ${loginStatusHtml(
+          member
+        )}
       </td>
-
 
       <td>
 
@@ -1023,7 +684,6 @@ function createMemberRow(member) {
             View
           </button>
 
-
           <button
             type="button"
             class="member-action edit-action"
@@ -1033,7 +693,6 @@ function createMemberRow(member) {
             <span>✎</span>
             Edit
           </button>
-
 
           ${invitationButton}
 
@@ -1045,23 +704,15 @@ function createMemberRow(member) {
   `;
 }
 
-
-/* =========================================================
-   CREATE MOBILE MEMBER CARD
-========================================================= */
-
 function createMemberCard(member) {
-
   const id =
     escapeHtml(member.id);
-
 
   const memberNumber =
     escapeHtml(
       member.member_number ||
       "—"
     );
-
 
   const membershipNumber =
     escapeHtml(
@@ -1070,6 +721,11 @@ function createMemberCard(member) {
       "—"
     );
 
+  const nationalId =
+    escapeHtml(
+      member.national_id ||
+      "—"
+    );
 
   const name =
     escapeHtml(
@@ -1077,13 +733,11 @@ function createMemberCard(member) {
       "Member"
     );
 
-
   const phone =
     escapeHtml(
       member.phone ||
       "—"
     );
-
 
   const email =
     escapeHtml(
@@ -1091,37 +745,23 @@ function createMemberCard(member) {
       "—"
     );
 
-
-  const status =
-    member.status ||
-    "active";
-
-
   const loginStatus =
     getLoginStatus(member);
 
+  let invitationButton = `
+    <button
+      type="button"
+      class="mobile-action disabled-action"
+      disabled
+    >
+      ✉ No Email
+    </button>
+  `;
 
-  let invitationButton =
-    "";
-
-
-  if (!member.email) {
-
-    invitationButton = `
-      <button
-        type="button"
-        class="mobile-action disabled-action"
-        disabled
-      >
-        ✉ No Email
-      </button>
-    `;
-  }
-
-  else if (
+  if (
+    member.email &&
     loginStatus === "Active"
   ) {
-
     invitationButton = `
       <button
         type="button"
@@ -1131,12 +771,11 @@ function createMemberCard(member) {
         ✓ Account Active
       </button>
     `;
-  }
-
-  else if (
-    loginStatus === "Invitation Sent"
+  } else if (
+    member.email &&
+    loginStatus ===
+      "Invitation Sent"
   ) {
-
     invitationButton = `
       <button
         type="button"
@@ -1147,10 +786,9 @@ function createMemberCard(member) {
         ↻ Resend
       </button>
     `;
-  }
-
-  else {
-
+  } else if (
+    member.email
+  ) {
     invitationButton = `
       <button
         type="button"
@@ -1162,7 +800,6 @@ function createMemberCard(member) {
       </button>
     `;
   }
-
 
   return `
     <article
@@ -1176,7 +813,9 @@ function createMemberCard(member) {
 
           <div class="member-avatar large">
             ${escapeHtml(
-              getInitials(member.name)
+              getInitials(
+                member.name
+              )
             )}
           </div>
 
@@ -1194,25 +833,27 @@ function createMemberCard(member) {
 
         </div>
 
-
-        ${accountStatusHtml(status)}
+        ${accountStatusHtml(
+          member.status
+        )}
 
       </div>
-
 
       <div class="member-card-badges">
 
-        ${roleBadgeHtml(member.role)}
+        ${roleBadgeHtml(
+          member.role
+        )}
 
-        ${loginStatusHtml(member)}
+        ${loginStatusHtml(
+          member
+        )}
 
       </div>
-
 
       <div class="member-card-info">
 
         <div class="member-info-item">
-
           <span class="info-label">
             Membership No.
           </span>
@@ -1220,12 +861,19 @@ function createMemberCard(member) {
           <strong>
             ${membershipNumber}
           </strong>
-
         </div>
 
+        <div class="member-info-item">
+          <span class="info-label">
+            National ID
+          </span>
+
+          <strong>
+            ${nationalId}
+          </strong>
+        </div>
 
         <div class="member-info-item">
-
           <span class="info-label">
             Phone
           </span>
@@ -1233,12 +881,9 @@ function createMemberCard(member) {
           <strong>
             ${phone}
           </strong>
-
         </div>
 
-
         <div class="member-info-item full">
-
           <span class="info-label">
             Email
           </span>
@@ -1246,26 +891,23 @@ function createMemberCard(member) {
           <strong class="mobile-email">
             ${email}
           </strong>
-
         </div>
 
-
         <div class="member-info-item">
-
           <span class="info-label">
             Joined
           </span>
 
           <strong>
             ${escapeHtml(
-              formatDate(member.join_date)
+              formatDate(
+                member.join_date
+              )
             )}
           </strong>
-
         </div>
 
       </div>
-
 
       <div class="member-card-actions">
 
@@ -1278,7 +920,6 @@ function createMemberCard(member) {
           ◉ View
         </button>
 
-
         <button
           type="button"
           class="mobile-action edit-mobile"
@@ -1288,7 +929,6 @@ function createMemberCard(member) {
           ✎ Edit
         </button>
 
-
         ${invitationButton}
 
       </div>
@@ -1297,163 +937,104 @@ function createMemberCard(member) {
   `;
 }
 
-
-/* =========================================================
-   RENDER MEMBERS
-========================================================= */
-
 function renderMembers(
   list = members
 ) {
+  ensureNationalIdUI();
 
   const tbody =
     byId("memberRows");
 
-
   const cards =
     byId("memberCards");
-
 
   const rows =
     Array.isArray(list)
       ? list
       : [];
 
-
-  /* =====================================================
-     DESKTOP TABLE
-  ===================================================== */
-
   if (tbody) {
+    tbody.innerHTML =
+      rows.length
+        ? rows
+            .map(createMemberRow)
+            .join("")
+        : `
+          <tr>
+            <td
+              colspan="10"
+              class="empty-table-cell"
+            >
+              <div class="empty-state">
 
-    if (rows.length === 0) {
+                <div class="empty-state-icon">
+                  ♙
+                </div>
 
-      tbody.innerHTML = `
-        <tr>
+                <h3>
+                  No members found
+                </h3>
 
-          <td
-            colspan="9"
-            class="empty-table-cell"
-          >
+                <p>
+                  Add your first group
+                  member to get started.
+                </p>
 
-            <div class="empty-state">
-
-              <div class="empty-state-icon">
-                ♙
               </div>
-
-              <h3>
-                No members found
-              </h3>
-
-              <p>
-                Add your first group member to get started.
-              </p>
-
-            </div>
-
-          </td>
-
-        </tr>
-      `;
-    }
-
-    else {
-
-      tbody.innerHTML =
-        rows
-          .map(createMemberRow)
-          .join("");
-    }
+            </td>
+          </tr>
+        `;
   }
-
-
-  /* =====================================================
-     MOBILE CARDS
-  ===================================================== */
 
   if (cards) {
+    cards.innerHTML =
+      rows.length
+        ? rows
+            .map(createMemberCard)
+            .join("")
+        : `
+          <div class="empty-state mobile-empty">
 
-    if (rows.length === 0) {
+            <div class="empty-state-icon">
+              ♙
+            </div>
 
-      cards.innerHTML = `
-        <div class="empty-state mobile-empty">
+            <h3>
+              No members found
+            </h3>
 
-          <div class="empty-state-icon">
-            ♙
+            <p>
+              Add your first group
+              member to get started.
+            </p>
+
           </div>
-
-          <h3>
-            No members found
-          </h3>
-
-          <p>
-            Add your first group member to get started.
-          </p>
-
-        </div>
-      `;
-    }
-
-    else {
-
-      cards.innerHTML =
-        rows
-          .map(createMemberCard)
-          .join("");
-    }
+        `;
   }
 
-
-  /* =====================================================
-     RESULT COUNT
-  ===================================================== */
-
-  const resultCount =
+  const count =
     byId("memberResultCount");
 
-
-  if (resultCount) {
-
-    resultCount.textContent =
+  if (count) {
+    count.textContent =
       rows.length === members.length
         ? `${rows.length} members`
         : `${rows.length} of ${members.length} members`;
   }
 }
 
-
-/* =========================================================
-   MEMBER COUNT / STATISTICS
-========================================================= */
-
 function updateMemberCount() {
-
   const total =
     members.length;
-
 
   const active =
     members.filter(
       member =>
         String(
           member.status || ""
-        )
-          .toLowerCase() ===
+        ).toLowerCase() ===
         "active"
     ).length;
-
-
-  const inactive =
-    members.filter(
-      member =>
-        String(
-          member.status || ""
-        )
-          .toLowerCase() !==
-        "active"
-    ).length;
-
 
   const loginActive =
     members.filter(
@@ -1462,14 +1043,12 @@ function updateMemberCount() {
         "Active"
     ).length;
 
-
   const invitations =
     members.filter(
       member =>
         getLoginStatus(member) ===
         "Invitation Sent"
     ).length;
-
 
   const noLogin =
     members.filter(
@@ -1478,749 +1057,277 @@ function updateMemberCount() {
         "No Login"
     ).length;
 
-
   const values = {
-
-    memberCount:
-      total,
-
-    membersCount:
-      total,
-
-    activeMembers:
-      active,
-
+    memberCount: total,
+    membersCount: total,
+    activeMembers: active,
     inactiveMembers:
-      inactive,
-
+      total - active,
     loginMembers:
       loginActive,
-
     invitedMembers:
       invitations,
-
     noLoginMembers:
       noLogin
   };
 
-
   Object.entries(values)
     .forEach(
       ([id, value]) => {
+        const node = byId(id);
 
-        const element =
-          byId(id);
-
-        if (element) {
-
-          element.textContent =
+        if (node) {
+          node.textContent =
             String(value);
         }
       }
     );
 }
 
-
-/* =========================================================
-   BIND EVENTS
-========================================================= */
-
-function bindEvents() {
-
-  if (eventsBound) {
-    return;
-  }
-
-  eventsBound =
-    true;
-
-
-  const addButton =
-    byId("addMemberButton");
-
-
-  const closeButton =
-    byId("closeAddMember");
-
-
-  const cancelButton =
-    byId("cancelAddMember");
-
-
-  const form =
-    byId("addMemberForm");
-
-
-  const search =
-    byId("memberSearch");
-
-
-  const clearSearch =
-    byId("clearMemberSearch");
-
-
-  const closeModalButton =
-    byId("closeMemberModal");
-
-
-  const modalBackdrop =
-    byId("memberModal");
-
-
-  const tbody =
-    byId("memberRows");
-
-
-  const cards =
-    byId("memberCards");
-
-
-  if (addButton) {
-
-    addButton.addEventListener(
-      "click",
-      openAddMember
-    );
-  }
-
-
-  if (closeButton) {
-
-    closeButton.addEventListener(
-      "click",
-      closeMemberForm
-    );
-  }
-
-
-  if (cancelButton) {
-
-    cancelButton.addEventListener(
-      "click",
-      closeMemberForm
-    );
-  }
-
-
-  if (form) {
-
-    form.addEventListener(
-      "submit",
-      saveMember
-    );
-  }
-
-
-  if (search) {
-
-    search.addEventListener(
-      "input",
-      handleSearch
-    );
-  }
-
-
-  if (clearSearch) {
-
-    clearSearch.addEventListener(
-      "click",
-      () => {
-
-        if (search) {
-          search.value = "";
-        }
-
-        renderMembers();
-      }
-    );
-  }
-
-
-  if (tbody) {
-
-    tbody.addEventListener(
-      "click",
-      handleTableAction
-    );
-  }
-
-
-  if (cards) {
-
-    cards.addEventListener(
-      "click",
-      handleTableAction
-    );
-  }
-
-
-  if (closeModalButton) {
-
-    closeModalButton.addEventListener(
-      "click",
-      closeMemberModal
-    );
-  }
-
-
-  if (modalBackdrop) {
-
-    modalBackdrop.addEventListener(
-      "click",
-      event => {
-
-        if (
-          event.target ===
-          modalBackdrop
-        ) {
-
-          closeMemberModal();
-        }
-      }
-    );
-  }
-
-
-  document.addEventListener(
-    "keydown",
-    handleEscape
-  );
-}
-
-
-/* =========================================================
-   ESCAPE KEY
-========================================================= */
-
-function handleEscape(event) {
-
-  if (event.key !== "Escape") {
-    return;
-  }
-
-  closeMemberModal();
-
-  closeMemberForm();
-}
-
-
-/* =========================================================
-   SEARCH MEMBERS
-========================================================= */
-
-function handleSearch(event) {
-
-  const query =
-    String(
-      event.target.value || ""
-    )
-      .trim()
-      .toLowerCase();
-
-
-  const searchEmpty =
-    byId("searchEmpty");
-
-
-  if (!query) {
-
-    if (searchEmpty) {
-      searchEmpty.hidden =
-        true;
-    }
-
-    renderMembers();
-
-    return;
-  }
-
-
-  const filtered =
-    members.filter(
-      member => {
-
-        const values = [
-
-          member.member_number,
-
-          member.membership_number,
-
-          member.name,
-
-          member.phone,
-
-          member.email,
-
-          member.role,
-
-          member.status,
-
-          member.onboarding_status
-
-        ];
-
-
-        const searchable =
-          values
-            .filter(
-              value =>
-                value !== null &&
-                value !== undefined
-            )
-            .join(" ")
-            .toLowerCase();
-
-
-        return searchable.includes(
-          query
-        );
-      }
-    );
-
-
-  renderMembers(filtered);
-
-
-  if (searchEmpty) {
-
-    searchEmpty.hidden =
-      filtered.length !== 0;
-  }
-}
-
-
-/* =========================================================
-   TABLE / CARD ACTIONS
-========================================================= */
-
-function handleTableAction(event) {
-
-  const button =
-    event.target.closest(
-      "[data-action]"
-    );
-
-
-  if (!button) {
-    return;
-  }
-
-
-  const memberId =
-    button.getAttribute(
-      "data-member-id"
-    );
-
-
-  const action =
-    button.getAttribute(
-      "data-action"
-    );
-
-
-  if (!memberId) {
-    return;
-  }
-
-
-  if (action === "view") {
-
-    openMemberModal(memberId);
-
-    return;
-  }
-
-
-  if (action === "edit") {
-
-    openEditMember(memberId);
-
-    return;
-  }
-
-
-  if (action === "invite") {
-
-    sendMemberInvitation(
-      memberId,
-      button
-    );
-  }
-}
-
-
-/* =========================================================
-   OPEN ADD MEMBER
-========================================================= */
-
 function openAddMember() {
-
-  editingMemberId =
-    null;
-
+  editingMemberId = null;
 
   const panel =
     byId("addMemberPanel");
 
-
   const title =
     byId("memberFormTitle");
 
-
   const description =
-    byId("memberFormDescription");
-
+    byId(
+      "memberFormDescription"
+    );
 
   const form =
     byId("addMemberForm");
 
-
   if (panel) {
-    panel.hidden =
-      false;
+    panel.hidden = false;
   }
 
-
   if (title) {
-
     title.textContent =
       "Add Member";
   }
 
-
   if (description) {
-
     description.textContent =
       "Register a new member in your group.";
   }
 
-
   if (form) {
     form.reset();
   }
 
-
   clearFormMessage();
 
+  byId(
+    "memberNumber"
+  )?.focus();
 
-  const memberNumber =
-    byId("memberNumber");
-
-
-  if (memberNumber) {
-
-    memberNumber.focus();
-  }
-
-
-  if (panel) {
-
-    panel.scrollIntoView({
-      behavior: "smooth",
-      block: "start"
-    });
-  }
+  panel?.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
 }
-
-
-/* =========================================================
-   CLOSE MEMBER FORM
-========================================================= */
 
 function closeMemberForm() {
+  editingMemberId = null;
 
-  editingMemberId =
-    null;
+  byId(
+    "addMemberPanel"
+  )?.setAttribute(
+    "hidden",
+    ""
+  );
 
-
-  const panel =
-    byId("addMemberPanel");
-
-
-  if (panel) {
-
-    panel.hidden =
-      true;
-  }
-
-
-  const form =
-    byId("addMemberForm");
-
-
-  if (form) {
-    form.reset();
-  }
-
+  byId(
+    "addMemberForm"
+  )?.reset();
 
   clearFormMessage();
 }
 
-
-/* =========================================================
-   OPEN EDIT MEMBER
-========================================================= */
-
-function openEditMember(memberId) {
-
+function openEditMember(
+  memberId
+) {
   const member =
     findMember(memberId);
 
-
   if (!member) {
-
-    showError(
+    return showError(
       new Error(
         "Member could not be found."
       )
     );
-
-    return;
   }
-
 
   editingMemberId =
     memberId;
 
+  ensureNationalIdUI();
 
   const panel =
     byId("addMemberPanel");
 
-
-  const title =
-    byId("memberFormTitle");
-
-
-  const description =
-    byId("memberFormDescription");
-
-
   if (panel) {
-
-    panel.hidden =
-      false;
+    panel.hidden = false;
   }
 
-
-  if (title) {
-
-    title.textContent =
+  if (
+    byId("memberFormTitle")
+  ) {
+    byId(
+      "memberFormTitle"
+    ).textContent =
       "Edit Member";
   }
 
-
-  if (description) {
-
-    description.textContent =
+  if (
+    byId(
+      "memberFormDescription"
+    )
+  ) {
+    byId(
+      "memberFormDescription"
+    ).textContent =
       "Update the member information.";
   }
 
-
-  const memberNumber =
-    byId("memberNumber");
-
-
-  const memberName =
-    byId("memberName");
-
-
-  const memberPhone =
-    byId("memberPhone");
-
-
-  const memberEmail =
-    byId("memberEmail");
-
-
-  const memberRole =
-    byId("memberRole");
-
-
-  const memberStatus =
-    byId("memberStatus");
-
-
-  if (memberNumber) {
-
-    memberNumber.value =
+  const values = {
+    memberNumber:
       member.member_number ||
       member.membership_number ||
-      "";
-  }
+      "",
 
-
-  if (memberName) {
-
-    memberName.value =
+    memberName:
       member.name ||
-      "";
-  }
+      "",
 
+    memberNationalId:
+      member.national_id ||
+      "",
 
-  if (memberPhone) {
-
-    memberPhone.value =
+    memberPhone:
       member.phone ||
-      "";
-  }
+      "",
 
-
-  if (memberEmail) {
-
-    memberEmail.value =
+    memberEmail:
       member.email ||
-      "";
-  }
+      "",
 
-
-  if (memberRole) {
-
-    memberRole.value =
+    memberRole:
       member.role ||
-      "member";
-  }
+      "member",
 
-
-  if (memberStatus) {
-
-    memberStatus.value =
+    memberStatus:
       member.status ||
-      "active";
-  }
+      "active"
+  };
 
+  Object.entries(values)
+    .forEach(
+      ([id, value]) => {
+        const node =
+          byId(id);
+
+        if (node) {
+          node.value =
+            value;
+        }
+      }
+    );
 
   clearFormMessage();
 
-
-  if (panel) {
-
-    panel.scrollIntoView({
-      behavior: "smooth",
-      block: "start"
-    });
-  }
+  panel?.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
 }
 
-
-/* =========================================================
-   GET FORM VALUES
-========================================================= */
-
 function getFormValues() {
-
-  const memberNumberElement =
-    byId("memberNumber");
-
-
-  const nameElement =
-    byId("memberName");
-
-
-  const phoneElement =
-    byId("memberPhone");
-
-
-  const emailElement =
-    byId("memberEmail");
-
-
-  const roleElement =
-    byId("memberRole");
-
-
-  const statusElement =
-    byId("memberStatus");
-
+  const value = id =>
+    byId(id)?.value?.trim() ||
+    "";
 
   return {
-
     memberNumber:
-      memberNumberElement
-        ? memberNumberElement.value.trim()
-        : "",
-
+      value("memberNumber"),
 
     name:
-      nameElement
-        ? nameElement.value.trim()
-        : "",
+      value("memberName"),
 
+    nationalId:
+      value("memberNationalId"),
 
     phone:
-      phoneElement
-        ? phoneElement.value.trim()
-        : "",
-
+      value("memberPhone"),
 
     email:
-      emailElement
-        ? emailElement.value
-            .trim()
-            .toLowerCase()
-        : "",
-
+      String(
+        byId("memberEmail")
+          ?.value || ""
+      )
+        .trim()
+        .toLowerCase(),
 
     role:
-      roleElement
-        ? roleElement.value
-        : "member",
-
+      byId("memberRole")
+        ?.value ||
+      "member",
 
     status:
-      statusElement
-        ? statusElement.value
-        : "active"
+      byId("memberStatus")
+        ?.value ||
+      "active"
   };
 }
 
-
-/* =========================================================
-   VALIDATE FORM
-========================================================= */
-
 function validateForm(values) {
-
   if (!values.memberNumber) {
-
     throw new Error(
       "Please enter the member number."
     );
   }
 
-
   if (!values.name) {
-
     throw new Error(
       "Please enter the member's full name."
     );
   }
 
+  /*
+    National ID is mandatory only for NEW
+    members. Existing members who were
+    created before this requirement may
+    remain blank until edited.
+  */
+  if (
+    !values.nationalId &&
+    !editingMemberId
+  ) {
+    throw new Error(
+      "Please enter the member's National ID."
+    );
+  }
 
   if (!values.phone) {
-
     throw new Error(
       "Please enter the member's phone number."
     );
   }
 
-
   if (!groupId) {
-
     throw new Error(
       "No group is associated with this account."
     );
   }
 }
 
-
-/* =========================================================
-   CHECK DUPLICATE MEMBER NUMBER
-========================================================= */
-
 async function checkDuplicateMemberNumber(
   memberNumber
 ) {
-
   let query =
     supabase
       .from("members")
@@ -2234,9 +1341,7 @@ async function checkDuplicateMemberNumber(
         memberNumber
       );
 
-
   if (editingMemberId) {
-
     query =
       query.neq(
         "id",
@@ -2244,138 +1349,94 @@ async function checkDuplicateMemberNumber(
       );
   }
 
-
   const result =
     await query.limit(1);
 
-
   if (result.error) {
-
     throw result.error;
   }
 
-
   return (
-    Array.isArray(result.data) &&
+    Array.isArray(
+      result.data
+    ) &&
     result.data.length > 0
   );
 }
 
-
-/* =========================================================
-   GENERATE MEMBERSHIP NUMBER
-========================================================= */
-
-function generateMembershipNumber(
-  memberNumber
+async function saveMember(
+  event
 ) {
-
-  return String(
-    memberNumber || ""
-  ).trim();
-}
-
-
-/* =========================================================
-   SAVE MEMBER
-========================================================= */
-
-async function saveMember(event) {
-
   event.preventDefault();
 
   clearError();
-
   clearFormMessage();
 
-
-  const saveButton =
+  const button =
     byId("saveMemberButton");
-
 
   const wasEditing =
     Boolean(editingMemberId);
 
-
   try {
-
     const values =
       getFormValues();
 
-
     validateForm(values);
 
-
-    if (saveButton) {
-
-      saveButton.disabled =
+    if (button) {
+      button.disabled =
         true;
 
-      saveButton.textContent =
+      button.textContent =
         wasEditing
           ? "Updating..."
           : "Saving...";
     }
 
-
-    /* =====================================================
-       DUPLICATE NUMBER
-    ===================================================== */
-
-    const duplicate =
+    if (
       await checkDuplicateMemberNumber(
         values.memberNumber
-      );
-
-
-    if (duplicate) {
-
+      )
+    ) {
       throw new Error(
-        "Member number " +
-        values.memberNumber +
-        " is already registered in this group."
+        `Member number ${values.memberNumber} is already registered in this group.`
       );
     }
 
+    const payload = {
+      member_number:
+        values.memberNumber,
 
-    /* =====================================================
-       UPDATE
-    ===================================================== */
+      membership_number:
+        values.memberNumber,
+
+      national_id:
+        values.nationalId ||
+        null,
+
+      name:
+        values.name,
+
+      phone:
+        values.phone,
+
+      email:
+        values.email ||
+        null,
+
+      role:
+        values.role,
+
+      status:
+        values.status
+    };
 
     if (wasEditing) {
-
-      const updatePayload = {
-
-        member_number:
-          values.memberNumber,
-
-        membership_number:
-          generateMembershipNumber(
-            values.memberNumber
-          ),
-
-        name:
-          values.name,
-
-        phone:
-          values.phone,
-
-        email:
-          values.email ||
-          null,
-
-        role:
-          values.role,
-
-        status:
-          values.status
-      };
-
-
       const result =
         await supabase
           .from("members")
-          .update(updatePayload)
+          .update(payload)
           .eq(
             "id",
             editingMemberId
@@ -2385,113 +1446,38 @@ async function saveMember(event) {
             groupId
           );
 
-
       if (result.error) {
-
         throw result.error;
       }
-
 
       showFormMessage(
         "Member updated successfully.",
         "success"
       );
-    }
-
-
-    /* =====================================================
-       CREATE
-    ===================================================== */
-
-    else {
-
-      const membershipNumber =
-        generateMembershipNumber(
-          values.memberNumber
-        );
-
-
-      if (!membershipNumber) {
-
-        throw new Error(
-          "A membership number could not be generated."
-        );
-      }
-
-
-      const insertPayload = {
-
-        group_id:
-          groupId,
-
-        member_number:
-          values.memberNumber,
-
-        membership_number:
-          membershipNumber,
-
-        name:
-          values.name,
-
-        phone:
-          values.phone,
-
-        email:
-          values.email ||
-          null,
-
-        role:
-          values.role,
-
-        status:
-          values.status,
-
-        onboarding_status:
-          "pending",
-
-        join_date:
-          new Date()
-            .toISOString()
-            .slice(0, 10)
-      };
-
-
+    } else {
       const result =
         await supabase
           .from("members")
-          .insert(insertPayload)
-          .select(`
-            id,
-            group_id,
-            user_id,
-            auth_user_id,
-            member_number,
-            membership_number,
-            name,
-            phone,
-            email,
-            role,
-            join_date,
-            status,
-            onboarding_status,
-            invited_at,
-            activated_at,
-            created_at
-          `)
-          .single();
+          .insert({
+            ...payload,
+            group_id:
+              groupId,
 
+            onboarding_status:
+              "pending",
+
+            join_date:
+              new Date()
+                .toISOString()
+                .slice(
+                  0,
+                  10
+                )
+          });
 
       if (result.error) {
-
         throw result.error;
       }
-
-
-      console.log(
-        "CHAMA LIVE: member created",
-        result.data
-      );
-
 
       showFormMessage(
         values.email
@@ -2501,54 +1487,33 @@ async function saveMember(event) {
       );
     }
 
-
-    /* =====================================================
-       REFRESH
-    ===================================================== */
-
     await loadMembers();
 
     renderMembers();
 
     updateMemberCount();
 
-
     setTimeout(
-      () => {
-
-        closeMemberForm();
-
-      },
+      closeMemberForm,
       900
     );
-
-  }
-
-
-  catch (error) {
-
+  } catch (error) {
     console.error(
       "CHAMA LIVE: save member failed",
       error
     );
 
-
     showFormMessage(
       error?.message ||
-      String(error),
+        String(error),
       "error"
     );
-  }
-
-
-  finally {
-
-    if (saveButton) {
-
-      saveButton.disabled =
+  } finally {
+    if (button) {
+      button.disabled =
         false;
 
-      saveButton.textContent =
+      button.textContent =
         wasEditing
           ? "Save Changes"
           : "Save Member";
@@ -2556,262 +1521,22 @@ async function saveMember(event) {
   }
 }
 
-
-/* =========================================================
-   EXTRACT EDGE FUNCTION ERROR
-========================================================= */
-
-async function extractFunctionError(
-  functionError,
-  functionData
-) {
-
-  let message =
-    functionError?.message ||
-    "The invitation could not be sent.";
-
-
-  if (
-    functionData &&
-    typeof functionData === "object"
-  ) {
-
-    if (functionData.error) {
-
-      if (
-        typeof functionData.error ===
-        "string"
-      ) {
-
-        return functionData.error;
-      }
-
-
-      if (
-        functionData.error.message
-      ) {
-
-        return functionData.error.message;
-      }
-    }
-
-
-    if (functionData.message) {
-
-      return functionData.message;
-    }
-  }
-
-
-  const context =
-    functionError?.context;
-
-
-  if (context) {
-
-    try {
-
-      if (
-        typeof context.clone ===
-        "function"
-      ) {
-
-        const cloned =
-          context.clone();
-
-
-        if (
-          typeof cloned.json ===
-          "function"
-        ) {
-
-          const body =
-            await cloned.json();
-
-
-          console.error(
-            "CHAMA LIVE: Edge Function JSON error",
-            body
-          );
-
-
-          if (body?.error) {
-
-            if (
-              typeof body.error ===
-              "string"
-            ) {
-
-              return body.error;
-            }
-
-
-            if (
-              body.error.message
-            ) {
-
-              return body.error.message;
-            }
-
-
-            return JSON.stringify(
-              body.error
-            );
-          }
-
-
-          if (body?.message) {
-
-            return body.message;
-          }
-
-
-          if (body) {
-
-            return JSON.stringify(
-              body
-            );
-          }
-        }
-      }
-
-    }
-
-    catch (jsonError) {
-
-      console.warn(
-        "CHAMA LIVE: JSON error parsing failed",
-        jsonError
-      );
-    }
-
-
-    try {
-
-      if (
-        typeof context.clone ===
-        "function"
-      ) {
-
-        const cloned =
-          context.clone();
-
-
-        if (
-          typeof cloned.text ===
-          "function"
-        ) {
-
-          const text =
-            await cloned.text();
-
-
-          console.error(
-            "CHAMA LIVE: Edge Function text error",
-            text
-          );
-
-
-          if (text) {
-
-            try {
-
-              const parsed =
-                JSON.parse(text);
-
-
-              if (parsed?.error) {
-
-                if (
-                  typeof parsed.error ===
-                  "string"
-                ) {
-
-                  return parsed.error;
-                }
-
-
-                if (
-                  parsed.error.message
-                ) {
-
-                  return parsed.error.message;
-                }
-
-
-                return JSON.stringify(
-                  parsed.error
-                );
-              }
-
-
-              if (parsed?.message) {
-
-                return parsed.message;
-              }
-
-            }
-
-            catch {
-
-              return text;
-            }
-          }
-        }
-      }
-
-    }
-
-    catch (textError) {
-
-      console.warn(
-        "CHAMA LIVE: text error parsing failed",
-        textError
-      );
-    }
-  }
-
-
-  if (
-    functionError?.status
-  ) {
-
-    message +=
-      ` (HTTP ${functionError.status})`;
-  }
-
-
-  return message;
-}
-
-
-/* =========================================================
-   SEND MEMBER INVITATION
-========================================================= */
-
 async function sendMemberInvitation(
   memberId,
-  button = null
+  button
 ) {
-
   clearError();
-
 
   const member =
     findMember(memberId);
 
-
   if (!member) {
-
-    showError(
+    return showError(
       new Error(
         "Member could not be found."
       )
     );
-
-    return;
   }
-
 
   const email =
     String(
@@ -2820,41 +1545,20 @@ async function sendMemberInvitation(
       .trim()
       .toLowerCase();
 
-
   if (!email) {
-
-    showError(
+    return showError(
       new Error(
         "This member does not have an email address. Edit the member and add an email first."
       )
     );
-
-    return;
   }
 
-
-  if (!groupId) {
-
-    showError(
-      new Error(
-        "No group is associated with this account."
-      )
-    );
-
-    return;
-  }
-
-
-  const originalText =
-    button
-      ? button.textContent
-      : "Invite";
-
+  const original =
+    button?.textContent ||
+    "Invite";
 
   try {
-
     if (button) {
-
       button.disabled =
         true;
 
@@ -2862,28 +1566,9 @@ async function sendMemberInvitation(
         "Sending...";
     }
 
-
     showStatus(
       `Sending login invitation to ${email}...`
     );
-
-
-    console.log(
-      "CHAMA LIVE: preparing member invitation",
-      {
-        memberId:
-          member.id,
-
-        email,
-
-        groupId
-      }
-    );
-
-
-    /* =====================================================
-       SESSION
-    ===================================================== */
 
     const {
       data: sessionData,
@@ -2891,27 +1576,17 @@ async function sendMemberInvitation(
     } =
       await supabase.auth.getSession();
 
-
     if (sessionError) {
       throw sessionError;
     }
 
-
-    const session =
-      sessionData?.session;
-
-
-    if (!session) {
-
+    if (
+      !sessionData?.session
+    ) {
       throw new Error(
         "Your login session has expired. Please sign in again."
       );
     }
-
-
-    /* =====================================================
-       EDGE FUNCTION
-    ===================================================== */
 
     const result =
       await supabase.functions.invoke(
@@ -2924,82 +1599,21 @@ async function sendMemberInvitation(
         }
       );
 
-
-    console.log(
-      "CHAMA LIVE: invitation function response",
-      result
-    );
-
-
     if (result.error) {
-
-      console.error(
-        "CHAMA LIVE: Edge Function error",
-        result.error
-      );
-
-
-      const actualMessage =
-        await extractFunctionError(
-          result.error,
-          result.data
-        );
-
-
-      throw new Error(
-        actualMessage
-      );
+      throw result.error;
     }
-
 
     if (
-      result.data &&
-      typeof result.data === "object"
+      result.data?.success ===
+        false ||
+      result.data?.error
     ) {
-
-      if (
-        result.data.success === false
-      ) {
-
-        throw new Error(
-          result.data.error ||
+      throw new Error(
+        result.data.error ||
           result.data.message ||
           "The invitation was rejected by the server."
-        );
-      }
-
-
-      if (
-        result.data.error
-      ) {
-
-        throw new Error(
-          typeof result.data.error ===
-          "string"
-            ? result.data.error
-            : result.data.error.message ||
-              JSON.stringify(
-                result.data.error
-              )
-        );
-      }
+      );
     }
-
-
-    console.log(
-      "CHAMA LIVE: invitation sent successfully",
-      result.data
-    );
-
-
-    showStatus(
-      `Invitation sent successfully to ${email}.`
-    );
-
-
-    /* =====================================================
-       REFRESH
-    ===================================================== */
 
     await loadMembers();
 
@@ -3007,344 +1621,454 @@ async function sendMemberInvitation(
 
     updateMemberCount();
 
-
-    /* =====================================================
-       REFRESH MODAL
-    ===================================================== */
+    showStatus(
+      `Invitation sent successfully to ${email}.`
+    );
 
     const modal =
       byId("memberModal");
-
 
     if (
       modal &&
       !modal.hidden
     ) {
-
       openMemberModal(
         member.id
       );
     }
 
-
     setTimeout(
-      () => {
-        showStatus("");
-      },
+      () =>
+        showStatus(""),
       3500
     );
-
-  }
-
-
-  catch (error) {
-
-    console.error(
-      "CHAMA LIVE: send invitation failed",
-      error
-    );
-
-
-    showError(
-      new Error(
-        error?.message ||
-        "Unable to send the member invitation."
-      )
-    );
-
-
+  } catch (error) {
     showStatus("");
-  }
 
-
-  finally {
-
+    showError(error);
+  } finally {
     if (button) {
-
       button.disabled =
         false;
 
+      const updated =
+        findMember(
+          memberId
+        );
 
-      const updatedMember =
-        findMember(memberId);
-
-
-      if (
-        updatedMember &&
-        getLoginStatus(updatedMember) ===
-        "Invitation Sent"
-      ) {
-
-        button.textContent =
-          "↻ Resend";
-      }
-
-      else {
-
-        button.textContent =
-          originalText ||
-          "Invite";
-      }
+      button.textContent =
+        updated &&
+        getLoginStatus(
+          updated
+        ) ===
+          "Invitation Sent"
+          ? "↻ Resend"
+          : original;
     }
   }
 }
 
-
-/* =========================================================
-   OPEN MEMBER MODAL
-========================================================= */
-
-function openMemberModal(memberId) {
-
+function openMemberModal(
+  memberId
+) {
   const member =
     findMember(memberId);
 
-
   if (!member) {
-
-    showError(
+    return showError(
       new Error(
         "Member could not be found."
       )
     );
-
-    return;
   }
 
+  ensureNationalIdUI();
 
-  const name =
-    byId("viewMemberName");
-
-
-  const initials =
-    byId("viewMemberInitials");
-
-
-  const number =
-    byId("viewMemberNumber");
-
-
-  const membershipNumber =
-    byId("viewMembershipNumber");
-
-
-  const phone =
-    byId("viewMemberPhone");
-
-
-  const email =
-    byId("viewMemberEmail");
-
-
-  const role =
-    byId("viewMemberRole");
-
-
-  const status =
-    byId("viewMemberStatus");
-
-
-  const loginStatus =
-    byId("viewMemberLoginStatus");
-
-
-  const joinDate =
-    byId("viewMemberJoinDate");
-
-
-  const group =
-    byId("viewMemberGroup");
-
-
-  if (name) {
-
-    name.textContent =
+  const values = {
+    viewMemberName:
       member.name ||
-      "Member";
-  }
+      "Member",
 
-
-  if (initials) {
-
-    initials.textContent =
-      getInitials(member.name);
-  }
-
-
-  if (number) {
-
-    number.textContent =
+    viewMemberNumber:
       member.member_number ||
-      "—";
-  }
+      "—",
 
-
-  if (membershipNumber) {
-
-    membershipNumber.textContent =
+    viewMembershipNumber:
       member.membership_number ||
       member.member_number ||
-      "—";
-  }
+      "—",
 
+    viewMemberNationalId:
+      member.national_id ||
+      "—",
 
-  if (phone) {
-
-    phone.textContent =
+    viewMemberPhone:
       member.phone ||
-      "—";
-  }
+      "—",
 
-
-  if (email) {
-
-    email.textContent =
+    viewMemberEmail:
       member.email ||
-      "—";
+      "—",
+
+    viewMemberJoinDate:
+      formatDate(
+        member.join_date
+      ),
+
+    viewMemberGroup:
+      currentGroup?.name ||
+      currentGroup?.group_name ||
+      "Current Group"
+  };
+
+  const initials =
+    byId(
+      "viewMemberInitials"
+    );
+
+  if (initials) {
+    initials.textContent =
+      getInitials(
+        member.name
+      );
   }
 
+  Object.entries(values)
+    .forEach(
+      ([id, value]) => {
+        const node =
+          byId(id);
+
+        if (node) {
+          node.textContent =
+            value;
+        }
+      }
+    );
+
+  const role =
+    byId(
+      "viewMemberRole"
+    );
 
   if (role) {
-
     role.innerHTML =
       roleBadgeHtml(
         member.role
       );
   }
 
+  const status =
+    byId(
+      "viewMemberStatus"
+    );
 
   if (status) {
-
     status.innerHTML =
       accountStatusHtml(
         member.status
       );
   }
 
+  const login =
+    byId(
+      "viewMemberLoginStatus"
+    );
 
-  if (loginStatus) {
-
-    loginStatus.innerHTML =
+  if (login) {
+    login.innerHTML =
       loginStatusHtml(
         member
       );
   }
 
-
-  if (joinDate) {
-
-    joinDate.textContent =
-      formatDate(
-        member.join_date
-      );
-  }
-
-
-  if (group) {
-
-    group.textContent =
-      currentGroup?.name ||
-      currentGroup?.group_name ||
-      "Current Group";
-  }
-
-
   const modal =
     byId("memberModal");
 
-
-  if (!modal) {
-
-    console.warn(
-      "CHAMA LIVE: #memberModal not found"
-    );
-
-    return;
-  }
-
+  if (!modal) return;
 
   modal.hidden =
     false;
 
-
   modal.style.display =
     "flex";
-
 
   document.body.classList.add(
     "modal-open"
   );
 
-
-  const closeButton =
-    byId("closeMemberModal");
-
-
-  if (closeButton) {
-
-    setTimeout(
-      () => {
-        closeButton.focus();
-      },
-      50
-    );
-  }
+  setTimeout(
+    () =>
+      byId(
+        "closeMemberModal"
+      )?.focus(),
+    50
+  );
 }
 
-
-/* =========================================================
-   CLOSE MEMBER MODAL
-========================================================= */
-
 function closeMemberModal() {
-
   const modal =
     byId("memberModal");
 
-
-  if (!modal) {
-    return;
-  }
-
+  if (!modal) return;
 
   modal.hidden =
     true;
 
-
   modal.style.display =
     "none";
-
 
   document.body.classList.remove(
     "modal-open"
   );
 }
 
+function handleSearch(
+  event
+) {
+  const query =
+    String(
+      event.target.value ||
+        ""
+    )
+      .trim()
+      .toLowerCase();
 
-/* =========================================================
-   REFRESH MEMBERS
-========================================================= */
-
-export async function refreshMembers() {
-
-  if (!groupId) {
-
-    console.warn(
-      "CHAMA LIVE: Cannot refresh members without groupId"
-    );
-
-    return;
+  if (!query) {
+    return renderMembers();
   }
 
+  const filtered =
+    members.filter(
+      member =>
+        [
+          member.member_number,
+          member.membership_number,
+          member.national_id,
+          member.name,
+          member.phone,
+          member.email,
+          member.role,
+          member.status,
+          member.onboarding_status
+        ]
+          .filter(
+            value =>
+              value !== null &&
+              value !== undefined
+          )
+          .join(" ")
+          .toLowerCase()
+          .includes(query)
+    );
+
+  renderMembers(
+    filtered
+  );
+}
+
+function handleTableAction(
+  event
+) {
+  const button =
+    event.target.closest(
+      "[data-action]"
+    );
+
+  if (!button) return;
+
+  const memberId =
+    button.getAttribute(
+      "data-member-id"
+    );
+
+  const action =
+    button.getAttribute(
+      "data-action"
+    );
+
+  if (!memberId) return;
+
+  if (
+    action === "view"
+  ) {
+    openMemberModal(
+      memberId
+    );
+  } else if (
+    action === "edit"
+  ) {
+    openEditMember(
+      memberId
+    );
+  } else if (
+    action === "invite"
+  ) {
+    sendMemberInvitation(
+      memberId,
+      button
+    );
+  }
+}
+
+function bindEvents() {
+  if (eventsBound) return;
+
+  eventsBound = true;
+
+  byId(
+    "addMemberButton"
+  )?.addEventListener(
+    "click",
+    openAddMember
+  );
+
+  byId(
+    "closeAddMember"
+  )?.addEventListener(
+    "click",
+    closeMemberForm
+  );
+
+  byId(
+    "cancelAddMember"
+  )?.addEventListener(
+    "click",
+    closeMemberForm
+  );
+
+  byId(
+    "addMemberForm"
+  )?.addEventListener(
+    "submit",
+    saveMember
+  );
+
+  byId(
+    "memberSearch"
+  )?.addEventListener(
+    "input",
+    handleSearch
+  );
+
+  byId(
+    "clearMemberSearch"
+  )?.addEventListener(
+    "click",
+    () => {
+      const search =
+        byId(
+          "memberSearch"
+        );
+
+      if (search) {
+        search.value = "";
+      }
+
+      renderMembers();
+    }
+  );
+
+  byId(
+    "memberRows"
+  )?.addEventListener(
+    "click",
+    handleTableAction
+  );
+
+  byId(
+    "memberCards"
+  )?.addEventListener(
+    "click",
+    handleTableAction
+  );
+
+  byId(
+    "closeMemberModal"
+  )?.addEventListener(
+    "click",
+    closeMemberModal
+  );
+
+  byId(
+    "memberModal"
+  )?.addEventListener(
+    "click",
+    event => {
+      if (
+        event.target ===
+        byId("memberModal")
+      ) {
+        closeMemberModal();
+      }
+    }
+  );
+
+  document.addEventListener(
+    "keydown",
+    event => {
+      if (
+        event.key ===
+        "Escape"
+      ) {
+        closeMemberModal();
+        closeMemberForm();
+      }
+    }
+  );
+}
+
+export async function init() {
+  if (initialized) return;
+
+  initialized = true;
 
   try {
-
     clearError();
 
     showStatus(
-      "Refreshing members..."
+      "Loading members..."
     );
 
+    currentUser =
+      await requireAuth();
+
+    currentMember =
+      await getMyMember();
+
+    if (
+      !currentMember?.group_id
+    ) {
+      throw new Error(
+        "Your member record has no group."
+      );
+    }
+
+    groupId =
+      currentMember.group_id;
+
+    currentGroup =
+      await getMyGroup();
+
+    if (!currentGroup) {
+      throw new Error(
+        "Group information could not be found."
+      );
+    }
+
+    const groupName =
+      byId(
+        "membersGroupName"
+      );
+
+    if (groupName) {
+      groupName.textContent =
+        currentGroup.name ||
+        currentGroup.group_name ||
+        "Your Group";
+    }
+
+    ensureNationalIdUI();
 
     await loadMembers();
 
@@ -3352,12 +2076,12 @@ export async function refreshMembers() {
 
     updateMemberCount();
 
+    bindEvents();
+
     showStatus("");
-
-
-  }
-
-  catch (error) {
+  } catch (error) {
+    initialized =
+      false;
 
     showStatus("");
 
@@ -3365,18 +2089,22 @@ export async function refreshMembers() {
   }
 }
 
+export async function refreshMembers() {
+  if (!groupId) return;
 
-/* =========================================================
-   PUBLIC ALIAS
-========================================================= */
+  try {
+    await loadMembers();
+
+    renderMembers();
+
+    updateMemberCount();
+  } catch (error) {
+    showError(error);
+  }
+}
 
 export const loadPage =
   init;
-
-
-/* =========================================================
-   READY
-========================================================= */
 
 console.log(
   "CHAMA LIVE: members.js ready"
