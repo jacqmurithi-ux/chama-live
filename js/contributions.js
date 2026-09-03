@@ -2,15 +2,19 @@
    CHAMA LIVE — CONTRIBUTIONS
    CANONICAL 2B ACCOUNTING VERSION
 
-   ACCOUNTING MONTH UPDATE
+   ATOMIC CONTRIBUTION RECORDING
    ---------------------------------------------------------
-   • Accounting Month is explicit page state.
-   • Selected month is refreshed through the canonical RPC.
-   • Monthly status is loaded for selected month.
-   • No frontend arrears calculation.
-   • No frontend allocation calculation.
-   • No frontend carry-forward calculation.
-   • Supabase canonical RPC remains authoritative.
+   • Contribution writes go through cl_2b_record_contribution().
+   • Payment insertion and monthly allocation refresh are
+     performed atomically by Supabase.
+   • Frontend never inserts directly into contributions.
+   • Frontend never performs allocation calculations.
+   • Frontend never performs arrears calculations.
+   • Frontend never performs carry-forward calculations.
+   • Accounting Month selection is READ-ONLY.
+   • Canonical monthly status comes from Supabase.
+   • Idempotency key is generated per new submission.
+   • Same idempotency key is retained for retries.
 ========================================================= */
 
 import {
@@ -94,6 +98,19 @@ const accountingMonthSelect =
 const selectedAccountingMonthLabel =
   document.getElementById(
     "selectedAccountingMonthLabel"
+  );
+
+
+/*
+ * Hidden idempotency field added to contributions.html.
+ *
+ * JavaScript owns this value.
+ * The user does not enter it.
+ */
+
+const contributionIdempotencyKeyInput =
+  document.getElementById(
+    "contributionIdempotencyKey"
   );
 
 
@@ -305,11 +322,10 @@ function shiftMonth(
 /*
  * Build accounting month options.
  *
- * Previous months are included because arrears
- * may originate there.
+ * This is DISPLAY STATE ONLY.
  *
- * Future months are included so the user can
- * inspect future obligations such as October.
+ * Selecting a month does not write to Supabase.
+ * Canonical accounting is read through the status RPC.
  */
 
 function buildAccountingMonthOptions() {
@@ -533,6 +549,94 @@ function escapeHtml(value) {
       "'",
       "&#039;"
     );
+
+}
+
+
+/* =========================================================
+   IDEMPOTENCY
+========================================================= */
+
+/*
+ * Generate a UUID for a NEW contribution submission.
+ *
+ * The same UUID is retained while the submission is being
+ * retried. It is replaced only after a successful submission
+ * and form reset.
+ */
+
+function generateIdempotencyKey() {
+
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
+
+    return crypto.randomUUID();
+
+  }
+
+
+  throw new Error(
+    "Secure idempotency key generation is unavailable in this browser."
+  );
+
+}
+
+
+/*
+ * Return the current submission idempotency key.
+ *
+ * A missing key is generated once and then retained.
+ */
+
+function getContributionIdempotencyKey() {
+
+  if (!contributionIdempotencyKeyInput) {
+
+    throw new Error(
+      "Contribution idempotency field is missing from the page."
+    );
+
+  }
+
+
+  let key =
+    String(
+      contributionIdempotencyKeyInput.value ||
+      ""
+    ).trim();
+
+
+  if (!key) {
+
+    key =
+      generateIdempotencyKey();
+
+    contributionIdempotencyKeyInput.value =
+      key;
+
+  }
+
+
+  return key;
+
+}
+
+
+/*
+ * Start a completely NEW submission identity.
+ */
+
+function resetContributionIdempotencyKey() {
+
+  if (!contributionIdempotencyKeyInput) {
+    return;
+  }
+
+
+  contributionIdempotencyKeyInput.value =
+    generateIdempotencyKey();
 
 }
 
@@ -1048,173 +1152,25 @@ function getCanonicalMemberStatus(
 }
 
 
-/*
- * Refresh canonical accounting for one member.
- *
- * Used after recording a monthly contribution.
- */
-
-async function refreshCanonicalMember(
-  memberId,
-  month
-) {
-
-  if (!groupId) {
-
-    throw new Error(
-      "No current group is available."
-    );
-
-  }
-
-
-  if (!memberId) {
-
-    throw new Error(
-      "No contribution member was supplied."
-    );
-
-  }
-
-
-  if (
-    !/^\d{4}-\d{2}$/.test(
-      String(month || "")
-    )
-  ) {
-
-    throw new Error(
-      "Contribution month must use YYYY-MM format."
-    );
-
-  }
-
-
-  const {
-    data,
-    error
-  } =
-    await supabase.rpc(
-      "refresh_canonical_contribution_accounting",
-      {
-        p_group_id:
-          groupId,
-
-        p_through_month:
-          month,
-
-        p_member_id:
-          memberId
-      }
-    );
-
-
-  if (error) {
-
-    throw error;
-
-  }
-
-
-  console.log(
-    "CHAMA LIVE: Canonical contribution accounting refreshed",
-    {
-      groupId,
-      memberId,
-      month,
-      result: data
-    }
-  );
-
-
-  return data;
-
-}
-
-
-/*
- * NEW:
- * Refresh canonical accounting for the current group
- * through the selected accounting month.
- *
- * This deliberately uses the existing canonical RPC
- * with p_member_id = null so every active/member
- * accounting chain can be brought through the selected
- * month before the status RPC is read.
- *
- * No manual obligation or allocation is performed here.
- */
-
-async function refreshCanonicalAccountingThroughMonth(
-  month
-) {
-
-  if (!groupId) {
-
-    throw new Error(
-      "No current group is available."
-    );
-
-  }
-
-
-  if (
-    !/^\d{4}-\d{2}$/.test(
-      String(month || "")
-    )
-  ) {
-
-    throw new Error(
-      "Accounting month must use YYYY-MM format."
-    );
-
-  }
-
-
-  const {
-    data,
-    error
-  } =
-    await supabase.rpc(
-      "refresh_canonical_contribution_accounting",
-      {
-        p_group_id:
-          groupId,
-
-        p_through_month:
-          month,
-
-        p_member_id:
-          null
-      }
-    );
-
-
-  if (error) {
-
-    throw error;
-
-  }
-
-
-  console.log(
-    "CHAMA LIVE: Canonical group accounting refreshed",
-    {
-      groupId,
-      month,
-      result: data
-    }
-  );
-
-
-  return data;
-
-}
-
-
 /* =========================================================
    ACCOUNTING MONTH
 ========================================================= */
+
+/*
+ * IMPORTANT:
+ *
+ * Accounting Month selection is READ-ONLY.
+ *
+ * It must NOT call:
+ *
+ * refresh_canonical_contribution_accounting()
+ *
+ * The canonical status RPC is authoritative for display.
+ *
+ * Mutation belongs only to the atomic contribution RPC:
+ *
+ * cl_2b_record_contribution()
+ */
 
 async function changeAccountingMonth() {
 
@@ -1238,7 +1194,7 @@ async function changeAccountingMonth() {
       false;
 
     statusEl.textContent =
-      `Refreshing ${formatAccountingMonth(
+      `Loading ${formatAccountingMonth(
         accountingMonth
       )} canonical accounting...`;
 
@@ -1253,7 +1209,7 @@ async function changeAccountingMonth() {
 
         <td colspan="7">
 
-          Refreshing ${escapeHtml(
+          Loading ${escapeHtml(
             formatAccountingMonth(
               accountingMonth
             )
@@ -1268,32 +1224,12 @@ async function changeAccountingMonth() {
   }
 
 
-  /*
-   * IMPORTANT:
-   *
-   * Selecting an accounting month is not merely a
-   * display operation.
-   *
-   * The canonical obligation/allocation chain must
-   * first exist through the selected month.
-   *
-   * We therefore call the EXISTING canonical refresh
-   * RPC and let Supabase perform all obligation and
-   * allocation work.
-   *
-   * The frontend does not calculate or create any
-   * accounting values itself.
-   */
-
   try {
 
-    await refreshCanonicalAccountingThroughMonth(
-      accountingMonth
-    );
-
-
     /*
-     * Read the canonical result only after refresh.
+     * READ ONLY.
+     *
+     * Do not refresh or mutate obligations here.
      */
 
     await loadCanonicalMemberStatus(
@@ -2972,6 +2908,8 @@ async function recordContribution(event) {
    *
    * A second monthly payment is legitimate
    * and may become carry-forward.
+   *
+   * This is NOT the idempotency mechanism.
    */
 
   if (
@@ -3034,6 +2972,32 @@ async function recordContribution(event) {
     );
 
 
+  /*
+   * Obtain the submission identity BEFORE
+   * calling the atomic RPC.
+   *
+   * If the request fails due to a network problem,
+   * the same key remains in the hidden field and
+   * can safely be retried.
+   */
+
+  let idempotencyKey;
+
+  try {
+
+    idempotencyKey =
+      getContributionIdempotencyKey();
+
+  }
+  catch (error) {
+
+    showError(error);
+
+    return;
+
+  }
+
+
   if (saveButton) {
 
     saveButton.disabled =
@@ -3051,69 +3015,80 @@ async function recordContribution(event) {
       false;
 
     statusEl.textContent =
-      "Recording contribution...";
+      "Recording contribution securely...";
 
   }
 
 
   try {
 
-    const contributionData = {
-
-      group_id:
-        groupId,
-
-      member_id:
-        memberId,
-
-      amount:
-        amount,
-
-      contribution_type:
-        contributionType,
-
-      month:
-        month,
-
-      payment_method:
-        paymentMethod,
-
-      contribution_date:
-        contributionDate,
-
-      goal_id:
-        goalId,
-
-      notes:
-        finalNotes,
-
-      mpesa_reference:
-        paymentMethod ===
-          PAYMENT_METHODS.MPESA
-          ? reference
-          : null,
-
-      reference:
-        reference ||
-        null
-
-    };
-
-
     /*
-     * STEP 1
+     * =====================================================
+     * ATOMIC 2B WRITE
+     * =====================================================
      *
-     * Raw contribution record.
+     * IMPORTANT:
+     *
+     * There is intentionally NO:
+     *
+     *   .from("contributions").insert(...)
+     *
+     * here.
+     *
+     * The database RPC performs:
+     *
+     * • authentication
+     * • finance-role authorization
+     * • group/member ownership validation
+     * • active-member validation
+     * • closed-period validation
+     * • idempotency handling
+     * • payment insertion
+     * • member-level transaction locking
+     * • full-horizon monthly allocation refresh
+     *
+     * atomically.
      */
 
     const {
+      data,
       error
     } =
-      await supabase
-        .from("contributions")
-        .insert(
-          contributionData
-        );
+      await supabase.rpc(
+        "cl_2b_record_contribution",
+        {
+          p_group_id:
+            groupId,
+
+          p_member_id:
+            memberId,
+
+          p_amount:
+            amount,
+
+          p_contribution_type:
+            contributionType,
+
+          p_contribution_date:
+            contributionDate,
+
+          p_payment_method:
+            paymentMethod,
+
+          p_reference:
+            reference ||
+            null,
+
+          p_notes:
+            finalNotes,
+
+          p_goal_id:
+            goalId,
+
+          p_idempotency_key:
+            idempotencyKey
+        }
+      );
 
 
     if (error) {
@@ -3123,40 +3098,31 @@ async function recordContribution(event) {
     }
 
 
+    console.log(
+      "CHAMA LIVE: Atomic contribution RPC completed",
+      {
+        groupId,
+        memberId,
+        amount,
+        contributionType,
+        contributionDate,
+        paymentMethod,
+        idempotencyKey,
+        result: data
+      }
+    );
+
+
     /*
-     * STEP 2
-     *
-     * Monthly contribution:
-     * refresh canonical accounting through
-     * the contribution's month.
-     *
-     * No manual allocation is performed.
+     * After a successful atomic operation,
+     * display the contribution's accounting month
+     * for monthly contributions.
      */
 
     if (
       contributionType ===
       "monthly"
     ) {
-
-      if (statusEl) {
-
-        statusEl.textContent =
-          "Updating canonical monthly accounting...";
-
-      }
-
-
-      await refreshCanonicalMember(
-        memberId,
-        month
-      );
-
-
-      /*
-       * After recording a contribution,
-       * automatically display the contribution's
-       * accounting month.
-       */
 
       accountingMonth =
         month;
@@ -3171,34 +3137,22 @@ async function recordContribution(event) {
 
       }
 
-
       renderAccountingMonthLabel();
-
-
-      await loadCanonicalMemberStatus(
-        accountingMonth
-      );
-
-    }
-    else {
-
-      /*
-       * Non-monthly contributions do not enter
-       * canonical monthly obligation allocation.
-       *
-       * Keep the user's selected accounting month.
-       */
-
-      await loadCanonicalMemberStatus(
-        accountingMonth
-      );
 
     }
 
 
     /*
-     * STEP 3
-     *
+     * Read canonical accounting AFTER the
+     * atomic database transaction has completed.
+     */
+
+    await loadCanonicalMemberStatus(
+      accountingMonth
+    );
+
+
+    /*
      * Reload raw ledger.
      */
 
@@ -3206,9 +3160,7 @@ async function recordContribution(event) {
 
 
     /*
-     * STEP 4
-     *
-     * Render.
+     * Render all current data.
      */
 
     renderLedger();
@@ -3221,7 +3173,14 @@ async function recordContribution(event) {
 
 
     /*
-     * Reset form.
+     * Reset form only AFTER successful completion.
+     *
+     * This is important:
+     *
+     * if the RPC succeeded but the network response
+     * was interrupted, the user can retry with the
+     * same idempotency key rather than generating
+     * another payment.
      */
 
     form?.reset();
@@ -3275,6 +3234,16 @@ async function recordContribution(event) {
     }
 
 
+    /*
+     * Successful submission is complete.
+     *
+     * Generate a NEW idempotency key for the
+     * next independent contribution.
+     */
+
+    resetContributionIdempotencyKey();
+
+
     clearError();
 
 
@@ -3284,14 +3253,25 @@ async function recordContribution(event) {
         false;
 
       statusEl.textContent =
-        `✓ Contribution recorded. ${formatAccountingMonth(
+        `✓ Contribution recorded atomically. ${formatAccountingMonth(
           accountingMonth
-        )} canonical accounting refreshed.`;
+        )} canonical accounting is current.`;
 
     }
 
   }
   catch (error) {
+
+    /*
+     * IMPORTANT:
+     *
+     * Do NOT reset the idempotency key here.
+     *
+     * If the request actually committed but the
+     * response was lost, retrying with the same key
+     * allows the database RPC to return the existing
+     * payment rather than creating a duplicate.
+     */
 
     showError(error);
 
@@ -3342,6 +3322,24 @@ export async function initContributions() {
     renderAccountingMonthLabel();
 
 
+    /*
+     * Generate the first submission idempotency
+     * key when the page is initialized.
+     */
+
+    if (
+      contributionIdempotencyKeyInput &&
+      !String(
+        contributionIdempotencyKeyInput.value ||
+        ""
+      ).trim()
+    ) {
+
+      resetContributionIdempotencyKey();
+
+    }
+
+
     if (statusEl) {
 
       statusEl.hidden =
@@ -3381,7 +3379,10 @@ export async function initContributions() {
     /*
      * CANONICAL ACCOUNTING
      *
-     * Uses selected accountingMonth.
+     * READ ONLY.
+     *
+     * No refresh mutation is performed merely
+     * because the Contributions page was opened.
      */
 
     await loadCanonicalMemberStatus(
@@ -3554,6 +3555,10 @@ if (
 
 /*
  * Accounting month selector.
+ *
+ * READ ONLY.
+ *
+ * No canonical refresh RPC is called here.
  */
 
 if (
