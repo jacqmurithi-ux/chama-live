@@ -1,0 +1,1256 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Plans & Activities — CHAMA LIVE</title>
+
+  <link rel="stylesheet" href="css/app.css">
+
+  <style>
+    .plans-page {
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    .plans-hero {
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 24px;
+      padding: 30px;
+      border-radius: 22px;
+      background: linear-gradient(
+        135deg,
+        var(--primary),
+        color-mix(in srgb, var(--primary) 70%, #000 30%)
+      );
+      color: #fff;
+      box-shadow: 0 14px 35px rgba(0, 0, 0, .10);
+    }
+
+    .plans-hero::after {
+      content: "";
+      position: absolute;
+      width: 220px;
+      height: 220px;
+      right: -70px;
+      top: -85px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .09);
+    }
+
+    .plans-hero-content {
+      position: relative;
+      z-index: 2;
+    }
+
+    .plans-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 12px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .14);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+    }
+
+    .plans-hero h1 {
+      margin: 0 0 8px;
+      color: #fff;
+      font-size: clamp(28px, 4vw, 40px);
+      line-height: 1.1;
+    }
+
+    .plans-hero p {
+      max-width: 760px;
+      margin: 0;
+      color: rgba(255, 255, 255, .84);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    .plans-context {
+      margin-top: 14px;
+      color: rgba(255, 255, 255, .78);
+      font-size: 13px;
+    }
+
+    .plans-status {
+      margin-bottom: 20px;
+      padding: 13px 16px;
+      border-radius: 12px;
+      background: var(--surface-soft);
+      border: 1px solid var(--border-light);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .plans-error {
+      margin-bottom: 20px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .kpi {
+      padding: 20px;
+      border: 1px solid var(--border-light);
+      border-radius: 17px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+    }
+
+    .kpi-label {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .kpi-value {
+      display: block;
+      margin-top: 7px;
+      color: var(--text-dark);
+      font-size: 25px;
+      font-weight: 850;
+    }
+
+    .management-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .82fr) minmax(0, 1.55fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .card-pad {
+      padding: 24px;
+    }
+
+    .card-head {
+      margin-bottom: 20px;
+    }
+
+    .card-head h2 {
+      margin-bottom: 5px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 17px;
+    }
+
+    .full {
+      grid-column: 1 / -1;
+    }
+
+    .help {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 22px;
+      padding-top: 19px;
+      border-top: 1px solid var(--border-light);
+    }
+
+    .filter-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 18px 0 15px;
+    }
+
+    .filter-bar select,
+    .filter-bar input {
+      min-height: 40px;
+    }
+
+    .search {
+      flex: 1 1 220px;
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+    }
+
+    .data-table {
+      width: 100%;
+      min-width: 1080px;
+      border-collapse: collapse;
+    }
+
+    .data-table th,
+    .data-table td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--border-light);
+      text-align: left;
+      vertical-align: middle;
+      font-size: 13px;
+    }
+
+    .data-table th {
+      background: var(--surface-soft);
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .data-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .data-table tr:hover td {
+      background: #fbfefd;
+    }
+
+    .progress-cell {
+      min-width: 130px;
+    }
+
+    .progress-track {
+      height: 8px;
+      border-radius: 999px;
+      background: var(--surface-soft);
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: var(--primary);
+    }
+
+    .progress-label {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 800;
+      white-space: nowrap;
+      text-transform: capitalize;
+    }
+
+    .status-planned,
+    .status-not_started {
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .status-active,
+    .status-in_progress {
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .status-completed {
+      background: #ecfdf3;
+      color: #047857;
+    }
+
+    .status-paused,
+    .status-delayed {
+      background: #fffaeb;
+      color: #b45309;
+    }
+
+    .status-cancelled {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .row-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .action {
+      padding: 6px 9px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 750;
+    }
+
+    .action:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: var(--nav-hover);
+    }
+
+    .action:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+    .empty {
+      padding: 35px 15px !important;
+      text-align: center !important;
+      color: var(--muted);
+    }
+
+    .section-gap {
+      margin-top: 20px;
+    }
+
+    @media (max-width: 1000px) {
+      .management-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 650px) {
+      .plans-hero {
+        padding: 24px 20px;
+        border-radius: 18px;
+      }
+
+      .summary {
+        grid-template-columns: 1fr;
+      }
+
+      .card-pad {
+        padding: 19px;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .full {
+        grid-column: auto;
+      }
+
+      .form-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .form-actions .btn {
+        width: 100%;
+      }
+
+      .filter-bar {
+        flex-direction: column;
+      }
+
+      .filter-bar select,
+      .filter-bar input {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="topbar">
+    <div class="brand">
+      CHAMA <span>LIVE</span>
+    </div>
+
+    <button
+      class="btn btn-secondary"
+      id="logout"
+      type="button"
+    >
+      Sign out
+    </button>
+  </header>
+
+  <div class="layout">
+
+    <aside class="sidebar">
+      <nav class="nav">
+
+        <a href="dashboard.html">
+          Dashboard
+        </a>
+
+        <a href="members.html">
+          Members
+        </a>
+
+        <a href="support-welfare.html">
+          Support &amp; Welfare
+        </a>
+
+        <a
+          class="active"
+          href="plans-activities.html"
+        >
+          Plans &amp; Activities
+        </a>
+
+        <a href="contributions.html">
+          Contributions
+        </a>
+
+        <a href="expenses.html">
+          Expenses
+        </a>
+
+        <a href="meetings.html">
+          Meetings
+        </a>
+
+        <a href="reports.html">
+          Reports
+        </a>
+
+        <a href="monthly-closing.html">
+          Monthly Closing
+        </a>
+
+        <a href="group-management.html">
+          Group Management
+        </a>
+
+      </nav>
+    </aside>
+
+    <main class="main">
+
+      <div class="plans-page">
+
+        <!-- HERO -->
+
+        <section class="plans-hero">
+
+          <div class="plans-hero-content">
+
+            <div class="plans-badge">
+              📋 Group Operations
+            </div>
+
+            <h1>
+              Plans &amp; Activities
+            </h1>
+
+            <p>
+              Turn group objectives into trackable plans and activities
+              without changing the existing financial and contribution
+              accounting system.
+            </p>
+
+            <div class="plans-context">
+              Current group:
+              <strong id="groupName">
+                Loading…
+              </strong>
+            </div>
+
+          </div>
+
+        </section>
+
+
+        <!-- STATUS -->
+
+        <div
+          id="status"
+          class="plans-status hidden"
+          role="status"
+          aria-live="polite"
+        ></div>
+
+        <div
+          id="error"
+          class="error plans-error hidden"
+          role="alert"
+          aria-live="assertive"
+        ></div>
+
+
+        <!-- SUMMARY -->
+
+        <section class="summary">
+
+          <div class="kpi">
+            <span class="kpi-label">
+              Total Plans
+            </span>
+
+            <strong
+              id="totalPlans"
+              class="kpi-value"
+            >
+              0
+            </strong>
+          </div>
+
+
+          <div class="kpi">
+            <span class="kpi-label">
+              Active Plans
+            </span>
+
+            <strong
+              id="activePlans"
+              class="kpi-value"
+            >
+              0
+            </strong>
+          </div>
+
+
+          <div class="kpi">
+            <span class="kpi-label">
+              Open Activities
+            </span>
+
+            <strong
+              id="openActivities"
+              class="kpi-value"
+            >
+              0
+            </strong>
+          </div>
+
+
+          <div class="kpi">
+            <span class="kpi-label">
+              Completed Activities
+            </span>
+
+            <strong
+              id="completedActivities"
+              class="kpi-value"
+            >
+              0
+            </strong>
+          </div>
+
+        </section>
+
+
+        <!-- CREATION FORMS -->
+
+        <div class="management-grid">
+
+          <!-- PLAN FORM -->
+
+          <section class="card card-pad">
+
+            <div class="card-head">
+
+              <h2>
+                New Plan
+              </h2>
+
+              <p class="muted">
+                Create a group plan.
+                New plans default to
+                <strong>Planned</strong>
+                and 0% progress.
+              </p>
+
+            </div>
+
+
+            <form id="planForm">
+
+              <div class="form-grid">
+
+                <div class="form-group full">
+
+                  <label for="planTitle">
+                    Plan Title
+                  </label>
+
+                  <input
+                    id="planTitle"
+                    type="text"
+                    maxlength="200"
+                    required
+                    placeholder="e.g. Timau CBO 2026 Investment Plan"
+                  >
+
+                </div>
+
+
+                <div class="form-group">
+
+                  <label for="planCategory">
+                    Category
+                  </label>
+
+                  <select
+                    id="planCategory"
+                    required
+                  >
+                    <option value="investment">
+                      Investment
+                    </option>
+
+                    <option value="property">
+                      Property
+                    </option>
+
+                    <option value="welfare">
+                      Welfare
+                    </option>
+
+                    <option value="business">
+                      Business
+                    </option>
+
+                    <option value="education">
+                      Education
+                    </option>
+
+                    <option value="membership">
+                      Membership
+                    </option>
+
+                    <option value="fundraising">
+                      Fundraising
+                    </option>
+
+                    <option value="infrastructure">
+                      Infrastructure
+                    </option>
+
+                    <option
+                      value="other"
+                      selected
+                    >
+                      Other
+                    </option>
+
+                  </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                  <label for="planStatus">
+                    Status
+                  </label>
+
+                  <select
+                    id="planStatus"
+                    required
+                  >
+
+                    <option
+                      value="planned"
+                      selected
+                    >
+                      Planned
+                    </option>
+
+                    <option value="active">
+                      Active
+                    </option>
+
+                    <option value="paused">
+                      Paused
+                    </option>
+
+                    <option value="completed">
+                      Completed
+                    </option>
+
+                    <option value="cancelled">
+                      Cancelled
+                    </option>
+
+                  </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                  <label for="planStart">
+                    Start Date
+                  </label>
+
+                  <input
+                    id="planStart"
+                    type="date"
+                  >
+
+                </div>
+
+
+                <div class="form-group">
+
+                  <label for="planTarget">
+                    Target Date
+                  </label>
+
+                  <input
+                    id="planTarget"
+                    type="date"
+                  >
+
+                </div>
+
+
+                <div class="form-group full">
+
+                  <label for="planProgress">
+                    Progress (%)
+                  </label>
+
+                  <input
+                    id="planProgress"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value="0"
+                    required
+                  >
+
+                  <p class="help">
+                    The database enforces the 0–100% range.
+                  </p>
+
+                </div>
+
+
+                <div class="form-group full">
+
+                  <label for="planDescription">
+                    Description
+                  </label>
+
+                  <textarea
+                    id="planDescription"
+                    rows="4"
+                    maxlength="2000"
+                    placeholder="What does this plan aim to achieve?"
+                  ></textarea>
+
+                </div>
+
+              </div>
+
+
+              <div class="form-actions">
+
+                <button
+                  class="btn btn-primary"
+                  type="submit"
+                  id="savePlan"
+                >
+                  Create Plan
+                </button>
+
+                <button
+                  class="btn btn-secondary"
+                  type="button"
+                  id="resetPlan"
+                >
+                  Clear
+                </button>
+
+              </div>
+
+            </form>
+
+          </section>
+
+
+          <!-- ACTIVITY FORM -->
+
+          <section class="card card-pad">
+
+            <div class="card-head">
+
+              <h2>
+                New Activity
+              </h2>
+
+              <p class="muted">
+                Create a task and optionally attach it to a group plan.
+              </p>
+
+            </div>
+
+
+            <form id="activityForm">
+
+              <div class="form-grid">
+
+                <div class="form-group full">
+
+                  <label for="activityTitle">
+                    Activity Title
+                  </label>
+
+                  <input
+                    id="activityTitle"
+                    type="text"
+                    maxlength="200"
+                    required
+                    placeholder="e.g. Identify land for investment"
+                  >
+
+                </div>
+
+
+                <div class="form-group full">
+
+                  <label for="activityPlan">
+                    Plan
+                  </label>
+
+                  <select id="activityPlan">
+
+                    <option value="">
+                      No linked plan
+                    </option>
+
+                  </select>
+
+                  <p class="help">
+                    Only plans belonging to the current group are shown.
+                  </p>
+
+                </div>
+
+
+                <div class="form-group">
+
+                  <label for="activityAssignee">
+                    Assigned To
+                  </label>
+
+                  <select id="activityAssignee">
+
+                    <option value="">
+                      Unassigned
+                    </option>
+
+                  </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                  <label for="activityStatus">
+                    Status
+                  </label>
+
+                  <select
+                    id="activityStatus"
+                    required
+                  >
+
+                    <option
+                      value="not_started"
+                      selected
+                    >
+                      Not started
+                    </option>
+
+                    <option value="planned">
+                      Planned
+                    </option>
+
+                    <option value="in_progress">
+                      In progress
+                    </option>
+
+                    <option value="delayed">
+                      Delayed
+                    </option>
+
+                    <option value="cancelled">
+                      Cancelled
+                    </option>
+
+                  </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                  <label for="activityStart">
+                    Start Date
+                  </label>
+
+                  <input
+                    id="activityStart"
+                    type="date"
+                  >
+
+                </div>
+
+
+                <div class="form-group">
+
+                  <label for="activityDue">
+                    Due Date
+                  </label>
+
+                  <input
+                    id="activityDue"
+                    type="date"
+                  >
+
+                </div>
+
+
+                <div class="form-group full">
+
+                  <label for="activityProgress">
+                    Progress (%)
+                  </label>
+
+                  <input
+                    id="activityProgress"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value="0"
+                    required
+                  >
+
+                </div>
+
+
+                <div class="form-group full">
+
+                  <label for="activityDescription">
+                    Description
+                  </label>
+
+                  <textarea
+                    id="activityDescription"
+                    rows="4"
+                    maxlength="2000"
+                    placeholder="What needs to be done?"
+                  ></textarea>
+
+                </div>
+
+              </div>
+
+
+              <div class="form-actions">
+
+                <button
+                  class="btn btn-primary"
+                  type="submit"
+                  id="saveActivity"
+                >
+                  Create Activity
+                </button>
+
+                <button
+                  class="btn btn-secondary"
+                  type="button"
+                  id="resetActivity"
+                >
+                  Clear
+                </button>
+
+              </div>
+
+            </form>
+
+          </section>
+
+        </div>
+
+
+        <!-- PLANS -->
+
+        <section class="card card-pad section-gap">
+
+          <div class="card-head">
+
+            <h2>
+              Plans
+            </h2>
+
+            <p class="muted">
+              Plans are isolated to the current group by the database
+              security policies.
+            </p>
+
+          </div>
+
+
+          <div class="filter-bar">
+
+            <select
+              id="planFilterStatus"
+              aria-label="Filter plans by status"
+            >
+
+              <option value="">
+                All plan statuses
+              </option>
+
+              <option value="planned">
+                Planned
+              </option>
+
+              <option value="active">
+                Active
+              </option>
+
+              <option value="completed">
+                Completed
+              </option>
+
+              <option value="paused">
+                Paused
+              </option>
+
+              <option value="cancelled">
+                Cancelled
+              </option>
+
+            </select>
+
+
+            <input
+              id="planSearch"
+              class="search"
+              type="search"
+              placeholder="Search plans…"
+              aria-label="Search plans"
+            >
+
+
+            <button
+              class="btn btn-secondary"
+              id="refreshPlans"
+              type="button"
+            >
+              Refresh
+            </button>
+
+          </div>
+
+
+          <div class="table-wrap">
+
+            <table class="data-table">
+
+              <thead>
+
+                <tr>
+                  <th>Plan</th>
+                  <th>Category</th>
+                  <th>Dates</th>
+                  <th>Status</th>
+                  <th>Progress</th>
+                  <th>Created</th>
+                  <th>Actions</th>
+                </tr>
+
+              </thead>
+
+              <tbody id="plansBody">
+
+                <tr>
+                  <td
+                    colspan="7"
+                    class="empty"
+                  >
+                    Loading plans…
+                  </td>
+                </tr>
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </section>
+
+
+        <!-- ACTIVITIES -->
+
+        <section class="card card-pad section-gap">
+
+          <div class="card-head">
+
+            <h2>
+              Activities
+            </h2>
+
+            <p class="muted">
+              Activities can be linked to a plan, assigned to a
+              current-group member, and tracked through completion.
+            </p>
+
+          </div>
+
+
+          <div class="filter-bar">
+
+            <select
+              id="activityFilterStatus"
+              aria-label="Filter activities by status"
+            >
+
+              <option value="">
+                All activity statuses
+              </option>
+
+              <option value="not_started">
+                Not started
+              </option>
+
+              <option value="planned">
+                Planned
+              </option>
+
+              <option value="in_progress">
+                In progress
+              </option>
+
+              <option value="completed">
+                Completed
+              </option>
+
+              <option value="delayed">
+                Delayed
+              </option>
+
+              <option value="cancelled">
+                Cancelled
+              </option>
+
+            </select>
+
+
+            <select
+              id="activityFilterAssignee"
+              aria-label="Filter activities by assignee"
+            >
+
+              <option value="">
+                All assignees
+              </option>
+
+            </select>
+
+
+            <input
+              id="activitySearch"
+              class="search"
+              type="search"
+              placeholder="Search activities…"
+              aria-label="Search activities"
+            >
+
+
+            <button
+              class="btn btn-secondary"
+              id="refreshActivities"
+              type="button"
+            >
+              Refresh
+            </button>
+
+          </div>
+
+
+          <div class="table-wrap">
+
+            <table class="data-table">
+
+              <thead>
+
+                <tr>
+                  <th>Activity</th>
+                  <th>Plan</th>
+                  <th>Assigned To</th>
+                  <th>Dates</th>
+                  <th>Status</th>
+                  <th>Progress</th>
+                  <th>Actions</th>
+                </tr>
+
+              </thead>
+
+              <tbody id="activitiesBody">
+
+                <tr>
+                  <td
+                    colspan="7"
+                    class="empty"
+                  >
+                    Loading activities…
+                  </td>
+                </tr>
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </section>
+
+      </div>
+
+    </main>
+
+  </div>
+
+
+  <script type="module">
+
+    import "./js/layout.js";
+    import "./js/plans-activities.js";
+
+  </script>
+
+</body>
+</html>
