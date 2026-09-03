@@ -20,15 +20,13 @@
    IMPORTANT
    ---------------------------------------------------------
    Paid support requires an existing expense_id.
-   This page does NOT create expenses.
+   This page does NOT create or modify expenses.
 
    The existing Expenses workflow remains responsible
    for expense creation and approval.
 ========================================================= */
 
-import {
-  supabase
-} from "./supabase.js";
+import { supabase } from "./supabase.js";
 
 import {
   requireAuth,
@@ -46,139 +44,93 @@ console.log(
 ========================================================= */
 
 const groupNameEl =
-  document.getElementById(
-    "groupName"
-  );
+  document.getElementById("groupName");
 
 const statusEl =
-  document.getElementById(
-    "status"
-  );
+  document.getElementById("status");
 
 const errorEl =
-  document.getElementById(
-    "error"
-  );
+  document.getElementById("error");
 
 const accessDeniedEl =
-  document.getElementById(
-    "accessDenied"
-  );
+  document.getElementById("accessDenied");
 
 const supportContentEl =
-  document.getElementById(
-    "supportContent"
-  );
+  document.getElementById("supportContent");
 
 const supportForm =
-  document.getElementById(
-    "supportForm"
-  );
+  document.getElementById("supportForm");
 
 const memberSelect =
-  document.getElementById(
-    "memberId"
-  );
+  document.getElementById("memberId");
 
 const supportTypeSelect =
-  document.getElementById(
-    "supportType"
-  );
+  document.getElementById("supportType");
 
 const supportDateInput =
-  document.getElementById(
-    "supportDate"
-  );
+  document.getElementById("supportDate");
 
 const amountInput =
-  document.getElementById(
-    "amount"
-  );
+  document.getElementById("amount");
 
 const descriptionInput =
-  document.getElementById(
-    "description"
-  );
+  document.getElementById("description");
 
 const saveButton =
-  document.getElementById(
-    "saveSupport"
-  );
+  document.getElementById("saveSupport");
 
 const resetButton =
-  document.getElementById(
-    "resetSupport"
-  );
+  document.getElementById("resetSupport");
 
 const refreshButton =
-  document.getElementById(
-    "refreshSupport"
-  );
+  document.getElementById("refreshSupport");
 
 const statusFilter =
-  document.getElementById(
-    "statusFilter"
-  );
+  document.getElementById("statusFilter");
 
 const searchInput =
-  document.getElementById(
-    "caseSearch"
-  );
+  document.getElementById("caseSearch");
 
 const supportRows =
-  document.getElementById(
-    "supportRows"
-  );
+  document.getElementById("supportRows");
 
 const totalCasesEl =
-  document.getElementById(
-    "totalCases"
-  );
+  document.getElementById("totalCases");
 
 const openCasesEl =
-  document.getElementById(
-    "openCases"
-  );
+  document.getElementById("openCases");
 
 const approvedCasesEl =
-  document.getElementById(
-    "approvedCases"
-  );
+  document.getElementById("approvedCases");
 
 const totalAmountEl =
-  document.getElementById(
-    "totalAmount"
-  );
+  document.getElementById("totalAmount");
 
 
 /* =========================================================
    STATE
 ========================================================= */
 
-let currentUser =
-  null;
+let currentUser = null;
 
-let currentMember =
-  null;
+let currentMember = null;
 
-let groupId =
-  null;
+let groupId = null;
 
-let members =
-  [];
+let members = [];
 
-let expenses =
-  [];
+let expenses = [];
 
-let supportCases =
-  [];
+let supportCases = [];
 
-let initialized =
-  false;
+let initialized = false;
 
 
 /* =========================================================
-   LIVE DATABASE ENUMS
+   LIVE DATABASE CONTRACT VALUES
+   ---------------------------------------------------------
+   These values mirror the live CHECK constraints on
+   public.group_support_cases.
 ========================================================= */
 
 const MANAGEMENT_ROLES =
@@ -188,6 +140,7 @@ const MANAGEMENT_ROLES =
     "secretary",
     "treasurer"
   ]);
+
 
 const SUPPORT_TYPES =
   new Set([
@@ -203,6 +156,7 @@ const SUPPORT_TYPES =
     "other"
   ]);
 
+
 const SUPPORT_STATUSES =
   new Set([
     "requested",
@@ -212,6 +166,37 @@ const SUPPORT_STATUSES =
     "rejected",
     "cancelled"
   ]);
+
+
+/*
+ * The live database currently permits these state
+ * transitions through the validator/RLS combination.
+ *
+ * Keeping the transition map client-side prevents this
+ * page from offering arbitrary status changes.
+ */
+const STATUS_TRANSITIONS = {
+  requested: new Set([
+    "approved",
+    "rejected",
+    "cancelled"
+  ]),
+
+  approved: new Set([
+    "paid",
+    "completed"
+  ]),
+
+  paid: new Set([
+    "completed"
+  ]),
+
+  completed: new Set(),
+
+  rejected: new Set(),
+
+  cancelled: new Set()
+};
 
 
 /* =========================================================
@@ -227,16 +212,10 @@ function todayString() {
     date.getFullYear(),
     String(
       date.getMonth() + 1
-    ).padStart(
-      2,
-      "0"
-    ),
+    ).padStart(2, "0"),
     String(
       date.getDate()
-    ).padStart(
-      2,
-      "0"
-    )
+    ).padStart(2, "0")
   ].join("-");
 
 }
@@ -253,9 +232,7 @@ function money(value) {
       maximumFractionDigits: 2
     }
   ).format(
-    Number(
-      value || 0
-    )
+    Number(value || 0)
   );
 
 }
@@ -268,18 +245,14 @@ function formatDate(value) {
   }
 
   const date =
-    new Date(
-      value
-    );
+    new Date(value);
 
   if (
     Number.isNaN(
       date.getTime()
     )
   ) {
-    return String(
-      value
-    );
+    return String(value);
   }
 
   return date.toLocaleDateString(
@@ -296,38 +269,19 @@ function formatDate(value) {
 
 function escapeHtml(value) {
 
-  return String(
-    value ?? ""
-  )
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 
 }
 
 
 function normalize(value) {
 
-  return String(
-    value || ""
-  )
+  return String(value || "")
     .trim()
     .toLowerCase();
 
@@ -410,41 +364,29 @@ function showError(error) {
 }
 
 
-function supportTypeLabel(
-  value
-) {
+function supportTypeLabel(value) {
 
   const labels = {
 
-    welfare:
-      "Welfare",
+    welfare: "Welfare",
 
-    hospital:
-      "Hospital",
+    hospital: "Hospital",
 
-    bereavement:
-      "Bereavement",
+    bereavement: "Bereavement",
 
-    education:
-      "Education",
+    education: "Education",
 
-    emergency:
-      "Emergency",
+    emergency: "Emergency",
 
-    accident:
-      "Accident",
+    accident: "Accident",
 
-    marriage:
-      "Marriage",
+    marriage: "Marriage",
 
-    new_baby:
-      "New baby",
+    new_baby: "New baby",
 
-    disaster:
-      "Disaster",
+    disaster: "Disaster",
 
-    other:
-      "Other"
+    other: "Other"
 
   };
 
@@ -452,25 +394,16 @@ function supportTypeLabel(
     labels[
       normalize(value)
     ] ||
-    String(
-      value || "Other"
-    )
+    String(value || "Other")
   );
 
 }
 
 
-function statusLabel(
-  value
-) {
+function statusLabel(value) {
 
-  return String(
-    value || ""
-  )
-    .replaceAll(
-      "_",
-      " "
-    );
+  return String(value || "")
+    .replaceAll("_", " ");
 
 }
 
@@ -494,17 +427,12 @@ async function loadCurrentGroup() {
     error
   } =
     await supabase
-      .from(
-        "groups"
-      )
+      .from("groups")
       .select(`
         id,
         name
       `)
-      .eq(
-        "id",
-        groupId
-      )
+      .eq("id", groupId)
       .single();
 
   if (error) {
@@ -541,19 +469,14 @@ async function loadMembers() {
     error
   } =
     await supabase
-      .from(
-        "members"
-      )
+      .from("members")
       .select(`
         id,
         name,
         member_number,
         status
       `)
-      .eq(
-        "group_id",
-        groupId
-      )
+      .eq("group_id", groupId)
       .order(
         "name",
         {
@@ -569,9 +492,7 @@ async function loadMembers() {
     (data || [])
       .filter(
         member =>
-          normalize(
-            member.status
-          ) ===
+          normalize(member.status) ===
           "active"
       );
 
@@ -622,10 +543,12 @@ function renderMemberOptions() {
 /* =========================================================
    APPROVED EXPENSES
    ---------------------------------------------------------
-   This is read-only from this module.
+   READ ONLY FROM THIS MODULE.
 
-   The existing Expenses workflow owns expense creation,
-   approval and financial controls.
+   The Expenses workflow remains responsible for:
+   - expense creation
+   - expense approval
+   - financial controls
 ========================================================= */
 
 async function loadExpenses() {
@@ -635,9 +558,7 @@ async function loadExpenses() {
     error
   } =
     await supabase
-      .from(
-        "expenses"
-      )
+      .from("expenses")
       .select(`
         id,
         description,
@@ -645,23 +566,15 @@ async function loadExpenses() {
         date,
         approval_status
       `)
-      .eq(
-        "group_id",
-        groupId
-      )
-      .eq(
-        "approval_status",
-        "approved"
-      )
+      .eq("group_id", groupId)
+      .eq("approval_status", "approved")
       .order(
         "date",
         {
           ascending: false
         }
       )
-      .limit(
-        100
-      );
+      .limit(100);
 
   if (error) {
     throw error;
@@ -684,9 +597,7 @@ async function loadSupportCases() {
     error
   } =
     await supabase
-      .from(
-        "group_support_cases"
-      )
+      .from("group_support_cases")
       .select(`
         id,
         group_id,
@@ -702,10 +613,7 @@ async function loadSupportCases() {
         created_at,
         updated_at
       `)
-      .eq(
-        "group_id",
-        groupId
-      )
+      .eq("group_id", groupId)
       .order(
         "support_date",
         {
@@ -745,21 +653,16 @@ function renderSummary() {
   const open =
     supportCases.filter(
       item =>
-        item.status ===
-          "requested" ||
-        item.status ===
-          "approved"
+        item.status === "requested" ||
+        item.status === "approved"
     ).length;
 
   const approved =
     supportCases.filter(
       item =>
-        item.status ===
-          "approved" ||
-        item.status ===
-          "paid" ||
-        item.status ===
-          "completed"
+        item.status === "approved" ||
+        item.status === "paid" ||
+        item.status === "completed"
     ).length;
 
   const totalAmount =
@@ -799,9 +702,7 @@ function renderSummary() {
   if (totalAmountEl) {
 
     totalAmountEl.textContent =
-      money(
-        totalAmount
-      );
+      money(totalAmount);
 
   }
 
@@ -812,27 +713,21 @@ function renderSummary() {
    LOOKUPS
 ========================================================= */
 
-function getMember(
-  memberId
-) {
+function getMember(memberId) {
 
   return members.find(
     member =>
-      member.id ===
-      memberId
+      member.id === memberId
   );
 
 }
 
 
-function getExpense(
-  expenseId
-) {
+function getExpense(expenseId) {
 
   return expenses.find(
     expense =>
-      expense.id ===
-      expenseId
+      expense.id === expenseId
   );
 
 }
@@ -859,14 +754,10 @@ function getFilteredCases() {
 
       if (
         selectedStatus &&
-        normalize(
-          item.status
-        ) !==
-        selectedStatus
+        normalize(item.status) !==
+          selectedStatus
       ) {
-
         return false;
-
       }
 
       if (!search) {
@@ -874,9 +765,7 @@ function getFilteredCases() {
       }
 
       const member =
-        getMember(
-          item.member_id
-        );
+        getMember(item.member_id);
 
       const searchable =
         [
@@ -917,14 +806,12 @@ function renderSupportCases() {
     supportRows.innerHTML =
       `
         <tr>
-
           <td
             colspan="7"
             class="support-empty"
           >
             No welfare cases match the current filter.
           </td>
-
         </tr>
       `;
 
@@ -963,7 +850,6 @@ function renderSupportCases() {
                 )}
               </td>
 
-
               <td>
 
                 <strong>
@@ -987,7 +873,6 @@ function renderSupportCases() {
 
               </td>
 
-
               <td>
 
                 ${escapeHtml(
@@ -1010,17 +895,13 @@ function renderSupportCases() {
 
               </td>
 
-
               <td class="support-amount">
 
                 ${escapeHtml(
-                  money(
-                    item.amount
-                  )
+                  money(item.amount)
                 )}
 
               </td>
-
 
               <td>
 
@@ -1038,7 +919,6 @@ function renderSupportCases() {
                 </span>
 
               </td>
-
 
               <td>
 
@@ -1071,12 +951,9 @@ function renderSupportCases() {
 
               </td>
 
-
               <td>
 
-                ${renderActions(
-                  item
-                )}
+                ${renderActions(item)}
 
               </td>
 
@@ -1094,15 +971,15 @@ function renderSupportCases() {
    ACTION BUTTONS
 ========================================================= */
 
-function renderActions(
-  item
-) {
+function renderActions(item) {
 
-  const buttons =
-    [];
+  const buttons = [];
+
+  const currentStatus =
+    normalize(item.status);
 
   if (
-    item.status ===
+    currentStatus ===
     "requested"
   ) {
 
@@ -1155,7 +1032,7 @@ function renderActions(
 
 
   if (
-    item.status ===
+    currentStatus ===
     "approved"
   ) {
 
@@ -1193,7 +1070,7 @@ function renderActions(
 
 
   if (
-    item.status ===
+    currentStatus ===
     "paid"
   ) {
 
@@ -1237,9 +1114,7 @@ function renderActions(
    CREATE CASE
 ========================================================= */
 
-async function createSupportCase(
-  event
-) {
+async function createSupportCase(event) {
 
   event.preventDefault();
 
@@ -1257,10 +1132,17 @@ async function createSupportCase(
 
     }
 
+    if (!groupId) {
+
+      throw new Error(
+        "Your current group could not be resolved."
+      );
+
+    }
+
     const memberId =
       String(
-        memberSelect?.value ||
-        ""
+        memberSelect?.value || ""
       ).trim();
 
     const supportType =
@@ -1270,20 +1152,17 @@ async function createSupportCase(
 
     const supportDate =
       String(
-        supportDateInput?.value ||
-        ""
+        supportDateInput?.value || ""
       ).trim();
 
     const amount =
       Number(
-        amountInput?.value ||
-        0
+        amountInput?.value || 0
       );
 
     const description =
       String(
-        descriptionInput?.value ||
-        ""
+        descriptionInput?.value || ""
       ).trim();
 
 
@@ -1291,6 +1170,27 @@ async function createSupportCase(
 
       throw new Error(
         "Please select the supported member."
+      );
+
+    }
+
+
+    /*
+     * Client-side membership check.
+     *
+     * This is only an early validation convenience.
+     * The database validator remains authoritative.
+     */
+    const selectedMember =
+      members.find(
+        member =>
+          member.id === memberId
+      );
+
+    if (!selectedMember) {
+
+      throw new Error(
+        "The selected member is not an active member of the current group."
       );
 
     }
@@ -1319,9 +1219,7 @@ async function createSupportCase(
 
 
     if (
-      !Number.isFinite(
-        amount
-      ) ||
+      !Number.isFinite(amount) ||
       amount < 0
     ) {
 
@@ -1348,14 +1246,13 @@ async function createSupportCase(
 
 
     /*
-     * IMPORTANT:
-     *
      * group_id is derived exclusively from the
      * authenticated member context.
      *
      * created_by is the authenticated member.
      *
-     * The database validator and RLS remain authoritative.
+     * The database validator and RLS remain
+     * authoritative.
      */
 
     const payload = {
@@ -1379,6 +1276,10 @@ async function createSupportCase(
         description ||
         null,
 
+      /*
+       * New cases deliberately begin in the live
+       * database's default/requested state.
+       */
       status:
         "requested",
 
@@ -1393,12 +1294,8 @@ async function createSupportCase(
       error
     } =
       await supabase
-        .from(
-          "group_support_cases"
-        )
-        .insert(
-          payload
-        )
+        .from("group_support_cases")
+        .insert(payload)
         .select(`
           id,
           group_id,
@@ -1449,9 +1346,7 @@ async function createSupportCase(
 
     showStatus("");
 
-    showError(
-      error
-    );
+    showError(error);
 
   }
   finally {
@@ -1475,11 +1370,24 @@ async function createSupportCase(
    CHOOSE EXISTING APPROVED EXPENSE
    ---------------------------------------------------------
    No expense is created or modified here.
+
+   The database remains authoritative for:
+   - group ownership
+   - existence of the referenced expense
+   - paid status requiring expense_id
 ========================================================= */
 
 async function chooseExpenseForPayment(
   supportCase
 ) {
+
+  /*
+   * Refresh the approved-expense list immediately before
+   * payment selection so the user is not relying entirely
+   * on an old page load.
+   */
+  await loadExpenses();
+
 
   if (
     expenses.length ===
@@ -1521,10 +1429,7 @@ async function chooseExpenseForPayment(
 
   const lines =
     candidates
-      .slice(
-        0,
-        20
-      )
+      .slice(0, 20)
       .map(
         (
           expense,
@@ -1543,9 +1448,7 @@ async function chooseExpenseForPayment(
             )
           }`
       )
-      .join(
-        "\n"
-      );
+      .join("\n");
 
 
   const answer =
@@ -1554,16 +1457,22 @@ async function chooseExpenseForPayment(
     );
 
 
+  if (
+    answer ===
+    null
+  ) {
+
+    return null;
+
+  }
+
+
   const index =
-    Number(
-      answer
-    ) - 1;
+    Number(answer) - 1;
 
 
   if (
-    !Number.isInteger(
-      index
-    ) ||
+    !Number.isInteger(index) ||
     index < 0 ||
     index >= candidates.length
   ) {
@@ -1573,9 +1482,7 @@ async function chooseExpenseForPayment(
   }
 
 
-  return candidates[
-    index
-  ].id;
+  return candidates[index].id;
 
 }
 
@@ -1589,9 +1496,13 @@ async function updateSupportCase(
   nextStatus
 ) {
 
+  const normalizedNextStatus =
+    normalize(nextStatus);
+
+
   if (
     !SUPPORT_STATUSES.has(
-      nextStatus
+      normalizedNextStatus
     )
   ) {
 
@@ -1605,9 +1516,9 @@ async function updateSupportCase(
   const supportCase =
     supportCases.find(
       item =>
-        item.id ===
-        caseId
+        item.id === caseId
     );
+
 
   if (!supportCase) {
 
@@ -1618,22 +1529,54 @@ async function updateSupportCase(
   }
 
 
+  const currentStatus =
+    normalize(
+      supportCase.status
+    );
+
+
+  const allowedTransitions =
+    STATUS_TRANSITIONS[
+      currentStatus
+    ] ||
+    new Set();
+
+
+  if (
+    !allowedTransitions.has(
+      normalizedNextStatus
+    )
+  ) {
+
+    throw new Error(
+      `This support case cannot be changed from "${statusLabel(
+        currentStatus
+      )}" to "${statusLabel(
+        normalizedNextStatus
+      )}".`
+    );
+
+  }
+
+
   const updates = {
 
     status:
-      nextStatus
+      normalizedNextStatus
 
   };
 
 
   /*
-   * Approval identity is recorded only when the
-   * authenticated management user performs the
-   * approval/payment action.
+   * Approval identity is recorded when the case
+   * is actually approved.
+   *
+   * We deliberately do not overwrite approved_by
+   * when merely marking an already-approved case
+   * as paid or completed.
    */
-
   if (
-    nextStatus ===
+    normalizedNextStatus ===
     "approved"
   ) {
 
@@ -1644,12 +1587,17 @@ async function updateSupportCase(
 
 
   /*
-   * The live validator requires an expense for
-   * paid support.
+   * The live validator requires:
+   *
+   * status = 'paid'
+   * AND
+   * expense_id IS NOT NULL
+   *
+   * Therefore payment cannot be attempted without
+   * selecting an existing expense.
    */
-
   if (
-    nextStatus ===
+    normalizedNextStatus ===
     "paid"
   ) {
 
@@ -1657,6 +1605,7 @@ async function updateSupportCase(
       await chooseExpenseForPayment(
         supportCase
       );
+
 
     if (!expenseId) {
 
@@ -1666,9 +1615,32 @@ async function updateSupportCase(
 
     }
 
-    updates.approved_by =
-      currentMember.id;
 
+    /*
+     * Verify the selected expense is still present
+     * in the current approved-expense set after the
+     * refresh performed above.
+     */
+    const selectedExpense =
+      getExpense(expenseId);
+
+
+    if (!selectedExpense) {
+
+      throw new Error(
+        "The selected expense is no longer available as an approved expense."
+      );
+
+    }
+
+
+    /*
+     * The expense belongs to the same authenticated
+     * group because it was loaded using groupId.
+     *
+     * The database validator independently checks
+     * expense ownership again.
+     */
     updates.expense_id =
       expenseId;
 
@@ -1680,20 +1652,10 @@ async function updateSupportCase(
     error
   } =
     await supabase
-      .from(
-        "group_support_cases"
-      )
-      .update(
-        updates
-      )
-      .eq(
-        "id",
-        caseId
-      )
-      .eq(
-        "group_id",
-        groupId
-      )
+      .from("group_support_cases")
+      .update(updates)
+      .eq("id", caseId)
+      .eq("group_id", groupId)
       .select(`
         id,
         group_id,
@@ -1725,6 +1687,24 @@ async function updateSupportCase(
 
   }
 
+
+  /*
+   * Keep local state synchronized with the row returned
+   * by the database.
+   */
+  const index =
+    supportCases.findIndex(
+      item =>
+        item.id === caseId
+    );
+
+  if (index >= 0) {
+
+    supportCases[index] =
+      data;
+
+  }
+
 }
 
 
@@ -1732,9 +1712,7 @@ async function updateSupportCase(
    CASE ACTION
 ========================================================= */
 
-async function handleCaseAction(
-  event
-) {
+async function handleCaseAction(event) {
 
   const button =
     event.target.closest(
@@ -1783,9 +1761,7 @@ async function handleCaseAction(
 
 
   const nextStatus =
-    actionMap[
-      action
-    ];
+    actionMap[action];
 
 
   if (
@@ -1829,7 +1805,10 @@ async function handleCaseAction(
     );
 
 
-    await loadSupportCases();
+    renderSummary();
+
+    renderSupportCases();
+
 
     showStatus(
       "✓ Support case updated successfully."
@@ -1845,9 +1824,7 @@ async function handleCaseAction(
 
     showStatus("");
 
-    showError(
-      error
-    );
+    showError(error);
 
   }
   finally {
@@ -1870,12 +1847,14 @@ function resetForm() {
     supportForm.reset();
   }
 
+
   if (supportDateInput) {
 
     supportDateInput.value =
       todayString();
 
   }
+
 
   if (amountInput) {
 
@@ -1897,6 +1876,7 @@ function enforceManagementAccess() {
     normalize(
       currentMember?.role
     );
+
 
   const allowed =
     MANAGEMENT_ROLES.has(
@@ -1947,7 +1927,15 @@ function setupEvents() {
 
   resetButton?.addEventListener(
     "click",
-    resetForm
+    () => {
+
+      clearError();
+
+      showStatus("");
+
+      resetForm();
+
+    }
   );
 
 
@@ -1963,9 +1951,13 @@ function setupEvents() {
           "Refreshing welfare cases..."
         );
 
+
+        await loadMembers();
+
         await loadExpenses();
 
         await loadSupportCases();
+
 
         showStatus(
           "Welfare cases refreshed."
@@ -1981,9 +1973,7 @@ function setupEvents() {
 
         showStatus("");
 
-        showError(
-          error
-        );
+        showError(error);
 
       }
 
@@ -2037,7 +2027,6 @@ export async function initPage() {
     /*
      * Canonical authentication.
      */
-
     currentUser =
       await requireAuth();
 
@@ -2045,7 +2034,6 @@ export async function initPage() {
     /*
      * Canonical member resolution.
      */
-
     currentMember =
       await getMyMember();
 
@@ -2062,10 +2050,11 @@ export async function initPage() {
 
 
     /*
-     * Current group is derived from the authenticated
-     * member. It is never supplied by the page.
+     * Current group is derived exclusively from
+     * authenticated member context.
+     *
+     * It is never supplied by the page.
      */
-
     groupId =
       currentMember.group_id;
 
@@ -2132,9 +2121,7 @@ export async function initPage() {
 
     showStatus("");
 
-    showError(
-      error
-    );
+    showError(error);
 
   }
 
