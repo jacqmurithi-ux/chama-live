@@ -1,3 +1,853 @@
-p_group_id       = OTHER_GROUP
-p_through_month  = 2026-09
-p_member_id      = OTHER_MEMBER
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>CHAMA LIVE — 2B Authenticated RPC Test</title>
+
+  <style>
+    :root {
+      color-scheme: light;
+      font-family:
+        Inter,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      background: #f5f7fa;
+      color: #172033;
+    }
+
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin-top: 0;
+    }
+
+    .warning {
+      padding: 16px;
+      border-radius: 10px;
+      background: #fff4d6;
+      border: 1px solid #e6c96a;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: #ffffff;
+      border: 1px solid #dfe4ea;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 18px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .status {
+      padding: 12px;
+      border-radius: 8px;
+      background: #eef2f7;
+      margin: 10px 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .success {
+      border-left: 5px solid #16834b;
+      background: #edf9f2;
+    }
+
+    .failure {
+      border-left: 5px solid #c62828;
+      background: #fff0f0;
+    }
+
+    .expected {
+      border-left: 5px solid #876800;
+      background: #fff9e8;
+    }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 11px 16px;
+      cursor: pointer;
+      font-weight: 600;
+      margin: 4px 6px 4px 0;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-x: auto;
+      background: #10151c;
+      color: #e8edf3;
+      padding: 14px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    code {
+      background: #eef1f5;
+      padding: 2px 5px;
+      border-radius: 4px;
+    }
+
+    .label {
+      font-weight: 700;
+    }
+
+    #finalStatus {
+      font-size: 18px;
+      font-weight: 700;
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+
+    <h1>CHAMA LIVE — 2B Authenticated RPC Test</h1>
+
+    <div class="warning">
+      <strong>Safety checkpoint</strong><br>
+      This page tests the live authenticated RPC.
+      Test 1 calls the live accounting refresh function and may rebuild
+      accounting allocations / create missing obligations.
+      It does not create a contribution payment.
+      Do not treat this page as a purely read-only test.
+    </div>
+
+    <section class="card">
+      <h2>Session</h2>
+
+      <div id="sessionStatus" class="status">
+        Checking authentication...
+      </div>
+
+      <button id="refreshSessionButton">
+        Refresh Session
+      </button>
+    </section>
+
+    <section class="card">
+      <h2>Test Constants</h2>
+
+      <pre id="constants"></pre>
+    </section>
+
+    <section class="card">
+      <h2>Test 1 — Own Group</h2>
+
+      <p>
+        Expected result:
+        <strong>SUCCESS</strong>
+      </p>
+
+      <pre>{
+  p_group_id: OWN_GROUP,
+  p_through_month: TEST_MONTH,
+  p_member_id: OWN_MEMBER
+}</pre>
+
+      <button id="runOwnButton" disabled>
+        Run Test 1
+      </button>
+
+      <div id="ownResult" class="status">
+        Waiting...
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Test 2 — Cross Group</h2>
+
+      <p>
+        Expected result:
+        <strong>REJECTED — Finance authorization required</strong>
+      </p>
+
+      <pre>{
+  p_group_id: OTHER_GROUP,
+  p_through_month: TEST_MONTH,
+  p_member_id: OTHER_MEMBER
+}</pre>
+
+      <button id="runCrossButton" disabled>
+        Run Test 2
+      </button>
+
+      <div id="crossResult" class="status">
+        Waiting...
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Final Gate</h2>
+
+      <div id="finalStatus" class="status expected">
+        Not evaluated yet.
+      </div>
+
+      <button id="runAllButton" disabled>
+        Run Both Tests
+      </button>
+    </section>
+
+    <section class="card">
+      <h2>Diagnostic Output</h2>
+
+      <pre id="diagnostic">No test executed yet.</pre>
+    </section>
+
+  </main>
+
+  <script type="module">
+
+    import { supabase } from "./js/supabase.js";
+
+
+    /* =========================================================
+       EXACT LIVE TEST CONSTANTS
+    ========================================================= */
+
+    const OWN_GROUP =
+      "26bb954e-b248-4ce6-bd23-f820e486f377";
+
+    const OWN_MEMBER =
+      "91cad68b-cc4a-4294-9a09-2157dafe4791";
+
+    const OTHER_GROUP =
+      "351596a8-9a1a-4c64-bf45-cb9814be089c";
+
+    const OTHER_MEMBER =
+      "46b10456-a8b8-4c83-b60f-04ae7e6c0c98";
+
+    const TEST_MONTH = "2026-09";
+
+
+    /* =========================================================
+       ELEMENTS
+    ========================================================= */
+
+    const sessionStatus =
+      document.getElementById("sessionStatus");
+
+    const constantsElement =
+      document.getElementById("constants");
+
+    const ownResult =
+      document.getElementById("ownResult");
+
+    const crossResult =
+      document.getElementById("crossResult");
+
+    const finalStatus =
+      document.getElementById("finalStatus");
+
+    const diagnostic =
+      document.getElementById("diagnostic");
+
+    const refreshSessionButton =
+      document.getElementById("refreshSessionButton");
+
+    const runOwnButton =
+      document.getElementById("runOwnButton");
+
+    const runCrossButton =
+      document.getElementById("runCrossButton");
+
+    const runAllButton =
+      document.getElementById("runAllButton");
+
+
+    /* =========================================================
+       STATE
+    ========================================================= */
+
+    let authenticatedUser = null;
+
+    let ownTestPassed = false;
+    let crossTestPassed = false;
+
+    let ownTestCompleted = false;
+    let crossTestCompleted = false;
+
+
+    /* =========================================================
+       CONSTANT DISPLAY
+    ========================================================= */
+
+    constantsElement.textContent = JSON.stringify(
+      {
+        OWN_GROUP,
+        OWN_MEMBER,
+        OTHER_GROUP,
+        OTHER_MEMBER,
+        TEST_MONTH
+      },
+      null,
+      2
+    );
+
+
+    /* =========================================================
+       HELPERS
+    ========================================================= */
+
+    function setResult(element, message, type = "") {
+      element.className = "status";
+
+      if (type) {
+        element.classList.add(type);
+      }
+
+      element.textContent = message;
+    }
+
+
+    function safeError(error) {
+      if (!error) {
+        return "Unknown error";
+      }
+
+      return {
+        message: error.message ?? null,
+        code: error.code ?? null,
+        details: error.details ?? null,
+        hint: error.hint ?? null
+      };
+    }
+
+
+    function updateFinalStatus() {
+
+      if (!ownTestCompleted || !crossTestCompleted) {
+        finalStatus.className =
+          "status expected";
+
+        finalStatus.textContent =
+          "PENDING — both tests must complete.";
+        return;
+      }
+
+
+      if (ownTestPassed && crossTestPassed) {
+        finalStatus.className =
+          "status success";
+
+        finalStatus.textContent =
+          "PASS — authenticated own-group access succeeded and cross-group authorization was genuinely rejected.";
+        return;
+      }
+
+
+      finalStatus.className =
+        "status failure";
+
+      finalStatus.textContent =
+        "FAIL — the authorization gate has NOT passed. Do not treat this test as a security PASS.";
+    }
+
+
+    function appendDiagnostic(label, value) {
+
+      const existing =
+        diagnostic.textContent === "No test executed yet."
+          ? ""
+          : diagnostic.textContent + "\n\n";
+
+      diagnostic.textContent =
+        existing +
+        "===== " +
+        label +
+        " =====\n" +
+        JSON.stringify(value, null, 2);
+    }
+
+
+    /* =========================================================
+       SESSION
+    ========================================================= */
+
+    async function loadSession() {
+
+      setResult(
+        sessionStatus,
+        "Checking authenticated session..."
+      );
+
+      const {
+        data,
+        error
+      } = await supabase.auth.getSession();
+
+      if (error) {
+
+        authenticatedUser = null;
+
+        setResult(
+          sessionStatus,
+          "SESSION ERROR\n\n" +
+          JSON.stringify(safeError(error), null, 2),
+          "failure"
+        );
+
+        runOwnButton.disabled = true;
+        runCrossButton.disabled = true;
+        runAllButton.disabled = true;
+
+        return;
+      }
+
+
+      const session = data?.session;
+
+      if (!session?.user) {
+
+        authenticatedUser = null;
+
+        setResult(
+          sessionStatus,
+          "NO AUTHENTICATED SESSION.\n\nSign in to CHAMA LIVE first.",
+          "failure"
+        );
+
+        runOwnButton.disabled = true;
+        runCrossButton.disabled = true;
+        runAllButton.disabled = true;
+
+        return;
+      }
+
+
+      authenticatedUser = session.user;
+
+      setResult(
+        sessionStatus,
+        [
+          "AUTHENTICATED",
+          "",
+          `User ID: ${session.user.id}`,
+          `Email: ${session.user.email ?? "(not exposed)"}`,
+          `Access token present: ${Boolean(session.access_token)}`
+        ].join("\n"),
+        "success"
+      );
+
+
+      runOwnButton.disabled = false;
+      runCrossButton.disabled = false;
+      runAllButton.disabled = false;
+
+
+      appendDiagnostic(
+        "AUTHENTICATED SESSION",
+        {
+          user_id: session.user.id,
+          email: session.user.email ?? null,
+          access_token_present: Boolean(session.access_token)
+        }
+      );
+    }
+
+
+    /* =========================================================
+       TEST 1 — OWN GROUP
+    ========================================================= */
+
+    async function runOwnGroupTest() {
+
+      ownTestCompleted = false;
+      ownTestPassed = false;
+
+      setResult(
+        ownResult,
+        "Running authenticated own-group RPC..."
+      );
+
+      updateFinalStatus();
+
+
+      if (!authenticatedUser) {
+
+        setResult(
+          ownResult,
+          "FAIL — no authenticated session.",
+          "failure"
+        );
+
+        ownTestCompleted = true;
+        updateFinalStatus();
+
+        return;
+      }
+
+
+      const rpcArguments = {
+        p_group_id: OWN_GROUP,
+        p_through_month: TEST_MONTH,
+        p_member_id: OWN_MEMBER
+      };
+
+
+      const startedAt = new Date().toISOString();
+
+      const {
+        data,
+        error
+      } = await supabase.rpc(
+        "refresh_canonical_contribution_accounting",
+        rpcArguments
+      );
+
+      const finishedAt = new Date().toISOString();
+
+
+      appendDiagnostic(
+        "TEST 1 — OWN GROUP",
+        {
+          started_at: startedAt,
+          finished_at: finishedAt,
+          rpc: "refresh_canonical_contribution_accounting",
+          arguments: rpcArguments,
+          result: data ?? null,
+          error: safeError(error)
+        }
+      );
+
+
+      if (error) {
+
+        ownTestCompleted = true;
+        ownTestPassed = false;
+
+        setResult(
+          ownResult,
+          [
+            "FAIL — OWN-GROUP RPC DID NOT SUCCEED.",
+            "",
+            JSON.stringify(
+              safeError(error),
+              null,
+              2
+            ),
+            "",
+            "A parameter/signature error such as PGRST202 is NOT a PASS."
+          ].join("\n"),
+          "failure"
+        );
+
+        updateFinalStatus();
+
+        return;
+      }
+
+
+      ownTestCompleted = true;
+      ownTestPassed = true;
+
+      setResult(
+        ownResult,
+        [
+          "PASS — OWN-GROUP RPC SUCCEEDED.",
+          "",
+          "RPC: refresh_canonical_contribution_accounting",
+          `group: ${OWN_GROUP}`,
+          `member: ${OWN_MEMBER}`,
+          `through_month: ${TEST_MONTH}`,
+          "",
+          "Returned:",
+          JSON.stringify(data, null, 2)
+        ].join("\n"),
+        "success"
+      );
+
+      updateFinalStatus();
+    }
+
+
+    /* =========================================================
+       TEST 2 — CROSS GROUP
+    ========================================================= */
+
+    async function runCrossGroupTest() {
+
+      crossTestCompleted = false;
+      crossTestPassed = false;
+
+      setResult(
+        crossResult,
+        "Running authenticated cross-group authorization test..."
+      );
+
+      updateFinalStatus();
+
+
+      if (!authenticatedUser) {
+
+        setResult(
+          crossResult,
+          "FAIL — no authenticated session.",
+          "failure"
+        );
+
+        crossTestCompleted = true;
+        updateFinalStatus();
+
+        return;
+      }
+
+
+      const rpcArguments = {
+        p_group_id: OTHER_GROUP,
+        p_through_month: TEST_MONTH,
+        p_member_id: OTHER_MEMBER
+      };
+
+
+      const startedAt = new Date().toISOString();
+
+      const {
+        data,
+        error
+      } = await supabase.rpc(
+        "refresh_canonical_contribution_accounting",
+        rpcArguments
+      );
+
+      const finishedAt = new Date().toISOString();
+
+
+      appendDiagnostic(
+        "TEST 2 — CROSS GROUP",
+        {
+          started_at: startedAt,
+          finished_at: finishedAt,
+          rpc: "refresh_canonical_contribution_accounting",
+          arguments: rpcArguments,
+          result: data ?? null,
+          error: safeError(error)
+        }
+      );
+
+
+      if (!error) {
+
+        crossTestCompleted = true;
+        crossTestPassed = false;
+
+        setResult(
+          crossResult,
+          [
+            "CRITICAL FAIL — CROSS-GROUP RPC SUCCEEDED.",
+            "",
+            "The authenticated user was able to invoke the finance RPC",
+            "against a different group.",
+            "",
+            "Do NOT treat the authorization gate as passed.",
+            "",
+            "Returned:",
+            JSON.stringify(data, null, 2)
+          ].join("\n"),
+          "failure"
+        );
+
+        updateFinalStatus();
+
+        return;
+      }
+
+
+      const errorInfo = safeError(error);
+
+      const message =
+        String(errorInfo.message ?? "").toLowerCase();
+
+      const code =
+        String(errorInfo.code ?? "").toUpperCase();
+
+
+      /*
+       * A PostgREST function lookup/signature failure means the
+       * security test did NOT reach the authorization logic.
+       *
+       * Therefore PGRST202 is explicitly NOT accepted as PASS.
+       */
+
+      const isSchemaCacheFailure =
+        code === "PGRST202" ||
+        message.includes("could not find the function") ||
+        message.includes("schema cache") ||
+        message.includes("parameter");
+
+
+      const isAuthorizationFailure =
+        message.includes("finance authorization required") ||
+        message.includes("authorization required") ||
+        message.includes("does not belong to this group") ||
+        message.includes("not authorized") ||
+        message.includes("permission denied");
+
+
+      if (isSchemaCacheFailure) {
+
+        crossTestCompleted = true;
+        crossTestPassed = false;
+
+        setResult(
+          crossResult,
+          [
+            "FAIL — NOT A GENUINE AUTHORIZATION REJECTION.",
+            "",
+            "The RPC call failed at function/signature/schema resolution.",
+            "",
+            JSON.stringify(errorInfo, null, 2),
+            "",
+            "PGRST202 or a parameter mismatch does NOT count as a security PASS."
+          ].join("\n"),
+          "failure"
+        );
+
+        updateFinalStatus();
+
+        return;
+      }
+
+
+      if (isAuthorizationFailure) {
+
+        crossTestCompleted = true;
+        crossTestPassed = true;
+
+        setResult(
+          crossResult,
+          [
+            "PASS — CROSS-GROUP ACCESS WAS GENUINELY REJECTED.",
+            "",
+            "The authenticated user could not use the finance RPC",
+            "against the other group.",
+            "",
+            JSON.stringify(errorInfo, null, 2)
+          ].join("\n"),
+          "success"
+        );
+
+        updateFinalStatus();
+
+        return;
+      }
+
+
+      /*
+       * Any unexpected error is deliberately treated as FAIL.
+       * This prevents an unknown database/API error from being
+       * mistaken for an authorization success.
+       */
+
+      crossTestCompleted = true;
+      crossTestPassed = false;
+
+      setResult(
+        crossResult,
+        [
+          "FAIL — UNEXPECTED ERROR.",
+          "",
+          "The error was not positively identified as a genuine",
+          "authorization rejection.",
+          "",
+          JSON.stringify(errorInfo, null, 2),
+          "",
+          "Do NOT treat this as a security PASS."
+        ].join("\n"),
+        "failure"
+      );
+
+      updateFinalStatus();
+    }
+
+
+    /* =========================================================
+       RUN BOTH
+    ========================================================= */
+
+    async function runAllTests() {
+
+      runAllButton.disabled = true;
+      runOwnButton.disabled = true;
+      runCrossButton.disabled = true;
+
+      try {
+
+        await runOwnGroupTest();
+
+        /*
+         * Continue to Test 2 even if Test 1 fails.
+         * This allows us to distinguish a normal RPC failure
+         * from an authorization failure.
+         */
+
+        await runCrossGroupTest();
+
+      } finally {
+
+        runAllButton.disabled = false;
+        runOwnButton.disabled = false;
+        runCrossButton.disabled = false;
+
+        updateFinalStatus();
+      }
+    }
+
+
+    /* =========================================================
+       EVENTS
+    ========================================================= */
+
+    refreshSessionButton.addEventListener(
+      "click",
+      loadSession
+    );
+
+    runOwnButton.addEventListener(
+      "click",
+      runOwnGroupTest
+    );
+
+    runCrossButton.addEventListener(
+      "click",
+      runCrossGroupTest
+    );
+
+    runAllButton.addEventListener(
+      "click",
+      runAllTests
+    );
+
+
+    /* =========================================================
+       INITIAL LOAD
+    ========================================================= */
+
+    loadSession();
+
+  </script>
+
+</body>
+</html>
