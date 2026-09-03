@@ -1,0 +1,1066 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>
+    Support & Welfare — CHAMA LIVE
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="css/app.css"
+  >
+
+  <style>
+
+    /* =====================================================
+       CHAMA LIVE — SUPPORT & WELFARE
+    ===================================================== */
+
+    .support-page {
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+
+    /* =====================================================
+       HERO
+    ===================================================== */
+
+    .support-hero {
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 24px;
+      padding: 30px;
+      border-radius: 22px;
+
+      background:
+        linear-gradient(
+          135deg,
+          var(--primary),
+          color-mix(
+            in srgb,
+            var(--primary) 70%,
+            #000 30%
+          )
+        );
+
+      color: #fff;
+
+      box-shadow:
+        0 14px 35px rgba(0,0,0,.10);
+    }
+
+    .support-hero::after {
+      content: "";
+      position: absolute;
+      width: 210px;
+      height: 210px;
+      right: -65px;
+      top: -80px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.09);
+    }
+
+    .support-hero-content {
+      position: relative;
+      z-index: 2;
+    }
+
+    .support-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 12px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.14);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+    }
+
+    .support-hero h1 {
+      margin: 0 0 8px;
+      color: #fff;
+      font-size: clamp(28px, 4vw, 40px);
+      line-height: 1.1;
+    }
+
+    .support-hero p {
+      max-width: 720px;
+      margin: 0;
+      color: rgba(255,255,255,.84);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    .support-context {
+      margin-top: 14px;
+      color: rgba(255,255,255,.78);
+      font-size: 13px;
+    }
+
+
+    /* =====================================================
+       STATUS / ERROR
+    ===================================================== */
+
+    .support-status {
+      margin-bottom: 20px;
+      padding: 13px 16px;
+      border-radius: 12px;
+      background: var(--surface-soft);
+      border: 1px solid var(--border-light);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .support-error {
+      margin-bottom: 20px;
+    }
+
+    .support-hidden {
+      display: none !important;
+    }
+
+
+    /* =====================================================
+       ACCESS DENIED
+    ===================================================== */
+
+    .support-access-denied {
+      margin-bottom: 20px;
+      padding: 18px;
+      border: 1px solid #fecaca;
+      border-radius: 14px;
+      background: #fef2f2;
+      color: #991b1b;
+      line-height: 1.65;
+    }
+
+
+    /* =====================================================
+       SUMMARY
+    ===================================================== */
+
+    .support-summary {
+      display: grid;
+      grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .support-kpi {
+      position: relative;
+      overflow: hidden;
+      padding: 20px;
+      border: 1px solid var(--border-light);
+      border-radius: 17px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+    }
+
+    .support-kpi::after {
+      content: "";
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      right: -30px;
+      bottom: -35px;
+      border-radius: 50%;
+      background: rgba(15,118,110,.035);
+    }
+
+    .support-kpi-label {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .support-kpi-value {
+      display: block;
+      margin-top: 7px;
+      color: var(--text-dark);
+      font-size: 25px;
+      font-weight: 850;
+    }
+
+
+    /* =====================================================
+       MAIN GRID
+    ===================================================== */
+
+    .support-grid {
+      display: grid;
+      grid-template-columns:
+        minmax(320px, .82fr)
+        minmax(0, 1.55fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+
+    /* =====================================================
+       FORM
+    ===================================================== */
+
+    .support-card {
+      padding: 24px;
+    }
+
+    .support-card-header {
+      margin-bottom: 20px;
+    }
+
+    .support-card-header h2 {
+      margin-bottom: 5px;
+    }
+
+    .support-form-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+      gap: 17px;
+    }
+
+    .support-full {
+      grid-column: 1 / -1;
+    }
+
+    .support-help {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .support-form-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 22px;
+      padding-top: 19px;
+      border-top: 1px solid var(--border-light);
+    }
+
+
+    /* =====================================================
+       FILTERS
+    ===================================================== */
+
+    .support-filter {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 18px 0 15px;
+    }
+
+    .support-filter select,
+    .support-filter input {
+      min-height: 40px;
+    }
+
+    .support-search {
+      flex: 1 1 220px;
+    }
+
+
+    /* =====================================================
+       TABLE
+    ===================================================== */
+
+    .support-table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+
+      border:
+        1px solid var(--border-light);
+
+      border-radius: 12px;
+    }
+
+    .support-table {
+      width: 100%;
+      min-width: 1050px;
+      border-collapse: collapse;
+    }
+
+    .support-table th,
+    .support-table td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--border-light);
+      text-align: left;
+      vertical-align: middle;
+      font-size: 13px;
+    }
+
+    .support-table th {
+      background: var(--surface-soft);
+      color: var(--text-dark);
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .support-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .support-table tr:hover td {
+      background: #fbfefd;
+    }
+
+    .support-amount {
+      text-align: right !important;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+      font-weight: 750;
+    }
+
+    .support-secondary {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+
+    /* =====================================================
+       STATUS BADGES
+    ===================================================== */
+
+    .support-status-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 800;
+      white-space: nowrap;
+      text-transform: capitalize;
+    }
+
+    .support-status-requested {
+      background: #fffaeb;
+      color: #b45309;
+    }
+
+    .support-status-approved {
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .support-status-paid,
+    .support-status-completed {
+      background: #ecfdf3;
+      color: #047857;
+    }
+
+    .support-status-rejected,
+    .support-status-cancelled {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+
+    /* =====================================================
+       ROW ACTIONS
+    ===================================================== */
+
+    .support-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .support-action-btn {
+      padding: 6px 9px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 750;
+    }
+
+    .support-action-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: var(--nav-hover);
+    }
+
+    .support-action-btn:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+
+    /* =====================================================
+       EMPTY STATE
+    ===================================================== */
+
+    .support-empty {
+      padding: 35px 15px !important;
+      text-align: center !important;
+      color: var(--muted);
+    }
+
+
+    /* =====================================================
+       MOBILE
+    ===================================================== */
+
+    @media (max-width: 1000px) {
+
+      .support-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .support-summary {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+
+    }
+
+
+    @media (max-width: 650px) {
+
+      .support-hero {
+        padding: 24px 20px;
+        border-radius: 18px;
+      }
+
+      .support-card {
+        padding: 19px;
+      }
+
+      .support-summary {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .support-form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .support-full {
+        grid-column: auto;
+      }
+
+      .support-form-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .support-form-actions .btn {
+        width: 100%;
+      }
+
+      .support-filter {
+        flex-direction: column;
+      }
+
+      .support-filter select,
+      .support-filter input {
+        width: 100%;
+      }
+
+    }
+
+  </style>
+
+</head>
+
+
+<body>
+
+
+<header class="topbar">
+
+  <div class="brand">
+    CHAMA <span>LIVE</span>
+  </div>
+
+  <button
+    class="btn btn-secondary"
+    id="logout"
+    type="button"
+  >
+    Sign out
+  </button>
+
+</header>
+
+
+
+<div class="layout">
+
+
+  <aside class="sidebar">
+
+    <nav class="nav">
+
+      <a href="dashboard.html">
+        Dashboard
+      </a>
+
+      <a href="members.html">
+        Members
+      </a>
+
+      <a
+        class="active"
+        href="support-welfare.html"
+      >
+        Support &amp; Welfare
+      </a>
+
+      <a href="contributions.html">
+        Contributions
+      </a>
+
+      <a href="expenses.html">
+        Expenses
+      </a>
+
+      <a href="meetings.html">
+        Meetings
+      </a>
+
+      <a href="reports.html">
+        Reports
+      </a>
+
+      <a href="monthly-closing.html">
+        Monthly Closing
+      </a>
+
+      <a href="group-management.html">
+        Group Management
+      </a>
+
+    </nav>
+
+  </aside>
+
+
+
+  <main class="main">
+
+    <div class="support-page">
+
+
+      <section class="support-hero">
+
+        <div class="support-hero-content">
+
+          <div class="support-badge">
+            🤝 Welfare &amp; Support
+          </div>
+
+          <h1>
+            Support &amp; Welfare
+          </h1>
+
+          <p>
+            Record member welfare cases, review support
+            decisions and connect paid support to an
+            existing approved group expense.
+          </p>
+
+          <div class="support-context">
+            Current group:
+            <strong id="groupName">
+              Loading…
+            </strong>
+          </div>
+
+        </div>
+
+      </section>
+
+
+
+      <div
+        id="status"
+        class="support-status support-hidden"
+        role="status"
+      ></div>
+
+
+      <div
+        id="error"
+        class="error support-error support-hidden"
+        role="alert"
+      ></div>
+
+
+      <div
+        id="accessDenied"
+        class="support-access-denied support-hidden"
+      >
+        <strong>
+          Management access required.
+        </strong>
+
+        <div>
+          Support &amp; Welfare management is restricted
+          to the group's admin, chairperson, secretary or
+          treasurer role.
+        </div>
+      </div>
+
+
+      <section id="supportContent">
+
+
+        <section class="support-summary">
+
+
+          <div class="support-kpi">
+
+            <span class="support-kpi-label">
+              Total Cases
+            </span>
+
+            <strong
+              id="totalCases"
+              class="support-kpi-value"
+            >
+              0
+            </strong>
+
+          </div>
+
+
+          <div class="support-kpi">
+
+            <span class="support-kpi-label">
+              Open Requests
+            </span>
+
+            <strong
+              id="openCases"
+              class="support-kpi-value"
+            >
+              0
+            </strong>
+
+          </div>
+
+
+          <div class="support-kpi">
+
+            <span class="support-kpi-label">
+              Approved / Paid
+            </span>
+
+            <strong
+              id="approvedCases"
+              class="support-kpi-value"
+            >
+              0
+            </strong>
+
+          </div>
+
+
+          <div class="support-kpi">
+
+            <span class="support-kpi-label">
+              Total Support
+            </span>
+
+            <strong
+              id="totalAmount"
+              class="support-kpi-value"
+            >
+              KSh 0
+            </strong>
+
+          </div>
+
+
+        </section>
+
+
+
+        <div class="support-grid">
+
+
+          <section class="card support-card">
+
+
+            <div class="support-card-header">
+
+              <h2>
+                Record Support Case
+              </h2>
+
+              <p class="muted">
+                New cases are created as
+                <strong>Requested</strong>.
+                Server-side validation and RLS remain
+                authoritative.
+              </p>
+
+            </div>
+
+
+            <form id="supportForm">
+
+
+              <div class="support-form-grid">
+
+
+                <div class="form-group support-full">
+
+                  <label for="memberId">
+                    Member
+                  </label>
+
+                  <select
+                    id="memberId"
+                    required
+                  >
+
+                    <option value="">
+                      Select member
+                    </option>
+
+                  </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                  <label for="supportType">
+                    Support Type
+                  </label>
+
+                  <select
+                    id="supportType"
+                    required
+                  >
+
+                    <option value="welfare">
+                      Welfare
+                    </option>
+
+                    <option value="hospital">
+                      Hospital
+                    </option>
+
+                    <option value="bereavement">
+                      Bereavement
+                    </option>
+
+                    <option value="education">
+                      Education
+                    </option>
+
+                    <option value="emergency">
+                      Emergency
+                    </option>
+
+                    <option value="accident">
+                      Accident
+                    </option>
+
+                    <option value="marriage">
+                      Marriage
+                    </option>
+
+                    <option value="new_baby">
+                      New baby
+                    </option>
+
+                    <option value="disaster">
+                      Disaster
+                    </option>
+
+                    <option value="other">
+                      Other
+                    </option>
+
+                  </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                  <label for="supportDate">
+                    Support Date
+                  </label>
+
+                  <input
+                    id="supportDate"
+                    type="date"
+                    required
+                  >
+
+                </div>
+
+
+                <div class="form-group support-full">
+
+                  <label for="amount">
+                    Amount (KSh)
+                  </label>
+
+                  <input
+                    id="amount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value="0"
+                    required
+                  >
+
+                  <p class="support-help">
+                    Zero is valid under the live database
+                    contract.
+                  </p>
+
+                </div>
+
+
+                <div class="form-group support-full">
+
+                  <label for="description">
+                    Description
+                  </label>
+
+                  <textarea
+                    id="description"
+                    rows="5"
+                    maxlength="5000"
+                    placeholder="Brief details of the support case"
+                  ></textarea>
+
+                </div>
+
+
+              </div>
+
+
+              <div class="support-form-actions">
+
+                <button
+                  class="btn btn-primary"
+                  id="saveSupport"
+                  type="submit"
+                >
+                  Save Support Case
+                </button>
+
+                <button
+                  class="btn btn-secondary"
+                  id="resetSupport"
+                  type="button"
+                >
+                  Clear
+                </button>
+
+              </div>
+
+
+            </form>
+
+          </section>
+
+
+
+          <section class="card support-card">
+
+
+            <div
+              style="
+                display:flex;
+                justify-content:space-between;
+                align-items:flex-start;
+                gap:15px;
+                flex-wrap:wrap;
+              "
+            >
+
+              <div>
+
+                <h2>
+                  Welfare Cases
+                </h2>
+
+                <p class="muted">
+                  Cases visible to authorized management
+                  users in the current authenticated group.
+                </p>
+
+              </div>
+
+              <button
+                class="btn btn-secondary"
+                id="refreshSupport"
+                type="button"
+              >
+                Refresh
+              </button>
+
+            </div>
+
+
+            <div class="support-filter">
+
+              <select
+                id="statusFilter"
+                aria-label="Filter welfare cases by status"
+              >
+
+                <option value="">
+                  All statuses
+                </option>
+
+                <option value="requested">
+                  Requested
+                </option>
+
+                <option value="approved">
+                  Approved
+                </option>
+
+                <option value="paid">
+                  Paid
+                </option>
+
+                <option value="completed">
+                  Completed
+                </option>
+
+                <option value="rejected">
+                  Rejected
+                </option>
+
+                <option value="cancelled">
+                  Cancelled
+                </option>
+
+              </select>
+
+
+              <input
+                id="caseSearch"
+                class="support-search"
+                type="search"
+                placeholder="Search member or description"
+                aria-label="Search welfare cases"
+              >
+
+            </div>
+
+
+            <div class="support-table-wrap">
+
+              <table class="support-table">
+
+                <thead>
+
+                  <tr>
+
+                    <th>
+                      Date
+                    </th>
+
+                    <th>
+                      Member
+                    </th>
+
+                    <th>
+                      Type
+                    </th>
+
+                    <th>
+                      Amount
+                    </th>
+
+                    <th>
+                      Status
+                    </th>
+
+                    <th>
+                      Expense
+                    </th>
+
+                    <th>
+                      Actions
+                    </th>
+
+                  </tr>
+
+                </thead>
+
+
+                <tbody id="supportRows">
+
+                  <tr>
+
+                    <td
+                      colspan="7"
+                      class="support-empty"
+                    >
+                      Loading welfare cases…
+                    </td>
+
+                  </tr>
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+
+          </section>
+
+
+        </div>
+
+      </section>
+
+    </div>
+
+  </main>
+
+</div>
+
+
+
+<script type="module">
+
+  import "./js/layout.js";
+
+  import "./js/support-welfare.js";
+
+</script>
+
+
+</body>
+
+</html>
