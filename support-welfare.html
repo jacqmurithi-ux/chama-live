@@ -509,7 +509,6 @@
 </header>
 
 
-
 <div class="layout">
 
 
@@ -561,7 +560,6 @@
   </aside>
 
 
-
   <main class="main">
 
     <div class="support-page">
@@ -597,11 +595,11 @@
       </section>
 
 
-
       <div
         id="status"
         class="support-status support-hidden"
         role="status"
+        aria-live="polite"
       ></div>
 
 
@@ -609,6 +607,7 @@
         id="error"
         class="error support-error support-hidden"
         role="alert"
+        aria-live="assertive"
       ></div>
 
 
@@ -616,6 +615,7 @@
         id="accessDenied"
         class="support-access-denied support-hidden"
       >
+
         <strong>
           Management access required.
         </strong>
@@ -625,10 +625,14 @@
           to the group's admin, chairperson, secretary or
           treasurer role.
         </div>
+
       </div>
 
 
-      <section id="supportContent">
+      <section
+        id="supportContent"
+        class="support-hidden"
+      >
 
 
         <section class="support-summary">
@@ -699,7 +703,6 @@
 
 
         </section>
-
 
 
         <div class="support-grid">
@@ -889,7 +892,6 @@
           </section>
 
 
-
           <section class="card support-card">
 
 
@@ -1049,7 +1051,6 @@
   </main>
 
 </div>
-
 
 
 <script type="module">
