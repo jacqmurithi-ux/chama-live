@@ -1683,7 +1683,43 @@
               placeholder="e.g. QWE123XYZ"
             >
 
+            <small class="muted">
+              Required for M-Pesa payments.
+            </small>
+
           </div>
+
+
+          <!-- =================================================
+               IDEMPOTENCY KEY
+          ================================================== -->
+
+          <!--
+            INTERNAL ONLY
+
+            JavaScript generates this UUID for each new
+            contribution submission.
+
+            The user does not enter or edit this value.
+
+            The same key is retained when the same
+            submission is retried, allowing the atomic
+            contribution RPC to recognize an already
+            committed payment instead of creating a
+            duplicate payment record.
+
+            This field does not perform any accounting
+            calculation and does not expose database
+            credentials or secrets.
+          -->
+
+          <input
+            id="contributionIdempotencyKey"
+            name="contributionIdempotencyKey"
+            type="hidden"
+            value=""
+            autocomplete="off"
+          >
 
 
           <!-- CONTRIBUTION GOAL -->
