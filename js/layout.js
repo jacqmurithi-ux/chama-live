@@ -2,6 +2,13 @@
    CHAMA LIVE — GLOBAL LAYOUT
    FINAL STABLE VERSION
    TOP NAV + MOBILE MENU + MOBILE BOTTOM NAV
+
+   ASSETS NAVIGATION INTEGRATION:
+   - Assets is included in the full mobile menu.
+   - Assets is intentionally NOT included in the mobile
+     bottom navigation.
+   - assets.html is intentionally NOT included in
+     PAGE_SCRIPTS because assets.js owns its own boot.
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -976,6 +983,19 @@ function setupMobileMenu() {
       page: "group-management.html",
       icon: "⚙",
       label: "Group Management"
+    },
+
+    /* -----------------------------------------------------
+       ASSETS
+       Assets is intentionally available through the full
+       mobile menu but NOT the five-item bottom navigation.
+    ----------------------------------------------------- */
+
+    {
+      href: "assets.html",
+      page: "assets.html",
+      icon: "▣",
+      label: "Assets"
     }
 
   ];
@@ -1286,6 +1306,13 @@ function setupMobileNavigation() {
   }
 
 
+  /*
+   * Keep the bottom navigation intentionally limited
+   * to five primary actions.
+   *
+   * Assets belongs in the full mobile menu instead.
+   */
+
   addLink(
     "dashboard.html",
     "dashboard.html",
@@ -1561,6 +1588,21 @@ const PAGE_SCRIPTS = {
 
   "group-management.html":
     "./group-management.js"
+
+  /*
+   * IMPORTANT:
+   *
+   * assets.html is intentionally absent.
+   *
+   * assets.js owns its own independent boot sequence.
+   *
+   * Do not add:
+   *
+   * "assets.html": "./assets.js"
+   *
+   * here, because that would create a duplicate/competing
+   * boot architecture for the Assets page.
+   */
 
 };
 
@@ -1970,3 +2012,4 @@ export function getLayoutState() {
 console.log(
   "CHAMA LIVE: layout.js ready — boot() exported"
 );
+
