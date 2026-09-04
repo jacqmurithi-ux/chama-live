@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Assets | CHAMA LIVE</title>
+
+  <meta
+    name="description"
+    content="CHAMA LIVE group asset register and asset management."
+  >
+
+  <link rel="stylesheet" href="./css/app.css">
+
+  <style>
+    :root {
+      --cl-green: #075c3a;
+      --cl-green-dark: #043c28;
+      --cl-green-mid: #08764b;
+      --cl-green-light: #eaf7f0;
+      --cl-gold: #d4a72c;
+      --cl-gold-light: #fff8df;
+      --cl-bg: #f3f8f5;
+      --cl-border: #dce9e2;
+      --cl-text: #17352a;
+      --cl-muted: #6b7d74;
+      --cl-danger: #b42318;
+      --cl-danger-bg: #fff0ee;
+      --cl-shadow: 0 10px 28px rgba(7, 92, 58, 0.08);
+      --cl-radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--cl-bg);
+      color: var(--cl-text);
+      font-family:
+        Inter,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    .assets-page {
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .assets-shell {
+      max-width: 1500px;
+      margin: 0 auto;
+    }
+
+    .assets-hero {
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 22px;
+      padding: 30px;
+      border-radius: 24px;
+      background:
+        linear-gradient(
+          135deg,
+          var(--cl-green-dark),
+          var(--cl-green)
+        );
+      color: white;
+      box-shadow: var(--cl-shadow);
+    }
+
+    .assets-hero::after {
+      content: "";
+      position: absolute;
+      right: -70px;
+      top: -100px;
+      width: 260px;
+      height: 260px;
+      border-radius: 50%;
+      border: 35px solid rgba(212, 167, 44, 0.16);
+    }
+
+    .assets-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .assets-hero h1 {
+      position: relative;
+      z-index: 1;
+      margin: 14px 0 7px;
+      font-size: clamp(28px, 4vw, 42px);
+      line-height: 1.05;
+    }
+
+    .assets-hero p {
+      position: relative;
+      z-index: 1;
+      max-width: 760px;
+      margin: 0;
+      color: rgba(255,255,255,.86);
+      line-height: 1.6;
+    }
+
+    .assets-context {
+      position: relative;
+      z-index: 1;
+      display: inline-flex;
+      margin-top: 18px;
+      padding: 9px 13px;
+      border-radius: 10px;
+      background: rgba(0,0,0,.13);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .status {
+      margin-bottom: 18px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: var(--cl-green-light);
+      color: var(--cl-green-dark);
+      font-weight: 700;
+    }
+
+    .status.error {
+      background: var(--cl-danger-bg);
+      color: var(--cl-danger);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .assets-kpis {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    .assets-kpi {
+      padding: 21px;
+      background: white;
+      border: 1px solid var(--cl-border);
+      border-radius: var(--cl-radius);
+      box-shadow: var(--cl-shadow);
+    }
+
+    .assets-kpi-label {
+      color: var(--cl-muted);
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .assets-kpi-value {
+      color: var(--cl-green-dark);
+      font-size: 27px;
+      font-weight: 850;
+    }
+
+    .assets-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, 390px) minmax(0, 1fr);
+      gap: 22px;
+      align-items: start;
+    }
+
+    .assets-card {
+      background: white;
+      border: 1px solid var(--cl-border);
+      border-radius: var(--cl-radius);
+      box-shadow: var(--cl-shadow);
+      overflow: hidden;
+    }
+
+    .assets-card-header {
+      padding: 20px 22px;
+      border-bottom: 1px solid var(--cl-border);
+    }
+
+    .assets-card-header h2 {
+      margin: 0;
+      color: var(--cl-green-dark);
+      font-size: 19px;
+    }
+
+    .assets-card-header p {
+      margin: 6px 0 0;
+      color: var(--cl-muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .assets-card-body {
+      padding: 22px;
+    }
+
+    .assets-form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+
+    .assets-field {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .assets-field.full {
+      grid-column: 1 / -1;
+    }
+
+    .assets-field label {
+      color: var(--cl-green-dark);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .assets-field input,
+    .assets-field select,
+    .assets-field textarea {
+      width: 100%;
+      border: 1px solid #cddbd4;
+      border-radius: 11px;
+      padding: 11px 12px;
+      background: #fff;
+      color: var(--cl-text);
+      outline: none;
+      transition: .15s ease;
+    }
+
+    .assets-field textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .assets-field input:focus,
+    .assets-field select:focus,
+    .assets-field textarea:focus {
+      border-color: var(--cl-green);
+      box-shadow: 0 0 0 3px rgba(7,92,58,.09);
+    }
+
+    .assets-form-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .assets-btn {
+      border: 0;
+      border-radius: 11px;
+      padding: 11px 16px;
+      cursor: pointer;
+      font-weight: 800;
+      transition: transform .12s ease, opacity .12s ease;
+    }
+
+    .assets-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .assets-btn-primary {
+      background: var(--cl-green);
+      color: white;
+    }
+
+    .assets-btn-secondary {
+      background: #edf3f0;
+      color: var(--cl-green-dark);
+    }
+
+    .assets-btn-danger {
+      background: var(--cl-danger-bg);
+      color: var(--cl-danger);
+    }
+
+    .assets-btn:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .assets-toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--cl-border);
+      background: #fbfdfc;
+    }
+
+    .assets-toolbar input,
+    .assets-toolbar select {
+      min-width: 160px;
+      flex: 1;
+      border: 1px solid #cddbd4;
+      border-radius: 10px;
+      padding: 10px 11px;
+      background: white;
+      color: var(--cl-text);
+    }
+
+    .assets-table-wrap {
+      overflow-x: auto;
+    }
+
+    .assets-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 900px;
+    }
+
+    .assets-table th,
+    .assets-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid #edf2ef;
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    .assets-table th {
+      background: #f8fbf9;
+      color: var(--cl-green-dark);
+      font-size: 12px;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: .035em;
+      white-space: nowrap;
+    }
+
+    .assets-table td {
+      font-size: 13px;
+    }
+
+    .asset-name {
+      font-weight: 850;
+      color: var(--cl-green-dark);
+    }
+
+    .asset-description {
+      max-width: 260px;
+      color: var(--cl-muted);
+      line-height: 1.45;
+    }
+
+    .asset-status {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 850;
+      text-transform: capitalize;
+      white-space: nowrap;
+    }
+
+    .asset-status.active {
+      background: var(--cl-green-light);
+      color: var(--cl-green-dark);
+    }
+
+    .asset-status.inactive {
+      background: #eef1ef;
+      color: #56645d;
+    }
+
+    .asset-status.disposed,
+    .asset-status.sold {
+      background: #fff5df;
+      color: #815d00;
+    }
+
+    .asset-status.lost {
+      background: var(--cl-danger-bg);
+      color: var(--cl-danger);
+    }
+
+    .asset-actions {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+
+    .asset-action {
+      border: 1px solid var(--cl-border);
+      background: white;
+      color: var(--cl-green-dark);
+      border-radius: 8px;
+      padding: 6px 9px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .asset-action.delete {
+      color: var(--cl-danger);
+      background: var(--cl-danger-bg);
+      border-color: #f4d0cb;
+    }
+
+    .assets-empty {
+      padding: 45px 20px;
+      text-align: center;
+      color: var(--cl-muted);
+    }
+
+    .assets-empty-icon {
+      font-size: 35px;
+      margin-bottom: 10px;
+    }
+
+    .assets-empty strong {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--cl-green-dark);
+    }
+
+    .access-denied {
+      padding: 22px;
+      border-radius: var(--cl-radius);
+      background: var(--cl-danger-bg);
+      color: var(--cl-danger);
+      font-weight: 700;
+    }
+
+    .role-note {
+      margin-top: 14px;
+      padding: 11px 13px;
+      border-radius: 10px;
+      background: var(--cl-gold-light);
+      color: #715400;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 1100px) {
+      .assets-kpis {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .assets-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 650px) {
+      .assets-page {
+        padding: 13px;
+      }
+
+      .assets-hero {
+        padding: 23px;
+        border-radius: 18px;
+      }
+
+      .assets-kpis {
+        grid-template-columns: 1fr;
+      }
+
+      .assets-form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .assets-field.full {
+        grid-column: auto;
+      }
+
+      .assets-card-body {
+        padding: 17px;
+      }
+
+      .assets-card-header {
+        padding: 17px;
+      }
+
+      .assets-toolbar {
+        padding: 15px;
+      }
+
+      .assets-toolbar input,
+      .assets-toolbar select {
+        min-width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="assets-page">
+    <div class="assets-shell">
+
+      <section class="assets-hero">
+        <span class="assets-badge">🏢 Group Operations</span>
+
+        <h1>Assets</h1>
+
+        <p>
+          Keep a clear, group-owned register of property, equipment,
+          investments and other assets held by your chama.
+        </p>
+
+        <div class="assets-context">
+          Current group:
+          <span id="groupName" style="margin-left:6px;">Loading…</span>
+        </div>
+      </section>
+
+      <div id="status" class="status hidden"></div>
+
+      <div id="error" class="status error hidden"></div>
+
+      <div id="accessDenied" class="access-denied hidden">
+        You can view group assets, but you do not have permission to
+        create, edit or delete them.
+      </div>
+
+      <section id="assetsContent">
+
+        <section class="assets-kpis">
+          <div class="assets-kpi">
+            <div class="assets-kpi-label">Total Assets</div>
+            <div id="totalAssets" class="assets-kpi-value">0</div>
+          </div>
+
+          <div class="assets-kpi">
+            <div class="assets-kpi-label">Active Assets</div>
+            <div id="activeAssets" class="assets-kpi-value">0</div>
+          </div>
+
+          <div class="assets-kpi">
+            <div class="assets-kpi-label">Acquisition Cost</div>
+            <div id="totalAcquisitionCost" class="assets-kpi-value">
+              KSh 0.00
+            </div>
+          </div>
+
+          <div class="assets-kpi">
+            <div class="assets-kpi-label">Current Value</div>
+            <div id="totalCurrentValue" class="assets-kpi-value">
+              KSh 0.00
+            </div>
+          </div>
+        </section>
+
+        <section class="assets-grid">
+
+          <article class="assets-card">
+            <div class="assets-card-header">
+              <h2 id="formTitle">Add Asset</h2>
+              <p>
+                Record the asset without changing the financial ledger.
+              </p>
+            </div>
+
+            <div class="assets-card-body">
+
+              <form id="assetForm">
+
+                <input
+                  type="hidden"
+                  id="assetId"
+                  value=""
+                >
+
+                <div class="assets-form-grid">
+
+                  <div class="assets-field full">
+                    <label for="assetName">
+                      Asset name *
+                    </label>
+
+                    <input
+                      id="assetName"
+                      type="text"
+                      maxlength="200"
+                      required
+                      placeholder="e.g. Group dairy cow"
+                    >
+                  </div>
+
+                  <div class="assets-field">
+                    <label for="assetCategory">
+                      Category *
+                    </label>
+
+                    <select id="assetCategory" required>
+                      <option value="land">Land</option>
+                      <option value="building">Building</option>
+                      <option value="vehicle">Vehicle</option>
+                      <option value="equipment">Equipment</option>
+                      <option value="livestock">Livestock</option>
+                      <option value="farm">Farm</option>
+                      <option value="furniture">Furniture</option>
+                      <option value="investment">Investment</option>
+                      <option value="shares">Shares</option>
+                      <option value="other" selected>Other</option>
+                    </select>
+                  </div>
+
+                  <div class="assets-field">
+                    <label for="assetStatus">
+                      Status *
+                    </label>
+
+                    <select id="assetStatus" required>
+                      <option value="active" selected>Active</option>
+                      <option value="disposed">Disposed</option>
+                      <option value="sold">Sold</option>
+                      <option value="lost">Lost</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                  </div>
+
+                  <div class="assets-field">
+                    <label for="acquiredDate">
+                      Acquired date
+                    </label>
+
+                    <input
+                      id="acquiredDate"
+                      type="date"
+                    >
+                  </div>
+
+                  <div class="assets-field">
+                    <label for="assetLocation">
+                      Location
+                    </label>
+
+                    <input
+                      id="assetLocation"
+                      type="text"
+                      maxlength="250"
+                      placeholder="e.g. Timau"
+                    >
+                  </div>
+
+                  <div class="assets-field">
+                    <label for="acquisitionCost">
+                      Acquisition cost
+                    </label>
+
+                    <input
+                      id="acquisitionCost"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                    >
+                  </div>
+
+                  <div class="assets-field">
+                    <label for="currentValue">
+                      Current value
+                    </label>
+
+                    <input
+                      id="currentValue"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                    >
+                  </div>
+
+                  <div class="assets-field full">
+                    <label for="assetDescription">
+                      Description
+                    </label>
+
+                    <textarea
+                      id="assetDescription"
+                      maxlength="2000"
+                      placeholder="Add useful details about the asset..."
+                    ></textarea>
+                  </div>
+
+                </div>
+
+                <div class="assets-form-actions">
+                  <button
+                    id="saveAsset"
+                    class="assets-btn assets-btn-primary"
+                    type="submit"
+                  >
+                    Save Asset
+                  </button>
+
+                  <button
+                    id="resetAsset"
+                    class="assets-btn assets-btn-secondary"
+                    type="button"
+                  >
+                    Reset
+                  </button>
+                </div>
+
+              </form>
+
+              <div class="role-note">
+                Asset management is restricted to
+                <strong>admin, chairperson and treasurer</strong>.
+                Deletion is restricted to <strong>admin</strong>.
+              </div>
+
+            </div>
+          </article>
+
+          <article class="assets-card">
+
+            <div class="assets-card-header">
+              <h2>Asset Register</h2>
+              <p>
+                Assets shown here belong only to the authenticated
+                member's current group.
+              </p>
+            </div>
+
+            <div class="assets-toolbar">
+
+              <input
+                id="assetSearch"
+                type="search"
+                placeholder="Search assets..."
+                aria-label="Search assets"
+              >
+
+              <select
+                id="assetFilterCategory"
+                aria-label="Filter by category"
+              >
+                <option value="">All categories</option>
+                <option value="land">Land</option>
+                <option value="building">Building</option>
+                <option value="vehicle">Vehicle</option>
+                <option value="equipment">Equipment</option>
+                <option value="livestock">Livestock</option>
+                <option value="farm">Farm</option>
+                <option value="furniture">Furniture</option>
+                <option value="investment">Investment</option>
+                <option value="shares">Shares</option>
+                <option value="other">Other</option>
+              </select>
+
+              <select
+                id="assetFilterStatus"
+                aria-label="Filter by status"
+              >
+                <option value="">All statuses</option>
+                <option value="active">Active</option>
+                <option value="disposed">Disposed</option>
+                <option value="sold">Sold</option>
+                <option value="lost">Lost</option>
+                <option value="inactive">Inactive</option>
+              </select>
+
+              <button
+                id="refreshAssets"
+                class="assets-btn assets-btn-secondary"
+                type="button"
+              >
+                Refresh
+              </button>
+
+            </div>
+
+            <div class="assets-table-wrap">
+
+              <table class="assets-table">
+                <thead>
+                  <tr>
+                    <th>Asset</th>
+                    <th>Category</th>
+                    <th>Acquired</th>
+                    <th>Cost</th>
+                    <th>Current Value</th>
+                    <th>Location</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+
+                <tbody id="assetsBody">
+                  <tr>
+                    <td colspan="8">
+                      <div class="assets-empty">
+                        <div class="assets-empty-icon">🏢</div>
+                        <strong>Loading assets…</strong>
+                        Please wait.
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+
+              </table>
+
+            </div>
+
+          </article>
+
+        </section>
+
+      </section>
+
+    </div>
+  </div>
+
+  <script type="module">
+    import "./js/layout.js";
+    import "./js/assets.js";
+  </script>
+
+</body>
+</html>
+
