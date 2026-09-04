@@ -1,33 +1,34 @@
+
 import { supabase } from "./supabase.js";
 import { requireAuth, getMyMember } from "./auth.js";
 
 console.log("CHAMA LIVE: milestones.js loaded");
 
 const MANAGEMENT_ROLES = [
-"admin",
-"chairperson",
-"secretary"
+  "admin",
+  "chairperson",
+  "secretary"
 ];
 
 const MILESTONE_CATEGORIES = [
-"general",
-"investment",
-"property",
-"welfare",
-"business",
-"education",
-"membership",
-"fundraising",
-"infrastructure",
-"other"
+  "general",
+  "investment",
+  "property",
+  "welfare",
+  "business",
+  "education",
+  "membership",
+  "fundraising",
+  "infrastructure",
+  "other"
 ];
 
 const state = {
-currentMember: null,
-groupId: null,
-groupName: "",
-plans: [],
-milestones: []
+  currentMember: null,
+  groupId: null,
+  groupName: "",
+  plans: [],
+  milestones: []
 };
 
 const els = {};
@@ -35,652 +36,1221 @@ const els = {};
 document.addEventListener("DOMContentLoaded", init);
 
 async function init() {
-cacheElements();
-bindEvents();
+  cacheElements();
+  bindEvents();
 
-try {
-await loadContext();
-await loadPlans();
-await loadMilestones();
+  try {
+    await loadContext();
+    await loadPlans();
+    await loadMilestones();
 
-```
-console.log("CHAMA LIVE: Milestones context ready", {
-  groupId: state.groupId,
-  groupName: state.groupName
-});
-```
+    console.log("CHAMA LIVE: Milestones context ready", {
+      groupId: state.groupId,
+      groupName: state.groupName,
+      role: state.currentMember?.role || null
+    });
+  } catch (error) {
+    console.error(
+      "CHAMA LIVE: Milestones initialization failed",
+      error
+    );
 
-} catch (error) {
-console.error("CHAMA LIVE: Milestones initialization failed", error);
-showMessage(normalizeError(error), "error");
-}
+    showMessage(
+      normalizeError(error),
+      "error"
+    );
+  }
 }
 
 function cacheElements() {
-els.groupName = document.getElementById("current-group-name");
+  els.groupName = document.getElementById(
+    "current-group-name"
+  );
 
-els.message = document.getElementById("message");
+  els.message = document.getElementById(
+    "message"
+  );
 
-els.totalMilestones = document.getElementById("total-milestones");
-els.upcomingMilestones = document.getElementById("upcoming-milestones");
-els.linkedMilestones = document.getElementById("linked-milestones");
-els.milestoneAmount = document.getElementById("milestone-amount");
+  els.totalMilestones = document.getElementById(
+    "total-milestones"
+  );
 
-els.form = document.getElementById("milestone-form");
-els.title = document.getElementById("milestone-title");
-els.category = document.getElementById("milestone-category");
-els.plan = document.getElementById("milestone-plan");
-els.date = document.getElementById("milestone-date");
-els.amount = document.getElementById("milestone-amount");
-els.documentId = document.getElementById("milestone-document-id");
-els.description = document.getElementById("milestone-description");
+  els.upcomingMilestones = document.getElementById(
+    "upcoming-milestones"
+  );
 
-els.createButton = document.getElementById("create-milestone-btn");
-els.clearButton = document.getElementById("clear-milestone-btn");
-els.managementNote = document.getElementById("management-note");
+  els.linkedMilestones = document.getElementById(
+    "linked-milestones"
+  );
 
-els.search = document.getElementById("milestone-search");
-els.categoryFilter = document.getElementById("milestone-category-filter");
-els.refreshButton = document.getElementById("refresh-milestones-btn");
-els.body = document.getElementById("milestones-body");
+  /*
+   * The current HTML contains the same ID for:
+   *   1. Total Amount KPI
+   *   2. Amount input
+   *
+   * Use scoped selectors so the duplicate ID cannot
+   * cause the KPI reference to be overwritten.
+   */
+  els.milestoneAmountKpi =
+    document.querySelector(
+      ".kpi-card #milestone-amount"
+    );
+
+  els.form = document.getElementById(
+    "milestone-form"
+  );
+
+  els.title = document.getElementById(
+    "milestone-title"
+  );
+
+  els.category = document.getElementById(
+    "milestone-category"
+  );
+
+  els.plan = document.getElementById(
+    "milestone-plan"
+  );
+
+  els.date = document.getElementById(
+    "milestone-date"
+  );
+
+  els.amount =
+    document.querySelector(
+      "#milestone-form #milestone-amount"
+    );
+
+  els.documentId = document.getElementById(
+    "milestone-document-id"
+  );
+
+  els.description = document.getElementById(
+    "milestone-description"
+  );
+
+  els.createButton = document.getElementById(
+    "create-milestone-btn"
+  );
+
+  els.clearButton = document.getElementById(
+    "clear-milestone-btn"
+  );
+
+  els.managementNote = document.getElementById(
+    "management-note"
+  );
+
+  els.search = document.getElementById(
+    "milestone-search"
+  );
+
+  els.categoryFilter = document.getElementById(
+    "milestone-category-filter"
+  );
+
+  els.refreshButton = document.getElementById(
+    "refresh-milestones-btn"
+  );
+
+  els.body = document.getElementById(
+    "milestones-body"
+  );
 }
 
 function bindEvents() {
-els.form?.addEventListener("submit", handleCreateMilestone);
-els.clearButton?.addEventListener("click", clearForm);
-els.refreshButton?.addEventListener("click", refreshData);
+  els.form?.addEventListener(
+    "submit",
+    handleCreateMilestone
+  );
 
-els.search?.addEventListener("input", renderMilestones);
-els.categoryFilter?.addEventListener("change", renderMilestones);
+  els.clearButton?.addEventListener(
+    "click",
+    clearForm
+  );
 
-els.body?.addEventListener("click", handleTableAction);
+  els.refreshButton?.addEventListener(
+    "click",
+    refreshData
+  );
+
+  els.search?.addEventListener(
+    "input",
+    renderMilestones
+  );
+
+  els.categoryFilter?.addEventListener(
+    "change",
+    renderMilestones
+  );
+
+  els.body?.addEventListener(
+    "click",
+    handleTableAction
+  );
 }
 
 async function loadContext() {
-await requireAuth();
+  await requireAuth();
 
-state.currentMember = await getMyMember();
+  state.currentMember = await getMyMember();
 
-if (!state.currentMember?.group_id) {
-throw new Error("Your member account is not linked to a group.");
-}
+  if (!state.currentMember?.group_id) {
+    throw new Error(
+      "Your member account is not linked to a group."
+    );
+  }
 
-state.groupId = state.currentMember.group_id;
+  state.groupId =
+    state.currentMember.group_id;
 
-const { data: group, error } = await supabase
-.from("groups")
-.select("id, name")
-.eq("id", state.groupId)
-.maybeSingle();
+  const {
+    data: group,
+    error
+  } = await supabase
+    .from("groups")
+    .select("id, name")
+    .eq("id", state.groupId)
+    .maybeSingle();
 
-if (error) {
-throw error;
-}
+  if (error) {
+    throw error;
+  }
 
-if (!group) {
-throw new Error("Current group could not be loaded.");
-}
+  if (!group) {
+    throw new Error(
+      "Current group could not be loaded."
+    );
+  }
 
-state.groupName = group.name || "";
-els.groupName.textContent = state.groupName;
+  state.groupName =
+    group.name || "";
 
-const canManage = isManagementRole();
+  if (els.groupName) {
+    els.groupName.textContent =
+      state.groupName;
+  }
 
-els.managementNote.style.display = canManage ? "none" : "block";
-els.createButton.disabled = !canManage;
+  const canManage =
+    isManagementRole();
 
-if (!canManage) {
-els.title.disabled = true;
-els.category.disabled = true;
-els.plan.disabled = true;
-els.date.disabled = true;
-els.amount.disabled = true;
-els.documentId.disabled = true;
-els.description.disabled = true;
-}
+  if (els.managementNote) {
+    els.managementNote.style.display =
+      canManage
+        ? "none"
+        : "block";
+  }
+
+  if (els.createButton) {
+    els.createButton.disabled =
+      !canManage;
+  }
+
+  if (!canManage) {
+    const fields = [
+      els.title,
+      els.category,
+      els.plan,
+      els.date,
+      els.amount,
+      els.documentId,
+      els.description
+    ];
+
+    for (const field of fields) {
+      if (field) {
+        field.disabled = true;
+      }
+    }
+  }
 }
 
 function isManagementRole() {
-const role = String(state.currentMember?.role || "").toLowerCase();
-return MANAGEMENT_ROLES.includes(role);
+  const role = String(
+    state.currentMember?.role || ""
+  ).toLowerCase();
+
+  return MANAGEMENT_ROLES.includes(role);
 }
 
 async function loadPlans() {
-const { data, error } = await supabase
-.from("group_plans")
-.select(`       id,
-      title,
-      status,
-      start_date,
-      target_date
-    `)
-.eq("group_id", state.groupId)
-.order("target_date", { ascending: true });
+  const {
+    data,
+    error
+  } = await supabase
+    .from("group_plans")
+    .select(
+      "id, title, status, start_date, target_date"
+    )
+    .eq(
+      "group_id",
+      state.groupId
+    )
+    .order(
+      "target_date",
+      {
+        ascending: true
+      }
+    );
 
-if (error) {
-throw error;
-}
+  if (error) {
+    throw error;
+  }
 
-state.plans = data || [];
-populatePlanSelect();
+  state.plans = data || [];
+
+  populatePlanSelect();
 }
 
 function populatePlanSelect() {
-els.plan.innerHTML = "";
+  if (!els.plan) {
+    return;
+  }
 
-const noPlan = document.createElement("option");
-noPlan.value = "";
-noPlan.textContent = "No linked plan";
-els.plan.appendChild(noPlan);
+  els.plan.innerHTML = "";
 
-for (const plan of state.plans) {
-const option = document.createElement("option");
-option.value = plan.id;
-option.textContent = `${plan.title} (${formatStatus(plan.status)})`;
-els.plan.appendChild(option);
-}
+  const noPlan =
+    document.createElement("option");
+
+  noPlan.value = "";
+  noPlan.textContent =
+    "No linked plan";
+
+  els.plan.appendChild(
+    noPlan
+  );
+
+  for (const plan of state.plans) {
+    const option =
+      document.createElement("option");
+
+    option.value = plan.id;
+
+    option.textContent =
+      `${plan.title} (${formatStatus(
+        plan.status
+      )})`;
+
+    els.plan.appendChild(
+      option
+    );
+  }
 }
 
 async function loadMilestones() {
-const { data, error } = await supabase
-.from("group_milestones")
-.select(`       id,
-      group_id,
-      plan_id,
-      title,
-      description,
-      milestone_date,
-      category,
-      amount,
-      document_id,
-      created_by,
-      created_at,
-      updated_at
-    `)
-.eq("group_id", state.groupId)
-.order("milestone_date", { ascending: true })
-.order("created_at", { ascending: false });
+  const {
+    data,
+    error
+  } = await supabase
+    .from("group_milestones")
+    .select(
+      [
+        "id",
+        "group_id",
+        "plan_id",
+        "title",
+        "description",
+        "milestone_date",
+        "category",
+        "amount",
+        "document_id",
+        "created_by",
+        "created_at",
+        "updated_at"
+      ].join(", ")
+    )
+    .eq(
+      "group_id",
+      state.groupId
+    )
+    .order(
+      "milestone_date",
+      {
+        ascending: true
+      }
+    )
+    .order(
+      "created_at",
+      {
+        ascending: false
+      }
+    );
 
-if (error) {
-throw error;
-}
+  if (error) {
+    throw error;
+  }
 
-state.milestones = data || [];
+  state.milestones =
+    data || [];
 
-updateKpis();
-renderMilestones();
+  updateKpis();
+  renderMilestones();
 }
 
 async function refreshData() {
-try {
-await loadPlans();
-await loadMilestones();
-showMessage("Milestones refreshed.", "success");
-} catch (error) {
-console.error(error);
-showMessage(normalizeError(error), "error");
-}
-}
+  try {
+    await loadPlans();
+    await loadMilestones();
 
-async function handleCreateMilestone(event) {
-event.preventDefault();
+    showMessage(
+      "Milestones refreshed.",
+      "success"
+    );
+  } catch (error) {
+    console.error(
+      "CHAMA LIVE: milestone refresh failed",
+      error
+    );
 
-if (!isManagementRole()) {
-showMessage("You do not have permission to create milestones.", "error");
-return;
-}
-
-const title = els.title.value.trim();
-const category = els.category.value;
-const planId = els.plan.value || null;
-const milestoneDate = els.date.value;
-const description = els.description.value.trim();
-const documentId = els.documentId.value.trim() || null;
-
-if (!title) {
-showMessage("Milestone title is required.", "error");
-return;
+    showMessage(
+      normalizeError(error),
+      "error"
+    );
+  }
 }
 
-if (!MILESTONE_CATEGORIES.includes(category)) {
-showMessage("Invalid milestone category.", "error");
-return;
+async function handleCreateMilestone(
+  event
+) {
+  event.preventDefault();
+
+  if (!isManagementRole()) {
+    showMessage(
+      "You do not have permission to create milestones.",
+      "error"
+    );
+
+    return;
+  }
+
+  const title =
+    els.title.value.trim();
+
+  const category =
+    els.category.value;
+
+  const planId =
+    els.plan.value || null;
+
+  const milestoneDate =
+    els.date.value;
+
+  const description =
+    els.description.value.trim();
+
+  const documentId =
+    els.documentId.value.trim() ||
+    null;
+
+  if (!title) {
+    showMessage(
+      "Milestone title is required.",
+      "error"
+    );
+
+    return;
+  }
+
+  if (
+    !MILESTONE_CATEGORIES.includes(
+      category
+    )
+  ) {
+    showMessage(
+      "Invalid milestone category.",
+      "error"
+    );
+
+    return;
+  }
+
+  if (!milestoneDate) {
+    showMessage(
+      "Milestone date is required.",
+      "error"
+    );
+
+    return;
+  }
+
+  let amount = null;
+
+  if (
+    els.amount &&
+    els.amount.value !== ""
+  ) {
+    amount =
+      Number(els.amount.value);
+
+    if (
+      !Number.isFinite(amount) ||
+      amount < 0
+    ) {
+      showMessage(
+        "Amount must be zero or greater.",
+        "error"
+      );
+
+      return;
+    }
+  }
+
+  if (
+    planId &&
+    !state.plans.some(
+      (plan) =>
+        plan.id === planId
+    )
+  ) {
+    showMessage(
+      "The selected plan does not belong to the current group.",
+      "error"
+    );
+
+    return;
+  }
+
+  if (
+    documentId &&
+    !isUuid(documentId)
+  ) {
+    showMessage(
+      "Document ID must be a valid UUID when supplied.",
+      "error"
+    );
+
+    return;
+  }
+
+  setFormBusy(true);
+
+  try {
+    const payload = {
+      group_id:
+        state.groupId,
+
+      plan_id:
+        planId,
+
+      title,
+
+      description:
+        description || null,
+
+      milestone_date:
+        milestoneDate,
+
+      category,
+
+      amount,
+
+      document_id:
+        documentId,
+
+      created_by:
+        state.currentMember.id
+    };
+
+    const {
+      error
+    } = await supabase
+      .from("group_milestones")
+      .insert(payload);
+
+    if (error) {
+      throw error;
+    }
+
+    clearForm();
+
+    await loadMilestones();
+
+    showMessage(
+      "Milestone created successfully.",
+      "success"
+    );
+  } catch (error) {
+    console.error(
+      "CHAMA LIVE: milestone creation failed",
+      error
+    );
+
+    showMessage(
+      normalizeError(error),
+      "error"
+    );
+  } finally {
+    setFormBusy(false);
+  }
 }
 
-if (!milestoneDate) {
-showMessage("Milestone date is required.", "error");
-return;
+async function handleTableAction(
+  event
+) {
+  const button =
+    event.target.closest(
+      "button[data-action]"
+    );
+
+  if (!button) {
+    return;
+  }
+
+  const milestoneId =
+    button.dataset.id;
+
+  const action =
+    button.dataset.action;
+
+  if (!milestoneId) {
+    return;
+  }
+
+  if (
+    action === "delete"
+  ) {
+    await deleteMilestone(
+      milestoneId
+    );
+  }
 }
 
-let amount = null;
+async function deleteMilestone(
+  id
+) {
+  if (!isManagementRole()) {
+    showMessage(
+      "You do not have permission to delete milestones.",
+      "error"
+    );
 
-if (els.amount.value !== "") {
-amount = Number(els.amount.value);
+    return;
+  }
 
-```
-if (!Number.isFinite(amount) || amount < 0) {
-  showMessage("Amount must be zero or greater.", "error");
-  return;
-}
-```
+  const milestone =
+    state.milestones.find(
+      (item) =>
+        item.id === id
+    );
 
-}
+  if (!milestone) {
+    showMessage(
+      "Milestone could not be found.",
+      "error"
+    );
 
-if (planId && !state.plans.some((plan) => plan.id === planId)) {
-showMessage("The selected plan does not belong to the current group.", "error");
-return;
-}
+    return;
+  }
 
-if (documentId && !isUuid(documentId)) {
-showMessage("Document ID must be a valid UUID when supplied.", "error");
-return;
-}
+  const confirmed =
+    window.confirm(
+      `Delete milestone "${milestone.title}"? This action cannot be undone.`
+    );
 
-setFormBusy(true);
+  if (!confirmed) {
+    return;
+  }
 
-try {
-const payload = {
-group_id: state.groupId,
-plan_id: planId,
-title,
-description: description || null,
-milestone_date: milestoneDate,
-category,
-amount,
-document_id: documentId,
-created_by: state.currentMember.id
-};
+  try {
+    const {
+      error
+    } = await supabase
+      .from("group_milestones")
+      .delete()
+      .eq(
+        "id",
+        id
+      )
+      .eq(
+        "group_id",
+        state.groupId
+      );
 
-```
-const { error } = await supabase
-  .from("group_milestones")
-  .insert(payload);
+    if (error) {
+      throw error;
+    }
 
-if (error) {
-  throw error;
-}
+    await loadMilestones();
 
-clearForm();
-await loadMilestones();
+    showMessage(
+      "Milestone deleted successfully.",
+      "success"
+    );
+  } catch (error) {
+    console.error(
+      "CHAMA LIVE: milestone deletion failed",
+      error
+    );
 
-showMessage("Milestone created successfully.", "success");
-```
-
-} catch (error) {
-console.error("CHAMA LIVE: milestone creation failed", error);
-showMessage(normalizeError(error), "error");
-} finally {
-setFormBusy(false);
-}
-}
-
-async function handleTableAction(event) {
-const button = event.target.closest("button[data-action]");
-
-if (!button) {
-return;
-}
-
-const milestoneId = button.dataset.id;
-const action = button.dataset.action;
-
-if (!milestoneId) {
-return;
-}
-
-if (action === "delete") {
-await deleteMilestone(milestoneId);
-}
-}
-
-async function deleteMilestone(id) {
-if (!isManagementRole()) {
-showMessage("You do not have permission to delete milestones.", "error");
-return;
-}
-
-const milestone = state.milestones.find((item) => item.id === id);
-
-if (!milestone) {
-showMessage("Milestone could not be found.", "error");
-return;
-}
-
-const confirmed = window.confirm(
-`Delete milestone "${milestone.title}"? This action cannot be undone.`
-);
-
-if (!confirmed) {
-return;
-}
-
-try {
-const { error } = await supabase
-.from("group_milestones")
-.delete()
-.eq("id", id)
-.eq("group_id", state.groupId);
-
-```
-if (error) {
-  throw error;
-}
-
-await loadMilestones();
-showMessage("Milestone deleted successfully.", "success");
-```
-
-} catch (error) {
-console.error("CHAMA LIVE: milestone deletion failed", error);
-showMessage(normalizeError(error), "error");
-}
+    showMessage(
+      normalizeError(error),
+      "error"
+    );
+  }
 }
 
 function updateKpis() {
-const milestones = state.milestones;
+  const milestones =
+    state.milestones;
 
-const today = todayString();
+  const today =
+    todayString();
 
-const upcoming = milestones.filter(
-(milestone) => milestone.milestone_date >= today
-).length;
+  const upcoming =
+    milestones.filter(
+      (milestone) =>
+        milestone.milestone_date >=
+        today
+    ).length;
 
-const linked = milestones.filter(
-(milestone) => Boolean(milestone.plan_id)
-).length;
+  const linked =
+    milestones.filter(
+      (milestone) =>
+        Boolean(
+          milestone.plan_id
+        )
+    ).length;
 
-const totalAmount = milestones.reduce(
-(sum, milestone) => sum + numericAmount(milestone.amount),
-0
-);
+  const totalAmount =
+    milestones.reduce(
+      (sum, milestone) =>
+        sum +
+        numericAmount(
+          milestone.amount
+        ),
+      0
+    );
 
-els.totalMilestones.textContent = String(milestones.length);
-els.upcomingMilestones.textContent = String(upcoming);
-els.linkedMilestones.textContent = String(linked);
-els.milestoneAmount.textContent = formatCurrency(totalAmount);
+  if (els.totalMilestones) {
+    els.totalMilestones.textContent =
+      String(
+        milestones.length
+      );
+  }
+
+  if (els.upcomingMilestones) {
+    els.upcomingMilestones.textContent =
+      String(upcoming);
+  }
+
+  if (els.linkedMilestones) {
+    els.linkedMilestones.textContent =
+      String(linked);
+  }
+
+  if (els.milestoneAmountKpi) {
+    els.milestoneAmountKpi.textContent =
+      formatCurrency(
+        totalAmount
+      );
+  }
 }
 
 function renderMilestones() {
-if (!els.body) {
-return;
-}
+  if (!els.body) {
+    return;
+  }
 
-const search = String(els.search?.value || "").trim().toLowerCase();
-const category = els.categoryFilter?.value || "";
+  const search =
+    String(
+      els.search?.value || ""
+    )
+      .trim()
+      .toLowerCase();
 
-const filtered = state.milestones.filter((milestone) => {
-const matchesCategory =
-!category || milestone.category === category;
+  const category =
+    els.categoryFilter?.value ||
+    "";
 
-```
-if (!matchesCategory) {
-  return false;
-}
+  const filtered =
+    state.milestones.filter(
+      (milestone) => {
+        if (
+          category &&
+          milestone.category !==
+            category
+        ) {
+          return false;
+        }
 
-if (!search) {
-  return true;
-}
+        if (!search) {
+          return true;
+        }
 
-const planTitle = getPlanTitle(milestone.plan_id);
+        const planTitle =
+          getPlanTitle(
+            milestone.plan_id
+          );
 
-const haystack = [
-  milestone.title,
-  milestone.description,
-  milestone.category,
-  planTitle
-]
-  .filter(Boolean)
-  .join(" ")
-  .toLowerCase();
+        const haystack = [
+          milestone.title,
+          milestone.description,
+          milestone.category,
+          planTitle
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
 
-return haystack.includes(search);
-```
+        return haystack.includes(
+          search
+        );
+      }
+    );
 
-});
-
-if (!filtered.length) {
-els.body.innerHTML = `       <tr>         <td colspan="8" class="empty-state">
-          No milestones found.         </td>       </tr>
+  if (!filtered.length) {
+    els.body.innerHTML = `
+      <tr>
+        <td
+          colspan="8"
+          class="empty-state"
+        >
+          No milestones found.
+        </td>
+      </tr>
     `;
-return;
-}
 
-els.body.innerHTML = filtered
-.map((milestone) => {
-const planTitle = getPlanTitle(milestone.plan_id);
-const createdDate = formatDateTime(milestone.created_at);
+    return;
+  }
 
-```
-  return `
-    <tr>
-      <td>
-        <strong>${escapeHtml(milestone.title)}</strong>
-        ${
-          milestone.document_id
-            ? `<div class="help-text">Document attached</div>`
-            : ""
-        }
-      </td>
+  els.body.innerHTML =
+    filtered
+      .map(
+        (milestone) => {
+          const planTitle =
+            getPlanTitle(
+              milestone.plan_id
+            );
 
-      <td>
-        <span class="status-badge">
-          ${escapeHtml(formatStatus(milestone.category))}
-        </span>
-      </td>
+          const createdDate =
+            formatDateTime(
+              milestone.created_at
+            );
 
-      <td>
-        ${escapeHtml(planTitle || "—")}
-      </td>
+          const categoryClass =
+            String(
+              milestone.category ||
+                ""
+            )
+              .toLowerCase()
+              .replace(
+                /[^a-z0-9_-]/g,
+                ""
+              );
 
-      <td>
-        ${escapeHtml(formatDate(milestone.milestone_date))}
-      </td>
+          return `
+            <tr>
+              <td>
+                <strong>
+                  ${escapeHtml(
+                    milestone.title
+                  )}
+                </strong>
 
-      <td class="amount">
-        ${
-          milestone.amount === null ||
-          milestone.amount === undefined
-            ? "—"
-            : escapeHtml(formatCurrency(milestone.amount))
-        }
-      </td>
+                ${
+                  milestone.document_id
+                    ? `
+                      <div class="help-text">
+                        Document attached
+                      </div>
+                    `
+                    : ""
+                }
+              </td>
 
-      <td>
-        ${escapeHtml(milestone.description || "—")}
-      </td>
-
-      <td>
-        ${escapeHtml(createdDate)}
-      </td>
-
-      <td>
-        <div class="actions">
-          ${
-            isManagementRole()
-              ? `
-                <button
-                  type="button"
-                  class="btn-danger"
-                  data-action="delete"
-                  data-id="${escapeHtml(milestone.id)}"
+              <td>
+                <span
+                  class="status-badge ${escapeHtml(
+                    categoryClass
+                  )}"
                 >
-                  Delete
-                </button>
-              `
-              : "—"
-          }
-        </div>
-      </td>
-    </tr>
-  `;
-})
-.join("");
-```
+                  ${escapeHtml(
+                    formatStatus(
+                      milestone.category
+                    )
+                  )}
+                </span>
+              </td>
 
+              <td>
+                ${escapeHtml(
+                  planTitle ||
+                    "—"
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  formatDate(
+                    milestone.milestone_date
+                  )
+                )}
+              </td>
+
+              <td class="amount">
+                ${
+                  milestone.amount ===
+                    null ||
+                  milestone.amount ===
+                    undefined
+                    ? "—"
+                    : escapeHtml(
+                        formatCurrency(
+                          milestone.amount
+                        )
+                      )
+                }
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  milestone.description ||
+                    "—"
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  createdDate
+                )}
+              </td>
+
+              <td>
+                <div class="actions">
+                  ${
+                    isManagementRole()
+                      ? `
+                        <button
+                          type="button"
+                          class="btn-danger"
+                          data-action="delete"
+                          data-id="${escapeHtml(
+                            milestone.id
+                          )}"
+                        >
+                          Delete
+                        </button>
+                      `
+                      : "—"
+                  }
+                </div>
+              </td>
+            </tr>
+          `;
+        }
+      )
+      .join("");
 }
 
 function clearForm() {
-els.form?.reset();
+  els.form?.reset();
 
-if (els.category) {
-els.category.value = "general";
+  if (els.category) {
+    els.category.value =
+      "general";
+  }
+
+  if (els.plan) {
+    els.plan.value = "";
+  }
 }
 
-if (els.plan) {
-els.plan.value = "";
-}
-}
+function setFormBusy(
+  busy
+) {
+  if (!els.createButton) {
+    return;
+  }
 
-function setFormBusy(busy) {
-if (els.createButton) {
-els.createButton.disabled = busy || !isManagementRole();
-els.createButton.textContent = busy
-? "Creating..."
-: "Create Milestone";
-}
-}
+  els.createButton.disabled =
+    busy ||
+    !isManagementRole();
 
-function getPlanTitle(planId) {
-if (!planId) {
-return "";
+  els.createButton.textContent =
+    busy
+      ? "Creating..."
+      : "Create Milestone";
 }
 
-const plan = state.plans.find((item) => item.id === planId);
-return plan?.title || "Linked plan";
+function getPlanTitle(
+  planId
+) {
+  if (!planId) {
+    return "";
+  }
+
+  const plan =
+    state.plans.find(
+      (item) =>
+        item.id ===
+        planId
+    );
+
+  return (
+    plan?.title ||
+    "Linked plan"
+  );
 }
 
-function numericAmount(value) {
-if (value === null || value === undefined || value === "") {
-return 0;
+function numericAmount(
+  value
+) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return 0;
+  }
+
+  const number =
+    Number(value);
+
+  return Number.isFinite(
+    number
+  )
+    ? number
+    : 0;
 }
 
-const number = Number(value);
-return Number.isFinite(number) ? number : 0;
+function formatCurrency(
+  value
+) {
+  return `KSh ${numericAmount(
+    value
+  ).toLocaleString(
+    "en-KE",
+    {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }
+  )}`;
 }
 
-function formatCurrency(value) {
-return `KSh ${numericAmount(value).toLocaleString("en-KE", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })}`;
+function formatDate(
+  value
+) {
+  if (!value) {
+    return "—";
+  }
+
+  const date =
+    new Date(
+      `${value}T00:00:00`
+    );
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return String(value);
+  }
+
+  return date.toLocaleDateString(
+    "en-KE",
+    {
+      day: "2-digit",
+      month: "short",
+      year: "numeric"
+    }
+  );
 }
 
-function formatDate(value) {
-if (!value) {
-return "—";
+function formatDateTime(
+  value
+) {
+  if (!value) {
+    return "—";
+  }
+
+  const date =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return String(value);
+  }
+
+  return date.toLocaleString(
+    "en-KE",
+    {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    }
+  );
 }
 
-const date = new Date(`${value}T00:00:00`);
+function formatStatus(
+  value
+) {
+  if (!value) {
+    return "";
+  }
 
-if (Number.isNaN(date.getTime())) {
-return value;
-}
-
-return date.toLocaleDateString("en-KE", {
-day: "2-digit",
-month: "short",
-year: "numeric"
-});
-}
-
-function formatDateTime(value) {
-if (!value) {
-return "—";
-}
-
-const date = new Date(value);
-
-if (Number.isNaN(date.getTime())) {
-return value;
-}
-
-return date.toLocaleString("en-KE", {
-day: "2-digit",
-month: "short",
-year: "numeric",
-hour: "2-digit",
-minute: "2-digit"
-});
-}
-
-function formatStatus(value) {
-if (!value) {
-return "";
-}
-
-return String(value)
-.replaceAll("_", " ")
-.replace(/\b\w/g, (character) => character.toUpperCase());
+  return String(value)
+    .replaceAll(
+      "_",
+      " "
+    )
+    .replace(
+      /\b\w/g,
+      (character) =>
+        character.toUpperCase()
+    );
 }
 
 function todayString() {
-const date = new Date();
+  const date =
+    new Date();
 
-const year = date.getFullYear();
-const month = String(date.getMonth() + 1).padStart(2, "0");
-const day = String(date.getDate()).padStart(2, "0");
+  const year =
+    date.getFullYear();
 
-return `${year}-${month}-${day}`;
+  const month =
+    String(
+      date.getMonth() + 1
+    ).padStart(2, "0");
+
+  const day =
+    String(
+      date.getDate()
+    ).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
 }
 
-function isUuid(value) {
-return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-value
+function isUuid(
+  value
+) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value
+  );
+}
+
+function escapeHtml(
+  value
+) {
+  return String(
+    value ?? ""
+  )
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
+}
+
+function normalizeError(
+  error
+) {
+  if (!error) {
+    return "An unexpected error occurred.";
+  }
+
+  const message =
+    String(
+      error.message || ""
+    ).trim();
+
+  if (!message) {
+    return "The requested operation could not be completed.";
+  }
+
+  if (
+    message.includes(
+      "row-level security"
+    ) ||
+    message.includes(
+      "permission denied"
+    ) ||
+    message.includes(
+      "not allowed"
+    )
+  ) {
+    return "You do not have permission to perform this operation for the current group.";
+  }
+
+  if (
+    message.includes(
+      "foreign key"
+    ) ||
+    (
+      message.includes(
+        "violates"
+      ) &&
+      message.includes(
+        "constraint"
+      )
+    )
+  ) {
+    return "The milestone references data that is not valid for the current group.";
+  }
+
+  return message.length > 220
+    ? `${message.slice(
+        0,
+        217
+      )}...`
+    : message;
+}
+
+function showMessage(
+  message,
+  type = "success"
+) {
+  if (!els.message) {
+    return;
+  }
+
+  els.message.textContent =
+    message;
+
+  els.message.className =
+    `message show ${type}`;
+
+  window.clearTimeout(
+    showMessage.timer
+  );
+
+  showMessage.timer =
+    window.setTimeout(
+      () => {
+        if (!els.message) {
+          return;
+        }
+
+        els.message.className =
+          "message";
+
+        els.message.textContent =
+          "";
+      },
+      5000
+    );
+}
+
+console.log(
+  "CHAMA LIVE: milestones.js ready"
 );
-}
-
-function escapeHtml(value) {
-return String(value ?? "")
-.replaceAll("&", "&")
-.replaceAll("<", "<")
-.replaceAll(">", ">")
-.replaceAll('"', """)
-.replaceAll("'", "'");
-}
-
-function normalizeError(error) {
-if (!error) {
-return "An unexpected error occurred.";
-}
-
-const message = String(error.message || "").trim();
-
-if (!message) {
-return "The requested operation could not be completed.";
-}
-
-if (
-message.includes("row-level security") ||
-message.includes("permission denied")
-) {
-return "You do not have permission to perform this operation for the current group.";
-}
-
-if (
-message.includes("violates") ||
-message.includes("foreign key") ||
-message.includes("check constraint")
-) {
-return "The milestone data does not satisfy the group's database rules.";
-}
-
-return message;
-}
-
-function showMessage(message, type = "success") {
-if (!els.message) {
-return;
-}
-
-els.message.textContent = message;
-els.message.className = `message show ${type}`;
-
-window.clearTimeout(showMessage.timeout);
-
-showMessage.timeout = window.setTimeout(() => {
-els.message.className = "message";
-els.message.textContent = "";
-}, 5000);
-}
-
-console.log("CHAMA LIVE: milestones.js ready");
