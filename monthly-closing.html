@@ -1,14 +1,16 @@
 <!doctype html>
+
 <html lang="en">
 
 <head>
 
   <meta charset="utf-8">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1"
-  >
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1"
+
+>
 
   <title>
     Monthly Closing — CHAMA LIVE
@@ -640,9 +642,7 @@
 
 </head>
 
-
 <body>
-
 
 <!-- =====================================================
      TOP BAR
@@ -654,18 +654,20 @@
     CHAMA <span>LIVE</span>
   </div>
 
+<button
+class="btn btn-secondary"
+id="logout"
+type="button"
 
-  <button
-    class="btn btn-secondary"
-    id="logout"
-    type="button"
-  >
-    Sign out
+>
+
+```
+Sign out
+```
+
   </button>
 
 </header>
-
-
 
 <!-- =====================================================
      APPLICATION LAYOUT
@@ -673,55 +675,58 @@
 
 <div class="layout">
 
-
   <!-- ===================================================
        SIDEBAR
   ==================================================== -->
 
   <aside class="sidebar">
 
-    <nav class="nav">
+```
+<nav class="nav">
 
-      <a href="dashboard.html">
-        Dashboard
-      </a>
+  <a href="dashboard.html">
+    Dashboard
+  </a>
 
-      <a href="members.html">
-        Members
-      </a>
+  <a href="members.html">
+    Members
+  </a>
 
-      <a href="contributions.html">
-        Contributions
-      </a>
+  <a href="contributions.html">
+    Contributions
+  </a>
 
-      <a href="expenses.html">
-        Expenses
-      </a>
+  <a href="expenses.html">
+    Expenses
+  </a>
 
-      <a href="meetings.html">
-        Meetings
-      </a>
+  <a href="meetings.html">
+    Meetings
+  </a>
 
-      <a href="reports.html">
-        Reports
-      </a>
+  <a href="reports.html">
+    Reports
+  </a>
 
-      <a
-        class="active"
-        href="monthly-closing.html"
-      >
-        Monthly Closing
-      </a>
+  <a
+    class="active"
+    href="monthly-closing.html"
+  >
+    Monthly Closing
+  </a>
 
-      <a href="group-management.html">
-        Group Management
-      </a>
+  <a href="group-management.html">
+    Group Management
+  </a>
 
-    </nav>
+  <a href="assets.html">
+    Assets
+  </a>
+
+</nav>
+```
 
   </aside>
-
-
 
   <!-- ===================================================
        MAIN
@@ -729,669 +734,667 @@
 
   <main class="main">
 
+```
+<!-- =================================================
+     PAGE HEADER
+================================================== -->
 
-    <!-- =================================================
-         PAGE HEADER
-    ================================================== -->
+<div class="page-head closing-header">
 
-    <div class="page-head closing-header">
+  <div class="closing-header-content">
 
-      <div class="closing-header-content">
+    <div class="closing-header-copy">
 
-        <div class="closing-header-copy">
+      <h1>
+        Monthly Closing
+      </h1>
 
-          <h1>
-            Monthly Closing
-          </h1>
+      <p class="muted">
+        Review contributions, approved expenses and
+        the financial balance before officially closing
+        the month.
+      </p>
 
-          <p class="muted">
-            Review contributions, approved expenses and
-            the financial balance before officially closing
-            the month.
-          </p>
-
-        </div>
+    </div>
 
 
-        <div class="closing-month-display">
+    <div class="closing-month-display">
 
-          <span class="closing-month-display-label">
-            Closing Period
-          </span>
+      <span class="closing-month-display-label">
+        Closing Period
+      </span>
 
-          <span
-            id="selectedMonthLabel"
-            class="closing-month-display-value"
-          >
-            Loading...
-          </span>
+      <span
+        id="selectedMonthLabel"
+        class="closing-month-display-value"
+      >
+        Loading...
+      </span>
 
-        </div>
+    </div>
 
+  </div>
+
+</div>
+
+
+
+<!-- =================================================
+     STATUS
+================================================== -->
+
+<div
+  id="status"
+  class="card closing-status-message"
+  hidden
+></div>
+
+
+
+<!-- =================================================
+     ERROR
+================================================== -->
+
+<div
+  id="error"
+  class="error"
+  hidden
+></div>
+
+
+
+<!-- =================================================
+     SELECT CLOSING MONTH
+================================================== -->
+
+<section class="card month-selector-card">
+
+  <div class="closing-section-head">
+
+    <div>
+
+      <h2>
+        Select Closing Month
+      </h2>
+
+      <p class="muted section-description">
+        Select the financial month you want to review.
+      </p>
+
+    </div>
+
+  </div>
+
+
+  <div class="month-selector-inner">
+
+    <div class="form-group">
+
+      <label
+        for="closingMonth"
+      >
+        Financial Month
+      </label>
+
+      <input
+        id="closingMonth"
+        type="month"
+        required
+      >
+
+    </div>
+
+
+    <div class="month-selector-actions">
+
+      <button
+        class="btn btn-secondary"
+        id="calculateClosing"
+        type="button"
+      >
+        Calculate
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <div
+    id="closingStatus"
+    class="closing-status-badge open"
+  >
+    Open
+  </div>
+
+</section>
+
+
+
+<br>
+
+
+
+<!-- =================================================
+     CLOSING SUMMARY
+================================================== -->
+
+<section class="card">
+
+  <div class="closing-section-head">
+
+    <div>
+
+      <h2>
+        Closing Summary
+      </h2>
+
+      <p class="muted section-description">
+        Your month-end financial position.
+      </p>
+
+    </div>
+
+  </div>
+
+
+  <div class="closing-summary-grid">
+
+
+    <!-- EXPECTED -->
+
+    <div class="closing-metric-card">
+
+      <div class="closing-metric-icon">
+        ◎
       </div>
+
+      <span class="closing-metric-label">
+        Total Expected
+      </span>
+
+      <span
+        id="totalExpected"
+        class="closing-metric-value"
+      >
+        KSh 0
+      </span>
+
+      <span class="metric-subtext">
+        Monthly contribution target
+      </span>
 
     </div>
 
 
 
-    <!-- =================================================
-         STATUS
-    ================================================== -->
+    <!-- APPLIED -->
 
-    <div
-      id="status"
-      class="card closing-status-message"
-      hidden
-    ></div>
+    <div class="closing-metric-card">
 
-
-
-    <!-- =================================================
-         ERROR
-    ================================================== -->
-
-    <div
-      id="error"
-      class="error"
-      hidden
-    ></div>
-
-
-
-    <!-- =================================================
-         SELECT CLOSING MONTH
-    ================================================== -->
-
-    <section class="card month-selector-card">
-
-      <div class="closing-section-head">
-
-        <div>
-
-          <h2>
-            Select Closing Month
-          </h2>
-
-          <p class="muted section-description">
-            Select the financial month you want to review.
-          </p>
-
-        </div>
-
+      <div class="closing-metric-icon">
+        ✓
       </div>
 
+      <span class="closing-metric-label">
+        Applied This Month
+      </span>
 
-      <div class="month-selector-inner">
+      <span
+        id="appliedThisMonth"
+        class="closing-metric-value"
+      >
+        KSh 0
+      </span>
 
-        <div class="form-group">
+      <span class="metric-subtext">
+        Applied to current month obligations
+      </span>
 
-          <label
-            for="closingMonth"
-          >
-            Financial Month
-          </label>
-
-          <input
-            id="closingMonth"
-            type="month"
-            required
-          >
-
-        </div>
+    </div>
 
 
-        <div class="month-selector-actions">
 
-          <button
-            class="btn btn-secondary"
-            id="calculateClosing"
-            type="button"
-          >
-            Calculate
-          </button>
+    <!-- OTHER SAVINGS -->
 
-        </div>
+    <div class="closing-metric-card">
 
+      <div class="closing-metric-icon">
+        ☆
       </div>
 
+      <span class="closing-metric-label">
+        Other Savings
+      </span>
+
+      <span
+        id="otherSavings"
+        class="closing-metric-value"
+      >
+        KSh 0
+      </span>
+
+      <span class="metric-subtext">
+        Savings recorded outside monthly contributions
+      </span>
+
+    </div>
+
+
+
+    <!-- OUTSTANDING -->
+
+    <div class="closing-metric-card">
+
+      <div class="closing-metric-icon">
+        !
+      </div>
+
+      <span class="closing-metric-label">
+        Monthly Outstanding
+      </span>
+
+      <span
+        id="currentOutstanding"
+        class="closing-metric-value"
+      >
+        KSh 0
+      </span>
+
+      <span class="metric-subtext">
+        Remaining current-month obligation
+      </span>
+
+    </div>
+
+
+
+    <!-- CASH RECEIVED -->
+
+    <div class="closing-metric-card">
+
+      <div class="closing-metric-icon">
+        ✓
+      </div>
+
+      <span class="closing-metric-label">
+        Actual Cash Received
+      </span>
+
+      <span
+        id="cashReceived"
+        class="closing-metric-value"
+      >
+        KSh 0
+      </span>
+
+      <span class="metric-subtext">
+        Contribution cash received during this month
+      </span>
+
+    </div>
+
+
+
+    <!-- EXPENSES -->
+
+    <div class="closing-metric-card">
+
+      <div class="closing-metric-icon">
+        −
+      </div>
+
+      <span class="closing-metric-label">
+        Approved Expenses
+      </span>
+
+      <span
+        id="totalExpenses"
+        class="closing-metric-value"
+      >
+        KSh 0
+      </span>
+
+      <span class="metric-subtext">
+        Approved for payment
+      </span>
+
+    </div>
+
+
+
+    <!-- PREVIOUS BALANCE -->
+
+    <div class="closing-metric-card">
+
+      <div class="closing-metric-icon">
+        ↗
+      </div>
+
+      <span class="closing-metric-label">
+        Previous Balance
+      </span>
+
+      <span
+        id="previousBalance"
+        class="closing-metric-value"
+      >
+        KSh 0
+      </span>
+
+      <span class="metric-subtext">
+        Carried into this month
+      </span>
+
+    </div>
+
+
+
+    <!-- CARRY FORWARD -->
+
+    <div class="closing-metric-card">
+
+      <div class="closing-metric-icon">
+        ↪
+      </div>
+
+      <span class="closing-metric-label">
+        Carry-forward Credit
+      </span>
+
+      <span
+        id="carryForward"
+        class="closing-metric-value"
+      >
+        KSh 0
+      </span>
+
+      <span class="metric-subtext">
+        Credit carried into future obligations
+      </span>
+
+    </div>
+
+  </div>
+
+
+
+  <!-- =================================================
+       CONTRIBUTION PROGRESS
+  ================================================== -->
+
+  <div class="collection-progress-card">
+
+    <div class="collection-progress-head">
+
+      <span class="collection-progress-title">
+        Contribution Application
+      </span>
+
+      <span id="collectionProgressText">
+        0% applied
+      </span>
+
+    </div>
+
+
+    <div class="collection-progress-track">
 
       <div
-        id="closingStatus"
-        class="closing-status-badge open"
+        id="collectionProgress"
+        class="collection-progress"
+        role="progressbar"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="0"
+      ></div>
+
+    </div>
+
+
+    <div class="collection-progress-footer">
+
+      <span
+        id="collectionProgressDescription"
+        class="muted"
       >
-        Open
-      </div>
+        Current-month obligations satisfied by payment
+        allocations.
+      </span>
 
-    </section>
+      <span
+        id="collectionDifference"
+        class="collection-difference"
+      >
+        —
+      </span>
 
+    </div>
 
+  </div>
 
-    <br>
 
 
+  <!-- =================================================
+       CLOSING BALANCE
+  ================================================== -->
 
-    <!-- =================================================
-         CLOSING SUMMARY
-    ================================================== -->
+  <div class="closing-balance-card">
 
-    <section class="card">
+    <span class="closing-balance-label">
+      Closing Balance
+    </span>
 
-      <div class="closing-section-head">
-
-        <div>
-
-          <h2>
-            Closing Summary
-          </h2>
-
-          <p class="muted section-description">
-            Your month-end financial position.
-          </p>
-
-        </div>
-
-      </div>
-
-
-      <div class="closing-summary-grid">
-
-
-        <!-- EXPECTED -->
-
-        <div class="closing-metric-card">
-
-          <div class="closing-metric-icon">
-            ◎
-          </div>
-
-          <span class="closing-metric-label">
-            Total Expected
-          </span>
-
-          <span
-            id="totalExpected"
-            class="closing-metric-value"
-          >
-            KSh 0
-          </span>
-
-          <span class="metric-subtext">
-            Monthly contribution target
-          </span>
-
-        </div>
-
-
-
-        <!-- APPLIED -->
-
-        <div class="closing-metric-card">
-
-          <div class="closing-metric-icon">
-            ✓
-          </div>
-
-          <span class="closing-metric-label">
-            Applied This Month
-          </span>
-
-          <span
-            id="appliedThisMonth"
-            class="closing-metric-value"
-          >
-            KSh 0
-          </span>
-
-          <span class="metric-subtext">
-            Applied to current month obligations
-          </span>
-
-        </div>
-
-
-
-        <!-- OTHER SAVINGS -->
-
-        <div class="closing-metric-card">
-
-          <div class="closing-metric-icon">
-            ☆
-          </div>
-
-          <span class="closing-metric-label">
-            Other Savings
-          </span>
-
-          <span
-            id="otherSavings"
-            class="closing-metric-value"
-          >
-            KSh 0
-          </span>
-
-          <span class="metric-subtext">
-            Savings recorded outside monthly contributions
-          </span>
-
-        </div>
-
-
-
-        <!-- OUTSTANDING -->
-
-        <div class="closing-metric-card">
-
-          <div class="closing-metric-icon">
-            !
-          </div>
-
-          <span class="closing-metric-label">
-            Monthly Outstanding
-          </span>
-
-          <span
-            id="currentOutstanding"
-            class="closing-metric-value"
-          >
-            KSh 0
-          </span>
-
-          <span class="metric-subtext">
-            Remaining current-month obligation
-          </span>
-
-        </div>
-
-
-
-        <!-- CASH RECEIVED -->
-
-        <div class="closing-metric-card">
-
-          <div class="closing-metric-icon">
-            ✓
-          </div>
-
-          <span class="closing-metric-label">
-            Actual Cash Received
-          </span>
-
-          <span
-            id="cashReceived"
-            class="closing-metric-value"
-          >
-            KSh 0
-          </span>
-
-          <span class="metric-subtext">
-            Contribution cash received during this month
-          </span>
-
-        </div>
-
-
-
-        <!-- EXPENSES -->
-
-        <div class="closing-metric-card">
-
-          <div class="closing-metric-icon">
-            −
-          </div>
-
-          <span class="closing-metric-label">
-            Approved Expenses
-          </span>
-
-          <span
-            id="totalExpenses"
-            class="closing-metric-value"
-          >
-            KSh 0
-          </span>
-
-          <span class="metric-subtext">
-            Approved for payment
-          </span>
-
-        </div>
-
-
-
-        <!-- PREVIOUS BALANCE -->
-
-        <div class="closing-metric-card">
-
-          <div class="closing-metric-icon">
-            ↗
-          </div>
-
-          <span class="closing-metric-label">
-            Previous Balance
-          </span>
-
-          <span
-            id="previousBalance"
-            class="closing-metric-value"
-          >
-            KSh 0
-          </span>
-
-          <span class="metric-subtext">
-            Carried into this month
-          </span>
-
-        </div>
-
-
-
-        <!-- CARRY FORWARD -->
-
-        <div class="closing-metric-card">
-
-          <div class="closing-metric-icon">
-            ↪
-          </div>
-
-          <span class="closing-metric-label">
-            Carry-forward Credit
-          </span>
-
-          <span
-            id="carryForward"
-            class="closing-metric-value"
-          >
-            KSh 0
-          </span>
-
-          <span class="metric-subtext">
-            Credit carried into future obligations
-          </span>
-
-        </div>
-
-      </div>
-
-
-
-      <!-- =================================================
-           CONTRIBUTION PROGRESS
-      ================================================== -->
-
-      <div class="collection-progress-card">
-
-        <div class="collection-progress-head">
-
-          <span class="collection-progress-title">
-            Contribution Application
-          </span>
-
-          <span id="collectionProgressText">
-            0% applied
-          </span>
-
-        </div>
-
-
-        <div class="collection-progress-track">
-
-          <div
-            id="collectionProgress"
-            class="collection-progress"
-            role="progressbar"
-            aria-valuemin="0"
-            aria-valuemax="100"
-            aria-valuenow="0"
-          ></div>
-
-        </div>
-
-
-        <div class="collection-progress-footer">
-
-          <span
-            id="collectionProgressDescription"
-            class="muted"
-          >
-            Current-month obligations satisfied by payment
-            allocations.
-          </span>
-
-          <span
-            id="collectionDifference"
-            class="collection-difference"
-          >
-            —
-          </span>
-
-        </div>
-
-      </div>
-
-
-
-      <!-- =================================================
-           CLOSING BALANCE
-      ================================================== -->
-
-      <div class="closing-balance-card">
-
-        <span class="closing-balance-label">
-          Closing Balance
-        </span>
-
-        <div
-          id="closingBalance"
-          class="closing-balance-value"
-        >
-          KSh 0
-        </div>
-
-        <p class="closing-balance-equation">
-
-          Previous closing balance
-          + actual cash contributions received
-          − approved expenses
-          = closing balance.
-
-        </p>
-
-      </div>
-
-    </section>
-
-
-
-    <br>
-
-
-
-    <!-- =================================================
-         FINALIZE MONTH
-    ================================================== -->
-
-    <section
-      id="finalizeSection"
-      class="card finalize-card"
+    <div
+      id="closingBalance"
+      class="closing-balance-value"
     >
+      KSh 0
+    </div>
 
-      <div class="closing-section-head">
+    <p class="closing-balance-equation">
 
-        <div>
+      Previous closing balance
+      + actual cash contributions received
+      − approved expenses
+      = closing balance.
 
-          <h2>
-            Finalize Monthly Closing
-          </h2>
+    </p>
 
-          <p class="muted section-description">
-            Create the official financial record for this
-            month.
-          </p>
+  </div>
 
-        </div>
-
-      </div>
+</section>
 
 
-      <div class="finalize-warning">
 
-        <div class="finalize-warning-icon">
-          !
-        </div>
-
-        <div>
-
-          <strong>
-            Review before closing
-          </strong>
-
-          <p>
-            Make sure all monthly contributions, other
-            savings and approved expenses for this month
-            have been recorded correctly. Once closed,
-            this month becomes the official monthly
-            financial record.
-          </p>
-
-        </div>
-
-      </div>
+<br>
 
 
-      <div class="form-group">
 
-        <label
-          for="closingNotes"
-        >
-          Closing Notes
-        </label>
+<!-- =================================================
+     FINALIZE MONTH
+================================================== -->
 
-        <textarea
-          id="closingNotes"
-          class="closing-notes"
-          rows="5"
-          placeholder="Enter notes, explanations or observations for this month's closing..."
-        ></textarea>
+<section
+  id="finalizeSection"
+  class="card finalize-card"
+>
 
-      </div>
+  <div class="closing-section-head">
 
+    <div>
 
-      <div class="closing-actions">
+      <h2>
+        Finalize Monthly Closing
+      </h2>
 
-        <button
-          class="btn btn-primary close-month-button"
-          id="closeMonth"
-          type="button"
-        >
-          Close Month
-        </button>
-
-      </div>
-
-
-      <p class="finalize-help">
-        Closing is protected against duplicate financial
-        periods. A month that has already been closed
-        cannot be closed again.
+      <p class="muted section-description">
+        Create the official financial record for this
+        month.
       </p>
 
-    </section>
+    </div>
+
+  </div>
+
+
+  <div class="finalize-warning">
+
+    <div class="finalize-warning-icon">
+      !
+    </div>
+
+    <div>
+
+      <strong>
+        Review before closing
+      </strong>
+
+      <p>
+        Make sure all monthly contributions, other
+        savings and approved expenses for this month
+        have been recorded correctly. Once closed,
+        this month becomes the official monthly
+        financial record.
+      </p>
+
+    </div>
+
+  </div>
+
+
+  <div class="form-group">
+
+    <label
+      for="closingNotes"
+    >
+      Closing Notes
+    </label>
+
+    <textarea
+      id="closingNotes"
+      class="closing-notes"
+      rows="5"
+      placeholder="Enter notes, explanations or observations for this month's closing..."
+    ></textarea>
+
+  </div>
+
+
+  <div class="closing-actions">
+
+    <button
+      class="btn btn-primary close-month-button"
+      id="closeMonth"
+      type="button"
+    >
+      Close Month
+    </button>
+
+  </div>
+
+
+  <p class="finalize-help">
+    Closing is protected against duplicate financial
+    periods. A month that has already been closed
+    cannot be closed again.
+  </p>
+
+</section>
 
 
 
-    <br>
+<br>
 
 
 
-    <!-- =================================================
-         HISTORY
-    ================================================== -->
+<!-- =================================================
+     HISTORY
+================================================== -->
 
-    <section class="card history-card">
+<section class="card history-card">
 
-      <div class="closing-section-head">
+  <div class="closing-section-head">
 
-        <div>
+    <div>
 
-          <h2>
-            Monthly Closing History
-          </h2>
+      <h2>
+        Monthly Closing History
+      </h2>
 
-          <p class="muted section-description">
-            Official financial records for previously
-            closed months.
-          </p>
+      <p class="muted section-description">
+        Official financial records for previously
+        closed months.
+      </p>
 
-        </div>
+    </div>
 
-      </div>
-
-
-      <div class="table-wrap">
-
-        <table class="table history-table">
-
-          <thead>
-
-            <tr>
-
-              <th>
-                Month
-              </th>
-
-              <th>
-                Expected
-              </th>
-
-              <th>
-                Collected
-              </th>
-
-              <th>
-                Expenses
-              </th>
-
-              <th>
-                Closing Balance
-              </th>
-
-              <th>
-                Closed At
-              </th>
-
-              <th>
-                Notes
-              </th>
-
-            </tr>
-
-          </thead>
+  </div>
 
 
-          <tbody id="closingRows">
+  <div class="table-wrap">
 
-            <tr>
+    <table class="table history-table">
 
-              <td colspan="7">
-                Loading monthly closing history...
-              </td>
+      <thead>
 
-            </tr>
+        <tr>
 
-          </tbody>
+          <th>
+            Month
+          </th>
 
-        </table>
+          <th>
+            Expected
+          </th>
 
-      </div>
+          <th>
+            Collected
+          </th>
 
-    </section>
+          <th>
+            Expenses
+          </th>
 
+          <th>
+            Closing Balance
+          </th>
+
+          <th>
+            Closed At
+          </th>
+
+          <th>
+            Notes
+          </th>
+
+        </tr>
+
+      </thead>
+
+
+      <tbody id="closingRows">
+
+        <tr>
+
+          <td colspan="7">
+            Loading monthly closing history...
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</section>
+```
 
   </main>
 
 </div>
-
-
 
 <!-- =====================================================
      PAGE BOOT
@@ -1413,7 +1416,6 @@
   boot();
 
 </script>
-
 
 </body>
 
