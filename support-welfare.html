@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 
@@ -8,6 +9,11 @@
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1"
+  >
+
+  <meta
+    name="theme-color"
+    content="#075c38"
   >
 
   <title>
@@ -22,12 +28,60 @@
   <style>
 
     /* =====================================================
-       CHAMA LIVE — SUPPORT & WELFARE
+       CHAMA LIVE
+       GROUP OPERATIONS — SUPPORT & WELFARE
+    ===================================================== */
+
+    :root {
+      --cl-green: #075c38;
+      --cl-green-dark: #043d26;
+      --cl-green-mid: #087443;
+      --cl-green-light: #eaf7f0;
+
+      --cl-gold: #d6a928;
+      --cl-gold-light: #fff8dc;
+
+      --cl-ink: #10271c;
+      --cl-text: #263b31;
+      --cl-muted: #718078;
+
+      --cl-bg: #f4f8f5;
+      --cl-card: #ffffff;
+      --cl-border: #dfe9e3;
+
+      --cl-blue: #285bb5;
+      --cl-blue-bg: #edf4ff;
+
+      --cl-danger: #a52319;
+      --cl-danger-bg: #fff0ee;
+
+      --cl-warning: #9a6800;
+      --cl-warning-bg: #fff8e1;
+
+      --cl-success: #087443;
+      --cl-success-bg: #e9f8f0;
+
+      --cl-shadow-sm:
+        0 5px 18px rgba(4, 61, 38, .055);
+
+      --cl-shadow-md:
+        0 14px 38px rgba(4, 61, 38, .095);
+
+      --cl-radius-xl: 24px;
+      --cl-radius-lg: 19px;
+      --cl-radius-md: 14px;
+      --cl-radius-sm: 10px;
+    }
+
+
+    /* =====================================================
+       PAGE
     ===================================================== */
 
     .support-page {
-      max-width: 1280px;
+      width: min(1440px, calc(100% - 30px));
       margin: 0 auto;
+      padding: 24px 0 60px;
     }
 
 
@@ -38,76 +92,257 @@
     .support-hero {
       position: relative;
       overflow: hidden;
-      margin-bottom: 24px;
-      padding: 30px;
-      border-radius: 22px;
+      margin-bottom: 18px;
+      padding: 34px;
+      border-radius: var(--cl-radius-xl);
 
       background:
+        radial-gradient(
+          circle at 92% 18%,
+          rgba(214,169,40,.20),
+          transparent 25%
+        ),
+        radial-gradient(
+          circle at 80% 110%,
+          rgba(255,255,255,.08),
+          transparent 28%
+        ),
         linear-gradient(
           135deg,
-          var(--primary),
-          color-mix(
-            in srgb,
-            var(--primary) 70%,
-            #000 30%
-          )
+          var(--cl-green-dark) 0%,
+          var(--cl-green) 58%,
+          #0b8250 100%
         );
 
       color: #fff;
 
-      box-shadow:
-        0 14px 35px rgba(0,0,0,.10);
+      box-shadow: var(--cl-shadow-md);
     }
+
+
+    .support-hero::before {
+      content: "";
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      right: -125px;
+      top: -150px;
+
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 50%;
+
+      box-shadow:
+        0 0 0 35px rgba(255,255,255,.025),
+        0 0 0 70px rgba(255,255,255,.018);
+    }
+
 
     .support-hero::after {
       content: "";
       position: absolute;
-      width: 210px;
-      height: 210px;
-      right: -65px;
-      top: -80px;
+      width: 180px;
+      height: 180px;
+      right: 160px;
+      bottom: -140px;
+
       border-radius: 50%;
-      background: rgba(255,255,255,.09);
+      background: rgba(214,169,40,.12);
     }
+
 
     .support-hero-content {
       position: relative;
       z-index: 2;
+      max-width: 900px;
     }
+
 
     .support-badge {
       display: inline-flex;
       align-items: center;
-      gap: 7px;
-      margin-bottom: 12px;
+      gap: 8px;
+
+      margin-bottom: 13px;
       padding: 7px 12px;
+
+      border:
+        1px solid rgba(255,255,255,.16);
+
       border-radius: 999px;
-      background: rgba(255,255,255,.14);
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: .03em;
+
+      background:
+        rgba(255,255,255,.09);
+
+      color: #f6fbf8;
+
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing: .08em;
       text-transform: uppercase;
     }
 
+
     .support-hero h1 {
-      margin: 0 0 8px;
+      margin: 0;
+
       color: #fff;
-      font-size: clamp(28px, 4vw, 40px);
-      line-height: 1.1;
+
+      font-size:
+        clamp(30px, 4vw, 46px);
+
+      line-height: 1.06;
+      letter-spacing: -.035em;
+      font-weight: 900;
     }
 
+
+    .support-hero h1 .hero-accent {
+      color: #f2d36a;
+    }
+
+
     .support-hero p {
-      max-width: 720px;
-      margin: 0;
-      color: rgba(255,255,255,.84);
+      max-width: 760px;
+
+      margin:
+        13px 0 0;
+
+      color:
+        rgba(255,255,255,.82);
+
       font-size: 15px;
       line-height: 1.7;
     }
 
+
     .support-context {
-      margin-top: 14px;
-      color: rgba(255,255,255,.78);
-      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+
+      margin-top: 18px;
+      padding: 8px 12px;
+
+      border:
+        1px solid rgba(255,255,255,.13);
+
+      border-radius: 10px;
+
+      background:
+        rgba(0,0,0,.10);
+
+      color:
+        rgba(255,255,255,.74);
+
+      font-size: 12px;
+    }
+
+
+    .support-context strong {
+      color: #fff;
+      font-weight: 850;
+    }
+
+
+    /* =====================================================
+       LIVE GROUP STRIP
+    ===================================================== */
+
+    .support-group-strip {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+
+      margin-bottom: 20px;
+      padding: 13px 16px;
+
+      border:
+        1px solid var(--cl-border);
+
+      border-radius: var(--cl-radius-md);
+
+      background:
+        rgba(255,255,255,.96);
+
+      box-shadow: var(--cl-shadow-sm);
+    }
+
+
+    .support-group-info {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+    }
+
+
+    .support-group-icon {
+      display: grid;
+      place-items: center;
+
+      width: 39px;
+      height: 39px;
+
+      border-radius: 11px;
+
+      background:
+        var(--cl-green-light);
+
+      color:
+        var(--cl-green);
+
+      font-size: 18px;
+    }
+
+
+    .support-group-label {
+      display: block;
+
+      color: var(--cl-muted);
+
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+
+    .support-group-name {
+      display: block;
+
+      margin-top: 2px;
+
+      color: var(--cl-ink);
+
+      font-size: 15px;
+      font-weight: 850;
+    }
+
+
+    .support-live {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+
+      color: var(--cl-green);
+
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+
+    .support-live-dot {
+      width: 8px;
+      height: 8px;
+
+      border-radius: 50%;
+
+      background: #19b76c;
+
+      box-shadow:
+        0 0 0 5px rgba(25,183,108,.10);
     }
 
 
@@ -116,18 +351,30 @@
     ===================================================== */
 
     .support-status {
-      margin-bottom: 20px;
+      margin-bottom: 18px;
       padding: 13px 16px;
-      border-radius: 12px;
-      background: var(--surface-soft);
-      border: 1px solid var(--border-light);
-      font-size: 14px;
+
+      border:
+        1px solid var(--cl-border);
+
+      border-radius: var(--cl-radius-md);
+
+      background:
+        var(--cl-green-light);
+
+      color:
+        var(--cl-green-dark);
+
+      font-size: 13px;
       font-weight: 700;
+      line-height: 1.5;
     }
 
+
     .support-error {
-      margin-bottom: 20px;
+      margin-bottom: 18px;
     }
+
 
     .support-hidden {
       display: none !important;
@@ -139,13 +386,41 @@
     ===================================================== */
 
     .support-access-denied {
+      position: relative;
+
       margin-bottom: 20px;
-      padding: 18px;
-      border: 1px solid #fecaca;
-      border-radius: 14px;
-      background: #fef2f2;
-      color: #991b1b;
-      line-height: 1.65;
+      padding: 17px 18px 17px 52px;
+
+      border:
+        1px solid #f2c7c2;
+
+      border-radius: var(--cl-radius-md);
+
+      background:
+        var(--cl-danger-bg);
+
+      color:
+        #8f2118;
+
+      line-height: 1.6;
+    }
+
+
+    .support-access-denied::before {
+      content: "🔒";
+
+      position: absolute;
+      left: 18px;
+      top: 17px;
+
+      font-size: 19px;
+    }
+
+
+    .support-access-denied strong {
+      display: block;
+      margin-bottom: 2px;
+      font-weight: 850;
     }
 
 
@@ -155,48 +430,119 @@
 
     .support-summary {
       display: grid;
+
       grid-template-columns:
         repeat(4, minmax(0, 1fr));
-      gap: 14px;
-      margin-bottom: 24px;
+
+      gap: 15px;
+
+      margin-bottom: 22px;
     }
+
 
     .support-kpi {
       position: relative;
       overflow: hidden;
-      padding: 20px;
-      border: 1px solid var(--border-light);
-      border-radius: 17px;
-      background: var(--card);
-      box-shadow: var(--shadow);
+
+      min-height: 142px;
+
+      padding: 19px;
+
+      border:
+        1px solid var(--cl-border);
+
+      border-radius: var(--cl-radius-lg);
+
+      background:
+        var(--cl-card);
+
+      box-shadow:
+        var(--cl-shadow-sm);
+
+      transition:
+        transform .18s ease,
+        box-shadow .18s ease;
     }
+
+
+    .support-kpi:hover {
+      transform:
+        translateY(-3px);
+
+      box-shadow:
+        var(--cl-shadow-md);
+    }
+
 
     .support-kpi::after {
       content: "";
+
       position: absolute;
-      width: 80px;
-      height: 80px;
-      right: -30px;
-      bottom: -35px;
+
+      width: 105px;
+      height: 105px;
+
+      right: -42px;
+      bottom: -47px;
+
       border-radius: 50%;
-      background: rgba(15,118,110,.035);
+
+      background:
+        rgba(8,116,67,.055);
     }
 
+
+    .support-kpi:nth-child(2)::after {
+      background:
+        rgba(214,169,40,.075);
+    }
+
+
+    .support-kpi:nth-child(3)::after {
+      background:
+        rgba(40,91,181,.055);
+    }
+
+
+    .support-kpi:nth-child(4)::after {
+      background:
+        rgba(119,64,170,.055);
+    }
+
+
     .support-kpi-label {
+      position: relative;
+      z-index: 2;
+
       display: block;
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: .05em;
+
+      color:
+        var(--cl-muted);
+
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: .08em;
       text-transform: uppercase;
     }
 
+
     .support-kpi-value {
+      position: relative;
+      z-index: 2;
+
       display: block;
-      margin-top: 7px;
-      color: var(--text-dark);
-      font-size: 25px;
-      font-weight: 850;
+
+      margin-top: 9px;
+
+      color:
+        var(--cl-ink);
+
+      font-size: 29px;
+      line-height: 1;
+
+      font-weight: 900;
+
+      letter-spacing: -.035em;
     }
 
 
@@ -206,11 +552,118 @@
 
     .support-grid {
       display: grid;
+
       grid-template-columns:
-        minmax(320px, .82fr)
-        minmax(0, 1.55fr);
+        minmax(330px, .82fr)
+        minmax(0, 1.6fr);
+
       gap: 20px;
+
       align-items: start;
+    }
+
+
+    /* =====================================================
+       CARDS
+    ===================================================== */
+
+    .support-card {
+      padding: 24px;
+
+      border:
+        1px solid var(--cl-border);
+
+      border-radius: var(--cl-radius-lg);
+
+      background:
+        rgba(255,255,255,.97);
+
+      box-shadow:
+        var(--cl-shadow-sm);
+    }
+
+
+    .support-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 14px;
+
+      margin-bottom: 20px;
+    }
+
+
+    .support-card-title {
+      display: flex;
+      align-items: flex-start;
+      gap: 11px;
+    }
+
+
+    .support-card-icon {
+      display: grid;
+      place-items: center;
+
+      flex: 0 0 auto;
+
+      width: 39px;
+      height: 39px;
+
+      border-radius: 11px;
+
+      background:
+        var(--cl-green-light);
+
+      color:
+        var(--cl-green);
+
+      font-size: 18px;
+    }
+
+
+    .support-card-header h2 {
+      margin: 0 0 4px;
+
+      color:
+        var(--cl-ink);
+
+      font-size: 19px;
+      font-weight: 900;
+      letter-spacing: -.02em;
+    }
+
+
+    .support-card-header p {
+      margin: 0;
+
+      color:
+        var(--cl-muted);
+
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+
+    .support-section-chip {
+      flex: 0 0 auto;
+
+      display: inline-flex;
+      align-items: center;
+
+      padding: 6px 9px;
+
+      border-radius: 999px;
+
+      background:
+        var(--cl-gold-light);
+
+      color:
+        #806000;
+
+      font-size: 10px;
+      font-weight: 850;
+
+      white-space: nowrap;
     }
 
 
@@ -218,44 +671,203 @@
        FORM
     ===================================================== */
 
-    .support-card {
-      padding: 24px;
-    }
-
-    .support-card-header {
-      margin-bottom: 20px;
-    }
-
-    .support-card-header h2 {
-      margin-bottom: 5px;
-    }
-
     .support-form-grid {
       display: grid;
+
       grid-template-columns:
         repeat(2, minmax(0, 1fr));
-      gap: 17px;
+
+      gap: 16px;
     }
+
 
     .support-full {
       grid-column: 1 / -1;
     }
 
-    .support-help {
-      margin: 6px 0 0;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.55;
+
+    .support-form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
     }
+
+
+    .support-form-group label {
+      color:
+        var(--cl-text);
+
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+
+    .support-form-group input,
+    .support-form-group select,
+    .support-form-group textarea {
+      width: 100%;
+
+      border:
+        1px solid #d2dfd7;
+
+      border-radius:
+        var(--cl-radius-sm);
+
+      background:
+        #fff;
+
+      color:
+        var(--cl-ink);
+
+      font: inherit;
+      font-size: 13px;
+
+      outline: none;
+
+      transition:
+        border-color .18s ease,
+        box-shadow .18s ease;
+    }
+
+
+    .support-form-group input,
+    .support-form-group select {
+      min-height: 43px;
+      padding: 10px 12px;
+    }
+
+
+    .support-form-group textarea {
+      min-height: 118px;
+      padding: 11px 12px;
+      resize: vertical;
+    }
+
+
+    .support-form-group input::placeholder,
+    .support-form-group textarea::placeholder {
+      color:
+        #9ba8a1;
+    }
+
+
+    .support-form-group input:focus,
+    .support-form-group select:focus,
+    .support-form-group textarea:focus {
+      border-color:
+        var(--cl-green);
+
+      box-shadow:
+        0 0 0 4px rgba(8,116,67,.09);
+    }
+
+
+    .support-help {
+      margin: 0;
+
+      color:
+        var(--cl-muted);
+
+      font-size: 10px;
+      line-height: 1.5;
+    }
+
 
     .support-form-actions {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 9px;
       flex-wrap: wrap;
-      margin-top: 22px;
-      padding-top: 19px;
-      border-top: 1px solid var(--border-light);
+
+      margin-top: 21px;
+      padding-top: 18px;
+
+      border-top:
+        1px solid #edf2ee;
+    }
+
+
+    /* =====================================================
+       BUTTONS
+    ===================================================== */
+
+    .support-btn {
+      min-height: 41px;
+
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+
+      padding: 10px 15px;
+
+      border-radius:
+        var(--cl-radius-sm);
+
+      font: inherit;
+      font-size: 12px;
+      font-weight: 850;
+
+      cursor: pointer;
+
+      transition:
+        transform .15s ease,
+        box-shadow .15s ease,
+        opacity .15s ease;
+    }
+
+
+    .support-btn:hover:not(:disabled) {
+      transform:
+        translateY(-1px);
+    }
+
+
+    .support-btn:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+
+    .support-btn-primary {
+      border:
+        1px solid var(--cl-green);
+
+      background:
+        linear-gradient(
+          135deg,
+          var(--cl-green-mid),
+          var(--cl-green-dark)
+        );
+
+      color: #fff;
+
+      box-shadow:
+        0 7px 16px rgba(7,92,56,.17);
+    }
+
+
+    .support-btn-primary:hover:not(:disabled) {
+      box-shadow:
+        0 10px 22px rgba(7,92,56,.23);
+    }
+
+
+    .support-btn-secondary {
+      border:
+        1px solid #d6e1da;
+
+      background:
+        #f7faf8;
+
+      color:
+        var(--cl-text);
+    }
+
+
+    .support-btn-secondary:hover:not(:disabled) {
+      background:
+        #edf4ef;
     }
 
 
@@ -265,18 +877,72 @@
 
     .support-filter {
       display: flex;
-      gap: 10px;
+      align-items: center;
+      gap: 9px;
       flex-wrap: wrap;
-      margin: 18px 0 15px;
+
+      margin:
+        17px 0 15px;
+
+      padding: 10px;
+
+      border:
+        1px solid #e6eee9;
+
+      border-radius:
+        var(--cl-radius-md);
+
+      background:
+        #f8faf9;
     }
+
 
     .support-filter select,
     .support-filter input {
       min-height: 40px;
+
+      border:
+        1px solid #d6e2da;
+
+      border-radius:
+        9px;
+
+      background:
+        #fff;
+
+      color:
+        var(--cl-text);
+
+      font: inherit;
+      font-size: 12px;
+
+      outline: none;
     }
 
-    .support-search {
-      flex: 1 1 220px;
+
+    .support-filter select {
+      min-width: 160px;
+      padding: 8px 10px;
+    }
+
+
+    .support-filter input {
+      flex:
+        1 1 240px;
+
+      min-width: 180px;
+
+      padding: 8px 11px;
+    }
+
+
+    .support-filter input:focus,
+    .support-filter select:focus {
+      border-color:
+        var(--cl-green);
+
+      box-shadow:
+        0 0 0 3px rgba(8,116,67,.08);
     }
 
 
@@ -287,55 +953,120 @@
     .support-table-wrap {
       width: 100%;
       overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
 
       border:
-        1px solid var(--border-light);
+        1px solid #e2ebe5;
 
-      border-radius: 12px;
+      border-radius:
+        var(--cl-radius-md);
+
+      -webkit-overflow-scrolling: touch;
     }
+
 
     .support-table {
       width: 100%;
       min-width: 1050px;
-      border-collapse: collapse;
+
+      border-collapse:
+        separate;
+
+      border-spacing:
+        0;
+
+      background:
+        #fff;
     }
+
 
     .support-table th,
     .support-table td {
-      padding: 11px 12px;
-      border-bottom: 1px solid var(--border-light);
-      text-align: left;
-      vertical-align: middle;
-      font-size: 13px;
+      padding:
+        12px 11px;
+
+      border-bottom:
+        1px solid #e8efeb;
+
+      text-align:
+        left;
+
+      vertical-align:
+        middle;
+
+      font-size:
+        12px;
     }
+
 
     .support-table th {
-      background: var(--surface-soft);
-      color: var(--text-dark);
-      font-weight: 800;
-      white-space: nowrap;
+      background:
+        #f5f9f6;
+
+      color:
+        #617168;
+
+      font-size:
+        10px;
+
+      font-weight:
+        900;
+
+      letter-spacing:
+        .07em;
+
+      text-transform:
+        uppercase;
+
+      white-space:
+        nowrap;
     }
 
-    .support-table tr:last-child td {
-      border-bottom: 0;
+
+    .support-table tbody tr {
+      transition:
+        background .15s ease;
     }
 
-    .support-table tr:hover td {
-      background: #fbfefd;
+
+    .support-table tbody tr:hover td {
+      background:
+        #fbfdfc;
     }
+
+
+    .support-table tbody tr:last-child td {
+      border-bottom:
+        0;
+    }
+
 
     .support-amount {
-      text-align: right !important;
-      white-space: nowrap;
-      font-variant-numeric: tabular-nums;
-      font-weight: 750;
+      text-align:
+        right !important;
+
+      white-space:
+        nowrap;
+
+      font-variant-numeric:
+        tabular-nums;
+
+      font-weight:
+        850;
+
+      color:
+        var(--cl-green-dark);
     }
 
+
     .support-secondary {
-      margin-top: 3px;
-      color: var(--muted);
-      font-size: 11px;
+      margin-top:
+        3px;
+
+      color:
+        var(--cl-muted);
+
+      font-size:
+        10px;
     }
 
 
@@ -347,34 +1078,65 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 5px 9px;
-      border-radius: 999px;
-      font-size: 10px;
-      font-weight: 800;
-      white-space: nowrap;
-      text-transform: capitalize;
+
+      min-width:
+        68px;
+
+      padding:
+        5px 9px;
+
+      border-radius:
+        999px;
+
+      font-size:
+        10px;
+
+      font-weight:
+        850;
+
+      white-space:
+        nowrap;
+
+      text-transform:
+        capitalize;
     }
+
 
     .support-status-requested {
-      background: #fffaeb;
-      color: #b45309;
+      background:
+        var(--cl-warning-bg);
+
+      color:
+        var(--cl-warning);
     }
 
+
     .support-status-approved {
-      background: #eff6ff;
-      color: #1d4ed8;
+      background:
+        var(--cl-blue-bg);
+
+      color:
+        var(--cl-blue);
     }
+
 
     .support-status-paid,
     .support-status-completed {
-      background: #ecfdf3;
-      color: #047857;
+      background:
+        var(--cl-success-bg);
+
+      color:
+        var(--cl-success);
     }
+
 
     .support-status-rejected,
     .support-status-cancelled {
-      background: #fee2e2;
-      color: #b91c1c;
+      background:
+        var(--cl-danger-bg);
+
+      color:
+        var(--cl-danger);
     }
 
 
@@ -383,31 +1145,70 @@
     ===================================================== */
 
     .support-actions {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
+      display:
+        flex;
+
+      gap:
+        5px;
+
+      flex-wrap:
+        wrap;
     }
+
 
     .support-action-btn {
-      padding: 6px 9px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: #fff;
-      color: var(--text);
-      cursor: pointer;
-      font-size: 11px;
-      font-weight: 750;
+      padding:
+        6px 9px;
+
+      border:
+        1px solid #d7e1db;
+
+      border-radius:
+        8px;
+
+      background:
+        #fff;
+
+      color:
+        var(--cl-text);
+
+      cursor:
+        pointer;
+
+      font:
+        inherit;
+
+      font-size:
+        10px;
+
+      font-weight:
+        800;
+
+      transition:
+        border-color .15s ease,
+        background .15s ease,
+        color .15s ease;
     }
 
-    .support-action-btn:hover {
-      border-color: var(--primary);
-      color: var(--primary);
-      background: var(--nav-hover);
+
+    .support-action-btn:hover:not(:disabled) {
+      border-color:
+        var(--cl-green);
+
+      background:
+        var(--cl-green-light);
+
+      color:
+        var(--cl-green-dark);
     }
+
 
     .support-action-btn:disabled {
-      opacity: .55;
-      cursor: not-allowed;
+      opacity:
+        .55;
+
+      cursor:
+        not-allowed;
     }
 
 
@@ -416,70 +1217,334 @@
     ===================================================== */
 
     .support-empty {
-      padding: 35px 15px !important;
-      text-align: center !important;
-      color: var(--muted);
+      padding:
+        48px 18px !important;
+
+      text-align:
+        center !important;
+
+      color:
+        var(--cl-muted);
+
+      background:
+        linear-gradient(
+          135deg,
+          #fcfefd,
+          #f5f9f6
+        );
+    }
+
+
+    .support-empty::before {
+      content:
+        "🤝";
+
+      display:
+        block;
+
+      margin-bottom:
+        10px;
+
+      font-size:
+        31px;
+
+      opacity:
+        .70;
     }
 
 
     /* =====================================================
-       MOBILE
+       BRAND FOOTER
     ===================================================== */
 
-    @media (max-width: 1000px) {
+    .support-brand-footer {
+      display:
+        flex;
 
-      .support-grid {
-        grid-template-columns: 1fr;
-      }
+      align-items:
+        center;
+
+      justify-content:
+        space-between;
+
+      gap:
+        16px;
+
+      margin-top:
+        22px;
+
+      padding:
+        18px 20px;
+
+      border:
+        1px solid var(--cl-border);
+
+      border-radius:
+        var(--cl-radius-lg);
+
+      background:
+        linear-gradient(
+          135deg,
+          #eef8f2,
+          #fffaf0
+        );
+    }
+
+
+    .support-brand {
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      gap:
+        11px;
+    }
+
+
+    .support-brand-mark {
+      display:
+        grid;
+
+      place-items:
+        center;
+
+      width:
+        40px;
+
+      height:
+        40px;
+
+      border-radius:
+        11px;
+
+      background:
+        var(--cl-green);
+
+      color:
+        #fff;
+
+      font-size:
+        12px;
+
+      font-weight:
+        950;
+
+      letter-spacing:
+        -.03em;
+    }
+
+
+    .support-brand strong {
+      display:
+        block;
+
+      color:
+        var(--cl-green-dark);
+
+      font-size:
+        13px;
+
+      font-weight:
+        900;
+    }
+
+
+    .support-brand span {
+      display:
+        block;
+
+      margin-top:
+        2px;
+
+      color:
+        var(--cl-muted);
+
+      font-size:
+        10px;
+    }
+
+
+    .support-footer-tag {
+      color:
+        var(--cl-muted);
+
+      font-size:
+        10px;
+
+      font-weight:
+        800;
+
+      text-align:
+        right;
+    }
+
+
+    /* =====================================================
+       RESPONSIVE
+    ===================================================== */
+
+    @media (max-width: 1100px) {
 
       .support-summary {
         grid-template-columns:
           repeat(2, minmax(0, 1fr));
       }
 
+      .support-grid {
+        grid-template-columns:
+          1fr;
+      }
+
     }
 
 
-    @media (max-width: 650px) {
+    @media (max-width: 720px) {
+
+      .support-page {
+        width:
+          calc(100% - 18px);
+
+        padding:
+          16px 0 40px;
+      }
+
 
       .support-hero {
-        padding: 24px 20px;
-        border-radius: 18px;
+        padding:
+          24px 20px;
+
+        border-radius:
+          19px;
       }
+
+
+      .support-hero h1 {
+        font-size:
+          31px;
+      }
+
+
+      .support-hero p {
+        font-size:
+          13px;
+      }
+
+
+      .support-group-strip {
+        align-items:
+          flex-start;
+
+        flex-direction:
+          column;
+      }
+
+
+      .support-live {
+        padding-left:
+          50px;
+      }
+
 
       .support-card {
-        padding: 19px;
+        padding:
+          18px;
       }
 
-      .support-summary {
-        grid-template-columns: 1fr;
-        gap: 10px;
+
+      .support-card-header {
+        flex-direction:
+          column;
       }
+
+
+      .support-section-chip {
+        align-self:
+          flex-start;
+      }
+
 
       .support-form-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns:
+          1fr;
       }
+
 
       .support-full {
-        grid-column: auto;
+        grid-column:
+          auto;
       }
+
 
       .support-form-actions {
-        flex-direction: column;
-        align-items: stretch;
+        flex-direction:
+          column;
+
+        align-items:
+          stretch;
       }
 
-      .support-form-actions .btn {
-        width: 100%;
+
+      .support-btn {
+        width:
+          100%;
       }
+
+
+      .support-brand-footer {
+        align-items:
+          flex-start;
+
+        flex-direction:
+          column;
+      }
+
+
+      .support-footer-tag {
+        text-align:
+          left;
+      }
+
+    }
+
+
+    @media (max-width: 470px) {
+
+      .support-summary {
+        grid-template-columns:
+          1fr;
+      }
+
+
+      .support-kpi {
+        min-height:
+          115px;
+      }
+
+
+      .support-kpi-value {
+        font-size:
+          27px;
+      }
+
 
       .support-filter {
-        flex-direction: column;
+        flex-direction:
+          column;
+
+        align-items:
+          stretch;
       }
+
 
       .support-filter select,
       .support-filter input {
-        width: 100%;
+        width:
+          100%;
+
+        min-width:
+          0;
       }
 
     }
@@ -491,6 +1556,10 @@
 
 <body>
 
+
+<!-- =====================================================
+     GLOBAL TOP BAR
+===================================================== -->
 
 <header class="topbar">
 
@@ -511,6 +1580,10 @@
 
 <div class="layout">
 
+
+  <!-- ===================================================
+       SIDEBAR
+  =================================================== -->
 
   <aside class="sidebar">
 
@@ -547,12 +1620,32 @@
         Reports
       </a>
 
-      <a href="monthly-closing.html">
-        Monthly Closing
+      <a href="plans-activities.html">
+        Plans &amp; Activities
+      </a>
+
+      <a href="milestones.html">
+        Milestones
+      </a>
+
+      <a href="assets.html">
+        Assets
+      </a>
+
+      <a href="documents.html">
+        Documents
+      </a>
+
+      <a href="data-import.html">
+        Data Import
       </a>
 
       <a href="group-management.html">
         Group Management
+      </a>
+
+      <a href="monthly-closing.html">
+        Monthly Closing
       </a>
 
     </nav>
@@ -560,40 +1653,111 @@
   </aside>
 
 
+  <!-- ===================================================
+       MAIN
+  =================================================== -->
+
   <main class="main">
 
     <div class="support-page">
 
+
+      <!-- ===============================================
+           HERO
+      ================================================ -->
 
       <section class="support-hero">
 
         <div class="support-hero-content">
 
           <div class="support-badge">
-            🤝 Welfare &amp; Support
+            🤝 CHAMA LIVE
+            <span>•</span>
+            Group Operations
           </div>
 
+
           <h1>
-            Support &amp; Welfare
+            Support &amp;
+            <span class="hero-accent">
+              Welfare
+            </span>
           </h1>
 
+
           <p>
-            Record member welfare cases, review support
-            decisions and connect paid support to an
-            existing approved group expense.
+            Manage member welfare cases, support requests
+            and approval decisions in one secure group
+            workspace — while keeping financial records
+            and accounting controls safely separated.
           </p>
 
+
           <div class="support-context">
-            Current group:
+
+            <span>
+              👥
+            </span>
+
+            <span>
+              Current group:
+            </span>
+
             <strong id="groupName">
               Loading…
             </strong>
+
           </div>
 
         </div>
 
       </section>
 
+
+      <!-- ===============================================
+           GROUP CONTEXT
+      ================================================ -->
+
+      <section class="support-group-strip">
+
+        <div class="support-group-info">
+
+          <div class="support-group-icon">
+            👥
+          </div>
+
+          <div>
+
+            <span class="support-group-label">
+              Active group workspace
+            </span>
+
+            <strong
+              id="supportGroupDisplay"
+              class="support-group-name"
+            >
+              Loading…
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <div class="support-live">
+
+          <span class="support-live-dot"></span>
+
+          Live group context
+
+        </div>
+
+      </section>
+
+
+      <!-- ===============================================
+           STATUS
+      ================================================ -->
 
       <div
         id="status"
@@ -603,6 +1767,10 @@
       ></div>
 
 
+      <!-- ===============================================
+           ERROR
+      ================================================ -->
+
       <div
         id="error"
         class="error support-error support-hidden"
@@ -610,6 +1778,10 @@
         aria-live="assertive"
       ></div>
 
+
+      <!-- ===============================================
+           ACCESS DENIED
+      ================================================ -->
 
       <div
         id="accessDenied"
@@ -629,11 +1801,19 @@
       </div>
 
 
+      <!-- ===============================================
+           MAIN CONTENT
+      ================================================ -->
+
       <section
         id="supportContent"
         class="support-hidden"
       >
 
+
+        <!-- =============================================
+             KPI SUMMARY
+        ============================================== -->
 
         <section class="support-summary">
 
@@ -641,7 +1821,7 @@
           <div class="support-kpi">
 
             <span class="support-kpi-label">
-              Total Cases
+              Total cases
             </span>
 
             <strong
@@ -657,7 +1837,7 @@
           <div class="support-kpi">
 
             <span class="support-kpi-label">
-              Open Requests
+              Open requests
             </span>
 
             <strong
@@ -673,7 +1853,7 @@
           <div class="support-kpi">
 
             <span class="support-kpi-label">
-              Approved / Paid
+              Approved / paid
             </span>
 
             <strong
@@ -689,7 +1869,7 @@
           <div class="support-kpi">
 
             <span class="support-kpi-label">
-              Total Support
+              Total support
             </span>
 
             <strong
@@ -705,24 +1885,47 @@
         </section>
 
 
+        <!-- =============================================
+             FORM + REGISTER
+        ============================================== -->
+
         <div class="support-grid">
 
+
+          <!-- ===========================================
+               RECORD SUPPORT
+          ============================================ -->
 
           <section class="card support-card">
 
 
             <div class="support-card-header">
 
-              <h2>
-                Record Support Case
-              </h2>
+              <div class="support-card-title">
 
-              <p class="muted">
-                New cases are created as
-                <strong>Requested</strong>.
-                Server-side validation and RLS remain
-                authoritative.
-              </p>
+                <div class="support-card-icon">
+                  🤝
+                </div>
+
+                <div>
+
+                  <h2>
+                    Record Support Case
+                  </h2>
+
+                  <p>
+                    Capture a new welfare or support
+                    request for a group member.
+                  </p>
+
+                </div>
+
+              </div>
+
+
+              <div class="support-section-chip">
+                New case
+              </div>
 
             </div>
 
@@ -733,7 +1936,9 @@
               <div class="support-form-grid">
 
 
-                <div class="form-group support-full">
+                <!-- MEMBER -->
+
+                <div class="support-form-group support-full">
 
                   <label for="memberId">
                     Member
@@ -753,10 +1958,12 @@
                 </div>
 
 
-                <div class="form-group">
+                <!-- SUPPORT TYPE -->
+
+                <div class="support-form-group">
 
                   <label for="supportType">
-                    Support Type
+                    Support type
                   </label>
 
                   <select
@@ -809,10 +2016,12 @@
                 </div>
 
 
-                <div class="form-group">
+                <!-- DATE -->
+
+                <div class="support-form-group">
 
                   <label for="supportDate">
-                    Support Date
+                    Support date
                   </label>
 
                   <input
@@ -824,7 +2033,9 @@
                 </div>
 
 
-                <div class="form-group support-full">
+                <!-- AMOUNT -->
+
+                <div class="support-form-group support-full">
 
                   <label for="amount">
                     Amount (KSh)
@@ -847,7 +2058,9 @@
                 </div>
 
 
-                <div class="form-group support-full">
+                <!-- DESCRIPTION -->
+
+                <div class="support-form-group support-full">
 
                   <label for="description">
                     Description
@@ -857,7 +2070,7 @@
                     id="description"
                     rows="5"
                     maxlength="5000"
-                    placeholder="Brief details of the support case"
+                    placeholder="Brief details of the support case..."
                   ></textarea>
 
                 </div>
@@ -869,15 +2082,17 @@
               <div class="support-form-actions">
 
                 <button
-                  class="btn btn-primary"
+                  class="support-btn support-btn-primary"
                   id="saveSupport"
                   type="submit"
                 >
+                  <span>＋</span>
                   Save Support Case
                 </button>
 
+
                 <button
-                  class="btn btn-secondary"
+                  class="support-btn support-btn-secondary"
                   id="resetSupport"
                   type="button"
                 >
@@ -892,42 +2107,49 @@
           </section>
 
 
+          <!-- ===========================================
+               WELFARE REGISTER
+          ============================================ -->
+
           <section class="card support-card">
 
 
-            <div
-              style="
-                display:flex;
-                justify-content:space-between;
-                align-items:flex-start;
-                gap:15px;
-                flex-wrap:wrap;
-              "
-            >
+            <div class="support-card-header">
 
-              <div>
+              <div class="support-card-title">
 
-                <h2>
-                  Welfare Cases
-                </h2>
+                <div class="support-card-icon">
+                  📋
+                </div>
 
-                <p class="muted">
-                  Cases visible to authorized management
-                  users in the current authenticated group.
-                </p>
+                <div>
+
+                  <h2>
+                    Welfare Cases
+                  </h2>
+
+                  <p>
+                    Review support cases belonging to the
+                    current authenticated group.
+                  </p>
+
+                </div>
 
               </div>
 
+
               <button
-                class="btn btn-secondary"
+                class="support-btn support-btn-secondary"
                 id="refreshSupport"
                 type="button"
               >
-                Refresh
+                ↻ Refresh
               </button>
 
             </div>
 
+
+            <!-- FILTER BAR -->
 
             <div class="support-filter">
 
@@ -969,14 +2191,15 @@
 
               <input
                 id="caseSearch"
-                class="support-search"
                 type="search"
-                placeholder="Search member or description"
+                placeholder="Search member or description..."
                 aria-label="Search welfare cases"
               >
 
             </div>
 
+
+            <!-- TABLE -->
 
             <div class="support-table-wrap">
 
@@ -1028,6 +2251,7 @@
                       class="support-empty"
                     >
                       Loading welfare cases…
+
                     </td>
 
                   </tr>
@@ -1044,6 +2268,42 @@
 
         </div>
 
+
+        <!-- =============================================
+             BRAND FOOTER
+        ============================================== -->
+
+        <section class="support-brand-footer">
+
+          <div class="support-brand">
+
+            <div class="support-brand-mark">
+              CL
+            </div>
+
+            <div>
+
+              <strong>
+                CHAMA LIVE
+              </strong>
+
+              <span>
+                Better groups. Better records.
+                Better decisions.
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <div class="support-footer-tag">
+            Group Operations • Support &amp; Welfare
+          </div>
+
+        </section>
+
+
       </section>
 
     </div>
@@ -1052,6 +2312,10 @@
 
 </div>
 
+
+<!-- =====================================================
+     PAGE SCRIPT
+===================================================== -->
 
 <script type="module">
 
@@ -1065,3 +2329,4 @@
 </body>
 
 </html>
+
