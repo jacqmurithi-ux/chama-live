@@ -1,0 +1,1546 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <meta
+    name="description"
+    content="CHAMA LIVE — Controlled historical data migration"
+  >
+
+  <title>
+    Data Migration — CHAMA LIVE
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="css/app.css"
+  >
+
+  <style>
+
+    /* =====================================================
+       CHAMA LIVE — DATA MIGRATION
+       ISOLATED CANDIDATE
+
+       IMPORT SCOPE:
+       - Contributions
+       - Expenses
+
+       EXPLICITLY NOT IMPORTED:
+       - Members
+       - Assets
+       - Plans
+       - Activities
+       - Milestones
+       - Meetings
+       - Support
+       - Opening balances
+       - Other entities
+    ====================================================== */
+
+    html,
+    body {
+      width: 100%;
+      max-width: 100%;
+      margin: 0;
+      overflow-x: hidden;
+    }
+
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+
+    .migration-page {
+      width: 100%;
+      max-width: 1450px;
+      margin: 0 auto;
+    }
+
+
+    .migration-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+
+    .migration-title h1 {
+      margin: 0 0 7px;
+      font-size: 30px;
+      line-height: 1.2;
+    }
+
+
+    .migration-title p {
+      margin: 0;
+      max-width: 760px;
+    }
+
+
+    .group-context {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      margin-top: 12px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      background: rgba(15, 118, 110, .08);
+      color: #0f766e;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+
+    .group-context-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #0f766e;
+    }
+
+
+    .safety-banner {
+      margin-bottom: 22px;
+      padding: 15px 17px;
+      border: 1px solid rgba(180, 83, 9, .18);
+      border-radius: 14px;
+      background: #fffbeb;
+      color: #92400e;
+    }
+
+
+    .safety-banner strong {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+
+    .safety-banner p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+
+    .stepper {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+
+    .step {
+      min-width: 0;
+      padding: 11px 9px;
+      border: 1px solid #e5e7eb;
+      border-radius: 11px;
+      background: #fff;
+      color: #64748b;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+
+    .step.active {
+      border-color: #0f766e;
+      background: #ecfdf5;
+      color: #0f766e;
+    }
+
+
+    .step.complete {
+      border-color: #86efac;
+      background: #f0fdf4;
+      color: #166534;
+    }
+
+
+    .migration-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 330px;
+      gap: 20px;
+      align-items: start;
+    }
+
+
+    .migration-card {
+      width: 100%;
+      min-width: 0;
+      padding: 22px;
+      border-radius: 17px;
+    }
+
+
+    .card-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 15px;
+      margin-bottom: 18px;
+    }
+
+
+    .card-heading h2 {
+      margin: 0 0 5px;
+      font-size: 20px;
+    }
+
+
+    .card-heading p {
+      margin: 0;
+      font-size: 13px;
+    }
+
+
+    .upload-zone {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 230px;
+      padding: 25px;
+      border: 2px dashed #cbd5e1;
+      border-radius: 16px;
+      background: #f8fafc;
+      text-align: center;
+      transition:
+        border-color .18s ease,
+        background .18s ease;
+    }
+
+
+    .upload-zone.dragover {
+      border-color: #0f766e;
+      background: #f0fdfa;
+    }
+
+
+    .upload-icon {
+      width: 58px;
+      height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+      border-radius: 16px;
+      background: #ecfdf5;
+      color: #0f766e;
+      font-size: 26px;
+      font-weight: 800;
+    }
+
+
+    .upload-zone h3 {
+      margin: 0 0 6px;
+      font-size: 17px;
+    }
+
+
+    .upload-zone p {
+      max-width: 560px;
+      margin: 0 0 15px;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+
+    .hidden-file-input {
+      display: none;
+    }
+
+
+    .format-note {
+      margin-top: 12px;
+      font-size: 11px;
+      color: #64748b;
+    }
+
+
+    .mapping-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+
+    .mapping-field {
+      min-width: 0;
+    }
+
+
+    .mapping-field label {
+      display: block;
+      margin-bottom: 6px;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+
+    .mapping-field select {
+      width: 100%;
+    }
+
+
+    .mapping-required {
+      color: #b91c1c;
+    }
+
+
+    .mapping-source-note {
+      margin-top: 5px;
+      color: #64748b;
+      font-size: 10px;
+      line-height: 1.4;
+    }
+
+
+    .mapping-forbidden {
+      margin-top: 16px;
+      padding: 13px 15px;
+      border-radius: 11px;
+      background: #fef2f2;
+      color: #991b1b;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+
+    .validation-summary {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 9px;
+      margin-bottom: 18px;
+    }
+
+
+    .summary-box {
+      min-width: 0;
+      padding: 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 11px;
+      background: #fff;
+    }
+
+
+    .summary-label {
+      color: #64748b;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+
+    .summary-value {
+      margin-top: 5px;
+      color: #0f172a;
+      font-size: 21px;
+      font-weight: 800;
+    }
+
+
+    .summary-box.error {
+      border-color: rgba(220, 38, 38, .15);
+      background: #fef2f2;
+    }
+
+
+    .summary-box.warning {
+      border-color: rgba(217, 119, 6, .15);
+      background: #fffbeb;
+    }
+
+
+    .summary-box.success {
+      border-color: rgba(22, 163, 74, .15);
+      background: #f0fdf4;
+    }
+
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+
+    .migration-table {
+      width: 100%;
+      min-width: 920px;
+      border-collapse: collapse;
+    }
+
+
+    .migration-table th {
+      padding: 11px 12px;
+      border-bottom: 1px solid #e2e8f0;
+      background: #f8fafc;
+      color: #64748b;
+      text-align: left;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      white-space: nowrap;
+    }
+
+
+    .migration-table td {
+      padding: 11px 12px;
+      border-bottom: 1px solid #eef2f7;
+      color: #334155;
+      font-size: 12px;
+      vertical-align: top;
+    }
+
+
+    .migration-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+
+    .status-valid {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+
+    .status-warning {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+
+    .status-error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+
+    .status-imported {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+
+    .status-pending {
+      background: #f1f5f9;
+      color: #475569;
+    }
+
+
+    .status-skipped {
+      background: #f1f5f9;
+      color: #64748b;
+    }
+
+
+    .error-list,
+    .warning-list {
+      margin: 0;
+      padding-left: 18px;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+
+    .error-list {
+      color: #991b1b;
+    }
+
+
+    .warning-list {
+      color: #92400e;
+    }
+
+
+    .confirmation-box {
+      padding: 17px;
+      border: 1px solid #cbd5e1;
+      border-radius: 13px;
+      background: #f8fafc;
+    }
+
+
+    .confirmation-box h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+
+
+    .confirmation-box p {
+      margin: 0 0 12px;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+
+    .confirmation-check {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      margin-top: 13px;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+
+    .confirmation-check input {
+      margin-top: 3px;
+      flex: 0 0 auto;
+    }
+
+
+    .action-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+
+    .action-row .spacer {
+      flex: 1;
+    }
+
+
+    .status-message {
+      display: none;
+      margin-bottom: 17px;
+      padding: 12px 14px;
+      border-radius: 11px;
+      font-size: 12px;
+      line-height: 1.5;
+      font-weight: 650;
+    }
+
+
+    .status-message.visible {
+      display: block;
+    }
+
+
+    .status-message.info {
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+
+    .status-message.success {
+      background: #f0fdf4;
+      color: #166534;
+    }
+
+
+    .status-message.error {
+      background: #fef2f2;
+      color: #991b1b;
+    }
+
+
+    .status-message.warning {
+      background: #fffbeb;
+      color: #92400e;
+    }
+
+
+    .sidebar-card {
+      padding: 19px;
+      border-radius: 16px;
+    }
+
+
+    .sidebar-card h3 {
+      margin: 0 0 11px;
+      font-size: 16px;
+    }
+
+
+    .sidebar-card p {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+
+    .scope-list {
+      display: grid;
+      gap: 7px;
+      margin: 13px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+
+    .scope-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+
+    .scope-list .allowed {
+      color: #166534;
+    }
+
+
+    .scope-list .blocked {
+      color: #991b1b;
+    }
+
+
+    .reconciliation-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+
+    .reconciliation-item {
+      padding: 13px;
+      border: 1px solid #e5e7eb;
+      border-radius: 11px;
+    }
+
+
+    .reconciliation-item span {
+      display: block;
+      color: #64748b;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+
+    .reconciliation-item strong {
+      display: block;
+      margin-top: 5px;
+      color: #0f172a;
+      font-size: 18px;
+    }
+
+
+    [hidden] {
+      display: none !important;
+    }
+
+
+    @media (max-width: 1050px) {
+
+      .migration-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .validation-summary {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .reconciliation-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+    }
+
+
+    @media (max-width: 750px) {
+
+      .migration-header {
+        flex-direction: column;
+      }
+
+      .stepper {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .mapping-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .validation-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .migration-card {
+        padding: 16px 13px;
+      }
+
+    }
+
+
+    @media (max-width: 450px) {
+
+      .validation-summary,
+      .reconciliation-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stepper {
+        grid-template-columns: 1fr;
+      }
+
+    }
+
+  </style>
+
+</head>
+
+
+<body>
+
+  <!-- ===================================================
+       GLOBAL LAYOUT
+  ==================================================== -->
+
+  <div class="topbar">
+
+    <div class="topbar-inner">
+
+      <div class="brand">
+        CHAMA LIVE
+      </div>
+
+      <nav class="top-nav" aria-label="Primary navigation">
+
+        <a href="dashboard.html">
+          Dashboard
+        </a>
+
+        <a href="members.html">
+          Members
+        </a>
+
+        <a href="contributions.html">
+          Contributions
+        </a>
+
+        <a href="expenses.html">
+          Expenses
+        </a>
+
+        <a href="meetings.html">
+          Meetings
+        </a>
+
+        <a href="reports.html">
+          Reports
+        </a>
+
+        <a href="monthly-closing.html">
+          Monthly Closing
+        </a>
+
+        <a href="group-management.html">
+          Group Management
+        </a>
+
+        <a
+          href="data-migration.html"
+          class="active"
+          aria-current="page"
+        >
+          Data Migration
+        </a>
+
+      </nav>
+
+      <div class="topbar-actions">
+
+        <span
+          class="user-name"
+          data-user-name
+        >
+          Member
+        </span>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <div class="layout">
+
+    <main class="main">
+
+      <div class="migration-page">
+
+        <header class="migration-header">
+
+          <div class="migration-title">
+
+            <h1>
+              Data Migration
+            </h1>
+
+            <p class="muted">
+              Controlled import of historical contributions and expenses.
+              Migration never bypasses normal authentication, financial-period
+              controls, or canonical contribution accounting.
+            </p>
+
+            <div class="group-context">
+
+              <span class="group-context-dot"></span>
+
+              <span>
+                Group:
+                <strong data-group-name>
+                  Loading…
+                </strong>
+              </span>
+
+            </div>
+
+          </div>
+
+        </header>
+
+
+        <section class="safety-banner">
+
+          <strong>
+            🔒 Controlled migration — production accounting remains protected
+          </strong>
+
+          <p>
+            Only Contributions and Expenses can be imported.
+            Closed financial periods are rejected. Contributions are recorded
+            through the canonical 2B contribution-confirmation path.
+            Allocations and obligations are never supplied by the import file.
+          </p>
+
+        </section>
+
+
+        <div
+          id="stepper"
+          class="stepper"
+          aria-label="Migration progress"
+        >
+
+          <div class="step active" data-step="upload">
+            1. Upload
+          </div>
+
+          <div class="step" data-step="map">
+            2. Map
+          </div>
+
+          <div class="step" data-step="validate">
+            3. Validate
+          </div>
+
+          <div class="step" data-step="preview">
+            4. Preview
+          </div>
+
+          <div class="step" data-step="confirm">
+            5. Confirm
+          </div>
+
+          <div class="step" data-step="import">
+            6. Import
+          </div>
+
+          <div class="step" data-step="verify">
+            7. Verify
+          </div>
+
+        </div>
+
+
+        <div
+          id="pageStatus"
+          class="status-message"
+          role="status"
+          aria-live="polite"
+        ></div>
+
+
+        <div class="migration-grid">
+
+          <section class="migration-card card">
+
+            <!-- =========================================
+                 UPLOAD
+            ========================================== -->
+
+            <section id="uploadSection">
+
+              <div class="card-heading">
+
+                <div>
+
+                  <h2>
+                    Upload source file
+                  </h2>
+
+                  <p class="muted">
+                    Start with a CSV export containing contributions or expenses.
+                  </p>
+
+                </div>
+
+              </div>
+
+
+              <div
+                id="uploadZone"
+                class="upload-zone"
+              >
+
+                <div class="upload-icon">
+                  ↑
+                </div>
+
+                <h3>
+                  Drop your CSV here
+                </h3>
+
+                <p class="muted">
+                  Or choose a file from your computer. The candidate importer
+                  does not modify live accounting during upload.
+                </p>
+
+                <button
+                  id="chooseFileButton"
+                  class="btn"
+                  type="button"
+                >
+                  Choose CSV file
+                </button>
+
+                <input
+                  id="fileInput"
+                  class="hidden-file-input"
+                  type="file"
+                  accept=".csv,text/csv"
+                >
+
+                <div class="format-note">
+                  Supported candidate format: CSV.
+                </div>
+
+              </div>
+
+            </section>
+
+
+            <!-- =========================================
+                 MAPPING
+            ========================================== -->
+
+            <section
+              id="mappingSection"
+              hidden
+            >
+
+              <div class="card-heading">
+
+                <div>
+
+                  <h2>
+                    Map source columns
+                  </h2>
+
+                  <p class="muted">
+                    Select the source column corresponding to each canonical field.
+                  </p>
+
+                </div>
+
+              </div>
+
+
+              <div
+                id="mappingGrid"
+                class="mapping-grid"
+              ></div>
+
+
+              <div class="mapping-forbidden">
+
+                <strong>
+                  Protected fields:
+                </strong>
+
+                group IDs, recorded-by IDs, allocation IDs,
+                obligation IDs, allocation amounts, financial-period state,
+                and other system/accounting fields cannot be imported.
+
+              </div>
+
+
+              <div class="action-row">
+
+                <button
+                  id="backToUploadButton"
+                  class="btn"
+                  type="button"
+                >
+                  Back
+                </button>
+
+                <div class="spacer"></div>
+
+                <button
+                  id="validateButton"
+                  class="btn primary"
+                  type="button"
+                >
+                  Validate data
+                </button>
+
+              </div>
+
+            </section>
+
+
+            <!-- =========================================
+                 VALIDATION
+            ========================================== -->
+
+            <section
+              id="validationSection"
+              hidden
+            >
+
+              <div class="card-heading">
+
+                <div>
+
+                  <h2>
+                    Validation
+                  </h2>
+
+                  <p class="muted">
+                    Every source row is checked before anything can be imported.
+                  </p>
+
+                </div>
+
+              </div>
+
+
+              <div
+                id="validationSummary"
+                class="validation-summary"
+              ></div>
+
+
+              <div
+                id="validationErrorsPanel"
+                hidden
+              >
+
+                <h3>
+                  Errors
+                </h3>
+
+                <ul
+                  id="validationErrors"
+                  class="error-list"
+                ></ul>
+
+              </div>
+
+
+              <div
+                id="validationWarningsPanel"
+                hidden
+              >
+
+                <h3>
+                  Warnings
+                </h3>
+
+                <ul
+                  id="validationWarnings"
+                  class="warning-list"
+                ></ul>
+
+              </div>
+
+
+              <div class="action-row">
+
+                <button
+                  id="backToMappingButton"
+                  class="btn"
+                  type="button"
+                >
+                  Back
+                </button>
+
+                <div class="spacer"></div>
+
+                <button
+                  id="previewButton"
+                  class="btn primary"
+                  type="button"
+                  disabled
+                >
+                  Open preview
+                </button>
+
+              </div>
+
+            </section>
+
+
+            <!-- =========================================
+                 PREVIEW
+            ========================================== -->
+
+            <section
+              id="previewSection"
+              hidden
+            >
+
+              <div class="card-heading">
+
+                <div>
+
+                  <h2>
+                    Import preview
+                  </h2>
+
+                  <p class="muted">
+                    Review normalized rows before explicit confirmation.
+                  </p>
+
+                </div>
+
+              </div>
+
+
+              <div
+                id="previewSummary"
+                class="validation-summary"
+              ></div>
+
+
+              <div class="table-wrap">
+
+                <table class="migration-table">
+
+                  <thead>
+
+                    <tr>
+
+                      <th>
+                        Row
+                      </th>
+
+                      <th>
+                        Type
+                      </th>
+
+                      <th>
+                        Member / Description
+                      </th>
+
+                      <th>
+                        Amount
+                      </th>
+
+                      <th>
+                        Date
+                      </th>
+
+                      <th>
+                        Month
+                      </th>
+
+                      <th>
+                        Payment
+                      </th>
+
+                      <th>
+                        Period
+                      </th>
+
+                      <th>
+                        Status
+                      </th>
+
+                    </tr>
+
+                  </thead>
+
+                  <tbody id="previewTableBody"></tbody>
+
+                </table>
+
+              </div>
+
+
+              <div class="action-row">
+
+                <button
+                  id="backToValidationButton"
+                  class="btn"
+                  type="button"
+                >
+                  Back
+                </button>
+
+                <div class="spacer"></div>
+
+                <button
+                  id="confirmReviewButton"
+                  class="btn primary"
+                  type="button"
+                  disabled
+                >
+                  Continue to confirmation
+                </button>
+
+              </div>
+
+            </section>
+
+
+            <!-- =========================================
+                 CONFIRMATION
+            ========================================== -->
+
+            <section
+              id="confirmationSection"
+              hidden
+            >
+
+              <div class="card-heading">
+
+                <div>
+
+                  <h2>
+                    Explicit confirmation
+                  </h2>
+
+                  <p class="muted">
+                    No financial records will be written until you confirm this summary.
+                  </p>
+
+                </div>
+
+              </div>
+
+
+              <div
+                id="confirmationSummary"
+                class="reconciliation-grid"
+              ></div>
+
+
+              <div class="confirmation-box">
+
+                <h3>
+                  Final safety confirmation
+                </h3>
+
+                <p>
+                  By confirming, you acknowledge that the rows shown above
+                  passed validation and that no closed-period record will be
+                  imported. Contributions will use the canonical 2B recording
+                  function; the importer will not create or modify obligations
+                  or allocations directly.
+                </p>
+
+
+                <label class="confirmation-check">
+
+                  <input
+                    id="confirmationCheckbox"
+                    type="checkbox"
+                  >
+
+                  <span>
+                    I have reviewed the migration preview and explicitly
+                    authorize the validated rows to proceed to import.
+                  </span>
+
+                </label>
+
+              </div>
+
+
+              <div class="action-row">
+
+                <button
+                  id="backToPreviewButton"
+                  class="btn"
+                  type="button"
+                >
+                  Back
+                </button>
+
+                <div class="spacer"></div>
+
+                <button
+                  id="startImportButton"
+                  class="btn primary"
+                  type="button"
+                  disabled
+                >
+                  Confirm and import
+                </button>
+
+              </div>
+
+            </section>
+
+
+            <!-- =========================================
+                 IMPORT
+            ========================================== -->
+
+            <section
+              id="importSection"
+              hidden
+            >
+
+              <div class="card-heading">
+
+                <div>
+
+                  <h2>
+                    Importing
+                  </h2>
+
+                  <p class="muted">
+                    The controlled import path is executing.
+                  </p>
+
+                </div>
+
+              </div>
+
+
+              <div
+                id="importProgress"
+                class="validation-summary"
+              ></div>
+
+
+              <div class="action-row">
+
+                <button
+                  id="verifyButton"
+                  class="btn primary"
+                  type="button"
+                  disabled
+                >
+                  Verify imported records
+                </button>
+
+              </div>
+
+            </section>
+
+
+            <!-- =========================================
+                 VERIFICATION
+            ========================================== -->
+
+            <section
+              id="verificationSection"
+              hidden
+            >
+
+              <div class="card-heading">
+
+                <div>
+
+                  <h2>
+                    Verification complete
+                  </h2>
+
+                  <p class="muted">
+                    Reconciliation results from the controlled import.
+                  </p>
+
+                </div>
+
+              </div>
+
+
+              <div
+                id="verificationSummary"
+                class="reconciliation-grid"
+              ></div>
+
+
+              <div class="action-row">
+
+                <button
+                  id="newMigrationButton"
+                  class="btn"
+                  type="button"
+                >
+                  Start another migration
+                </button>
+
+              </div>
+
+            </section>
+
+          </section>
+
+
+          <!-- =========================================
+               SIDE INFORMATION
+          ========================================== -->
+
+          <aside>
+
+            <section class="sidebar-card card">
+
+              <h3>
+                Import scope
+              </h3>
+
+              <p class="muted">
+                This migration candidate intentionally accepts only financial
+                transaction records that already belong in existing modules.
+              </p>
+
+
+              <ul class="scope-list">
+
+                <li class="allowed">
+                  ✓ Contributions
+                </li>
+
+                <li class="allowed">
+                  ✓ Expenses
+                </li>
+
+                <li class="blocked">
+                  ✕ Members
+                </li>
+
+                <li class="blocked">
+                  ✕ Plans & Activities
+                </li>
+
+                <li class="blocked">
+                  ✕ Milestones
+                </li>
+
+                <li class="blocked">
+                  ✕ Assets
+                </li>
+
+                <li class="blocked">
+                  ✕ Meetings
+                </li>
+
+                <li class="blocked">
+                  ✕ Support cases
+                </li>
+
+                <li class="blocked">
+                  ✕ Opening balances
+                </li>
+
+              </ul>
+
+            </section>
+
+
+            <section class="sidebar-card card">
+
+              <h3>
+                Accounting protection
+              </h3>
+
+              <p class="muted">
+                Contribution imports never accept allocation or obligation
+                records from the source file. The live canonical accounting
+                function remains authoritative.
+              </p>
+
+            </section>
+
+
+            <section class="sidebar-card card">
+
+              <h3>
+                Before importing
+              </h3>
+
+              <p class="muted">
+                Resolve member references, correct invalid dates and amounts,
+                and address all closed-period conflicts before confirmation.
+              </p>
+
+            </section>
+
+          </aside>
+
+        </div>
+
+      </div>
+
+    </main>
+
+  </div>
+
+
+  <!-- ===================================================
+       EXISTING GLOBAL LAYOUT
+       Loaded separately so this candidate does not require
+       modifying layout.js / PAGE_SCRIPTS.
+  ==================================================== -->
+
+  <script
+    type="module"
+    src="js/layout.js"
+  ></script>
+
+
+  <!-- ===================================================
+       ISOLATED CANDIDATE
+  ==================================================== -->
+
+  <script
+    type="module"
+    src="js/data-migration.js"
+  ></script>
+
+</body>
+
+</html>
