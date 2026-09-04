@@ -1,80 +1,84 @@
 /* =========================================================
    CHAMA LIVE — DATA MIGRATION
-   ISOLATED CANDIDATE
+   COMPLETE CANDIDATE
+   =========================================================
 
-   IMPORT SCOPE
+   PURPOSE
    ---------------------------------------------------------
-   ONLY:
-     - contributions
-     - expenses
+   Controlled migration of:
 
-   WORKFLOW
-   ---------------------------------------------------------
-   Upload
-      ↓
-   Map
-      ↓
-   Validate
-      ↓
-   Preview
-      ↓
-   Explicit confirmation
-      ↓
-   Import
-      ↓
-   Verify
+     1. Contributions
+     2. Expenses
 
-   SAFETY
+   Workflow:
+
+     Upload
+        ↓
+     Map
+        ↓
+     Stage
+        ↓
+     Validate
+        ↓
+     Preview
+        ↓
+     Explicit Confirmation
+        ↓
+     Import
+        ↓
+     Verify
+
+   IMPORTANT SAFETY RULES
    ---------------------------------------------------------
-   - Uses authenticated current member/group context.
-   - Never accepts group_id from the UI.
-   - Never accepts recorded_by from the UI.
-   - Never imports obligations.
-   - Never imports allocations.
-   - Never imports financial-period state.
-   - Never creates members automatically.
-   - Never creates financial periods automatically.
-   - Contributions use cl_2b_record_contribution().
-   - cl_2b_refresh_member() is NOT modified here.
+   - Production schema is NOT modified by this file.
+   - No financial periods are created.
+   - Closed periods cannot be bypassed.
+   - contribution_allocations are NEVER inserted directly.
+   - contribution_obligations are NEVER inserted directly.
+   - Contributions use canonical:
+       cl_2b_record_contribution(...)
+   - Group identity comes from authenticated context.
+   - No group_id is accepted from URL/localStorage/forms.
    - No service-role key is used.
-   - No DDL is executed.
-========================================================= */
+   - Historical data does NOT bypass financial controls.
+   - Only contributions and expenses may be imported.
+   - Other entity types are rejected.
+   - Import confirmation is explicit.
+   - Post-import verification is mandatory.
+
+   ========================================================= */
 
 import {
-  supabase
-} from "./supabase.js";
-
-import {
-  requireAuth,
-  getCurrentMember,
-  getCurrentGroup
+  supabase,
+  getMyMember,
+  getMyGroupId,
+  money
 } from "./auth.js";
 
 
 /* =========================================================
-   CONSTANTS
+   CONFIGURATION
 ========================================================= */
 
-const IMPORTABLE_ENTITY_TYPES = [
+const ALLOWED_ENTITY_TYPES = [
   "contribution",
   "expense"
 ];
 
-
-const SOURCE_TYPES = [
-  "csv"
+const ALLOWED_SOURCE_TYPES = [
+  "csv",
+  "xlsx"
 ];
 
+const CONTRIBUTION_TYPES = [
+  "monthly"
+];
 
-const CONTRIBUTION_PAYMENT_METHODS = [
+const PAYMENT_METHODS = [
   "M-Pesa",
   "Cash",
   "Bank transfer"
 ];
-
-
-const CONTRIBUTION_TYPE = "monthly";
-
 
 const EXPENSE_CATEGORIES = [
   "meeting",
@@ -87,175 +91,21 @@ const EXPENSE_CATEGORIES = [
   "other"
 ];
 
-
 const EXPENSE_APPROVAL_STATUSES = [
   "pending",
   "approved",
   "rejected"
 ];
 
-
-const PROTECTED_FIELD_NAMES = new Set([
-
-  "id",
-
-  "group_id",
-
-  "recorded_by",
-
-  "created_at",
-
-  "updated_at",
-
-  "payment_id",
-
-  "contribution_id",
-
-  "allocation_id",
-
-  "obligation_id",
-
-  "allocation_amount",
-
-  "obligation_amount",
-
-  "financial_period_id",
-
-  "financial_period_status",
-
-  "period_status",
-
-  "accounting_status",
-
-  "accounting_result",
-
-  "normalized_accounting",
-
-  "canonical_accounting",
-
-  "service_role",
-
-  "auth_uid",
-
-  "user_id",
-
-  "auth_user_id"
-
-]);
-
-
-/*
- * The first implementation deliberately requires the
- * contribution date.
- *
- * Month is derived from contribution_date.
- *
- * If the source also provides a month column, it is
- * validated against the derived month.
- */
-const CONTRIBUTION_FIELDS = [
-
-  {
-    key: "member_identifier",
-    label: "Member identifier",
-    required: true
-  },
-
-  {
-    key: "amount",
-    label: "Amount",
-    required: true
-  },
-
-  {
-    key: "contribution_date",
-    label: "Contribution date",
-    required: true
-  },
-
-  {
-    key: "month",
-    label: "Source month (optional consistency check)",
-    required: false
-  },
-
-  {
-    key: "payment_method",
-    label: "Payment method",
-    required: true
-  },
-
-  {
-    key: "reference",
-    label: "Reference",
-    required: false
-  },
-
-  {
-    key: "mpesa_reference",
-    label: "M-Pesa reference",
-    required: false
-  },
-
-  {
-    key: "goal",
-    label: "Goal",
-    required: false
-  },
-
-  {
-    key: "notes",
-    label: "Notes",
-    required: false
-  },
-
-  {
-    key: "contribution_type",
-    label: "Contribution type",
-    required: false
-  }
-
-];
-
-
-const EXPENSE_FIELDS = [
-
-  {
-    key: "description",
-    label: "Description",
-    required: true
-  },
-
-  {
-    key: "amount",
-    label: "Amount",
-    required: true
-  },
-
-  {
-    key: "date",
-    label: "Expense date",
-    required: true
-  },
-
-  {
-    key: "category",
-    label: "Category",
-    required: false
-  },
-
-  {
-    key: "approval_status",
-    label: "Approval status",
-    required: false
-  },
-
-  {
-    key: "receipt_url",
-    label: "Receipt reference",
-    required: false
-  }
-
+const MAPPING_TYPES = [
+  "direct",
+  "member_match",
+  "date_parse",
+  "amount_parse",
+  "month_to_date",
+  "constant",
+  "ignore",
+  "custom"
 ];
 
 
@@ -264,37 +114,37 @@ const EXPENSE_FIELDS = [
 ========================================================= */
 
 const state = {
-
   user: null,
-
   member: null,
-
-  group: null,
+  groupId: null,
 
   file: null,
+  sourceType: null,
+  sourceName: null,
 
-  sourceHeaders: [],
+  sheetName: null,
 
+  headers: [],
   sourceRows: [],
 
-  entityType: null,
+  entityType: "contribution",
 
   mappings: {},
 
-  normalizedRows: [],
-
-  validation: null,
-
   batchId: null,
 
-  importResults: [],
+  stagedRows: [],
+  validationRows: [],
 
-  verification: null,
+  validated: false,
+  ready: false,
+  confirmed: false,
+  importing: false,
 
-  currentStep: "upload",
+  importedCount: 0,
+  failedCount: 0,
 
-  busy: false
-
+  importResults: []
 };
 
 
@@ -302,882 +152,1293 @@ const state = {
    DOM HELPERS
 ========================================================= */
 
-function byId(id) {
+function $(selector) {
+  return document.querySelector(selector);
+}
 
-  return document.getElementById(id);
+
+function $all(selector) {
+  return Array.from(
+    document.querySelectorAll(selector)
+  );
+}
+
+
+function setText(selector, value) {
+
+  const element = $(selector);
+
+  if (element) {
+    element.textContent =
+      value == null
+        ? ""
+        : String(value);
+  }
 
 }
 
 
-function all(selector) {
+function show(selector) {
 
-  return Array.from(
-    document.querySelectorAll(selector)
-  );
+  const element = $(selector);
+
+  if (element) {
+    element.hidden = false;
+  }
+
+}
+
+
+function hide(selector) {
+
+  const element = $(selector);
+
+  if (element) {
+    element.hidden = true;
+  }
+
+}
+
+
+function setDisabled(selector, disabled) {
+
+  const element = $(selector);
+
+  if (element) {
+    element.disabled = Boolean(disabled);
+  }
 
 }
 
 
 function escapeHtml(value) {
 
-  return String(
-    value ?? ""
-  )
+  return String(value ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
-
 }
 
 
 /* =========================================================
-   STATUS
+   STATUS / MESSAGE
 ========================================================= */
 
-function showStatus(
+function showMessage(
   message,
   type = "info"
 ) {
 
   const element =
-    byId("pageStatus");
+    $("#migrationMessage") ||
+    $("#message") ||
+    $(".migration-message");
 
   if (!element) {
+    console[type === "error" ? "error" : "log"](
+      message
+    );
     return;
   }
 
-  element.textContent =
-    message || "";
+  element.textContent = message;
 
-  element.className =
-    `status-message visible ${type}`;
+  element.dataset.type = type;
 
+  element.hidden = false;
 }
 
 
-function clearStatus() {
+function clearMessage() {
 
   const element =
-    byId("pageStatus");
+    $("#migrationMessage") ||
+    $("#message") ||
+    $(".migration-message");
 
-  if (!element) {
+  if (element) {
+    element.textContent = "";
+    element.hidden = true;
+    delete element.dataset.type;
+  }
+
+}
+
+
+/* =========================================================
+   INITIALIZATION
+========================================================= */
+
+document.addEventListener(
+  "DOMContentLoaded",
+  initialize
+);
+
+
+async function initialize() {
+
+  try {
+
+    showMessage(
+      "Loading your group migration context...",
+      "info"
+    );
+
+    state.member =
+      await getMyMember();
+
+    state.groupId =
+      await getMyGroupId();
+
+    if (!state.member?.id) {
+      throw new Error(
+        "Your member account could not be resolved."
+      );
+    }
+
+    if (!state.groupId) {
+      throw new Error(
+        "Your group could not be resolved."
+      );
+    }
+
+    bindEvents();
+
+    updateEntityUI();
+
+    updateStepUI(1);
+
+    clearMessage();
+
+  }
+  catch (error) {
+
+    console.error(
+      "DATA MIGRATION INITIALIZATION ERROR",
+      error
+    );
+
+    showMessage(
+      error?.message ||
+      "Unable to initialize Data Migration.",
+      "error"
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   EVENT BINDING
+========================================================= */
+
+function bindEvents() {
+
+  const fileInput =
+    $("#fileInput") ||
+    $("#migrationFile");
+
+  if (fileInput) {
+
+    fileInput.addEventListener(
+      "change",
+      handleFileSelection
+    );
+
+  }
+
+
+  const entitySelect =
+    $("#entityType") ||
+    $("#migrationEntityType");
+
+  if (entitySelect) {
+
+    entitySelect.addEventListener(
+      "change",
+      () => {
+
+        state.entityType =
+          entitySelect.value;
+
+        updateEntityUI();
+
+        if (state.sourceRows.length) {
+          buildMappingUI();
+        }
+
+      }
+    );
+
+  }
+
+
+  const validateButton =
+    $("#validateButton") ||
+    $("#validateImport");
+
+  if (validateButton) {
+
+    validateButton.addEventListener(
+      "click",
+      validateMigration
+    );
+
+  }
+
+
+  const confirmCheckbox =
+    $("#confirmImport") ||
+    $("#explicitConfirmation");
+
+  if (confirmCheckbox) {
+
+    confirmCheckbox.addEventListener(
+      "change",
+      () => {
+
+        state.confirmed =
+          Boolean(confirmCheckbox.checked);
+
+        updateImportButton();
+
+      }
+    );
+
+  }
+
+
+  const importButton =
+    $("#importButton") ||
+    $("#executeImport");
+
+  if (importButton) {
+
+    importButton.addEventListener(
+      "click",
+      executeImport
+    );
+
+  }
+
+
+  const resetButton =
+    $("#resetButton") ||
+    $("#resetMigration");
+
+  if (resetButton) {
+
+    resetButton.addEventListener(
+      "click",
+      resetMigration
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   ENTITY UI
+========================================================= */
+
+function updateEntityUI() {
+
+  const entity =
+    state.entityType;
+
+  const label =
+    entity === "expense"
+      ? "Expenses"
+      : "Contributions";
+
+  setText(
+    "#selectedEntityLabel",
+    label
+  );
+
+  setText(
+    "#entityDescription",
+    entity === "expense"
+      ? "Import expense records only."
+      : "Import contribution payment records through the canonical 2B accounting path."
+  );
+
+}
+
+
+/* =========================================================
+   FILE SELECTION
+========================================================= */
+
+async function handleFileSelection(event) {
+
+  const file =
+    event.target.files?.[0];
+
+  if (!file) {
     return;
   }
 
-  element.textContent = "";
+  try {
 
-  element.className =
-    "status-message";
+    clearMessage();
 
-}
+    resetFileState();
 
+    state.file = file;
 
-/* =========================================================
-   STEP UI
-========================================================= */
+    state.sourceName =
+      file.name;
 
-function setStep(step) {
+    state.sourceType =
+      detectSourceType(file);
 
-  state.currentStep =
-    step;
+    if (
+      !ALLOWED_SOURCE_TYPES.includes(
+        state.sourceType
+      )
+    ) {
 
-  const order = [
-    "upload",
-    "map",
-    "validate",
-    "preview",
-    "confirm",
-    "import",
-    "verify"
-  ];
-
-  const currentIndex =
-    order.indexOf(step);
-
-
-  all("[data-step]")
-    .forEach(function (element) {
-
-      const elementStep =
-        element.dataset.step;
-
-      const elementIndex =
-        order.indexOf(elementStep);
-
-      element.classList.remove(
-        "active",
-        "complete"
+      throw new Error(
+        "Only CSV and XLSX files are supported."
       );
 
-      if (
-        elementIndex <
-        currentIndex
-      ) {
-
-        element.classList.add(
-          "complete"
-        );
-
-      }
-
-      if (
-        elementStep === step
-      ) {
-
-        element.classList.add(
-          "active"
-        );
-
-      }
-
-    });
-
-}
-
-
-function showOnly(
-  sectionId
-) {
-
-  const sections = [
-
-    "uploadSection",
-
-    "mappingSection",
-
-    "validationSection",
-
-    "previewSection",
-
-    "confirmationSection",
-
-    "importSection",
-
-    "verificationSection"
-
-  ];
-
-
-  sections.forEach(function (id) {
-
-    const element =
-      byId(id);
-
-    if (!element) {
-      return;
     }
 
-    element.hidden =
-      id !== sectionId;
+    setText(
+      "#fileName",
+      file.name
+    );
 
-  });
+    setText(
+      "#fileSize",
+      formatBytes(file.size)
+    );
+
+    showMessage(
+      "Reading file...",
+      "info"
+    );
+
+    const parsed =
+      await parseFile(file);
+
+    if (
+      !parsed ||
+      !Array.isArray(parsed.rows) ||
+      parsed.rows.length === 0
+    ) {
+
+      throw new Error(
+        "The selected file contains no usable data rows."
+      );
+
+    }
+
+    state.headers =
+      parsed.headers;
+
+    state.sourceRows =
+      parsed.rows;
+
+    state.sheetName =
+      parsed.sheetName || null;
+
+    await createBatch();
+
+    await stageRows();
+
+    buildMappingUI();
+
+    updatePreviewStats();
+
+    updateStepUI(2);
+
+    showMessage(
+      `File loaded successfully: ${state.sourceRows.length} data row(s).`,
+      "success"
+    );
+
+  }
+  catch (error) {
+
+    console.error(
+      "FILE IMPORT ERROR",
+      error
+    );
+
+    resetFileState();
+
+    showMessage(
+      error?.message ||
+      "Unable to read the selected file.",
+      "error"
+    );
+
+  }
 
 }
 
 
 /* =========================================================
-   AUTHENTICATION / GROUP CONTEXT
+   SOURCE TYPE
 ========================================================= */
 
-async function loadContext() {
+function detectSourceType(file) {
 
-  state.user =
-    await requireAuth();
-
-  state.member =
-    await getCurrentMember();
-
-  state.group =
-    await getCurrentGroup();
-
-
-  if (!state.member?.id) {
-
-    throw new Error(
-      "Authenticated member could not be resolved."
-    );
-
-  }
-
-
-  if (!state.member?.group_id) {
-
-    throw new Error(
-      "Authenticated member has no group."
-    );
-
-  }
-
-
-  if (!state.group?.id) {
-
-    throw new Error(
-      "Current group could not be resolved."
-    );
-
-  }
-
+  const name =
+    String(file.name || "")
+      .toLowerCase();
 
   if (
-    state.member.group_id !==
-    state.group.id
+    name.endsWith(".xlsx") ||
+    name.endsWith(".xls")
+  ) {
+    return "xlsx";
+  }
+
+  if (
+    name.endsWith(".csv")
+  ) {
+    return "csv";
+  }
+
+  return null;
+}
+
+
+/* =========================================================
+   FILE PARSING
+========================================================= */
+
+async function parseFile(file) {
+
+  if (
+    state.sourceType === "csv"
   ) {
 
-    throw new Error(
-      "Authenticated member/group context is inconsistent."
-    );
+    return parseCsvFile(file);
 
   }
 
+  if (
+    state.sourceType === "xlsx"
+  ) {
 
-  const groupName =
-    state.group.name ||
-    state.group.group_name ||
-    "CHAMA";
+    return parseXlsxFile(file);
 
+  }
 
-  all("[data-group-name]")
-    .forEach(function (element) {
-
-      element.textContent =
-        groupName;
-
-    });
-
-
-  all("[data-user-name]")
-    .forEach(function (element) {
-
-      element.textContent =
-        state.member.name ||
-        state.member.full_name ||
-        "Member";
-
-    });
+  throw new Error(
+    "Unsupported file type."
+  );
 
 }
 
 
 /* =========================================================
-   FILE READING
+   CSV PARSER
 ========================================================= */
 
-function parseCsv(text) {
+async function parseCsvFile(file) {
 
-  const rows = [];
+  const text =
+    await file.text();
 
-  let row = [];
+  const lines =
+    splitCsvLines(text);
 
-  let cell = "";
+  if (!lines.length) {
+    throw new Error(
+      "CSV file is empty."
+    );
+  }
 
-  let inQuotes = false;
+  const rows =
+    lines.map(parseCsvLine);
 
+  const headers =
+    rows.shift()
+      .map(normalizeHeader)
+      .filter(Boolean);
+
+  if (!headers.length) {
+    throw new Error(
+      "CSV file has no usable column headers."
+    );
+  }
+
+  const dataRows =
+    rows
+      .filter(row =>
+        row.some(
+          value =>
+            String(value ?? "").trim() !== ""
+        )
+      )
+      .map(row => {
+
+        const object = {};
+
+        headers.forEach(
+          (header, index) => {
+
+            object[header] =
+              row[index] ?? "";
+
+          }
+        );
+
+        return object;
+
+      });
+
+  return {
+    headers,
+    rows: dataRows,
+    sheetName: null
+  };
+
+}
+
+
+/* =========================================================
+   CSV LINE SPLITTING
+========================================================= */
+
+function splitCsvLines(text) {
+
+  const lines = [];
+
+  let current = "";
+  let quoted = false;
 
   for (
-    let index = 0;
-    index < text.length;
-    index += 1
+    let i = 0;
+    i < text.length;
+    i++
   ) {
 
     const char =
-      text[index];
+      text[i];
 
     const next =
-      text[index + 1];
+      text[i + 1];
 
+    if (
+      char === '"' &&
+      quoted &&
+      next === '"'
+    ) {
+
+      current += '""';
+
+      i++;
+
+      continue;
+    }
 
     if (char === '"') {
 
-      if (
-        inQuotes &&
-        next === '"'
-      ) {
+      quoted = !quoted;
 
-        cell += '"';
-
-        index += 1;
-
-      }
-
-      else {
-
-        inQuotes =
-          !inQuotes;
-
-      }
+      current += char;
 
       continue;
-
     }
-
-
-    if (
-      char === "," &&
-      !inQuotes
-    ) {
-
-      row.push(cell);
-
-      cell = "";
-
-      continue;
-
-    }
-
 
     if (
       (char === "\n" || char === "\r") &&
-      !inQuotes
+      !quoted
     ) {
 
       if (
         char === "\r" &&
         next === "\n"
       ) {
-
-        index += 1;
-
+        i++;
       }
 
-      row.push(cell);
+      lines.push(current);
 
-      cell = "";
-
-      if (
-        row.some(
-          value =>
-            String(value).trim() !== ""
-        )
-      ) {
-
-        rows.push(row);
-
-      }
-
-      row = [];
+      current = "";
 
       continue;
-
     }
 
-
-    cell += char;
+    current += char;
 
   }
 
+  if (current.length > 0) {
+    lines.push(current);
+  }
 
-  if (
-    cell !== "" ||
-    row.length > 0
+  return lines;
+}
+
+
+/* =========================================================
+   CSV LINE PARSER
+========================================================= */
+
+function parseCsvLine(line) {
+
+  const values = [];
+
+  let value = "";
+
+  let quoted = false;
+
+  for (
+    let i = 0;
+    i < line.length;
+    i++
   ) {
 
-    row.push(cell);
+    const char =
+      line[i];
+
+    const next =
+      line[i + 1];
+
+    if (
+      char === '"' &&
+      quoted &&
+      next === '"'
+    ) {
+
+      value += '"';
+
+      i++;
+
+      continue;
+    }
+
+    if (char === '"') {
+
+      quoted = !quoted;
+
+      continue;
+    }
+
+    if (
+      char === "," &&
+      !quoted
+    ) {
+
+      values.push(value);
+
+      value = "";
+
+      continue;
+    }
+
+    value += char;
 
   }
 
+  values.push(value);
+
+  return values;
+}
+
+
+/* =========================================================
+   XLSX PARSER
+========================================================= */
+
+async function parseXlsxFile(file) {
+
+  const XLSX =
+    await loadXlsxLibrary();
+
+  const buffer =
+    await file.arrayBuffer();
+
+  const workbook =
+    XLSX.read(
+      buffer,
+      {
+        type: "array",
+        cellDates: true
+      }
+    );
 
   if (
-    row.some(
-      value =>
-        String(value).trim() !== ""
-    )
-  ) {
-
-    rows.push(row);
-
-  }
-
-
-  return rows;
-
-}
-
-
-function normalizeHeader(
-  value
-) {
-
-  return String(
-    value ?? ""
-  )
-    .trim()
-    .toLowerCase()
-    .replace(/^\uFEFF/, "");
-
-}
-
-
-function cleanCell(
-  value
-) {
-
-  return String(
-    value ?? ""
-  ).trim();
-
-}
-
-
-function buildSourceRows(
-  parsedRows
-) {
-
-  if (
-    !parsedRows ||
-    parsedRows.length === 0
+    !workbook.SheetNames?.length
   ) {
 
     throw new Error(
-      "The CSV file is empty."
+      "The XLSX workbook contains no sheets."
     );
 
   }
 
+  const sheetName =
+    workbook.SheetNames[0];
+
+  const sheet =
+    workbook.Sheets[sheetName];
+
+  const matrix =
+    XLSX.utils.sheet_to_json(
+      sheet,
+      {
+        header: 1,
+        defval: "",
+        raw: false
+      }
+    );
+
+  if (
+    !Array.isArray(matrix) ||
+    matrix.length < 2
+  ) {
+
+    throw new Error(
+      "The selected XLSX sheet contains no usable data."
+    );
+
+  }
 
   const headers =
-    parsedRows[0]
-      .map(function (value) {
-
-        return cleanCell(value);
-
-      });
-
-
-  if (
-    headers.length === 0 ||
-    headers.every(
-      value => !value
-    )
-  ) {
-
-    throw new Error(
-      "The CSV header row is empty."
-    );
-
-  }
-
-
-  const duplicateHeaders =
-    findDuplicateHeaders(headers);
-
-
-  if (
-    duplicateHeaders.length > 0
-  ) {
-
-    throw new Error(
-      `Duplicate source columns: ${duplicateHeaders.join(", ")}`
-    );
-
-  }
-
-
-  state.sourceHeaders =
-    headers;
-
+    matrix[0]
+      .map(normalizeHeader)
+      .filter(Boolean);
 
   const rows =
-    parsedRows
+    matrix
       .slice(1)
-      .map(function (
-        values,
-        index
-      ) {
+      .filter(row =>
+        row.some(
+          value =>
+            String(value ?? "").trim() !== ""
+        )
+      )
+      .map(row => {
 
         const object = {};
 
         headers.forEach(
-          function (
-            header,
-            columnIndex
-          ) {
+          (header, index) => {
 
             object[header] =
-              cleanCell(
-                values[columnIndex]
-              );
+              row[index] ?? "";
 
           }
         );
 
-
-        return {
-
-          sourceRowNumber:
-            index + 2,
-
-          values:
-            object
-
-        };
+        return object;
 
       });
 
+  return {
+    headers,
+    rows,
+    sheetName
+  };
 
-  state.sourceRows =
-    rows.filter(
-      row =>
-        Object.values(
-          row.values
-        ).some(
-          value =>
-            String(value).trim() !== ""
-        )
+}
+
+
+/* =========================================================
+   XLSX LIBRARY
+========================================================= */
+
+let xlsxPromise = null;
+
+async function loadXlsxLibrary() {
+
+  if (xlsxPromise) {
+    return xlsxPromise;
+  }
+
+  xlsxPromise =
+    import(
+      "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm"
     );
 
+  return xlsxPromise;
+}
 
-  if (
-    state.sourceRows.length === 0
-  ) {
 
+/* =========================================================
+   HEADER NORMALIZATION
+========================================================= */
+
+function normalizeHeader(value) {
+
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_")
+    .replace(/[^\w-]/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
+}
+
+
+/* =========================================================
+   CREATE STAGING BATCH
+========================================================= */
+
+async function createBatch() {
+
+  if (!state.groupId) {
     throw new Error(
-      "The CSV contains no data rows."
+      "Authenticated group context is unavailable."
+    );
+  }
+
+  const {
+    data,
+    error
+  } = await supabase
+    .from("data_import_batches")
+    .insert({
+      group_id: state.groupId,
+      source_name: state.sourceName,
+      source_type: state.sourceType,
+      status: "uploaded",
+      summary: {
+        entity_type:
+          state.entityType,
+        source_name:
+          state.sourceName,
+        source_type:
+          state.sourceType,
+        row_count:
+          state.sourceRows.length
+      }
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data?.id) {
+    throw new Error(
+      "Migration batch could not be created."
+    );
+  }
+
+  state.batchId =
+    data.id;
+
+}
+
+
+/* =========================================================
+   UPDATE BATCH STATUS
+========================================================= */
+
+async function updateBatchStatus(
+  status,
+  summary = {}
+) {
+
+  if (!state.batchId) {
+    return;
+  }
+
+  const {
+    error
+  } = await supabase
+    .from("data_import_batches")
+    .update({
+      status,
+      summary: {
+        ...summary,
+        entity_type:
+          state.entityType,
+        source_name:
+          state.sourceName,
+        source_type:
+          state.sourceType
+      }
+    })
+    .eq(
+      "id",
+      state.batchId
     );
 
+  if (error) {
+    throw error;
   }
 
 }
 
 
-function findDuplicateHeaders(
-  headers
-) {
+/* =========================================================
+   STAGE SOURCE ROWS
+========================================================= */
 
-  const seen =
-    new Map();
+async function stageRows() {
 
-  const duplicates =
-    new Set();
+  if (!state.batchId) {
+    throw new Error(
+      "Migration batch does not exist."
+    );
+  }
 
-
-  headers.forEach(
-    function (header) {
-
-      const key =
-        normalizeHeader(header);
-
-      if (!key) {
-        return;
-      }
-
-      if (seen.has(key)) {
-
-        duplicates.add(
-          header
-        );
-
-      }
-
-      else {
-
-        seen.set(
-          key,
-          true
-        );
-
-      }
-
+  await updateBatchStatus(
+    "analyzing",
+    {
+      row_count:
+        state.sourceRows.length
     }
   );
 
+  const payload =
+    state.sourceRows.map(
+      (row, index) => ({
+        batch_id:
+          state.batchId,
 
-  return Array.from(
-    duplicates
-  );
+        source_sheet:
+          state.sheetName,
 
-}
+        source_row_number:
+          index + 2,
 
+        entity_type:
+          state.entityType,
 
-/* =========================================================
-   ENTITY DETECTION
-========================================================= */
+        raw_data:
+          row,
 
-function detectEntityType() {
+        normalized_data:
+          null,
 
-  const normalizedHeaders =
-    state.sourceHeaders.map(
-      normalizeHeader
+        status:
+          "pending"
+      })
     );
 
+  const chunkSize = 500;
 
-  const contributionSignals = [
-    "member",
-    "member_number",
-    "membership_number",
-    "contribution",
-    "contribution_date",
-    "payment_method",
-    "mpesa_reference"
-  ];
-
-
-  const expenseSignals = [
-    "description",
-    "expense",
-    "expense_date",
-    "category",
-    "receipt",
-    "approval_status"
-  ];
-
-
-  const contributionScore =
-    contributionSignals.filter(
-      signal =>
-        normalizedHeaders.some(
-          header =>
-            header.includes(signal)
-        )
-    ).length;
-
-
-  const expenseScore =
-    expenseSignals.filter(
-      signal =>
-        normalizedHeaders.some(
-          header =>
-            header.includes(signal)
-        )
-    ).length;
-
-
-  if (
-    contributionScore === 0 &&
-    expenseScore === 0
+  for (
+    let start = 0;
+    start < payload.length;
+    start += chunkSize
   ) {
 
-    return null;
+    const chunk =
+      payload.slice(
+        start,
+        start + chunkSize
+      );
+
+    const {
+      error
+    } = await supabase
+      .from("data_import_rows")
+      .insert(chunk);
+
+    if (error) {
+      throw error;
+    }
 
   }
 
+  const {
+    data,
+    error
+  } = await supabase
+    .from("data_import_rows")
+    .select(`
+      id,
+      batch_id,
+      source_sheet,
+      source_row_number,
+      entity_type,
+      raw_data,
+      normalized_data,
+      status,
+      error_message,
+      target_id
+    `)
+    .eq(
+      "batch_id",
+      state.batchId
+    )
+    .order(
+      "source_row_number",
+      {
+        ascending: true
+      }
+    );
 
-  if (
-    contributionScore >
-    expenseScore
-  ) {
-
-    return "contribution";
-
+  if (error) {
+    throw error;
   }
 
-
-  if (
-    expenseScore >
-    contributionScore
-  ) {
-
-    return "expense";
-
-  }
-
-
-  return null;
+  state.stagedRows =
+    data || [];
 
 }
 
 
 /* =========================================================
-   MAPPING
+   MAPPING UI
 ========================================================= */
 
-function renderMapping() {
+function buildMappingUI() {
 
   const container =
-    byId("mappingGrid");
+    $("#mappingFields") ||
+    $("#mappingContainer") ||
+    $("#mappingTable");
 
   if (!container) {
     return;
   }
 
-
   const fields =
     state.entityType === "contribution"
-      ? CONTRIBUTION_FIELDS
-      : EXPENSE_FIELDS;
+      ? contributionMappingFields()
+      : expenseMappingFields();
 
+  container.innerHTML = fields
+    .map(field => {
 
-  const options = [
-    `<option value="">— Not mapped —</option>`
-  ]
-    .concat(
-      state.sourceHeaders.map(
-        function (header) {
+      const selected =
+        autoMapField(field);
 
-          return (
-            `<option value="${escapeHtml(header)}">` +
-            `${escapeHtml(header)}` +
-            `</option>`
-          );
+      state.mappings[field.key] =
+        selected;
 
-        }
-      )
-    )
-    .join("");
-
-
-  container.innerHTML =
-    fields.map(
-      function (field) {
-
-        const required =
-          field.required
-            ? `<span class="mapping-required">*</span>`
-            : "";
-
-
-        return `
-          <div class="mapping-field">
-
-            <label for="map_${escapeHtml(field.key)}">
-
-              ${escapeHtml(field.label)}
-              ${required}
-
-            </label>
+      return `
+        <div class="mapping-row">
+          <label>
+            <span>${escapeHtml(field.label)}</span>
 
             <select
-              id="map_${escapeHtml(field.key)}"
-              data-mapping-key="${escapeHtml(field.key)}"
+              data-target-field="${escapeHtml(field.key)}"
+              class="mapping-select"
             >
-              ${options}
+
+              <option value="">
+                -- Not mapped --
+              </option>
+
+              ${state.headers
+                .map(header => `
+                  <option
+                    value="${escapeHtml(header)}"
+                    ${selected === header ? "selected" : ""}
+                  >
+                    ${escapeHtml(header)}
+                  </option>
+                `)
+                .join("")}
+
             </select>
+          </label>
+        </div>
+      `;
 
-            <div class="mapping-source-note">
-
-              ${
-                field.required
-                  ? "Required"
-                  : "Optional"
-              }
-
-            </div>
-
-          </div>
-        `;
-
-      }
-    )
+    })
     .join("");
 
+  $all(".mapping-select")
+    .forEach(select => {
 
-  autoSuggestMappings();
+      select.addEventListener(
+        "change",
+        event => {
 
-}
+          const field =
+            event.target.dataset.targetField;
 
+          state.mappings[field] =
+            event.target.value || null;
 
-function autoSuggestMappings() {
+        }
+      );
 
-  const fields =
-    state.entityType === "contribution"
-      ? CONTRIBUTION_FIELDS
-      : EXPENSE_FIELDS;
+    });
 
-
-  fields.forEach(
-    function (field) {
-
-      const select =
-        document.querySelector(
-          `[data-mapping-key="${field.key}"]`
-        );
-
-
-      if (!select) {
-        return;
-      }
-
-
-      const candidates =
-        state.sourceHeaders.filter(
-          function (header) {
-
-            return headerMatchesField(
-              header,
-              field.key
-            );
-
-          }
-        );
-
-
-      if (
-        candidates.length === 1
-      ) {
-
-        select.value =
-          candidates[0];
-
-      }
-
-    }
+  show(
+    "#mappingSection"
   );
 
 }
 
 
-function headerMatchesField(
-  header,
-  fieldKey
-) {
+/* =========================================================
+   CONTRIBUTION MAPPING FIELDS
+========================================================= */
 
-  const normalized =
-    normalizeHeader(header)
-      .replace(/[\s-]+/g, "_");
+function contributionMappingFields() {
 
+  return [
+    {
+      key: "member",
+      label: "Member",
+      required: true
+    },
+    {
+      key: "amount",
+      label: "Amount",
+      required: true
+    },
+    {
+      key: "contribution_date",
+      label: "Contribution Date",
+      required: true
+    },
+    {
+      key: "payment_method",
+      label: "Payment Method",
+      required: true
+    },
+    {
+      key: "contribution_type",
+      label: "Contribution Type",
+      required: false
+    },
+    {
+      key: "reference",
+      label: "Reference",
+      required: false
+    },
+    {
+      key: "mpesa_reference",
+      label: "M-Pesa Reference",
+      required: false
+    },
+    {
+      key: "goal",
+      label: "Goal",
+      required: false
+    },
+    {
+      key: "notes",
+      label: "Notes",
+      required: false
+    },
+    {
+      key: "month",
+      label: "Source Month",
+      required: false
+    }
+  ];
+
+}
+
+
+/* =========================================================
+   EXPENSE MAPPING FIELDS
+========================================================= */
+
+function expenseMappingFields() {
+
+  return [
+    {
+      key: "description",
+      label: "Description",
+      required: true
+    },
+    {
+      key: "amount",
+      label: "Amount",
+      required: true
+    },
+    {
+      key: "date",
+      label: "Expense Date",
+      required: true
+    },
+    {
+      key: "category",
+      label: "Category",
+      required: false
+    },
+    {
+      key: "approval_status",
+      label: "Approval Status",
+      required: false
+    },
+    {
+      key: "receipt_url",
+      label: "Receipt URL",
+      required: false
+    }
+  ];
+
+}
+
+
+/* =========================================================
+   AUTO MAPPING
+========================================================= */
+
+function autoMapField(field) {
 
   const aliases = {
-
-    member_identifier: [
+    member: [
       "member",
+      "member_name",
+      "name",
       "member_number",
       "membership_number",
-      "member_no",
-      "membership_no",
-      "member_id"
+      "phone",
+      "email"
     ],
 
     amount: [
       "amount",
       "contribution_amount",
       "expense_amount",
+      "paid",
+      "payment",
       "value"
     ],
 
     contribution_date: [
       "contribution_date",
       "payment_date",
-      "date"
-    ],
-
-    month: [
-      "month",
-      "contribution_month"
+      "date",
+      "transaction_date"
     ],
 
     payment_method: [
       "payment_method",
       "method",
-      "payment"
+      "payment_mode"
+    ],
+
+    contribution_type: [
+      "contribution_type",
+      "type"
     ],
 
     reference: [
       "reference",
       "transaction_reference",
-      "ref"
+      "receipt_number"
     ],
 
     mpesa_reference: [
       "mpesa_reference",
-      "mpesa_ref",
-      "mpesa_transaction",
-      "mpesa_code"
+      "mpesa_code",
+      "mpesa",
+      "mpesa_receipt"
     ],
 
     goal: [
       "goal",
-      "goal_name"
+      "goal_name",
+      "contribution_goal"
     ],
 
     notes: [
@@ -1187,21 +1448,24 @@ function headerMatchesField(
       "comment"
     ],
 
-    contribution_type: [
-      "contribution_type",
-      "type"
+    month: [
+      "month",
+      "contribution_month",
+      "payment_month"
     ],
 
     description: [
       "description",
-      "expense_description",
       "expense",
-      "details"
+      "expense_description",
+      "details",
+      "particulars"
     ],
 
     date: [
       "date",
-      "expense_date"
+      "expense_date",
+      "transaction_date"
     ],
 
     category: [
@@ -1217,846 +1481,328 @@ function headerMatchesField(
     receipt_url: [
       "receipt_url",
       "receipt",
-      "receipt_reference"
+      "receipt_link"
     ]
-
   };
 
-
-  return (
-    aliases[fieldKey] ||
-    []
-  ).includes(
-    normalized
-  );
-
-}
-
-
-/* =========================================================
-   MAPPING COLLECTION
-========================================================= */
-
-function collectMappings() {
-
-  const fields =
-    state.entityType === "contribution"
-      ? CONTRIBUTION_FIELDS
-      : EXPENSE_FIELDS;
-
-
-  const mappings = {};
-
-
-  fields.forEach(
-    function (field) {
-
-      const select =
-        document.querySelector(
-          `[data-mapping-key="${field.key}"]`
-        );
-
-
-      mappings[field.key] =
-        select?.value ||
-        null;
-
-    }
-  );
-
-
-  state.mappings =
-    mappings;
-
-
-  return mappings;
-
-}
-
-
-function getMappedValue(
-  row,
-  key
-) {
-
-  const sourceColumn =
-    state.mappings[key];
-
-
-  if (!sourceColumn) {
-    return "";
-  }
-
-
-  return cleanCell(
-    row.values[sourceColumn]
-  );
-
-}
-
-
-/* =========================================================
-   PROTECTED SOURCE FIELDS
-========================================================= */
-
-function detectProtectedFields() {
-
-  const violations = [];
-
-
-  state.sourceHeaders.forEach(
-    function (header) {
-
-      const normalized =
-        normalizeHeader(header)
-          .replace(/[\s-]+/g, "_");
-
-
-      if (
-        PROTECTED_FIELD_NAMES.has(
-          normalized
-        )
-      ) {
-
-        violations.push(
-          header
-        );
-
-      }
-
-    }
-  );
-
-
-  return violations;
-
-}
-
-
-/* =========================================================
-   DATA NORMALIZATION
-========================================================= */
-
-function parsePositiveAmount(
-  value
-) {
-
-  const cleaned =
-    String(value ?? "")
-      .trim()
-      .replace(/,/g, "")
-      .replace(/\s+/g, "");
-
-
-  if (!cleaned) {
-    return null;
-  }
-
-
-  const amount =
-    Number(cleaned);
-
-
-  if (
-    !Number.isFinite(amount) ||
-    amount <= 0
-  ) {
-
-    return null;
-
-  }
-
-
-  return amount;
-
-}
-
-
-function parseDate(
-  value
-) {
-
-  const text =
-    cleanCell(value);
-
-
-  if (!text) {
-    return null;
-  }
-
-
-  /*
-   * ISO date is preferred.
-   */
-  const isoMatch =
-    text.match(
-      /^(\d{4})-(\d{2})-(\d{2})$/
-    );
-
-
-  if (isoMatch) {
-
-    const year =
-      Number(isoMatch[1]);
-
-    const month =
-      Number(isoMatch[2]);
-
-    const day =
-      Number(isoMatch[3]);
-
-
-    const date =
-      new Date(
-        Date.UTC(
-          year,
-          month - 1,
-          day
-        )
-      );
-
-
-    if (
-      date.getUTCFullYear() === year &&
-      date.getUTCMonth() === month - 1 &&
-      date.getUTCDate() === day
-    ) {
-
-      return (
-        `${year.toString().padStart(4, "0")}-` +
-        `${month.toString().padStart(2, "0")}-` +
-        `${day.toString().padStart(2, "0")}`
-      );
-
-    }
-
-  }
-
-
-  /*
-   * Deliberately support common unambiguous
-   * slash/dash forms where day/month ordering
-   * is obvious from the values.
-   */
-  const parts =
-    text.split(
-      /[\/.\-]/
-    )
-      .map(
-        value =>
-          Number(value)
-      );
-
-
-  if (
-    parts.length === 3 &&
-    parts.every(
-      value =>
-        Number.isInteger(value)
-    )
-  ) {
-
-    let year;
-    let month;
-    let day;
-
-
-    if (
-      parts[0] >= 1900 &&
-      parts[0] <= 2200
-    ) {
-
-      year =
-        parts[0];
-
-      month =
-        parts[1];
-
-      day =
-        parts[2];
-
-    }
-
-    else if (
-      parts[2] >= 1900 &&
-      parts[2] <= 2200
-    ) {
-
-      year =
-        parts[2];
-
-      /*
-       * DD/MM/YYYY is used for the
-       * ambiguous non-US form.
-       */
-      day =
-        parts[0];
-
-      month =
-        parts[1];
-
-    }
-
-    else {
-
-      return null;
-
-    }
-
-
-    const date =
-      new Date(
-        Date.UTC(
-          year,
-          month - 1,
-          day
-        )
-      );
-
-
-    if (
-      date.getUTCFullYear() !== year ||
-      date.getUTCMonth() !== month - 1 ||
-      date.getUTCDate() !== day
-    ) {
-
-      return null;
-
-    }
-
-
-    return (
-      `${year}-` +
-      `${String(month).padStart(2, "0")}-` +
-      `${String(day).padStart(2, "0")}`
-    );
-
-  }
-
-
-  return null;
-
-}
-
-
-function monthFromDate(
-  dateString
-) {
-
-  if (!dateString) {
-    return null;
-  }
-
-
-  return dateString.slice(
-    0,
-    7
-  );
-
-}
-
-
-function isValidMonth(
-  value
-) {
-
-  return /^\d{4}-(0[1-9]|1[0-2])$/.test(
-    String(value || "")
-  );
-
-}
-
-
-/* =========================================================
-   MEMBER RESOLUTION
-========================================================= */
-
-async function resolveMember(
-  identifier
-) {
-
-  const clean =
-    cleanCell(identifier);
-
-
-  if (!clean) {
-
-    return {
-      status: "error",
-      error: "Member identifier is required."
-    };
-
-  }
-
-
-  /*
-   * We resolve only inside the authenticated
-   * current group.
-   *
-   * No group_id is accepted from the source file.
-   */
-  const candidateColumns = [
-    "member_number",
-    "membership_number",
-    "id"
-  ];
-
+  const candidates =
+    aliases[field.key] || [];
 
   for (
-    const column of candidateColumns
+    const candidate of candidates
   ) {
 
-    const {
-      data,
+    if (
+      state.headers.includes(
+        candidate
+      )
+    ) {
+
+      return candidate;
+
+    }
+
+  }
+
+  return null;
+}
+
+
+/* =========================================================
+   VALIDATION
+========================================================= */
+
+async function validateMigration() {
+
+  if (!state.batchId) {
+
+    showMessage(
+      "Load a file before validating.",
+      "error"
+    );
+
+    return;
+
+  }
+
+  try {
+
+    setValidationBusy(true);
+
+    clearMessage();
+
+    state.validated = false;
+    state.ready = false;
+
+    await updateBatchStatus(
+      "validating"
+    );
+
+    const mappingErrors =
+      validateRequiredMappings();
+
+    if (mappingErrors.length) {
+
+      await markAllRowsError(
+        mappingErrors.join("; ")
+      );
+
+      throw new Error(
+        mappingErrors.join(" ")
+      );
+
+    }
+
+    const rows =
+      [];
+
+    for (
+      const stagedRow of state.stagedRows
+    ) {
+
+      const result =
+        state.entityType === "contribution"
+          ? await validateContributionRow(
+              stagedRow
+            )
+          : await validateExpenseRow(
+              stagedRow
+            );
+
+      rows.push(result);
+
+    }
+
+    state.validationRows =
+      rows;
+
+    await persistValidationResults();
+
+    const summary =
+      buildValidationSummary();
+
+    state.validated = true;
+
+    state.ready =
+      summary.errors === 0 &&
+      summary.valid +
+      summary.warnings ===
+      summary.total;
+
+    await updateBatchStatus(
+      state.ready
+        ? "ready"
+        : "validating",
+      summary
+    );
+
+    renderValidationSummary(
+      summary
+    );
+
+    renderValidationRows(
+      rows
+    );
+
+    updateStepUI(
+      state.ready ? 4 : 3
+    );
+
+    updateImportButton();
+
+    if (state.ready) {
+
+      showMessage(
+        "Validation passed. The batch is ready for explicit confirmation.",
+        "success"
+      );
+
+    }
+    else {
+
+      showMessage(
+        "Validation found blocking errors. No records can be imported.",
+        "error"
+      );
+
+    }
+
+  }
+  catch (error) {
+
+    console.error(
+      "VALIDATION ERROR",
       error
-    } =
-      await supabase
-        .from("members")
-        .select(`
-          id,
-          group_id,
-          member_number,
-          membership_number,
-          name,
-          status
-        `)
-        .eq(
-          column,
-          clean
-        )
-        .eq(
-          "group_id",
-          state.group.id
-        )
-        .limit(20);
+    );
 
-
-    if (error) {
-
-      throw error;
-
-    }
-
-
-    if (
-      data &&
-      data.length > 0
-    ) {
-
-      if (
-        data.length > 1
-      ) {
-
-        return {
-          status: "error",
-          error:
-            `Multiple members matched "${clean}".`
-        };
-
-      }
-
-
-      const member =
-        data[0];
-
-
-      if (
-        member.group_id !==
-        state.group.id
-      ) {
-
-        return {
-          status: "error",
-          error:
-            "Resolved member does not belong to the current group."
-        };
-
-      }
-
-
-      return {
-        status: "resolved",
-        member
-      };
-
-    }
+    showMessage(
+      error?.message ||
+      "Validation failed.",
+      "error"
+    );
 
   }
+  finally {
 
-
-  /*
-   * Exact name matching is intentionally allowed
-   * only when unique.
-   *
-   * This is not fuzzy matching.
-   */
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("members")
-      .select(`
-        id,
-        group_id,
-        member_number,
-        membership_number,
-        name,
-        status
-      `)
-      .eq(
-        "group_id",
-        state.group.id
-      )
-      .ilike(
-        "name",
-        clean
-      )
-      .limit(20);
-
-
-  if (error) {
-    throw error;
-  }
-
-
-  if (
-    !data ||
-    data.length === 0
-  ) {
-
-    return {
-      status: "error",
-      error:
-        `Member "${clean}" was not found in the current group.`
-    };
+    setValidationBusy(false);
 
   }
-
-
-  if (
-    data.length > 1
-  ) {
-
-    return {
-      status: "error",
-      error:
-        `Multiple members matched "${clean}". Use a member number.`
-    };
-
-  }
-
-
-  return {
-    status: "resolved",
-    member: data[0]
-  };
 
 }
 
 
 /* =========================================================
-   GOAL RESOLUTION
+   REQUIRED MAPPINGS
 ========================================================= */
 
-async function resolveGoal(
-  value
-) {
+function validateRequiredMappings() {
 
-  const clean =
-    cleanCell(value);
-
-
-  if (!clean) {
-
-    return {
-      status: "empty",
-      goal: null
-    };
-
-  }
-
-
-  /*
-   * Resolve by exact goal name within group.
-   *
-   * Never accept arbitrary goal_id from the file.
-   */
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("contribution_goals")
-      .select(`
-        id,
-        group_id,
-        name
-      `)
-      .eq(
-        "group_id",
-        state.group.id
-      )
-      .ilike(
-        "name",
-        clean
-      )
-      .limit(20);
-
-
-  if (error) {
-    throw error;
-  }
-
-
-  if (
-    !data ||
-    data.length === 0
-  ) {
-
-    return {
-      status: "error",
-      error:
-        `Goal "${clean}" was not found in the current group.`
-    };
-
-  }
-
-
-  if (
-    data.length > 1
-  ) {
-
-    return {
-      status: "error",
-      error:
-        `Multiple goals matched "${clean}".`
-    };
-
-  }
-
-
-  return {
-    status: "resolved",
-    goal: data[0]
-  };
-
-}
-
-
-/* =========================================================
-   FINANCIAL PERIOD CHECK
-========================================================= */
-
-async function checkFinancialPeriod(
-  month
-) {
-
-  if (
-    !isValidMonth(month)
-  ) {
-
-    return {
-      status: "error",
-      error:
-        "A valid YYYY-MM financial month is required."
-    };
-
-  }
-
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("financial_periods")
-      .select(`
-        id,
-        group_id,
-        period_month,
-        status
-      `)
-      .eq(
-        "group_id",
-        state.group.id
-      )
-      .eq(
-        "period_month",
-        `${month}-01`
-      )
-      .limit(1);
-
-
-  if (error) {
-    throw error;
-  }
-
-
-  if (
-    data &&
-    data.length > 0
-  ) {
-
-    const period =
-      data[0];
-
-
-    const status =
-      String(
-        period.status || ""
-      )
-        .trim()
-        .toLowerCase();
-
-
-    if (
-      status === "closed"
-    ) {
-
-      return {
-        status: "closed",
-        period
-      };
-
-    }
-
-
-    return {
-      status: "open",
-      period
-    };
-
-  }
-
-
-  /*
-   * No automatic period creation.
-   *
-   * Absence is not treated as permission to
-   * bypass financial-period controls.
-   */
-  return {
-    status: "not_found"
-  };
-
-}
-
-
-/* =========================================================
-   CONTRIBUTION NORMALIZATION
-========================================================= */
-
-async function normalizeContribution(
-  sourceRow
-) {
+  const required =
+    state.entityType === "contribution"
+      ? [
+          "member",
+          "amount",
+          "contribution_date",
+          "payment_method"
+        ]
+      : [
+          "description",
+          "amount",
+          "date"
+        ];
 
   const errors = [];
 
+  for (
+    const field of required
+  ) {
+
+    if (
+      !state.mappings[field]
+    ) {
+
+      errors.push(
+        `Required field "${field}" is not mapped.`
+      );
+
+    }
+
+  }
+
+  return errors;
+}
+
+
+/* =========================================================
+   CONTRIBUTION VALIDATION
+========================================================= */
+
+async function validateContributionRow(
+  stagedRow
+) {
+
+  const raw =
+    stagedRow.raw_data || {};
+
+  const errors = [];
   const warnings = [];
 
+  const normalized = {};
+
+  /* -------------------------------------------------------
+     MEMBER
+  ------------------------------------------------------- */
 
   const memberIdentifier =
     getMappedValue(
-      sourceRow,
-      "member_identifier"
+      raw,
+      "member"
     );
 
-
-  const amountRaw =
-    getMappedValue(
-      sourceRow,
-      "amount"
-    );
-
-
-  const dateRaw =
-    getMappedValue(
-      sourceRow,
-      "contribution_date"
-    );
-
-
-  const sourceMonth =
-    getMappedValue(
-      sourceRow,
-      "month"
-    );
-
-
-  const paymentMethod =
-    getMappedValue(
-      sourceRow,
-      "payment_method"
-    );
-
-
-  const reference =
-    getMappedValue(
-      sourceRow,
-      "reference"
-    );
-
-
-  const mpesaReference =
-    getMappedValue(
-      sourceRow,
-      "mpesa_reference"
-    );
-
-
-  const goal =
-    getMappedValue(
-      sourceRow,
-      "goal"
-    );
-
-
-  const notes =
-    getMappedValue(
-      sourceRow,
-      "notes"
-    );
-
-
-  const contributionType =
-    getMappedValue(
-      sourceRow,
-      "contribution_type"
-    );
-
-
-  if (!memberIdentifier) {
+  if (
+    !String(memberIdentifier ?? "").trim()
+  ) {
 
     errors.push(
       "Member identifier is required."
     );
 
   }
+  else {
 
+    const member =
+      await resolveMember(
+        memberIdentifier
+      );
 
-  const amount =
-    parsePositiveAmount(
-      amountRaw
-    );
+    if (!member) {
 
+      errors.push(
+        `Member "${memberIdentifier}" could not be resolved within the current group.`
+      );
 
-  if (
-    amount === null
-  ) {
+    }
+    else {
 
-    errors.push(
-      "Amount must be a positive number."
-    );
+      normalized.member_id =
+        member.id;
+
+      normalized.member_name =
+        member.name ||
+        memberIdentifier;
+
+    }
 
   }
 
 
-  const contributionDate =
-    parseDate(
-      dateRaw
+  /* -------------------------------------------------------
+     AMOUNT
+  ------------------------------------------------------- */
+
+  const amountValue =
+    getMappedValue(
+      raw,
+      "amount"
     );
 
+  const amount =
+    parseAmount(
+      amountValue
+    );
+
+  if (
+    !Number.isFinite(amount) ||
+    amount <= 0
+  ) {
+
+    errors.push(
+      "Contribution amount must be a number greater than zero."
+    );
+
+  }
+  else {
+
+    normalized.amount =
+      amount;
+
+  }
+
+
+  /* -------------------------------------------------------
+     CONTRIBUTION DATE
+  ------------------------------------------------------- */
+
+  const dateValue =
+    getMappedValue(
+      raw,
+      "contribution_date"
+    );
+
+  const contributionDate =
+    parseDate(
+      dateValue
+    );
 
   if (!contributionDate) {
 
@@ -2065,66 +1811,113 @@ async function normalizeContribution(
     );
 
   }
+  else {
 
-
-  const derivedMonth =
-    monthFromDate(
-      contributionDate
-    );
-
-
-  if (
-    sourceMonth &&
-    derivedMonth &&
-    sourceMonth !== derivedMonth
-  ) {
-
-    errors.push(
-      `Source month ${sourceMonth} does not match contribution date month ${derivedMonth}.`
-    );
+    normalized.contribution_date =
+      contributionDate;
 
   }
 
 
+  /* -------------------------------------------------------
+     PAYMENT METHOD
+  ------------------------------------------------------- */
+
+  const paymentMethod =
+    normalizePaymentMethod(
+      getMappedValue(
+        raw,
+        "payment_method"
+      )
+    );
+
   if (
-    paymentMethod &&
-    !CONTRIBUTION_PAYMENT_METHODS.includes(
+    !PAYMENT_METHODS.includes(
       paymentMethod
     )
   ) {
 
     errors.push(
-      `Invalid payment method "${paymentMethod}".`
+      `Invalid payment method. Allowed values: ${PAYMENT_METHODS.join(", ")}.`
     );
+
+  }
+  else {
+
+    normalized.payment_method =
+      paymentMethod;
 
   }
 
 
-  if (!paymentMethod) {
+  /* -------------------------------------------------------
+     CONTRIBUTION TYPE
+  ------------------------------------------------------- */
 
-    errors.push(
-      "Payment method is required."
+  let contributionType =
+    String(
+      getMappedValue(
+        raw,
+        "contribution_type"
+      ) || ""
+    )
+      .trim()
+      .toLowerCase();
+
+  if (!contributionType) {
+
+    contributionType =
+      "monthly";
+
+    warnings.push(
+      "Contribution type omitted; monthly will be used."
     );
 
   }
-
-
-  const normalizedContributionType =
-    contributionType ||
-    CONTRIBUTION_TYPE;
-
 
   if (
-    normalizedContributionType !==
-    CONTRIBUTION_TYPE
+    !CONTRIBUTION_TYPES.includes(
+      contributionType
+    )
   ) {
 
     errors.push(
-      `Contribution type must be "${CONTRIBUTION_TYPE}".`
+      "Only monthly contributions are supported by the live canonical contribution function."
     );
 
   }
 
+  normalized.contribution_type =
+    contributionType;
+
+
+  /* -------------------------------------------------------
+     REFERENCE
+  ------------------------------------------------------- */
+
+  const reference =
+    cleanNullable(
+      getMappedValue(
+        raw,
+        "reference"
+      )
+    );
+
+  normalized.reference =
+    reference;
+
+
+  /* -------------------------------------------------------
+     M-PESA REFERENCE
+  ------------------------------------------------------- */
+
+  const mpesaReference =
+    cleanNullable(
+      getMappedValue(
+        raw,
+        "mpesa_reference"
+      )
+    );
 
   if (
     paymentMethod === "M-Pesa"
@@ -2137,124 +1930,167 @@ async function normalizeContribution(
     ) {
 
       errors.push(
-        "Reference and M-Pesa reference must match when both are supplied."
+        "Reference and M-Pesa reference do not match."
       );
 
     }
 
+    normalized.mpesa_reference =
+      mpesaReference || reference;
+
+  }
+  else {
+
+    if (mpesaReference) {
+
+      errors.push(
+        "M-Pesa reference cannot be supplied for a non-M-Pesa payment."
+      );
+
+    }
+
+    normalized.mpesa_reference =
+      null;
+
   }
 
 
-  if (
-    paymentMethod &&
-    paymentMethod !== "M-Pesa" &&
-    mpesaReference
-  ) {
+  /* -------------------------------------------------------
+     GOAL
+  ------------------------------------------------------- */
 
-    errors.push(
-      "M-Pesa reference cannot be supplied for non-M-Pesa payments."
+  const goalValue =
+    cleanNullable(
+      getMappedValue(
+        raw,
+        "goal"
+      )
     );
 
-  }
+  if (goalValue) {
 
-
-  let resolvedMember =
-    null;
-
-
-  if (memberIdentifier) {
-
-    const result =
-      await resolveMember(
-        memberIdentifier
-      );
-
-
-    if (
-      result.status !==
-      "resolved"
-    ) {
-
-      errors.push(
-        result.error
-      );
-
-    }
-
-    else {
-
-      resolvedMember =
-        result.member;
-
-    }
-
-  }
-
-
-  let resolvedGoal =
-    null;
-
-
-  if (goal) {
-
-    const result =
+    const goal =
       await resolveGoal(
-        goal
+        goalValue
       );
 
-
-    if (
-      result.status !==
-      "resolved"
-    ) {
+    if (!goal) {
 
       errors.push(
-        result.error
+        `Contribution goal "${goalValue}" could not be resolved within the current group.`
       );
 
     }
-
     else {
 
-      resolvedGoal =
-        result.goal;
+      normalized.goal_id =
+        goal.id;
+
+    }
+
+  }
+  else {
+
+    normalized.goal_id =
+      null;
+
+  }
+
+
+  /* -------------------------------------------------------
+     NOTES
+  ------------------------------------------------------- */
+
+  normalized.notes =
+    cleanNullable(
+      getMappedValue(
+        raw,
+        "notes"
+      )
+    );
+
+
+  /* -------------------------------------------------------
+     SOURCE MONTH
+     -------------------------------------------------------
+     Month is derived from contribution_date.
+
+     If source also supplies month, it must agree.
+  ------------------------------------------------------- */
+
+  const sourceMonth =
+    cleanNullable(
+      getMappedValue(
+        raw,
+        "month"
+      )
+    );
+
+  const derivedMonth =
+    contributionDate
+      ? contributionDate.slice(
+          0,
+          7
+        )
+      : null;
+
+  if (
+    sourceMonth &&
+    derivedMonth
+  ) {
+
+    const normalizedSourceMonth =
+      normalizeMonth(
+        sourceMonth
+      );
+
+    if (
+      !normalizedSourceMonth ||
+      normalizedSourceMonth !==
+        derivedMonth
+    ) {
+
+      errors.push(
+        `Source month "${sourceMonth}" does not agree with contribution date "${contributionDate}".`
+      );
 
     }
 
   }
 
+  normalized.month =
+    derivedMonth;
 
-  let period =
-    null;
 
+  /* -------------------------------------------------------
+     FINANCIAL PERIOD
+  ------------------------------------------------------- */
 
-  if (derivedMonth) {
+  if (
+    normalized.month &&
+    normalized.group_id !== false
+  ) {
 
-    period =
-      await checkFinancialPeriod(
-        derivedMonth
+    const period =
+      await getFinancialPeriod(
+        normalized.month
       );
 
+    if (!period) {
 
-    if (
-      period.status ===
+      errors.push(
+        `Financial period ${normalized.month} does not exist for this group.`
+      );
+
+    }
+    else if (
+      String(period.status)
+        .toLowerCase() ===
       "closed"
     ) {
 
       errors.push(
-        `Financial period ${derivedMonth} is closed.`
-      );
-
-    }
-
-
-    if (
-      period.status ===
-      "not_found"
-    ) {
-
-      errors.push(
-        `Financial period ${derivedMonth} could not be resolved.`
+        `Financial period ${normalized.month} is closed.`
       );
 
     }
@@ -2262,177 +2098,91 @@ async function normalizeContribution(
   }
 
 
-  if (!reference) {
-
-    warnings.push(
-      "Reference is not supplied."
-    );
-
-  }
-
-
-  if (!notes) {
-
-    warnings.push(
-      "Notes are not supplied."
-    );
-
-  }
-
+  /* -------------------------------------------------------
+     DUPLICATE CHECK
+  ------------------------------------------------------- */
 
   if (
-    errors.length === 0 &&
-    warnings.length > 0
+    errors.length === 0
   ) {
 
-    /*
-     * Warnings are allowed by the frozen contract.
-     */
+    const duplicate =
+      await detectContributionDuplicate(
+        normalized
+      );
+
+    if (duplicate) {
+
+      errors.push(
+        duplicate
+      );
+
+    }
 
   }
 
 
-  const effectiveReference =
-    paymentMethod === "M-Pesa"
-      ? (
-          mpesaReference ||
-          reference ||
-          null
-        )
-      : (
-          reference ||
-          null
-        );
-
+  const status =
+    errors.length
+      ? "error"
+      : warnings.length
+        ? "warning"
+        : "valid";
 
   return {
+    staged_id:
+      stagedRow.id,
 
-    entityType:
-      "contribution",
+    source_row_number:
+      stagedRow.source_row_number,
 
-    sourceRowNumber:
-      sourceRow.sourceRowNumber,
-
-    sourceData:
-      sourceRow.values,
-
-    normalizedData: {
-
-      member_id:
-        resolvedMember?.id ||
-        null,
-
-      member_identifier:
-        memberIdentifier,
-
-      amount,
-
-      contribution_date:
-        contributionDate,
-
-      month:
-        derivedMonth,
-
-      contribution_type:
-        normalizedContributionType,
-
-      payment_method:
-        paymentMethod,
-
-      reference:
-        effectiveReference,
-
-      mpesa_reference:
-        paymentMethod === "M-Pesa"
-          ? (
-              mpesaReference ||
-              reference ||
-              null
-            )
-          : null,
-
-      goal_id:
-        resolvedGoal?.id ||
-        null,
-
-      notes:
-        notes ||
-        null
-
-    },
-
-    period,
+    status,
 
     errors,
 
     warnings,
 
-    status:
-      errors.length > 0
-        ? "error"
-        : warnings.length > 0
-          ? "warning"
-          : "valid"
+    normalized_data:
+      normalized,
 
+    error_message:
+      [
+        ...errors,
+        ...warnings
+      ].join(" ")
   };
 
 }
 
 
 /* =========================================================
-   EXPENSE NORMALIZATION
+   EXPENSE VALIDATION
 ========================================================= */
 
-async function normalizeExpense(
-  sourceRow
+async function validateExpenseRow(
+  stagedRow
 ) {
 
-  const errors = [];
+  const raw =
+    stagedRow.raw_data || {};
 
+  const errors = [];
   const warnings = [];
 
+  const normalized = {};
+
+
+  /* -------------------------------------------------------
+     DESCRIPTION
+  ------------------------------------------------------- */
 
   const description =
-    getMappedValue(
-      sourceRow,
-      "description"
-    );
-
-
-  const amountRaw =
-    getMappedValue(
-      sourceRow,
-      "amount"
-    );
-
-
-  const dateRaw =
-    getMappedValue(
-      sourceRow,
-      "date"
-    );
-
-
-  const categoryRaw =
-    getMappedValue(
-      sourceRow,
-      "category"
-    );
-
-
-  const approvalRaw =
-    getMappedValue(
-      sourceRow,
-      "approval_status"
-    );
-
-
-  const receiptUrl =
-    getMappedValue(
-      sourceRow,
-      "receipt_url"
-    );
-
+    String(
+      getMappedValue(
+        raw,
+        "description"
+      ) ?? ""
+    ).trim();
 
   if (!description) {
 
@@ -2441,30 +2191,55 @@ async function normalizeExpense(
     );
 
   }
+  else {
 
-
-  const amount =
-    parsePositiveAmount(
-      amountRaw
-    );
-
-
-  if (
-    amount === null
-  ) {
-
-    errors.push(
-      "Amount must be a positive number."
-    );
+    normalized.description =
+      description;
 
   }
 
 
-  const expenseDate =
-    parseDate(
-      dateRaw
+  /* -------------------------------------------------------
+     AMOUNT
+  ------------------------------------------------------- */
+
+  const amount =
+    parseAmount(
+      getMappedValue(
+        raw,
+        "amount"
+      )
     );
 
+  if (
+    !Number.isFinite(amount) ||
+    amount <= 0
+  ) {
+
+    errors.push(
+      "Expense amount must be a number greater than zero."
+    );
+
+  }
+  else {
+
+    normalized.amount =
+      amount;
+
+  }
+
+
+  /* -------------------------------------------------------
+     DATE
+  ------------------------------------------------------- */
+
+  const expenseDate =
+    parseDate(
+      getMappedValue(
+        raw,
+        "date"
+      )
+    );
 
   if (!expenseDate) {
 
@@ -2473,12 +2248,38 @@ async function normalizeExpense(
     );
 
   }
+  else {
+
+    normalized.date =
+      expenseDate;
+
+  }
 
 
-  const category =
-    categoryRaw ||
-    "other";
+  /* -------------------------------------------------------
+     CATEGORY
+  ------------------------------------------------------- */
 
+  let category =
+    String(
+      getMappedValue(
+        raw,
+        "category"
+      ) || ""
+    )
+      .trim()
+      .toLowerCase();
+
+  if (!category) {
+
+    category =
+      "other";
+
+    warnings.push(
+      "Expense category omitted; other will be used."
+    );
+
+  }
 
   if (
     !EXPENSE_CATEGORIES.includes(
@@ -2492,11 +2293,34 @@ async function normalizeExpense(
 
   }
 
+  normalized.category =
+    category;
 
-  const approvalStatus =
-    approvalRaw ||
-    "pending";
 
+  /* -------------------------------------------------------
+     APPROVAL STATUS
+  ------------------------------------------------------- */
+
+  let approvalStatus =
+    String(
+      getMappedValue(
+        raw,
+        "approval_status"
+      ) || ""
+    )
+      .trim()
+      .toLowerCase();
+
+  if (!approvalStatus) {
+
+    approvalStatus =
+      "pending";
+
+    warnings.push(
+      "Approval status omitted; pending will be used."
+    );
+
+  }
 
   if (
     !EXPENSE_APPROVAL_STATUSES.includes(
@@ -2510,27 +2334,71 @@ async function normalizeExpense(
 
   }
 
+  normalized.approval_status =
+    approvalStatus;
 
-  const month =
-    monthFromDate(
-      expenseDate
+
+  /* -------------------------------------------------------
+     RECEIPT URL
+  ------------------------------------------------------- */
+
+  const receiptUrl =
+    cleanNullable(
+      getMappedValue(
+        raw,
+        "receipt_url"
+      )
     );
 
+  if (
+    receiptUrl &&
+    !looksLikeSafeUrl(
+      receiptUrl
+    )
+  ) {
 
-  let period =
-    null;
+    errors.push(
+      "Receipt URL is not a valid HTTP(S) URL."
+    );
 
+  }
+
+  normalized.receipt_url =
+    receiptUrl;
+
+
+  /* -------------------------------------------------------
+     FINANCIAL PERIOD
+  ------------------------------------------------------- */
+
+  const month =
+    expenseDate
+      ? expenseDate.slice(
+          0,
+          7
+        )
+      : null;
+
+  normalized.month =
+    month;
 
   if (month) {
 
-    period =
-      await checkFinancialPeriod(
+    const period =
+      await getFinancialPeriod(
         month
       );
 
+    if (!period) {
 
-    if (
-      period.status ===
+      errors.push(
+        `Financial period ${month} does not exist for this group.`
+      );
+
+    }
+    else if (
+      String(period.status)
+        .toLowerCase() ===
       "closed"
     ) {
 
@@ -2540,14 +2408,26 @@ async function normalizeExpense(
 
     }
 
+  }
 
-    if (
-      period.status ===
-      "not_found"
-    ) {
 
-      errors.push(
-        `Financial period ${month} could not be resolved.`
+  /* -------------------------------------------------------
+     DUPLICATE / LIKELY DUPLICATE
+  ------------------------------------------------------- */
+
+  if (
+    errors.length === 0
+  ) {
+
+    const duplicate =
+      await detectExpenseDuplicate(
+        normalized
+      );
+
+    if (duplicate) {
+
+      warnings.push(
+        duplicate
       );
 
     }
@@ -2555,801 +2435,542 @@ async function normalizeExpense(
   }
 
 
-  if (!categoryRaw) {
-
-    warnings.push(
-      'Category omitted; "other" will be used.'
-    );
-
-  }
-
-
-  if (!approvalRaw) {
-
-    warnings.push(
-      'Approval status omitted; "pending" will be used.'
-    );
-
-  }
-
-
-  if (!receiptUrl) {
-
-    warnings.push(
-      "Receipt reference is not supplied."
-    );
-
-  }
-
+  const status =
+    errors.length
+      ? "error"
+      : warnings.length
+        ? "warning"
+        : "valid";
 
   return {
+    staged_id:
+      stagedRow.id,
 
-    entityType:
-      "expense",
+    source_row_number:
+      stagedRow.source_row_number,
 
-    sourceRowNumber:
-      sourceRow.sourceRowNumber,
-
-    sourceData:
-      sourceRow.values,
-
-    normalizedData: {
-
-      description,
-
-      amount,
-
-      date:
-        expenseDate,
-
-      category,
-
-      approval_status:
-        approvalStatus,
-
-      receipt_url:
-        receiptUrl ||
-        null
-
-    },
-
-    period,
+    status,
 
     errors,
 
     warnings,
 
-    status:
-      errors.length > 0
-        ? "error"
-        : warnings.length > 0
-          ? "warning"
-          : "valid"
+    normalized_data:
+      normalized,
 
+    error_message:
+      [
+        ...errors,
+        ...warnings
+      ].join(" ")
   };
 
 }
 
 
 /* =========================================================
-   DUPLICATE DETECTION
+   MAPPED VALUE
 ========================================================= */
 
-function buildDuplicateKey(
-  normalizedRow
+function getMappedValue(
+  raw,
+  targetField
 ) {
 
-  const data =
-    normalizedRow.normalizedData;
+  const sourceColumn =
+    state.mappings[targetField];
 
-
-  if (
-    normalizedRow.entityType ===
-    "contribution"
-  ) {
-
-    return [
-      "contribution",
-      data.member_id,
-      data.amount,
-      data.contribution_date,
-      data.payment_method,
-      data.reference || "",
-      data.mpesa_reference || ""
-    ]
-      .join("|")
-      .toLowerCase();
-
+  if (!sourceColumn) {
+    return null;
   }
 
-
-  return [
-    "expense",
-    data.description,
-    data.amount,
-    data.date,
-    data.category
-  ]
-    .join("|")
-    .toLowerCase();
-
-}
-
-
-function detectInternalDuplicates(
-  rows
-) {
-
-  const seen =
-    new Map();
-
-
-  rows.forEach(
-    function (row) {
-
-      const key =
-        buildDuplicateKey(
-          row
-        );
-
-
-      if (
-        seen.has(key)
-      ) {
-
-        const firstRow =
-          seen.get(key);
-
-
-        row.errors.push(
-          `Duplicate of source row ${firstRow.sourceRowNumber}.`
-        );
-
-
-        row.status =
-          "error";
-
-      }
-
-      else {
-
-        seen.set(
-          key,
-          row
-        );
-
-      }
-
-    }
-  );
-
+  return raw?.[sourceColumn];
 }
 
 
 /* =========================================================
-   LIVE DUPLICATE DETECTION
+   MEMBER RESOLUTION
 ========================================================= */
 
-async function detectLiveDuplicates(
-  rows
+async function resolveMember(
+  identifier
 ) {
 
-  for (
-    const row of rows
-  ) {
+  const value =
+    String(
+      identifier ?? ""
+    ).trim();
 
-    if (
-      row.errors.length > 0
-    ) {
-
-      continue;
-
-    }
-
-
-    const data =
-      row.normalizedData;
-
-
-    if (
-      row.entityType ===
-      "contribution"
-    ) {
-
-      /*
-       * The final idempotency key is generated at
-       * import time. Here we detect likely existing
-       * duplicates using identifying contribution
-       * fields, without bypassing the canonical RPC.
-       */
-      const {
-        data: existing,
-        error
-      } =
-        await supabase
-          .from("contributions")
-          .select(`
-            id,
-            group_id,
-            member_id,
-            amount,
-            contribution_date,
-            contribution_type,
-            payment_method,
-            reference
-          `)
-          .eq(
-            "group_id",
-            state.group.id
-          )
-          .eq(
-            "member_id",
-            data.member_id
-          )
-          .eq(
-            "amount",
-            data.amount
-          )
-          .eq(
-            "contribution_date",
-            data.contribution_date
-          )
-          .eq(
-            "contribution_type",
-            CONTRIBUTION_TYPE
-          )
-          .eq(
-            "payment_method",
-            data.payment_method
-          )
-          .limit(10);
-
-
-      if (error) {
-        throw error;
-      }
-
-
-      if (
-        existing &&
-        existing.length > 0
-      ) {
-
-        row.warnings.push(
-          `A likely existing contribution was found for this member/date/amount/payment method.`
-        );
-
-      }
-
-    }
-
-
-    if (
-      row.entityType ===
-      "expense"
-    ) {
-
-      const {
-        data: existing,
-        error
-      } =
-        await supabase
-          .from("expenses")
-          .select(`
-            id,
-            group_id,
-            description,
-            amount,
-            date,
-            category,
-            approval_status
-          `)
-          .eq(
-            "group_id",
-            state.group.id
-          )
-          .eq(
-            "description",
-            data.description
-          )
-          .eq(
-            "amount",
-            data.amount
-          )
-          .eq(
-            "date",
-            data.date
-          )
-          .eq(
-            "category",
-            data.category
-          )
-          .limit(10);
-
-
-      if (error) {
-        throw error;
-      }
-
-
-      if (
-        existing &&
-        existing.length > 0
-      ) {
-
-        row.warnings.push(
-          "A likely existing expense was found with the same description, amount, date and category."
-        );
-
-      }
-
-    }
-
+  if (!value) {
+    return null;
   }
 
-}
+  /*
+   * IMPORTANT:
+   * Every lookup is constrained to the authenticated
+   * group. No client-supplied group ID is accepted.
+   */
 
-
-/* =========================================================
-   VALIDATION
-========================================================= */
-
-async function validateRows() {
-
-  const protectedFields =
-    detectProtectedFields();
-
-
-  if (
-    protectedFields.length > 0
-  ) {
-
-    throw new Error(
-      `Protected source fields detected: ${protectedFields.join(", ")}`
-    );
-
-  }
-
-
-  const mappings =
-    collectMappings();
-
+  const columns = [
+    "id",
+    "group_id",
+    "member_number",
+    "membership_number",
+    "name",
+    "phone",
+    "email",
+    "status"
+  ];
 
   const fields =
-    state.entityType === "contribution"
-      ? CONTRIBUTION_FIELDS
-      : EXPENSE_FIELDS;
-
-
-  const mappingErrors = [];
-
-
-  fields.forEach(
-    function (field) {
-
-      if (
-        field.required &&
-        !mappings[field.key]
-      ) {
-
-        mappingErrors.push(
-          `Required field "${field.label}" has not been mapped.`
-        );
-
-      }
-
-    }
-  );
-
-
-  if (
-    mappingErrors.length > 0
-  ) {
-
-    throw new Error(
-      mappingErrors.join(" ")
-    );
-
-  }
-
-
-  const normalizedRows = [];
-
+    [
+      ["member_number", value],
+      ["membership_number", value],
+      ["phone", value],
+      ["email", value]
+    ];
 
   for (
-    const sourceRow of
-      state.sourceRows
+    const [
+      field,
+      candidate
+    ] of fields
   ) {
 
-    const normalized =
-      state.entityType ===
-        "contribution"
-        ? await normalizeContribution(
-            sourceRow
-          )
-        : await normalizeExpense(
-            sourceRow
-          );
+    const {
+      data,
+      error
+    } = await supabase
+      .from("members")
+      .select(columns.join(","))
+      .eq(
+        "group_id",
+        state.groupId
+      )
+      .eq(
+        field,
+        candidate
+      )
+      .limit(2);
 
+    if (error) {
+      throw error;
+    }
 
-    normalizedRows.push(
-      normalized
-    );
+    if (
+      data?.length === 1
+    ) {
 
-  }
-
-
-  detectInternalDuplicates(
-    normalizedRows
-  );
-
-
-  await detectLiveDuplicates(
-    normalizedRows
-  );
-
-
-  normalizedRows.forEach(
-    function (row) {
-
-      if (
-        row.errors.length > 0
-      ) {
-
-        row.status =
-          "error";
-
-      }
-
-      else if (
-        row.warnings.length > 0
-      ) {
-
-        row.status =
-          "warning";
-
-      }
-
-      else {
-
-        row.status =
-          "valid";
-
-      }
+      return data[0];
 
     }
-  );
 
+    if (
+      data?.length > 1
+    ) {
 
-  state.normalizedRows =
-    normalizedRows;
+      throw new Error(
+        `Multiple members matched ${field} "${candidate}".`
+      );
 
-
-  const errors =
-    normalizedRows.filter(
-      row =>
-        row.status === "error"
-    );
-
-
-  const warnings =
-    normalizedRows.filter(
-      row =>
-        row.status === "warning"
-    );
-
-
-  const valid =
-    normalizedRows.filter(
-      row =>
-        row.status === "valid"
-    );
-
-
-  state.validation = {
-
-    total:
-      normalizedRows.length,
-
-    valid:
-      valid.length,
-
-    warnings:
-      warnings.length,
-
-    errors:
-      errors.length,
-
-    ready:
-      errors.length === 0 &&
-      normalizedRows.length > 0
-
-  };
-
-
-  renderValidation();
-
-
-  return state.validation;
-
-}
-
-
-/* =========================================================
-   VALIDATION UI
-========================================================= */
-
-function renderValidation() {
-
-  const summary =
-    byId(
-      "validationSummary"
-    );
-
-
-  const errorsPanel =
-    byId(
-      "validationErrorsPanel"
-    );
-
-
-  const errorsList =
-    byId(
-      "validationErrors"
-    );
-
-
-  const warningsPanel =
-    byId(
-      "validationWarningsPanel"
-    );
-
-
-  const warningsList =
-    byId(
-      "validationWarnings"
-    );
-
-
-  const validation =
-    state.validation;
-
-
-  if (!validation) {
-    return;
-  }
-
-
-  const errorRows =
-    state.normalizedRows.filter(
-      row =>
-        row.errors.length > 0
-    );
-
-
-  const warningRows =
-    state.normalizedRows.filter(
-      row =>
-        row.warnings.length > 0
-    );
-
-
-  summary.innerHTML = [
-
-    summaryBox(
-      "Total rows",
-      validation.total
-    ),
-
-    summaryBox(
-      "Valid",
-      validation.valid,
-      "success"
-    ),
-
-    summaryBox(
-      "Warnings",
-      validation.warnings,
-      "warning"
-    ),
-
-    summaryBox(
-      "Errors",
-      validation.errors,
-      "error"
-    ),
-
-    summaryBox(
-      "Duplicates",
-      countDuplicateRows()
-    ),
-
-    summaryBox(
-      "Ready",
-      validation.ready
-        ? validation.total
-        : 0,
-      validation.ready
-        ? "success"
-        : "error"
-    )
-
-  ].join("");
-
-
-  errorsPanel.hidden =
-    errorRows.length === 0;
-
-
-  errorsList.innerHTML =
-    errorRows
-      .slice(0, 100)
-      .map(
-        row =>
-          `<li>
-            Row ${row.sourceRowNumber}:
-            ${escapeHtml(row.errors.join(" "))}
-          </li>`
-      )
-      .join("");
-
-
-  warningsPanel.hidden =
-    warningRows.length === 0;
-
-
-  warningsList.innerHTML =
-    warningRows
-      .slice(0, 100)
-      .map(
-        row =>
-          `<li>
-            Row ${row.sourceRowNumber}:
-            ${escapeHtml(row.warnings.join(" "))}
-          </li>`
-      )
-      .join("");
-
-
-  byId(
-    "previewButton"
-  ).disabled =
-    !validation.ready;
-
-}
-
-
-function summaryBox(
-  label,
-  value,
-  modifier = ""
-) {
-
-  return `
-    <div class="summary-box ${modifier}">
-
-      <div class="summary-label">
-        ${escapeHtml(label)}
-      </div>
-
-      <div class="summary-value">
-        ${escapeHtml(value)}
-      </div>
-
-    </div>
-  `;
-
-}
-
-
-function countDuplicateRows() {
-
-  return state.normalizedRows.filter(
-    row =>
-      row.errors.some(
-        error =>
-          error.includes(
-            "Duplicate"
-          )
-      )
-  ).length;
-
-}
-
-
-/* =========================================================
-   STAGING
-========================================================= */
-
-async function createBatch() {
-
-  if (!state.group?.id) {
-
-    throw new Error(
-      "Current group context is missing."
-    );
+    }
 
   }
 
 
   /*
-   * The authenticated database policies remain
-   * authoritative. We still send the current
-   * group because the staging schema requires it,
-   * but it is derived exclusively from auth context.
+   * Exact normalized name lookup.
+   *
+   * Deliberately no fuzzy matching.
    */
+
   const {
     data,
     error
-  } =
-    await supabase
-      .from("data_import_batches")
-      .insert({
-
-        group_id:
-          state.group.id,
-
-        created_by:
-          state.member.id,
-
-        source_type:
-          "csv",
-
-        source_name:
-          state.file?.name ||
-          "migration.csv",
-
-        status:
-          "uploaded"
-
-      })
-      .select(
-        "id"
-      )
-      .single();
-
+  } = await supabase
+    .from("members")
+    .select(columns.join(","))
+    .eq(
+      "group_id",
+      state.groupId
+    )
+    .ilike(
+      "name",
+      value
+    )
+    .limit(2);
 
   if (error) {
+    throw error;
+  }
+
+  if (
+    data?.length === 1
+  ) {
+
+    return data[0];
+
+  }
+
+  if (
+    data?.length > 1
+  ) {
+
+    throw new Error(
+      `Multiple members matched name "${value}".`
+    );
+
+  }
+
+  return null;
+}
+
+
+/* =========================================================
+   GOAL RESOLUTION
+========================================================= */
+
+async function resolveGoal(
+  identifier
+) {
+
+  const value =
+    String(
+      identifier ?? ""
+    ).trim();
+
+  if (!value) {
+    return null;
+  }
+
+  /*
+   * Try exact UUID first.
+   */
+
+  if (
+    isUuid(value)
+  ) {
+
+    const {
+      data,
+      error
+    } = await supabase
+      .from("contribution_goals")
+      .select("id,group_id,name")
+      .eq(
+        "id",
+        value
+      )
+      .eq(
+        "group_id",
+        state.groupId
+      )
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    return data || null;
+  }
+
+  /*
+   * Resolve by name only inside current group.
+   *
+   * The query intentionally remains exact rather than
+   * fuzzy to prevent ambiguous historical imports.
+   */
+
+  const {
+    data,
+    error
+  } = await supabase
+    .from("contribution_goals")
+    .select("id,group_id,name")
+    .eq(
+      "group_id",
+      state.groupId
+    )
+    .ilike(
+      "name",
+      value
+    )
+    .limit(2);
+
+  if (error) {
+    throw error;
+  }
+
+  if (
+    data?.length === 1
+  ) {
+
+    return data[0];
+
+  }
+
+  if (
+    data?.length > 1
+  ) {
+
+    throw new Error(
+      `Multiple contribution goals matched "${value}".`
+    );
+
+  }
+
+  return null;
+}
+
+
+/* =========================================================
+   FINANCIAL PERIOD
+========================================================= */
+
+async function getFinancialPeriod(
+  month
+) {
+
+  if (
+    !state.groupId ||
+    !month
+  ) {
+    return null;
+  }
+
+  const {
+    data,
+    error
+  } = await supabase
+    .from("financial_periods")
+    .select(`
+      id,
+      group_id,
+      month,
+      status
+    `)
+    .eq(
+      "group_id",
+      state.groupId
+    )
+    .eq(
+      "month",
+      month
+    )
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data || null;
+}
+
+
+/* =========================================================
+   CONTRIBUTION DUPLICATE CHECK
+========================================================= */
+
+async function detectContributionDuplicate(
+  contribution
+) {
+
+  if (
+    !contribution.member_id ||
+    !contribution.amount ||
+    !contribution.contribution_date
+  ) {
+
+    return null;
+
+  }
+
+  let query =
+    supabase
+      .from("contributions")
+      .select(`
+        id,
+        group_id,
+        member_id,
+        amount,
+        contribution_date,
+        payment_method,
+        reference,
+        mpesa_reference
+      `)
+      .eq(
+        "group_id",
+        state.groupId
+      )
+      .eq(
+        "member_id",
+        contribution.member_id
+      )
+      .eq(
+        "amount",
+        contribution.amount
+      )
+      .eq(
+        "contribution_date",
+        contribution.contribution_date
+      )
+      .eq(
+        "payment_method",
+        contribution.payment_method
+      )
+      .limit(2);
+
+  const {
+    data,
+    error
+  } = await query;
+
+  if (error) {
+
+    /*
+     * Do not convert database query failures into a
+     * duplicate warning. A security/data-access failure
+     * must block validation.
+     */
 
     throw error;
 
   }
 
+  if (
+    data?.length
+  ) {
 
-  if (!data?.id) {
-
-    throw new Error(
-      "Migration batch was not created."
+    return (
+      "A matching contribution already exists in the current group for this member, amount, date, and payment method."
     );
 
   }
 
+  return null;
+}
 
-  state.batchId =
-    data.id;
+
+/* =========================================================
+   EXPENSE DUPLICATE CHECK
+========================================================= */
+
+async function detectExpenseDuplicate(
+  expense
+) {
+
+  if (
+    !expense.description ||
+    !expense.amount ||
+    !expense.date
+  ) {
+
+    return null;
+
+  }
+
+  const {
+    data,
+    error
+  } = await supabase
+    .from("expenses")
+    .select(`
+      id,
+      group_id,
+      description,
+      amount,
+      date,
+      category
+    `)
+    .eq(
+      "group_id",
+      state.groupId
+    )
+    .eq(
+      "amount",
+      expense.amount
+    )
+    .eq(
+      "date",
+      expense.date
+    )
+    .ilike(
+      "description",
+      expense.description
+    )
+    .limit(2);
+
+  if (error) {
+    throw error;
+  }
+
+  if (
+    data?.length
+  ) {
+
+    return (
+      "A likely duplicate expense already exists with the same description, amount, and date."
+    );
+
+  }
+
+  return null;
+}
 
 
-  return data.id;
+/* =========================================================
+   PERSIST VALIDATION RESULTS
+========================================================= */
+
+async function persistValidationResults() {
+
+  for (
+    const result of state.validationRows
+  ) {
+
+    const {
+      error
+    } = await supabase
+      .from("data_import_rows")
+      .update({
+        normalized_data:
+          result.normalized_data,
+
+        status:
+          result.status,
+
+        error_message:
+          result.error_message || null
+      })
+      .eq(
+        "id",
+        result.staged_id
+      )
+      .eq(
+        "batch_id",
+        state.batchId
+      );
+
+    if (error) {
+      throw error;
+    }
+
+  }
 
 }
 
 
 /* =========================================================
-   STAGING MAPPINGS
+   SAVE MAPPINGS
 ========================================================= */
 
-async function stageMappings() {
+async function saveMappings() {
 
   if (!state.batchId) {
-
-    throw new Error(
-      "Migration batch does not exist."
-    );
-
+    return;
   }
 
-
-  const rows =
+  const payload =
     Object.entries(
       state.mappings
     )
@@ -3358,830 +2979,719 @@ async function stageMappings() {
           Boolean(sourceColumn)
       )
       .map(
-        (
-          [
+        ([targetField, sourceColumn]) => ({
+          batch_id:
+            state.batchId,
+
+          source_column:
+            sourceColumn,
+
+          target_field:
             targetField,
-            sourceColumn
-          ]
-        ) => {
 
-          return {
-
-            batch_id:
-              state.batchId,
-
-            source_column:
-              sourceColumn,
-
-            target_entity:
-              state.entityType,
-
-            target_field:
-              targetField,
-
-            mapping_type:
-              "direct"
-
-          };
-
-        }
+          mapping_type:
+            mappingTypeFor(
+              targetField
+            )
+        })
       );
 
-
-  if (
-    rows.length === 0
-  ) {
-
-    throw new Error(
-      "No migration mappings were selected."
-    );
-
-  }
-
-
-  const {
-    error
-  } =
-    await supabase
-      .from("data_import_mappings")
-      .insert(
-        rows
-      );
-
-
-  if (error) {
-
-    throw error;
-
-  }
-
-}
-
-
-/* =========================================================
-   STAGING ROWS
-========================================================= */
-
-async function stageRows() {
-
-  if (!state.batchId) {
-
-    throw new Error(
-      "Migration batch does not exist."
-    );
-
-  }
-
-
-  const rows =
-    state.normalizedRows
-      .map(
-        function (row) {
-
-          return {
-
-            batch_id:
-              state.batchId,
-
-            entity_type:
-              row.entityType,
-
-            source_row_number:
-              row.sourceRowNumber,
-
-            source_data:
-              row.sourceData,
-
-            normalized_data:
-              row.normalizedData,
-
-            status:
-              row.status === "valid" ||
-              row.status === "warning"
-                ? row.status
-                : "error",
-
-            error_message:
-              row.errors.length > 0
-                ? row.errors.join(" ")
-                : null
-
-          };
-
-        }
-      );
-
-
-  const chunkSize =
-    250;
-
-
-  for (
-    let index = 0;
-    index < rows.length;
-    index += chunkSize
-  ) {
-
-    const chunk =
-      rows.slice(
-        index,
-        index + chunkSize
-      );
-
-
-    const {
-      error
-    } =
-      await supabase
-        .from("data_import_rows")
-        .insert(
-          chunk
-        );
-
-
-    if (error) {
-
-      throw error;
-
-    }
-
-  }
-
-}
-
-
-/* =========================================================
-   BATCH STATUS
-========================================================= */
-
-async function updateBatchStatus(
-  status,
-  summary = {}
-) {
-
-  if (!state.batchId) {
+  if (!payload.length) {
     return;
   }
 
-
-  const payload = {
-
-    status,
-
-    summary
-
-  };
-
-
-  if (
-    status === "importing"
-  ) {
-
-    payload.started_at =
-      new Date().toISOString();
-
-  }
-
-
-  if (
-    status === "completed"
-  ) {
-
-    payload.completed_at =
-      new Date().toISOString();
-
-  }
-
-
   const {
     error
-  } =
-    await supabase
-      .from("data_import_batches")
-      .update(
-        payload
-      )
-      .eq(
-        "id",
-        state.batchId
-      );
-
+  } = await supabase
+    .from("data_import_mappings")
+    .upsert(
+      payload,
+      {
+        onConflict:
+          "batch_id,source_column"
+      }
+    );
 
   if (error) {
-
     throw error;
-
   }
 
 }
 
 
 /* =========================================================
-   PREVIEW
+   MAPPING TYPE
 ========================================================= */
 
-function renderPreview() {
+function mappingTypeFor(
+  targetField
+) {
 
-  const summary =
-    byId(
-      "previewSummary"
-    );
+  if (
+    targetField === "member"
+  ) {
+    return "member_match";
+  }
+
+  if (
+    targetField === "amount"
+  ) {
+    return "amount_parse";
+  }
+
+  if (
+    targetField === "contribution_date" ||
+    targetField === "date"
+  ) {
+    return "date_parse";
+  }
+
+  return "direct";
+}
 
 
-  const body =
-    byId(
-      "previewTableBody"
-    );
+/* =========================================================
+   VALIDATION SUMMARY
+========================================================= */
 
+function buildValidationSummary() {
 
-  const rows =
-    state.normalizedRows;
-
-
-  const valid =
-    rows.filter(
-      row =>
-        row.status === "valid"
-    );
-
-
-  const warnings =
-    rows.filter(
-      row =>
-        row.status === "warning"
-    );
-
+  const total =
+    state.validationRows.length;
 
   const errors =
-    rows.filter(
+    state.validationRows.filter(
       row =>
         row.status === "error"
-    );
+    ).length;
 
-
-  const contributionRows =
-    rows.filter(
+  const warnings =
+    state.validationRows.filter(
       row =>
-        row.entityType ===
-        "contribution"
-    );
+        row.status === "warning"
+    ).length;
 
-
-  const expenseRows =
-    rows.filter(
+  const valid =
+    state.validationRows.filter(
       row =>
-        row.entityType ===
-        "expense"
-    );
+        row.status === "valid"
+    ).length;
 
+  return {
+    total,
+    valid,
+    warnings,
+    errors,
 
-  const contributionTotal =
-    contributionRows.reduce(
-      (
-        total,
-        row
-      ) =>
-        total +
-        Number(
-          row.normalizedData.amount ||
-          0
-        ),
-      0
-    );
+    ready_to_import:
+      valid + warnings,
 
-
-  const expenseTotal =
-    expenseRows.reduce(
-      (
-        total,
-        row
-      ) =>
-        total +
-        Number(
-          row.normalizedData.amount ||
-          0
-        ),
-      0
-    );
-
-
-  summary.innerHTML = [
-
-    summaryBox(
-      "Total rows",
-      rows.length
-    ),
-
-    summaryBox(
-      "Valid",
-      valid.length,
-      "success"
-    ),
-
-    summaryBox(
-      "Warnings",
-      warnings.length,
-      "warning"
-    ),
-
-    summaryBox(
-      "Errors",
-      errors.length,
-      "error"
-    ),
-
-    summaryBox(
-      "Contribution total",
-      formatMoney(
-        contributionTotal
-      )
-    ),
-
-    summaryBox(
-      "Expense total",
-      formatMoney(
-        expenseTotal
-      )
-    )
-
-  ].join("");
-
-
-  body.innerHTML =
-    rows
-      .map(
-        function (row) {
-
-          const data =
-            row.normalizedData;
-
-
-          const isContribution =
-            row.entityType ===
-            "contribution";
-
-
-          const subject =
-            isContribution
-              ? (
-                  resolveMemberDisplay(
-                    data.member_id
-                  )
-                )
-              : data.description;
-
-
-          const date =
-            isContribution
-              ? data.contribution_date
-              : data.date;
-
-
-          const month =
-            isContribution
-              ? data.month
-              : monthFromDate(
-                  data.date
-                );
-
-
-          const payment =
-            isContribution
-              ? data.payment_method
-              : "—";
-
-
-          const period =
-            row.period?.status ||
-            "unresolved";
-
-
-          const statusClass =
-            row.status === "valid"
-              ? "status-valid"
-              : row.status === "warning"
-                ? "status-warning"
-                : "status-error";
-
-
-          return `
-            <tr>
-
-              <td>
-                ${escapeHtml(row.sourceRowNumber)}
-              </td>
-
-              <td>
-                ${escapeHtml(row.entityType)}
-              </td>
-
-              <td>
-                ${escapeHtml(subject || "—")}
-              </td>
-
-              <td>
-                ${escapeHtml(
-                  formatMoney(
-                    data.amount
-                  )
-                )}
-              </td>
-
-              <td>
-                ${escapeHtml(date || "—")}
-              </td>
-
-              <td>
-                ${escapeHtml(month || "—")}
-              </td>
-
-              <td>
-                ${escapeHtml(payment)}
-              </td>
-
-              <td>
-                ${escapeHtml(period)}
-              </td>
-
-              <td>
-
-                <span class="status-badge ${statusClass}">
-                  ${escapeHtml(row.status)}
-                </span>
-
-              </td>
-
-            </tr>
-          `;
-
-        }
-      )
-      .join("");
-
-
-  byId(
-    "confirmReviewButton"
-  ).disabled =
-    errors.length > 0;
+    entity_type:
+      state.entityType
+  };
 
 }
 
 
-function resolveMemberDisplay(
-  memberId
+/* =========================================================
+   VALIDATION SUMMARY UI
+========================================================= */
+
+function renderValidationSummary(
+  summary
 ) {
 
-  const row =
-    state.normalizedRows.find(
-      candidate =>
-        candidate.normalizedData
-          ?.member_id ===
-        memberId
-    );
+  setText(
+    "#totalRows",
+    summary.total
+  );
 
+  setText(
+    "#validRows",
+    summary.valid
+  );
 
-  return (
-    row?.normalizedData
-      ?.member_identifier ||
-    memberId ||
-    "—"
+  setText(
+    "#warningRows",
+    summary.warnings
+  );
+
+  setText(
+    "#errorRows",
+    summary.errors
+  );
+
+  setText(
+    "#readyRows",
+    summary.ready_to_import
+  );
+
+  show(
+    "#validationSection"
   );
 
 }
 
 
 /* =========================================================
-   CONFIRMATION
+   VALIDATION ROWS UI
+========================================================= */
+
+function renderValidationRows(
+  rows
+) {
+
+  const container =
+    $("#validationRows") ||
+    $("#validationTableBody");
+
+  if (!container) {
+    return;
+  }
+
+  container.innerHTML =
+    rows.map(row => {
+
+      const messages =
+        [
+          ...(row.errors || []),
+          ...(row.warnings || [])
+        ];
+
+      return `
+        <tr>
+          <td>
+            ${escapeHtml(
+              row.source_row_number
+            )}
+          </td>
+
+          <td>
+            ${escapeHtml(
+              row.status
+            )}
+          </td>
+
+          <td>
+            ${messages.length
+              ? escapeHtml(
+                  messages.join(" ")
+                )
+              : "Ready"}
+          </td>
+        </tr>
+      `;
+
+    }).join("");
+
+}
+
+
+/* =========================================================
+   EXPLICIT CONFIRMATION
+========================================================= */
+
+function getConfirmationSummary() {
+
+  const rows =
+    state.validationRows
+      .filter(
+        row =>
+          row.status === "valid" ||
+          row.status === "warning"
+      );
+
+  const totalAmount =
+    rows.reduce(
+      (
+        total,
+        row
+      ) =>
+        total +
+        Number(
+          row.normalized_data?.amount ||
+          0
+        ),
+      0
+    );
+
+  const months =
+    [
+      ...new Set(
+        rows
+          .map(
+            row =>
+              row.normalized_data?.month
+          )
+          .filter(Boolean)
+      )
+    ]
+      .sort();
+
+  return {
+    count:
+      rows.length,
+
+    totalAmount,
+
+    months,
+
+    warnings:
+      rows.filter(
+        row =>
+          row.status === "warning"
+      ).length
+  };
+
+}
+
+
+/* =========================================================
+   CONFIRMATION UI
 ========================================================= */
 
 function renderConfirmation() {
 
-  const rows =
-    state.normalizedRows;
+  const summary =
+    getConfirmationSummary();
 
+  setText(
+    "#confirmCount",
+    summary.count
+  );
 
-  const contributionRows =
-    rows.filter(
-      row =>
-        row.entityType ===
-        "contribution"
-    );
-
-
-  const expenseRows =
-    rows.filter(
-      row =>
-        row.entityType ===
-        "expense"
-    );
-
-
-  const contributionTotal =
-    contributionRows.reduce(
-      (
-        total,
-        row
-      ) =>
-        total +
-        Number(
-          row.normalizedData.amount ||
-          0
-        ),
-      0
-    );
-
-
-  const expenseTotal =
-    expenseRows.reduce(
-      (
-        total,
-        row
-      ) =>
-        total +
-        Number(
-          row.normalizedData.amount ||
-          0
-        ),
-      0
-    );
-
-
-  const months =
-    Array.from(
-      new Set(
-        rows
-          .map(
-            row =>
-              row.entityType ===
-                "contribution"
-                ? row.normalizedData.month
-                : monthFromDate(
-                    row.normalizedData.date
-                  )
-          )
-          .filter(Boolean)
-      )
+  setText(
+    "#confirmAmount",
+    money(
+      summary.totalAmount
     )
-      .sort();
+  );
 
+  setText(
+    "#confirmMonths",
+    summary.months.join(", ") ||
+    "None"
+  );
 
-  byId(
-    "confirmationSummary"
-  ).innerHTML = [
+  setText(
+    "#confirmWarnings",
+    summary.warnings
+  );
 
-    reconciliationItem(
-      "Contributions",
-      contributionRows.length
-    ),
-
-    reconciliationItem(
-      "Contribution total",
-      formatMoney(
-        contributionTotal
-      )
-    ),
-
-    reconciliationItem(
-      "Expenses",
-      expenseRows.length
-    ),
-
-    reconciliationItem(
-      "Expense total",
-      formatMoney(
-        expenseTotal
-      )
-    ),
-
-    reconciliationItem(
-      "Affected months",
-      months.join(", ") || "None"
-    ),
-
-    reconciliationItem(
-      "Rows",
-      rows.length
-    ),
-
-    reconciliationItem(
-      "Warnings",
-      rows.filter(
-        row =>
-          row.warnings.length > 0
-      ).length
-    ),
-
-    reconciliationItem(
-      "Closed-period imports",
-      0
-    )
-
-  ].join("");
-
-
-  byId(
-    "confirmationCheckbox"
-  ).checked =
-    false;
-
-
-  byId(
-    "startImportButton"
-  ).disabled =
-    true;
-
-}
-
-
-function reconciliationItem(
-  label,
-  value
-) {
-
-  return `
-    <div class="reconciliation-item">
-
-      <span>
-        ${escapeHtml(label)}
-      </span>
-
-      <strong>
-        ${escapeHtml(value)}
-      </strong>
-
-    </div>
-  `;
+  show(
+    "#confirmationSection"
+  );
 
 }
 
 
 /* =========================================================
-   CONTRIBUTION IMPORT
+   IMPORT BUTTON
 ========================================================= */
 
-function generatePaymentId() {
+function updateImportButton() {
 
-  /*
-   * UUID generated client-side solely as the
-   * canonical payment idempotency key.
-   *
-   * It is NOT an allocation ID.
-   * It is NOT an obligation ID.
-   */
-  if (
-    typeof crypto !== "undefined" &&
-    typeof crypto.randomUUID === "function"
-  ) {
+  const button =
+    $("#importButton") ||
+    $("#executeImport");
 
-    return crypto.randomUUID();
-
+  if (!button) {
+    return;
   }
 
+  const enabled =
+    state.ready &&
+    state.confirmed &&
+    !state.importing;
 
-  throw new Error(
-    "Secure UUID generation is unavailable. Contribution import stopped."
-  );
+  button.disabled =
+    !enabled;
 
 }
 
+
+/* =========================================================
+   EXECUTE IMPORT
+========================================================= */
+
+async function executeImport() {
+
+  if (
+    !state.ready
+  ) {
+
+    showMessage(
+      "The migration is not ready for import.",
+      "error"
+    );
+
+    return;
+
+  }
+
+  if (
+    !state.confirmed
+  ) {
+
+    showMessage(
+      "Explicit confirmation is required before importing.",
+      "error"
+    );
+
+    return;
+
+  }
+
+  if (
+    state.importing
+  ) {
+    return;
+  }
+
+  /*
+   * Re-read the confirmation state from the actual control.
+   */
+
+  const confirmation =
+    $("#confirmImport") ||
+    $("#explicitConfirmation");
+
+  if (
+    confirmation &&
+    !confirmation.checked
+  ) {
+
+    showMessage(
+      "Please explicitly confirm the migration.",
+      "error"
+    );
+
+    return;
+
+  }
+
+  try {
+
+    state.importing =
+      true;
+
+    updateImportButton();
+
+    await saveMappings();
+
+    await updateBatchStatus(
+      "importing",
+      buildValidationSummary()
+    );
+
+    updateStepUI(5);
+
+    renderConfirmation();
+
+    showMessage(
+      "Import started. Each financial record is being processed through the existing controls.",
+      "info"
+    );
+
+    state.importedCount = 0;
+    state.failedCount = 0;
+    state.importResults = [];
+
+    const rows =
+      state.validationRows.filter(
+        row =>
+          row.status === "valid" ||
+          row.status === "warning"
+      );
+
+    /*
+     * IMPORTANT:
+     *
+     * There is intentionally no generic normalized_data
+     * INSERT here.
+     *
+     * Contributions use cl_2b_record_contribution().
+     * Expenses use the existing expenses table path.
+     */
+
+    for (
+      const row of rows
+    ) {
+
+      try {
+
+        const result =
+          state.entityType === "contribution"
+            ? await importContribution(
+                row
+              )
+            : await importExpense(
+                row
+              );
+
+        state.importedCount++;
+
+        state.importResults.push({
+          staged_id:
+            row.staged_id,
+
+          source_row_number:
+            row.source_row_number,
+
+          status:
+            "imported",
+
+          target_id:
+            result.target_id,
+
+          result
+        });
+
+        await markRowImported(
+          row.staged_id,
+          result.target_id
+        );
+
+      }
+      catch (error) {
+
+        state.failedCount++;
+
+        state.importResults.push({
+          staged_id:
+            row.staged_id,
+
+          source_row_number:
+            row.source_row_number,
+
+          status:
+            "error",
+
+          error:
+            error?.message ||
+            "Import failed."
+        });
+
+        await markRowImportError(
+          row.staged_id,
+          error?.message ||
+          "Import failed."
+        );
+
+        /*
+         * Stop immediately.
+         *
+         * This avoids silently continuing after a financial
+         * import failure.
+         *
+         * Earlier successfully imported rows remain explicitly
+         * reported as imported. There is no false claim of
+         * browser-wide transaction atomicity.
+         */
+
+        throw new Error(
+          `Import stopped at source row ${row.source_row_number}: ${
+            error?.message ||
+            "Import failed."
+          }`
+        );
+
+      }
+
+    }
+
+
+    await updateBatchStatus(
+      "completed",
+      {
+        ...buildValidationSummary(),
+
+        imported:
+          state.importedCount,
+
+        failed:
+          state.failedCount
+      }
+    );
+
+    updateStepUI(6);
+
+    showMessage(
+      `Import completed successfully: ${state.importedCount} record(s) imported.`,
+      "success"
+    );
+
+    await verifyImportedData();
+
+  }
+  catch (error) {
+
+    console.error(
+      "IMPORT ERROR",
+      error
+    );
+
+    try {
+
+      await updateBatchStatus(
+        state.importedCount > 0
+          ? "completed_with_errors"
+          : "failed",
+        {
+          ...buildValidationSummary(),
+
+          imported:
+            state.importedCount,
+
+          failed:
+            state.failedCount,
+
+          error:
+            error?.message ||
+            "Import failed."
+        }
+      );
+
+    }
+    catch (statusError) {
+
+      console.error(
+        "Unable to update batch failure status",
+        statusError
+      );
+
+    }
+
+    showMessage(
+      error?.message ||
+      "Import failed.",
+      "error"
+    );
+
+  }
+  finally {
+
+    state.importing =
+      false;
+
+    updateImportButton();
+
+  }
+
+}
+
+
+/* =========================================================
+   IMPORT CONTRIBUTION
+========================================================= */
 
 async function importContribution(
   row
 ) {
 
   const data =
-    row.normalizedData;
-
+    row.normalized_data;
 
   if (
-    !data.member_id
+    !data?.member_id ||
+    !data?.amount ||
+    !data?.contribution_date
   ) {
 
     throw new Error(
-      `Source row ${row.sourceRowNumber} has no resolved member.`
+      "Contribution normalized data is incomplete."
     );
 
   }
-
-
-  if (
-    !data.contribution_date
-  ) {
-
-    throw new Error(
-      `Source row ${row.sourceRowNumber} has no contribution date.`
-    );
-
-  }
-
-
-  const paymentId =
-    generatePaymentId();
-
 
   /*
-   * IMPORTANT:
+   * Generate a UUID idempotency/payment ID locally.
    *
-   * This is the only contribution write path.
+   * It is generated per staged row and persisted through
+   * the canonical payment call.
    *
-   * The importer does NOT:
-   *   - insert contributions directly
-   *   - insert obligations
-   *   - insert allocations
-   *   - call a second allocator
-   *
-   * The canonical live function remains authoritative.
+   * The canonical function remains authoritative.
    */
+
+  const paymentId =
+    crypto.randomUUID();
+
   const {
     data: result,
     error
-  } =
-    await supabase.rpc(
-      "cl_2b_record_contribution",
-      {
+  } = await supabase.rpc(
+    "cl_2b_record_contribution",
+    {
+      p_payment_id:
+        paymentId,
 
-        p_payment_id:
-          paymentId,
+      p_group_id:
+        state.groupId,
 
-        p_group_id:
-          state.group.id,
+      p_member_id:
+        data.member_id,
 
-        p_member_id:
-          data.member_id,
+      p_amount:
+        data.amount,
 
-        p_amount:
-          data.amount,
+      p_contribution_date:
+        data.contribution_date,
 
-        p_contribution_date:
-          data.contribution_date,
+      p_contribution_type:
+        data.contribution_type ||
+        "monthly",
 
-        p_contribution_type:
-          CONTRIBUTION_TYPE,
+      p_payment_method:
+        data.payment_method,
 
-        p_payment_method:
-          data.payment_method,
+      p_reference:
+        data.reference ||
+        null,
 
-        p_reference:
-          data.reference,
+      p_mpesa_reference:
+        data.mpesa_reference ||
+        null,
 
-        p_mpesa_reference:
-          data.mpesa_reference,
+      p_goal_id:
+        data.goal_id ||
+        null,
 
-        p_goal_id:
-          data.goal_id,
-
-        p_notes:
-          data.notes
-
-      }
-    );
-
+      p_notes:
+        data.notes ||
+        null
+    }
+  );
 
   if (error) {
-
     throw error;
-
   }
 
-
   if (
-    !result?.ok
+    !result ||
+    result.ok !== true
   ) {
 
     throw new Error(
       result?.error ||
-      `Canonical contribution recording failed for source row ${row.sourceRowNumber}.`
+      "Canonical contribution recording did not confirm success."
     );
 
   }
 
-
   return {
-
-    sourceRowNumber:
-      row.sourceRowNumber,
-
-    entityType:
-      "contribution",
-
-    paymentId:
+    target_id:
       result.payment_id ||
       paymentId,
 
-    replay:
-      Boolean(
-        result.replay
-      ),
-
-    result
-
+    canonical_result:
+      result
   };
 
 }
 
 
 /* =========================================================
-   EXPENSE IMPORT
+   IMPORT EXPENSE
 ========================================================= */
 
 async function importExpense(
@@ -4189,817 +3699,677 @@ async function importExpense(
 ) {
 
   const data =
-    row.normalizedData;
-
-
-  /*
-   * recorded_by is deliberately omitted.
-   *
-   * Existing database trigger/function is
-   * responsible for resolving the authenticated
-   * member inside the supplied current group.
-   */
-  const payload = {
-
-    group_id:
-      state.group.id,
-
-    description:
-      data.description,
-
-    amount:
-      data.amount,
-
-    date:
-      data.date,
-
-    category:
-      data.category,
-
-    approval_status:
-      data.approval_status
-
-  };
-
+    row.normalized_data;
 
   if (
-    data.receipt_url
+    !data?.description ||
+    !data?.amount ||
+    !data?.date
   ) {
 
-    payload.receipt_url =
-      data.receipt_url;
+    throw new Error(
+      "Expense normalized data is incomplete."
+    );
 
   }
 
+  /*
+   * No group_id is taken from migration data.
+   *
+   * The group comes exclusively from authenticated context.
+   *
+   * recorded_by is intentionally not supplied by the client.
+   * Existing database logic resolves/validates it.
+   */
 
   const {
     data: inserted,
     error
-  } =
-    await supabase
-      .from("expenses")
-      .insert(
-        payload
-      )
-      .select(`
-        id,
-        group_id,
-        description,
-        amount,
-        date,
-        category,
-        approval_status,
-        recorded_by
-      `)
-      .single();
+  } = await supabase
+    .from("expenses")
+    .insert({
+      group_id:
+        state.groupId,
 
+      description:
+        data.description,
+
+      category:
+        data.category ||
+        "other",
+
+      amount:
+        data.amount,
+
+      date:
+        data.date,
+
+      receipt_url:
+        data.receipt_url ||
+        null,
+
+      approval_status:
+        data.approval_status ||
+        "pending"
+    })
+    .select(`
+      id,
+      group_id,
+      description,
+      category,
+      amount,
+      date,
+      receipt_url,
+      approval_status
+    `)
+    .single();
 
   if (error) {
-
     throw error;
-
   }
 
-
-  if (!inserted?.id) {
+  if (
+    !inserted?.id
+  ) {
 
     throw new Error(
-      `Expense insertion returned no record for source row ${row.sourceRowNumber}.`
+      "Expense insert did not return a target record."
     );
 
   }
 
+  /*
+   * Verify group ownership immediately.
+   */
 
   if (
     inserted.group_id !==
-    state.group.id
+    state.groupId
   ) {
 
     throw new Error(
-      `Expense group verification failed for source row ${row.sourceRowNumber}.`
+      "Expense verification failed: group mismatch."
     );
 
   }
 
-
   return {
-
-    sourceRowNumber:
-      row.sourceRowNumber,
-
-    entityType:
-      "expense",
-
-    expenseId:
+    target_id:
       inserted.id,
 
-    inserted
-
+    record:
+      inserted
   };
 
 }
 
 
 /* =========================================================
-   IMPORT
+   MARK ROW IMPORTED
 ========================================================= */
 
-async function executeImport() {
+async function markRowImported(
+  stagedId,
+  targetId
+) {
 
-  if (state.busy) {
-    return;
+  const {
+    error
+  } = await supabase
+    .from("data_import_rows")
+    .update({
+      status:
+        "imported",
+
+      target_id:
+        targetId,
+
+      error_message:
+        null
+    })
+    .eq(
+      "id",
+      stagedId
+    )
+    .eq(
+      "batch_id",
+      state.batchId
+    );
+
+  if (error) {
+    throw error;
   }
 
-
-  state.busy =
-    true;
+}
 
 
-  try {
+/* =========================================================
+   MARK ROW IMPORT ERROR
+========================================================= */
 
-    setStep(
-      "import"
+async function markRowImportError(
+  stagedId,
+  message
+) {
+
+  const {
+    error
+  } = await supabase
+    .from("data_import_rows")
+    .update({
+      status:
+        "error",
+
+      error_message:
+        message
+    })
+    .eq(
+      "id",
+      stagedId
+    )
+    .eq(
+      "batch_id",
+      state.batchId
     );
 
-    showOnly(
-      "importSection"
-    );
-
-    showStatus(
-      "Import started. No unvalidated rows will be imported.",
-      "info"
-    );
-
-
-    await updateBatchStatus(
-      "importing",
-      {
-        total:
-          state.normalizedRows.length,
-
-        contribution_count:
-          state.normalizedRows.filter(
-            row =>
-              row.entityType ===
-              "contribution"
-          ).length,
-
-        expense_count:
-          state.normalizedRows.filter(
-            row =>
-              row.entityType ===
-              "expense"
-          ).length
-
-      }
-    );
-
-
-    /*
-     * Stage only after explicit confirmation.
-     */
-    await stageMappings();
-
-    await stageRows();
-
-
-    const results = [];
-
-
-    const rowsToImport =
-      state.normalizedRows.filter(
-        row =>
-          row.status === "valid" ||
-          row.status === "warning"
-      );
-
-
-    renderImportProgress(
-      0,
-      rowsToImport.length,
-      results
-    );
-
-
-    for (
-      let index = 0;
-      index < rowsToImport.length;
-      index += 1
-    ) {
-
-      const row =
-        rowsToImport[index];
-
-
-      /*
-       * Re-check row state immediately before
-       * financial write.
-       */
-      if (
-        row.errors.length > 0
-      ) {
-
-        throw new Error(
-          `Import safety check failed for source row ${row.sourceRowNumber}.`
-        );
-
-      }
-
-
-      /*
-       * Closed-period safety check is repeated
-       * immediately before writing.
-       */
-      const month =
-        row.entityType ===
-          "contribution"
-          ? row.normalizedData.month
-          : monthFromDate(
-              row.normalizedData.date
-            );
-
-
-      const period =
-        await checkFinancialPeriod(
-          month
-        );
-
-
-      if (
-        period.status !==
-        "open"
-      ) {
-
-        throw new Error(
-          `Financial period ${month} is no longer open. Import stopped before writing source row ${row.sourceRowNumber}.`
-        );
-
-      }
-
-
-      let result;
-
-
-      if (
-        row.entityType ===
-        "contribution"
-      ) {
-
-        result =
-          await importContribution(
-            row
-          );
-
-      }
-
-      else if (
-        row.entityType ===
-        "expense"
-      ) {
-
-        result =
-          await importExpense(
-            row
-          );
-
-      }
-
-      else {
-
-        throw new Error(
-          `Unsupported migration entity type "${row.entityType}".`
-        );
-
-      }
-
-
-      results.push(
-        result
-      );
-
-
-      renderImportProgress(
-        index + 1,
-        rowsToImport.length,
-        results
-      );
-
-    }
-
-
-    state.importResults =
-      results;
-
-
-    await updateBatchStatus(
-      "completed",
-      {
-        total:
-          state.normalizedRows.length,
-
-        imported:
-          results.length,
-
-        contribution_imported:
-          results.filter(
-            result =>
-              result.entityType ===
-              "contribution"
-          ).length,
-
-        expense_imported:
-          results.filter(
-            result =>
-              result.entityType ===
-              "expense"
-          ).length
-
-      }
-    );
-
-
-    byId(
-      "verifyButton"
-    ).disabled =
-      false;
-
-
-    showStatus(
-      "Import completed. Verification is now required.",
-      "success"
-    );
-
-  }
-
-  catch (error) {
-
+  if (error) {
     console.error(
-      "CHAMA LIVE: migration import failed",
+      "Unable to mark migration row as error",
       error
     );
+  }
 
+}
+
+
+/* =========================================================
+   POST-IMPORT VERIFICATION
+========================================================= */
+
+async function verifyImportedData() {
+
+  const imported =
+    state.importResults.filter(
+      result =>
+        result.status ===
+        "imported"
+    );
+
+  const verification = {
+    total:
+      imported.length,
+
+    verified:
+      0,
+
+    failed:
+      0,
+
+    failures:
+      []
+  };
+
+
+  for (
+    const result of imported
+  ) {
 
     try {
 
-      await updateBatchStatus(
-        "failed",
-        {
-          error:
-            error.message
-        }
-      );
+      if (
+        state.entityType ===
+        "contribution"
+      ) {
+
+        await verifyContribution(
+          result.target_id
+        );
+
+      }
+      else {
+
+        await verifyExpense(
+          result.target_id
+        );
+
+      }
+
+      verification.verified++;
+
+    }
+    catch (error) {
+
+      verification.failed++;
+
+      verification.failures.push({
+        source_row_number:
+          result.source_row_number,
+
+        target_id:
+          result.target_id,
+
+        error:
+          error?.message ||
+          "Verification failed."
+      });
 
     }
 
-    catch (
-      statusError
-    ) {
-
-      console.error(
-        "CHAMA LIVE: failed to update migration batch status",
-        statusError
-      );
-
-    }
+  }
 
 
-    showStatus(
-      error.message ||
-      "Migration failed.",
+  renderVerification(
+    verification
+  );
+
+
+  if (
+    verification.failed === 0
+  ) {
+
+    showMessage(
+      `Import and verification complete. ${verification.verified} record(s) verified.`,
+      "success"
+    );
+
+  }
+  else {
+
+    showMessage(
+      `Import completed, but ${verification.failed} record(s) failed post-import verification.`,
       "error"
     );
 
   }
 
-  finally {
+  return verification;
 
-    state.busy =
-      false;
+}
+
+
+/* =========================================================
+   VERIFY CONTRIBUTION
+========================================================= */
+
+async function verifyContribution(
+  paymentId
+) {
+
+  const {
+    data,
+    error
+  } = await supabase
+    .from("contributions")
+    .select(`
+      id,
+      group_id,
+      member_id,
+      amount,
+      contribution_date,
+      payment_method,
+      contribution_type
+    `)
+    .eq(
+      "id",
+      paymentId
+    )
+    .eq(
+      "group_id",
+      state.groupId
+    )
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+
+    throw new Error(
+      "Imported contribution was not found."
+    );
 
   }
 
-}
-
-
-/* =========================================================
-   IMPORT PROGRESS
-========================================================= */
-
-function renderImportProgress(
-  completed,
-  total,
-  results
-) {
-
-  const container =
-    byId(
-      "importProgress"
-    );
-
-
-  const contributions =
-    results.filter(
-      result =>
-        result.entityType ===
-        "contribution"
-    ).length;
-
-
-  const expenses =
-    results.filter(
-      result =>
-        result.entityType ===
-        "expense"
-    ).length;
-
-
-  container.innerHTML = [
-
-    summaryBox(
-      "Processed",
-      `${completed} / ${total}`
-    ),
-
-    summaryBox(
-      "Contributions",
-      contributions
-    ),
-
-    summaryBox(
-      "Expenses",
-      expenses
-    ),
-
-    summaryBox(
-      "Failures",
-      0,
-      "success"
-    )
-
-  ].join("");
-
-}
-
-
-/* =========================================================
-   VERIFICATION
-========================================================= */
-
-async function verifyImport() {
-
   if (
-    !state.batchId
+    data.group_id !==
+    state.groupId
   ) {
 
     throw new Error(
-      "Migration batch is missing."
+      "Contribution group verification failed."
     );
 
   }
 
+  if (
+    !data.member_id
+  ) {
 
-  setStep(
-    "verify"
-  );
+    throw new Error(
+      "Contribution member verification failed."
+    );
 
-  showOnly(
-    "verificationSection"
-  );
+  }
 
+  if (
+    Number(data.amount) <= 0
+  ) {
 
-  showStatus(
-    "Verifying imported records.",
-    "info"
-  );
+    throw new Error(
+      "Contribution amount verification failed."
+    );
 
+  }
 
-  const verification = {
+  if (
+    !data.contribution_date
+  ) {
 
-    batchRows:
-      0,
+    throw new Error(
+      "Contribution date verification failed."
+    );
 
-    importedRows:
-      state.importResults.length,
-
-    contributionVerified:
-      0,
-
-    expenseVerified:
-      0,
-
-    groupFailures:
-      0,
-
-    missingFailures:
-      0,
-
-    closedPeriodFailures:
-      0
-
-  };
-
+  }
 
   /*
-   * Verify every imported contribution.
+   * The canonical contribution function already refreshed
+   * accounting. We deliberately do NOT insert or rebuild
+   * allocations here.
    */
-  for (
-    const result of
-      state.importResults
-  ) {
 
-    if (
-      result.entityType ===
-      "contribution"
-    ) {
-
-      const {
-        data,
-        error
-      } =
-        await supabase
-          .from("contributions")
-          .select(`
-            id,
-            group_id,
-            member_id,
-            amount,
-            contribution_date,
-            contribution_type,
-            payment_method
-          `)
-          .eq(
-            "id",
-            result.paymentId
-          )
-          .limit(1);
-
-
-      if (error) {
-        throw error;
-      }
-
-
-      if (
-        !data ||
-        data.length === 0
-      ) {
-
-        verification.missingFailures +=
-          1;
-
-        continue;
-
-      }
-
-
-      const contribution =
-        data[0];
-
-
-      if (
-        contribution.group_id !==
-        state.group.id
-      ) {
-
-        verification.groupFailures +=
-          1;
-
-        continue;
-
-      }
-
-
-      if (
-        contribution.amount !==
-        state.normalizedRows.find(
-          row =>
-            row.sourceRowNumber ===
-            result.sourceRowNumber
-        )?.normalizedData.amount
-      ) {
-
-        verification.missingFailures +=
-          1;
-
-        continue;
-
-      }
-
-
-      const month =
-        monthFromDate(
-          contribution.contribution_date
-        );
-
-
-      const period =
-        await checkFinancialPeriod(
-          month
-        );
-
-
-      if (
-        period.status ===
-        "closed"
-      ) {
-
-        /*
-         * This is not expected because the
-         * canonical function rejects closed periods.
-         */
-        verification.closedPeriodFailures +=
-          1;
-
-        continue;
-
-      }
-
-
-      verification.contributionVerified +=
-        1;
-
-    }
-
-
-    if (
-      result.entityType ===
-      "expense"
-    ) {
-
-      const {
-        data,
-        error
-      } =
-        await supabase
-          .from("expenses")
-          .select(`
-            id,
-            group_id,
-            description,
-            amount,
-            date,
-            category,
-            approval_status,
-            recorded_by
-          `)
-          .eq(
-            "id",
-            result.expenseId
-          )
-          .limit(1);
-
-
-      if (error) {
-        throw error;
-      }
-
-
-      if (
-        !data ||
-        data.length === 0
-      ) {
-
-        verification.missingFailures +=
-          1;
-
-        continue;
-
-      }
-
-
-      const expense =
-        data[0];
-
-
-      if (
-        expense.group_id !==
-        state.group.id
-      ) {
-
-        verification.groupFailures +=
-          1;
-
-        continue;
-
-      }
-
-
-      const sourceRow =
-        state.normalizedRows.find(
-          row =>
-            row.sourceRowNumber ===
-            result.sourceRowNumber
-        );
-
-
-      if (
-        !sourceRow
-      ) {
-
-        verification.missingFailures +=
-          1;
-
-        continue;
-
-      }
-
-
-      if (
-        Number(expense.amount) !==
-        Number(
-          sourceRow.normalizedData.amount
-        )
-      ) {
-
-        verification.missingFailures +=
-          1;
-
-        continue;
-
-      }
-
-
-      verification.expenseVerified +=
-        1;
-
-    }
-
+  return data;
+}
+
+
+/* =========================================================
+   VERIFY EXPENSE
+========================================================= */
+
+async function verifyExpense(
+  expenseId
+) {
+
+  const {
+    data,
+    error
+  } = await supabase
+    .from("expenses")
+    .select(`
+      id,
+      group_id,
+      description,
+      category,
+      amount,
+      date,
+      approval_status
+    `)
+    .eq(
+      "id",
+      expenseId
+    )
+    .eq(
+      "group_id",
+      state.groupId
+    )
+    .maybeSingle();
+
+  if (error) {
+    throw error;
   }
 
+  if (!data) {
 
-  verification.ok =
-    verification.missingFailures === 0 &&
-    verification.groupFailures === 0 &&
-    verification.closedPeriodFailures === 0 &&
-    verification.contributionVerified +
-      verification.expenseVerified ===
-      state.importResults.length;
-
-
-  state.verification =
-    verification;
-
-
-  byId(
-    "verificationSummary"
-  ).innerHTML = [
-
-    reconciliationItem(
-      "Imported rows",
-      verification.importedRows
-    ),
-
-    reconciliationItem(
-      "Contributions verified",
-      verification.contributionVerified
-    ),
-
-    reconciliationItem(
-      "Expenses verified",
-      verification.expenseVerified
-    ),
-
-    reconciliationItem(
-      "Group failures",
-      verification.groupFailures
-    ),
-
-    reconciliationItem(
-      "Missing records",
-      verification.missingFailures
-    ),
-
-    reconciliationItem(
-      "Closed-period failures",
-      verification.closedPeriodFailures
-    ),
-
-    reconciliationItem(
-      "Verification",
-      verification.ok
-        ? "PASS"
-        : "FAIL"
-    )
-
-  ].join("");
-
-
-  if (
-    verification.ok
-  ) {
-
-    showStatus(
-      "Migration verification PASSED.",
-      "success"
+    throw new Error(
+      "Imported expense was not found."
     );
 
   }
 
-  else {
+  if (
+    data.group_id !==
+    state.groupId
+  ) {
 
-    showStatus(
-      "Migration verification FAILED. Review the reconciliation before taking any further action.",
-      "error"
+    throw new Error(
+      "Expense group verification failed."
+    );
+
+  }
+
+  if (
+    Number(data.amount) <= 0
+  ) {
+
+    throw new Error(
+      "Expense amount verification failed."
+    );
+
+  }
+
+  if (
+    !data.date
+  ) {
+
+    throw new Error(
+      "Expense date verification failed."
+    );
+
+  }
+
+  return data;
+}
+
+
+/* =========================================================
+   VERIFICATION UI
+========================================================= */
+
+function renderVerification(
+  verification
+) {
+
+  setText(
+    "#verifiedCount",
+    verification.verified
+  );
+
+  setText(
+    "#verificationFailed",
+    verification.failed
+  );
+
+  const container =
+    $("#verificationResults");
+
+  if (!container) {
+    return;
+  }
+
+  if (
+    verification.failures.length === 0
+  ) {
+
+    container.innerHTML =
+      "<p>All imported records passed verification.</p>";
+
+    return;
+
+  }
+
+  container.innerHTML =
+    verification.failures
+      .map(
+        failure => `
+          <div class="verification-error">
+            <strong>
+              Row ${escapeHtml(
+                failure.source_row_number
+              )}
+            </strong>
+
+            <span>
+              ${escapeHtml(
+                failure.error
+              )}
+            </span>
+          </div>
+        `
+      )
+      .join("");
+
+}
+
+
+/* =========================================================
+   MARK ALL ROWS ERROR
+========================================================= */
+
+async function markAllRowsError(
+  message
+) {
+
+  if (!state.batchId) {
+    return;
+  }
+
+  const {
+    error
+  } = await supabase
+    .from("data_import_rows")
+    .update({
+      status:
+        "error",
+
+      error_message:
+        message
+    })
+    .eq(
+      "batch_id",
+      state.batchId
+    );
+
+  if (error) {
+    throw error;
+  }
+
+}
+
+
+/* =========================================================
+   RESET FILE STATE
+========================================================= */
+
+function resetFileState() {
+
+  state.file = null;
+  state.sourceType = null;
+  state.sourceName = null;
+  state.sheetName = null;
+
+  state.headers = [];
+  state.sourceRows = [];
+
+  state.mappings = {};
+
+  state.batchId = null;
+
+  state.stagedRows = [];
+  state.validationRows = [];
+
+  state.validated = false;
+  state.ready = false;
+  state.confirmed = false;
+
+  state.importing = false;
+
+  state.importedCount = 0;
+  state.failedCount = 0;
+
+  state.importResults = [];
+
+}
+
+
+/* =========================================================
+   RESET ENTIRE MIGRATION
+========================================================= */
+
+function resetMigration() {
+
+  const confirmed =
+    window.confirm(
+      "Reset this migration screen? Staged migration data already saved in the database will not be deleted automatically."
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  resetFileState();
+
+  const fileInput =
+    $("#fileInput") ||
+    $("#migrationFile");
+
+  if (fileInput) {
+    fileInput.value = "";
+  }
+
+  const confirmation =
+    $("#confirmImport") ||
+    $("#explicitConfirmation");
+
+  if (confirmation) {
+    confirmation.checked = false;
+  }
+
+  hide(
+    "#mappingSection"
+  );
+
+  hide(
+    "#validationSection"
+  );
+
+  hide(
+    "#confirmationSection"
+  );
+
+  hide(
+    "#verificationSection"
+  );
+
+  clearMessage();
+
+  updateStepUI(1);
+
+}
+
+
+/* =========================================================
+   VALIDATION BUSY STATE
+========================================================= */
+
+function setValidationBusy(
+  busy
+) {
+
+  setDisabled(
+    "#validateButton",
+    busy
+  );
+
+  setDisabled(
+    "#validateImport",
+    busy
+  );
+
+  if (busy) {
+
+    showMessage(
+      "Validating migration rows. No financial records are being imported.",
+      "info"
     );
 
   }
@@ -5008,709 +4378,648 @@ async function verifyImport() {
 
 
 /* =========================================================
-   MONEY
+   PREVIEW STATS
 ========================================================= */
 
-function formatMoney(
-  amount
-) {
+function updatePreviewStats() {
 
-  return (
-    "KSh " +
-    Number(
-      amount || 0
-    ).toLocaleString(
-      "en-KE",
-      {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2
-      }
-    )
+  setText(
+    "#totalRows",
+    state.sourceRows.length
+  );
+
+  setText(
+    "#validRows",
+    "—"
+  );
+
+  setText(
+    "#warningRows",
+    "—"
+  );
+
+  setText(
+    "#errorRows",
+    "—"
+  );
+
+  setText(
+    "#readyRows",
+    "—"
   );
 
 }
 
 
 /* =========================================================
-   FILE HANDLING
+   STEP UI
 ========================================================= */
 
-async function handleFile(
-  file
+function updateStepUI(
+  activeStep
 ) {
 
-  if (!file) {
-    return;
-  }
+  $all(
+    "[data-step]"
+  )
+    .forEach(element => {
+
+      const step =
+        Number(
+          element.dataset.step
+        );
+
+      element.classList.toggle(
+        "active",
+        step === activeStep
+      );
+
+      element.classList.toggle(
+        "completed",
+        step < activeStep
+      );
+
+    });
+
+  setText(
+    "#currentStep",
+    activeStep
+  );
+
+}
 
 
-  const name =
-    String(
-      file.name ||
-      ""
-    )
-      .toLowerCase();
+/* =========================================================
+   DATE PARSER
+========================================================= */
 
+function parseDate(value) {
 
   if (
-    !name.endsWith(".csv")
+    value instanceof Date &&
+    !Number.isNaN(
+      value.getTime()
+    )
   ) {
 
-    showStatus(
-      "Only CSV files are accepted by this candidate.",
-      "error"
+    return formatDate(
+      value
     );
-
-    return;
 
   }
 
+  const raw =
+    String(
+      value ?? ""
+    ).trim();
 
-  state.file =
-    file;
+  if (!raw) {
+    return null;
+  }
 
+  /*
+   * ISO date.
+   */
 
-  clearStatus();
-
-
-  try {
-
-    const text =
-      await file.text();
-
-
-    const parsed =
-      parseCsv(text);
-
-
-    buildSourceRows(
-      parsed
+  const iso =
+    raw.match(
+      /^(\d{4})-(\d{1,2})-(\d{1,2})$/
     );
 
+  if (iso) {
 
-    state.entityType =
-      detectEntityType();
+    const year =
+      Number(iso[1]);
 
+    const month =
+      Number(iso[2]);
+
+    const day =
+      Number(iso[3]);
 
     if (
-      !IMPORTABLE_ENTITY_TYPES.includes(
-        state.entityType
+      isValidDateParts(
+        year,
+        month,
+        day
       )
     ) {
 
-      throw new Error(
-        "The source file could not be identified as a Contributions or Expenses import."
-      );
+      return [
+        String(year).padStart(4, "0"),
+        String(month).padStart(2, "0"),
+        String(day).padStart(2, "0")
+      ].join("-");
 
     }
 
-
-    state.mappings = {};
-
-
-    renderMapping();
-
-
-    setStep(
-      "map"
-    );
-
-    showOnly(
-      "mappingSection"
-    );
-
-
-    showStatus(
-      `${file.name}: ${state.sourceRows.length} source rows loaded as ${state.entityType}.`,
-      "success"
-    );
-
+    return null;
   }
 
-  catch (error) {
 
-    console.error(
-      "CHAMA LIVE: file parsing failed",
-      error
+  /*
+   * DD/MM/YYYY or DD-MM-YYYY
+   */
+
+  const dmy =
+    raw.match(
+      /^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/
     );
 
+  if (dmy) {
 
-    resetMigrationState(
-      false
-    );
+    const day =
+      Number(dmy[1]);
 
+    const month =
+      Number(dmy[2]);
 
-    showOnly(
-      "uploadSection"
-    );
+    const year =
+      Number(dmy[3]);
 
-    setStep(
-      "upload"
-    );
+    if (
+      isValidDateParts(
+        year,
+        month,
+        day
+      )
+    ) {
 
+      return [
+        String(year),
+        String(month).padStart(2, "0"),
+        String(day).padStart(2, "0")
+      ].join("-");
 
-    showStatus(
-      error.message ||
-      "The source file could not be read.",
-      "error"
-    );
+    }
 
+    return null;
   }
 
-}
 
+  /*
+   * MM/DD/YYYY
+   *
+   * Only accept when unambiguous enough to parse.
+   */
 
-/* =========================================================
-   RESET
-========================================================= */
-
-function resetMigrationState(
-  preserveContext = true
-) {
-
-  const context = {
-
-    user:
-      state.user,
-
-    member:
-      state.member,
-
-    group:
-      state.group
-
-  };
-
-
-  Object.keys(
-    state
-  ).forEach(
-    function (key) {
-
-      state[key] =
-        Array.isArray(
-          state[key]
-        )
-          ? []
-          : null;
-
-    }
-  );
-
-
-  state.currentStep =
-    "upload";
-
-  state.busy =
-    false;
-
-
-  if (preserveContext) {
-
-    state.user =
-      context.user;
-
-    state.member =
-      context.member;
-
-    state.group =
-      context.group;
-
-  }
-
-}
-
-
-/* =========================================================
-   EVENTS
-========================================================= */
-
-function setupEvents() {
-
-  const fileInput =
-    byId(
-      "fileInput"
+  const slash =
+    raw.match(
+      /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/
     );
 
+  if (slash) {
 
-  const chooseFileButton =
-    byId(
-      "chooseFileButton"
-    );
+    const first =
+      Number(slash[1]);
 
+    const second =
+      Number(slash[2]);
 
-  const uploadZone =
-    byId(
-      "uploadZone"
-    );
+    const year =
+      Number(slash[3]);
 
-
-  chooseFileButton.addEventListener(
-    "click",
-    function () {
-
-      fileInput.click();
-
-    }
-  );
-
-
-  fileInput.addEventListener(
-    "change",
-    function () {
-
-      const file =
-        fileInput.files?.[0];
-
-      handleFile(
-        file
-      );
-
-    }
-  );
-
-
-  [
-    "dragenter",
-    "dragover"
-  ]
-    .forEach(
-      eventName => {
-
-        uploadZone.addEventListener(
-          eventName,
-          function (event) {
-
-            event.preventDefault();
-
-            uploadZone.classList.add(
-              "dragover"
-            );
-
-          }
-        );
-
-      }
-    );
-
-
-  [
-    "dragleave",
-    "drop"
-  ]
-    .forEach(
-      eventName => {
-
-        uploadZone.addEventListener(
-          eventName,
-          function (event) {
-
-            event.preventDefault();
-
-            uploadZone.classList.remove(
-              "dragover"
-            );
-
-          }
-        );
-
-      }
-    );
-
-
-  uploadZone.addEventListener(
-    "drop",
-    function (event) {
-
-      const file =
-        event.dataTransfer
-          ?.files?.[0];
-
-      handleFile(
-        file
-      );
-
-    }
-  );
-
-
-  byId(
-    "backToUploadButton"
-  ).addEventListener(
-    "click",
-    function () {
-
-      showOnly(
-        "uploadSection"
-      );
-
-      setStep(
-        "upload"
-      );
-
-      clearStatus();
-
-    }
-  );
-
-
-  byId(
-    "validateButton"
-  ).addEventListener(
-    "click",
-    async function () {
-
-      if (state.busy) {
-        return;
-      }
-
-
-      state.busy =
-        true;
-
-
-      try {
-
-        showStatus(
-          "Validating source rows. No financial writes are being performed.",
-          "info"
-        );
-
-
-        setStep(
-          "validate"
-        );
-
-        showOnly(
-          "validationSection"
-        );
-
-
-        await validateRows();
-
-
-        if (
-          state.validation.ready
-        ) {
-
-          showStatus(
-            "Validation passed. You can review the import preview.",
-            "success"
-          );
-
-        }
-
-        else {
-
-          showStatus(
-            "Validation found blocking errors. Nothing is ready to import.",
-            "error"
-          );
-
-        }
-
-      }
-
-      catch (error) {
-
-        console.error(
-          "CHAMA LIVE: validation failed",
-          error
-        );
-
-
-        showStatus(
-          error.message ||
-          "Validation failed.",
-          "error"
-        );
-
-      }
-
-      finally {
-
-        state.busy =
-          false;
-
-      }
-
-    }
-  );
-
-
-  byId(
-    "backToMappingButton"
-  ).addEventListener(
-    "click",
-    function () {
-
-      showOnly(
-        "mappingSection"
-      );
-
-      setStep(
-        "map"
-      );
-
-    }
-  );
-
-
-  byId(
-    "previewButton"
-  ).addEventListener(
-    "click",
-    function () {
-
-      renderPreview();
-
-      setStep(
-        "preview"
-      );
-
-      showOnly(
-        "previewSection"
-      );
-
-      showStatus(
-        "Preview ready. No records have been imported.",
-        "info"
-      );
-
-    }
-  );
-
-
-  byId(
-    "backToValidationButton"
-  ).addEventListener(
-    "click",
-    function () {
-
-      showOnly(
-        "validationSection"
-      );
-
-      setStep(
-        "validate"
-      );
-
-    }
-  );
-
-
-  byId(
-    "confirmReviewButton"
-  ).addEventListener(
-    "click",
-    function () {
-
-      renderConfirmation();
-
-      setStep(
-        "confirm"
-      );
-
-      showOnly(
-        "confirmationSection"
-      );
-
-      showStatus(
-        "Review the final reconciliation before authorizing import.",
-        "warning"
-      );
-
-    }
-  );
-
-
-  byId(
-    "backToPreviewButton"
-  ).addEventListener(
-    "click",
-    function () {
-
-      showOnly(
-        "previewSection"
-      );
-
-      setStep(
-        "preview"
-      );
-
-    }
-  );
-
-
-  byId(
-    "confirmationCheckbox"
-  ).addEventListener(
-    "change",
-    function () {
-
-      byId(
-        "startImportButton"
-      ).disabled =
-        !this.checked;
-
-    }
-  );
-
-
-  byId(
-    "startImportButton"
-  ).addEventListener(
-    "click",
-    async function () {
+    if (
+      first > 12 &&
+      second <= 12
+    ) {
 
       if (
-        !byId(
-          "confirmationCheckbox"
-        ).checked
+        isValidDateParts(
+          year,
+          second,
+          first
+        )
       ) {
 
-        showStatus(
-          "Explicit confirmation is required.",
-          "error"
-        );
-
-        return;
-
-      }
-
-
-      await executeImport();
-
-    }
-  );
-
-
-  byId(
-    "verifyButton"
-  ).addEventListener(
-    "click",
-    async function () {
-
-      if (state.busy) {
-        return;
-      }
-
-
-      state.busy =
-        true;
-
-
-      try {
-
-        await verifyImport();
-
-      }
-
-      catch (error) {
-
-        console.error(
-          "CHAMA LIVE: verification failed",
-          error
-        );
-
-
-        showStatus(
-          error.message ||
-          "Verification failed.",
-          "error"
-        );
-
-      }
-
-      finally {
-
-        state.busy =
-          false;
+        return [
+          String(year),
+          String(second).padStart(2, "0"),
+          String(first).padStart(2, "0")
+        ].join("-");
 
       }
 
     }
-  );
 
+    /*
+     * If both are <= 12, the format is ambiguous.
+     * Do not guess.
+     */
 
-  byId(
-    "newMigrationButton"
-  ).addEventListener(
-    "click",
-    function () {
+    if (
+      first <= 12 &&
+      second <= 12
+    ) {
 
-      window.location.reload();
+      return null;
 
     }
+
+  }
+
+
+  /*
+   * Last controlled fallback.
+   */
+
+  const parsed =
+    new Date(raw);
+
+  if (
+    !Number.isNaN(
+      parsed.getTime()
+    )
+  ) {
+
+    return formatDate(
+      parsed
+    );
+
+  }
+
+  return null;
+}
+
+
+/* =========================================================
+   DATE VALIDATION
+========================================================= */
+
+function isValidDateParts(
+  year,
+  month,
+  day
+) {
+
+  if (
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > 31
+  ) {
+
+    return false;
+
+  }
+
+  const date =
+    new Date(
+      Date.UTC(
+        year,
+        month - 1,
+        day
+      )
+    );
+
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
   );
 
 }
 
 
 /* =========================================================
-   BOOT
+   DATE FORMAT
 ========================================================= */
 
-async function boot() {
+function formatDate(
+  date
+) {
+
+  return [
+    date.getFullYear(),
+    String(
+      date.getMonth() + 1
+    ).padStart(2, "0"),
+    String(
+      date.getDate()
+    ).padStart(2, "0")
+  ].join("-");
+}
+
+
+/* =========================================================
+   MONTH NORMALIZATION
+========================================================= */
+
+function normalizeMonth(
+  value
+) {
+
+  const raw =
+    String(
+      value ?? ""
+    ).trim();
+
+  const match =
+    raw.match(
+      /^(\d{4})[-\/](\d{1,2})$/
+    );
+
+  if (!match) {
+    return null;
+  }
+
+  const year =
+    Number(match[1]);
+
+  const month =
+    Number(match[2]);
+
+  if (
+    month < 1 ||
+    month > 12
+  ) {
+    return null;
+  }
+
+  return [
+    String(year),
+    String(month).padStart(2, "0")
+  ].join("-");
+}
+
+
+/* =========================================================
+   AMOUNT PARSER
+========================================================= */
+
+function parseAmount(
+  value
+) {
+
+  if (
+    typeof value === "number"
+  ) {
+
+    return Number.isFinite(
+      value
+    )
+      ? value
+      : NaN;
+
+  }
+
+  let raw =
+    String(
+      value ?? ""
+    )
+      .trim();
+
+  if (!raw) {
+    return NaN;
+  }
+
+  /*
+   * Remove common currency labels and whitespace.
+   */
+
+  raw =
+    raw
+      .replace(
+        /KSh|KES|Shillings?/gi,
+        ""
+      )
+      .replace(
+        /\s/g,
+        ""
+      );
+
+  /*
+   * Reject accounting-style negative values explicitly.
+   */
+
+  if (
+    /^\(.*\)$/.test(raw)
+  ) {
+
+    return NaN;
+
+  }
+
+  /*
+   * Remove commas.
+   */
+
+  raw =
+    raw.replace(
+      /,/g,
+      ""
+    );
+
+  const amount =
+    Number(raw);
+
+  return Number.isFinite(
+    amount
+  )
+    ? amount
+    : NaN;
+}
+
+
+/* =========================================================
+   PAYMENT METHOD NORMALIZATION
+========================================================= */
+
+function normalizePaymentMethod(
+  value
+) {
+
+  const raw =
+    String(
+      value ?? ""
+    )
+      .trim()
+      .toLowerCase();
+
+  if (
+    raw === "m-pesa" ||
+    raw === "mpesa" ||
+    raw === "m pesa"
+  ) {
+    return "M-Pesa";
+  }
+
+  if (
+    raw === "cash"
+  ) {
+    return "Cash";
+  }
+
+  if (
+    raw === "bank transfer" ||
+    raw === "bank_transfer" ||
+    raw === "bank"
+  ) {
+    return "Bank transfer";
+  }
+
+  return String(
+    value ?? ""
+  ).trim();
+}
+
+
+/* =========================================================
+   NULL CLEANING
+========================================================= */
+
+function cleanNullable(
+  value
+) {
+
+  const result =
+    String(
+      value ?? ""
+    ).trim();
+
+  return result
+    ? result
+    : null;
+}
+
+
+/* =========================================================
+   SAFE URL
+========================================================= */
+
+function looksLikeSafeUrl(
+  value
+) {
 
   try {
 
-    await loadContext();
+    const url =
+      new URL(
+        String(value)
+      );
 
-    setupEvents();
-
-    showOnly(
-      "uploadSection"
-    );
-
-    setStep(
-      "upload"
-    );
-
-
-    showStatus(
-      "Authenticated migration workspace ready.",
-      "success"
+    return (
+      url.protocol ===
+        "https:" ||
+      url.protocol ===
+        "http:"
     );
 
   }
+  catch {
 
-  catch (error) {
-
-    console.error(
-      "CHAMA LIVE: data migration boot failed",
-      error
-    );
-
-
-    showStatus(
-      error.message ||
-      "Data Migration could not be initialized.",
-      "error"
-    );
+    return false;
 
   }
 
 }
 
 
-if (
-  document.readyState ===
-  "loading"
+/* =========================================================
+   UUID
+========================================================= */
+
+function isUuid(
+  value
 ) {
 
-  document.addEventListener(
-    "DOMContentLoaded",
-    boot,
-    {
-      once: true
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    .test(
+      String(value)
+    );
+
+}
+
+
+/* =========================================================
+   FILE SIZE
+========================================================= */
+
+function formatBytes(
+  bytes
+) {
+
+  const value =
+    Number(bytes || 0);
+
+  if (
+    value < 1024
+  ) {
+
+    return `${value} B`;
+
+  }
+
+  if (
+    value < 1024 * 1024
+  ) {
+
+    return `${(
+      value / 1024
+    ).toFixed(1)} KB`;
+
+  }
+
+  return `${(
+    value /
+    (1024 * 1024)
+  ).toFixed(1)} MB`;
+
+}
+
+
+/* =========================================================
+   EXPORT STATE FOR DEBUGGING
+   ---------------------------------------------------------
+   Read-only diagnostic access.
+========================================================= */
+
+window.CHAMA_LIVE_DATA_MIGRATION =
+  Object.freeze({
+    getState() {
+
+      return {
+        groupId:
+          state.groupId,
+
+        entityType:
+          state.entityType,
+
+        sourceName:
+          state.sourceName,
+
+        sourceType:
+          state.sourceType,
+
+        batchId:
+          state.batchId,
+
+        sourceRowCount:
+          state.sourceRows.length,
+
+        validationRowCount:
+          state.validationRows.length,
+
+        validated:
+          state.validated,
+
+        ready:
+          state.ready,
+
+        importing:
+          state.importing,
+
+        importedCount:
+          state.importedCount,
+
+        failedCount:
+          state.failedCount
+      };
+
     }
-  );
+  });
 
-}
 
-else {
-
-  boot();
-
-}
+/* =========================================================
+   END
+========================================================= */
