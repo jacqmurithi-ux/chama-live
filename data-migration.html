@@ -3,51 +3,841 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="CHAMA LIVE controlled Data Migration">
+  <meta
+    name="description"
+    content="CHAMA LIVE controlled Data Migration"
+  >
   <title>CHAMA LIVE — Data Migration</title>
+
   <style>
-    :root{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#101828;background:#f8fafc}
-    *{box-sizing:border-box}body{margin:0;background:#f8fafc}.page{max-width:1400px;margin:auto;padding:24px 16px 80px}
-    .card{background:#fff;border:1px solid #e4e7ec;border-radius:16px;padding:20px;margin:16px 0;box-shadow:0 2px 8px rgba(16,24,40,.04)}
-    h1,h2{margin-top:0}h1{font-size:26px;margin-bottom:6px}h2{font-size:18px}.muted,.note{color:#667085;font-size:13px}
-    .notice{padding:13px 15px;border-radius:10px;margin:12px 0;font-size:14px}.info{background:#eff8ff;border:1px solid #b2ddff;color:#175cd3}.success{background:#ecfdf3;border:1px solid #abefc6;color:#067647}.warn{background:#fffaeb;border:1px solid #fedf89;color:#b54708}.error{background:#fef3f2;border:1px solid #fecdca;color:#b42318}
-    .steps{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}.step{padding:9px;border-radius:9px;background:#f2f4f7;color:#667085;text-align:center;font-size:12px;font-weight:700}.step.active{background:#ecfdf3;color:#067647}.step.done{background:#eff8ff;color:#175cd3}
-    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}.stat{background:#f9fafb;border:1px solid #eaecf0;border-radius:10px;padding:11px}.stat b{display:block;font-size:19px;margin-top:3px}
-    label{display:block;font-size:13px;font-weight:700;color:#344054;margin-bottom:6px}input,select{width:100%;padding:10px 11px;border:1px solid #d0d5dd;border-radius:9px;background:#fff}button{border:0;border-radius:9px;padding:10px 15px;font-weight:700;cursor:pointer}button.primary{background:#0f766e;color:#fff}button.secondary{background:#f2f4f7;color:#344054}button.danger{background:#b42318;color:#fff}button:disabled{opacity:.5;cursor:not-allowed}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:15px}
-    .table-wrap{overflow:auto;border:1px solid #e4e7ec;border-radius:10px;margin-top:15px}table{width:100%;border-collapse:collapse;min-width:850px}th,td{padding:9px;border-bottom:1px solid #eaecf0;text-align:left;font-size:12px;vertical-align:top}th{background:#f9fafb;font-weight:800}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.pill{display:inline-block;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:800}.pill.valid{background:#ecfdf3;color:#067647}.pill.warning{background:#fffaeb;color:#b54708}.pill.error{background:#fef3f2;color:#b42318}.pill.imported{background:#eff8ff;color:#175cd3}.hidden{display:none!important}
-    @media(max-width:850px){.grid,.stats,.steps{grid-template-columns:1fr 1fr}}@media(max-width:520px){.grid,.stats,.steps{grid-template-columns:1fr}.page{padding:12px 10px 60px}}
+    :root{
+      font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      color:#101828;
+      background:#f8fafc
+    }
+
+    *{
+      box-sizing:border-box
+    }
+
+    body{
+      margin:0;
+      background:#f8fafc
+    }
+
+    .topbar{
+      min-height:58px;
+      display:flex;
+      align-items:center;
+      gap:14px;
+      padding:10px 18px;
+      background:#ffffff;
+      border-bottom:1px solid #e4e7ec;
+      position:sticky;
+      top:0;
+      z-index:1000
+    }
+
+    .brand{
+      font-size:18px;
+      font-weight:800;
+      letter-spacing:.2px;
+      white-space:nowrap
+    }
+
+    .brand span{
+      color:#0f766e
+    }
+
+    .layout{
+      display:grid;
+      grid-template-columns:240px minmax(0,1fr);
+      min-height:calc(100vh - 58px)
+    }
+
+    .sidebar{
+      background:#ffffff;
+      border-right:1px solid #e4e7ec;
+      padding:16px 10px;
+      position:sticky;
+      top:58px;
+      height:calc(100vh - 58px);
+      overflow-y:auto
+    }
+
+    .nav{
+      display:flex;
+      flex-direction:column;
+      gap:4px
+    }
+
+    .nav a{
+      display:block;
+      padding:10px 12px;
+      border-radius:9px;
+      color:#344054;
+      text-decoration:none;
+      font-size:13px;
+      font-weight:650
+    }
+
+    .nav a:hover{
+      background:#f0fdfa;
+      color:#0f766e
+    }
+
+    .nav a.active{
+      background:#ecfdf5;
+      color:#0f766e;
+      font-weight:750
+    }
+
+    .main{
+      min-width:0
+    }
+
+    .page{
+      max-width:1400px;
+      margin:auto;
+      padding:24px 16px 80px
+    }
+
+    .card{
+      background:#fff;
+      border:1px solid #e4e7ec;
+      border-radius:16px;
+      padding:20px;
+      margin:16px 0;
+      box-shadow:0 2px 8px rgba(16,24,40,.04)
+    }
+
+    h1,
+    h2{
+      margin-top:0
+    }
+
+    h1{
+      font-size:26px;
+      margin-bottom:6px
+    }
+
+    h2{
+      font-size:18px
+    }
+
+    .muted,
+    .note{
+      color:#667085;
+      font-size:13px
+    }
+
+    .notice{
+      padding:13px 15px;
+      border-radius:10px;
+      margin:12px 0;
+      font-size:14px
+    }
+
+    .info{
+      background:#eff8ff;
+      border:1px solid #b2ddff;
+      color:#175cd3
+    }
+
+    .success{
+      background:#ecfdf3;
+      border:1px solid #abefc6;
+      color:#067647
+    }
+
+    .warn{
+      background:#fffaeb;
+      border:1px solid #fedf89;
+      color:#b54708
+    }
+
+    .error{
+      background:#fef3f2;
+      border:1px solid #fecdca;
+      color:#b42318
+    }
+
+    .steps{
+      display:grid;
+      grid-template-columns:repeat(6,1fr);
+      gap:8px
+    }
+
+    .step{
+      padding:9px;
+      border-radius:9px;
+      background:#f2f4f7;
+      color:#667085;
+      text-align:center;
+      font-size:12px;
+      font-weight:700
+    }
+
+    .step.active{
+      background:#ecfdf3;
+      color:#067647
+    }
+
+    .step.done{
+      background:#eff8ff;
+      color:#175cd3
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:15px
+    }
+
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(6,1fr);
+      gap:10px
+    }
+
+    .stat{
+      background:#f9fafb;
+      border:1px solid #eaecf0;
+      border-radius:10px;
+      padding:11px
+    }
+
+    .stat b{
+      display:block;
+      font-size:19px;
+      margin-top:3px
+    }
+
+    label{
+      display:block;
+      font-size:13px;
+      font-weight:700;
+      color:#344054;
+      margin-bottom:6px
+    }
+
+    input,
+    select{
+      width:100%;
+      padding:10px 11px;
+      border:1px solid #d0d5dd;
+      border-radius:9px;
+      background:#fff
+    }
+
+    button{
+      border:0;
+      border-radius:9px;
+      padding:10px 15px;
+      font-weight:700;
+      cursor:pointer
+    }
+
+    button.primary{
+      background:#0f766e;
+      color:#fff
+    }
+
+    button.secondary{
+      background:#f2f4f7;
+      color:#344054
+    }
+
+    button.danger{
+      background:#b42318;
+      color:#fff
+    }
+
+    button:disabled{
+      opacity:.5;
+      cursor:not-allowed
+    }
+
+    .actions{
+      display:flex;
+      gap:9px;
+      flex-wrap:wrap;
+      margin-top:15px
+    }
+
+    .table-wrap{
+      overflow:auto;
+      border:1px solid #e4e7ec;
+      border-radius:10px;
+      margin-top:15px
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:850px
+    }
+
+    th,
+    td{
+      padding:9px;
+      border-bottom:1px solid #eaecf0;
+      text-align:left;
+      font-size:12px;
+      vertical-align:top
+    }
+
+    th{
+      background:#f9fafb;
+      font-weight:800
+    }
+
+    .mono{
+      font-family:ui-monospace,SFMono-Regular,Menlo,monospace
+    }
+
+    .pill{
+      display:inline-block;
+      padding:3px 8px;
+      border-radius:999px;
+      font-size:11px;
+      font-weight:800
+    }
+
+    .pill.valid{
+      background:#ecfdf3;
+      color:#067647
+    }
+
+    .pill.warning{
+      background:#fffaeb;
+      color:#b54708
+    }
+
+    .pill.error{
+      background:#fef3f2;
+      color:#b42318
+    }
+
+    .pill.imported{
+      background:#eff8ff;
+      color:#175cd3
+    }
+
+    .hidden{
+      display:none!important
+    }
+
+    @media(max-width:1050px){
+      .layout{
+        grid-template-columns:210px minmax(0,1fr)
+      }
+
+      .stats{
+        grid-template-columns:repeat(3,1fr)
+      }
+    }
+
+    @media(max-width:850px){
+      .layout{
+        grid-template-columns:1fr
+      }
+
+      .sidebar{
+        display:none
+      }
+
+      .grid,
+      .stats,
+      .steps{
+        grid-template-columns:1fr 1fr
+      }
+    }
+
+    @media(max-width:520px){
+      .page{
+        padding:12px 10px 60px
+      }
+
+      .grid,
+      .stats,
+      .steps{
+        grid-template-columns:1fr
+      }
+
+      .topbar{
+        padding:9px 10px
+      }
+
+      .brand{
+        font-size:16px
+      }
+    }
   </style>
 </head>
-<body>
-<main class="page">
-  <section class="card">
-    <h1>Data Migration</h1>
-    <p class="muted">Controlled import of <strong>contributions</strong> and <strong>expenses</strong> only.</p>
-    <div id="message" class="notice info">NO-APPLY candidate. No GitHub write, deployment, schema change, or financial-period creation is performed by this candidate.</div>
-  </section>
 
-  <div class="steps">
-    <div class="step active" data-step="upload">1. Upload</div><div class="step" data-step="mapping">2. Map</div><div class="step" data-step="validate">3. Validate</div><div class="step" data-step="preview">4. Preview</div><div class="step" data-step="import">5. Import</div><div class="step" data-step="verify">6. Verify</div>
+<body>
+
+  <!-- =====================================================
+       APPLICATION TOPBAR
+  ====================================================== -->
+
+  <header class="topbar">
+
+    <div class="brand">
+      CHAMA <span>LIVE</span>
+    </div>
+
+    <div
+      data-group-name
+      style="margin-left:auto;font-size:13px;font-weight:700;color:#344054"
+    >
+    </div>
+
+    <div
+      data-user-name
+      style="font-size:12px;color:#667085"
+    >
+    </div>
+
+    <button
+      id="logout"
+      class="secondary"
+      type="button"
+    >
+      Sign out
+    </button>
+
+  </header>
+
+
+  <!-- =====================================================
+       APPLICATION LAYOUT
+  ====================================================== -->
+
+  <div class="layout">
+
+    <aside class="sidebar">
+
+      <nav class="nav" aria-label="Primary navigation">
+
+        <a href="dashboard.html">
+          Dashboard
+        </a>
+
+        <a href="members.html">
+          Members
+        </a>
+
+        <a href="contributions.html">
+          Contributions
+        </a>
+
+        <a href="expenses.html">
+          Expenses
+        </a>
+
+        <a href="meetings.html">
+          Meetings
+        </a>
+
+        <a href="reports.html">
+          Reports
+        </a>
+
+        <a href="monthly-closing.html">
+          Monthly Closing
+        </a>
+
+        <a href="group-management.html">
+          Group Management
+        </a>
+
+        <a href="assets.html">
+          Assets
+        </a>
+
+        <a href="plans-activities.html">
+          Plans &amp; Activities
+        </a>
+
+        <a href="support-welfare.html">
+          Support &amp; Welfare
+        </a>
+
+        <a href="milestones.html">
+          Milestones
+        </a>
+
+        <a
+          href="data-migration.html"
+          class="active"
+        >
+          Data Migration
+        </a>
+
+      </nav>
+
+    </aside>
+
+
+    <main class="main">
+
+      <div id="error" class="notice error hidden"></div>
+
+
+      <div class="page">
+
+        <section class="card">
+
+          <h1>
+            Data Migration
+          </h1>
+
+          <p class="muted">
+            Controlled import of
+            <strong>contributions</strong>
+            and
+            <strong>expenses</strong>
+            only.
+          </p>
+
+          <div
+            id="message"
+            class="notice info"
+          >
+            NO-APPLY candidate. No GitHub write, deployment,
+            schema change, or financial-period creation is
+            performed by this candidate.
+          </div>
+
+        </section>
+
+
+        <div class="steps">
+
+          <div
+            class="step active"
+            data-step="upload"
+          >
+            1. Upload
+          </div>
+
+          <div
+            class="step"
+            data-step="mapping"
+          >
+            2. Map
+          </div>
+
+          <div
+            class="step"
+            data-step="validate"
+          >
+            3. Validate
+          </div>
+
+          <div
+            class="step"
+            data-step="preview"
+          >
+            4. Preview
+          </div>
+
+          <div
+            class="step"
+            data-step="import"
+          >
+            5. Import
+          </div>
+
+          <div
+            class="step"
+            data-step="verify"
+          >
+            6. Verify
+          </div>
+
+        </div>
+
+
+        <!-- =================================================
+             1. UPLOAD
+        ================================================== -->
+
+        <section class="card">
+
+          <h2>
+            1. Upload
+          </h2>
+
+          <div class="grid">
+
+            <div>
+
+              <label for="file">
+                CSV or XLSX
+              </label>
+
+              <input
+                id="file"
+                type="file"
+                accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              >
+
+            </div>
+
+
+            <div>
+
+              <label for="entity">
+                Entity
+              </label>
+
+              <select id="entity">
+
+                <option value="contribution">
+                  Contributions
+                </option>
+
+                <option value="expense">
+                  Expenses
+                </option>
+
+              </select>
+
+            </div>
+
+          </div>
+
+
+          <p
+            id="fileInfo"
+            class="note"
+          >
+          </p>
+
+
+          <div class="actions">
+
+            <button
+              id="stage"
+              class="primary"
+              type="button"
+            >
+              Analyze &amp; Stage
+            </button>
+
+          </div>
+
+        </section>
+
+
+        <!-- =================================================
+             2. MAPPING
+        ================================================== -->
+
+        <section
+          id="mappingCard"
+          class="card hidden"
+        >
+
+          <h2>
+            2. Mapping
+          </h2>
+
+          <p class="muted">
+            Only fields defined by the migration contract
+            can be mapped. Group identity, recorder identity,
+            obligations, allocations and financial-period
+            fields are forbidden.
+          </p>
+
+          <div
+            id="mapping"
+            class="grid"
+          >
+          </div>
+
+          <div class="actions">
+
+            <button
+              id="validate"
+              class="primary"
+              type="button"
+            >
+              Validate
+            </button>
+
+          </div>
+
+        </section>
+
+
+        <!-- =================================================
+             3–4. VALIDATION & PREVIEW
+        ================================================== -->
+
+        <section
+          id="validationCard"
+          class="card hidden"
+        >
+
+          <h2>
+            3–4. Validation &amp; Preview
+          </h2>
+
+          <div
+            id="stats"
+            class="stats"
+          >
+          </div>
+
+          <div
+            id="validationMessage"
+          >
+          </div>
+
+          <div
+            id="preview"
+            class="table-wrap"
+          >
+          </div>
+
+          <div class="actions">
+
+            <button
+              id="confirm"
+              class="danger"
+              type="button"
+              disabled
+            >
+              Review Explicit Confirmation
+            </button>
+
+          </div>
+
+        </section>
+
+
+        <!-- =================================================
+             5. EXPLICIT CONFIRMATION
+        ================================================== -->
+
+        <section
+          id="confirmCard"
+          class="card hidden"
+        >
+
+          <h2>
+            5. Explicit Confirmation
+          </h2>
+
+          <div
+            id="confirmSummary"
+            class="notice warn"
+          >
+          </div>
+
+          <label
+            style="display:flex;gap:8px;align-items:flex-start"
+          >
+
+            <input
+              id="check"
+              type="checkbox"
+              style="width:auto"
+            >
+
+            <span>
+              I confirm this exact batch. I understand that
+              closed periods are blocked, no financial period
+              will be created, and contributions will be
+              recorded only through the canonical 2B
+              contribution function.
+            </span>
+
+          </label>
+
+
+          <div class="actions">
+
+            <button
+              id="import"
+              class="danger"
+              type="button"
+              disabled
+            >
+              Import Confirmed Batch
+            </button>
+
+          </div>
+
+        </section>
+
+
+        <!-- =================================================
+             6. VERIFICATION
+        ================================================== -->
+
+        <section
+          id="verifyCard"
+          class="card hidden"
+        >
+
+          <h2>
+            6. Verification
+          </h2>
+
+          <div id="verifyResult">
+          </div>
+
+        </section>
+
+
+        <p class="note">
+          Safety boundary: this candidate never directly
+          writes contribution_allocations or
+          contribution_obligations, never creates
+          financial_periods, never accepts a group_id from
+          the page, and never uses a service-role key.
+        </p>
+
+      </div>
+
+    </main>
+
   </div>
 
-  <section class="card">
-    <h2>1. Upload</h2>
-    <div class="grid">
-      <div><label for="file">CSV or XLSX</label><input id="file" type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"></div>
-      <div><label for="entity">Entity</label><select id="entity"><option value="contribution">Contributions</option><option value="expense">Expenses</option></select></div>
-    </div>
-    <p id="fileInfo" class="note"></p><div class="actions"><button id="stage" class="primary">Analyze &amp; Stage</button></div>
-  </section>
 
-  <section id="mappingCard" class="card hidden"><h2>2. Mapping</h2><p class="muted">Only fields defined by the migration contract can be mapped. Group identity, recorder identity, obligations, allocations and financial-period fields are forbidden.</p><div id="mapping" class="grid"></div><div class="actions"><button id="validate" class="primary">Validate</button></div></section>
+  <!-- =====================================================
+       GLOBAL LAYOUT BOOT
 
-  <section id="validationCard" class="card hidden"><h2>3–4. Validation &amp; Preview</h2><div id="stats" class="stats"></div><div id="validationMessage"></div><div id="preview" class="table-wrap"></div><div class="actions"><button id="confirm" class="danger" disabled>Review Explicit Confirmation</button></div></section>
+       Data Migration remains independently booted.
+       It is intentionally NOT loaded through PAGE_SCRIPTS.
+  ====================================================== -->
 
-  <section id="confirmCard" class="card hidden"><h2>5. Explicit Confirmation</h2><div id="confirmSummary" class="notice warn"></div><label style="display:flex;gap:8px;align-items:flex-start"><input id="check" type="checkbox" style="width:auto"><span>I confirm this exact batch. I understand that closed periods are blocked, no financial period will be created, and contributions will be recorded only through the canonical 2B contribution function.</span></label><div class="actions"><button id="import" class="danger" disabled>Import Confirmed Batch</button></div></section>
+  <script type="module">
 
-  <section id="verifyCard" class="card hidden"><h2>6. Verification</h2><div id="verifyResult"></div></section>
-  <p class="note">Safety boundary: this candidate never directly writes contribution_allocations or contribution_obligations, never creates financial_periods, never accepts a group_id from the page, and never uses a service-role key.</p>
-</main>
-<script type="module" src="./js/data-migration.js"></script>
+    import {
+      boot
+    } from "./js/layout.js";
+
+    boot();
+
+  </script>
+
+
+  <!-- =====================================================
+       DATA MIGRATION PAGE BOOT
+
+       This remains independent from layout.js.
+  ====================================================== -->
+
+  <script
+    type="module"
+    src="./js/data-migration.js"
+  ></script>
+
 </body>
 </html>
