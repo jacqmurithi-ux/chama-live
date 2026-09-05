@@ -1564,17 +1564,6 @@
         Members
       </a>
 
-      <a href="support-welfare.html">
-        Support &amp; Welfare
-      </a>
-
-      <a
-        class="active"
-        href="plans-activities.html"
-      >
-        Plans &amp; Activities
-      </a>
-
       <a href="contributions.html">
         Contributions
       </a>
@@ -1591,32 +1580,35 @@
         Reports
       </a>
 
-      <a href="milestones.html">
-        Milestones
-      </a>
-
-      <a href="assets.html">
-        Assets
-      </a>
-
-      <a href="documents.html">
-        Documents
-      </a>
-
-      <!-- =================================================
-           CORRECTED CANONICAL DATA MIGRATION TARGET
-      ================================================== -->
-
-      <a href="data-migration.html">
-        Data Migration
-      </a>
-
       <a href="monthly-closing.html">
         Monthly Closing
       </a>
 
       <a href="group-management.html">
         Group Management
+      </a>
+
+      <a href="assets.html">
+        Assets
+      </a>
+
+      <a
+        class="active"
+        href="plans-activities.html"
+      >
+        Plans &amp; Activities
+      </a>
+
+      <a href="support-welfare.html">
+        Support &amp; Welfare
+      </a>
+
+      <a href="milestones.html">
+        Milestones
+      </a>
+
+      <a href="data-migration.html">
+        Data Migration
       </a>
 
     </nav>
@@ -1687,7 +1679,10 @@
               Current group:
             </span>
 
-            <strong id="groupName">
+            <strong
+              id="groupName"
+              data-group-name
+            >
               Loading…
             </strong>
 
@@ -1719,6 +1714,7 @@
             <strong
               id="plansGroupDisplay"
               class="plans-group-name"
+              data-group-name
             >
               Loading…
             </strong>
@@ -2662,11 +2658,19 @@
 </div>
 
 
+<!-- =====================================================
+     SHARED LAYOUT + PAGE SCRIPT
+===================================================== -->
+
 <script type="module">
 
-  import "./js/layout.js";
+  import {
+    boot
+  } from "./js/layout.js";
 
   import "./js/plans-activities.js";
+
+  boot();
 
 </script>
 
