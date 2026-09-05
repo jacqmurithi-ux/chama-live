@@ -6,17 +6,15 @@
 
   <meta charset="utf-8">
 
-<meta
-name="viewport"
-content="width=device-width, initial-scale=1"
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
 
->
-
-<meta
-name="theme-color"
-content="#075c38"
-
->
+  <meta
+    name="theme-color"
+    content="#075c38"
+  >
 
   <title>
     Support &amp; Welfare — CHAMA LIVE
@@ -1567,17 +1565,12 @@ content="#075c38"
     CHAMA <span>LIVE</span>
   </div>
 
-<button
-class="btn btn-secondary"
-id="logout"
-type="button"
-
->
-
-```
-Sign out
-```
-
+  <button
+    class="btn btn-secondary"
+    id="logout"
+    type="button"
+  >
+    Sign out
   </button>
 
 </header>
@@ -1590,71 +1583,64 @@ Sign out
 
   <aside class="sidebar">
 
-```
-<nav class="nav">
+    <nav class="nav">
 
-  <a href="dashboard.html">
-    Dashboard
-  </a>
+      <a href="dashboard.html">
+        Dashboard
+      </a>
 
-  <a href="members.html">
-    Members
-  </a>
+      <a href="members.html">
+        Members
+      </a>
 
-  <a
-    class="active"
-    href="support-welfare.html"
-  >
-    Support &amp; Welfare
-  </a>
+      <a href="contributions.html">
+        Contributions
+      </a>
 
-  <a href="contributions.html">
-    Contributions
-  </a>
+      <a href="expenses.html">
+        Expenses
+      </a>
 
-  <a href="expenses.html">
-    Expenses
-  </a>
+      <a href="meetings.html">
+        Meetings
+      </a>
 
-  <a href="meetings.html">
-    Meetings
-  </a>
+      <a href="reports.html">
+        Reports
+      </a>
 
-  <a href="reports.html">
-    Reports
-  </a>
+      <a href="monthly-closing.html">
+        Monthly Closing
+      </a>
 
-  <a href="plans-activities.html">
-    Plans &amp; Activities
-  </a>
+      <a href="group-management.html">
+        Group Management
+      </a>
 
-  <a href="milestones.html">
-    Milestones
-  </a>
+      <a href="assets.html">
+        Assets
+      </a>
 
-  <a href="assets.html">
-    Assets
-  </a>
+      <a href="plans-activities.html">
+        Plans &amp; Activities
+      </a>
 
-  <a href="documents.html">
-    Documents
-  </a>
+      <a
+        class="active"
+        href="support-welfare.html"
+      >
+        Support &amp; Welfare
+      </a>
 
-  <!-- Corrected canonical migration page -->
-  <a href="data-migration.html">
-    Data Migration
-  </a>
+      <a href="milestones.html">
+        Milestones
+      </a>
 
-  <a href="group-management.html">
-    Group Management
-  </a>
+      <a href="data-migration.html">
+        Data Migration
+      </a>
 
-  <a href="monthly-closing.html">
-    Monthly Closing
-  </a>
-
-</nav>
-```
+    </nav>
 
   </aside>
 
@@ -1664,656 +1650,654 @@ Sign out
 
   <main class="main">
 
-```
-<div class="support-page">
+    <div class="support-page">
 
 
-  <!-- ===============================================
-       HERO
-  ================================================ -->
+      <!-- ===============================================
+           HERO
+      ================================================ -->
 
-  <section class="support-hero">
+      <section class="support-hero">
 
-    <div class="support-hero-content">
+        <div class="support-hero-content">
 
-      <div class="support-badge">
-        🤝 CHAMA LIVE
-        <span>•</span>
-        Group Operations
-      </div>
-
-
-      <h1>
-        Support &amp;
-        <span class="hero-accent">
-          Welfare
-        </span>
-      </h1>
-
-
-      <p>
-        Manage member welfare cases, support requests
-        and approval decisions in one secure group
-        workspace — while keeping financial records
-        and accounting controls safely separated.
-      </p>
-
-
-      <div class="support-context">
-
-        <span>
-          👥
-        </span>
-
-        <span>
-          Current group:
-        </span>
-
-        <strong id="groupName">
-          Loading…
-        </strong>
-
-      </div>
-
-    </div>
-
-  </section>
-
-
-  <!-- ===============================================
-       GROUP CONTEXT
-  ================================================ -->
-
-  <section class="support-group-strip">
-
-    <div class="support-group-info">
-
-      <div class="support-group-icon">
-        👥
-      </div>
-
-      <div>
-
-        <span class="support-group-label">
-          Active group workspace
-        </span>
-
-        <strong
-          id="supportGroupDisplay"
-          class="support-group-name"
-        >
-          Loading…
-        </strong>
-
-      </div>
-
-    </div>
-
-
-    <div class="support-live">
-
-      <span class="support-live-dot"></span>
-
-      Live group context
-
-    </div>
-
-  </section>
-
-
-  <!-- ===============================================
-       STATUS
-  ================================================ -->
-
-  <div
-    id="status"
-    class="support-status support-hidden"
-    role="status"
-    aria-live="polite"
-  ></div>
-
-
-  <!-- ===============================================
-       ERROR
-  ================================================ -->
-
-  <div
-    id="error"
-    class="error support-error support-hidden"
-    role="alert"
-    aria-live="assertive"
-  ></div>
-
-
-  <!-- ===============================================
-       ACCESS DENIED
-  ================================================ -->
-
-  <div
-    id="accessDenied"
-    class="support-access-denied support-hidden"
-  >
-
-    <strong>
-      Management access required.
-    </strong>
-
-    <div>
-      Support &amp; Welfare management is restricted
-      to the group's admin, chairperson, secretary or
-      treasurer role.
-    </div>
-
-  </div>
-
-
-  <!-- ===============================================
-       MAIN CONTENT
-  ================================================ -->
-
-  <section
-    id="supportContent"
-    class="support-hidden"
-  >
-
-
-    <!-- =============================================
-         KPI SUMMARY
-    ============================================== -->
-
-    <section class="support-summary">
-
-
-      <div class="support-kpi">
-
-        <span class="support-kpi-label">
-          Total cases
-        </span>
-
-        <strong
-          id="totalCases"
-          class="support-kpi-value"
-        >
-          0
-        </strong>
-
-      </div>
-
-
-      <div class="support-kpi">
-
-        <span class="support-kpi-label">
-          Open requests
-        </span>
-
-        <strong
-          id="openCases"
-          class="support-kpi-value"
-        >
-          0
-        </strong>
-
-      </div>
-
-
-      <div class="support-kpi">
-
-        <span class="support-kpi-label">
-          Approved / paid
-        </span>
-
-        <strong
-          id="approvedCases"
-          class="support-kpi-value"
-        >
-          0
-        </strong>
-
-      </div>
-
-
-      <div class="support-kpi">
-
-        <span class="support-kpi-label">
-          Total support
-        </span>
-
-        <strong
-          id="totalAmount"
-          class="support-kpi-value"
-        >
-          KSh 0
-        </strong>
-
-      </div>
-
-
-    </section>
-
-
-    <!-- =============================================
-         FORM + REGISTER
-    ============================================== -->
-
-    <div class="support-grid">
-
-
-      <!-- ===========================================
-           RECORD SUPPORT
-      ============================================ -->
-
-      <section class="card support-card">
-
-
-        <div class="support-card-header">
-
-          <div class="support-card-title">
-
-            <div class="support-card-icon">
-              🤝
-            </div>
-
-            <div>
-
-              <h2>
-                Record Support Case
-              </h2>
-
-              <p>
-                Capture a new welfare or support
-                request for a group member.
-              </p>
-
-            </div>
-
+          <div class="support-badge">
+            🤝 CHAMA LIVE
+            <span>•</span>
+            Group Operations
           </div>
 
 
-          <div class="support-section-chip">
-            New case
+          <h1>
+            Support &amp;
+            <span class="hero-accent">
+              Welfare
+            </span>
+          </h1>
+
+
+          <p>
+            Manage member welfare cases, support requests
+            and approval decisions in one secure group
+            workspace — while keeping financial records
+            and accounting controls safely separated.
+          </p>
+
+
+          <div class="support-context">
+
+            <span>
+              👥
+            </span>
+
+            <span>
+              Current group:
+            </span>
+
+            <strong id="groupName">
+              Loading…
+            </strong>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ===============================================
+           GROUP CONTEXT
+      ================================================ -->
+
+      <section class="support-group-strip">
+
+        <div class="support-group-info">
+
+          <div class="support-group-icon">
+            👥
+          </div>
+
+          <div>
+
+            <span class="support-group-label">
+              Active group workspace
+            </span>
+
+            <strong
+              id="supportGroupDisplay"
+              class="support-group-name"
+            >
+              Loading…
+            </strong>
+
           </div>
 
         </div>
 
 
-        <form id="supportForm">
+        <div class="support-live">
+
+          <span class="support-live-dot"></span>
+
+          Live group context
+
+        </div>
+
+      </section>
 
 
-          <div class="support-form-grid">
+      <!-- ===============================================
+           STATUS
+      ================================================ -->
+
+      <div
+        id="status"
+        class="support-status support-hidden"
+        role="status"
+        aria-live="polite"
+      ></div>
 
 
-            <!-- MEMBER -->
+      <!-- ===============================================
+           ERROR
+      ================================================ -->
 
-            <div class="support-form-group support-full">
+      <div
+        id="error"
+        class="error support-error support-hidden"
+        role="alert"
+        aria-live="assertive"
+      ></div>
 
-              <label for="memberId">
-                Member
-              </label>
+
+      <!-- ===============================================
+           ACCESS DENIED
+      ================================================ -->
+
+      <div
+        id="accessDenied"
+        class="support-access-denied support-hidden"
+      >
+
+        <strong>
+          Management access required.
+        </strong>
+
+        <div>
+          Support &amp; Welfare management is restricted
+          to the group's admin, chairperson, secretary or
+          treasurer role.
+        </div>
+
+      </div>
+
+
+      <!-- ===============================================
+           MAIN CONTENT
+      ================================================ -->
+
+      <section
+        id="supportContent"
+        class="support-hidden"
+      >
+
+
+        <!-- =============================================
+             KPI SUMMARY
+        ============================================== -->
+
+        <section class="support-summary">
+
+
+          <div class="support-kpi">
+
+            <span class="support-kpi-label">
+              Total cases
+            </span>
+
+            <strong
+              id="totalCases"
+              class="support-kpi-value"
+            >
+              0
+            </strong>
+
+          </div>
+
+
+          <div class="support-kpi">
+
+            <span class="support-kpi-label">
+              Open requests
+            </span>
+
+            <strong
+              id="openCases"
+              class="support-kpi-value"
+            >
+              0
+            </strong>
+
+          </div>
+
+
+          <div class="support-kpi">
+
+            <span class="support-kpi-label">
+              Approved / paid
+            </span>
+
+            <strong
+              id="approvedCases"
+              class="support-kpi-value"
+            >
+              0
+            </strong>
+
+          </div>
+
+
+          <div class="support-kpi">
+
+            <span class="support-kpi-label">
+              Total support
+            </span>
+
+            <strong
+              id="totalAmount"
+              class="support-kpi-value"
+            >
+              KSh 0
+            </strong>
+
+          </div>
+
+
+        </section>
+
+
+        <!-- =============================================
+             FORM + REGISTER
+        ============================================== -->
+
+        <div class="support-grid">
+
+
+          <!-- ===========================================
+               RECORD SUPPORT
+          ============================================ -->
+
+          <section class="card support-card">
+
+
+            <div class="support-card-header">
+
+              <div class="support-card-title">
+
+                <div class="support-card-icon">
+                  🤝
+                </div>
+
+                <div>
+
+                  <h2>
+                    Record Support Case
+                  </h2>
+
+                  <p>
+                    Capture a new welfare or support
+                    request for a group member.
+                  </p>
+
+                </div>
+
+              </div>
+
+
+              <div class="support-section-chip">
+                New case
+              </div>
+
+            </div>
+
+
+            <form id="supportForm">
+
+
+              <div class="support-form-grid">
+
+
+                <!-- MEMBER -->
+
+                <div class="support-form-group support-full">
+
+                  <label for="memberId">
+                    Member
+                  </label>
+
+                  <select
+                    id="memberId"
+                    required
+                  >
+
+                    <option value="">
+                      Select member
+                    </option>
+
+                  </select>
+
+                </div>
+
+
+                <!-- SUPPORT TYPE -->
+
+                <div class="support-form-group">
+
+                  <label for="supportType">
+                    Support type
+                  </label>
+
+                  <select
+                    id="supportType"
+                    required
+                  >
+
+                    <option value="welfare">
+                      Welfare
+                    </option>
+
+                    <option value="hospital">
+                      Hospital
+                    </option>
+
+                    <option value="bereavement">
+                      Bereavement
+                    </option>
+
+                    <option value="education">
+                      Education
+                    </option>
+
+                    <option value="emergency">
+                      Emergency
+                    </option>
+
+                    <option value="accident">
+                      Accident
+                    </option>
+
+                    <option value="marriage">
+                      Marriage
+                    </option>
+
+                    <option value="new_baby">
+                      New baby
+                    </option>
+
+                    <option value="disaster">
+                      Disaster
+                    </option>
+
+                    <option value="other">
+                      Other
+                    </option>
+
+                  </select>
+
+                </div>
+
+
+                <!-- DATE -->
+
+                <div class="support-form-group">
+
+                  <label for="supportDate">
+                    Support date
+                  </label>
+
+                  <input
+                    id="supportDate"
+                    type="date"
+                    required
+                  >
+
+                </div>
+
+
+                <!-- AMOUNT -->
+
+                <div class="support-form-group support-full">
+
+                  <label for="amount">
+                    Amount (KSh)
+                  </label>
+
+                  <input
+                    id="amount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value="0"
+                    required
+                  >
+
+                  <p class="support-help">
+                    Zero is valid under the live database
+                    contract.
+                  </p>
+
+                </div>
+
+
+                <!-- DESCRIPTION -->
+
+                <div class="support-form-group support-full">
+
+                  <label for="description">
+                    Description
+                  </label>
+
+                  <textarea
+                    id="description"
+                    rows="5"
+                    maxlength="5000"
+                    placeholder="Brief details of the support case..."
+                  ></textarea>
+
+                </div>
+
+
+              </div>
+
+
+              <div class="support-form-actions">
+
+                <button
+                  class="support-btn support-btn-primary"
+                  id="saveSupport"
+                  type="submit"
+                >
+                  <span>＋</span>
+                  Save Support Case
+                </button>
+
+
+                <button
+                  class="support-btn support-btn-secondary"
+                  id="resetSupport"
+                  type="button"
+                >
+                  Clear
+                </button>
+
+              </div>
+
+
+            </form>
+
+          </section>
+
+
+          <!-- ===========================================
+               WELFARE REGISTER
+          ============================================ -->
+
+          <section class="card support-card">
+
+
+            <div class="support-card-header">
+
+              <div class="support-card-title">
+
+                <div class="support-card-icon">
+                  📋
+                </div>
+
+                <div>
+
+                  <h2>
+                    Welfare Cases
+                  </h2>
+
+                  <p>
+                    Review support cases belonging to the
+                    current authenticated group.
+                  </p>
+
+                </div>
+
+              </div>
+
+
+              <button
+                class="support-btn support-btn-secondary"
+                id="refreshSupport"
+                type="button"
+              >
+                ↻ Refresh
+              </button>
+
+            </div>
+
+
+            <!-- FILTER BAR -->
+
+            <div class="support-filter">
 
               <select
-                id="memberId"
-                required
+                id="statusFilter"
+                aria-label="Filter welfare cases by status"
               >
 
                 <option value="">
-                  Select member
+                  All statuses
+                </option>
+
+                <option value="requested">
+                  Requested
+                </option>
+
+                <option value="approved">
+                  Approved
+                </option>
+
+                <option value="paid">
+                  Paid
+                </option>
+
+                <option value="completed">
+                  Completed
+                </option>
+
+                <option value="rejected">
+                  Rejected
+                </option>
+
+                <option value="cancelled">
+                  Cancelled
                 </option>
 
               </select>
 
-            </div>
-
-
-            <!-- SUPPORT TYPE -->
-
-            <div class="support-form-group">
-
-              <label for="supportType">
-                Support type
-              </label>
-
-              <select
-                id="supportType"
-                required
-              >
-
-                <option value="welfare">
-                  Welfare
-                </option>
-
-                <option value="hospital">
-                  Hospital
-                </option>
-
-                <option value="bereavement">
-                  Bereavement
-                </option>
-
-                <option value="education">
-                  Education
-                </option>
-
-                <option value="emergency">
-                  Emergency
-                </option>
-
-                <option value="accident">
-                  Accident
-                </option>
-
-                <option value="marriage">
-                  Marriage
-                </option>
-
-                <option value="new_baby">
-                  New baby
-                </option>
-
-                <option value="disaster">
-                  Disaster
-                </option>
-
-                <option value="other">
-                  Other
-                </option>
-
-              </select>
-
-            </div>
-
-
-            <!-- DATE -->
-
-            <div class="support-form-group">
-
-              <label for="supportDate">
-                Support date
-              </label>
 
               <input
-                id="supportDate"
-                type="date"
-                required
+                id="caseSearch"
+                type="search"
+                placeholder="Search member or description..."
+                aria-label="Search welfare cases"
               >
 
             </div>
 
 
-            <!-- AMOUNT -->
+            <!-- TABLE -->
 
-            <div class="support-form-group support-full">
+            <div class="support-table-wrap">
 
-              <label for="amount">
-                Amount (KSh)
-              </label>
+              <table class="support-table">
 
-              <input
-                id="amount"
-                type="number"
-                min="0"
-                step="0.01"
-                value="0"
-                required
-              >
+                <thead>
 
-              <p class="support-help">
-                Zero is valid under the live database
-                contract.
-              </p>
+                  <tr>
+
+                    <th>
+                      Date
+                    </th>
+
+                    <th>
+                      Member
+                    </th>
+
+                    <th>
+                      Type
+                    </th>
+
+                    <th>
+                      Amount
+                    </th>
+
+                    <th>
+                      Status
+                    </th>
+
+                    <th>
+                      Expense
+                    </th>
+
+                    <th>
+                      Actions
+                    </th>
+
+                  </tr>
+
+                </thead>
+
+
+                <tbody id="supportRows">
+
+                  <tr>
+
+                    <td
+                      colspan="7"
+                      class="support-empty"
+                    >
+                      Loading welfare cases…
+
+                    </td>
+
+                  </tr>
+
+                </tbody>
+
+              </table>
 
             </div>
 
 
-            <!-- DESCRIPTION -->
-
-            <div class="support-form-group support-full">
-
-              <label for="description">
-                Description
-              </label>
-
-              <textarea
-                id="description"
-                rows="5"
-                maxlength="5000"
-                placeholder="Brief details of the support case..."
-              ></textarea>
-
-            </div>
+          </section>
 
 
-          </div>
+        </div>
 
 
-          <div class="support-form-actions">
+        <!-- =============================================
+             BRAND FOOTER
+        ============================================== -->
 
-            <button
-              class="support-btn support-btn-primary"
-              id="saveSupport"
-              type="submit"
-            >
-              <span>＋</span>
-              Save Support Case
-            </button>
+        <section class="support-brand-footer">
 
+          <div class="support-brand">
 
-            <button
-              class="support-btn support-btn-secondary"
-              id="resetSupport"
-              type="button"
-            >
-              Clear
-            </button>
-
-          </div>
-
-
-        </form>
-
-      </section>
-
-
-      <!-- ===========================================
-           WELFARE REGISTER
-      ============================================ -->
-
-      <section class="card support-card">
-
-
-        <div class="support-card-header">
-
-          <div class="support-card-title">
-
-            <div class="support-card-icon">
-              📋
+            <div class="support-brand-mark">
+              CL
             </div>
 
             <div>
 
-              <h2>
-                Welfare Cases
-              </h2>
+              <strong>
+                CHAMA LIVE
+              </strong>
 
-              <p>
-                Review support cases belonging to the
-                current authenticated group.
-              </p>
+              <span>
+                Better groups. Better records.
+                Better decisions.
+              </span>
 
             </div>
 
           </div>
 
 
-          <button
-            class="support-btn support-btn-secondary"
-            id="refreshSupport"
-            type="button"
-          >
-            ↻ Refresh
-          </button>
+          <div class="support-footer-tag">
+            Group Operations • Support &amp; Welfare
+          </div>
 
-        </div>
-
-
-        <!-- FILTER BAR -->
-
-        <div class="support-filter">
-
-          <select
-            id="statusFilter"
-            aria-label="Filter welfare cases by status"
-          >
-
-            <option value="">
-              All statuses
-            </option>
-
-            <option value="requested">
-              Requested
-            </option>
-
-            <option value="approved">
-              Approved
-            </option>
-
-            <option value="paid">
-              Paid
-            </option>
-
-            <option value="completed">
-              Completed
-            </option>
-
-            <option value="rejected">
-              Rejected
-            </option>
-
-            <option value="cancelled">
-              Cancelled
-            </option>
-
-          </select>
-
-
-          <input
-            id="caseSearch"
-            type="search"
-            placeholder="Search member or description..."
-            aria-label="Search welfare cases"
-          >
-
-        </div>
-
-
-        <!-- TABLE -->
-
-        <div class="support-table-wrap">
-
-          <table class="support-table">
-
-            <thead>
-
-              <tr>
-
-                <th>
-                  Date
-                </th>
-
-                <th>
-                  Member
-                </th>
-
-                <th>
-                  Type
-                </th>
-
-                <th>
-                  Amount
-                </th>
-
-                <th>
-                  Status
-                </th>
-
-                <th>
-                  Expense
-                </th>
-
-                <th>
-                  Actions
-                </th>
-
-              </tr>
-
-            </thead>
-
-
-            <tbody id="supportRows">
-
-              <tr>
-
-                <td
-                  colspan="7"
-                  class="support-empty"
-                >
-                  Loading welfare cases…
-
-                </td>
-
-              </tr>
-
-            </tbody>
-
-          </table>
-
-        </div>
+        </section>
 
 
       </section>
 
-
     </div>
-
-
-    <!-- =============================================
-         BRAND FOOTER
-    ============================================== -->
-
-    <section class="support-brand-footer">
-
-      <div class="support-brand">
-
-        <div class="support-brand-mark">
-          CL
-        </div>
-
-        <div>
-
-          <strong>
-            CHAMA LIVE
-          </strong>
-
-          <span>
-            Better groups. Better records.
-            Better decisions.
-          </span>
-
-        </div>
-
-      </div>
-
-
-      <div class="support-footer-tag">
-        Group Operations • Support &amp; Welfare
-      </div>
-
-    </section>
-
-
-  </section>
-
-</div>
-```
 
   </main>
 
@@ -2325,14 +2309,14 @@ Sign out
 
 <script type="module">
 
-  import "./js/layout.js";
+  import { boot } from "./js/layout.js";
 
   import "./js/support-welfare.js";
+
+  boot();
 
 </script>
 
 </body>
 
 </html>
-
-
