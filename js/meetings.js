@@ -275,6 +275,7 @@ function agendaToArray(value) {
     )
     .filter(Boolean);
 
+
 }
 
 
@@ -2021,33 +2022,17 @@ export const initMeetings =
 
 
 /* =========================================================
-   AUTO BOOT
+   BOOT OWNERSHIP
+   ---------------------------------------------------------
+   layout.js is the sole page boot owner.
+
+   meetings.js intentionally does NOT attach its own
+   DOMContentLoaded handler and does NOT call initPage()
+   automatically.
+
+   This prevents a race between module auto-initialization
+   and layout.js dynamic initialization.
 ========================================================= */
-
-if (
-  document.readyState ===
-  "loading"
-) {
-
-  document.addEventListener(
-    "DOMContentLoaded",
-    () => {
-
-      initPage();
-
-    },
-    {
-      once: true
-    }
-  );
-
-}
-else {
-
-  initPage();
-
-}
-
 
 console.log(
   "CHAMA LIVE: meetings.js ready"
