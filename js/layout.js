@@ -1,21 +1,36 @@
 /* =========================================================
    CHAMA LIVE — GLOBAL LAYOUT
    FINAL STABLE VERSION
-   TOP NAV + MOBILE MENU + MOBILE BOTTOM NAV
+   TOP NAV + SIDEBAR NAV + MOBILE MENU + MOBILE BOTTOM NAV
 
-   MOBILE MENU INTEGRATION:
+   GLOBAL NAVIGATION CONTRACT:
+   - Desktop navigation is reconciled centrally here.
+   - Dashboard-style .top-nav and sidebar-style .nav use
+     the same canonical destination list.
+   - Only real application destinations are exposed.
+   - Documents is intentionally excluded because
+     documents.html does not exist.
+   - Assets is included in navigation but owns its own boot.
+   - Plans & Activities owns its own boot.
+   - Support & Welfare owns its own boot.
+   - Milestones owns its own boot.
+   - Data Migration owns its own boot.
+
+   MOBILE MENU:
    - Assets is included in the full mobile menu.
    - Plans & Activities is included in the full mobile menu.
    - Support & Welfare is included in the full mobile menu.
    - Milestones is included in the full mobile menu.
-   - Documents is included in the full mobile menu.
    - Data Migration is included in the full mobile menu.
    - Assets is intentionally NOT included in the mobile
      bottom navigation.
    - Independently booted pages are intentionally NOT
      included in PAGE_SCRIPTS.
-   - assets.html is intentionally NOT included in
-     PAGE_SCRIPTS because assets.js owns its own boot.
+
+   PAGE SCRIPT ARCHITECTURE:
+   - Core pages may be initialized through PAGE_SCRIPTS.
+   - Independently booted pages are intentionally absent
+     from PAGE_SCRIPTS.
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -71,6 +86,106 @@ function getCurrentPage() {
 
 
 /* =========================================================
+   CANONICAL APPLICATION NAVIGATION
+========================================================= */
+
+/*
+ * This is the single navigation contract for the application.
+ *
+ * IMPORTANT:
+ * - Keep only destinations that actually exist.
+ * - Do not add documents.html unless a real documents page
+ *   is introduced and verified.
+ * - Page boot architecture is separate from navigation.
+ *
+ * Therefore independently booted pages may appear here even
+ * though they remain absent from PAGE_SCRIPTS.
+ */
+
+const APPLICATION_NAVIGATION = [
+
+  {
+    href: "dashboard.html",
+    page: "dashboard.html",
+    label: "Dashboard"
+  },
+
+  {
+    href: "members.html",
+    page: "members.html",
+    label: "Members"
+  },
+
+  {
+    href: "contributions.html",
+    page: "contributions.html",
+    label: "Contributions"
+  },
+
+  {
+    href: "expenses.html",
+    page: "expenses.html",
+    label: "Expenses"
+  },
+
+  {
+    href: "meetings.html",
+    page: "meetings.html",
+    label: "Meetings"
+  },
+
+  {
+    href: "reports.html",
+    page: "reports.html",
+    label: "Reports"
+  },
+
+  {
+    href: "monthly-closing.html",
+    page: "monthly-closing.html",
+    label: "Monthly Closing"
+  },
+
+  {
+    href: "group-management.html",
+    page: "group-management.html",
+    label: "Group Management"
+  },
+
+  {
+    href: "assets.html",
+    page: "assets.html",
+    label: "Assets"
+  },
+
+  {
+    href: "plans-activities.html",
+    page: "plans-activities.html",
+    label: "Plans & Activities"
+  },
+
+  {
+    href: "support-welfare.html",
+    page: "support-welfare.html",
+    label: "Support & Welfare"
+  },
+
+  {
+    href: "milestones.html",
+    page: "milestones.html",
+    label: "Milestones"
+  },
+
+  {
+    href: "data-migration.html",
+    page: "data-migration.html",
+    label: "Data Migration"
+  }
+
+];
+
+
+/* =========================================================
    DISPLAY USER
 ========================================================= */
 
@@ -110,6 +225,316 @@ function displayGroup(group) {
       element.textContent = name;
 
     });
+
+}
+
+
+/* =========================================================
+   DESKTOP NAVIGATION
+========================================================= */
+
+/*
+ * Reconcile whichever desktop navigation structure the
+ * current page already provides.
+ *
+ * Supported structures:
+ *
+ *   Dashboard-style:
+ *     .top-nav
+ *
+ *   Sidebar-style:
+ *     .sidebar .nav
+ *
+ * The function does not redesign the page. It only ensures
+ * the navigation links are synchronized with the canonical
+ * application navigation contract.
+ */
+
+function reconcileDesktopNavigation() {
+
+  const currentPage =
+    getCurrentPage();
+
+
+  const navigationContainers = [];
+
+
+  const topNav =
+    document.querySelector(".top-nav");
+
+
+  if (topNav) {
+    navigationContainers.push(topNav);
+  }
+
+
+  document
+    .querySelectorAll(".sidebar .nav")
+    .forEach(function (nav) {
+
+      if (
+        !navigationContainers.includes(nav)
+      ) {
+
+        navigationContainers.push(nav);
+
+      }
+
+    });
+
+
+  if (
+    navigationContainers.length === 0
+  ) {
+
+    console.log(
+      "CHAMA LIVE: no desktop navigation container found"
+    );
+
+    return;
+
+  }
+
+
+  navigationContainers.forEach(
+    function (nav) {
+
+      const existingLinks =
+        Array.from(
+          nav.querySelectorAll(
+            ":scope > a"
+          )
+        );
+
+
+      const linksByPage =
+        new Map();
+
+
+      existingLinks.forEach(
+        function (link) {
+
+          const href =
+            (
+              link.getAttribute("href") ||
+              ""
+            )
+              .split("#")[0]
+              .split("?")[0]
+              .trim()
+              .toLowerCase();
+
+
+          if (href) {
+
+            linksByPage.set(
+              href,
+              link
+            );
+
+          }
+
+        }
+      );
+
+
+      /*
+       * Remove direct navigation links that are not part of
+       * the canonical application navigation.
+       *
+       * This specifically removes stale destinations such
+       * as documents.html without touching unrelated elements
+       * that may exist inside the navigation container.
+       */
+
+      existingLinks.forEach(
+        function (link) {
+
+          const href =
+            (
+              link.getAttribute("href") ||
+              ""
+            )
+              .split("#")[0]
+              .split("?")[0]
+              .trim()
+              .toLowerCase();
+
+
+          const isCanonical =
+            APPLICATION_NAVIGATION.some(
+              function (item) {
+
+                return (
+                  item.page === href
+                );
+
+              }
+            );
+
+
+          if (!isCanonical) {
+
+            link.remove();
+
+          }
+
+        }
+      );
+
+
+      /*
+       * Re-read direct links after stale-link removal.
+       */
+
+      const currentLinks =
+        Array.from(
+          nav.querySelectorAll(
+            ":scope > a"
+          )
+        );
+
+
+      const currentLinksByPage =
+        new Map();
+
+
+      currentLinks.forEach(
+        function (link) {
+
+          const href =
+            (
+              link.getAttribute("href") ||
+              ""
+            )
+              .split("#")[0]
+              .split("?")[0]
+              .trim()
+              .toLowerCase();
+
+
+          if (href) {
+
+            currentLinksByPage.set(
+              href,
+              link
+            );
+
+          }
+
+        }
+      );
+
+
+      /*
+       * Ensure every canonical destination exists and appears
+       * in the canonical order.
+       */
+
+      APPLICATION_NAVIGATION.forEach(
+        function (item) {
+
+          let link =
+            currentLinksByPage.get(
+              item.page
+            );
+
+
+          if (!link) {
+
+            link =
+              document.createElement("a");
+
+            link.href =
+              item.href;
+
+            nav.appendChild(
+              link
+            );
+
+          }
+
+
+          link.href =
+            item.href;
+
+
+          link.textContent =
+            item.label;
+
+
+          link.classList.toggle(
+            "active",
+            item.page === currentPage
+          );
+
+
+          link.setAttribute(
+            "aria-current",
+            item.page === currentPage
+              ? "page"
+              : "false"
+          );
+
+        }
+      );
+
+
+      /*
+       * Put canonical links into the exact application order.
+       *
+       * appendChild() moves an existing node rather than
+       * creating a duplicate.
+       */
+
+      APPLICATION_NAVIGATION.forEach(
+        function (item) {
+
+          const link =
+            nav.querySelector(
+              `:scope > a[href="${item.href}"]`
+            );
+
+
+          if (link) {
+
+            nav.appendChild(
+              link
+            );
+
+          }
+
+        }
+      );
+
+
+      /*
+       * Remove aria-current="false" from links where it is
+       * unnecessary, while retaining aria-current="page"
+       * for the active destination.
+       */
+
+      nav
+        .querySelectorAll(
+          ':scope > a[aria-current="false"]'
+        )
+        .forEach(
+          function (link) {
+
+            link.removeAttribute(
+              "aria-current"
+            );
+
+          }
+        );
+
+    }
+  );
+
+
+  console.log(
+    "CHAMA LIVE: desktop navigation reconciled"
+  );
 
 }
 
@@ -1049,17 +1474,6 @@ function setupMobileMenu() {
     },
 
     /* -----------------------------------------------------
-       DOCUMENTS
-    ----------------------------------------------------- */
-
-    {
-      href: "documents.html",
-      page: "documents.html",
-      icon: "▱",
-      label: "Documents"
-    },
-
-    /* -----------------------------------------------------
        DATA MIGRATION
 
        Data Migration owns its own page boot and is therefore
@@ -1102,6 +1516,11 @@ function setupMobileMenu() {
 
       link.classList.add(
         "active"
+      );
+
+      link.setAttribute(
+        "aria-current",
+        "page"
       );
 
     }
@@ -1456,6 +1875,11 @@ function setupMobileNavigation() {
 
         item.classList.add(
           "active"
+        );
+
+        item.setAttribute(
+          "aria-current",
+          "page"
         );
 
       }
@@ -1974,28 +2398,35 @@ async function initLayout() {
 
 
   /*
-   * 4. Logout
+   * 4. Desktop navigation
+   */
+
+  reconcileDesktopNavigation();
+
+
+  /*
+   * 5. Logout
    */
 
   setupLogout();
 
 
   /*
-   * 5. Full mobile menu
+   * 6. Full mobile menu
    */
 
   setupMobileMenu();
 
 
   /*
-   * 6. Mobile bottom navigation
+   * 7. Mobile bottom navigation
    */
 
   setupMobileNavigation();
 
 
   /*
-   * 7. Current page script
+   * 8. Current page script
    */
 
   await loadCurrentPageScript();
