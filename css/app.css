@@ -1,83 +1,164 @@
 /* =========================================================
    CHAMA LIVE — APP CSS
    Professional Financial Dashboard UI
-   TOP NAVIGATION + RESPONSIVE MOBILE MENU
+
+   GLOBAL NAVIGATION:
+   - Topbar
+   - Desktop sidebar
+   - Responsive mobile navigation
 ========================================================= */
 
+
 * {
-  box-sizing: border-box;
+  box-sizing:
+    border-box;
 }
 
+
 html {
-  scroll-behavior: smooth;
+  scroll-behavior:
+    smooth;
 }
+
 
 :root {
 
   /* =====================================================
      BRAND
-  ===================================================== */
+  ====================================================== */
 
-  --primary: #0f766e;
-  --primary-dark: #115e59;
-  --primary-light: #ccfbf1;
+  --primary:
+    #0f766e;
+
+  --primary-dark:
+    #115e59;
+
+  --primary-light:
+    #ccfbf1;
 
 
   /* =====================================================
      STATUS
-  ===================================================== */
+  ====================================================== */
 
-  --success: #10b981;
-  --success-dark: #047857;
-  --success-light: #ecfdf3;
+  --success:
+    #10b981;
 
-  --warning: #f59e0b;
-  --warning-dark: #b45309;
-  --warning-light: #fffaeb;
+  --success-dark:
+    #047857;
 
-  --danger: #dc2626;
-  --danger-dark: #b91c1c;
-  --danger-light: #fee2e2;
+  --success-light:
+    #ecfdf3;
 
-  --info: #3b82f6;
-  --info-light: #eff6ff;
+
+  --warning:
+    #f59e0b;
+
+  --warning-dark:
+    #b45309;
+
+  --warning-light:
+    #fffaeb;
+
+
+  --danger:
+    #dc2626;
+
+  --danger-dark:
+    #b91c1c;
+
+  --danger-light:
+    #fee2e2;
+
+
+  --info:
+    #3b82f6;
+
+  --info-light:
+    #eff6ff;
 
 
   /* =====================================================
      TEXT
-  ===================================================== */
+  ====================================================== */
 
-  --text: #172033;
-  --text-dark: #101828;
-  --muted: #667085;
-  --muted-light: #98a2b3;
+  --text:
+    #172033;
+
+  --text-dark:
+    #101828;
+
+  --muted:
+    #667085;
+
+  --muted-light:
+    #98a2b3;
 
 
   /* =====================================================
      SURFACES
-  ===================================================== */
+  ====================================================== */
 
-  --background: #f5f7fa;
-  --card: #ffffff;
-  --surface-soft: #f8fafc;
+  --background:
+    #f5f7fa;
 
-  --border: #e5e7eb;
-  --border-light: #edf0f4;
+  --card:
+    #ffffff;
+
+  --surface-soft:
+    #f8fafc;
+
+
+  --border:
+    #e5e7eb;
+
+  --border-light:
+    #edf0f4;
 
 
   /* =====================================================
-     TOP NAVIGATION
-  ===================================================== */
+     NAVIGATION
+  ====================================================== */
 
-  --nav-background: #ffffff;
-  --nav-text: #475467;
-  --nav-hover: #f0fdfa;
-  --nav-active: #ecfdf5;
+  --nav-background:
+    #ffffff;
+
+  --nav-text:
+    #475467;
+
+  --nav-hover:
+    #f0fdfa;
+
+  --nav-active:
+    #ecfdf5;
+
+
+  /* =====================================================
+     SIDEBAR
+  ====================================================== */
+
+  --sidebar-width:
+    245px;
+
+  --sidebar-background:
+    #ffffff;
+
+  --sidebar-border:
+    #e5e7eb;
+
+  --sidebar-text:
+    #475467;
+
+  --sidebar-hover:
+    #f0fdfa;
+
+  --sidebar-active:
+    #ecfdf5;
 
 
   /* =====================================================
      SHADOWS
-  ===================================================== */
+  ====================================================== */
 
   --shadow:
     0 2px 8px rgba(15, 118, 110, 0.05);
@@ -93,6 +174,7 @@ html {
 /* =========================================================
    BASE
 ========================================================= */
+
 
 body {
 
@@ -125,6 +207,7 @@ body {
 
 
 a {
+
   text-decoration:
     none;
 
@@ -137,12 +220,14 @@ button,
 input,
 select,
 textarea {
+
   font:
     inherit;
 }
 
 
 button {
+
   -webkit-tap-highlight-color:
     transparent;
 }
@@ -151,6 +236,7 @@ button {
 /* =========================================================
    TOPBAR
 ========================================================= */
+
 
 .topbar {
 
@@ -196,6 +282,7 @@ button {
    BRAND
 ========================================================= */
 
+
 .brand {
 
   flex-shrink:
@@ -232,6 +319,7 @@ button {
    TOP NAVIGATION
 ========================================================= */
 
+
 .topbar-nav {
 
   display:
@@ -264,14 +352,16 @@ button {
 
 
 .topbar-nav::-webkit-scrollbar {
+
   display:
     none;
 }
 
 
 /* =========================================================
-   NAV LINKS
+   TOP NAVIGATION LINKS
 ========================================================= */
+
 
 .topbar-nav a {
 
@@ -339,6 +429,7 @@ button {
    TOPBAR ACTIONS
 ========================================================= */
 
+
 .topbar-actions {
 
   display:
@@ -380,8 +471,9 @@ button {
 /* =========================================================
    MENU BUTTON
    Desktop: hidden
-   Mobile: enabled by layout.js CSS
+   Mobile: enabled by responsive rules
 ========================================================= */
+
 
 .menu-toggle {
 
@@ -440,31 +532,253 @@ button {
 
 
 .menu-toggle:active {
+
   transform:
     scale(.96);
 }
 
 
 /* =========================================================
-   SIDEBAR
+   DESKTOP SIDEBAR
 ========================================================= */
 
+
+/*
+ * IMPORTANT
+ * ---------------------------------------------------------
+ * The previous CSS deliberately hid the sidebar:
+ *
+ *   display: none !important;
+ *
+ * That prevented every sidebar-enabled page from displaying
+ * its navigation.
+ *
+ * The sidebar is now a first-class desktop navigation.
+ */
+
+
 .sidebar {
+
   display:
-    none !important;
+    flex;
+
+  flex-direction:
+    column;
+
+  width:
+    var(--sidebar-width);
+
+  min-width:
+    var(--sidebar-width);
+
+  background:
+    var(--sidebar-background);
+
+  border-right:
+    1px solid var(--sidebar-border);
+
+  min-height:
+    calc(100vh - 64px);
+
+  position:
+    sticky;
+
+  top:
+    64px;
+
+  align-self:
+    flex-start;
+
+  height:
+    calc(100vh - 64px);
+
+  overflow-y:
+    auto;
+
+  overflow-x:
+    hidden;
+
+  scrollbar-width:
+    thin;
+
+  z-index:
+    900;
 }
+
+
+/*
+ * Do not allow the sidebar itself to disappear merely because
+ * another page uses the global navigation reconciliation.
+ */
+
+
+.sidebar .nav {
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  gap:
+    4px;
+
+  width:
+    100%;
+
+  padding:
+    18px 13px 24px;
+}
+
+
+/* =========================================================
+   SIDEBAR NAVIGATION LINKS
+========================================================= */
+
+
+.sidebar .nav > a {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  width:
+    100%;
+
+  min-height:
+    43px;
+
+  padding:
+    10px 13px;
+
+  border-radius:
+    10px;
+
+  color:
+    var(--sidebar-text);
+
+  font-size:
+    13px;
+
+  font-weight:
+    600;
+
+  line-height:
+    1.25;
+
+  white-space:
+    normal;
+
+  transition:
+    background .15s ease,
+    color .15s ease,
+    transform .15s ease,
+    box-shadow .15s ease;
+}
+
+
+.sidebar .nav > a:hover {
+
+  background:
+    var(--sidebar-hover);
+
+  color:
+    var(--primary);
+
+  transform:
+    translateX(1px);
+}
+
+
+.sidebar .nav > a.active {
+
+  background:
+    var(--sidebar-active);
+
+  color:
+    var(--primary);
+
+  font-weight:
+    750;
+
+  box-shadow:
+    inset 3px 0 0 var(--primary);
+}
+
+
+.sidebar .nav > a:active {
+
+  transform:
+    translateX(1px);
+}
+
+
+/* =========================================================
+   SIDEBAR SCROLLBAR
+========================================================= */
+
+
+.sidebar::-webkit-scrollbar {
+
+  width:
+    6px;
+}
+
+
+.sidebar::-webkit-scrollbar-track {
+
+  background:
+    transparent;
+}
+
+
+.sidebar::-webkit-scrollbar-thumb {
+
+  background:
+    #d0d5dd;
+
+  border-radius:
+    999px;
+}
+
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+
+  background:
+    #98a2b3;
+}
+
+
+/* =========================================================
+   SIDEBAR OVERLAY
+   Used only if a page/mobile navigation creates one.
+========================================================= */
 
 
 .sidebar-overlay {
+
   display:
-    none !important;
+    none;
 }
 
 
-.sidebar .nav,
+/* =========================================================
+   SIDEBAR ALTERNATIVE NAV CLASS
+========================================================= */
+
+
 .sidebar-nav {
+
   display:
-    none !important;
+    flex;
+
+  flex-direction:
+    column;
+
+  width:
+    100%;
 }
 
 
@@ -472,10 +786,26 @@ button {
    LAYOUT
 ========================================================= */
 
+
+/*
+ * Desktop layout:
+ *
+ *   TOPBAR
+ *   ┌───────────────┬───────────────────────────┐
+ *   │   SIDEBAR     │                           │
+ *   │               │       MAIN CONTENT        │
+ *   │               │                           │
+ *   └───────────────┴───────────────────────────┘
+ */
+
+
 .layout {
 
   display:
-    block !important;
+    flex;
+
+  align-items:
+    flex-start;
 
   width:
     100%;
@@ -488,6 +818,7 @@ button {
 /* =========================================================
    MAIN CONTENT
 ========================================================= */
+
 
 .main {
 
@@ -505,12 +836,16 @@ button {
 
   min-width:
     0;
+
+  flex:
+    1 1 auto;
 }
 
 
 /* =========================================================
    PAGE HEADER
 ========================================================= */
+
 
 .page-head {
 
@@ -583,7 +918,10 @@ button {
    ACCESSIBILITY
 ========================================================= */
 
+
 .topbar-nav a:focus-visible,
+.sidebar .nav a:focus-visible,
+.sidebar-nav a:focus-visible,
 .nav a:focus-visible,
 .btn:focus-visible,
 .quick-action:focus-visible,
@@ -602,6 +940,7 @@ button {
    GRID
 ========================================================= */
 
+
 .grid {
 
   display:
@@ -613,18 +952,21 @@ button {
 
 
 .grid-4 {
+
   grid-template-columns:
     repeat(4, minmax(0, 1fr));
 }
 
 
 .grid-3 {
+
   grid-template-columns:
     repeat(3, minmax(0, 1fr));
 }
 
 
 .grid-2 {
+
   grid-template-columns:
     repeat(2, minmax(0, 1fr));
 }
@@ -633,6 +975,7 @@ button {
 /* =========================================================
    CARD
 ========================================================= */
+
 
 .card {
 
@@ -685,6 +1028,7 @@ button {
 
 
 .card h3 {
+
   margin-top:
     0;
 }
@@ -693,6 +1037,7 @@ button {
 /* =========================================================
    STATUS CARD
 ========================================================= */
+
 
 .status-card {
 
@@ -705,7 +1050,9 @@ button {
    DASHBOARD METRICS
 ========================================================= */
 
+
 .dashboard-metrics {
+
   margin-top:
     0;
 }
@@ -714,6 +1061,7 @@ button {
 /* =========================================================
    METRIC CARD
 ========================================================= */
+
 
 .metric-card {
 
@@ -760,6 +1108,7 @@ button {
    METRIC LABEL
 ========================================================= */
 
+
 .metric-label {
 
   display:
@@ -786,6 +1135,7 @@ button {
    METRIC DOT
 ========================================================= */
 
+
 .metric-dot {
 
   width:
@@ -806,24 +1156,28 @@ button {
 
 
 .metric-dot.expected {
+
   background:
     #64748b;
 }
 
 
 .metric-dot.success {
+
   background:
     var(--success);
 }
 
 
 .metric-dot.warning {
+
   background:
     var(--warning);
 }
 
 
 .metric-dot.balance {
+
   background:
     #6366f1;
 }
@@ -832,6 +1186,7 @@ button {
 /* =========================================================
    METRIC VALUE
 ========================================================= */
+
 
 .metric {
 
@@ -859,25 +1214,30 @@ button {
    FINANCIAL STATES
 ========================================================= */
 
+
 .metric-positive .metric {
+
   color:
     var(--success-dark);
 }
 
 
 .metric-warning .metric {
+
   color:
     var(--warning-dark);
 }
 
 
 .metric-danger .metric {
+
   color:
     var(--danger-dark);
 }
 
 
 .metric-neutral .metric {
+
   color:
     var(--text-dark);
 }
@@ -887,7 +1247,9 @@ button {
    MUTED
 ========================================================= */
 
+
 .muted {
+
   color:
     var(--muted);
 }
@@ -904,6 +1266,7 @@ button {
 
 
 .card strong {
+
   font-weight:
     750;
 }
@@ -912,6 +1275,7 @@ button {
 /* =========================================================
    HOVER SAFETY
 ========================================================= */
+
 
 @media (hover: none) {
 
@@ -931,7 +1295,9 @@ button {
    CONTRIBUTION STATUS UI
 ========================================================= */
 
+
 #memberStatusRows td {
+
   vertical-align:
     middle;
 }
@@ -1004,6 +1370,7 @@ button {
    TABLES
 ========================================================= */
 
+
 .table-wrap {
 
   width:
@@ -1031,6 +1398,7 @@ button {
 
 
 .table td {
+
   vertical-align:
     middle;
 }
@@ -1039,6 +1407,7 @@ button {
 /* =========================================================
    TABLET
 ========================================================= */
+
 
 @media (max-width: 1100px) {
 
@@ -1069,6 +1438,33 @@ button {
   }
 
 
+  .sidebar {
+
+    width:
+      220px;
+
+    min-width:
+      220px;
+  }
+
+
+  .sidebar .nav {
+
+    padding:
+      16px 10px 22px;
+  }
+
+
+  .sidebar .nav > a {
+
+    padding:
+      9px 11px;
+
+    font-size:
+      12px;
+  }
+
+
   .main {
 
     padding:
@@ -1079,10 +1475,87 @@ button {
 
 
 /* =========================================================
+   COMPACT DESKTOP / TABLET
+========================================================= */
+
+
+@media (max-width: 950px) {
+
+  .sidebar {
+
+    width:
+      210px;
+
+    min-width:
+      210px;
+  }
+
+
+  .main {
+
+    padding:
+      22px;
+  }
+
+
+  .sidebar .nav > a {
+
+    min-height:
+      41px;
+
+    font-size:
+      12px;
+  }
+
+}
+
+
+/* =========================================================
    MOBILE
 ========================================================= */
 
+
 @media (max-width: 800px) {
+
+  /*
+   * The desktop sidebar gives way to the responsive mobile
+   * navigation on smaller screens.
+   */
+
+  .sidebar {
+
+    display:
+      none !important;
+  }
+
+
+  .sidebar-overlay {
+
+    display:
+      none;
+  }
+
+
+  .sidebar .nav,
+  .sidebar-nav {
+
+    display:
+      none;
+  }
+
+
+  .layout {
+
+    display:
+      block;
+
+    width:
+      100%;
+
+    min-height:
+      calc(100vh - 64px);
+  }
+
 
   .topbar {
 
@@ -1174,6 +1647,7 @@ button {
    SMALL MOBILE
 ========================================================= */
 
+
 @media (max-width: 650px) {
 
   .topbar {
@@ -1208,8 +1682,8 @@ button {
 
 
   /*
-   * On mobile the full top navigation is replaced
-   * by the hamburger menu.
+   * On mobile the full top navigation is replaced by the
+   * hamburger menu supplied by layout.js.
    */
 
   .topbar-nav {
@@ -1220,7 +1694,7 @@ button {
 
 
   /*
-   * Mobile menu button is visible.
+   * Mobile menu button becomes visible.
    */
 
   .menu-toggle {
@@ -1292,6 +1766,7 @@ button {
    VERY SMALL MOBILE
 ========================================================= */
 
+
 @media (max-width: 390px) {
 
   .menu-toggle {
@@ -1311,3 +1786,80 @@ button {
   }
 
 }
+
+
+/* =========================================================
+   SIDEBAR SAFETY
+========================================================= */
+
+
+/*
+ * These rules intentionally use stronger specificity than
+ * legacy page-specific styles that may have attempted to hide
+ * the sidebar.
+ *
+ * Desktop:
+ *   sidebar = visible
+ *
+ * Mobile:
+ *   sidebar = hidden and mobile menu takes over
+ */
+
+
+@media (min-width: 801px) {
+
+  .layout > .sidebar {
+
+    display:
+      flex !important;
+  }
+
+
+  .layout > .sidebar > .nav {
+
+    display:
+      flex !important;
+  }
+
+}
+
+
+/* =========================================================
+   SIDEBAR ACTIVE PAGE SAFETY
+========================================================= */
+
+
+@media (min-width: 801px) {
+
+  .sidebar .nav > a.active {
+
+    display:
+      flex !important;
+
+    visibility:
+      visible !important;
+
+    opacity:
+      1 !important;
+  }
+
+}
+
+
+/* =========================================================
+   SIDEBAR CONTENT SAFETY
+========================================================= */
+
+
+.sidebar,
+.sidebar .nav,
+.sidebar .nav > a {
+
+  box-sizing:
+    border-box;
+}
+
+
+/* =========================================================
+   END OF APP CSS
+========================================================= */
