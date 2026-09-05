@@ -3,10 +3,17 @@
    FINAL STABLE VERSION
    TOP NAV + MOBILE MENU + MOBILE BOTTOM NAV
 
-   ASSETS NAVIGATION INTEGRATION:
+   MOBILE MENU INTEGRATION:
    - Assets is included in the full mobile menu.
+   - Plans & Activities is included in the full mobile menu.
+   - Support & Welfare is included in the full mobile menu.
+   - Milestones is included in the full mobile menu.
+   - Documents is included in the full mobile menu.
+   - Data Migration is included in the full mobile menu.
    - Assets is intentionally NOT included in the mobile
      bottom navigation.
+   - Independently booted pages are intentionally NOT
+     included in PAGE_SCRIPTS.
    - assets.html is intentionally NOT included in
      PAGE_SCRIPTS because assets.js owns its own boot.
 ========================================================= */
@@ -923,9 +930,9 @@ function setupMobileMenu() {
   menu.appendChild(header);
 
 
-  /* =====================================================
-     MENU ITEMS
-  ===================================================== */
+/* =========================================================
+   MENU ITEMS
+========================================================= */
 
   const menuItems = [
 
@@ -987,6 +994,7 @@ function setupMobileMenu() {
 
     /* -----------------------------------------------------
        ASSETS
+
        Assets is intentionally available through the full
        mobile menu but NOT the five-item bottom navigation.
     ----------------------------------------------------- */
@@ -996,6 +1004,73 @@ function setupMobileMenu() {
       page: "assets.html",
       icon: "▣",
       label: "Assets"
+    },
+
+    /* -----------------------------------------------------
+       PLANS & ACTIVITIES
+
+       This page owns its own initialization and therefore
+       is intentionally NOT included in PAGE_SCRIPTS.
+    ----------------------------------------------------- */
+
+    {
+      href: "plans-activities.html",
+      page: "plans-activities.html",
+      icon: "◫",
+      label: "Plans & Activities"
+    },
+
+    /* -----------------------------------------------------
+       SUPPORT & WELFARE
+
+       This page owns its own initialization and therefore
+       is intentionally NOT included in PAGE_SCRIPTS.
+    ----------------------------------------------------- */
+
+    {
+      href: "support-welfare.html",
+      page: "support-welfare.html",
+      icon: "♡",
+      label: "Support & Welfare"
+    },
+
+    /* -----------------------------------------------------
+       MILESTONES
+
+       This page owns its own initialization and therefore
+       is intentionally NOT included in PAGE_SCRIPTS.
+    ----------------------------------------------------- */
+
+    {
+      href: "milestones.html",
+      page: "milestones.html",
+      icon: "★",
+      label: "Milestones"
+    },
+
+    /* -----------------------------------------------------
+       DOCUMENTS
+    ----------------------------------------------------- */
+
+    {
+      href: "documents.html",
+      page: "documents.html",
+      icon: "▱",
+      label: "Documents"
+    },
+
+    /* -----------------------------------------------------
+       DATA MIGRATION
+
+       Data Migration owns its own page boot and is therefore
+       intentionally NOT included in PAGE_SCRIPTS.
+    ----------------------------------------------------- */
+
+    {
+      href: "data-migration.html",
+      page: "data-migration.html",
+      icon: "⇅",
+      label: "Data Migration"
     }
 
   ];
@@ -1310,7 +1385,8 @@ function setupMobileNavigation() {
    * Keep the bottom navigation intentionally limited
    * to five primary actions.
    *
-   * Assets belongs in the full mobile menu instead.
+   * Assets and the newer operational pages belong in
+   * the full mobile menu instead.
    */
 
   addLink(
@@ -1596,12 +1672,18 @@ const PAGE_SCRIPTS = {
    *
    * assets.js owns its own independent boot sequence.
    *
-   * Do not add:
+   * The following newer/independently booted pages are also
+   * intentionally absent from this map:
    *
-   * "assets.html": "./assets.js"
+   * - plans-activities.html
+   * - support-welfare.html
+   * - milestones.html
+   * - data-migration.html
    *
-   * here, because that would create a duplicate/competing
-   * boot architecture for the Assets page.
+   * Their page modules own their own initialization.
+   *
+   * Do not add those pages here unless their boot architecture
+   * is explicitly reconciled and changed.
    */
 
 };
@@ -2012,4 +2094,3 @@ export function getLayoutState() {
 console.log(
   "CHAMA LIVE: layout.js ready — boot() exported"
 );
-
