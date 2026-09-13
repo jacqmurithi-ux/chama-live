@@ -13,23 +13,20 @@ import {
    - Preserve existing approval response contract
    - Preserve existing review-email workflow
    - Reconcile Refresh button ID with admin-review.html
+   - Reconcile application rendering with admin-review.html
+   - Remove stale loading/empty DOM dependencies
    - No subscription RPC calls
    - No direct database writes
    - No Edge Function changes
    ========================================================= */
 
-const applicationList =
-  document.getElementById("applicationList");
+
+/* =========================================================
+   DOM REFERENCES
+   ========================================================= */
 
 const applicationsContainer =
-  document.getElementById("applications") ||
-  document.getElementById("applicationsContainer");
-
-const loadingBox =
-  document.getElementById("loading");
-
-const emptyBox =
-  document.getElementById("empty");
+  document.getElementById("applications");
 
 const errorBox =
   document.getElementById("error");
@@ -37,15 +34,6 @@ const errorBox =
 const statusBox =
   document.getElementById("status");
 
-/*
- * admin-review.html uses:
- *
- *   id="refreshApplications"
- *
- * Keep the older refreshButton fallback so this JS remains
- * compatible with any existing page variant without creating
- * a new UI contract.
- */
 const refreshButton =
   document.getElementById("refreshApplications") ||
   document.getElementById("refreshButton");
@@ -55,26 +43,31 @@ const logoutButton =
 
 
 /* =========================================================
-   UI HELPERS
+   APPLICATION STATE
    ========================================================= */
 
-function showLoading(show) {
-  if (!loadingBox) return;
+/*
+ * Keep the complete application objects returned by
+ * list_pending_group_applications() available by ID.
+ *
+ * This preserves the applicant data returned by the
+ * existing RPC without depending on rendered DOM text
+ * for the rejection-email workflow.
+ */
+const applicationsById =
+  new Map();
 
-  loadingBox.hidden = !show;
-}
 
-function showEmpty(show) {
-  if (!emptyBox) return;
-
-  emptyBox.hidden = !show;
-}
+/* =========================================================
+   UI HELPERS
+   ========================================================= */
 
 function showError(message) {
   if (!errorBox) return;
 
   errorBox.textContent =
-    message || "An unexpected error occurred.";
+    message ||
+    "An unexpected error occurred.";
 
   errorBox.hidden = false;
 }
@@ -89,8 +82,11 @@ function clearError() {
 function showStatus(message) {
   if (!statusBox) return;
 
-  statusBox.textContent = message || "";
-  statusBox.hidden = !message;
+  statusBox.textContent =
+    message || "";
+
+  statusBox.hidden =
+    !message;
 }
 
 function clearStatus() {
@@ -103,16 +99,36 @@ function clearStatus() {
 function setRefreshState(disabled) {
   if (!refreshButton) return;
 
-  refreshButton.disabled = disabled;
+  refreshButton.disabled =
+    disabled;
 }
 
 function escapeHtml(value) {
   return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
+}
+
+function escapeAttribute(value) {
+  return escapeHtml(value);
 }
 
 
@@ -141,7 +157,9 @@ async function verifyPlatformAdmin() {
     await getCurrentSession();
 
   if (!session) {
-    window.location.href = "login.html";
+    window.location.href =
+      "login.html";
+
     return false;
   }
 
@@ -177,11 +195,18 @@ async function loadApplications() {
   clearError();
   clearStatus();
 
-  showLoading(true);
-  showEmpty(false);
   setRefreshState(true);
 
   try {
+    if (!applicationsContainer) {
+      throw new Error(
+        "Applications container was not found."
+      );
+    }
+
+    /*
+     * Preserve the existing pending-application RPC.
+     */
     const {
       data,
       error
@@ -201,6 +226,19 @@ async function loadApplications() {
         ? data
         : [];
 
+    applicationsById.clear();
+
+    applications.forEach(
+      (application) => {
+        if (application?.id) {
+          applicationsById.set(
+            String(application.id),
+            application
+          );
+        }
+      }
+    );
+
     renderApplications(
       applications
     );
@@ -215,7 +253,6 @@ async function loadApplications() {
       "Unable to load pending applications."
     );
   } finally {
-    showLoading(false);
     setRefreshState(false);
   }
 }
@@ -237,11 +274,9 @@ function renderApplications(
   applicationsContainer.innerHTML = "";
 
   if (!applications.length) {
-    showEmpty(true);
+    renderEmptyState();
     return;
   }
-
-  showEmpty(false);
 
   applications.forEach(
     (application) => {
@@ -257,150 +292,214 @@ function renderApplications(
   );
 }
 
+function renderEmptyState() {
+  if (!applicationsContainer) {
+    return;
+  }
+
+  applicationsContainer.innerHTML = `
+    <div class="cl-empty">
+
+      <div class="cl-empty-icon">
+        ✓
+      </div>
+
+      <strong>
+        No pending applications
+      </strong>
+
+      <span>
+        There are currently no group applications
+        awaiting administrator review.
+      </span>
+
+    </div>
+  `;
+}
+
 function createApplicationCard(
   application
 ) {
   const card =
-    document.createElement("div");
+    document.createElement("article");
 
   card.className =
-    "application-card";
+    "cl-application";
 
   const id =
-    application.id;
+    application?.id || "";
 
   const groupName =
-    application.group_name ||
+    application?.group_name ||
     "Unnamed group";
 
   const adminName =
-    application.admin_name ||
+    application?.admin_name ||
     "Unnamed administrator";
 
   const email =
-    application.email ||
+    application?.email ||
     "";
 
   const phone =
-    application.phone ||
-    application.phone_number ||
+    application?.phone ||
+    application?.phone_number ||
     "";
 
   const county =
-    application.county ||
+    application?.county ||
     "";
 
   const ward =
-    application.ward ||
+    application?.ward ||
     "";
 
   const createdAt =
-    application.created_at
+    application?.created_at
       ? new Date(
           application.created_at
         ).toLocaleString()
       : "";
 
   card.innerHTML = `
-    <div class="application-card-content">
+    <div class="cl-application-top">
 
-      <div class="application-card-header">
-        <h3>
+      <div>
+        <h3 class="cl-application-title">
           ${escapeHtml(groupName)}
         </h3>
-      </div>
-
-      <div class="application-details">
-
-        <div class="application-detail">
-          <strong>Administrator</strong>
-          <span>
-            ${escapeHtml(adminName)}
-          </span>
-        </div>
-
-        <div class="application-detail">
-          <strong>Email</strong>
-          <span>
-            ${escapeHtml(email)}
-          </span>
-        </div>
-
-        ${
-          phone
-            ? `
-              <div class="application-detail">
-                <strong>Phone</strong>
-                <span>
-                  ${escapeHtml(phone)}
-                </span>
-              </div>
-            `
-            : ""
-        }
-
-        ${
-          county
-            ? `
-              <div class="application-detail">
-                <strong>County</strong>
-                <span>
-                  ${escapeHtml(county)}
-                </span>
-              </div>
-            `
-            : ""
-        }
-
-        ${
-          ward
-            ? `
-              <div class="application-detail">
-                <strong>Ward</strong>
-                <span>
-                  ${escapeHtml(ward)}
-                </span>
-              </div>
-            `
-            : ""
-        }
 
         ${
           createdAt
             ? `
-              <div class="application-detail">
-                <strong>Applied</strong>
-                <span>
-                  ${escapeHtml(createdAt)}
-                </span>
+              <div class="cl-application-meta">
+                Applied ${escapeHtml(createdAt)}
               </div>
             `
             : ""
         }
-
       </div>
 
-      <div class="application-actions">
+      <span class="cl-status-pill">
+        Pending
+      </span>
 
-        <button
-          type="button"
-          class="approve-button"
-          data-action="approve"
-          data-application-id="${escapeHtml(id)}"
-        >
-          Approve
-        </button>
+    </div>
 
-        <button
-          type="button"
-          class="reject-button"
-          data-action="reject"
-          data-application-id="${escapeHtml(id)}"
-        >
-          Reject
-        </button>
 
+    <div class="cl-application-grid">
+
+      <div class="cl-detail">
+        <span class="cl-detail-label">
+          Administrator
+        </span>
+
+        <span class="cl-detail-value">
+          ${escapeHtml(adminName)}
+        </span>
       </div>
+
+
+      <div class="cl-detail">
+        <span class="cl-detail-label">
+          Email
+        </span>
+
+        <span class="cl-detail-value">
+          ${escapeHtml(email)}
+        </span>
+      </div>
+
+
+      ${
+        phone
+          ? `
+            <div class="cl-detail">
+              <span class="cl-detail-label">
+                Phone
+              </span>
+
+              <span class="cl-detail-value">
+                ${escapeHtml(phone)}
+              </span>
+            </div>
+          `
+          : ""
+      }
+
+
+      ${
+        county
+          ? `
+            <div class="cl-detail">
+              <span class="cl-detail-label">
+                County
+              </span>
+
+              <span class="cl-detail-value">
+                ${escapeHtml(county)}
+              </span>
+            </div>
+          `
+          : ""
+      }
+
+
+      ${
+        ward
+          ? `
+            <div class="cl-detail">
+              <span class="cl-detail-label">
+                Ward
+              </span>
+
+              <span class="cl-detail-value">
+                ${escapeHtml(ward)}
+              </span>
+            </div>
+          `
+          : ""
+      }
+
+
+      ${
+        createdAt
+          ? `
+            <div class="cl-detail">
+              <span class="cl-detail-label">
+                Applied
+              </span>
+
+              <span class="cl-detail-value">
+                ${escapeHtml(createdAt)}
+              </span>
+            </div>
+          `
+          : ""
+      }
+
+    </div>
+
+
+    <div class="cl-application-actions">
+
+      <button
+        type="button"
+        class="cl-action cl-approve"
+        data-action="approve"
+        data-application-id="${escapeAttribute(id)}"
+      >
+        Approve
+      </button>
+
+      <button
+        type="button"
+        class="cl-action cl-reject"
+        data-action="reject"
+        data-application-id="${escapeAttribute(id)}"
+      >
+        Reject
+      </button>
 
     </div>
   `;
@@ -420,6 +519,7 @@ async function approveApplication(
     showError(
       "Application ID is missing."
     );
+
     return;
   }
 
@@ -448,9 +548,10 @@ async function approveApplication(
     /*
      * Preserve the existing approval RPC contract.
      *
-     * Do not replace this with client-side inserts.
      * Subscription initialization and Cycle 1 creation
-     * are handled inside approve_group_application().
+     * remain inside approve_group_application().
+     *
+     * No client-side subscription operation is introduced.
      */
     const {
       data,
@@ -480,9 +581,6 @@ async function approveApplication(
 
     /*
      * Preserve the existing approval response contract.
-     *
-     * These fields are returned by
-     * approve_group_application().
      */
     const email =
       data.email;
@@ -511,9 +609,6 @@ async function approveApplication(
 
     /*
      * Preserve the existing review-email workflow.
-     *
-     * No direct authentication or member writes
-     * are performed here.
      */
     const {
       data: emailData,
@@ -542,11 +637,8 @@ async function approveApplication(
         "Application approved, but the approval email could not be sent."
       );
 
-      /*
-       * The approval itself has already succeeded.
-       * Do not report the database operation as failed.
-       */
       await loadApplications();
+
       return;
     }
 
@@ -564,6 +656,7 @@ async function approveApplication(
       );
 
       await loadApplications();
+
       return;
     }
 
@@ -601,6 +694,7 @@ async function rejectApplication(
     showError(
       "Application ID is missing."
     );
+
     return;
   }
 
@@ -658,66 +752,33 @@ async function rejectApplication(
     }
 
     /*
-     * Preserve the existing workflow of sending the
-     * rejection email after the rejection RPC succeeds.
+     * Recover the original application returned by
+     * list_pending_group_applications().
      *
-     * The applicant details are recovered from the
-     * application currently rendered in the page.
+     * This avoids inventing a new database query and avoids
+     * depending on presentation-layer text extraction.
      */
-    const card =
-      applicationsContainer?.querySelector(
-        `[data-application-id="${CSS.escape(
-          String(id)
-        )}"]`
+    const application =
+      applicationsById.get(
+        String(id)
       );
 
-    let email = "";
-    let adminName = "";
-    let groupName = "";
+    const email =
+      application?.email ||
+      "";
 
-    if (card) {
-      const details =
-        card.querySelectorAll(
-          ".application-detail"
-        );
+    const adminName =
+      application?.admin_name ||
+      "";
 
-      details.forEach(
-        (detail) => {
-          const label =
-            detail.querySelector(
-              "strong"
-            )
-              ?.textContent
-              ?.trim()
-              ?.toLowerCase();
+    const groupName =
+      application?.group_name ||
+      "";
 
-          const value =
-            detail.querySelector(
-              "span"
-            )
-              ?.textContent
-              ?.trim() || "";
-
-          if (
-            label === "email"
-          ) {
-            email = value;
-          }
-
-          if (
-            label === "administrator"
-          ) {
-            adminName = value;
-          }
-        }
-      );
-
-      groupName =
-        card.querySelector("h3")
-          ?.textContent
-          ?.trim() || "";
-    }
-
+    /*
+     * Preserve the existing behavior:
+     * send the rejection email after the rejection succeeds.
+     */
     if (email) {
       showStatus(
         "Application rejected. Sending rejection email..."
@@ -749,6 +810,7 @@ async function rejectApplication(
         );
 
         await loadApplications();
+
         return;
       }
 
@@ -766,6 +828,7 @@ async function rejectApplication(
         );
 
         await loadApplications();
+
         return;
       }
     }
@@ -811,7 +874,8 @@ function setActionButtonsDisabled(
 
   buttons.forEach(
     (button) => {
-      button.disabled = disabled;
+      button.disabled =
+        disabled;
     }
   );
 }
@@ -823,16 +887,9 @@ function setActionButtonsDisabled(
 
 function setupActions() {
   /*
-   * Reconciled with admin-review.html:
+   * admin-review.html:
    *
-   * HTML:
    *   id="refreshApplications"
-   *
-   * JS:
-   *   refreshButton
-   *
-   * The fallback to refreshButton preserves compatibility
-   * with any older markup without changing the page contract.
    */
   if (refreshButton) {
     refreshButton.addEventListener(
@@ -843,6 +900,13 @@ function setupActions() {
     );
   }
 
+  /*
+   * Keep compatibility with any existing page variant
+   * that provides logoutButton.
+   *
+   * The supplied admin-review.html does not currently
+   * render this element, so no new UI contract is created.
+   */
   if (logoutButton) {
     logoutButton.addEventListener(
       "click",
@@ -901,6 +965,7 @@ function setupActions() {
           await approveApplication(
             id
           );
+
           return;
         }
 
@@ -962,8 +1027,6 @@ async function initialize() {
       error
     );
 
-    showLoading(false);
-
     showError(
       error?.message ||
       "Unable to initialize the admin review page."
@@ -977,4 +1040,3 @@ async function initialize() {
    ========================================================= */
 
 initialize();
-
