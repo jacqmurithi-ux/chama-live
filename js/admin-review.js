@@ -39,6 +39,7 @@ const statusBox =
 
 /*
  * admin-review.html uses:
+ *
  *   id="refreshApplications"
  *
  * Keep the older refreshButton fallback so this JS remains
@@ -127,7 +128,8 @@ async function getCurrentSession() {
 
   if (error) {
     throw new Error(
-      error.message || "Unable to read the current session."
+      error.message ||
+      "Unable to read the current session."
     );
   }
 
@@ -135,7 +137,8 @@ async function getCurrentSession() {
 }
 
 async function verifyPlatformAdmin() {
-  const session = await getCurrentSession();
+  const session =
+    await getCurrentSession();
 
   if (!session) {
     window.location.href = "login.html";
@@ -145,7 +148,9 @@ async function verifyPlatformAdmin() {
   const {
     data,
     error
-  } = await supabase.rpc("is_platform_admin");
+  } = await supabase.rpc(
+    "is_platform_admin"
+  );
 
   if (error) {
     throw new Error(
@@ -191,11 +196,14 @@ async function loadApplications() {
       );
     }
 
-    const applications = Array.isArray(data)
-      ? data
-      : [];
+    const applications =
+      Array.isArray(data)
+        ? data
+        : [];
 
-    renderApplications(applications);
+    renderApplications(
+      applications
+    );
   } catch (error) {
     console.error(
       "Failed to load pending applications:",
@@ -217,7 +225,9 @@ async function loadApplications() {
    APPLICATION RENDERING
    ========================================================= */
 
-function renderApplications(applications) {
+function renderApplications(
+  applications
+) {
   if (!applicationsContainer) {
     throw new Error(
       "Applications container was not found."
@@ -233,15 +243,23 @@ function renderApplications(applications) {
 
   showEmpty(false);
 
-  applications.forEach((application) => {
-    const card =
-      createApplicationCard(application);
+  applications.forEach(
+    (application) => {
+      const card =
+        createApplicationCard(
+          application
+        );
 
-    applicationsContainer.appendChild(card);
-  });
+      applicationsContainer.appendChild(
+        card
+      );
+    }
+  );
 }
 
-function createApplicationCard(application) {
+function createApplicationCard(
+  application
+) {
   const card =
     document.createElement("div");
 
@@ -278,8 +296,9 @@ function createApplicationCard(application) {
 
   const createdAt =
     application.created_at
-      ? new Date(application.created_at)
-          .toLocaleString()
+      ? new Date(
+          application.created_at
+        ).toLocaleString()
       : "";
 
   card.innerHTML = `
@@ -394,7 +413,9 @@ function createApplicationCard(application) {
    APPROVAL
    ========================================================= */
 
-async function approveApplication(id) {
+async function approveApplication(
+  id
+) {
   if (!id) {
     showError(
       "Application ID is missing."
@@ -448,7 +469,10 @@ async function approveApplication(id) {
       );
     }
 
-    if (!data || data.success !== true) {
+    if (
+      !data ||
+      data.success !== true
+    ) {
       throw new Error(
         "Application approval did not return a successful response."
       );
@@ -456,7 +480,9 @@ async function approveApplication(id) {
 
     /*
      * Preserve the existing approval response contract.
-     * These fields are returned by approve_group_application().
+     *
+     * These fields are returned by
+     * approve_group_application().
      */
     const email =
       data.email;
@@ -485,7 +511,9 @@ async function approveApplication(id) {
 
     /*
      * Preserve the existing review-email workflow.
-     * No direct authentication or member writes are performed here.
+     *
+     * No direct authentication or member writes
+     * are performed here.
      */
     const {
       data: emailData,
@@ -555,7 +583,9 @@ async function approveApplication(id) {
       "Unable to approve application."
     );
   } finally {
-    setActionButtonsDisabled(false);
+    setActionButtonsDisabled(
+      false
+    );
   }
 }
 
@@ -564,7 +594,9 @@ async function approveApplication(id) {
    REJECTION
    ========================================================= */
 
-async function rejectApplication(id) {
+async function rejectApplication(
+  id
+) {
   if (!id) {
     showError(
       "Application ID is missing."
@@ -634,7 +666,9 @@ async function rejectApplication(id) {
      */
     const card =
       applicationsContainer?.querySelector(
-        `[data-application-id="${CSS.escape(String(id))}"]`
+        `[data-application-id="${CSS.escape(
+          String(id)
+        )}"]`
       );
 
     let email = "";
@@ -647,26 +681,36 @@ async function rejectApplication(id) {
           ".application-detail"
         );
 
-      details.forEach((detail) => {
-        const label =
-          detail.querySelector("strong")
-            ?.textContent
-            ?.trim()
-            ?.toLowerCase();
+      details.forEach(
+        (detail) => {
+          const label =
+            detail.querySelector(
+              "strong"
+            )
+              ?.textContent
+              ?.trim()
+              ?.toLowerCase();
 
-        const value =
-          detail.querySelector("span")
-            ?.textContent
-            ?.trim() || "";
+          const value =
+            detail.querySelector(
+              "span"
+            )
+              ?.textContent
+              ?.trim() || "";
 
-        if (label === "email") {
-          email = value;
+          if (
+            label === "email"
+          ) {
+            email = value;
+          }
+
+          if (
+            label === "administrator"
+          ) {
+            adminName = value;
+          }
         }
-
-        if (label === "administrator") {
-          adminName = value;
-        }
-      });
+      );
 
       groupName =
         card.querySelector("h3")
@@ -742,7 +786,9 @@ async function rejectApplication(id) {
       "Unable to reject application."
     );
   } finally {
-    setActionButtonsDisabled(false);
+    setActionButtonsDisabled(
+      false
+    );
   }
 }
 
@@ -751,7 +797,9 @@ async function rejectApplication(id) {
    ACTION BUTTON STATE
    ========================================================= */
 
-function setActionButtonsDisabled(disabled) {
+function setActionButtonsDisabled(
+  disabled
+) {
   if (!applicationsContainer) {
     return;
   }
@@ -761,9 +809,11 @@ function setActionButtonsDisabled(disabled) {
       "[data-action]"
     );
 
-  buttons.forEach((button) => {
-    button.disabled = disabled;
-  });
+  buttons.forEach(
+    (button) => {
+      button.disabled = disabled;
+    }
+  );
 }
 
 
@@ -845,13 +895,21 @@ function setupActions() {
         const id =
           button.dataset.applicationId;
 
-        if (action === "approve") {
-          await approveApplication(id);
+        if (
+          action === "approve"
+        ) {
+          await approveApplication(
+            id
+          );
           return;
         }
 
-        if (action === "reject") {
-          await rejectApplication(id);
+        if (
+          action === "reject"
+        ) {
+          await rejectApplication(
+            id
+          );
         }
       }
     );
@@ -913,4 +971,10 @@ async function initialize() {
   }
 }
 
+
+/* =========================================================
+   START
+   ========================================================= */
+
 initialize();
+
