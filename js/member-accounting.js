@@ -11,7 +11,7 @@
 
    2B APPLICATION CONTRACT:
    Browser:
-     READ  -> get_canonical_member_monthly_status()
+     READ -> get_canonical_member_monthly_status()
 
    Server/service-role:
      REFRESH -> protected canonical accounting refresh path
@@ -43,8 +43,8 @@ let currentGroup = null;
 
 let accountingMonth = "";
 let canonicalRows = [];
-
 let filteredRows = [];
+
 let selectedMemberId = null;
 
 
@@ -94,44 +94,47 @@ const memberAccountingBody =
 const tablePeriod =
   document.getElementById("tablePeriod");
 
-const statementMember =
-  document.getElementById("statementMember");
+const statementSection =
+  document.getElementById("statementSection");
 
-const statementPeriod =
-  document.getElementById("statementPeriod");
+const statementTitle =
+  document.getElementById("statementTitle");
 
-const statementStatus =
-  document.getElementById("statementStatus");
+const statementMeta =
+  document.getElementById("statementMeta");
 
-const statementExpected =
-  document.getElementById("statementExpected");
+const statementDue =
+  document.getElementById("statementDue");
 
 const statementPaid =
   document.getElementById("statementPaid");
 
-const statementBalance =
-  document.getElementById("statementBalance");
+const statementOutstanding =
+  document.getElementById("statementOutstanding");
 
 const statementCredit =
   document.getElementById("statementCredit");
 
-const statementArrears =
-  document.getElementById("statementArrears");
+const statementBody =
+  document.getElementById("statementBody");
 
-const totalExpected =
-  document.getElementById("totalExpected");
+const statMembers =
+  document.getElementById("statMembers");
 
-const totalPaid =
-  document.getElementById("totalPaid");
+const statDue =
+  document.getElementById("statDue");
 
-const totalArrears =
-  document.getElementById("totalArrears");
+const statApplied =
+  document.getElementById("statApplied");
 
-const totalCredit =
-  document.getElementById("totalCredit");
+const statOutstanding =
+  document.getElementById("statOutstanding");
 
-const totalMembers =
-  document.getElementById("totalMembers");
+const statCredit =
+  document.getElementById("statCredit");
+
+const statAttention =
+  document.getElementById("statAttention");
 
 const quickFilters =
   document.querySelectorAll("[data-quick]");
@@ -141,10 +144,17 @@ const quickFilters =
    HELPERS
    ========================================================= */
 
-function formatCurrency(value) {
-  const amount = Number(value || 0);
+function number(value) {
+  const parsed = Number(value);
 
-  return `KSh ${amount.toLocaleString("en-KE", {
+  return Number.isFinite(parsed)
+    ? parsed
+    : 0;
+}
+
+
+function formatCurrency(value) {
+  return `KSh ${number(value).toLocaleString("en-KE", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   })}`;
@@ -156,18 +166,23 @@ function formatMonth(month) {
     return "";
   }
 
-  const [year, monthNumber] = month.split("-");
+  const [year, monthNumber] =
+    month.split("-");
 
-  const date = new Date(
-    Number(year),
-    Number(monthNumber) - 1,
-    1
+  const date =
+    new Date(
+      Number(year),
+      Number(monthNumber) - 1,
+      1
+    );
+
+  return date.toLocaleDateString(
+    "en-KE",
+    {
+      month: "long",
+      year: "numeric"
+    }
   );
-
-  return date.toLocaleDateString("en-KE", {
-    month: "long",
-    year: "numeric"
-  });
 }
 
 
@@ -188,113 +203,98 @@ function normalizeStatus(value) {
 }
 
 
-function getRowMemberId(row) {
-  return (
-    row.member_id ??
-    row.memberId ??
-    row.id ??
-    ""
-  );
-}
-
-
-function getMemberName(row) {
-  return (
-    row.member_name ??
-    row.member_full_name ??
-    row.full_name ??
-    row.name ??
-    "Unnamed member"
-  );
-}
-
-
-function getExpected(row) {
-  return Number(
-    row.expected_amount ??
-    row.due_amount ??
-    row.expected ??
-    0
-  );
-}
-
-
-function getPaid(row) {
-  return Number(
-    row.paid_amount ??
-    row.contributed_amount ??
-    row.amount_paid ??
-    row.paid ??
-    0
-  );
-}
-
-
-function getArrears(row) {
-  return Number(
-    row.arrears_amount ??
-    row.arrears ??
-    0
-  );
-}
-
-
-function getCredit(row) {
-  return Number(
-    row.credit_amount ??
-    row.credit ??
-    0
-  );
-}
-
-
-function getBalance(row) {
-  if (
-    row.balance_amount !== undefined &&
-    row.balance_amount !== null
-  ) {
-    return Number(row.balance_amount);
-  }
-
-  return getExpected(row) - getPaid(row);
-}
-
-
-function getStatus(row) {
-  return (
-    row.status ??
-    row.account_status ??
-    row.payment_status ??
-    ""
-  );
+function getMemberId(row) {
+  return row.member_id ?? "";
 }
 
 
 function getMemberNumber(row) {
-  return (
-    row.member_number ??
-    row.membership_number ??
-    row.member_no ??
-    ""
+  return row.member_number ?? "";
+}
+
+
+function getMemberName(row) {
+  return row.member_name ??
+    "Unnamed member";
+}
+
+
+function getMonthlyDue(row) {
+  return number(row.monthly_due);
+}
+
+
+function getPreviousOutstanding(row) {
+  return number(
+    row.previous_outstanding
   );
 }
 
 
-function getContributionCount(row) {
-  return Number(
-    row.contribution_count ??
-    row.payment_count ??
-    0
+function getPreviousCredit(row) {
+  return number(
+    row.previous_credit
   );
 }
 
 
-function setStatus(message, type = "info") {
+function getCurrentMonthPayment(row) {
+  return number(
+    row.current_month_payment
+  );
+}
+
+
+function getApplied(row) {
+  return number(
+    row.applied_this_month
+  );
+}
+
+
+function getCarryForward(row) {
+  return number(
+    row.carry_forward
+  );
+}
+
+
+function getCurrentOutstanding(row) {
+  return number(
+    row.current_outstanding
+  );
+}
+
+
+function getTotalPaid(row) {
+  return number(
+    row.total_paid_to_date
+  );
+}
+
+
+function getTotalDue(row) {
+  return number(
+    row.total_due_to_date
+  );
+}
+
+
+function getStatus(row) {
+  return row.status ?? "";
+}
+
+
+function setStatus(
+  message,
+  type = "info"
+) {
   if (!statusMessage) {
     return;
   }
 
-  statusMessage.textContent = message;
+  statusMessage.textContent =
+    message;
 
   statusMessage.dataset.status =
     type;
@@ -307,12 +307,9 @@ function showError(error) {
     error
   );
 
-  const message =
-    error?.message ||
-    "Unable to load member accounting.";
-
   setStatus(
-    message,
+    error?.message ||
+      "Unable to load member accounting.",
     "error"
   );
 }
@@ -328,21 +325,30 @@ function setAccountingMonth(month) {
       ).padStart(2, "0")}`;
   }
 
-  accountingMonth = month;
+  accountingMonth =
+    month;
 
   if (accountingMonthInput) {
     accountingMonthInput.value =
       accountingMonth;
   }
 
+  renderPeriod();
+}
+
+
+function renderPeriod() {
+  const period =
+    formatMonth(accountingMonth);
+
   if (tablePeriod) {
     tablePeriod.textContent =
-      formatMonth(accountingMonth);
+      period;
   }
 
-  if (statementPeriod) {
-    statementPeriod.textContent =
-      formatMonth(accountingMonth);
+  if (statementMeta) {
+    statementMeta.textContent =
+      `${period} • Canonical member accounting`;
   }
 }
 
@@ -394,11 +400,12 @@ async function loadContext() {
    =========================================================
    Browser-side accounting is intentionally read-only.
 
-   The protected server-side refresh/rebuild path is NOT
-   called here.
+   IMPORTANT:
+   This function performs ONLY the canonical read.
 
-   The canonical RPC below returns the accounting state
-   already maintained by the protected accounting layer.
+   It does NOT call:
+     refresh_canonical_contribution_accounting()
+
    ========================================================= */
 
 async function loadCanonicalRows() {
@@ -425,7 +432,7 @@ async function loadCanonicalRows() {
 
 
 /* =========================================================
-   FILTERS
+   MEMBER FILTER
    ========================================================= */
 
 function populateMemberFilter() {
@@ -436,40 +443,78 @@ function populateMemberFilter() {
   const previousValue =
     memberFilter.value;
 
-  const members = [
-    ...canonicalRows
-  ].sort((a, b) =>
-    getMemberName(a).localeCompare(
-      getMemberName(b)
-    )
-  );
+  const members =
+    [...canonicalRows].sort(
+      (a, b) =>
+        getMemberName(a).localeCompare(
+          getMemberName(b)
+        )
+    );
 
   memberFilter.innerHTML = `
     <option value="">All members</option>
-    ${members
-      .map((row) => {
-        const id =
-          getRowMemberId(row);
-
-        return `
-          <option value="${escapeHtml(id)}">
-            ${escapeHtml(getMemberName(row))}
-          </option>
-        `;
-      })
-      .join("")}
+    ${members.map(row => `
+      <option value="${escapeHtml(
+        getMemberId(row)
+      )}">
+        ${escapeHtml(
+          getMemberName(row)
+        )}
+      </option>
+    `).join("")}
   `;
 
   if (
     previousValue &&
     members.some(
       row =>
-        String(getRowMemberId(row)) ===
+        String(getMemberId(row)) ===
         String(previousValue)
     )
   ) {
     memberFilter.value =
       previousValue;
+  }
+}
+
+
+/* =========================================================
+   FILTERING
+   ========================================================= */
+
+function matchesQuickFilter(
+  row,
+  filter
+) {
+  const status =
+    normalizeStatus(
+      getStatus(row)
+    );
+
+  switch (filter) {
+    case "all":
+      return true;
+
+    case "attention":
+      return (
+        getCurrentOutstanding(row) > 0 ||
+        getPreviousOutstanding(row) > 0
+      );
+
+    case "arrears":
+      return (
+        getPreviousOutstanding(row) > 0
+      );
+
+    case "credit":
+      return (
+        getPreviousCredit(row) > 0 ||
+        getCarryForward(row) > 0
+      );
+
+    default:
+      return status ===
+        normalizeStatus(filter);
   }
 }
 
@@ -489,17 +534,17 @@ function applyFilters() {
   filteredRows =
     canonicalRows.filter(row => {
       const memberId =
-        String(getRowMemberId(row));
+        String(getMemberId(row));
 
       const name =
-        getMemberName(row)
+        String(getMemberName(row))
           .toLowerCase();
 
-      const number =
+      const memberNumber =
         String(getMemberNumber(row))
           .toLowerCase();
 
-      const rowStatus =
+      const status =
         normalizeStatus(
           getStatus(row)
         );
@@ -514,8 +559,10 @@ function applyFilters() {
 
       if (
         selectedStatus &&
-        rowStatus !==
-          normalizeStatus(selectedStatus)
+        status !==
+          normalizeStatus(
+            selectedStatus
+          )
       ) {
         return false;
       }
@@ -523,7 +570,7 @@ function applyFilters() {
       if (
         search &&
         !name.includes(search) &&
-        !number.includes(search)
+        !memberNumber.includes(search)
       ) {
         return false;
       }
@@ -549,8 +596,8 @@ function renderTable() {
     memberAccountingBody.innerHTML = `
       <tr>
         <td
-          colspan="9"
-          class="text-center"
+          colspan="11"
+          class="ma-empty"
         >
           No member accounting records
           found for ${escapeHtml(
@@ -564,97 +611,117 @@ function renderTable() {
   }
 
   memberAccountingBody.innerHTML =
-    filteredRows
-      .map(row => {
-        const memberId =
-          getRowMemberId(row);
+    filteredRows.map(row => {
+      const memberId =
+        getMemberId(row);
 
-        const memberName =
-          getMemberName(row);
+      const status =
+        getStatus(row);
 
-        const memberNumber =
-          getMemberNumber(row);
+      const statusClass =
+        normalizeStatus(status)
+          .replace(/\s+/g, "-");
 
-        const expected =
-          getExpected(row);
-
-        const paid =
-          getPaid(row);
-
-        const balance =
-          getBalance(row);
-
-        const arrears =
-          getArrears(row);
-
-        const credit =
-          getCredit(row);
-
-        const status =
-          getStatus(row);
-
-        const contributionCount =
-          getContributionCount(row);
-
-        const statusClass =
-          normalizeStatus(status)
-            .replace(/\s+/g, "-");
-
-        return `
-          <tr
-            data-member-id="${escapeHtml(memberId)}"
-          >
-            <td>
-              ${escapeHtml(memberNumber)}
-            </td>
-
-            <td>
-              <button
-                type="button"
-                class="member-statement-link"
-                data-member-id="${escapeHtml(memberId)}"
-              >
-                ${escapeHtml(memberName)}
-              </button>
-            </td>
-
-            <td>
-              ${formatCurrency(expected)}
-            </td>
-
-            <td>
-              ${formatCurrency(paid)}
-            </td>
-
-            <td>
-              ${formatCurrency(balance)}
-            </td>
-
-            <td>
-              ${formatCurrency(arrears)}
-            </td>
-
-            <td>
-              ${formatCurrency(credit)}
-            </td>
-
-            <td>
-              <span
-                class="status-badge ${escapeHtml(
-                  statusClass
-                )}"
-              >
-                ${escapeHtml(status || "—")}
+      return `
+        <tr
+          data-member-id="${escapeHtml(
+            memberId
+          )}"
+        >
+          <td>
+            <button
+              type="button"
+              class="member-statement-link"
+              data-member-id="${escapeHtml(
+                memberId
+              )}"
+            >
+              <span class="ma-member-name">
+                ${escapeHtml(
+                  getMemberName(row)
+                )}
               </span>
-            </td>
 
-            <td>
-              ${contributionCount}
-            </td>
-          </tr>
-        `;
-      })
-      .join("");
+              <span class="ma-member-number">
+                ${escapeHtml(
+                  getMemberNumber(row)
+                )}
+              </span>
+            </button>
+          </td>
+
+          <td>
+            ${formatCurrency(
+              getMonthlyDue(row)
+            )}
+          </td>
+
+          <td>
+            ${formatCurrency(
+              getPreviousOutstanding(row)
+            )}
+          </td>
+
+          <td>
+            ${formatCurrency(
+              getPreviousCredit(row)
+            )}
+          </td>
+
+          <td>
+            ${formatCurrency(
+              getCurrentMonthPayment(row)
+            )}
+          </td>
+
+          <td>
+            ${formatCurrency(
+              getApplied(row)
+            )}
+          </td>
+
+          <td>
+            ${formatCurrency(
+              getCarryForward(row)
+            )}
+          </td>
+
+          <td>
+            ${formatCurrency(
+              getCurrentOutstanding(row)
+            )}
+          </td>
+
+          <td>
+            ${formatCurrency(
+              getTotalPaid(row)
+            )}
+          </td>
+
+          <td>
+            ${formatCurrency(
+              getTotalDue(row)
+            )}
+          </td>
+
+          <td>
+            <span
+              class="ma-badge ${
+                statusClass
+                  ? `ma-badge-${escapeHtml(
+                      statusClass
+                    )}`
+                  : "ma-badge-neutral"
+              }"
+            >
+              ${escapeHtml(
+                status || "—"
+              )}
+            </span>
+          </td>
+        </tr>
+      `;
+    }).join("");
 
   memberAccountingBody
     .querySelectorAll(
@@ -663,12 +730,11 @@ function renderTable() {
     .forEach(button => {
       button.addEventListener(
         "click",
-        () => {
-          const memberId =
-            button.dataset.memberId;
+        event => {
+          event.stopPropagation();
 
           openMemberStatement(
-            memberId
+            button.dataset.memberId
           );
         }
       );
@@ -684,57 +750,80 @@ function renderSummary() {
   const rows =
     filteredRows;
 
-  const expected =
+  const members =
+    rows.length;
+
+  const due =
     rows.reduce(
       (sum, row) =>
-        sum + getExpected(row),
+        sum + getMonthlyDue(row),
       0
     );
 
-  const paid =
+  const applied =
     rows.reduce(
       (sum, row) =>
-        sum + getPaid(row),
+        sum + getApplied(row),
       0
     );
 
-  const arrears =
+  const outstanding =
     rows.reduce(
       (sum, row) =>
-        sum + getArrears(row),
+        sum +
+        getCurrentOutstanding(row),
       0
     );
 
   const credit =
     rows.reduce(
       (sum, row) =>
-        sum + getCredit(row),
+        sum +
+        getPreviousCredit(row) +
+        Math.max(
+          getCarryForward(row),
+          0
+        ),
       0
     );
 
-  if (totalExpected) {
-    totalExpected.textContent =
-      formatCurrency(expected);
+  const attention =
+    rows.filter(
+      row =>
+        getCurrentOutstanding(row) > 0 ||
+        getPreviousOutstanding(row) > 0
+    ).length;
+
+  if (statMembers) {
+    statMembers.textContent =
+      members.toLocaleString(
+        "en-KE"
+      );
   }
 
-  if (totalPaid) {
-    totalPaid.textContent =
-      formatCurrency(paid);
+  if (statDue) {
+    statDue.textContent =
+      formatCurrency(due);
   }
 
-  if (totalArrears) {
-    totalArrears.textContent =
-      formatCurrency(arrears);
+  if (statApplied) {
+    statApplied.textContent =
+      formatCurrency(applied);
   }
 
-  if (totalCredit) {
-    totalCredit.textContent =
+  if (statOutstanding) {
+    statOutstanding.textContent =
+      formatCurrency(outstanding);
+  }
+
+  if (statCredit) {
+    statCredit.textContent =
       formatCurrency(credit);
   }
 
-  if (totalMembers) {
-    totalMembers.textContent =
-      rows.length.toLocaleString(
+  if (statAttention) {
+    statAttention.textContent =
+      attention.toLocaleString(
         "en-KE"
       );
   }
@@ -752,7 +841,7 @@ function openMemberStatement(
     canonicalRows.find(
       item =>
         String(
-          getRowMemberId(item)
+          getMemberId(item)
         ) ===
         String(memberId)
     );
@@ -764,145 +853,221 @@ function openMemberStatement(
   selectedMemberId =
     memberId;
 
-  if (statementMember) {
-    const number =
-      getMemberNumber(row);
+  const name =
+    getMemberName(row);
 
-    const name =
-      getMemberName(row);
+  const number =
+    getMemberNumber(row);
 
-    statementMember.textContent =
+  if (statementTitle) {
+    statementTitle.textContent =
       number
         ? `${number} — ${name}`
         : name;
   }
 
-  if (statementPeriod) {
-    statementPeriod.textContent =
-      formatMonth(accountingMonth);
+  if (statementMeta) {
+    statementMeta.textContent =
+      `${formatMonth(
+        accountingMonth
+      )} • Canonical member accounting`;
   }
 
-  if (statementStatus) {
-    statementStatus.textContent =
-      getStatus(row) || "—";
-  }
-
-  if (statementExpected) {
-    statementExpected.textContent =
+  if (statementDue) {
+    statementDue.textContent =
       formatCurrency(
-        getExpected(row)
+        getMonthlyDue(row)
       );
   }
 
   if (statementPaid) {
     statementPaid.textContent =
       formatCurrency(
-        getPaid(row)
+        getCurrentMonthPayment(row)
       );
   }
 
-  if (statementBalance) {
-    statementBalance.textContent =
+  if (statementOutstanding) {
+    statementOutstanding.textContent =
       formatCurrency(
-        getBalance(row)
+        getCurrentOutstanding(row)
       );
   }
 
   if (statementCredit) {
     statementCredit.textContent =
       formatCurrency(
-        getCredit(row)
+        getPreviousCredit(row)
       );
   }
 
-  if (statementArrears) {
-    statementArrears.textContent =
-      formatCurrency(
-        getArrears(row)
-      );
+  if (statementBody) {
+    statementBody.innerHTML = `
+      <tr>
+        <td>Previous arrears</td>
+        <td>${formatCurrency(
+          getPreviousOutstanding(row)
+        )}</td>
+      </tr>
+
+      <tr>
+        <td>Previous credit</td>
+        <td>${formatCurrency(
+          getPreviousCredit(row)
+        )}</td>
+      </tr>
+
+      <tr>
+        <td>Current month payment</td>
+        <td>${formatCurrency(
+          getCurrentMonthPayment(row)
+        )}</td>
+      </tr>
+
+      <tr>
+        <td>Applied this month</td>
+        <td>${formatCurrency(
+          getApplied(row)
+        )}</td>
+      </tr>
+
+      <tr>
+        <td>Carry-forward</td>
+        <td>${formatCurrency(
+          getCarryForward(row)
+        )}</td>
+      </tr>
+
+      <tr>
+        <td>Current outstanding</td>
+        <td>${formatCurrency(
+          getCurrentOutstanding(row)
+        )}</td>
+      </tr>
+
+      <tr>
+        <td>Total paid to date</td>
+        <td>${formatCurrency(
+          getTotalPaid(row)
+        )}</td>
+      </tr>
+
+      <tr>
+        <td>Total due to date</td>
+        <td>${formatCurrency(
+          getTotalDue(row)
+        )}</td>
+      </tr>
+
+      <tr>
+        <td>Status</td>
+        <td>${escapeHtml(
+          getStatus(row) || "—"
+        )}</td>
+      </tr>
+    `;
   }
 
-  const statement =
-    document.getElementById(
-      "memberStatement"
+  if (statementSection) {
+    statementSection.classList.add(
+      "visible"
     );
-
-  if (statement) {
-    statement.hidden = false;
   }
 }
 
 
 function closeMemberStatement() {
-  selectedMemberId = null;
+  selectedMemberId =
+    null;
 
-  const statement =
-    document.getElementById(
-      "memberStatement"
+  if (statementSection) {
+    statementSection.classList.remove(
+      "visible"
     );
-
-  if (statement) {
-    statement.hidden = true;
   }
 }
 
 
 /* =========================================================
-   PERIOD RENDER
+   QUICK FILTERS
    ========================================================= */
 
-function renderPeriod() {
-  if (tablePeriod) {
-    tablePeriod.textContent =
-      formatMonth(accountingMonth);
-  }
+function applyQuickFilter(
+  filter
+) {
+  const value =
+    String(filter || "")
+      .trim()
+      .toLowerCase();
 
-  if (statementPeriod) {
-    statementPeriod.textContent =
-      formatMonth(accountingMonth);
-  }
-}
+  quickFilters.forEach(
+    button => {
+      button.classList.toggle(
+        "active",
+        button.dataset.quick ===
+          value
+      );
+    }
+  );
 
+  if (value === "all") {
+    if (memberFilter) {
+      memberFilter.value = "";
+    }
 
-/* =========================================================
-   ACCOUNTING LOAD
-   =========================================================
-   No refresh parameter.
+    if (statusFilter) {
+      statusFilter.value = "";
+    }
 
-   Loading accounting means:
-   1. Read canonical member accounting.
-   2. Populate filters.
-   3. Apply filters.
-   4. Render the existing UI.
-
-   It does NOT invoke a service-role-only refresh RPC.
-   ========================================================= */
-
-async function loadAccounting() {
-  try {
-    setStatus(
-      `Loading ${formatMonth(
-        accountingMonth
-      )} accounting…`
-    );
-
-    await loadCanonicalRows();
-
-    populateMemberFilter();
     applyFilters();
-    renderPeriod();
 
-    setStatus(
-      `${canonicalRows.length} member accounting record${
-        canonicalRows.length === 1
-          ? ""
-          : "s"
-      } loaded.`,
-      "success"
-    );
-  } catch (error) {
-    showError(error);
+    return;
   }
+
+  if (
+    value === "attention" ||
+    value === "arrears" ||
+    value === "credit"
+  ) {
+    filteredRows =
+      canonicalRows.filter(
+        row =>
+          matchesQuickFilter(
+            row,
+            value
+          )
+      );
+
+    renderTable();
+    renderSummary();
+
+    return;
+  }
+
+  if (statusFilter) {
+    const matchingOption =
+      [...statusFilter.options]
+        .find(
+          option =>
+            normalizeStatus(
+              option.value
+            ) === value ||
+            normalizeStatus(
+              option.textContent
+            ) === value
+        );
+
+    if (matchingOption) {
+      statusFilter.value =
+        matchingOption.value;
+
+      applyFilters();
+
+      return;
+    }
+  }
+
+  applyFilters();
 }
 
 
@@ -923,48 +1088,12 @@ function resetFilters() {
     searchMember.value = "";
   }
 
-  applyFilters();
-}
-
-
-/* =========================================================
-   QUICK FILTERS
-   ========================================================= */
-
-function applyQuickFilter(
-  filter
-) {
-  if (!filter) {
-    return;
-  }
-
-  const value =
-    String(filter)
-      .trim()
-      .toLowerCase();
-
-  if (statusFilter) {
-    const options =
-      [
-        ...statusFilter.options
-      ];
-
-    const matchingOption =
-      options.find(
-        option =>
-          normalizeStatus(
-            option.value
-          ) === value ||
-          normalizeStatus(
-            option.textContent
-          ) === value
-      );
-
-    if (matchingOption) {
-      statusFilter.value =
-        matchingOption.value;
-    }
-  }
+  quickFilters.forEach(
+    button =>
+      button.classList.remove(
+        "active"
+      )
+  );
 
   applyFilters();
 }
@@ -978,52 +1107,56 @@ function exportCsv() {
   const headers = [
     "Member Number",
     "Member Name",
-    "Expected",
-    "Paid",
-    "Balance",
-    "Arrears",
-    "Credit",
-    "Status",
-    "Contribution Count"
+    "Monthly Due",
+    "Previous Arrears",
+    "Previous Credit",
+    "Current Payment",
+    "Applied",
+    "Carry-forward",
+    "Outstanding",
+    "Total Paid",
+    "Total Due",
+    "Status"
   ];
 
   const rows =
     filteredRows.map(row => [
       getMemberNumber(row),
       getMemberName(row),
-      getExpected(row),
-      getPaid(row),
-      getBalance(row),
-      getArrears(row),
-      getCredit(row),
-      getStatus(row),
-      getContributionCount(row)
+      getMonthlyDue(row),
+      getPreviousOutstanding(row),
+      getPreviousCredit(row),
+      getCurrentMonthPayment(row),
+      getApplied(row),
+      getCarryForward(row),
+      getCurrentOutstanding(row),
+      getTotalPaid(row),
+      getTotalDue(row),
+      getStatus(row)
     ]);
 
-  const csv = [
-    headers,
-    ...rows
-  ]
-    .map(row =>
-      row
-        .map(value =>
-          `"${String(
-            value ?? ""
-          ).replace(
-            /"/g,
-            '""'
-          )}"`
-        )
-        .join(",")
-    )
-    .join("\r\n");
-
-  const filename =
-    `member-accounting-${accountingMonth}.csv`;
+  const csv =
+    [
+      headers,
+      ...rows
+    ]
+      .map(row =>
+        row
+          .map(value =>
+            `"${String(
+              value ?? ""
+            ).replace(
+              /"/g,
+              '""'
+            )}"`
+          )
+          .join(",")
+      )
+      .join("\r\n");
 
   downloadBlob(
     csv,
-    filename,
+    `member-accounting-${accountingMonth}.csv`,
     "text/csv;charset=utf-8;"
   );
 }
@@ -1037,26 +1170,32 @@ function exportExcel() {
   const headers = [
     "Member Number",
     "Member Name",
-    "Expected",
-    "Paid",
-    "Balance",
-    "Arrears",
-    "Credit",
-    "Status",
-    "Contribution Count"
+    "Monthly Due",
+    "Previous Arrears",
+    "Previous Credit",
+    "Current Payment",
+    "Applied",
+    "Carry-forward",
+    "Outstanding",
+    "Total Paid",
+    "Total Due",
+    "Status"
   ];
 
   const rows =
     filteredRows.map(row => [
       getMemberNumber(row),
       getMemberName(row),
-      getExpected(row),
-      getPaid(row),
-      getBalance(row),
-      getArrears(row),
-      getCredit(row),
-      getStatus(row),
-      getContributionCount(row)
+      getMonthlyDue(row),
+      getPreviousOutstanding(row),
+      getPreviousCredit(row),
+      getCurrentMonthPayment(row),
+      getApplied(row),
+      getCarryForward(row),
+      getCurrentOutstanding(row),
+      getTotalPaid(row),
+      getTotalDue(row),
+      getStatus(row)
     ]);
 
   const html = `
@@ -1069,53 +1208,44 @@ function exportExcel() {
         <table border="1">
           <thead>
             <tr>
-              ${headers
-                .map(
-                  header =>
-                    `<th>${escapeHtml(
-                      header
-                    )}</th>`
-                )
-                .join("")}
+              ${headers.map(
+                header =>
+                  `<th>${escapeHtml(
+                    header
+                  )}</th>`
+              ).join("")}
             </tr>
           </thead>
 
           <tbody>
-            ${rows
-              .map(
-                row => `
-                  <tr>
-                    ${row
-                      .map(
-                        value =>
-                          `<td>${escapeHtml(
-                            value
-                          )}</td>`
-                      )
-                      .join("")}
-                  </tr>
-                `
-              )
-              .join("")}
+            ${rows.map(
+              row => `
+                <tr>
+                  ${row.map(
+                    value =>
+                      `<td>${escapeHtml(
+                        value
+                      )}</td>`
+                  ).join("")}
+                </tr>
+              `
+            ).join("")}
           </tbody>
         </table>
       </body>
     </html>
   `;
 
-  const filename =
-    `member-accounting-${accountingMonth}.xls`;
-
   downloadBlob(
     html,
-    filename,
+    `member-accounting-${accountingMonth}.xls`,
     "application/vnd.ms-excel;charset=utf-8;"
   );
 }
 
 
 /* =========================================================
-   DOWNLOAD HELPER
+   DOWNLOAD
    ========================================================= */
 
 function downloadBlob(
@@ -1135,7 +1265,9 @@ function downloadBlob(
   const anchor =
     document.createElement("a");
 
-  anchor.href = url;
+  anchor.href =
+    url;
+
   anchor.download =
     filename;
 
@@ -1147,7 +1279,9 @@ function downloadBlob(
 
   anchor.remove();
 
-  URL.revokeObjectURL(url);
+  URL.revokeObjectURL(
+    url
+  );
 }
 
 
@@ -1200,12 +1334,12 @@ function setupEvents() {
   }
 
   /*
-   * The Refresh Accounting button remains part of the
-   * existing UI, but it now performs a read-only reload.
+   * Refresh remains a read-only reload.
    *
-   * It does NOT invoke the protected
-   * refresh_canonical_contribution_accounting() RPC.
+   * It does NOT invoke:
+   * refresh_canonical_contribution_accounting()
    */
+
   if (refreshButton) {
     refreshButton.addEventListener(
       "click",
@@ -1266,6 +1400,40 @@ function setupEvents() {
 
 
 /* =========================================================
+   LOAD
+   ========================================================= */
+
+async function loadAccounting() {
+  try {
+    setStatus(
+      `Loading ${formatMonth(
+        accountingMonth
+      )} accounting…`
+    );
+
+    await loadCanonicalRows();
+
+    populateMemberFilter();
+
+    applyFilters();
+
+    renderPeriod();
+
+    setStatus(
+      `${canonicalRows.length} member accounting record${
+        canonicalRows.length === 1
+          ? ""
+          : "s"
+      } loaded.`,
+      "success"
+    );
+  } catch (error) {
+    showError(error);
+  }
+}
+
+
+/* =========================================================
    INIT
    ========================================================= */
 
@@ -1286,7 +1454,6 @@ async function initMemberAccounting() {
     await loadContext();
 
     await loadAccounting();
-
   } catch (error) {
     showError(error);
   }
