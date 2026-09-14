@@ -565,7 +565,7 @@
 
     .ma-statement-table {
       width: 100%;
-      min-width: 650px;
+      min-width: 500px;
       border-collapse: collapse;
     }
 
@@ -927,11 +927,6 @@
 
           <select id="statusFilter">
 
-            <!--
-              RECONCILIATION:
-              Empty value is the canonical "no filter" state
-              used by member-accounting.js.
-            -->
             <option value="">
               All Statuses
             </option>
@@ -950,10 +945,6 @@
 
             <option value="credit">
               Credit / Carry-forward
-            </option>
-
-            <option value="no_payment">
-              No Payment
             </option>
 
           </select>
@@ -1339,7 +1330,7 @@
         <article class="ma-statement-stat">
 
           <span>
-            Total Due
+            Monthly Due
           </span>
 
           <strong id="statementDue">
@@ -1351,7 +1342,7 @@
         <article class="ma-statement-stat">
 
           <span>
-            Total Paid
+            Current Month Payment
           </span>
 
           <strong id="statementPaid">
@@ -1363,7 +1354,7 @@
         <article class="ma-statement-stat">
 
           <span>
-            Outstanding
+            Current Outstanding
           </span>
 
           <strong id="statementOutstanding">
@@ -1375,7 +1366,7 @@
         <article class="ma-statement-stat">
 
           <span>
-            Carry-forward
+            Previous Credit
           </span>
 
           <strong id="statementCredit">
@@ -1395,27 +1386,11 @@
             <tr>
 
               <th>
-                Month
+                Statement Item
               </th>
 
               <th>
-                Due
-              </th>
-
-              <th>
-                Applied
-              </th>
-
-              <th>
-                Outstanding
-              </th>
-
-              <th>
-                Carry-forward
-              </th>
-
-              <th>
-                Status
+                Amount / Status
               </th>
 
             </tr>
@@ -1501,3 +1476,4 @@
 
 </body>
 </html>
+
