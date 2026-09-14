@@ -15,6 +15,19 @@
           ↓
         safe approved-account status
 
+   3. Email-confirmation continuation:
+        authenticated session
+          ↓
+        safe pending onboarding data
+          ↓
+        email ownership check
+          ↓
+        submit_group_application()
+          ↓
+        pending application
+          ↓
+        account review
+
    IMPORTANT
    ---------------------------------------------------------
    - Never query another applicant's application.
@@ -22,6 +35,9 @@
    - Never expose access_code before approval.
    - Never expose approved_member_number before approval.
    - Never create groups or members.
+   - Never store or recover passwords.
+   - Never create subscriptions.
+   - Never perform accounting.
 ========================================================= */
 
 import {
@@ -47,6 +63,9 @@ const HOME_PAGE =
 
 const STATUS_RPC =
   "check_application_status";
+
+const PENDING_KEY =
+  "chama_live_pending_group_onboarding";
 
 
 /* =========================================================
@@ -82,6 +101,18 @@ let statusBox =
   document.getElementById(
     "status"
   );
+
+
+/* =========================================================
+   CONTINUATION LOCK
+========================================================= */
+
+/*
+ * Prevent duplicate submission if Supabase emits
+ * more than one relevant authentication event.
+ */
+let pendingContinuationRunning =
+  false;
 
 
 /* =========================================================
@@ -801,6 +832,590 @@ async function checkRegisteredAccount(
 
 
 /* =========================================================
+   PENDING ONBOARDING
+========================================================= */
+
+function loadPendingOnboarding() {
+
+  try {
+
+    const raw =
+      localStorage.getItem(
+        PENDING_KEY
+      );
+
+    if (!raw) {
+      return null;
+    }
+
+    const data =
+      JSON.parse(
+        raw
+      );
+
+    if (
+      !data ||
+      typeof data !== "object"
+    ) {
+
+      clearPendingOnboarding();
+
+      return null;
+
+    }
+
+    return data;
+
+  }
+
+  catch (error) {
+
+    console.warn(
+      "CHAMA LIVE: Could not restore pending onboarding data.",
+      error
+    );
+
+    clearPendingOnboarding();
+
+    return null;
+
+  }
+
+}
+
+
+function clearPendingOnboarding() {
+
+  localStorage.removeItem(
+    PENDING_KEY
+  );
+
+}
+
+
+/* =========================================================
+   PENDING ACCOUNT OWNERSHIP
+========================================================= */
+
+function validatePendingOwnership(
+  pending,
+  session
+) {
+
+  if (
+    !pending ||
+    typeof pending !== "object"
+  ) {
+
+    throw new Error(
+      "No pending group application was found."
+    );
+
+  }
+
+  if (!session?.user) {
+
+    throw new Error(
+      "Your account is not authenticated."
+    );
+
+  }
+
+  const pendingEmail =
+    normalizeEmail(
+      pending.email
+    );
+
+  const authenticatedEmail =
+    normalizeEmail(
+      session.user.email
+    );
+
+  if (
+    !pendingEmail ||
+    !authenticatedEmail
+  ) {
+
+    throw new Error(
+      "The pending registration could not be matched to your authenticated account."
+    );
+
+  }
+
+  if (
+    pendingEmail !==
+    authenticatedEmail
+  ) {
+
+    throw new Error(
+      "The saved group application does not belong to the authenticated account."
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   PENDING APPLICATION VALUES
+========================================================= */
+
+function buildPendingApplicationValues(
+  pending
+) {
+
+  return {
+
+    groupName:
+      String(
+        pending.groupName ||
+        ""
+      ).trim(),
+
+    category:
+      String(
+        pending.category ||
+        "chama"
+      ).trim(),
+
+    country:
+      String(
+        pending.country ||
+        "Kenya"
+      ).trim(),
+
+    monthlyContribution:
+      Number(
+        pending.monthlyContribution ||
+        0
+      ),
+
+    description:
+      String(
+        pending.description ||
+        ""
+      ).trim(),
+
+    adminName:
+      String(
+        pending.adminName ||
+        ""
+      ).trim(),
+
+    adminPhone:
+      String(
+        pending.adminPhone ||
+        ""
+      ).trim(),
+
+    email:
+      normalizeEmail(
+        pending.email
+      )
+
+  };
+
+}
+
+
+/* =========================================================
+   VALIDATE PENDING APPLICATION
+========================================================= */
+
+function validatePendingApplication(
+  values
+) {
+
+  if (!values.groupName) {
+
+    throw new Error(
+      "The saved group name is missing. Please start registration again."
+    );
+
+  }
+
+  if (
+    values.groupName.length <
+    2
+  ) {
+
+    throw new Error(
+      "The saved group name is invalid. Please start registration again."
+    );
+
+  }
+
+  if (
+    !Number.isFinite(
+      values.monthlyContribution
+    ) ||
+    values.monthlyContribution <
+    0
+  ) {
+
+    throw new Error(
+      "The saved monthly contribution is invalid."
+    );
+
+  }
+
+  if (!values.adminName) {
+
+    throw new Error(
+      "The saved administrator name is missing."
+    );
+
+  }
+
+  if (!values.adminPhone) {
+
+    throw new Error(
+      "The saved administrator phone number is missing."
+    );
+
+  }
+
+  if (
+    !isValidEmail(
+      values.email
+    )
+  ) {
+
+    throw new Error(
+      "The saved registration email is invalid."
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   SUBMIT GROUP APPLICATION
+========================================================= */
+
+/*
+ * Canonical application boundary.
+ *
+ * This is the SAME existing RPC used by signup.js.
+ *
+ * It creates only the pending application.
+ *
+ * It does NOT:
+ *   - create public.groups
+ *   - create public.members
+ *   - create financial_periods
+ *   - initialize subscriptions
+ *   - generate access codes
+ *   - perform accounting
+ */
+
+async function submitGroupApplication(
+  values
+) {
+
+  const {
+    data,
+    error
+  } =
+    await supabase.rpc(
+      "submit_group_application",
+      {
+
+        p_group_name:
+          values.groupName,
+
+        p_category:
+          values.category,
+
+        p_monthly_contribution:
+          values.monthlyContribution,
+
+        p_opening_balance:
+          0,
+
+        p_description:
+          values.description,
+
+        p_admin_name:
+          values.adminName,
+
+        p_admin_phone:
+          values.adminPhone,
+
+        p_country:
+          values.country
+
+      }
+    );
+
+  if (error) {
+    throw error;
+  }
+
+  const result =
+    Array.isArray(data)
+      ? data[0]
+      : data;
+
+  if (
+    !result ||
+    result.success === false
+  ) {
+
+    throw new Error(
+      "The group application was not submitted successfully."
+    );
+
+  }
+
+  return result;
+
+}
+
+
+/* =========================================================
+   COMPLETE CONFIRMED PENDING APPLICATION
+========================================================= */
+
+async function completePendingApplication(
+  session
+) {
+
+  if (
+    pendingContinuationRunning
+  ) {
+
+    return;
+
+  }
+
+  const pending =
+    loadPendingOnboarding();
+
+  if (!pending) {
+
+    return;
+
+  }
+
+  pendingContinuationRunning =
+    true;
+
+  try {
+
+    validatePendingOwnership(
+      pending,
+      session
+    );
+
+    const values =
+      buildPendingApplicationValues(
+        pending
+      );
+
+    validatePendingApplication(
+      values
+    );
+
+    showStatus(
+      "Email confirmed. Submitting your group application..."
+    );
+
+    await submitGroupApplication(
+      values
+    );
+
+    /*
+     * The pending payload is removed ONLY after
+     * the canonical application RPC succeeds.
+     */
+    clearPendingOnboarding();
+
+    showStatus(
+      "Group application submitted successfully. " +
+      "Your application is now awaiting review."
+    );
+
+    /*
+     * Preserve the existing review-page contract.
+     *
+     * Do not add application IDs or other internal
+     * identifiers to the URL.
+     */
+    window.history.replaceState(
+      {},
+      document.title,
+      `${window.location.pathname}?submitted=1`
+    );
+
+    showSubmissionMessage();
+
+    /*
+     * Render the newly submitted authenticated
+     * application through the existing safe lookup.
+     */
+    const email =
+      normalizeEmail(
+        session.user.email
+      );
+
+    const ownApplication =
+      await checkOwnPendingApplication(
+        email
+      );
+
+    if (ownApplication) {
+
+      renderResult(
+        ownApplication,
+        email
+      );
+
+      showStatus(
+        "Application submitted — awaiting review."
+      );
+
+    }
+
+  }
+
+  finally {
+
+    pendingContinuationRunning =
+      false;
+
+  }
+
+}
+
+
+/* =========================================================
+   EMAIL-CONFIRMATION CONTINUATION
+========================================================= */
+
+/*
+ * Supabase redirects the confirmed user to:
+ *
+ *     account-review.html
+ *
+ * The authenticated SIGNED_IN event is therefore handled
+ * HERE, not in signup.js.
+ *
+ * This is intentionally limited to SIGNED_IN.
+ *
+ * INITIAL_SESSION is NOT used for automatic submission,
+ * preventing an ordinary later visit to account-review.html
+ * from unexpectedly submitting stale localStorage data.
+ */
+
+supabase.auth.onAuthStateChange(
+  (
+    event,
+    session
+  ) => {
+
+    if (
+      event !==
+      "SIGNED_IN"
+    ) {
+
+      return;
+
+    }
+
+    if (
+      !session?.user
+    ) {
+
+      return;
+
+    }
+
+    if (
+      pendingContinuationRunning
+    ) {
+
+      return;
+
+    }
+
+    /*
+     * Only proceed when safe pending onboarding data
+     * actually exists.
+     */
+    if (
+      !loadPendingOnboarding()
+    ) {
+
+      return;
+
+    }
+
+    /*
+     * Defer the RPC until the auth transition has
+     * completed and the session is available through
+     * the normal Supabase session API.
+     */
+    setTimeout(
+      async () => {
+
+        try {
+
+          const {
+            data,
+            error
+          } =
+            await supabase.auth.getSession();
+
+          if (error) {
+            throw error;
+          }
+
+          const currentSession =
+            data?.session ||
+            null;
+
+          if (
+            !currentSession?.user
+          ) {
+
+            throw new Error(
+              "Your confirmed account session could not be established. Please refresh and try again."
+            );
+
+          }
+
+          await completePendingApplication(
+            currentSession
+          );
+
+        }
+
+        catch (error) {
+
+          console.error(
+            "CHAMA LIVE: pending signup continuation failed:",
+            error
+          );
+
+          showError(
+            normalizeRpcError(
+              error
+            )
+          );
+
+        }
+
+      },
+      0
+    );
+
+  }
+);
+
+
+/* =========================================================
    MAIN STATUS CHECK
 ========================================================= */
 
@@ -858,8 +1473,7 @@ async function checkApplicationStatus() {
 
     /*
      * First attempt the authenticated application
-     * boundary. This is what makes pending
-     * applications visible after confirmation.
+     * boundary.
      */
     const ownApplication =
       await checkOwnPendingApplication(
@@ -880,7 +1494,6 @@ async function checkApplicationStatus() {
       return;
 
     }
-
 
     /*
      * No authenticated application was available.
@@ -960,6 +1573,31 @@ function normalizeRpcError(error) {
   ) {
 
     return message;
+
+  }
+
+  if (
+    lower.includes(
+      "does not belong to the authenticated account"
+    )
+  ) {
+
+    return (
+      "The saved registration belongs to a different account. " +
+      "Please use the email address originally used for registration."
+    );
+
+  }
+
+  if (
+    lower.includes(
+      "application already exists"
+    )
+  ) {
+
+    return (
+      "A group application already exists for this account."
+    );
 
   }
 
@@ -1171,3 +1809,4 @@ showSubmissionMessage();
 console.log(
   "CHAMA LIVE: account-review.js ready"
 );
+
