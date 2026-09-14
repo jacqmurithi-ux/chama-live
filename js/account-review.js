@@ -58,9 +58,6 @@ console.log(
 const LOGIN_PAGE =
   `${BASE_URL}/login.html`;
 
-const HOME_PAGE =
-  `${BASE_URL}/index.html`;
-
 const STATUS_RPC =
   "check_application_status";
 
@@ -70,36 +67,65 @@ const PENDING_KEY =
 
 /* =========================================================
    ELEMENTS
+
+   IMPORTANT
+   ---------------------------------------------------------
+   These IDs MUST match account-review.html.
 ========================================================= */
 
-const applicationDetails =
+const reviewForm =
   document.getElementById(
-    "applicationDetails"
+    "reviewLookupForm"
   );
 
-let reviewForm =
+const emailInput =
   document.getElementById(
-    "reviewStatusForm"
+    "adminEmail"
   );
 
-let emailInput =
-  document.getElementById(
-    "reviewEmail"
-  );
-
-let checkButton =
+const checkButton =
   document.getElementById(
     "checkStatusButton"
   );
 
-let errorBox =
+const applicationDetails =
+  document.getElementById(
+    "reviewResult"
+  );
+
+const errorBox =
   document.getElementById(
     "error"
   );
 
-let statusBox =
+const statusBox =
   document.getElementById(
     "status"
+  );
+
+const statusBadge =
+  document.getElementById(
+    "statusBadge"
+  );
+
+const groupNameBox =
+  document.getElementById(
+    "groupName"
+  );
+
+const registeredEmailBox =
+  document.getElementById(
+    "registeredEmail"
+  );
+
+const statusMessageBox =
+  document.getElementById(
+    "statusMessage"
+  );
+
+const statusAction =
+  document.getElementById(
+    "statusAction"
   );
 
 
@@ -107,10 +133,6 @@ let statusBox =
    CONTINUATION LOCK
 ========================================================= */
 
-/*
- * Prevent duplicate submission if Supabase emits
- * more than one relevant authentication event.
- */
 let pendingContinuationRunning =
   false;
 
@@ -337,7 +359,7 @@ function statusLabel(status) {
   switch (status) {
 
     case "active":
-      return "Active";
+      return "Approved";
 
     case "rejected":
       return "Rejected";
@@ -397,332 +419,27 @@ function statusDescription(status) {
 
 
 /* =========================================================
-   RENDER
+   STATUS BADGE CLASS
 ========================================================= */
 
-function renderResult(
-  result,
-  email
-) {
+function statusBadgeClass(status) {
 
-  if (!applicationDetails) {
-    return;
-  }
+  switch (status) {
 
-  if (
-    !result ||
-    result.found === false
-  ) {
+    case "active":
+      return "status-approved";
 
-    applicationDetails.innerHTML = `
+    case "rejected":
+      return "status-rejected";
 
-      <div class="cl-review-result cl-review-not-found">
+    case "suspended":
+      return "status-suspended";
 
-        <div class="cl-review-result-icon">
-          ?
-        </div>
-
-        <h3>
-          Application not found
-        </h3>
-
-        <p>
-          We could not find a CHAMA LIVE application
-          registered to this email address.
-        </p>
-
-        <p class="cl-review-muted">
-          Please use the same email address used
-          during group registration.
-        </p>
-
-        <div class="cl-review-result-email">
-          ${escapeHtml(email)}
-        </div>
-
-      </div>
-
-    `;
-
-    return;
+    case "pending":
+    default:
+      return "status-pending";
 
   }
-
-  const status =
-    normalizeStatus(
-      result
-    );
-
-  const groupName =
-    result.group_name ||
-    "Your CHAMA LIVE group";
-
-  const maskedEmail =
-    result.masked_email ||
-    email;
-
-  applicationDetails.innerHTML = `
-
-    <div
-      class="
-        cl-review-result
-        cl-review-result-${escapeHtml(status)}
-      "
-    >
-
-      <div class="cl-review-result-header">
-
-        <div class="cl-review-result-icon">
-
-          ${
-            status === "active"
-              ? "✓"
-              : status === "rejected"
-                ? "!"
-                : status === "suspended"
-                  ? "!"
-                  : "•"
-          }
-
-        </div>
-
-        <div>
-
-          <div class="cl-review-result-label">
-            Application status
-          </div>
-
-          <div class="
-            cl-review-result-status
-            cl-status-${escapeHtml(status)}
-          ">
-            ${escapeHtml(
-              statusLabel(status)
-            )}
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <div class="cl-review-result-group">
-
-        <span>
-          Group
-        </span>
-
-        <strong>
-          ${escapeHtml(groupName)}
-        </strong>
-
-      </div>
-
-
-      <div class="cl-review-result-email-row">
-
-        <span>
-          Registered administrator
-        </span>
-
-        <strong>
-          ${escapeHtml(maskedEmail)}
-        </strong>
-
-      </div>
-
-
-      <div class="cl-review-result-description">
-
-        ${escapeHtml(
-          statusDescription(status)
-        )}
-
-      </div>
-
-
-      ${
-        status === "active"
-
-          ? `
-            <a
-              href="${escapeHtml(LOGIN_PAGE)}"
-              class="btn btn-primary cl-full-btn"
-            >
-              Sign In to Dashboard
-            </a>
-          `
-
-          : status === "pending"
-
-            ? `
-              <div class="cl-review-next-step">
-
-                <strong>
-                  Next step
-                </strong>
-
-                <span>
-                  CHAMA LIVE is reviewing your
-                  group application. You can
-                  return here later to check again.
-                </span>
-
-              </div>
-            `
-
-          : status === "rejected"
-
-            ? `
-              <div class="cl-review-next-step">
-
-                <strong>
-                  Need assistance?
-                </strong>
-
-                <span>
-                  Please contact CHAMA LIVE support
-                  regarding your application.
-                </span>
-
-              </div>
-            `
-
-          : `
-              <div class="cl-review-next-step">
-
-                <strong>
-                  Account restricted
-                </strong>
-
-                <span>
-                  Please contact CHAMA LIVE support
-                  regarding your account.
-                </span>
-
-              </div>
-            `
-      }
-
-    </div>
-
-  `;
-
-}
-
-
-/* =========================================================
-   AUTHENTICATED OWN APPLICATION
-========================================================= */
-
-async function checkOwnPendingApplication(
-  email
-) {
-
-  const {
-    data: sessionData,
-    error: sessionError
-  } =
-    await supabase.auth.getSession();
-
-  if (sessionError) {
-    throw sessionError;
-  }
-
-  const user =
-    sessionData?.session?.user;
-
-  /*
-   * No authenticated user:
-   *
-   * Cannot safely query group_applications because
-   * its SELECT policy is scoped to auth.uid().
-   *
-   * Caller must use the existing status RPC.
-   */
-  if (!user) {
-
-    return null;
-
-  }
-
-  const userEmail =
-    normalizeEmail(
-      user.email
-    );
-
-  /*
-   * Never allow the authenticated user to use
-   * another email to query their application.
-   */
-  if (
-    !userEmail ||
-    userEmail !== email
-  ) {
-
-    throw new Error(
-      "Please use the email address associated with your CHAMA LIVE login."
-    );
-
-  }
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from(
-        "group_applications"
-      )
-      .select(
-        [
-          "group_name",
-          "email",
-          "status",
-          "created_at"
-        ].join(",")
-      )
-      .eq(
-        "auth_user_id",
-        user.id
-      )
-      .maybeSingle();
-
-  if (error) {
-    throw error;
-  }
-
-  if (!data) {
-    return null;
-  }
-
-  /*
-   * Convert the existing application row into
-   * the safe rendering contract.
-   *
-   * No internal identifiers are exposed.
-   */
-  return {
-
-    found:
-      true,
-
-    group_name:
-      data.group_name,
-
-    masked_email:
-      maskEmail(
-        data.email ||
-        email
-      ),
-
-    application_status:
-      data.status,
-
-    onboarding_status:
-      data.status
-
-  };
 
 }
 
@@ -783,6 +500,255 @@ function maskEmail(email) {
     ) +
     domain
   );
+
+}
+
+
+/* =========================================================
+   RENDER RESULT
+
+   Uses the existing DOM contract from account-review.html.
+========================================================= */
+
+function renderResult(
+  result,
+  email
+) {
+
+  if (!applicationDetails) {
+    return;
+  }
+
+  if (
+    !result ||
+    result.found === false
+  ) {
+
+    applicationDetails.hidden =
+      false;
+
+    if (statusBadge) {
+
+      statusBadge.className =
+        "cl-status-badge status-rejected";
+
+      statusBadge.textContent =
+        "Not Found";
+
+    }
+
+    if (groupNameBox) {
+
+      groupNameBox.textContent =
+        "Application not found";
+
+    }
+
+    if (registeredEmailBox) {
+
+      registeredEmailBox.textContent =
+        email;
+
+    }
+
+    if (statusMessageBox) {
+
+      statusMessageBox.textContent =
+        "We could not find a CHAMA LIVE application registered to this email address. Please use the same email address used during group registration.";
+
+    }
+
+    if (statusAction) {
+
+      statusAction.hidden =
+        true;
+
+    }
+
+    return;
+
+  }
+
+  const status =
+    normalizeStatus(
+      result
+    );
+
+  const groupName =
+    result.group_name ||
+    "Your CHAMA LIVE group";
+
+  const maskedEmail =
+    result.masked_email ||
+    maskEmail(
+      email
+    );
+
+  applicationDetails.hidden =
+    false;
+
+  if (statusBadge) {
+
+    statusBadge.className =
+      `cl-status-badge ${statusBadgeClass(status)}`;
+
+    statusBadge.textContent =
+      statusLabel(status);
+
+  }
+
+  if (groupNameBox) {
+
+    groupNameBox.textContent =
+      groupName;
+
+  }
+
+  if (registeredEmailBox) {
+
+    registeredEmailBox.textContent =
+      maskedEmail;
+
+  }
+
+  if (statusMessageBox) {
+
+    statusMessageBox.textContent =
+      statusDescription(
+        status
+      );
+
+  }
+
+  if (statusAction) {
+
+    statusAction.hidden =
+      status !== "active";
+
+  }
+
+}
+
+
+/* =========================================================
+   AUTHENTICATED OWN APPLICATION
+========================================================= */
+
+async function checkOwnPendingApplication(
+  email
+) {
+
+  const {
+    data: sessionData,
+    error: sessionError
+  } =
+    await supabase.auth.getSession();
+
+  if (sessionError) {
+    throw sessionError;
+  }
+
+  const user =
+    sessionData?.session?.user;
+
+  /*
+   * No authenticated user:
+   *
+   * Cannot safely query group_applications through
+   * the authenticated ownership boundary.
+   *
+   * Caller will use the existing status RPC.
+   */
+  if (!user) {
+
+    return null;
+
+  }
+
+  const userEmail =
+    normalizeEmail(
+      user.email
+    );
+
+  /*
+   * Never allow the authenticated user to use
+   * another email to query their application.
+   */
+  if (
+    !userEmail ||
+    userEmail !== email
+  ) {
+
+    throw new Error(
+      "Please use the email address associated with your CHAMA LIVE login."
+    );
+
+  }
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from(
+        "group_applications"
+      )
+      .select(
+        [
+          "group_name",
+          "email",
+          "status",
+          "created_at"
+        ].join(",")
+      )
+      .eq(
+        "auth_user_id",
+        user.id
+      )
+      .order(
+        "created_at",
+        {
+          ascending: false
+        }
+      )
+      .limit(1)
+      .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  /*
+   * Convert the existing application row into
+   * the safe rendering contract.
+   *
+   * No internal identifiers are exposed.
+   */
+  return {
+
+    found:
+      true,
+
+    group_name:
+      data.group_name,
+
+    masked_email:
+      maskEmail(
+        data.email ||
+        email
+      ),
+
+    application_status:
+      data.status,
+
+    onboarding_status:
+      data.status
+
+  };
 
 }
 
@@ -1092,23 +1058,9 @@ function validatePendingApplication(
 
 /* =========================================================
    SUBMIT GROUP APPLICATION
-========================================================= */
 
-/*
- * Canonical application boundary.
- *
- * This is the SAME existing RPC used by signup.js.
- *
- * It creates only the pending application.
- *
- * It does NOT:
- *   - create public.groups
- *   - create public.members
- *   - create financial_periods
- *   - initialize subscriptions
- *   - generate access codes
- *   - perform accounting
- */
+   Canonical existing application boundary.
+========================================================= */
 
 async function submitGroupApplication(
   values
@@ -1227,22 +1179,15 @@ async function completePendingApplication(
     );
 
     /*
-     * The pending payload is removed ONLY after
-     * the canonical application RPC succeeds.
+     * Remove pending data ONLY after the
+     * canonical application RPC succeeds.
      */
     clearPendingOnboarding();
 
     showStatus(
-      "Group application submitted successfully. " +
-      "Your application is now awaiting review."
+      "Group application submitted successfully. Your application is now awaiting review."
     );
 
-    /*
-     * Preserve the existing review-page contract.
-     *
-     * Do not add application IDs or other internal
-     * identifiers to the URL.
-     */
     window.history.replaceState(
       {},
       document.title,
@@ -1252,8 +1197,8 @@ async function completePendingApplication(
     showSubmissionMessage();
 
     /*
-     * Render the newly submitted authenticated
-     * application through the existing safe lookup.
+     * Render the newly submitted application
+     * through the authenticated ownership lookup.
      */
     const email =
       normalizeEmail(
@@ -1294,21 +1239,6 @@ async function completePendingApplication(
    EMAIL-CONFIRMATION CONTINUATION
 ========================================================= */
 
-/*
- * Supabase redirects the confirmed user to:
- *
- *     account-review.html
- *
- * The authenticated SIGNED_IN event is therefore handled
- * HERE, not in signup.js.
- *
- * This is intentionally limited to SIGNED_IN.
- *
- * INITIAL_SESSION is NOT used for automatic submission,
- * preventing an ordinary later visit to account-review.html
- * from unexpectedly submitting stale localStorage data.
- */
-
 supabase.auth.onAuthStateChange(
   (
     event,
@@ -1340,10 +1270,6 @@ supabase.auth.onAuthStateChange(
 
     }
 
-    /*
-     * Only proceed when safe pending onboarding data
-     * actually exists.
-     */
     if (
       !loadPendingOnboarding()
     ) {
@@ -1352,11 +1278,6 @@ supabase.auth.onAuthStateChange(
 
     }
 
-    /*
-     * Defer the RPC until the auth transition has
-     * completed and the session is available through
-     * the normal Supabase session API.
-     */
     setTimeout(
       async () => {
 
@@ -1456,8 +1377,8 @@ async function checkApplicationStatus() {
 
   if (applicationDetails) {
 
-    applicationDetails.innerHTML =
-      "";
+    applicationDetails.hidden =
+      true;
 
   }
 
@@ -1472,7 +1393,7 @@ async function checkApplicationStatus() {
   try {
 
     /*
-     * First attempt the authenticated application
+     * First attempt the authenticated ownership
      * boundary.
      */
     const ownApplication =
@@ -1496,7 +1417,7 @@ async function checkApplicationStatus() {
     }
 
     /*
-     * No authenticated application was available.
+     * No authenticated own application was found.
      *
      * Preserve the existing production RPC for
      * approved/registered administrators.
@@ -1526,8 +1447,8 @@ async function checkApplicationStatus() {
 
     if (applicationDetails) {
 
-      applicationDetails.innerHTML =
-        "";
+      applicationDetails.hidden =
+        true;
 
     }
 
@@ -1659,99 +1580,19 @@ function normalizeRpcError(error) {
 
 
 /* =========================================================
-   DYNAMIC LOOKUP UI
-========================================================= */
-
-function ensureLookupInterface() {
-
-  if (
-    reviewForm &&
-    emailInput &&
-    checkButton
-  ) {
-
-    return;
-
-  }
-
-  if (!applicationDetails) {
-    return;
-  }
-
-  const wrapper =
-    document.createElement(
-      "form"
-    );
-
-  wrapper.id =
-    "reviewStatusForm";
-
-  wrapper.className =
-    "cl-review-form";
-
-  wrapper.innerHTML = `
-
-    <div class="cl-review-field">
-
-      <label for="reviewEmail">
-        Registered administrator email
-      </label>
-
-      <input
-        id="reviewEmail"
-        name="reviewEmail"
-        type="email"
-        autocomplete="email"
-        required
-        placeholder="you@example.com"
-      >
-
-      <span class="cl-review-help">
-        Use the email address associated with
-        your CHAMA LIVE administrator account.
-      </span>
-
-    </div>
-
-    <button
-      id="checkStatusButton"
-      class="cl-review-button"
-      type="submit"
-    >
-      Check Application Status
-    </button>
-
-  `;
-
-  applicationDetails.parentNode.insertBefore(
-    wrapper,
-    applicationDetails
-  );
-
-  reviewForm =
-    wrapper;
-
-  emailInput =
-    wrapper.querySelector(
-      "#reviewEmail"
-    );
-
-  checkButton =
-    wrapper.querySelector(
-      "#checkStatusButton"
-    );
-
-}
-
-
-/* =========================================================
    FORM BINDING
 ========================================================= */
 
 function bindForm() {
 
   if (!reviewForm) {
+
+    console.error(
+      "CHAMA LIVE: account review form #reviewLookupForm was not found."
+    );
+
     return;
+
   }
 
   reviewForm.addEventListener(
@@ -1800,8 +1641,6 @@ function showSubmissionMessage() {
    INITIALIZE
 ========================================================= */
 
-ensureLookupInterface();
-
 bindForm();
 
 showSubmissionMessage();
@@ -1809,4 +1648,3 @@ showSubmissionMessage();
 console.log(
   "CHAMA LIVE: account-review.js ready"
 );
-
