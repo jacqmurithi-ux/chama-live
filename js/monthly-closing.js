@@ -3111,36 +3111,6 @@ export const initMonthlyClosing =
   initPage;
 
 
-/* =========================================================
-   AUTO BOOT
-========================================================= */
-
-if (
-  document.readyState ===
-  "loading"
-) {
-
-  document.addEventListener(
-    "DOMContentLoaded",
-    () => {
-
-      initPage();
-
-    },
-    {
-      once: true
-    }
-  );
-
-}
-
-else {
-
-  initPage();
-
-}
-
-
 console.log(
   "CHAMA LIVE: monthly closing.js ready"
 );
