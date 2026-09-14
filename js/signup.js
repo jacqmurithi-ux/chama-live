@@ -459,6 +459,10 @@ function savePending(
   values
 ) {
 
+  /*
+   * NEVER store the password.
+   */
+
   const safeData = {
 
     groupName:
@@ -499,6 +503,64 @@ function savePending(
 
 
 /* =========================================================
+   LOAD SAFE ONBOARDING DATA
+========================================================= */
+
+function loadPending() {
+
+  try {
+
+    const raw =
+      localStorage.getItem(
+        PENDING_KEY
+      );
+
+
+    if (!raw) {
+      return null;
+    }
+
+
+    const data =
+      JSON.parse(
+        raw
+      );
+
+
+    if (
+      !data ||
+      typeof data !== "object"
+    ) {
+
+      clearPending();
+
+      return null;
+
+    }
+
+
+    return data;
+
+  }
+
+  catch (error) {
+
+    console.warn(
+      "CHAMA LIVE: Could not restore pending onboarding data.",
+      error
+    );
+
+
+    clearPending();
+
+    return null;
+
+  }
+
+}
+
+
+/* =========================================================
    CLEAR PENDING
 ========================================================= */
 
@@ -507,6 +569,277 @@ function clearPending() {
   localStorage.removeItem(
     PENDING_KEY
   );
+
+}
+
+
+/* =========================================================
+   RESTORE PENDING FORM
+========================================================= */
+
+function restorePending(
+  values
+) {
+
+  if (!values) {
+    return;
+  }
+
+
+  const fields = [
+    "groupName",
+    "category",
+    "country",
+    "monthlyContribution",
+    "description",
+    "adminName",
+    "adminPhone",
+    "email"
+  ];
+
+
+  fields.forEach(
+    field => {
+
+      const element =
+        byId(field);
+
+
+      if (
+        element &&
+        values[field] !== undefined
+      ) {
+
+        element.value =
+          values[field];
+
+      }
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   VALIDATE PENDING ACCOUNT OWNERSHIP
+========================================================= */
+
+function validatePendingOwnership(
+  pending,
+  session
+) {
+
+  if (
+    !pending ||
+    typeof pending !== "object"
+  ) {
+
+    throw new Error(
+      "No pending group application was found. Please start the registration again."
+    );
+
+  }
+
+
+  if (!session?.user) {
+
+    throw new Error(
+      "Your account is not authenticated. Please sign in and continue."
+    );
+
+  }
+
+
+  const pendingEmail =
+    String(
+      pending.email ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  const authenticatedEmail =
+    String(
+      session.user.email ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  if (
+    !pendingEmail ||
+    !authenticatedEmail
+  ) {
+
+    throw new Error(
+      "The pending registration could not be matched to your authenticated account."
+    );
+
+  }
+
+
+  if (
+    pendingEmail !==
+    authenticatedEmail
+  ) {
+
+    throw new Error(
+      "The saved group application does not belong to the authenticated account."
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   BUILD PENDING APPLICATION VALUES
+========================================================= */
+
+function pendingApplicationValues(
+  pending
+) {
+
+  return {
+
+    groupName:
+      String(
+        pending.groupName ||
+        ""
+      ).trim(),
+
+
+    category:
+      String(
+        pending.category ||
+        "chama"
+      ).trim(),
+
+
+    country:
+      String(
+        pending.country ||
+        "Kenya"
+      ).trim(),
+
+
+    monthlyContribution:
+      Number(
+        pending.monthlyContribution ||
+        0
+      ),
+
+
+    description:
+      String(
+        pending.description ||
+        ""
+      ).trim(),
+
+
+    adminName:
+      String(
+        pending.adminName ||
+        ""
+      ).trim(),
+
+
+    adminPhone:
+      normalizePhone(
+        pending.adminPhone ||
+        ""
+      ),
+
+
+    email:
+      String(
+        pending.email ||
+        ""
+      )
+        .trim()
+        .toLowerCase()
+
+  };
+
+}
+
+
+/* =========================================================
+   VALIDATE PENDING APPLICATION
+========================================================= */
+
+function validatePendingApplication(
+  values
+) {
+
+  if (!values.groupName) {
+
+    throw new Error(
+      "The saved group name is missing. Please start registration again."
+    );
+
+  }
+
+
+  if (
+    values.groupName.length <
+    2
+  ) {
+
+    throw new Error(
+      "The saved group name is invalid. Please start registration again."
+    );
+
+  }
+
+
+  if (
+    !Number.isFinite(
+      values.monthlyContribution
+    ) ||
+    values.monthlyContribution <
+    0
+  ) {
+
+    throw new Error(
+      "The saved monthly contribution is invalid."
+    );
+
+  }
+
+
+  if (!values.adminName) {
+
+    throw new Error(
+      "The saved administrator name is missing."
+    );
+
+  }
+
+
+  if (!values.adminPhone) {
+
+    throw new Error(
+      "The saved administrator phone number is missing."
+    );
+
+  }
+
+
+  if (
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+      values.email
+    )
+  ) {
+
+    throw new Error(
+      "The saved registration email is invalid."
+    );
+
+  }
 
 }
 
@@ -583,6 +916,34 @@ function friendlyError(
 
     return (
       "This account is already linked to a CHAMA LIVE group."
+    );
+
+  }
+
+
+  if (
+    lower.includes(
+      "does not belong to the authenticated account"
+    )
+  ) {
+
+    return (
+      "The saved registration belongs to a different account. " +
+      "Please use the email address originally used for registration."
+    );
+
+  }
+
+
+  if (
+    lower.includes(
+      "no pending group application"
+    )
+  ) {
+
+    return (
+      "No pending registration was found. " +
+      "Please start the group registration again."
     );
 
   }
@@ -710,6 +1071,86 @@ async function submitGroupApplication(
 
 
 /* =========================================================
+   COMPLETE PENDING APPLICATION
+========================================================= */
+
+async function completePendingApplication(
+  session
+) {
+
+  const pending =
+    loadPending();
+
+
+  if (!pending) {
+
+    throw new Error(
+      "No pending group application was found. " +
+      "Please start the registration again."
+    );
+
+  }
+
+
+  /*
+   * The browser may contain pending onboarding
+   * data from another account. Never submit it
+   * without matching it to the authenticated email.
+   */
+
+  validatePendingOwnership(
+    pending,
+    session
+  );
+
+
+  const values =
+    pendingApplicationValues(
+      pending
+    );
+
+
+  validatePendingApplication(
+    values
+  );
+
+
+  restorePending(
+    values
+  );
+
+
+  showStatus(
+    "Email confirmed. Submitting your group application..."
+  );
+
+
+  await submitGroupApplication(
+    values
+  );
+
+
+  /*
+   * Remove pending data only after the RPC
+   * has successfully returned.
+   */
+
+  clearPending();
+
+
+  showStatus(
+    "Group application submitted successfully."
+  );
+
+
+  window.location.replace(
+    `${REVIEW_PAGE}?submitted=1`
+  );
+
+}
+
+
+/* =========================================================
    FORM SUBMIT
 ========================================================= */
 
@@ -743,6 +1184,7 @@ if (form) {
          *
          * Password is never stored.
          */
+
         savePending(
           values
         );
@@ -832,7 +1274,12 @@ if (form) {
           /*
            * Email confirmation is required before the
            * authenticated application RPC can run.
+           *
+           * The pending onboarding data remains in
+           * localStorage so the confirmation callback
+           * can complete the existing application flow.
            */
+
           if (!session?.user) {
 
             setLoading(
@@ -843,7 +1290,7 @@ if (form) {
             showStatus(
               "Account created successfully. " +
               "Please check your email and confirm your address. " +
-              "After confirmation, sign in to continue."
+              "After confirmation, this page will continue your saved group application."
             );
 
 
@@ -875,6 +1322,7 @@ if (form) {
          * No group/member/access-code data is stored
          * because those records do not exist yet.
          */
+
         clearPending();
 
 
@@ -882,6 +1330,7 @@ if (form) {
          * Preserve the existing review-page navigation
          * without inventing a client-side application ID.
          */
+
         showStatus(
           "Group application submitted successfully."
         );
@@ -921,6 +1370,182 @@ if (form) {
 }
 
 
+/* =========================================================
+   AUTH STATE / EMAIL CONFIRMATION CONTINUATION
+========================================================= */
+
+/*
+ * Supabase establishes the authenticated session after
+ * the user confirms the email through the existing
+ * REVIEW_PAGE callback.
+ *
+ * If safe pending onboarding data exists, complete the
+ * existing group application through the same canonical
+ * RPC boundary.
+ *
+ * This does NOT create a group, member, subscription,
+ * access code, or accounting record.
+ */
+
+supabase.auth.onAuthStateChange(
+  async (
+    event,
+    session
+  ) => {
+
+    if (!session?.user) {
+      return;
+    }
+
+
+    const pending =
+      loadPending();
+
+
+    if (!pending) {
+      return;
+    }
+
+
+    /*
+     * Do not run a second submission when the normal
+     * form flow already submitted the application.
+     */
+
+    if (
+      event !== "SIGNED_IN" &&
+      event !== "INITIAL_SESSION"
+    ) {
+
+      return;
+
+    }
+
+
+    /*
+     * Defer the application RPC so the auth state
+     * transition can complete before the authenticated
+     * request is issued.
+     */
+
+    setTimeout(
+      async () => {
+
+        try {
+
+          /*
+           * Re-read the session because the event
+           * callback may have been triggered before
+           * the session was fully persisted.
+           */
+
+          const {
+            data,
+            error
+          } =
+            await supabase.auth.getSession();
+
+
+          if (error) {
+            throw error;
+          }
+
+
+          const currentSession =
+            data?.session ||
+            null;
+
+
+          if (!currentSession?.user) {
+
+            return;
+
+          }
+
+
+          /*
+           * Verify that the saved onboarding data
+           * belongs to the authenticated account.
+           */
+
+          validatePendingOwnership(
+            pending,
+            currentSession
+          );
+
+
+          /*
+           * If the user is currently on signup.html,
+           * complete the pending application here.
+           *
+           * This is the missing continuation after
+           * email confirmation.
+           */
+
+          if (
+            window.location.pathname.endsWith(
+              "/signup.html"
+            ) ||
+            window.location.pathname ===
+              "/signup.html"
+          ) {
+
+            setLoading(
+              true
+            );
+
+
+            await completePendingApplication(
+              currentSession
+            );
+
+          }
+
+        }
+
+        catch (error) {
+
+          console.error(
+            "CHAMA LIVE: pending signup continuation failed:",
+            error
+          );
+
+
+          showError(
+            friendlyError(
+              error
+            )
+          );
+
+
+          setLoading(
+            false
+          );
+
+        }
+
+      },
+      0
+    );
+
+  }
+);
+
+
+/* =========================================================
+   INITIAL RESTORE
+========================================================= */
+
+restorePending(
+  loadPending()
+);
+
+
+/* =========================================================
+   READY
+========================================================= */
+
 console.log(
   "CHAMA LIVE: signup.js ready"
 );
+
