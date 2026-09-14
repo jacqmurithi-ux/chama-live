@@ -85,7 +85,6 @@ const goalProgressContainer =
     "goalProgressContainer"
   );
 
-
 const accountingMonthSelect =
   document.getElementById(
     "accountingMonth"
@@ -95,7 +94,6 @@ const selectedAccountingMonthLabel =
   document.getElementById(
     "selectedAccountingMonthLabel"
   );
-
 
 const contributionIdempotencyKeyInput =
   document.getElementById(
@@ -120,7 +118,6 @@ let canonicalMemberStatus = [];
 let monthlyContribution = 0;
 
 let initialized = false;
-
 
 let accountingMonth =
   getCurrentMonth();
@@ -3267,5 +3264,6 @@ else {
 
 
 console.log(
-  "CHAMA LIVE: contributions.js ready"
+  "CHAMA LIVE: contributions.js loaded"
 );
+
