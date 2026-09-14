@@ -37,10 +37,9 @@ import { supabase } from "./supabase.js";
 
 import {
   getCurrentUser,
-  getCurrentMember,
-  getCurrentGroup
+  getMyMember,
+  getMyGroup
 } from "./auth.js";
-
 
 console.log("CHAMA LIVE: layout.js loaded");
 
@@ -81,7 +80,6 @@ function getCurrentPage() {
   }
 
   return page.toLowerCase();
-
 }
 
 
@@ -255,18 +253,14 @@ function reconcileDesktopNavigation() {
   const currentPage =
     getCurrentPage();
 
-
   const navigationContainers = [];
-
 
   const topNav =
     document.querySelector(".top-nav");
 
-
   if (topNav) {
     navigationContainers.push(topNav);
   }
-
 
   document
     .querySelectorAll(".sidebar .nav")
@@ -282,7 +276,6 @@ function reconcileDesktopNavigation() {
 
     });
 
-
   if (
     navigationContainers.length === 0
   ) {
@@ -295,7 +288,6 @@ function reconcileDesktopNavigation() {
 
   }
 
-
   navigationContainers.forEach(
     function (nav) {
 
@@ -306,10 +298,8 @@ function reconcileDesktopNavigation() {
           )
         );
 
-
       const linksByPage =
         new Map();
-
 
       existingLinks.forEach(
         function (link) {
@@ -324,7 +314,6 @@ function reconcileDesktopNavigation() {
               .trim()
               .toLowerCase();
 
-
           if (href) {
 
             linksByPage.set(
@@ -336,7 +325,6 @@ function reconcileDesktopNavigation() {
 
         }
       );
-
 
       /*
        * Remove direct navigation links that are not part of
@@ -360,7 +348,6 @@ function reconcileDesktopNavigation() {
               .trim()
               .toLowerCase();
 
-
           const isCanonical =
             APPLICATION_NAVIGATION.some(
               function (item) {
@@ -372,7 +359,6 @@ function reconcileDesktopNavigation() {
               }
             );
 
-
           if (!isCanonical) {
 
             link.remove();
@@ -381,7 +367,6 @@ function reconcileDesktopNavigation() {
 
         }
       );
-
 
       /*
        * Re-read direct links after stale-link removal.
@@ -394,10 +379,8 @@ function reconcileDesktopNavigation() {
           )
         );
 
-
       const currentLinksByPage =
         new Map();
-
 
       currentLinks.forEach(
         function (link) {
@@ -412,7 +395,6 @@ function reconcileDesktopNavigation() {
               .trim()
               .toLowerCase();
 
-
           if (href) {
 
             currentLinksByPage.set(
@@ -424,7 +406,6 @@ function reconcileDesktopNavigation() {
 
         }
       );
-
 
       /*
        * Ensure every canonical destination exists and appears
@@ -438,7 +419,6 @@ function reconcileDesktopNavigation() {
             currentLinksByPage.get(
               item.page
             );
-
 
           if (!link) {
 
@@ -454,20 +434,16 @@ function reconcileDesktopNavigation() {
 
           }
 
-
           link.href =
             item.href;
 
-
           link.textContent =
             item.label;
-
 
           link.classList.toggle(
             "active",
             item.page === currentPage
           );
-
 
           link.setAttribute(
             "aria-current",
@@ -478,7 +454,6 @@ function reconcileDesktopNavigation() {
 
         }
       );
-
 
       /*
        * Put canonical links into the exact application order.
@@ -495,7 +470,6 @@ function reconcileDesktopNavigation() {
               `:scope > a[href="${item.href}"]`
             );
 
-
           if (link) {
 
             nav.appendChild(
@@ -506,7 +480,6 @@ function reconcileDesktopNavigation() {
 
         }
       );
-
 
       /*
        * Remove aria-current="false" from links where it is
@@ -531,7 +504,6 @@ function reconcileDesktopNavigation() {
     }
   );
 
-
   console.log(
     "CHAMA LIVE: desktop navigation reconciled"
   );
@@ -549,14 +521,11 @@ function injectMobileNavigationStyles() {
     return;
   }
 
-
   const style =
     document.createElement("style");
 
-
   style.id =
     "chama-global-mobile-styles";
-
 
   style.textContent = `
 
@@ -576,7 +545,6 @@ function injectMobileNavigationStyles() {
     .chama-mobile-menu {
       display: none;
     }
-
 
     .chama-mobile-menu-backdrop {
       display: none;
@@ -661,6 +629,7 @@ function injectMobileNavigationStyles() {
 
         -webkit-backdrop-filter:
           blur(2px);
+
       }
 
 
@@ -699,6 +668,7 @@ function injectMobileNavigationStyles() {
           calc(100vh - 75px);
 
         overflow-y: auto;
+
       }
 
 
@@ -721,6 +691,7 @@ function injectMobileNavigationStyles() {
 
         background:
           #f8fafc;
+
       }
 
 
@@ -734,6 +705,7 @@ function injectMobileNavigationStyles() {
 
         color:
           #101828;
+
       }
 
 
@@ -747,6 +719,7 @@ function injectMobileNavigationStyles() {
 
         color:
           #667085;
+
       }
 
 
@@ -791,6 +764,7 @@ function injectMobileNavigationStyles() {
 
         background:
           #ffffff;
+
       }
 
 
@@ -801,11 +775,13 @@ function injectMobileNavigationStyles() {
 
 
       .chama-mobile-menu-link:hover {
+
         background:
           #f0fdfa;
 
         color:
           #0f766e;
+
       }
 
 
@@ -819,6 +795,7 @@ function injectMobileNavigationStyles() {
 
         font-weight:
           750;
+
       }
 
 
@@ -850,6 +827,7 @@ function injectMobileNavigationStyles() {
 
         flex-shrink:
           0;
+
       }
 
 
@@ -858,6 +836,7 @@ function injectMobileNavigationStyles() {
 
         background:
           #d1fae5;
+
       }
 
 
@@ -904,6 +883,7 @@ function injectMobileNavigationStyles() {
 
         -webkit-backdrop-filter:
           blur(14px);
+
       }
 
 
@@ -940,12 +920,15 @@ function injectMobileNavigationStyles() {
           background .2s ease,
           color .2s ease,
           transform .2s ease;
+
       }
 
 
       .mobile-nav-item:active {
+
         transform:
           scale(.96);
+
       }
 
 
@@ -956,6 +939,7 @@ function injectMobileNavigationStyles() {
 
         background:
           rgba(15, 118, 110, .09);
+
       }
 
 
@@ -984,6 +968,7 @@ function injectMobileNavigationStyles() {
 
         font-weight:
           700;
+
       }
 
 
@@ -1000,6 +985,7 @@ function injectMobileNavigationStyles() {
 
         white-space:
           nowrap;
+
       }
 
 
@@ -1033,20 +1019,25 @@ function injectMobileNavigationStyles() {
 
         font-size:
           25px;
+
       }
 
 
       .mobile-nav-main
       .mobile-nav-label {
+
         color:
           #0f766e;
+
       }
 
 
       .mobile-nav-main.active
       .mobile-nav-icon {
+
         background:
           #115e59;
+
       }
 
 
@@ -1055,23 +1046,29 @@ function injectMobileNavigationStyles() {
       --------------------------------------------------- */
 
       .sidebar {
+
         display:
           none !important;
+
       }
 
 
       .sidebar-overlay {
+
         display:
           none !important;
+
       }
 
 
       .layout {
+
         display:
           block !important;
 
         width:
           100% !important;
+
       }
 
 
@@ -1088,6 +1085,7 @@ function injectMobileNavigationStyles() {
 
         padding:
           16px 10px 96px 10px !important;
+
       }
 
 
@@ -1104,24 +1102,31 @@ function injectMobileNavigationStyles() {
 
         -webkit-overflow-scrolling:
           touch;
+
       }
 
 
       .grid-2 {
+
         grid-template-columns:
           1fr !important;
+
       }
 
 
       .grid-3 {
+
         grid-template-columns:
           repeat(2, minmax(0, 1fr));
+
       }
 
 
       .card {
+
         max-width:
           100%;
+
       }
 
     }
@@ -1130,8 +1135,10 @@ function injectMobileNavigationStyles() {
     @media (max-width: 390px) {
 
       .mobile-bottom-nav {
+
         height:
           68px;
+
       }
 
 
@@ -1145,12 +1152,15 @@ function injectMobileNavigationStyles() {
 
         font-size:
           19px;
+
       }
 
 
       .mobile-nav-label {
+
         font-size:
           8px;
+
       }
 
 
@@ -1165,21 +1175,22 @@ function injectMobileNavigationStyles() {
 
         font-size:
           22px;
+
       }
 
 
       .grid-3 {
+
         grid-template-columns:
           1fr;
+
       }
 
     }
 
   `;
 
-
   document.head.appendChild(style);
-
 
   console.log(
     "CHAMA LIVE: mobile navigation styles ready"
@@ -1231,7 +1242,6 @@ function setupMobileMenu() {
 
     }
 
-
     menuButton =
       document.createElement("button");
 
@@ -1273,7 +1283,6 @@ function setupMobileMenu() {
   menuButton.id =
     menuButton.id ||
     "mobileMenuButton";
-
 
   menuButton.setAttribute(
     "aria-controls",
@@ -1355,9 +1364,9 @@ function setupMobileMenu() {
   menu.appendChild(header);
 
 
-/* =========================================================
-   MENU ITEMS
-========================================================= */
+  /* =====================================================
+     MENU ITEMS
+  ===================================================== */
 
   const menuItems = [
 
@@ -1417,12 +1426,14 @@ function setupMobileMenu() {
       label: "Group Management"
     },
 
-    /* -----------------------------------------------------
-       ASSETS
-
-       Assets is intentionally available through the full
-       mobile menu but NOT the five-item bottom navigation.
-    ----------------------------------------------------- */
+    /*
+     * -----------------------------------------------------
+     * ASSETS
+     *
+     * Assets is intentionally available through the full
+     * mobile menu but NOT the five-item bottom navigation.
+     * -----------------------------------------------------
+     */
 
     {
       href: "assets.html",
@@ -1431,12 +1442,14 @@ function setupMobileMenu() {
       label: "Assets"
     },
 
-    /* -----------------------------------------------------
-       PLANS & ACTIVITIES
-
-       This page owns its own initialization and therefore
-       is intentionally NOT included in PAGE_SCRIPTS.
-    ----------------------------------------------------- */
+    /*
+     * -----------------------------------------------------
+     * PLANS & ACTIVITIES
+     *
+     * This page owns its own initialization and therefore
+     * is intentionally NOT included in PAGE_SCRIPTS.
+     * -----------------------------------------------------
+     */
 
     {
       href: "plans-activities.html",
@@ -1445,12 +1458,14 @@ function setupMobileMenu() {
       label: "Plans & Activities"
     },
 
-    /* -----------------------------------------------------
-       SUPPORT & WELFARE
-
-       This page owns its own initialization and therefore
-       is intentionally NOT included in PAGE_SCRIPTS.
-    ----------------------------------------------------- */
+    /*
+     * -----------------------------------------------------
+     * SUPPORT & WELFARE
+     *
+     * This page owns its own initialization and therefore
+     * is intentionally NOT included in PAGE_SCRIPTS.
+     * -----------------------------------------------------
+     */
 
     {
       href: "support-welfare.html",
@@ -1459,12 +1474,14 @@ function setupMobileMenu() {
       label: "Support & Welfare"
     },
 
-    /* -----------------------------------------------------
-       MILESTONES
-
-       This page owns its own initialization and therefore
-       is intentionally NOT included in PAGE_SCRIPTS.
-    ----------------------------------------------------- */
+    /*
+     * -----------------------------------------------------
+     * MILESTONES
+     *
+     * This page owns its own initialization and therefore
+     * is intentionally NOT included in PAGE_SCRIPTS.
+     * -----------------------------------------------------
+     */
 
     {
       href: "milestones.html",
@@ -1473,12 +1490,14 @@ function setupMobileMenu() {
       label: "Milestones"
     },
 
-    /* -----------------------------------------------------
-       DATA MIGRATION
-
-       Data Migration owns its own page boot and is therefore
-       intentionally NOT included in PAGE_SCRIPTS.
-    ----------------------------------------------------- */
+    /*
+     * -----------------------------------------------------
+     * DATA MIGRATION
+     *
+     * Data Migration owns its own page boot and is therefore
+     * intentionally NOT included in PAGE_SCRIPTS.
+     * -----------------------------------------------------
+     */
 
     {
       href: "data-migration.html",
@@ -1702,17 +1721,17 @@ function setupMobileNavigation() {
       ".mobile-bottom-nav"
     )
   ) {
+
     return;
+
   }
 
 
   const nav =
     document.createElement("nav");
 
-
   nav.className =
     "mobile-bottom-nav";
-
 
   nav.setAttribute(
     "aria-label",
@@ -1731,14 +1750,11 @@ function setupMobileNavigation() {
     const link =
       document.createElement("a");
 
-
     link.href =
       href;
 
-
     link.className =
       "mobile-nav-item";
-
 
     link.dataset.page =
       page;
@@ -1756,16 +1772,13 @@ function setupMobileNavigation() {
     const iconElement =
       document.createElement("span");
 
-
     iconElement.className =
       "mobile-nav-icon";
-
 
     iconElement.setAttribute(
       "aria-hidden",
       "true"
     );
-
 
     iconElement.textContent =
       icon;
@@ -1774,10 +1787,8 @@ function setupMobileNavigation() {
     const labelElement =
       document.createElement("span");
 
-
     labelElement.className =
       "mobile-nav-label";
-
 
     labelElement.textContent =
       label;
@@ -1787,11 +1798,9 @@ function setupMobileNavigation() {
       iconElement
     );
 
-
     link.appendChild(
       labelElement
     );
-
 
     nav.appendChild(
       link
@@ -1903,7 +1912,6 @@ function setupLogout() {
   const button =
     byId("logout");
 
-
   if (!button) {
     return;
   }
@@ -1913,7 +1921,9 @@ function setupLogout() {
     button.dataset.layoutLogoutReady ===
     "true"
   ) {
+
     return;
+
   }
 
 
@@ -1928,10 +1938,8 @@ function setupLogout() {
       const originalText =
         button.textContent;
 
-
       button.disabled =
         true;
-
 
       button.textContent =
         "Signing out...";
@@ -1943,7 +1951,6 @@ function setupLogout() {
           error
         } =
           await supabase.auth.signOut();
-
 
         if (error) {
           throw error;
@@ -1961,10 +1968,8 @@ function setupLogout() {
           error
         );
 
-
         button.disabled =
           false;
-
 
         button.textContent =
           originalText ||
@@ -1995,8 +2000,7 @@ async function loadLayoutData() {
 
 
   currentMember =
-    await getCurrentMember();
-
+    await getMyMember();
 
   if (!currentMember) {
 
@@ -2017,8 +2021,7 @@ async function loadLayoutData() {
 
 
   currentGroup =
-    await getCurrentGroup();
-
+    await getMyGroup();
 
   if (!currentGroup) {
 
@@ -2033,7 +2036,6 @@ async function loadLayoutData() {
     currentMember
   );
 
-
   displayGroup(
     currentGroup
   );
@@ -2043,7 +2045,6 @@ async function loadLayoutData() {
     "CHAMA LIVE: member loaded",
     currentMember
   );
-
 
   console.log(
     "CHAMA LIVE: group loaded",
@@ -2155,7 +2156,6 @@ async function loadCurrentPageScript() {
     const pageModule =
       await import(script);
 
-
     let initializer =
       null;
 
@@ -2170,6 +2170,7 @@ async function loadCurrentPageScript() {
 
     }
 
+
     else if (
       page === "dashboard.html" &&
       typeof pageModule.initDashboard ===
@@ -2180,6 +2181,7 @@ async function loadCurrentPageScript() {
         pageModule.initDashboard;
 
     }
+
 
     else if (
       page === "members.html" &&
@@ -2192,6 +2194,7 @@ async function loadCurrentPageScript() {
 
     }
 
+
     else if (
       page === "contributions.html" &&
       typeof pageModule.initContributions ===
@@ -2202,6 +2205,7 @@ async function loadCurrentPageScript() {
         pageModule.initContributions;
 
     }
+
 
     else if (
       page === "expenses.html" &&
@@ -2214,6 +2218,7 @@ async function loadCurrentPageScript() {
 
     }
 
+
     else if (
       page === "meetings.html" &&
       typeof pageModule.initMeetings ===
@@ -2224,6 +2229,7 @@ async function loadCurrentPageScript() {
         pageModule.initMeetings;
 
     }
+
 
     else if (
       page === "reports.html" &&
@@ -2236,6 +2242,7 @@ async function loadCurrentPageScript() {
 
     }
 
+
     else if (
       page === "monthly-closing.html" &&
       typeof pageModule.initMonthlyClosing ===
@@ -2247,6 +2254,7 @@ async function loadCurrentPageScript() {
 
     }
 
+
     else if (
       page === "group-management.html" &&
       typeof pageModule.initGroupManagement ===
@@ -2257,6 +2265,7 @@ async function loadCurrentPageScript() {
         pageModule.initGroupManagement;
 
     }
+
 
     else if (
       typeof pageModule.init ===
@@ -2273,10 +2282,8 @@ async function loadCurrentPageScript() {
 
       await initializer();
 
-
       pageScriptLoaded =
         true;
-
 
       console.log(
         "CHAMA LIVE: page initialized:",
@@ -2284,13 +2291,13 @@ async function loadCurrentPageScript() {
       );
 
     }
+
     else {
 
       console.warn(
         "CHAMA LIVE: no initializer exported by:",
         page
       );
-
 
       pageScriptLoaded =
         true;
@@ -2302,7 +2309,6 @@ async function loadCurrentPageScript() {
 
     pageScriptLoaded =
       false;
-
 
     console.error(
       "CHAMA LIVE: page script failed:",
@@ -2318,7 +2324,6 @@ async function loadCurrentPageScript() {
 
       errorBox.hidden =
         false;
-
 
       errorBox.textContent =
         error?.message ||
@@ -2490,7 +2495,6 @@ export async function boot() {
 
       errorBox.hidden =
         false;
-
 
       errorBox.textContent =
         error?.message ||
