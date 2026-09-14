@@ -67,6 +67,18 @@
    NOT:
        closed_by = currentMember.id
 
+   MONTH CLOSING CONTRACT
+   ---------------------------------------------------------
+   Closing mutation:
+       close_financial_month(group_id, month)
+
+   Reopening mutation:
+       reopen_financial_month(group_id, month)
+
+   The application does NOT directly mutate:
+       financial_periods
+       monthly_closings
+
    Required exports:
        initPage()
        initMonthlyClosing
@@ -103,6 +115,9 @@ const calculateButton =
 
 const closeButton =
   document.getElementById("closeMonth");
+
+const reopenButton =
+  document.getElementById("reopenMonth");
 
 const notesInput =
   document.getElementById("closingNotes");
@@ -185,6 +200,17 @@ let currentClosing = null;
 let calculatedData = null;
 
 let canonicalStatus = [];
+
+/*
+  Authoritative financial-period state.
+
+  This is deliberately separate from currentClosing.
+
+  monthly_closings is retained as historical closing metadata,
+  but the financial-period status determines whether the
+  selected month is currently open or closed.
+*/
+let periodStatus = "open";
 
 let initialized = false;
 
@@ -404,19 +430,6 @@ function renderSelectedMonth() {
 
 /* =========================================================
    LOAD OTHER SAVINGS
-   ---------------------------------------------------------
-   Other savings are intentionally separate from the
-   canonical monthly contribution accounting.
-
-   This reads contribution transactions recorded during
-   the selected calendar month where:
-
-       contribution_type = "other"
-
-   Example:
-       September 2026 Christmas saving = KES 200
-
-   It does NOT modify the canonical RPC values.
 ========================================================= */
 
 async function loadOtherSavings(month) {
@@ -604,6 +617,12 @@ function renderOptionalAccountingFields(
 
 /* =========================================================
    LOAD EXISTING CLOSING
+   ---------------------------------------------------------
+   This is READ-ONLY historical metadata.
+
+   It is NOT used as the authoritative open/closed state,
+   because reopen_financial_month() deliberately leaves the
+   monthly_closings record in place.
 ========================================================= */
 
 async function loadExistingClosing(
@@ -646,6 +665,47 @@ async function loadExistingClosing(
 
   currentClosing =
     data || null;
+
+}
+
+
+/* =========================================================
+   LOAD AUTHORITATIVE FINANCIAL PERIOD STATE
+========================================================= */
+
+async function loadFinancialPeriodState(
+  month
+) {
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("financial_periods")
+      .select(`
+        status
+      `)
+      .eq(
+        "group_id",
+        groupId
+      )
+      .eq(
+        "month",
+        month
+      )
+      .maybeSingle();
+
+
+  if (error) {
+    throw error;
+  }
+
+
+  periodStatus =
+    data?.status === "closed"
+      ? "closed"
+      : "open";
 
 }
 
@@ -1196,15 +1256,6 @@ async function loadCanonicalAccounting(
      CANONICAL 2B VALUES
   --------------------------------------------------------- */
 
-  /*
-    ACTUAL CASH RECEIVED
-
-    This is the amount returned by the canonical
-    accounting summary.
-
-    It is used for CASH CLOSING.
-  */
-
   const totalCollected =
     Number(
       summary
@@ -1212,10 +1263,6 @@ async function loadCanonicalAccounting(
       0
     );
 
-
-  /*
-    EXPECTED MONTHLY OBLIGATIONS
-  */
 
   const expected =
     Number(
@@ -1225,12 +1272,6 @@ async function loadCanonicalAccounting(
     );
 
 
-  /*
-    APPLICATION AGAINST CURRENT MONTH
-
-    This can come from earlier payments/carry-forward.
-  */
-
   const applied =
     Number(
       summary
@@ -1239,10 +1280,6 @@ async function loadCanonicalAccounting(
     );
 
 
-  /*
-    CARRY-FORWARD CREDIT
-  */
-
   const carryForward =
     Number(
       summary
@@ -1250,10 +1287,6 @@ async function loadCanonicalAccounting(
       0
     );
 
-
-  /*
-    CURRENT OUTSTANDING
-  */
 
   const outstanding =
     Number(
@@ -1265,25 +1298,6 @@ async function loadCanonicalAccounting(
 
   /* -------------------------------------------------------
      CASH CLOSING
-  ---------------------------------------------------------
-
-     IMPORTANT:
-
-       opening
-       + actual cash received
-       - approved expenses
-
-     NOT:
-
-       opening
-       + applied amount
-       - expenses
-
-     Application is an obligation-accounting concept,
-     not a cash-flow concept.
-
-     Other savings are displayed separately and are NOT
-     silently added to the canonical cash value here.
   --------------------------------------------------------- */
 
   const closingBalance =
@@ -1405,10 +1419,6 @@ function renderCalculation() {
     );
 
 
-  /*
-    ACTUAL CASH RECEIVED
-  */
-
   const collected =
     Number(
       calculatedData
@@ -1417,10 +1427,6 @@ function renderCalculation() {
     );
 
 
-  /*
-    AMOUNT APPLIED TO CURRENT MONTH
-  */
-
   const applied =
     Number(
       calculatedData
@@ -1428,10 +1434,6 @@ function renderCalculation() {
       0
     );
 
-
-  /*
-    OTHER SAVINGS
-  */
 
   const otherSavings =
     Number(
@@ -1481,10 +1483,6 @@ function renderCalculation() {
     );
 
 
-  /* -------------------------------------------------------
-     SUMMARY CARDS
-  --------------------------------------------------------- */
-
   if (expectedEl) {
 
     expectedEl.textContent =
@@ -1492,11 +1490,6 @@ function renderCalculation() {
 
   }
 
-
-  /*
-    Keep the legacy Total Collected field synchronized
-    with the canonical actual-cash value.
-  */
 
   if (collectedEl) {
 
@@ -1570,19 +1563,6 @@ function renderCalculation() {
   }
 
 
-  /* -------------------------------------------------------
-     CONTRIBUTION APPLICATION PROGRESS
-  ---------------------------------------------------------
-
-     Percentage is:
-
-         applied / expected
-
-     NOT:
-
-         cash received / expected
-  --------------------------------------------------------- */
-
   let percentage =
     0;
 
@@ -1635,10 +1615,6 @@ function renderCalculation() {
   }
 
 
-  /* -------------------------------------------------------
-     DIFFERENCE
-  --------------------------------------------------------- */
-
   if (collectionDifference) {
 
     const difference =
@@ -1685,10 +1661,6 @@ function renderCalculation() {
   }
 
 
-  /* -------------------------------------------------------
-     BALANCE CLASS
-  --------------------------------------------------------- */
-
   if (balanceEl) {
 
     balanceEl.classList.remove(
@@ -1725,18 +1697,10 @@ function renderCalculation() {
   }
 
 
-  /* -------------------------------------------------------
-     OPTIONAL 2B FIELDS
-  --------------------------------------------------------- */
-
   renderOptionalAccountingFields(
     calculatedData
   );
 
-
-  /*
-    Optional explanatory labels.
-  */
 
   const progressDescription =
     document.getElementById(
@@ -1779,10 +1743,6 @@ function renderCalculation() {
 
   }
 
-
-  /*
-    Optional current accounting values.
-  */
 
   const activeMembersEl =
     document.getElementById(
@@ -1852,6 +1812,10 @@ function renderCalculation() {
 
 /* =========================================================
    RENDER CLOSING STATUS
+   ---------------------------------------------------------
+   periodStatus is authoritative.
+
+   currentClosing is historical metadata only.
 ========================================================= */
 
 function renderClosingStatus() {
@@ -1861,12 +1825,18 @@ function renderClosingStatus() {
   }
 
 
-  if (currentClosing) {
+  const isClosed =
+    periodStatus === "closed";
+
+
+  if (isClosed) {
 
     closingStatusEl.textContent =
-      `Closed on ${formatDate(
-        currentClosing.closed_at
-      )}`;
+      currentClosing?.closed_at
+        ? `Closed on ${formatDate(
+            currentClosing.closed_at
+          )}`
+        : "Closed";
 
 
     closingStatusEl.className =
@@ -1884,51 +1854,69 @@ function renderClosingStatus() {
     }
 
 
+    if (reopenButton) {
+
+      reopenButton.hidden =
+        false;
+
+      reopenButton.disabled =
+        false;
+
+      reopenButton.textContent =
+        "Reopen Month";
+
+    }
+
+
     if (notesInput) {
 
       notesInput.value =
-        currentClosing.notes ||
+        currentClosing?.notes ||
         "";
 
     }
 
 
-    if (expectedEl) {
+    if (currentClosing) {
 
-      expectedEl.textContent =
-        money(
-          currentClosing.total_expected
-        );
+      if (expectedEl) {
 
-    }
+        expectedEl.textContent =
+          money(
+            currentClosing.total_expected
+          );
 
-
-    if (collectedEl) {
-
-      collectedEl.textContent =
-        money(
-          currentClosing.total_collected
-        );
-
-    }
+      }
 
 
-    if (expensesEl) {
+      if (collectedEl) {
 
-      expensesEl.textContent =
-        money(
-          currentClosing.total_expenses
-        );
+        collectedEl.textContent =
+          money(
+            currentClosing.total_collected
+          );
 
-    }
+      }
 
 
-    if (balanceEl) {
+      if (expensesEl) {
 
-      balanceEl.textContent =
-        money(
-          currentClosing.closing_balance
-        );
+        expensesEl.textContent =
+          money(
+            currentClosing.total_expenses
+          );
+
+      }
+
+
+      if (balanceEl) {
+
+        balanceEl.textContent =
+          money(
+            currentClosing.closing_balance
+          );
+
+      }
 
     }
 
@@ -1966,6 +1954,20 @@ function renderClosingStatus() {
 
       closeButton.textContent =
         "Close Month";
+
+    }
+
+
+    if (reopenButton) {
+
+      reopenButton.hidden =
+        true;
+
+      reopenButton.disabled =
+        false;
+
+      reopenButton.textContent =
+        "Reopen Month";
 
     }
 
@@ -2025,6 +2027,10 @@ async function calculateMonth() {
       [];
 
 
+    periodStatus =
+      "open";
+
+
     renderSelectedMonth();
 
 
@@ -2032,6 +2038,23 @@ async function calculateMonth() {
       month
     );
 
+
+    /*
+      Read the authoritative financial-period state.
+    */
+
+    await loadFinancialPeriodState(
+      month
+    );
+
+
+    /*
+      Read-only closing metadata.
+
+      This is retained for the existing history/status
+      display but does not determine whether the period
+      is open or closed.
+    */
 
     await loadExistingClosing(
       month
@@ -2059,7 +2082,153 @@ async function calculateMonth() {
 
 
 /* =========================================================
+   APPLY FINANCIAL REPORT RESPONSE
+   ---------------------------------------------------------
+   close_financial_month() and reopen_financial_month()
+   return the existing financial report JSON.
+
+   The report does not contain other_savings, which is an
+   intentionally separate application-level value.
+
+   Therefore the existing calculatedData is preserved and
+   only the authoritative report fields are refreshed.
+========================================================= */
+
+function applyFinancialReport(
+  report
+) {
+
+  if (!report) {
+    throw new Error(
+      "No financial report was returned."
+    );
+  }
+
+
+  calculatedData = {
+
+    ...(calculatedData || {}),
+
+    month:
+      report.month ??
+      monthInput?.value,
+
+    period_status:
+      report.period_status,
+
+    opening_balance:
+      Number(
+        report.opening_balance ??
+        calculatedData?.opening_balance ??
+        0
+      ),
+
+    expected_monthly_contributions:
+      Number(
+        report.expected_monthly_contributions ??
+        calculatedData?.expected_monthly_contributions ??
+        0
+      ),
+
+    total_contributions_collected:
+      Number(
+        report.total_contributions_collected ??
+        calculatedData?.total_contributions_collected ??
+        0
+      ),
+
+    applied_this_month:
+      Number(
+        report.applied_this_month ??
+        calculatedData?.applied_this_month ??
+        0
+      ),
+
+    carry_forward:
+      Number(
+        report.carry_forward ??
+        calculatedData?.carry_forward ??
+        0
+      ),
+
+    current_outstanding:
+      Number(
+        report.current_outstanding ??
+        calculatedData?.current_outstanding ??
+        0
+      ),
+
+    approved_expenses:
+      Number(
+        report.approved_expenses ??
+        calculatedData?.approved_expenses ??
+        0
+      ),
+
+    closing_balance:
+      Number(
+        report.closing_balance ??
+        calculatedData?.closing_balance ??
+        0
+      ),
+
+    active_members:
+      Number(
+        report.active_members ??
+        calculatedData?.active_members ??
+        0
+      ),
+
+    members_paid:
+      Number(
+        report.members_paid ??
+        calculatedData?.members_paid ??
+        0
+      ),
+
+    partial_payments:
+      Number(
+        report.partial_payments ??
+        calculatedData?.partial_payments ??
+        0
+      ),
+
+    outstanding_members:
+      Number(
+        report.outstanding_members ??
+        calculatedData?.outstanding_members ??
+        0
+      ),
+
+    collection_rate:
+      Number(
+        report.collection_rate ??
+        calculatedData?.collection_rate ??
+        0
+      )
+
+  };
+
+
+  periodStatus =
+    report.period_status === "closed"
+      ? "closed"
+      : "open";
+
+
+  renderCalculation();
+
+}
+
+
+/* =========================================================
    CLOSE MONTH
+   ---------------------------------------------------------
+   Sole close mutation:
+
+       close_financial_month(group, month)
+
+   No direct monthly_closings INSERT.
 ========================================================= */
 
 async function closeMonth() {
@@ -2082,10 +2251,10 @@ async function closeMonth() {
     }
 
 
-    if (currentClosing) {
+    if (periodStatus === "closed") {
 
       throw new Error(
-        "This month has already been closed."
+        `Financial month ${month} is already closed`
       );
 
     }
@@ -2094,9 +2263,8 @@ async function closeMonth() {
     /*
       Recalculate before closing.
 
-      This prevents stale values from being
-      written if another contribution or expense
-      was recorded after the last calculation.
+      This preserves the existing protection against
+      stale displayed accounting values.
     */
 
     await loadCanonicalAccounting(
@@ -2114,24 +2282,25 @@ async function closeMonth() {
 
 
     /*
-      Check again immediately before INSERT.
-
-      This prevents duplicate closing records
-      when another session has already closed
-      the month.
+      Refresh the authoritative period state immediately
+      before confirmation.
     */
 
-    await loadExistingClosing(
+    await loadFinancialPeriodState(
       month
     );
 
 
-    if (currentClosing) {
+    if (periodStatus === "closed") {
+
+      await loadExistingClosing(
+        month
+      );
 
       renderClosingStatus();
 
       throw new Error(
-        "This financial month has already been closed."
+        `Financial month ${month} is already closed`
       );
 
     }
@@ -2255,6 +2424,14 @@ async function closeMonth() {
     }
 
 
+    if (reopenButton) {
+
+      reopenButton.disabled =
+        true;
+
+    }
+
+
     showStatus(
       `Closing ${formatMonth(
         month
@@ -2263,195 +2440,66 @@ async function closeMonth() {
 
 
     /*
-      RLS IDENTITY FIX
+      EXISTING BACKEND CONTRACT
 
-      monthly_closings.closed_by references
-      auth.users.id.
+      close_financial_month(
+        p_group_id,
+        p_month
+      )
 
-      Therefore:
+      The authenticated RPC performs:
+        - authentication
+        - role authorization
+        - 2B accounting lock
+        - financial period locking
+        - financial period close
+        - monthly_closings upsert
+        - financial report generation
 
-          currentUser.id
-
-      is REQUIRED.
-
-      Do NOT use:
-
-          currentMember.id
+      No direct table mutation occurs here.
     */
-
-    const payload = {
-
-      group_id:
-        groupId,
-
-      closing_month:
-        `${month}-01`,
-
-      closed_by:
-        currentUser.id,
-
-      closed_at:
-        new Date().toISOString(),
-
-      total_expected:
-        Number(
-          calculatedData
-            .expected_monthly_contributions ||
-          0
-        ),
-
-      /*
-        This is ACTUAL CASH RECEIVED
-        according to the canonical summary.
-      */
-
-      total_collected:
-        Number(
-          calculatedData
-            .total_contributions_collected ||
-          0
-        ),
-
-      total_expenses:
-        Number(
-          calculatedData
-            .approved_expenses ||
-          0
-        ),
-
-      /*
-        Cash closing formula:
-
-            opening
-            + actual cash received
-            - approved expenses
-      */
-
-      closing_balance:
-        Number(
-          calculatedData
-            .closing_balance ||
-          0
-        ),
-
-      notes:
-        notesInput?.value?.trim() ||
-        null
-
-    };
-
-
-    console.log(
-      "CHAMA LIVE: monthly closing insert",
-      {
-        groupId:
-          payload.group_id,
-
-        closingMonth:
-          payload.closing_month,
-
-        closedBy:
-          payload.closed_by,
-
-        currentUserId:
-          currentUser.id,
-
-        currentMemberId:
-          currentMember.id,
-
-        closedByMatchesAuthUser:
-          payload.closed_by ===
-          currentUser.id,
-
-        expected:
-          payload.total_expected,
-
-        actualCashReceived:
-          payload.total_collected,
-
-        otherSavings:
-          calculatedData
-            .other_savings,
-
-        approvedExpenses:
-          payload.total_expenses,
-
-        closingBalance:
-          payload.closing_balance
-      }
-    );
-
 
     const {
       data,
       error
     } =
       await supabase
-        .from("monthly_closings")
-        .insert(
-          payload
-        )
-        .select(`
-          id,
-          group_id,
-          closing_month,
-          closed_by,
-          closed_at,
-          total_expected,
-          total_collected,
-          total_expenses,
-          closing_balance,
-          notes
-        `)
-        .single();
+        .rpc(
+          "close_financial_month",
+          {
+            p_group_id:
+              groupId,
+
+            p_month:
+              month
+          }
+        );
 
 
     if (error) {
-
-      /*
-        PostgreSQL unique violation.
-      */
-
-      if (
-        error.code ===
-        "23505"
-      ) {
-
-        throw new Error(
-          "This financial month has already been closed."
-        );
-
-      }
-
-
-      /*
-        RLS diagnostic message.
-
-        We do not bypass RLS.
-
-        The authenticated user ID is deliberately
-        used as closed_by.
-      */
-
-      if (
-        error.code ===
-        "42501"
-      ) {
-
-        throw new Error(
-          "Monthly Closing was blocked by database authorization. The closing identity must match the authenticated user."
-        );
-
-      }
-
-
       throw error;
-
     }
 
 
-    currentClosing =
-      data;
+    /*
+      Consume the existing JSONB financial-report response.
+    */
+
+    applyFinancialReport(
+      data
+    );
+
+
+    /*
+      Read the existing monthly_closings row for the
+      established history/status metadata.
+
+      This is READ-ONLY.
+    */
+
+    await loadExistingClosing(
+      month
+    );
 
 
     renderClosingStatus();
@@ -2488,7 +2536,7 @@ async function closeMonth() {
 
     if (
       closeButton &&
-      !currentClosing
+      periodStatus !== "closed"
     ) {
 
       closeButton.disabled =
@@ -2496,6 +2544,253 @@ async function closeMonth() {
 
       closeButton.textContent =
         "Close Month";
+
+    }
+
+
+    if (
+      reopenButton &&
+      periodStatus !== "closed"
+    ) {
+
+      reopenButton.disabled =
+        false;
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   REOPEN MONTH
+   ---------------------------------------------------------
+   Sole reopen mutation:
+
+       reopen_financial_month(group, month)
+
+   No direct financial_periods UPDATE.
+   No deletion/update of monthly_closings.
+========================================================= */
+
+async function reopenMonth() {
+
+  try {
+
+    clearError();
+
+
+    const month =
+      monthInput?.value;
+
+
+    if (!month) {
+
+      throw new Error(
+        "Please select a month."
+      );
+
+    }
+
+
+    if (periodStatus !== "closed") {
+
+      throw new Error(
+        `Financial month ${month} is not closed`
+      );
+
+    }
+
+
+    const confirmed =
+      window.confirm(
+
+        `Reopen ${formatMonth(
+          month
+        )}?\n\n` +
+
+        `This will reopen the financial period ` +
+        `for further financial activity.\n\n` +
+
+        `Continue?`
+
+      );
+
+
+    if (!confirmed) {
+      return;
+    }
+
+
+    if (!currentUser?.id) {
+
+      throw new Error(
+        "Authenticated user identity is unavailable."
+      );
+
+    }
+
+
+    if (!currentMember?.id) {
+
+      throw new Error(
+        "Current member identity is unavailable."
+      );
+
+    }
+
+
+    if (!groupId) {
+
+      throw new Error(
+        "Current group identity is unavailable."
+      );
+
+    }
+
+
+    if (reopenButton) {
+
+      reopenButton.disabled =
+        true;
+
+      reopenButton.textContent =
+        "Reopening...";
+
+    }
+
+
+    if (closeButton) {
+
+      closeButton.disabled =
+        true;
+
+    }
+
+
+    showStatus(
+      `Reopening ${formatMonth(
+        month
+      )}...`
+    );
+
+
+    /*
+      EXISTING BACKEND CONTRACT
+
+      reopen_financial_month(
+        p_group_id,
+        p_month
+      )
+
+      The RPC performs the complete authenticated
+      reopen operation.
+    */
+
+    const {
+      data,
+      error
+    } =
+      await supabase
+        .rpc(
+          "reopen_financial_month",
+          {
+            p_group_id:
+              groupId,
+
+            p_month:
+              month
+          }
+        );
+
+
+    if (error) {
+      throw error;
+    }
+
+
+    /*
+      Consume the existing JSONB financial-report response.
+    */
+
+    applyFinancialReport(
+      data
+    );
+
+
+    /*
+      IMPORTANT:
+
+      reopen_financial_month() does not remove the
+      monthly_closings historical record.
+
+      Therefore currentClosing may still exist and is
+      intentionally retained as historical metadata.
+      periodStatus is what determines the current state.
+    */
+
+    await loadExistingClosing(
+      month
+    );
+
+
+    renderClosingStatus();
+
+
+    await loadClosingHistory();
+
+
+    showStatus(
+      `${formatMonth(
+        month
+      )} reopened successfully.`
+    );
+
+
+    setTimeout(
+      () => {
+
+        showStatus("");
+
+      },
+      3000
+    );
+
+  }
+
+  catch (error) {
+
+    showError(error);
+
+  }
+
+  finally {
+
+    if (reopenButton) {
+
+      reopenButton.disabled =
+        false;
+
+      reopenButton.textContent =
+        "Reopen Month";
+
+    }
+
+
+    if (closeButton) {
+
+      closeButton.disabled =
+        periodStatus === "closed";
+
+      if (
+        periodStatus === "open"
+      ) {
+
+        closeButton.textContent =
+          "Close Month";
+
+      }
 
     }
 
@@ -2531,6 +2826,9 @@ function setupEvents() {
 
         canonicalStatus =
           [];
+
+        periodStatus =
+          "open";
 
         renderSelectedMonth();
 
@@ -2577,6 +2875,27 @@ function setupEvents() {
       () => {
 
         closeMonth();
+
+      }
+    );
+
+  }
+
+
+  if (
+    reopenButton &&
+    reopenButton.dataset.bound !== "true"
+  ) {
+
+    reopenButton.dataset.bound =
+      "true";
+
+
+    reopenButton.addEventListener(
+      "click",
+      () => {
+
+        reopenMonth();
 
       }
     );
@@ -2744,6 +3063,8 @@ export async function initPage() {
         memberAuthUserId:
           currentMember.auth_user_id,
 
+        periodStatus,
+
         canonicalMembers:
           canonicalStatus.length
       }
@@ -2804,5 +3125,5 @@ else {
 
 
 console.log(
-  "CHAMA LIVE: monthly-closing.js ready"
+  "CHAMA LIVE: monthly closing.js ready"
 );
