@@ -37,6 +37,30 @@
    Direct members-table lookup remains only as a
    compatibility fallback for environments where the
    canonical RPC is temporarily unavailable.
+
+   CANONICAL FRONTEND EXPORTS
+   ---------------------------------------------------------
+     - getCurrentUser()
+     - getMyMember()
+     - getMyGroupId()
+     - getMyGroup()
+     - requireAuth()
+     - signIn()
+     - signOut()
+     - money()
+     - setText()
+     - showError()
+     - clearError()
+
+   IMPORTANT
+   ---------------------------------------------------------
+   Do NOT introduce compatibility aliases such as:
+     getCurrentMember
+     getCurrentGroup
+     getCurrentGroupId
+
+   Application modules must import and use the canonical
+   function names above.
 ========================================================= */
 
 import {
@@ -1067,22 +1091,6 @@ export function clearError() {
   }
 
 }
-
-
-/* =========================================================
-   COMPATIBILITY ALIASES
-========================================================= */
-
-export const getCurrentMember =
-  getMyMember;
-
-
-export const getCurrentGroup =
-  getMyGroup;
-
-
-export const getCurrentGroupId =
-  getMyGroupId;
 
 
 /* =========================================================
