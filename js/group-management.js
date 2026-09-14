@@ -32,6 +32,18 @@
        Meetings
        Reports
        Monthly Closing
+
+   SUBSCRIPTION
+   ---------------------------------------------------------
+       Read-only group subscription context.
+
+       Canonical RPC:
+           get_group_subscription(p_group_id)
+
+       Subscription state is isolated from:
+           group
+
+       No subscription mutation is performed here.
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -95,6 +107,16 @@ const currentGroupNameEl =
 
 
 /* =========================================================
+   ACCOUNT CARD
+========================================================= */
+
+const accountCardEl =
+  document.querySelector(
+    ".account-card"
+  );
+
+
+/* =========================================================
    STATE
 ========================================================= */
 
@@ -105,6 +127,13 @@ let currentMember = null;
 let groupId = null;
 
 let group = null;
+
+/*
+   Isolated subscription state.
+
+   This must never be merged into `group`.
+*/
+let subscription = null;
 
 let initialized = false;
 
@@ -347,6 +376,347 @@ async function loadMemberCount() {
       Number(count || 0);
 
   }
+
+}
+
+
+/* =========================================================
+   LOAD SUBSCRIPTION
+========================================================= */
+
+async function loadSubscription() {
+
+  subscription =
+    null;
+
+
+  if (!groupId) {
+
+    return;
+
+  }
+
+
+  /*
+     Read-only canonical subscription contract.
+
+     No fallback query is introduced.
+     No subscription table is accessed directly.
+  */
+
+  const {
+    data,
+    error
+  } =
+    await supabase.rpc(
+      "get_group_subscription",
+      {
+        p_group_id:
+          groupId
+      }
+    );
+
+
+  if (error) {
+
+    /*
+       Subscription is an additive informational surface.
+
+       A subscription-read failure must not prevent the
+       established Group Management workflow from loading.
+    */
+
+    console.warn(
+      "CHAMA LIVE: subscription information unavailable",
+      error
+    );
+
+    return;
+
+  }
+
+
+  /*
+     The RPC returns TABLE rows.
+
+     Preserve only the first group-scoped result.
+  */
+
+  subscription =
+    Array.isArray(data)
+      ? (
+          data[0] ||
+          null
+        )
+      : (
+          data ||
+          null
+        );
+
+
+  console.log(
+    "CHAMA LIVE: subscription loaded",
+    subscription
+  );
+
+}
+
+
+/* =========================================================
+   RENDER SUBSCRIPTION
+========================================================= */
+
+function renderSubscription() {
+
+  if (!accountCardEl) {
+
+    return;
+
+  }
+
+
+  /*
+     Remove only the panel previously created by this
+     subscription renderer.
+
+     Existing Account Card markup remains untouched.
+  */
+
+  accountCardEl
+    .querySelector(
+      "[data-chama-subscription-panel]"
+    )
+    ?.remove();
+
+
+  /*
+     Do not invent a business status when the canonical
+     subscription read returned no record.
+
+     The existing Account Card remains exactly as it was.
+  */
+
+  if (!subscription) {
+
+    return;
+
+  }
+
+
+  const panel =
+    document.createElement("div");
+
+  panel.className =
+    "account-box";
+
+  panel.dataset.chamaSubscriptionPanel =
+    "true";
+
+
+  /* -------------------------------------------------------
+     STATUS
+  ------------------------------------------------------- */
+
+  const statusRow =
+    document.createElement("div");
+
+  statusRow.className =
+    "account-status";
+
+
+  const dot =
+    document.createElement("span");
+
+  dot.className =
+    "account-dot";
+
+
+  const statusText =
+    document.createElement("span");
+
+
+  const status =
+    String(
+      subscription.status ||
+      "unknown"
+    )
+      .trim()
+      .toLowerCase();
+
+
+  const displayStatus =
+    status
+      ? (
+          status.charAt(0).toUpperCase() +
+          status.slice(1)
+        )
+      : "Unknown";
+
+
+  statusText.textContent =
+    `Subscription: ${displayStatus}`;
+
+
+  statusRow.append(
+    dot,
+    statusText
+  );
+
+
+  panel.append(
+    statusRow
+  );
+
+
+  /* -------------------------------------------------------
+     DESCRIPTION
+  ------------------------------------------------------- */
+
+  const description =
+    document.createElement("p");
+
+  description.className =
+    "muted";
+
+  description.textContent =
+    "Current subscription context for this group.";
+
+
+  panel.append(
+    description
+  );
+
+
+  /* -------------------------------------------------------
+     SUBSCRIPTION CONTEXT
+  ------------------------------------------------------- */
+
+  const list =
+    document.createElement("ul");
+
+  list.className =
+    "context-list";
+
+
+  function addContextItem(
+    label,
+    value
+  ) {
+
+    const item =
+      document.createElement("li");
+
+    const check =
+      document.createElement("span");
+
+    check.className =
+      "context-check";
+
+    check.textContent =
+      "✓";
+
+
+    const text =
+      document.createElement("span");
+
+    text.textContent =
+      `${label}: ${value}`;
+
+
+    item.append(
+      check,
+      text
+    );
+
+    list.append(
+      item
+    );
+
+  }
+
+
+  const tier =
+    String(
+      subscription.pricing_tier_code ||
+      "—"
+    );
+
+
+  const currency =
+    String(
+      subscription.currency ||
+      "KES"
+    );
+
+
+  const groupAmount =
+    Number(
+      subscription.standard_group_amount ||
+      0
+    );
+
+
+  const memberLoginAmount =
+    Number(
+      subscription.standard_member_login_amount ||
+      0
+    );
+
+
+  const startedAt =
+    subscription.started_at
+      ? new Date(
+          subscription.started_at
+        ).toLocaleDateString(
+          "en-KE"
+        )
+      : "—";
+
+
+  addContextItem(
+    "Pricing tier",
+    tier
+  );
+
+
+  addContextItem(
+    "Group amount",
+    `${currency} ${groupAmount.toLocaleString(
+      "en-KE",
+      {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      }
+    )}`
+  );
+
+
+  addContextItem(
+    "Member login amount",
+    `${currency} ${memberLoginAmount.toLocaleString(
+      "en-KE",
+      {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      }
+    )}`
+  );
+
+
+  addContextItem(
+    "Started",
+    startedAt
+  );
+
+
+  panel.append(
+    list
+  );
+
+
+  accountCardEl.append(
+    panel
+  );
 
 }
 
@@ -933,12 +1303,16 @@ export async function initPage() {
 
     await loadMemberCount();
 
+    await loadSubscription();
+
 
     /* -------------------------------------------------------
        RENDER
     ------------------------------------------------------- */
 
     renderGroup();
+
+    renderSubscription();
 
 
     showStatus(
@@ -1017,3 +1391,4 @@ else {
 console.log(
   "CHAMA LIVE: group-management.js ready"
 );
+
