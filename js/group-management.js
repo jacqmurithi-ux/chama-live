@@ -1,108 +1,116 @@
 /* =========================================================
    CHAMA LIVE — GROUP MANAGEMENT
-   COMPLETE VISUAL + SCHEMA-ALIGNED VERSION
 
-   DATABASE
+   RECONSTRUCTED APPLICATION-LAYER CANDIDATE
    ---------------------------------------------------------
-   groups.name
-   groups.category
-   groups.country
-   groups.monthly_contribution
+   STATUS:
+     Reconstructed — NOT HISTORICAL SOURCE
+
+   CONTROL:
+     NO-APPLY
+
+   VERIFIED CONTRACT:
+     auth.js exports:
+       - supabase
+       - getMyMember()
+       - getMyGroupId()
+       - getMyGroup()
+
+   GROUP DATABASE CONTRACT:
+     groups.name
+     groups.category
+     groups.country
+     groups.monthly_contribution
+     groups.description
+     groups.phone
+     groups.email
 
    IMPORTANT:
-       There is NO groups.type column.
+     UI label may say "Group Type".
+     DATABASE FIELD IS:
+       groups.category
 
-       UI:
-           Group Type
+   APPROVED ADDITION:
+     - isolated subscription state
+     - read-only get_group_subscription RPC
+     - Account Card subscription rendering
 
-       DATABASE:
-           groups.category
-
-   GROUP CONTEXT
-   ---------------------------------------------------------
-       currentMember.group_id
-                ↓
-             groups.id
-
-   This keeps Group Management consistent with:
-       Dashboard
-       Members
-       Contributions
-       Expenses
-       Meetings
-       Reports
-       Monthly Closing
-
-   SUBSCRIPTION
-   ---------------------------------------------------------
-       Read-only group subscription context.
-
-       Canonical RPC:
-           get_group_subscription(p_group_id)
-
-       Subscription state is isolated from:
-           group
-
-       No subscription mutation is performed here.
+   NO ACCOUNTING / 2B LOGIC IS ADDED.
 ========================================================= */
 
-import { supabase } from "./supabase.js";
-
 import {
-  requireAuth,
-  getMyMember
+  supabase,
+  getMyGroupId,
+  getMyGroup
 } from "./auth.js";
 
 
-console.log(
-  "CHAMA LIVE: group-management.js loaded"
-);
+/* =========================================================
+   STATE
+========================================================= */
+
+let currentGroup = null;
+
+let subscription = null;
 
 
 /* =========================================================
-   ELEMENTS
+   DOM
 ========================================================= */
 
-const statusEl =
-  document.getElementById("status");
-
-const errorEl =
-  document.getElementById("error");
-
 const form =
-  document.getElementById("groupForm");
+  document.getElementById(
+    "groupManagementForm"
+  );
 
-const groupNameInput =
-  document.getElementById("groupName");
+const groupNameEl =
+  document.getElementById(
+    "groupName"
+  );
 
-const groupTypeInput =
-  document.getElementById("groupType");
+const categoryEl =
+  document.getElementById(
+    "category"
+  );
 
-const countryInput =
-  document.getElementById("country");
+const countryEl =
+  document.getElementById(
+    "country"
+  );
 
-const monthlyContributionInput =
+const monthlyContributionEl =
   document.getElementById(
     "monthlyContribution"
   );
 
-const contributionPreviewEl =
+const descriptionEl =
   document.getElementById(
-    "contributionPreview"
+    "description"
+  );
+
+const phoneEl =
+  document.getElementById(
+    "phone"
+  );
+
+const emailEl =
+  document.getElementById(
+    "email"
+  );
+
+const statusEl =
+  document.getElementById(
+    "status"
+  );
+
+const errorEl =
+  document.getElementById(
+    "error"
   );
 
 const saveButton =
-  document.getElementById("saveGroup");
-
-const groupIdEl =
-  document.getElementById("groupId");
-
-const memberCountEl =
-  document.getElementById("memberCount");
-
-const currentGroupNameEl =
   document.getElementById(
-    "currentGroupName"
+    "saveGroupButton"
   );
 
 
@@ -111,143 +119,62 @@ const currentGroupNameEl =
 ========================================================= */
 
 const accountCardEl =
-  document.querySelector(
-    ".account-card"
+  document.getElementById(
+    "accountCard"
+  );
+
+const subscriptionStatusEl =
+  document.getElementById(
+    "subscriptionStatus"
+  );
+
+const subscriptionPlanEl =
+  document.getElementById(
+    "subscriptionPlan"
+  );
+
+const subscriptionAmountEl =
+  document.getElementById(
+    "subscriptionAmount"
+  );
+
+const subscriptionNextBillingEl =
+  document.getElementById(
+    "subscriptionNextBilling"
   );
 
 
 /* =========================================================
-   STATE
+   INIT
 ========================================================= */
 
-let currentUser = null;
+export async function initGroupManagement() {
 
-let currentMember = null;
+  clearMessages();
 
-let groupId = null;
+  try {
 
-let group = null;
+    await loadGroup();
 
-/*
-   Isolated subscription state.
+    renderGroup();
 
-   This must never be merged into `group`.
-*/
-let subscription = null;
+    await loadSubscription();
 
-let initialized = false;
+    renderSubscription();
 
+  } catch (error) {
 
-/* =========================================================
-   MONEY FORMATTER
-========================================================= */
+    console.error(
+      "CHAMA LIVE: group management initialization failed",
+      error
+    );
 
-function money(value) {
-
-  return new Intl.NumberFormat(
-    "en-KE",
-    {
-      style: "currency",
-      currency: "KES",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2
-    }
-  ).format(
-    Number(value || 0)
-  );
-
-}
-
-
-/* =========================================================
-   STATUS
-========================================================= */
-
-function showStatus(message) {
-
-  if (!statusEl) {
-
-    return;
+    showError(
+      error?.message ||
+      "Unable to load group information."
+    );
 
   }
-
-  statusEl.textContent =
-    message || "";
-
-  statusEl.hidden =
-    !message;
-
-}
-
-
-/* =========================================================
-   ERROR
-========================================================= */
-
-function showError(error) {
-
-  console.error(
-    "CHAMA LIVE Group Management:",
-    error
-  );
-
-
-  if (!errorEl) {
-
-    return;
-
-  }
-
-
-  let message =
-    error?.message ||
-    String(error) ||
-    "Unable to process group information.";
-
-
-  /*
-     Friendly handling of the old
-     groups.type schema mistake.
-  */
-
-  if (
-    message.toLowerCase().includes(
-      "groups.type"
-    )
-  ) {
-
-    message =
-      "The group type must use the database field 'category'. This page has been aligned to that schema.";
-
-  }
-
-
-  errorEl.textContent =
-    message;
-
-  errorEl.hidden =
-    false;
-
-}
-
-
-/* =========================================================
-   CLEAR ERROR
-========================================================= */
-
-function clearError() {
-
-  if (!errorEl) {
-
-    return;
-
-  }
-
-  errorEl.textContent =
-    "";
-
-  errorEl.hidden =
-    true;
 
 }
 
@@ -258,6 +185,102 @@ function clearError() {
 
 async function loadGroup() {
 
+  currentGroup =
+    await getMyGroup();
+
+  if (!currentGroup?.id) {
+
+    throw new Error(
+      "Group information could not be resolved."
+    );
+
+  }
+
+  return currentGroup;
+
+}
+
+
+/* =========================================================
+   RENDER GROUP
+========================================================= */
+
+function renderGroup() {
+
+  if (!currentGroup) {
+
+    return;
+
+  }
+
+  if (groupNameEl) {
+
+    groupNameEl.value =
+      currentGroup.name || "";
+
+  }
+
+  /*
+   * IMPORTANT:
+   *
+   * The database field is category.
+   * Never use groups.type.
+   */
+
+  if (categoryEl) {
+
+    categoryEl.value =
+      currentGroup.category || "";
+
+  }
+
+  if (countryEl) {
+
+    countryEl.value =
+      currentGroup.country || "";
+
+  }
+
+  if (monthlyContributionEl) {
+
+    monthlyContributionEl.value =
+      currentGroup.monthly_contribution ?? 0;
+
+  }
+
+  if (descriptionEl) {
+
+    descriptionEl.value =
+      currentGroup.description || "";
+
+  }
+
+  if (phoneEl) {
+
+    phoneEl.value =
+      currentGroup.phone || "";
+
+  }
+
+  if (emailEl) {
+
+    emailEl.value =
+      currentGroup.email || "";
+
+  }
+
+}
+
+
+/* =========================================================
+   UPDATE GROUP
+========================================================= */
+
+async function updateGroup() {
+
+  const groupId =
+    await getMyGroupId();
+
   if (!groupId) {
 
     throw new Error(
@@ -266,21 +289,58 @@ async function loadGroup() {
 
   }
 
+  const payload = {
 
-  /*
-     IMPORTANT
+    name:
+      groupNameEl?.value.trim() || "",
 
-     The canonical group fields are:
+    /*
+     * VERIFIED DATABASE CONTRACT:
+     * category, NOT type.
+     */
+    category:
+      categoryEl?.value.trim() || "",
 
-       id
-       name
-       category
-       country
-       monthly_contribution
-       created_at
+    country:
+      countryEl?.value.trim() ||
+      "Kenya",
 
-     DO NOT change category to type.
-  */
+    monthly_contribution:
+      Number(
+        monthlyContributionEl?.value || 0
+      ),
+
+    description:
+      descriptionEl?.value.trim() || "",
+
+    phone:
+      phoneEl?.value.trim() || "",
+
+    email:
+      emailEl?.value.trim() || ""
+
+  };
+
+  if (!payload.name) {
+
+    throw new Error(
+      "Please enter the group name."
+    );
+
+  }
+
+  if (
+    !Number.isFinite(
+      payload.monthly_contribution
+    ) ||
+    payload.monthly_contribution < 0
+  ) {
+
+    throw new Error(
+      "Monthly contribution must be zero or greater."
+    );
+
+  }
 
   const {
     data,
@@ -288,20 +348,10 @@ async function loadGroup() {
   } =
     await supabase
       .from("groups")
-      .select(`
-        id,
-        name,
-        category,
-        country,
-        monthly_contribution,
-        created_at
-      `)
-      .eq(
-        "id",
-        groupId
-      )
+      .update(payload)
+      .eq("id", groupId)
+      .select()
       .single();
-
 
   if (error) {
 
@@ -309,100 +359,85 @@ async function loadGroup() {
 
   }
 
-
-  if (!data) {
-
-    throw new Error(
-      "Group record could not be found."
-    );
-
-  }
-
-
-  group =
+  currentGroup =
     data;
 
+  return data;
 
-  console.log(
-    "CHAMA LIVE: group loaded",
-    group
+}
+
+
+/* =========================================================
+   FORM SUBMIT
+========================================================= */
+
+if (form) {
+
+  form.addEventListener(
+    "submit",
+    async (event) => {
+
+      event.preventDefault();
+
+      clearMessages();
+
+      setSaving(true);
+
+      try {
+
+        await updateGroup();
+
+        renderGroup();
+
+        showStatus(
+          "Group information updated successfully."
+        );
+
+      } catch (error) {
+
+        console.error(
+          "CHAMA LIVE: group update failed",
+          error
+        );
+
+        showError(
+          error?.message ||
+          "Unable to update group information."
+        );
+
+      } finally {
+
+        setSaving(false);
+
+      }
+
+    }
   );
 
 }
 
 
 /* =========================================================
-   LOAD MEMBER COUNT
-========================================================= */
-
-async function loadMemberCount() {
-
-  if (!groupId) {
-
-    return;
-
-  }
-
-
-  const {
-    count,
-    error
-  } =
-    await supabase
-      .from("members")
-      .select(
-        "id",
-        {
-          count: "exact",
-          head: true
-        }
-      )
-      .eq(
-        "group_id",
-        groupId
-      );
-
-
-  if (error) {
-
-    throw error;
-
-  }
-
-
-  if (memberCountEl) {
-
-    memberCountEl.textContent =
-      Number(count || 0);
-
-  }
-
-}
-
-
-/* =========================================================
-   LOAD SUBSCRIPTION
+   SUBSCRIPTION
+   ---------------------------------------------------------
+   APPROVED ADDITION ONLY
+   ---------------------------------------------------------
+   Read-only canonical RPC:
+     get_group_subscription
 ========================================================= */
 
 async function loadSubscription() {
 
-  subscription =
-    null;
-
+  const groupId =
+    await getMyGroupId();
 
   if (!groupId) {
 
-    return;
+    throw new Error(
+      "No group is associated with this account."
+    );
 
   }
-
-
-  /*
-     Read-only canonical subscription contract.
-
-     No fallback query is introduced.
-     No subscription table is accessed directly.
-  */
 
   const {
     data,
@@ -416,48 +451,23 @@ async function loadSubscription() {
       }
     );
 
-
   if (error) {
 
-    /*
-       Subscription is an additive informational surface.
-
-       A subscription-read failure must not prevent the
-       established Group Management workflow from loading.
-    */
-
-    console.warn(
-      "CHAMA LIVE: subscription information unavailable",
-      error
-    );
-
-    return;
+    throw error;
 
   }
 
-
   /*
-     The RPC returns TABLE rows.
-
-     Preserve only the first group-scoped result.
-  */
-
+   * Normalize the two common PostgREST
+   * RPC response shapes without changing
+   * the database contract.
+   */
   subscription =
     Array.isArray(data)
-      ? (
-          data[0] ||
-          null
-        )
-      : (
-          data ||
-          null
-        );
+      ? (data[0] || null)
+      : data || null;
 
-
-  console.log(
-    "CHAMA LIVE: subscription loaded",
-    subscription
-  );
+  return subscription;
 
 }
 
@@ -474,894 +484,272 @@ function renderSubscription() {
 
   }
 
-
-  /*
-     Remove only the panel previously created by this
-     subscription renderer.
-
-     Existing Account Card markup remains untouched.
-  */
-
-  accountCardEl
-    .querySelector(
-      "[data-chama-subscription-panel]"
-    )
-    ?.remove();
-
-
-  /*
-     Do not invent a business status when the canonical
-     subscription read returned no record.
-
-     The existing Account Card remains exactly as it was.
-  */
+  accountCardEl.hidden = false;
 
   if (!subscription) {
 
-    return;
-
-  }
-
-
-  const panel =
-    document.createElement("div");
-
-  panel.className =
-    "account-box";
-
-  panel.dataset.chamaSubscriptionPanel =
-    "true";
-
-
-  /* -------------------------------------------------------
-     STATUS
-  ------------------------------------------------------- */
-
-  const statusRow =
-    document.createElement("div");
-
-  statusRow.className =
-    "account-status";
-
-
-  const dot =
-    document.createElement("span");
-
-  dot.className =
-    "account-dot";
-
-
-  const statusText =
-    document.createElement("span");
-
-
-  const status =
-    String(
-      subscription.status ||
-      "unknown"
-    )
-      .trim()
-      .toLowerCase();
-
-
-  const displayStatus =
-    status
-      ? (
-          status.charAt(0).toUpperCase() +
-          status.slice(1)
-        )
-      : "Unknown";
-
-
-  statusText.textContent =
-    `Subscription: ${displayStatus}`;
-
-
-  statusRow.append(
-    dot,
-    statusText
-  );
-
-
-  panel.append(
-    statusRow
-  );
-
-
-  /* -------------------------------------------------------
-     DESCRIPTION
-  ------------------------------------------------------- */
-
-  const description =
-    document.createElement("p");
-
-  description.className =
-    "muted";
-
-  description.textContent =
-    "Current subscription context for this group.";
-
-
-  panel.append(
-    description
-  );
-
-
-  /* -------------------------------------------------------
-     SUBSCRIPTION CONTEXT
-  ------------------------------------------------------- */
-
-  const list =
-    document.createElement("ul");
-
-  list.className =
-    "context-list";
-
-
-  function addContextItem(
-    label,
-    value
-  ) {
-
-    const item =
-      document.createElement("li");
-
-    const check =
-      document.createElement("span");
-
-    check.className =
-      "context-check";
-
-    check.textContent =
-      "✓";
-
-
-    const text =
-      document.createElement("span");
-
-    text.textContent =
-      `${label}: ${value}`;
-
-
-    item.append(
-      check,
-      text
+    setElementText(
+      subscriptionStatusEl,
+      "Not available"
     );
 
-    list.append(
-      item
-    );
-
-  }
-
-
-  const tier =
-    String(
-      subscription.pricing_tier_code ||
+    setElementText(
+      subscriptionPlanEl,
       "—"
     );
 
-
-  const currency =
-    String(
-      subscription.currency ||
-      "KES"
+    setElementText(
+      subscriptionAmountEl,
+      "—"
     );
 
-
-  const groupAmount =
-    Number(
-      subscription.standard_group_amount ||
-      0
+    setElementText(
+      subscriptionNextBillingEl,
+      "—"
     );
 
+    return;
 
-  const memberLoginAmount =
-    Number(
-      subscription.standard_member_login_amount ||
-      0
-    );
+  }
 
+  /*
+   * The rendering deliberately tolerates
+   * either a single RPC row or a normalized
+   * object. It does not write subscription
+   * data back to Supabase.
+   */
 
-  const startedAt =
-    subscription.started_at
-      ? new Date(
-          subscription.started_at
-        ).toLocaleDateString(
-          "en-KE"
-        )
-      : "—";
-
-
-  addContextItem(
-    "Pricing tier",
-    tier
+  setElementText(
+    subscriptionStatusEl,
+    subscription.status ??
+    subscription.subscription_status ??
+    "—"
   );
 
-
-  addContextItem(
-    "Group amount",
-    `${currency} ${groupAmount.toLocaleString(
-      "en-KE",
-      {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2
-      }
-    )}`
+  setElementText(
+    subscriptionPlanEl,
+    subscription.plan_name ??
+    subscription.plan ??
+    "—"
   );
 
-
-  addContextItem(
-    "Member login amount",
-    `${currency} ${memberLoginAmount.toLocaleString(
-      "en-KE",
-      {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2
-      }
-    )}`
+  setElementText(
+    subscriptionAmountEl,
+    formatAmount(
+      subscription.amount ??
+      subscription.monthly_amount ??
+      subscription.price
+    )
   );
 
-
-  addContextItem(
-    "Started",
-    startedAt
-  );
-
-
-  panel.append(
-    list
-  );
-
-
-  accountCardEl.append(
-    panel
+  setElementText(
+    subscriptionNextBillingEl,
+    formatDate(
+      subscription.next_billing_date ??
+      subscription.current_period_end
+    )
   );
 
 }
 
 
 /* =========================================================
-   UPDATE CONTRIBUTION PREVIEW
+   UI HELPERS
 ========================================================= */
 
-function updateContributionPreview() {
+function setElementText(
+  element,
+  value
+) {
 
-  if (!contributionPreviewEl) {
+  if (!element) {
 
     return;
 
   }
 
-
-  const amount =
-    Number(
-      monthlyContributionInput?.value ||
-      0
-    );
-
-
-  contributionPreviewEl.textContent =
-    money(amount);
+  element.textContent =
+    value == null ||
+    value === ""
+      ? "—"
+      : String(value);
 
 }
 
 
-/* =========================================================
-   RENDER GROUP
-========================================================= */
-
-function renderGroup() {
-
-  if (!group) {
-
-    return;
-
-  }
-
-
-  /* -------------------------------------------------------
-     GROUP NAME
-  ------------------------------------------------------- */
-
-  if (groupNameInput) {
-
-    groupNameInput.value =
-      group.name ||
-      "";
-
-  }
-
-
-  /* -------------------------------------------------------
-     GROUP TYPE
-
-     UI:
-         groupType
-
-     DATABASE:
-         category
-  ------------------------------------------------------- */
-
-  if (groupTypeInput) {
-
-    const category =
-      String(
-        group.category ||
-        "chama"
-      )
-        .trim()
-        .toLowerCase();
-
-
-    const optionExists =
-      Array.from(
-        groupTypeInput.options
-      )
-      .some(
-        option =>
-          option.value ===
-          category
-      );
-
-
-    if (optionExists) {
-
-      groupTypeInput.value =
-        category;
-
-    }
-    else {
-
-      groupTypeInput.value =
-        "other";
-
-    }
-
-  }
-
-
-  /* -------------------------------------------------------
-     COUNTRY
-  ------------------------------------------------------- */
-
-  if (countryInput) {
-
-    countryInput.value =
-      group.country ||
-      "Kenya";
-
-  }
-
-
-  /* -------------------------------------------------------
-     MONTHLY CONTRIBUTION
-  ------------------------------------------------------- */
+function formatAmount(
+  value
+) {
 
   if (
-    monthlyContributionInput
+    value == null ||
+    value === ""
   ) {
 
-    monthlyContributionInput.value =
-      Number(
-        group.monthly_contribution ||
-        0
-      );
+    return "—";
 
   }
 
+  const amount =
+    Number(value);
 
-  /* -------------------------------------------------------
-     GROUP ID
-  ------------------------------------------------------- */
+  if (!Number.isFinite(amount)) {
 
-  if (groupIdEl) {
-
-    groupIdEl.textContent =
-      group.id ||
-      "—";
+    return String(value);
 
   }
 
-
-  /* -------------------------------------------------------
-     GROUP NAME OVERVIEW
-  ------------------------------------------------------- */
-
-  if (currentGroupNameEl) {
-
-    currentGroupNameEl.textContent =
-      group.name ||
-      "—";
-
-  }
-
-
-  updateContributionPreview();
-
-}
-
-
-/* =========================================================
-   SAVE GROUP
-========================================================= */
-
-async function saveGroup(event) {
-
-  event.preventDefault();
-
-
-  try {
-
-    clearError();
-
-    showStatus("");
-
-
-    if (!groupId) {
-
-      throw new Error(
-        "No group is associated with this account."
-      );
-
-    }
-
-
-    /* -------------------------------------------------------
-       READ FORM
-    ------------------------------------------------------- */
-
-    const name =
-      String(
-        groupNameInput?.value ||
-        ""
-      )
-        .trim();
-
-
-    /*
-       UI label:
-
-           Group Type
-
-       Database:
-
-           category
-    */
-
-    const category =
-      String(
-        groupTypeInput?.value ||
-        ""
-      )
-        .trim()
-        .toLowerCase();
-
-
-    const country =
-      String(
-        countryInput?.value ||
-        ""
-      )
-        .trim();
-
-
-    const monthlyContribution =
-      Number(
-        monthlyContributionInput?.value ||
-        0
-      );
-
-
-    /* -------------------------------------------------------
-       VALIDATION
-    ------------------------------------------------------- */
-
-    if (!name) {
-
-      throw new Error(
-        "Please enter the group name."
-      );
-
-    }
-
-
-    if (!category) {
-
-      throw new Error(
-        "Please select the group type."
-      );
-
-    }
-
-
-    if (!country) {
-
-      throw new Error(
-        "Please enter the country."
-      );
-
-    }
-
-
-    if (
-      !Number.isFinite(
-        monthlyContribution
-      )
-    ) {
-
-      throw new Error(
-        "Please enter a valid monthly contribution."
-      );
-
-    }
-
-
-    if (
-      monthlyContribution < 0
-    ) {
-
-      throw new Error(
-        "Monthly contribution cannot be negative."
-      );
-
-    }
-
-
-    /* -------------------------------------------------------
-       BUTTON STATE
-    ------------------------------------------------------- */
-
-    if (saveButton) {
-
-      saveButton.disabled =
-        true;
-
-      saveButton.textContent =
-        "Saving...";
-
-    }
-
-
-    showStatus(
-      "Saving group information..."
-    );
-
-
-    /* -------------------------------------------------------
-       DATABASE PAYLOAD
-
-       IMPORTANT:
-           category NOT type.
-    ------------------------------------------------------- */
-
-    const payload = {
-
-      name:
-        name,
-
-      category:
-        category,
-
-      country:
-        country,
-
-      monthly_contribution:
-        monthlyContribution
-
-    };
-
-
-    console.log(
-      "CHAMA LIVE: updating group",
+  return (
+    "KSh " +
+    amount.toLocaleString(
+      "en-KE",
       {
-        groupId,
-        payload
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
       }
-    );
-
-
-    /* -------------------------------------------------------
-       UPDATE GROUP
-    ------------------------------------------------------- */
-
-    const {
-      data,
-      error
-    } =
-      await supabase
-        .from("groups")
-        .update(
-          payload
-        )
-        .eq(
-          "id",
-          groupId
-        )
-        .select(`
-          id,
-          name,
-          category,
-          country,
-          monthly_contribution,
-          created_at
-        `)
-        .single();
-
-
-    if (error) {
-
-      throw error;
-
-    }
-
-
-    if (!data) {
-
-      throw new Error(
-        "Group information was not updated."
-      );
-
-    }
-
-
-    group =
-      data;
-
-
-    /* -------------------------------------------------------
-       RENDER UPDATED DATA
-    ------------------------------------------------------- */
-
-    renderGroup();
-
-
-    showStatus(
-      "✓ Group information updated successfully."
-    );
-
-
-    setTimeout(
-      () => {
-
-        showStatus("");
-
-      },
-      3000
-    );
-
-
-  }
-  catch (error) {
-
-    showStatus("");
-
-    showError(
-      error
-    );
-
-  }
-  finally {
-
-    if (saveButton) {
-
-      saveButton.disabled =
-        false;
-
-      saveButton.textContent =
-        "Save Changes";
-
-    }
-
-  }
-
-}
-
-
-/* =========================================================
-   SETUP EVENTS
-========================================================= */
-
-function setupEvents() {
-
-  form?.addEventListener(
-    "submit",
-    saveGroup
+    )
   );
 
-
-  monthlyContributionInput
-    ?.addEventListener(
-      "input",
-      updateContributionPreview
-    );
+}
 
 
-  monthlyContributionInput
-    ?.addEventListener(
-      "change",
-      updateContributionPreview
-    );
+function formatDate(
+  value
+) {
+
+  if (!value) {
+
+    return "—";
+
+  }
+
+  const date =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+
+    return String(value);
+
+  }
+
+  return date.toLocaleDateString(
+    "en-KE",
+    {
+      year: "numeric",
+      month: "short",
+      day: "numeric"
+    }
+  );
 
 }
 
 
-/* =========================================================
-   INITIALIZE
-========================================================= */
+function setSaving(
+  saving
+) {
 
-export async function initPage() {
-
-  if (initialized) {
-
-    console.warn(
-      "CHAMA LIVE: group management already initialized"
-    );
+  if (!saveButton) {
 
     return;
 
   }
 
+  saveButton.disabled =
+    Boolean(saving);
 
-  initialized =
-    true;
-
-
-  try {
-
-    clearError();
-
-    showStatus(
-      "Loading group information..."
-    );
-
-
-    /* -------------------------------------------------------
-       AUTHENTICATION
-    ------------------------------------------------------- */
-
-    currentUser =
-      await requireAuth();
-
-
-    if (!currentUser) {
-
-      throw new Error(
-        "You are not signed in."
-      );
-
-    }
-
-
-    /* -------------------------------------------------------
-       MEMBER CONTEXT
-    ------------------------------------------------------- */
-
-    currentMember =
-      await getMyMember();
-
-
-    if (!currentMember) {
-
-      throw new Error(
-        "No member record is linked to this account."
-      );
-
-    }
-
-
-    /* -------------------------------------------------------
-       GROUP CONTEXT
-       
-       Canonical CHAMA LIVE relationship:
-
-           member.group_id
-                  ↓
-             groups.id
-    ------------------------------------------------------- */
-
-    groupId =
-      currentMember.group_id;
-
-
-    if (!groupId) {
-
-      throw new Error(
-        "Your member record is not linked to a group."
-      );
-
-    }
-
-
-    console.log(
-      "CHAMA LIVE: group management context",
-      {
-        userId:
-          currentUser.id,
-
-        memberId:
-          currentMember.id,
-
-        groupId:
-          groupId
-      }
-    );
-
-
-    /* -------------------------------------------------------
-       EVENTS
-    ------------------------------------------------------- */
-
-    setupEvents();
-
-
-    /* -------------------------------------------------------
-       DATA
-    ------------------------------------------------------- */
-
-    await loadGroup();
-
-    await loadMemberCount();
-
-    await loadSubscription();
-
-
-    /* -------------------------------------------------------
-       RENDER
-    ------------------------------------------------------- */
-
-    renderGroup();
-
-    renderSubscription();
-
-
-    showStatus(
-      "Group information ready."
-    );
-
-
-    setTimeout(
-      () => {
-
-        showStatus("");
-
-      },
-      2000
-    );
-
-
-    console.log(
-      "CHAMA LIVE: group management initialized"
-    );
-
-  }
-  catch (error) {
-
-    initialized =
-      false;
-
-    showStatus("");
-
-    showError(
-      error
-    );
-
-  }
+  saveButton.textContent =
+    saving
+      ? "Saving..."
+      : "Save Changes";
 
 }
 
 
-/* =========================================================
-   PUBLIC ALIAS
-========================================================= */
+function showStatus(
+  message
+) {
 
-export const initGroupManagement =
-  initPage;
+  if (!statusEl) {
+
+    return;
+
+  }
+
+  statusEl.textContent =
+    message;
+
+  statusEl.hidden =
+    false;
+
+}
+
+
+function showError(
+  message
+) {
+
+  if (!errorEl) {
+
+    return;
+
+  }
+
+  errorEl.textContent =
+    message;
+
+  errorEl.hidden =
+    false;
+
+}
+
+
+function clearMessages() {
+
+  if (statusEl) {
+
+    statusEl.textContent =
+      "";
+
+    statusEl.hidden =
+      true;
+
+  }
+
+  if (errorEl) {
+
+    errorEl.textContent =
+      "";
+
+    errorEl.hidden =
+      true;
+
+  }
+
+}
 
 
 /* =========================================================
    AUTO BOOT
 ========================================================= */
+
+function boot() {
+
+  initGroupManagement()
+    .catch((error) => {
+
+      console.error(
+        "CHAMA LIVE: group management boot failed",
+        error
+      );
+
+    });
+
+}
+
 
 if (
   document.readyState ===
@@ -1370,25 +758,14 @@ if (
 
   document.addEventListener(
     "DOMContentLoaded",
-    () => {
-
-      initPage();
-
-    },
+    boot,
     {
       once: true
     }
   );
 
+} else {
+
+  boot();
+
 }
-else {
-
-  initPage();
-
-}
-
-
-console.log(
-  "CHAMA LIVE: group-management.js ready"
-);
-
