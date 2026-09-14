@@ -1,21 +1,22 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8"><meta
-name="viewport"
-content="width=device-width, initial-scale=1.0"
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-«»
+  <meta
+    name="description"
+    content="CHAMA LIVE member accounting, arrears, credit and member statements"
+  >
 
-<meta
-name="description"
-content="CHAMA LIVE member accounting, arrears, credit and member statements"
+  <title>Member Accounting | CHAMA LIVE</title>
 
-«»
-
-  <title>Member Accounting | CHAMA LIVE</title>  <link
+  <link
     rel="stylesheet"
     href="./css/app.css"
-  >  <style>
+  >
+
+  <style>
     /* =========================================================
        CHAMA LIVE — MEMBER ACCOUNTING
        ADDITIVE MVP PAGE
@@ -795,583 +796,649 @@ content="CHAMA LIVE member accounting, arrears, credit and member statements"
         width: 100%;
       }
     }
-  </style></head><body>  <main class="member-accounting-page"><!-- =======================================================
-     PRINT HEADER
-     ======================================================= -->
+  </style>
+</head>
 
-<header class="ma-print-header">
-  <div class="ma-print-brand">
-    CHAMA LIVE
-  </div>
+<body>
 
-  <div class="ma-print-title">
-    Member Contribution Accounting
-  </div>
+  <main class="member-accounting-page">
 
-  <div
-    id="printMeta"
-    class="ma-print-meta"
-  >
-    Member accounting report
-  </div>
-</header>
+    <!-- =======================================================
+         PRINT HEADER
+         ======================================================= -->
 
-<!-- =======================================================
-     HERO
-     ======================================================= -->
+    <header class="ma-print-header">
 
-<section class="ma-hero">
-  <div class="ma-hero-content">
-
-    <p class="ma-eyebrow">
-      CHAMA LIVE • Financial Management
-    </p>
-
-    <h1 class="ma-title">
-      Member Accounting
-    </h1>
-
-    <p class="ma-subtitle">
-      View each active member's monthly obligation,
-      payment, application, arrears and carry-forward
-      position from the canonical chama accounting system.
-    </p>
-
-    <div
-      id="groupLabel"
-      class="ma-group-label"
-    >
-      Loading group…
-    </div>
-
-  </div>
-</section>
-
-<!-- =======================================================
-     STATUS MESSAGE
-     ======================================================= -->
-
-<div
-  id="statusMessage"
-  class="ma-status"
-  aria-live="polite"
-></div>
-
-<!-- =======================================================
-     FILTER CARD
-     ======================================================= -->
-
-<section class="ma-card ma-filter-card">
-
-  <div class="ma-heading">
-    <h2>
-      Accounting Filters
-    </h2>
-
-    <p>
-      Select a month, member or status. Search by member
-      name or member number, or use a quick filter.
-    </p>
-  </div>
-
-  <div class="ma-filter-grid">
-
-    <div class="ma-field">
-      <label for="accountingMonth">
-        Accounting Month
-      </label>
-
-      <input
-        id="accountingMonth"
-        type="month"
-      >
-    </div>
-
-    <div class="ma-field">
-      <label for="memberFilter">
-        Member
-      </label>
-
-      <select id="memberFilter">
-        <option value="all">
-          All Members
-        </option>
-      </select>
-    </div>
-
-    <div class="ma-field">
-      <label for="statusFilter">
-        Status
-      </label>
-
-      <select id="statusFilter">
-        <option value="all">
-          All Statuses
-        </option>
-
-        <option value="paid">
-          Paid
-        </option>
-
-        <option value="partial">
-          Partial
-        </option>
-
-        <option value="outstanding">
-          Arrears / Outstanding
-        </option>
-
-        <option value="credit">
-          Credit / Carry-forward
-        </option>
-
-        <option value="no_payment">
-          No Payment
-        </option>
-      </select>
-    </div>
-
-    <div class="ma-field">
-      <label for="searchMember">
-        Search Member
-      </label>
-
-      <input
-        id="searchMember"
-        type="search"
-        placeholder="Name or member number…"
-        autocomplete="off"
-      >
-    </div>
-
-  </div>
-
-  <div
-    class="ma-quick-filters"
-    aria-label="Quick filters"
-  >
-
-    <button
-      type="button"
-      class="ma-quick active"
-      data-quick="all"
-    >
-      All Members
-    </button>
-
-    <button
-      type="button"
-      class="ma-quick"
-      data-quick="attention"
-    >
-      Needs Attention
-    </button>
-
-    <button
-      type="button"
-      class="ma-quick"
-      data-quick="arrears"
-    >
-      Has Arrears
-    </button>
-
-    <button
-      type="button"
-      class="ma-quick"
-      data-quick="credit"
-    >
-      Has Credit
-    </button>
-
-  </div>
-
-  <div class="ma-filter-actions">
-
-    <button
-      id="refreshButton"
-      type="button"
-      class="ma-button primary"
-    >
-      Refresh Accounting
-    </button>
-
-    <button
-      id="resetButton"
-      type="button"
-      class="ma-button"
-    >
-      Reset Filters
-    </button>
-
-  </div>
-
-</section>
-
-<!-- =======================================================
-     SUMMARY
-     ======================================================= -->
-
-<section
-  class="ma-summary"
-  aria-label="Accounting summary"
->
-
-  <article class="ma-stat">
-    <div class="ma-stat-label">
-      Members
-    </div>
-
-    <div
-      id="statMembers"
-      class="ma-stat-value"
-    >
-      0
-    </div>
-
-    <div class="ma-stat-note">
-      Members in current view
-    </div>
-  </article>
-
-  <article class="ma-stat">
-    <div class="ma-stat-label">
-      Monthly Due
-    </div>
-
-    <div
-      id="statDue"
-      class="ma-stat-value"
-    >
-      KES 0.00
-    </div>
-
-    <div class="ma-stat-note">
-      Current obligations
-    </div>
-  </article>
-
-  <article class="ma-stat">
-    <div class="ma-stat-label">
-      Applied
-    </div>
-
-    <div
-      id="statApplied"
-      class="ma-stat-value"
-    >
-      KES 0.00
-    </div>
-
-    <div class="ma-stat-note">
-      Applied this month
-    </div>
-  </article>
-
-  <article class="ma-stat">
-    <div class="ma-stat-label">
-      Outstanding
-    </div>
-
-    <div
-      id="statOutstanding"
-      class="ma-stat-value"
-    >
-      KES 0.00
-    </div>
-
-    <div class="ma-stat-note">
-      Current outstanding
-    </div>
-  </article>
-
-  <article class="ma-stat">
-    <div class="ma-stat-label">
-      Credit
-    </div>
-
-    <div
-      id="statCredit"
-      class="ma-stat-value"
-    >
-      KES 0.00
-    </div>
-
-    <div class="ma-stat-note">
-      Carry-forward credit
-    </div>
-  </article>
-
-  <article class="ma-stat">
-    <div class="ma-stat-label">
-      Attention
-    </div>
-
-    <div
-      id="statAttention"
-      class="ma-stat-value"
-    >
-      0
-    </div>
-
-    <div class="ma-stat-note">
-      Partial / outstanding
-    </div>
-  </article>
-
-</section>
-
-<!-- =======================================================
-     ACCOUNTING TABLE
-     ======================================================= -->
-
-<section class="ma-card ma-table-card">
-
-  <div class="ma-table-header">
-
-    <div>
-      <h2 class="ma-table-title">
-        Member Accounting
-      </h2>
-
-      <div
-        id="tablePeriod"
-        class="ma-table-period"
-      >
-        Loading accounting period…
+      <div class="ma-print-brand">
+        CHAMA LIVE
       </div>
-    </div>
 
-    <div class="ma-table-actions">
-
-      <button
-        id="printButton"
-        type="button"
-        class="ma-button primary"
-      >
-        Print
-      </button>
-
-      <button
-        id="csvButton"
-        type="button"
-        class="ma-button"
-      >
-        CSV
-      </button>
-
-      <button
-        id="excelButton"
-        type="button"
-        class="ma-button"
-      >
-        Excel
-      </button>
-
-    </div>
-
-  </div>
-
-  <div class="ma-table-wrap">
-
-    <table class="ma-table">
-
-      <thead>
-        <tr>
-
-          <th>
-            Member
-          </th>
-
-          <th>
-            Monthly Due
-          </th>
-
-          <th>
-            Previous Arrears
-          </th>
-
-          <th>
-            Previous Credit
-          </th>
-
-          <th>
-            Current Payment
-          </th>
-
-          <th>
-            Applied
-          </th>
-
-          <th>
-            Carry-forward
-          </th>
-
-          <th>
-            Outstanding
-          </th>
-
-          <th>
-            Total Paid
-          </th>
-
-          <th>
-            Total Due
-          </th>
-
-          <th>
-            Status
-          </th>
-
-        </tr>
-      </thead>
-
-      <tbody id="memberAccountingBody">
-
-        <tr>
-          <td
-            colspan="11"
-            class="ma-loading"
-          >
-            <div class="ma-spinner"></div>
-            Loading member accounting…
-          </td>
-        </tr>
-
-      </tbody>
-
-    </table>
-
-  </div>
-
-</section>
-
-<!-- =======================================================
-     MEMBER STATEMENT
-     ======================================================= -->
-
-<section
-  id="statementSection"
-  class="ma-card ma-statement"
->
-
-  <div class="ma-statement-header">
-
-    <div>
-
-      <h2
-        id="statementTitle"
-        class="ma-statement-title"
-      >
-        Member Statement
-      </h2>
+      <div class="ma-print-title">
+        Member Contribution Accounting
+      </div>
 
       <div
-        id="statementMeta"
-        class="ma-statement-meta"
-      ></div>
+        id="printMeta"
+        class="ma-print-meta"
+      >
+        Member accounting report
+      </div>
 
-    </div>
+    </header>
 
-    <button
-      id="closeStatementButton"
-      type="button"
-      class="ma-button"
-    >
-      Close Statement
-    </button>
+    <!-- =======================================================
+         HERO
+         ======================================================= -->
 
-  </div>
+    <section class="ma-hero">
 
-  <div class="ma-statement-summary">
+      <div class="ma-hero-content">
 
-    <article class="ma-statement-stat">
-      <span>
-        Total Due
-      </span>
+        <p class="ma-eyebrow">
+          CHAMA LIVE • Financial Management
+        </p>
 
-      <strong id="statementDue">
-        KES 0.00
-      </strong>
-    </article>
+        <h1 class="ma-title">
+          Member Accounting
+        </h1>
 
-    <article class="ma-statement-stat">
-      <span>
-        Total Paid
-      </span>
+        <p class="ma-subtitle">
+          View each active member's monthly obligation,
+          payment, application, arrears and carry-forward
+          position from the canonical chama accounting system.
+        </p>
 
-      <strong id="statementPaid">
-        KES 0.00
-      </strong>
-    </article>
+        <div
+          id="groupLabel"
+          class="ma-group-label"
+        >
+          Loading group…
+        </div>
 
-    <article class="ma-statement-stat">
-      <span>
-        Outstanding
-      </span>
+      </div>
 
-      <strong id="statementOutstanding">
-        KES 0.00
-      </strong>
-    </article>
+    </section>
 
-    <article class="ma-statement-stat">
-      <span>
-        Carry-forward
-      </span>
+    <!-- =======================================================
+         STATUS MESSAGE
+         ======================================================= -->
 
-      <strong id="statementCredit">
-        KES 0.00
-      </strong>
-    </article>
+    <div
+      id="statusMessage"
+      class="ma-status"
+      aria-live="polite"
+    ></div>
 
-  </div>
+    <!-- =======================================================
+         FILTER CARD
+         ======================================================= -->
 
-  <div class="ma-table-wrap">
+    <section class="ma-card ma-filter-card">
 
-    <table class="ma-statement-table">
+      <div class="ma-heading">
 
-      <thead>
-        <tr>
+        <h2>
+          Accounting Filters
+        </h2>
 
-          <th>
-            Month
-          </th>
+        <p>
+          Select a month, member or status. Search by member
+          name or member number, or use a quick filter.
+        </p>
 
-          <th>
-            Due
-          </th>
+      </div>
 
-          <th>
-            Applied
-          </th>
+      <div class="ma-filter-grid">
 
-          <th>
-            Outstanding
-          </th>
+        <div class="ma-field">
 
-          <th>
-            Carry-forward
-          </th>
+          <label for="accountingMonth">
+            Accounting Month
+          </label>
 
-          <th>
+          <input
+            id="accountingMonth"
+            type="month"
+          >
+
+        </div>
+
+        <div class="ma-field">
+
+          <label for="memberFilter">
+            Member
+          </label>
+
+          <select id="memberFilter">
+
+            <option value="all">
+              All Members
+            </option>
+
+          </select>
+
+        </div>
+
+        <div class="ma-field">
+
+          <label for="statusFilter">
             Status
-          </th>
+          </label>
 
-        </tr>
-      </thead>
+          <select id="statusFilter">
 
-      <tbody id="statementBody">
-      </tbody>
+            <!--
+              RECONCILIATION:
+              Empty value is the canonical "no filter" state
+              used by member-accounting.js.
+            -->
+            <option value="">
+              All Statuses
+            </option>
 
-    </table>
+            <option value="paid">
+              Paid
+            </option>
 
-  </div>
+            <option value="partial">
+              Partial
+            </option>
 
-</section>
+            <option value="outstanding">
+              Arrears / Outstanding
+            </option>
 
-  </main>  <!-- =========================================================
+            <option value="credit">
+              Credit / Carry-forward
+            </option>
+
+            <option value="no_payment">
+              No Payment
+            </option>
+
+          </select>
+
+        </div>
+
+        <div class="ma-field">
+
+          <label for="searchMember">
+            Search Member
+          </label>
+
+          <input
+            id="searchMember"
+            type="search"
+            placeholder="Name or member number…"
+            autocomplete="off"
+          >
+
+        </div>
+
+      </div>
+
+      <div
+        class="ma-quick-filters"
+        aria-label="Quick filters"
+      >
+
+        <button
+          type="button"
+          class="ma-quick active"
+          data-quick="all"
+        >
+          All Members
+        </button>
+
+        <button
+          type="button"
+          class="ma-quick"
+          data-quick="attention"
+        >
+          Needs Attention
+        </button>
+
+        <button
+          type="button"
+          class="ma-quick"
+          data-quick="arrears"
+        >
+          Has Arrears
+        </button>
+
+        <button
+          type="button"
+          class="ma-quick"
+          data-quick="credit"
+        >
+          Has Credit
+        </button>
+
+      </div>
+
+      <div class="ma-filter-actions">
+
+        <button
+          id="refreshButton"
+          type="button"
+          class="ma-button primary"
+        >
+          Refresh Accounting
+        </button>
+
+        <button
+          id="resetButton"
+          type="button"
+          class="ma-button"
+        >
+          Reset Filters
+        </button>
+
+      </div>
+
+    </section>
+
+    <!-- =======================================================
+         SUMMARY
+         ======================================================= -->
+
+    <section
+      class="ma-summary"
+      aria-label="Accounting summary"
+    >
+
+      <article class="ma-stat">
+
+        <div class="ma-stat-label">
+          Members
+        </div>
+
+        <div
+          id="statMembers"
+          class="ma-stat-value"
+        >
+          0
+        </div>
+
+        <div class="ma-stat-note">
+          Members in current view
+        </div>
+
+      </article>
+
+      <article class="ma-stat">
+
+        <div class="ma-stat-label">
+          Monthly Due
+        </div>
+
+        <div
+          id="statDue"
+          class="ma-stat-value"
+        >
+          KES 0.00
+        </div>
+
+        <div class="ma-stat-note">
+          Current obligations
+        </div>
+
+      </article>
+
+      <article class="ma-stat">
+
+        <div class="ma-stat-label">
+          Applied
+        </div>
+
+        <div
+          id="statApplied"
+          class="ma-stat-value"
+        >
+          KES 0.00
+        </div>
+
+        <div class="ma-stat-note">
+          Applied this month
+        </div>
+
+      </article>
+
+      <article class="ma-stat">
+
+        <div class="ma-stat-label">
+          Outstanding
+        </div>
+
+        <div
+          id="statOutstanding"
+          class="ma-stat-value"
+        >
+          KES 0.00
+        </div>
+
+        <div class="ma-stat-note">
+          Current outstanding
+        </div>
+
+      </article>
+
+      <article class="ma-stat">
+
+        <div class="ma-stat-label">
+          Credit
+        </div>
+
+        <div
+          id="statCredit"
+          class="ma-stat-value"
+        >
+          KES 0.00
+        </div>
+
+        <div class="ma-stat-note">
+          Carry-forward credit
+        </div>
+
+      </article>
+
+      <article class="ma-stat">
+
+        <div class="ma-stat-label">
+          Attention
+        </div>
+
+        <div
+          id="statAttention"
+          class="ma-stat-value"
+        >
+          0
+        </div>
+
+        <div class="ma-stat-note">
+          Partial / outstanding
+        </div>
+
+      </article>
+
+    </section>
+
+    <!-- =======================================================
+         ACCOUNTING TABLE
+         ======================================================= -->
+
+    <section class="ma-card ma-table-card">
+
+      <div class="ma-table-header">
+
+        <div>
+
+          <h2 class="ma-table-title">
+            Member Accounting
+          </h2>
+
+          <div
+            id="tablePeriod"
+            class="ma-table-period"
+          >
+            Loading accounting period…
+          </div>
+
+        </div>
+
+        <div class="ma-table-actions">
+
+          <button
+            id="printButton"
+            type="button"
+            class="ma-button primary"
+          >
+            Print
+          </button>
+
+          <button
+            id="csvButton"
+            type="button"
+            class="ma-button"
+          >
+            CSV
+          </button>
+
+          <button
+            id="excelButton"
+            type="button"
+            class="ma-button"
+          >
+            Excel
+          </button>
+
+        </div>
+
+      </div>
+
+      <div class="ma-table-wrap">
+
+        <table class="ma-table">
+
+          <thead>
+
+            <tr>
+
+              <th>
+                Member
+              </th>
+
+              <th>
+                Monthly Due
+              </th>
+
+              <th>
+                Previous Arrears
+              </th>
+
+              <th>
+                Previous Credit
+              </th>
+
+              <th>
+                Current Payment
+              </th>
+
+              <th>
+                Applied
+              </th>
+
+              <th>
+                Carry-forward
+              </th>
+
+              <th>
+                Outstanding
+              </th>
+
+              <th>
+                Total Paid
+              </th>
+
+              <th>
+                Total Due
+              </th>
+
+              <th>
+                Status
+              </th>
+
+            </tr>
+
+          </thead>
+
+          <tbody id="memberAccountingBody">
+
+            <tr>
+
+              <td
+                colspan="11"
+                class="ma-loading"
+              >
+
+                <div class="ma-spinner"></div>
+
+                Loading member accounting…
+
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+    <!-- =======================================================
+         MEMBER STATEMENT
+         ======================================================= -->
+
+    <section
+      id="statementSection"
+      class="ma-card ma-statement"
+    >
+
+      <div class="ma-statement-header">
+
+        <div>
+
+          <h2
+            id="statementTitle"
+            class="ma-statement-title"
+          >
+            Member Statement
+          </h2>
+
+          <div
+            id="statementMeta"
+            class="ma-statement-meta"
+          ></div>
+
+        </div>
+
+        <button
+          id="closeStatementButton"
+          type="button"
+          class="ma-button"
+        >
+          Close Statement
+        </button>
+
+      </div>
+
+      <div class="ma-statement-summary">
+
+        <article class="ma-statement-stat">
+
+          <span>
+            Total Due
+          </span>
+
+          <strong id="statementDue">
+            KES 0.00
+          </strong>
+
+        </article>
+
+        <article class="ma-statement-stat">
+
+          <span>
+            Total Paid
+          </span>
+
+          <strong id="statementPaid">
+            KES 0.00
+          </strong>
+
+        </article>
+
+        <article class="ma-statement-stat">
+
+          <span>
+            Outstanding
+          </span>
+
+          <strong id="statementOutstanding">
+            KES 0.00
+          </strong>
+
+        </article>
+
+        <article class="ma-statement-stat">
+
+          <span>
+            Carry-forward
+          </span>
+
+          <strong id="statementCredit">
+            KES 0.00
+          </strong>
+
+        </article>
+
+      </div>
+
+      <div class="ma-table-wrap">
+
+        <table class="ma-statement-table">
+
+          <thead>
+
+            <tr>
+
+              <th>
+                Month
+              </th>
+
+              <th>
+                Due
+              </th>
+
+              <th>
+                Applied
+              </th>
+
+              <th>
+                Outstanding
+              </th>
+
+              <th>
+                Carry-forward
+              </th>
+
+              <th>
+                Status
+              </th>
+
+            </tr>
+
+          </thead>
+
+          <tbody id="statementBody">
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- =========================================================
        PAGE SCRIPT
-       ========================================================= -->  <script type="module">
+       ========================================================= -->
+
+  <script type="module">
+
     /*
       CHAMA LIVE — Member Accounting
 
@@ -1393,6 +1460,7 @@ content="CHAMA LIVE member accounting, arrears, credit and member statements"
     window.addEventListener(
       "beforeprint",
       () => {
+
         const groupLabel =
           document.getElementById("groupLabel");
 
@@ -1425,7 +1493,11 @@ content="CHAMA LIVE member accounting, arrears, credit and member statements"
 
         printMeta.textContent =
           `${group} • ${period} • Generated ${generated}`;
+
       }
     );
-  </script></body>
+
+  </script>
+
+</body>
 </html>
