@@ -1144,7 +1144,7 @@ async function loadCanonicalAccounting(
 
   /* -------------------------------------------------------
      OTHER SAVINGS
-  --------------------------------------------------------- */
+  ------------------------------------------------------- */
 
   const otherSavings =
     await loadOtherSavings(
@@ -1154,7 +1154,7 @@ async function loadCanonicalAccounting(
 
   /* -------------------------------------------------------
      APPROVED EXPENSES
-  --------------------------------------------------------- */
+  ------------------------------------------------------- */
 
   const monthStart =
     `${month}-01`;
@@ -1244,7 +1244,7 @@ async function loadCanonicalAccounting(
 
   /* -------------------------------------------------------
      OPENING BALANCE
-  --------------------------------------------------------- */
+  ------------------------------------------------------- */
 
   const openingBalance =
     await getOpeningBalance(
@@ -1254,7 +1254,7 @@ async function loadCanonicalAccounting(
 
   /* -------------------------------------------------------
      CANONICAL 2B VALUES
-  --------------------------------------------------------- */
+  ------------------------------------------------------- */
 
   const totalCollected =
     Number(
@@ -1298,7 +1298,7 @@ async function loadCanonicalAccounting(
 
   /* -------------------------------------------------------
      CASH CLOSING
-  --------------------------------------------------------- */
+  ------------------------------------------------------- */
 
   const closingBalance =
     openingBalance +
@@ -1308,7 +1308,7 @@ async function loadCanonicalAccounting(
 
   /* -------------------------------------------------------
      APPLICATION RATE
-  --------------------------------------------------------- */
+  ------------------------------------------------------- */
 
   let collectionRate =
     0;
@@ -2251,6 +2251,13 @@ async function closeMonth() {
     }
 
 
+    /*
+      VERIFIED CHANGE:
+
+      A closed period is handled as a state condition.
+      Do not throw an invented client-side error.
+    */
+
     if (periodStatus === "closed") {
 
       renderClosingStatus();
@@ -2289,6 +2296,14 @@ async function closeMonth() {
       month
     );
 
+
+    /*
+      VERIFIED CHANGE:
+
+      If another process closed the period while this
+      screen was calculating, simply render the current
+      authoritative state and stop.
+    */
 
     if (periodStatus === "closed") {
 
@@ -2589,6 +2604,13 @@ async function reopenMonth() {
 
     }
 
+
+    /*
+      VERIFIED CHANGE:
+
+      An already-open period is handled as a state condition.
+      Do not throw an invented client-side error.
+    */
 
     if (periodStatus !== "closed") {
 
@@ -3122,3 +3144,4 @@ else {
 console.log(
   "CHAMA LIVE: monthly closing.js ready"
 );
+
