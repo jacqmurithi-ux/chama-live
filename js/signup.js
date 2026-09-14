@@ -5,15 +5,18 @@
    ---------------------------------------------------------
    1. Create Supabase Auth account
    2. Confirm email if required
-   3. Call create_group_account RPC
-   4. RPC creates group
-   5. RPC creates admin member
-   6. Admin/member starts as PENDING
+   3. Submit group application
+   4. Application remains PENDING
+   5. Platform administrator reviews application
+   6. approve_group_application() creates the group/member
    7. Redirect to account-review.html
 
    IMPORTANT
    ---------------------------------------------------------
-   Password is NEVER stored in localStorage.
+   - Signup does NOT create the group directly.
+   - Signup does NOT create the admin member directly.
+   - Signup does NOT generate or receive an access code.
+   - Password is NEVER stored in localStorage.
 ========================================================= */
 
 import {
@@ -76,7 +79,9 @@ const PENDING_KEY =
 
 function byId(id) {
 
-  return document.getElementById(id);
+  return document.getElementById(
+    id
+  );
 
 }
 
@@ -556,7 +561,23 @@ function friendlyError(
 
   if (
     lower.includes(
+      "application already exists"
+    )
+  ) {
+
+    return (
+      "A group application already exists for this account."
+    );
+
+  }
+
+
+  if (
+    lower.includes(
       "already linked to a group"
+    ) ||
+    lower.includes(
+      "already assigned to a group"
     )
   ) {
 
@@ -593,10 +614,26 @@ function friendlyError(
 
 
 /* =========================================================
-   CREATE GROUP
+   SUBMIT GROUP APPLICATION
 ========================================================= */
 
-async function createGroup(
+/*
+ * Canonical application boundary.
+ *
+ * Signup submits a pending application only.
+ *
+ * It does NOT:
+ *   - create public.groups
+ *   - create public.members
+ *   - create financial_periods
+ *   - initialize subscriptions
+ *   - generate access codes
+ *
+ * Those operations belong to
+ * approve_group_application().
+ */
+
+async function submitGroupApplication(
   values
 ) {
 
@@ -605,10 +642,10 @@ async function createGroup(
     error
   } =
     await supabase.rpc(
-      "create_group_account",
+      "submit_group_application",
       {
 
-        p_name:
+        p_group_name:
           values.groupName,
 
         p_category:
@@ -616,6 +653,9 @@ async function createGroup(
 
         p_monthly_contribution:
           values.monthlyContribution,
+
+        p_opening_balance:
+          0,
 
         p_description:
           values.description,
@@ -644,10 +684,21 @@ async function createGroup(
       : data;
 
 
-  if (!result?.group_id) {
+  /*
+   * submit_group_application() is expected to
+   * return the created application payload.
+   *
+   * Do not require group_id/member_id/access_code:
+   * those belong to the approval boundary.
+   */
+
+  if (
+    !result ||
+    result.success === false
+  ) {
 
     throw new Error(
-      "The group was not created. No group ID was returned."
+      "The group application was not submitted successfully."
     );
 
   }
@@ -687,6 +738,11 @@ if (form) {
         );
 
 
+        /*
+         * Store only non-sensitive recovery data.
+         *
+         * Password is never stored.
+         */
         savePending(
           values
         );
@@ -774,9 +830,9 @@ if (form) {
 
 
           /*
-           * Email confirmation required.
+           * Email confirmation is required before the
+           * authenticated application RPC can run.
            */
-
           if (!session?.user) {
 
             setLoading(
@@ -799,58 +855,33 @@ if (form) {
 
 
         /* =================================================
-           CREATE GROUP
+           SUBMIT APPLICATION
         ================================================= */
 
         showStatus(
-          "Creating your group application..."
+          "Submitting your group application..."
         );
 
 
-        const result =
-          await createGroup(
-            values
-          );
+        await submitGroupApplication(
+          values
+        );
 
 
         /*
-         * The RPC now creates the administrator
-         * as pending.
+         * Application has now entered the pending
+         * review workflow.
+         *
+         * No group/member/access-code data is stored
+         * because those records do not exist yet.
          */
-
         clearPending();
 
 
         /*
-         * Save only non-sensitive result data.
+         * Preserve the existing review-page navigation
+         * without inventing a client-side application ID.
          */
-
-        localStorage.setItem(
-          "chama_live_review_application",
-          JSON.stringify({
-
-            group_id:
-              result.group_id,
-
-            member_id:
-              result.member_id,
-
-            member_number:
-              result.member_number,
-
-            access_code:
-              result.access_code,
-
-            email:
-              values.email,
-
-            created_at:
-              new Date().toISOString()
-
-          })
-        );
-
-
         showStatus(
           "Group application submitted successfully."
         );
@@ -861,6 +892,7 @@ if (form) {
         );
 
       }
+
 
       catch (error) {
 
