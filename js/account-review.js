@@ -1,44 +1,27 @@
 /* =========================================================
    CHAMA LIVE — ACCOUNT REVIEW
 
-   PRODUCTION ACCOUNT STATUS LOOKUP
-
-   Flow:
+   SECURITY MODEL
    ---------------------------------------------------------
-   account-review.html
+   1. Authenticated pending applicant:
+        auth.uid()
           ↓
-   Administrator enters registered email
+        own group_applications row
           ↓
-   check_application_status(p_email)
+        pending/rejected/application status
+
+   2. Existing registered administrator:
+        check_application_status(p_email)
           ↓
-   Supabase RPC
-          ↓
-   Safe application status
-          ↓
-   Pending / Active / Rejected / Suspended
+        safe approved-account status
 
    IMPORTANT
    ---------------------------------------------------------
-   This frontend NEVER queries the members table directly.
-
-   The deployed RPC is responsible for:
-      - verifying the registered administrator
-      - finding the correct group
-      - checking approval status
-      - returning safe information only
-
-   Expected RPC:
-      public.check_application_status(p_email text)
-
-   Expected safe response:
-      {
-        found,
-        group_name,
-        masked_email,
-        onboarding_status,
-        application_status
-      }
-
+   - Never query another applicant's application.
+   - Never expose auth_user_id.
+   - Never expose access_code before approval.
+   - Never expose approved_member_number before approval.
+   - Never create groups or members.
 ========================================================= */
 
 import {
@@ -53,7 +36,7 @@ console.log(
 
 
 /* =========================================================
-   CONFIGURATION
+   CONSTANTS
 ========================================================= */
 
 const LOGIN_PAGE =
@@ -74,16 +57,6 @@ const applicationDetails =
   document.getElementById(
     "applicationDetails"
   );
-
-
-/*
- * These elements are optional.
- *
- * The script supports the existing
- * account-review.html and will create
- * the lookup interface if it is not
- * already present.
- */
 
 let reviewForm =
   document.getElementById(
@@ -112,12 +85,10 @@ let statusBox =
 
 
 /* =========================================================
-   SAFE HTML ESCAPE
+   HTML ESCAPE
 ========================================================= */
 
-function escapeHtml(
-  value
-) {
+function escapeHtml(value) {
 
   return String(
     value ?? ""
@@ -147,12 +118,10 @@ function escapeHtml(
 
 
 /* =========================================================
-   NORMALIZE EMAIL
+   EMAIL
 ========================================================= */
 
-function normalizeEmail(
-  email
-) {
+function normalizeEmail(email) {
 
   return String(
     email || ""
@@ -163,13 +132,7 @@ function normalizeEmail(
 }
 
 
-/* =========================================================
-   VALIDATE EMAIL
-========================================================= */
-
-function isValidEmail(
-  email
-) {
+function isValidEmail(email) {
 
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     .test(email);
@@ -178,7 +141,7 @@ function isValidEmail(
 
 
 /* =========================================================
-   CLEAR MESSAGES
+   MESSAGES
 ========================================================= */
 
 function clearMessages() {
@@ -193,7 +156,6 @@ function clearMessages() {
 
   }
 
-
   if (statusBox) {
 
     statusBox.textContent =
@@ -207,76 +169,42 @@ function clearMessages() {
 }
 
 
-/* =========================================================
-   SHOW ERROR
-========================================================= */
+function showError(message) {
 
-function showError(
-  message
-) {
-
-  const cleanMessage =
+  const clean =
     String(
       message ||
       "Unable to check your application."
     );
 
-
   console.error(
     "CHAMA LIVE account review:",
-    cleanMessage
+    clean
   );
-
 
   if (errorBox) {
 
     errorBox.textContent =
-      cleanMessage;
+      clean;
 
     errorBox.hidden =
       false;
-
-  } else {
-
-    /*
-     * If the current HTML does not
-     * have an error element, display
-     * the message inside the details area.
-     */
-
-    if (applicationDetails) {
-
-      applicationDetails.innerHTML = `
-        <div class="cl-review-error">
-          ${escapeHtml(cleanMessage)}
-        </div>
-      `;
-
-    }
 
   }
 
 }
 
 
-/* =========================================================
-   SHOW STATUS MESSAGE
-========================================================= */
-
-function showStatusMessage(
-  message
-) {
+function showStatus(message) {
 
   if (!statusBox) {
     return;
   }
 
-
   statusBox.textContent =
     String(
       message || ""
     );
-
 
   statusBox.hidden =
     !message;
@@ -285,18 +213,15 @@ function showStatusMessage(
 
 
 /* =========================================================
-   LOADING STATE
+   LOADING
 ========================================================= */
 
-function setLoading(
-  loading
-) {
+function setLoading(loading) {
 
   if (checkButton) {
 
     checkButton.disabled =
       loading;
-
 
     checkButton.textContent =
       loading
@@ -304,7 +229,6 @@ function setLoading(
         : "Check Application Status";
 
   }
-
 
   if (emailInput) {
 
@@ -317,12 +241,10 @@ function setLoading(
 
 
 /* =========================================================
-   NORMALIZE RPC STATUS
+   STATUS NORMALIZATION
 ========================================================= */
 
-function normalizeApplicationStatus(
-  result
-) {
+function normalizeStatus(result) {
 
   const onboarding =
     String(
@@ -332,19 +254,14 @@ function normalizeApplicationStatus(
       .trim()
       .toLowerCase();
 
-
   const application =
     String(
       result?.application_status ||
+      result?.status ||
       ""
     )
       .trim()
       .toLowerCase();
-
-
-  /*
-   * Suspended has highest priority.
-   */
 
   if (
     onboarding === "suspended" ||
@@ -355,11 +272,6 @@ function normalizeApplicationStatus(
 
   }
 
-
-  /*
-   * Rejected.
-   */
-
   if (
     onboarding === "rejected" ||
     application === "rejected"
@@ -368,11 +280,6 @@ function normalizeApplicationStatus(
     return "rejected";
 
   }
-
-
-  /*
-   * Active / approved.
-   */
 
   if (
     onboarding === "active" ||
@@ -385,43 +292,18 @@ function normalizeApplicationStatus(
 
   }
 
-
-  /*
-   * Pending / submitted / awaiting review.
-   */
-
-  if (
-    onboarding === "pending" ||
-    onboarding === "submitted" ||
-    application === "pending" ||
-    application === "submitted"
-  ) {
-
-    return "pending";
-
-  }
-
-
-  /*
-   * Fail closed.
-   */
-
   return "pending";
 
 }
 
 
 /* =========================================================
-   STATUS LABEL
+   STATUS TEXT
 ========================================================= */
 
-function getStatusLabel(
-  status
-) {
+function statusLabel(status) {
 
-  switch (
-    status
-  ) {
+  switch (status) {
 
     case "active":
       return "Active";
@@ -441,47 +323,9 @@ function getStatusLabel(
 }
 
 
-/* =========================================================
-   STATUS CLASS
-========================================================= */
+function statusDescription(status) {
 
-function getStatusClass(
-  status
-) {
-
-  switch (
-    status
-  ) {
-
-    case "active":
-      return "active";
-
-    case "rejected":
-      return "rejected";
-
-    case "suspended":
-      return "suspended";
-
-    case "pending":
-    default:
-      return "pending";
-
-  }
-
-}
-
-
-/* =========================================================
-   STATUS DESCRIPTION
-========================================================= */
-
-function getStatusDescription(
-  status
-) {
-
-  switch (
-    status
-  ) {
+  switch (status) {
 
     case "active":
 
@@ -491,15 +335,13 @@ function getStatusDescription(
         "your Dashboard."
       );
 
-
     case "rejected":
 
       return (
         "Your CHAMA LIVE group application was not " +
         "approved. Please contact CHAMA LIVE support " +
-        "or the administrator for assistance."
+        "for assistance."
       );
-
 
     case "suspended":
 
@@ -509,15 +351,13 @@ function getStatusDescription(
         "until the account is restored."
       );
 
-
     case "pending":
-
     default:
 
       return (
         "Your group application has been received " +
         "and is currently awaiting review. You will " +
-        "be able to sign in after approval."
+        "be able to access the Dashboard after approval."
       );
 
   }
@@ -526,10 +366,10 @@ function getStatusDescription(
 
 
 /* =========================================================
-   RENDER APPLICATION RESULT
+   RENDER
 ========================================================= */
 
-function renderApplicationResult(
+function renderResult(
   result,
   email
 ) {
@@ -537,12 +377,6 @@ function renderApplicationResult(
   if (!applicationDetails) {
     return;
   }
-
-
-  /*
-   * RPC did not find a matching
-   * registered administrator.
-   */
 
   if (
     !result ||
@@ -562,14 +396,13 @@ function renderApplicationResult(
         </h3>
 
         <p>
-          We could not find a CHAMA LIVE group
-          application registered to this email address.
+          We could not find a CHAMA LIVE application
+          registered to this email address.
         </p>
 
         <p class="cl-review-muted">
-          Please enter the same email address used
-          when the group administrator account was
-          registered.
+          Please use the same email address used
+          during group registration.
         </p>
 
         <div class="cl-review-result-email">
@@ -584,47 +417,25 @@ function renderApplicationResult(
 
   }
 
-
-  const applicationStatus =
-    normalizeApplicationStatus(
+  const status =
+    normalizeStatus(
       result
     );
-
-
-  const statusLabel =
-    getStatusLabel(
-      applicationStatus
-    );
-
-
-  const statusClass =
-    getStatusClass(
-      applicationStatus
-    );
-
-
-  const description =
-    getStatusDescription(
-      applicationStatus
-    );
-
 
   const groupName =
     result.group_name ||
     "Your CHAMA LIVE group";
 
-
   const maskedEmail =
     result.masked_email ||
     email;
-
 
   applicationDetails.innerHTML = `
 
     <div
       class="
         cl-review-result
-        cl-review-result-${escapeHtml(statusClass)}
+        cl-review-result-${escapeHtml(status)}
       "
     >
 
@@ -633,11 +444,11 @@ function renderApplicationResult(
         <div class="cl-review-result-icon">
 
           ${
-            applicationStatus === "active"
+            status === "active"
               ? "✓"
-              : applicationStatus === "rejected"
+              : status === "rejected"
                 ? "!"
-                : applicationStatus === "suspended"
+                : status === "suspended"
                   ? "!"
                   : "•"
           }
@@ -650,13 +461,13 @@ function renderApplicationResult(
             Application status
           </div>
 
-          <div
-            class="
-              cl-review-result-status
-              cl-status-${escapeHtml(statusClass)}
-            "
-          >
-            ${escapeHtml(statusLabel)}
+          <div class="
+            cl-review-result-status
+            cl-status-${escapeHtml(status)}
+          ">
+            ${escapeHtml(
+              statusLabel(status)
+            )}
           </div>
 
         </div>
@@ -692,13 +503,15 @@ function renderApplicationResult(
 
       <div class="cl-review-result-description">
 
-        ${escapeHtml(description)}
+        ${escapeHtml(
+          statusDescription(status)
+        )}
 
       </div>
 
 
       ${
-        applicationStatus === "active"
+        status === "active"
 
           ? `
             <a
@@ -709,26 +522,29 @@ function renderApplicationResult(
             </a>
           `
 
-          : applicationStatus === "pending"
+          : status === "pending"
 
             ? `
               <div class="cl-review-next-step">
+
                 <strong>
                   Next step
                 </strong>
 
                 <span>
-                  Please wait for the review to be
-                  completed. You can return here later
-                  using your registered administrator email.
+                  CHAMA LIVE is reviewing your
+                  group application. You can
+                  return here later to check again.
                 </span>
+
               </div>
             `
 
-          : applicationStatus === "rejected"
+          : status === "rejected"
 
             ? `
               <div class="cl-review-next-step">
+
                 <strong>
                   Need assistance?
                 </strong>
@@ -737,19 +553,22 @@ function renderApplicationResult(
                   Please contact CHAMA LIVE support
                   regarding your application.
                 </span>
+
               </div>
             `
 
           : `
               <div class="cl-review-next-step">
+
                 <strong>
                   Account restricted
                 </strong>
 
                 <span>
-                  Please contact your CHAMA LIVE
-                  administrator or support team.
+                  Please contact CHAMA LIVE support
+                  regarding your account.
                 </span>
+
               </div>
             `
       }
@@ -762,102 +581,237 @@ function renderApplicationResult(
 
 
 /* =========================================================
-   RPC ERROR NORMALIZATION
+   AUTHENTICATED OWN APPLICATION
 ========================================================= */
 
-function normalizeRpcError(
-  error
+async function checkOwnPendingApplication(
+  email
 ) {
 
-  const message =
-    String(
-      error?.message ||
-      error ||
-      ""
+  const {
+    data: sessionData,
+    error: sessionError
+  } =
+    await supabase.auth.getSession();
+
+  if (sessionError) {
+    throw sessionError;
+  }
+
+  const user =
+    sessionData?.session?.user;
+
+  /*
+   * No authenticated user:
+   *
+   * Cannot safely query group_applications because
+   * its SELECT policy is scoped to auth.uid().
+   *
+   * Caller must use the existing status RPC.
+   */
+  if (!user) {
+
+    return null;
+
+  }
+
+  const userEmail =
+    normalizeEmail(
+      user.email
     );
 
-
-  const lower =
-    message.toLowerCase();
-
-
+  /*
+   * Never allow the authenticated user to use
+   * another email to query their application.
+   */
   if (
-    lower.includes(
-      "function"
-    ) &&
-    lower.includes(
-      "does not exist"
-    )
+    !userEmail ||
+    userEmail !== email
   ) {
 
-    return (
-      "The application status service is temporarily " +
-      "unavailable. Please try again later."
+    throw new Error(
+      "Please use the email address associated with your CHAMA LIVE login."
     );
 
   }
 
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from(
+        "group_applications"
+      )
+      .select(
+        [
+          "group_name",
+          "email",
+          "status",
+          "created_at"
+        ].join(",")
+      )
+      .eq(
+        "auth_user_id",
+        user.id
+      )
+      .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  /*
+   * Convert the existing application row into
+   * the safe rendering contract.
+   *
+   * No internal identifiers are exposed.
+   */
+  return {
+
+    found:
+      true,
+
+    group_name:
+      data.group_name,
+
+    masked_email:
+      maskEmail(
+        data.email ||
+        email
+      ),
+
+    application_status:
+      data.status,
+
+    onboarding_status:
+      data.status
+
+  };
+
+}
+
+
+/* =========================================================
+   EMAIL MASK
+========================================================= */
+
+function maskEmail(email) {
+
+  const normalized =
+    normalizeEmail(email);
+
+  const at =
+    normalized.indexOf("@");
 
   if (
-    lower.includes(
-      "permission"
-    ) ||
-    lower.includes(
-      "not allowed"
-    )
+    at <= 0
   ) {
 
-    return (
-      "You are not authorized to perform this " +
-      "application status check."
-    );
+    return normalized;
 
   }
 
+  const local =
+    normalized.substring(
+      0,
+      at
+    );
+
+  const domain =
+    normalized.substring(
+      at
+    );
 
   if (
-    lower.includes(
-      "failed to fetch"
-    ) ||
-    lower.includes(
-      "network"
-    )
+    local.length <= 2
   ) {
 
     return (
-      "Unable to connect to CHAMA LIVE. " +
-      "Please check your internet connection and try again."
+      local.charAt(0) +
+      "*" +
+      domain
     );
 
   }
-
 
   return (
-    "We could not check your application status " +
-    "right now. Please try again."
+    local.charAt(0) +
+    "*".repeat(
+      Math.max(
+        1,
+        local.length - 2
+      )
+    ) +
+    local.charAt(
+      local.length - 1
+    ) +
+    domain
   );
 
 }
 
 
 /* =========================================================
-   CHECK APPLICATION STATUS
+   EXISTING REGISTERED ACCOUNT RPC
+========================================================= */
+
+async function checkRegisteredAccount(
+  email
+) {
+
+  const {
+    data,
+    error
+  } =
+    await supabase.rpc(
+      STATUS_RPC,
+      {
+        p_email:
+          email
+      }
+    );
+
+  if (error) {
+    throw error;
+  }
+
+  let result =
+    data;
+
+  if (
+    Array.isArray(data)
+  ) {
+
+    result =
+      data[0] || {
+        found:
+          false
+      };
+
+  }
+
+  return result;
+
+}
+
+
+/* =========================================================
+   MAIN STATUS CHECK
 ========================================================= */
 
 async function checkApplicationStatus() {
 
   clearMessages();
 
-
   const email =
     normalizeEmail(
       emailInput?.value
     );
-
-
-  /*
-   * Email is required.
-   */
 
   if (!email) {
 
@@ -871,15 +825,8 @@ async function checkApplicationStatus() {
 
   }
 
-
-  /*
-   * Validate email.
-   */
-
   if (
-    !isValidEmail(
-      email
-    )
+    !isValidEmail(email)
   ) {
 
     showError(
@@ -892,11 +839,6 @@ async function checkApplicationStatus() {
 
   }
 
-
-  /*
-   * Do not display stale results.
-   */
-
   if (applicationDetails) {
 
     applicationDetails.innerHTML =
@@ -904,115 +846,59 @@ async function checkApplicationStatus() {
 
   }
 
-
   setLoading(
     true
   );
 
-
-  showStatusMessage(
+  showStatus(
     "Checking your registered group application..."
   );
 
-
   try {
 
-    console.log(
-      "CHAMA LIVE: checking application status"
-    );
-
-
     /*
-     * =====================================================
-     * DEPLOYED RPC
-     * =====================================================
-     *
-     * IMPORTANT:
-     *
-     * Do NOT replace this with:
-     *
-     * supabase
-     *   .from("members")
-     *
-     * The RPC is the security boundary.
+     * First attempt the authenticated application
+     * boundary. This is what makes pending
+     * applications visible after confirmation.
      */
-
-    const {
-      data,
-      error
-    } =
-      await supabase.rpc(
-        STATUS_RPC,
-        {
-          p_email:
-            email
-        }
+    const ownApplication =
+      await checkOwnPendingApplication(
+        email
       );
 
+    if (ownApplication) {
 
-    if (error) {
+      renderResult(
+        ownApplication,
+        email
+      );
 
-      throw error;
+      showStatus(
+        ""
+      );
+
+      return;
 
     }
-
-
-    console.log(
-      "CHAMA LIVE: application status received",
-      {
-        found:
-          data?.found,
-
-        group_name:
-          data?.group_name,
-
-        masked_email:
-          data?.masked_email,
-
-        onboarding_status:
-          data?.onboarding_status,
-
-        application_status:
-          data?.application_status
-      }
-    );
 
 
     /*
-     * Supabase RPC functions may return:
+     * No authenticated application was available.
      *
-     * 1. an object
-     * 2. an array containing one object
-     *
-     * Support both without exposing
-     * any additional database data.
+     * Preserve the existing production RPC for
+     * approved/registered administrators.
      */
+    const registeredAccount =
+      await checkRegisteredAccount(
+        email
+      );
 
-    let result =
-      data;
-
-
-    if (
-      Array.isArray(data)
-    ) {
-
-      result =
-        data[0] ||
-        {
-          found:
-            false
-        };
-
-    }
-
-
-    renderApplicationResult(
-      result,
+    renderResult(
+      registeredAccount,
       email
     );
 
-
-    showStatusMessage(
+    showStatus(
       ""
     );
 
@@ -1025,19 +911,12 @@ async function checkApplicationStatus() {
       error
     );
 
-
     if (applicationDetails) {
 
       applicationDetails.innerHTML =
         "";
 
     }
-
-
-    showStatusMessage(
-      ""
-    );
-
 
     showError(
       normalizeRpcError(
@@ -1059,15 +938,93 @@ async function checkApplicationStatus() {
 
 
 /* =========================================================
-   CREATE LOOKUP UI IF HTML DOES NOT HAVE IT
+   ERROR NORMALIZATION
+========================================================= */
+
+function normalizeRpcError(error) {
+
+  const message =
+    String(
+      error?.message ||
+      error ||
+      ""
+    );
+
+  const lower =
+    message.toLowerCase();
+
+  if (
+    lower.includes(
+      "email address associated"
+    )
+  ) {
+
+    return message;
+
+  }
+
+  if (
+    lower.includes(
+      "permission"
+    ) ||
+    lower.includes(
+      "row-level security"
+    )
+  ) {
+
+    return (
+      "Please sign in with the administrator account " +
+      "used to register this group before checking " +
+      "a pending application."
+    );
+
+  }
+
+  if (
+    lower.includes(
+      "function"
+    ) &&
+    lower.includes(
+      "does not exist"
+    )
+  ) {
+
+    return (
+      "The application status service is temporarily " +
+      "unavailable. Please try again later."
+    );
+
+  }
+
+  if (
+    lower.includes(
+      "failed to fetch"
+    ) ||
+    lower.includes(
+      "network"
+    )
+  ) {
+
+    return (
+      "Unable to connect to CHAMA LIVE. " +
+      "Please check your internet connection and try again."
+    );
+
+  }
+
+  return (
+    "We could not check your application status " +
+    "right now. Please try again."
+  );
+
+}
+
+
+/* =========================================================
+   DYNAMIC LOOKUP UI
 ========================================================= */
 
 function ensureLookupInterface() {
-
-  /*
-   * If the page already contains the form,
-   * preserve it completely.
-   */
 
   if (
     reviewForm &&
@@ -1079,274 +1036,124 @@ function ensureLookupInterface() {
 
   }
 
-
-  /*
-   * Existing page may only contain the
-   * informational review screen.
-   *
-   * Insert the administrator status
-   * lookup immediately before the
-   * application details section.
-   */
-
   if (!applicationDetails) {
-
-    console.warn(
-      "CHAMA LIVE: applicationDetails element not found."
-    );
-
     return;
-
   }
-
 
   const wrapper =
     document.createElement(
-      "div"
+      "form"
     );
 
+  wrapper.id =
+    "reviewStatusForm";
 
   wrapper.className =
-    "cl-status-lookup";
-
+    "cl-review-form";
 
   wrapper.innerHTML = `
 
-    <div class="cl-status-lookup-header">
+    <div class="cl-review-field">
 
-      <div class="cl-status-lookup-icon">
-        ✓
-      </div>
+      <label for="reviewEmail">
+        Registered administrator email
+      </label>
 
-      <div>
+      <input
+        id="reviewEmail"
+        name="reviewEmail"
+        type="email"
+        autocomplete="email"
+        required
+        placeholder="you@example.com"
+      >
 
-        <h2>
-          Check your application
-        </h2>
-
-        <p>
-          Enter the registered administrator
-          email to securely view your group status.
-        </p>
-
-      </div>
+      <span class="cl-review-help">
+        Use the email address associated with
+        your CHAMA LIVE administrator account.
+      </span>
 
     </div>
 
-
-    <form
-      id="reviewStatusForm"
-      class="cl-status-lookup-form"
-      novalidate
+    <button
+      id="checkStatusButton"
+      class="cl-review-button"
+      type="submit"
     >
-
-      <div class="form-group">
-
-        <label for="reviewEmail">
-          Registered administrator email
-        </label>
-
-        <input
-          id="reviewEmail"
-          name="reviewEmail"
-          type="email"
-          required
-          autocomplete="email"
-          inputmode="email"
-          placeholder="you@example.com"
-        >
-
-        <small>
-          Use the same email address used when
-          creating the group account.
-        </small>
-
-      </div>
-
-
-      <button
-        id="checkStatusButton"
-        type="submit"
-        class="btn btn-primary cl-full-btn"
-      >
-        Check Application Status
-      </button>
-
-    </form>
+      Check Application Status
+    </button>
 
   `;
-
 
   applicationDetails.parentNode.insertBefore(
     wrapper,
     applicationDetails
   );
 
-
-  /*
-   * Re-read the dynamically-created
-   * elements.
-   */
-
   reviewForm =
-    document.getElementById(
-      "reviewStatusForm"
-    );
-
+    wrapper;
 
   emailInput =
-    document.getElementById(
-      "reviewEmail"
+    wrapper.querySelector(
+      "#reviewEmail"
     );
-
 
   checkButton =
-    document.getElementById(
-      "checkStatusButton"
+    wrapper.querySelector(
+      "#checkStatusButton"
     );
-
-
-  if (reviewForm) {
-
-    reviewForm.addEventListener(
-      "submit",
-      event => {
-
-        event.preventDefault();
-
-        checkApplicationStatus();
-
-      }
-    );
-
-  }
 
 }
 
 
 /* =========================================================
-   EXISTING FORM INITIALIZATION
+   FORM BINDING
 ========================================================= */
 
-function initializeExistingForm() {
+function bindForm() {
 
   if (!reviewForm) {
     return;
   }
 
+  reviewForm.addEventListener(
+    "submit",
+    event => {
 
-  if (!emailInput) {
+      event.preventDefault();
+
+      checkApplicationStatus();
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   SUBMISSION MESSAGE
+========================================================= */
+
+function showSubmissionMessage() {
+
+  const params =
+    new URLSearchParams(
+      window.location.search
+    );
+
+  if (
+    params.get(
+      "submitted"
+    ) !== "1"
+  ) {
+
     return;
-  }
-
-
-  if (checkButton) {
-
-    reviewForm.addEventListener(
-      "submit",
-      event => {
-
-        event.preventDefault();
-
-        checkApplicationStatus();
-
-      }
-    );
 
   }
 
-}
-
-
-/* =========================================================
-   PRE-FILL REGISTERED EMAIL
-========================================================= */
-
-function restoreRegisteredEmail() {
-
-  /*
-   * Login.js stores this object when a
-   * pending user is redirected here.
-   *
-   * Example:
-   *
-   * chama_live_review_application
-   *
-   * {
-   *   member_number,
-   *   email
-   * }
-   *
-   * We only use the email.
-   *
-   * No member number is displayed.
-   */
-
-  try {
-
-    const stored =
-      localStorage.getItem(
-        "chama_live_review_application"
-      );
-
-
-    if (!stored) {
-      return;
-    }
-
-
-    const parsed =
-      JSON.parse(
-        stored
-      );
-
-
-    const email =
-      normalizeEmail(
-        parsed?.email
-      );
-
-
-    if (
-      email &&
-      emailInput
-    ) {
-
-      emailInput.value =
-        email;
-
-    }
-
-  }
-
-  catch (error) {
-
-    console.warn(
-      "CHAMA LIVE: unable to restore review email",
-      error
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   OPTIONAL AUTO CHECK
-========================================================= */
-
-function shouldAutoCheck() {
-
-  /*
-   * We deliberately DO NOT automatically
-   * query the RPC merely because an email
-   * was stored in localStorage.
-   *
-   * The administrator should explicitly
-   * submit the registered email.
-   */
-
-  return false;
+  showStatus(
+    "Application submitted — awaiting review."
+  );
 
 }
 
@@ -1355,53 +1162,12 @@ function shouldAutoCheck() {
    INITIALIZE
 ========================================================= */
 
-function initialize() {
+ensureLookupInterface();
 
-  ensureLookupInterface();
+bindForm();
 
+showSubmissionMessage();
 
-  initializeExistingForm();
-
-
-  restoreRegisteredEmail();
-
-
-  if (
-    shouldAutoCheck()
-  ) {
-
-    checkApplicationStatus();
-
-  }
-
-
-  console.log(
-    "CHAMA LIVE: account-review.js ready"
-  );
-
-}
-
-
-/* =========================================================
-   START
-========================================================= */
-
-if (
-  document.readyState ===
-  "loading"
-) {
-
-  document.addEventListener(
-    "DOMContentLoaded",
-    initialize,
-    {
-      once:
-        true
-    }
-  );
-
-} else {
-
-  initialize();
-
-}
+console.log(
+  "CHAMA LIVE: account-review.js ready"
+);
