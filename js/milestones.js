@@ -43,11 +43,14 @@ async function init() {
     await loadPlans();
     await loadMilestones();
 
-    console.log("CHAMA LIVE: Milestones context ready", {
-      groupId: state.groupId,
-      groupName: state.groupName,
-      role: state.currentMember?.role || null
-    });
+    console.log(
+      "CHAMA LIVE: Milestones context ready",
+      {
+        groupId: state.groupId,
+        groupName: state.groupName,
+        role: state.currentMember?.role || null
+      }
+    );
   } catch (error) {
     console.error(
       "CHAMA LIVE: Milestones initialization failed",
@@ -192,7 +195,8 @@ function bindEvents() {
 async function loadContext() {
   await requireAuth();
 
-  state.currentMember = await getMyMember();
+  state.currentMember =
+    await getMyMember();
 
   if (!state.currentMember?.group_id) {
     throw new Error(
@@ -269,7 +273,9 @@ function isManagementRole() {
     state.currentMember?.role || ""
   ).toLowerCase();
 
-  return MANAGEMENT_ROLES.includes(role);
+  return MANAGEMENT_ROLES.includes(
+    role
+  );
 }
 
 async function loadPlans() {
@@ -296,7 +302,8 @@ async function loadPlans() {
     throw error;
   }
 
-  state.plans = data || [];
+  state.plans =
+    data || [];
 
   populatePlanSelect();
 }
@@ -323,7 +330,8 @@ function populatePlanSelect() {
     const option =
       document.createElement("option");
 
-    option.value = plan.id;
+    option.value =
+      plan.id;
 
     option.textContent =
       `${plan.title} (${formatStatus(
@@ -479,7 +487,9 @@ async function handleCreateMilestone(
     els.amount.value !== ""
   ) {
     amount =
-      Number(els.amount.value);
+      Number(
+        els.amount.value
+      );
 
     if (
       !Number.isFinite(amount) ||
