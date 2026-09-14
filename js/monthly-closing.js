@@ -2253,9 +2253,8 @@ async function closeMonth() {
 
     if (periodStatus === "closed") {
 
-      throw new Error(
-        `Financial month ${month} is already closed`
-      );
+      renderClosingStatus();
+      return;
 
     }
 
@@ -2298,10 +2297,7 @@ async function closeMonth() {
       );
 
       renderClosingStatus();
-
-      throw new Error(
-        `Financial month ${month} is already closed`
-      );
+      return;
 
     }
 
@@ -2596,9 +2592,8 @@ async function reopenMonth() {
 
     if (periodStatus !== "closed") {
 
-      throw new Error(
-        `Financial month ${month} is not closed`
-      );
+      renderClosingStatus();
+      return;
 
     }
 
