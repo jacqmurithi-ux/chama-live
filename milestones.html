@@ -1,17 +1,20 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
   <meta charset="UTF-8">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0"
 
-  <meta
-    name="description"
-    content="CHAMA LIVE group milestones management"
-  >
+>
+
+<meta
+name="description"
+content="CHAMA LIVE group milestones management"
+
+>
 
   <title>Milestones — CHAMA LIVE</title>
 
@@ -728,6 +731,7 @@
       }
     }
   </style>
+
 </head>
 
 <body>
@@ -735,40 +739,43 @@
     <div class="brand">
       <div class="brand-mark">C</div>
 
-      <div class="brand-text">
-        <div class="brand-title">
-          CHAMA LIVE
-        </div>
-
-        <div class="brand-subtitle">
-          Group Operations
-        </div>
-      </div>
+```
+  <div class="brand-text">
+    <div class="brand-title">
+      CHAMA LIVE
     </div>
 
-    <div class="topbar-right">
-      <div class="topbar-context">
-        <span class="context-label">
-          Current group
-        </span>
-
-        <span
-          id="topbar-group-name"
-          class="context-value"
-          data-group-name
-        >
-          Loading...
-        </span>
-      </div>
-
-      <button
-        id="logout-btn"
-        type="button"
-        class="logout-btn"
-      >
-        Logout
-      </button>
+    <div class="brand-subtitle">
+      Group Operations
     </div>
+  </div>
+</div>
+
+<div class="topbar-right">
+  <div class="topbar-context">
+    <span class="context-label">
+      Current group
+    </span>
+
+    <span
+      id="topbar-group-name"
+      class="context-value"
+      data-group-name
+    >
+      Loading...
+    </span>
+  </div>
+
+  <button
+    id="logout"
+    type="button"
+    class="logout-btn"
+  >
+    Logout
+  </button>
+</div>
+```
+
   </header>
 
   <div class="app-shell">
@@ -777,402 +784,227 @@
         Navigation
       </div>
 
-      <nav class="nav">
-        <a href="dashboard.html">
-          Dashboard
-        </a>
+```
+  <nav class="nav">
+    <a href="dashboard.html">
+      Dashboard
+    </a>
 
-        <a href="members.html">
-          Members
-        </a>
+    <a href="members.html">
+      Members
+    </a>
 
-        <a href="contributions.html">
-          Contributions
-        </a>
+    <a href="contributions.html">
+      Contributions
+    </a>
 
-        <a href="expenses.html">
-          Expenses
-        </a>
+    <a href="expenses.html">
+      Expenses
+    </a>
 
-        <a href="meetings.html">
-          Meetings
-        </a>
+    <a href="meetings.html">
+      Meetings
+    </a>
 
-        <a href="reports.html">
-          Reports
-        </a>
+    <a href="reports.html">
+      Reports
+    </a>
 
-        <a href="monthly-closing.html">
-          Monthly Closing
-        </a>
+    <a href="monthly-closing.html">
+      Monthly Closing
+    </a>
 
-        <a href="group-management.html">
-          Group Management
-        </a>
+    <a href="group-management.html">
+      Group Management
+    </a>
 
-        <a href="assets.html">
-          Assets
-        </a>
+    <a href="assets.html">
+      Assets
+    </a>
 
-        <a href="plans-activities.html">
-          Plans &amp; Activities
-        </a>
+    <a href="plans-activities.html">
+      Plans &amp; Activities
+    </a>
 
-        <a href="support-welfare.html">
-          Support &amp; Welfare
-        </a>
+    <a href="support-welfare.html">
+      Support &amp; Welfare
+    </a>
 
-        <a
-          href="milestones.html"
-          class="active"
-          aria-current="page"
-        >
-          Milestones
-        </a>
+    <a
+      href="milestones.html"
+      class="active"
+      aria-current="page"
+    >
+      Milestones
+    </a>
 
-        <a href="data-migration.html">
-          Data Migration
-        </a>
-      </nav>
-    </aside>
+    <a href="data-migration.html">
+      Data Migration
+    </a>
+  </nav>
+</aside>
 
-    <main class="main">
-      <div class="page">
-        <section class="hero">
-          <div class="eyebrow">
-            Group Operations
-          </div>
+<main class="main">
+  <div class="page">
+    <section class="hero">
+      <div class="eyebrow">
+        Group Operations
+      </div>
 
-          <h1>
-            Milestones
-          </h1>
+      <h1>
+        Milestones
+      </h1>
 
-          <p>
-            Track important group targets, planned achievements,
-            linked plans, dates, and associated amounts in one
-            group-scoped register.
-          </p>
-        </section>
+      <p>
+        Track important group targets, planned achievements,
+        linked plans, dates, and associated amounts in one
+        group-scoped register.
+      </p>
+    </section>
 
-        <section class="context-card">
-          <div class="context-item">
-            <div class="context-item-label">
-              Current Group
-            </div>
-
-            <div
-              id="current-group-name"
-              class="context-item-value"
-              data-group-name
-            >
-              Loading...
-            </div>
-          </div>
-
-          <div class="context-item">
-            <div class="context-item-label">
-              Context Boundary
-            </div>
-
-            <div class="context-item-value">
-              Authenticated member group
-            </div>
-          </div>
-        </section>
+    <section class="context-card">
+      <div class="context-item">
+        <div class="context-item-label">
+          Current Group
+        </div>
 
         <div
-          id="message"
-          class="message"
-          role="status"
-          aria-live="polite"
-        ></div>
+          id="current-group-name"
+          class="context-item-value"
+          data-group-name
+        >
+          Loading...
+        </div>
+      </div>
 
-        <section class="kpi-grid">
-          <div class="kpi-card">
-            <div class="kpi-label">
-              Total Milestones
-            </div>
+      <div class="context-item">
+        <div class="context-item-label">
+          Context Boundary
+        </div>
 
-            <div
-              id="total-milestones"
-              class="kpi-value"
-            >
-              0
-            </div>
-          </div>
+        <div class="context-item-value">
+          Authenticated member group
+        </div>
+      </div>
+    </section>
 
-          <div class="kpi-card">
-            <div class="kpi-label">
-              Upcoming Milestones
-            </div>
+    <div
+      id="message"
+      class="message"
+      role="status"
+      aria-live="polite"
+    ></div>
 
-            <div
-              id="upcoming-milestones"
-              class="kpi-value"
-            >
-              0
-            </div>
-          </div>
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">
+          Total Milestones
+        </div>
 
-          <div class="kpi-card">
-            <div class="kpi-label">
-              Linked to Plans
-            </div>
+        <div
+          id="total-milestones"
+          class="kpi-value"
+        >
+          0
+        </div>
+      </div>
 
-            <div
-              id="linked-milestones"
-              class="kpi-value"
-            >
-              0
-            </div>
-          </div>
+      <div class="kpi-card">
+        <div class="kpi-label">
+          Upcoming Milestones
+        </div>
 
-          <div class="kpi-card">
-            <div class="kpi-label">
-              Total Amount
-            </div>
+        <div
+          id="upcoming-milestones"
+          class="kpi-value"
+        >
+          0
+        </div>
+      </div>
 
-            <!--
-              milestones.js intentionally scopes this selector
-              because the form below also uses milestone-amount.
-            -->
-            <div
-              id="milestone-amount"
-              class="kpi-value"
-            >
-              KSh 0.00
-            </div>
-          </div>
-        </section>
+      <div class="kpi-card">
+        <div class="kpi-label">
+          Linked to Plans
+        </div>
 
-        <section class="section">
-          <div class="section-header">
-            <div>
-              <h2>
-                Create Milestone
-              </h2>
+        <div
+          id="linked-milestones"
+          class="kpi-value"
+        >
+          0
+        </div>
+      </div>
 
-              <p>
-                Add a new milestone to the current authenticated group.
-              </p>
-            </div>
-          </div>
+      <div class="kpi-card">
+        <div class="kpi-label">
+          Total Amount
+        </div>
 
-          <div class="section-body">
-            <div
-              id="management-note"
-              class="management-note"
-            >
-              Milestone creation is restricted to authorised
-              group management roles.
-            </div>
+        <!--
+          milestones.js intentionally scopes this selector
+          because the form below also uses milestone-amount.
+        -->
+        <div
+          id="milestone-amount"
+          class="kpi-value"
+        >
+          KSh 0.00
+        </div>
+      </div>
+    </section>
 
-            <form
-              id="milestone-form"
-              novalidate
-            >
-              <div class="form-grid">
-                <div class="field full">
-                  <label for="milestone-title">
-                    Milestone Title
-                  </label>
+    <section class="section">
+      <div class="section-header">
+        <div>
+          <h2>
+            Create Milestone
+          </h2>
 
-                  <input
-                    id="milestone-title"
-                    name="title"
-                    type="text"
-                    maxlength="200"
-                    autocomplete="off"
-                    placeholder="e.g. Purchase group plot"
-                    required
-                  >
-                </div>
+          <p>
+            Add a new milestone to the current authenticated group.
+          </p>
+        </div>
+      </div>
 
-                <div class="field">
-                  <label for="milestone-category">
-                    Category
-                  </label>
+      <div class="section-body">
+        <div
+          id="management-note"
+          class="management-note"
+        >
+          Milestone creation is restricted to authorised
+          group management roles.
+        </div>
 
-                  <select
-                    id="milestone-category"
-                    name="category"
-                  >
-                    <option value="general">
-                      General
-                    </option>
+        <form
+          id="milestone-form"
+          novalidate
+        >
+          <div class="form-grid">
+            <div class="field full">
+              <label for="milestone-title">
+                Milestone Title
+              </label>
 
-                    <option value="investment">
-                      Investment
-                    </option>
-
-                    <option value="property">
-                      Property
-                    </option>
-
-                    <option value="welfare">
-                      Welfare
-                    </option>
-
-                    <option value="business">
-                      Business
-                    </option>
-
-                    <option value="education">
-                      Education
-                    </option>
-
-                    <option value="membership">
-                      Membership
-                    </option>
-
-                    <option value="fundraising">
-                      Fundraising
-                    </option>
-
-                    <option value="infrastructure">
-                      Infrastructure
-                    </option>
-
-                    <option value="other">
-                      Other
-                    </option>
-                  </select>
-                </div>
-
-                <div class="field">
-                  <label for="milestone-plan">
-                    Linked Plan
-                  </label>
-
-                  <select
-                    id="milestone-plan"
-                    name="plan_id"
-                  >
-                    <option value="">
-                      No linked plan
-                    </option>
-                  </select>
-                </div>
-
-                <div class="field">
-                  <label for="milestone-date">
-                    Milestone Date
-                  </label>
-
-                  <input
-                    id="milestone-date"
-                    name="milestone_date"
-                    type="date"
-                    required
-                  >
-                </div>
-
-                <div class="field">
-                  <label for="milestone-amount">
-                    Amount
-                  </label>
-
-                  <!--
-                    Duplicate ID is intentionally preserved because
-                    milestones.js scopes the form selector:
-                    #milestone-form #milestone-amount
-                  -->
-                  <input
-                    id="milestone-amount"
-                    name="amount"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    inputmode="decimal"
-                    placeholder="0.00"
-                  >
-                </div>
-
-                <div class="field full">
-                  <label for="milestone-document-id">
-                    Document ID
-                  </label>
-
-                  <input
-                    id="milestone-document-id"
-                    name="document_id"
-                    type="text"
-                    autocomplete="off"
-                    placeholder="Optional document UUID"
-                  >
-
-                  <div class="help-text">
-                    Optional. When supplied, this must be a valid UUID.
-                  </div>
-                </div>
-
-                <div class="field full">
-                  <label for="milestone-description">
-                    Description
-                  </label>
-
-                  <textarea
-                    id="milestone-description"
-                    name="description"
-                    maxlength="2000"
-                    placeholder="Describe the milestone..."
-                  ></textarea>
-                </div>
-              </div>
-
-              <div class="form-actions">
-                <button
-                  id="create-milestone-btn"
-                  type="submit"
-                  class="btn-primary"
-                >
-                  Create Milestone
-                </button>
-
-                <button
-                  id="clear-milestone-btn"
-                  type="button"
-                  class="btn-secondary"
-                >
-                  Clear
-                </button>
-              </div>
-            </form>
-          </div>
-        </section>
-
-        <section class="section">
-          <div class="section-header">
-            <div>
-              <h2>
-                Group Milestone Register
-              </h2>
-
-              <p>
-                Milestones are always loaded within the authenticated
-                member's current group context.
-              </p>
-            </div>
-          </div>
-
-          <div class="section-body">
-            <div class="toolbar">
               <input
-                id="milestone-search"
-                type="search"
-                placeholder="Search milestones..."
+                id="milestone-title"
+                name="title"
+                type="text"
+                maxlength="200"
                 autocomplete="off"
-                aria-label="Search milestones"
+                placeholder="e.g. Purchase group plot"
+                required
               >
+            </div>
+
+            <div class="field">
+              <label for="milestone-category">
+                Category
+              </label>
 
               <select
-                id="milestone-category-filter"
-                aria-label="Filter milestones by category"
+                id="milestone-category"
+                name="category"
               >
-                <option value="">
-                  All Categories
-                </option>
-
                 <option value="general">
                   General
                 </option>
@@ -1213,75 +1045,253 @@
                   Other
                 </option>
               </select>
-
-              <button
-                id="refresh-milestones-btn"
-                type="button"
-                class="btn-secondary"
-              >
-                Refresh
-              </button>
             </div>
 
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>
-                      Milestone
-                    </th>
+            <div class="field">
+              <label for="milestone-plan">
+                Linked Plan
+              </label>
 
-                    <th>
-                      Category
-                    </th>
+              <select
+                id="milestone-plan"
+                name="plan_id"
+              >
+                <option value="">
+                  No linked plan
+                </option>
+              </select>
+            </div>
 
-                    <th>
-                      Linked Plan
-                    </th>
+            <div class="field">
+              <label for="milestone-date">
+                Milestone Date
+              </label>
 
-                    <th>
-                      Date
-                    </th>
+              <input
+                id="milestone-date"
+                name="milestone_date"
+                type="date"
+                required
+              >
+            </div>
 
-                    <th>
-                      Amount
-                    </th>
+            <div class="field">
+              <label for="milestone-amount">
+                Amount
+              </label>
 
-                    <th>
-                      Description
-                    </th>
+              <!--
+                Duplicate ID is intentionally preserved because
+                milestones.js scopes the form selector:
+                #milestone-form #milestone-amount
+              -->
+              <input
+                id="milestone-amount"
+                name="amount"
+                type="number"
+                min="0"
+                step="0.01"
+                inputmode="decimal"
+                placeholder="0.00"
+              >
+            </div>
 
-                    <th>
-                      Created
-                    </th>
+            <div class="field full">
+              <label for="milestone-document-id">
+                Document ID
+              </label>
 
-                    <th>
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
+              <input
+                id="milestone-document-id"
+                name="document_id"
+                type="text"
+                autocomplete="off"
+                placeholder="Optional document UUID"
+              >
 
-                <tbody id="milestones-body">
-                  <tr>
-                    <td
-                      colspan="8"
-                      class="empty-state"
-                    >
-                      Loading milestones...
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+              <div class="help-text">
+                Optional. When supplied, this must be a valid UUID.
+              </div>
+            </div>
+
+            <div class="field full">
+              <label for="milestone-description">
+                Description
+              </label>
+
+              <textarea
+                id="milestone-description"
+                name="description"
+                maxlength="2000"
+                placeholder="Describe the milestone..."
+              ></textarea>
             </div>
           </div>
-        </section>
 
-        <footer>
-          CHAMA LIVE · Milestones are scoped to the authenticated
-          member's current group.
-        </footer>
+          <div class="form-actions">
+            <button
+              id="create-milestone-btn"
+              type="submit"
+              class="btn-primary"
+            >
+              Create Milestone
+            </button>
+
+            <button
+              id="clear-milestone-btn"
+              type="button"
+              class="btn-secondary"
+            >
+              Clear
+            </button>
+          </div>
+        </form>
       </div>
-    </main>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <div>
+          <h2>
+            Group Milestone Register
+          </h2>
+
+          <p>
+            Milestones are always loaded within the authenticated
+            member's current group context.
+          </p>
+        </div>
+      </div>
+
+      <div class="section-body">
+        <div class="toolbar">
+          <input
+            id="milestone-search"
+            type="search"
+            placeholder="Search milestones..."
+            autocomplete="off"
+            aria-label="Search milestones"
+          >
+
+          <select
+            id="milestone-category-filter"
+            aria-label="Filter milestones by category"
+          >
+            <option value="">
+              All Categories
+            </option>
+
+            <option value="general">
+              General
+            </option>
+
+            <option value="investment">
+              Investment
+            </option>
+
+            <option value="property">
+              Property
+            </option>
+
+            <option value="welfare">
+              Welfare
+            </option>
+
+            <option value="business">
+              Business
+            </option>
+
+            <option value="education">
+              Education
+            </option>
+
+            <option value="membership">
+              Membership
+            </option>
+
+            <option value="fundraising">
+              Fundraising
+            </option>
+
+            <option value="infrastructure">
+              Infrastructure
+            </option>
+
+            <option value="other">
+              Other
+            </option>
+          </select>
+
+          <button
+            id="refresh-milestones-btn"
+            type="button"
+            class="btn-secondary"
+          >
+            Refresh
+          </button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>
+                  Milestone
+                </th>
+
+                <th>
+                  Category
+                </th>
+
+                <th>
+                  Linked Plan
+                </th>
+
+                <th>
+                  Date
+                </th>
+
+                <th>
+                  Amount
+                </th>
+
+                <th>
+                  Description
+                </th>
+
+                <th>
+                  Created
+                </th>
+
+                <th>
+                  Actions
+                </th>
+              </tr>
+            </thead>
+
+            <tbody id="milestones-body">
+              <tr>
+                <td
+                  colspan="8"
+                  class="empty-state"
+                >
+                  Loading milestones...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      CHAMA LIVE · Milestones are scoped to the authenticated
+      member's current group.
+    </footer>
+  </div>
+</main>
+```
+
   </div>
 
   <script type="module">
@@ -1296,5 +1306,6 @@
     type="module"
     src="./js/milestones.js"
   ></script>
+
 </body>
 </html>
