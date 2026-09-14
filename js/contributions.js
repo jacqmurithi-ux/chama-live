@@ -86,10 +86,6 @@ const goalProgressContainer =
   );
 
 
-/*
- * Explicit accounting month selector.
- */
-
 const accountingMonthSelect =
   document.getElementById(
     "accountingMonth"
@@ -100,13 +96,6 @@ const selectedAccountingMonthLabel =
     "selectedAccountingMonthLabel"
   );
 
-
-/*
- * Hidden idempotency field added to contributions.html.
- *
- * JavaScript owns this value.
- * The user does not enter it.
- */
 
 const contributionIdempotencyKeyInput =
   document.getElementById(
@@ -132,14 +121,6 @@ let monthlyContribution = 0;
 
 let initialized = false;
 
-
-/*
- * The selected accounting month is the month
- * displayed by canonical monthly accounting.
- *
- * Default:
- * current local month.
- */
 
 let accountingMonth =
   getCurrentMonth();
@@ -230,10 +211,6 @@ function getCurrentMonth() {
 }
 
 
-/*
- * Convert YYYY-MM to a readable month label.
- */
-
 function formatAccountingMonth(month) {
 
   if (
@@ -272,10 +249,6 @@ function formatAccountingMonth(month) {
 }
 
 
-/*
- * Return YYYY-MM for a Date object.
- */
-
 function monthKeyFromDate(date) {
 
   return (
@@ -287,10 +260,6 @@ function monthKeyFromDate(date) {
 
 }
 
-
-/*
- * Add/subtract months from YYYY-MM.
- */
 
 function shiftMonth(
   month,
@@ -318,15 +287,6 @@ function shiftMonth(
 
 }
 
-
-/*
- * Build accounting month options.
- *
- * This is DISPLAY STATE ONLY.
- *
- * Selecting a month does not write to Supabase.
- * Canonical accounting is read through the status RPC.
- */
 
 function buildAccountingMonthOptions() {
 
@@ -389,10 +349,6 @@ function buildAccountingMonthOptions() {
 }
 
 
-/*
- * Update visible selected-month label.
- */
-
 function renderAccountingMonthLabel() {
 
   if (
@@ -408,10 +364,6 @@ function renderAccountingMonthLabel() {
 
 }
 
-
-/*
- * Return the month selected by the user.
- */
 
 function getSelectedAccountingMonth() {
 
@@ -449,7 +401,6 @@ function getContributionMonth(item) {
 
   }
 
-
   if (
     item?.month
   ) {
@@ -459,7 +410,6 @@ function getContributionMonth(item) {
     ).slice(0, 7);
 
   }
-
 
   if (
     item?.created_at
@@ -484,7 +434,6 @@ function getContributionMonth(item) {
 
   }
 
-
   return "";
 
 }
@@ -496,10 +445,8 @@ function formatDate(value) {
     return "—";
   }
 
-
   const date =
     new Date(value);
-
 
   if (
     Number.isNaN(
@@ -510,7 +457,6 @@ function formatDate(value) {
     return String(value);
 
   }
-
 
   return date.toLocaleDateString(
     "en-KE",
@@ -557,14 +503,6 @@ function escapeHtml(value) {
    IDEMPOTENCY
 ========================================================= */
 
-/*
- * Generate a UUID for a NEW contribution submission.
- *
- * The same UUID is retained while the submission is being
- * retried. It is replaced only after a successful submission
- * and form reset.
- */
-
 function generateIdempotencyKey() {
 
   if (
@@ -576,19 +514,12 @@ function generateIdempotencyKey() {
 
   }
 
-
   throw new Error(
     "Secure idempotency key generation is unavailable in this browser."
   );
 
 }
 
-
-/*
- * Return the current submission idempotency key.
- *
- * A missing key is generated once and then retained.
- */
 
 function getContributionIdempotencyKey() {
 
@@ -600,13 +531,11 @@ function getContributionIdempotencyKey() {
 
   }
 
-
   let key =
     String(
       contributionIdempotencyKeyInput.value ||
       ""
     ).trim();
-
 
   if (!key) {
 
@@ -618,22 +547,16 @@ function getContributionIdempotencyKey() {
 
   }
 
-
   return key;
 
 }
 
-
-/*
- * Start a completely NEW submission identity.
- */
 
 function resetContributionIdempotencyKey() {
 
   if (!contributionIdempotencyKeyInput) {
     return;
   }
-
 
   contributionIdempotencyKeyInput.value =
     generateIdempotencyKey();
@@ -652,7 +575,6 @@ function showError(error) {
     error
   );
 
-
   if (errorEl) {
 
     errorEl.textContent =
@@ -663,7 +585,6 @@ function showError(error) {
       false;
 
   }
-
 
   if (statusEl) {
 
@@ -707,13 +628,11 @@ async function getGroupId() {
       "my_group_id"
     );
 
-
   if (error) {
 
     throw error;
 
   }
-
 
   if (!data) {
 
@@ -722,7 +641,6 @@ async function getGroupId() {
     );
 
   }
-
 
   return data;
 
@@ -750,19 +668,16 @@ async function loadGroup() {
       )
       .single();
 
-
   if (error) {
 
     throw error;
 
   }
 
-
   monthlyContribution =
     number(
       data?.monthly_contribution
     );
-
 
   if (
     monthlyExpected
@@ -775,7 +690,6 @@ async function loadGroup() {
 
   }
 
-
   if (
     amountInput &&
     monthlyContribution > 0
@@ -785,7 +699,6 @@ async function loadGroup() {
       monthlyContribution;
 
   }
-
 
   document
     .querySelectorAll(
@@ -806,9 +719,6 @@ async function loadGroup() {
 
 /* =========================================================
    LOAD MEMBERS
-   ---------------------------------------------------------
-   Membership accounting is controlled by members.status.
-   onboarding_status is deliberately NOT used here.
 ========================================================= */
 
 async function loadMembers() {
@@ -837,13 +747,11 @@ async function loadMembers() {
         }
       );
 
-
   if (error) {
 
     throw error;
 
   }
-
 
   members =
     (data || [])
@@ -857,11 +765,9 @@ async function loadMembers() {
           "active"
       );
 
-
   if (!memberSelect) {
     return;
   }
-
 
   memberSelect.innerHTML = `
 
@@ -871,7 +777,6 @@ async function loadMembers() {
 
   `;
 
-
   members.forEach(
     member => {
 
@@ -880,14 +785,11 @@ async function loadMembers() {
           "option"
         );
 
-
       option.value =
         member.id;
 
-
       option.textContent =
         member.name;
-
 
       memberSelect.appendChild(
         option
@@ -907,11 +809,9 @@ async function loadContributionGoals() {
 
   contributionGoals = [];
 
-
   if (!goalSelect) {
     return;
   }
-
 
   const {
     data,
@@ -946,17 +846,14 @@ async function loadContributionGoals() {
         }
       );
 
-
   if (error) {
 
     throw error;
 
   }
 
-
   contributionGoals =
     data || [];
-
 
   goalSelect.innerHTML = `
 
@@ -966,7 +863,6 @@ async function loadContributionGoals() {
 
   `;
 
-
   contributionGoals.forEach(
     goal => {
 
@@ -975,10 +871,8 @@ async function loadContributionGoals() {
           "option"
         );
 
-
       option.value =
         goal.id;
-
 
       option.textContent =
         goal.target_amount
@@ -986,7 +880,6 @@ async function loadContributionGoals() {
               goal.target_amount
             )}`
           : goal.goal_name;
-
 
       goalSelect.appendChild(
         option
@@ -1045,13 +938,11 @@ async function loadContributions() {
         }
       );
 
-
   if (error) {
 
     throw error;
 
   }
-
 
   contributions =
     data || [];
@@ -1062,20 +953,6 @@ async function loadContributions() {
 /* =========================================================
    CANONICAL 2B STATUS
 ========================================================= */
-
-/*
- * IMPORTANT:
- *
- * This function does NOT calculate:
- *
- * • arrears
- * • credit
- * • allocations
- * • outstanding
- *
- * It only asks the canonical RPC for the
- * selected accounting month.
- */
 
 async function loadCanonicalMemberStatus(
   month = accountingMonth
@@ -1089,7 +966,6 @@ async function loadCanonicalMemberStatus(
 
   }
 
-
   if (
     !/^\d{4}-\d{2}$/.test(
       String(month || "")
@@ -1101,7 +977,6 @@ async function loadCanonicalMemberStatus(
     );
 
   }
-
 
   const {
     data,
@@ -1118,26 +993,19 @@ async function loadCanonicalMemberStatus(
       }
     );
 
-
   if (error) {
 
     throw error;
 
   }
 
-
   canonicalMemberStatus =
     data || [];
-
 
   return canonicalMemberStatus;
 
 }
 
-
-/*
- * Find canonical status for one member.
- */
 
 function getCanonicalMemberStatus(
   memberId
@@ -1156,37 +1024,17 @@ function getCanonicalMemberStatus(
    ACCOUNTING MONTH
 ========================================================= */
 
-/*
- * IMPORTANT:
- *
- * Accounting Month selection is READ-ONLY.
- *
- * It must NOT call:
- *
- * refresh_canonical_contribution_accounting()
- *
- * The canonical status RPC is authoritative for display.
- *
- * Mutation belongs only to the atomic contribution RPC:
- *
- * cl_2b_record_contribution()
- */
-
 async function changeAccountingMonth() {
 
   const selected =
     getSelectedAccountingMonth();
 
-
   accountingMonth =
     selected;
 
-
   renderAccountingMonthLabel();
 
-
   clearError();
-
 
   if (statusEl) {
 
@@ -1199,7 +1047,6 @@ async function changeAccountingMonth() {
       )} canonical accounting...`;
 
   }
-
 
   if (memberStatusRows) {
 
@@ -1223,24 +1070,15 @@ async function changeAccountingMonth() {
 
   }
 
-
   try {
-
-    /*
-     * READ ONLY.
-     *
-     * Do not refresh or mutate obligations here.
-     */
 
     await loadCanonicalMemberStatus(
       accountingMonth
     );
 
-
     renderMemberStatus();
 
     renderSummary();
-
 
     if (statusEl) {
 
@@ -1274,7 +1112,6 @@ function getMemberName(memberId) {
         String(memberId)
     );
 
-
   return (
     member?.name ||
     "Unknown member"
@@ -1295,14 +1132,12 @@ function getGoalName(goalId) {
 
   }
 
-
   const goal =
     contributionGoals.find(
       item =>
         String(item.id) ===
         String(goalId)
     );
-
 
   return (
     goal?.goal_name ||
@@ -1323,7 +1158,6 @@ function normalizePaymentMethod(value) {
       .trim()
       .toLowerCase();
 
-
   if (
     method === "m-pesa" ||
     method === "mpesa" ||
@@ -1334,7 +1168,6 @@ function normalizePaymentMethod(value) {
 
   }
 
-
   if (
     method === "cash"
   ) {
@@ -1342,7 +1175,6 @@ function normalizePaymentMethod(value) {
     return PAYMENT_METHODS.CASH;
 
   }
-
 
   if (
     method === "bank" ||
@@ -1353,7 +1185,6 @@ function normalizePaymentMethod(value) {
     return PAYMENT_METHODS.BANK;
 
   }
-
 
   return value || "—";
 
@@ -1374,7 +1205,6 @@ function contributionTypeLabel(item) {
       .trim()
       .toLowerCase();
 
-
   const labels = {
 
     monthly: "Monthly",
@@ -1394,7 +1224,6 @@ function contributionTypeLabel(item) {
     fine: "Fine"
 
   };
-
 
   return (
     labels[type] ||
@@ -1425,12 +1254,10 @@ function createOtherContributionField() {
       "otherContributionTypeWrap"
     );
 
-
   otherTypeInput =
     document.getElementById(
       "otherContributionType"
     );
-
 
   updateOtherContributionType();
 
@@ -1453,23 +1280,20 @@ function updateOtherContributionType() {
 
   }
 
-
   const isOther =
     String(
-      typeSelect.value || ""
+      typeSelect.value ||
+      ""
     )
       .trim()
       .toLowerCase() ===
     "other";
 
-
   otherTypeWrap.hidden =
     !isOther;
 
-
   otherTypeInput.required =
     isOther;
-
 
   if (!isOther) {
 
@@ -1496,7 +1320,6 @@ function buildContributionNotes(
       normalNotes || ""
     ).trim();
 
-
   if (
     String(
       contributionType || ""
@@ -1508,12 +1331,10 @@ function buildContributionNotes(
 
   }
 
-
   const details =
     String(
       otherDetails || ""
     ).trim();
-
 
   if (!details) {
 
@@ -1521,17 +1342,14 @@ function buildContributionNotes(
 
   }
 
-
   const otherLine =
     `Other contribution: ${details}`;
-
 
   if (!notes) {
 
     return otherLine;
 
   }
-
 
   return (
     `${otherLine}\n${notes}`
@@ -1552,7 +1370,6 @@ function extractOtherDetails(item) {
       ""
     ).toLowerCase();
 
-
   if (
     type !== "other"
   ) {
@@ -1561,19 +1378,16 @@ function extractOtherDetails(item) {
 
   }
 
-
   const notes =
     String(
       item?.notes ||
       ""
     );
 
-
   const match =
     notes.match(
       /Other contribution:\s*(.+?)(?:\n|$)/i
     );
-
 
   return (
     match?.[1]?.trim() ||
@@ -1593,17 +1407,14 @@ function updatePaymentMethod() {
     return;
   }
 
-
   const method =
     normalizePaymentMethod(
       methodSelect.value
     );
 
-
   const isMpesa =
     method ===
     PAYMENT_METHODS.MPESA;
-
 
   if (mpesaReferenceWrap) {
 
@@ -1612,12 +1423,10 @@ function updatePaymentMethod() {
 
   }
 
-
   if (mpesaReference) {
 
     mpesaReference.required =
       isMpesa;
-
 
     if (!isMpesa) {
 
@@ -1640,7 +1449,6 @@ function renderLedger() {
   if (!contributionRows) {
     return;
   }
-
 
   if (!contributions.length) {
 
@@ -1665,7 +1473,6 @@ function renderLedger() {
 
   }
 
-
   contributionRows.innerHTML =
     contributions
       .slice(0, 100)
@@ -1681,36 +1488,30 @@ function renderLedger() {
                 : null
             );
 
-
           const reference =
             item.mpesa_reference ||
             item.reference ||
             "—";
-
 
           const paymentMethod =
             normalizePaymentMethod(
               item.payment_method
             );
 
-
           const type =
             contributionTypeLabel(
               item
             );
-
 
           const otherDetails =
             extractOtherDetails(
               item
             );
 
-
           const goalName =
             getGoalName(
               item.goal_id
             );
-
 
           return `
 
@@ -1852,7 +1653,6 @@ function canonicalStatusLabel(
       .trim()
       .toLowerCase();
 
-
   const labels = {
 
     paid: "PAID",
@@ -1864,7 +1664,6 @@ function canonicalStatusLabel(
     credit: "OVERPAID"
 
   };
-
 
   return (
     labels[value] ||
@@ -1889,7 +1688,6 @@ function canonicalStatusClass(
       .trim()
       .toLowerCase();
 
-
   if (
     value === "paid"
   ) {
@@ -1897,7 +1695,6 @@ function canonicalStatusClass(
     return "cl-status-paid";
 
   }
-
 
   if (
     value === "partial"
@@ -1907,7 +1704,6 @@ function canonicalStatusClass(
 
   }
 
-
   if (
     value === "credit"
   ) {
@@ -1915,7 +1711,6 @@ function canonicalStatusClass(
     return "cl-status-credit";
 
   }
-
 
   if (
     value === "outstanding"
@@ -1925,18 +1720,10 @@ function canonicalStatusClass(
 
   }
 
-
   return "cl-status-neutral";
 
 }
 
-
-/*
- * Progress is visual only.
- *
- * The amount applied is supplied by
- * the canonical RPC.
- */
 
 function canonicalProgress(
   account
@@ -1947,12 +1734,10 @@ function canonicalProgress(
       account?.monthly_due
     );
 
-
   const applied =
     number(
       account?.applied_this_month
     );
-
 
   if (
     due <= 0
@@ -1961,7 +1746,6 @@ function canonicalProgress(
     return 0;
 
   }
-
 
   return Math.min(
     Math.max(
@@ -1987,7 +1771,6 @@ function renderMemberStatus() {
     return;
   }
 
-
   if (!members.length) {
 
     memberStatusRows.innerHTML = `
@@ -2010,7 +1793,6 @@ function renderMemberStatus() {
     return;
 
   }
-
 
   if (!canonicalMemberStatus.length) {
 
@@ -2041,7 +1823,6 @@ function renderMemberStatus() {
 
   }
 
-
   memberStatusRows.innerHTML =
     members
       .map(
@@ -2051,13 +1832,6 @@ function renderMemberStatus() {
             getCanonicalMemberStatus(
               member.id
             );
-
-
-          /*
-           * Never replace missing canonical
-           * accounting data with frontend
-           * calculations.
-           */
 
           if (!account) {
 
@@ -2120,60 +1894,50 @@ function renderMemberStatus() {
 
           }
 
-
           const monthlyDue =
             number(
               account.monthly_due
             );
-
 
           const previousArrears =
             number(
               account.previous_outstanding
             );
 
-
           const currentPaid =
             number(
               account.current_month_payment
             );
-
 
           const appliedThisMonth =
             number(
               account.applied_this_month
             );
 
-
           const carryForward =
             number(
               account.carry_forward
             );
-
 
           const outstanding =
             number(
               account.current_outstanding
             );
 
-
           const progress =
             canonicalProgress(
               account
             );
-
 
           const status =
             canonicalStatusLabel(
               account.status
             );
 
-
           const statusClass =
             canonicalStatusClass(
               account.status
             );
-
 
           return `
 
@@ -2377,11 +2141,9 @@ function renderSummary() {
       "contributionSummary"
     );
 
-
   if (!container) {
     return;
   }
-
 
   const total =
     contributions.reduce(
@@ -2394,15 +2156,8 @@ function renderSummary() {
       0
     );
 
-
-  /*
-   * THIS MONTH means the selected
-   * accounting month.
-   */
-
   const selectedMonth =
     accountingMonth;
-
 
   const monthlyTotal =
     contributions
@@ -2426,7 +2181,6 @@ function renderSummary() {
         0
       );
 
-
   const outstandingMembers =
     canonicalMemberStatus.filter(
       account =>
@@ -2434,7 +2188,6 @@ function renderSummary() {
           account.current_outstanding
         ) > 0
     ).length;
-
 
   container.innerHTML = `
 
@@ -2544,7 +2297,6 @@ function renderContributionGoals() {
     return;
   }
 
-
   if (!contributionGoals.length) {
 
     goalProgressContainer.innerHTML = `
@@ -2568,7 +2320,6 @@ function renderContributionGoals() {
 
   }
 
-
   goalProgressContainer.innerHTML =
     contributionGoals
       .map(
@@ -2578,7 +2329,6 @@ function renderContributionGoals() {
             number(
               goal.target_amount
             );
-
 
           const raised =
             contributions
@@ -2603,7 +2353,6 @@ function renderContributionGoals() {
                 0
               );
 
-
           const percentage =
             target > 0
               ? Math.min(
@@ -2614,7 +2363,6 @@ function renderContributionGoals() {
                   100
                 )
               : 0;
-
 
           return `
 
@@ -2719,17 +2467,14 @@ async function recordContribution(event) {
     memberSelect?.value ||
     "";
 
-
   const amount =
     number(
       amountInput?.value
     );
 
-
   const contributionDate =
     dateInput?.value ||
     "";
-
 
   const contributionType =
     String(
@@ -2739,30 +2484,25 @@ async function recordContribution(event) {
       .trim()
       .toLowerCase();
 
-
   const otherDetails =
     otherTypeInput?.value
       ?.trim() ||
     "";
-
 
   const paymentMethod =
     normalizePaymentMethod(
       methodSelect?.value
     );
 
-
   const reference =
     mpesaReference?.value
       ?.trim() ||
     "";
 
-
   const normalNotes =
     notesInput?.value
       ?.trim() ||
     "";
-
 
   const goalId =
     goalSelect?.value ||
@@ -2823,6 +2563,39 @@ async function recordContribution(event) {
     );
 
     typeSelect?.focus();
+
+    return;
+
+  }
+
+
+  /*
+   * =====================================================
+   * CANONICAL 2B WRITE BOUNDARY
+   * =====================================================
+   *
+   * Historical contribution records may contain
+   * non-monthly contribution_type values.
+   *
+   * Those values remain valid for historical
+   * read/display/import purposes.
+   *
+   * The canonical 2B contribution writer, however,
+   * supports the monthly contribution workflow only.
+   *
+   * Therefore non-monthly values are rejected BEFORE
+   * the atomic contribution RPC is called.
+   */
+
+  if (
+    contributionType !== "monthly"
+  ) {
+
+    showError(
+      new Error(
+        "Only Monthly contributions can be recorded through the canonical 2B accounting workflow."
+      )
+    );
 
     return;
 
@@ -2903,15 +2676,6 @@ async function recordContribution(event) {
   }
 
 
-  /*
-   * Duplicate warning remains a warning only.
-   *
-   * A second monthly payment is legitimate
-   * and may become carry-forward.
-   *
-   * This is NOT the idempotency mechanism.
-   */
-
   if (
     contributionType ===
     "monthly"
@@ -2972,15 +2736,6 @@ async function recordContribution(event) {
     );
 
 
-  /*
-   * Obtain the submission identity BEFORE
-   * calling the atomic RPC.
-   *
-   * If the request fails due to a network problem,
-   * the same key remains in the hidden field and
-   * can safely be retried.
-   */
-
   let idempotencyKey;
 
   try {
@@ -3027,27 +2782,14 @@ async function recordContribution(event) {
      * ATOMIC 2B WRITE
      * =====================================================
      *
-     * IMPORTANT:
-     *
      * There is intentionally NO:
      *
      *   .from("contributions").insert(...)
      *
      * here.
      *
-     * The database RPC performs:
-     *
-     * • authentication
-     * • finance-role authorization
-     * • group/member ownership validation
-     * • active-member validation
-     * • closed-period validation
-     * • idempotency handling
-     * • payment insertion
-     * • member-level transaction locking
-     * • full-horizon monthly allocation refresh
-     *
-     * atomically.
+     * The canonical RPC is the sole new-contribution
+     * write boundary.
      */
 
     const {
@@ -3067,7 +2809,7 @@ async function recordContribution(event) {
             amount,
 
           p_contribution_type:
-            contributionType,
+            "monthly",
 
           p_contribution_date:
             contributionDate,
@@ -3113,12 +2855,6 @@ async function recordContribution(event) {
     );
 
 
-    /*
-     * After a successful atomic operation,
-     * display the contribution's accounting month
-     * for monthly contributions.
-     */
-
     if (
       contributionType ===
       "monthly"
@@ -3142,26 +2878,13 @@ async function recordContribution(event) {
     }
 
 
-    /*
-     * Read canonical accounting AFTER the
-     * atomic database transaction has completed.
-     */
-
     await loadCanonicalMemberStatus(
       accountingMonth
     );
 
 
-    /*
-     * Reload raw ledger.
-     */
-
     await loadContributions();
 
-
-    /*
-     * Render all current data.
-     */
 
     renderLedger();
 
@@ -3171,17 +2894,6 @@ async function recordContribution(event) {
 
     renderContributionGoals();
 
-
-    /*
-     * Reset form only AFTER successful completion.
-     *
-     * This is important:
-     *
-     * if the RPC succeeded but the network response
-     * was interrupted, the user can retry with the
-     * same idempotency key rather than generating
-     * another payment.
-     */
 
     form?.reset();
 
@@ -3234,13 +2946,6 @@ async function recordContribution(event) {
     }
 
 
-    /*
-     * Successful submission is complete.
-     *
-     * Generate a NEW idempotency key for the
-     * next independent contribution.
-     */
-
     resetContributionIdempotencyKey();
 
 
@@ -3263,14 +2968,9 @@ async function recordContribution(event) {
   catch (error) {
 
     /*
-     * IMPORTANT:
+     * Do NOT reset the idempotency key on failure.
      *
-     * Do NOT reset the idempotency key here.
-     *
-     * If the request actually committed but the
-     * response was lost, retrying with the same key
-     * allows the database RPC to return the existing
-     * payment rather than creating a duplicate.
+     * A retry must use the same payment identity.
      */
 
     showError(error);
@@ -3313,19 +3013,10 @@ export async function initContributions() {
     clearError();
 
 
-    /*
-     * Build month selector before loading data.
-     */
-
     buildAccountingMonthOptions();
 
     renderAccountingMonthLabel();
 
-
-    /*
-     * Generate the first submission idempotency
-     * key when the page is initialized.
-     */
 
     if (
       contributionIdempotencyKeyInput &&
@@ -3351,17 +3042,9 @@ export async function initContributions() {
     }
 
 
-    /*
-     * GROUP
-     */
-
     groupId =
       await getGroupId();
 
-
-    /*
-     * DATA
-     */
 
     await Promise.all([
 
@@ -3376,23 +3059,10 @@ export async function initContributions() {
     ]);
 
 
-    /*
-     * CANONICAL ACCOUNTING
-     *
-     * READ ONLY.
-     *
-     * No refresh mutation is performed merely
-     * because the Contributions page was opened.
-     */
-
     await loadCanonicalMemberStatus(
       accountingMonth
     );
 
-
-    /*
-     * DEFAULT FORM VALUES
-     */
 
     if (dateInput) {
 
@@ -3435,10 +3105,6 @@ export async function initContributions() {
 
     }
 
-
-    /*
-     * RENDER
-     */
 
     renderAccountingMonthLabel();
 
@@ -3486,11 +3152,6 @@ export async function initContributions() {
    EVENTS
 ========================================================= */
 
-
-/*
- * Contribution form.
- */
-
 if (
   form &&
   !form.dataset.clContributionBound
@@ -3508,10 +3169,6 @@ if (
 
 }
 
-
-/*
- * Payment method.
- */
 
 if (
   methodSelect &&
@@ -3531,10 +3188,6 @@ if (
 }
 
 
-/*
- * Contribution type.
- */
-
 if (
   typeSelect &&
   !typeSelect.dataset.clTypeBound
@@ -3552,14 +3205,6 @@ if (
 
 }
 
-
-/*
- * Accounting month selector.
- *
- * READ ONLY.
- *
- * No canonical refresh RPC is called here.
- */
 
 if (
   accountingMonthSelect &&
