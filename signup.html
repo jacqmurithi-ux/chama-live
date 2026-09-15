@@ -1,36 +1,39 @@
 <!doctype html>
 
-<html lang="en"><head>  <meta charset="utf-8"><meta
-name="viewport"
-content="width=device-width, initial-scale=1"
+<html lang="en">
 
-«»
+<head>
 
-<meta
-name="description"
-content="Create your CHAMA LIVE group account and start managing members, contributions, expenses, meetings and reports in one connected system."
+  <meta charset="utf-8">
 
-«»
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
 
-<meta
-name="theme-color"
-content="#0f766e"
+  <meta
+    name="description"
+    content="Create your CHAMA LIVE group account and start managing members, contributions, expenses, meetings and reports in one connected system."
+  >
 
-«»
+  <meta
+    name="theme-color"
+    content="#0f766e"
+  >
 
-  <title>Create Group — CHAMA LIVE</title>  <!-- Existing application styles -->  <link
+  <title>Create Group — CHAMA LIVE</title>
+
+  <link
     rel="stylesheet"
     href="css/app.css"
-  >  <!-- Existing landing-page styles -->  <link
+  >
+
+  <link
     rel="stylesheet"
     href="css/landing.css"
-  >  <!-- =====================================================
-       SIGNUP PAGE VISUAL LAYER
+  >
 
-       This styling is intentionally page-local so the
-       existing application and landing page styles remain
-       untouched.
-  ====================================================== -->  <style>
+  <style>
 
     :root {
       --cl-primary: #0f766e;
@@ -103,10 +106,6 @@ content="#0f766e"
     }
 
 
-    /* =====================================================
-       BACKGROUND
-    ====================================================== */
-
     .cl-auth-body::before {
 
       content: "";
@@ -161,10 +160,6 @@ content="#0f766e"
     }
 
 
-    /* =====================================================
-       MAIN SHELL
-    ====================================================== */
-
     .cl-auth-shell {
 
       position: relative;
@@ -185,10 +180,6 @@ content="#0f766e"
         60px;
     }
 
-
-    /* =====================================================
-       CARD
-    ====================================================== */
 
     .cl-auth-card {
 
@@ -219,10 +210,6 @@ content="#0f766e"
         blur(18px);
     }
 
-
-    /* =====================================================
-       BRAND
-    ====================================================== */
 
     .cl-brand {
 
@@ -260,10 +247,6 @@ content="#0f766e"
       text-decoration: none;
     }
 
-
-    /* =====================================================
-       INTRO
-    ====================================================== */
 
     .cl-eyebrow {
 
@@ -356,10 +339,6 @@ content="#0f766e"
     }
 
 
-    /* =====================================================
-       ALERTS
-    ====================================================== */
-
     .cl-auth-card .alert {
 
       border-radius:
@@ -403,10 +382,6 @@ content="#0f766e"
         #fecdd3;
     }
 
-
-    /* =====================================================
-       FORM SECTION
-    ====================================================== */
 
     .cl-auth-card form {
 
@@ -477,10 +452,6 @@ content="#0f766e"
         1 / -1;
     }
 
-
-    /* =====================================================
-       FORM CONTROLS
-    ====================================================== */
 
     .cl-auth-card .form-group {
 
@@ -625,10 +596,10 @@ content="#0f766e"
 
 
     /* =====================================================
-       REVIEW NOTICE
+       ONBOARDING NOTICE
     ====================================================== */
 
-    .cl-review-note {
+    .cl-onboarding-note {
 
       position: relative;
 
@@ -657,7 +628,7 @@ content="#0f766e"
     }
 
 
-    .cl-review-note::before {
+    .cl-onboarding-note::before {
 
       content: "";
 
@@ -678,14 +649,14 @@ content="#0f766e"
     }
 
 
-    .cl-review-note strong {
+    .cl-onboarding-note strong {
 
       color:
         var(--cl-dark);
     }
 
 
-    .cl-review-note ol {
+    .cl-onboarding-note ol {
 
       margin:
         12px 0 0;
@@ -701,16 +672,12 @@ content="#0f766e"
     }
 
 
-    .cl-review-note li {
+    .cl-onboarding-note li {
 
       margin-bottom:
         5px;
     }
 
-
-    /* =====================================================
-       PRIMARY BUTTON
-    ====================================================== */
 
     .cl-full-btn {
 
@@ -790,10 +757,6 @@ content="#0f766e"
     }
 
 
-    /* =====================================================
-       FOOTER
-    ====================================================== */
-
     .cl-auth-footer {
 
       margin:
@@ -829,10 +792,6 @@ content="#0f766e"
         underline;
     }
 
-
-    /* =====================================================
-       MOBILE
-    ====================================================== */
 
     @media (max-width: 720px) {
 
@@ -908,7 +867,7 @@ content="#0f766e"
       }
 
 
-      .cl-review-note {
+      .cl-onboarding-note {
 
         padding:
           18px 18px 18px 20px;
@@ -919,10 +878,6 @@ content="#0f766e"
 
     }
 
-
-    /* =====================================================
-       SMALL PHONES
-    ====================================================== */
 
     @media (max-width: 400px) {
 
@@ -959,10 +914,6 @@ content="#0f766e"
     }
 
 
-    /* =====================================================
-       ACCESSIBILITY
-    ====================================================== */
-
     @media (prefers-reduced-motion: reduce) {
 
       * {
@@ -976,387 +927,354 @@ content="#0f766e"
 
     }
 
-  </style></head><body class="cl-auth-body"><main class="cl-auth-shell">  <section
+  </style>
+
+</head>
+
+
+<body class="cl-auth-body">
+
+<main class="cl-auth-shell">
+
+  <section
     class="cl-auth-card"
     aria-labelledby="signupTitle"
-  ><!-- =================================================
-     BRAND
-================================================== -->
-
-<a
-  class="cl-brand"
-  href="index.html"
-  aria-label="CHAMA LIVE home"
->
-  CHAMA <span>LIVE</span>
-</a>
-
-
-<!-- =================================================
-     INTRO
-================================================== -->
-
-<div class="cl-eyebrow">
-  GROUP ONBOARDING
-</div>
-
-
-<h1 id="signupTitle">
-  Create your CHAMA LIVE account
-</h1>
-
-
-<p class="cl-auth-intro">
-  Set up your group and administrator account.
-  New group accounts are reviewed before
-  Dashboard access is enabled.
-</p>
-
-
-<!-- =================================================
-     ERROR
-================================================== -->
-
-<div
-  id="error"
-  class="alert alert-error"
-  hidden
-  role="alert"
-></div>
-
-
-<!-- =================================================
-     STATUS
-================================================== -->
-
-<div
-  id="status"
-  class="alert alert-info"
-  hidden
-  role="status"
-></div>
-
-
-<!-- =================================================
-     SIGNUP FORM
-================================================== -->
-
-<form
-  id="signupForm"
-  autocomplete="on"
->
-
-
-  <!-- =================================================
-       GROUP DETAILS
-  ================================================== -->
-
-  <h2>
-    Group details
-  </h2>
-
-
-  <div class="cl-form-grid">
-
-
-    <div class="form-group full">
-
-      <label for="groupName">
-        Group name *
-      </label>
-
-      <input
-        id="groupName"
-        name="groupName"
-        type="text"
-        required
-        maxlength="120"
-        placeholder="e.g. Timau Community Welfare Group"
-      >
-
-    </div>
-
-
-    <div class="form-group">
-
-      <label for="category">
-        Group type
-      </label>
-
-      <select
-        id="category"
-        name="category"
-      >
-
-        <option value="chama">
-          Chama
-        </option>
-
-        <option value="welfare">
-          Welfare Group
-        </option>
-
-        <option value="investment">
-          Investment Group
-        </option>
-
-        <option value="savings">
-          Savings Group
-        </option>
-
-        <option value="self_help">
-          Self Help Group
-        </option>
-
-        <option value="cbo">
-          CBO
-        </option>
-
-        <option value="other">
-          Other
-        </option>
-
-      </select>
-
-    </div>
-
-
-    <div class="form-group">
-
-      <label for="country">
-        Country
-      </label>
-
-      <input
-        id="country"
-        name="country"
-        type="text"
-        value="Kenya"
-        maxlength="100"
-      >
-
-    </div>
-
-
-    <div class="form-group">
-
-      <label for="monthlyContribution">
-        Monthly contribution (KSh)
-      </label>
-
-      <input
-        id="monthlyContribution"
-        name="monthlyContribution"
-        type="number"
-        min="0"
-        step="0.01"
-        value="0"
-      >
-
-    </div>
-
-
-    <div class="form-group full">
-
-      <label for="description">
-        Description
-      </label>
-
-      <textarea
-        id="description"
-        name="description"
-        maxlength="500"
-        placeholder="Brief description of the group"
-      ></textarea>
-
-    </div>
-
-
-  </div>
-
-
-  <!-- =================================================
-       ADMINISTRATOR
-  ================================================== -->
-
-  <h2>
-    Administrator
-  </h2>
-
-
-  <div class="cl-form-grid">
-
-
-    <div class="form-group">
-
-      <label for="adminName">
-        Full name *
-      </label>
-
-      <input
-        id="adminName"
-        name="adminName"
-        type="text"
-        required
-        maxlength="120"
-        autocomplete="name"
-      >
-
-    </div>
-
-
-    <div class="form-group">
-
-      <label for="adminPhone">
-        Phone number *
-      </label>
-
-      <input
-        id="adminPhone"
-        name="adminPhone"
-        type="tel"
-        required
-        maxlength="30"
-        placeholder="07XXXXXXXX"
-        autocomplete="tel"
-      >
-
-    </div>
-
-
-    <div class="form-group full">
-
-      <label for="email">
-        Email address *
-      </label>
-
-      <input
-        id="email"
-        name="email"
-        type="email"
-        required
-        autocomplete="email"
-        placeholder="you@example.com"
-      >
-
-    </div>
-
-
-    <div class="form-group">
-
-      <label for="password">
-        Password *
-      </label>
-
-      <input
-        id="password"
-        name="password"
-        type="password"
-        required
-        minlength="8"
-        autocomplete="new-password"
-      >
-
-    </div>
-
-
-    <div class="form-group">
-
-      <label for="confirmPassword">
-        Confirm password *
-      </label>
-
-      <input
-        id="confirmPassword"
-        name="confirmPassword"
-        type="password"
-        required
-        minlength="8"
-        autocomplete="new-password"
-      >
-
-    </div>
-
-
-  </div>
-
-
-  <!-- =================================================
-       REVIEW NOTICE
-  ================================================== -->
-
-  <div class="cl-review-note">
-
-    <strong>
-      What happens next?
-    </strong>
-
-    <ol>
-
-      <li>
-        Your login account and group application
-        are created.
-      </li>
-
-      <li>
-        Your application is marked
-        <strong>Pending Review</strong>.
-      </li>
-
-      <li>
-        CHAMA LIVE reviews the account before
-        Dashboard access is enabled.
-      </li>
-
-      <li>
-        After approval, sign in normally to
-        access your group.
-      </li>
-
-    </ol>
-
-  </div>
-
-
-  <!-- =================================================
-       SUBMIT
-  ================================================== -->
-
-  <button
-    id="signupButton"
-    class="btn btn-primary cl-full-btn"
-    type="submit"
   >
-    Create Group Account
-  </button>
+
+    <a
+      class="cl-brand"
+      href="index.html"
+      aria-label="CHAMA LIVE home"
+    >
+      CHAMA <span>LIVE</span>
+    </a>
 
 
-</form>
+    <div class="cl-eyebrow">
+      GROUP ONBOARDING
+    </div>
 
 
-<!-- =================================================
-     SIGN IN
-================================================== -->
+    <h1 id="signupTitle">
+      Create your CHAMA LIVE account
+    </h1>
 
-<p class="cl-auth-footer">
 
-  Already have an account?
+    <p class="cl-auth-intro">
+      Create your secure administrator account,
+      verify your email, and continue directly into
+      your new group.
+    </p>
 
-  <a href="login.html">
-    Sign in
-  </a>
 
-</p>
+    <div
+      id="error"
+      class="alert alert-error"
+      hidden
+      role="alert"
+    ></div>
 
-  </section></main><!-- =====================================================
-     EXISTING SUPABASE / SIGNUP LOGIC
 
-     DO NOT REMOVE.
+    <div
+      id="status"
+      class="alert alert-info"
+      hidden
+      role="status"
+    ></div>
 
-     This remains the form submission hook for:
-     signup → group creation → application review
-     → approval → sign-in → dashboard.
-====================================================== --><script
+
+    <form
+      id="signupForm"
+      autocomplete="on"
+    >
+
+      <h2>
+        Group details
+      </h2>
+
+
+      <div class="cl-form-grid">
+
+        <div class="form-group full">
+
+          <label for="groupName">
+            Group name *
+          </label>
+
+          <input
+            id="groupName"
+            name="groupName"
+            type="text"
+            required
+            maxlength="120"
+            placeholder="e.g. Timau Community Welfare Group"
+          >
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label for="category">
+            Group type
+          </label>
+
+          <select
+            id="category"
+            name="category"
+          >
+
+            <option value="chama">
+              Chama
+            </option>
+
+            <option value="welfare">
+              Welfare Group
+            </option>
+
+            <option value="investment">
+              Investment Group
+            </option>
+
+            <option value="savings">
+              Savings Group
+            </option>
+
+            <option value="self_help">
+              Self Help Group
+            </option>
+
+            <option value="cbo">
+              CBO
+            </option>
+
+            <option value="other">
+              Other
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label for="country">
+            Country
+          </label>
+
+          <input
+            id="country"
+            name="country"
+            type="text"
+            value="Kenya"
+            maxlength="100"
+          >
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label for="monthlyContribution">
+            Monthly contribution (KSh)
+          </label>
+
+          <input
+            id="monthlyContribution"
+            name="monthlyContribution"
+            type="number"
+            min="0"
+            step="0.01"
+            value="0"
+          >
+
+        </div>
+
+
+        <div class="form-group full">
+
+          <label for="description">
+            Description
+          </label>
+
+          <textarea
+            id="description"
+            name="description"
+            maxlength="500"
+            placeholder="Brief description of the group"
+          ></textarea>
+
+        </div>
+
+      </div>
+
+
+      <h2>
+        Administrator
+      </h2>
+
+
+      <div class="cl-form-grid">
+
+        <div class="form-group">
+
+          <label for="adminName">
+            Full name *
+          </label>
+
+          <input
+            id="adminName"
+            name="adminName"
+            type="text"
+            required
+            maxlength="120"
+            autocomplete="name"
+          >
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label for="adminPhone">
+            Phone number *
+          </label>
+
+          <input
+            id="adminPhone"
+            name="adminPhone"
+            type="tel"
+            required
+            maxlength="30"
+            placeholder="07XXXXXXXX"
+            autocomplete="tel"
+          >
+
+        </div>
+
+
+        <div class="form-group full">
+
+          <label for="email">
+            Email address *
+          </label>
+
+          <input
+            id="email"
+            name="email"
+            type="email"
+            required
+            autocomplete="email"
+            placeholder="you@example.com"
+          >
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label for="password">
+            Password *
+          </label>
+
+          <input
+            id="password"
+            name="password"
+            type="password"
+            required
+            minlength="8"
+            autocomplete="new-password"
+          >
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label for="confirmPassword">
+            Confirm password *
+          </label>
+
+          <input
+            id="confirmPassword"
+            name="confirmPassword"
+            type="password"
+            required
+            minlength="8"
+            autocomplete="new-password"
+          >
+
+        </div>
+
+      </div>
+
+
+      <div class="cl-onboarding-note">
+
+        <strong>
+          What happens next?
+        </strong>
+
+        <ol>
+
+          <li>
+            Your secure login account is created.
+          </li>
+
+          <li>
+            Confirm your email address using the
+            verification link we send you.
+          </li>
+
+          <li>
+            Your authenticated account creates the
+            group and administrator membership.
+          </li>
+
+          <li>
+            You are redirected to your CHAMA LIVE
+            dashboard and can continue setting up
+            your group.
+          </li>
+
+        </ol>
+
+      </div>
+
+
+      <button
+        id="signupButton"
+        class="btn btn-primary cl-full-btn"
+        type="submit"
+      >
+        Create Group Account
+      </button>
+
+    </form>
+
+
+    <p class="cl-auth-footer">
+
+      Already have an account?
+
+      <a href="login.html">
+        Sign in
+      </a>
+
+    </p>
+
+  </section>
+
+</main>
+
+
+<script
   type="module"
   src="js/signup.js"
-></script></body></html>
+></script>
+
+</body>
+
+</html>
+
