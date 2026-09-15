@@ -1,6 +1,6 @@
 /* =========================================================
    CHAMA LIVE — DASHBOARD
-   COMPLETE CANONICAL 2B VERSION
+   RECONCILED CANONICAL 2B VERSION
 
    FRONTEND-ONLY VERSION
    ---------------------------------------------------------
@@ -13,9 +13,7 @@
        NO RLS CHANGE
 
    AUTH / GROUP:
-       requireAuth()
-       getMyMember()
-       getMyGroup()
+       getMyApplicationContext()
 
    MEMBERSHIP RULE:
        members.status controls membership accounting.
@@ -47,12 +45,12 @@
        refreshDashboard()
 ========================================================= */
 
-import { supabase } from "./supabase.js";
+import {
+  supabase
+} from "./supabase.js";
 
 import {
-  requireAuth,
-  getMyMember,
-  getMyGroup
+  getMyApplicationContext
 } from "./auth.js";
 
 
@@ -86,13 +84,18 @@ let initialized = false;
 ========================================================= */
 
 function el(id) {
-  return document.getElementById(id);
+
+  return document.getElementById(
+    id
+  );
+
 }
 
 
 function setText(id, value) {
 
-  const element = el(id);
+  const element =
+    el(id);
 
   if (!element) {
     return;
@@ -100,6 +103,7 @@ function setText(id, value) {
 
   element.textContent =
     value ?? "—";
+
 }
 
 
@@ -122,6 +126,7 @@ function money(value) {
       }
     )
   );
+
 }
 
 
@@ -137,6 +142,7 @@ function numberValue(value) {
   return Number.isFinite(number)
     ? number
     : 0;
+
 }
 
 
@@ -147,11 +153,27 @@ function numberValue(value) {
 function escapeHtml(value) {
 
   return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
+
 }
 
 
@@ -173,6 +195,7 @@ function showStatus(message) {
 
   element.textContent =
     message || "";
+
 }
 
 
@@ -190,6 +213,7 @@ function clearStatus() {
 
   element.textContent =
     "";
+
 }
 
 
@@ -239,6 +263,7 @@ function showError(error) {
       message;
 
   }
+
 }
 
 
@@ -256,6 +281,7 @@ function clearError() {
 
   errorElement.textContent =
     "";
+
 }
 
 
@@ -270,7 +296,11 @@ function normalizeDate(value) {
   }
 
   return String(value)
-    .substring(0, 10);
+    .substring(
+      0,
+      10
+    );
+
 }
 
 
@@ -281,20 +311,34 @@ function getToday() {
 
   return [
     date.getFullYear(),
+
     String(
       date.getMonth() + 1
-    ).padStart(2, "0"),
+    ).padStart(
+      2,
+      "0"
+    ),
+
     String(
       date.getDate()
-    ).padStart(2, "0")
+    ).padStart(
+      2,
+      "0"
+    )
+
   ].join("-");
+
 }
 
 
 function getCurrentMonth() {
 
   return getToday()
-    .substring(0, 7);
+    .substring(
+      0,
+      7
+    );
+
 }
 
 
@@ -319,6 +363,7 @@ function formatDate(value) {
   ) {
 
     return dateValue;
+
   }
 
   return date.toLocaleDateString(
@@ -329,6 +374,7 @@ function formatDate(value) {
       day: "numeric"
     }
   );
+
 }
 
 
@@ -350,6 +396,7 @@ function formatMonth(month) {
   ) {
 
     return month;
+
   }
 
   return date.toLocaleDateString(
@@ -359,6 +406,7 @@ function formatMonth(month) {
       month: "long"
     }
   );
+
 }
 
 
@@ -368,25 +416,48 @@ function formatMonth(month) {
 
 async function loadContext() {
 
+  const context =
+    await getMyApplicationContext();
+
+  if (!context) {
+
+    throw new Error(
+      "Your authenticated group context could not be loaded."
+    );
+
+  }
+
+
   currentUser =
-    await requireAuth();
+    context.user ||
+    null;
+
+
+  currentMember =
+    context.member ||
+    null;
+
+
+  currentGroup =
+    context.group ||
+    null;
+
 
   if (!currentUser) {
 
     throw new Error(
       "You are not signed in."
     );
+
   }
 
-
-  currentMember =
-    await getMyMember();
 
   if (!currentMember) {
 
     throw new Error(
       "No member record is linked to this account."
     );
+
   }
 
 
@@ -395,6 +466,7 @@ async function loadContext() {
     throw new Error(
       "Your member record has no member ID."
     );
+
   }
 
 
@@ -403,6 +475,7 @@ async function loadContext() {
     throw new Error(
       "Your member record is not linked to a group."
     );
+
   }
 
 
@@ -410,14 +483,12 @@ async function loadContext() {
     currentMember.group_id;
 
 
-  currentGroup =
-    await getMyGroup();
-
   if (!currentGroup) {
 
     throw new Error(
       "Group information could not be found."
     );
+
   }
 
 
@@ -429,10 +500,12 @@ async function loadContext() {
     throw new Error(
       "Current group context could not be verified."
     );
+
   }
 
 
   renderContext();
+
 }
 
 
@@ -446,46 +519,31 @@ function renderContext() {
     .querySelectorAll(
       "[data-group-name]"
     )
-    .forEach(element => {
+    .forEach(
+      element => {
 
-      element.textContent =
-        currentGroup?.name ||
-        "CHAMA";
-    });
+        element.textContent =
+          currentGroup?.name ||
+          "CHAMA";
+
+      }
+    );
 
 
   document
     .querySelectorAll(
       "[data-user-name]"
     )
-    .forEach(element => {
+    .forEach(
+      element => {
 
-      element.textContent =
-        currentMember?.name ||
-        "Member";
-    });
+        element.textContent =
+          currentMember?.name ||
+          "Member";
 
+      }
+    );
 
-  /*
-     Existing Dashboard HTML uses:
-
-         #groupName
-         #userName
-
-     Keep these as direct fallbacks as well.
-  */
-
-  setText(
-    "groupName",
-    currentGroup?.name ||
-    "CHAMA"
-  );
-
-  setText(
-    "userName",
-    currentMember?.name ||
-    "Member"
-  );
 }
 
 
@@ -532,6 +590,7 @@ async function loadMembers() {
 
   members =
     data || [];
+
 }
 
 
@@ -580,6 +639,7 @@ async function loadContributions() {
 
   contributions =
     data || [];
+
 }
 
 
@@ -626,6 +686,7 @@ async function loadExpenses() {
 
   expenses =
     data || [];
+
 }
 
 
@@ -672,6 +733,7 @@ async function loadMeetings() {
 
   meetings =
     data || [];
+
 }
 
 
@@ -714,6 +776,7 @@ function isActiveMember(member) {
     "suspended",
     "removed"
   ].includes(status);
+
 }
 
 
@@ -726,6 +789,7 @@ function getActiveMembers() {
   return members.filter(
     isActiveMember
   );
+
 }
 
 
@@ -752,6 +816,7 @@ function memberName(memberId) {
     member?.name ||
     "Unknown member"
   );
+
 }
 
 
@@ -789,81 +854,85 @@ async function loadCanonicalMemberStatus(
     throw new Error(
       `Canonical monthly accounting could not be loaded: ${error.message}`
     );
+
   }
 
 
   monthlyStatus =
-    (data || []).map(row => {
+    (data || []).map(
+      row => {
 
-      return {
+        return {
 
-        memberId:
-          row.member_id,
+          memberId:
+            row.member_id,
 
-        memberNumber:
-          row.member_number,
+          memberNumber:
+            row.member_number,
 
-        memberName:
-          row.member_name ||
-          memberName(
-            row.member_id
-          ),
+          memberName:
+            row.member_name ||
+            memberName(
+              row.member_id
+            ),
 
-        monthlyDue:
-          numberValue(
-            row.monthly_due
-          ),
+          monthlyDue:
+            numberValue(
+              row.monthly_due
+            ),
 
-        previousOutstanding:
-          numberValue(
-            row.previous_outstanding
-          ),
+          previousOutstanding:
+            numberValue(
+              row.previous_outstanding
+            ),
 
-        previousCredit:
-          numberValue(
-            row.previous_credit
-          ),
+          previousCredit:
+            numberValue(
+              row.previous_credit
+            ),
 
-        currentMonthPayment:
-          numberValue(
-            row.current_month_payment
-          ),
+          currentMonthPayment:
+            numberValue(
+              row.current_month_payment
+            ),
 
-        appliedThisMonth:
-          numberValue(
-            row.applied_this_month
-          ),
+          appliedThisMonth:
+            numberValue(
+              row.applied_this_month
+            ),
 
-        carryForward:
-          numberValue(
-            row.carry_forward
-          ),
+          carryForward:
+            numberValue(
+              row.carry_forward
+            ),
 
-        currentOutstanding:
-          numberValue(
-            row.current_outstanding
-          ),
+          currentOutstanding:
+            numberValue(
+              row.current_outstanding
+            ),
 
-        totalPaidToDate:
-          numberValue(
-            row.total_paid_to_date
-          ),
+          totalPaidToDate:
+            numberValue(
+              row.total_paid_to_date
+            ),
 
-        totalDueToDate:
-          numberValue(
-            row.total_due_to_date
-          ),
+          totalDueToDate:
+            numberValue(
+              row.total_due_to_date
+            ),
 
-        status:
-          row.status ||
-          "outstanding"
+          status:
+            row.status ||
+            "outstanding"
 
-      };
+        };
 
-    });
+      }
+    );
 
 
   return monthlyStatus;
+
 }
 
 
@@ -901,6 +970,7 @@ async function loadCanonicalSummary(
     throw new Error(
       `Canonical monthly summary could not be loaded: ${error.message}`
     );
+
   }
 
 
@@ -912,7 +982,9 @@ async function loadCanonicalSummary(
     try {
 
       canonicalSummary =
-        JSON.parse(data);
+        JSON.parse(
+          data
+        );
 
     }
     catch {
@@ -920,6 +992,7 @@ async function loadCanonicalSummary(
       throw new Error(
         "Canonical monthly summary returned invalid JSON."
       );
+
     }
 
   }
@@ -932,6 +1005,7 @@ async function loadCanonicalSummary(
 
 
   return canonicalSummary;
+
 }
 
 
@@ -973,6 +1047,7 @@ async function loadCanonicalAccounting() {
     throw new Error(
       "Canonical accounting summary was not returned."
     );
+
   }
 
 
@@ -981,6 +1056,7 @@ async function loadCanonicalAccounting() {
     monthlyStatus,
     canonicalSummary
   };
+
 }
 
 
@@ -1009,6 +1085,7 @@ async function loadData() {
   */
 
   await loadCanonicalAccounting();
+
 }
 
 
@@ -1025,13 +1102,6 @@ function getMonthlySummary() {
   const summary =
     canonicalSummary || {};
 
-
-  /*
-     These fields are returned by the canonical
-     monthly summary RPC.
-
-     Dashboard does not reconstruct them.
-  */
 
   const expected =
     numberValue(
@@ -1063,13 +1133,6 @@ function getMonthlySummary() {
     );
 
 
-  /*
-     Canonical active_members is authoritative.
-
-     If the RPC does not return it for any reason,
-     use the status-based member count.
-  */
-
   const canonicalActiveMembers =
     Number.isFinite(
       Number(
@@ -1081,13 +1144,6 @@ function getMonthlySummary() {
         )
       : activeMembers.length;
 
-
-  /*
-     Canonical member counts.
-
-     If unavailable, derive only from canonical
-     member-status rows — never from onboarding.
-  */
 
   let membersPaid =
     numberValue(
@@ -1162,13 +1218,6 @@ function getMonthlySummary() {
       : 0;
 
 
-  /*
-     Prefer canonical collection rate.
-
-     If unavailable, calculate it from
-     canonical applied / canonical expected.
-  */
-
   let collectionRate =
     Number(
       summary.collection_rate
@@ -1226,6 +1275,7 @@ function getMonthlySummary() {
     collectionRate
 
   };
+
 }
 
 
@@ -1256,7 +1306,10 @@ function getGroupBalance() {
 
   const totalContributions =
     contributions.reduce(
-      (sum, contribution) =>
+      (
+        sum,
+        contribution
+      ) =>
         sum +
         numberValue(
           contribution.amount
@@ -1277,7 +1330,10 @@ function getGroupBalance() {
           "approved"
       )
       .reduce(
-        (sum, expense) =>
+        (
+          sum,
+          expense
+        ) =>
           sum +
           numberValue(
             expense.amount
@@ -1291,6 +1347,7 @@ function getGroupBalance() {
     totalContributions -
     approvedExpenses
   );
+
 }
 
 
@@ -1308,39 +1365,17 @@ function renderSummary() {
     getGroupBalance();
 
 
-  /*
-     --------------------------------------------------------
-     TOTAL MEMBERS
-     --------------------------------------------------------
-
-     This is the complete group membership count.
-
-     Login status is irrelevant.
-  */
-
   setText(
     "membersCount",
     `${members.length} members`
   );
 
 
-  /*
-     --------------------------------------------------------
-     ACTIVE MEMBERS
-     --------------------------------------------------------
-  */
-
   setText(
     "activeMembers",
     summary.activeMembers
   );
 
-
-  /*
-     --------------------------------------------------------
-     MONTHLY EXPECTED
-     --------------------------------------------------------
-  */
 
   setText(
     "monthlyExpected",
@@ -1350,12 +1385,6 @@ function renderSummary() {
   );
 
 
-  /*
-     --------------------------------------------------------
-     CURRENT BALANCE
-     --------------------------------------------------------
-  */
-
   setText(
     "currentBalance",
     money(
@@ -1364,15 +1393,6 @@ function renderSummary() {
   );
 
 
-  /*
-     --------------------------------------------------------
-     MONTHLY COLLECTED
-     --------------------------------------------------------
-
-     The progress system uses canonical applied amount,
-     not a locally reconstructed allocation.
-  */
-
   setText(
     "monthlyCollected",
     money(
@@ -1380,12 +1400,6 @@ function renderSummary() {
     )
   );
 
-
-  /*
-     --------------------------------------------------------
-     PROGRESS
-     --------------------------------------------------------
-  */
 
   const percentage =
     Math.max(
@@ -1446,12 +1460,6 @@ function renderSummary() {
   }
 
 
-  /*
-     --------------------------------------------------------
-     CONTRIBUTOR SUMMARY
-     --------------------------------------------------------
-  */
-
   setText(
     "contributorsCount",
     summary.contributors
@@ -1473,12 +1481,6 @@ function renderSummary() {
     )
   );
 
-
-  /*
-     --------------------------------------------------------
-     CANONICAL BREAKDOWN
-     --------------------------------------------------------
-  */
 
   setText(
     "progressApplied",
@@ -1503,12 +1505,6 @@ function renderSummary() {
     )
   );
 
-
-  /*
-     --------------------------------------------------------
-     BALANCE STATE
-     --------------------------------------------------------
-  */
 
   const balanceElement =
     el("currentBalance");
@@ -1548,6 +1544,7 @@ function renderSummary() {
     }
 
   }
+
 }
 
 
@@ -1556,14 +1553,6 @@ function renderSummary() {
 ========================================================= */
 
 function renderMemberStatus() {
-
-  /*
-     dashboard.html uses:
-         #memberStatusRows
-
-     IMPORTANT:
-     We render the canonical RPC result directly.
-  */
 
   const container =
     el("memberStatusRows");
@@ -1576,6 +1565,7 @@ function renderMemberStatus() {
     );
 
     return;
+
   }
 
 
@@ -1595,100 +1585,104 @@ function renderMemberStatus() {
     `;
 
     return;
+
   }
 
 
   container.innerHTML =
     monthlyStatus
-      .map(row => {
+      .map(
+        row => {
 
-        const status =
-          String(
-            row.status ||
-            "outstanding"
-          )
-            .trim()
-            .toLowerCase();
-
-
-        const statusClass =
-          status.replace(
-            /\s+/g,
-            "-"
-          );
+          const status =
+            String(
+              row.status ||
+              "outstanding"
+            )
+              .trim()
+              .toLowerCase();
 
 
-        return `
-          <tr>
+          const statusClass =
+            status.replace(
+              /\s+/g,
+              "-"
+            );
 
-            <td>
-              <strong>
-                ${escapeHtml(
-                  row.memberName
-                )}
-              </strong>
-            </td>
 
-            <td>
-              ${escapeHtml(
-                money(
-                  row.monthlyDue
-                )
-              )}
-            </td>
+          return `
+            <tr>
 
-            <td>
-              ${escapeHtml(
-                money(
-                  row.previousOutstanding
-                )
-              )}
-            </td>
+              <td>
+                <strong>
+                  ${escapeHtml(
+                    row.memberName
+                  )}
+                </strong>
+              </td>
 
-            <td>
-              ${escapeHtml(
-                money(
-                  row.appliedThisMonth
-                )
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                money(
-                  row.carryForward
-                )
-              )}
-            </td>
-
-            <td>
-              <strong>
+              <td>
                 ${escapeHtml(
                   money(
-                    row.currentOutstanding
+                    row.monthlyDue
                   )
                 )}
-              </strong>
-            </td>
+              </td>
 
-            <td>
-              <span
-                class="status-badge status-${escapeHtml(
-                  statusClass
-                )}"
-              >
+              <td>
                 ${escapeHtml(
-                  row.status ||
-                  "Outstanding"
+                  money(
+                    row.previousOutstanding
+                  )
                 )}
-              </span>
-            </td>
+              </td>
 
-          </tr>
-        `;
+              <td>
+                ${escapeHtml(
+                  money(
+                    row.appliedThisMonth
+                  )
+                )}
+              </td>
 
-      })
+              <td>
+                ${escapeHtml(
+                  money(
+                    row.carryForward
+                  )
+                )}
+              </td>
+
+              <td>
+                <strong>
+                  ${escapeHtml(
+                    money(
+                      row.currentOutstanding
+                    )
+                  )}
+                </strong>
+              </td>
+
+              <td>
+                <span
+                  class="status-badge status-${escapeHtml(
+                    statusClass
+                  )}"
+                >
+                  ${escapeHtml(
+                    row.status ||
+                    "Outstanding"
+                  )}
+                </span>
+              </td>
+
+            </tr>
+          `;
+
+        }
+      )
       .join("");
+
 }
 
 
@@ -1711,6 +1705,7 @@ function renderRecentContributions() {
     );
 
     return;
+
   }
 
 
@@ -1718,7 +1713,10 @@ function renderRecentContributions() {
     contributions
       .slice()
       .sort(
-        (a, b) =>
+        (
+          a,
+          b
+        ) =>
           normalizeDate(
             b.contribution_date
           )
@@ -1727,7 +1725,7 @@ function renderRecentContributions() {
                 a.contribution_date
               )
             )
-      )
+        )
       .slice(
         0,
         5
@@ -1750,56 +1748,60 @@ function renderRecentContributions() {
     `;
 
     return;
+
   }
 
 
   container.innerHTML =
     rows
-      .map(row => {
+      .map(
+        row => {
 
-        return `
-          <tr>
+          return `
+            <tr>
 
-            <td>
-              <strong>
+              <td>
+                <strong>
+                  ${escapeHtml(
+                    memberName(
+                      row.member_id
+                    )
+                  )}
+                </strong>
+              </td>
+
+              <td>
+                <strong>
+                  ${escapeHtml(
+                    money(
+                      row.amount
+                    )
+                  )}
+                </strong>
+              </td>
+
+              <td>
                 ${escapeHtml(
-                  memberName(
-                    row.member_id
+                  row.contribution_type ||
+                  "Contribution"
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  formatDate(
+                    row.contribution_date
                   )
                 )}
-              </strong>
-            </td>
+              </td>
 
-            <td>
-              <strong>
-                ${escapeHtml(
-                  money(
-                    row.amount
-                  )
-                )}
-              </strong>
-            </td>
+            </tr>
+          `;
 
-            <td>
-              ${escapeHtml(
-                row.contribution_type ||
-                "Contribution"
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                formatDate(
-                  row.contribution_date
-                )
-              )}
-            </td>
-
-          </tr>
-        `;
-
-      })
+        }
+      )
       .join("");
+
 }
 
 
@@ -1815,6 +1817,7 @@ function expenseStatus(expense) {
   )
     .trim()
     .toLowerCase();
+
 }
 
 
@@ -1837,6 +1840,7 @@ function renderRecentExpenses() {
     );
 
     return;
+
   }
 
 
@@ -1844,7 +1848,10 @@ function renderRecentExpenses() {
     expenses
       .slice()
       .sort(
-        (a, b) =>
+        (
+          a,
+          b
+        ) =>
           normalizeDate(
             b.date
           )
@@ -1853,7 +1860,7 @@ function renderRecentExpenses() {
                 a.date
               )
             )
-      )
+        )
       .slice(
         0,
         5
@@ -1876,63 +1883,69 @@ function renderRecentExpenses() {
     `;
 
     return;
+
   }
 
 
   container.innerHTML =
     rows
-      .map(row => {
+      .map(
+        row => {
 
-        const status =
-          expenseStatus(row);
+          const status =
+            expenseStatus(
+              row
+            );
 
 
-        return `
-          <tr>
+          return `
+            <tr>
 
-            <td>
-              <strong>
+              <td>
+                <strong>
+                  ${escapeHtml(
+                    row.description ||
+                    "Expense"
+                  )}
+                </strong>
+              </td>
+
+              <td>
                 ${escapeHtml(
-                  row.description ||
-                  "Expense"
+                  money(
+                    row.amount
+                  )
                 )}
-              </strong>
-            </td>
+              </td>
 
-            <td>
-              ${escapeHtml(
-                money(
-                  row.amount
-                )
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                row.category ||
-                "—"
-              )}
-            </td>
-
-            <td>
-              <span
-                class="status-badge status-${escapeHtml(
-                  status ||
-                  "unknown"
-                )}"
-              >
+              <td>
                 ${escapeHtml(
-                  row.approval_status ||
-                  "Unknown"
+                  row.category ||
+                  "—"
                 )}
-              </span>
-            </td>
+              </td>
 
-          </tr>
-        `;
+              <td>
+                <span
+                  class="status-badge status-${escapeHtml(
+                    status ||
+                    "unknown"
+                  )}"
+                >
+                  ${escapeHtml(
+                    row.approval_status ||
+                    "Unknown"
+                  )}
+                </span>
+              </td>
 
-      })
+            </tr>
+          `;
+
+        }
+      )
       .join("");
+
 }
 
 
@@ -1955,6 +1968,7 @@ function renderUpcomingMeetings() {
     );
 
     return;
+
   }
 
 
@@ -1971,7 +1985,10 @@ function renderUpcomingMeetings() {
           ) >= today
       )
       .sort(
-        (a, b) =>
+        (
+          a,
+          b
+        ) =>
           normalizeDate(
             a.date
           )
@@ -1980,7 +1997,7 @@ function renderUpcomingMeetings() {
                 b.date
               )
             )
-      )
+        )
       .slice(
         0,
         5
@@ -2003,54 +2020,58 @@ function renderUpcomingMeetings() {
     `;
 
     return;
+
   }
 
 
   container.innerHTML =
     rows
-      .map(row => {
+      .map(
+        row => {
 
-        return `
-          <tr>
+          return `
+            <tr>
 
-            <td>
-              ${escapeHtml(
-                formatDate(
-                  row.date
-                )
-              )}
-            </td>
-
-            <td>
-              <strong>
+              <td>
                 ${escapeHtml(
-                  row.title ||
-                  "Meeting"
+                  formatDate(
+                    row.date
+                  )
                 )}
-              </strong>
-            </td>
+              </td>
 
-            <td>
-              ${escapeHtml(
-                row.venue ||
-                "—"
-              )}
-            </td>
+              <td>
+                <strong>
+                  ${escapeHtml(
+                    row.title ||
+                    "Meeting"
+                  )}
+                </strong>
+              </td>
 
-            <td>
-              <span class="status-badge">
+              <td>
                 ${escapeHtml(
-                  row.status ||
-                  "Upcoming"
+                  row.venue ||
+                  "—"
                 )}
-              </span>
-            </td>
+              </td>
 
-          </tr>
-        `;
+              <td>
+                <span class="status-badge">
+                  ${escapeHtml(
+                    row.status ||
+                    "Upcoming"
+                  )}
+                </span>
+              </td>
 
-      })
+            </tr>
+          `;
+
+        }
+      )
       .join("");
+
 }
 
 
@@ -2069,6 +2090,7 @@ function renderDashboard() {
   renderRecentExpenses();
 
   renderUpcomingMeetings();
+
 }
 
 
@@ -2093,6 +2115,7 @@ export async function initDashboard() {
     );
 
     return;
+
   }
 
 
@@ -2159,6 +2182,7 @@ export async function initDashboard() {
     );
 
   }
+
 }
 
 
@@ -2208,6 +2232,7 @@ export async function refreshDashboard() {
     );
 
   }
+
 }
 
 
