@@ -70,16 +70,27 @@ const CONFIRM_PAGE =
 ========================================================= */
 
 const form =
-  document.getElementById("signupForm");
+  document.getElementById(
+    "signupForm"
+  );
+
 
 const signupButton =
-  document.getElementById("signupButton");
+  document.getElementById(
+    "signupButton"
+  );
+
 
 const errorBox =
-  document.getElementById("error");
+  document.getElementById(
+    "error"
+  );
+
 
 const statusBox =
-  document.getElementById("status");
+  document.getElementById(
+    "status"
+  );
 
 
 /* =========================================================
@@ -87,14 +98,21 @@ const statusBox =
 ========================================================= */
 
 function field(id) {
-  return document.getElementById(id);
+
+  return document.getElementById(
+    id
+  );
+
 }
 
 
 function valueOf(id) {
+
   return (
-    field(id)?.value?.trim() || ""
+    field(id)?.value?.trim() ||
+    ""
   );
+
 }
 
 
@@ -109,12 +127,16 @@ function showError(message) {
     message
   );
 
+
   if (errorBox) {
+
     errorBox.textContent =
       message ||
       "Unable to create your account.";
 
-    errorBox.hidden = false;
+    errorBox.hidden =
+      false;
+
   }
 
 }
@@ -123,8 +145,13 @@ function showError(message) {
 function clearError() {
 
   if (errorBox) {
-    errorBox.textContent = "";
-    errorBox.hidden = true;
+
+    errorBox.textContent =
+      "";
+
+    errorBox.hidden =
+      true;
+
   }
 
 }
@@ -133,12 +160,102 @@ function clearError() {
 function setStatus(message) {
 
   if (statusBox) {
+
     statusBox.textContent =
-      message || "";
+      message ||
+      "";
 
     statusBox.hidden =
       !message;
+
   }
+
+}
+
+
+/* =========================================================
+   FRIENDLY ERROR
+========================================================= */
+
+function friendlyError(error) {
+
+  const message =
+    String(
+      error?.message ||
+      error ||
+      ""
+    );
+
+
+  const lower =
+    message.toLowerCase();
+
+
+  if (
+    lower.includes(
+      "user already registered"
+    )
+  ) {
+
+    return (
+      "An account already exists for this email. " +
+      "Please sign in instead."
+    );
+
+  }
+
+
+  if (
+    lower.includes(
+      "email rate limit"
+    )
+  ) {
+
+    return (
+      "Too many email requests. " +
+      "Please wait a few minutes and try again."
+    );
+
+  }
+
+
+  if (
+    lower.includes(
+      "password"
+    ) &&
+    lower.includes(
+      "6"
+    )
+  ) {
+
+    return (
+      "Password must contain at least 8 characters."
+    );
+
+  }
+
+
+  if (
+    lower.includes(
+      "failed to fetch"
+    ) ||
+    lower.includes(
+      "network"
+    )
+  ) {
+
+    return (
+      "Unable to connect to CHAMA LIVE. " +
+      "Check your internet connection and try again."
+    );
+
+  }
+
+
+  return (
+    message ||
+    "Unable to create your account."
+  );
 
 }
 
@@ -152,36 +269,59 @@ function collectFormValues() {
   const values = {
 
     groupName:
-      valueOf("groupName"),
+      valueOf(
+        "groupName"
+      ),
 
     category:
-      valueOf("category") ||
+      valueOf(
+        "category"
+      ) ||
       "other",
 
     country:
-      valueOf("country") ||
+      valueOf(
+        "country"
+      ) ||
       "Kenya",
 
     monthlyContribution:
-      valueOf("monthlyContribution"),
+      valueOf(
+        "monthlyContribution"
+      ),
 
     description:
-      valueOf("description"),
+      valueOf(
+        "description"
+      ),
 
     adminName:
-      valueOf("adminName"),
+      valueOf(
+        "adminName"
+      ),
 
     adminPhone:
-      valueOf("adminPhone"),
+      valueOf(
+        "adminPhone"
+      ),
 
     email:
-      valueOf("email"),
+      valueOf(
+        "email"
+      )
+        .toLowerCase(),
 
     password:
-      field("password")?.value || "",
+      field(
+        "password"
+      )?.value ||
+      "",
 
     confirmPassword:
-      field("confirmPassword")?.value || ""
+      field(
+        "confirmPassword"
+      )?.value ||
+      ""
 
   };
 
@@ -193,48 +333,83 @@ function collectFormValues() {
 
 function validate(values) {
 
-  if (!values.adminName) {
-    throw new Error(
-      "Please enter your full name."
-    );
-  }
-
-
-  if (!values.adminPhone) {
-    throw new Error(
-      "Please enter your phone number."
-    );
-  }
-
-
-  if (!values.email) {
-    throw new Error(
-      "Please enter your email address."
-    );
-  }
-
-
   if (!values.groupName) {
+
     throw new Error(
       "Please enter your Chama name."
     );
+
+  }
+
+
+  if (
+    values.groupName.length <
+    2
+  ) {
+
+    throw new Error(
+      "Your Chama name is too short."
+    );
+
   }
 
 
   if (!values.category) {
+
     throw new Error(
       "Please select the Chama type."
     );
+
+  }
+
+
+  if (!values.adminName) {
+
+    throw new Error(
+      "Please enter your full name."
+    );
+
+  }
+
+
+  if (!values.adminPhone) {
+
+    throw new Error(
+      "Please enter your phone number."
+    );
+
+  }
+
+
+  if (!values.email) {
+
+    throw new Error(
+      "Please enter your email address."
+    );
+
+  }
+
+
+  if (
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+      values.email
+    )
+  ) {
+
+    throw new Error(
+      "Please enter a valid email address."
+    );
+
   }
 
 
   if (
     !values.password ||
-    values.password.length < 6
+    values.password.length < 8
   ) {
 
     throw new Error(
-      "Password must be at least 6 characters."
+      "Password must be at least 8 characters."
     );
 
   }
@@ -254,7 +429,8 @@ function validate(values) {
 
   const monthlyContribution =
     Number(
-      values.monthlyContribution || 0
+      values.monthlyContribution ||
+      0
     );
 
 
@@ -282,75 +458,80 @@ function validate(values) {
 
 
 /* =========================================================
-   SIGNUP
+   CREATE AUTH ACCOUNT
 ========================================================= */
 
-async function createAuthAccount(values) {
+async function createAuthAccount(
+  values
+) {
 
   /*
    * The browser never stores the password outside
    * Supabase Auth.
    *
-   * The onboarding data is carried in Auth metadata so
-   * confirm.html can complete the authenticated group
+   * Safe onboarding values are carried in Auth metadata
+   * so confirm.html can complete authenticated group
    * creation after email verification.
    */
 
   const {
     data,
     error
-  } = await supabase.auth.signUp({
+  } =
+    await supabase.auth.signUp({
 
-    email:
-      values.email,
+      email:
+        values.email,
 
-    password:
-      values.password,
+      password:
+        values.password,
 
-    options: {
+      options: {
 
-      emailRedirectTo:
-        CONFIRM_PAGE,
+        emailRedirectTo:
+          CONFIRM_PAGE,
 
-      data: {
+        data: {
 
-        chama_onboarding:
-          true,
+          chama_onboarding:
+            true,
 
-        group_name:
-          values.groupName,
+          group_name:
+            values.groupName,
 
-        category:
-          values.category,
+          category:
+            values.category,
 
-        monthly_contribution:
-          values.monthlyContribution,
+          monthly_contribution:
+            values.monthlyContribution,
 
-        opening_balance:
-          0,
+          opening_balance:
+            0,
 
-        description:
-          values.description ||
-          null,
+          description:
+            values.description ||
+            null,
 
-        admin_name:
-          values.adminName,
+          admin_name:
+            values.adminName,
 
-        admin_phone:
-          values.adminPhone,
+          admin_phone:
+            values.adminPhone,
 
-        country:
-          values.country
+          country:
+            values.country
+
+        }
 
       }
 
-    }
-
-  });
+    });
 
 
   if (error) {
+
     throw error;
+
   }
 
 
@@ -372,13 +553,15 @@ async function createAuthAccount(values) {
    HANDLE SUCCESS
 ========================================================= */
 
-function handleSignupSuccess(data) {
+function handleSignupSuccess(
+  data
+) {
 
   /*
    * When email confirmation is required,
    * Supabase returns the user without an active
-   * session. The user must follow the confirmation
-   * email before group creation occurs.
+   * session. Group creation therefore waits for
+   * the confirmation callback.
    */
 
   if (!data?.session) {
@@ -393,12 +576,9 @@ function handleSignupSuccess(data) {
 
 
   /*
-   * If the project allows immediate sessions after
-   * signup, send the authenticated user through the
-   * same confirmation/onboarding endpoint.
-   *
-   * The database remains responsible for the actual
-   * group creation.
+   * If the project permits an immediate session,
+   * use the same confirmation boundary so there is
+   * only one group-creation path.
    */
 
   setStatus(
@@ -417,15 +597,23 @@ function handleSignupSuccess(data) {
    SUBMIT
 ========================================================= */
 
-async function handleSubmit(event) {
+async function handleSubmit(
+  event
+) {
 
   event.preventDefault();
 
+
   clearError();
+
   setStatus("");
 
+
   if (signupButton) {
-    signupButton.disabled = true;
+
+    signupButton.disabled =
+      true;
+
   }
 
 
@@ -434,7 +622,10 @@ async function handleSubmit(event) {
     const values =
       collectFormValues();
 
-    validate(values);
+
+    validate(
+      values
+    );
 
 
     setStatus(
@@ -453,30 +644,21 @@ async function handleSubmit(event) {
     );
 
 
-  } catch (error) {
+  }
+
+  catch (error) {
 
     showError(
-      error?.message ||
-      "Unable to create your account."
+      friendlyError(
+        error
+      )
     );
 
 
-  } finally {
+    if (signupButton) {
 
-    /*
-     * Keep the button disabled when signup succeeded
-     * so the user cannot submit the form repeatedly.
-     *
-     * Re-enable it only when an error occurred.
-     */
-
-    if (
-      signupButton &&
-      errorBox &&
-      !errorBox.hidden
-    ) {
-
-      signupButton.disabled = false;
+      signupButton.disabled =
+        false;
 
     }
 
@@ -509,6 +691,10 @@ function init() {
 
 }
 
+
+/* =========================================================
+   START
+========================================================= */
 
 init();
 
