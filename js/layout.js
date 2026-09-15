@@ -31,14 +31,19 @@
    - Core pages may be initialized through PAGE_SCRIPTS.
    - Independently booted pages are intentionally absent
      from PAGE_SCRIPTS.
+
+   AUTH CONTEXT CONTRACT:
+   - layout.js consumes getMyApplicationContext().
+   - Authentication, member, group, ownership and role
+     context are resolved centrally by auth.js.
+   - layout.js does NOT independently calculate ownership.
+   - layout.js does NOT query owner_user_id directly.
 ========================================================= */
 
 import { supabase } from "./supabase.js";
 
 import {
-  getCurrentUser,
-  getMyMember,
-  getMyGroup
+  getMyApplicationContext
 } from "./auth.js";
 
 console.log("CHAMA LIVE: layout.js loaded");
@@ -48,8 +53,12 @@ console.log("CHAMA LIVE: layout.js loaded");
    STATE
 ========================================================= */
 
+let currentUser = null;
 let currentMember = null;
 let currentGroup = null;
+
+let currentIsOwner = false;
+let currentRole = "";
 
 let bootStarted = false;
 let pageScriptLoaded = false;
@@ -231,23 +240,6 @@ function displayGroup(group) {
    DESKTOP NAVIGATION
 ========================================================= */
 
-/*
- * Reconcile whichever desktop navigation structure the
- * current page already provides.
- *
- * Supported structures:
- *
- *   Dashboard-style:
- *     .top-nav
- *
- *   Sidebar-style:
- *     .sidebar .nav
- *
- * The function does not redesign the page. It only ensures
- * the navigation links are synchronized with the canonical
- * application navigation contract.
- */
-
 function reconcileDesktopNavigation() {
 
   const currentPage =
@@ -298,43 +290,6 @@ function reconcileDesktopNavigation() {
           )
         );
 
-      const linksByPage =
-        new Map();
-
-      existingLinks.forEach(
-        function (link) {
-
-          const href =
-            (
-              link.getAttribute("href") ||
-              ""
-            )
-              .split("#")[0]
-              .split("?")[0]
-              .trim()
-              .toLowerCase();
-
-          if (href) {
-
-            linksByPage.set(
-              href,
-              link
-            );
-
-          }
-
-        }
-      );
-
-      /*
-       * Remove direct navigation links that are not part of
-       * the canonical application navigation.
-       *
-       * This specifically removes stale destinations such
-       * as documents.html without touching unrelated elements
-       * that may exist inside the navigation container.
-       */
-
       existingLinks.forEach(
         function (link) {
 
@@ -367,10 +322,6 @@ function reconcileDesktopNavigation() {
 
         }
       );
-
-      /*
-       * Re-read direct links after stale-link removal.
-       */
 
       const currentLinks =
         Array.from(
@@ -406,11 +357,6 @@ function reconcileDesktopNavigation() {
 
         }
       );
-
-      /*
-       * Ensure every canonical destination exists and appears
-       * in the canonical order.
-       */
 
       APPLICATION_NAVIGATION.forEach(
         function (item) {
@@ -455,13 +401,6 @@ function reconcileDesktopNavigation() {
         }
       );
 
-      /*
-       * Put canonical links into the exact application order.
-       *
-       * appendChild() moves an existing node rather than
-       * creating a duplicate.
-       */
-
       APPLICATION_NAVIGATION.forEach(
         function (item) {
 
@@ -480,12 +419,6 @@ function reconcileDesktopNavigation() {
 
         }
       );
-
-      /*
-       * Remove aria-current="false" from links where it is
-       * unnecessary, while retaining aria-current="page"
-       * for the active destination.
-       */
 
       nav
         .querySelectorAll(
@@ -529,18 +462,9 @@ function injectMobileNavigationStyles() {
 
   style.textContent = `
 
-    /* =====================================================
-       MOBILE BOTTOM NAV
-    ===================================================== */
-
     .mobile-bottom-nav {
       display: none;
     }
-
-
-    /* =====================================================
-       MOBILE MENU
-    ===================================================== */
 
     .chama-mobile-menu {
       display: none;
@@ -550,12 +474,7 @@ function injectMobileNavigationStyles() {
       display: none;
     }
 
-
     @media (max-width: 650px) {
-
-      /* ---------------------------------------------------
-         MOBILE TOPBAR
-      --------------------------------------------------- */
 
       .topbar {
         width: 100%;
@@ -563,11 +482,6 @@ function injectMobileNavigationStyles() {
         top: 0;
         z-index: 10000;
       }
-
-
-      /* ---------------------------------------------------
-         MOBILE MENU BUTTON
-      --------------------------------------------------- */
 
       .menu-toggle {
         display: inline-flex !important;
@@ -597,21 +511,14 @@ function injectMobileNavigationStyles() {
         flex-shrink: 0;
       }
 
-
       .menu-toggle:hover {
         background: #f0fdfa;
         color: #0f766e;
       }
 
-
       .menu-toggle:active {
         transform: scale(.96);
       }
-
-
-      /* ---------------------------------------------------
-         MOBILE MENU BACKDROP
-      --------------------------------------------------- */
 
       .chama-mobile-menu-backdrop {
 
@@ -631,11 +538,6 @@ function injectMobileNavigationStyles() {
           blur(2px);
 
       }
-
-
-      /* ---------------------------------------------------
-         MOBILE MENU PANEL
-      --------------------------------------------------- */
 
       .chama-mobile-menu {
 
@@ -671,15 +573,9 @@ function injectMobileNavigationStyles() {
 
       }
 
-
       .chama-mobile-menu.open {
         display: block;
       }
-
-
-      /* ---------------------------------------------------
-         MENU HEADER
-      --------------------------------------------------- */
 
       .chama-mobile-menu-header {
 
@@ -694,7 +590,6 @@ function injectMobileNavigationStyles() {
 
       }
 
-
       .chama-mobile-menu-group {
 
         font-size:
@@ -708,7 +603,6 @@ function injectMobileNavigationStyles() {
 
       }
 
-
       .chama-mobile-menu-user {
 
         margin-top:
@@ -721,11 +615,6 @@ function injectMobileNavigationStyles() {
           #667085;
 
       }
-
-
-      /* ---------------------------------------------------
-         MENU LINKS
-      --------------------------------------------------- */
 
       .chama-mobile-menu-link {
 
@@ -767,12 +656,10 @@ function injectMobileNavigationStyles() {
 
       }
 
-
       .chama-mobile-menu-link:last-child {
         border-bottom:
           0;
       }
-
 
       .chama-mobile-menu-link:hover {
 
@@ -783,7 +670,6 @@ function injectMobileNavigationStyles() {
           #0f766e;
 
       }
-
 
       .chama-mobile-menu-link.active {
 
@@ -797,7 +683,6 @@ function injectMobileNavigationStyles() {
           750;
 
       }
-
 
       .chama-mobile-menu-icon {
 
@@ -830,7 +715,6 @@ function injectMobileNavigationStyles() {
 
       }
 
-
       .chama-mobile-menu-link.active
       .chama-mobile-menu-icon {
 
@@ -838,11 +722,6 @@ function injectMobileNavigationStyles() {
           #d1fae5;
 
       }
-
-
-      /* ---------------------------------------------------
-         MOBILE BOTTOM NAV
-      --------------------------------------------------- */
 
       .mobile-bottom-nav {
 
@@ -886,7 +765,6 @@ function injectMobileNavigationStyles() {
 
       }
 
-
       .mobile-nav-item {
 
         display:
@@ -923,14 +801,12 @@ function injectMobileNavigationStyles() {
 
       }
 
-
       .mobile-nav-item:active {
 
         transform:
           scale(.96);
 
       }
-
 
       .mobile-nav-item.active {
 
@@ -941,7 +817,6 @@ function injectMobileNavigationStyles() {
           rgba(15, 118, 110, .09);
 
       }
-
 
       .mobile-nav-icon {
 
@@ -971,7 +846,6 @@ function injectMobileNavigationStyles() {
 
       }
 
-
       .mobile-nav-label {
 
         font-size:
@@ -987,7 +861,6 @@ function injectMobileNavigationStyles() {
           nowrap;
 
       }
-
 
       .mobile-nav-main
       .mobile-nav-icon {
@@ -1022,7 +895,6 @@ function injectMobileNavigationStyles() {
 
       }
 
-
       .mobile-nav-main
       .mobile-nav-label {
 
@@ -1030,7 +902,6 @@ function injectMobileNavigationStyles() {
           #0f766e;
 
       }
-
 
       .mobile-nav-main.active
       .mobile-nav-icon {
@@ -1040,11 +911,6 @@ function injectMobileNavigationStyles() {
 
       }
 
-
-      /* ---------------------------------------------------
-         CONTENT
-      --------------------------------------------------- */
-
       .sidebar {
 
         display:
@@ -1052,14 +918,12 @@ function injectMobileNavigationStyles() {
 
       }
 
-
       .sidebar-overlay {
 
         display:
           none !important;
 
       }
-
 
       .layout {
 
@@ -1070,7 +934,6 @@ function injectMobileNavigationStyles() {
           100% !important;
 
       }
-
 
       .main {
 
@@ -1088,7 +951,6 @@ function injectMobileNavigationStyles() {
 
       }
 
-
       .table-wrap {
 
         width:
@@ -1105,7 +967,6 @@ function injectMobileNavigationStyles() {
 
       }
 
-
       .grid-2 {
 
         grid-template-columns:
@@ -1113,14 +974,12 @@ function injectMobileNavigationStyles() {
 
       }
 
-
       .grid-3 {
 
         grid-template-columns:
           repeat(2, minmax(0, 1fr));
 
       }
-
 
       .card {
 
@@ -1131,7 +990,6 @@ function injectMobileNavigationStyles() {
 
     }
 
-
     @media (max-width: 390px) {
 
       .mobile-bottom-nav {
@@ -1140,7 +998,6 @@ function injectMobileNavigationStyles() {
           68px;
 
       }
-
 
       .mobile-nav-icon {
 
@@ -1155,14 +1012,12 @@ function injectMobileNavigationStyles() {
 
       }
 
-
       .mobile-nav-label {
 
         font-size:
           8px;
 
       }
-
 
       .mobile-nav-main
       .mobile-nav-icon {
@@ -1177,7 +1032,6 @@ function injectMobileNavigationStyles() {
           22px;
 
       }
-
 
       .grid-3 {
 
@@ -1205,27 +1059,12 @@ function injectMobileNavigationStyles() {
 
 function setupMobileMenu() {
 
-  /*
-   * Do not create duplicate menu.
-   */
-
   if (byId("chama-mobile-menu")) {
     return;
   }
 
-
-  /*
-   * Find existing menu button.
-   */
-
   let menuButton =
     document.querySelector(".menu-toggle");
-
-
-  /*
-   * If page does not have one,
-   * create one and put it in topbar.
-   */
 
   if (!menuButton) {
 
@@ -1267,18 +1106,12 @@ function setupMobileMenu() {
     menuButton.textContent =
       "☰";
 
-
-    /*
-     * Put menu button at the beginning.
-     */
-
     topbar.insertBefore(
       menuButton,
       topbar.firstChild
     );
 
   }
-
 
   menuButton.id =
     menuButton.id ||
@@ -1426,30 +1259,12 @@ function setupMobileMenu() {
       label: "Group Management"
     },
 
-    /*
-     * -----------------------------------------------------
-     * ASSETS
-     *
-     * Assets is intentionally available through the full
-     * mobile menu but NOT the five-item bottom navigation.
-     * -----------------------------------------------------
-     */
-
     {
       href: "assets.html",
       page: "assets.html",
       icon: "▣",
       label: "Assets"
     },
-
-    /*
-     * -----------------------------------------------------
-     * PLANS & ACTIVITIES
-     *
-     * This page owns its own initialization and therefore
-     * is intentionally NOT included in PAGE_SCRIPTS.
-     * -----------------------------------------------------
-     */
 
     {
       href: "plans-activities.html",
@@ -1458,15 +1273,6 @@ function setupMobileMenu() {
       label: "Plans & Activities"
     },
 
-    /*
-     * -----------------------------------------------------
-     * SUPPORT & WELFARE
-     *
-     * This page owns its own initialization and therefore
-     * is intentionally NOT included in PAGE_SCRIPTS.
-     * -----------------------------------------------------
-     */
-
     {
       href: "support-welfare.html",
       page: "support-welfare.html",
@@ -1474,30 +1280,12 @@ function setupMobileMenu() {
       label: "Support & Welfare"
     },
 
-    /*
-     * -----------------------------------------------------
-     * MILESTONES
-     *
-     * This page owns its own initialization and therefore
-     * is intentionally NOT included in PAGE_SCRIPTS.
-     * -----------------------------------------------------
-     */
-
     {
       href: "milestones.html",
       page: "milestones.html",
       icon: "★",
       label: "Milestones"
     },
-
-    /*
-     * -----------------------------------------------------
-     * DATA MIGRATION
-     *
-     * Data Migration owns its own page boot and is therefore
-     * intentionally NOT included in PAGE_SCRIPTS.
-     * -----------------------------------------------------
-     */
 
     {
       href: "data-migration.html",
@@ -1809,14 +1597,6 @@ function setupMobileNavigation() {
   }
 
 
-  /*
-   * Keep the bottom navigation intentionally limited
-   * to five primary actions.
-   *
-   * Assets and the newer operational pages belong in
-   * the full mobile menu instead.
-   */
-
   addLink(
     "dashboard.html",
     "dashboard.html",
@@ -1824,7 +1604,6 @@ function setupMobileNavigation() {
     "Home",
     false
   );
-
 
   addLink(
     "members.html",
@@ -1834,7 +1613,6 @@ function setupMobileNavigation() {
     false
   );
 
-
   addLink(
     "contributions.html",
     "contributions.html",
@@ -1843,7 +1621,6 @@ function setupMobileNavigation() {
     true
   );
 
-
   addLink(
     "expenses.html",
     "expenses.html",
@@ -1851,7 +1628,6 @@ function setupMobileNavigation() {
     "Expenses",
     false
   );
-
 
   addLink(
     "meetings.html",
@@ -1989,20 +1765,56 @@ function setupLogout() {
 
 
 /* =========================================================
-   LOAD MEMBER + GROUP
+   LOAD APPLICATION CONTEXT
 ========================================================= */
+
+/*
+ * Canonical auth boundary.
+ *
+ * auth.js is responsible for resolving:
+ *
+ *   user
+ *   member
+ *   group
+ *   isOwner
+ *   role
+ *
+ * layout.js consumes that context.
+ *
+ * IMPORTANT:
+ * - Do not calculate ownership here.
+ * - Do not query owner_user_id here.
+ * - Do not invent a new OWNER member role.
+ * - Preserve members.role = admin compatibility.
+ */
 
 async function loadLayoutData() {
 
   console.log(
-    "CHAMA LIVE: loading member and group"
+    "CHAMA LIVE: loading application context"
   );
 
 
-  currentMember =
-    await getMyMember();
+  const {
+    user,
+    member,
+    group,
+    isOwner,
+    role
+  } =
+    await getMyApplicationContext();
 
-  if (!currentMember) {
+
+  if (!user) {
+
+    throw new Error(
+      "You are not logged in."
+    );
+
+  }
+
+
+  if (!member) {
 
     throw new Error(
       "No member record is linked to this account."
@@ -2011,7 +1823,7 @@ async function loadLayoutData() {
   }
 
 
-  if (!currentMember.group_id) {
+  if (!member.group_id) {
 
     throw new Error(
       "Your member record has no group."
@@ -2020,16 +1832,35 @@ async function loadLayoutData() {
   }
 
 
-  currentGroup =
-    await getMyGroup();
-
-  if (!currentGroup) {
+  if (!group) {
 
     throw new Error(
       "Group information could not be found."
     );
 
   }
+
+
+  currentUser =
+    user;
+
+  currentMember =
+    member;
+
+  currentGroup =
+    group;
+
+  currentIsOwner =
+    Boolean(
+      isOwner
+    );
+
+  currentRole =
+    String(
+      role || ""
+    )
+      .trim()
+      .toLowerCase();
 
 
   displayUser(
@@ -2042,19 +1873,33 @@ async function loadLayoutData() {
 
 
   console.log(
-    "CHAMA LIVE: member loaded",
-    currentMember
-  );
-
-  console.log(
-    "CHAMA LIVE: group loaded",
-    currentGroup
+    "CHAMA LIVE: application context loaded",
+    {
+      user: currentUser,
+      member: currentMember,
+      group: currentGroup,
+      isOwner: currentIsOwner,
+      role: currentRole
+    }
   );
 
 
   return {
-    member: currentMember,
-    group: currentGroup
+    user:
+      currentUser,
+
+    member:
+      currentMember,
+
+    group:
+      currentGroup,
+
+    isOwner:
+      currentIsOwner,
+
+    role:
+      currentRole
+
   };
 
 }
@@ -2170,7 +2015,6 @@ async function loadCurrentPageScript() {
 
     }
 
-
     else if (
       page === "dashboard.html" &&
       typeof pageModule.initDashboard ===
@@ -2181,7 +2025,6 @@ async function loadCurrentPageScript() {
         pageModule.initDashboard;
 
     }
-
 
     else if (
       page === "members.html" &&
@@ -2194,7 +2037,6 @@ async function loadCurrentPageScript() {
 
     }
 
-
     else if (
       page === "contributions.html" &&
       typeof pageModule.initContributions ===
@@ -2205,7 +2047,6 @@ async function loadCurrentPageScript() {
         pageModule.initContributions;
 
     }
-
 
     else if (
       page === "expenses.html" &&
@@ -2218,7 +2059,6 @@ async function loadCurrentPageScript() {
 
     }
 
-
     else if (
       page === "meetings.html" &&
       typeof pageModule.initMeetings ===
@@ -2229,7 +2069,6 @@ async function loadCurrentPageScript() {
         pageModule.initMeetings;
 
     }
-
 
     else if (
       page === "reports.html" &&
@@ -2242,7 +2081,6 @@ async function loadCurrentPageScript() {
 
     }
 
-
     else if (
       page === "monthly-closing.html" &&
       typeof pageModule.initMonthlyClosing ===
@@ -2254,7 +2092,6 @@ async function loadCurrentPageScript() {
 
     }
 
-
     else if (
       page === "group-management.html" &&
       typeof pageModule.initGroupManagement ===
@@ -2265,7 +2102,6 @@ async function loadCurrentPageScript() {
         pageModule.initGroupManagement;
 
     }
-
 
     else if (
       typeof pageModule.init ===
@@ -2340,6 +2176,13 @@ async function loadCurrentPageScript() {
    AUTHENTICATION
 ========================================================= */
 
+/*
+ * Authentication is now resolved through the same canonical
+ * application context used by the layout.
+ *
+ * Do not call getCurrentUser() separately here.
+ */
+
 async function initializeAuthentication() {
 
   console.log(
@@ -2347,8 +2190,10 @@ async function initializeAuthentication() {
   );
 
 
-  const user =
-    await getCurrentUser();
+  const {
+    user
+  } =
+    await getMyApplicationContext();
 
 
   if (!user) {
@@ -2389,49 +2234,45 @@ async function initLayout() {
 
 
   /*
-   * 2. Authentication
-   */
-
-  await initializeAuthentication();
-
-
-  /*
-   * 3. Member + Group
+   * 2. Authentication + application context
+   *
+   * loadLayoutData() consumes the canonical auth.js
+   * context and therefore also establishes authentication.
    */
 
   await loadLayoutData();
 
 
   /*
-   * 4. Desktop navigation
+   * 3. Desktop navigation
    */
 
   reconcileDesktopNavigation();
 
 
   /*
-   * 5. Logout
+   * 4. Logout
    */
 
   setupLogout();
 
 
   /*
-   * 6. Full mobile menu
+   * 5. Full mobile menu
    */
 
   setupMobileMenu();
 
 
   /*
-   * 7. Mobile bottom navigation
+   * 6. Mobile bottom navigation
    */
 
   setupMobileNavigation();
 
 
   /*
-   * 8. Current page script
+   * 7. Current page script
    */
 
   await loadCurrentPageScript();
@@ -2515,11 +2356,20 @@ export function getLayoutState() {
 
   return {
 
+    user:
+      currentUser,
+
     member:
       currentMember,
 
     group:
-      currentGroup
+      currentGroup,
+
+    isOwner:
+      currentIsOwner,
+
+    role:
+      currentRole
 
   };
 
