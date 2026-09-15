@@ -27,7 +27,23 @@ export const supabase =
       auth: {
         persistSession: true,
         autoRefreshToken: true,
-        detectSessionInUrl: true
+
+        /*
+         * CHAMA LIVE uses the PKCE verification flow.
+         *
+         * signup.js
+         *      ↓
+         * Supabase Auth
+         *      ↓
+         * email verification
+         *      ↓
+         * confirm.html
+         *
+         * detectSessionInUrl allows the Supabase client
+         * to process the returned authentication URL.
+         */
+        detectSessionInUrl: true,
+        flowType: "pkce"
       }
     }
   );
