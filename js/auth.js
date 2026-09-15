@@ -42,6 +42,7 @@
      - getMyMember()
      - getMyGroupId()
      - getMyGroup()
+     - getMyApplicationContext()
      - requireAuth()
      - signIn()
      - signOut()
@@ -537,7 +538,8 @@ export async function getMyGroup() {
         category,
         description,
         access_code,
-        country
+        country,
+        owner_user_id
       `)
       .eq(
         "id",
@@ -571,6 +573,98 @@ export async function getMyGroup() {
 
 
   return data[0];
+
+}
+
+
+/* =========================================================
+   CANONICAL APPLICATION CONTEXT
+   ---------------------------------------------------------
+   This is the single frontend context boundary for:
+
+     authenticated user
+     current member
+     current group
+     owner state
+     member role
+
+   IMPORTANT
+   ---------------------------------------------------------
+   Ownership is determined here only.
+
+   Owner identity:
+     user.id === group.owner_user_id
+
+   Member role remains independent:
+     member.role
+
+   Do NOT replace the legacy admin role with OWNER.
+========================================================= */
+
+export async function getMyApplicationContext() {
+
+  const user =
+    await getCurrentUser();
+
+
+  const member =
+    await getMyMember();
+
+
+  const group =
+    await getMyGroup();
+
+
+  if (!member?.group_id) {
+
+    throw new Error(
+      "Your member record has no group."
+    );
+
+  }
+
+
+  if (
+    String(member.group_id) !==
+    String(group.id)
+  ) {
+
+    throw new Error(
+      "Your member and group context do not match."
+    );
+
+  }
+
+
+  const isOwner =
+    Boolean(
+      user?.id &&
+      group?.owner_user_id &&
+      user.id === group.owner_user_id
+    );
+
+
+  const role =
+    String(
+      member.role || ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  return {
+
+    user,
+
+    member,
+
+    group,
+
+    isOwner,
+
+    role
+
+  };
 
 }
 
@@ -855,3 +949,4 @@ export function clearError(
     "none";
 
 }
+
