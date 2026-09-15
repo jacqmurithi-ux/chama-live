@@ -60,7 +60,9 @@
 
 <script type="module">
 
-import { supabase } from "./js/supabase.js";
+import {
+  supabase
+} from "./js/supabase.js";
 
 
 /* =======================================================
@@ -409,7 +411,7 @@ async function init() {
 
 
     /* ===================================================
-       STEP 1 — CHECK URL
+       STEP 1 — CHECK AUTH CALLBACK
     =================================================== */
 
     const url =
@@ -418,12 +420,10 @@ async function init() {
       );
 
 
-    const code =
-      url.searchParams.get("code");
-
-
     const errorParam =
-      url.searchParams.get("error");
+      url.searchParams.get(
+        "error"
+      );
 
 
     const errorDescription =
@@ -443,52 +443,46 @@ async function init() {
 
 
     /* ===================================================
-       STEP 2 — PKCE CONFIRMATION
+       STEP 2 — PKCE CALLBACK
     =================================================== */
 
-    if (code) {
+    /*
+     * IMPORTANT:
+     *
+     * supabase.js is configured with:
+     *
+     *   detectSessionInUrl: true
+     *   flowType: "pkce"
+     *
+     * Therefore Supabase Auth is responsible for
+     * processing the returned PKCE authorization code.
+     *
+     * Do NOT call:
+     *
+     *   exchangeCodeForSession()
+     *
+     * here.
+     *
+     * The authorization code is single-use.
+     */
 
-      setStatus(
-        "Confirming your email address..."
-      );
 
-
-      const {
-        error: exchangeError
-      } =
-        await supabase.auth.exchangeCodeForSession(
-          code
-        );
-
-
-      if (exchangeError) {
-
-        throw exchangeError;
-
-      }
-
-
-      /*
-       * Remove ?code= from the address bar.
-       */
-
-      window.history.replaceState(
-        {},
-        document.title,
-        `${APP_URL}/confirm.html`
-      );
-
-    }
+    setStatus(
+      "Confirming your email address..."
+    );
 
 
     /* ===================================================
-       STEP 3 — GET SESSION
+       STEP 3 — WAIT FOR AUTH SESSION
     =================================================== */
 
-    setStatus(
-      "Loading your account..."
-    );
+    let session = null;
 
+
+    /*
+     * First check whether Supabase has already
+     * established the session.
+     */
 
     const {
       data: sessionData,
@@ -504,31 +498,158 @@ async function init() {
     }
 
 
-    let session =
-      sessionData?.session;
+    session =
+      sessionData?.session || null;
 
 
     /*
-     * Give Supabase a short moment to process
-     * the authentication callback if necessary.
+     * If the session is not available immediately,
+     * listen briefly for the automatic PKCE session
+     * establishment.
      */
 
     if (!session) {
 
-      await new Promise(
-        resolve =>
-          setTimeout(resolve, 500)
-      );
-
-
-      const {
-        data: retrySession
-      } =
-        await supabase.auth.getSession();
-
-
       session =
-        retrySession?.session;
+        await new Promise(
+          async resolve => {
+
+            let settled = false;
+
+
+            const finish =
+              value => {
+
+                if (settled) {
+                  return;
+                }
+
+                settled = true;
+
+                clearTimeout(
+                  timeout
+                );
+
+                if (subscription) {
+
+                  subscription.unsubscribe();
+
+                }
+
+                resolve(
+                  value || null
+                );
+
+              };
+
+
+            const {
+              data: authListener
+            } =
+              supabase.auth.onAuthStateChange(
+                (event, nextSession) => {
+
+                  console.log(
+                    "CHAMA LIVE AUTH EVENT:",
+                    event
+                  );
+
+
+                  if (
+                    nextSession &&
+                    (
+                      event === "SIGNED_IN" ||
+                      event === "INITIAL_SESSION" ||
+                      event === "TOKEN_REFRESHED"
+                    )
+                  ) {
+
+                    finish(
+                      nextSession
+                    );
+
+                  }
+
+                }
+              );
+
+
+            const subscription =
+              authListener?.subscription;
+
+
+            const timeout =
+              setTimeout(
+                async () => {
+
+                  try {
+
+                    const {
+                      data: finalSessionData
+                    } =
+                      await supabase.auth.getSession();
+
+
+                    finish(
+                      finalSessionData?.session ||
+                      null
+                    );
+
+                  } catch (sessionCheckError) {
+
+                    console.error(
+                      "CHAMA LIVE session retry error:",
+                      sessionCheckError
+                    );
+
+                    finish(
+                      null
+                    );
+
+                  }
+
+                },
+                2000
+              );
+
+
+            /*
+             * Re-check after registering the listener.
+             *
+             * This prevents a race where the session
+             * becomes available between the first
+             * getSession() call and listener setup.
+             */
+
+            try {
+
+              const {
+                data: currentSessionData
+              } =
+                await supabase.auth.getSession();
+
+
+              if (
+                currentSessionData?.session
+              ) {
+
+                finish(
+                  currentSessionData.session
+                );
+
+              }
+
+            } catch (currentSessionError) {
+
+              console.error(
+                "CHAMA LIVE current session check error:",
+                currentSessionError
+              );
+
+            }
+
+          }
+        );
 
     }
 
@@ -543,8 +664,24 @@ async function init() {
 
 
     /* ===================================================
-       STEP 4 — GET CURRENT USER
+       STEP 4 — CLEAN AUTH CALLBACK URL
     =================================================== */
+
+    window.history.replaceState(
+      {},
+      document.title,
+      `${APP_URL}/confirm.html`
+    );
+
+
+    /* ===================================================
+       STEP 5 — GET CURRENT USER
+    =================================================== */
+
+    setStatus(
+      "Loading your account..."
+    );
+
 
     const {
       data: userData,
@@ -580,7 +717,7 @@ async function init() {
 
 
     /* ===================================================
-       STEP 5 — COMPLETE GROUP ONBOARDING
+       STEP 6 — COMPLETE GROUP ONBOARDING
     =================================================== */
 
     await completeOnboarding(
@@ -617,3 +754,4 @@ init();
 </body>
 
 </html>
+
