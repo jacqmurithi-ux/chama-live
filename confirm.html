@@ -1,4 +1,5 @@
 <!doctype html>
+
 <html lang="en">
 
 <head>
@@ -19,6 +20,7 @@
 
 </head>
 
+
 <body>
 
 <main
@@ -35,9 +37,11 @@
       CHAMA <span>LIVE</span>
     </div>
 
+
     <h1>
       Confirming Your Account
     </h1>
+
 
     <p
       id="status"
@@ -45,6 +49,7 @@
     >
       Please wait while we confirm your account...
     </p>
+
 
     <div
       id="error"
@@ -72,8 +77,10 @@ import {
 const APP_URL =
   "https://jacqmurithi-ux.github.io/chama-live";
 
+
 const LOGIN_URL =
   `${APP_URL}/login.html`;
+
 
 const DASHBOARD_URL =
   `${APP_URL}/dashboard.html`;
@@ -84,10 +91,15 @@ const DASHBOARD_URL =
 ======================================================= */
 
 const status =
-  document.getElementById("status");
+  document.getElementById(
+    "status"
+  );
+
 
 const error =
-  document.getElementById("error");
+  document.getElementById(
+    "error"
+  );
 
 
 /* =======================================================
@@ -97,7 +109,10 @@ const error =
 function setStatus(message) {
 
   if (status) {
-    status.textContent = message;
+
+    status.textContent =
+      message;
+
   }
 
 }
@@ -110,9 +125,11 @@ function showError(message) {
     message
   );
 
+
   setStatus(
     "Account confirmation could not be completed."
   );
+
 
   if (error) {
 
@@ -120,7 +137,8 @@ function showError(message) {
       message ||
       "Unable to complete account confirmation.";
 
-    error.hidden = false;
+    error.hidden =
+      false;
 
   }
 
@@ -131,10 +149,13 @@ function showError(message) {
    COMPLETE ONBOARDING
 ======================================================= */
 
-async function completeOnboarding(user) {
+async function completeOnboarding(
+  user
+) {
 
   const metadata =
-    user.user_metadata || {};
+    user.user_metadata ||
+    {};
 
 
   console.log(
@@ -142,23 +163,19 @@ async function completeOnboarding(user) {
     user.id
   );
 
-  console.log(
-    "CHAMA LIVE METADATA:",
-    metadata
-  );
 
-
-  /* =====================================================
-     CHECK WHETHER THIS IS A NEW GROUP ADMIN
-  ===================================================== */
+  /*
+   * Only accounts explicitly carrying the onboarding
+   * marker may enter the group-creation boundary.
+   */
 
   const isOnboarding =
     metadata.chama_onboarding === true;
 
 
   /*
-   * If this is an ordinary existing account,
-   * do not attempt to create a group.
+   * Ordinary existing accounts are not allowed to
+   * create a group through this confirmation page.
    */
 
   if (!isOnboarding) {
@@ -167,13 +184,18 @@ async function completeOnboarding(user) {
       "Account confirmed. Redirecting to sign in..."
     );
 
-    setTimeout(() => {
 
-      window.location.replace(
-        LOGIN_URL
-      );
+    setTimeout(
+      () => {
 
-    }, 1000);
+        window.location.replace(
+          LOGIN_URL
+        );
+
+      },
+      1000
+    );
+
 
     return;
 
@@ -182,37 +204,65 @@ async function completeOnboarding(user) {
 
   /* =====================================================
      READ GROUP INFORMATION
-  ===================================================== */
+  ====================================================== */
 
   const groupName =
-    metadata.group_name || "";
+    String(
+      metadata.group_name ||
+      ""
+    ).trim();
+
 
   const category =
-    metadata.category || "other";
+    String(
+      metadata.category ||
+      "other"
+    ).trim();
+
 
   const monthlyContribution =
     Number(
-      metadata.monthly_contribution || 0
+      metadata.monthly_contribution ||
+      0
     );
+
 
   const openingBalance =
     Number(
-      metadata.opening_balance || 0
+      metadata.opening_balance ||
+      0
     );
 
+
   const description =
-    metadata.description || null;
+    metadata.description ||
+    null;
+
 
   const adminName =
-    metadata.admin_name || "";
+    String(
+      metadata.admin_name ||
+      ""
+    ).trim();
+
 
   const adminPhone =
-    metadata.admin_phone || "";
+    String(
+      metadata.admin_phone ||
+      ""
+    ).trim();
+
+
+  const country =
+    String(
+      metadata.country ||
+      "Kenya"
+    ).trim();
 
 
   /* =====================================================
      VALIDATE
-  ===================================================== */
+  ====================================================== */
 
   if (!groupName) {
 
@@ -232,9 +282,37 @@ async function completeOnboarding(user) {
   }
 
 
+  if (
+    !Number.isFinite(
+      monthlyContribution
+    ) ||
+    monthlyContribution < 0
+  ) {
+
+    throw new Error(
+      "Your group contribution amount is invalid."
+    );
+
+  }
+
+
+  if (
+    !Number.isFinite(
+      openingBalance
+    ) ||
+    openingBalance < 0
+  ) {
+
+    throw new Error(
+      "Your group opening balance is invalid."
+    );
+
+  }
+
+
   /* =====================================================
      CREATE GROUP
-  ===================================================== */
+  ====================================================== */
 
   setStatus(
     "Email confirmed. Creating your group..."
@@ -271,7 +349,7 @@ async function completeOnboarding(user) {
           adminPhone,
 
         p_country:
-          "Kenya"
+          country
 
       }
     );
@@ -292,7 +370,7 @@ async function completeOnboarding(user) {
 
   /* =====================================================
      VERIFY RESULT
-  ===================================================== */
+  ====================================================== */
 
   if (
     !onboarding ||
@@ -315,33 +393,9 @@ async function completeOnboarding(user) {
   }
 
 
-  console.log(
-    "CHAMA LIVE GROUP CREATED:",
-    onboarding.group_id
-  );
-
-
-  console.log(
-    "CHAMA LIVE MEMBER CREATED:",
-    onboarding.member_id
-  );
-
-
-  console.log(
-    "CHAMA LIVE MEMBER NUMBER:",
-    onboarding.member_number
-  );
-
-
-  console.log(
-    "CHAMA LIVE ACCESS CODE:",
-    onboarding.access_code
-  );
-
-
   /* =====================================================
      CLEAN AUTH METADATA
-  ===================================================== */
+  ====================================================== */
 
   const cleanedMetadata = {
     ...metadata
@@ -349,21 +403,36 @@ async function completeOnboarding(user) {
 
 
   delete cleanedMetadata.chama_onboarding;
+
   delete cleanedMetadata.admin_name;
+
   delete cleanedMetadata.admin_phone;
+
   delete cleanedMetadata.group_name;
+
   delete cleanedMetadata.category;
+
   delete cleanedMetadata.monthly_contribution;
+
   delete cleanedMetadata.opening_balance;
+
   delete cleanedMetadata.description;
+
   delete cleanedMetadata.country;
 
+
+  /*
+   * Metadata cleanup is non-blocking.
+   *
+   * Group creation has already completed successfully.
+   */
 
   const {
     error: metadataError
   } =
     await supabase.auth.updateUser({
-      data: cleanedMetadata
+      data:
+        cleanedMetadata
     });
 
 
@@ -379,20 +448,23 @@ async function completeOnboarding(user) {
 
   /* =====================================================
      SUCCESS
-  ===================================================== */
+  ====================================================== */
 
   setStatus(
     "✓ Account confirmed and group created successfully. Redirecting..."
   );
 
 
-  setTimeout(() => {
+  setTimeout(
+    () => {
 
-    window.location.replace(
-      DASHBOARD_URL
-    );
+      window.location.replace(
+        DASHBOARD_URL
+      );
 
-  }, 1000);
+    },
+    1000
+  );
 
 }
 
@@ -447,23 +519,15 @@ async function init() {
     =================================================== */
 
     /*
-     * IMPORTANT:
-     *
      * supabase.js is configured with:
      *
      *   detectSessionInUrl: true
      *   flowType: "pkce"
      *
-     * Therefore Supabase Auth is responsible for
-     * processing the returned PKCE authorization code.
+     * Supabase Auth therefore processes the returned
+     * authorization code.
      *
-     * Do NOT call:
-     *
-     *   exchangeCodeForSession()
-     *
-     * here.
-     *
-     * The authorization code is single-use.
+     * Do NOT call exchangeCodeForSession() here.
      */
 
 
@@ -476,13 +540,9 @@ async function init() {
        STEP 3 — WAIT FOR AUTH SESSION
     =================================================== */
 
-    let session = null;
+    let session =
+      null;
 
-
-    /*
-     * First check whether Supabase has already
-     * established the session.
-     */
 
     const {
       data: sessionData,
@@ -499,14 +559,9 @@ async function init() {
 
 
     session =
-      sessionData?.session || null;
+      sessionData?.session ||
+      null;
 
-
-    /*
-     * If the session is not available immediately,
-     * listen briefly for the automatic PKCE session
-     * establishment.
-     */
 
     if (!session) {
 
@@ -514,21 +569,38 @@ async function init() {
         await new Promise(
           async resolve => {
 
-            let settled = false;
+            let settled =
+              false;
+
+            let subscription =
+              null;
+
+            let timeout =
+              null;
 
 
             const finish =
               value => {
 
                 if (settled) {
+
                   return;
+
                 }
 
-                settled = true;
 
-                clearTimeout(
-                  timeout
-                );
+                settled =
+                  true;
+
+
+                if (timeout) {
+
+                  clearTimeout(
+                    timeout
+                  );
+
+                }
+
 
                 if (subscription) {
 
@@ -536,8 +608,10 @@ async function init() {
 
                 }
 
+
                 resolve(
-                  value || null
+                  value ||
+                  null
                 );
 
               };
@@ -547,7 +621,10 @@ async function init() {
               data: authListener
             } =
               supabase.auth.onAuthStateChange(
-                (event, nextSession) => {
+                (
+                  event,
+                  nextSession
+                ) => {
 
                   console.log(
                     "CHAMA LIVE AUTH EVENT:",
@@ -558,9 +635,12 @@ async function init() {
                   if (
                     nextSession &&
                     (
-                      event === "SIGNED_IN" ||
-                      event === "INITIAL_SESSION" ||
-                      event === "TOKEN_REFRESHED"
+                      event ===
+                        "SIGNED_IN" ||
+                      event ===
+                        "INITIAL_SESSION" ||
+                      event ===
+                        "TOKEN_REFRESHED"
                     )
                   ) {
 
@@ -574,18 +654,20 @@ async function init() {
               );
 
 
-            const subscription =
-              authListener?.subscription;
+            subscription =
+              authListener?.subscription ||
+              null;
 
 
-            const timeout =
+            timeout =
               setTimeout(
                 async () => {
 
                   try {
 
                     const {
-                      data: finalSessionData
+                      data:
+                        finalSessionData
                     } =
                       await supabase.auth.getSession();
 
@@ -595,12 +677,17 @@ async function init() {
                       null
                     );
 
-                  } catch (sessionCheckError) {
+                  }
+
+                  catch (
+                    sessionCheckError
+                  ) {
 
                     console.error(
                       "CHAMA LIVE session retry error:",
                       sessionCheckError
                     );
+
 
                     finish(
                       null
@@ -624,7 +711,8 @@ async function init() {
             try {
 
               const {
-                data: currentSessionData
+                data:
+                  currentSessionData
               } =
                 await supabase.auth.getSession();
 
@@ -639,7 +727,11 @@ async function init() {
 
               }
 
-            } catch (currentSessionError) {
+            }
+
+            catch (
+              currentSessionError
+            ) {
 
               console.error(
                 "CHAMA LIVE current session check error:",
@@ -724,8 +816,9 @@ async function init() {
       user
     );
 
+  }
 
-  } catch (err) {
+  catch (err) {
 
     console.error(
       "CHAMA LIVE confirmation error:",
@@ -750,6 +843,7 @@ async function init() {
 init();
 
 </script>
+
 
 </body>
 
