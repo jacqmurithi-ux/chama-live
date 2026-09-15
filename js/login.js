@@ -1,33 +1,37 @@
 /* =========================================================
    CHAMA LIVE — LOGIN
 
-   Approval-aware authentication.
-
-   Flow:
+   CANONICAL AUTHENTICATION FLOW
    ---------------------------------------------------------
-   Supabase Auth
+   Sign-in form
         ↓
-   Find member
+   auth.js / signIn()
         ↓
-   Check onboarding_status
+   Supabase Auth session
         ↓
-   pending  → account-review.html
-   rejected → review/rejection message
-   approved → dashboard.html
+   auth.js / getMyMember()
+        ↓
+   Authenticated member
+        ↓
+   Dashboard / portal authorization
 
-   Group context remains:
-        auth user
-           ↓
-        members
-           ↓
-        group_id
-           ↓
-        getMyGroup()
+   IMPORTANT
+   ---------------------------------------------------------
+   - Supabase Auth owns authentication.
+   - auth.js owns canonical user/member/group resolution.
+   - This file does NOT implement account approval.
+   - This file does NOT query group_applications.
+   - This file does NOT use onboarding_status.
+   - This file does NOT redirect to account-review.html.
+   - This file does NOT implement platform-admin review.
+   - Portal authorization remains a separate security layer.
 ========================================================= */
 
 import {
   supabase,
-  BASE_URL
+  BASE_URL,
+  signIn,
+  getMyMember
 } from "./auth.js";
 
 
@@ -77,15 +81,11 @@ const successBox =
 
 
 /* =========================================================
-   PAGES
+   DESTINATION
 ========================================================= */
 
-const DASHBOARD =
+const DASHBOARD_URL =
   `${BASE_URL}/dashboard.html`;
-
-
-const REVIEW_PAGE =
-  `${BASE_URL}/account-review.html`;
 
 
 /* =========================================================
@@ -100,7 +100,7 @@ function showError(
     String(
       message ||
       "Unable to sign in."
-    );
+    ).trim();
 
 
   console.error(
@@ -123,10 +123,10 @@ function showError(
 
 
 /* =========================================================
-   CLEAR ERROR
+   CLEAR MESSAGES
 ========================================================= */
 
-function clearError() {
+function clearMessages() {
 
   if (errorBox) {
 
@@ -167,7 +167,8 @@ function showSuccess(
 
   successBox.textContent =
     String(
-      message || ""
+      message ||
+      ""
     );
 
 
@@ -203,7 +204,7 @@ function setLoading(
 
 
 /* =========================================================
-   LOGIN ERROR
+   LOGIN ERROR NORMALIZATION
 ========================================================= */
 
 function normalizeLoginError(
@@ -215,7 +216,7 @@ function normalizeLoginError(
       error?.message ||
       error ||
       ""
-    );
+    ).trim();
 
 
   const lower =
@@ -281,6 +282,48 @@ function normalizeLoginError(
   }
 
 
+  if (
+    lower.includes(
+      "no member record"
+    )
+  ) {
+
+    return (
+      "Your account is not linked to a CHAMA LIVE member record. " +
+      "Please contact your group administrator."
+    );
+
+  }
+
+
+  if (
+    lower.includes(
+      "not linked to a group"
+    )
+  ) {
+
+    return (
+      "Your member account is not linked to a group. " +
+      "Please contact your group administrator."
+    );
+
+  }
+
+
+  if (
+    lower.includes(
+      "user is not authenticated"
+    )
+  ) {
+
+    return (
+      "Your session could not be established. " +
+      "Please sign in again."
+    );
+
+  }
+
+
   return (
     message ||
     "Unable to sign in."
@@ -290,96 +333,33 @@ function normalizeLoginError(
 
 
 /* =========================================================
-   GET MEMBER FOR AUTH USER
+   VERIFY CANONICAL MEMBER CONTEXT
 ========================================================= */
 
-async function getMemberForUser(
-  userId
-) {
+/*
+ * IMPORTANT:
+ *
+ * Do not query the members table directly here.
+ *
+ * auth.js is the canonical owner of:
+ *
+ *     authenticated user
+ *          ↓
+ *       member
+ *          ↓
+ *       group_id
+ *
+ * This prevents login.js from maintaining a second
+ * authentication/member-resolution implementation.
+ */
 
-  let {
-    data,
-    error
-  } =
-    await supabase
-      .from("members")
-      .select(`
-        id,
-        group_id,
-        user_id,
-        auth_user_id,
-        member_number,
-        membership_number,
-        name,
-        email,
-        role,
-        status,
-        onboarding_status,
-        join_date,
-        activated_at
-      `)
-      .eq(
-        "auth_user_id",
-        userId
-      )
-      .limit(1);
+async function verifyMemberContext() {
+
+  const member =
+    await getMyMember();
 
 
-  /*
-   * Compatibility fallback for
-   * older records.
-   */
-
-  if (
-    (!data || data.length === 0) &&
-    !error
-  ) {
-
-    const fallback =
-      await supabase
-        .from("members")
-        .select(`
-          id,
-          group_id,
-          user_id,
-          auth_user_id,
-          member_number,
-          membership_number,
-          name,
-          email,
-          role,
-          status,
-          onboarding_status,
-          join_date,
-          activated_at
-        `)
-        .eq(
-          "user_id",
-          userId
-        )
-        .limit(1);
-
-
-    if (fallback.error) {
-      throw fallback.error;
-    }
-
-
-    data =
-      fallback.data;
-
-  }
-
-
-  if (error) {
-    throw error;
-  }
-
-
-  if (
-    !data ||
-    data.length === 0
-  ) {
+  if (!member) {
 
     throw new Error(
       "No member record is linked to this account."
@@ -388,26 +368,7 @@ async function getMemberForUser(
   }
 
 
-  return data[0];
-
-}
-
-
-/* =========================================================
-   CHECK APPROVAL
-========================================================= */
-
-async function checkAccountStatus(
-  user
-) {
-
-  const member =
-    await getMemberForUser(
-      user.id
-    );
-
-
-  if (!member?.group_id) {
+  if (!member.group_id) {
 
     throw new Error(
       "Your member record is not linked to a group."
@@ -416,26 +377,8 @@ async function checkAccountStatus(
   }
 
 
-  const onboardingStatus =
-    String(
-      member.onboarding_status ||
-      ""
-    )
-      .trim()
-      .toLowerCase();
-
-
-  const memberStatus =
-    String(
-      member.status ||
-      ""
-    )
-      .trim()
-      .toLowerCase();
-
-
   console.log(
-    "CHAMA LIVE: account status",
+    "CHAMA LIVE: canonical member context resolved",
     {
       memberId:
         member.id,
@@ -443,136 +386,16 @@ async function checkAccountStatus(
       groupId:
         member.group_id,
 
-      onboardingStatus,
+      role:
+        member.role || null,
 
-      memberStatus
+      status:
+        member.status || null
     }
   );
 
 
-  /* =====================================================
-     REJECTED
-  ===================================================== */
-
-  if (
-    onboardingStatus ===
-      "rejected" ||
-    memberStatus ===
-      "rejected"
-  ) {
-
-    return {
-
-      allowed:
-        false,
-
-      reason:
-        "rejected",
-
-      member
-
-    };
-
-  }
-
-
-  /* =====================================================
-     PENDING
-  ===================================================== */
-
-  if (
-    onboardingStatus ===
-      "pending" ||
-    onboardingStatus ===
-      "submitted" ||
-    memberStatus ===
-      "pending"
-  ) {
-
-    return {
-
-      allowed:
-        false,
-
-      reason:
-        "pending",
-
-      member
-
-    };
-
-  }
-
-
-  /* =====================================================
-     APPROVED / ACTIVE
-  ===================================================== */
-
-  if (
-    onboardingStatus ===
-      "approved" ||
-    onboardingStatus ===
-      "active"
-  ) {
-
-    return {
-
-      allowed:
-        memberStatus !==
-          "suspended" &&
-        memberStatus !==
-          "inactive",
-
-      reason:
-        "approved",
-
-      member
-
-    };
-
-  }
-
-
-  /*
-   * Legacy active records.
-   */
-
-  if (
-    memberStatus ===
-    "active"
-  ) {
-
-    return {
-
-      allowed:
-        true,
-
-      reason:
-        "approved",
-
-      member
-
-    };
-
-  }
-
-
-  /*
-   * Unknown status:
-   * fail closed.
-   */
-
-  return {
-
-    allowed:
-      false,
-
-    reason:
-      "pending",
-
-    member
-
-  };
+  return member;
 
 }
 
@@ -581,47 +404,42 @@ async function checkAccountStatus(
    REDIRECT
 ========================================================= */
 
-function redirect(
-  url
-) {
+function redirectToDashboard() {
 
   window.location.replace(
-    url
+    DASHBOARD_URL
   );
 
 }
 
 
 /* =========================================================
-   LOGIN
+   READ LOGIN CREDENTIALS
 ========================================================= */
 
-async function performLogin() {
-
-  clearError();
-
+function readCredentials() {
 
   const email =
-    emailInput?.value
+    String(
+      emailInput?.value ||
+      ""
+    )
       .trim()
-      .toLowerCase() ||
-    "";
+      .toLowerCase();
 
 
   const password =
-    passwordInput?.value ||
-    "";
+    String(
+      passwordInput?.value ||
+      ""
+    );
 
 
   if (!email) {
 
-    showError(
+    throw new Error(
       "Please enter your email address."
     );
-
-    emailInput?.focus();
-
-    return;
 
   }
 
@@ -632,24 +450,60 @@ async function performLogin() {
     )
   ) {
 
-    showError(
+    throw new Error(
       "Please enter a valid email address."
     );
-
-    emailInput?.focus();
-
-    return;
 
   }
 
 
   if (!password) {
 
-    showError(
+    throw new Error(
       "Please enter your password."
     );
 
-    passwordInput?.focus();
+  }
+
+
+  return {
+    email,
+    password
+  };
+
+}
+
+
+/* =========================================================
+   LOGIN
+========================================================= */
+
+async function performLogin() {
+
+  clearMessages();
+
+
+  let credentials;
+
+
+  /* =======================================================
+     VALIDATE
+  ======================================================= */
+
+  try {
+
+    credentials =
+      readCredentials();
+
+  }
+
+  catch (error) {
+
+    showError(
+      normalizeLoginError(
+        error
+      )
+    );
 
     return;
 
@@ -663,31 +517,26 @@ async function performLogin() {
 
   try {
 
-    /* ===================================================
-       SUPABASE LOGIN
-    ================================================== */
+    /* =====================================================
+       AUTHENTICATE
+    ===================================================== */
 
     showSuccess(
       "Authenticating..."
     );
 
 
-    const {
-      data,
-      error
-    } =
-      await supabase.auth.signInWithPassword({
+    /*
+     * auth.js owns the sign-in contract.
+     *
+     * Do not call signInWithPassword() directly here.
+     */
 
-        email,
-
-        password
-
-      });
-
-
-    if (error) {
-      throw error;
-    }
+    const data =
+      await signIn(
+        credentials.email,
+        credentials.password
+      );
 
 
     if (
@@ -696,105 +545,34 @@ async function performLogin() {
     ) {
 
       throw new Error(
-        "Login was not completed."
+        "Sign in failed. No active session was created."
       );
 
     }
 
 
-    /* ===================================================
-       CHECK MEMBER / APPROVAL
-    ================================================== */
+    /* =====================================================
+       RESOLVE MEMBER
+    ===================================================== */
 
     showSuccess(
-      "Checking your group account..."
+      "Loading your CHAMA LIVE account..."
     );
 
 
-    const account =
-      await checkAccountStatus(
-        data.user
-      );
+    /*
+     * Canonical member resolution.
+     *
+     * No approval workflow is performed.
+     * No application lookup is performed.
+     */
+
+    await verifyMemberContext();
 
 
-    /* ===================================================
-       PENDING
-    ================================================== */
-
-    if (
-      account.reason ===
-      "pending"
-    ) {
-
-      await supabase.auth.signOut();
-
-
-      localStorage.setItem(
-        "chama_live_review_application",
-        JSON.stringify({
-
-          member_number:
-            account.member
-              ?.member_number ||
-            account.member
-              ?.membership_number ||
-            null,
-
-          email:
-            email
-
-        })
-      );
-
-
-      redirect(
-        REVIEW_PAGE
-      );
-
-
-      return;
-
-    }
-
-
-    /* ===================================================
-       REJECTED
-    ================================================== */
-
-    if (
-      account.reason ===
-      "rejected"
-    ) {
-
-      await supabase.auth.signOut();
-
-
-      throw new Error(
-        "Your CHAMA LIVE account application was not approved. Please contact the CHAMA LIVE administrator for assistance."
-      );
-
-    }
-
-
-    /* ===================================================
-       APPROVED
-    ================================================== */
-
-    if (!account.allowed) {
-
-      await supabase.auth.signOut();
-
-
-      throw new Error(
-        "Your account is not currently active. Please contact your group administrator."
-      );
-
-    }
-
-
-    /* ===================================================
+    /* =====================================================
        CLEAR PASSWORD
-    ================================================== */
+    ===================================================== */
 
     if (passwordInput) {
 
@@ -804,29 +582,33 @@ async function performLogin() {
     }
 
 
+    /* =====================================================
+       SUCCESS
+    ===================================================== */
+
     showSuccess(
-      "Account approved. Opening Dashboard..."
+      "Signed in successfully. Opening CHAMA LIVE..."
     );
 
 
     /*
-     * Important:
+     * The dashboard independently resolves:
      *
-     * Dashboard will independently call:
+     *     requireAuth()
+     *     getMyMember()
+     *     getMyGroup()
      *
-     * requireAuth()
-     * getMyMember()
-     * getMyGroup()
+     * Group context is therefore never passed through
+     * the URL.
      *
-     * Therefore group context is NOT passed
-     * through the URL.
+     * Portal authorization remains separate and must
+     * ultimately be enforced by backend authorization.
      */
 
-    redirect(
-      DASHBOARD
-    );
+    redirectToDashboard();
 
   }
+
 
   catch (error) {
 
@@ -834,6 +616,28 @@ async function performLogin() {
       "CHAMA LIVE: login failed",
       error
     );
+
+
+    /*
+     * If authentication succeeded but member resolution
+     * failed, remove the unusable session before returning
+     * to the login screen.
+     */
+
+    try {
+
+      await supabase.auth.signOut();
+
+    }
+
+    catch (signOutError) {
+
+      console.warn(
+        "CHAMA LIVE: cleanup sign-out failed",
+        signOutError
+      );
+
+    }
 
 
     showError(
@@ -868,7 +672,14 @@ async function checkExistingSession() {
 
 
     if (error) {
+
+      console.warn(
+        "CHAMA LIVE: existing session check failed",
+        error
+      );
+
       return;
+
     }
 
 
@@ -882,61 +693,50 @@ async function checkExistingSession() {
 
 
     /*
-     * Do NOT automatically trust an existing
-     * authenticated session.
+     * An existing Auth session is not sufficient by itself.
      *
-     * Check the member approval status.
+     * Resolve the canonical member context before allowing
+     * access to the application.
      */
 
-    const account =
-      await checkAccountStatus(
-        session.user
-      );
-
-
-    if (
-      account.allowed
-    ) {
-
-      redirect(
-        DASHBOARD
-      );
-
-
-      return;
-
-    }
-
-
-    if (
-      account.reason ===
-      "pending"
-    ) {
-
-      redirect(
-        REVIEW_PAGE
-      );
-
-
-      return;
-
-    }
+    await verifyMemberContext();
 
 
     /*
-     * Unknown/rejected account.
+     * Existing valid session.
      */
 
-    await supabase.auth.signOut();
+    redirectToDashboard();
 
   }
 
+
   catch (error) {
 
-    console.error(
-      "CHAMA LIVE: existing session check failed",
+    console.warn(
+      "CHAMA LIVE: existing session is not usable",
       error
     );
+
+
+    /*
+     * Remove an unusable session.
+     */
+
+    try {
+
+      await supabase.auth.signOut();
+
+    }
+
+    catch (signOutError) {
+
+      console.warn(
+        "CHAMA LIVE: existing-session cleanup failed",
+        signOutError
+      );
+
+    }
 
   }
 
@@ -947,11 +747,19 @@ async function checkExistingSession() {
    FORM
 ========================================================= */
 
-if (form) {
+if (!form) {
+
+  console.error(
+    "CHAMA LIVE: loginForm was not found."
+  );
+
+}
+
+else {
 
   form.addEventListener(
     "submit",
-    event => {
+    function (event) {
 
       event.preventDefault();
 
@@ -971,5 +779,6 @@ checkExistingSession();
 
 
 console.log(
-  "CHAMA LIVE: login.js ready"
+  "CHAMA LIVE: login.js ready — canonical authentication flow enabled"
 );
+
