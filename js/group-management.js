@@ -1,21 +1,25 @@
 /* =========================================================
    CHAMA LIVE — GROUP MANAGEMENT
-   Reconciled application-layer version
+   RECONCILED APPLICATION-LAYER VERSION
 
-   CONTRACT:
+   CONTROLLED SCOPE
+   ---------------------------------------------------------
    - Page boot is owned by layout.js.
    - layout.js imports this module and calls
      initGroupManagement().
    - Group Type maps to groups.category.
    - Subscription is read through
      get_group_subscription().
+   - Centralized owner/role context comes from auth.js.
+   - Legacy `admin` compatibility role is preserved.
+   - Database/RLS remains the authoritative security boundary.
    - No accounting / 2B dependencies belong in this module.
+   - No database changes are made by this file.
 ========================================================= */
 
 import {
   supabase,
-  getMyGroupId,
-  getMyGroup
+  getMyApplicationContext
 } from "./auth.js";
 
 
@@ -23,7 +27,18 @@ import {
    STATE
 ========================================================= */
 
+let currentUser = null;
+
+let currentMember = null;
+
 let currentGroup = null;
+
+let currentIsOwner = false;
+
+let currentRole = "";
+
+let canManageGroup = false;
+
 let subscription = null;
 
 
@@ -32,43 +47,69 @@ let subscription = null;
 ========================================================= */
 
 const form =
-  document.getElementById("groupForm");
+  document.getElementById(
+    "groupForm"
+  );
 
 const groupNameEl =
-  document.getElementById("groupName");
+  document.getElementById(
+    "groupName"
+  );
 
 const groupTypeEl =
-  document.getElementById("groupType");
+  document.getElementById(
+    "groupType"
+  );
 
 const countryEl =
-  document.getElementById("country");
+  document.getElementById(
+    "country"
+  );
 
 const monthlyContributionEl =
-  document.getElementById("monthlyContribution");
+  document.getElementById(
+    "monthlyContribution"
+  );
 
 const contributionPreviewEl =
-  document.getElementById("contributionPreview");
+  document.getElementById(
+    "contributionPreview"
+  );
 
 const currentGroupNameEl =
-  document.getElementById("currentGroupName");
+  document.getElementById(
+    "currentGroupName"
+  );
 
 const memberCountEl =
-  document.getElementById("memberCount");
+  document.getElementById(
+    "memberCount"
+  );
 
 const groupIdEl =
-  document.getElementById("groupId");
+  document.getElementById(
+    "groupId"
+  );
 
 const statusEl =
-  document.getElementById("status");
+  document.getElementById(
+    "status"
+  );
 
 const errorEl =
-  document.getElementById("error");
+  document.getElementById(
+    "error"
+  );
 
 const saveButton =
-  document.getElementById("saveGroup");
+  document.getElementById(
+    "saveGroup"
+  );
 
 const accountCardEl =
-  document.querySelector(".account-card");
+  document.querySelector(
+    ".account-card"
+  );
 
 
 /* =========================================================
@@ -78,60 +119,194 @@ const accountCardEl =
 function clearMessages() {
 
   if (statusEl) {
-    statusEl.hidden = true;
-    statusEl.textContent = "";
+
+    statusEl.hidden =
+      true;
+
+    statusEl.textContent =
+      "";
+
   }
 
+
   if (errorEl) {
-    errorEl.hidden = true;
-    errorEl.textContent = "";
+
+    errorEl.hidden =
+      true;
+
+    errorEl.textContent =
+      "";
+
   }
 
 }
 
 
-function showStatus(message) {
+function showStatus(
+  message
+) {
 
   if (!statusEl) {
     return;
   }
 
-  statusEl.textContent = message;
-  statusEl.hidden = false;
+
+  statusEl.textContent =
+    message;
+
+
+  statusEl.hidden =
+    false;
 
 }
 
 
-function showError(message) {
+function showError(
+  message
+) {
 
   if (!errorEl) {
     return;
   }
 
-  errorEl.textContent = message;
-  errorEl.hidden = false;
+
+  errorEl.textContent =
+    message;
+
+
+  errorEl.hidden =
+    false;
 
 }
 
 
 /* =========================================================
-   GROUP LOAD
+   AUTHORIZATION / CONTEXT
 ========================================================= */
 
-async function loadGroup() {
+/*
+ * Centralized context boundary.
+ *
+ * auth.js is responsible for resolving:
+ *
+ *     user
+ *     member
+ *     group
+ *     isOwner
+ *     role
+ *
+ * This module must not independently resolve
+ * owner_user_id or calculate ownership.
+ *
+ * Existing compatibility rule:
+ *
+ *     owner
+ *       OR
+ *     legacy admin
+ *
+ * may use the group-management UI.
+ *
+ * The database remains the authoritative security
+ * boundary for the actual groups UPDATE operation.
+ */
+
+async function loadAuthorizationContext() {
+
+  const {
+    user,
+    member,
+    group,
+    isOwner,
+    role
+  } =
+    await getMyApplicationContext();
+
+
+  currentUser =
+    user;
+
+
+  currentMember =
+    member;
+
 
   currentGroup =
-    await getMyGroup();
+    group;
 
-  if (!currentGroup?.id) {
 
-    throw new Error(
-      "Group information could not be resolved."
+  currentIsOwner =
+    Boolean(
+      isOwner
     );
+
+
+  currentRole =
+    String(
+      role || ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  canManageGroup =
+    currentIsOwner ||
+    currentRole === "admin";
+
+
+  return {
+
+    user:
+      currentUser,
+
+    member:
+      currentMember,
+
+    group:
+      currentGroup,
+
+    isOwner:
+      currentIsOwner,
+
+    role:
+      currentRole,
+
+    canManageGroup:
+      canManageGroup
+
+  };
+
+}
+
+
+/* =========================================================
+   APPLY AUTHORIZATION UI
+========================================================= */
+
+function applyAuthorizationUI() {
+
+  if (!saveButton) {
+    return;
+  }
+
+
+  saveButton.disabled =
+    !canManageGroup;
+
+
+  if (!canManageGroup) {
+
+    saveButton.title =
+      "Only the group owner or administrator can change group information.";
 
   }
 
-  return currentGroup;
+  else {
+
+    saveButton.removeAttribute(
+      "title"
+    );
+
+  }
 
 }
 
@@ -150,7 +325,8 @@ function renderGroup() {
   if (currentGroupNameEl) {
 
     currentGroupNameEl.textContent =
-      currentGroup.name || "CHAMA";
+      currentGroup.name ||
+      "CHAMA";
 
   }
 
@@ -158,20 +334,29 @@ function renderGroup() {
   if (groupNameEl) {
 
     groupNameEl.value =
-      currentGroup.name || "";
+      currentGroup.name ||
+      "";
 
   }
 
 
   /*
    * IMPORTANT:
-   * UI field is groupType.
-   * Database field is groups.category.
+   *
+   * UI field:
+   *     groupType
+   *
+   * Database field:
+   *     groups.category
+   *
+   * There is no groups.type dependency.
    */
+
   if (groupTypeEl) {
 
     groupTypeEl.value =
-      currentGroup.category || "chama";
+      currentGroup.category ||
+      "chama";
 
   }
 
@@ -179,7 +364,8 @@ function renderGroup() {
   if (countryEl) {
 
     countryEl.value =
-      currentGroup.country || "Kenya";
+      currentGroup.country ||
+      "Kenya";
 
   }
 
@@ -187,7 +373,8 @@ function renderGroup() {
   if (monthlyContributionEl) {
 
     monthlyContributionEl.value =
-      currentGroup.monthly_contribution ?? 0;
+      currentGroup.monthly_contribution ??
+      0;
 
   }
 
@@ -195,7 +382,8 @@ function renderGroup() {
   if (groupIdEl) {
 
     groupIdEl.textContent =
-      currentGroup.id || "—";
+      currentGroup.id ||
+      "—";
 
   }
 
@@ -214,6 +402,7 @@ async function loadMemberCount() {
   const groupId =
     currentGroup?.id;
 
+
   if (!groupId) {
     return;
   }
@@ -222,13 +411,28 @@ async function loadMemberCount() {
   const {
     count,
     error
-  } = await supabase
-    .from("members")
-    .select("id", {
-      count: "exact",
-      head: true
-    })
-    .eq("group_id", groupId);
+  } =
+    await supabase
+
+      .from(
+        "members"
+      )
+
+      .select(
+        "id",
+        {
+          count:
+            "exact",
+
+          head:
+            true
+        }
+      )
+
+      .eq(
+        "group_id",
+        groupId
+      );
 
 
   if (error) {
@@ -239,7 +443,10 @@ async function loadMemberCount() {
   if (memberCountEl) {
 
     memberCountEl.textContent =
-      String(count ?? 0);
+      String(
+        count ??
+        0
+      );
 
   }
 
@@ -259,22 +466,31 @@ function updateContributionPreview() {
 
   const amount =
     Number(
-      monthlyContributionEl?.value || 0
+      monthlyContributionEl?.value ||
+      0
     );
 
 
   const safeAmount =
-    Number.isFinite(amount) &&
+    Number.isFinite(
+      amount
+    ) &&
     amount >= 0
       ? amount
       : 0;
 
 
   contributionPreviewEl.textContent =
-    `KSh ${safeAmount.toLocaleString("en-KE", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    })}`;
+    `KSh ${safeAmount.toLocaleString(
+      "en-KE",
+      {
+        minimumFractionDigits:
+          2,
+
+        maximumFractionDigits:
+          2
+      }
+    )}`;
 
 }
 
@@ -302,9 +518,15 @@ function updateContributionPreview() {
 
 async function loadSubscription() {
 
+  /*
+   * The centralized application context has already
+   * resolved the current group.
+   *
+   * Do not call getMyGroupId() again.
+   */
+
   const groupId =
-    currentGroup?.id ||
-    await getMyGroupId();
+    currentGroup?.id;
 
 
   if (!groupId) {
@@ -319,12 +541,14 @@ async function loadSubscription() {
   const {
     data,
     error
-  } = await supabase.rpc(
-    "get_group_subscription",
-    {
-      p_group_id: groupId
-    }
-  );
+  } =
+    await supabase.rpc(
+      "get_group_subscription",
+      {
+        p_group_id:
+          groupId
+      }
+    );
 
 
   if (error) {
@@ -333,9 +557,17 @@ async function loadSubscription() {
 
 
   subscription =
-    Array.isArray(data)
-      ? (data[0] || null)
-      : (data || null);
+    Array.isArray(
+      data
+    )
+      ? (
+          data[0] ||
+          null
+        )
+      : (
+          data ||
+          null
+        );
 
 
   return subscription;
@@ -355,9 +587,10 @@ function renderSubscription() {
 
 
   /*
-   * Prevent duplicate rendering if the initializer is
-   * called again during the same page lifetime.
+   * Prevent duplicate rendering if the initializer
+   * is called again during the same page lifetime.
    */
+
   const existing =
     accountCardEl.querySelector(
       "[data-group-subscription]"
@@ -365,45 +598,57 @@ function renderSubscription() {
 
 
   if (existing) {
+
     existing.remove();
+
   }
 
 
   const wrapper =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
 
 
   wrapper.dataset.groupSubscription =
     "true";
+
 
   wrapper.className =
     "contribution-highlight";
 
 
   const label =
-    document.createElement("span");
+    document.createElement(
+      "span"
+    );
 
 
   label.className =
     "contribution-highlight-label";
 
+
   label.textContent =
     "Subscription";
 
 
-  wrapper.appendChild(label);
+  wrapper.appendChild(
+    label
+  );
 
 
   const rows = [
 
     [
       "Status",
-      subscription?.status || "—"
+      subscription?.status ||
+      "—"
     ],
 
     [
       "Pricing tier",
-      subscription?.pricing_tier_code || "—"
+      subscription?.pricing_tier_code ||
+      "—"
     ],
 
     [
@@ -426,35 +671,52 @@ function renderSubscription() {
 
 
   rows.forEach(
-    function ([name, value]) {
+    function (
+      [
+        name,
+        value
+      ]
+    ) {
 
       const row =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
 
 
       const strong =
-        document.createElement("strong");
+        document.createElement(
+          "strong"
+        );
 
 
       strong.textContent =
         `${name}: `;
 
 
-      row.appendChild(strong);
-
-
       row.appendChild(
-        document.createTextNode(value)
+        strong
       );
 
 
-      wrapper.appendChild(row);
+      row.appendChild(
+        document.createTextNode(
+          value
+        )
+      );
+
+
+      wrapper.appendChild(
+        row
+      );
 
     }
   );
 
 
-  accountCardEl.appendChild(wrapper);
+  accountCardEl.appendChild(
+    wrapper
+  );
 
 }
 
@@ -479,26 +741,45 @@ function formatSubscriptionAmount(
 
 
   const numericAmount =
-    Number(amount);
+    Number(
+      amount
+    );
 
 
-  if (!Number.isFinite(numericAmount)) {
+  if (
+    !Number.isFinite(
+      numericAmount
+    )
+  ) {
 
-    return String(amount);
+    return String(
+      amount
+    );
 
   }
 
 
   const code =
     String(
-      currency || "KES"
-    ).toUpperCase();
+      currency ||
+      "KES"
+    )
+      .toUpperCase();
 
 
-  return `${code} ${numericAmount.toLocaleString("en-KE", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })}`;
+  return (
+    `${code} ` +
+    numericAmount.toLocaleString(
+      "en-KE",
+      {
+        minimumFractionDigits:
+          2,
+
+        maximumFractionDigits:
+          2
+      }
+    )
+  );
 
 }
 
@@ -508,6 +789,29 @@ function formatSubscriptionAmount(
 ========================================================= */
 
 async function saveGroup() {
+
+  /*
+   * Frontend authorization gate only.
+   *
+   * This is NOT the security boundary.
+   *
+   * The database RLS policy remains authoritative.
+   *
+   * Compatibility rule:
+   *
+   *     owner
+   *       OR
+   *     legacy admin
+   */
+
+  if (!canManageGroup) {
+
+    throw new Error(
+      "Only the group owner or administrator can change group information."
+    );
+
+  }
+
 
   const groupId =
     currentGroup?.id;
@@ -523,20 +827,26 @@ async function saveGroup() {
 
 
   const name =
-    groupNameEl?.value.trim() || "";
+    groupNameEl?.value
+      .trim() ||
+    "";
 
 
   const category =
-    groupTypeEl?.value || "";
+    groupTypeEl?.value ||
+    "";
 
 
   const country =
-    countryEl?.value.trim() || "Kenya";
+    countryEl?.value
+      .trim() ||
+    "Kenya";
 
 
   const monthlyContribution =
     Number(
-      monthlyContributionEl?.value || 0
+      monthlyContributionEl?.value ||
+      0
     );
 
 
@@ -574,10 +884,12 @@ async function saveGroup() {
 
   /*
    * IMPORTANT:
+   *
    * groupType → category
    *
    * There is no groups.type field.
    */
+
   const payload = {
 
     name,
@@ -593,7 +905,10 @@ async function saveGroup() {
 
 
   if (saveButton) {
-    saveButton.disabled = true;
+
+    saveButton.disabled =
+      true;
+
   }
 
 
@@ -602,19 +917,27 @@ async function saveGroup() {
     const {
       data,
       error
-    } = await supabase
+    } =
+      await supabase
 
-      .from("groups")
+        .from(
+          "groups"
+        )
 
-      .update(payload)
+        .update(
+          payload
+        )
 
-      .eq("id", groupId)
+        .eq(
+          "id",
+          groupId
+        )
 
-      .select(
-        "id,name,category,monthly_contribution,country"
-      )
+        .select(
+          "id,name,category,monthly_contribution,country"
+        )
 
-      .single();
+        .single();
 
 
     if (error) {
@@ -633,12 +956,11 @@ async function saveGroup() {
       "Group information saved successfully."
     );
 
+  }
 
-  } finally {
+  finally {
 
-    if (saveButton) {
-      saveButton.disabled = false;
-    }
+    applyAuthorizationUI();
 
   }
 
@@ -663,7 +985,9 @@ if (form) {
 
   form.addEventListener(
     "submit",
-    async function (event) {
+    async function (
+      event
+    ) {
 
       event.preventDefault();
 
@@ -674,7 +998,9 @@ if (form) {
 
         await saveGroup();
 
-      } catch (error) {
+      }
+
+      catch (error) {
 
         console.error(
           "CHAMA LIVE: group update failed",
@@ -706,23 +1032,61 @@ export async function initGroupManagement() {
 
   try {
 
-    await loadGroup();
+    /*
+     * Resolve the complete application context once.
+     */
+
+    await loadAuthorizationContext();
+
+
+    if (!currentGroup?.id) {
+
+      throw new Error(
+        "Group information could not be resolved."
+      );
+
+    }
+
+
+    /*
+     * Apply frontend authorization state before
+     * rendering the management form.
+     */
+
+    applyAuthorizationUI();
+
 
     renderGroup();
 
+
     await loadMemberCount();
+
 
     await loadSubscription();
 
+
     renderSubscription();
 
+  }
 
-  } catch (error) {
+  catch (error) {
 
     console.error(
       "CHAMA LIVE: group management initialization failed",
       error
     );
+
+
+    /*
+     * A failed context must never leave the form
+     * appearing editable.
+     */
+
+    canManageGroup =
+      false;
+
+
+    applyAuthorizationUI();
 
 
     showError(
@@ -733,3 +1097,4 @@ export async function initGroupManagement() {
   }
 
 }
+
