@@ -1,251 +1,76 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
 
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="description"
+    content="Activate your CHAMA LIVE member account."
   >
 
   <title>Activate Account — CHAMA LIVE</title>
 
-  <link
-    rel="stylesheet"
-    href="css/app.css"
-  >
-</head>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
 
-<body>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family:
+        Inter,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+      background: #f5f7fb;
+      color: #172033;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
 
-<div
-  style="
-    min-height:100vh;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:20px;
-  "
->
+    .container {
+      width: 100%;
+      max-width: 460px;
+    }
 
-  <div
-    class="card"
-    style="
-      width:100%;
-      max-width:480px;
-    "
-  >
+    .brand {
+      text-align: center;
+      margin-bottom: 24px;
+    }
 
-    <div
-      style="
-        text-align:center;
-        margin-bottom:25px;
-      "
-    >
+    .brand h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
 
-      <div class="brand">
-        CHAMA <span>LIVE</span>
-      </div>
+    .brand p {
+      margin: 8px 0 0;
+      color: #667085;
+      font-size: 14px;
+    }
 
-      <h1>
-        Activate Your Account
-      </h1>
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow:
+        0 10px 30px rgba(16, 24, 40, 0.08);
+      border: 1px solid #eaecf0;
+    }
 
-      <p class="muted">
-        Your group administrator has already
-        registered your member details.
-        Use those details to activate your login.
-      </p>
-
-    </div>
-
-
-    <!-- ERROR -->
-
-    <div
-      id="error"
-      class="error"
-      hidden
-      style="margin-bottom:15px;"
-    ></div>
-
-
-    <!-- SUCCESS -->
-
-    <div
-      id="success"
-      hidden
-      style="
-        padding:12px;
-        border-radius:8px;
-        margin-bottom:15px;
-        background:#e8f7ed;
-      "
-    ></div>
-
-
-    <form id="activateForm">
-
-
-      <!-- MEMBER NUMBER -->
-
-      <div
-        style="margin-bottom:18px;"
-      >
-
-        <label
-          for="membershipNumber"
-        >
-          Membership Number
-        </label>
-
-        <input
-          id="membershipNumber"
-          name="membershipNumber"
-          type="text"
-          required
-          autocomplete="off"
-          placeholder="e.g. 0004"
-          style="width:100%;"
-        >
-
-      </div>
-
-
-      <!-- EMAIL -->
-
-      <div
-        style="margin-bottom:18px;"
-      >
-
-        <label
-          for="email"
-        >
-          Registered Email
-        </label>
-
-        <input
-          id="email"
-          name="email"
-          type="email"
-          required
-          autocomplete="email"
-          placeholder="Enter the email registered by your group"
-          style="width:100%;"
-        >
-
-      </div>
-
-
-      <hr
-        style="
-          margin:25px 0;
-          opacity:.2;
-        "
-      >
-
-
-      <h3>
-        Create Login Password
-      </h3>
-
-
-      <!-- PASSWORD -->
-
-      <div
-        style="margin-bottom:18px;"
-      >
-
-        <label
-          for="password"
-        >
-          Password
-        </label>
-
-        <input
-          id="password"
-          name="password"
-          type="password"
-          required
-          minlength="8"
-          autocomplete="new-password"
-          placeholder="Minimum 8 characters"
-          style="width:100%;"
-        >
-
-      </div>
-
-
-      <!-- CONFIRM PASSWORD -->
-
-      <div
-        style="margin-bottom:20px;"
-      >
-
-        <label
-          for="confirmPassword"
-        >
-          Confirm Password
-        </label>
-
-        <input
-          id="confirmPassword"
-          name="confirmPassword"
-          type="password"
-          required
-          minlength="8"
-          autocomplete="new-password"
-          placeholder="Repeat your password"
-          style="width:100%;"
-        >
-
-      </div>
-
-
-      <!-- SUBMIT -->
-
-      <button
-        id="activateButton"
-        class="btn btn-primary"
-        type="submit"
-        style="width:100%;"
-      >
-        Activate Account
-      </button>
-
-
-    </form>
-
-
-    <div
-      style="
-        text-align:center;
-        margin-top:20px;
-      "
-    >
-
-      <span class="muted">
-        Already have an account?
-      </span>
-
-      <a href="login.html">
-        Sign in
-      </a>
-
-    </div>
-
-  </div>
-
-</div>
-
-
-<script type="module">
-
-  import "./js/activate-account.js";
-
-</script>
-
-</body>
-
-</html>
+    .card h2 {
+      margin: 0 0 8px;
+      font-size: 22px;
+     
