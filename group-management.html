@@ -152,6 +152,38 @@
 
 
     /* =====================================================
+       BILLING CARD
+    ====================================================== */
+
+    .billing-card {
+      margin-bottom: 24px;
+      padding: 24px;
+    }
+
+    .billing-card-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .billing-card-copy {
+      max-width: 720px;
+    }
+
+    .billing-card-copy h2 {
+      margin-bottom: 6px;
+    }
+
+    .billing-card-copy p {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+
+    /* =====================================================
        OVERVIEW CARDS
     ====================================================== */
 
@@ -418,7 +450,8 @@
       }
 
       .management-card,
-      .account-card {
+      .account-card,
+      .billing-card {
         padding: 20px;
       }
 
@@ -436,6 +469,15 @@
       }
 
       .save-area .btn {
+        width: 100%;
+      }
+
+      .billing-card-content {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .billing-card-content .btn {
         width: 100%;
       }
 
@@ -508,10 +550,6 @@
         Group Management
       </a>
 
-      <a href="billing.html">
-        Billing
-      </a>
-
       <a href="assets.html">
         Assets
       </a>
@@ -555,6 +593,38 @@
       </section>
 
 
+      <!-- =================================================
+           BILLING
+      ================================================== -->
+
+      <section class="card billing-card">
+
+        <div class="billing-card-content">
+
+          <div class="billing-card-copy">
+
+            <h2>
+              Billing
+            </h2>
+
+            <p class="muted">
+              View your group's subscription, invoices,
+              billing cycles and payment records.
+            </p>
+
+          </div>
+
+          <a
+            class="btn btn-primary"
+            href="billing.html"
+          >
+            Open Billing
+          </a>
+
+        </div>
+
+      </section>
+
 
       <!-- STATUS -->
 
@@ -565,7 +635,6 @@
       ></div>
 
 
-
       <!-- ERROR -->
 
       <div
@@ -573,7 +642,6 @@
         class="error group-error"
         hidden
       ></div>
-
 
 
       <!-- =================================================
@@ -669,9 +737,7 @@
       </section>
 
 
-
       <br>
-
 
 
       <!-- =================================================
@@ -710,7 +776,6 @@
           </div>
 
 
-
           <form id="groupForm">
 
 
@@ -736,7 +801,6 @@
                 >
 
               </div>
-
 
 
               <!-- GROUP TYPE -->
@@ -788,7 +852,6 @@
               </div>
 
 
-
               <!-- COUNTRY -->
 
               <div class="form-group">
@@ -808,7 +871,6 @@
                 >
 
               </div>
-
 
 
               <!-- MONTHLY CONTRIBUTION -->
@@ -841,7 +903,6 @@
             </div>
 
 
-
             <!-- CONTRIBUTION PREVIEW -->
 
             <div class="contribution-highlight">
@@ -858,7 +919,6 @@
               </strong>
 
             </div>
-
 
 
             <!-- SAVE -->
@@ -883,7 +943,6 @@
           </form>
 
         </section>
-
 
 
         <!-- =================================================
@@ -914,7 +973,6 @@
           </div>
 
 
-
           <div class="account-box">
 
             <div class="account-status">
@@ -935,7 +993,6 @@
             </p>
 
           </div>
-
 
 
           <ul class="context-list">
@@ -1003,6 +1060,7 @@
   </main>
 
 </div>
+
 
 <!-- =====================================================
      PAGE BOOT
