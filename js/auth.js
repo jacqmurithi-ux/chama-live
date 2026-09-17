@@ -154,17 +154,145 @@ export async function signIn(
 
 /* =========================================================
    CURRENT USER
+   ---------------------------------------------------------
+   Handles an expired/invalid access token by attempting a
+   Supabase session refresh before failing authentication.
+
+   IMPORTANT
+   ---------------------------------------------------------
+   - Does not change authentication identity.
+   - Does not accept identity from the frontend.
+   - Does not write application/database records.
+   - Preserves the existing getCurrentUser() contract.
 ========================================================= */
 
 export async function getCurrentUser() {
 
-  const {
+  let {
     data,
     error
   } =
     await supabase.auth.getUser();
 
 
+  /*
+   * Normal authenticated path.
+   */
+  if (
+    !error &&
+    data?.user
+  ) {
+
+    return data.user;
+
+  }
+
+
+  /*
+   * Detect the expired/invalid JWT condition returned by
+   * Supabase Auth.
+   */
+  const message =
+    String(
+      error?.message || ""
+    )
+      .toLowerCase();
+
+
+  const isExpiredToken =
+    message.includes("invalid jwt") ||
+    message.includes("token is expired") ||
+    message.includes("jwt expired") ||
+    message.includes("expired");
+
+
+  /*
+   * Attempt one session refresh when the access token has
+   * expired.
+   */
+  if (isExpiredToken) {
+
+    console.warn(
+      "CHAMA LIVE: access token expired; attempting session refresh."
+    );
+
+
+    const {
+      data: refreshed,
+      error: refreshError
+    } =
+      await supabase.auth.refreshSession();
+
+
+    /*
+     * Refresh failed. The user needs to authenticate again.
+     */
+    if (refreshError) {
+
+      console.warn(
+        "CHAMA LIVE: session refresh failed.",
+        refreshError
+      );
+
+      throw new Error(
+        "Your session has expired. Please sign in again."
+      );
+
+    }
+
+
+    /*
+     * Refresh completed but did not produce an authenticated
+     * session/user.
+     */
+    if (
+      !refreshed?.session?.user
+    ) {
+
+      throw new Error(
+        "Your session has expired. Please sign in again."
+      );
+
+    }
+
+
+    /*
+     * Retry the authenticated-user request using the refreshed
+     * session.
+     */
+    const retry =
+      await supabase.auth.getUser();
+
+
+    if (
+      retry.error
+    ) {
+
+      throw retry.error;
+
+    }
+
+
+    if (
+      !retry.data?.user
+    ) {
+
+      throw new Error(
+        "Your session has expired. Please sign in again."
+      );
+
+    }
+
+
+    return retry.data.user;
+
+  }
+
+
+  /*
+   * Preserve normal Supabase errors that are not expired-token
+   * conditions.
+   */
   if (error) {
 
     throw error;
@@ -172,16 +300,9 @@ export async function getCurrentUser() {
   }
 
 
-  if (!data?.user) {
-
-    throw new Error(
-      "You are not logged in."
-    );
-
-  }
-
-
-  return data.user;
+  throw new Error(
+    "You are not logged in."
+  );
 
 }
 
@@ -949,4 +1070,3 @@ export function clearError(
     "none";
 
 }
-
