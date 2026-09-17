@@ -428,10 +428,6 @@ function getAdministratorSlides() {
 
   return [
 
-    /* =====================================================
-       ADMIN SLIDE 1 — DASHBOARD
-    ===================================================== */
-
     {
       icon: "🏠",
       eyebrow: roleName.toUpperCase(),
@@ -470,10 +466,6 @@ function getAdministratorSlides() {
         ])
     },
 
-
-    /* =====================================================
-       ADMIN SLIDE 2 — MEMBERS
-    ===================================================== */
 
     {
       icon: "👥",
@@ -520,10 +512,6 @@ function getAdministratorSlides() {
     },
 
 
-    /* =====================================================
-       ADMIN SLIDE 3 — CONTRIBUTIONS
-    ===================================================== */
-
     {
       icon: "💰",
       eyebrow: "CONTRIBUTIONS",
@@ -560,10 +548,6 @@ function getAdministratorSlides() {
         ])
     },
 
-
-    /* =====================================================
-       ADMIN SLIDE 4 — PAYMENTS
-    ===================================================== */
 
     {
       icon: "📱",
@@ -607,10 +591,6 @@ function getAdministratorSlides() {
     },
 
 
-    /* =====================================================
-       ADMIN SLIDE 5 — EXPENSES
-    ===================================================== */
-
     {
       icon: "🧾",
       eyebrow: "EXPENSES",
@@ -647,10 +627,6 @@ function getAdministratorSlides() {
         ])
     },
 
-
-    /* =====================================================
-       ADMIN SLIDE 6 — LOANS
-    ===================================================== */
 
     {
       icon: "💳",
@@ -697,10 +673,6 @@ function getAdministratorSlides() {
     },
 
 
-    /* =====================================================
-       ADMIN SLIDE 7 — MEETINGS
-    ===================================================== */
-
     {
       icon: "📅",
       eyebrow: "MEETINGS",
@@ -746,10 +718,6 @@ function getAdministratorSlides() {
     },
 
 
-    /* =====================================================
-       ADMIN SLIDE 8 — REPORTS
-    ===================================================== */
-
     {
       icon: "📊",
       eyebrow: "REPORTS",
@@ -793,10 +761,6 @@ function getAdministratorSlides() {
         ])
     },
 
-
-    /* =====================================================
-       ADMIN SLIDE 9 — SETTINGS / GROUP MANAGEMENT
-    ===================================================== */
 
     {
       icon: "⚙️",
@@ -842,10 +806,6 @@ function getAdministratorSlides() {
         ])
     },
 
-
-    /* =====================================================
-       ADMIN SLIDE 10 — READY
-    ===================================================== */
 
     {
       icon: "🎉",
@@ -1404,9 +1364,6 @@ function renderSlide() {
     "tour-card"
   );
 
-  /*
-   * Force a small animation restart.
-   */
   void cardEl.offsetWidth;
 
   cardEl.classList.add(
@@ -1570,11 +1527,6 @@ function finishTour() {
     );
 
   } catch (error) {
-
-    /*
-     * localStorage failure should not prevent
-     * the user from entering the application.
-     */
 
     console.warn(
       "CHAMA LIVE tour state could not be saved:",
@@ -1766,43 +1718,16 @@ async function initializeTour() {
 
 
     /* =====================================================
-       COMPLETION CHECK
+       TOUR COMPLETION
 
-       Previously completed users should not be forced
-       through the tour again.
+       IMPORTANT:
+       A completed tour does NOT redirect the user away.
+
+       The tour must remain accessible whenever the user
+       explicitly opens tour.html from Getting Started.
+
+       Completion is still recorded by finishTour().
     ===================================================== */
-
-    try {
-
-      const tourCompleted =
-        localStorage.getItem(
-          TOUR_STORAGE_KEY
-        );
-
-      if (tourCompleted === "true") {
-
-        console.info(
-          "[TOUR-DIAG] TOUR ALREADY COMPLETED"
-        );
-
-        window.location.href =
-          DASHBOARD_URL;
-
-        return;
-      }
-
-    } catch (error) {
-
-      /*
-       * localStorage read failure should not prevent
-       * the user from entering the tour.
-       */
-
-      console.warn(
-        "CHAMA LIVE tour state could not be read:",
-        error
-      );
-    }
 
 
     stage =
