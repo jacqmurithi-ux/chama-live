@@ -23,7 +23,6 @@ import {
 const TOUR_STORAGE_KEY =
   "chama_live_tour_completed_v1";
 
-
 const DASHBOARD_URL =
   "dashboard.html";
 
@@ -332,11 +331,14 @@ function getWelcomeSlides() {
           }
         ]),
 
-      details: detailList([
-        "Learn how CHAMA LIVE works before entering your dashboard.",
-        "Your access depends on your role in the Chama.",
-        "You can skip the tour at any time."
-      ])
+      details:
+        detailList([
+          "Start the tour with your current CHAMA LIVE role.",
+          "Use the navigation to move between the pages available to your account.",
+          "The tour explains the main workflow before you begin entering records.",
+          "You can use the Back, Next, slide dots, keyboard arrows or swipe gestures to navigate.",
+          "You can skip the tour at any time and go directly to the dashboard."
+        ])
     },
 
 
@@ -367,13 +369,15 @@ function getWelcomeSlides() {
           }
         ]),
 
-      details: detailList([
-        "Create and maintain your member records.",
-        "Record expected and received contributions.",
-        "Reconcile payments against your group's records.",
-        "Manage expenses, loans, meetings and reports.",
-        "CHAMA LIVE is a management and reconciliation system — not your group's bank account."
-      ])
+      details:
+        detailList([
+          "Start by keeping the member register accurate.",
+          "Record contributions and other financial activity against the correct member or group record.",
+          "Record expenses, loans and other activities using their dedicated pages.",
+          "Use reports and statements to review information already recorded.",
+          "Reconcile application records against the group's actual financial records.",
+          "CHAMA LIVE is a management and reconciliation system — it is not the group's bank account."
+        ])
     },
 
 
@@ -393,12 +397,13 @@ function getWelcomeSlides() {
 
       details:
         detailList([
-          "Owner / Super Admin — group administration.",
-          "Chairperson — leadership and approvals.",
-          "Treasurer — financial records and reconciliation.",
-          "Secretary — members, meetings and minutes.",
-          "Committee — assigned group responsibilities.",
-          "Member — personal participation and statements."
+          "Owner / Super Admin — group administration and overall control.",
+          "Chairperson — leadership, oversight and approvals where permitted.",
+          "Treasurer — financial records, contributions and reconciliation.",
+          "Secretary — members, meetings, minutes and group communication.",
+          "Committee — assigned group responsibilities and activities.",
+          "Member — personal participation, financial information and group updates.",
+          "Your actual available pages and actions are determined by your account permissions."
         ])
     }
 
@@ -423,12 +428,16 @@ function getAdministratorSlides() {
 
   return [
 
+    /* =====================================================
+       ADMIN SLIDE 1 — DASHBOARD
+    ===================================================== */
+
     {
       icon: "🏠",
       eyebrow: roleName.toUpperCase(),
       title: "Your Dashboard",
       description:
-        "Your Chama at a glance. Start here to understand what is happening in your group.",
+        "Use the dashboard as your starting point. It gives you a quick view of the group's current records and activity.",
 
       visual:
         exampleStats([
@@ -452,67 +461,75 @@ function getAdministratorSlides() {
 
       details:
         detailList([
-          "Total members",
-          "Contributions",
-          "Expenses",
-          "Group balance",
-          "Outstanding contributions",
-          "Pending tasks",
-          "Recent activity"
+          "OPEN — Click Dashboard in the navigation to return to the group overview.",
+          "CHECK — Review total members, contributions, expenses, balance and outstanding amounts shown for your group.",
+          "REVIEW — Check recent activity and any pending items before starting your work.",
+          "USE — Select the relevant navigation item when you need to work on members, contributions, expenses, meetings or reports.",
+          "EXPECT — The dashboard gives you a summary; detailed records are managed on the individual pages.",
+          "TIP — If a dashboard figure looks unexpected, open the relevant detailed page and verify the underlying records."
         ])
     },
 
+
+    /* =====================================================
+       ADMIN SLIDE 2 — MEMBERS
+    ===================================================== */
 
     {
       icon: "👥",
       eyebrow: "MEMBERS",
       title: "Manage your members",
       description:
-        "Keep your group's membership records organized and give people the right level of access.",
+        "The Members page is where you maintain the group's member register and manage member access.",
 
       visual:
         featureGrid([
           {
             icon: "➕",
-            title: "Add members",
-            text: "Create member records"
+            title: "Add Member",
+            text: "Create a member record"
           },
           {
-            icon: "✉️",
-            title: "Invite members",
-            text: "Give members portal access"
+            icon: "✏️",
+            title: "Edit",
+            text: "Update member information"
           },
           {
             icon: "🛡️",
-            title: "Assign roles",
-            text: "Control responsibilities"
+            title: "Role",
+            text: "Assign responsibilities"
           },
           {
-            icon: "👤",
-            title: "Profiles",
-            text: "View member information"
+            icon: "✉️",
+            title: "Invite",
+            text: "Provide portal access"
           }
         ]),
 
       details:
         detailList([
-          "Add and manage members.",
-          "Invite members to the portal.",
-          "Assign appropriate roles.",
-          "View membership status.",
-          "View individual contribution records.",
-          "Disable portal access when necessary.",
-          "A registered member does not automatically need a portal account."
+          "OPEN — Click Members in the navigation.",
+          "ADD — Click Add Member to create a new member record.",
+          "ENTER — Enter the member's required personal/contact information and select the appropriate role.",
+          "SAVE — Save the member record and confirm that the new member appears in the member list.",
+          "CHECK — Review the member's status, role, contact information and group association.",
+          "ACCESS — If portal access is required, use the available invitation/access action for that member.",
+          "EXPECT — The member should appear in the group's member register with the appropriate status.",
+          "IMPORTANT — A registered member does not automatically need a portal account."
         ])
     },
 
 
+    /* =====================================================
+       ADMIN SLIDE 3 — CONTRIBUTIONS
+    ===================================================== */
+
     {
       icon: "💰",
       eyebrow: "CONTRIBUTIONS",
-      title: "Track what members contribute",
+      title: "Record member contributions",
       description:
-        "Understand what is expected, what has been received and what remains outstanding.",
+        "Use Contributions to record what members are expected to contribute, what has been received and what remains outstanding.",
 
       visual:
         exampleStats([
@@ -532,23 +549,28 @@ function getAdministratorSlides() {
 
       details:
         detailList([
-          "Set contribution rules.",
-          "Record payments.",
-          "View expected contributions.",
-          "See paid, partial and outstanding members.",
-          "Track arrears.",
-          "Reconcile payments.",
-          "Issue receipts."
+          "OPEN — Click Contributions in the navigation.",
+          "SELECT — Choose the member whose contribution you are recording.",
+          "ENTER — Enter the contribution amount, contribution date and contribution type as required.",
+          "PAYMENT — Select the applicable payment method and enter the payment/reference information when available.",
+          "SAVE — Save the contribution record and confirm that it appears in the member's contribution history.",
+          "CHECK — Verify the member, amount, date, payment method and reference before relying on the record.",
+          "RECONCILE — Compare recorded payments with the group's actual M-Pesa, bank or cash records.",
+          "EXPECT — The member's contribution history and relevant totals should reflect the newly recorded transaction."
         ])
     },
 
+
+    /* =====================================================
+       ADMIN SLIDE 4 — PAYMENTS
+    ===================================================== */
 
     {
       icon: "📱",
       eyebrow: "PAYMENTS",
       title: "Payments & reconciliation",
       description:
-        "Connect payments to the right member and verify the contribution record.",
+        "Use the payment workflow to make sure received payments are connected to the correct member and contribution record.",
 
       visual:
         flow([
@@ -558,7 +580,7 @@ function getAdministratorSlides() {
           },
           {
             icon: "📥",
-            title: "Payment received"
+            title: "Receive"
           },
           {
             icon: "🔎",
@@ -572,29 +594,34 @@ function getAdministratorSlides() {
 
       details:
         detailList([
-          "M-Pesa payments",
-          "Bank payments",
-          "Cash or manual entries",
-          "Payment references",
-          "Unmatched transactions",
-          "Payment verification",
-          "Receipt records",
-          "CHAMA LIVE manages the records and reconciliation; group funds remain in the group's financial account."
+          "OPEN — Go to the payment/contribution workflow available to your group.",
+          "IDENTIFY — Confirm who made the payment before assigning it to a member.",
+          "ENTER — Record the amount, payment date, payment method and available transaction/reference information.",
+          "MATCH — Connect the payment to the correct member and applicable contribution record.",
+          "CHECK — Confirm that the amount and reference agree with the original payment evidence.",
+          "VERIFY — Review the resulting member contribution/history record after reconciliation.",
+          "HANDLE — Do not silently assign an uncertain payment; investigate unmatched or ambiguous transactions first.",
+          "EXPECT — A correctly reconciled payment should be traceable from the payment information to the appropriate member record.",
+          "IMPORTANT — CHAMA LIVE manages records and reconciliation; the group's actual funds remain in the group's financial account."
         ])
     },
 
 
+    /* =====================================================
+       ADMIN SLIDE 5 — EXPENSES
+    ===================================================== */
+
     {
       icon: "🧾",
       eyebrow: "EXPENSES",
-      title: "Know where group money goes",
+      title: "Record and review expenses",
       description:
-        "Record expenses clearly and maintain an understandable approval trail.",
+        "Use Expenses to document group spending and keep a clear record of what was spent, why it was spent and how it was approved.",
 
       visual:
         exampleStats([
           {
-            label: "Expense",
+            label: "Description",
             value: "Office supplies"
           },
           {
@@ -602,80 +629,91 @@ function getAdministratorSlides() {
             value: "KSh 2,500"
           },
           {
-            label: "Approved",
-            value: "Treasurer"
+            label: "Status",
+            value: "Approved"
           }
         ]),
 
       details:
         detailList([
-          "Record expenses.",
-          "Upload supporting documents.",
-          "Request or approve expenses.",
-          "Categorize spending.",
-          "Track who approved an expense.",
-          "View expense history."
+          "OPEN — Click Expenses in the navigation.",
+          "ADD — Start the expense entry available on the page.",
+          "ENTER — Enter the expense date, description, category and amount.",
+          "SUPPORT — Add supporting information or documents when the page provides that option.",
+          "SAVE — Save the expense and confirm that it appears in the expense history.",
+          "CHECK — Verify the date, description, category, amount and approval status.",
+          "APPROVE — Follow your group's approval process where approval is required.",
+          "EXPECT — The expense should become part of the group's recorded spending history and relevant summaries."
         ])
     },
 
+
+    /* =====================================================
+       ADMIN SLIDE 6 — LOANS
+    ===================================================== */
 
     {
       icon: "💳",
       eyebrow: "LOANS",
       title: "Manage member loans",
       description:
-        "If your group uses loans, keep disbursements, repayments and balances organized.",
+        "If your group provides loans, use the loan workflow to keep loan amounts, repayments and outstanding balances organized.",
 
       visual:
         featureGrid([
           {
             icon: "➕",
-            title: "Create loans",
+            title: "Create",
             text: "Record loan details"
           },
           {
             icon: "💸",
-            title: "Disbursements",
+            title: "Disburse",
             text: "Record money issued"
           },
           {
             icon: "📅",
-            title: "Schedules",
-            text: "Track repayments"
+            title: "Repay",
+            text: "Track scheduled payments"
           },
           {
-            icon: "👥",
-            title: "Guarantors",
-            text: "Maintain guarantees"
+            icon: "📊",
+            title: "Balance",
+            text: "Review outstanding amounts"
           }
         ]),
 
       details:
         detailList([
-          "Create member loans.",
-          "Record disbursements.",
-          "Set repayment schedules.",
-          "Track outstanding balances.",
-          "Manage guarantors.",
-          "Record repayments.",
-          "Identify overdue loans."
+          "OPEN — Click Loans or the loan function available in your navigation.",
+          "SELECT — Select the member receiving or repaying the loan.",
+          "ENTER — Record the loan amount, applicable dates, repayment information and other required loan details.",
+          "CHECK — Review the member, principal amount, repayment schedule and any guarantor information before saving.",
+          "SAVE — Save the loan record and confirm that the loan appears against the correct member.",
+          "RECORD — Record repayments using the appropriate loan repayment workflow.",
+          "REVIEW — Check the outstanding balance and repayment history after each recorded transaction.",
+          "EXPECT — The member's loan record should show the loan history, repayments and remaining balance."
         ])
     },
 
 
+    /* =====================================================
+       ADMIN SLIDE 7 — MEETINGS
+    ===================================================== */
+
     {
       icon: "📅",
       eyebrow: "MEETINGS",
-      title: "Keep your group organized",
+      title: "Organize meetings and decisions",
       description:
-        "Bring meetings, attendance, agendas and decisions into one place.",
+        "Use Meetings to keep a structured record of meetings, attendance, agendas, minutes and resolutions.",
 
       visual:
         featureGrid([
           {
             icon: "📅",
             title: "Schedule",
-            text: "Plan upcoming meetings"
+            text: "Create the meeting"
           },
           {
             icon: "👥",
@@ -685,132 +723,136 @@ function getAdministratorSlides() {
           {
             icon: "📝",
             title: "Minutes",
-            text: "Keep meeting records"
+            text: "Record what happened"
           },
           {
             icon: "✓",
-            title: "Decisions",
-            text: "Track resolutions"
+            title: "Resolutions",
+            text: "Track decisions"
           }
         ]),
 
       details:
         detailList([
-          "Schedule meetings.",
-          "Record attendance.",
-          "Add agendas.",
-          "Record minutes.",
-          "Track decisions.",
-          "Share meeting information."
+          "OPEN — Click Meetings in the navigation.",
+          "CREATE — Add the meeting date, title, venue and other required meeting information.",
+          "PLAN — Add the agenda or topics that members need to discuss.",
+          "RECORD — After the meeting, update attendance and record the minutes.",
+          "DECIDE — Record important decisions or resolutions made by the group.",
+          "CHECK — Confirm the meeting date, title, attendance, minutes and resolutions are complete.",
+          "SAVE — Save the meeting record so it becomes part of the group's history.",
+          "EXPECT — The meeting should remain available as a reference for future review."
         ])
     },
 
+
+    /* =====================================================
+       ADMIN SLIDE 8 — REPORTS
+    ===================================================== */
 
     {
       icon: "📊",
       eyebrow: "REPORTS",
       title: "Turn records into useful information",
       description:
-        "Reports help your leadership understand the group's financial and operational records.",
+        "Reports help leadership review the information already recorded in CHAMA LIVE.",
 
       visual:
         featureGrid([
           {
             icon: "💰",
             title: "Contributions",
-            text: "Contribution reports"
+            text: "Review contribution records"
           },
           {
             icon: "👤",
             title: "Statements",
-            text: "Member statements"
+            text: "Review member history"
           },
           {
             icon: "🧾",
             title: "Expenses",
-            text: "Expense reports"
+            text: "Review group spending"
           },
           {
             icon: "📊",
             title: "Summary",
-            text: "Financial overview"
+            text: "Review group information"
           }
         ]),
 
       details:
         detailList([
-          "Contribution reports.",
-          "Member statements.",
-          "Expense reports.",
-          "Loan reports.",
-          "Income and expenditure.",
-          "Group financial summaries.",
-          "Audit history."
+          "OPEN — Click Reports in the navigation.",
+          "SELECT — Choose the report or reporting view relevant to the information you need.",
+          "FILTER — Where filters are available, select the appropriate member, period, category or other criteria.",
+          "REVIEW — Check that the report covers the intended period and uses the expected records.",
+          "COMPARE — Compare report figures against the detailed contribution, expense, loan or member records when reconciliation is required.",
+          "EXPORT — Use an available export/download action when you need a copy of the report.",
+          "EXPECT — The report should summarize records already stored in CHAMA LIVE; it should not be treated as a replacement for verifying source records."
         ])
     },
 
 
+    /* =====================================================
+       ADMIN SLIDE 9 — SETTINGS / GROUP MANAGEMENT
+    ===================================================== */
+
     {
       icon: "⚙️",
-      eyebrow: "SETTINGS",
+      eyebrow: "GROUP MANAGEMENT",
       title: "Control how your Chama operates",
       description:
-        "Group administrators can configure the information and rules used by CHAMA LIVE.",
+        "Group Management is where administrators can review and maintain the group-level settings and controls available to their account.",
 
       visual:
         featureGrid([
           {
             icon: "🏢",
             title: "Group",
-            text: "Group information"
+            text: "Review group information"
           },
           {
             icon: "💰",
             title: "Rules",
-            text: "Contribution settings"
+            text: "Review contribution settings"
           },
           {
             icon: "👥",
             title: "Roles",
-            text: "User access"
-          },
-          {
-            icon: "🔔",
-            title: "Notifications",
-            text: "Stay informed"
-          },
-          {
-            icon: "🔐",
-            title: "Security",
-            text: "Account controls"
+            text: "Review user responsibilities"
           },
           {
             icon: "💳",
-            title: "Subscription",
-            text: "Billing settings"
+            title: "Billing",
+            text: "Open subscription information"
           }
         ]),
 
       details:
         detailList([
-          "Group information.",
-          "Contribution rules.",
-          "Payment details.",
-          "User roles.",
-          "Notifications.",
-          "Security.",
-          "Subscription.",
-          "Documents and audit information."
+          "OPEN — Click Group Management in the navigation.",
+          "REVIEW — Check the group name, group information and other configuration displayed for your group.",
+          "UPDATE — Use only the settings and controls that your role is authorized to change.",
+          "ROLES — Review member roles carefully because roles determine responsibilities and access.",
+          "BILLING — When billing is available from Group Management, open the billing section to review subscription/payment information.",
+          "CHECK — After any permitted configuration change, review the displayed information to confirm it is correct.",
+          "EXPECT — Group Management should provide the central place for authorized group-level configuration.",
+          "IMPORTANT — Do not change a setting simply to test it in a live group. Confirm the intended value before saving."
         ])
     },
 
+
+    /* =====================================================
+       ADMIN SLIDE 10 — READY
+    ===================================================== */
 
     {
       icon: "🎉",
       eyebrow: "READY",
       title: "You're ready!",
       description:
-        "Your CHAMA LIVE experience starts with a clear view of your group's activities.",
+        "You now have the basic workflow for managing your Chama in CHAMA LIVE.",
 
       visual:
         flow([
@@ -834,10 +876,14 @@ function getAdministratorSlides() {
 
       details:
         detailList([
-          "Start from your dashboard.",
-          "Use the tools relevant to your role.",
-          "Keep your group's records organized.",
-          "Return to the tour later if you need a refresher."
+          "START — Begin from the Dashboard and review the current state of your group.",
+          "MEMBERS — Keep the member register accurate before recording member activity.",
+          "FINANCE — Record contributions, payments, expenses and loans against the correct records.",
+          "OPERATIONS — Keep meetings, attendance, minutes and resolutions organized.",
+          "REVIEW — Use reports and detailed pages to check the information you have recorded.",
+          "CONTROL — Use Group Management for authorized group-level settings and administration.",
+          "NEXT — Click Go to Dashboard when you are ready to start working with your actual group records.",
+          "REMEMBER — Accurate records depend on entering the correct member, date, amount and reference information."
         ]),
 
       final: true
@@ -888,9 +934,10 @@ function getMemberSlides() {
 
       details:
         detailList([
-          "See information relevant to your participation.",
-          "Track your own financial records.",
-          "Stay informed about meetings and announcements."
+          "Use the Member Portal to review information relevant to your own participation.",
+          "Check your financial records and contribution status.",
+          "Review meetings, announcements and other information shared with members.",
+          "Your available actions depend on the permissions assigned to your account."
         ])
     },
 
@@ -924,12 +971,11 @@ function getMemberSlides() {
 
       details:
         detailList([
-          "My contributions.",
-          "Amount outstanding.",
-          "Loan balance.",
-          "Upcoming meetings.",
-          "Announcements.",
-          "Recent activity."
+          "OPEN — Start from your Member Dashboard.",
+          "CHECK — Review your contribution total, outstanding amount and loan information.",
+          "REVIEW — Check upcoming meetings and announcements.",
+          "COMPARE — If a figure appears incorrect, contact the appropriate group administrator rather than changing financial records yourself.",
+          "EXPECT — The dashboard provides a summary of your current member information."
         ])
     },
 
@@ -960,11 +1006,13 @@ function getMemberSlides() {
 
       details:
         detailList([
-          "View contribution periods.",
-          "See expected amounts.",
-          "See payments recorded for you.",
-          "Identify paid, partial and outstanding periods.",
-          "Use available contribution actions when enabled."
+          "OPEN — Go to your contribution information.",
+          "CHECK — Review the contribution period and expected amount.",
+          "REVIEW — Check payments recorded against your member account.",
+          "IDENTIFY — Look for paid, partial or outstanding periods.",
+          "VERIFY — Compare your personal payment evidence with the record shown in CHAMA LIVE.",
+          "EXPECT — Your contribution history should show the transactions recorded for your member account.",
+          "CONTACT — If a payment is missing or incorrect, contact the group administrator responsible for financial records."
         ])
     },
 
@@ -1002,13 +1050,12 @@ function getMemberSlides() {
 
       details:
         detailList([
-          "Contributions.",
-          "Payments.",
-          "Receipts.",
-          "Loans.",
-          "Repayments.",
-          "Outstanding amounts.",
-          "Download your statement when the feature is available."
+          "OPEN — Open your member statement.",
+          "REVIEW — Check contributions, payments, receipts and loan activity shown for your account.",
+          "CHECK — Review dates and amounts against your own records.",
+          "IDENTIFY — Note any missing, duplicate or unexpected transactions.",
+          "DOWNLOAD — Download your statement when that feature is available.",
+          "EXPECT — The statement should provide a consolidated view of the financial records associated with your member account."
         ])
     },
 
@@ -1038,12 +1085,13 @@ function getMemberSlides() {
 
       details:
         detailList([
-          "Loan amount.",
-          "Outstanding balance.",
-          "Repayment schedule.",
-          "Next payment.",
-          "Guarantors.",
-          "Loan history."
+          "OPEN — Open your loan information.",
+          "CHECK — Review the original loan amount and outstanding balance.",
+          "REVIEW — Check the repayment schedule and next payment information.",
+          "CHECK GUARANTORS — Review guarantor information where it is displayed.",
+          "COMPARE — Compare recorded repayments with your own payment records.",
+          "EXPECT — The loan information should show the records maintained by your Chama.",
+          "CONTACT — Ask the responsible group administrator about discrepancies."
         ])
     },
 
@@ -1081,11 +1129,12 @@ function getMemberSlides() {
 
       details:
         detailList([
-          "See upcoming meetings.",
-          "View meeting details.",
-          "See agendas.",
-          "View minutes.",
-          "Check attendance records."
+          "OPEN — Go to Meetings.",
+          "CHECK — Review upcoming meeting dates, times and venues.",
+          "REVIEW — Read the agenda so you know what is planned.",
+          "AFTER MEETING — Review minutes and decisions when they are published.",
+          "ATTENDANCE — Check your recorded participation where available.",
+          "EXPECT — Meeting information should help you stay informed about group activities."
         ])
     },
 
@@ -1142,10 +1191,11 @@ function getMemberSlides() {
 
       details:
         detailList([
-          "Meeting announcements.",
-          "Contribution reminders.",
-          "Important group notices.",
-          "Other information shared by administrators."
+          "OPEN — Review announcements available to your member account.",
+          "READ — Check meeting announcements, contribution reminders and other group notices.",
+          "CHECK — Pay attention to dates, deadlines and instructions included in each notice.",
+          "KEEP — Follow important group communication so you do not miss meetings or required actions.",
+          "EXPECT — Announcements provide information shared by authorized group administrators."
         ])
     },
 
@@ -1183,12 +1233,13 @@ function getMemberSlides() {
 
       details:
         detailList([
-          "Name.",
-          "Phone.",
-          "Email.",
-          "Password or PIN where supported.",
-          "Notification preferences.",
-          "Login and security settings."
+          "OPEN — Open your profile or account settings.",
+          "REVIEW — Check your name, phone number and email information.",
+          "UPDATE — Change personal information only where the application allows you to do so.",
+          "SECURITY — Review available login and security controls.",
+          "NOTIFICATIONS — Review notification preferences when available.",
+          "CHECK — Save permitted changes and confirm that the updated information is displayed correctly.",
+          "EXPECT — Your account information should remain consistent with the member record maintained by the group."
         ])
     },
 
@@ -1222,10 +1273,13 @@ function getMemberSlides() {
 
       details:
         detailList([
-          "Check your contribution status.",
-          "Review your statement.",
-          "Keep up with loans and meetings.",
-          "Stay informed through announcements."
+          "START — Check your dashboard.",
+          "FINANCE — Review your contribution status and statement.",
+          "LOANS — Review loan information when applicable.",
+          "MEETINGS — Keep up with meetings and group decisions.",
+          "NOTICES — Check announcements regularly.",
+          "PROFILE — Keep your personal account information current.",
+          "NEXT — Click Go to Dashboard to enter the application."
         ]),
 
       final: true
@@ -1713,6 +1767,7 @@ async function initializeTour() {
 
     /* =====================================================
        COMPLETION CHECK
+
        Previously completed users should not be forced
        through the tour again.
     ===================================================== */
