@@ -15,23 +15,106 @@
 
   <meta
     name="description"
-    content="CHAMA LIVE guided tour"
+    content="CHAMA LIVE guided operating tour"
   >
 
-  <title>Welcome to CHAMA LIVE</title>
+  <title>Guided Tour — CHAMA LIVE</title>
 
-  <link rel="stylesheet" href="css/app.css">
-  <link rel="stylesheet" href="css/tour.css">
+  <link
+    rel="stylesheet"
+    href="css/app.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="css/tour.css"
+  >
+
+  <style>
+    .tour-top-navigation {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .tour-dashboard-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      padding: 0 14px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 9px;
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.08);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .tour-dashboard-link:hover {
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    .tour-intro {
+      margin-bottom: 18px;
+      padding: 18px 20px;
+      border: 1px solid #99f6e4;
+      border-radius: 14px;
+      background: #f0fdfa;
+    }
+
+    .tour-intro-label {
+      margin-bottom: 5px;
+      color: #0f766e;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .tour-intro h1 {
+      margin: 0 0 6px;
+      color: #101828;
+      font-size: 20px;
+      line-height: 1.3;
+    }
+
+    .tour-intro p {
+      margin: 0;
+      max-width: 800px;
+      color: #475467;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    @media (max-width: 700px) {
+      .tour-top-navigation {
+        gap: 6px;
+      }
+
+      .tour-dashboard-link {
+        min-height: 34px;
+        padding: 0 10px;
+        font-size: 13px;
+      }
+
+      .tour-intro {
+        padding: 16px;
+      }
+    }
+  </style>
 </head>
 
 <body class="tour-page">
 
+  <!-- CHAMA LIVE HEADER -->
   <header class="tour-header">
 
     <a
       href="dashboard.html"
       class="tour-brand"
-      aria-label="CHAMA LIVE"
+      aria-label="CHAMA LIVE Dashboard"
     >
       CHAMA <span>LIVE</span>
     </a>
@@ -45,17 +128,29 @@
         Welcome
       </div>
 
-      <button
-        id="skipTourTop"
-        class="tour-skip-top"
-        type="button"
-      >
-        Skip tour
-      </button>
+      <div class="tour-top-navigation">
+
+        <a
+          href="dashboard.html"
+          class="tour-dashboard-link"
+        >
+          ← Dashboard
+        </a>
+
+        <button
+          id="skipTourTop"
+          class="tour-skip-top"
+          type="button"
+        >
+          Skip tour
+        </button>
+
+      </div>
 
     </div>
 
   </header>
+
 
   <main class="tour-main">
 
@@ -64,6 +159,27 @@
       aria-label="CHAMA LIVE guided tour"
     >
 
+      <!-- GUIDE INTRO -->
+      <div class="tour-intro">
+
+        <div class="tour-intro-label">
+          CHAMA LIVE OPERATING GUIDE
+        </div>
+
+        <h1>
+          Learn how to use your group workspace
+        </h1>
+
+        <p>
+          This guided tour explains each major area of CHAMA LIVE,
+          what the page is used for, what information to enter,
+          what to check, and what result to expect.
+        </p>
+
+      </div>
+
+
+      <!-- TOUR PROGRESS -->
       <div class="tour-progress-header">
 
         <div>
@@ -85,14 +201,18 @@
         </div>
 
         <div class="tour-progress-track">
+
           <div
             id="tourProgress"
             class="tour-progress-fill"
           ></div>
+
         </div>
 
       </div>
 
+
+      <!-- TOUR CONTENT -->
       <article
         id="tourCard"
         class="tour-card"
@@ -115,12 +235,12 @@
             WELCOME
           </div>
 
-          <h1
+          <h2
             id="tourTitle"
             class="tour-title"
           >
             Welcome to CHAMA LIVE
-          </h1>
+          </h2>
 
           <p
             id="tourDescription"
@@ -143,6 +263,8 @@
 
       </article>
 
+
+      <!-- TOUR CONTROLS -->
       <div class="tour-controls">
 
         <button
@@ -169,38 +291,49 @@
 
       </div>
 
+
       <div class="tour-footer-note">
-        You can return to this tour anytime from your CHAMA LIVE dashboard.
+        You can return to this tour anytime from your CHAMA LIVE
+        workspace.
       </div>
 
     </section>
 
   </main>
 
+
+  <!-- LOADING STATE -->
   <div
     id="tourLoading"
     class="tour-loading"
     aria-live="polite"
   >
+
     <div class="tour-loading-card">
 
       <div class="tour-loading-spinner"></div>
 
-      <strong>Preparing your tour...</strong>
+      <strong>
+        Preparing your tour...
+      </strong>
 
       <span>
         Loading your CHAMA LIVE experience.
       </span>
 
     </div>
+
   </div>
 
+
+  <!-- ERROR STATE -->
   <div
     id="tourError"
     class="tour-error"
     role="alert"
     hidden
   >
+
     <div class="tour-error-card">
 
       <div class="tour-error-icon">
@@ -215,17 +348,42 @@
         The tour could not verify your application context.
       </p>
 
-      <a
-        href="login.html"
-        class="tour-button tour-button-primary"
+      <div
+        style="
+          display:flex;
+          gap:10px;
+          justify-content:center;
+          flex-wrap:wrap;
+          margin-top:18px;
+        "
       >
-        Return to Sign In
-      </a>
+
+        <a
+          href="dashboard.html"
+          class="tour-button tour-button-secondary"
+        >
+          ← Dashboard
+        </a>
+
+        <a
+          href="login.html"
+          class="tour-button tour-button-primary"
+        >
+          Return to Sign In
+        </a>
+
+      </div>
 
     </div>
+
   </div>
 
-  <script type="module" src="js/tour.js"></script>
+
+  <!-- EXISTING TOUR ENGINE -->
+  <script
+    type="module"
+    src="js/tour.js"
+  ></script>
 
 </body>
 </html>
