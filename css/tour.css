@@ -316,8 +316,13 @@ body.tour-page {
 
   gap: 30px;
 
+  /* Controlled layout correction:
+     Reduced desktop card padding from
+     clamp(30px, 5vw, 60px) to 35px
+     so navigation remains within the
+     initial viewport. */
   padding:
-    clamp(30px, 5vw, 60px);
+    35px;
 
   overflow: hidden;
 
