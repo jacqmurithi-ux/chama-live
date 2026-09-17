@@ -110,7 +110,7 @@
     }
 
     .pricing-heading {
-      max-width: 720px;
+      max-width: 760px;
       margin: 0 auto 42px;
       text-align: center;
     }
@@ -121,10 +121,58 @@
 
     .pricing-heading p {
       color: #64748b;
-      max-width: 620px;
+      max-width: 660px;
       margin: 0 auto;
       line-height: 1.7;
     }
+
+
+    /* =====================================================
+       PROMOTIONAL OFFER
+    ====================================================== */
+
+    .pricing-offer {
+      max-width: 760px;
+      margin: 26px auto 0;
+      padding: 18px 22px;
+      border: 1px solid rgba(15,118,110,.20);
+      border-radius: 18px;
+      background:
+        linear-gradient(
+          135deg,
+          #ecfdf5 0%,
+          #f0fdfa 100%
+        );
+      text-align: center;
+    }
+
+    .pricing-offer strong {
+      display: block;
+      color: #0f766e;
+      font-size: 18px;
+      margin-bottom: 6px;
+    }
+
+    .pricing-offer span {
+      display: block;
+      color: #475569;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .pricing-offer-badge {
+      display: inline-block;
+      margin-bottom: 9px;
+      padding: 5px 11px;
+      border-radius: 999px;
+      background: #0f766e;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
 
     .pricing-toggle {
       display: inline-flex;
@@ -223,7 +271,7 @@
       display: flex;
       align-items: baseline;
       gap: 5px;
-      margin: 24px 0 22px;
+      margin: 24px 0 8px;
     }
 
     .pricing-price strong {
@@ -235,6 +283,32 @@
     .pricing-price span {
       color: #64748b;
       font-size: 14px;
+    }
+
+    .pricing-original-price {
+      margin-bottom: 16px;
+      color: #94a3b8;
+      font-size: 13px;
+    }
+
+    .pricing-original-price s {
+      margin-right: 4px;
+    }
+
+    .pricing-promo {
+      margin-bottom: 20px;
+      padding: 11px 13px;
+      border-radius: 12px;
+      background: #f0fdfa;
+      border: 1px solid rgba(15,118,110,.12);
+      color: #0f766e;
+      font-size: 13px;
+      line-height: 1.5;
+      font-weight: 700;
+    }
+
+    .pricing-promo strong {
+      color: #0f766e;
     }
 
     .pricing-features {
@@ -270,6 +344,28 @@
       text-align: center;
       color: #64748b;
       font-size: 13px;
+      line-height: 1.6;
+    }
+
+
+    /* =====================================================
+       MEMBER PORTAL CHARGES
+    ====================================================== */
+
+    .member-charge-note {
+      margin-top: 18px;
+      padding: 15px 17px;
+      border-radius: 14px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      color: #475569;
+      font-size: 13px;
+      line-height: 1.6;
+      text-align: left;
+    }
+
+    .member-charge-note strong {
+      color: #0f172a;
     }
 
 
@@ -309,7 +405,7 @@
 
 
     /* =====================================================
-       MEMBER / ADMIN ACCESS
+       ADMIN / MEMBER ACCESS
     ====================================================== */
 
     .portal-section {
@@ -411,6 +507,10 @@
 
       .pricing-card {
         padding: 24px;
+      }
+
+      .pricing-offer {
+        padding: 16px;
       }
 
     }
@@ -1430,6 +1530,30 @@
           </p>
 
 
+          <!-- =================================================
+               PROMOTIONAL OFFER
+          ================================================== -->
+
+          <div class="pricing-offer">
+
+            <span class="pricing-offer-badge">
+              LIMITED INTRODUCTORY OFFER
+            </span>
+
+            <strong>
+              First month FREE — next 4 months 30% OFF
+            </strong>
+
+            <span>
+              The introductory offer applies across all
+              CHAMA LIVE plan categories. After the first
+              five months, the applicable standard plan price
+              resumes.
+            </span>
+
+          </div>
+
+
           <div class="pricing-toggle">
 
             <button
@@ -1456,7 +1580,9 @@
         <div class="pricing-grid">
 
 
-          <!-- BASIC -->
+          <!-- =================================================
+               BASIC / CHAMA
+          ================================================== -->
 
           <article class="pricing-card">
 
@@ -1486,6 +1612,31 @@
               <span>
                 / month
               </span>
+
+            </div>
+
+
+            <div class="pricing-original-price">
+
+              Standard price:
+              <s>KSh 500/month</s>
+
+            </div>
+
+
+            <div class="pricing-promo">
+
+              <strong>
+                Month 1: FREE
+              </strong>
+
+              <br>
+
+              Months 2–5:
+              <strong>
+                KSh 350/month
+              </strong>
+              — 30% OFF
 
             </div>
 
@@ -1526,12 +1677,14 @@
 
 
 
-          <!-- CBO -->
+          <!-- =================================================
+               CBO
+          ================================================== -->
 
           <article class="pricing-card featured">
 
             <span class="pricing-popular">
-              FOR GROWING ORGANIZATIONS
+              INTRODUCTORY OFFER
             </span>
 
             <span class="pricing-card-label">
@@ -1560,6 +1713,31 @@
               <span>
                 / month
               </span>
+
+            </div>
+
+
+            <div class="pricing-original-price">
+
+              Standard price:
+              <s>KSh 1,000/month</s>
+
+            </div>
+
+
+            <div class="pricing-promo">
+
+              <strong>
+                Month 1: FREE
+              </strong>
+
+              <br>
+
+              Months 2–5:
+              <strong>
+                KSh 700/month
+              </strong>
+              — 30% OFF
 
             </div>
 
@@ -1600,7 +1778,9 @@
 
 
 
-          <!-- CONTACT / ORGANIZATION -->
+          <!-- =================================================
+               ORGANIZATION
+          ================================================== -->
 
           <article class="pricing-card">
 
@@ -1623,6 +1803,27 @@
               <strong>
                 Let's talk
               </strong>
+
+            </div>
+
+
+            <div class="pricing-promo">
+
+              <strong>
+                Month 1: FREE
+              </strong>
+
+              <br>
+
+              Next 4 months:
+              <strong>
+                30% OFF
+              </strong>
+
+              <br>
+
+              Pricing is agreed according to the
+              organization's requirements.
 
             </div>
 
@@ -1660,9 +1861,40 @@
         </div>
 
 
+
+        <!-- =================================================
+             MEMBER CHARGES CLARIFICATION
+        ================================================== -->
+
+        <div class="member-charge-note">
+
+          <strong>
+            Member portal charges:
+          </strong>
+
+          Member-related charges apply only to members who
+          have an <strong>active CHAMA LIVE login</strong> and
+          access the group's <strong>members portal</strong>.
+          Members who are recorded in the group but do not
+          have an active portal login are not charged for
+          member portal access.
+
+        </div>
+
+
         <p class="pricing-note">
+
           Plans are designed around the group account.
-          Members access their group through the members portal.
+          Group administrators and active portal members
+          use secure sign-in to access CHAMA LIVE.
+
+          <br>
+
+          The introductory offer is:
+          <strong>
+            first month FREE + the next 4 months at 30% OFF.
+          </strong>
+
         </p>
 
       </div>
@@ -1756,6 +1988,20 @@
             </a>
 
           </article>
+
+        </div>
+
+
+        <div class="member-charge-note">
+
+          <strong>
+            Active member login only:
+          </strong>
+
+          Member portal charges apply only when a member
+          has an active login and can access the group's
+          members portal. Being listed in a group's member
+          register alone does not create a portal charge.
 
         </div>
 
@@ -2425,7 +2671,7 @@
 
 
         <div class="cta-secondary-text">
-          Group administrators and members use the same secure sign-in.
+          Group administrators and active members use the same secure sign-in.
         </div>
 
       </div>
