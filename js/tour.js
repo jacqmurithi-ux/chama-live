@@ -1670,19 +1670,8 @@ async function initializeTour() {
 
   try {
 
-    /*
-     * Diagnostic-only instrumentation.
-     *
-     * The tour continues to use the existing
-     * canonical application-context function.
-     *
-     * No Supabase writes, database mutations,
-     * auth changes, RPC changes, or redirect
-     * changes are performed here.
-     */
-
     console.info(
-      "CHAMA LIVE tour: resolving application context..."
+      "[TOUR-DIAG] CONTEXT START"
     );
 
 
@@ -1691,7 +1680,7 @@ async function initializeTour() {
 
 
     console.info(
-      "CHAMA LIVE tour: application context resolved.",
+      "[TOUR-DIAG] CONTEXT COMPLETE",
       {
         userId:
           context?.user?.id ?? null,
@@ -1726,7 +1715,23 @@ async function initializeTour() {
       "TOUR BUILD";
 
 
+    console.info(
+      "[TOUR-DIAG] BUILD START"
+    );
+
+
     buildTour();
+
+
+    console.info(
+      "[TOUR-DIAG] BUILD COMPLETE",
+      {
+        slideCount:
+          Array.isArray(slides)
+            ? slides.length
+            : null
+      }
+    );
 
 
     if (
@@ -1748,12 +1753,31 @@ async function initializeTour() {
       0;
 
 
+    console.info(
+      "[TOUR-DIAG] RENDER START",
+      {
+        slide:
+          currentSlide
+      }
+    );
+
+
     renderSlide();
+
+
+    console.info(
+      "[TOUR-DIAG] RENDER COMPLETE"
+    );
 
 
     if (loadingEl) {
       loadingEl.hidden = true;
     }
+
+
+    console.info(
+      "[TOUR-DIAG] INITIALIZATION COMPLETE"
+    );
 
 
   } catch (error) {
