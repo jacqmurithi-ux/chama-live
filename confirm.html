@@ -538,49 +538,119 @@ async function init() {
     =================================================== */
 
     /*
-     * supabase.js is configured with:
+     * CHAMA LIVE uses:
      *
-     *   detectSessionInUrl: true
      *   flowType: "pkce"
      *
-     * Supabase Auth therefore processes the returned
-     * authorization code.
+     * When Supabase returns an authorization code,
+     * explicitly exchange that code for the authenticated
+     * session.
      *
-     * Do NOT call exchangeCodeForSession() here.
+     * This is the critical session-establishment step.
      */
-
 
     setStatus(
       "Confirming your email address..."
     );
 
 
-    /* ===================================================
-       STEP 3 — WAIT FOR AUTH SESSION
-    =================================================== */
-
     let session =
       null;
 
 
-    const {
-      data: sessionData,
-      error: sessionError
-    } =
-      await supabase.auth.getSession();
+    const code =
+      url.searchParams.get(
+        "code"
+      );
 
 
-    if (sessionError) {
+    if (code) {
 
-      throw sessionError;
+      console.log(
+        "CHAMA LIVE: PKCE authorization code detected."
+      );
+
+
+      const {
+        data: exchangeData,
+        error: exchangeError
+      } =
+        await supabase.auth.exchangeCodeForSession(
+          code
+        );
+
+
+      if (exchangeError) {
+
+        throw exchangeError;
+
+      }
+
+
+      session =
+        exchangeData?.session ||
+        null;
+
+
+      if (!session) {
+
+        throw new Error(
+          "Email confirmation succeeded, but Supabase did not return a login session."
+        );
+
+      }
+
+
+      console.log(
+        "CHAMA LIVE: PKCE session established."
+      );
 
     }
 
 
-    session =
-      sessionData?.session ||
-      null;
+    /*
+     * If there was no authorization code, check whether
+     * Supabase already has an authenticated session.
+     *
+     * This also supports callbacks where the Supabase
+     * client has already processed the authentication URL.
+     */
 
+    if (!session) {
+
+      const {
+        data: existingSessionData,
+        error: existingSessionError
+      } =
+        await supabase.auth.getSession();
+
+
+      if (existingSessionError) {
+
+        throw existingSessionError;
+
+      }
+
+
+      session =
+        existingSessionData?.session ||
+        null;
+
+    }
+
+
+    /* ===================================================
+       STEP 3 — WAIT FOR AUTH SESSION
+    =================================================== */
+
+    /*
+     * Normally the PKCE exchange above establishes the
+     * session immediately.
+     *
+     * The fallback listener protects against a small
+     * initialization race in which the Supabase client
+     * has not finished restoring the session yet.
+     */
 
     if (!session) {
 
@@ -639,7 +709,7 @@ async function init() {
             const {
               data: authListener
             } =
-              supabase.auth.onAuthStateChange(
+              await supabase.auth.onAuthStateChange(
                 (
                   event,
                   nextSession
@@ -777,6 +847,12 @@ async function init() {
     /* ===================================================
        STEP 4 — CLEAN AUTH CALLBACK URL
     =================================================== */
+
+    /*
+     * Remove the PKCE code and any authentication
+     * parameters from the browser URL after the session
+     * has been established.
+     */
 
     window.history.replaceState(
       {},
