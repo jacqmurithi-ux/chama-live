@@ -29,14 +29,17 @@
     .getting-started {
       max-width: 1100px;
       margin: 0 auto;
+      padding-bottom: 40px;
     }
+
+    /* TOP NAV */
 
     .getting-started-topbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 20px;
-      margin-bottom: 20px;
+      margin-bottom: 24px;
       padding: 14px 18px;
       border: 1px solid #e5e7eb;
       border-radius: 14px;
@@ -48,6 +51,7 @@
       font-weight: 800;
       color: #101828;
       text-decoration: none;
+      white-space: nowrap;
     }
 
     .getting-started-brand span {
@@ -73,11 +77,7 @@
       font-weight: 600;
     }
 
-    .getting-started-nav a:hover {
-      background: #f0fdfa;
-      color: #0f766e;
-    }
-
+    .getting-started-nav a:hover,
     .getting-started-nav a.active {
       background: #f0fdfa;
       color: #0f766e;
@@ -87,30 +87,56 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-height: 40px;
-      padding: 0 15px;
+      min-height: 38px;
+      padding: 0 14px;
+      border: 1px solid #d0d5dd;
       border-radius: 9px;
-      background: #0f766e;
-      color: #ffffff;
+      background: #ffffff;
+      color: #344054;
       text-decoration: none;
       font-size: 14px;
       font-weight: 700;
+      white-space: nowrap;
     }
 
     .getting-started-dashboard:hover {
-      background: #115e59;
+      border-color: #99f6e4;
+      background: #f0fdfa;
+      color: #0f766e;
     }
 
+    /* HERO */
+
     .getting-started-hero {
-      padding: 28px;
-      margin-bottom: 20px;
-      border: 1px solid #e5e7eb;
-      border-radius: 18px;
-      background: #ffffff;
+      position: relative;
+      overflow: hidden;
+      padding: 42px;
+      margin-bottom: 24px;
+      border: 1px solid #99f6e4;
+      border-radius: 22px;
+      background:
+        linear-gradient(
+          135deg,
+          #f0fdfa 0%,
+          #ffffff 58%,
+          #f8fafc 100%
+        );
+    }
+
+    .getting-started-hero::after {
+      content: "";
+      position: absolute;
+      width: 220px;
+      height: 220px;
+      right: -80px;
+      top: -90px;
+      border-radius: 50%;
+      background: rgba(20, 184, 166, 0.08);
+      pointer-events: none;
     }
 
     .getting-started-eyebrow {
-      margin-bottom: 8px;
+      margin-bottom: 9px;
       color: #0f766e;
       font-size: 12px;
       font-weight: 800;
@@ -119,74 +145,113 @@
     }
 
     .getting-started-hero h1 {
-      margin: 0 0 8px;
-      font-size: 30px;
+      position: relative;
+      z-index: 1;
+      margin: 0 0 12px;
+      font-size: 34px;
       line-height: 1.2;
       color: #101828;
     }
 
     .getting-started-hero p {
+      position: relative;
+      z-index: 1;
       margin: 0;
       max-width: 760px;
       color: #667085;
-      line-height: 1.6;
+      line-height: 1.7;
+      font-size: 16px;
     }
 
     .getting-started-hero-actions {
+      position: relative;
+      z-index: 1;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       flex-wrap: wrap;
-      margin-top: 20px;
+      margin-top: 26px;
     }
 
     .getting-started-button {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-height: 44px;
-      padding: 0 18px;
+      min-height: 46px;
+      padding: 0 20px;
       border-radius: 10px;
       background: #0f766e;
       color: #ffffff;
       text-decoration: none;
-      font-weight: 700;
+      font-weight: 800;
+      box-shadow: 0 4px 12px rgba(15, 118, 110, 0.18);
+      transition:
+        transform 0.15s ease,
+        background 0.15s ease,
+        box-shadow 0.15s ease;
     }
 
     .getting-started-button:hover {
       background: #115e59;
+      transform: translateY(-1px);
+      box-shadow: 0 7px 16px rgba(15, 118, 110, 0.22);
     }
 
-    .getting-started-button-secondary {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 44px;
-      padding: 0 18px;
-      border: 1px solid #d0d5dd;
-      border-radius: 10px;
-      background: #ffffff;
-      color: #344054;
-      text-decoration: none;
-      font-weight: 700;
+    .getting-started-hero-note {
+      color: #667085;
+      font-size: 13px;
     }
 
-    .getting-started-button-secondary:hover {
-      background: #f9fafb;
+    /* SECTION HEADER */
+
+    .getting-started-section-heading {
+      margin: 0 0 14px;
+      color: #101828;
+      font-size: 20px;
     }
+
+    .getting-started-section-description {
+      margin: 0 0 20px;
+      color: #667085;
+      line-height: 1.6;
+    }
+
+    /* CARDS */
 
     .getting-started-grid {
       display: grid;
-      grid-template-columns:
-        repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 18px;
     }
 
     .getting-started-card {
-      padding: 22px;
+      padding: 24px;
       border: 1px solid #e5e7eb;
-      border-radius: 16px;
+      border-radius: 18px;
       background: #ffffff;
+      transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease,
+        transform 0.15s ease;
+    }
+
+    .getting-started-card:hover {
+      border-color: #d0d5dd;
+      box-shadow: 0 8px 24px rgba(16, 24, 40, 0.06);
+      transform: translateY(-1px);
+    }
+
+    .getting-started-card-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      margin-bottom: 14px;
+      border-radius: 12px;
+      background: #f0fdfa;
+      color: #0f766e;
+      font-size: 20px;
     }
 
     .getting-started-card h2 {
@@ -212,33 +277,61 @@
       margin-top: 5px;
     }
 
+    /* TOUR FEATURE */
+
     .getting-started-tour {
       border-color: #99f6e4;
-      background: #f0fdfa;
+      background:
+        linear-gradient(
+          145deg,
+          #f0fdfa 0%,
+          #ffffff 75%
+        );
     }
 
-    .getting-started-link {
+    .getting-started-tour-badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      margin-bottom: 14px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: #ccfbf1;
       color: #0f766e;
-      font-weight: 700;
-      text-decoration: none;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
     }
 
-    .getting-started-link:hover {
+    .getting-started-tour-link {
+      display: inline-flex;
+      align-items: center;
+      margin-top: 4px;
+      color: #0f766e;
+      text-decoration: none;
+      font-weight: 800;
+    }
+
+    .getting-started-tour-link:hover {
       text-decoration: underline;
     }
 
     .getting-started-note {
-      margin-top: 12px;
+      margin-top: 12px !important;
+      margin-bottom: 0 !important;
       font-size: 13px;
       color: #667085;
     }
 
+    /* NEXT STEP */
+
     .getting-started-next {
       grid-column: 1 / -1;
-      padding: 24px;
-      border: 1px solid #99f6e4;
-      border-radius: 16px;
-      background: #f0fdfa;
+      padding: 28px;
+      border: 1px solid #e5e7eb;
+      border-radius: 18px;
+      background: #ffffff;
     }
 
     .getting-started-next h2 {
@@ -253,13 +346,64 @@
       line-height: 1.6;
     }
 
-    .getting-started-next-actions {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 18px;
+    .getting-started-next-steps {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 20px;
     }
+
+    .getting-started-step {
+      padding: 14px;
+      border: 1px solid #eaecf0;
+      border-radius: 12px;
+      background: #f9fafb;
+    }
+
+    .getting-started-step-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      margin-bottom: 8px;
+      border-radius: 50%;
+      background: #ccfbf1;
+      color: #0f766e;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .getting-started-step strong {
+      display: block;
+      margin-bottom: 4px;
+      color: #101828;
+      font-size: 14px;
+    }
+
+    .getting-started-step span {
+      color: #667085;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .getting-started-next-action {
+      margin-top: 20px;
+    }
+
+    /* SUPPORT */
+
+    .getting-started-link {
+      color: #0f766e;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .getting-started-link:hover {
+      text-decoration: underline;
+    }
+
+    /* RESPONSIVE */
 
     @media (max-width: 800px) {
       .getting-started-topbar {
@@ -274,6 +418,14 @@
       .getting-started-dashboard {
         width: 100%;
       }
+
+      .getting-started-hero {
+        padding: 30px;
+      }
+
+      .getting-started-next-steps {
+        grid-template-columns: 1fr;
+      }
     }
 
     @media (max-width: 700px) {
@@ -282,19 +434,30 @@
       }
 
       .getting-started-hero {
-        padding: 22px;
+        padding: 24px;
+        border-radius: 18px;
       }
 
       .getting-started-hero h1 {
-        font-size: 25px;
+        font-size: 27px;
       }
 
       .getting-started-card {
-        padding: 18px;
+        padding: 20px;
       }
 
       .getting-started-next {
         grid-column: auto;
+        padding: 22px;
+      }
+
+      .getting-started-hero-actions {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .getting-started-button {
+        width: 100%;
       }
     }
   </style>
@@ -308,7 +471,7 @@
 
       <div class="getting-started">
 
-        <!-- CHAMA LIVE PAGE NAVIGATION -->
+        <!-- PAGE NAVIGATION -->
         <header class="getting-started-topbar">
 
           <a
@@ -323,9 +486,7 @@
             aria-label="Getting Started navigation"
           >
 
-            <a
-              href="dashboard.html"
-            >
+            <a href="dashboard.html">
               Dashboard
             </a>
 
@@ -353,17 +514,18 @@
         <section class="getting-started-hero">
 
           <div class="getting-started-eyebrow">
-            CHAMA LIVE
+            CHAMA LIVE · GETTING STARTED
           </div>
 
           <h1>
-            Start using CHAMA LIVE
+            Welcome to your group workspace
           </h1>
 
           <p>
-            Welcome to CHAMA LIVE. This section helps you
-            understand the system, learn the main workflows,
-            and get started with managing your group digitally.
+            CHAMA LIVE brings your group's members, contributions,
+            expenses, meetings and reports into one connected
+            workspace. Start with the guided tour to understand
+            how everything fits together.
           </p>
 
           <div class="getting-started-hero-actions">
@@ -375,262 +537,336 @@
               Start Guided Tour →
             </a>
 
-            <a
-              class="getting-started-button-secondary"
-              href="dashboard.html"
-            >
-              Back to Dashboard
-            </a>
+            <span class="getting-started-hero-note">
+              A quick walkthrough of your CHAMA LIVE workspace
+            </span>
 
           </div>
 
         </section>
 
 
-        <!-- GETTING STARTED CONTENT -->
+        <!-- CONTENT -->
         <section
-          class="getting-started-grid"
-          aria-label="Getting started"
+          aria-label="Getting started information"
         >
 
-          <!-- GUIDED TOUR -->
-          <article
-            class="getting-started-card getting-started-tour"
-          >
+          <h2 class="getting-started-section-heading">
+            Everything you need to get started
+          </h2>
 
-            <h2>
-              Take the Guided Tour
-            </h2>
+          <p class="getting-started-section-description">
+            Learn the main areas of CHAMA LIVE and the basic
+            workflow for managing your group.
+          </p>
 
-            <p>
-              Learn the main parts of CHAMA LIVE step by step.
-              The guided tour explains what each area does,
-              what to enter, what to check, and what result
-              to expect.
-            </p>
 
-            <a
-              class="getting-started-button"
-              href="tour.html"
+          <div class="getting-started-grid">
+
+
+            <!-- GUIDED TOUR -->
+            <article
+              class="getting-started-card getting-started-tour"
             >
-              Start Guided Tour →
-            </a>
 
-            <p class="getting-started-note">
-              You can return to the tour whenever you need a
-              refresher.
-            </p>
+              <div class="getting-started-tour-badge">
+                Recommended first step
+              </div>
 
-          </article>
+              <div class="getting-started-card-icon">
+                ▶
+              </div>
 
+              <h2>
+                Guided Tour
+              </h2>
 
-          <!-- WORKSPACE -->
-          <article class="getting-started-card">
-
-            <h2>
-              Understand Your Workspace
-            </h2>
-
-            <p>
-              Your workspace contains the tools used to manage
-              your chama or group.
-            </p>
-
-            <ul>
-
-              <li>
-                Dashboard — see your group's key information.
-              </li>
-
-              <li>
-                Members — manage member records and accounts.
-              </li>
-
-              <li>
-                Contributions — record and review contributions.
-              </li>
-
-              <li>
-                Expenses — manage group expenses.
-              </li>
-
-              <li>
-                Meetings — keep track of meetings and resolutions.
-              </li>
-
-              <li>
-                Reports — review group information and activity.
-              </li>
-
-              <li>
-                Group Management — manage group-level settings.
-              </li>
-
-            </ul>
-
-          </article>
-
-
-          <!-- FIRST STEPS -->
-          <article class="getting-started-card">
-
-            <h2>
-              Your First Steps
-            </h2>
-
-            <p>
-              If your group is new to CHAMA LIVE, start with
-              these basic steps.
-            </p>
-
-            <ul>
-
-              <li>
-                Confirm your group information.
-              </li>
-
-              <li>
-                Add or review your members.
-              </li>
-
-              <li>
-                Confirm member roles and account status.
-              </li>
-
-              <li>
-                Start recording contributions.
-              </li>
-
-              <li>
-                Record expenses and meetings as they happen.
-              </li>
-
-              <li>
-                Use reports to review your group's activity.
-              </li>
-
-            </ul>
-
-          </article>
-
-
-          <!-- COMMON QUESTIONS -->
-          <article class="getting-started-card">
-
-            <h2>
-              Common Questions
-            </h2>
-
-            <p>
-              Use the information below as a quick reference
-              while learning the system.
-            </p>
-
-            <ul>
-
-              <li>
-                <strong>
-                  Where do I begin?
-                </strong>
-                Start with the Guided Tour.
-              </li>
-
-              <li>
-                <strong>
-                  Where are members managed?
-                </strong>
-                Open Members from the main navigation.
-              </li>
-
-              <li>
-                <strong>
-                  Where do I record money received?
-                </strong>
-                Use Contributions.
-              </li>
-
-              <li>
-                <strong>
-                  Where do I record spending?
-                </strong>
-                Use Expenses.
-              </li>
-
-              <li>
-                <strong>
-                  Where do I manage group settings?
-                </strong>
-                Open Group Management.
-              </li>
-
-            </ul>
-
-          </article>
-
-
-          <!-- NEED HELP -->
-          <article class="getting-started-card">
-
-            <h2>
-              Need Help?
-            </h2>
-
-            <p>
-              If something is unclear, first check the Guided
-              Tour and the relevant section of CHAMA LIVE.
-            </p>
-
-            <p>
-              For group welfare matters, continue to use the
-              existing
-              <a
-                class="getting-started-link"
-                href="support-welfare.html"
-              >
-                Support &amp; Welfare
-              </a>
-              section.
-            </p>
-
-          </article>
-
-
-          <!-- NEXT STEP -->
-          <section class="getting-started-next">
-
-            <div class="getting-started-eyebrow">
-              READY TO BEGIN?
-            </div>
-
-            <h2>
-              Learn CHAMA LIVE step by step
-            </h2>
-
-            <p>
-              The guided tour walks you through the CHAMA LIVE
-              workspace, including what each page is for, what
-              to enter, what to check, and what result to expect.
-            </p>
-
-            <div class="getting-started-next-actions">
+              <p>
+                Walk through the main parts of CHAMA LIVE
+                step by step. The tour explains what each
+                area does, what information to enter,
+                what to check, and what result to expect.
+              </p>
 
               <a
-                class="getting-started-button"
+                class="getting-started-tour-link"
                 href="tour.html"
               >
-                Start Guided Tour →
+                Begin the walkthrough →
               </a>
 
-              <a
-                class="getting-started-button-secondary"
-                href="dashboard.html"
-              >
-                ← Back to Dashboard
-              </a>
+              <p class="getting-started-note">
+                You can return to the tour whenever you need
+                a refresher.
+              </p>
 
-            </div>
+            </article>
 
-          </section>
+
+            <!-- WORKSPACE -->
+            <article class="getting-started-card">
+
+              <div class="getting-started-card-icon">
+                ◫
+              </div>
+
+              <h2>
+                Your Workspace
+              </h2>
+
+              <p>
+                Your workspace contains the tools used to
+                manage your chama or group.
+              </p>
+
+              <ul>
+
+                <li>
+                  Dashboard — see your group's key information.
+                </li>
+
+                <li>
+                  Members — manage member records and accounts.
+                </li>
+
+                <li>
+                  Contributions — record and review contributions.
+                </li>
+
+                <li>
+                  Expenses — manage group expenses.
+                </li>
+
+                <li>
+                  Meetings — keep track of meetings and resolutions.
+                </li>
+
+                <li>
+                  Reports — review group information and activity.
+                </li>
+
+                <li>
+                  Group Management — manage group-level settings.
+                </li>
+
+              </ul>
+
+            </article>
+
+
+            <!-- FIRST STEPS -->
+            <article class="getting-started-card">
+
+              <div class="getting-started-card-icon">
+                ✓
+              </div>
+
+              <h2>
+                Your First Steps
+              </h2>
+
+              <p>
+                If your group is new to CHAMA LIVE, start
+                with these basic steps.
+              </p>
+
+              <ul>
+
+                <li>
+                  Confirm your group information.
+                </li>
+
+                <li>
+                  Add or review your members.
+                </li>
+
+                <li>
+                  Confirm member roles and account status.
+                </li>
+
+                <li>
+                  Start recording contributions.
+                </li>
+
+                <li>
+                  Record expenses and meetings as they happen.
+                </li>
+
+                <li>
+                  Use reports to review your group's activity.
+                </li>
+
+              </ul>
+
+            </article>
+
+
+            <!-- COMMON QUESTIONS -->
+            <article class="getting-started-card">
+
+              <div class="getting-started-card-icon">
+                ?
+              </div>
+
+              <h2>
+                Common Questions
+              </h2>
+
+              <p>
+                Use these quick answers while learning the system.
+              </p>
+
+              <ul>
+
+                <li>
+                  <strong>Where do I begin?</strong>
+                  Start with the Guided Tour.
+                </li>
+
+                <li>
+                  <strong>Where are members managed?</strong>
+                  Open Members from the main navigation.
+                </li>
+
+                <li>
+                  <strong>Where do I record money received?</strong>
+                  Use Contributions.
+                </li>
+
+                <li>
+                  <strong>Where do I record spending?</strong>
+                  Use Expenses.
+                </li>
+
+                <li>
+                  <strong>Where do I manage group settings?</strong>
+                  Open Group Management.
+                </li>
+
+              </ul>
+
+            </article>
+
+
+            <!-- NEED HELP -->
+            <article class="getting-started-card">
+
+              <div class="getting-started-card-icon">
+                ?
+              </div>
+
+              <h2>
+                Need Help?
+              </h2>
+
+              <p>
+                If something is unclear, first check the
+                Guided Tour and the relevant section of
+                CHAMA LIVE.
+              </p>
+
+              <p>
+                For group welfare matters, continue to use
+                the existing
+                <a
+                  class="getting-started-link"
+                  href="support-welfare.html"
+                >
+                  Support &amp; Welfare
+                </a>
+                section.
+              </p>
+
+            </article>
+
+
+            <!-- NEXT STEP -->
+            <section class="getting-started-next">
+
+              <div class="getting-started-eyebrow">
+                YOUR NEXT STEP
+              </div>
+
+              <h2>
+                Get familiar with CHAMA LIVE
+              </h2>
+
+              <p>
+                The guided tour gives you a simple overview
+                of the workspace before you begin entering
+                or managing group records.
+              </p>
+
+
+              <div class="getting-started-next-steps">
+
+                <div class="getting-started-step">
+
+                  <div class="getting-started-step-number">
+                    1
+                  </div>
+
+                  <strong>
+                    Take the tour
+                  </strong>
+
+                  <span>
+                    Understand the main areas of CHAMA LIVE.
+                  </span>
+
+                </div>
+
+
+                <div class="getting-started-step">
+
+                  <div class="getting-started-step-number">
+                    2
+                  </div>
+
+                  <strong>
+                    Set up your workspace
+                  </strong>
+
+                  <span>
+                    Review your group and member information.
+                  </span>
+
+                </div>
+
+
+                <div class="getting-started-step">
+
+                  <div class="getting-started-step-number">
+                    3
+                  </div>
+
+                  <strong>
+                    Start managing records
+                  </strong>
+
+                  <span>
+                    Record contributions, expenses and meetings.
+                  </span>
+
+                </div>
+
+              </div>
+
+
+              <div class="getting-started-next-action">
+
+                <a
+                  class="getting-started-button"
+                  href="tour.html"
+                >
+                  Begin Guided Tour →
+                </a>
+
+              </div>
+
+            </section>
+
+          </div>
 
         </section>
 
