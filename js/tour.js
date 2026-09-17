@@ -1664,16 +1664,51 @@ function showError(message) {
 
 async function initializeTour() {
 
+  let stage =
+    "AUTH USER / MEMBER / GROUP CONTEXT";
+
+
   try {
 
     /*
-     * The tour intentionally does not make any
-     * database writes. It only retrieves the
-     * existing authenticated application context.
+     * Diagnostic-only instrumentation.
+     *
+     * The tour continues to use the existing
+     * canonical application-context function.
+     *
+     * No Supabase writes, database mutations,
+     * auth changes, RPC changes, or redirect
+     * changes are performed here.
      */
+
+    console.info(
+      "CHAMA LIVE tour: resolving application context..."
+    );
+
 
     context =
       await getMyApplicationContext();
+
+
+    console.info(
+      "CHAMA LIVE tour: application context resolved.",
+      {
+        userId:
+          context?.user?.id ?? null,
+
+        memberId:
+          context?.member?.id ?? null,
+
+        groupId:
+          context?.group?.id ?? null,
+
+        role:
+          context?.role ?? null,
+
+        isOwner:
+          context?.isOwner ?? false
+      }
+    );
 
 
     if (
@@ -1682,14 +1717,36 @@ async function initializeTour() {
     ) {
 
       throw new Error(
-        "Your session could not be verified."
+        "Application context did not contain an authenticated user."
       );
     }
 
 
+    stage =
+      "TOUR BUILD";
+
+
     buildTour();
 
-    currentSlide = 0;
+
+    if (
+      !Array.isArray(slides) ||
+      slides.length === 0
+    ) {
+
+      throw new Error(
+        "Tour build returned no slides."
+      );
+    }
+
+
+    stage =
+      "TOUR RENDER";
+
+
+    currentSlide =
+      0;
+
 
     renderSlide();
 
@@ -1702,14 +1759,27 @@ async function initializeTour() {
   } catch (error) {
 
     console.error(
-      "CHAMA LIVE tour initialization failed:",
-      error
+      "CHAMA LIVE tour initialization failed.",
+      {
+        stage,
+        error,
+        message:
+          error?.message ?? null,
+        name:
+          error?.name ?? null,
+        stack:
+          error?.stack ?? null
+      }
     );
 
 
-    showError(
+    const message =
       error?.message ||
-      "The tour could not verify your application context."
+      `Tour initialization failed during ${stage}.`;
+
+
+    showError(
+      `${stage}: ${message}`
     );
   }
 }
