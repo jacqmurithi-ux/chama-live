@@ -12,7 +12,7 @@
 
   <meta
     name="description"
-    content="CHAMA LIVE — Simple, transparent and real-time management for chamas, welfare groups, investment groups and community organizations."
+    content="CHAMA LIVE helps chamas, welfare groups, investment groups and community organizations manage members, contributions, expenses, meetings and reports in one simple system."
   >
 
   <meta
@@ -26,13 +26,396 @@
   >
 
   <title>
-    CHAMA LIVE — Manage Your Group Better
+    CHAMA LIVE — Simple Group Management That Works
   </title>
 
   <link
     rel="stylesheet"
     href="css/landing.css"
   >
+
+  <style>
+
+    /* =====================================================
+       ENHANCED LANDING PAGE
+       Existing design preserved.
+       Marketing + pricing + account access additions.
+    ====================================================== */
+
+    .hero-account-options {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 24px;
+      max-width: 720px;
+    }
+
+    .account-option {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 15px 17px;
+      border: 1px solid rgba(15, 118, 110, 0.15);
+      border-radius: 14px;
+      background: rgba(255,255,255,.86);
+      text-decoration: none;
+      transition:
+        transform .2s ease,
+        box-shadow .2s ease,
+        border-color .2s ease;
+    }
+
+    .account-option:hover {
+      transform: translateY(-2px);
+      border-color: rgba(15,118,110,.35);
+      box-shadow: 0 10px 30px rgba(15,118,110,.10);
+    }
+
+    .account-option-icon {
+      width: 42px;
+      height: 42px;
+      min-width: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      background: #ecfdf5;
+      font-size: 20px;
+    }
+
+    .account-option strong {
+      display: block;
+      color: #0f172a;
+      font-size: 14px;
+      margin-bottom: 3px;
+    }
+
+    .account-option small {
+      display: block;
+      color: #64748b;
+      line-height: 1.4;
+    }
+
+
+    /* =====================================================
+       PRICING
+    ====================================================== */
+
+    .pricing-section {
+      background:
+        linear-gradient(
+          180deg,
+          #f8fafc 0%,
+          #ffffff 100%
+        );
+    }
+
+    .pricing-heading {
+      max-width: 720px;
+      margin: 0 auto 42px;
+      text-align: center;
+    }
+
+    .pricing-heading h2 {
+      margin-bottom: 12px;
+    }
+
+    .pricing-heading p {
+      color: #64748b;
+      max-width: 620px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    .pricing-toggle {
+      display: inline-flex;
+      padding: 5px;
+      margin-top: 22px;
+      border: 1px solid #dbe4ea;
+      background: #fff;
+      border-radius: 999px;
+      gap: 4px;
+    }
+
+    .pricing-toggle button {
+      border: 0;
+      background: transparent;
+      padding: 9px 16px;
+      border-radius: 999px;
+      cursor: pointer;
+      color: #64748b;
+      font-weight: 700;
+    }
+
+    .pricing-toggle button.active {
+      background: #0f766e;
+      color: #fff;
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .pricing-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      padding: 30px;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 22px;
+      box-shadow: 0 10px 30px rgba(15,23,42,.05);
+      transition:
+        transform .2s ease,
+        box-shadow .2s ease,
+        border-color .2s ease;
+    }
+
+    .pricing-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 45px rgba(15,23,42,.10);
+    }
+
+    .pricing-card.featured {
+      border: 2px solid #0f766e;
+      box-shadow: 0 20px 50px rgba(15,118,110,.14);
+    }
+
+    .pricing-popular {
+      position: absolute;
+      top: -13px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: #0f766e;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      white-space: nowrap;
+    }
+
+    .pricing-card-label {
+      color: #0f766e;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 9px;
+    }
+
+    .pricing-card h3 {
+      margin: 0 0 9px;
+      font-size: 24px;
+      color: #0f172a;
+    }
+
+    .pricing-description {
+      color: #64748b;
+      min-height: 54px;
+      line-height: 1.55;
+    }
+
+    .pricing-price {
+      display: flex;
+      align-items: baseline;
+      gap: 5px;
+      margin: 24px 0 22px;
+    }
+
+    .pricing-price strong {
+      font-size: 38px;
+      line-height: 1;
+      color: #0f172a;
+    }
+
+    .pricing-price span {
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    .pricing-features {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 28px;
+    }
+
+    .pricing-features li {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin: 13px 0;
+      color: #334155;
+      line-height: 1.5;
+    }
+
+    .pricing-features li::before {
+      content: "✓";
+      flex: 0 0 auto;
+      color: #0f766e;
+      font-weight: 900;
+    }
+
+    .pricing-card .button {
+      width: 100%;
+      justify-content: center;
+      margin-top: auto;
+    }
+
+    .pricing-note {
+      margin-top: 25px;
+      text-align: center;
+      color: #64748b;
+      font-size: 13px;
+    }
+
+
+    /* =====================================================
+       VALUE / OUTCOME CARDS
+    ====================================================== */
+
+    .benefit-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 20px;
+      margin-top: 42px;
+    }
+
+    .benefit-card {
+      padding: 24px;
+      border: 1px solid #e2e8f0;
+      border-radius: 18px;
+      background: #fff;
+    }
+
+    .benefit-card-icon {
+      font-size: 25px;
+      margin-bottom: 15px;
+    }
+
+    .benefit-card h3 {
+      margin: 0 0 8px;
+      color: #0f172a;
+    }
+
+    .benefit-card p {
+      margin: 0;
+      color: #64748b;
+      line-height: 1.65;
+    }
+
+
+    /* =====================================================
+       MEMBER / ADMIN ACCESS
+    ====================================================== */
+
+    .portal-section {
+      background: #f8fafc;
+    }
+
+    .portal-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 22px;
+      margin-top: 40px;
+    }
+
+    .portal-card {
+      display: flex;
+      flex-direction: column;
+      padding: 30px;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+    }
+
+    .portal-card.admin {
+      border-color: rgba(15,118,110,.22);
+    }
+
+    .portal-card.member {
+      border-color: rgba(30,64,175,.16);
+    }
+
+    .portal-card-icon {
+      width: 48px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      background: #ecfdf5;
+      font-size: 22px;
+      margin-bottom: 18px;
+    }
+
+    .portal-card h3 {
+      margin: 0 0 8px;
+      color: #0f172a;
+    }
+
+    .portal-card p {
+      color: #64748b;
+      line-height: 1.65;
+      margin: 0 0 20px;
+    }
+
+    .portal-card .button {
+      align-self: flex-start;
+      margin-top: auto;
+    }
+
+
+    /* =====================================================
+       CTA IMPROVEMENT
+    ====================================================== */
+
+    .cta-secondary-text {
+      margin-top: 17px;
+      color: rgba(255,255,255,.78);
+      font-size: 14px;
+    }
+
+
+    /* =====================================================
+       RESPONSIVE
+    ====================================================== */
+
+    @media (max-width: 900px) {
+
+      .pricing-grid {
+        grid-template-columns: 1fr;
+        max-width: 560px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .benefit-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .portal-grid {
+        grid-template-columns: 1fr;
+      }
+
+    }
+
+
+    @media (max-width: 650px) {
+
+      .hero-account-options {
+        grid-template-columns: 1fr;
+      }
+
+      .pricing-card {
+        padding: 24px;
+      }
+
+    }
+
+  </style>
 
 </head>
 
@@ -41,15 +424,12 @@
 
 
   <!-- =====================================================
-       HEADER / NAVIGATION
+       HEADER
   ====================================================== -->
 
   <header class="landing-header">
 
     <div class="container nav-container">
-
-
-      <!-- LOGO -->
 
       <a
         href="index.html"
@@ -68,8 +448,6 @@
       </a>
 
 
-      <!-- MOBILE MENU -->
-
       <button
         class="mobile-menu-button"
         id="mobileMenuButton"
@@ -86,8 +464,6 @@
       </button>
 
 
-      <!-- NAVIGATION -->
-
       <nav
         class="landing-navigation"
         id="landingNavigation"
@@ -96,6 +472,10 @@
 
         <a href="#features">
           Features
+        </a>
+
+        <a href="#pricing">
+          Plans
         </a>
 
         <a href="#how-it-works">
@@ -160,8 +540,6 @@
       <div class="container hero-grid">
 
 
-        <!-- HERO CONTENT -->
-
         <div class="hero-content">
 
 
@@ -190,22 +568,22 @@
 
           <p class="hero-description">
 
-            CHAMA LIVE helps groups manage members,
-            contributions, expenses, meetings and reports
-            from one secure, easy-to-use platform.
+            Stop chasing notebooks, spreadsheets and
+            WhatsApp messages. CHAMA LIVE brings your
+            members, contributions, expenses, meetings
+            and reports together in one place.
 
           </p>
 
 
           <div class="hero-actions">
 
-
             <a
               href="signup.html"
               class="button button-primary button-large"
             >
 
-              Start Your Group
+              Create Your Group
 
               <span aria-hidden="true">
                 →
@@ -215,21 +593,82 @@
 
 
             <a
-              href="#how-it-works"
+              href="login.html"
               class="button button-secondary button-large"
             >
 
-              See How It Works
+              Sign In
 
             </a>
 
           </div>
 
 
-          <!-- TRUST -->
+          <!-- =================================================
+               CLEAR ACCOUNT PATHS
+          ================================================== -->
+
+          <div class="hero-account-options">
+
+            <a
+              href="signup.html"
+              class="account-option"
+            >
+
+              <span
+                class="account-option-icon"
+                aria-hidden="true"
+              >
+                🚀
+              </span>
+
+              <span>
+
+                <strong>
+                  Starting a new group?
+                </strong>
+
+                <small>
+                  Create your group account and start
+                  managing your group in one place.
+                </small>
+
+              </span>
+
+            </a>
+
+
+            <a
+              href="login.html"
+              class="account-option"
+            >
+
+              <span
+                class="account-option-icon"
+                aria-hidden="true"
+              >
+                🔐
+              </span>
+
+              <span>
+
+                <strong>
+                  Already part of a group?
+                </strong>
+
+                <small>
+                  Sign in to your members portal —
+                  for admins and members.
+                </small>
+
+              </span>
+
+            </a>
+
+          </div>
+
 
           <div class="hero-trust">
-
 
             <div class="trust-item">
 
@@ -288,7 +727,7 @@
 
 
         <!-- =================================================
-             DASHBOARD PREVIEW
+             EXISTING DASHBOARD PREVIEW
         ================================================== -->
 
         <div
@@ -298,11 +737,7 @@
 
           <div class="dashboard-window">
 
-
-            <!-- DASHBOARD TOPBAR -->
-
             <div class="dashboard-topbar">
-
 
               <div class="dashboard-brand">
 
@@ -333,9 +768,6 @@
 
             <div class="dashboard-body">
 
-
-              <!-- WELCOME -->
-
               <div class="dashboard-welcome">
 
                 <div>
@@ -358,10 +790,7 @@
 
 
 
-              <!-- STATS -->
-
               <div class="dashboard-stat-grid">
-
 
                 <div class="dashboard-stat-card">
 
@@ -382,7 +811,6 @@
                   </small>
 
                 </div>
-
 
 
                 <div class="dashboard-stat-card">
@@ -406,7 +834,6 @@
                 </div>
 
 
-
                 <div class="dashboard-stat-card">
 
                   <span class="stat-icon expense-icon">
@@ -426,7 +853,6 @@
                   </small>
 
                 </div>
-
 
 
                 <div class="dashboard-stat-card">
@@ -453,15 +879,9 @@
 
 
 
-              <!-- LOWER DASHBOARD -->
-
               <div class="dashboard-lower">
 
-
-                <!-- CHART -->
-
                 <div class="mini-chart-card">
-
 
                   <div class="mini-card-heading">
 
@@ -506,11 +926,7 @@
                 </div>
 
 
-
-                <!-- ACTIVITY -->
-
                 <div class="activity-card">
-
 
                   <div class="mini-card-heading">
 
@@ -546,7 +962,6 @@
                   </div>
 
 
-
                   <div class="activity-item">
 
                     <span class="activity-avatar">
@@ -566,7 +981,6 @@
                     </div>
 
                   </div>
-
 
 
                   <div class="activity-item">
@@ -613,12 +1027,9 @@
 
       <div class="container value-grid">
 
-
         <div class="value-item">
 
-          <span>
-            ✓
-          </span>
+          <span>✓</span>
 
           <div>
 
@@ -635,12 +1046,9 @@
         </div>
 
 
-
         <div class="value-item">
 
-          <span>
-            ✓
-          </span>
+          <span>✓</span>
 
           <div>
 
@@ -657,12 +1065,9 @@
         </div>
 
 
-
         <div class="value-item">
 
-          <span>
-            ✓
-          </span>
+          <span>✓</span>
 
           <div>
 
@@ -679,12 +1084,9 @@
         </div>
 
 
-
         <div class="value-item">
 
-          <span>
-            ✓
-          </span>
+          <span>✓</span>
 
           <div>
 
@@ -707,6 +1109,100 @@
 
 
     <!-- ===================================================
+         WHY CHAMA LIVE
+    ==================================================== -->
+
+    <section class="section">
+
+      <div class="container">
+
+        <div class="section-heading centered">
+
+          <span class="section-label">
+            WHY CHAMA LIVE
+          </span>
+
+          <h2>
+            Less administration.
+            <span>More control.</span>
+          </h2>
+
+          <p>
+            CHAMA LIVE is built to help your group spend
+            less time searching for records and more time
+            managing what matters.
+          </p>
+
+        </div>
+
+
+        <div class="benefit-grid">
+
+          <article class="benefit-card">
+
+            <div class="benefit-card-icon">
+              📒
+            </div>
+
+            <h3>
+              Leave the notebook behind
+            </h3>
+
+            <p>
+              Keep your member records, contributions,
+              expenses and group activities together instead
+              of scattering them across books and files.
+            </p>
+
+          </article>
+
+
+          <article class="benefit-card">
+
+            <div class="benefit-card-icon">
+              💰
+            </div>
+
+            <h3>
+              Understand your money
+            </h3>
+
+            <p>
+              See what members have contributed, what the
+              group has spent and where the group's finances
+              stand.
+            </p>
+
+          </article>
+
+
+          <article class="benefit-card">
+
+            <div class="benefit-card-icon">
+              🤝
+            </div>
+
+            <h3>
+              Keep everyone connected
+            </h3>
+
+            <p>
+              Give administrators and members a shared
+              place to access the information that matters
+              to the group.
+            </p>
+
+          </article>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- ===================================================
          FEATURES
     ==================================================== -->
 
@@ -717,7 +1213,6 @@
 
       <div class="container">
 
-
         <div class="section-heading">
 
           <span class="section-label">
@@ -725,18 +1220,13 @@
           </span>
 
           <h2>
-
             Replace scattered records
             with one clear system.
-
           </h2>
 
           <p>
-
-            From the first member registration to monthly
-            closing, CHAMA LIVE keeps your group's
-            information connected.
-
+            Everything your group needs to stay organized,
+            accountable and ready for the next meeting.
           </p>
 
         </div>
@@ -744,7 +1234,6 @@
 
 
         <div class="features-grid">
-
 
           <article class="feature-card feature-card-large">
 
@@ -761,11 +1250,9 @@
             </h3>
 
             <p>
-
-              Maintain a central member register with
+              Keep a central member register with
               membership details, status, roles and
               group information.
-
             </p>
 
             <a href="signup.html">
@@ -773,7 +1260,6 @@
             </a>
 
           </article>
-
 
 
           <article class="feature-card">
@@ -791,11 +1277,8 @@
             </h3>
 
             <p>
-
               Record member payments and follow monthly
-              contributions, arrears and carry-forward
-              balances.
-
+              contributions, arrears and balances.
             </p>
 
             <a href="signup.html">
@@ -803,7 +1286,6 @@
             </a>
 
           </article>
-
 
 
           <article class="feature-card">
@@ -821,10 +1303,8 @@
             </h3>
 
             <p>
-
-              Record group spending and maintain a
-              transparent view of approved expenses.
-
+              Record group spending and maintain a clear
+              view of approved expenses.
             </p>
 
             <a href="signup.html">
@@ -832,7 +1312,6 @@
             </a>
 
           </article>
-
 
 
           <article class="feature-card">
@@ -850,10 +1329,8 @@
             </h3>
 
             <p>
-
               Keep meeting dates, attendance, minutes
-              and important group decisions organized.
-
+              and important decisions organized.
             </p>
 
             <a href="signup.html">
@@ -861,7 +1338,6 @@
             </a>
 
           </article>
-
 
 
           <article class="feature-card">
@@ -879,10 +1355,8 @@
             </h3>
 
             <p>
-
-              Turn your group records into useful
-              financial, membership and activity reports.
-
+              Turn your group records into useful financial,
+              membership and activity reports.
             </p>
 
             <a href="signup.html">
@@ -892,11 +1366,10 @@
           </article>
 
 
-
           <article class="feature-card feature-card-highlight">
 
             <div class="feature-icon">
-              🔒
+              ⚙️
             </div>
 
             <span class="feature-number">
@@ -908,15 +1381,378 @@
             </h3>
 
             <p>
-
-              Configure your group's details, contribution
-              rules, goals and administrative settings
-              from one place.
-
+              Manage group details, contribution rules,
+              goals and administrative settings from one
+              place.
             </p>
 
             <a href="signup.html">
               Take control →
+            </a>
+
+          </article>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- ===================================================
+         PRICING
+    ==================================================== -->
+
+    <section
+      class="section pricing-section"
+      id="pricing"
+    >
+
+      <div class="container">
+
+        <div class="pricing-heading">
+
+          <span class="section-label">
+            SIMPLE GROUP PLANS
+          </span>
+
+          <h2>
+            Choose a plan that fits
+            <span>your group.</span>
+          </h2>
+
+          <p>
+            Start managing your group digitally without
+            buying complicated accounting software. Choose
+            the plan that matches the way your organization
+            operates.
+          </p>
+
+
+          <div class="pricing-toggle">
+
+            <button
+              type="button"
+              class="active"
+              data-plan-view="monthly"
+            >
+              Monthly
+            </button>
+
+            <button
+              type="button"
+              data-plan-view="yearly"
+            >
+              Yearly
+            </button>
+
+          </div>
+
+        </div>
+
+
+
+        <div class="pricing-grid">
+
+
+          <!-- BASIC -->
+
+          <article class="pricing-card">
+
+            <span class="pricing-card-label">
+              For small groups
+            </span>
+
+            <h3>
+              Chama
+            </h3>
+
+            <p class="pricing-description">
+              A simple starting point for savings,
+              welfare and member-led groups.
+            </p>
+
+
+            <div class="pricing-price">
+
+              <strong
+                data-monthly="500"
+                data-yearly="5000"
+              >
+                KSh 500
+              </strong>
+
+              <span>
+                / month
+              </span>
+
+            </div>
+
+
+            <ul class="pricing-features">
+
+              <li>
+                Member management
+              </li>
+
+              <li>
+                Contribution tracking
+              </li>
+
+              <li>
+                Expense management
+              </li>
+
+              <li>
+                Meetings and group records
+              </li>
+
+              <li>
+                Group reports
+              </li>
+
+            </ul>
+
+
+            <a
+              href="signup.html"
+              class="button button-secondary"
+            >
+              Start Your Group
+            </a>
+
+          </article>
+
+
+
+          <!-- CBO -->
+
+          <article class="pricing-card featured">
+
+            <span class="pricing-popular">
+              FOR GROWING ORGANIZATIONS
+            </span>
+
+            <span class="pricing-card-label">
+              For larger groups
+            </span>
+
+            <h3>
+              CBO
+            </h3>
+
+            <p class="pricing-description">
+              More room for organizations managing
+              broader community activities.
+            </p>
+
+
+            <div class="pricing-price">
+
+              <strong
+                data-monthly="1000"
+                data-yearly="10000"
+              >
+                KSh 1,000
+              </strong>
+
+              <span>
+                / month
+              </span>
+
+            </div>
+
+
+            <ul class="pricing-features">
+
+              <li>
+                Everything in Chama
+              </li>
+
+              <li>
+                Community organization management
+              </li>
+
+              <li>
+                Expanded group administration
+              </li>
+
+              <li>
+                Financial and activity records
+              </li>
+
+              <li>
+                Reporting and accountability tools
+              </li>
+
+            </ul>
+
+
+            <a
+              href="signup.html"
+              class="button button-primary"
+            >
+              Create Your Group
+            </a>
+
+          </article>
+
+
+
+          <!-- CONTACT / ORGANIZATION -->
+
+          <article class="pricing-card">
+
+            <span class="pricing-card-label">
+              For organizations
+            </span>
+
+            <h3>
+              Organization
+            </h3>
+
+            <p class="pricing-description">
+              Need a setup for a larger or more specialized
+              organization? Talk to us about your requirements.
+            </p>
+
+
+            <div class="pricing-price">
+
+              <strong>
+                Let's talk
+              </strong>
+
+            </div>
+
+
+            <ul class="pricing-features">
+
+              <li>
+                Tailored group workflows
+              </li>
+
+              <li>
+                Larger organization requirements
+              </li>
+
+              <li>
+                Specialized reporting needs
+              </li>
+
+              <li>
+                Flexible implementation
+              </li>
+
+            </ul>
+
+
+            <a
+              href="signup.html"
+              class="button button-secondary"
+            >
+              Get Started
+            </a>
+
+          </article>
+
+        </div>
+
+
+        <p class="pricing-note">
+          Plans are designed around the group account.
+          Members access their group through the members portal.
+        </p>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- ===================================================
+         ADMIN + MEMBER PORTAL
+    ==================================================== -->
+
+    <section
+      class="section portal-section"
+      id="portal"
+    >
+
+      <div class="container">
+
+        <div class="section-heading centered">
+
+          <span class="section-label">
+            ALREADY HAVE A GROUP?
+          </span>
+
+          <h2>
+            Your group already has an account?
+            <span>You're in the right place.</span>
+          </h2>
+
+          <p>
+            CHAMA LIVE has one secure sign-in for people
+            already connected to a group.
+          </p>
+
+        </div>
+
+
+
+        <div class="portal-grid">
+
+
+          <article class="portal-card admin">
+
+            <div class="portal-card-icon">
+              👨‍💼
+            </div>
+
+            <h3>
+              Group administrators
+            </h3>
+
+            <p>
+              Manage your group's members, contributions,
+              expenses, meetings, reports and group settings
+              from your administrator dashboard.
+            </p>
+
+            <a
+              href="login.html"
+              class="button button-primary"
+            >
+              Admin Sign In →
+            </a>
+
+          </article>
+
+
+
+          <article class="portal-card member">
+
+            <div class="portal-card-icon">
+              👥
+            </div>
+
+            <h3>
+              Members
+            </h3>
+
+            <p>
+              Already a member of a CHAMA LIVE group?
+              Sign in to access your members portal and
+              stay connected with your group's records.
+            </p>
+
+            <a
+              href="login.html"
+              class="button button-secondary"
+            >
+              Member Sign In →
             </a>
 
           </article>
@@ -940,7 +1776,6 @@
 
       <div class="container">
 
-
         <div class="section-heading centered">
 
           <span class="section-label">
@@ -948,10 +1783,8 @@
           </span>
 
           <h2>
-
             From paper records to
             <span>CHAMA LIVE.</span>
-
           </h2>
 
           <p>
@@ -963,7 +1796,6 @@
 
 
         <div class="steps-grid">
-
 
           <div class="step-card">
 
@@ -978,14 +1810,11 @@
             </h3>
 
             <p>
-
               Start your group account and enter your
               basic group information.
-
             </p>
 
           </div>
-
 
 
           <div class="step-card">
@@ -1001,14 +1830,11 @@
             </h3>
 
             <p>
-
               Confirm your account when required so your
               administrator identity is securely established.
-
             </p>
 
           </div>
-
 
 
           <div class="step-card">
@@ -1024,14 +1850,11 @@
             </h3>
 
             <p>
-
               Add your members, configure group rules and
               prepare your group workspace.
-
             </p>
 
           </div>
-
 
 
           <div class="step-card">
@@ -1047,10 +1870,8 @@
             </h3>
 
             <p>
-
               Manage members, contributions, expenses,
               meetings, reports and monthly closing.
-
             </p>
 
           </div>
@@ -1074,7 +1895,6 @@
 
       <div class="container groups-layout">
 
-
         <div class="groups-content">
 
           <span class="section-label">
@@ -1082,18 +1902,14 @@
           </span>
 
           <h2>
-
             One platform.
             <span>Many kinds of groups.</span>
-
           </h2>
 
           <p>
-
             CHAMA LIVE is designed around the way
-            community groups actually operate—not around
+            community groups actually operate — not around
             complicated accounting software.
-
           </p>
 
 
@@ -1116,7 +1932,6 @@
 
         <div class="groups-list">
 
-
           <div class="group-type">
 
             <span>01</span>
@@ -1130,7 +1945,6 @@
             </small>
 
           </div>
-
 
 
           <div class="group-type">
@@ -1148,7 +1962,6 @@
           </div>
 
 
-
           <div class="group-type">
 
             <span>03</span>
@@ -1162,7 +1975,6 @@
             </small>
 
           </div>
-
 
 
           <div class="group-type">
@@ -1180,7 +1992,6 @@
           </div>
 
 
-
           <div class="group-type">
 
             <span>05</span>
@@ -1194,7 +2005,6 @@
             </small>
 
           </div>
-
 
 
           <div class="group-type">
@@ -1227,11 +2037,9 @@
 
       <div class="container transparency-grid">
 
-
         <div class="transparency-visual">
 
           <div class="ledger-card">
-
 
             <div class="ledger-header">
 
@@ -1252,7 +2060,6 @@
               </span>
 
             </div>
-
 
 
             <div class="ledger-row">
@@ -1284,7 +2091,6 @@
             </div>
 
 
-
             <div class="ledger-row">
 
               <div>
@@ -1312,7 +2118,6 @@
               </strong>
 
             </div>
-
 
 
             <div class="ledger-row">
@@ -1344,7 +2149,6 @@
             </div>
 
 
-
             <div class="ledger-total">
 
               <span>
@@ -1370,25 +2174,20 @@
           </span>
 
           <h2>
-
             Everyone deserves
             <span>clear records.</span>
-
           </h2>
 
           <p>
-
             Good group management starts with knowing
             what has happened. CHAMA LIVE connects the
             records that matter so your group can make
             decisions with confidence.
-
           </p>
 
 
 
           <ul class="check-list">
-
 
             <li>
 
@@ -1409,7 +2208,6 @@
               </div>
 
             </li>
-
 
 
             <li>
@@ -1433,7 +2231,6 @@
             </li>
 
 
-
             <li>
 
               <span>
@@ -1453,7 +2250,6 @@
               </div>
 
             </li>
-
 
 
             <li>
@@ -1497,33 +2293,27 @@
 
       <div class="container about-container">
 
-
         <span class="section-label">
           ABOUT CHAMA LIVE
         </span>
 
 
         <h2>
-
           Built for the way
           <span>groups work.</span>
-
         </h2>
 
 
         <p>
-
           Many groups still depend on notebooks,
           spreadsheets, WhatsApp messages and scattered
           records. CHAMA LIVE brings those everyday
           activities into one connected system.
-
         </p>
 
 
 
         <div class="about-points">
-
 
           <div>
 
@@ -1538,7 +2328,6 @@
           </div>
 
 
-
           <div>
 
             <strong>
@@ -1550,7 +2339,6 @@
             </span>
 
           </div>
-
 
 
           <div>
@@ -1587,30 +2375,24 @@
 
       <div class="container cta-container">
 
-
         <span class="cta-label">
           READY TO GET ORGANIZED?
         </span>
 
 
         <h2>
-
           Run your group with
           <span>clarity.</span>
-
         </h2>
 
 
         <p>
-
           Bring your members, contributions, expenses,
           meetings and reports together with CHAMA LIVE.
-
         </p>
 
 
         <div class="cta-actions">
-
 
           <a
             href="signup.html"
@@ -1631,11 +2413,19 @@
             class="cta-login"
           >
 
-            Already have an account?
-            Sign in
+            Already registered?
+
+            <strong>
+              Sign in to your members portal →
+            </strong>
 
           </a>
 
+        </div>
+
+
+        <div class="cta-secondary-text">
+          Group administrators and members use the same secure sign-in.
         </div>
 
       </div>
@@ -1652,12 +2442,9 @@
 
   <footer class="landing-footer">
 
-
     <div class="container footer-grid">
 
-
       <div class="footer-brand">
-
 
         <a
           href="index.html"
@@ -1676,10 +2463,8 @@
 
 
         <p>
-
           Simple, transparent group management
           for modern community organizations.
-
         </p>
 
       </div>
@@ -1694,6 +2479,10 @@
 
         <a href="#features">
           Features
+        </a>
+
+        <a href="#pricing">
+          Plans
         </a>
 
         <a href="#how-it-works">
@@ -1715,7 +2504,7 @@
         </h3>
 
         <a href="login.html">
-          Sign In
+          Admin & Member Sign In
         </a>
 
         <a href="signup.html">
@@ -1736,8 +2525,8 @@
           About
         </a>
 
-        <a href="#features">
-          Platform
+        <a href="#portal">
+          Members Portal
         </a>
 
       </div>
@@ -1748,11 +2537,9 @@
 
     <div class="container footer-bottom">
 
-
       <span>
         © 2026 CHAMA LIVE. All rights reserved.
       </span>
-
 
       <span>
         Built for better group management.
@@ -1765,12 +2552,16 @@
 
 
   <!-- =====================================================
-       MOBILE NAVIGATION
+       INTERACTION
   ====================================================== -->
 
   <script>
 
     (() => {
+
+      /* -----------------------------------------------
+         MOBILE NAVIGATION
+      ------------------------------------------------ */
 
       const button =
         document.getElementById(
@@ -1785,126 +2576,263 @@
 
 
       if (
-        !button ||
-        !navigation
+        button &&
+        navigation
       ) {
 
-        return;
+        button.addEventListener(
+          "click",
+          () => {
 
-      }
+            const isOpen =
+              navigation.classList.toggle(
+                "is-open"
+              );
 
 
-      button.addEventListener(
-        "click",
-        () => {
-
-          const isOpen =
-            navigation.classList.toggle(
-              "is-open"
+            button.setAttribute(
+              "aria-expanded",
+              String(isOpen)
             );
 
 
-          button.setAttribute(
-            "aria-expanded",
-            String(isOpen)
-          );
-
-
-          button.setAttribute(
-            "aria-label",
-            isOpen
-              ? "Close navigation"
-              : "Open navigation"
-          );
-
-        }
-      );
-
-
-      navigation
-        .querySelectorAll("a")
-        .forEach(
-          link => {
-
-            link.addEventListener(
-              "click",
-              () => {
-
-                navigation.classList.remove(
-                  "is-open"
-                );
-
-
-                button.setAttribute(
-                  "aria-expanded",
-                  "false"
-                );
-
-
-                button.setAttribute(
-                  "aria-label",
-                  "Open navigation"
-                );
-
-              }
+            button.setAttribute(
+              "aria-label",
+              isOpen
+                ? "Close navigation"
+                : "Open navigation"
             );
 
           }
         );
 
 
-      /*
-       * Close mobile navigation when
-       * clicking outside the navigation.
-       */
+        navigation
+          .querySelectorAll("a")
+          .forEach(
+            link => {
 
-      document.addEventListener(
-        "click",
-        event => {
+              link.addEventListener(
+                "click",
+                () => {
 
-          if (
-            !navigation.classList.contains(
+                  navigation.classList.remove(
+                    "is-open"
+                  );
+
+
+                  button.setAttribute(
+                    "aria-expanded",
+                    "false"
+                  );
+
+
+                  button.setAttribute(
+                    "aria-label",
+                    "Open navigation"
+                  );
+
+                }
+              );
+
+            }
+          );
+
+
+        document.addEventListener(
+          "click",
+          event => {
+
+            if (
+              !navigation.classList.contains(
+                "is-open"
+              )
+            ) {
+
+              return;
+
+            }
+
+
+            if (
+              navigation.contains(
+                event.target
+              ) ||
+              button.contains(
+                event.target
+              )
+            ) {
+
+              return;
+
+            }
+
+
+            navigation.classList.remove(
               "is-open"
-            )
-          ) {
-
-            return;
-
-          }
+            );
 
 
-          if (
-            navigation.contains(
-              event.target
-            ) ||
-            button.contains(
-              event.target
-            )
-          ) {
+            button.setAttribute(
+              "aria-expanded",
+              "false"
+            );
 
-            return;
+
+            button.setAttribute(
+              "aria-label",
+              "Open navigation"
+            );
 
           }
+        );
+
+      }
 
 
-          navigation.classList.remove(
-            "is-open"
-          );
+
+      /* -----------------------------------------------
+         PRICING TOGGLE
+      ------------------------------------------------ */
+
+      const pricingButtons =
+        document.querySelectorAll(
+          "[data-plan-view]"
+        );
 
 
-          button.setAttribute(
-            "aria-expanded",
-            "false"
-          );
+      const pricingAmounts =
+        document.querySelectorAll(
+          "[data-monthly]"
+        );
 
 
-          button.setAttribute(
-            "aria-label",
-            "Open navigation"
+      pricingButtons.forEach(
+        button => {
+
+          button.addEventListener(
+            "click",
+            () => {
+
+              const view =
+                button.dataset.planView;
+
+
+              pricingButtons.forEach(
+                item => {
+
+                  item.classList.toggle(
+                    "active",
+                    item === button
+                  );
+
+                }
+              );
+
+
+              pricingAmounts.forEach(
+                amount => {
+
+                  const value =
+                    amount.dataset[view];
+
+
+                  if (!value) {
+                    return;
+                  }
+
+
+                  const formatted =
+                    Number(value).toLocaleString(
+                      "en-KE"
+                    );
+
+
+                  amount.textContent =
+                    `KSh ${formatted}`;
+
+                }
+              );
+
+
+              document
+                .querySelectorAll(
+                  ".pricing-price span"
+                )
+                .forEach(
+                  period => {
+
+                    period.textContent =
+                      view === "yearly"
+                        ? "/ year"
+                        : "/ month";
+
+                  }
+                );
+
+            }
           );
 
         }
       );
+
+
+
+      /* -----------------------------------------------
+         SMOOTH SCROLL
+      ------------------------------------------------ */
+
+      document
+        .querySelectorAll(
+          'a[href^="#"]'
+        )
+        .forEach(
+          link => {
+
+            link.addEventListener(
+              "click",
+              event => {
+
+                const targetId =
+                  link.getAttribute(
+                    "href"
+                  );
+
+
+                if (
+                  !targetId ||
+                  targetId === "#"
+                ) {
+
+                  return;
+
+                }
+
+
+                const target =
+                  document.querySelector(
+                    targetId
+                  );
+
+
+                if (!target) {
+                  return;
+                }
+
+
+                event.preventDefault();
+
+
+                target.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start"
+                });
+
+              }
+            );
+
+          }
+        );
 
     })();
 
@@ -1914,4 +2842,3 @@
 </body>
 
 </html>
-
