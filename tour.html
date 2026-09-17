@@ -31,51 +31,105 @@
   >
 
   <style>
+    /*
+     * PERSISTENT TOUR HEADER
+     *
+     * The header remains visible while the user moves
+     * between all tour slides.
+     */
+
+    .tour-header {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .tour-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
     .tour-top-navigation {
       display: flex;
       align-items: center;
       gap: 10px;
     }
 
+    /*
+     * DASHBOARD LINK
+     *
+     * This link is outside the tour-card/slide content,
+     * so it remains available on every slide.
+     */
+
     .tour-dashboard-link {
       display: inline-flex;
       align-items: center;
       justify-content: center;
+
       min-height: 38px;
       padding: 0 14px;
+
       border: 1px solid rgba(255, 255, 255, 0.22);
       border-radius: 9px;
+
       color: #ffffff;
       background: rgba(255, 255, 255, 0.08);
+
       text-decoration: none;
+
       font-size: 14px;
       font-weight: 700;
+
+      white-space: nowrap;
+
+      transition:
+        background 0.15s ease,
+        border-color 0.15s ease;
     }
 
     .tour-dashboard-link:hover {
       background: rgba(255, 255, 255, 0.16);
+      border-color: rgba(255, 255, 255, 0.32);
     }
+
+    .tour-dashboard-link:focus-visible {
+      outline: 2px solid #99f6e4;
+      outline-offset: 2px;
+    }
+
+    /*
+     * GUIDE INTRO
+     */
 
     .tour-intro {
       margin-bottom: 18px;
       padding: 18px 20px;
+
       border: 1px solid #99f6e4;
       border-radius: 14px;
+
       background: #f0fdfa;
     }
 
     .tour-intro-label {
       margin-bottom: 5px;
+
       color: #0f766e;
+
       font-size: 11px;
       font-weight: 800;
+
       letter-spacing: 0.08em;
       text-transform: uppercase;
     }
 
     .tour-intro h1 {
       margin: 0 0 6px;
+
       color: #101828;
+
       font-size: 20px;
       line-height: 1.3;
     }
@@ -83,12 +137,23 @@
     .tour-intro p {
       margin: 0;
       max-width: 800px;
+
       color: #475467;
+
       line-height: 1.6;
       font-size: 14px;
     }
 
+    /*
+     * MOBILE
+     */
+
     @media (max-width: 700px) {
+
+      .tour-header-actions {
+        gap: 6px;
+      }
+
       .tour-top-navigation {
         gap: 6px;
       }
@@ -96,6 +161,7 @@
       .tour-dashboard-link {
         min-height: 34px;
         padding: 0 10px;
+
         font-size: 13px;
       }
 
@@ -103,12 +169,27 @@
         padding: 16px;
       }
     }
+
+    @media (max-width: 520px) {
+
+      .tour-role-badge {
+        display: none;
+      }
+
+      .tour-dashboard-link {
+        padding: 0 9px;
+        font-size: 12px;
+      }
+    }
   </style>
 </head>
 
 <body class="tour-page">
 
-  <!-- CHAMA LIVE HEADER -->
+  <!-- =========================================================
+       CHAMA LIVE HEADER
+       ========================================================= -->
+
   <header class="tour-header">
 
     <a
@@ -128,11 +209,19 @@
         Welcome
       </div>
 
+      <!--
+        PERSISTENT NAVIGATION
+
+        This navigation is part of the header, not the
+        individual tour slides. Therefore the Dashboard
+        link remains available throughout the entire tour.
+      -->
       <div class="tour-top-navigation">
 
         <a
           href="dashboard.html"
           class="tour-dashboard-link"
+          aria-label="Return to Dashboard"
         >
           ← Dashboard
         </a>
@@ -152,6 +241,10 @@
   </header>
 
 
+  <!-- =========================================================
+       TOUR MAIN CONTENT
+       ========================================================= -->
+
   <main class="tour-main">
 
     <section
@@ -159,7 +252,10 @@
       aria-label="CHAMA LIVE guided tour"
     >
 
-      <!-- GUIDE INTRO -->
+      <!-- =====================================================
+           GUIDE INTRO
+           ===================================================== -->
+
       <div class="tour-intro">
 
         <div class="tour-intro-label">
@@ -179,7 +275,10 @@
       </div>
 
 
-      <!-- TOUR PROGRESS -->
+      <!-- =====================================================
+           TOUR PROGRESS
+           ===================================================== -->
+
       <div class="tour-progress-header">
 
         <div>
@@ -212,7 +311,10 @@
       </div>
 
 
-      <!-- TOUR CONTENT -->
+      <!-- =====================================================
+           TOUR CONTENT
+           ===================================================== -->
+
       <article
         id="tourCard"
         class="tour-card"
@@ -264,7 +366,10 @@
       </article>
 
 
-      <!-- TOUR CONTROLS -->
+      <!-- =====================================================
+           TOUR CONTROLS
+           ===================================================== -->
+
       <div class="tour-controls">
 
         <button
@@ -292,6 +397,10 @@
       </div>
 
 
+      <!-- =====================================================
+           TOUR FOOTER
+           ===================================================== -->
+
       <div class="tour-footer-note">
         You can return to this tour anytime from your CHAMA LIVE
         workspace.
@@ -302,7 +411,10 @@
   </main>
 
 
-  <!-- LOADING STATE -->
+  <!-- =========================================================
+       LOADING STATE
+       ========================================================= -->
+
   <div
     id="tourLoading"
     class="tour-loading"
@@ -326,7 +438,10 @@
   </div>
 
 
-  <!-- ERROR STATE -->
+  <!-- =========================================================
+       ERROR STATE
+       ========================================================= -->
+
   <div
     id="tourError"
     class="tour-error"
@@ -379,7 +494,10 @@
   </div>
 
 
-  <!-- EXISTING TOUR ENGINE -->
+  <!-- =========================================================
+       EXISTING TOUR ENGINE
+       ========================================================= -->
+
   <script
     type="module"
     src="js/tour.js"
