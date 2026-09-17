@@ -682,9 +682,7 @@
 
 
         <!-- CONTENT -->
-        <section
-          aria-label="Getting started information"
-        >
+        <section aria-label="Getting started information">
 
           <h2 class="getting-started-section-heading">
             Everything you need to get started
@@ -1013,6 +1011,7 @@
 
 
   <!-- ONBOARDING POPUP -->
+
   <div
     id="gettingStartedPopup"
     class="getting-started-popup"
@@ -1066,12 +1065,155 @@
   </div>
 
 
+  <!-- EXISTING PAGE BOOT -->
+
   <script type="module">
     import { boot } from "./js/layout.js";
-    import { boot as bootGettingStarted } from "./js/getting-started.js";
 
     boot();
-    bootGettingStarted();
+
+
+    /*
+     * GETTING STARTED ONBOARDING POPUP
+     *
+     * The event is intentionally stored in sessionStorage.
+     *
+     * Expected values:
+     *
+     *   new-group
+     *   new-member
+     *
+     * The signal is consumed immediately after it is read,
+     * so the popup does not repeatedly appear on refresh.
+     */
+
+    const POPUP_EVENT_KEY =
+      "chama_live_getting_started_event";
+
+    const popup =
+      document.getElementById("gettingStartedPopup");
+
+    const closeButton =
+      document.getElementById("gettingStartedPopupClose");
+
+    const popupTitle =
+      document.getElementById("gettingStartedPopupTitle");
+
+    const popupMessage =
+      document.getElementById("gettingStartedPopupMessage");
+
+
+    function closeGettingStartedPopup() {
+      popup.hidden = true;
+    }
+
+
+    function showGettingStartedPopup(eventType) {
+
+      if (
+        eventType !== "new-group" &&
+        eventType !== "new-member"
+      ) {
+        return;
+      }
+
+
+      if (eventType === "new-group") {
+
+        popupTitle.textContent =
+          "Your group is ready";
+
+        popupMessage.textContent =
+          "Your CHAMA LIVE group workspace has been created successfully. Take the guided tour to see how your new workspace works.";
+      }
+
+
+      if (eventType === "new-member") {
+
+        popupTitle.textContent =
+          "Member added successfully";
+
+        popupMessage.textContent =
+          "The new member has been added to your group. Take a quick guided tour to see how members and the rest of your workspace fit together.";
+      }
+
+
+      popup.hidden = false;
+
+
+      /*
+       * Consume the event immediately.
+       *
+       * This makes the popup one-time for this
+       * onboarding event.
+       */
+
+      sessionStorage.removeItem(
+        POPUP_EVENT_KEY
+      );
+    }
+
+
+    closeButton.addEventListener(
+      "click",
+      closeGettingStartedPopup
+    );
+
+
+    /*
+     * Close when clicking the dark backdrop.
+     */
+
+    popup.addEventListener(
+      "click",
+      (event) => {
+
+        if (event.target === popup) {
+          closeGettingStartedPopup();
+        }
+
+      }
+    );
+
+
+    /*
+     * Allow Escape to close the popup.
+     */
+
+    document.addEventListener(
+      "keydown",
+      (event) => {
+
+        if (
+          event.key === "Escape" &&
+          !popup.hidden
+        ) {
+          closeGettingStartedPopup();
+        }
+
+      }
+    );
+
+
+    /*
+     * Read the onboarding event.
+     */
+
+    const onboardingEvent =
+      sessionStorage.getItem(
+        POPUP_EVENT_KEY
+      );
+
+
+    /*
+     * Show the popup only when a valid
+     * onboarding event exists.
+     */
+
+    showGettingStartedPopup(
+      onboardingEvent
+    );
+
   </script>
 
 </body>
