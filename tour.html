@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <meta
+    name="theme-color"
+    content="#0f766e"
+  >
+
+  <meta
+    name="description"
+    content="CHAMA LIVE guided tour"
+  >
+
+  <title>Welcome to CHAMA LIVE</title>
+
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/tour.css">
+</head>
+
+<body class="tour-page">
+
+  <!-- =====================================================
+       TOP BRAND BAR
+  ====================================================== -->
+
+  <header class="tour-header">
+
+    <a
+      href="dashboard.html"
+      class="tour-brand"
+      aria-label="CHAMA LIVE"
+    >
+      CHAMA <span>LIVE</span>
+    </a>
+
+    <div class="tour-header-actions">
+
+      <div
+        id="tourRoleBadge"
+        class="tour-role-badge"
+      >
+        Welcome
+      </div>
+
+      <button
+        id="skipTourTop"
+        class="tour-skip-top"
+        type="button"
+      >
+        Skip tour
+      </button>
+
+    </div>
+
+  </header>
+
+
+  <!-- =====================================================
+       MAIN TOUR
+  ====================================================== -->
+
+  <main class="tour-main">
+
+    <section
+      class="tour-shell"
+      aria-label="CHAMA LIVE guided tour"
+    >
+
+      <!-- Progress -->
+
+      <div class="tour-progress-header">
+
+        <div>
+
+          <div
+            id="tourStepLabel"
+            class="tour-step-label"
+          >
+            01 / 12
+          </div>
+
+          <div
+            id="tourTourLabel"
+            class="tour-tour-label"
+          >
+            Getting started
+          </div>
+
+        </div>
+
+        <div class="tour-progress-track">
+          <div
+            id="tourProgress"
+            class="tour-progress-fill"
+          ></div>
+        </div>
+
+      </div>
+
+
+      <!-- Slide -->
+
+      <article
+        id="tourCard"
+        class="tour-card"
+      >
+
+        <div
+          id="tourIcon"
+          class="tour-icon"
+          aria-hidden="true"
+        >
+          👋
+        </div>
+
+        <div class="tour-content">
+
+          <div
+            id="tourEyebrow"
+            class="tour-eyebrow"
+          >
+            WELCOME
+          </div>
+
+          <h1
+            id="tourTitle"
+            class="tour-title"
+          >
+            Welcome to CHAMA LIVE
+          </h1>
+
+          <p
+            id="tourDescription"
+            class="tour-description"
+          >
+            Welcome to your digital Chama.
+          </p>
+
+
+          <!-- Dynamic visual -->
+
+          <div
+            id="tourVisual"
+            class="tour-visual"
+          ></div>
+
+
+          <!-- Dynamic details -->
+
+          <div
+            id="tourDetails"
+            class="tour-details"
+          ></div>
+
+        </div>
+
+      </article>
+
+
+      <!-- Bottom controls -->
+
+      <div class="tour-controls">
+
+        <button
+          id="backButton"
+          class="tour-button tour-button-secondary"
+          type="button"
+        >
+          ← Back
+        </button>
+
+        <div
+          id="tourDots"
+          class="tour-dots"
+          aria-label="Tour progress"
+        ></div>
+
+        <button
+          id="nextButton"
+          class="tour-button tour-button-primary"
+          type="button"
+        >
+          Next →
+        </button>
+
+      </div>
+
+
+      <div class="tour-footer-note">
+        You can revisit this tour later from your account settings.
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <!-- =====================================================
+       AUTH / TOUR STATUS
+  ====================================================== -->
+
+  <div
+    id="tourLoading"
+    class="tour-loading"
+    aria-live="polite"
+  >
+    <div class="tour-loading-card">
+
+      <div class="tour-loading-spinner"></div>
+
+      <strong>Preparing your tour...</strong>
+
+      <span>
+        Loading your CHAMA LIVE experience.
+      </span>
+
+    </div>
+  </div>
+
+
+  <div
+    id="tourError"
+    class="tour-error"
+    role="alert"
+    hidden
+  >
+    <div class="tour-error-card">
+
+      <div class="tour-error-icon">
+        ⚠️
+      </div>
+
+      <h2>
+        We couldn't load your tour
+      </h2>
+
+      <p id="tourErrorMessage">
+        Please sign in again.
+      </p>
+
+      <a
+        href="login.html"
+        class="tour-button tour-button-primary"
+      >
+        Return to Sign In
+      </a>
+
+    </div>
+  </div>
+
+
+  <script type="module" src="js/tour.js"></script>
+
+</body>
+</html>
