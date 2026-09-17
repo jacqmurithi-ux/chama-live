@@ -1711,6 +1711,45 @@ async function initializeTour() {
     }
 
 
+    /* =====================================================
+       COMPLETION CHECK
+       Previously completed users should not be forced
+       through the tour again.
+    ===================================================== */
+
+    try {
+
+      const tourCompleted =
+        localStorage.getItem(
+          TOUR_STORAGE_KEY
+        );
+
+      if (tourCompleted === "true") {
+
+        console.info(
+          "[TOUR-DIAG] TOUR ALREADY COMPLETED"
+        );
+
+        window.location.href =
+          DASHBOARD_URL;
+
+        return;
+      }
+
+    } catch (error) {
+
+      /*
+       * localStorage read failure should not prevent
+       * the user from entering the tour.
+       */
+
+      console.warn(
+        "CHAMA LIVE tour state could not be read:",
+        error
+      );
+    }
+
+
     stage =
       "TOUR BUILD";
 
