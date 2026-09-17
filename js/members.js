@@ -273,6 +273,7 @@ function findMember(memberId) {
   );
 }
 
+
 /* =========================================================
    NATIONAL ID UI
    Existing members may remain blank.
@@ -287,6 +288,7 @@ function ensureNationalIdUI() {
     Add National ID field dynamically so the existing
     members.html structure does not have to be changed.
   */
+
   if (
     form &&
     !byId("memberNationalId")
@@ -343,6 +345,7 @@ function ensureNationalIdUI() {
     Add National ID column to the existing
     Members table.
   */
+
   const table =
     document.querySelector(
       ".members-table"
@@ -390,6 +393,7 @@ function ensureNationalIdUI() {
   /*
     Add National ID to the member detail modal.
   */
+
   const modalGrid =
     document.querySelector(
       ".member-detail-grid"
@@ -1303,6 +1307,7 @@ function validateForm(values) {
     created before this requirement may
     remain blank until edited.
   */
+
   if (
     !values.nationalId &&
     !editingMemberId
@@ -1460,6 +1465,7 @@ async function saveMember(
           .from("members")
           .insert({
             ...payload,
+
             group_id:
               groupId,
 
@@ -1478,6 +1484,22 @@ async function saveMember(
       if (result.error) {
         throw result.error;
       }
+
+      /*
+       * NEW-MEMBER ONBOARDING EVENT
+       *
+       * The insert has succeeded at this point.
+       * Only now do we create the one-time signal
+       * consumed by getting-started.html.
+       *
+       * Editing an existing member does not set
+       * this signal.
+       */
+
+      sessionStorage.setItem(
+        "chama_live_getting_started_event",
+        "new-member"
+      );
 
       showFormMessage(
         values.email
