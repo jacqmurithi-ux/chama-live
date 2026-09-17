@@ -394,6 +394,25 @@ async function completeOnboarding(
 
 
   /* =====================================================
+     RECORD SUCCESSFUL NEW-GROUP EVENT
+  ====================================================== */
+
+  /*
+   * The group has now been positively verified as created.
+   *
+   * Getting Started reads this one-time signal and
+   * displays the onboarding popup.
+   *
+   * No redirect or database behavior is changed.
+   */
+
+  sessionStorage.setItem(
+    "chama_live_getting_started_event",
+    "new-group"
+  );
+
+
+  /* =====================================================
      CLEAN AUTH METADATA
   ====================================================== */
 
@@ -848,4 +867,3 @@ init();
 </body>
 
 </html>
-
