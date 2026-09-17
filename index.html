@@ -134,8 +134,8 @@
     .pricing-offer {
       max-width: 760px;
       margin: 26px auto 0;
-      padding: 18px 22px;
-      border: 1px solid rgba(15,118,110,.20);
+      padding: 19px 22px;
+      border: 2px solid rgba(15,118,110,.20);
       border-radius: 18px;
       background:
         linear-gradient(
@@ -144,6 +144,7 @@
           #f0fdfa 100%
         );
       text-align: center;
+      box-shadow: 0 10px 28px rgba(15,118,110,.07);
     }
 
     .pricing-offer strong {
@@ -297,18 +298,27 @@
 
     .pricing-promo {
       margin-bottom: 20px;
-      padding: 11px 13px;
+      padding: 12px 13px;
       border-radius: 12px;
       background: #f0fdfa;
       border: 1px solid rgba(15,118,110,.12);
       color: #0f766e;
       font-size: 13px;
-      line-height: 1.5;
+      line-height: 1.6;
       font-weight: 700;
     }
 
     .pricing-promo strong {
       color: #0f766e;
+    }
+
+    .pricing-promo .promo-free {
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .pricing-promo .promo-discount {
+      font-weight: 800;
     }
 
     .pricing-features {
@@ -344,28 +354,83 @@
       text-align: center;
       color: #64748b;
       font-size: 13px;
-      line-height: 1.6;
+      line-height: 1.7;
     }
 
 
     /* =====================================================
        MEMBER PORTAL CHARGES
+       HIGH-VISIBILITY VERSION
     ====================================================== */
 
     .member-charge-note {
-      margin-top: 18px;
-      padding: 15px 17px;
-      border-radius: 14px;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      color: #475569;
-      font-size: 13px;
-      line-height: 1.6;
-      text-align: left;
+      margin-top: 28px;
+      padding: 24px 24px;
+      border-radius: 18px;
+      background:
+        linear-gradient(
+          135deg,
+          #ecfdf5 0%,
+          #f0fdfa 100%
+        );
+      border: 2px solid #0f766e;
+      color: #334155;
+      font-size: 14px;
+      line-height: 1.65;
+      text-align: center;
+      box-shadow: 0 12px 32px rgba(15,118,110,.10);
     }
 
+    .member-charge-badge {
+      display: inline-block;
+      margin-bottom: 10px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: #0f766e;
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .member-charge-note h3 {
+      margin: 0 0 8px;
+      color: #0f766e;
+      font-size: 25px;
+      line-height: 1.2;
+      font-weight: 900;
+    }
+
+    .member-charge-note p {
+      max-width: 720px;
+      margin: 0 auto 12px;
+      color: #334155;
+      line-height: 1.7;
+    }
+
+    .member-charge-note p strong,
     .member-charge-note strong {
+      color: #0f766e;
+    }
+
+    .member-charge-billing {
+      max-width: 620px;
+      margin: 14px auto 12px;
+      padding: 12px 15px;
+      border-radius: 12px;
+      background: #ffffff;
+      border: 1px solid rgba(15,118,110,.15);
       color: #0f172a;
+      font-weight: 800;
+    }
+
+    .member-charge-note small {
+      display: block;
+      color: #64748b;
+      font-size: 12px;
+      line-height: 1.55;
+      font-weight: 700;
     }
 
 
@@ -511,6 +576,14 @@
 
       .pricing-offer {
         padding: 16px;
+      }
+
+      .member-charge-note {
+        padding: 21px 17px;
+      }
+
+      .member-charge-note h3 {
+        font-size: 22px;
       }
 
     }
@@ -1537,7 +1610,7 @@
           <div class="pricing-offer">
 
             <span class="pricing-offer-badge">
-              LIMITED INTRODUCTORY OFFER
+              NEW GROUP LAUNCH OFFER
             </span>
 
             <strong>
@@ -1559,14 +1632,14 @@
             <button
               type="button"
               class="active"
-              data-plan-view="monthly"
+              data-pricing-period="monthly"
             >
               Monthly
             </button>
 
             <button
               type="button"
-              data-plan-view="yearly"
+              data-pricing-period="yearly"
             >
               Yearly
             </button>
@@ -1609,34 +1682,33 @@
                 KSh 500
               </strong>
 
-              <span>
+              <span data-price-period>
                 / month
               </span>
 
             </div>
 
 
-            <div class="pricing-original-price">
-
-              Standard price:
-              <s>KSh 500/month</s>
-
+            <div
+              class="pricing-original-price"
+              data-standard-price
+            >
+              Standard monthly price:
+              <s>KSh 500</s>
             </div>
 
 
             <div class="pricing-promo">
 
-              <strong>
+              <span class="promo-free">
                 Month 1: FREE
-              </strong>
+              </span>
 
               <br>
 
-              Months 2–5:
-              <strong>
-                KSh 350/month
-              </strong>
-              — 30% OFF
+              <span class="promo-discount">
+                Months 2–5: KSh 350/month — 30% OFF
+              </span>
 
             </div>
 
@@ -1710,34 +1782,33 @@
                 KSh 1,000
               </strong>
 
-              <span>
+              <span data-price-period>
                 / month
               </span>
 
             </div>
 
 
-            <div class="pricing-original-price">
-
-              Standard price:
-              <s>KSh 1,000/month</s>
-
+            <div
+              class="pricing-original-price"
+              data-standard-price
+            >
+              Standard monthly price:
+              <s>KSh 1,000</s>
             </div>
 
 
             <div class="pricing-promo">
 
-              <strong>
+              <span class="promo-free">
                 Month 1: FREE
-              </strong>
+              </span>
 
               <br>
 
-              Months 2–5:
-              <strong>
-                KSh 700/month
-              </strong>
-              — 30% OFF
+              <span class="promo-discount">
+                Months 2–5: KSh 700/month — 30% OFF
+              </span>
 
             </div>
 
@@ -1807,18 +1878,25 @@
             </div>
 
 
+            <div
+              class="pricing-original-price"
+              data-standard-price
+            >
+              Custom organization pricing
+            </div>
+
+
             <div class="pricing-promo">
 
-              <strong>
+              <span class="promo-free">
                 Month 1: FREE
-              </strong>
+              </span>
 
               <br>
 
-              Next 4 months:
-              <strong>
-                30% OFF
-              </strong>
+              <span class="promo-discount">
+                Next 4 months: 30% OFF
+              </span>
 
               <br>
 
@@ -1863,37 +1941,59 @@
 
 
         <!-- =================================================
-             MEMBER CHARGES CLARIFICATION
+             MEMBER CHARGE — VERY PROMINENT
         ================================================== -->
 
         <div class="member-charge-note">
 
-          <strong>
-            Member portal charges:
-          </strong>
+          <span class="member-charge-badge">
+            MEMBERS PORTAL ACCESS
+          </span>
 
-          Member-related charges apply only to members who
-          have an <strong>active CHAMA LIVE login</strong> and
-          access the group's <strong>members portal</strong>.
-          Members who are recorded in the group but do not
-          have an active portal login are not charged for
-          member portal access.
+          <h3>
+            KSh 20 per active member / month
+          </h3>
+
+          <p>
+            Each group member with an
+            <strong>active CHAMA LIVE Members Portal login</strong>
+            is charged
+            <strong>KSh 20 per month</strong>.
+          </p>
+
+          <div class="member-charge-billing">
+            The KSh 20 monthly member charge is
+            <strong>billed to the group account</strong>.
+          </div>
+
+          <small>
+            Being listed in the group's member register does not
+            create this charge. The member must have an active
+            Members Portal login. Members without an active login
+            are not charged for Members Portal access.
+          </small>
 
         </div>
 
 
         <p class="pricing-note">
 
-          Plans are designed around the group account.
-          Group administrators and active portal members
-          use secure sign-in to access CHAMA LIVE.
+          <strong>
+            Launch offer:
+          </strong>
+
+          First month FREE, followed by 30% OFF for the next
+          four months across all plan categories.
 
           <br>
 
-          The introductory offer is:
           <strong>
-            first month FREE + the next 4 months at 30% OFF.
+            Member Portal:
           </strong>
+
+          KSh 20 per month applies only to each member with
+          an active Members Portal login, and the charge is
+          billed to the group account.
 
         </p>
 
@@ -1971,13 +2071,20 @@
             </div>
 
             <h3>
-              Members
+              Members Portal
             </h3>
 
             <p>
               Already a member of a CHAMA LIVE group?
-              Sign in to access your members portal and
-              stay connected with your group's records.
+              Sign in with your active login to access your
+              group's Members Portal.
+            </p>
+
+            <p>
+              <strong>
+                KSh 20 per active member per month,
+                billed to the group account.
+              </strong>
             </p>
 
             <a
@@ -1994,14 +2101,32 @@
 
         <div class="member-charge-note">
 
-          <strong>
-            Active member login only:
-          </strong>
+          <span class="member-charge-badge">
+            ACTIVE LOGIN REQUIRED
+          </span>
 
-          Member portal charges apply only when a member
-          has an active login and can access the group's
-          members portal. Being listed in a group's member
-          register alone does not create a portal charge.
+          <h3>
+            Member charge applies only when portal access is active
+          </h3>
+
+          <p>
+            A member must have an
+            <strong>active CHAMA LIVE login</strong>
+            to the group's Members Portal for the
+            <strong>KSh 20 monthly member charge</strong>
+            to apply.
+          </p>
+
+          <div class="member-charge-billing">
+            Member portal charges are
+            <strong>billed to the group account</strong>.
+          </div>
+
+          <small>
+            A member who is only recorded in the group's
+            membership register and does not have an active
+            Members Portal login is not charged for portal access.
+          </small>
 
         </div>
 
@@ -2943,7 +3068,7 @@
 
       const pricingButtons =
         document.querySelectorAll(
-          "[data-plan-view]"
+          "[data-pricing-period]"
         );
 
 
@@ -2960,8 +3085,8 @@
             "click",
             () => {
 
-              const view =
-                button.dataset.planView;
+              const period =
+                button.dataset.pricingPeriod;
 
 
               pricingButtons.forEach(
@@ -2980,7 +3105,7 @@
                 amount => {
 
                   const value =
-                    amount.dataset[view];
+                    amount.dataset[period];
 
 
                   if (!value) {
@@ -3003,18 +3128,31 @@
 
               document
                 .querySelectorAll(
-                  ".pricing-price span"
+                  "[data-price-period]"
                 )
                 .forEach(
-                  period => {
+                  periodElement => {
 
-                    period.textContent =
-                      view === "yearly"
+                    periodElement.textContent =
+                      period === "yearly"
                         ? "/ year"
                         : "/ month";
 
                   }
                 );
+
+
+              /*
+               * The introductory offer remains a
+               * five-month offer:
+               *
+               * Month 1 = FREE
+               * Months 2–5 = 30% OFF
+               *
+               * The member portal charge remains
+               * KSh 20/month per active-login member
+               * and is billed to the group account.
+               */
 
             }
           );
