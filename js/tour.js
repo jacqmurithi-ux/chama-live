@@ -1709,7 +1709,7 @@ async function initializeTour() {
 
     showError(
       error?.message ||
-      "Please sign in again to continue."
+      "The tour could not verify your application context."
     );
   }
 }
