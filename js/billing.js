@@ -24,17 +24,10 @@
         ↓
    subscription_payments
 
-   Related authoritative records:
-   - subscription_invoice_lines
-   - subscription_payment_allocations
-   - subscription_credits
-
    Existing RPC intentionally used for subscription lookup:
    - get_group_subscription(uuid)
 
-   Existing write RPCs are NOT invoked by this read-only
-   page because no billing write action is currently exposed.
-
+   This page is read-only.
 ========================================================= */
 
 
@@ -66,12 +59,6 @@ let invoices = [];
 
 let payments = [];
 
-let invoiceLines = [];
-
-let paymentAllocations = [];
-
-let credits = [];
-
 
 /* =========================================================
    DOM
@@ -86,6 +73,12 @@ const statusEl =
 const errorEl =
   document.getElementById(
     "billingError"
+  );
+
+
+const billingSummaryGridEl =
+  document.getElementById(
+    "billingSummaryGrid"
   );
 
 
@@ -110,12 +103,6 @@ const invoiceContainerEl =
 const paymentContainerEl =
   document.getElementById(
     "paymentContainer"
-  );
-
-
-const billingMetaEl =
-  document.getElementById(
-    "billingMeta"
   );
 
 
@@ -273,7 +260,7 @@ async function loadApplicationContext() {
  *
  *     get_group_subscription(uuid)
  *
- * Returned fields:
+ * Returned fields include:
  *
  *     subscription_id
  *     group_id
@@ -342,10 +329,10 @@ async function loadSubscription() {
 ========================================================= */
 
 /*
- * These reads do NOT recreate billing logic.
+ * These reads retrieve records already created by
+ * the authoritative billing model.
  *
- * They retrieve records already created by the
- * authoritative billing model.
+ * No settlement logic is recreated here.
  *
  * RLS remains responsible for access control.
  */
@@ -490,70 +477,6 @@ async function loadInvoices() {
 
 
 /* ---------------------------------------------------------
-   INVOICE LINES
---------------------------------------------------------- */
-
-async function loadInvoiceLines() {
-
-  if (
-    !invoices ||
-    invoices.length === 0
-  ) {
-
-    invoiceLines =
-      [];
-
-    return invoiceLines;
-
-  }
-
-
-  const invoiceIds =
-    invoices.map(
-      function (
-        invoice
-      ) {
-        return invoice.id;
-      }
-    );
-
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-
-      .from(
-        "subscription_invoice_lines"
-      )
-
-      .select(
-        "*"
-      )
-
-      .in(
-        "invoice_id",
-        invoiceIds
-      );
-
-
-  if (error) {
-    throw error;
-  }
-
-
-  invoiceLines =
-    data ||
-    [];
-
-
-  return invoiceLines;
-
-}
-
-
-/* ---------------------------------------------------------
    PAYMENTS
 --------------------------------------------------------- */
 
@@ -614,137 +537,7 @@ async function loadPayments() {
   return payments;
 
 }
-
-
-/* ---------------------------------------------------------
-   PAYMENT ALLOCATIONS
---------------------------------------------------------- */
-
-async function loadPaymentAllocations() {
-
-  if (
-    !payments ||
-    payments.length === 0
-  ) {
-
-    paymentAllocations =
-      [];
-
-    return paymentAllocations;
-
-  }
-
-
-  const paymentIds =
-    payments.map(
-      function (
-        payment
-      ) {
-        return payment.id;
-      }
-    );
-
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-
-      .from(
-        "subscription_payment_allocations"
-      )
-
-      .select(
-        "*"
-      )
-
-      .in(
-        "payment_id",
-        paymentIds
-      );
-
-
-  if (error) {
-    throw error;
-  }
-
-
-  paymentAllocations =
-    data ||
-    [];
-
-
-  return paymentAllocations;
-
-}
-
-
-/* ---------------------------------------------------------
-   CREDITS
---------------------------------------------------------- */
-
-async function loadCredits() {
-
-  if (
-    !payments ||
-    payments.length === 0
-  ) {
-
-    credits =
-      [];
-
-    return credits;
-
-  }
-
-
-  const paymentIds =
-    payments.map(
-      function (
-        payment
-      ) {
-        return payment.id;
-      }
-    );
-
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-
-      .from(
-        "subscription_credits"
-      )
-
-      .select(
-        "*"
-      )
-
-      .in(
-        "source_payment_id",
-        paymentIds
-      );
-
-
-  if (error) {
-    throw error;
-  }
-
-
-  credits =
-    data ||
-    [];
-
-
-  return credits;
-
-}
-
-
-/* =========================================================
+ /* =========================================================
    FORMATTING
 ========================================================= */
 
@@ -850,45 +643,6 @@ function formatDate(
 }
 
 
-function formatDateOnly(
-  value
-) {
-
-  if (!value) {
-    return "—";
-  }
-
-
-  const date =
-    new Date(
-      value
-    );
-
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-
-    return String(
-      value
-    );
-
-  }
-
-
-  return date.toLocaleDateString(
-    "en-KE",
-    {
-      dateStyle:
-        "medium"
-    }
-  );
-
-}
-
-
 function text(
   value,
   fallback = "—"
@@ -970,6 +724,159 @@ function createStatusBadge(
 
 
 /* =========================================================
+   BILLING OVERVIEW
+========================================================= */
+
+function renderBillingSummary() {
+
+  if (!billingSummaryGridEl) {
+    return;
+  }
+
+
+  billingSummaryGridEl.replaceChildren();
+
+
+  const currentInvoice =
+    invoices.length > 0
+      ? invoices[0]
+      : null;
+
+
+  const lastPayment =
+    payments.length > 0
+      ? payments[0]
+      : null;
+
+
+  const currentCycle =
+    cycles.length > 0
+      ? cycles[0]
+      : null;
+
+
+  const cards = [
+
+    [
+      "Plan",
+      text(
+        subscription?.pricing_tier_code
+      ),
+      text(
+        subscription?.status
+      )
+    ],
+
+
+    [
+      "Current Invoice",
+
+      currentInvoice
+        ? formatAmount(
+            currentInvoice.total_amount,
+            currentInvoice.currency
+          )
+        : "No invoice",
+
+      currentInvoice
+        ? text(
+            currentInvoice.status
+          )
+        : "—"
+    ],
+
+
+    [
+      "Due Date",
+
+      currentInvoice
+        ? formatDate(
+            currentInvoice.due_at
+          )
+        : "—",
+
+      currentCycle
+        ? `Cycle ${text(
+            currentCycle.cycle_number
+          )}`
+        : "—"
+    ],
+
+
+    [
+      "Last Payment",
+
+      lastPayment
+        ? formatAmount(
+            lastPayment.amount,
+            subscription?.currency
+          )
+        : "No payments",
+
+      lastPayment
+        ? formatDate(
+            lastPayment.paid_at
+          )
+        : "—"
+    ]
+
+  ];
+
+
+  cards.forEach(
+    function (
+      [
+        label,
+        value,
+        subvalue
+      ]
+    ) {
+
+      const card =
+        createElement(
+          "div",
+          "billing-card billing-summary-card"
+        );
+
+
+      card.appendChild(
+        createElement(
+          "span",
+          "billing-label",
+          label
+        )
+      );
+
+
+      card.appendChild(
+        createElement(
+          "span",
+          "billing-value",
+          value
+        )
+      );
+
+
+      card.appendChild(
+        createElement(
+          "span",
+          "billing-subvalue",
+          subvalue
+        )
+      );
+
+
+      billingSummaryGridEl.appendChild(
+        card
+      );
+
+    }
+  );
+
+}
+
+
+/* =========================================================
    SUBSCRIPTION RENDER
 ========================================================= */
 
@@ -985,16 +892,12 @@ function renderSubscription() {
 
   if (!subscription) {
 
-    const empty =
+    subscriptionGridEl.appendChild(
       createElement(
         "div",
         "billing-empty",
         "No subscription record is available for this group."
-      );
-
-
-    subscriptionGridEl.appendChild(
-      empty
+      )
     );
 
 
@@ -1010,21 +913,26 @@ function renderSubscription() {
       subscription.status
     ],
 
+
     [
       "Pricing tier",
       subscription.pricing_tier_code
     ],
 
+
     [
       "Group amount",
+
       formatAmount(
         subscription.standard_group_amount,
         subscription.currency
       )
     ],
 
+
     [
       "Member login",
+
       formatAmount(
         subscription.standard_member_login_amount,
         subscription.currency
@@ -1049,31 +957,23 @@ function renderSubscription() {
         );
 
 
-      const labelEl =
+      card.appendChild(
         createElement(
           "span",
           "billing-label",
           label
-        );
+        )
+      );
 
 
-      const valueEl =
+      card.appendChild(
         createElement(
           "span",
           "billing-value",
           text(
             value
           )
-        );
-
-
-      card.appendChild(
-        labelEl
-      );
-
-
-      card.appendChild(
-        valueEl
+        )
       );
 
 
@@ -1130,10 +1030,12 @@ function renderCycles() {
       currentCycle.cycle_number
     ],
 
+
     [
       "Status",
       currentCycle.status
     ],
+
 
     [
       "Starts",
@@ -1141,6 +1043,7 @@ function renderCycles() {
         currentCycle.starts_at
       )
     ],
+
 
     [
       "Ends",
@@ -1211,8 +1114,6 @@ function renderCycles() {
   );
 
 }
-
-
 /* =========================================================
    INVOICE RENDER
 ========================================================= */
@@ -1344,31 +1245,23 @@ function renderInvoices() {
         );
 
 
-      const invoiceNumber =
+      invoiceCell.appendChild(
         createElement(
           "strong",
           null,
           text(
             invoice.invoice_number
           )
-        );
-
-
-      invoiceCell.appendChild(
-        invoiceNumber
+        )
       );
 
 
-      const invoiceId =
+      invoiceCell.appendChild(
         createElement(
           "span",
-          "billing-subvalue billing-id",
+          "billing-subvalue",
           invoice.id
-        );
-
-
-      invoiceCell.appendChild(
-        invoiceId
+        )
       );
 
 
@@ -1428,7 +1321,7 @@ function renderInvoices() {
       );
 
 
-      const amountCell =
+      row.appendChild(
         createElement(
           "td",
           "amount",
@@ -1436,11 +1329,7 @@ function renderInvoices() {
             invoice.total_amount,
             invoice.currency
           )
-        );
-
-
-      row.appendChild(
-        amountCell
+        )
       );
 
 
@@ -1589,11 +1478,7 @@ function renderPayments() {
         createElement(
           "strong",
           null,
-          text(
-            payment.reference ||
-            payment.mpesa_reference ||
-            payment.id
-          )
+          payment.id
         )
       );
 
@@ -1601,8 +1486,9 @@ function renderPayments() {
       paymentCell.appendChild(
         createElement(
           "span",
-          "billing-subvalue billing-id",
-          payment.id
+          "billing-subvalue",
+          payment.provider_reference ||
+          "—"
         )
       );
 
@@ -1646,10 +1532,8 @@ function renderPayments() {
           "td",
           null,
           text(
-            payment.payment_method ||
-            payment.method
+            payment.payment_method
           )
-        )
       );
 
 
@@ -1699,93 +1583,7 @@ function renderPayments() {
   );
 
 }
-
-
-/* =========================================================
-   AUTHORITATIVE IDENTIFIERS
-========================================================= */
-
-function renderBillingMeta() {
-
-  if (!billingMetaEl) {
-    return;
-  }
-
-
-  billingMetaEl.replaceChildren();
-
-
-  const rows = [
-
-    [
-      "Group ID",
-      currentGroup?.id
-    ],
-
-    [
-      "Subscription ID",
-      subscription?.subscription_id
-    ],
-
-    [
-      "Member context",
-      currentMember?.id
-    ],
-
-    [
-      "Authenticated user",
-      currentUser?.id
-    ]
-
-  ];
-
-
-  rows.forEach(
-    function (
-      [
-        label,
-        value
-      ]
-    ) {
-
-      const row =
-        createElement(
-          "div",
-          "billing-meta-row"
-        );
-
-
-      row.appendChild(
-        createElement(
-          "span",
-          "billing-label",
-          label
-        )
-      );
-
-
-      row.appendChild(
-        createElement(
-          "span",
-          "billing-value billing-id",
-          text(
-            value
-          )
-        )
-      );
-
-
-      billingMetaEl.appendChild(
-        row
-      );
-
-    }
-  );
-
-}
-
-
-/* =========================================================
+ /* =========================================================
    LOAD ALL BILLING STATE
 ========================================================= */
 
@@ -1823,6 +1621,8 @@ async function loadBilling() {
 
   if (!subscription) {
 
+    renderBillingSummary();
+
     renderSubscription();
 
     renderCycles();
@@ -1830,8 +1630,6 @@ async function loadBilling() {
     renderInvoices();
 
     renderPayments();
-
-    renderBillingMeta();
 
     showStatus(
       "No subscription record is currently available for this group."
@@ -1845,45 +1643,27 @@ async function loadBilling() {
   /*
    * Step 3:
    * Read existing authoritative records.
+   *
+   * Only records actually displayed by this page
+   * are loaded.
    */
 
   await Promise.all([
     loadCycles(),
-    loadInvoices()
-  ]);
-
-
-  /*
-   * Step 4:
-   * Read related existing records.
-   *
-   * These are display data only.
-   */
-
-  await Promise.all([
-    loadInvoiceLines(),
+    loadInvoices(),
     loadPayments()
   ]);
 
 
   /*
-   * Step 5:
-   * Read allocation/credit state.
+   * Step 4:
+   * Render the customer-facing billing view.
    *
-   * No settlement calculation is performed here.
+   * No settlement calculation is performed.
+   * No allocation or credit state is recreated.
    */
 
-  await Promise.all([
-    loadPaymentAllocations(),
-    loadCredits()
-  ]);
-
-
-  /*
-   * Step 6:
-   * Render exactly what the authoritative
-   * database state provides.
-   */
+  renderBillingSummary();
 
   renderSubscription();
 
@@ -1892,8 +1672,6 @@ async function loadBilling() {
   renderInvoices();
 
   renderPayments();
-
-  renderBillingMeta();
 
 
   showStatus(
@@ -1941,3 +1719,4 @@ async function initBilling() {
 ========================================================= */
 
 initBilling();
+
