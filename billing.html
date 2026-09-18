@@ -19,6 +19,197 @@
     href="css/style.css"
   >
 
+  <style>
+    /* Billing page layout */
+
+    .billing-section {
+      margin-top: 1.5rem;
+    }
+
+    .billing-section-heading {
+      margin-bottom: 0.75rem;
+    }
+
+    .billing-section-heading h2 {
+      margin-bottom: 0.25rem;
+    }
+
+    .billing-section-heading p {
+      margin: 0;
+      line-height: 1.45;
+    }
+
+    .billing-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+
+    .billing-card {
+      min-width: 0;
+      padding: 1rem;
+      border-radius: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .billing-card .billing-value {
+      display: block;
+      margin-top: 0.35rem;
+      font-size: 1.05rem;
+      line-height: 1.3;
+      font-weight: 600;
+    }
+
+    .billing-card .billing-subvalue {
+      display: block;
+      margin-top: 0.3rem;
+      font-size: 0.82rem;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    /* Prevent long invoice/payment content from breaking the page */
+
+    #invoiceContainer,
+    #paymentContainer {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    #invoiceContainer table,
+    #paymentContainer table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    #invoiceContainer th,
+    #invoiceContainer td,
+    #paymentContainer th,
+    #paymentContainer td {
+      padding: 0.75rem;
+      vertical-align: top;
+      text-align: left;
+    }
+
+    /* Tablet */
+
+    @media (max-width: 900px) {
+
+      .billing-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+    }
+
+    /* Mobile */
+
+    @media (max-width: 700px) {
+
+      .page-container {
+        padding-left: 0.9rem;
+        padding-right: 0.9rem;
+      }
+
+      .main-nav {
+        display: flex;
+        gap: 0.5rem;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 0.35rem;
+      }
+
+      .main-nav a {
+        flex: 0 0 auto;
+      }
+
+      .billing-hero {
+        margin-top: 0.75rem;
+        padding: 1rem;
+      }
+
+      .billing-hero h1 {
+        margin-bottom: 0.35rem;
+        font-size: 1.75rem;
+      }
+
+      .billing-hero p {
+        line-height: 1.45;
+      }
+
+      .billing-section {
+        margin-top: 1.25rem;
+      }
+
+      .billing-section-heading h2 {
+        font-size: 1.2rem;
+      }
+
+      .billing-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.6rem;
+      }
+
+      .billing-card {
+        padding: 0.8rem;
+        border-radius: 10px;
+      }
+
+      .billing-card .billing-value {
+        font-size: 0.98rem;
+      }
+
+      .billing-card .billing-subvalue {
+        font-size: 0.78rem;
+      }
+
+      /*
+        Invoice and payment tables become
+        horizontally scrollable on phones.
+      */
+
+      #invoiceContainer,
+      #paymentContainer {
+        overflow-x: auto;
+      }
+
+      #invoiceContainer table,
+      #paymentContainer table {
+        min-width: 650px;
+      }
+
+    }
+
+    /* Small phones */
+
+    @media (max-width: 430px) {
+
+      .billing-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .billing-hero {
+        padding: 0.9rem;
+      }
+
+      .billing-hero h1 {
+        font-size: 1.55rem;
+      }
+
+      .billing-section-heading h2 {
+        font-size: 1.1rem;
+      }
+
+      #invoiceContainer table,
+      #paymentContainer table {
+        min-width: 600px;
+      }
+
+    }
+
+  </style>
+
 </head>
 
 
@@ -119,7 +310,11 @@
       class="error-message"
       aria-live="assertive"
     ></div>
-        <section class="billing-section">
+
+
+    <!-- Billing Overview -->
+
+    <section class="billing-section">
 
       <div class="billing-section-heading">
 
@@ -143,6 +338,8 @@
     </section>
 
 
+    <!-- Subscription -->
+
     <section class="billing-section">
 
       <div class="billing-section-heading">
@@ -165,7 +362,11 @@
       ></div>
 
     </section>
-        <section class="billing-section">
+
+
+    <!-- Current Billing Cycle -->
+
+    <section class="billing-section">
 
       <div class="billing-section-heading">
 
@@ -187,7 +388,11 @@
       ></div>
 
     </section>
-        <section class="billing-section">
+
+
+    <!-- Invoices -->
+
+    <section class="billing-section">
 
       <div class="billing-section-heading">
 
@@ -210,6 +415,8 @@
     </section>
 
 
+    <!-- Payments -->
+
     <section class="billing-section">
 
       <div class="billing-section-heading">
@@ -231,7 +438,8 @@
       ></div>
 
     </section>
-      </main>
+
+  </main>
 
 
   <script
@@ -242,6 +450,3 @@
 </body>
 
 </html>
-    
-    
-    
