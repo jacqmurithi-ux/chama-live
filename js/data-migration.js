@@ -16,10 +16,6 @@
  *   - Closed financial periods are blocked.
  *   - No service-role key is used.
  *
- * Important transaction boundary:
- *   The browser processes target records individually.
- *   This is NOT a whole-batch PostgreSQL transaction.
- *
  * Recovery:
  *   - Stable contribution payment UUIDs.
  *   - Stable expense primary-key UUIDs.
@@ -27,8 +23,9 @@
  *   - Persistent batch state.
  *   - Duplicate/idempotency verification.
  *
- * This file performs real writes only after explicit
- * user confirmation.
+ * Important:
+ *   Browser processing is NOT one PostgreSQL transaction.
+ *   Recovery is therefore persisted-state/idempotency based.
  * ========================================================= */
 
 import {
@@ -57,105 +54,25 @@ const FORBIDDEN = new Set([
 
 const DEF = {
   contribution: [
-    [
-      "member_identifier",
-      "Member identifier",
-      "member_match",
-      true
-    ],
-    [
-      "amount",
-      "Amount",
-      "amount_parse",
-      true
-    ],
-    [
-      "contribution_date",
-      "Contribution date",
-      "date_parse",
-      true
-    ],
-    [
-      "payment_method",
-      "Payment method",
-      "direct",
-      true
-    ],
-    [
-      "contribution_type",
-      "Contribution type",
-      "direct",
-      false
-    ],
-    [
-      "reference",
-      "Reference",
-      "direct",
-      false
-    ],
-    [
-      "mpesa_reference",
-      "M-Pesa reference",
-      "direct",
-      false
-    ],
-    [
-      "goal",
-      "Goal",
-      "direct",
-      false
-    ],
-    [
-      "notes",
-      "Notes",
-      "direct",
-      false
-    ],
-    [
-      "month",
-      "Source month (cross-check only)",
-      "direct",
-      false
-    ]
+    ["member_identifier", "Member identifier", "member_match", true],
+    ["amount", "Amount", "amount_parse", true],
+    ["contribution_date", "Contribution date", "date_parse", true],
+    ["payment_method", "Payment method", "direct", true],
+    ["contribution_type", "Contribution type", "direct", false],
+    ["reference", "Reference", "direct", false],
+    ["mpesa_reference", "M-Pesa reference", "direct", false],
+    ["goal", "Goal", "direct", false],
+    ["notes", "Notes", "direct", false],
+    ["month", "Source month (cross-check only)", "direct", false]
   ],
 
   expense: [
-    [
-      "description",
-      "Description",
-      "direct",
-      true
-    ],
-    [
-      "amount",
-      "Amount",
-      "amount_parse",
-      true
-    ],
-    [
-      "date",
-      "Expense date",
-      "date_parse",
-      true
-    ],
-    [
-      "category",
-      "Category",
-      "direct",
-      false
-    ],
-    [
-      "approval_status",
-      "Approval status",
-      "direct",
-      false
-    ],
-    [
-      "receipt_url",
-      "Receipt/reference",
-      "direct",
-      false
-    ]
+    ["description", "Description", "direct", true],
+    ["amount", "Amount", "amount_parse", true],
+    ["date", "Expense date", "date_parse", true],
+    ["category", "Category", "direct", false],
+    ["approval_status", "Approval status", "direct", false],
+    ["receipt_url", "Receipt/reference", "direct", false]
   ]
 };
 
@@ -173,16 +90,15 @@ const state = {
   staged: [],
 
   batchId: null,
-
   mappings: {},
-
   results: [],
-
   imported: [],
 
   importStartedAt: null,
+  importing: false,
 
-  importing: false
+  recoveryBatches: [],
+  recoveryMode: false
 };
 
 const $ = (id) =>
@@ -199,19 +115,14 @@ const esc = (value) =>
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 
-function msg(
-  text,
-  kind = "info"
-) {
+function msg(text, kind = "info") {
   const element = $("message");
 
   if (!element) {
     return;
   }
 
-  element.className =
-    `notice ${kind}`;
-
+  element.className = `notice ${kind}`;
   element.textContent = text;
 }
 
@@ -229,19 +140,14 @@ function step(currentStep) {
     .querySelectorAll(".step")
     .forEach((element) => {
       const index =
-        order.indexOf(
-          element.dataset.step
-        );
+        order.indexOf(element.dataset.step);
 
       const currentIndex =
-        order.indexOf(
-          currentStep
-        );
+        order.indexOf(currentStep);
 
       element.classList.toggle(
         "active",
-        element.dataset.step ===
-          currentStep
+        element.dataset.step === currentStep
       );
 
       element.classList.toggle(
@@ -254,103 +160,76 @@ function step(currentStep) {
 }
 
 function moneySafe(value) {
-  if (
-    typeof money ===
-    "function"
-  ) {
+  if (typeof money === "function") {
     return money(value);
   }
 
-  return `KSh ${Number(
-    value || 0
-  ).toLocaleString("en-KE", {
-    maximumFractionDigits: 2
-  })}`;
+  return `KSh ${Number(value || 0).toLocaleString(
+    "en-KE",
+    {
+      maximumFractionDigits: 2
+    }
+  )}`;
 }
 
 function num(value) {
   if (
-    typeof value ===
-      "number" &&
+    typeof value === "number" &&
     Number.isFinite(value)
   ) {
     return value;
   }
 
-  const cleaned =
-    clean(value);
+  const cleaned = clean(value);
 
   if (!cleaned) {
     return null;
   }
 
-  const parsed =
-    Number(
-      cleaned.replace(
-        /[, ]/g,
-        ""
-      )
-    );
+  const parsed = Number(
+    cleaned.replace(/[, ]/g, "")
+  );
 
-  return Number.isFinite(
-    parsed
-  )
+  return Number.isFinite(parsed)
     ? parsed
     : null;
 }
 
 function validIso(value) {
   const dateValue =
-    new Date(
-      `${value}T00:00:00Z`
-    );
+    new Date(`${value}T00:00:00Z`);
 
   return (
-    !Number.isNaN(
-      dateValue.getTime()
-    ) &&
-    dateValue
-      .toISOString()
-      .slice(0, 10) ===
-      value
+    !Number.isNaN(dateValue.getTime()) &&
+    dateValue.toISOString().slice(0, 10) === value
   );
 }
 
 function date(value) {
   if (
     value instanceof Date &&
-    !Number.isNaN(
-      value.getTime()
-    )
+    !Number.isNaN(value.getTime())
   ) {
-    return value
-      .toISOString()
-      .slice(0, 10);
+    return value.toISOString().slice(0, 10);
   }
 
-  const stringValue =
-    clean(value);
+  const stringValue = clean(value);
 
   if (!stringValue) {
     return null;
   }
 
   if (
-    /^\d{4}-\d{2}-\d{2}$/.test(
-      stringValue
-    )
+    /^\d{4}-\d{2}-\d{2}$/.test(stringValue)
   ) {
-    return validIso(
-      stringValue
-    )
+    return validIso(stringValue)
       ? stringValue
       : null;
   }
 
-  const match =
-    stringValue.match(
-      /^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})$/
-    );
+  const match = stringValue.match(
+    /^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})$/
+  );
 
   if (!match) {
     return null;
@@ -358,14 +237,8 @@ function date(value) {
 
   const iso =
     `${match[3]}-` +
-    `${match[2].padStart(
-      2,
-      "0"
-    )}-` +
-    `${match[1].padStart(
-      2,
-      "0"
-    )}`;
+    `${match[2].padStart(2, "0")}-` +
+    `${match[1].padStart(2, "0")}`;
 
   return validIso(iso)
     ? iso
@@ -381,14 +254,8 @@ function month(value) {
 function normHeader(value) {
   return clean(value)
     .toLowerCase()
-    .replace(
-      /[^a-z0-9]+/g,
-      "_"
-    )
-    .replace(
-      /^_+|_+$/g,
-      ""
-    );
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
 }
 
 function csv(text) {
@@ -403,8 +270,7 @@ function csv(text) {
     i < text.length;
     i += 1
   ) {
-    const character =
-      text[i];
+    const character = text[i];
 
     if (quoted) {
       if (
@@ -416,9 +282,7 @@ function csv(text) {
         continue;
       }
 
-      if (
-        character === '"'
-      ) {
+      if (character === '"') {
         quoted = false;
         continue;
       }
@@ -427,24 +291,18 @@ function csv(text) {
       continue;
     }
 
-    if (
-      character === '"'
-    ) {
+    if (character === '"') {
       quoted = true;
       continue;
     }
 
-    if (
-      character === ","
-    ) {
+    if (character === ",") {
       row.push(field);
       field = "";
       continue;
     }
 
-    if (
-      character === "\n"
-    ) {
+    if (character === "\n") {
       row.push(field);
       output.push(row);
       row = [];
@@ -452,9 +310,7 @@ function csv(text) {
       continue;
     }
 
-    if (
-      character !== "\r"
-    ) {
+    if (character !== "\r") {
       field += character;
     }
   }
@@ -462,9 +318,7 @@ function csv(text) {
   row.push(field);
 
   if (
-    row.some(
-      (value) => clean(value)
-    )
+    row.some((value) => clean(value))
   ) {
     output.push(row);
   }
@@ -476,21 +330,13 @@ async function readFile(file) {
   const fileName =
     file.name.toLowerCase();
 
-  if (
-    fileName.endsWith(".csv")
-  ) {
-    return csv(
-      await file.text()
-    );
+  if (fileName.endsWith(".csv")) {
+    return csv(await file.text());
   }
 
-  if (
-    fileName.endsWith(".xlsx")
-  ) {
+  if (fileName.endsWith(".xlsx")) {
     const XLSX =
-      await import(
-        XLSX_URL
-      );
+      await import(XLSX_URL);
 
     const workbook =
       XLSX.read(
@@ -511,9 +357,7 @@ async function readFile(file) {
     }
 
     return XLSX.utils.sheet_to_json(
-      workbook.Sheets[
-        sheetName
-      ],
+      workbook.Sheets[sheetName],
       {
         header: 1,
         defval: ""
@@ -528,9 +372,7 @@ async function readFile(file) {
 
 function matrixRows(matrix) {
   if (!matrix.length) {
-    throw new Error(
-      "File is empty."
-    );
+    throw new Error("File is empty.");
   }
 
   const headers =
@@ -541,17 +383,12 @@ function matrixRows(matrix) {
     );
 
   const normalizedHeaders =
-    headers.map(
-      (header) =>
-        normHeader(header)
-    );
+    headers.map(normHeader);
 
   const duplicates =
     normalizedHeaders.filter(
       (header, index) =>
-        normalizedHeaders.indexOf(
-          header
-        ) !== index
+        normalizedHeaders.indexOf(header) !== index
     );
 
   if (duplicates.length) {
@@ -566,10 +403,7 @@ function matrixRows(matrix) {
       .map((array) =>
         Object.fromEntries(
           headers.map(
-            (
-              header,
-              index
-            ) => [
+            (header, index) => [
               header,
               array[index] ?? ""
             ]
@@ -577,11 +411,8 @@ function matrixRows(matrix) {
         )
       )
       .filter((row) =>
-        Object.values(
-          row
-        ).some(
-          (value) =>
-            clean(value)
+        Object.values(row).some(
+          (value) => clean(value)
         )
       );
 
@@ -704,22 +535,17 @@ function autoMap() {
   };
 
   for (
-    const [field] of
-      DEF[state.entity]
+    const [field] of DEF[state.entity]
   ) {
     const alias =
       aliases[field]?.find(
         (candidate) =>
-          headerMap.has(
-            candidate
-          )
+          headerMap.has(candidate)
       );
 
     if (alias) {
       state.mappings[field] =
-        headerMap.get(
-          alias
-        );
+        headerMap.get(alias);
     }
   }
 }
@@ -746,9 +572,7 @@ async function createBatch() {
     data,
     error
   } = await supabase
-    .from(
-      "data_import_batches"
-    )
+    .from("data_import_batches")
     .insert({
       group_id:
         state.groupId,
@@ -787,10 +611,7 @@ async function createBatch() {
 async function stage() {
   const payload =
     state.rows.map(
-      (
-        raw,
-        index
-      ) => ({
+      (raw, index) => ({
         batch_id:
           state.batchId,
 
@@ -815,9 +636,7 @@ async function stage() {
     data,
     error
   } = await supabase
-    .from(
-      "data_import_rows"
-    )
+    .from("data_import_rows")
     .insert(payload)
     .select(
       "id,source_row_number,raw_data,status"
@@ -853,9 +672,7 @@ async function saveMaps() {
       continue;
     }
 
-    if (
-      FORBIDDEN.has(field)
-    ) {
+    if (FORBIDDEN.has(field)) {
       throw new Error(
         `Forbidden mapping: ${field}`
       );
@@ -874,9 +691,7 @@ async function saveMaps() {
     const {
       error
     } = await supabase
-      .from(
-        "data_import_mappings"
-      )
+      .from("data_import_mappings")
       .upsert(
         {
           batch_id:
@@ -903,10 +718,7 @@ async function saveMaps() {
   }
 }
 
-function val(
-  raw,
-  field
-) {
+function val(raw, field) {
   const source =
     state.mappings[field];
 
@@ -915,9 +727,7 @@ function val(
     : undefined;
 }
 
-async function members(
-  identifier
-) {
+async function members(identifier) {
   const value =
     clean(identifier);
 
@@ -949,28 +759,21 @@ async function members(
           state.groupId
         );
 
-    if (
+    query =
       column === "name"
-    ) {
-      query =
-        query.ilike(
-          column,
-          value
-        );
-    } else {
-      query =
-        query.eq(
-          column,
-          value
-        );
-    }
+        ? query.ilike(
+            column,
+            value
+          )
+        : query.eq(
+            column,
+            value
+          );
 
     const {
       data,
       error
-    } = await query.limit(
-      10
-    );
+    } = await query.limit(10);
 
     if (error) {
       throw error;
@@ -993,9 +796,13 @@ async function members(
   ];
 }
 
-async function goal(
-  value
-) {
+/*
+ * IMPORTANT:
+ *
+ * contribution_goals uses goal_name.
+ * There is no "name" column in the reconciled schema.
+ */
+async function goal(value) {
   const searchValue =
     clean(value);
 
@@ -1010,18 +817,16 @@ async function goal(
     data,
     error
   } = await supabase
-    .from(
-      "contribution_goals"
-    )
+    .from("contribution_goals")
     .select(
-      "id,name"
+      "id,goal_name"
     )
     .eq(
       "group_id",
       state.groupId
     )
     .ilike(
-      "name",
+      "goal_name",
       searchValue
     )
     .limit(10);
@@ -1038,9 +843,7 @@ async function goal(
     };
   }
 
-  if (
-    data.length > 1
-  ) {
+  if (data.length > 1) {
     return {
       goalId: null,
       error:
@@ -1055,9 +858,7 @@ async function goal(
   };
 }
 
-async function period(
-  monthValue
-) {
+async function period(monthValue) {
   if (!monthValue) {
     return null;
   }
@@ -1066,9 +867,7 @@ async function period(
     data,
     error
   } = await supabase
-    .from(
-      "financial_periods"
-    )
+    .from("financial_periods")
     .select(
       "id,group_id,month,status"
     )
@@ -1085,15 +884,11 @@ async function period(
     throw error;
   }
 
-  if (
-    !data?.length
-  ) {
+  if (!data?.length) {
     return null;
   }
 
-  if (
-    data.length !== 1
-  ) {
+  if (data.length !== 1) {
     throw new Error(
       `Financial period configuration for ${monthValue} is ambiguous. Import is blocked.`
     );
@@ -1101,10 +896,7 @@ async function period(
 
   return data[0];
 }
-
-async function validateContribution(
-  raw
-) {
+async function validateContribution(raw) {
   const errors = [];
   const warnings = [];
 
@@ -1152,8 +944,7 @@ async function validateContribution(
         raw,
         "contribution_type"
       )
-    ) ||
-    "monthly";
+    ) || "monthly";
 
   const reference =
     clean(
@@ -1161,8 +952,7 @@ async function validateContribution(
         raw,
         "reference"
       )
-    ) ||
-    null;
+    ) || null;
 
   const mpesaReference =
     clean(
@@ -1170,8 +960,7 @@ async function validateContribution(
         raw,
         "mpesa_reference"
       )
-    ) ||
-    null;
+    ) || null;
 
   const notes =
     clean(
@@ -1179,12 +968,9 @@ async function validateContribution(
         raw,
         "notes"
       )
-    ) ||
-    null;
+    ) || null;
 
-  if (
-    !clean(memberIdentifier)
-  ) {
+  if (!clean(memberIdentifier)) {
     errors.push(
       "Member identifier is required."
     );
@@ -1210,9 +996,7 @@ async function validateContribution(
       "M-Pesa",
       "Cash",
       "Bank transfer"
-    ].includes(
-      paymentMethod
-    )
+    ].includes(paymentMethod)
   ) {
     errors.push(
       "Payment method must be M-Pesa, Cash, or Bank transfer."
@@ -1232,9 +1016,7 @@ async function validateContribution(
     sourceMonth &&
     contributionDate &&
     sourceMonth !==
-      month(
-        contributionDate
-      )
+      month(contributionDate)
   ) {
     errors.push(
       "Source month does not agree with contribution date."
@@ -1252,8 +1034,7 @@ async function validateContribution(
   }
 
   if (
-    paymentMethod ===
-      "M-Pesa" &&
+    paymentMethod === "M-Pesa" &&
     reference &&
     mpesaReference &&
     reference !==
@@ -1269,17 +1050,13 @@ async function validateContribution(
       memberIdentifier
     );
 
-  if (
-    !memberMatches.length
-  ) {
+  if (!memberMatches.length) {
     errors.push(
       "Member not found in current group."
     );
   }
 
-  if (
-    memberMatches.length > 1
-  ) {
+  if (memberMatches.length > 1) {
     errors.push(
       "Multiple member matches; import is blocked."
     );
@@ -1305,9 +1082,7 @@ async function validateContribution(
         )
       );
 
-    if (
-      goalResult.error
-    ) {
+    if (goalResult.error) {
       errors.push(
         goalResult.error
       );
@@ -1329,9 +1104,7 @@ async function validateContribution(
           monthValue
         );
 
-      if (
-        !financialPeriod
-      ) {
+      if (!financialPeriod) {
         errors.push(
           `No financial period exists for ${monthValue}; importer will not create one.`
         );
@@ -1411,9 +1184,7 @@ async function validateContribution(
   };
 }
 
-async function validateExpense(
-  raw
-) {
+async function validateExpense(raw) {
   const errors = [];
   const warnings = [];
 
@@ -1447,8 +1218,7 @@ async function validateExpense(
         raw,
         "category"
       )
-    ) ||
-    "other";
+    ) || "other";
 
   const approvalStatus =
     clean(
@@ -1456,8 +1226,7 @@ async function validateExpense(
         raw,
         "approval_status"
       )
-    ) ||
-    "pending";
+    ) || "pending";
 
   const receiptUrl =
     clean(
@@ -1465,8 +1234,7 @@ async function validateExpense(
         raw,
         "receipt_url"
       )
-    ) ||
-    null;
+    ) || null;
 
   if (!description) {
     errors.push(
@@ -1499,9 +1267,7 @@ async function validateExpense(
       "bank_charges",
       "admin",
       "other"
-    ].includes(
-      category
-    )
+    ].includes(category)
   ) {
     errors.push(
       "Invalid expense category."
@@ -1524,9 +1290,7 @@ async function validateExpense(
 
   if (expenseDate) {
     const monthValue =
-      month(
-        expenseDate
-      );
+      month(expenseDate);
 
     try {
       const financialPeriod =
@@ -1534,9 +1298,7 @@ async function validateExpense(
           monthValue
         );
 
-      if (
-        !financialPeriod
-      ) {
+      if (!financialPeriod) {
         errors.push(
           `No financial period exists for ${monthValue}; importer will not create one.`
         );
@@ -1575,6 +1337,7 @@ async function validateExpense(
         approvalStatus,
       receipt_url:
         receiptUrl,
+
       __idempotency_key:
         crypto.randomUUID()
     },
@@ -1584,9 +1347,7 @@ async function validateExpense(
   };
 }
 
-function duplicateKey(
-  normalized
-) {
+function duplicateKey(normalized) {
   if (
     state.entity ===
     "contribution"
@@ -1596,10 +1357,8 @@ function duplicateKey(
       normalized.amount,
       normalized.contribution_date,
       normalized.payment_method,
-      normalized.reference ||
-        "",
-      normalized.mpesa_reference ||
-        ""
+      normalized.reference || "",
+      normalized.mpesa_reference || ""
     ]
       .join("|")
       .toLowerCase();
@@ -1666,9 +1425,7 @@ async function validate() {
           result.normalized
         );
 
-      if (
-        seen.has(key)
-      ) {
+      if (seen.has(key)) {
         result.errors.push(
           "Duplicate row inside upload."
         );
@@ -1676,6 +1433,10 @@ async function validate() {
         seen.add(key);
       }
 
+      /*
+       * Preserve one stable idempotency key for
+       * the complete lifetime of this import row.
+       */
       result.normalized
         .__idempotency_key =
         result.normalized
@@ -1731,9 +1492,8 @@ async function validate() {
           [
             ...result.errors,
             ...result.warnings
-          ].join(
-            " | "
-          ) || null
+          ].join(" | ") ||
+          null
       })
       .eq(
         "id",
@@ -1835,9 +1595,7 @@ async function validate() {
 
   render();
 
-  step(
-    "preview"
-  );
+  step("preview");
 
   msg(
     errors
@@ -1849,6 +1607,533 @@ async function validate() {
   );
 }
 
+/* =========================================================
+ * RECOVERY
+ * ========================================================= */
+
+async function loadRecoverableBatches() {
+  const {
+    data,
+    error
+  } = await supabase
+    .from(
+      "data_import_batches"
+    )
+    .select(
+      "id,group_id,source_name,source_type,status,started_at,completed_at,created_by,summary"
+    )
+    .eq(
+      "group_id",
+      state.groupId
+    )
+    .in(
+      "status",
+      [
+        "ready",
+        "importing",
+        "failed"
+      ]
+    )
+    .order(
+      "started_at",
+      {
+        ascending: false,
+        nullsFirst: false
+      }
+    )
+    .limit(25);
+
+  if (error) {
+    throw error;
+  }
+
+  state.recoveryBatches =
+    data || [];
+
+  renderRecoveryBatches();
+}
+
+function renderRecoveryBatches() {
+  const list =
+    $("recoveryList");
+
+  const info =
+    $("recoveryInfo");
+
+  const recover =
+    $("recoverBatch");
+
+  if (!list) {
+    return;
+  }
+
+  if (
+    !state.recoveryBatches.length
+  ) {
+    list.innerHTML = "";
+
+    if (info) {
+      info.className =
+        "notice info";
+
+      info.textContent =
+        "No recoverable migration batches were found for this group.";
+    }
+
+    if (recover) {
+      recover.disabled =
+        true;
+    }
+
+    return;
+  }
+
+  if (info) {
+    info.className =
+      "notice info";
+
+    info.textContent =
+      "Select a previously staged or interrupted batch to recover its persisted state.";
+  }
+
+  list.innerHTML =
+    state.recoveryBatches
+      .map(
+        (batch) => {
+          const summary =
+            batch.summary || {};
+
+          const entity =
+            summary.entity_type ||
+            "unknown";
+
+          const rows =
+            summary.total_rows ||
+            summary.row_count ||
+            "—";
+
+          const label =
+            batch.source_name ||
+            "Unnamed import";
+
+          return `
+            <label
+              class="recovery-item"
+              style="cursor:pointer"
+            >
+              <div class="recovery-meta">
+                <div class="recovery-title">
+                  ${esc(label)}
+                </div>
+
+                <div class="recovery-details">
+                  Status:
+                  <strong>${esc(
+                    batch.status
+                  )}</strong>
+                  · Entity:
+                  <strong>${esc(
+                    entity
+                  )}</strong>
+                  · Rows:
+                  <strong>${esc(
+                    rows
+                  )}</strong>
+                  · Batch:
+                  <span class="mono">
+                    ${esc(
+                      batch.id
+                    )}
+                  </span>
+                </div>
+              </div>
+
+              <input
+                type="radio"
+                name="recoveryBatch"
+                value="${esc(
+                  batch.id
+                )}"
+                style="width:auto"
+              >
+            </label>
+          `;
+        }
+      )
+      .join("");
+
+  list
+    .querySelectorAll(
+      'input[name="recoveryBatch"]'
+    )
+    .forEach(
+      (input) => {
+        input.addEventListener(
+          "change",
+          () => {
+            if (recover) {
+              recover.disabled =
+                !input.checked;
+            }
+          }
+        );
+      }
+    );
+
+  if (recover) {
+    recover.disabled =
+      true;
+  }
+}
+
+function selectedRecoveryBatchId() {
+  return document.querySelector(
+    'input[name="recoveryBatch"]:checked'
+  )?.value || null;
+}
+
+async function loadRecoveryMappings(batchId) {
+  const {
+    data,
+    error
+  } = await supabase
+    .from(
+      "data_import_mappings"
+    )
+    .select(
+      "source_column,target_field,mapping_type"
+    )
+    .eq(
+      "batch_id",
+      batchId
+    );
+
+  if (error) {
+    throw error;
+  }
+
+  const mappings = {};
+
+  for (
+    const mapping of
+      data || []
+  ) {
+    if (
+      mapping.target_field &&
+      mapping.source_column
+    ) {
+      mappings[
+        mapping.target_field
+      ] =
+        mapping.source_column;
+    }
+  }
+
+  return mappings;
+}
+
+async function recoverBatch(batchId) {
+  if (!batchId) {
+    throw new Error(
+      "Select a recoverable batch first."
+    );
+  }
+
+  if (state.importing) {
+    throw new Error(
+      "An import is already running."
+    );
+  }
+
+  const batch =
+    state.recoveryBatches.find(
+      (item) =>
+        String(item.id) ===
+        String(batchId)
+    );
+
+  if (!batch) {
+    throw new Error(
+      "Selected recovery batch is no longer available."
+    );
+  }
+
+  const summary =
+    batch.summary || {};
+
+  const entity =
+    summary.entity_type;
+
+  if (
+    ![
+      "contribution",
+      "expense"
+    ].includes(entity)
+  ) {
+    throw new Error(
+      "The selected batch has no recognized migration entity type."
+    );
+  }
+
+  const {
+    data: rows,
+    error
+  } = await supabase
+    .from(
+      "data_import_rows"
+    )
+    .select(
+      "id,source_sheet,source_row_number,entity_type,raw_data,status,normalized_data,error_message,target_id"
+    )
+    .eq(
+      "batch_id",
+      batchId
+    )
+    .order(
+      "source_row_number",
+      {
+        ascending: true
+      }
+    );
+
+  if (error) {
+    throw error;
+  }
+
+  if (!rows?.length) {
+    throw new Error(
+      "The selected batch has no persisted import rows."
+    );
+  }
+
+  const unsafeRows =
+    rows.filter(
+      (row) =>
+        row.status !==
+          "imported" &&
+        (
+          !row.normalized_data ||
+          typeof row.normalized_data !==
+            "object" ||
+          row.status ===
+            "error"
+        )
+    );
+
+  if (unsafeRows.length) {
+    throw new Error(
+      `${unsafeRows.length} row(s) do not contain safe persisted normalized data. This batch must be validated again rather than automatically resumed.`
+    );
+  }
+
+  const mappings =
+    await loadRecoveryMappings(
+      batchId
+    );
+
+  state.recoveryMode =
+    true;
+
+  state.batchId =
+    batchId;
+
+  state.entity =
+    entity;
+
+  state.fileName =
+    batch.source_name || "";
+
+  state.sourceType =
+    batch.source_type || "";
+
+  state.mappings =
+    mappings;
+
+  state.staged =
+    rows.map(
+      (row) => ({
+        id:
+          row.id,
+
+        source_row_number:
+          row.source_row_number,
+
+        raw_data:
+          row.raw_data,
+
+        status:
+          row.status
+      })
+    );
+
+  state.rows =
+    rows.map(
+      (row) =>
+        row.raw_data
+    );
+
+  state.headers =
+    rows[0]?.raw_data
+      ? Object.keys(
+          rows[0].raw_data
+        )
+      : [];
+
+  state.results =
+    rows.map(
+      (row) => {
+        const normalized =
+          row.normalized_data ||
+          {};
+
+        const imported =
+          row.status ===
+          "imported";
+
+        const warnings =
+          row.error_message &&
+          !imported
+            ? [row.error_message]
+            : [];
+
+        return {
+          rowId:
+            row.id,
+
+          row:
+            row.source_row_number,
+
+          normalized,
+
+          errors: [],
+
+          warnings,
+
+          status:
+            imported
+              ? "imported"
+              : (
+                  row.status ===
+                    "warning"
+                    ? "warning"
+                    : "valid"
+                ),
+
+          targetId:
+            row.target_id ||
+            null
+        };
+      }
+    );
+
+  state.imported =
+    rows
+      .filter(
+        (row) =>
+          row.status ===
+          "imported"
+      )
+      .map(
+        (row) => ({
+          row: row.source_row_number,
+          targetId:
+            row.target_id
+        })
+      );
+
+  if ($("entity")) {
+    $("entity").value =
+      state.entity;
+
+    $("entity").disabled =
+      true;
+  }
+
+  if ($("file")) {
+    $("file").disabled =
+      true;
+  }
+
+  if ($("stage")) {
+    $("stage").disabled =
+      true;
+  }
+
+  renderMapping();
+
+  if ($("mappingCard")) {
+    $("mappingCard")
+      .classList.remove(
+        "hidden"
+      );
+  }
+
+  render();
+
+  if ($("validationCard")) {
+    $("validationCard")
+      .classList.remove(
+        "hidden"
+      );
+  }
+
+  const importedCount =
+    rows.filter(
+      (row) =>
+        row.status ===
+        "imported"
+    ).length;
+
+  const remainingCount =
+    rows.length -
+    importedCount;
+
+  if ($("confirm")) {
+    $("confirm").disabled =
+      remainingCount === 0;
+  }
+
+  if ($("confirmSummary")) {
+    $("confirmSummary")
+      .textContent =
+      `Recovered batch "${state.fileName}" with ${rows.length} row(s). ${importedCount} row(s) are already imported and ${remainingCount} row(s) remain. Persisted idempotency keys and normalized data will be reused.`;
+  }
+
+  step(
+    remainingCount
+      ? "preview"
+      : "verify"
+  );
+
+  msg(
+    remainingCount
+      ? `Recovery loaded. ${importedCount} row(s) are already imported; ${remainingCount} row(s) can resume using persisted state.`
+      : "All rows in this batch are already marked imported. Verification can be run against the persisted batch.",
+    "success"
+  );
+}
+
+async function verifyRecoveredState() {
+  if (!state.batchId) {
+    throw new Error(
+      "No batch is selected."
+    );
+  }
+
+  const verification =
+    await verify();
+
+  if (
+    verification.bad >
+    0
+  ) {
+    throw new Error(
+      `${verification.bad} verification check(s) failed.`
+    );
+  }
+
+  return verification;
+}
 function render() {
   const errors =
     state.results.filter(
@@ -1864,10 +2149,18 @@ function render() {
         "warning"
     ).length;
 
+  const imported =
+    state.results.filter(
+      (result) =>
+        result.status ===
+        "imported"
+    ).length;
+
   const valid =
     state.results.length -
     errors -
-    warnings;
+    warnings -
+    imported;
 
   const total =
     state.results.reduce(
@@ -1914,6 +2207,10 @@ function render() {
           valid
         ],
         [
+          "Imported",
+          imported
+        ],
+        [
           "Warnings",
           warnings
         ],
@@ -1922,21 +2219,15 @@ function render() {
           errors
         ],
         [
-          "Duplicates",
-          duplicateCount
-        ],
-        [
           "Amount",
           moneySafe(total)
         ]
       ]
         .map(
-          (
-            [
-              label,
-              value
-            ]
-          ) =>
+          ([
+            label,
+            value
+          ]) =>
             `<div class="stat">
               <span class="muted">${esc(
                 label
@@ -1949,9 +2240,7 @@ function render() {
         .join("");
   }
 
-  if (
-    $("validationMessage")
-  ) {
+  if ($("validationMessage")) {
     $("validationMessage")
       .innerHTML =
       errors
@@ -2013,8 +2302,7 @@ function render() {
                         ...result.warnings
                       ].join(
                         " | "
-                      ) ||
-                        "—"
+                      ) || "—"
                     )}
                   </td>
                 </tr>
@@ -2026,52 +2314,59 @@ function render() {
     `;
   }
 
+  const remaining =
+    state.results.filter(
+      (result) =>
+        result.status !==
+        "imported"
+    ).length;
+
   if ($("confirm")) {
     $("confirm").disabled =
       errors > 0 ||
-      !state.results.length;
+      !state.results.length ||
+      remaining === 0;
   }
 
   const confirmationTotal =
-    state.results.reduce(
-      (
-        sum,
-        result
-      ) =>
-        sum +
+    state.results
+      .filter(
+        (result) =>
+          result.status !==
+          "imported"
+      )
+      .reduce(
         (
-          Number(
-            result.normalized
-              .amount
-          ) || 0
-        ),
-      0
-    );
+          sum,
+          result
+        ) =>
+          sum +
+          (
+            Number(
+              result.normalized
+                .amount
+            ) || 0
+          ),
+        0
+      );
 
-  if (
-    $("confirmSummary")
-  ) {
+  if ($("confirmSummary")) {
     $("confirmSummary")
       .textContent =
-      `Confirming ${state.results.length} ${state.entity} row(s), total ${moneySafe(
-        confirmationTotal
-      )}. Target records will be written individually after confirmation; no financial period will be created.`;
+      state.recoveryMode
+        ? `Recovered batch: ${remaining} row(s) remain to import. Already imported rows will be preserved. Remaining target writes total ${moneySafe(
+            confirmationTotal
+          )}.`
+        : `Confirming ${state.results.length} ${state.entity} row(s), total ${moneySafe(
+            confirmationTotal
+          )}. Target records will be written individually after confirmation; no financial period will be created.`;
   }
 }
 
-async function importContribution(
-  result
-) {
+async function importContribution(result) {
   const normalized =
     result.normalized;
 
-  /*
-   * The payment UUID is generated once during
-   * validation and persisted in normalized_data.
-   *
-   * The canonical 2B RPC remains the only
-   * contribution write path.
-   */
   const {
     data,
     error
@@ -2125,12 +2420,14 @@ async function importContribution(
   return data;
 }
 
-async function importExpense(
-  result
-) {
+async function importExpense(result) {
   const normalized =
     result.normalized;
 
+  /*
+   * Recovery must never generate a new UUID
+   * when normalized_data already contains one.
+   */
   normalized.__idempotency_key =
     normalized
       .__idempotency_key ||
@@ -2182,12 +2479,6 @@ async function importExpense(
     return data;
   }
 
-  /*
-   * A duplicate UUID can mean that the original
-   * request succeeded but its response was lost.
-   * Verify the existing row rather than inserting
-   * another expense.
-   */
   if (
     error.code ===
     "23505"
@@ -2297,11 +2588,6 @@ async function markRowImported(
     return;
   }
 
-  /*
-   * The update may have succeeded while the
-   * response was lost. Re-read before treating
-   * the operation as failed.
-   */
   const {
     data: check,
     error:
@@ -2377,9 +2663,7 @@ async function getImportedRows() {
   return data || [];
 }
 
-async function verifyRow(
-  row
-) {
+async function verifyRow(row) {
   const targetId =
     row.target_id;
 
@@ -2529,9 +2813,7 @@ async function verify() {
             <tbody>
               ${checks
                 .map(
-                  (
-                    check
-                  ) => `
+                  (check) => `
                     <tr>
                       <td>${esc(
                         check.row
@@ -2560,9 +2842,7 @@ async function verify() {
       `;
   }
 
-  step(
-    "verify"
-  );
+  step("verify");
 
   msg(
     bad
@@ -2579,9 +2859,7 @@ async function verify() {
   };
 }
 
-async function markBatchFailed(
-  error
-) {
+async function markBatchFailed(error) {
   if (!state.batchId) {
     return;
   }
@@ -2713,25 +2991,19 @@ async function markBatchCompleted() {
 }
 
 async function runImport() {
-  if (
-    state.importing
-  ) {
+  if (state.importing) {
     throw new Error(
       "An import is already running."
     );
   }
 
-  if (
-    !state.batchId
-  ) {
+  if (!state.batchId) {
     throw new Error(
       "No staged import batch is available."
     );
   }
 
-  if (
-    !state.results.length
-  ) {
+  if (!state.results.length) {
     throw new Error(
       "No validated rows are available."
     );
@@ -2748,35 +3020,6 @@ async function runImport() {
       "Fatal validation errors remain."
     );
   }
-
-  /*
-   * IMPORTANT:
-   *
-   * The browser processes target records individually.
-   * This is NOT a whole-batch PostgreSQL transaction.
-   *
-   * Therefore:
-   *
-   *   - Earlier successful target writes remain committed
-   *     if a later target write fails.
-   *
-   *   - The batch is marked failed when the operation
-   *     encounters an error.
-   *
-   *   - No destructive browser rollback is attempted.
-   *
-   * Recovery is based on:
-   *
-   *   - stable contribution payment UUIDs
-   *   - stable expense UUIDs
-   *   - persistent import-row status
-   *   - target IDs
-   *   - duplicate/idempotency verification
-   *
-   * A true all-or-nothing batch transaction must be implemented
-   * server-side as an explicitly authenticated database operation.
-   * It must not be simulated in browser JavaScript.
-   */
 
   state.importing =
     true;
@@ -2798,7 +3041,10 @@ async function runImport() {
         "importing",
 
       started_at:
-        start
+        start,
+
+      completed_at:
+        null
     })
     .eq(
       "id",
@@ -2823,11 +3069,6 @@ async function runImport() {
       const result of
         state.results
     ) {
-      /*
-       * If the current result was already marked imported
-       * by a previous attempt in this same batch, do not
-       * create another target record.
-       */
       if (
         result.status ===
         "imported"
@@ -2864,10 +3105,6 @@ async function runImport() {
         );
       }
 
-      /*
-       * Persist the import-row state immediately after
-       * the target record is confirmed by the write path.
-       */
       await markRowImported(
         result,
         targetId
@@ -2883,13 +3120,6 @@ async function runImport() {
         "imported";
     }
 
-    /*
-     * Do not mark the batch completed yet.
-     *
-     * First verify every persisted imported row from
-     * data_import_rows. This makes verification independent
-     * of the transient in-memory state.imported array.
-     */
     const verification =
       await verify();
 
@@ -2908,6 +3138,19 @@ async function runImport() {
       "Import and verification completed successfully. The batch is marked completed.",
       "success"
     );
+
+    state.recoveryMode =
+      false;
+
+    if ($("entity")) {
+      $("entity").disabled =
+        false;
+    }
+
+    if ($("file")) {
+      $("file").disabled =
+        false;
+    }
   } catch (error) {
     await markBatchFailed(
       error
@@ -2953,9 +3196,7 @@ function renderMapping() {
 
               ${state.headers
                 .map(
-                  (
-                    header
-                  ) => `
+                  (header) => `
                     <option
                       value="${esc(
                         header
@@ -2991,6 +3232,9 @@ function renderMapping() {
 }
 
 function resetForNewUpload() {
+  state.recoveryMode =
+    false;
+
   state.fileName =
     "";
 
@@ -3024,6 +3268,21 @@ function resetForNewUpload() {
   state.importing =
     false;
 
+  if ($("entity")) {
+    $("entity").disabled =
+      false;
+  }
+
+  if ($("file")) {
+    $("file").disabled =
+      false;
+  }
+
+  if ($("stage")) {
+    $("stage").disabled =
+      false;
+  }
+
   if ($("mappingCard")) {
     $("mappingCard")
       .classList.add(
@@ -3031,9 +3290,7 @@ function resetForNewUpload() {
       );
   }
 
-  if (
-    $("validationCard")
-  ) {
+  if ($("validationCard")) {
     $("validationCard")
       .classList.add(
         "hidden"
@@ -3059,9 +3316,7 @@ function resetForNewUpload() {
       "";
   }
 
-  if (
-    $("validationMessage")
-  ) {
+  if ($("validationMessage")) {
     $("validationMessage")
       .innerHTML =
       "";
@@ -3093,9 +3348,7 @@ function resetForNewUpload() {
       true;
   }
 
-  step(
-    "upload"
-  );
+  step("upload");
 }
 
 function bind() {
@@ -3104,9 +3357,7 @@ function bind() {
       .addEventListener(
         "change",
         (event) => {
-          if (
-            state.importing
-          ) {
+          if (state.importing) {
             event.target.value =
               state.entity;
 
@@ -3121,11 +3372,6 @@ function bind() {
           state.entity =
             event.target.value;
 
-          /*
-           * Prevent mappings and validation results
-           * from the previous entity type leaking into
-           * the new entity type.
-           */
           state.mappings =
             {};
 
@@ -3138,45 +3384,35 @@ function bind() {
           state.batchId =
             null;
 
-          if (
-            $("mappingCard")
-          ) {
+          if ($("mappingCard")) {
             $("mappingCard")
               .classList.add(
                 "hidden"
               );
           }
 
-          if (
-            $("validationCard")
-          ) {
+          if ($("validationCard")) {
             $("validationCard")
               .classList.add(
                 "hidden"
               );
           }
 
-          if (
-            $("confirmCard")
-          ) {
+          if ($("confirmCard")) {
             $("confirmCard")
               .classList.add(
                 "hidden"
               );
           }
 
-          if (
-            $("verifyCard")
-          ) {
+          if ($("verifyCard")) {
             $("verifyCard")
               .classList.add(
                 "hidden"
               );
           }
 
-          step(
-            "upload"
-          );
+          step("upload");
         }
       );
   }
@@ -3206,9 +3442,7 @@ function bind() {
         "click",
         async () => {
           try {
-            if (
-              state.importing
-            ) {
+            if (state.importing) {
               throw new Error(
                 "An import is already running."
               );
@@ -3225,8 +3459,7 @@ function bind() {
             }
 
             const lowerName =
-              file.name
-                .toLowerCase();
+              file.name.toLowerCase();
 
             if (
               !lowerName.endsWith(
@@ -3277,9 +3510,7 @@ function bind() {
 
             await saveMaps();
 
-            if (
-              $("mappingCard")
-            ) {
+            if ($("mappingCard")) {
               $("mappingCard")
                 .classList.remove(
                   "hidden"
@@ -3288,18 +3519,14 @@ function bind() {
 
             renderMapping();
 
-            step(
-              "mapping"
-            );
+            step("mapping");
 
             msg(
               `Staged ${state.rows.length} row(s). No target financial record has been imported.`,
               "success"
             );
           } catch (error) {
-            console.error(
-              error
-            );
+            console.error(error);
 
             msg(
               error.message ||
@@ -3329,22 +3556,17 @@ function bind() {
               .field;
 
           const value =
-            event.target
-              .value ||
+            event.target.value ||
             null;
 
           if (
-            FORBIDDEN.has(
-              field
-            )
+            FORBIDDEN.has(field)
           ) {
             event.target.value =
               "";
 
             delete state
-              .mappings[
-              field
-            ];
+              .mappings[field];
 
             msg(
               `Forbidden mapping: ${field}`,
@@ -3354,9 +3576,8 @@ function bind() {
             return;
           }
 
-          state.mappings[
-            field
-          ] = value;
+          state.mappings[field] =
+            value;
         }
       );
   }
@@ -3367,9 +3588,7 @@ function bind() {
         "click",
         async () => {
           try {
-            if (
-              !state.batchId
-            ) {
+            if (!state.batchId) {
               throw new Error(
                 "Stage a file before validation."
               );
@@ -3377,18 +3596,14 @@ function bind() {
 
             await validate();
 
-            if (
-              $("validationCard")
-            ) {
+            if ($("validationCard")) {
               $("validationCard")
                 .classList.remove(
                   "hidden"
                 );
             }
           } catch (error) {
-            console.error(
-              error
-            );
+            console.error(error);
 
             msg(
               error.message ||
@@ -3400,21 +3615,49 @@ function bind() {
       );
   }
 
+  if ($("recoverBatch")) {
+    $("recoverBatch")
+      .addEventListener(
+        "click",
+        async () => {
+          try {
+            const batchId =
+              selectedRecoveryBatchId();
+
+            $("recoverBatch")
+              .disabled =
+              true;
+
+            await recoverBatch(
+              batchId
+            );
+          } catch (error) {
+            console.error(error);
+
+            msg(
+              error.message ||
+                "Unable to recover migration batch.",
+              "error"
+            );
+
+            renderRecoveryBatches();
+          }
+        }
+      );
+  }
+
   if ($("confirm")) {
     $("confirm")
       .addEventListener(
         "click",
         () => {
           if (
-            $("confirm")
-              .disabled
+            $("confirm").disabled
           ) {
             return;
           }
 
-          if (
-            $("confirmCard")
-          ) {
+          if ($("confirmCard")) {
             $("confirmCard")
               .classList.remove(
                 "hidden"
@@ -3422,20 +3665,16 @@ function bind() {
           }
 
           if ($("check")) {
-            $("check")
-              .checked =
+            $("check").checked =
               false;
           }
 
           if ($("import")) {
-            $("import")
-              .disabled =
+            $("import").disabled =
               true;
           }
 
-          step(
-            "import"
-          );
+          step("import");
         }
       );
   }
@@ -3445,13 +3684,9 @@ function bind() {
       .addEventListener(
         "change",
         (event) => {
-          if (
-            $("import")
-          ) {
-            $("import")
-              .disabled =
-              !event.target
-                .checked;
+          if ($("import")) {
+            $("import").disabled =
+              !event.target.checked;
           }
         }
       );
@@ -3464,15 +3699,12 @@ function bind() {
         async () => {
           try {
             if (
-              !$("check")
-                ?.checked
+              !$("check")?.checked
             ) {
               return;
             }
 
-            if (
-              state.importing
-            ) {
+            if (state.importing) {
               return;
             }
 
@@ -3487,9 +3719,7 @@ function bind() {
 
             await runImport();
           } catch (error) {
-            console.error(
-              error
-            );
+            console.error(error);
 
             msg(
               error.message ||
@@ -3497,9 +3727,7 @@ function bind() {
               "error"
             );
 
-            if (
-              $("import")
-            ) {
+            if ($("import")) {
               $("import")
                 .disabled =
                 false;
@@ -3516,18 +3744,17 @@ function bind() {
 
     await context();
 
+    await loadRecoverableBatches();
+
     msg(
       "Authenticated group context resolved. Migration is limited to contributions and expenses. Explicit confirmation is required before target records are written.",
       "success"
     );
   } catch (error) {
-    console.error(
-      error
-    );
+    console.error(error);
 
     if ($("stage")) {
-      $("stage")
-        .disabled =
+      $("stage").disabled =
         true;
     }
 
