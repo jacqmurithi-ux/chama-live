@@ -221,6 +221,279 @@
 
 
     /* =====================================================
+       MEMBER PAYMENT EVIDENCE
+    ====================================================== */
+
+    #memberPaymentEvidenceCard {
+
+      display: none;
+
+      width: 100%;
+
+      max-width: 100%;
+
+    }
+
+
+    #memberPaymentEvidenceCard.cl-member-evidence-visible {
+
+      display: block;
+
+    }
+
+
+    .cl-evidence-intro {
+
+      margin:
+        0 0 16px;
+
+      color: #64748b;
+
+      font-size: 12px;
+
+      line-height: 1.55;
+
+    }
+
+
+    #memberPaymentEvidenceForm {
+
+      width: 100%;
+
+      max-width: 100%;
+
+    }
+
+
+    #memberPaymentEvidenceForm .form-group {
+
+      width: 100%;
+
+      min-width: 0;
+
+      margin-bottom: 13px;
+
+    }
+
+
+    #memberPaymentEvidenceForm label {
+
+      display: block;
+
+      margin-bottom: 6px;
+
+      color: #0f172a;
+
+      font-size: 12px;
+
+      font-weight: 750;
+
+    }
+
+
+    #memberPaymentEvidenceForm input,
+    #memberPaymentEvidenceForm select,
+    #memberPaymentEvidenceForm textarea {
+
+      display: block;
+
+      width: 100%;
+
+      max-width: 100%;
+
+      min-width: 0;
+
+      min-height: 46px;
+
+      padding:
+        10px 12px;
+
+      border:
+        1px solid #e2e8f0;
+
+      border-radius: 10px;
+
+      background: #ffffff;
+
+      color: #0f172a;
+
+      font: inherit;
+
+    }
+
+
+    #memberPaymentEvidenceForm textarea {
+
+      min-height: 95px;
+
+      resize: vertical;
+
+    }
+
+
+    #memberPaymentEvidenceForm input:focus,
+    #memberPaymentEvidenceForm select:focus,
+    #memberPaymentEvidenceForm textarea:focus {
+
+      outline: none;
+
+      border-color: #14b8a6;
+
+      box-shadow:
+        0 0 0 4px
+        rgba(20, 184, 166, .10);
+
+    }
+
+
+    .cl-evidence-submit {
+
+      width: 100%;
+
+      min-height: 49px;
+
+      border: 0;
+
+      border-radius: 11px;
+
+      font-weight: 800;
+
+    }
+
+
+    .cl-evidence-message {
+
+      margin:
+        0 0 16px;
+
+      padding: 12px 14px;
+
+      border:
+        1px solid #ccfbf1;
+
+      border-radius: 11px;
+
+      background: #f0fdfa;
+
+      color: #115e59;
+
+      font-size: 11px;
+
+      line-height: 1.5;
+
+    }
+
+
+    .cl-evidence-message[hidden] {
+
+      display: none;
+
+    }
+
+
+    .cl-evidence-reference-note {
+
+      display: block;
+
+      margin-top: 5px;
+
+      color: #64748b;
+
+      font-size: 10px;
+
+      line-height: 1.4;
+
+    }
+
+
+    .cl-evidence-status-badge {
+
+      display: inline-flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      width: fit-content;
+
+      max-width: 100%;
+
+      padding:
+        5px 9px;
+
+      border-radius: 999px;
+
+      font-size: 10px;
+
+      font-weight: 800;
+
+      white-space: nowrap;
+
+    }
+
+
+    .cl-evidence-status-pending {
+
+      color: #92400e;
+
+      background: #fffbeb;
+
+    }
+
+
+    .cl-evidence-status-verified {
+
+      color: #047857;
+
+      background: #ecfdf5;
+
+    }
+
+
+    .cl-evidence-status-rejected {
+
+      color: #be123c;
+
+      background: #fff1f2;
+
+    }
+
+
+    .cl-evidence-reason {
+
+      display: block;
+
+      max-width: 240px;
+
+      margin-top: 4px;
+
+      color: #64748b;
+
+      font-size: 10px;
+
+      line-height: 1.45;
+
+      white-space: normal;
+
+      overflow-wrap: anywhere;
+
+    }
+
+
+    .cl-evidence-empty {
+
+      padding: 18px;
+
+      text-align: center;
+
+      color: #64748b;
+
+      font-size: 11px;
+
+    }
+
+
+    /* =====================================================
        FORM
     ====================================================== */
 
@@ -1174,7 +1447,8 @@
 
 
       .cl-sub-detail,
-      .cl-note-text {
+      .cl-note-text,
+      .cl-evidence-reason {
 
         max-width: 100%;
 
@@ -1294,8 +1568,6 @@
     <div class="topbar-inner">
 
 
-      <!-- BRAND -->
-
       <div class="brand">
 
         CHAMA
@@ -1304,25 +1576,15 @@
       </div>
 
 
-      <!-- =================================================
-           SHARED TOP NAVIGATION
-      ================================================== -->
-
       <nav class="top-nav">
 
-        <a
-          href="dashboard.html"
-        >
+        <a href="dashboard.html">
           Dashboard
         </a>
 
-
-        <a
-          href="members.html"
-        >
+        <a href="members.html">
           Members
         </a>
-
 
         <a
           href="contributions.html"
@@ -1331,82 +1593,48 @@
           Contributions
         </a>
 
-
-        <a
-          href="expenses.html"
-        >
+        <a href="expenses.html">
           Expenses
         </a>
 
-
-        <a
-          href="meetings.html"
-        >
+        <a href="meetings.html">
           Meetings
         </a>
 
-
-        <a
-          href="reports.html"
-        >
+        <a href="reports.html">
           Reports
         </a>
 
-
-        <a
-          href="monthly-closing.html"
-        >
+        <a href="monthly-closing.html">
           Monthly Closing
         </a>
 
-
-        <a
-          href="group-management.html"
-        >
+        <a href="group-management.html">
           Group Management
         </a>
 
-
-        <a
-          href="assets.html"
-        >
+        <a href="assets.html">
           Assets
         </a>
 
-
-        <a
-          href="plans-activities.html"
-        >
+        <a href="plans-activities.html">
           Plans &amp; Activities
         </a>
 
-
-        <a
-          href="support-welfare.html"
-        >
+        <a href="support-welfare.html">
           Support &amp; Welfare
         </a>
 
-
-        <a
-          href="milestones.html"
-        >
+        <a href="milestones.html">
           Milestones
         </a>
 
-
-        <a
-          href="data-migration.html"
-        >
+        <a href="data-migration.html">
           Data Migration
         </a>
 
       </nav>
 
-
-      <!-- =================================================
-           USER / LOGOUT
-      ================================================== -->
 
       <div class="topbar-actions">
 
@@ -1416,7 +1644,6 @@
         >
           Member
         </span>
-
 
         <button
           id="logout"
@@ -1433,34 +1660,20 @@
   </header>
 
 
-  <!-- =====================================================
-       SHARED APPLICATION LAYOUT
-  ====================================================== -->
-
   <div class="layout">
 
-
-    <!-- ===================================================
-         CANONICAL APPLICATION SIDEBAR
-    ==================================================== -->
 
     <aside class="sidebar">
 
       <nav class="nav">
 
-        <a
-          href="dashboard.html"
-        >
+        <a href="dashboard.html">
           Dashboard
         </a>
 
-
-        <a
-          href="members.html"
-        >
+        <a href="members.html">
           Members
         </a>
-
 
         <a
           href="contributions.html"
@@ -1470,73 +1683,43 @@
           Contributions
         </a>
 
-
-        <a
-          href="expenses.html"
-        >
+        <a href="expenses.html">
           Expenses
         </a>
 
-
-        <a
-          href="meetings.html"
-        >
+        <a href="meetings.html">
           Meetings
         </a>
 
-
-        <a
-          href="reports.html"
-        >
+        <a href="reports.html">
           Reports
         </a>
 
-
-        <a
-          href="monthly-closing.html"
-        >
+        <a href="monthly-closing.html">
           Monthly Closing
         </a>
 
-
-        <a
-          href="group-management.html"
-        >
+        <a href="group-management.html">
           Group Management
         </a>
 
-
-        <a
-          href="assets.html"
-        >
+        <a href="assets.html">
           Assets
         </a>
 
-
-        <a
-          href="plans-activities.html"
-        >
+        <a href="plans-activities.html">
           Plans &amp; Activities
         </a>
 
-
-        <a
-          href="support-welfare.html"
-        >
+        <a href="support-welfare.html">
           Support &amp; Welfare
         </a>
 
-
-        <a
-          href="milestones.html"
-        >
+        <a href="milestones.html">
           Milestones
         </a>
 
-
-        <a
-          href="data-migration.html"
-        >
+        <a href="data-migration.html">
           Data Migration
         </a>
 
@@ -1545,16 +1728,8 @@
     </aside>
 
 
-    <!-- ===================================================
-         CONTRIBUTIONS MAIN CONTENT
-    ==================================================== -->
-
     <main class="main">
 
-
-      <!-- =================================================
-           STATUS
-      ================================================== -->
 
       <div
         id="status"
@@ -1564,10 +1739,6 @@
       ></div>
 
 
-      <!-- =================================================
-           ERROR
-      ================================================== -->
-
       <div
         id="error"
         class="error"
@@ -1576,21 +1747,15 @@
       ></div>
 
 
-      <!-- =================================================
-           PAGE HEADER
-      ================================================== -->
-
       <section class="contributions-page-header">
 
         <div class="eyebrow">
           FINANCIAL MANAGEMENT
         </div>
 
-
         <h1>
           Contributions
         </h1>
-
 
         <p class="muted">
 
@@ -1604,10 +1769,268 @@
 
 
       <!-- =================================================
-           RECORD CONTRIBUTION
+           MEMBER PAYMENT EVIDENCE
+           MEMBER-ONLY SUBMISSION SURFACE
       ================================================== -->
 
-      <section class="card">
+      <section
+        id="memberPaymentEvidenceCard"
+        class="card"
+      >
+
+        <div class="card-header">
+
+          <div>
+
+            <h2>
+              Submit Payment Evidence
+            </h2>
+
+            <p class="muted">
+              Send payment details for verification.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <p class="cl-evidence-intro">
+
+          Submit your payment details here when you have
+          made a contribution. Your submission will remain
+          pending until an authorised group verifier reviews it.
+
+        </p>
+
+
+        <div
+          id="memberEvidenceMessage"
+          class="cl-evidence-message"
+          hidden
+          aria-live="polite"
+        ></div>
+
+
+        <form
+          id="memberPaymentEvidenceForm"
+          novalidate
+        >
+
+
+          <div class="form-group">
+
+            <label for="memberEvidenceAmount">
+              Amount
+            </label>
+
+            <input
+              id="memberEvidenceAmount"
+              name="memberEvidenceAmount"
+              type="number"
+              min="0.01"
+              step="0.01"
+              placeholder="200"
+              required
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="memberEvidenceDate">
+              Payment Date
+            </label>
+
+            <input
+              id="memberEvidenceDate"
+              name="memberEvidenceDate"
+              type="date"
+              required
+            >
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="memberEvidenceMethod">
+              Payment Method
+            </label>
+
+            <select
+              id="memberEvidenceMethod"
+              name="memberEvidenceMethod"
+              required
+            >
+
+              <option value="M-Pesa">
+                M-Pesa
+              </option>
+
+              <option value="Cash">
+                Cash
+              </option>
+
+              <option value="Bank transfer">
+                Bank transfer
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div
+            id="memberEvidenceMpesaWrap"
+            class="form-group"
+          >
+
+            <label for="memberEvidenceMpesaReference">
+              M-Pesa Reference
+            </label>
+
+            <input
+              id="memberEvidenceMpesaReference"
+              name="memberEvidenceMpesaReference"
+              type="text"
+              maxlength="100"
+              autocomplete="off"
+              placeholder="e.g. QWE123XYZ"
+            >
+
+            <small class="cl-evidence-reference-note">
+
+              Required for M-Pesa payments.
+
+            </small>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label for="memberEvidenceText">
+              Payment Details
+            </label>
+
+            <textarea
+              id="memberEvidenceText"
+              name="memberEvidenceText"
+              rows="4"
+              maxlength="1000"
+              placeholder="Add any useful payment details"
+              required
+            ></textarea>
+
+          </div>
+
+
+          <div class="form-actions">
+
+            <button
+              id="submitMemberPaymentEvidence"
+              type="submit"
+              class="button button-primary cl-evidence-submit"
+            >
+              Submit Payment Evidence
+            </button>
+
+          </div>
+
+        </form>
+
+
+        <div
+          class="card-header"
+          style="margin-top:24px;"
+        >
+
+          <div>
+
+            <h2>
+              My Payment Evidence
+            </h2>
+
+            <p class="muted">
+              Your submitted payment evidence and verification status.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="table-wrapper">
+
+          <table>
+
+            <thead>
+
+              <tr>
+
+                <th>
+                  Date
+                </th>
+
+                <th>
+                  Amount
+                </th>
+
+                <th>
+                  Method
+                </th>
+
+                <th>
+                  Reference
+                </th>
+
+                <th>
+                  Submitted
+                </th>
+
+                <th>
+                  Status
+                </th>
+
+                <th>
+                  Details
+                </th>
+
+              </tr>
+
+            </thead>
+
+
+            <tbody id="memberPaymentEvidenceRows">
+
+              <tr>
+
+                <td colspan="7">
+                  Loading payment evidence...
+                </td>
+
+              </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           RECORD CONTRIBUTION
+           EXISTING AUTHORISED CONTRIBUTION PATH
+      ================================================== -->
+
+      <section
+        id="recordContributionCard"
+        class="card"
+      >
 
         <div class="card-header">
 
@@ -1632,8 +2055,6 @@
         >
 
 
-          <!-- MEMBER -->
-
           <div class="form-group">
 
             <label for="member">
@@ -1655,8 +2076,6 @@
           </div>
 
 
-          <!-- AMOUNT -->
-
           <div class="form-group">
 
             <label for="amount">
@@ -1676,8 +2095,6 @@
           </div>
 
 
-          <!-- DATE -->
-
           <div class="form-group">
 
             <label for="contributionDate">
@@ -1693,8 +2110,6 @@
 
           </div>
 
-
-          <!-- CONTRIBUTION TYPE -->
 
           <div class="form-group">
 
@@ -1741,8 +2156,6 @@
           </div>
 
 
-          <!-- OTHER CONTRIBUTION -->
-
           <div
             id="otherContributionTypeWrap"
             class="form-group cl-other-type-wrap"
@@ -1770,8 +2183,6 @@
 
           </div>
 
-
-          <!-- PAYMENT METHOD -->
 
           <div class="form-group">
 
@@ -1802,8 +2213,6 @@
           </div>
 
 
-          <!-- M-PESA REFERENCE -->
-
           <div
             id="mpesaReferenceWrap"
             class="form-group"
@@ -1830,29 +2239,6 @@
           </div>
 
 
-          <!-- =================================================
-               IDEMPOTENCY KEY
-          ================================================== -->
-
-          <!--
-            INTERNAL ONLY
-
-            JavaScript generates this UUID for each new
-            contribution submission.
-
-            The user does not enter or edit this value.
-
-            The same key is retained when the same
-            submission is retried, allowing the atomic
-            contribution RPC to recognize an already
-            committed payment instead of creating a
-            duplicate payment record.
-
-            This field does not perform any accounting
-            calculation and does not expose database
-            credentials or secrets.
-          -->
-
           <input
             id="contributionIdempotencyKey"
             name="contributionIdempotencyKey"
@@ -1861,8 +2247,6 @@
             autocomplete="off"
           >
 
-
-          <!-- CONTRIBUTION GOAL -->
 
           <div class="form-group">
 
@@ -1884,8 +2268,6 @@
           </div>
 
 
-          <!-- NOTES -->
-
           <div class="form-group">
 
             <label for="notes">
@@ -1903,8 +2285,6 @@
           </div>
 
 
-          <!-- SAVE -->
-
           <div class="form-actions">
 
             <button
@@ -1921,10 +2301,6 @@
 
       </section>
 
-
-      <!-- =================================================
-           MONTHLY CONTRIBUTION
-      ================================================== -->
 
       <section class="card">
 
@@ -1944,10 +2320,6 @@
 
       </section>
 
-
-      <!-- =================================================
-           MONTHLY STATUS
-      ================================================== -->
 
       <section class="card">
 
@@ -1970,10 +2342,6 @@
 
         </div>
 
-
-        <!-- =================================================
-             ACCOUNTING MONTH SELECTOR
-        ================================================== -->
 
         <div
           class="cl-accounting-month-control"
@@ -2078,10 +2446,6 @@
       </section>
 
 
-      <!-- =================================================
-           CONTRIBUTION GOALS
-      ================================================== -->
-
       <section class="card">
 
         <div class="card-header">
@@ -2113,10 +2477,6 @@
 
       </section>
 
-
-      <!-- =================================================
-           CONTRIBUTION HISTORY
-      ================================================== -->
 
       <section class="card">
 
@@ -2203,10 +2563,6 @@
       </section>
 
 
-      <!-- =================================================
-           GROUP INFORMATION
-      ================================================== -->
-
       <section class="card">
 
         <p class="muted">
@@ -2223,12 +2579,6 @@
 
   </div>
 
-
-  <!-- =====================================================
-       SHARED PAGE BOOT
-       layout.js loads contributions.js automatically
-       for contributions.html.
-  ====================================================== -->
 
   <script type="module">
 
