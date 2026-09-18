@@ -65,8 +65,18 @@ const successBox =
    CONFIGURATION
 ========================================================= */
 
+/*
+ * CHAMA LIVE is deployed as a GitHub Pages project site.
+ *
+ * Correct:
+ * https://jacqmurithi-ux.github.io/chama-live/login.html
+ *
+ * NOT:
+ * https://jacqmurithi-ux.github.io/login.html
+ */
+
 const LOGIN_URL =
-  `${window.location.origin}/login.html`;
+  `${window.location.origin}/chama-live/login.html`;
 
 
 /* =========================================================
