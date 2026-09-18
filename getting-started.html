@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
+
   <meta charset="utf-8">
 
   <meta
@@ -26,13 +27,16 @@
   >
 
   <style>
+
     .getting-started {
       max-width: 1100px;
       margin: 0 auto;
       padding-bottom: 40px;
     }
 
-    /* TOP NAV */
+    /* =====================================================
+       TOP NAV
+    ===================================================== */
 
     .getting-started-topbar {
       display: flex;
@@ -105,7 +109,9 @@
       color: #0f766e;
     }
 
-    /* HERO */
+    /* =====================================================
+       HERO
+    ===================================================== */
 
     .getting-started-hero {
       position: relative;
@@ -202,7 +208,9 @@
       font-size: 13px;
     }
 
-    /* SECTION HEADER */
+    /* =====================================================
+       SECTION HEADER
+    ===================================================== */
 
     .getting-started-section-heading {
       margin: 0 0 14px;
@@ -216,7 +224,9 @@
       line-height: 1.6;
     }
 
-    /* CARDS */
+    /* =====================================================
+       CARDS
+    ===================================================== */
 
     .getting-started-grid {
       display: grid;
@@ -277,7 +287,9 @@
       margin-top: 5px;
     }
 
-    /* TOUR FEATURE */
+    /* =====================================================
+       TOUR FEATURE
+    ===================================================== */
 
     .getting-started-tour {
       border-color: #99f6e4;
@@ -324,7 +336,9 @@
       color: #667085;
     }
 
-    /* NEXT STEP */
+    /* =====================================================
+       NEXT STEP
+    ===================================================== */
 
     .getting-started-next {
       grid-column: 1 / -1;
@@ -391,7 +405,9 @@
       margin-top: 20px;
     }
 
-    /* SUPPORT */
+    /* =====================================================
+       SUPPORT
+    ===================================================== */
 
     .getting-started-link {
       color: #0f766e;
@@ -403,121 +419,12 @@
       text-decoration: underline;
     }
 
-    /* ONBOARDING POPUP */
-
-    .getting-started-popup {
-      position: fixed;
-      inset: 0;
-      z-index: 9999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      background: rgba(16, 24, 40, 0.55);
-      backdrop-filter: blur(4px);
-    }
-
-    .getting-started-popup[hidden] {
-      display: none !important;
-    }
-
-    .getting-started-popup-card {
-      position: relative;
-      width: min(100%, 520px);
-      padding: 32px;
-      border: 1px solid #99f6e4;
-      border-radius: 22px;
-      background: #ffffff;
-      box-shadow: 0 24px 60px rgba(16, 24, 40, 0.18);
-      animation: gettingStartedPopupIn 0.2s ease-out;
-    }
-
-    @keyframes gettingStartedPopupIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px) scale(0.98);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-      }
-    }
-
-    .getting-started-popup-icon {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 54px;
-      height: 54px;
-      margin-bottom: 18px;
-      border-radius: 16px;
-      background: #ccfbf1;
-      color: #0f766e;
-      font-size: 25px;
-      font-weight: 800;
-    }
-
-    .getting-started-popup-card h2 {
-      margin: 0 0 10px;
-      color: #101828;
-      font-size: 25px;
-      line-height: 1.25;
-    }
-
-    .getting-started-popup-card p {
-      margin: 0;
-      color: #667085;
-      line-height: 1.65;
-    }
-
-    .getting-started-popup-actions {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 10px;
-      margin-top: 24px;
-    }
-
-    .getting-started-popup-tour {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 44px;
-      padding: 0 18px;
-      border-radius: 10px;
-      background: #0f766e;
-      color: #ffffff;
-      text-decoration: none;
-      font-weight: 800;
-    }
-
-    .getting-started-popup-tour:hover {
-      background: #115e59;
-    }
-
-    .getting-started-popup-close {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 44px;
-      padding: 0 16px;
-      border: 1px solid #d0d5dd;
-      border-radius: 10px;
-      background: #ffffff;
-      color: #344054;
-      font: inherit;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .getting-started-popup-close:hover {
-      background: #f9fafb;
-    }
-
-    /* RESPONSIVE */
+    /* =====================================================
+       RESPONSIVE
+    ===================================================== */
 
     @media (max-width: 800px) {
+
       .getting-started-topbar {
         align-items: flex-start;
         flex-direction: column;
@@ -538,9 +445,11 @@
       .getting-started-next-steps {
         grid-template-columns: 1fr;
       }
+
     }
 
     @media (max-width: 700px) {
+
       .getting-started-grid {
         grid-template-columns: 1fr;
       }
@@ -572,30 +481,10 @@
         width: 100%;
       }
 
-      .getting-started-popup {
-        padding: 16px;
-      }
-
-      .getting-started-popup-card {
-        padding: 24px;
-        border-radius: 18px;
-      }
-
-      .getting-started-popup-card h2 {
-        font-size: 22px;
-      }
-
-      .getting-started-popup-actions {
-        align-items: stretch;
-        flex-direction: column-reverse;
-      }
-
-      .getting-started-popup-tour,
-      .getting-started-popup-close {
-        width: 100%;
-      }
     }
+
   </style>
+
 </head>
 
 <body>
@@ -606,7 +495,10 @@
 
       <div class="getting-started">
 
-        <!-- PAGE NAVIGATION -->
+        <!-- =================================================
+             PAGE NAVIGATION
+        ================================================== -->
+
         <header class="getting-started-topbar">
 
           <a
@@ -645,7 +537,10 @@
         </header>
 
 
-        <!-- HERO -->
+        <!-- =================================================
+             HERO
+        ================================================== -->
+
         <section class="getting-started-hero">
 
           <div class="getting-started-eyebrow">
@@ -657,10 +552,11 @@
           </h1>
 
           <p>
-            CHAMA LIVE brings your group's members, contributions,
-            expenses, meetings and reports into one connected
-            workspace. Start with the guided tour to understand
-            how everything fits together.
+            CHAMA LIVE brings your group's members,
+            contributions, expenses, meetings and reports
+            into one connected workspace. Start with the
+            guided tour to understand how everything fits
+            together.
           </p>
 
           <div class="getting-started-hero-actions">
@@ -681,7 +577,10 @@
         </section>
 
 
-        <!-- CONTENT -->
+        <!-- =================================================
+             CONTENT
+        ================================================== -->
+
         <section aria-label="Getting started information">
 
           <h2 class="getting-started-section-heading">
@@ -697,7 +596,10 @@
           <div class="getting-started-grid">
 
 
-            <!-- GUIDED TOUR -->
+            <!-- =================================================
+                 GUIDED TOUR
+            ================================================== -->
+
             <article
               class="getting-started-card getting-started-tour"
             >
@@ -736,7 +638,10 @@
             </article>
 
 
-            <!-- WORKSPACE -->
+            <!-- =================================================
+                 WORKSPACE
+            ================================================== -->
+
             <article class="getting-started-card">
 
               <div class="getting-started-card-icon">
@@ -787,7 +692,10 @@
             </article>
 
 
-            <!-- FIRST STEPS -->
+            <!-- =================================================
+                 FIRST STEPS
+            ================================================== -->
+
             <article class="getting-started-card">
 
               <div class="getting-started-card-icon">
@@ -834,7 +742,10 @@
             </article>
 
 
-            <!-- COMMON QUESTIONS -->
+            <!-- =================================================
+                 COMMON QUESTIONS
+            ================================================== -->
+
             <article class="getting-started-card">
 
               <div class="getting-started-card-icon">
@@ -881,7 +792,10 @@
             </article>
 
 
-            <!-- NEED HELP -->
+            <!-- =================================================
+                 NEED HELP
+            ================================================== -->
+
             <article class="getting-started-card">
 
               <div class="getting-started-card-icon">
@@ -913,7 +827,10 @@
             </article>
 
 
-            <!-- NEXT STEP -->
+            <!-- =================================================
+                 NEXT STEP
+            ================================================== -->
+
             <section class="getting-started-next">
 
               <div class="getting-started-eyebrow">
@@ -1010,209 +927,24 @@
   </div>
 
 
-  <!-- ONBOARDING POPUP -->
+  <!-- =====================================================
+       EXISTING PAGE BOOT
+       
+       IMPORTANT:
+       This page no longer consumes
+       chama_live_getting_started_event.
 
-  <div
-    id="gettingStartedPopup"
-    class="getting-started-popup"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="gettingStartedPopupTitle"
-    aria-describedby="gettingStartedPopupMessage"
-    hidden
-  >
-
-    <div class="getting-started-popup-card">
-
-      <div
-        class="getting-started-popup-icon"
-        aria-hidden="true"
-      >
-        ✓
-      </div>
-
-      <h2 id="gettingStartedPopupTitle">
-        Welcome to CHAMA LIVE
-      </h2>
-
-      <p id="gettingStartedPopupMessage">
-        Your workspace is ready. Take a quick guided tour
-        to see how everything fits together.
-      </p>
-
-      <div class="getting-started-popup-actions">
-
-        <button
-          id="gettingStartedPopupClose"
-          class="getting-started-popup-close"
-          type="button"
-        >
-          Maybe Later
-        </button>
-
-        <a
-          id="gettingStartedPopupTour"
-          class="getting-started-popup-tour"
-          href="tour.html"
-        >
-          Take the Guided Tour →
-        </a>
-
-      </div>
-
-    </div>
-
-  </div>
-
-
-  <!-- EXISTING PAGE BOOT -->
+       dashboard.html is now the sole consumer of the
+       onboarding event and controls the 10-second popup.
+  ====================================================== -->
 
   <script type="module">
-    import { boot } from "./js/layout.js";
+
+    import {
+      boot
+    } from "./js/layout.js";
 
     boot();
-
-
-    /*
-     * GETTING STARTED ONBOARDING POPUP
-     *
-     * The event is intentionally stored in sessionStorage.
-     *
-     * Expected values:
-     *
-     *   new-group
-     *   new-member
-     *
-     * The signal is consumed immediately after it is read,
-     * so the popup does not repeatedly appear on refresh.
-     */
-
-    const POPUP_EVENT_KEY =
-      "chama_live_getting_started_event";
-
-    const popup =
-      document.getElementById("gettingStartedPopup");
-
-    const closeButton =
-      document.getElementById("gettingStartedPopupClose");
-
-    const popupTitle =
-      document.getElementById("gettingStartedPopupTitle");
-
-    const popupMessage =
-      document.getElementById("gettingStartedPopupMessage");
-
-
-    function closeGettingStartedPopup() {
-      popup.hidden = true;
-    }
-
-
-    function showGettingStartedPopup(eventType) {
-
-      if (
-        eventType !== "new-group" &&
-        eventType !== "new-member"
-      ) {
-        return;
-      }
-
-
-      if (eventType === "new-group") {
-
-        popupTitle.textContent =
-          "Your group is ready";
-
-        popupMessage.textContent =
-          "Your CHAMA LIVE group workspace has been created successfully. Take the guided tour to see how your new workspace works.";
-      }
-
-
-      if (eventType === "new-member") {
-
-        popupTitle.textContent =
-          "Member added successfully";
-
-        popupMessage.textContent =
-          "The new member has been added to your group. Take a quick guided tour to see how members and the rest of your workspace fit together.";
-      }
-
-
-      popup.hidden = false;
-
-
-      /*
-       * Consume the event immediately.
-       *
-       * This makes the popup one-time for this
-       * onboarding event.
-       */
-
-      sessionStorage.removeItem(
-        POPUP_EVENT_KEY
-      );
-    }
-
-
-    closeButton.addEventListener(
-      "click",
-      closeGettingStartedPopup
-    );
-
-
-    /*
-     * Close when clicking the dark backdrop.
-     */
-
-    popup.addEventListener(
-      "click",
-      (event) => {
-
-        if (event.target === popup) {
-          closeGettingStartedPopup();
-        }
-
-      }
-    );
-
-
-    /*
-     * Allow Escape to close the popup.
-     */
-
-    document.addEventListener(
-      "keydown",
-      (event) => {
-
-        if (
-          event.key === "Escape" &&
-          !popup.hidden
-        ) {
-          closeGettingStartedPopup();
-        }
-
-      }
-    );
-
-
-    /*
-     * Read the onboarding event.
-     */
-
-    const onboardingEvent =
-      sessionStorage.getItem(
-        POPUP_EVENT_KEY
-      );
-
-
-    /*
-     * Show the popup only when a valid
-     * onboarding event exists.
-     */
-
-    showGettingStartedPopup(
-      onboardingEvent
-    );
 
   </script>
 
