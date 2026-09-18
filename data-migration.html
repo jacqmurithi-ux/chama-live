@@ -328,6 +328,39 @@
       display:none!important
     }
 
+    .recovery-list{
+      display:flex;
+      flex-direction:column;
+      gap:9px;
+      margin-top:14px
+    }
+
+    .recovery-item{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:15px;
+      padding:12px;
+      border:1px solid #e4e7ec;
+      border-radius:10px;
+      background:#f9fafb
+    }
+
+    .recovery-meta{
+      min-width:0
+    }
+
+    .recovery-title{
+      font-weight:800;
+      color:#101828
+    }
+
+    .recovery-details{
+      margin-top:4px;
+      color:#667085;
+      font-size:12px
+    }
+
     @media(max-width:1050px){
       .layout{
         grid-template-columns:210px minmax(0,1fr)
@@ -351,6 +384,11 @@
       .stats,
       .steps{
         grid-template-columns:1fr 1fr
+      }
+
+      .recovery-item{
+        align-items:flex-start;
+        flex-direction:column
       }
     }
 
@@ -483,10 +521,17 @@
 
     <main class="main">
 
-      <div id="error" class="notice error hidden"></div>
+      <div
+        id="error"
+        class="notice error hidden"
+      ></div>
 
 
       <div class="page">
+
+        <!-- =================================================
+             PAGE HEADER
+        ================================================== -->
 
         <section class="card">
 
@@ -513,6 +558,10 @@
 
         </section>
 
+
+        <!-- =================================================
+             MIGRATION STEPS
+        ================================================== -->
 
         <div class="steps">
 
@@ -629,6 +678,63 @@
             </button>
 
           </div>
+
+        </section>
+
+
+        <!-- =================================================
+             RECOVER EXISTING IMPORT
+        ================================================== -->
+
+        <section
+          id="recoveryCard"
+          class="card"
+        >
+
+          <h2>
+            Recover Existing Import
+          </h2>
+
+          <p class="muted">
+            Resume a previously staged or interrupted migration
+            using the persisted batch, row status, normalized
+            data and idempotency keys. Imported rows are not
+            regenerated or re-imported unnecessarily.
+          </p>
+
+          <div
+            id="recoveryInfo"
+            class="notice info"
+          >
+            Loading recoverable migration batches...
+          </div>
+
+          <div
+            id="recoveryList"
+            class="recovery-list"
+          >
+          </div>
+
+          <div class="actions">
+
+            <button
+              id="recoverBatch"
+              class="primary"
+              type="button"
+              disabled
+            >
+              Recover Selected Batch
+            </button>
+
+          </div>
+
+          <p class="note">
+            Recovery is resumable rather than transactional.
+            A batch is recoverable only when its persisted
+            normalized row state is sufficient to continue
+            safely. A batch with unresolved validation errors
+            is not automatically resumed.
+          </p>
 
         </section>
 
@@ -794,6 +900,10 @@
 
         </section>
 
+
+        <!-- =================================================
+             SAFETY BOUNDARY
+        ================================================== -->
 
         <p class="note">
           Safety boundary: this candidate never directly
