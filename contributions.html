@@ -494,6 +494,277 @@
 
 
     /* =====================================================
+       VERIFIER PAYMENT EVIDENCE
+       AUTHORISED VERIFIER SURFACE
+    ====================================================== */
+
+    #verifierPaymentEvidenceCard {
+
+      width: 100%;
+
+      max-width: 100%;
+
+    }
+
+
+    #verifierPaymentEvidenceCard[hidden] {
+
+      display: none;
+
+    }
+
+
+    .cl-verifier-intro {
+
+      margin:
+        0 0 16px;
+
+      color: #64748b;
+
+      font-size: 12px;
+
+      line-height: 1.55;
+
+    }
+
+
+    .cl-verifier-actions {
+
+      display: flex;
+
+      flex-wrap: wrap;
+
+      gap: 7px;
+
+    }
+
+
+    .cl-verifier-button {
+
+      min-height: 38px;
+
+      padding:
+        8px 12px;
+
+      border: 0;
+
+      border-radius: 9px;
+
+      font: inherit;
+
+      font-size: 11px;
+
+      font-weight: 800;
+
+      cursor: pointer;
+
+    }
+
+
+    .cl-verifier-button:disabled {
+
+      opacity: .6;
+
+      cursor: not-allowed;
+
+    }
+
+
+    .cl-verifier-button-primary {
+
+      background: #0f766e;
+
+      color: #ffffff;
+
+    }
+
+
+    .cl-verifier-button-danger {
+
+      background: #fff1f2;
+
+      color: #be123c;
+
+      border:
+        1px solid #fecdd3;
+
+    }
+
+
+    .cl-verifier-button-secondary {
+
+      background: #f8fafc;
+
+      color: #334155;
+
+      border:
+        1px solid #e2e8f0;
+
+    }
+
+
+    .cl-verifier-detail {
+
+      margin-top: 18px;
+
+      padding: 16px;
+
+      border:
+        1px solid #ccfbf1;
+
+      border-radius: 14px;
+
+      background: #f8fffe;
+
+    }
+
+
+    .cl-verifier-detail[hidden] {
+
+      display: none;
+
+    }
+
+
+    .cl-verifier-detail-grid {
+
+      display: grid;
+
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+      gap: 12px;
+
+      margin-bottom: 16px;
+
+    }
+
+
+    .cl-verifier-detail-item {
+
+      min-width: 0;
+
+      padding: 11px;
+
+      border:
+        1px solid #e2e8f0;
+
+      border-radius: 10px;
+
+      background: #ffffff;
+
+    }
+
+
+    .cl-verifier-detail-item span {
+
+      display: block;
+
+      margin-bottom: 4px;
+
+      color: #94a3b8;
+
+      font-size: 9px;
+
+      font-weight: 800;
+
+      letter-spacing: .55px;
+
+      text-transform: uppercase;
+
+    }
+
+
+    .cl-verifier-detail-item strong {
+
+      display: block;
+
+      color: #0f172a;
+
+      font-size: 12px;
+
+      overflow-wrap: anywhere;
+
+    }
+
+
+    .cl-verifier-detail-evidence {
+
+      margin-bottom: 16px;
+
+      padding: 13px;
+
+      border:
+        1px solid #e2e8f0;
+
+      border-radius: 10px;
+
+      background: #ffffff;
+
+    }
+
+
+    .cl-verifier-detail-evidence span {
+
+      display: block;
+
+      margin-bottom: 5px;
+
+      color: #94a3b8;
+
+      font-size: 9px;
+
+      font-weight: 800;
+
+      letter-spacing: .55px;
+
+      text-transform: uppercase;
+
+    }
+
+
+    .cl-verifier-detail-evidence p {
+
+      margin: 0;
+
+      color: #334155;
+
+      font-size: 11px;
+
+      line-height: 1.55;
+
+      white-space: pre-wrap;
+
+      overflow-wrap: anywhere;
+
+    }
+
+
+    .cl-verifier-detail-actions {
+
+      display: flex;
+
+      flex-wrap: wrap;
+
+      gap: 8px;
+
+    }
+
+
+    .cl-verifier-empty {
+
+      padding: 18px;
+
+      text-align: center;
+
+      color: #64748b;
+
+      font-size: 11px;
+
+    }
+
+
+    /* =====================================================
        FORM
     ====================================================== */
 
@@ -1333,6 +1604,28 @@
       }
 
 
+      .cl-verifier-detail-grid {
+
+        grid-template-columns: 1fr;
+
+      }
+
+
+      .cl-verifier-actions,
+      .cl-verifier-detail-actions {
+
+        width: 100%;
+
+      }
+
+
+      .cl-verifier-button {
+
+        flex: 1 1 auto;
+
+      }
+
+
       .table-wrapper {
 
         overflow: visible;
@@ -2018,6 +2311,119 @@
           </table>
 
         </div>
+
+      </section>
+
+
+      <!-- =================================================
+           VERIFIER PAYMENT EVIDENCE
+           AUTHORISED VERIFIER SURFACE
+      ================================================== -->
+
+      <section
+        id="verifierPaymentEvidenceCard"
+        class="card"
+        hidden
+      >
+
+        <div class="card-header">
+
+          <div>
+
+            <h2>
+              Payment Evidence Review
+            </h2>
+
+            <p class="muted">
+              Review pending member payment evidence before
+              it enters canonical accounting.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <p class="cl-verifier-intro">
+
+          Pending payment evidence is shown only for your
+          current group. Verification is processed through
+          the canonical database verification workflow.
+
+        </p>
+
+
+        <div
+          id="verifierPaymentEvidenceMessage"
+          class="cl-evidence-message"
+          hidden
+          aria-live="polite"
+        ></div>
+
+
+        <div class="table-wrapper">
+
+          <table>
+
+            <thead>
+
+              <tr>
+
+                <th>
+                  Member
+                </th>
+
+                <th>
+                  Amount
+                </th>
+
+                <th>
+                  Payment Date
+                </th>
+
+                <th>
+                  Method
+                </th>
+
+                <th>
+                  Reference
+                </th>
+
+                <th>
+                  Submitted
+                </th>
+
+                <th>
+                  Action
+                </th>
+
+              </tr>
+
+            </thead>
+
+
+            <tbody id="verifierPaymentEvidenceRows">
+
+              <tr>
+
+                <td colspan="7">
+                  Loading pending payment evidence...
+                </td>
+
+              </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+
+        <div
+          id="verifierPaymentEvidenceDetail"
+          class="cl-verifier-detail"
+          hidden
+        ></div>
 
       </section>
 
