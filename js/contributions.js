@@ -155,7 +155,13 @@ const memberEvidenceText =
     "memberEvidenceText"
   );
 
-const submitMemberPaymentEvidence =
+/*
+ * IMPORTANT:
+ * This is the DOM button reference.
+ * It must not use the same identifier as the
+ * submitMemberPaymentEvidence() function below.
+ */
+const submitMemberPaymentEvidenceButton =
   document.getElementById(
     "submitMemberPaymentEvidence"
   );
@@ -1285,14 +1291,20 @@ async function submitMemberPaymentEvidence(
   }
 
 
+  /*
+   * IMPORTANT:
+   * Use the renamed DOM button variable.
+   * The function remains submitMemberPaymentEvidence().
+   */
+
   if (
-    submitMemberPaymentEvidence
+    submitMemberPaymentEvidenceButton
   ) {
 
-    submitMemberPaymentEvidence.disabled =
+    submitMemberPaymentEvidenceButton.disabled =
       true;
 
-    submitMemberPaymentEvidence.textContent =
+    submitMemberPaymentEvidenceButton.textContent =
       "Submitting...";
 
   }
@@ -1431,13 +1443,13 @@ async function submitMemberPaymentEvidence(
   finally {
 
     if (
-      submitMemberPaymentEvidence
+      submitMemberPaymentEvidenceButton
     ) {
 
-      submitMemberPaymentEvidence.disabled =
+      submitMemberPaymentEvidenceButton.disabled =
         false;
 
-      submitMemberPaymentEvidence.textContent =
+      submitMemberPaymentEvidenceButton.textContent =
         "Submit Payment Evidence";
 
     }
