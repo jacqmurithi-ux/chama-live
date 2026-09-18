@@ -39,10 +39,16 @@ export const supabase =
          *      ↓
          * confirm.html
          *
-         * detectSessionInUrl allows the Supabase client
-         * to process the returned authentication URL.
+         * confirm.html is responsible for the explicit
+         * exchangeCodeForSession() call.
+         *
+         * Automatic URL detection is therefore disabled.
+         * This prevents the shared client from consuming
+         * the authorization code before confirm.html can
+         * perform the PKCE exchange with its verifier.
          */
-        detectSessionInUrl: true,
+        detectSessionInUrl: false,
+
         flowType: "pkce"
       }
     }
