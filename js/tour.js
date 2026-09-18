@@ -1,862 +1,3 @@
-/* =========================================================
-   CHAMA LIVE TOUR
-   Read-only onboarding experience.
-
-   This file:
-   - Reads the existing application context.
-   - Determines administrator/member experience.
-   - Displays role-aware tour slides.
-   - Stores completion in localStorage.
-   - Does NOT write to Supabase.
-   - Does NOT create/update financial records.
-========================================================= */
-
-import {
-  getMyApplicationContext
-} from "./auth.js";
-
-
-/* =========================================================
-   CONSTANTS
-========================================================= */
-
-const TOUR_STORAGE_KEY =
-  "chama_live_tour_completed_v1";
-
-const DASHBOARD_URL =
-  "dashboard.html";
-
-
-/* =========================================================
-   DOM
-========================================================= */
-
-const loadingEl =
-  document.getElementById("tourLoading");
-
-const errorEl =
-  document.getElementById("tourError");
-
-const errorMessageEl =
-  document.getElementById("tourErrorMessage");
-
-const roleBadgeEl =
-  document.getElementById("tourRoleBadge");
-
-const stepLabelEl =
-  document.getElementById("tourStepLabel");
-
-const tourLabelEl =
-  document.getElementById("tourTourLabel");
-
-const progressEl =
-  document.getElementById("tourProgress");
-
-const cardEl =
-  document.getElementById("tourCard");
-
-const iconEl =
-  document.getElementById("tourIcon");
-
-const eyebrowEl =
-  document.getElementById("tourEyebrow");
-
-const titleEl =
-  document.getElementById("tourTitle");
-
-const descriptionEl =
-  document.getElementById("tourDescription");
-
-const visualEl =
-  document.getElementById("tourVisual");
-
-const detailsEl =
-  document.getElementById("tourDetails");
-
-const dotsEl =
-  document.getElementById("tourDots");
-
-const backButton =
-  document.getElementById("backButton");
-
-const nextButton =
-  document.getElementById("nextButton");
-
-const skipTopButton =
-  document.getElementById("skipTourTop");
-
-
-/* =========================================================
-   STATE
-========================================================= */
-
-let context = null;
-
-let slides = [];
-
-let currentSlide =
-  0;
-
-
-/* =========================================================
-   HTML HELPERS
-========================================================= */
-
-function escapeHtml(value) {
-
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
-
-function featureGrid(items) {
-
-  return `
-    <div class="tour-feature-grid">
-
-      ${items.map(item => `
-        <div class="tour-feature">
-
-          <div class="tour-feature-icon">
-            ${item.icon}
-          </div>
-
-          <div>
-            <strong>
-              ${escapeHtml(item.title)}
-            </strong>
-
-            <span>
-              ${escapeHtml(item.text)}
-            </span>
-          </div>
-
-        </div>
-      `).join("")}
-
-    </div>
-  `;
-}
-
-
-function detailList(items) {
-
-  return `
-    <ul class="tour-detail-list">
-
-      ${items.map(item => `
-        <li>
-          ${escapeHtml(item)}
-        </li>
-      `).join("")}
-
-    </ul>
-  `;
-}
-
-
-function exampleStats(items) {
-
-  return `
-    <div class="tour-example">
-
-      ${items.map(item => `
-        <div class="tour-example-stat">
-
-          <span>
-            ${escapeHtml(item.label)}
-          </span>
-
-          <strong>
-            ${escapeHtml(item.value)}
-          </strong>
-
-        </div>
-      `).join("")}
-
-    </div>
-  `;
-}
-
-
-function flow(items) {
-
-  return `
-    <div class="tour-flow">
-
-      ${items.map((item, index) => `
-        <div class="tour-flow-item">
-
-          <span>
-            ${item.icon}
-          </span>
-
-          <strong>
-            ${escapeHtml(item.title)}
-          </strong>
-
-          ${
-            index < items.length - 1
-              ? `<div class="tour-flow-arrow">→</div>`
-              : ""
-          }
-
-        </div>
-      `).join("")}
-
-    </div>
-  `;
-}
-
-
-function roleGrid(activeRole) {
-
-  const roles = [
-    {
-      icon: "👑",
-      title: "Owner / Super Admin",
-      text: "Group administration and platform control.",
-      key: "owner"
-    },
-    {
-      icon: "🧑‍💼",
-      title: "Chairperson",
-      text: "Leadership, approvals and group oversight.",
-      key: "chairperson"
-    },
-    {
-      icon: "💰",
-      title: "Treasurer",
-      text: "Contributions, payments and financial records.",
-      key: "treasurer"
-    },
-    {
-      icon: "📝",
-      title: "Secretary",
-      text: "Members, meetings, minutes and announcements.",
-      key: "secretary"
-    },
-    {
-      icon: "👥",
-      title: "Committee",
-      text: "Committee responsibilities and group activities.",
-      key: "committee"
-    },
-    {
-      icon: "👤",
-      title: "Member",
-      text: "Personal participation and financial information.",
-      key: "member"
-    }
-  ];
-
-  return `
-    <div class="tour-role-grid">
-
-      ${roles.map(role => {
-
-        const active =
-          activeRole === role.key ||
-          (
-            activeRole === "admin" &&
-            role.key === "owner"
-          );
-
-        return `
-          <div
-            class="
-              tour-role-card
-              ${active ? "active" : ""}
-            "
-          >
-
-            <strong>
-              ${role.icon}
-              ${escapeHtml(role.title)}
-            </strong>
-
-            <span>
-              ${escapeHtml(role.text)}
-            </span>
-
-          </div>
-        `;
-      }).join("")}
-
-    </div>
-  `;
-}
-
-
-/* =========================================================
-   COMMON SLIDES
-========================================================= */
-
-function getWelcomeSlides() {
-
-  return [
-
-    {
-      icon: "👋",
-      eyebrow: "WELCOME",
-      title: "Welcome to CHAMA LIVE",
-      description:
-        "Welcome to your digital Chama. Manage your group's activities, records and information in one connected place.",
-
-      visual:
-        featureGrid([
-          {
-            icon: "👥",
-            title: "Members",
-            text: "Organize your group"
-          },
-          {
-            icon: "💰",
-            title: "Contributions",
-            text: "Track member payments"
-          },
-          {
-            icon: "🧾",
-            title: "Expenses",
-            text: "Record group spending"
-          },
-          {
-            icon: "📊",
-            title: "Reports",
-            text: "Understand your records"
-          }
-        ]),
-
-      details:
-        detailList([
-          "Start the tour with your current CHAMA LIVE role.",
-          "Use the navigation to move between the pages available to your account.",
-          "The tour explains the main workflow before you begin entering records.",
-          "You can use the Back, Next, slide dots, keyboard arrows or swipe gestures to navigate.",
-          "You can skip the tour at any time and go directly to the dashboard."
-        ])
-    },
-
-
-    {
-      icon: "🔄",
-      eyebrow: "HOW IT WORKS",
-      title: "How your Chama works",
-      description:
-        "CHAMA LIVE helps your group record and manage its activities while your actual group money remains in your group's M-Pesa or bank account.",
-
-      visual:
-        flow([
-          {
-            icon: "👥",
-            title: "Members"
-          },
-          {
-            icon: "💰",
-            title: "Contributions"
-          },
-          {
-            icon: "🏦",
-            title: "Group Funds"
-          },
-          {
-            icon: "📊",
-            title: "Records"
-          }
-        ]),
-
-      details:
-        detailList([
-          "Start by keeping the member register accurate.",
-          "Record contributions and other financial activity against the correct member or group record.",
-          "Record expenses, loans and other activities using their dedicated pages.",
-          "Use reports and statements to review information already recorded.",
-          "Reconcile application records against the group's actual financial records.",
-          "CHAMA LIVE is a management and reconciliation system — it is not the group's bank account."
-        ])
-    },
-
-
-    {
-      icon: "🧩",
-      eyebrow: "YOUR ROLE",
-      title: "One group, different roles",
-      description:
-        "Everyone gets the access and information relevant to their responsibilities.",
-
-      visual:
-        roleGrid(
-          context?.isOwner
-            ? "owner"
-            : normalizeRole(context?.role)
-        ),
-
-      details:
-        detailList([
-          "Owner / Super Admin — group administration and overall control.",
-          "Chairperson — leadership, oversight and approvals where permitted.",
-          "Treasurer — financial records, contributions and reconciliation.",
-          "Secretary — members, meetings, minutes and group communication.",
-          "Committee — assigned group responsibilities and activities.",
-          "Member — personal participation, financial information and group updates.",
-          "Your actual available pages and actions are determined by your account permissions."
-        ])
-    }
-
-  ];
-}
-
-
-/* =========================================================
-   ADMINISTRATOR SLIDES
-========================================================= */
-
-function getAdministratorSlides() {
-
-  const role =
-    normalizeRole(context?.role);
-
-  const roleName =
-    context?.isOwner
-      ? "Owner / Super Admin"
-      : formatRole(role);
-
-
-  return [
-
-    {
-      icon: "🏠",
-      eyebrow: roleName.toUpperCase(),
-      title: "Your Dashboard",
-      description:
-        "Use the dashboard as your starting point. It gives you a quick view of the group's current records and activity.",
-
-      visual:
-        exampleStats([
-          {
-            label: "Total members",
-            value: "24"
-          },
-          {
-            label: "Contributions",
-            value: "KSh 42,000"
-          },
-          {
-            label: "Expenses",
-            value: "KSh 8,500"
-          },
-          {
-            label: "Outstanding",
-            value: "KSh 8,000"
-          }
-        ]),
-
-      details:
-        detailList([
-          "OPEN — Click Dashboard in the navigation to return to the group overview.",
-          "CHECK — Review total members, contributions, expenses, balance and outstanding amounts shown for your group.",
-          "REVIEW — Check recent activity and any pending items before starting your work.",
-          "USE — Select the relevant navigation item when you need to work on members, contributions, expenses, meetings or reports.",
-          "EXPECT — The dashboard gives you a summary; detailed records are managed on the individual pages.",
-          "TIP — If a dashboard figure looks unexpected, open the relevant detailed page and verify the underlying records."
-        ])
-    },
-
-
-    {
-      icon: "👥",
-      eyebrow: "MEMBERS",
-      title: "Manage your members",
-      description:
-        "The Members page is where you maintain the group's member register and manage member access.",
-
-      visual:
-        featureGrid([
-          {
-            icon: "➕",
-            title: "Add Member",
-            text: "Create a member record"
-          },
-          {
-            icon: "✏️",
-            title: "Edit",
-            text: "Update member information"
-          },
-          {
-            icon: "🛡️",
-            title: "Role",
-            text: "Assign responsibilities"
-          },
-          {
-            icon: "✉️",
-            title: "Invite",
-            text: "Provide portal access"
-          }
-        ]),
-
-      details:
-        detailList([
-          "OPEN — Click Members in the navigation.",
-          "ADD — Click Add Member to create a new member record.",
-          "ENTER — Enter the member's required personal/contact information and select the appropriate role.",
-          "SAVE — Save the member record and confirm that the new member appears in the member list.",
-          "CHECK — Review the member's status, role, contact information and group association.",
-          "ACCESS — If portal access is required, use the available invitation/access action for that member.",
-          "EXPECT — The member should appear in the group's member register with the appropriate status.",
-          "IMPORTANT — A registered member does not automatically need a portal account."
-        ])
-    },
-
-
-    {
-      icon: "💰",
-      eyebrow: "CONTRIBUTIONS",
-      title: "Record member contributions",
-      description:
-        "Use Contributions to record what members are expected to contribute, what has been received and what remains outstanding.",
-
-      visual:
-        exampleStats([
-          {
-            label: "Expected",
-            value: "KSh 50,000"
-          },
-          {
-            label: "Received",
-            value: "KSh 42,000"
-          },
-          {
-            label: "Outstanding",
-            value: "KSh 8,000"
-          }
-        ]),
-
-      details:
-        detailList([
-          "OPEN — Click Contributions in the navigation.",
-          "SELECT — Choose the member whose contribution you are recording.",
-          "ENTER — Enter the contribution amount, contribution date and contribution type as required.",
-          "PAYMENT — Select the applicable payment method and enter the payment/reference information when available.",
-          "SAVE — Save the contribution record and confirm that it appears in the member's contribution history.",
-          "CHECK — Verify the member, amount, date, payment method and reference before relying on the record.",
-          "RECONCILE — Compare recorded payments with the group's actual M-Pesa, bank or cash records.",
-          "EXPECT — The member's contribution history and relevant totals should reflect the newly recorded transaction."
-        ])
-    },
-
-
-    {
-      icon: "📱",
-      eyebrow: "PAYMENTS",
-      title: "Payments & reconciliation",
-      description:
-        "Use the payment workflow to make sure received payments are connected to the correct member and contribution record.",
-
-      visual:
-        flow([
-          {
-            icon: "💳",
-            title: "Member pays"
-          },
-          {
-            icon: "📥",
-            title: "Receive"
-          },
-          {
-            icon: "🔎",
-            title: "Match"
-          },
-          {
-            icon: "✓",
-            title: "Verify"
-          }
-        ]),
-
-      details:
-        detailList([
-          "OPEN — Go to the payment/contribution workflow available to your group.",
-          "IDENTIFY — Confirm who made the payment before assigning it to a member.",
-          "ENTER — Record the amount, payment date, payment method and available transaction/reference information.",
-          "MATCH — Connect the payment to the correct member and applicable contribution record.",
-          "CHECK — Confirm that the amount and reference agree with the original payment evidence.",
-          "VERIFY — Review the resulting member contribution/history record after reconciliation.",
-          "HANDLE — Do not silently assign an uncertain payment; investigate unmatched or ambiguous transactions first.",
-          "EXPECT — A correctly reconciled payment should be traceable from the payment information to the appropriate member record.",
-          "IMPORTANT — CHAMA LIVE manages records and reconciliation; the group's actual funds remain in the group's financial account."
-        ])
-    },
-
-
-    {
-      icon: "🧾",
-      eyebrow: "EXPENSES",
-      title: "Record and review expenses",
-      description:
-        "Use Expenses to document group spending and keep a clear record of what was spent, why it was spent and how it was approved.",
-
-      visual:
-        exampleStats([
-          {
-            label: "Description",
-            value: "Office supplies"
-          },
-          {
-            label: "Amount",
-            value: "KSh 2,500"
-          },
-          {
-            label: "Status",
-            value: "Approved"
-          }
-        ]),
-
-      details:
-        detailList([
-          "OPEN — Click Expenses in the navigation.",
-          "ADD — Start the expense entry available on the page.",
-          "ENTER — Enter the expense date, description, category and amount.",
-          "SUPPORT — Add supporting information or documents when the page provides that option.",
-          "SAVE — Save the expense and confirm that it appears in the expense history.",
-          "CHECK — Verify the date, description, category, amount and approval status.",
-          "APPROVE — Follow your group's approval process where approval is required.",
-          "EXPECT — The expense should become part of the group's recorded spending history and relevant summaries."
-        ])
-    },
-
-
-    {
-      icon: "💳",
-      eyebrow: "LOANS",
-      title: "Manage member loans",
-      description:
-        "If your group provides loans, use the loan workflow to keep loan amounts, repayments and outstanding balances organized.",
-
-      visual:
-        featureGrid([
-          {
-            icon: "➕",
-            title: "Create",
-            text: "Record loan details"
-          },
-          {
-            icon: "💸",
-            title: "Disburse",
-            text: "Record money issued"
-          },
-          {
-            icon: "📅",
-            title: "Repay",
-            text: "Track scheduled payments"
-          },
-          {
-            icon: "📊",
-            title: "Balance",
-            text: "Review outstanding amounts"
-          }
-        ]),
-
-      details:
-        detailList([
-          "OPEN — Click Loans or the loan function available in your navigation.",
-          "SELECT — Select the member receiving or repaying the loan.",
-          "ENTER — Record the loan amount, applicable dates, repayment information and other required loan details.",
-          "CHECK — Review the member, principal amount, repayment schedule and any guarantor information before saving.",
-          "SAVE — Save the loan record and confirm that the loan appears against the correct member.",
-          "RECORD — Record repayments using the appropriate loan repayment workflow.",
-          "REVIEW — Check the outstanding balance and repayment history after each recorded transaction.",
-          "EXPECT — The member's loan record should show the loan history, repayments and remaining balance."
-        ])
-    },
-
-
-    {
-      icon: "📅",
-      eyebrow: "MEETINGS",
-      title: "Organize meetings and decisions",
-      description:
-        "Use Meetings to keep a structured record of meetings, attendance, agendas, minutes and resolutions.",
-
-      visual:
-        featureGrid([
-          {
-            icon: "📅",
-            title: "Schedule",
-            text: "Create the meeting"
-          },
-          {
-            icon: "👥",
-            title: "Attendance",
-            text: "Record participation"
-          },
-          {
-            icon: "📝",
-            title: "Minutes",
-            text: "Record what happened"
-          },
-          {
-            icon: "✓",
-            title: "Resolutions",
-            text: "Track decisions"
-          }
-        ]),
-
-      details:
-        detailList([
-          "OPEN — Click Meetings in the navigation.",
-          "CREATE — Add the meeting date, title, venue and other required meeting information.",
-          "PLAN — Add the agenda or topics that members need to discuss.",
-          "RECORD — After the meeting, update attendance and record the minutes.",
-          "DECIDE — Record important decisions or resolutions made by the group.",
-          "CHECK — Confirm the meeting date, title, attendance, minutes and resolutions are complete.",
-          "SAVE — Save the meeting record so it becomes part of the group's history.",
-          "EXPECT — The meeting should remain available as a reference for future review."
-        ])
-    },
-
-
-    {
-      icon: "📊",
-      eyebrow: "REPORTS",
-      title: "Turn records into useful information",
-      description:
-        "Reports help leadership review the information already recorded in CHAMA LIVE.",
-
-      visual:
-        featureGrid([
-          {
-            icon: "💰",
-            title: "Contributions",
-            text: "Review contribution records"
-          },
-          {
-            icon: "👤",
-            title: "Statements",
-            text: "Review member history"
-          },
-          {
-            icon: "🧾",
-            title: "Expenses",
-            text: "Review group spending"
-          },
-          {
-            icon: "📊",
-            title: "Summary",
-            text: "Review group information"
-          }
-        ]),
-
-      details:
-        detailList([
-          "OPEN — Click Reports in the navigation.",
-          "SELECT — Choose the report or reporting view relevant to the information you need.",
-          "FILTER — Where filters are available, select the appropriate member, period, category or other criteria.",
-          "REVIEW — Check that the report covers the intended period and uses the expected records.",
-          "COMPARE — Compare report figures against the detailed contribution, expense, loan or member records when reconciliation is required.",
-          "EXPORT — Use an available export/download action when you need a copy of the report.",
-          "EXPECT — The report should summarize records already stored in CHAMA LIVE; it should not be treated as a replacement for verifying source records."
-        ])
-    },
-
-
-    {
-      icon: "⚙️",
-      eyebrow: "GROUP MANAGEMENT",
-      title: "Control how your Chama operates",
-      description:
-        "Group Management is where administrators can review and maintain the group-level settings and controls available to their account.",
-
-      visual:
-        featureGrid([
-          {
-            icon: "🏢",
-            title: "Group",
-            text: "Review group information"
-          },
-          {
-            icon: "💰",
-            title: "Rules",
-            text: "Review contribution settings"
-          },
-          {
-            icon: "👥",
-            title: "Roles",
-            text: "Review user responsibilities"
-          },
-          {
-            icon: "💳",
-            title: "Billing",
-            text: "Open subscription information"
-          }
-        ]),
-
-      details:
-        detailList([
-          "OPEN — Click Group Management in the navigation.",
-          "REVIEW — Check the group name, group information and other configuration displayed for your group.",
-          "UPDATE — Use only the settings and controls that your role is authorized to change.",
-          "ROLES — Review member roles carefully because roles determine responsibilities and access.",
-          "BILLING — When billing is available from Group Management, open the billing section to review subscription/payment information.",
-          "CHECK — After any permitted configuration change, review the displayed information to confirm it is correct.",
-          "EXPECT — Group Management should provide the central place for authorized group-level configuration.",
-          "IMPORTANT — Do not change a setting simply to test it in a live group. Confirm the intended value before saving."
-        ])
-    },
-
-
-    {
-      icon: "🎉",
-      eyebrow: "READY",
-      title: "You're ready!",
-      description:
-        "You now have the basic workflow for managing your Chama in CHAMA LIVE.",
-
-      visual:
-        flow([
-          {
-            icon: "👥",
-            title: "Members"
-          },
-          {
-            icon: "💰",
-            title: "Contributions"
-          },
-          {
-            icon: "🧾",
-            title: "Expenses"
-          },
-          {
-            icon: "📊",
-            title: "Reports"
-          }
-        ]),
-
-      details:
-        detailList([
-          "START — Begin from the Dashboard and review the current state of your group.",
-          "MEMBERS — Keep the member register accurate before recording member activity.",
-          "FINANCE — Record contributions, payments, expenses and loans against the correct records.",
-          "OPERATIONS — Keep meetings, attendance, minutes and resolutions organized.",
-          "REVIEW — Use reports and detailed pages to check the information you have recorded.",
-          "CONTROL — Use Group Management for authorized group-level settings and administration.",
-          "NEXT — Click Go to Dashboard when you are ready to start working with your actual group records.",
-          "REMEMBER — Accurate records depend on entering the correct member, date, amount and reference information."
-        ]),
-
-      final: true
-    }
-
-  ];
-}
-
-
-/* =========================================================
-   MEMBER SLIDES
-========================================================= */
-
 function getMemberSlides() {
 
   return [
@@ -901,7 +42,6 @@ function getMemberSlides() {
         ])
     },
 
-
     {
       icon: "🏠",
       eyebrow: "MY DASHBOARD",
@@ -939,7 +79,6 @@ function getMemberSlides() {
         ])
     },
 
-
     {
       icon: "💰",
       eyebrow: "MY CONTRIBUTIONS",
@@ -975,7 +114,6 @@ function getMemberSlides() {
           "CONTACT — If a payment is missing or incorrect, contact the group administrator responsible for financial records."
         ])
     },
-
 
     {
       icon: "🧾",
@@ -1019,7 +157,6 @@ function getMemberSlides() {
         ])
     },
 
-
     {
       icon: "💳",
       eyebrow: "MY LOANS",
@@ -1054,7 +191,6 @@ function getMemberSlides() {
           "CONTACT — Ask the responsible group administrator about discrepancies."
         ])
     },
-
 
     {
       icon: "📅",
@@ -1098,8 +234,47 @@ function getMemberSlides() {
         ])
     },
 
-
     {
+      icon: "📈",
+      eyebrow: "GROUP ACTIVITY",
+      title: "See what your Chama is working on",
+      description:
+        "Follow group activities, projects and progress that are shared with members.",
+
+      visual:
+        featureGrid([
+          {
+            icon: "📋",
+            title: "Activities",
+            text: "See current group work"
+          },
+          {
+            icon: "🎯",
+            title: "Progress",
+            text: "Follow group progress"
+          },
+          {
+            icon: "📅",
+            title: "Dates",
+            text: "See important timelines"
+          },
+          {
+            icon: "✓",
+            title: "Status",
+            text: "Follow completed work"
+          }
+        ]),
+
+      details:
+        detailList([
+          "OPEN — Review the group activity information available to members.",
+          "CHECK — See activities, projects and progress shared by group leadership.",
+          "FOLLOW — Review activity status, dates and assigned responsibilities where member-safe information is available.",
+          "STAY INFORMED — Use group activity information to understand what the Chama is currently working on.",
+          "EXPECT — Member views show group-safe information and do not expose private administrative records."
+        ])
+    },
+         {
       icon: "📢",
       eyebrow: "ANNOUNCEMENTS",
       title: "Stay informed",
@@ -1159,6 +334,169 @@ function getMemberSlides() {
         ])
     },
 
+    {
+      icon: "🎯",
+      eyebrow: "PLANS & GOALS",
+      title: "Follow your Chama's plans and goals",
+      description:
+        "See the plans and contribution goals your group shares with members.",
+
+      visual:
+        featureGrid([
+          {
+            icon: "🎯",
+            title: "Goals",
+            text: "See group targets"
+          },
+          {
+            icon: "📋",
+            title: "Plans",
+            text: "Understand group priorities"
+          },
+          {
+            icon: "📈",
+            title: "Progress",
+            text: "Follow progress"
+          },
+          {
+            icon: "📅",
+            title: "Timeline",
+            text: "See target dates"
+          }
+        ]),
+
+      details:
+        detailList([
+          "OPEN — Review plans and goals available to your member account.",
+          "CHECK — See the group's shared objectives and target dates.",
+          "FOLLOW — Review progress information where it is available to members.",
+          "UNDERSTAND — Use plans and goals to understand the direction and priorities of the Chama.",
+          "EXPECT — Management controls remain restricted to authorized group roles."
+        ])
+    },
+
+    {
+      icon: "📋",
+      eyebrow: "ACTIVITIES",
+      title: "Follow group activities",
+      description:
+        "Keep track of activities connected to the group's plans and projects.",
+
+      visual:
+        featureGrid([
+          {
+            icon: "📋",
+            title: "Current",
+            text: "See active activities"
+          },
+          {
+            icon: "👥",
+            title: "Assigned",
+            text: "See shared responsibilities"
+          },
+          {
+            icon: "📅",
+            title: "Dates",
+            text: "Follow activity timelines"
+          },
+          {
+            icon: "✓",
+            title: "Progress",
+            text: "See completion status"
+          }
+        ]),
+
+      details:
+        detailList([
+          "OPEN — Review activities shared with members.",
+          "CHECK — See activity titles, descriptions, dates and status where available.",
+          "FOLLOW — Review progress and completion information.",
+          "PARTICIPATE — Use the information to understand activities where you are involved.",
+          "EXPECT — Member views remain limited to information appropriate for the whole group."
+        ])
+    },
+
+    {
+      icon: "🏁",
+      eyebrow: "MILESTONES",
+      title: "Follow important group milestones",
+      description:
+        "See important achievements, targets and dates recorded for the Chama.",
+
+      visual:
+        featureGrid([
+          {
+            icon: "🏁",
+            title: "Milestones",
+            text: "See important targets"
+          },
+          {
+            icon: "📅",
+            title: "Dates",
+            text: "Follow milestone dates"
+          },
+          {
+            icon: "🎯",
+            title: "Goals",
+            text: "Connect progress to plans"
+          },
+          {
+            icon: "✓",
+            title: "Achievements",
+            text: "Recognize completed work"
+          }
+        ]),
+
+      details:
+        detailList([
+          "OPEN — Review milestones available to members.",
+          "CHECK — See milestone titles, dates and shared descriptions.",
+          "FOLLOW — Track important targets connected to group plans.",
+          "REVIEW — Use milestone information to understand group progress and achievements.",
+          "EXPECT — Private administrative information remains outside the member view."
+        ])
+    },
+
+    {
+      icon: "🏢",
+      eyebrow: "ASSETS",
+      title: "See your Chama's assets",
+      description:
+        "Members can view group-safe information about assets owned or managed by the Chama.",
+
+      visual:
+        featureGrid([
+          {
+            icon: "🏢",
+            title: "Assets",
+            text: "See group property"
+          },
+          {
+            icon: "📍",
+            title: "Location",
+            text: "See recorded location"
+          },
+          {
+            icon: "📅",
+            title: "Acquired",
+            text: "See acquisition information"
+          },
+          {
+            icon: "✓",
+            title: "Status",
+            text: "See current status"
+          }
+        ]),
+
+      details:
+        detailList([
+          "OPEN — Review the assets available to members.",
+          "CHECK — See member-safe asset names, categories, descriptions, locations and status where available.",
+          "UNDERSTAND — Use the asset register to understand what property or equipment belongs to the group.",
+          "VIEW ONLY — Asset management actions remain restricted to authorized roles.",
+          "EXPECT — Sensitive administrative or financial controls are not part of the member view."
+        ])
+    },
 
     {
       icon: "👤",
@@ -1203,8 +541,89 @@ function getMemberSlides() {
         ])
     },
 
+    {
+      icon: "🔔",
+      eyebrow: "REMINDERS",
+      title: "Keep track of important dates",
+      description:
+        "Use member-visible reminders to stay aware of meetings, activities, milestones and other group actions.",
+
+      visual:
+        featureGrid([
+          {
+            icon: "📅",
+            title: "Meetings",
+            text: "Remember upcoming meetings"
+          },
+          {
+            icon: "📋",
+            title: "Activities",
+            text: "Follow important dates"
+          },
+          {
+            icon: "🏁",
+            title: "Milestones",
+            text: "Track target dates"
+          },
+          {
+            icon: "💰",
+            title: "Contributions",
+            text: "Remember due dates"
+          }
+        ]),
+
+      details:
+        detailList([
+          "CHECK — Review reminders and upcoming dates made available to your member account.",
+          "MEETINGS — Pay attention to upcoming meeting dates and times.",
+          "ACTIVITIES — Review dates connected to activities or group projects.",
+          "MILESTONES — Keep track of important group targets and dates.",
+          "CONTRIBUTIONS — Review contribution deadlines when they are communicated to members.",
+          "IMPORTANT — Reminder delivery and storage depend on the application's member notification contract; this tour does not assume a separate reminder database table."
+        ])
+    },
 
     {
+      icon: "🤝",
+      eyebrow: "SUPPORT & WELFARE",
+      title: "Understand member support",
+      description:
+        "Members can access appropriate group welfare information while private support cases remain protected.",
+
+      visual:
+        featureGrid([
+          {
+            icon: "🤝",
+            title: "Support",
+            text: "Understand available welfare support"
+          },
+          {
+            icon: "❤️",
+            title: "Welfare",
+            text: "Stay aware of group care"
+          },
+          {
+            icon: "🔒",
+            title: "Privacy",
+            text: "Private cases remain protected"
+          },
+          {
+            icon: "👤",
+            title: "My information",
+            text: "See member-safe information"
+          }
+        ]),
+
+      details:
+        detailList([
+          "OPEN — Review the member-safe Support & Welfare information available to your account.",
+          "CHECK — See general welfare information or support guidance shared with members.",
+          "PRIVACY — Private support cases belonging to other members are not part of the member view.",
+          "PERSONAL — Any information about your own support should be shown only where the application's member contract permits it.",
+          "EXPECT — Support and welfare management actions remain restricted to authorized group roles."
+        ])
+    },
+         {
       icon: "🎉",
       eyebrow: "READY",
       title: "You're ready!",
@@ -1247,635 +666,3 @@ function getMemberSlides() {
 
   ];
 }
-
-
-/* =========================================================
-   ROLE HELPERS
-========================================================= */
-
-function normalizeRole(role) {
-
-  return String(role || "")
-    .trim()
-    .toLowerCase()
-    .replaceAll("-", "_")
-    .replaceAll(" ", "_");
-}
-
-
-function isAdministratorRole(role) {
-
-  const adminRoles = new Set([
-    "owner",
-    "super_admin",
-    "admin",
-    "administrator",
-    "chairperson",
-    "chairman",
-    "treasurer",
-    "secretary",
-    "committee"
-  ]);
-
-  return adminRoles.has(role);
-}
-
-
-function formatRole(role) {
-
-  const names = {
-    owner: "Owner / Super Admin",
-    super_admin: "Owner / Super Admin",
-    admin: "Administrator",
-    administrator: "Administrator",
-    chairperson: "Chairperson",
-    chairman: "Chairperson",
-    treasurer: "Treasurer",
-    secretary: "Secretary",
-    committee: "Committee",
-    member: "Member"
-  };
-
-  return names[role] || "Administrator";
-}
-
-
-/* =========================================================
-   TOUR TYPE
-========================================================= */
-
-function buildTour() {
-
-  const role =
-    normalizeRole(context?.role);
-
-  const administrator =
-    Boolean(context?.isOwner) ||
-    isAdministratorRole(role);
-
-  if (administrator) {
-
-    slides =
-      [
-        ...getWelcomeSlides(),
-        ...getAdministratorSlides()
-      ];
-
-    roleBadgeEl.textContent =
-      context?.isOwner
-        ? "Owner / Super Admin"
-        : formatRole(role);
-
-    tourLabelEl.textContent =
-      "Administrator tour";
-
-  } else {
-
-    slides =
-      [
-        ...getWelcomeSlides().slice(0, 2),
-        ...getMemberSlides()
-      ];
-
-    roleBadgeEl.textContent =
-      "Member";
-
-    tourLabelEl.textContent =
-      "Member tour";
-  }
-}
-
-
-/* =========================================================
-   RENDER
-========================================================= */
-
-function renderSlide() {
-
-  const slide =
-    slides[currentSlide];
-
-  if (!slide) {
-    return;
-  }
-
-
-  cardEl.classList.remove(
-    "tour-card"
-  );
-
-  void cardEl.offsetWidth;
-
-  cardEl.classList.add(
-    "tour-card"
-  );
-
-
-  const total =
-    slides.length;
-
-  const current =
-    currentSlide + 1;
-
-
-  stepLabelEl.textContent =
-    `${String(current).padStart(2, "0")} / ${String(total).padStart(2, "0")}`;
-
-
-  progressEl.style.width =
-    `${(current / total) * 100}%`;
-
-
-  iconEl.textContent =
-    slide.icon;
-
-  eyebrowEl.textContent =
-    slide.eyebrow;
-
-  titleEl.textContent =
-    slide.title;
-
-  descriptionEl.textContent =
-    slide.description;
-
-
-  visualEl.innerHTML =
-    slide.visual || "";
-
-
-  detailsEl.innerHTML =
-    slide.details || "";
-
-
-  backButton.disabled =
-    currentSlide === 0;
-
-
-  if (slide.final) {
-
-    nextButton.textContent =
-      "Go to Dashboard →";
-
-  } else {
-
-    nextButton.textContent =
-      "Next →";
-  }
-
-
-  renderDots();
-}
-
-
-/* =========================================================
-   DOTS
-========================================================= */
-
-function renderDots() {
-
-  dotsEl.innerHTML =
-    slides.map((slide, index) => `
-      <button
-        class="tour-dot ${index === currentSlide ? "active" : ""}"
-        type="button"
-        aria-label="Go to slide ${index + 1}"
-        aria-current="${index === currentSlide ? "step" : "false"}"
-        data-tour-index="${index}"
-      ></button>
-    `).join("");
-
-
-  dotsEl
-    .querySelectorAll("[data-tour-index]")
-    .forEach(button => {
-
-      button.addEventListener(
-        "click",
-        () => {
-
-          const index =
-            Number(
-              button.dataset.tourIndex
-            );
-
-          if (
-            Number.isInteger(index) &&
-            index >= 0 &&
-            index < slides.length
-          ) {
-
-            currentSlide =
-              index;
-
-            renderSlide();
-          }
-
-        }
-      );
-
-    });
-}
-
-
-/* =========================================================
-   NAVIGATION
-========================================================= */
-
-function nextSlide() {
-
-  if (
-    currentSlide <
-    slides.length - 1
-  ) {
-
-    currentSlide += 1;
-
-    renderSlide();
-
-    return;
-  }
-
-
-  finishTour();
-}
-
-
-function previousSlide() {
-
-  if (
-    currentSlide > 0
-  ) {
-
-    currentSlide -= 1;
-
-    renderSlide();
-  }
-}
-
-
-/* =========================================================
-   FINISH / SKIP
-========================================================= */
-
-function finishTour() {
-
-  try {
-
-    localStorage.setItem(
-      TOUR_STORAGE_KEY,
-      "true"
-    );
-
-  } catch (error) {
-
-    console.warn(
-      "CHAMA LIVE tour state could not be saved:",
-      error
-    );
-  }
-
-
-  window.location.href =
-    DASHBOARD_URL;
-}
-
-
-function skipTour() {
-
-  finishTour();
-}
-
-
-/* =========================================================
-   KEYBOARD
-========================================================= */
-
-function handleKeyboard(event) {
-
-  if (
-    event.key === "ArrowRight"
-  ) {
-
-    event.preventDefault();
-
-    nextSlide();
-
-  } else if (
-    event.key === "ArrowLeft"
-  ) {
-
-    event.preventDefault();
-
-    previousSlide();
-
-  } else if (
-    event.key === "Escape"
-  ) {
-
-    event.preventDefault();
-
-    skipTour();
-  }
-}
-
-
-/* =========================================================
-   TOUCH / SWIPE
-========================================================= */
-
-let touchStartX =
-  null;
-
-
-function handleTouchStart(event) {
-
-  if (
-    !event.touches ||
-    !event.touches.length
-  ) {
-    return;
-  }
-
-  touchStartX =
-    event.touches[0].clientX;
-}
-
-
-function handleTouchEnd(event) {
-
-  if (
-    touchStartX === null ||
-    !event.changedTouches ||
-    !event.changedTouches.length
-  ) {
-
-    touchStartX = null;
-
-    return;
-  }
-
-
-  const touchEndX =
-    event.changedTouches[0].clientX;
-
-  const distance =
-    touchEndX - touchStartX;
-
-
-  touchStartX = null;
-
-
-  if (
-    Math.abs(distance) < 50
-  ) {
-    return;
-  }
-
-
-  if (distance < 0) {
-
-    nextSlide();
-
-  } else {
-
-    previousSlide();
-  }
-}
-
-
-/* =========================================================
-   ERROR HANDLING
-========================================================= */
-
-function showError(message) {
-
-  if (loadingEl) {
-    loadingEl.hidden = true;
-  }
-
-  if (errorMessageEl) {
-    errorMessageEl.textContent =
-      message;
-  }
-
-  if (errorEl) {
-    errorEl.hidden = false;
-  }
-}
-
-
-/* =========================================================
-   INITIALIZATION
-========================================================= */
-
-async function initializeTour() {
-
-  let stage =
-    "AUTH USER / MEMBER / GROUP CONTEXT";
-
-
-  try {
-
-    console.info(
-      "[TOUR-DIAG] CONTEXT START"
-    );
-
-
-    context =
-      await getMyApplicationContext();
-
-
-    console.info(
-      "[TOUR-DIAG] CONTEXT COMPLETE",
-      {
-        userId:
-          context?.user?.id ?? null,
-
-        memberId:
-          context?.member?.id ?? null,
-
-        groupId:
-          context?.group?.id ?? null,
-
-        role:
-          context?.role ?? null,
-
-        isOwner:
-          context?.isOwner ?? false
-      }
-    );
-
-
-    if (
-      !context ||
-      !context.user
-    ) {
-
-      throw new Error(
-        "Application context did not contain an authenticated user."
-      );
-    }
-
-
-    /* =====================================================
-       TOUR COMPLETION
-
-       IMPORTANT:
-       A completed tour does NOT redirect the user away.
-
-       The tour must remain accessible whenever the user
-       explicitly opens tour.html from Getting Started.
-
-       Completion is still recorded by finishTour().
-    ===================================================== */
-
-
-    stage =
-      "TOUR BUILD";
-
-
-    console.info(
-      "[TOUR-DIAG] BUILD START"
-    );
-
-
-    buildTour();
-
-
-    console.info(
-      "[TOUR-DIAG] BUILD COMPLETE",
-      {
-        slideCount:
-          Array.isArray(slides)
-            ? slides.length
-            : null
-      }
-    );
-
-
-    if (
-      !Array.isArray(slides) ||
-      slides.length === 0
-    ) {
-
-      throw new Error(
-        "Tour build returned no slides."
-      );
-    }
-
-
-    stage =
-      "TOUR RENDER";
-
-
-    currentSlide =
-      0;
-
-
-    console.info(
-      "[TOUR-DIAG] RENDER START",
-      {
-        slide:
-          currentSlide
-      }
-    );
-
-
-    renderSlide();
-
-
-    console.info(
-      "[TOUR-DIAG] RENDER COMPLETE"
-    );
-
-
-    if (loadingEl) {
-      loadingEl.hidden = true;
-    }
-
-
-    console.info(
-      "[TOUR-DIAG] INITIALIZATION COMPLETE"
-    );
-
-
-  } catch (error) {
-
-    console.error(
-      "CHAMA LIVE tour initialization failed.",
-      {
-        stage,
-        error,
-        message:
-          error?.message ?? null,
-        name:
-          error?.name ?? null,
-        stack:
-          error?.stack ?? null
-      }
-    );
-
-
-    const message =
-      error?.message ||
-      `Tour initialization failed during ${stage}.`;
-
-
-    showError(
-      `${stage}: ${message}`
-    );
-  }
-}
-
-
-/* =========================================================
-   EVENTS
-========================================================= */
-
-nextButton.addEventListener(
-  "click",
-  nextSlide
-);
-
-
-backButton.addEventListener(
-  "click",
-  previousSlide
-);
-
-
-skipTopButton.addEventListener(
-  "click",
-  skipTour
-);
-
-
-document.addEventListener(
-  "keydown",
-  handleKeyboard
-);
-
-
-cardEl.addEventListener(
-  "touchstart",
-  handleTouchStart,
-  {
-    passive: true
-  }
-);
-
-
-cardEl.addEventListener(
-  "touchend",
-  handleTouchEnd,
-  {
-    passive: true
-  }
-);
-
-
-/* =========================================================
-   START
-========================================================= */
-
-initializeTour();
