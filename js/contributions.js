@@ -2,24 +2,29 @@
    CHAMA LIVE — CONTRIBUTIONS
    CANONICAL 2B ACCOUNTING VERSION
 
-   ATOMIC CONTRIBUTION RECORDING
+   MEMBER PAYMENT EVIDENCE INTEGRATION
    ---------------------------------------------------------
-   • Contribution writes go through cl_2b_record_contribution().
-   • Payment insertion and monthly allocation refresh are
-     performed atomically by Supabase.
-   • Frontend never inserts directly into contributions.
-   • Frontend never performs allocation calculations.
-   • Frontend never performs arrears calculations.
-   • Frontend never performs carry-forward calculations.
-   • Accounting Month selection is READ-ONLY.
-   • Canonical monthly status comes from Supabase.
-   • Idempotency key is generated per new submission.
-   • Same idempotency key is retained for retries.
+   • Ordinary members submit payment evidence only.
+   • Member evidence is inserted into
+     member_payment_evidence.
+   • Evidence remains pending until authorised
+     verification occurs.
+   • Frontend never directly inserts into contributions
+     for the member-evidence workflow.
+   • Verification is performed by the database
+     verify_member_payment_evidence() RPC through the
+     authorised verifier workflow.
+   • Existing canonical contribution recording remains
+     through cl_2b_record_contribution().
 ========================================================= */
 
 import {
   supabase
 } from "./supabase.js";
+
+import {
+  getMyMember
+} from "./auth.js";
 
 
 console.log(
@@ -39,6 +44,11 @@ const errorEl =
 
 const form =
   document.getElementById("contributionForm");
+
+const recordContributionCard =
+  document.getElementById(
+    "recordContributionCard"
+  );
 
 const memberSelect =
   document.getElementById("member");
@@ -102,6 +112,66 @@ const contributionIdempotencyKeyInput =
 
 
 /* =========================================================
+   MEMBER PAYMENT EVIDENCE ELEMENTS
+========================================================= */
+
+const memberPaymentEvidenceCard =
+  document.getElementById(
+    "memberPaymentEvidenceCard"
+  );
+
+const memberPaymentEvidenceForm =
+  document.getElementById(
+    "memberPaymentEvidenceForm"
+  );
+
+const memberEvidenceAmount =
+  document.getElementById(
+    "memberEvidenceAmount"
+  );
+
+const memberEvidenceDate =
+  document.getElementById(
+    "memberEvidenceDate"
+  );
+
+const memberEvidenceMethod =
+  document.getElementById(
+    "memberEvidenceMethod"
+  );
+
+const memberEvidenceMpesaWrap =
+  document.getElementById(
+    "memberEvidenceMpesaWrap"
+  );
+
+const memberEvidenceMpesaReference =
+  document.getElementById(
+    "memberEvidenceMpesaReference"
+  );
+
+const memberEvidenceText =
+  document.getElementById(
+    "memberEvidenceText"
+  );
+
+const submitMemberPaymentEvidence =
+  document.getElementById(
+    "submitMemberPaymentEvidence"
+  );
+
+const memberPaymentEvidenceRows =
+  document.getElementById(
+    "memberPaymentEvidenceRows"
+  );
+
+const memberEvidenceMessage =
+  document.getElementById(
+    "memberEvidenceMessage"
+  );
+
+
+/* =========================================================
    STATE
 ========================================================= */
 
@@ -114,6 +184,10 @@ let contributions = [];
 let contributionGoals = [];
 
 let canonicalMemberStatus = [];
+
+let memberPaymentEvidence = [];
+
+let currentMember = null;
 
 let monthlyContribution = 0;
 
@@ -134,6 +208,17 @@ const PAYMENT_METHODS = {
   CASH: "Cash",
 
   BANK: "Bank transfer"
+
+};
+
+
+const MEMBER_EVIDENCE_STATUSES = {
+
+  PENDING: "pending",
+
+  VERIFIED: "verified",
+
+  REJECTED: "rejected"
 
 };
 
@@ -605,6 +690,757 @@ function clearError() {
 
     errorEl.textContent =
       "";
+
+  }
+
+}
+
+
+/* =========================================================
+   MEMBER EVIDENCE MESSAGE
+========================================================= */
+
+function showMemberEvidenceMessage(
+  message
+) {
+
+  if (!memberEvidenceMessage) {
+    return;
+  }
+
+  memberEvidenceMessage.textContent =
+    message || "";
+
+  memberEvidenceMessage.hidden =
+    !message;
+
+}
+
+
+function clearMemberEvidenceMessage() {
+
+  showMemberEvidenceMessage("");
+
+}
+
+
+/* =========================================================
+   CURRENT MEMBER / ROLE
+========================================================= */
+
+function getCurrentMemberRole() {
+
+  return String(
+    currentMember?.role ||
+    ""
+  )
+    .trim()
+    .toLowerCase();
+
+}
+
+
+function isOrdinaryMember() {
+
+  return (
+    getCurrentMemberRole() ===
+    "member"
+  );
+
+}
+
+
+/* =========================================================
+   MEMBER PAYMENT EVIDENCE
+========================================================= */
+
+function updateMemberEvidencePaymentMethod() {
+
+  if (!memberEvidenceMethod) {
+    return;
+  }
+
+  const method =
+    normalizePaymentMethod(
+      memberEvidenceMethod.value
+    );
+
+  const isMpesa =
+    method ===
+    PAYMENT_METHODS.MPESA;
+
+  if (memberEvidenceMpesaWrap) {
+
+    memberEvidenceMpesaWrap.hidden =
+      !isMpesa;
+
+  }
+
+  if (memberEvidenceMpesaReference) {
+
+    memberEvidenceMpesaReference.required =
+      isMpesa;
+
+    if (!isMpesa) {
+
+      memberEvidenceMpesaReference.value =
+        "";
+
+    }
+
+  }
+
+}
+
+
+function memberEvidenceStatusLabel(
+  status
+) {
+
+  const value =
+    String(
+      status || ""
+    )
+      .trim()
+      .toLowerCase();
+
+  if (
+    value ===
+    MEMBER_EVIDENCE_STATUSES.VERIFIED
+  ) {
+
+    return "VERIFIED";
+
+  }
+
+  if (
+    value ===
+    MEMBER_EVIDENCE_STATUSES.REJECTED
+  ) {
+
+    return "REJECTED";
+
+  }
+
+  return "PENDING";
+
+}
+
+
+function memberEvidenceStatusClass(
+  status
+) {
+
+  const value =
+    String(
+      status || ""
+    )
+      .trim()
+      .toLowerCase();
+
+  if (
+    value ===
+    MEMBER_EVIDENCE_STATUSES.VERIFIED
+  ) {
+
+    return "cl-evidence-status-verified";
+
+  }
+
+  if (
+    value ===
+    MEMBER_EVIDENCE_STATUSES.REJECTED
+  ) {
+
+    return "cl-evidence-status-rejected";
+
+  }
+
+  return "cl-evidence-status-pending";
+
+}
+
+
+function renderMemberPaymentEvidence() {
+
+  if (!memberPaymentEvidenceRows) {
+    return;
+  }
+
+  if (!memberPaymentEvidence.length) {
+
+    memberPaymentEvidenceRows.innerHTML = `
+
+      <tr>
+
+        <td
+          colspan="7"
+          class="cl-evidence-empty"
+        >
+
+          You have not submitted any payment
+          evidence yet.
+
+        </td>
+
+      </tr>
+
+    `;
+
+    return;
+
+  }
+
+  memberPaymentEvidenceRows.innerHTML =
+    memberPaymentEvidence
+      .map(
+        evidence => {
+
+          const method =
+            normalizePaymentMethod(
+              evidence.payment_method
+            );
+
+          const status =
+            memberEvidenceStatusLabel(
+              evidence.status
+            );
+
+          const statusClass =
+            memberEvidenceStatusClass(
+              evidence.status
+            );
+
+          const reference =
+            evidence.mpesa_reference ||
+            "—";
+
+          const rejectionReason =
+            evidence.rejection_reason ||
+            "";
+
+          return `
+
+            <tr>
+
+              <td data-label="Date">
+
+                ${escapeHtml(
+                  formatDate(
+                    evidence.payment_date
+                  )
+                )}
+
+              </td>
+
+
+              <td
+                data-label="Amount"
+                class="cl-money-cell"
+              >
+
+                <strong>
+                  ${escapeHtml(
+                    money(
+                      evidence.amount
+                    )
+                  )}
+                </strong>
+
+              </td>
+
+
+              <td data-label="Method">
+
+                <span
+                  class="cl-payment-badge"
+                >
+
+                  ${escapeHtml(
+                    method
+                  )}
+
+                </span>
+
+              </td>
+
+
+              <td data-label="Reference">
+
+                ${escapeHtml(
+                  reference
+                )}
+
+              </td>
+
+
+              <td data-label="Submitted">
+
+                ${escapeHtml(
+                  formatDate(
+                    evidence.submitted_at
+                  )
+                )}
+
+              </td>
+
+
+              <td data-label="Status">
+
+                <span
+                  class="
+                    cl-evidence-status-badge
+                    ${statusClass}
+                  "
+                >
+
+                  ${escapeHtml(
+                    status
+                  )}
+
+                </span>
+
+              </td>
+
+
+              <td data-label="Details">
+
+                ${
+                  rejectionReason
+                    ? `
+                      <span
+                        class="cl-evidence-reason"
+                      >
+                        ${escapeHtml(
+                          rejectionReason
+                        )}
+                      </span>
+                    `
+                    : `
+                      <span
+                        class="cl-evidence-reason"
+                      >
+                        ${escapeHtml(
+                          evidence.evidence_text ||
+                          "Payment submitted for verification."
+                        )}
+                      </span>
+                    `
+                }
+
+              </td>
+
+            </tr>
+
+          `;
+
+        }
+      )
+      .join("");
+
+}
+
+
+async function loadMemberPaymentEvidence() {
+
+  memberPaymentEvidence = [];
+
+  if (
+    !currentMember?.id ||
+    !groupId ||
+    !isOrdinaryMember()
+  ) {
+
+    renderMemberPaymentEvidence();
+
+    return;
+
+  }
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from(
+        "member_payment_evidence"
+      )
+      .select(
+        `
+          id,
+          group_id,
+          member_id,
+          amount,
+          payment_method,
+          mpesa_reference,
+          payment_date,
+          evidence_text,
+          status,
+          submitted_at,
+          verified_at,
+          rejection_reason,
+          contribution_id
+        `
+      )
+      .eq(
+        "group_id",
+        groupId
+      )
+      .eq(
+        "member_id",
+        currentMember.id
+      )
+      .order(
+        "submitted_at",
+        {
+          ascending: false
+        }
+      );
+
+  if (error) {
+
+    throw error;
+
+  }
+
+  memberPaymentEvidence =
+    data || [];
+
+  renderMemberPaymentEvidence();
+
+}
+
+
+function configureMemberPaymentEvidence() {
+
+  if (
+    !memberPaymentEvidenceCard
+  ) {
+    return;
+  }
+
+  const show =
+    isOrdinaryMember();
+
+  memberPaymentEvidenceCard.classList.toggle(
+    "cl-member-evidence-visible",
+    show
+  );
+
+  if (
+    recordContributionCard
+  ) {
+
+    recordContributionCard.style.display =
+      show
+        ? "none"
+        : "";
+
+  }
+
+  if (
+    show &&
+    memberEvidenceDate &&
+    !memberEvidenceDate.value
+  ) {
+
+    memberEvidenceDate.value =
+      todayString();
+
+  }
+
+  updateMemberEvidencePaymentMethod();
+
+}
+
+
+async function submitMemberPaymentEvidence(
+  event
+) {
+
+  event.preventDefault();
+
+  clearMemberEvidenceMessage();
+  clearError();
+
+
+  if (!isOrdinaryMember()) {
+
+    showMemberEvidenceMessage(
+      "Payment evidence submission is available to ordinary members."
+    );
+
+    return;
+
+  }
+
+
+  if (
+    !currentMember?.id ||
+    !groupId
+  ) {
+
+    showMemberEvidenceMessage(
+      "Your active member account could not be resolved."
+    );
+
+    return;
+
+  }
+
+
+  const amount =
+    number(
+      memberEvidenceAmount?.value
+    );
+
+  const paymentDate =
+    memberEvidenceDate?.value ||
+    "";
+
+  const paymentMethod =
+    normalizePaymentMethod(
+      memberEvidenceMethod?.value
+    );
+
+  const mpesaReference =
+    memberEvidenceMpesaReference?.value
+      ?.trim() ||
+    "";
+
+  const evidenceText =
+    memberEvidenceText?.value
+      ?.trim() ||
+    "";
+
+
+  if (
+    amount <= 0
+  ) {
+
+    showMemberEvidenceMessage(
+      "Please enter a valid payment amount greater than zero."
+    );
+
+    memberEvidenceAmount?.focus();
+
+    return;
+
+  }
+
+
+  if (!paymentDate) {
+
+    showMemberEvidenceMessage(
+      "Please select the payment date."
+    );
+
+    memberEvidenceDate?.focus();
+
+    return;
+
+  }
+
+
+  if (!paymentMethod) {
+
+    showMemberEvidenceMessage(
+      "Please select the payment method."
+    );
+
+    memberEvidenceMethod?.focus();
+
+    return;
+
+  }
+
+
+  if (
+    paymentMethod ===
+      PAYMENT_METHODS.MPESA &&
+    !mpesaReference
+  ) {
+
+    showMemberEvidenceMessage(
+      "Please enter the M-Pesa reference."
+    );
+
+    memberEvidenceMpesaReference?.focus();
+
+    return;
+
+  }
+
+
+  if (!evidenceText) {
+
+    showMemberEvidenceMessage(
+      "Please provide payment details."
+    );
+
+    memberEvidenceText?.focus();
+
+    return;
+
+  }
+
+
+  if (
+    submitMemberPaymentEvidence
+  ) {
+
+    submitMemberPaymentEvidence.disabled =
+      true;
+
+    submitMemberPaymentEvidence.textContent =
+      "Submitting...";
+
+  }
+
+
+  if (statusEl) {
+
+    statusEl.hidden =
+      false;
+
+    statusEl.textContent =
+      "Submitting payment evidence securely...";
+
+  }
+
+
+  try {
+
+    /*
+     * =====================================================
+     * MEMBER EVIDENCE WRITE BOUNDARY
+     * =====================================================
+     *
+     * This is the ONLY client-side write performed by
+     * the member evidence workflow.
+     *
+     * It inserts a pending evidence record.
+     *
+     * It does NOT insert into contributions.
+     *
+     * It does NOT allocate a payment.
+     *
+     * It does NOT calculate arrears.
+     *
+     * It does NOT calculate carry-forward.
+     *
+     * It does NOT verify the payment.
+     */
+
+    const {
+      error
+    } =
+      await supabase
+        .from(
+          "member_payment_evidence"
+        )
+        .insert({
+          group_id:
+            groupId,
+
+          member_id:
+            currentMember.id,
+
+          amount:
+            amount,
+
+          payment_method:
+            paymentMethod,
+
+          mpesa_reference:
+            paymentMethod ===
+              PAYMENT_METHODS.MPESA
+              ? mpesaReference
+              : null,
+
+          payment_date:
+            paymentDate,
+
+          evidence_text:
+            evidenceText,
+
+          status:
+            MEMBER_EVIDENCE_STATUSES.PENDING
+        });
+
+
+    if (error) {
+
+      throw error;
+
+    }
+
+
+    if (
+      memberPaymentEvidenceForm
+    ) {
+
+      memberPaymentEvidenceForm.reset();
+
+    }
+
+
+    if (memberEvidenceDate) {
+
+      memberEvidenceDate.value =
+        todayString();
+
+    }
+
+
+    if (memberEvidenceMethod) {
+
+      memberEvidenceMethod.value =
+        PAYMENT_METHODS.MPESA;
+
+    }
+
+
+    updateMemberEvidencePaymentMethod();
+
+
+    await loadMemberPaymentEvidence();
+
+
+    showMemberEvidenceMessage(
+      "Payment evidence submitted successfully. It is now pending verification."
+    );
+
+
+    if (statusEl) {
+
+      statusEl.hidden =
+        false;
+
+      statusEl.textContent =
+        "Payment evidence submitted and is pending verification.";
+
+    }
+
+  }
+  catch (error) {
+
+    showError(error);
+
+  }
+  finally {
+
+    if (
+      submitMemberPaymentEvidence
+    ) {
+
+      submitMemberPaymentEvidence.disabled =
+        false;
+
+      submitMemberPaymentEvidence.textContent =
+        "Submit Payment Evidence";
+
+    }
 
   }
 
@@ -1878,7 +2714,10 @@ function renderMemberStatus() {
                 <td data-label="Status">
 
                   <span
-                    class="cl-status-badge cl-status-neutral"
+                    class="
+                      cl-status-badge
+                      cl-status-neutral
+                    "
                   >
                     NOT AVAILABLE
                   </span>
@@ -2105,7 +2944,10 @@ function renderMemberStatus() {
               >
 
                 <span
-                  class="cl-status-badge ${statusClass}"
+                  class="
+                    cl-status-badge
+                    ${statusClass}
+                  "
                 >
 
                   ${escapeHtml(
@@ -2451,6 +3293,7 @@ function renderContributionGoals() {
 
 /* =========================================================
    RECORD CONTRIBUTION
+   EXISTING CANONICAL PATH
 ========================================================= */
 
 async function recordContribution(event) {
@@ -2565,24 +3408,6 @@ async function recordContribution(event) {
 
   }
 
-
-  /*
-   * =====================================================
-   * CANONICAL 2B WRITE BOUNDARY
-   * =====================================================
-   *
-   * Historical contribution records may contain
-   * non-monthly contribution_type values.
-   *
-   * Those values remain valid for historical
-   * read/display/import purposes.
-   *
-   * The canonical 2B contribution writer, however,
-   * supports the monthly contribution workflow only.
-   *
-   * Therefore non-monthly values are rejected BEFORE
-   * the atomic contribution RPC is called.
-   */
 
   if (
     contributionType !== "monthly"
@@ -2776,17 +3601,11 @@ async function recordContribution(event) {
 
     /*
      * =====================================================
-     * ATOMIC 2B WRITE
+     * CANONICAL 2B WRITE
      * =====================================================
      *
-     * There is intentionally NO:
-     *
-     *   .from("contributions").insert(...)
-     *
-     * here.
-     *
-     * The canonical RPC is the sole new-contribution
-     * write boundary.
+     * The existing authorised contribution workflow
+     * remains separate from member payment evidence.
      */
 
     const {
@@ -2966,8 +3785,6 @@ async function recordContribution(event) {
 
     /*
      * Do NOT reset the idempotency key on failure.
-     *
-     * A retry must use the same payment identity.
      */
 
     showError(error);
@@ -3008,6 +3825,22 @@ export async function initContributions() {
   try {
 
     clearError();
+
+    clearMemberEvidenceMessage();
+
+
+    /*
+     * Resolve the authenticated member through the
+     * existing canonical get_my_member() path.
+     *
+     * auth.js is not modified by this integration.
+     */
+
+    currentMember =
+      await getMyMember();
+
+
+    configureMemberPaymentEvidence();
 
 
     buildAccountingMonthOptions();
@@ -3069,6 +3902,17 @@ export async function initContributions() {
     }
 
 
+    if (
+      memberEvidenceDate &&
+      !memberEvidenceDate.value
+    ) {
+
+      memberEvidenceDate.value =
+        todayString();
+
+    }
+
+
     if (typeSelect) {
 
       typeSelect.value =
@@ -3085,11 +3929,21 @@ export async function initContributions() {
     }
 
 
+    if (memberEvidenceMethod) {
+
+      memberEvidenceMethod.value =
+        PAYMENT_METHODS.MPESA;
+
+    }
+
+
     createOtherContributionField();
 
     updateOtherContributionType();
 
     updatePaymentMethod();
+
+    updateMemberEvidencePaymentMethod();
 
 
     if (
@@ -3099,6 +3953,24 @@ export async function initContributions() {
 
       amountInput.value =
         monthlyContribution;
+
+    }
+
+
+    /*
+     * Ordinary members can see their own evidence
+     * submission surface and do not receive the
+     * privileged contribution-recording form.
+     */
+
+    configureMemberPaymentEvidence();
+
+
+    if (
+      isOrdinaryMember()
+    ) {
+
+      await loadMemberPaymentEvidence();
 
     }
 
@@ -3128,7 +4000,12 @@ export async function initContributions() {
       "CHAMA LIVE: Contributions ready.",
       {
         groupId,
-        accountingMonth
+        accountingMonth,
+        memberId:
+          currentMember?.id ||
+          null,
+        role:
+          getCurrentMemberRole()
       }
     );
 
@@ -3222,6 +4099,44 @@ if (
 }
 
 
+if (
+  memberPaymentEvidenceForm &&
+  !memberPaymentEvidenceForm.dataset
+    .clMemberEvidenceBound
+) {
+
+  memberPaymentEvidenceForm.dataset
+    .clMemberEvidenceBound =
+    "true";
+
+
+  memberPaymentEvidenceForm.addEventListener(
+    "submit",
+    submitMemberPaymentEvidence
+  );
+
+}
+
+
+if (
+  memberEvidenceMethod &&
+  !memberEvidenceMethod.dataset
+    .clMemberEvidencePaymentBound
+) {
+
+  memberEvidenceMethod.dataset
+    .clMemberEvidencePaymentBound =
+    "true";
+
+
+  memberEvidenceMethod.addEventListener(
+    "change",
+    updateMemberEvidencePaymentMethod
+  );
+
+}
+
+
 /* =========================================================
    DIRECT PAGE COMPATIBILITY
 ========================================================= */
@@ -3266,4 +4181,3 @@ else {
 console.log(
   "CHAMA LIVE: contributions.js loaded"
 );
-
