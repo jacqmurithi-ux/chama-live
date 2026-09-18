@@ -27,7 +27,8 @@ const state = {
   groupId: null,
   groupName: "",
   plans: [],
-  milestones: []
+  milestones: [],
+  editingMilestoneId: null
 };
 
 const els = {};
@@ -85,14 +86,6 @@ function cacheElements() {
     "linked-milestones"
   );
 
-  /*
-   * The current HTML contains the same ID for:
-   *   1. Total Amount KPI
-   *   2. Amount input
-   *
-   * Use scoped selectors so the duplicate ID cannot
-   * cause the KPI reference to be overwritten.
-   */
   els.milestoneAmountKpi =
     document.querySelector(
       ".kpi-card #milestone-amount"
@@ -100,6 +93,14 @@ function cacheElements() {
 
   els.form = document.getElementById(
     "milestone-form"
+  );
+
+  els.formHeading = document.getElementById(
+    "milestone-form-heading"
+  );
+
+  els.formDescription = document.getElementById(
+    "milestone-form-description"
   );
 
   els.title = document.getElementById(
@@ -163,7 +164,7 @@ function cacheElements() {
 function bindEvents() {
   els.form?.addEventListener(
     "submit",
-    handleCreateMilestone
+    handleMilestoneSubmit
   );
 
   els.clearButton?.addEventListener(
@@ -416,20 +417,20 @@ async function refreshData() {
   }
 }
 
-async function handleCreateMilestone(
+async function handleMilestoneSubmit(
   event
 ) {
   event.preventDefault();
 
-  if (!isManagementRole()) {
-    showMessage(
-      "You do not have permission to create milestones.",
-      "error"
-    );
-
+  if (state.editingMilestoneId) {
+    await updateMilestone();
     return;
   }
 
+  await createMilestone();
+}
+
+function readMilestoneForm() {
   const title =
     els.title.value.trim();
 
@@ -450,12 +451,9 @@ async function handleCreateMilestone(
     null;
 
   if (!title) {
-    showMessage(
-      "Milestone title is required.",
-      "error"
+    throw new Error(
+      "Milestone title is required."
     );
-
-    return;
   }
 
   if (
@@ -463,21 +461,15 @@ async function handleCreateMilestone(
       category
     )
   ) {
-    showMessage(
-      "Invalid milestone category.",
-      "error"
+    throw new Error(
+      "Invalid milestone category."
     );
-
-    return;
   }
 
   if (!milestoneDate) {
-    showMessage(
-      "Milestone date is required.",
-      "error"
+    throw new Error(
+      "Milestone date is required."
     );
-
-    return;
   }
 
   let amount = null;
@@ -495,12 +487,9 @@ async function handleCreateMilestone(
       !Number.isFinite(amount) ||
       amount < 0
     ) {
-      showMessage(
-        "Amount must be zero or greater.",
-        "error"
+      throw new Error(
+        "Amount must be zero or greater."
       );
-
-      return;
     }
   }
 
@@ -511,20 +500,50 @@ async function handleCreateMilestone(
         plan.id === planId
     )
   ) {
-    showMessage(
-      "The selected plan does not belong to the current group.",
-      "error"
+    throw new Error(
+      "The selected plan does not belong to the current group."
     );
-
-    return;
   }
 
   if (
     documentId &&
     !isUuid(documentId)
   ) {
+    throw new Error(
+      "Document ID must be a valid UUID when supplied."
+    );
+  }
+
+  return {
+    plan_id: planId,
+    title,
+    description:
+      description || null,
+    milestone_date: milestoneDate,
+    category,
+    amount,
+    document_id: documentId
+  };
+}
+
+async function createMilestone() {
+  if (!isManagementRole()) {
     showMessage(
-      "Document ID must be a valid UUID when supplied.",
+      "You do not have permission to create milestones.",
+      "error"
+    );
+
+    return;
+  }
+
+  let values;
+
+  try {
+    values =
+      readMilestoneForm();
+  } catch (error) {
+    showMessage(
+      normalizeError(error),
       "error"
     );
 
@@ -538,23 +557,7 @@ async function handleCreateMilestone(
       group_id:
         state.groupId,
 
-      plan_id:
-        planId,
-
-      title,
-
-      description:
-        description || null,
-
-      milestone_date:
-        milestoneDate,
-
-      category,
-
-      amount,
-
-      document_id:
-        documentId,
+      ...values,
 
       created_by:
         state.currentMember.id
@@ -593,6 +596,228 @@ async function handleCreateMilestone(
   }
 }
 
+async function updateMilestone() {
+  if (!isManagementRole()) {
+    showMessage(
+      "You do not have permission to update milestones.",
+      "error"
+    );
+
+    return;
+  }
+
+  const id =
+    state.editingMilestoneId;
+
+  if (!id) {
+    showMessage(
+      "No milestone is currently selected for editing.",
+      "error"
+    );
+
+    return;
+  }
+
+  const existing =
+    state.milestones.find(
+      (item) =>
+        item.id === id
+    );
+
+  if (!existing) {
+    showMessage(
+      "Milestone could not be found.",
+      "error"
+    );
+
+    cancelMilestoneEdit();
+    return;
+  }
+
+  let values;
+
+  try {
+    values =
+      readMilestoneForm();
+  } catch (error) {
+    showMessage(
+      normalizeError(error),
+      "error"
+    );
+
+    return;
+  }
+
+  setFormBusy(true);
+
+  try {
+    const {
+      error
+    } = await supabase
+      .from("group_milestones")
+      .update(values)
+      .eq(
+        "id",
+        id
+      )
+      .eq(
+        "group_id",
+        state.groupId
+      );
+
+    if (error) {
+      throw error;
+    }
+
+    clearForm();
+
+    await loadMilestones();
+
+    showMessage(
+      "Milestone updated successfully.",
+      "success"
+    );
+  } catch (error) {
+    console.error(
+      "CHAMA LIVE: milestone update failed",
+      error
+    );
+
+    showMessage(
+      normalizeError(error),
+      "error"
+    );
+  } finally {
+    setFormBusy(false);
+  }
+}
+
+function beginMilestoneEdit(
+  id
+) {
+  if (!isManagementRole()) {
+    showMessage(
+      "You do not have permission to edit milestones.",
+      "error"
+    );
+
+    return;
+  }
+
+  const milestone =
+    state.milestones.find(
+      (item) =>
+        item.id === id
+    );
+
+  if (!milestone) {
+    showMessage(
+      "Milestone could not be found.",
+      "error"
+    );
+
+    return;
+  }
+
+  state.editingMilestoneId =
+    milestone.id;
+
+  if (els.title) {
+    els.title.value =
+      milestone.title || "";
+  }
+
+  if (els.category) {
+    els.category.value =
+      MILESTONE_CATEGORIES.includes(
+        milestone.category
+      )
+        ? milestone.category
+        : "general";
+  }
+
+  if (els.plan) {
+    els.plan.value =
+      milestone.plan_id || "";
+  }
+
+  if (els.date) {
+    els.date.value =
+      milestone.milestone_date || "";
+  }
+
+  if (els.amount) {
+    els.amount.value =
+      milestone.amount === null ||
+      milestone.amount === undefined
+        ? ""
+        : milestone.amount;
+  }
+
+  if (els.documentId) {
+    els.documentId.value =
+      milestone.document_id || "";
+  }
+
+  if (els.description) {
+    els.description.value =
+      milestone.description || "";
+  }
+
+  setEditMode(true);
+
+  els.form?.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+
+  showMessage(
+    `Editing milestone "${milestone.title}".`,
+    "success"
+  );
+}
+
+function cancelMilestoneEdit() {
+  state.editingMilestoneId =
+    null;
+
+  clearForm();
+
+  setEditMode(false);
+}
+
+function setEditMode(
+  editing
+) {
+  if (els.formHeading) {
+    els.formHeading.textContent =
+      editing
+        ? "Edit Milestone"
+        : "Create Milestone";
+  }
+
+  if (els.formDescription) {
+    els.formDescription.textContent =
+      editing
+        ? "Update the selected milestone in the current authenticated group."
+        : "Add a new milestone to the current authenticated group.";
+  }
+
+  if (els.createButton) {
+    els.createButton.textContent =
+      editing
+        ? "Update Milestone"
+        : "Create Milestone";
+  }
+
+  if (els.clearButton) {
+    els.clearButton.textContent =
+      editing
+        ? "Cancel Edit"
+        : "Clear";
+  }
+}
+
 async function handleTableAction(
   event
 ) {
@@ -612,6 +837,16 @@ async function handleTableAction(
     button.dataset.action;
 
   if (!milestoneId) {
+    return;
+  }
+
+  if (
+    action === "edit"
+  ) {
+    beginMilestoneEdit(
+      milestoneId
+    );
+
     return;
   }
 
@@ -677,6 +912,13 @@ async function deleteMilestone(
 
     if (error) {
       throw error;
+    }
+
+    if (
+      state.editingMilestoneId ===
+      id
+    ) {
+      cancelMilestoneEdit();
     }
 
     await loadMilestones();
@@ -931,6 +1173,17 @@ function renderMilestones() {
                       ? `
                         <button
                           type="button"
+                          class="btn-secondary"
+                          data-action="edit"
+                          data-id="${escapeHtml(
+                            milestone.id
+                          )}"
+                        >
+                          Edit
+                        </button>
+
+                        <button
+                          type="button"
                           class="btn-danger"
                           data-action="delete"
                           data-id="${escapeHtml(
@@ -962,6 +1215,23 @@ function clearForm() {
   if (els.plan) {
     els.plan.value = "";
   }
+
+  if (els.amount) {
+    els.amount.value = "";
+  }
+
+  if (els.documentId) {
+    els.documentId.value = "";
+  }
+
+  if (els.description) {
+    els.description.value = "";
+  }
+
+  state.editingMilestoneId =
+    null;
+
+  setEditMode(false);
 }
 
 function setFormBusy(
@@ -977,8 +1247,21 @@ function setFormBusy(
 
   els.createButton.textContent =
     busy
-      ? "Creating..."
-      : "Create Milestone";
+      ? (
+          state.editingMilestoneId
+            ? "Updating..."
+            : "Creating..."
+        )
+      : (
+          state.editingMilestoneId
+            ? "Update Milestone"
+            : "Create Milestone"
+        );
+
+  if (els.clearButton) {
+    els.clearButton.disabled =
+      busy;
+  }
 }
 
 function getPlanTitle(
