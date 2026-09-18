@@ -626,6 +626,176 @@
     }
 
     /* =====================================================
+       GETTING STARTED SUCCESS POPUP
+    ===================================================== */
+
+    .getting-started-popup {
+      position:
+        fixed;
+
+      inset:
+        0;
+
+      z-index:
+        5000;
+
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        center;
+
+      padding:
+        20px;
+
+      background:
+        rgba(15, 23, 42, .58);
+
+      backdrop-filter:
+        blur(4px);
+    }
+
+    .getting-started-popup[hidden] {
+      display:
+        none;
+    }
+
+    .getting-started-popup-card {
+      width:
+        100%;
+
+      max-width:
+        460px;
+
+      padding:
+        28px;
+
+      border-radius:
+        20px;
+
+      background:
+        #fff;
+
+      box-shadow:
+        0 24px 70px
+        rgba(15, 23, 42, .25);
+
+      text-align:
+        center;
+
+      animation:
+        gettingStartedPopupIn
+        .25s ease-out;
+    }
+
+    .getting-started-popup-icon {
+      width:
+        56px;
+
+      height:
+        56px;
+
+      margin:
+        0 auto 16px;
+
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        center;
+
+      border-radius:
+        50%;
+
+      background:
+        #ecfdf3;
+
+      color:
+        #047857;
+
+      font-size:
+        28px;
+
+      font-weight:
+        800;
+    }
+
+    .getting-started-popup-card h2 {
+      margin:
+        0 0 10px;
+
+      font-size:
+        22px;
+
+      color:
+        #172033;
+    }
+
+    .getting-started-popup-card p {
+      margin:
+        0 0 22px;
+
+      color:
+        #64748b;
+
+      font-size:
+        14px;
+
+      line-height:
+        1.6;
+    }
+
+    .getting-started-popup-actions {
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        center;
+
+      gap:
+        10px;
+
+      flex-wrap:
+        wrap;
+    }
+
+    .getting-started-popup-actions .btn {
+      min-width:
+        150px;
+    }
+
+    @keyframes gettingStartedPopupIn {
+
+      from {
+        opacity:
+          0;
+
+        transform:
+          translateY(12px)
+          scale(.98);
+      }
+
+      to {
+        opacity:
+          1;
+
+        transform:
+          translateY(0)
+          scale(1);
+      }
+
+    }
+
+    /* =====================================================
        DESKTOP
     ===================================================== */
 
@@ -981,6 +1151,39 @@
           17px;
       }
 
+      .getting-started-popup {
+        padding:
+          14px;
+      }
+
+      .getting-started-popup-card {
+        padding:
+          24px 18px;
+
+        border-radius:
+          18px;
+      }
+
+      .getting-started-popup-card h2 {
+        font-size:
+          20px;
+      }
+
+      .getting-started-popup-card p {
+        font-size:
+          13px;
+      }
+
+      .getting-started-popup-actions {
+        flex-direction:
+          column;
+      }
+
+      .getting-started-popup-actions .btn {
+        width:
+          100%;
+      }
+
     }
 
     /* =====================================================
@@ -1072,10 +1275,6 @@
         <a href="group-management.html">
           Group Management
         </a>
-
-        <!-- =================================================
-             ASSETS
-        ================================================== -->
 
         <a href="assets.html">
           Assets
@@ -1180,8 +1379,6 @@
 
       <section class="dashboard-metrics">
 
-        <!-- ACTIVE MEMBERS -->
-
         <div class="card metric-card">
 
           <div class="metric-label">
@@ -1207,8 +1404,6 @@
 
         </div>
 
-        <!-- MONTHLY EXPECTED -->
-
         <div class="card metric-card">
 
           <div class="metric-label">
@@ -1228,8 +1423,6 @@
 
         </div>
 
-        <!-- MONTHLY APPLIED -->
-
         <div class="card metric-card">
 
           <div class="metric-label">
@@ -1248,8 +1441,6 @@
           </div>
 
         </div>
-
-        <!-- CURRENT BALANCE -->
 
         <div class="card metric-card">
 
@@ -1299,16 +1490,12 @@
 
         </div>
 
-        <!-- PERCENTAGE -->
-
         <div
           id="progressPercentage"
           class="progress-percentage"
         >
           0%
         </div>
-
-        <!-- PROGRESS BAR -->
 
         <div
           class="progress"
@@ -1326,8 +1513,6 @@
 
         </div>
 
-        <!-- PROGRESS TOTAL -->
-
         <div class="progress-footer">
 
           <strong id="progressText">
@@ -1339,8 +1524,6 @@
           </span>
 
         </div>
-
-        <!-- MEMBER PARTICIPATION SUMMARY -->
 
         <div class="contributor-summary">
 
@@ -1391,8 +1574,6 @@
 
         </div>
 
-        <!-- CONTRIBUTION BREAKDOWN -->
-
         <div class="contribution-breakdown">
 
           <span>
@@ -1441,8 +1622,6 @@
           </span>
 
         </div>
-
-        <!-- EXPLANATION -->
 
         <p class="muted">
 
@@ -1551,8 +1730,6 @@
 
         <div class="activity-grid">
 
-          <!-- RECENT CONTRIBUTIONS -->
-
           <div class="card activity-card">
 
             <div class="section-heading">
@@ -1627,8 +1804,6 @@
             </div>
 
           </div>
-
-          <!-- RECENT EXPENSES -->
 
           <div class="card activity-card">
 
@@ -1795,6 +1970,62 @@
   </div>
 
   <!-- =====================================================
+       GETTING STARTED SUCCESS POPUP
+  ====================================================== -->
+
+  <div
+    id="gettingStartedPopup"
+    class="getting-started-popup"
+    hidden
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="gettingStartedPopupTitle"
+  >
+
+    <div class="getting-started-popup-card">
+
+      <div
+        class="getting-started-popup-icon"
+        aria-hidden="true"
+      >
+        ✓
+      </div>
+
+      <h2 id="gettingStartedPopupTitle">
+        Your group is ready
+      </h2>
+
+      <p id="gettingStartedPopupMessage">
+        Your CHAMA LIVE group workspace has been
+        created successfully. Take the guided tour
+        to see how your new workspace works.
+      </p>
+
+      <div class="getting-started-popup-actions">
+
+        <button
+          id="gettingStartedPopupClose"
+          class="btn btn-secondary"
+          type="button"
+        >
+          Maybe later
+        </button>
+
+        <button
+          id="gettingStartedPopupTour"
+          class="btn btn-primary"
+          type="button"
+        >
+          Take Guided Tour
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- =====================================================
        PAGE BOOT
   ====================================================== -->
 
@@ -1805,6 +2036,285 @@
     } from "./js/layout.js";
 
     boot();
+
+  </script>
+
+  <!-- =====================================================
+       GETTING STARTED SUCCESS POPUP
+  ====================================================== -->
+
+  <script>
+
+    /* =====================================================
+       CHAMA LIVE — GETTING STARTED SUCCESS POPUP
+
+       The event is created by:
+       - confirm.html      → new-group
+       - members.js        → new-member
+
+       Dashboard waits 10 seconds after opening before
+       displaying the popup.
+
+       The event is removed only after the popup displays.
+    ===================================================== */
+
+    const POPUP_EVENT_KEY =
+      "chama_live_getting_started_event";
+
+    const POPUP_DELAY =
+      10000;
+
+    const gettingStartedPopup =
+      document.getElementById(
+        "gettingStartedPopup"
+      );
+
+    const gettingStartedPopupTitle =
+      document.getElementById(
+        "gettingStartedPopupTitle"
+      );
+
+    const gettingStartedPopupMessage =
+      document.getElementById(
+        "gettingStartedPopupMessage"
+      );
+
+    const gettingStartedPopupClose =
+      document.getElementById(
+        "gettingStartedPopupClose"
+      );
+
+    const gettingStartedPopupTour =
+      document.getElementById(
+        "gettingStartedPopupTour"
+      );
+
+
+    /* =====================================================
+       CLOSE POPUP
+    ===================================================== */
+
+    function closeGettingStartedPopup() {
+
+      if (!gettingStartedPopup) {
+        return;
+      }
+
+      gettingStartedPopup.hidden =
+        true;
+
+    }
+
+
+    /* =====================================================
+       SHOW POPUP
+    ===================================================== */
+
+    function showGettingStartedPopup(
+      eventType
+    ) {
+
+      if (
+        eventType !== "new-group" &&
+        eventType !== "new-member"
+      ) {
+        return false;
+      }
+
+
+      /* ===================================================
+         NEW GROUP
+      =================================================== */
+
+      if (eventType === "new-group") {
+
+        gettingStartedPopupTitle.textContent =
+          "Your group is ready";
+
+        gettingStartedPopupMessage.textContent =
+          "Your CHAMA LIVE group workspace has been created successfully. Take the guided tour to see how your new workspace works.";
+
+      }
+
+
+      /* ===================================================
+         NEW MEMBER
+      =================================================== */
+
+      if (eventType === "new-member") {
+
+        gettingStartedPopupTitle.textContent =
+          "Member added successfully";
+
+        gettingStartedPopupMessage.textContent =
+          "The new member has been added to your group. Take a quick guided tour to see how members and the rest of your workspace fit together.";
+
+      }
+
+
+      /* ===================================================
+         DISPLAY POPUP
+      =================================================== */
+
+      gettingStartedPopup.hidden =
+        false;
+
+
+      /* ===================================================
+         CONSUME EVENT
+
+         Only remove the event AFTER the popup has
+         actually been displayed.
+      =================================================== */
+
+      sessionStorage.removeItem(
+        POPUP_EVENT_KEY
+      );
+
+
+      return true;
+
+    }
+
+
+    /* =====================================================
+       START POPUP TIMER
+    ===================================================== */
+
+    function startGettingStartedPopup() {
+
+      const onboardingEvent =
+        sessionStorage.getItem(
+          POPUP_EVENT_KEY
+        );
+
+
+      /* ===================================================
+         NO ONBOARDING EVENT
+      =================================================== */
+
+      if (
+        onboardingEvent !== "new-group" &&
+        onboardingEvent !== "new-member"
+      ) {
+        return;
+      }
+
+
+      /* ===================================================
+         WAIT 10 SECONDS
+
+         Dashboard is already open at this point.
+         The sessionStorage event remains available
+         during the delay.
+      =================================================== */
+
+      window.setTimeout(
+        () => {
+
+          /*
+           * Re-read the event before showing it.
+           *
+           * This protects against another page/script
+           * consuming the event while the timer is active.
+           */
+
+          const currentEvent =
+            sessionStorage.getItem(
+              POPUP_EVENT_KEY
+            );
+
+          if (
+            currentEvent !== "new-group" &&
+            currentEvent !== "new-member"
+          ) {
+            return;
+          }
+
+          showGettingStartedPopup(
+            currentEvent
+          );
+
+        },
+        POPUP_DELAY
+      );
+
+    }
+
+
+    /* =====================================================
+       CLOSE BUTTON
+    ===================================================== */
+
+    gettingStartedPopupClose?.addEventListener(
+      "click",
+      closeGettingStartedPopup
+    );
+
+
+    /* =====================================================
+       BACKDROP CLICK
+    ===================================================== */
+
+    gettingStartedPopup?.addEventListener(
+      "click",
+      event => {
+
+        if (
+          event.target ===
+          gettingStartedPopup
+        ) {
+
+          closeGettingStartedPopup();
+
+        }
+
+      }
+    );
+
+
+    /* =====================================================
+       ESCAPE KEY
+    ===================================================== */
+
+    document.addEventListener(
+      "keydown",
+      event => {
+
+        if (
+          event.key === "Escape" &&
+          gettingStartedPopup &&
+          !gettingStartedPopup.hidden
+        ) {
+
+          closeGettingStartedPopup();
+
+        }
+
+      }
+    );
+
+
+    /* =====================================================
+       GUIDED TOUR
+    ===================================================== */
+
+    gettingStartedPopupTour?.addEventListener(
+      "click",
+      () => {
+
+        window.location.href =
+          "getting-started.html";
+
+      }
+    );
+
+
+    /* =====================================================
+       START
+    ===================================================== */
+
+    startGettingStartedPopup();
 
   </script>
 
