@@ -16,6 +16,10 @@
      authorised verifier workflow.
    • Existing canonical contribution recording remains
      through cl_2b_record_contribution().
+   • Verifier reads are limited to pending evidence in
+     the current group.
+   • Verifier writes occur only through
+     verify_member_payment_evidence().
 ========================================================= */
 
 import {
@@ -178,6 +182,31 @@ const memberEvidenceMessage =
 
 
 /* =========================================================
+   VERIFIER PAYMENT EVIDENCE ELEMENTS
+========================================================= */
+
+const verifierPaymentEvidenceCard =
+  document.getElementById(
+    "verifierPaymentEvidenceCard"
+  );
+
+const verifierPaymentEvidenceMessage =
+  document.getElementById(
+    "verifierPaymentEvidenceMessage"
+  );
+
+const verifierPaymentEvidenceRows =
+  document.getElementById(
+    "verifierPaymentEvidenceRows"
+  );
+
+const verifierPaymentEvidenceDetail =
+  document.getElementById(
+    "verifierPaymentEvidenceDetail"
+  );
+
+
+/* =========================================================
    STATE
 ========================================================= */
 
@@ -193,6 +222,8 @@ let canonicalMemberStatus = [];
 
 let memberPaymentEvidence = [];
 
+let verifierPaymentEvidence = [];
+
 let currentMember = null;
 
 let monthlyContribution = 0;
@@ -201,6 +232,9 @@ let initialized = false;
 
 let accountingMonth =
   getCurrentMonth();
+
+let selectedVerifierEvidenceId =
+  null;
 
 
 /* =========================================================
@@ -227,6 +261,19 @@ const MEMBER_EVIDENCE_STATUSES = {
   REJECTED: "rejected"
 
 };
+
+
+const VERIFIER_ROLES = new Set([
+
+  "admin",
+
+  "chairperson",
+
+  "secretary",
+
+  "treasurer"
+
+]);
 
 
 /* =========================================================
@@ -731,6 +778,34 @@ function clearMemberEvidenceMessage() {
 
 
 /* =========================================================
+   VERIFIER MESSAGE
+========================================================= */
+
+function showVerifierPaymentEvidenceMessage(
+  message
+) {
+
+  if (!verifierPaymentEvidenceMessage) {
+    return;
+  }
+
+  verifierPaymentEvidenceMessage.textContent =
+    message || "";
+
+  verifierPaymentEvidenceMessage.hidden =
+    !message;
+
+}
+
+
+function clearVerifierPaymentEvidenceMessage() {
+
+  showVerifierPaymentEvidenceMessage("");
+
+}
+
+
+/* =========================================================
    CURRENT MEMBER / ROLE
 ========================================================= */
 
@@ -751,6 +826,15 @@ function isOrdinaryMember() {
   return (
     getCurrentMemberRole() ===
     "member"
+  );
+
+}
+
+
+function isAuthorizedVerifier() {
+
+  return VERIFIER_ROLES.has(
+    getCurrentMemberRole()
   );
 
 }
@@ -1291,12 +1375,6 @@ async function submitMemberPaymentEvidence(
   }
 
 
-  /*
-   * IMPORTANT:
-   * Use the renamed DOM button variable.
-   * The function remains submitMemberPaymentEvidence().
-   */
-
   if (
     submitMemberPaymentEvidenceButton
   ) {
@@ -1324,24 +1402,13 @@ async function submitMemberPaymentEvidence(
   try {
 
     /*
-     * =====================================================
      * MEMBER EVIDENCE WRITE BOUNDARY
-     * =====================================================
      *
-     * This is the ONLY client-side write performed by
-     * the member evidence workflow.
+     * This is the only client-side write performed
+     * by the member evidence submission workflow.
      *
-     * It inserts a pending evidence record.
-     *
-     * It does NOT insert into contributions.
-     *
-     * It does NOT allocate a payment.
-     *
-     * It does NOT calculate arrears.
-     *
-     * It does NOT calculate carry-forward.
-     *
-     * It does NOT verify the payment.
+     * It creates a pending evidence row only.
+     * It does not create a contribution.
      */
 
     const {
@@ -1451,6 +1518,981 @@ async function submitMemberPaymentEvidence(
 
       submitMemberPaymentEvidenceButton.textContent =
         "Submit Payment Evidence";
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   VERIFIER PAYMENT EVIDENCE
+========================================================= */
+
+function configureVerifierPaymentEvidence() {
+
+  if (
+    !verifierPaymentEvidenceCard
+  ) {
+    return;
+  }
+
+  const show =
+    isAuthorizedVerifier();
+
+  verifierPaymentEvidenceCard.hidden =
+    !show;
+
+  if (!show) {
+
+    verifierPaymentEvidence = [];
+
+    selectedVerifierEvidenceId =
+      null;
+
+    clearVerifierPaymentEvidenceMessage();
+
+    if (
+      verifierPaymentEvidenceRows
+    ) {
+
+      verifierPaymentEvidenceRows.innerHTML = "";
+
+    }
+
+    if (
+      verifierPaymentEvidenceDetail
+    ) {
+
+      verifierPaymentEvidenceDetail.hidden =
+        true;
+
+      verifierPaymentEvidenceDetail.innerHTML =
+        "";
+
+    }
+
+  }
+
+}
+
+
+function renderVerifierPaymentEvidence() {
+
+  if (
+    !verifierPaymentEvidenceRows
+  ) {
+    return;
+  }
+
+  if (
+    !verifierPaymentEvidence.length
+  ) {
+
+    verifierPaymentEvidenceRows.innerHTML = `
+
+      <tr>
+
+        <td
+          colspan="7"
+          class="cl-evidence-empty"
+        >
+
+          No pending payment evidence requires
+          verification.
+
+        </td>
+
+      </tr>
+
+    `;
+
+    return;
+
+  }
+
+  verifierPaymentEvidenceRows.innerHTML =
+    verifierPaymentEvidence
+      .map(
+        evidence => {
+
+          const memberName =
+            getMemberName(
+              evidence.member_id
+            );
+
+          const method =
+            normalizePaymentMethod(
+              evidence.payment_method
+            );
+
+          const reference =
+            evidence.mpesa_reference ||
+            "—";
+
+          return `
+
+            <tr>
+
+              <td data-label="Member">
+
+                <strong>
+                  ${escapeHtml(
+                    memberName
+                  )}
+                </strong>
+
+              </td>
+
+
+              <td
+                data-label="Amount"
+                class="cl-money-cell"
+              >
+
+                <strong>
+                  ${escapeHtml(
+                    money(
+                      evidence.amount
+                    )
+                  )}
+                </strong>
+
+              </td>
+
+
+              <td data-label="Payment Date">
+
+                ${escapeHtml(
+                  formatDate(
+                    evidence.payment_date
+                  )
+                )}
+
+              </td>
+
+
+              <td data-label="Method">
+
+                <span
+                  class="cl-payment-badge"
+                >
+
+                  ${escapeHtml(
+                    method
+                  )}
+
+                </span>
+
+              </td>
+
+
+              <td data-label="Reference">
+
+                ${escapeHtml(
+                  reference
+                )}
+
+              </td>
+
+
+              <td data-label="Submitted">
+
+                ${escapeHtml(
+                  formatDate(
+                    evidence.submitted_at
+                  )
+                )}
+
+              </td>
+
+
+              <td data-label="Action">
+
+                <button
+                  type="button"
+                  class="cl-verifier-button"
+                  data-verifier-evidence-id="${escapeHtml(
+                    evidence.id
+                  )}"
+                >
+                  Review
+                </button>
+
+              </td>
+
+            </tr>
+
+          `;
+
+        }
+      )
+      .join("");
+
+}
+
+
+function showVerifierPaymentEvidenceDetail(
+  evidenceId
+) {
+
+  if (
+    !verifierPaymentEvidenceDetail
+  ) {
+    return;
+  }
+
+  const evidence =
+    verifierPaymentEvidence.find(
+      item =>
+        String(item.id) ===
+        String(evidenceId)
+    );
+
+  if (!evidence) {
+
+    verifierPaymentEvidenceDetail.hidden =
+      true;
+
+    verifierPaymentEvidenceDetail.innerHTML =
+      "";
+
+    selectedVerifierEvidenceId =
+      null;
+
+    return;
+
+  }
+
+  selectedVerifierEvidenceId =
+    evidence.id;
+
+  const memberName =
+    getMemberName(
+      evidence.member_id
+    );
+
+  const method =
+    normalizePaymentMethod(
+      evidence.payment_method
+    );
+
+  const reference =
+    evidence.mpesa_reference ||
+    "—";
+
+  verifierPaymentEvidenceDetail.innerHTML = `
+
+    <div
+      class="cl-verifier-detail"
+    >
+
+      <div
+        class="cl-verifier-detail-grid"
+      >
+
+        <div>
+
+          <span>
+            Member
+          </span>
+
+          <strong>
+            ${escapeHtml(
+              memberName
+            )}
+          </strong>
+
+        </div>
+
+
+        <div>
+
+          <span>
+            Amount
+          </span>
+
+          <strong>
+            ${escapeHtml(
+              money(
+                evidence.amount
+              )
+            )}
+          </strong>
+
+        </div>
+
+
+        <div>
+
+          <span>
+            Payment date
+          </span>
+
+          <strong>
+            ${escapeHtml(
+              formatDate(
+                evidence.payment_date
+              )
+            )}
+          </strong>
+
+        </div>
+
+
+        <div>
+
+          <span>
+            Payment method
+          </span>
+
+          <strong>
+            ${escapeHtml(
+              method
+            )}
+          </strong>
+
+        </div>
+
+
+        <div>
+
+          <span>
+            M-Pesa reference
+          </span>
+
+          <strong>
+            ${escapeHtml(
+              reference
+            )}
+          </strong>
+
+        </div>
+
+
+        <div>
+
+          <span>
+            Submitted
+          </span>
+
+          <strong>
+            ${escapeHtml(
+              formatDate(
+                evidence.submitted_at
+              )
+            )}
+          </strong>
+
+        </div>
+
+      </div>
+
+
+      <div
+        class="cl-verifier-detail-evidence"
+      >
+
+        <span>
+          Payment details
+        </span>
+
+        <p>
+          ${escapeHtml(
+            evidence.evidence_text ||
+            "No additional payment details supplied."
+          )}
+        </p>
+
+      </div>
+
+
+      <div
+        class="cl-verifier-detail-actions"
+      >
+
+        <button
+          type="button"
+          class="
+            cl-verifier-button
+            cl-verifier-button-primary
+          "
+          data-verify-evidence-id="${escapeHtml(
+            evidence.id
+          )}"
+        >
+          Verify Payment
+        </button>
+
+
+        <button
+          type="button"
+          class="
+            cl-verifier-button
+            cl-verifier-button-danger
+          "
+          data-reject-evidence-id="${escapeHtml(
+            evidence.id
+          )}"
+        >
+          Reject Payment
+        </button>
+
+
+        <button
+          type="button"
+          class="
+            cl-verifier-button
+            cl-verifier-button-secondary
+          "
+          data-close-verifier-detail
+        >
+          Close
+        </button>
+
+      </div>
+
+    </div>
+
+  `;
+
+  verifierPaymentEvidenceDetail.hidden =
+    false;
+
+}
+
+
+async function loadVerifierPaymentEvidence() {
+
+  verifierPaymentEvidence = [];
+
+  selectedVerifierEvidenceId =
+    null;
+
+  if (
+    !groupId ||
+    !isAuthorizedVerifier()
+  ) {
+
+    renderVerifierPaymentEvidence();
+
+    if (
+      verifierPaymentEvidenceDetail
+    ) {
+
+      verifierPaymentEvidenceDetail.hidden =
+        true;
+
+      verifierPaymentEvidenceDetail.innerHTML =
+        "";
+
+    }
+
+    return;
+
+  }
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from(
+        "member_payment_evidence"
+      )
+      .select(
+        `
+          id,
+          group_id,
+          member_id,
+          amount,
+          payment_method,
+          mpesa_reference,
+          payment_date,
+          evidence_text,
+          status,
+          submitted_at
+        `
+      )
+      .eq(
+        "group_id",
+        groupId
+      )
+      .eq(
+        "status",
+        MEMBER_EVIDENCE_STATUSES.PENDING
+      )
+      .order(
+        "submitted_at",
+        {
+          ascending: true
+        }
+      );
+
+  if (error) {
+
+    throw error;
+
+  }
+
+  verifierPaymentEvidence =
+    data || [];
+
+  renderVerifierPaymentEvidence();
+
+}
+
+
+async function verifyPaymentEvidence(
+  evidenceId
+) {
+
+  if (
+    !isAuthorizedVerifier()
+  ) {
+
+    showVerifierPaymentEvidenceMessage(
+      "You are not authorised to verify payment evidence."
+    );
+
+    return;
+
+  }
+
+  const evidence =
+    verifierPaymentEvidence.find(
+      item =>
+        String(item.id) ===
+        String(evidenceId)
+    );
+
+  if (!evidence) {
+
+    showVerifierPaymentEvidenceMessage(
+      "The selected payment evidence is no longer pending."
+    );
+
+    return;
+
+  }
+
+  const confirmed =
+    window.confirm(
+      `Verify ${getMemberName(
+        evidence.member_id
+      )}'s payment of ${money(
+        evidence.amount
+      )}?\n\n` +
+      `This will pass the payment through the canonical accounting workflow.`
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  clearVerifierPaymentEvidenceMessage();
+  clearError();
+
+  try {
+
+    if (statusEl) {
+
+      statusEl.hidden =
+        false;
+
+      statusEl.textContent =
+        "Verifying payment evidence securely...";
+
+    }
+
+    /*
+     * =====================================================
+     * VERIFIER WRITE BOUNDARY
+     * =====================================================
+     *
+     * This is the ONLY verifier write.
+     *
+     * The browser does not directly UPDATE the evidence
+     * row and does not directly INSERT a contribution.
+     *
+     * The SECURITY DEFINER RPC is the authoritative
+     * verification and accounting boundary.
+     */
+
+    const {
+      data,
+      error
+    } =
+      await supabase.rpc(
+        "verify_member_payment_evidence",
+        {
+          p_evidence_id:
+            evidenceId,
+
+          p_decision:
+            MEMBER_EVIDENCE_STATUSES.VERIFIED,
+
+          p_rejection_reason:
+            null
+        }
+      );
+
+    if (error) {
+
+      throw error;
+
+    }
+
+    console.log(
+      "CHAMA LIVE: Payment evidence verification completed",
+      {
+        evidenceId,
+        result: data
+      }
+    );
+
+
+    selectedVerifierEvidenceId =
+      null;
+
+    if (
+      verifierPaymentEvidenceDetail
+    ) {
+
+      verifierPaymentEvidenceDetail.hidden =
+        true;
+
+      verifierPaymentEvidenceDetail.innerHTML =
+        "";
+
+    }
+
+
+    await loadVerifierPaymentEvidence();
+
+    await loadContributions();
+
+    await loadCanonicalMemberStatus(
+      accountingMonth
+    );
+
+
+    renderLedger();
+
+    renderMemberStatus();
+
+    renderSummary();
+
+    renderContributionGoals();
+
+
+    if (
+      isOrdinaryMember()
+    ) {
+
+      await loadMemberPaymentEvidence();
+
+    }
+
+
+    showVerifierPaymentEvidenceMessage(
+      "Payment verified successfully and passed through canonical accounting."
+    );
+
+
+    if (statusEl) {
+
+      statusEl.hidden =
+        false;
+
+      statusEl.textContent =
+        "Payment verified and canonical accounting refreshed.";
+
+    }
+
+  }
+  catch (error) {
+
+    showError(error);
+
+    showVerifierPaymentEvidenceMessage(
+      error?.message ||
+      "Payment verification failed. The pending evidence remains available for review."
+    );
+
+  }
+
+}
+
+
+async function rejectPaymentEvidence(
+  evidenceId
+) {
+
+  if (
+    !isAuthorizedVerifier()
+  ) {
+
+    showVerifierPaymentEvidenceMessage(
+      "You are not authorised to reject payment evidence."
+    );
+
+    return;
+
+  }
+
+  const evidence =
+    verifierPaymentEvidence.find(
+      item =>
+        String(item.id) ===
+        String(evidenceId)
+    );
+
+  if (!evidence) {
+
+    showVerifierPaymentEvidenceMessage(
+      "The selected payment evidence is no longer pending."
+    );
+
+    return;
+
+  }
+
+  const reason =
+    window.prompt(
+      "Enter the reason for rejecting this payment evidence:"
+    );
+
+  if (reason === null) {
+    return;
+  }
+
+  const rejectionReason =
+    String(
+      reason
+    ).trim();
+
+  if (!rejectionReason) {
+
+    showVerifierPaymentEvidenceMessage(
+      "A rejection reason is required."
+    );
+
+    return;
+
+  }
+
+  const confirmed =
+    window.confirm(
+      `Reject ${getMemberName(
+        evidence.member_id
+      )}'s payment evidence?\n\n` +
+      `Reason: ${rejectionReason}`
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  clearVerifierPaymentEvidenceMessage();
+  clearError();
+
+  try {
+
+    if (statusEl) {
+
+      statusEl.hidden =
+        false;
+
+      statusEl.textContent =
+        "Rejecting payment evidence securely...";
+
+    }
+
+    /*
+     * =====================================================
+     * VERIFIER WRITE BOUNDARY
+     * =====================================================
+     *
+     * Rejection also goes exclusively through the
+     * canonical verification RPC.
+     */
+
+    const {
+      data,
+      error
+    } =
+      await supabase.rpc(
+        "verify_member_payment_evidence",
+        {
+          p_evidence_id:
+            evidenceId,
+
+          p_decision:
+            MEMBER_EVIDENCE_STATUSES.REJECTED,
+
+          p_rejection_reason:
+            rejectionReason
+        }
+      );
+
+    if (error) {
+
+      throw error;
+
+    }
+
+    console.log(
+      "CHAMA LIVE: Payment evidence rejection completed",
+      {
+        evidenceId,
+        result: data
+      }
+    );
+
+
+    selectedVerifierEvidenceId =
+      null;
+
+    if (
+      verifierPaymentEvidenceDetail
+    ) {
+
+      verifierPaymentEvidenceDetail.hidden =
+        true;
+
+      verifierPaymentEvidenceDetail.innerHTML =
+        "";
+
+    }
+
+
+    await loadVerifierPaymentEvidence();
+
+
+    if (
+      isOrdinaryMember()
+    ) {
+
+      await loadMemberPaymentEvidence();
+
+    }
+
+
+    showVerifierPaymentEvidenceMessage(
+      "Payment evidence rejected successfully."
+    );
+
+
+    if (statusEl) {
+
+      statusEl.hidden =
+        false;
+
+      statusEl.textContent =
+        "Payment evidence rejected.";
+
+    }
+
+  }
+  catch (error) {
+
+    showError(error);
+
+    showVerifierPaymentEvidenceMessage(
+      error?.message ||
+      "Payment rejection failed. The pending evidence remains available for review."
+    );
+
+  }
+
+}
+
+
+function handleVerifierPaymentEvidenceClick(
+  event
+) {
+
+  const reviewButton =
+    event.target.closest(
+      "[data-verifier-evidence-id]"
+    );
+
+  if (reviewButton) {
+
+    const evidenceId =
+      reviewButton.dataset
+        .verifierEvidenceId;
+
+    showVerifierPaymentEvidenceDetail(
+      evidenceId
+    );
+
+    return;
+
+  }
+
+
+  const verifyButton =
+    event.target.closest(
+      "[data-verify-evidence-id]"
+    );
+
+  if (verifyButton) {
+
+    const evidenceId =
+      verifyButton.dataset
+        .verifyEvidenceId;
+
+    verifyPaymentEvidence(
+      evidenceId
+    );
+
+    return;
+
+  }
+
+
+  const rejectButton =
+    event.target.closest(
+      "[data-reject-evidence-id]"
+    );
+
+  if (rejectButton) {
+
+    const evidenceId =
+      rejectButton.dataset
+        .rejectEvidenceId;
+
+    rejectPaymentEvidence(
+      evidenceId
+    );
+
+    return;
+
+  }
+
+
+  const closeButton =
+    event.target.closest(
+      "[data-close-verifier-detail]"
+    );
+
+  if (closeButton) {
+
+    selectedVerifierEvidenceId =
+      null;
+
+    if (
+      verifierPaymentEvidenceDetail
+    ) {
+
+      verifierPaymentEvidenceDetail.hidden =
+        true;
+
+      verifierPaymentEvidenceDetail.innerHTML =
+        "";
 
     }
 
@@ -3422,7 +4464,8 @@ async function recordContribution(event) {
 
 
   if (
-    contributionType !== "monthly"
+    contributionType !==
+    "monthly"
   ) {
 
     showError(
@@ -3612,12 +4655,9 @@ async function recordContribution(event) {
   try {
 
     /*
-     * =====================================================
      * CANONICAL 2B WRITE
-     * =====================================================
      *
-     * The existing authorised contribution workflow
-     * remains separate from member payment evidence.
+     * This existing workflow remains untouched.
      */
 
     const {
@@ -3840,12 +4880,12 @@ export async function initContributions() {
 
     clearMemberEvidenceMessage();
 
+    clearVerifierPaymentEvidenceMessage();
+
 
     /*
      * Resolve the authenticated member through the
      * existing canonical get_my_member() path.
-     *
-     * auth.js is not modified by this integration.
      */
 
     currentMember =
@@ -3853,6 +4893,8 @@ export async function initContributions() {
 
 
     configureMemberPaymentEvidence();
+
+    configureVerifierPaymentEvidence();
 
 
     buildAccountingMonthOptions();
@@ -3970,9 +5012,8 @@ export async function initContributions() {
 
 
     /*
-     * Ordinary members can see their own evidence
-     * submission surface and do not receive the
-     * privileged contribution-recording form.
+     * Ordinary members retain their existing
+     * payment-evidence workflow.
      */
 
     configureMemberPaymentEvidence();
@@ -3983,6 +5024,27 @@ export async function initContributions() {
     ) {
 
       await loadMemberPaymentEvidence();
+
+    }
+
+
+    /*
+     * Verifier surface is loaded only for the
+     * authorised verifier roles.
+     *
+     * The frontend role check controls visibility.
+     * Database RLS remains the authoritative read
+     * boundary.
+     */
+
+    configureVerifierPaymentEvidence();
+
+
+    if (
+      isAuthorizedVerifier()
+    ) {
+
+      await loadVerifierPaymentEvidence();
 
     }
 
@@ -4144,6 +5206,29 @@ if (
   memberEvidenceMethod.addEventListener(
     "change",
     updateMemberEvidencePaymentMethod
+  );
+
+}
+
+
+/* =========================================================
+   VERIFIER EVENTS
+========================================================= */
+
+if (
+  verifierPaymentEvidenceCard &&
+  !verifierPaymentEvidenceCard.dataset
+    .clVerifierEvidenceBound
+) {
+
+  verifierPaymentEvidenceCard.dataset
+    .clVerifierEvidenceBound =
+    "true";
+
+
+  verifierPaymentEvidenceCard.addEventListener(
+    "click",
+    handleVerifierPaymentEvidenceClick
   );
 
 }
