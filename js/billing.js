@@ -42,21 +42,14 @@ import {
 ========================================================= */
 
 let currentUser = null;
-
 let currentMember = null;
-
 let currentGroup = null;
-
 let currentIsOwner = false;
-
 let currentRole = "";
 
 let subscription = null;
-
 let cycles = [];
-
 let invoices = [];
-
 let payments = [];
 
 
@@ -69,36 +62,30 @@ const statusEl =
     "billingStatus"
   );
 
-
 const errorEl =
   document.getElementById(
     "billingError"
   );
-
 
 const billingSummaryGridEl =
   document.getElementById(
     "billingSummaryGrid"
   );
 
-
 const subscriptionGridEl =
   document.getElementById(
     "subscriptionGrid"
   );
-
 
 const cycleGridEl =
   document.getElementById(
     "cycleGrid"
   );
 
-
 const invoiceContainerEl =
   document.getElementById(
     "invoiceContainer"
   );
-
 
 const paymentContainerEl =
   document.getElementById(
@@ -114,22 +101,16 @@ function clearMessages() {
 
   if (statusEl) {
 
-    statusEl.hidden =
-      true;
-
-    statusEl.textContent =
-      "";
+    statusEl.hidden = true;
+    statusEl.textContent = "";
 
   }
 
 
   if (errorEl) {
 
-    errorEl.hidden =
-      true;
-
-    errorEl.textContent =
-      "";
+    errorEl.hidden = true;
+    errorEl.textContent = "";
 
   }
 
@@ -410,7 +391,6 @@ async function loadInvoices() {
   const subscriptionId =
     subscription?.subscription_id;
 
-
   const groupId =
     currentGroup?.id;
 
@@ -537,7 +517,9 @@ async function loadPayments() {
   return payments;
 
 }
- /* =========================================================
+
+
+/* =========================================================
    FORMATTING
 ========================================================= */
 
@@ -759,9 +741,11 @@ function renderBillingSummary() {
 
     [
       "Plan",
+
       text(
         subscription?.pricing_tier_code
       ),
+
       text(
         subscription?.status
       )
@@ -1114,6 +1098,8 @@ function renderCycles() {
   );
 
 }
+
+
 /* =========================================================
    INVOICE RENDER
 ========================================================= */
@@ -1527,6 +1513,7 @@ function renderPayments() {
       );
 
 
+      /* Corrected closing parenthesis */
       row.appendChild(
         createElement(
           "td",
@@ -1534,6 +1521,7 @@ function renderPayments() {
           text(
             payment.payment_method
           )
+        )
       );
 
 
@@ -1583,7 +1571,9 @@ function renderPayments() {
   );
 
 }
- /* =========================================================
+
+
+/* =========================================================
    LOAD ALL BILLING STATE
 ========================================================= */
 
@@ -1719,4 +1709,3 @@ async function initBilling() {
 ========================================================= */
 
 initBilling();
-
