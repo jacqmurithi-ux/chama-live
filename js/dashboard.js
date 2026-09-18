@@ -34,6 +34,15 @@
            ↓
        Arrears / Credit
 
+   OPERATIONS SNAPSHOT:
+       Read-only counts for:
+       - Support & Welfare
+       - Plans
+       - Activities
+       - Milestones
+       - Assets
+       - Contribution Goals
+
    IMPORTANT:
        layout.js is the page bootloader.
 
@@ -72,6 +81,13 @@ let members = [];
 let contributions = [];
 let expenses = [];
 let meetings = [];
+
+let supportCases = [];
+let plans = [];
+let activities = [];
+let milestones = [];
+let assets = [];
+let contributionGoals = [];
 
 let monthlyStatus = [];
 let canonicalSummary = null;
@@ -738,6 +754,186 @@ async function loadMeetings() {
 
 
 /* =========================================================
+   LOAD SUPPORT & WELFARE
+========================================================= */
+
+async function loadSupportCases() {
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("group_support_cases")
+      .select("id")
+      .eq(
+        "group_id",
+        currentGroupId
+      );
+
+
+  if (error) {
+    throw error;
+  }
+
+
+  supportCases =
+    data || [];
+
+}
+
+
+/* =========================================================
+   LOAD PLANS
+========================================================= */
+
+async function loadPlans() {
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("group_plans")
+      .select("id")
+      .eq(
+        "group_id",
+        currentGroupId
+      );
+
+
+  if (error) {
+    throw error;
+  }
+
+
+  plans =
+    data || [];
+
+}
+
+
+/* =========================================================
+   LOAD ACTIVITIES
+========================================================= */
+
+async function loadActivities() {
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("group_activities")
+      .select("id")
+      .eq(
+        "group_id",
+        currentGroupId
+      );
+
+
+  if (error) {
+    throw error;
+  }
+
+
+  activities =
+    data || [];
+
+}
+
+
+/* =========================================================
+   LOAD MILESTONES
+========================================================= */
+
+async function loadMilestones() {
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("group_milestones")
+      .select("id")
+      .eq(
+        "group_id",
+        currentGroupId
+      );
+
+
+  if (error) {
+    throw error;
+  }
+
+
+  milestones =
+    data || [];
+
+}
+
+
+/* =========================================================
+   LOAD ASSETS
+========================================================= */
+
+async function loadAssets() {
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("group_assets")
+      .select("id")
+      .eq(
+        "group_id",
+        currentGroupId
+      );
+
+
+  if (error) {
+    throw error;
+  }
+
+
+  assets =
+    data || [];
+
+}
+
+
+/* =========================================================
+   LOAD CONTRIBUTION GOALS
+========================================================= */
+
+async function loadContributionGoals() {
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("contribution_goals")
+      .select("id")
+      .eq(
+        "group_id",
+        currentGroupId
+      );
+
+
+  if (error) {
+    throw error;
+  }
+
+
+  contributionGoals =
+    data || [];
+
+}
+
+
+/* =========================================================
    ACTIVE MEMBER RULE
 =========================================================
 
@@ -1070,7 +1266,14 @@ async function loadData() {
     loadMembers(),
     loadContributions(),
     loadExpenses(),
-    loadMeetings()
+    loadMeetings(),
+
+    loadSupportCases(),
+    loadPlans(),
+    loadActivities(),
+    loadMilestones(),
+    loadAssets(),
+    loadContributionGoals()
   ]);
 
 
@@ -2076,6 +2279,50 @@ function renderUpcomingMeetings() {
 
 
 /* =========================================================
+   OPERATIONS SNAPSHOT
+========================================================= */
+
+function renderOperationsSnapshot() {
+
+  setText(
+    "operationsSupportCases",
+    supportCases.length
+  );
+
+
+  setText(
+    "operationsPlans",
+    plans.length
+  );
+
+
+  setText(
+    "operationsActivities",
+    activities.length
+  );
+
+
+  setText(
+    "operationsMilestones",
+    milestones.length
+  );
+
+
+  setText(
+    "operationsAssets",
+    assets.length
+  );
+
+
+  setText(
+    "operationsContributionGoals",
+    contributionGoals.length
+  );
+
+}
+
+
+/* =========================================================
    RENDER DASHBOARD
 ========================================================= */
 
@@ -2090,6 +2337,8 @@ function renderDashboard() {
   renderRecentExpenses();
 
   renderUpcomingMeetings();
+
+  renderOperationsSnapshot();
 
 }
 
