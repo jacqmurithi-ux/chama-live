@@ -1,9 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>My Contributions — CHAMA LIVE</title>
 
   <style>
@@ -18,106 +17,120 @@
     }
 
     .member-page-header h1 {
-      margin: 0 0 8px;
+      margin: 0 0 6px;
     }
 
     .member-page-header p {
       margin: 0;
-      opacity: 0.72;
+      opacity: .72;
     }
 
-    .member-error {
-      display: none;
-      margin: 16px 0;
-      padding: 12px 16px;
-      border-radius: 8px;
-      background: rgba(220, 53, 69, 0.1);
-      color: #b42318;
-    }
-
-    .member-status {
-      margin: 16px 0;
-      opacity: 0.75;
-    }
-
-    .member-section {
+    .member-card {
       margin-bottom: 20px;
       padding: 20px;
-      border: 1px solid rgba(128, 128, 128, 0.25);
+      border: 1px solid rgba(127,127,127,.2);
       border-radius: 12px;
       background: var(--card-bg, #fff);
     }
 
-    .member-section h2 {
-      margin: 0 0 16px;
-      font-size: 1.1rem;
+    .member-card h2 {
+      margin-top: 0;
     }
 
-    .obligation-grid {
+    .member-grid {
       display: grid;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 12px;
     }
 
-    .obligation-card {
-      padding: 14px;
-      border-radius: 8px;
-      background: rgba(128, 128, 128, 0.08);
+    .member-stat {
+      padding: 15px;
+      border: 1px solid rgba(127,127,127,.18);
+      border-radius: 10px;
     }
 
-    .obligation-label {
+    .member-stat-label {
       display: block;
-      margin-bottom: 6px;
-      font-size: 0.78rem;
-      opacity: 0.68;
+      margin-bottom: 5px;
+      font-size: .82rem;
+      opacity: .7;
     }
 
-    .obligation-value {
-      display: block;
-      font-size: 1.05rem;
+    .member-stat-value {
       font-weight: 700;
-      word-break: break-word;
+      font-size: 1.05rem;
     }
 
-    .status-paid {
-      color: #147a3d;
+    .member-form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
     }
 
-    .status-partial {
-      color: #9a6700;
+    .member-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
 
-    .status-outstanding {
-      color: #b42318;
+    .member-field.full {
+      grid-column: 1 / -1;
     }
 
-    .status-credit {
-      color: #175cd3;
+    .member-field label {
+      font-weight: 600;
+      font-size: .9rem;
     }
 
-    .status-neutral {
-      opacity: 0.75;
+    .member-field input,
+    .member-field select,
+    .member-field textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 11px 12px;
+      border: 1px solid rgba(127,127,127,.3);
+      border-radius: 8px;
+      background: inherit;
+      color: inherit;
+      font: inherit;
+    }
+
+    .member-field textarea {
+      min-height: 90px;
+      resize: vertical;
     }
 
     .member-actions {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
-      margin-bottom: 20px;
+      margin-top: 16px;
     }
 
     .member-actions button {
-      min-height: 44px;
-      padding: 10px 16px;
-      border: 0;
-      border-radius: 8px;
       cursor: pointer;
+      padding: 10px 15px;
+      border-radius: 8px;
+      border: 1px solid rgba(127,127,127,.3);
       font: inherit;
     }
 
-    .member-actions button:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
+    .member-message {
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      border-radius: 8px;
+    }
+
+    .member-message.info {
+      background: rgba(59,130,246,.10);
+    }
+
+    .member-message.error {
+      background: rgba(239,68,68,.10);
+    }
+
+    .member-message.success {
+      background: rgba(34,197,94,.10);
     }
 
     .member-table-wrap {
@@ -127,77 +140,85 @@
 
     .member-table {
       width: 100%;
+      min-width: 760px;
       border-collapse: collapse;
-      min-width: 720px;
     }
 
     .member-table th,
     .member-table td {
-      padding: 12px 10px;
+      padding: 10px;
       text-align: left;
-      border-bottom: 1px solid rgba(128, 128, 128, 0.2);
+      border-bottom: 1px solid rgba(127,127,127,.18);
       vertical-align: top;
     }
 
     .member-table th {
-      font-size: 0.82rem;
-      opacity: 0.72;
+      font-weight: 700;
     }
 
-    .member-empty {
-      padding: 18px 0;
-      opacity: 0.7;
+    .member-status {
+      display: inline-block;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: .76rem;
+      font-weight: 700;
     }
 
-    .statement-summary {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-      margin-top: 16px;
+    .cl-status-paid,
+    .cl-evidence-status-verified {
+      background: rgba(34,197,94,.15);
     }
 
-    .statement-summary-card {
-      padding: 16px;
-      border-radius: 8px;
-      background: rgba(128, 128, 128, 0.08);
+    .cl-status-partial,
+    .cl-evidence-status-pending {
+      background: rgba(234,179,8,.18);
     }
 
-    .statement-summary-card span {
-      display: block;
-      font-size: 0.8rem;
-      opacity: 0.68;
-      margin-bottom: 6px;
+    .cl-status-credit {
+      background: rgba(59,130,246,.15);
     }
 
-    .statement-summary-card strong {
-      font-size: 1.25rem;
+    .cl-status-outstanding,
+    .cl-evidence-status-rejected {
+      background: rgba(239,68,68,.15);
     }
 
-    @media (max-width: 900px) {
-      .obligation-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-      }
+    .cl-status-neutral {
+      background: rgba(127,127,127,.15);
     }
 
-    @media (max-width: 600px) {
-      .member-page {
-        padding: 16px 12px 40px;
-      }
+    .member-note {
+      margin-top: 8px;
+      font-size: .88rem;
+      opacity: .7;
+    }
 
-      .obligation-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .statement-summary {
+    @media (max-width: 800px) {
+      .member-grid,
+      .member-form-grid {
         grid-template-columns: 1fr;
       }
 
-      .member-actions {
-        flex-direction: column;
+      .member-field.full {
+        grid-column: auto;
+      }
+    }
+
+    @media print {
+      .top-nav,
+      .sidebar,
+      .mobile-menu,
+      .bottom-nav,
+      #memberPaymentEvidenceCard,
+      #memberEvidenceCard,
+      .member-actions,
+      .member-note {
+        display: none !important;
       }
 
-      .member-actions button {
-        width: 100%;
+      .member-page {
+        max-width: none;
+        padding: 0;
       }
     }
   </style>
@@ -205,212 +226,376 @@
 
 <body>
 
-  <nav class="top-nav" aria-label="Member navigation">
-    <a href="member-dashboard.html">Home</a>
-    <a href="member-contributions.html" class="active">
-      My Contributions
-    </a>
-    <a href="getting-started.html">
-      Getting Started
-    </a>
+  <nav class="top-nav">
+    <a href="member-dashboard.html">My Dashboard</a>
+    <a href="member-contributions.html" class="active">My Contributions</a>
+    <a href="getting-started.html">Getting Started</a>
   </nav>
 
   <main class="member-page">
 
     <header class="member-page-header">
       <h1>My Contributions</h1>
-      <p id="memberContributionGroup">
+      <p id="memberContributionSubtitle">
         Your contribution record
       </p>
     </header>
 
     <div
-      id="memberContributionStatus"
-      class="member-status"
-      aria-live="polite"
-    >
-      Loading your contribution records...
+      id="memberContributionLoading"
+      class="member-message info">
+      Loading your contribution information...
     </div>
 
     <div
       id="memberContributionError"
-      class="member-error"
-      role="alert"
-      aria-live="assertive"
-    ></div>
+      class="member-message error"
+      hidden>
+    </div>
 
-    <section class="member-section">
+    <div
+      id="memberContributionSuccess"
+      class="member-message success"
+      hidden>
+    </div>
 
-      <h2>Current Contribution Position</h2>
+    <section id="memberContributionContent" hidden>
 
-      <div class="obligation-grid">
+      <!-- CURRENT CONTRIBUTION POSITION -->
 
-        <div class="obligation-card">
-          <span class="obligation-label">
-            Accounting Month
-          </span>
+      <section class="member-card">
+        <h2>Current Contribution Position</h2>
 
-          <strong
-            id="accountingMonth"
-            class="obligation-value"
-          >
-            —
-          </strong>
+        <div class="member-grid">
+
+          <div class="member-stat">
+            <span class="member-stat-label">
+              Accounting Month
+            </span>
+            <span
+              id="accountingMonth"
+              class="member-stat-value">
+              —
+            </span>
+          </div>
+
+          <div class="member-stat">
+            <span class="member-stat-label">
+              Status
+            </span>
+            <span id="contributionStatus">
+              —
+            </span>
+          </div>
+
+          <div class="member-stat">
+            <span class="member-stat-label">
+              Current Due
+            </span>
+            <span
+              id="currentDue"
+              class="member-stat-value">
+              KES 0
+            </span>
+          </div>
+
+          <div class="member-stat">
+            <span class="member-stat-label">
+              Previous Outstanding
+            </span>
+            <span
+              id="previousOutstanding"
+              class="member-stat-value">
+              KES 0
+            </span>
+          </div>
+
+          <div class="member-stat">
+            <span class="member-stat-label">
+              Current Paid
+            </span>
+            <span
+              id="currentPaid"
+              class="member-stat-value">
+              KES 0
+            </span>
+          </div>
+
+          <div class="member-stat">
+            <span class="member-stat-label">
+              Outstanding
+            </span>
+            <span
+              id="currentOutstanding"
+              class="member-stat-value">
+              KES 0
+            </span>
+          </div>
+
+          <div class="member-stat">
+            <span class="member-stat-label">
+              Carry Forward
+            </span>
+            <span
+              id="carryForward"
+              class="member-stat-value">
+              KES 0
+            </span>
+          </div>
+
+        </div>
+      </section>
+
+
+      <!-- SUBMIT PAYMENT EVIDENCE -->
+
+      <section
+        id="memberPaymentEvidenceCard"
+        class="member-card">
+
+        <h2>Submit Payment for Verification</h2>
+
+        <p>
+          If you have made a payment that is not yet reflected
+          in your contribution record, submit the payment details
+          for verification.
+        </p>
+
+        <div
+          id="memberEvidenceMessage"
+          class="member-message"
+          hidden>
         </div>
 
-        <div class="obligation-card">
-          <span class="obligation-label">
-            Status
-          </span>
+        <form id="memberPaymentEvidenceForm">
 
-          <strong
-            id="contributionStatus"
-            class="obligation-value"
-          >
-            —
-          </strong>
+          <div class="member-form-grid">
+
+            <div class="member-field">
+              <label for="memberEvidenceAmount">
+                Amount
+              </label>
+
+              <input
+                id="memberEvidenceAmount"
+                type="number"
+                min="0.01"
+                step="0.01"
+                required
+                inputmode="decimal"
+                placeholder="Enter amount" />
+            </div>
+
+            <div class="member-field">
+              <label for="memberEvidenceDate">
+                Payment Date
+              </label>
+
+              <input
+                id="memberEvidenceDate"
+                type="date"
+                required />
+            </div>
+
+            <div class="member-field">
+              <label for="memberEvidenceMethod">
+                Payment Method
+              </label>
+
+              <select
+                id="memberEvidenceMethod"
+                required>
+
+                <option value="M-Pesa">
+                  M-Pesa
+                </option>
+
+                <option value="Cash">
+                  Cash
+                </option>
+
+                <option value="Bank transfer">
+                  Bank transfer
+                </option>
+
+              </select>
+            </div>
+
+            <div
+              id="memberEvidenceMpesaWrap"
+              class="member-field">
+
+              <label for="memberEvidenceMpesaReference">
+                M-Pesa Reference
+              </label>
+
+              <input
+                id="memberEvidenceMpesaReference"
+                type="text"
+                maxlength="100"
+                placeholder="e.g. ABC123XYZ" />
+            </div>
+
+            <div class="member-field full">
+              <label for="memberEvidenceText">
+                Payment Details
+              </label>
+
+              <textarea
+                id="memberEvidenceText"
+                maxlength="1000"
+                placeholder="Add any useful payment details"></textarea>
+            </div>
+
+          </div>
+
+          <div class="member-actions">
+
+            <button
+              id="submitMemberPaymentEvidence"
+              type="submit">
+              Submit Payment for Verification
+            </button>
+
+          </div>
+
+        </form>
+
+        <p class="member-note">
+          Submission does not immediately record a contribution.
+          An authorised verifier must verify the payment first.
+        </p>
+
+      </section>
+
+
+      <!-- MEMBER PAYMENT EVIDENCE HISTORY -->
+
+      <section
+        id="memberEvidenceCard"
+        class="member-card">
+
+        <h2>My Payment Evidence</h2>
+
+        <div class="member-table-wrap">
+
+          <table class="member-table">
+
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>Reference</th>
+                <th>Submitted</th>
+                <th>Status</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+
+            <tbody id="memberPaymentEvidenceRows">
+            </tbody>
+
+          </table>
+
         </div>
 
-        <div class="obligation-card">
-          <span class="obligation-label">
-            Current Due
-          </span>
+      </section>
 
-          <strong
-            id="currentDue"
-            class="obligation-value"
-          >
-            KSh 0
-          </strong>
+
+      <!-- STATEMENT -->
+
+      <section class="member-card">
+
+        <h2>My Statement</h2>
+
+        <p>
+          Your statement contains your contribution records
+          and current canonical contribution position.
+        </p>
+
+        <div class="member-actions">
+
+          <button
+            id="downloadStatement"
+            type="button">
+            Download My Statement
+          </button>
+
+          <button
+            id="printStatement"
+            type="button">
+            Print / Save PDF
+          </button>
+
         </div>
 
-        <div class="obligation-card">
-          <span class="obligation-label">
-            Previous Outstanding
-          </span>
+        <div class="member-grid">
 
-          <strong
-            id="previousOutstanding"
-            class="obligation-value"
-          >
-            KSh 0
-          </strong>
+          <div class="member-stat">
+            <span class="member-stat-label">
+              Total Recorded
+            </span>
+
+            <span
+              id="totalRecorded"
+              class="member-stat-value">
+              KES 0
+            </span>
+          </div>
+
+          <div class="member-stat">
+            <span class="member-stat-label">
+              Contribution Records
+            </span>
+
+            <span
+              id="contributionRecordCount"
+              class="member-stat-value">
+              0
+            </span>
+          </div>
+
         </div>
 
-        <div class="obligation-card">
-          <span class="obligation-label">
-            Current Paid
-          </span>
+      </section>
 
-          <strong
-            id="currentPaid"
-            class="obligation-value"
-          >
-            KSh 0
-          </strong>
+
+      <!-- CONTRIBUTION HISTORY -->
+
+      <section class="member-card">
+
+        <h2>Contribution History</h2>
+
+        <div
+          id="contributionEmpty"
+          class="member-message info"
+          hidden>
+          No contribution records were found for your account.
         </div>
 
-        <div class="obligation-card">
-          <span class="obligation-label">
-            Outstanding
-          </span>
+        <div class="member-table-wrap">
 
-          <strong
-            id="currentOutstanding"
-            class="obligation-value"
-          >
-            KSh 0
-          </strong>
+          <table class="member-table">
+
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Type</th>
+                <th>Payment Method</th>
+                <th>Reference</th>
+              </tr>
+            </thead>
+
+            <tbody id="memberContributionRows">
+            </tbody>
+
+          </table>
+
         </div>
 
-      </div>
-
-    </section>
-
-    <section class="member-section">
-
-      <h2>My Statement</h2>
-
-      <p>
-        Your statement contains your contribution records and
-        current canonical contribution position.
-      </p>
-
-      <div class="member-actions">
-
-        <button
-          id="downloadStatement"
-          type="button"
-        >
-          Download My Statement
-        </button>
-
-        <button
-          id="printStatement"
-          type="button"
-        >
-          Print / Save PDF
-        </button>
-
-      </div>
-
-      <div class="statement-summary">
-
-        <div class="statement-summary-card">
-          <span>
-            Total Recorded
-          </span>
-
-          <strong id="statementTotal">
-            KSh 0
-          </strong>
-        </div>
-
-        <div class="statement-summary-card">
-          <span>
-            Contribution Records
-          </span>
-
-          <strong id="statementCount">
-            0
-          </strong>
-        </div>
-
-      </div>
-
-    </section>
-
-    <section class="member-section">
-
-      <h2>Contribution History</h2>
-
-      <div class="member-table-wrap">
-
-        <table class="member-table">
-
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Amount</th>
-              <th>Type</th>
-              <th>Payment Method</th>
-              <th>Reference</th>
-            </tr>
-          </thead>
-
-          <tbody id="memberContributionRows">
-
-            <tr>
-              <td colspan="5">
-                Loading...
-              </td>
-            </tr>
-
-          </tbody>
-
-        </table>
-
-      </div>
+      </section>
 
     </section>
 
