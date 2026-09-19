@@ -1,6 +1,7 @@
+import { supabase } from "./supabase.js";
+
 import {
   signIn,
-  signOut,
   getMyApplicationContext
 } from "./auth.js";
 
@@ -159,13 +160,14 @@ async function performLogin() {
      * Member Portal boundary:
      *
      * Ordinary members enter here.
-     * Admin/management accounts do not.
+     * Admin and management accounts
+     * must use the Admin Portal.
      */
     if (
       isOwner ||
       ADMIN_ROLES.has(role)
     ) {
-      await signOut();
+      await supabase.auth.signOut();
 
       throw new Error(
         "Access Denied. Your account is registered for the Admin Portal. Please use the Admin Login."
@@ -173,7 +175,7 @@ async function performLogin() {
     }
 
     if (role !== "member") {
-      await signOut();
+      await supabase.auth.signOut();
 
       throw new Error(
         "Your CHAMA LIVE account does not have a valid portal role. Please contact your Group Admin."
@@ -190,7 +192,7 @@ async function performLogin() {
       status &&
       status !== "active"
     ) {
-      await signOut();
+      await supabase.auth.signOut();
 
       throw new Error(
         "Your account is not yet verified. Please contact your Group Admin."
@@ -201,7 +203,7 @@ async function performLogin() {
       onboarding &&
       onboarding !== "active"
     ) {
-      await signOut();
+      await supabase.auth.signOut();
 
       throw new Error(
         "Your account is not yet verified. Please contact your Group Admin."
