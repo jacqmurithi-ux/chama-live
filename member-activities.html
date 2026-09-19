@@ -445,24 +445,11 @@
 
   <script type="module">
 
-    import "./js/layout.js";
-
     import {
-      initMemberActivities
-    } from "./js/member-activities.js";
+      boot
+    } from "./js/member-layout.js";
 
-
-    window.addEventListener(
-      "DOMContentLoaded",
-      () => {
-
-        initMemberActivities();
-
-      },
-      {
-        once: true
-      }
-    );
+    boot();
 
   </script>
 
