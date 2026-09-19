@@ -1,3 +1,4 @@
+Yes. Below is the complete revised layout.js, preserving your existing structure and adding only the Member Activities integration.
 /* =========================================================
    CHAMA LIVE — GLOBAL LAYOUT
    PORTAL-AWARE VERSION
@@ -15,6 +16,7 @@
    MEMBER PORTAL:
    - member-dashboard.html
    - member-contributions.html
+   - member-activities.html
    - getting-started.html
    - Existing admin-management pages remain blocked until
      their own member-safe/read-only contract is reconciled.
@@ -24,6 +26,7 @@
    - Data Migration is intentionally not exposed to members.
    - Existing Contributions page remains Admin Portal only.
    - member-contributions.html is a separate member-safe page.
+   - member-activities.html is a separate member-safe page.
    - No database authorization is changed here.
 ========================================================= */
 
@@ -213,6 +216,12 @@ const APPLICATION_NAVIGATION = [
     href: "member-contributions.html",
     page: "member-contributions.html",
     label: "My Contributions"
+  },
+
+  {
+    href: "member-activities.html",
+    page: "member-activities.html",
+    label: "Group Activities"
   }
 
 ];
@@ -244,6 +253,7 @@ const MEMBER_PAGES =
   new Set([
     "member-dashboard.html",
     "member-contributions.html",
+    "member-activities.html",
     "getting-started.html"
   ]);
 
@@ -305,6 +315,28 @@ function enforcePortalAccess() {
        *
        * Admin users remain on the Admin Portal and should use
        * the existing Contributions page.
+       */
+
+      window.location.replace(
+        ADMIN_DASHBOARD_URL
+      );
+
+      return false;
+
+    }
+
+
+    if (
+      currentPage ===
+      "member-activities.html"
+    ) {
+
+      /*
+       * Group Activities is intentionally a member-safe
+       * portal surface.
+       *
+       * Admin users remain on the Admin Portal and should use
+       * the existing Plans & Activities page.
        */
 
       window.location.replace(
@@ -398,7 +430,9 @@ function getNavigationItems() {
           item.page !==
           "member-dashboard.html" &&
           item.page !==
-          "member-contributions.html"
+          "member-contributions.html" &&
+          item.page !==
+          "member-activities.html"
         );
 
       }
@@ -1303,6 +1337,13 @@ function setupMobileMenu() {
     },
 
     {
+      href: "member-activities.html",
+      page: "member-activities.html",
+      icon: "◷",
+      label: "Group Activities"
+    },
+
+    {
       href: "getting-started.html",
       page: "getting-started.html",
       icon: "?",
@@ -1649,8 +1690,8 @@ function setupMobileNavigation() {
     );
 
     addLink(
-      "member-dashboard.html",
-      "member-dashboard.html",
+      "member-activities.html",
+      "member-activities.html",
       "◷",
       "Activity",
       false
@@ -1997,7 +2038,10 @@ const PAGE_SCRIPTS = {
     "./member-dashboard.js",
 
   "member-contributions.html":
-    "./member-contributions.js"
+    "./member-contributions.js",
+
+  "member-activities.html":
+    "./member-activities.js"
 
   /*
    * Independently booted pages remain absent:
@@ -2177,6 +2221,17 @@ async function loadCurrentPageScript() {
 
       initializer =
         pageModule.initMemberContributions;
+
+    }
+
+    else if (
+      page === "member-activities.html" &&
+      typeof pageModule.initMemberActivities ===
+      "function"
+    ) {
+
+      initializer =
+        pageModule.initMemberActivities;
 
     }
 
@@ -2459,3 +2514,16 @@ export function getLayoutState() {
 console.log(
   "CHAMA LIVE: layout.js ready — portal-aware boot() exported"
 );
+Controlled change set
+This version adds only the Member Activities portal integration:
+member-activities.html is a recognized Member Portal page.
+Members get Group Activities in the mobile menu.
+Members get Activity in the bottom navigation.
+The Activity bottom-nav button now opens member-activities.html.
+Admins are redirected away from the member-only page.
+Members attempting the admin plans-activities.html page are still redirected to their Member Dashboard.
+layout.js automatically loads ./member-activities.js.
+It expects member-activities.js to export initMemberActivities().
+No Supabase/database authorization or schema is changed.
+Existing Admin Plans & Activities remains untouched.
+One important upload rule: because this layout.js now owns the page-script loading, your member-activities.html should not separately import member-activities.js. Otherwise the module can initialize twice.
