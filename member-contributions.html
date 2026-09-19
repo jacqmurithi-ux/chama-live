@@ -1,546 +1,426 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
-
-  <meta charset="utf-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1"
-  >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>My Contributions — CHAMA LIVE</title>
 
-  <link
-    rel="stylesheet"
-    href="css/app.css"
-  >
-
   <style>
-
-    .member-contributions {
-      width: 100%;
-      max-width: 1100px;
+    .member-page {
+      max-width: 1200px;
       margin: 0 auto;
+      padding: 24px 16px 48px;
     }
 
     .member-page-header {
-      margin-bottom: 22px;
+      margin-bottom: 24px;
     }
 
     .member-page-header h1 {
-      margin: 0 0 6px;
+      margin: 0 0 8px;
     }
 
     .member-page-header p {
       margin: 0;
-      color: #64748b;
+      opacity: 0.72;
     }
 
-    .member-grid {
-      display: grid;
-      grid-template-columns:
-        repeat(2, minmax(0, 1fr));
-      gap: 16px;
-      margin-bottom: 20px;
-    }
-
-    .member-card {
-      min-width: 0;
-    }
-
-    .member-card h2 {
-      margin-top: 0;
-      font-size: 18px;
-    }
-
-    .member-stat {
-      padding: 16px;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      background: #f8fafc;
-    }
-
-    .member-stat-label {
-      display: block;
-      font-size: 11px;
-      color: #64748b;
-      margin-bottom: 5px;
-    }
-
-    .member-stat-value {
-      display: block;
-      font-size: 22px;
-      font-weight: 800;
+    .member-error {
+      display: none;
+      margin: 16px 0;
+      padding: 12px 16px;
+      border-radius: 8px;
+      background: rgba(220, 53, 69, 0.1);
+      color: #b42318;
     }
 
     .member-status {
-      display: inline-flex;
-      padding: 6px 10px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 800;
+      margin: 16px 0;
+      opacity: 0.75;
+    }
+
+    .member-section {
+      margin-bottom: 20px;
+      padding: 20px;
+      border: 1px solid rgba(128, 128, 128, 0.25);
+      border-radius: 12px;
+      background: var(--card-bg, #fff);
+    }
+
+    .member-section h2 {
+      margin: 0 0 16px;
+      font-size: 1.1rem;
+    }
+
+    .obligation-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .obligation-card {
+      padding: 14px;
+      border-radius: 8px;
+      background: rgba(128, 128, 128, 0.08);
+    }
+
+    .obligation-label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.78rem;
+      opacity: 0.68;
+    }
+
+    .obligation-value {
+      display: block;
+      font-size: 1.05rem;
+      font-weight: 700;
+      word-break: break-word;
     }
 
     .status-paid {
-      background: #ecfdf3;
-      color: #047857;
+      color: #147a3d;
     }
 
     .status-partial {
-      background: #fffbeb;
-      color: #b45309;
+      color: #9a6700;
     }
 
     .status-outstanding {
-      background: #fef2f2;
-      color: #b91c1c;
+      color: #b42318;
     }
 
     .status-credit {
-      background: #eff6ff;
-      color: #1d4ed8;
+      color: #175cd3;
     }
 
     .status-neutral {
-      background: #f1f5f9;
-      color: #475569;
-    }
-
-    .member-list {
-      display: grid;
-      gap: 10px;
-    }
-
-    .member-list-item {
-      padding: 12px;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-    }
-
-    .member-muted {
-      color: #64748b;
-      font-size: 12px;
+      opacity: 0.75;
     }
 
     .member-actions {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
-      margin-top: 14px;
+      margin-bottom: 20px;
     }
 
-    .member-loading {
-      margin-bottom: 18px;
+    .member-actions button {
+      min-height: 44px;
+      padding: 10px 16px;
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
+      font: inherit;
     }
 
-    .member-error {
-      margin-bottom: 18px;
+    .member-actions button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
     }
 
-    .statement-table {
+    .member-table-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    .member-table {
       width: 100%;
       border-collapse: collapse;
+      min-width: 720px;
     }
 
-    .statement-table th,
-    .statement-table td {
-      padding: 10px;
-      border-bottom: 1px solid #e5e7eb;
+    .member-table th,
+    .member-table td {
+      padding: 12px 10px;
       text-align: left;
+      border-bottom: 1px solid rgba(128, 128, 128, 0.2);
       vertical-align: top;
     }
 
-    .statement-table th {
-      font-size: 12px;
-      color: #475569;
+    .member-table th {
+      font-size: 0.82rem;
+      opacity: 0.72;
     }
 
-    .statement-table td {
-      font-size: 13px;
+    .member-empty {
+      padding: 18px 0;
+      opacity: 0.7;
     }
 
-    .money {
-      font-weight: 700;
+    .statement-summary {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 16px;
     }
 
-    @media (max-width: 700px) {
+    .statement-summary-card {
+      padding: 16px;
+      border-radius: 8px;
+      background: rgba(128, 128, 128, 0.08);
+    }
 
-      .member-grid {
+    .statement-summary-card span {
+      display: block;
+      font-size: 0.8rem;
+      opacity: 0.68;
+      margin-bottom: 6px;
+    }
+
+    .statement-summary-card strong {
+      font-size: 1.25rem;
+    }
+
+    @media (max-width: 900px) {
+      .obligation-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 600px) {
+      .member-page {
+        padding: 16px 12px 40px;
+      }
+
+      .obligation-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .statement-summary {
         grid-template-columns: 1fr;
       }
 
-      .statement-table {
-        display: block;
-        overflow-x: auto;
-        white-space: nowrap;
+      .member-actions {
+        flex-direction: column;
       }
 
+      .member-actions button {
+        width: 100%;
+      }
     }
-
   </style>
-
 </head>
 
 <body>
 
-  <header class="topbar">
+  <nav class="top-nav" aria-label="Member navigation">
+    <a href="member-dashboard.html">Home</a>
+    <a href="member-contributions.html" class="active">
+      My Contributions
+    </a>
+    <a href="getting-started.html">
+      Getting Started
+    </a>
+  </nav>
 
-    <div class="topbar-inner">
+  <main class="member-page">
 
-      <div class="brand">
-        CHAMA <span>LIVE</span>
+    <header class="member-page-header">
+      <h1>My Contributions</h1>
+      <p id="memberContributionGroup">
+        Your contribution record
+      </p>
+    </header>
+
+    <div
+      id="memberContributionStatus"
+      class="member-status"
+      aria-live="polite"
+    >
+      Loading your contribution records...
+    </div>
+
+    <div
+      id="memberContributionError"
+      class="member-error"
+      role="alert"
+      aria-live="assertive"
+    ></div>
+
+    <section class="member-section">
+
+      <h2>Current Contribution Position</h2>
+
+      <div class="obligation-grid">
+
+        <div class="obligation-card">
+          <span class="obligation-label">
+            Accounting Month
+          </span>
+
+          <strong
+            id="accountingMonth"
+            class="obligation-value"
+          >
+            —
+          </strong>
+        </div>
+
+        <div class="obligation-card">
+          <span class="obligation-label">
+            Status
+          </span>
+
+          <strong
+            id="contributionStatus"
+            class="obligation-value"
+          >
+            —
+          </strong>
+        </div>
+
+        <div class="obligation-card">
+          <span class="obligation-label">
+            Current Due
+          </span>
+
+          <strong
+            id="currentDue"
+            class="obligation-value"
+          >
+            KSh 0
+          </strong>
+        </div>
+
+        <div class="obligation-card">
+          <span class="obligation-label">
+            Previous Outstanding
+          </span>
+
+          <strong
+            id="previousOutstanding"
+            class="obligation-value"
+          >
+            KSh 0
+          </strong>
+        </div>
+
+        <div class="obligation-card">
+          <span class="obligation-label">
+            Current Paid
+          </span>
+
+          <strong
+            id="currentPaid"
+            class="obligation-value"
+          >
+            KSh 0
+          </strong>
+        </div>
+
+        <div class="obligation-card">
+          <span class="obligation-label">
+            Outstanding
+          </span>
+
+          <strong
+            id="currentOutstanding"
+            class="obligation-value"
+          >
+            KSh 0
+          </strong>
+        </div>
+
       </div>
 
-      <nav class="top-nav">
+    </section>
 
-        <a href="member-dashboard.html">
-          Home
-        </a>
+    <section class="member-section">
 
-        <a
-          href="member-contributions.html"
-          class="active"
-          aria-current="page"
-        >
-          My Contributions
-        </a>
+      <h2>My Statement</h2>
 
-        <a href="meetings.html">
-          Meetings
-        </a>
+      <p>
+        Your statement contains your contribution records and
+        current canonical contribution position.
+      </p>
 
-        <a href="plans-activities.html">
-          Activities
-        </a>
-
-        <a href="milestones.html">
-          Milestones
-        </a>
-
-        <a href="assets.html">
-          Assets
-        </a>
-
-      </nav>
-
-      <div class="topbar-actions">
+      <div class="member-actions">
 
         <button
+          id="downloadStatement"
           type="button"
-          class="btn"
-          id="logoutButton"
         >
-          Sign out
+          Download My Statement
+        </button>
+
+        <button
+          id="printStatement"
+          type="button"
+        >
+          Print / Save PDF
         </button>
 
       </div>
 
-    </div>
+      <div class="statement-summary">
 
-  </header>
+        <div class="statement-summary-card">
+          <span>
+            Total Recorded
+          </span>
 
+          <strong id="statementTotal">
+            KSh 0
+          </strong>
+        </div>
 
-  <main class="main">
+        <div class="statement-summary-card">
+          <span>
+            Contribution Records
+          </span>
 
-    <section class="member-contributions">
-
-      <div class="member-page-header">
-
-        <h1>
-          My Contributions
-        </h1>
-
-        <p id="memberGroupName">
-          Loading your group...
-        </p>
+          <strong id="statementCount">
+            0
+          </strong>
+        </div>
 
       </div>
 
+    </section>
 
-      <div
-        id="memberLoading"
-        class="member-loading"
-      >
-        Loading your contribution information...
-      </div>
+    <section class="member-section">
 
+      <h2>Contribution History</h2>
 
-      <div
-        id="memberError"
-        class="member-error"
-        hidden
-        role="alert"
-      ></div>
+      <div class="member-table-wrap">
 
+        <table class="member-table">
 
-      <div class="member-grid">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Amount</th>
+              <th>Type</th>
+              <th>Payment Method</th>
+              <th>Reference</th>
+            </tr>
+          </thead>
 
-        <section class="card member-card">
+          <tbody id="memberContributionRows">
 
-          <h2>
-            Current Obligation
-          </h2>
+            <tr>
+              <td colspan="5">
+                Loading...
+              </td>
+            </tr>
 
-          <div class="member-list">
+          </tbody>
 
-            <div class="member-list-item">
-
-              <span class="member-muted">
-                Accounting month
-              </span>
-
-              <strong id="accountingMonth">
-                —
-              </strong>
-
-            </div>
-
-            <div class="member-list-item">
-
-              <span class="member-muted">
-                Status
-              </span>
-
-              <div>
-                <span
-                  id="obligationStatus"
-                  class="member-status status-neutral"
-                >
-                  —
-                </span>
-              </div>
-
-            </div>
-
-          </div>
-
-        </section>
-
-
-        <section class="card member-card">
-
-          <h2>
-            Contribution Position
-          </h2>
-
-          <div class="member-list">
-
-            <div class="member-list-item">
-
-              <span class="member-muted">
-                Current due
-              </span>
-
-              <strong id="currentDue">
-                KSh 0.00
-              </strong>
-
-            </div>
-
-            <div class="member-list-item">
-
-              <span class="member-muted">
-                Previous outstanding
-              </span>
-
-              <strong id="previousOutstanding">
-                KSh 0.00
-              </strong>
-
-            </div>
-
-            <div class="member-list-item">
-
-              <span class="member-muted">
-                Current paid
-              </span>
-
-              <strong id="currentPaid">
-                KSh 0.00
-              </strong>
-
-            </div>
-
-            <div class="member-list-item">
-
-              <span class="member-muted">
-                Carry forward
-              </span>
-
-              <strong id="carryForward">
-                KSh 0.00
-              </strong>
-
-            </div>
-
-            <div class="member-list-item">
-
-              <span class="member-muted">
-                Outstanding
-              </span>
-
-              <strong id="currentOutstanding">
-                KSh 0.00
-              </strong>
-
-            </div>
-
-          </div>
-
-        </section>
+        </table>
 
       </div>
-
-
-      <section class="card member-card">
-
-        <div class="card-header">
-
-          <div>
-
-            <h2>
-              My Contribution History
-            </h2>
-
-            <p class="muted">
-              Your contribution records only.
-            </p>
-
-          </div>
-
-          <div class="member-actions">
-
-            <button
-              id="downloadStatement"
-              type="button"
-              class="button button-primary"
-            >
-              Download My Statement
-            </button>
-
-            <button
-              id="printStatement"
-              type="button"
-              class="button"
-            >
-              Print / Save PDF
-            </button>
-
-          </div>
-
-        </div>
-
-
-        <div class="table-wrapper">
-
-          <table class="statement-table">
-
-            <thead>
-
-              <tr>
-
-                <th>
-                  Date
-                </th>
-
-                <th>
-                  Amount
-                </th>
-
-                <th>
-                  Type
-                </th>
-
-                <th>
-                  Payment Method
-                </th>
-
-                <th>
-                  Reference
-                </th>
-
-              </tr>
-
-            </thead>
-
-            <tbody id="memberContributionRows">
-
-              <tr>
-
-                <td colspan="5">
-                  Loading contributions...
-                </td>
-
-              </tr>
-
-            </tbody>
-
-          </table>
-
-        </div>
-
-      </section>
-
-
-      <section class="card member-card">
-
-        <h2>
-          Statement Summary
-        </h2>
-
-        <div class="member-grid">
-
-          <div class="member-stat">
-
-            <span class="member-stat-label">
-              Total recorded
-            </span>
-
-            <span
-              id="totalContributions"
-              class="member-stat-value"
-            >
-              KSh 0.00
-            </span>
-
-          </div>
-
-          <div class="member-stat">
-
-            <span class="member-stat-label">
-              Contribution records
-            </span>
-
-            <span
-              id="contributionCount"
-              class="member-stat-value"
-            >
-              0
-            </span>
-
-          </div>
-
-        </div>
-
-      </section>
 
     </section>
 
   </main>
 
-
   <script type="module">
-
-    import {
-      boot
-    } from "./js/layout.js";
+    import { boot } from "./js/layout.js";
 
     boot();
-
   </script>
 
 </body>
-
 </html>
