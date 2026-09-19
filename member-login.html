@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Member Portal sign in — CHAMA LIVE">
+  <meta name="theme-color" content="#0f766e">
+  <title>Member Login — CHAMA LIVE</title>
+
+  <link rel="stylesheet" href="css/app.css">
+
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #f8fafc;
+      color: #0f172a;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .login-shell {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+
+    .login-card {
+      width: min(440px, 100%);
+      padding: 28px;
+      border: 1px solid #dbe4ea;
+      border-radius: 16px;
+      background: #fff;
+      box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+      box-sizing: border-box;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+    }
+
+    .intro {
+      margin: 0 0 24px;
+      color: #64748b;
+    }
+
+    label {
+      display: block;
+      margin: 0 0 6px;
+      font-weight: 600;
+    }
+
+    input {
+      width: 100%;
+      min-height: 46px;
+      box-sizing: border-box;
+      padding: 10px 12px;
+      margin-bottom: 16px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font: inherit;
+    }
+
+    button {
+      width: 100%;
+      min-height: 46px;
+      border: 0;
+      border-radius: 8px;
+      background: #0f766e;
+      color: #fff;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.65;
+      cursor: wait;
+    }
+
+    .message {
+      margin: 0 0 16px;
+      padding: 12px;
+      border-radius: 8px;
+    }
+
+    .error {
+      background: #fef2f2;
+      color: #991b1b;
+    }
+
+    .success {
+      background: #ecfdf5;
+      color: #166534;
+    }
+
+    .links {
+      margin-top: 18px;
+      text-align: center;
+    }
+
+    .links p {
+      margin: 8px 0;
+    }
+
+    .links a {
+      color: #0f766e;
+      text-decoration: none;
+    }
+
+    .links a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="login-shell">
+    <section class="login-card" aria-labelledby="loginTitle">
+      <h1 id="loginTitle">Member Portal</h1>
+
+      <p class="intro">
+        Sign in to view your member account and group information.
+      </p>
+
+      <div
+        id="error"
+        class="message error"
+        hidden
+        role="alert"
+        aria-live="assertive"
+      ></div>
+
+      <div
+        id="success"
+        class="message success"
+        hidden
+        role="status"
+        aria-live="polite"
+      ></div>
+
+      <form id="memberLoginForm" novalidate>
+        <label for="email">Email address</label>
+
+        <input
+          id="email"
+          name="email"
+          type="email"
+          autocomplete="username"
+          inputmode="email"
+          required
+        >
+
+        <label for="password">Password</label>
+
+        <input
+          id="password"
+          name="password"
+          type="password"
+          autocomplete="current-password"
+          required
+        >
+
+        <button id="loginButton" type="submit">
+          Sign In
+        </button>
+      </form>
+
+      <div class="links">
+        <p>
+          <a href="forgot-password.html">Forgot Password?</a>
+        </p>
+
+        <p>
+          Admin account?
+          <a href="admin-login.html">Use Admin Login</a>
+        </p>
+
+        <p>
+          <a href="index.html">Back to CHAMA LIVE</a>
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="js/member-login.js"></script>
+</body>
+</html>
