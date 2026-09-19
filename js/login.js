@@ -13,7 +13,11 @@
         ↓
    Authenticated member
         ↓
-   Dashboard / portal authorization
+   auth.js / getMyApplicationContext()
+        ↓
+   Portal authorization
+        ↓
+   Admin Portal OR Member Portal
 
    IMPORTANT
    ---------------------------------------------------------
@@ -31,7 +35,8 @@ import {
   supabase,
   BASE_URL,
   signIn,
-  getMyMember
+  getMyMember,
+  getMyApplicationContext
 } from "./auth.js";
 
 
@@ -81,11 +86,28 @@ const successBox =
 
 
 /* =========================================================
-   DESTINATION
+   DESTINATIONS
 ========================================================= */
 
-const DASHBOARD_URL =
+const ADMIN_DASHBOARD_URL =
   `${BASE_URL}/dashboard.html`;
+
+
+const MEMBER_DASHBOARD_URL =
+  `${BASE_URL}/member-dashboard.html`;
+
+
+/* =========================================================
+   PORTAL ROLES
+========================================================= */
+
+const ADMIN_ROLES =
+  new Set([
+    "admin",
+    "chairperson",
+    "secretary",
+    "treasurer"
+  ]);
 
 
 /* =========================================================
@@ -324,6 +346,23 @@ function normalizeLoginError(
   }
 
 
+  if (
+    lower.includes(
+      "not authorized"
+    ) ||
+    lower.includes(
+      "unsupported role"
+    )
+  ) {
+
+    return (
+      "Your CHAMA LIVE account does not have a valid portal role. " +
+      "Please contact your group administrator."
+    );
+
+  }
+
+
   return (
     message ||
     "Unable to sign in."
@@ -401,13 +440,131 @@ async function verifyMemberContext() {
 
 
 /* =========================================================
-   REDIRECT
+   PORTAL DESTINATION
 ========================================================= */
 
-function redirectToDashboard() {
+/*
+ * Portal routing uses the canonical application context
+ * from auth.js.
+ *
+ * Role meanings:
+ *
+ *     member
+ *         → Member Portal
+ *
+ *     admin
+ *     chairperson
+ *     secretary
+ *     treasurer
+ *         → Admin Portal
+ *
+ *     isOwner
+ *         → Admin Portal
+ *
+ * The OWNER concept remains separate from members.role.
+ * No OWNER role is invented here.
+ */
+
+function getPortalDestination(
+  context
+) {
+
+  if (!context) {
+
+    throw new Error(
+      "Unable to resolve your CHAMA LIVE application context."
+    );
+
+  }
+
+
+  const role =
+    String(
+      context.role ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  const isOwner =
+    context.isOwner === true;
+
+
+  if (
+    isOwner ||
+    ADMIN_ROLES.has(
+      role
+    )
+  ) {
+
+    return ADMIN_DASHBOARD_URL;
+
+  }
+
+
+  if (
+    role === "member"
+  ) {
+
+    return MEMBER_DASHBOARD_URL;
+
+  }
+
+
+  throw new Error(
+    "Your CHAMA LIVE account does not have a valid portal role."
+  );
+
+}
+
+
+/* =========================================================
+   REDIRECT TO PORTAL
+========================================================= */
+
+async function redirectToPortal() {
+
+  /*
+   * auth.js remains the canonical source for:
+   *
+   *     user
+   *     member
+   *     group
+   *     owner
+   *     role
+   *
+   * Do not calculate portal role from URL parameters,
+   * localStorage, or a second members-table query.
+   */
+
+  const context =
+    await getMyApplicationContext();
+
+
+  const destination =
+    getPortalDestination(
+      context
+    );
+
+
+  console.log(
+    "CHAMA LIVE: portal destination resolved",
+    {
+      role:
+        context?.role ||
+        null,
+
+      isOwner:
+        context?.isOwner === true,
+
+      destination
+    }
+  );
+
 
   window.location.replace(
-    DASHBOARD_URL
+    destination
   );
 
 }
@@ -571,6 +728,39 @@ async function performLogin() {
 
 
     /* =====================================================
+       RESOLVE PORTAL
+    ===================================================== */
+
+    showSuccess(
+      "Checking your CHAMA LIVE portal..."
+    );
+
+
+    /*
+     * Resolve the canonical application context before
+     * redirecting.
+     *
+     * This determines whether the authenticated account
+     * belongs in the Admin Portal or Member Portal.
+     */
+
+    const context =
+      await getMyApplicationContext();
+
+
+    /*
+     * Resolve the destination before clearing the password
+     * so an invalid/unsupported role is handled by the
+     * existing login error path.
+     */
+
+    const destination =
+      getPortalDestination(
+        context
+      );
+
+
+    /* =====================================================
        CLEAR PASSWORD
     ===================================================== */
 
@@ -591,21 +781,29 @@ async function performLogin() {
     );
 
 
+    console.log(
+      "CHAMA LIVE: authenticated portal resolved",
+      {
+        role:
+          context?.role ||
+          null,
+
+        isOwner:
+          context?.isOwner === true,
+
+        destination
+      }
+    );
+
+
     /*
-     * The dashboard independently resolves:
-     *
-     *     requireAuth()
-     *     getMyMember()
-     *     getMyGroup()
-     *
-     * Group context is therefore never passed through
-     * the URL.
-     *
-     * Portal authorization remains separate and must
-     * ultimately be enforced by backend authorization.
+     * The destination is determined from canonical auth
+     * context. Group context is never passed through the URL.
      */
 
-    redirectToDashboard();
+    window.location.replace(
+      destination
+    );
 
   }
 
@@ -619,9 +817,9 @@ async function performLogin() {
 
 
     /*
-     * If authentication succeeded but member resolution
-     * failed, remove the unusable session before returning
-     * to the login screen.
+     * If authentication succeeded but member/context
+     * resolution failed, remove the unusable session before
+     * returning to the login screen.
      */
 
     try {
@@ -703,10 +901,38 @@ async function checkExistingSession() {
 
 
     /*
-     * Existing valid session.
+     * Resolve the canonical application context and send
+     * the user to the appropriate portal.
      */
 
-    redirectToDashboard();
+    const context =
+      await getMyApplicationContext();
+
+
+    const destination =
+      getPortalDestination(
+        context
+      );
+
+
+    console.log(
+      "CHAMA LIVE: existing session portal resolved",
+      {
+        role:
+          context?.role ||
+          null,
+
+        isOwner:
+          context?.isOwner === true,
+
+        destination
+      }
+    );
+
+
+    window.location.replace(
+      destination
+    );
 
   }
 
@@ -781,4 +1007,3 @@ checkExistingSession();
 console.log(
   "CHAMA LIVE: login.js ready — canonical authentication flow enabled"
 );
-
