@@ -928,21 +928,17 @@
 
 
   <!-- =====================================================
-       EXISTING PAGE BOOT
-       
-       IMPORTANT:
-       This page no longer consumes
-       chama_live_getting_started_event.
+       MEMBER PORTAL PAGE BOOT
 
-       dashboard.html is now the sole consumer of the
-       onboarding event and controls the 10-second popup.
+       This page is loaded through the independent
+       Member Portal layout.
   ====================================================== -->
 
   <script type="module">
 
     import {
       boot
-    } from "./js/layout.js";
+    } from "./js/member-layout.js";
 
     boot();
 
