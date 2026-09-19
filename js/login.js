@@ -86,6 +86,27 @@ const successBox =
 
 
 /* =========================================================
+   LOGIN FLOW STATE
+========================================================= */
+
+/*
+ * Prevents checkExistingSession() from redirecting while
+ * an explicit login attempt is already resolving.
+ *
+ * This is important because Supabase session state can be
+ * changing while signIn() and the canonical application
+ * context are being resolved.
+ */
+
+let loginInProgress =
+  false;
+
+
+let redirectInProgress =
+  false;
+
+
+/* =========================================================
    DESTINATIONS
 ========================================================= */
 
@@ -387,9 +408,6 @@ function normalizeLoginError(
  *       member
  *          ↓
  *       group_id
- *
- * This prevents login.js from maintaining a second
- * authentication/member-resolution implementation.
  */
 
 async function verifyMemberContext() {
@@ -445,28 +463,6 @@ async function verifyMemberContext() {
    PORTAL DESTINATION
 ========================================================= */
 
-/*
- * Portal routing uses the canonical application context
- * from auth.js.
- *
- * Role meanings:
- *
- *     member
- *         → Member Portal
- *
- *     admin
- *     chairperson
- *     secretary
- *     treasurer
- *         → Admin Portal
- *
- *     isOwner
- *         → Admin Portal
- *
- * The OWNER concept remains separate from members.role.
- * No OWNER role is invented here.
- */
-
 function getPortalDestination(
   context
 ) {
@@ -516,57 +512,6 @@ function getPortalDestination(
 
   throw new Error(
     "Your CHAMA LIVE account does not have a valid portal role."
-  );
-
-}
-
-
-/* =========================================================
-   REDIRECT TO PORTAL
-========================================================= */
-
-async function redirectToPortal() {
-
-  /*
-   * auth.js remains the canonical source for:
-   *
-   *     user
-   *     member
-   *     group
-   *     owner
-   *     role
-   *
-   * Do not calculate portal role from URL parameters,
-   * localStorage, or a second members-table query.
-   */
-
-  const context =
-    await getMyApplicationContext();
-
-
-  const destination =
-    getPortalDestination(
-      context
-    );
-
-
-  console.log(
-    "CHAMA LIVE: portal destination resolved",
-    {
-      role:
-        context?.role ||
-        null,
-
-      isOwner:
-        context?.isOwner === true,
-
-      destination
-    }
-  );
-
-
-  window.location.replace(
-    destination
   );
 
 }
@@ -639,6 +584,18 @@ function readCredentials() {
 
 async function performLogin() {
 
+  /*
+   * Establish the explicit-login lock BEFORE any async
+   * authentication/context work begins.
+   *
+   * This prevents checkExistingSession() from winning a
+   * redirect race and sending the user to the wrong portal.
+   */
+
+  loginInProgress =
+    true;
+
+
   clearMessages();
 
 
@@ -657,6 +614,9 @@ async function performLogin() {
   }
 
   catch (error) {
+
+    loginInProgress =
+      false;
 
     showError(
       normalizeLoginError(
@@ -684,12 +644,6 @@ async function performLogin() {
       "Authenticating..."
     );
 
-
-    /*
-     * auth.js owns the sign-in contract.
-     *
-     * Do not call signInWithPassword() directly here.
-     */
 
     const data =
       await signIn(
@@ -719,13 +673,6 @@ async function performLogin() {
     );
 
 
-    /*
-     * Canonical member resolution.
-     *
-     * No approval workflow is performed.
-     * No application lookup is performed.
-     */
-
     await verifyMemberContext();
 
 
@@ -738,23 +685,9 @@ async function performLogin() {
     );
 
 
-    /*
-     * Resolve the canonical application context before
-     * redirecting.
-     *
-     * This determines whether the authenticated account
-     * belongs in the Admin Portal or Member Portal.
-     */
-
     const context =
       await getMyApplicationContext();
 
-
-    /*
-     * Resolve the destination before clearing the password
-     * so an invalid/unsupported role is handled by the
-     * existing login error path.
-     */
 
     const destination =
       getPortalDestination(
@@ -772,6 +705,14 @@ async function performLogin() {
         "";
 
     }
+
+
+    /* =====================================================
+       REDIRECT LOCK
+    ===================================================== */
+
+    redirectInProgress =
+      true;
 
 
     /* =====================================================
@@ -799,8 +740,8 @@ async function performLogin() {
 
 
     /*
-     * The destination is determined from canonical auth
-     * context. Group context is never passed through the URL.
+     * Only the destination resolved from the canonical
+     * application context is used.
      */
 
     window.location.replace(
@@ -820,8 +761,7 @@ async function performLogin() {
 
     /*
      * If authentication succeeded but member/context
-     * resolution failed, remove the unusable session before
-     * returning to the login screen.
+     * resolution failed, remove the unusable session.
      */
 
     try {
@@ -838,6 +778,14 @@ async function performLogin() {
       );
 
     }
+
+
+    loginInProgress =
+      false;
+
+
+    redirectInProgress =
+      false;
 
 
     showError(
@@ -861,6 +809,21 @@ async function performLogin() {
 ========================================================= */
 
 async function checkExistingSession() {
+
+  /*
+   * If the user has already started an explicit login,
+   * this automatic session check must not redirect.
+   */
+
+  if (
+    loginInProgress ||
+    redirectInProgress
+  ) {
+
+    return;
+
+  }
+
 
   try {
 
@@ -893,28 +856,76 @@ async function checkExistingSession() {
 
 
     /*
-     * An existing Auth session is not sufficient by itself.
+     * The session may have changed while this async
+     * operation was running.
      *
-     * Resolve the canonical member context before allowing
-     * access to the application.
+     * Never redirect if an explicit login has started.
      */
+
+    if (
+      loginInProgress ||
+      redirectInProgress
+    ) {
+
+      return;
+
+    }
+
+
+    /* =====================================================
+       RESOLVE MEMBER
+    ===================================================== */
 
     await verifyMemberContext();
 
 
     /*
-     * Resolve the canonical application context and send
-     * the user to the appropriate portal.
+     * The explicit login flow may have started while the
+     * member context was being resolved.
+     *
+     * Check again before resolving/using the destination.
      */
+
+    if (
+      loginInProgress ||
+      redirectInProgress
+    ) {
+
+      return;
+
+    }
+
+
+    /* =====================================================
+       RESOLVE PORTAL
+    ===================================================== */
 
     const context =
       await getMyApplicationContext();
+
+
+    /*
+     * Final race-protection check.
+     */
+
+    if (
+      loginInProgress ||
+      redirectInProgress
+    ) {
+
+      return;
+
+    }
 
 
     const destination =
       getPortalDestination(
         context
       );
+
+
+    redirectInProgress =
+      true;
 
 
     console.log(
@@ -941,15 +952,23 @@ async function checkExistingSession() {
 
   catch (error) {
 
+    /*
+     * If an explicit login has started, do not perform
+     * session cleanup from this background check.
+     */
+
+    if (loginInProgress) {
+
+      return;
+
+    }
+
+
     console.warn(
       "CHAMA LIVE: existing session is not usable",
       error
     );
 
-
-    /*
-     * Remove an unusable session.
-     */
 
     try {
 
