@@ -3,23 +3,6 @@
    PORTAL-AWARE VERSION
    TOP NAV + SIDEBAR NAV + MOBILE MENU + MOBILE BOTTOM NAV
 
-   GLOBAL NAVIGATION CONTRACT:
-   - Desktop navigation is reconciled centrally here.
-   - Dashboard-style .top-nav and sidebar-style .nav use
-     the same canonical destination list.
-   - Navigation is filtered by canonical application role.
-   - Direct URL access is protected before page scripts load.
-   - Only real application destinations are exposed.
-   - Documents is intentionally excluded because
-     documents.html does not exist.
-   - Assets is included in Admin navigation but owns its
-     own boot.
-   - Plans & Activities owns its own boot.
-   - Getting Started owns its own boot.
-   - Support & Welfare owns its own boot.
-   - Milestones owns its own boot.
-   - Data Migration owns its own boot.
-
    PORTAL CONTRACT:
    - member → Member Portal
    - admin → Admin Portal
@@ -30,39 +13,18 @@
    - unsupported role → blocked
 
    MEMBER PORTAL:
-   - Member dashboard is the canonical member landing page.
-   - Existing admin-management pages are not exposed to members.
-   - Member-safe group information is presented through the
-     member dashboard.
-   - Existing management pages are not assumed to be
-     member-safe merely because their database SELECT policies
-     permit group-member reads.
+   - member-dashboard.html
+   - member-contributions.html
+   - getting-started.html
+   - Existing admin-management pages remain blocked until
+     their own member-safe/read-only contract is reconciled.
 
-   MOBILE MENU:
-   - Assets is included in Admin navigation.
-   - Plans & Activities is included in Admin navigation.
-   - Getting Started is included in Admin navigation.
-   - Support & Welfare is included in Admin navigation.
-   - Milestones is included in Admin navigation.
-   - Data Migration is included in Admin navigation.
-   - Assets is intentionally NOT included in mobile bottom
-     navigation.
-   - Independently booted pages are intentionally NOT
-     included in PAGE_SCRIPTS.
-
-   PAGE SCRIPT ARCHITECTURE:
-   - Core pages may be initialized through PAGE_SCRIPTS.
-   - Independently booted pages are intentionally absent
-     from PAGE_SCRIPTS.
-   - member-dashboard.html is a core portal page and is
-     initialized through PAGE_SCRIPTS.
-
-   AUTH CONTEXT CONTRACT:
-   - layout.js consumes getMyApplicationContext().
-   - Authentication, member, group, ownership and role
-     context are resolved centrally by auth.js.
-   - layout.js does NOT independently calculate ownership.
-   - layout.js does NOT query owner_user_id directly.
+   IMPORTANT:
+   - Billing is intentionally not exposed to members.
+   - Data Migration is intentionally not exposed to members.
+   - Existing Contributions page remains Admin Portal only.
+   - member-contributions.html is a separate member-safe page.
+   - No database authorization is changed here.
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -135,9 +97,7 @@ function isAdminPortal() {
 
   return (
     currentIsOwner ||
-    ADMIN_ROLES.has(
-      currentRole
-    )
+    ADMIN_ROLES.has(currentRole)
   );
 
 }
@@ -156,24 +116,6 @@ function isMemberPortal() {
 /* =========================================================
    CANONICAL APPLICATION NAVIGATION
 ========================================================= */
-
-/*
- * This is the single navigation contract for the
- * application.
- *
- * IMPORTANT:
- * - Keep only destinations that actually exist.
- * - Do not add documents.html unless a real documents page
- *   is introduced and verified.
- * - Page boot architecture is separate from navigation.
- *
- * Admin navigation contains the existing application
- * management pages.
- *
- * Member navigation deliberately does NOT expose existing
- * management pages because their current page scripts may
- * contain management/write controls.
- */
 
 const APPLICATION_NAVIGATION = [
 
@@ -265,6 +207,12 @@ const APPLICATION_NAVIGATION = [
     href: "member-dashboard.html",
     page: "member-dashboard.html",
     label: "My Dashboard"
+  },
+
+  {
+    href: "member-contributions.html",
+    page: "member-contributions.html",
+    label: "My Contributions"
   }
 
 ];
@@ -273,26 +221,6 @@ const APPLICATION_NAVIGATION = [
 /* =========================================================
    PORTAL PAGE ACCESS
 ========================================================= */
-
-/*
- * These are application-level page-entry rules.
- *
- * This is intentionally separate from database RLS.
- *
- * Admin:
- *   - Existing application pages remain available.
- *   - member-dashboard.html redirects to dashboard.html.
- *
- * Member:
- *   - member-dashboard.html is the canonical portal.
- *   - getting-started.html remains available because it is
- *     a general onboarding/tour surface.
- *   - Existing management pages are blocked until they have
- *     an explicitly reconciled member-safe/read-only contract.
- *
- * This prevents a member from reaching an existing page that
- * may contain management controls merely by typing its URL.
- */
 
 const ADMIN_PAGES =
   new Set([
@@ -315,6 +243,7 @@ const ADMIN_PAGES =
 const MEMBER_PAGES =
   new Set([
     "member-dashboard.html",
+    "member-contributions.html",
     "getting-started.html"
   ]);
 
@@ -334,17 +263,6 @@ const MEMBER_DASHBOARD_URL =
 /* =========================================================
    DIRECT URL PORTAL GUARD
 ========================================================= */
-
-/*
- * IMPORTANT:
- *
- * This function runs AFTER the canonical auth context has
- * been resolved but BEFORE any page-specific script is
- * imported.
- *
- * Therefore a member cannot reach an admin page and allow
- * its management JavaScript to initialize first.
- */
 
 function enforcePortalAccess() {
 
@@ -376,13 +294,27 @@ function enforcePortalAccess() {
     }
 
 
-    /*
-     * All existing application pages remain available to
-     * authorized admin roles.
-     *
-     * Unknown pages are not given a special application
-     * permission here.
-     */
+    if (
+      currentPage ===
+      "member-contributions.html"
+    ) {
+
+      /*
+       * Member Contributions is intentionally a member-safe
+       * portal surface.
+       *
+       * Admin users remain on the Admin Portal and should use
+       * the existing Contributions page.
+       */
+
+      window.location.replace(
+        ADMIN_DASHBOARD_URL
+      );
+
+      return false;
+
+    }
+
 
     return true;
 
@@ -426,13 +358,6 @@ function enforcePortalAccess() {
     }
 
 
-    /*
-     * Unknown application pages are not treated as
-     * member-safe by default.
-     *
-     * Send the member to the canonical member portal.
-     */
-
     console.warn(
       "CHAMA LIVE: member attempted unknown page:",
       currentPage
@@ -471,7 +396,9 @@ function getNavigationItems() {
 
         return (
           item.page !==
-          "member-dashboard.html"
+          "member-dashboard.html" &&
+          item.page !==
+          "member-contributions.html"
         );
 
       }
@@ -810,29 +737,18 @@ function injectMobileNavigationStyles() {
 
       .menu-toggle {
         display: inline-flex !important;
-
         align-items: center;
         justify-content: center;
-
         width: 40px;
         height: 40px;
-
         padding: 0;
-
         border: 1px solid #e5e7eb;
-
         border-radius: 10px;
-
         background: #ffffff;
-
         color: #344054;
-
         cursor: pointer;
-
         font-size: 21px;
-
         line-height: 1;
-
         flex-shrink: 0;
       }
 
@@ -846,56 +762,31 @@ function injectMobileNavigationStyles() {
       }
 
       .chama-mobile-menu-backdrop {
-
         position: fixed;
-
         inset: 0;
-
         z-index: 19998;
-
-        background:
-          rgba(15, 23, 42, .38);
-
-        backdrop-filter:
-          blur(2px);
-
-        -webkit-backdrop-filter:
-          blur(2px);
-
+        background: rgba(15, 23, 42, .38);
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
       }
 
       .chama-mobile-menu {
-
         position: fixed;
-
         top: 58px;
-
         left: 10px;
-
         right: 10px;
-
         z-index: 19999;
-
         display: none;
-
         background: #ffffff;
-
-        border:
-          1px solid #e5e7eb;
-
+        border: 1px solid #e5e7eb;
         border-radius: 16px;
-
         box-shadow:
           0 18px 45px
           rgba(16, 24, 40, .18);
-
         overflow: hidden;
-
         max-height:
           calc(100vh - 75px);
-
         overflow-y: auto;
-
       }
 
       .chama-mobile-menu.open {
@@ -903,414 +794,199 @@ function injectMobileNavigationStyles() {
       }
 
       .chama-mobile-menu-header {
-
-        padding:
-          15px 16px;
-
-        border-bottom:
-          1px solid #edf0f4;
-
-        background:
-          #f8fafc;
-
+        padding: 15px 16px;
+        border-bottom: 1px solid #edf0f4;
+        background: #f8fafc;
       }
 
       .chama-mobile-menu-group {
-
-        font-size:
-          14px;
-
-        font-weight:
-          800;
-
-        color:
-          #101828;
-
+        font-size: 14px;
+        font-weight: 800;
+        color: #101828;
       }
 
       .chama-mobile-menu-user {
-
-        margin-top:
-          2px;
-
-        font-size:
-          12px;
-
-        color:
-          #667085;
-
+        margin-top: 2px;
+        font-size: 12px;
+        color: #667085;
       }
 
       .chama-mobile-menu-link {
-
-        display:
-          flex;
-
-        align-items:
-          center;
-
-        gap:
-          12px;
-
-        width:
-          100%;
-
-        min-height:
-          48px;
-
-        padding:
-          10px 16px;
-
-        text-decoration:
-          none;
-
-        color:
-          #344054;
-
-        font-size:
-          13px;
-
-        font-weight:
-          650;
-
-        border-bottom:
-          1px solid #f2f4f7;
-
-        background:
-          #ffffff;
-
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        min-height: 48px;
+        padding: 10px 16px;
+        text-decoration: none;
+        color: #344054;
+        font-size: 13px;
+        font-weight: 650;
+        border-bottom: 1px solid #f2f4f7;
+        background: #ffffff;
       }
 
       .chama-mobile-menu-link:last-child {
-        border-bottom:
-          0;
+        border-bottom: 0;
       }
 
       .chama-mobile-menu-link:hover {
-
-        background:
-          #f0fdfa;
-
-        color:
-          #0f766e;
-
+        background: #f0fdfa;
+        color: #0f766e;
       }
 
       .chama-mobile-menu-link.active {
-
-        background:
-          #ecfdf5;
-
-        color:
-          #0f766e;
-
-        font-weight:
-          750;
-
+        background: #ecfdf5;
+        color: #0f766e;
+        font-weight: 750;
       }
 
       .chama-mobile-menu-icon {
-
-        width:
-          30px;
-
-        height:
-          30px;
-
-        display:
-          flex;
-
-        align-items:
-          center;
-
-        justify-content:
-          center;
-
-        border-radius:
-          8px;
-
-        background:
-          #f8fafc;
-
-        font-size:
-          17px;
-
-        flex-shrink:
-          0;
-
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        background: #f8fafc;
+        font-size: 17px;
+        flex-shrink: 0;
       }
 
       .chama-mobile-menu-link.active
       .chama-mobile-menu-icon {
-
-        background:
-          #d1fae5;
-
+        background: #d1fae5;
       }
 
       .mobile-bottom-nav {
-
         position: fixed;
-
         left: 0;
-
         right: 0;
-
         bottom: 0;
-
         z-index: 15000;
-
         display: grid;
-
         grid-template-columns:
           repeat(5, minmax(0, 1fr));
-
-        height:
-          72px;
-
+        height: 72px;
         padding:
           6px 6px
           calc(6px + env(safe-area-inset-bottom));
-
         background:
           rgba(255, 255, 255, .98);
-
-        border-top:
-          1px solid #e5e7eb;
-
+        border-top: 1px solid #e5e7eb;
         box-shadow:
           0 -5px 20px
           rgba(0, 0, 0, .08);
-
-        backdrop-filter:
-          blur(14px);
-
-        -webkit-backdrop-filter:
-          blur(14px);
-
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
       }
 
       .mobile-nav-item {
-
-        display:
-          flex;
-
-        flex-direction:
-          column;
-
-        align-items:
-          center;
-
-        justify-content:
-          center;
-
-        gap:
-          3px;
-
-        min-width:
-          0;
-
-        text-decoration:
-          none;
-
-        color:
-          #64748b;
-
-        border-radius:
-          13px;
-
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        min-width: 0;
+        text-decoration: none;
+        color: #64748b;
+        border-radius: 13px;
         transition:
           background .2s ease,
           color .2s ease,
           transform .2s ease;
-
       }
 
       .mobile-nav-item:active {
-
-        transform:
-          scale(.96);
-
+        transform: scale(.96);
       }
 
       .mobile-nav-item.active {
-
-        color:
-          #0f766e;
-
-        background:
-          rgba(15, 118, 110, .09);
-
+        color: #0f766e;
+        background: rgba(15, 118, 110, .09);
       }
 
       .mobile-nav-icon {
-
-        display:
-          flex;
-
-        align-items:
-          center;
-
-        justify-content:
-          center;
-
-        width:
-          30px;
-
-        height:
-          30px;
-
-        font-size:
-          21px;
-
-        line-height:
-          1;
-
-        font-weight:
-          700;
-
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        font-size: 21px;
+        line-height: 1;
+        font-weight: 700;
       }
 
       .mobile-nav-label {
-
-        font-size:
-          9px;
-
-        line-height:
-          1;
-
-        font-weight:
-          600;
-
-        white-space:
-          nowrap;
-
+        font-size: 9px;
+        line-height: 1;
+        font-weight: 600;
+        white-space: nowrap;
       }
 
       .mobile-nav-main
       .mobile-nav-icon {
-
-        width:
-          43px;
-
-        height:
-          43px;
-
-        margin-top:
-          -18px;
-
-        border-radius:
-          50%;
-
-        background:
-          #0f766e;
-
-        color:
-          white;
-
-        border:
-          4px solid white;
-
+        width: 43px;
+        height: 43px;
+        margin-top: -18px;
+        border-radius: 50%;
+        background: #0f766e;
+        color: white;
+        border: 4px solid white;
         box-shadow:
           0 5px 15px
           rgba(15, 118, 110, .30);
-
-        font-size:
-          25px;
-
+        font-size: 25px;
       }
 
       .mobile-nav-main
       .mobile-nav-label {
-
-        color:
-          #0f766e;
-
+        color: #0f766e;
       }
 
       .mobile-nav-main.active
       .mobile-nav-icon {
-
-        background:
-          #115e59;
-
+        background: #115e59;
       }
 
       .sidebar {
-
-        display:
-          none !important;
-
+        display: none !important;
       }
 
       .sidebar-overlay {
-
-        display:
-          none !important;
-
+        display: none !important;
       }
 
       .layout {
-
-        display:
-          block !important;
-
-        width:
-          100% !important;
-
+        display: block !important;
+        width: 100% !important;
       }
 
       .main {
-
-        width:
-          100% !important;
-
-        max-width:
-          100% !important;
-
-        margin:
-          0 !important;
-
-        padding:
-          16px 10px 96px 10px !important;
-
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 16px 10px 96px 10px !important;
       }
 
       .table-wrap {
-
-        width:
-          100%;
-
-        max-width:
-          100%;
-
-        overflow-x:
-          auto;
-
-        -webkit-overflow-scrolling:
-          touch;
-
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
       }
 
       .grid-2 {
-
-        grid-template-columns:
-          1fr !important;
-
+        grid-template-columns: 1fr !important;
       }
 
       .grid-3 {
-
         grid-template-columns:
           repeat(2, minmax(0, 1fr));
-
       }
 
       .card {
-
-        max-width:
-          100%;
-
+        max-width: 100%;
       }
 
     }
@@ -1318,51 +994,28 @@ function injectMobileNavigationStyles() {
     @media (max-width: 390px) {
 
       .mobile-bottom-nav {
-
-        height:
-          68px;
-
+        height: 68px;
       }
 
       .mobile-nav-icon {
-
-        width:
-          27px;
-
-        height:
-          27px;
-
-        font-size:
-          19px;
-
+        width: 27px;
+        height: 27px;
+        font-size: 19px;
       }
 
       .mobile-nav-label {
-
-        font-size:
-          8px;
-
+        font-size: 8px;
       }
 
       .mobile-nav-main
       .mobile-nav-icon {
-
-        width:
-          39px;
-
-        height:
-          39px;
-
-        font-size:
-          22px;
-
+        width: 39px;
+        height: 39px;
+        font-size: 22px;
       }
 
       .grid-3 {
-
-        grid-template-columns:
-          1fr;
-
+        grid-template-columns: 1fr;
       }
 
     }
@@ -1523,7 +1176,7 @@ function setupMobileMenu() {
 
 
   /* =====================================================
-     MENU ITEMS
+     ADMIN MENU
   ===================================================== */
 
   const adminMenuItems = [
@@ -1629,6 +1282,10 @@ function setupMobileMenu() {
   ];
 
 
+  /* =====================================================
+     MEMBER MENU
+  ===================================================== */
+
   const memberMenuItems = [
 
     {
@@ -1636,6 +1293,13 @@ function setupMobileMenu() {
       page: "member-dashboard.html",
       icon: "⌂",
       label: "My Dashboard"
+    },
+
+    {
+      href: "member-contributions.html",
+      page: "member-contributions.html",
+      icon: "+",
+      label: "My Contributions"
     },
 
     {
@@ -1969,24 +1633,19 @@ function setupMobileNavigation() {
     );
 
     addLink(
+      "member-contributions.html",
+      "member-contributions.html",
+      "+",
+      "Contributions",
+      true
+    );
+
+    addLink(
       "getting-started.html",
       "getting-started.html",
       "?",
       "Guide",
       false
-    );
-
-    /*
-     * Keep the remaining bottom-navigation slots visually
-     * consistent without exposing admin destinations.
-     */
-
-    addLink(
-      "member-dashboard.html",
-      "member-dashboard.html",
-      "◎",
-      "Group",
-      true
     );
 
     addLink(
@@ -2187,26 +1846,6 @@ function setupLogout() {
    LOAD APPLICATION CONTEXT
 ========================================================= */
 
-/*
- * Canonical auth boundary.
- *
- * auth.js is responsible for resolving:
- *
- *   user
- *   member
- *   group
- *   isOwner
- *   role
- *
- * layout.js consumes that context.
- *
- * IMPORTANT:
- * - Do not calculate ownership here.
- * - Do not query owner_user_id here.
- * - Do not invent a new OWNER member role.
- * - Preserve members.role = admin compatibility.
- */
-
 async function loadLayoutData() {
 
   console.log(
@@ -2355,28 +1994,22 @@ const PAGE_SCRIPTS = {
     "./group-management.js",
 
   "member-dashboard.html":
-    "./member-dashboard.js"
+    "./member-dashboard.js",
+
+  "member-contributions.html":
+    "./member-contributions.js"
 
   /*
-   * IMPORTANT:
+   * Independently booted pages remain absent:
    *
-   * assets.html is intentionally absent.
-   *
-   * assets.js owns its own independent boot sequence.
-   *
-   * The following newer/independently booted pages are also
-   * intentionally absent from this map:
-   *
+   * - assets.html
    * - plans-activities.html
    * - getting-started.html
    * - support-welfare.html
    * - milestones.html
    * - data-migration.html
    *
-   * Their page modules own their own initialization.
-   *
-   * Do not add those pages here unless their boot architecture
-   * is explicitly reconciled and changed.
+   * Their own modules control their boot sequence.
    */
 
 };
@@ -2537,6 +2170,17 @@ async function loadCurrentPageScript() {
     }
 
     else if (
+      page === "member-contributions.html" &&
+      typeof pageModule.initMemberContributions ===
+      "function"
+    ) {
+
+      initializer =
+        pageModule.initMemberContributions;
+
+    }
+
+    else if (
       typeof pageModule.init ===
       "function"
     ) {
@@ -2609,13 +2253,6 @@ async function loadCurrentPageScript() {
    AUTHENTICATION
 ========================================================= */
 
-/*
- * Authentication is now resolved through the same canonical
- * application context used by the layout.
- *
- * Do not call getCurrentUser() separately here.
- */
-
 async function initializeAuthentication() {
 
   console.log(
@@ -2668,9 +2305,6 @@ async function initLayout() {
 
   /*
    * 2. Authentication + application context
-   *
-   * loadLayoutData() consumes the canonical auth.js
-   * context and therefore also establishes authentication.
    */
 
   await loadLayoutData();
@@ -2678,14 +2312,6 @@ async function initLayout() {
 
   /*
    * 3. Portal/direct-URL authorization
-   *
-   * IMPORTANT:
-   *
-   * This MUST happen before navigation initialization
-   * and before loadCurrentPageScript().
-   *
-   * A restricted member page therefore cannot initialize
-   * its page-specific JavaScript first.
    */
 
   const accessGranted =
