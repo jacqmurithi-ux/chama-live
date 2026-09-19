@@ -1,54 +1,123 @@
 /* =========================================================
    CHAMA LIVE — MEMBER CONTRIBUTIONS
-   MEMBER-SAFE READ-ONLY CONTRIBUTION VIEW
+
+   MEMBER PORTAL / READ ONLY
+
+   • Shows only the authenticated member's contribution records.
+   • Uses the canonical monthly status RPC.
+   • Does not record contributions.
+   • Does not verify payment evidence.
+   • Does not expose the group contribution ledger.
+   • Does not perform database mutations.
 ========================================================= */
 
-import { supabase } from "./supabase.js";
+import {
+  supabase
+} from "./supabase.js";
 
 import {
-  getMyApplicationContext
+  getMyMember
 } from "./auth.js";
 
 
-let initialized = false;
+/* =========================================================
+   STATE
+========================================================= */
 
-let currentUser = null;
 let currentMember = null;
-let currentGroup = null;
 
 let groupId = null;
-let memberId = null;
 
 let contributions = [];
+
 let canonicalStatus = null;
-let accountingMonth = "";
+
+let initialized = false;
+
+
+/* =========================================================
+   ELEMENTS
+========================================================= */
+
+const groupEl =
+  document.getElementById(
+    "memberContributionGroup"
+  );
+
+const statusMessageEl =
+  document.getElementById(
+    "memberContributionStatus"
+  );
+
+const errorEl =
+  document.getElementById(
+    "memberContributionError"
+  );
+
+const accountingMonthEl =
+  document.getElementById(
+    "accountingMonth"
+  );
+
+const contributionStatusEl =
+  document.getElementById(
+    "contributionStatus"
+  );
+
+const currentDueEl =
+  document.getElementById(
+    "currentDue"
+  );
+
+const previousOutstandingEl =
+  document.getElementById(
+    "previousOutstanding"
+  );
+
+const currentPaidEl =
+  document.getElementById(
+    "currentPaid"
+  );
+
+const currentOutstandingEl =
+  document.getElementById(
+    "currentOutstanding"
+  );
+
+const contributionRowsEl =
+  document.getElementById(
+    "memberContributionRows"
+  );
+
+const statementTotalEl =
+  document.getElementById(
+    "statementTotal"
+  );
+
+const statementCountEl =
+  document.getElementById(
+    "statementCount"
+  );
+
+const downloadStatementButton =
+  document.getElementById(
+    "downloadStatement"
+  );
+
+const printStatementButton =
+  document.getElementById(
+    "printStatement"
+  );
 
 
 /* =========================================================
    HELPERS
 ========================================================= */
 
-function byId(id) {
-  return document.getElementById(id);
-}
-
-
-function escapeHtml(value) {
-
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-
-}
-
-
 function number(value) {
 
   const result =
-    Number(value);
+    Number(value || 0);
 
   return Number.isFinite(result)
     ? result
@@ -59,13 +128,46 @@ function number(value) {
 
 function money(value) {
 
-  return `KSh ${number(value).toLocaleString(
+  return new Intl.NumberFormat(
     "en-KE",
     {
-      minimumFractionDigits: 2,
+      style: "currency",
+      currency: "KES",
+      minimumFractionDigits: 0,
       maximumFractionDigits: 2
     }
-  )}`;
+  ).format(
+    number(value)
+  );
+
+}
+
+
+function escapeHtml(value) {
+
+  return String(
+    value ?? ""
+  )
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
 
 }
 
@@ -90,235 +192,152 @@ function formatDate(value) {
   return date.toLocaleDateString(
     "en-KE",
     {
-      year: "numeric",
+      day: "2-digit",
       month: "short",
-      day: "numeric"
+      year: "numeric"
     }
   );
 
 }
 
 
-function formatAccountingMonth(value) {
-
-  if (
-    !/^\d{4}-\d{2}$/.test(
-      String(value || "")
-    )
-  ) {
-    return value || "—";
-  }
-
-  const date =
-    new Date(
-      `${value}-01T00:00:00`
-    );
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-    return value;
-  }
-
-  return date.toLocaleDateString(
-    "en-KE",
-    {
-      year: "numeric",
-      month: "long"
-    }
-  );
-
-}
-
-
-function currentMonth() {
+function getCurrentMonth() {
 
   const now =
     new Date();
 
-  return [
-    now.getFullYear(),
-    String(
+  return (
+    `${now.getFullYear()}-` +
+    `${String(
       now.getMonth() + 1
-    ).padStart(2, "0")
-  ].join("-");
+    ).padStart(2, "0")}`
+  );
 
 }
 
 
-function setText(
-  id,
-  value
-) {
+function formatMonth(month) {
 
-  const element =
-    byId(id);
-
-  if (element) {
-    element.textContent =
-      value;
+  if (
+    !/^\d{4}-\d{2}$/.test(
+      String(month || "")
+    )
+  ) {
+    return String(
+      month || "—"
+    );
   }
+
+  const [
+    year,
+    monthNumber
+  ] =
+    String(month).split("-");
+
+  const date =
+    new Date(
+      Number(year),
+      Number(monthNumber) - 1,
+      1
+    );
+
+  return date.toLocaleDateString(
+    "en-KE",
+    {
+      month: "long",
+      year: "numeric"
+    }
+  );
 
 }
 
 
 function showError(error) {
 
-  const element =
-    byId("memberError");
+  console.error(
+    "CHAMA LIVE Member Contributions:",
+    error
+  );
 
-  if (!element) {
-    return;
+  if (errorEl) {
+
+    errorEl.textContent =
+      error?.message ||
+      "Unable to load your contribution records.";
+
+    errorEl.style.display =
+      "block";
+
   }
 
-  element.hidden = false;
+  if (statusMessageEl) {
 
-  element.textContent =
-    error?.message ||
-    "Unable to load your contribution information.";
+    statusMessageEl.textContent =
+      "Unable to load your contribution records.";
+
+  }
 
 }
 
 
 function clearError() {
 
-  const element =
-    byId("memberError");
-
-  if (!element) {
+  if (!errorEl) {
     return;
   }
 
-  element.hidden = true;
-  element.textContent = "";
+  errorEl.textContent =
+    "";
+
+  errorEl.style.display =
+    "none";
 
 }
 
 
 /* =========================================================
-   STATUS DISPLAY
+   GROUP CONTEXT
 ========================================================= */
 
-function statusLabel(status) {
-
-  const value =
-    String(
-      status || ""
-    )
-      .trim()
-      .toLowerCase();
-
-  const labels = {
-
-    paid: "PAID",
-
-    partial: "PARTIAL",
-
-    outstanding: "OUTSTANDING",
-
-    credit: "OVERPAID"
-
-  };
-
-  return (
-    labels[value] ||
-    (
-      value
-        ? value.toUpperCase()
-        : "NOT SET"
-    )
-  );
-
-}
-
-
-function statusClass(status) {
-
-  const value =
-    String(
-      status || ""
-    )
-      .trim()
-      .toLowerCase();
-
-  if (
-    value === "paid"
-  ) {
-    return "status-paid";
-  }
-
-  if (
-    value === "partial"
-  ) {
-    return "status-partial";
-  }
-
-  if (
-    value === "outstanding"
-  ) {
-    return "status-outstanding";
-  }
-
-  if (
-    value === "credit"
-  ) {
-    return "status-credit";
-  }
-
-  return "status-neutral";
-
-}
-
-
-/* =========================================================
-   ACCOUNTING CONTEXT
-========================================================= */
-
-async function loadContext() {
-
-  const context =
-    await getMyApplicationContext();
-
-  currentUser =
-    context?.user || null;
-
-  currentMember =
-    context?.member || null;
-
-  currentGroup =
-    context?.group || null;
-
-  groupId =
-    currentMember?.group_id ||
-    currentGroup?.id ||
-    null;
-
-  memberId =
-    currentMember?.id ||
-    null;
+async function loadGroupName() {
 
   if (!groupId) {
-    throw new Error(
-      "Your group could not be resolved."
-    );
+    return;
   }
 
-  if (!memberId) {
-    throw new Error(
-      "Your member record could not be resolved."
-    );
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("groups")
+      .select(
+        "id,name"
+      )
+      .eq(
+        "id",
+        groupId
+      )
+      .maybeSingle();
+
+  if (error) {
+    throw error;
   }
 
-  accountingMonth =
-    currentMonth();
+  if (groupEl) {
+
+    groupEl.textContent =
+      data?.name
+        ? `${data.name} — your contribution record`
+        : "Your contribution record";
+
+  }
 
 }
 
 
 /* =========================================================
-   MEMBER CONTRIBUTIONS
+   CONTRIBUTIONS
 ========================================================= */
 
 async function loadContributions() {
@@ -329,25 +348,28 @@ async function loadContributions() {
   } =
     await supabase
       .from("contributions")
-      .select(`
-        id,
-        member_id,
-        amount,
-        contribution_type,
-        contribution_date,
-        payment_method,
-        reference,
-        mpesa_reference,
-        created_at,
-        notes
-      `)
+      .select(
+        `
+          id,
+          group_id,
+          member_id,
+          amount,
+          contribution_type,
+          contribution_date,
+          payment_method,
+          reference,
+          mpesa_reference,
+          created_at,
+          notes
+        `
+      )
       .eq(
         "group_id",
         groupId
       )
       .eq(
         "member_id",
-        memberId
+        currentMember.id
       )
       .order(
         "contribution_date",
@@ -367,7 +389,9 @@ async function loadContributions() {
   }
 
   contributions =
-    data || [];
+    Array.isArray(data)
+      ? data
+      : [];
 
 }
 
@@ -377,6 +401,9 @@ async function loadContributions() {
 ========================================================= */
 
 async function loadCanonicalStatus() {
+
+  const month =
+    getCurrentMonth();
 
   const {
     data,
@@ -389,7 +416,7 @@ async function loadCanonicalStatus() {
           groupId,
 
         p_month:
-          accountingMonth
+          month
       }
     );
 
@@ -398,7 +425,9 @@ async function loadCanonicalStatus() {
   }
 
   const rows =
-    data || [];
+    Array.isArray(data)
+      ? data
+      : [];
 
   canonicalStatus =
     rows.find(
@@ -407,126 +436,169 @@ async function loadCanonicalStatus() {
           row.member_id
         ) ===
         String(
-          memberId
+          currentMember.id
         )
     ) || null;
+
+  return month;
 
 }
 
 
 /* =========================================================
-   ACCOUNTING STATUS
+   STATUS PRESENTATION
 ========================================================= */
 
-function renderCanonicalStatus() {
+function statusLabel(status) {
 
-  setText(
-    "accountingMonth",
-    formatAccountingMonth(
-      accountingMonth
-    )
-  );
+  switch (
+    String(
+      status || ""
+    ).toLowerCase()
+  ) {
+
+    case "paid":
+      return "PAID";
+
+    case "partial":
+      return "PARTIAL";
+
+    case "outstanding":
+      return "OUTSTANDING";
+
+    case "credit":
+      return "OVERPAID";
+
+    default:
+      return "—";
+
+  }
+
+}
+
+
+function statusClass(status) {
+
+  switch (
+    String(
+      status || ""
+    ).toLowerCase()
+  ) {
+
+    case "paid":
+      return "status-paid";
+
+    case "partial":
+      return "status-partial";
+
+    case "outstanding":
+      return "status-outstanding";
+
+    case "credit":
+      return "status-credit";
+
+    default:
+      return "status-neutral";
+
+  }
+
+}
+
+
+/* =========================================================
+   RENDER STATUS
+========================================================= */
+
+function renderCanonicalStatus(month) {
 
   if (!canonicalStatus) {
 
-    setText(
-      "currentDue",
-      "KSh 0.00"
-    );
+    if (accountingMonthEl) {
+      accountingMonthEl.textContent =
+        formatMonth(month);
+    }
 
-    setText(
-      "previousOutstanding",
-      "KSh 0.00"
-    );
+    if (contributionStatusEl) {
+      contributionStatusEl.textContent =
+        "—";
+    }
 
-    setText(
-      "currentPaid",
-      "KSh 0.00"
-    );
+    if (currentDueEl) {
+      currentDueEl.textContent =
+        money(0);
+    }
 
-    setText(
-      "carryForward",
-      "KSh 0.00"
-    );
+    if (previousOutstandingEl) {
+      previousOutstandingEl.textContent =
+        money(0);
+    }
 
-    setText(
-      "currentOutstanding",
-      "KSh 0.00"
-    );
+    if (currentPaidEl) {
+      currentPaidEl.textContent =
+        money(0);
+    }
 
-    const status =
-      byId(
-        "obligationStatus"
-      );
-
-    if (status) {
-
-      status.textContent =
-        "NOT AVAILABLE";
-
-      status.className =
-        "member-status status-neutral";
-
+    if (currentOutstandingEl) {
+      currentOutstandingEl.textContent =
+        money(0);
     }
 
     return;
   }
 
-
-  setText(
-    "currentDue",
-    money(
-      canonicalStatus.monthly_due
-    )
-  );
-
-  setText(
-    "previousOutstanding",
-    money(
-      canonicalStatus.previous_outstanding
-    )
-  );
-
-  setText(
-    "currentPaid",
-    money(
-      canonicalStatus.current_month_payment
-    )
-  );
-
-  setText(
-    "carryForward",
-    money(
-      canonicalStatus.carry_forward
-    )
-  );
-
-  setText(
-    "currentOutstanding",
-    money(
-      canonicalStatus.current_outstanding
-    )
-  );
-
-
   const status =
-    byId(
-      "obligationStatus"
-    );
+    canonicalStatus.status;
 
-  if (status) {
+  if (accountingMonthEl) {
 
-    status.textContent =
-      statusLabel(
-        canonicalStatus.status
+    accountingMonthEl.textContent =
+      formatMonth(month);
+
+  }
+
+  if (contributionStatusEl) {
+
+    contributionStatusEl.textContent =
+      statusLabel(status);
+
+    contributionStatusEl.className =
+      `obligation-value ${statusClass(status)}`;
+
+  }
+
+  if (currentDueEl) {
+
+    currentDueEl.textContent =
+      money(
+        canonicalStatus.monthly_due
       );
 
-    status.className =
-      `member-status ${
-        statusClass(
-          canonicalStatus.status
-        )
-      }`;
+  }
+
+  if (previousOutstandingEl) {
+
+    previousOutstandingEl.textContent =
+      money(
+        canonicalStatus.previous_outstanding
+      );
+
+  }
+
+  if (currentPaidEl) {
+
+    currentPaidEl.textContent =
+      money(
+        canonicalStatus.current_month_payment
+      );
+
+  }
+
+  if (currentOutstandingEl) {
+
+    currentOutstandingEl.textContent =
+      money(
+        canonicalStatus.current_outstanding
+      );
 
   }
 
@@ -534,109 +606,23 @@ function renderCanonicalStatus() {
 
 
 /* =========================================================
-   CONTRIBUTION HISTORY
+   RENDER CONTRIBUTION HISTORY
 ========================================================= */
 
-function contributionTypeLabel(
-  value
-) {
+function renderContributionHistory() {
 
-  const type =
-    String(
-      value || ""
-    )
-      .trim()
-      .toLowerCase();
-
-  const labels = {
-
-    monthly: "Monthly",
-
-    welfare: "Welfare",
-
-    emergency: "Emergency",
-
-    fundraising: "Fundraising",
-
-    project: "Project",
-
-    event: "Event",
-
-    fine: "Fine",
-
-    other: "Other"
-
-  };
-
-  return (
-    labels[type] ||
-    (
-      type
-        ? type.charAt(0).toUpperCase() +
-          type.slice(1)
-        : "—"
-    )
-  );
-
-}
-
-
-function paymentMethodLabel(
-  value
-) {
-
-  const method =
-    String(
-      value || ""
-    )
-      .trim()
-      .toLowerCase();
-
-  if (
-    method === "mpesa" ||
-    method === "m-pesa" ||
-    method === "m_pesa"
-  ) {
-    return "M-Pesa";
-  }
-
-  if (
-    method === "bank" ||
-    method === "bank transfer" ||
-    method === "bank_transfer"
-  ) {
-    return "Bank transfer";
-  }
-
-  if (
-    method === "cash"
-  ) {
-    return "Cash";
-  }
-
-  return value || "—";
-
-}
-
-
-function renderContributions() {
-
-  const rows =
-    byId(
-      "memberContributionRows"
-    );
-
-  if (!rows) {
+  if (!contributionRowsEl) {
     return;
   }
 
-
   if (!contributions.length) {
 
-    rows.innerHTML = `
+    contributionRowsEl.innerHTML = `
       <tr>
         <td colspan="5">
-          No contribution records found.
+          <div class="member-empty">
+            No contribution records found.
+          </div>
         </td>
       </tr>
     `;
@@ -644,57 +630,50 @@ function renderContributions() {
     return;
   }
 
-
-  rows.innerHTML =
+  contributionRowsEl.innerHTML =
     contributions
       .map(
-        item => {
+        contribution => {
 
           const reference =
-            item.mpesa_reference ||
-            item.reference ||
+            contribution.mpesa_reference ||
+            contribution.reference ||
             "—";
 
           return `
             <tr>
 
-              <td data-label="Date">
+              <td>
                 ${escapeHtml(
                   formatDate(
-                    item.contribution_date ||
-                    item.created_at
+                    contribution.contribution_date
                   )
                 )}
               </td>
 
-              <td
-                data-label="Amount"
-                class="money"
-              >
+              <td>
                 ${escapeHtml(
                   money(
-                    item.amount
+                    contribution.amount
                   )
                 )}
               </td>
 
-              <td data-label="Type">
+              <td>
                 ${escapeHtml(
-                  contributionTypeLabel(
-                    item.contribution_type
-                  )
+                  contribution.contribution_type ||
+                  "—"
                 )}
               </td>
 
-              <td data-label="Payment Method">
+              <td>
                 ${escapeHtml(
-                  paymentMethodLabel(
-                    item.payment_method
-                  )
+                  contribution.payment_method ||
+                  "—"
                 )}
               </td>
 
-              <td data-label="Reference">
+              <td>
                 ${escapeHtml(
                   reference
                 )}
@@ -720,55 +699,44 @@ function renderSummary() {
     contributions.reduce(
       (
         sum,
-        item
+        contribution
       ) =>
         sum +
         number(
-          item.amount
+          contribution.amount
         ),
       0
     );
 
-  setText(
-    "totalContributions",
-    money(total)
-  );
+  if (statementTotalEl) {
 
-  setText(
-    "contributionCount",
-    String(
-      contributions.length
-    )
-  );
+    statementTotalEl.textContent =
+      money(total);
 
-}
+  }
 
+  if (statementCountEl) {
 
-/* =========================================================
-   GROUP / MEMBER HEADER
-========================================================= */
+    statementCountEl.textContent =
+      String(
+        contributions.length
+      );
 
-function renderHeader() {
-
-  setText(
-    "memberGroupName",
-    currentGroup?.name ||
-    currentGroup?.group_name ||
-    "CHAMA"
-  );
+  }
 
 }
 
 
 /* =========================================================
-   STATEMENT HTML
+   STATEMENT DATA
 ========================================================= */
 
 function buildStatementHtml() {
 
   const memberName =
-    currentMember?.name ||
     currentMember?.full_name ||
+    currentMember?.name ||
+    currentMember?.member_name ||
     "Member";
 
   const memberNumber =
@@ -777,318 +745,269 @@ function buildStatementHtml() {
     currentMember?.id ||
     "—";
 
-  const groupName =
-    currentGroup?.name ||
-    currentGroup?.group_name ||
-    "CHAMA";
+  const month =
+    getCurrentMonth();
+
+  const total =
+    contributions.reduce(
+      (
+        sum,
+        contribution
+      ) =>
+        sum +
+        number(
+          contribution.amount
+        ),
+      0
+    );
 
   const status =
     canonicalStatus
       ? statusLabel(
           canonicalStatus.status
         )
-      : "NOT AVAILABLE";
-
-  const total =
-    contributions.reduce(
-      (
-        sum,
-        item
-      ) =>
-        sum +
-        number(item.amount),
-      0
-    );
-
+      : "—";
 
   const rows =
-    contributions
-      .map(
-        item => {
+    contributions.length
+      ? contributions
+          .map(
+            contribution => {
 
-          const reference =
-            item.mpesa_reference ||
-            item.reference ||
-            "—";
+              const reference =
+                contribution.mpesa_reference ||
+                contribution.reference ||
+                "—";
 
-          return `
-            <tr>
-              <td>
-                ${escapeHtml(
-                  formatDate(
-                    item.contribution_date ||
-                    item.created_at
-                  )
-                )}
-              </td>
+              return `
+                <tr>
+                  <td>
+                    ${escapeHtml(
+                      formatDate(
+                        contribution.contribution_date
+                      )
+                    )}
+                  </td>
 
-              <td>
-                ${escapeHtml(
-                  money(item.amount)
-                )}
-              </td>
+                  <td>
+                    ${escapeHtml(
+                      money(
+                        contribution.amount
+                      )
+                    )}
+                  </td>
 
-              <td>
-                ${escapeHtml(
-                  contributionTypeLabel(
-                    item.contribution_type
-                  )
-                )}
-              </td>
+                  <td>
+                    ${escapeHtml(
+                      contribution.contribution_type ||
+                      "—"
+                    )}
+                  </td>
 
-              <td>
-                ${escapeHtml(
-                  paymentMethodLabel(
-                    item.payment_method
-                  )
-                )}
-              </td>
+                  <td>
+                    ${escapeHtml(
+                      contribution.payment_method ||
+                      "—"
+                    )}
+                  </td>
 
-              <td>
-                ${escapeHtml(
-                  reference
-                )}
-              </td>
-            </tr>
-          `;
+                  <td>
+                    ${escapeHtml(
+                      reference
+                    )}
+                  </td>
+                </tr>
+              `;
 
-        }
-      )
-      .join("");
-
+            }
+          )
+          .join("")
+      : `
+          <tr>
+            <td colspan="5">
+              No contribution records found.
+            </td>
+          </tr>
+        `;
 
   return `
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<title>Member Statement — CHAMA LIVE</title>
 
-<style>
+  <meta charset="UTF-8">
 
-body {
-  font-family: Arial, sans-serif;
-  margin: 40px;
-  color: #111827;
-}
+  <title>
+    CHAMA LIVE — Member Statement
+  </title>
 
-h1 {
-  margin-bottom: 4px;
-}
+  <style>
 
-.meta {
-  color: #475569;
-  margin-bottom: 24px;
-}
+    body {
+      font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
 
-.summary {
-  display: grid;
-  grid-template-columns:
-    repeat(2, 1fr);
-  gap: 12px;
-  margin-bottom: 24px;
-}
+      margin: 40px;
 
-.box {
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  padding: 12px;
-}
+      color: #222;
+    }
 
-.label {
-  display: block;
-  color: #64748b;
-  font-size: 11px;
-  margin-bottom: 4px;
-}
+    h1 {
+      margin-bottom: 4px;
+    }
 
-.value {
-  font-weight: 700;
-  font-size: 18px;
-}
+    .muted {
+      color: #666;
+    }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
+    .summary {
+      display: grid;
+      grid-template-columns:
+        repeat(3, 1fr);
 
-th,
-td {
-  padding: 9px;
-  border-bottom: 1px solid #e5e7eb;
-  text-align: left;
-}
+      gap: 12px;
 
-th {
-  font-size: 12px;
-  color: #475569;
-}
+      margin: 24px 0;
+    }
 
-.footer {
-  margin-top: 30px;
-  font-size: 11px;
-  color: #64748b;
-}
+    .summary-card {
+      padding: 14px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
 
-</style>
+    .summary-card span {
+      display: block;
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 5px;
+    }
+
+    .summary-card strong {
+      font-size: 18px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th,
+    td {
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+
+    th {
+      background: #f4f4f4;
+    }
+
+    @media print {
+
+      body {
+        margin: 20px;
+      }
+
+    }
+
+  </style>
+
 </head>
 
 <body>
 
-<h1>Member Contribution Statement</h1>
+  <h1>
+    CHAMA LIVE
+  </h1>
 
-<div class="meta">
+  <p class="muted">
+    Member Contribution Statement
+  </p>
 
-  <strong>
-    ${escapeHtml(groupName)}
-  </strong>
+  <p>
+    <strong>Member:</strong>
+    ${escapeHtml(memberName)}
+  </p>
 
-  <br>
+  <p>
+    <strong>Member Number:</strong>
+    ${escapeHtml(memberNumber)}
+  </p>
 
-  Member:
-  ${escapeHtml(memberName)}
+  <p>
+    <strong>Statement Month:</strong>
+    ${escapeHtml(
+      formatMonth(month)
+    )}
+  </p>
 
-  <br>
+  <div class="summary">
 
-  Member number:
-  ${escapeHtml(memberNumber)}
+    <div class="summary-card">
+      <span>
+        Current Status
+      </span>
 
-  <br>
+      <strong>
+        ${escapeHtml(status)}
+      </strong>
+    </div>
 
-  Statement month:
-  ${escapeHtml(
-    formatAccountingMonth(
-      accountingMonth
-    )
-  )}
+    <div class="summary-card">
+      <span>
+        Current Outstanding
+      </span>
 
-</div>
+      <strong>
+        ${escapeHtml(
+          money(
+            canonicalStatus?.current_outstanding
+          )
+        )}
+      </strong>
+    </div>
 
+    <div class="summary-card">
+      <span>
+        Total Recorded
+      </span>
 
-<div class="summary">
-
-  <div class="box">
-
-    <span class="label">
-      Obligation status
-    </span>
-
-    <span class="value">
-      ${escapeHtml(status)}
-    </span>
-
-  </div>
-
-
-  <div class="box">
-
-    <span class="label">
-      Current due
-    </span>
-
-    <span class="value">
-      ${escapeHtml(
-        money(
-          canonicalStatus?.monthly_due
-        )
-      )}
-    </span>
-
-  </div>
-
-
-  <div class="box">
-
-    <span class="label">
-      Current paid
-    </span>
-
-    <span class="value">
-      ${escapeHtml(
-        money(
-          canonicalStatus?.current_month_payment
-        )
-      )}
-    </span>
+      <strong>
+        ${escapeHtml(
+          money(total)
+        )}
+      </strong>
+    </div>
 
   </div>
 
+  <h2>
+    Contribution History
+  </h2>
 
-  <div class="box">
+  <table>
 
-    <span class="label">
-      Outstanding
-    </span>
+    <thead>
 
-    <span class="value">
-      ${escapeHtml(
-        money(
-          canonicalStatus?.current_outstanding
-        )
-      )}
-    </span>
+      <tr>
+        <th>Date</th>
+        <th>Amount</th>
+        <th>Type</th>
+        <th>Payment Method</th>
+        <th>Reference</th>
+      </tr>
 
-  </div>
+    </thead>
 
+    <tbody>
+      ${rows}
+    </tbody>
 
-  <div class="box">
-
-    <span class="label">
-      Total recorded contributions
-    </span>
-
-    <span class="value">
-      ${escapeHtml(
-        money(total)
-      )}
-    </span>
-
-  </div>
-
-</div>
-
-
-<h2>
-  Contribution History
-</h2>
-
-<table>
-
-<thead>
-
-<tr>
-  <th>Date</th>
-  <th>Amount</th>
-  <th>Type</th>
-  <th>Payment Method</th>
-  <th>Reference</th>
-</tr>
-
-</thead>
-
-<tbody>
-
-${
-  rows ||
-  `
-    <tr>
-      <td colspan="5">
-        No contribution records.
-      </td>
-    </tr>
-  `
-}
-
-</tbody>
-
-</table>
-
-
-<div class="footer">
-
-  Generated from CHAMA LIVE member records.
-
-</div>
+  </table>
 
 </body>
 </html>
@@ -1110,7 +1029,8 @@ function downloadStatement() {
     new Blob(
       [html],
       {
-        type: "text/html;charset=utf-8"
+        type:
+          "text/html;charset=utf-8"
       }
     );
 
@@ -1119,40 +1039,24 @@ function downloadStatement() {
       blob
     );
 
-  const link =
+  const anchor =
     document.createElement(
       "a"
     );
 
-  const safeMember =
-    String(
-      currentMember?.name ||
-      "member"
-    )
-      .trim()
-      .replace(
-        /[^a-z0-9]+/gi,
-        "-"
-      )
-      .replace(
-        /^-+|-+$/g,
-        ""
-      )
-      .toLowerCase();
-
-  link.href =
+  anchor.href =
     url;
 
-  link.download =
-    `chama-live-${safeMember || "member"}-statement.html`;
+  anchor.download =
+    "chama-live-member-statement.html";
 
   document.body.appendChild(
-    link
+    anchor
   );
 
-  link.click();
+  anchor.click();
 
-  link.remove();
+  anchor.remove();
 
   URL.revokeObjectURL(
     url
@@ -1173,14 +1077,13 @@ function printStatement() {
   const printWindow =
     window.open(
       "",
-      "_blank",
-      "noopener,noreferrer"
+      "_blank"
     );
 
   if (!printWindow) {
 
     throw new Error(
-      "Please allow pop-ups to print your statement."
+      "The browser blocked the statement window. Please allow pop-ups and try again."
     );
 
   }
@@ -1196,10 +1099,8 @@ function printStatement() {
   printWindow.focus();
 
   setTimeout(
-    function () {
-
+    () => {
       printWindow.print();
-
     },
     300
   );
@@ -1208,7 +1109,7 @@ function printStatement() {
 
 
 /* =========================================================
-   INITIALIZE
+   INITIALIZATION
 ========================================================= */
 
 export async function initMemberContributions() {
@@ -1224,43 +1125,56 @@ export async function initMemberContributions() {
 
     clearError();
 
+    if (statusMessageEl) {
 
-    await loadContext();
+      statusMessageEl.textContent =
+        "Loading your contribution records...";
 
-    renderHeader();
+    }
 
+    currentMember =
+      await getMyMember();
 
-    await Promise.all([
-      loadContributions(),
-      loadCanonicalStatus()
-    ]);
+    if (!currentMember?.id) {
 
+      throw new Error(
+        "Your member account could not be resolved."
+      );
 
-    renderCanonicalStatus();
+    }
 
-    renderContributions();
+    groupId =
+      currentMember.group_id;
+
+    if (!groupId) {
+
+      throw new Error(
+        "Your group could not be resolved."
+      );
+
+    }
+
+    await loadGroupName();
+
+    const month =
+      await loadCanonicalStatus();
+
+    await loadContributions();
+
+    renderCanonicalStatus(
+      month
+    );
+
+    renderContributionHistory();
 
     renderSummary();
 
+    if (statusMessageEl) {
 
-    const loading =
-      byId(
-        "memberLoading"
-      );
+      statusMessageEl.textContent =
+        "Your contribution records are up to date.";
 
-    if (loading) {
-      loading.hidden = true;
     }
-
-
-    console.log(
-      "CHAMA LIVE: Member Contributions ready.",
-      {
-        groupId,
-        memberId,
-        accountingMonth
-      }
-    );
 
   }
   catch (error) {
@@ -1268,7 +1182,9 @@ export async function initMemberContributions() {
     initialized =
       false;
 
-    showError(error);
+    showError(
+      error
+    );
 
   }
 
@@ -1279,16 +1195,17 @@ export async function initMemberContributions() {
    EVENTS
 ========================================================= */
 
-const downloadButton =
-  byId(
-    "downloadStatement"
-  );
+if (
+  downloadStatementButton &&
+  !downloadStatementButton.dataset.bound
+) {
 
-if (downloadButton) {
+  downloadStatementButton.dataset.bound =
+    "true";
 
-  downloadButton.addEventListener(
+  downloadStatementButton.addEventListener(
     "click",
-    function () {
+    () => {
 
       try {
 
@@ -1297,7 +1214,9 @@ if (downloadButton) {
       }
       catch (error) {
 
-        showError(error);
+        showError(
+          error
+        );
 
       }
 
@@ -1307,16 +1226,17 @@ if (downloadButton) {
 }
 
 
-const printButton =
-  byId(
-    "printStatement"
-  );
+if (
+  printStatementButton &&
+  !printStatementButton.dataset.bound
+) {
 
-if (printButton) {
+  printStatementButton.dataset.bound =
+    "true";
 
-  printButton.addEventListener(
+  printStatementButton.addEventListener(
     "click",
-    function () {
+    () => {
 
       try {
 
@@ -1325,7 +1245,9 @@ if (printButton) {
       }
       catch (error) {
 
-        showError(error);
+        showError(
+          error
+        );
 
       }
 
@@ -1336,7 +1258,7 @@ if (printButton) {
 
 
 /* =========================================================
-   BOOT
+   DIRECT BOOT COMPATIBILITY
 ========================================================= */
 
 if (
@@ -1346,7 +1268,7 @@ if (
 
   document.addEventListener(
     "DOMContentLoaded",
-    function () {
+    () => {
 
       if (
         !window.__CHAMA_LIVE_LAYOUT_LOADING__
@@ -1374,8 +1296,3 @@ else {
   }
 
 }
-
-
-console.log(
-  "CHAMA LIVE: member-contributions.js loaded"
-);
