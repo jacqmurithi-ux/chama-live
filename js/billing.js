@@ -14,6 +14,15 @@
    - Does not introduce replacement RPCs.
    - Database remains the authoritative security boundary.
 
+   Access
+   ---------------------------------------------------------
+   - Owner: allowed
+   - Admin: allowed
+   - Chairperson: allowed
+   - Secretary: allowed
+   - Treasurer: allowed
+   - Member: redirected to Member Portal
+
    Canonical relationship
    ---------------------------------------------------------
    group_subscriptions
@@ -51,6 +60,53 @@ let subscription = null;
 let cycles = [];
 let invoices = [];
 let payments = [];
+
+
+/* =========================================================
+   PORTAL ACCESS
+========================================================= */
+
+const ADMIN_ROLES = new Set([
+  "admin",
+  "chairperson",
+  "secretary",
+  "treasurer"
+]);
+
+const MEMBER_DASHBOARD_URL =
+  "https://jacqmurithi-ux.github.io/chama-live/member-dashboard.html";
+
+
+function canAccessBilling() {
+
+  return (
+    currentIsOwner ||
+    ADMIN_ROLES.has(
+      currentRole
+    )
+  );
+
+}
+
+
+function enforceBillingAccess() {
+
+  if (
+    canAccessBilling()
+  ) {
+
+    return true;
+
+  }
+
+
+  window.location.replace(
+    MEMBER_DASHBOARD_URL
+  );
+
+  return false;
+
+}
 
 
 /* =========================================================
@@ -1513,7 +1569,6 @@ function renderPayments() {
       );
 
 
-      /* Corrected closing parenthesis */
       row.appendChild(
         createElement(
           "td",
@@ -1583,7 +1638,7 @@ async function loadBilling() {
 
 
   showStatus(
-    "Loading authoritative billing information…"
+    "Checking billing access…"
   );
 
 
@@ -1597,6 +1652,28 @@ async function loadBilling() {
 
   /*
    * Step 2:
+   * Billing is an administrative surface.
+   *
+   * Owner remains a separate authorization path.
+   * Member users are redirected to the member portal.
+   */
+
+  if (
+    !enforceBillingAccess()
+  ) {
+
+    return;
+
+  }
+
+
+  showStatus(
+    "Loading authoritative billing information…"
+  );
+
+
+  /*
+   * Step 3:
    * Existing authoritative subscription RPC.
    */
 
@@ -1631,7 +1708,7 @@ async function loadBilling() {
 
 
   /*
-   * Step 3:
+   * Step 4:
    * Read existing authoritative records.
    *
    * Only records actually displayed by this page
@@ -1646,7 +1723,7 @@ async function loadBilling() {
 
 
   /*
-   * Step 4:
+   * Step 5:
    * Render the customer-facing billing view.
    *
    * No settlement calculation is performed.
