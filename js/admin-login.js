@@ -1,6 +1,7 @@
+import { supabase } from "./supabase.js";
+
 import {
   signIn,
-  signOut,
   getMyApplicationContext
 } from "./auth.js";
 
@@ -158,14 +159,17 @@ async function performLogin() {
     /*
      * Admin Portal boundary:
      *
-     * Owners and management roles may enter.
-     * Ordinary members may not.
+     * Group owners and management roles
+     * may enter the Admin Portal.
+     *
+     * Ordinary members must use the
+     * Member Portal.
      */
     if (
       !isOwner &&
       !ADMIN_ROLES.has(role)
     ) {
-      await signOut();
+      await supabase.auth.signOut();
 
       throw new Error(
         "Access Denied. Your account is registered for the Member Portal. Please use the Member Login."
@@ -182,7 +186,7 @@ async function performLogin() {
       status &&
       status !== "active"
     ) {
-      await signOut();
+      await supabase.auth.signOut();
 
       throw new Error(
         "Your account is not yet verified. Please contact your Group Admin."
@@ -193,7 +197,7 @@ async function performLogin() {
       onboarding &&
       onboarding !== "active"
     ) {
-      await signOut();
+      await supabase.auth.signOut();
 
       throw new Error(
         "Your account is not yet verified. Please contact your Group Admin."
