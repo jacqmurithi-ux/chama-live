@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>Group Activities — CHAMA LIVE</title>
+
+  <style>
+    :root {
+      --border: #e5e7eb;
+      --muted: #6b7280;
+      --text: #111827;
+      --surface: #ffffff;
+      --background: #f8fafc;
+      --success: #166534;
+      --warning: #92400e;
+      --danger: #991b1b;
+      --primary: #1d4ed8;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family:
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+      background: var(--background);
+      color: var(--text);
+    }
+
+    .page {
+      width: min(1180px, 100%);
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .page-header {
+      margin-bottom: 20px;
+    }
+
+    .page-header h1 {
+      margin: 0 0 6px;
+      font-size: clamp(1.5rem, 5vw, 2rem);
+    }
+
+    .page-header p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 18px;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns:
+        minmax(0, 1fr)
+        minmax(150px, 200px);
+      gap: 12px;
+      align-items: end;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    input,
+    select {
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text);
+      font: inherit;
+    }
+
+    .message {
+      padding: 12px 14px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+
+    .message[hidden] {
+      display: none;
+    }
+
+    .loading {
+      color: var(--muted);
+    }
+
+    .error {
+      background: #fef2f2;
+      color: var(--danger);
+      border: 1px solid #fecaca;
+    }
+
+    .empty {
+      padding: 28px 12px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .activity-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .activity-card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      background: #fff;
+    }
+
+    .activity-title {
+      margin: 0 0 6px;
+      font-size: 1.05rem;
+    }
+
+    .activity-description {
+      margin: 0 0 14px;
+      color: var(--muted);
+      white-space: pre-wrap;
+    }
+
+    .activity-meta {
+      display: grid;
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .meta-item {
+      min-width: 0;
+    }
+
+    .meta-label {
+      display: block;
+      margin-bottom: 3px;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .meta-value {
+      font-size: 0.92rem;
+      word-break: break-word;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: capitalize;
+    }
+
+    .status-not_started,
+    .status-planned {
+      background: #eff6ff;
+      color: #1e40af;
+    }
+
+    .status-in_progress {
+      background: #ecfdf5;
+      color: #166534;
+    }
+
+    .status-completed {
+      background: #f0fdf4;
+      color: #166534;
+    }
+
+    .status-delayed {
+      background: #fffbeb;
+      color: var(--warning);
+    }
+
+    .status-cancelled {
+      background: #fef2f2;
+      color: var(--danger);
+    }
+
+    .progress-wrap {
+      margin-top: 14px;
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 6px;
+      font-size: 0.82rem;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 9px;
+      overflow: hidden;
+      background: #e5e7eb;
+      border-radius: 999px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: var(--primary);
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 850px;
+    }
+
+    th,
+    td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    td {
+      font-size: 0.9rem;
+    }
+
+    .desktop-list {
+      display: block;
+    }
+
+    .mobile-list {
+      display: none;
+    }
+
+    @media (max-width: 700px) {
+      .page {
+        padding: 14px;
+      }
+
+      .toolbar {
+        grid-template-columns: 1fr;
+      }
+
+      .activity-meta {
+        grid-template-columns: 1fr;
+      }
+
+      .desktop-list {
+        display: none;
+      }
+
+      .mobile-list {
+        display: grid;
+      }
+
+      .card {
+        padding: 14px;
+        border-radius: 12px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="page">
+
+    <header class="page-header">
+      <h1>Group Activities</h1>
+
+      <p id="memberActivitiesSubtitle">
+        View activities and progress for your group.
+      </p>
+    </header>
+
+
+    <div
+      id="memberActivitiesLoading"
+      class="message loading"
+    >
+      Loading group activities…
+    </div>
+
+
+    <div
+      id="memberActivitiesError"
+      class="message error"
+      hidden
+    ></div>
+
+
+    <section
+      id="memberActivitiesContent"
+      hidden
+    >
+
+      <div class="card">
+
+        <div class="toolbar">
+
+          <div>
+            <label for="memberActivitySearch">
+              Search activities
+            </label>
+
+            <input
+              id="memberActivitySearch"
+              type="search"
+              placeholder="Search by activity or description"
+              autocomplete="off"
+            >
+          </div>
+
+
+          <div>
+            <label for="memberActivityStatus">
+              Status
+            </label>
+
+            <select id="memberActivityStatus">
+
+              <option value="">
+                All statuses
+              </option>
+
+              <option value="not_started">
+                Not started
+              </option>
+
+              <option value="planned">
+                Planned
+              </option>
+
+              <option value="in_progress">
+                In progress
+              </option>
+
+              <option value="completed">
+                Completed
+              </option>
+
+              <option value="delayed">
+                Delayed
+              </option>
+
+              <option value="cancelled">
+                Cancelled
+              </option>
+
+            </select>
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- Desktop/tablet -->
+
+      <section class="card desktop-list">
+
+        <div class="table-wrap">
+
+          <table>
+
+            <thead>
+
+              <tr>
+                <th>Activity</th>
+                <th>Plan</th>
+                <th>Assigned To</th>
+                <th>Dates</th>
+                <th>Status</th>
+                <th>Progress</th>
+                <th>Completed</th>
+              </tr>
+
+            </thead>
+
+            <tbody id="memberActivitiesRows">
+
+              <tr>
+                <td
+                  colspan="7"
+                  class="empty"
+                >
+                  No activities found.
+                </td>
+              </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </section>
+
+
+      <!-- Mobile -->
+
+      <section
+        id="memberActivitiesMobileList"
+        class="mobile-list"
+      ></section>
+
+    </section>
+
+  </main>
+
+
+  <script type="module">
+
+    import "./js/layout.js";
+
+    import {
+      initMemberActivities
+    } from "./js/member-activities.js";
+
+
+    window.addEventListener(
+      "DOMContentLoaded",
+      () => {
+
+        initMemberActivities();
+
+      },
+      {
+        once: true
+      }
+    );
+
+  </script>
+
+</body>
+</html>
