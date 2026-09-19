@@ -1,93 +1,47 @@
-<!doctype html>
-
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
-
-  <meta charset="utf-8">
-
+  <meta charset="UTF-8" />
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1"
-  >
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <title>Sign In | CHAMA LIVE</title>
 
   <meta
     name="description"
-    content="Sign in to CHAMA LIVE — manage your group members, contributions, expenses, meetings and reports from one connected platform."
-  >
-
-  <meta
-    name="theme-color"
-    content="#0f766e"
-  >
-
-  <title>Sign In — CHAMA LIVE</title>
-
-
-  <!-- =====================================================
-       APPLICATION STYLES
-  ====================================================== -->
-
-  <link
-    rel="stylesheet"
-    href="css/app.css"
-  >
-
-
-  <!-- =====================================================
-       CHAMA LIVE LANDING-PAGE VISUAL SYSTEM
-  ====================================================== -->
-
-  <link
-    rel="stylesheet"
-    href="css/landing.css"
-  >
-
+    content="Choose your CHAMA LIVE account portal."
+  />
 
   <style>
-
     :root {
-
       --cl-primary: #0f766e;
       --cl-primary-dark: #115e59;
-      --cl-primary-light: #14b8a6;
-
-      --cl-accent: #ccfbf1;
-
-      --cl-dark: #0f172a;
-      --cl-text: #334155;
+      --cl-accent: #14b8a6;
+      --cl-bg: #f8fafc;
+      --cl-card: #ffffff;
+      --cl-text: #0f172a;
       --cl-muted: #64748b;
-
-      --cl-border: #dbe4ea;
-
-      --cl-shadow:
-        0 30px 80px
-        rgba(15, 118, 110, .14);
-
-      --cl-danger: #be123c;
-
+      --cl-border: #e2e8f0;
+      --cl-success: #166534;
+      --cl-success-bg: #f0fdf4;
+      --cl-danger: #b91c1c;
+      --cl-danger-bg: #fef2f2;
+      --cl-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
     }
-
 
     * {
       box-sizing: border-box;
     }
 
-
-    html {
-      scroll-behavior: smooth;
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
     }
 
-
-    body.cl-login-body {
-
-      margin: 0;
-
-      min-height: 100vh;
-
-      color:
-        var(--cl-text);
-
+    body {
       font-family:
         Inter,
         ui-sans-serif,
@@ -96,1400 +50,431 @@
         BlinkMacSystemFont,
         "Segoe UI",
         sans-serif;
-
-      background:
-
-        radial-gradient(
-          circle at 10% 10%,
-          rgba(20,184,166,.16),
-          transparent 30%
-        ),
-
-        radial-gradient(
-          circle at 90% 20%,
-          rgba(15,118,110,.12),
-          transparent 28%
-        ),
-
-        linear-gradient(
-          135deg,
-          #ecfdf9 0%,
-          #f8fafc 48%,
-          #ecfdf5 100%
-        );
-
+      background: var(--cl-bg);
+      color: var(--cl-text);
     }
 
-
-    /* =====================================================
-       BACKGROUND DECORATION
-    ====================================================== */
-
-    .cl-login-body::before {
-
-      content: "";
-
-      position: fixed;
-
-      width: 430px;
-      height: 430px;
-
-      top: -210px;
-      right: -130px;
-
-      border-radius: 50%;
-
-      background:
-        linear-gradient(
-          135deg,
-          rgba(20,184,166,.18),
-          rgba(15,118,110,.02)
-        );
-
-      pointer-events: none;
-
-      z-index: 0;
-
+    a {
+      color: inherit;
     }
 
-
-    .cl-login-body::after {
-
-      content: "";
-
-      position: fixed;
-
-      width: 370px;
-      height: 370px;
-
-      bottom: -190px;
-      left: -140px;
-
-      border-radius: 50%;
-
-      background:
-        linear-gradient(
-          135deg,
-          rgba(15,118,110,.10),
-          rgba(20,184,166,.02)
-        );
-
-      pointer-events: none;
-
-      z-index: 0;
-
-    }
-
-
-    /* =====================================================
-       SHELL
-    ====================================================== */
-
-    .cl-login-shell {
-
-      position: relative;
-
-      z-index: 1;
-
+    .cl-login-page {
       min-height: 100vh;
-
       display: grid;
-
-      place-items: center;
-
-      padding:
-        30px 18px;
-
+      grid-template-columns: minmax(0, 1.05fr) minmax(420px, 0.95fr);
     }
-
-
-    /* =====================================================
-       LOGIN LAYOUT
-    ====================================================== */
-
-    .cl-login-layout {
-
-      width: 100%;
-
-      max-width: 1050px;
-
-      display: grid;
-
-      grid-template-columns:
-        minmax(0, 1.05fr)
-        minmax(390px, .75fr);
-
-      background:
-        rgba(255,255,255,.96);
-
-      border-radius:
-        24px;
-
-      overflow:
-        hidden;
-
-      box-shadow:
-        var(--cl-shadow);
-
-      border:
-        1px solid
-        rgba(255,255,255,.85);
-
-      backdrop-filter:
-        blur(18px);
-
-      -webkit-backdrop-filter:
-        blur(18px);
-
-    }
-
-
-    /* =====================================================
-       BRAND PANEL
-    ====================================================== */
 
     .cl-login-brand-panel {
-
       position: relative;
-
-      min-height:
-        620px;
-
-      padding:
-        50px;
-
-      color:
-        #ffffff;
-
-      overflow:
-        hidden;
-
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 64px;
+      overflow: hidden;
       background:
-
         radial-gradient(
-          circle at 85% 15%,
-          rgba(45,212,191,.30),
-          transparent 30%
+          circle at 20% 20%,
+          rgba(20, 184, 166, 0.24),
+          transparent 34%
         ),
-
-        radial-gradient(
-          circle at 10% 90%,
-          rgba(13,148,136,.30),
-          transparent 35%
-        ),
-
         linear-gradient(
           145deg,
-          #115e59,
+          #064e3b 0%,
           #0f766e 52%,
-          #0d9488
+          #115e59 100%
         );
-
+      color: #ffffff;
     }
 
+    .cl-login-brand-panel::before,
+    .cl-login-brand-panel::after {
+      content: "";
+      position: absolute;
+      border-radius: 999px;
+      pointer-events: none;
+    }
 
     .cl-login-brand-panel::before {
-
-      content: "";
-
-      position: absolute;
-
-      width: 360px;
-      height: 360px;
-
-      right: -150px;
-      bottom: -160px;
-
-      border:
-        1px solid
-        rgba(255,255,255,.15);
-
-      border-radius: 50%;
-
-      box-shadow:
-        0 0 0 70px rgba(255,255,255,.025),
-        0 0 0 140px rgba(255,255,255,.02);
-
+      width: 420px;
+      height: 420px;
+      right: -180px;
+      top: -160px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
     }
-
 
     .cl-login-brand-panel::after {
-
-      content: "";
-
-      position: absolute;
-
-      width: 120px;
-      height: 120px;
-
-      left: -45px;
-      top: 110px;
-
-      border-radius: 50%;
-
-      background:
-        rgba(255,255,255,.06);
-
+      width: 520px;
+      height: 520px;
+      left: -280px;
+      bottom: -260px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-
-    .cl-panel-content {
-
+    .cl-brand-content {
       position: relative;
-
-      z-index: 2;
-
-      max-width: 480px;
-
-      height: 100%;
-
-      display:
-        flex;
-
-      flex-direction:
-        column;
-
-      justify-content:
-        space-between;
-
+      z-index: 1;
+      max-width: 560px;
     }
 
-
-    .cl-brand-light {
-
-      display:
-        inline-flex;
-
-      align-items:
-        center;
-
-      gap:
-        5px;
-
-      width:
-        fit-content;
-
-      color:
-        #ffffff;
-
-      text-decoration:
-        none;
-
-      font-size:
-        25px;
-
-      line-height:
-        1;
-
-      font-weight:
-        900;
-
-      letter-spacing:
-        -.8px;
-
+    .cl-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      text-decoration: none;
+      font-weight: 800;
+      letter-spacing: -0.04em;
     }
 
-
-    .cl-brand-light span {
-
-      color:
-        #99f6e4;
-
+    .cl-brand span {
+      color: var(--cl-accent);
     }
 
-
-    .cl-panel-copy {
-
-      margin-top:
-        90px;
-
+    .cl-login-brand {
+      font-size: 32px;
+      color: #ffffff;
+      margin-bottom: 42px;
     }
 
-
-    .cl-panel-eyebrow {
-
-      display:
-        inline-flex;
-
-      align-items:
-        center;
-
-      gap:
-        8px;
-
-      padding:
-        7px 12px;
-
-      border:
-        1px solid
-        rgba(255,255,255,.18);
-
-      border-radius:
-        999px;
-
-      background:
-        rgba(255,255,255,.08);
-
-      color:
-        #ccfbf1;
-
-      font-size:
-        10px;
-
-      font-weight:
-        800;
-
-      letter-spacing:
-        1.2px;
-
-      margin-bottom:
-        18px;
-
+    .cl-login-brand-panel h1 {
+      margin: 0 0 22px;
+      font-size: clamp(38px, 5vw, 64px);
+      line-height: 1.03;
+      letter-spacing: -0.045em;
     }
 
-
-    .cl-panel-eyebrow::before {
-
-      content: "";
-
-      width:
-        7px;
-
-      height:
-        7px;
-
-      border-radius:
-        50%;
-
-      background:
-        #5eead4;
-
-      box-shadow:
-        0 0 0 4px
-        rgba(94,234,212,.12);
-
+    .cl-login-brand-panel p {
+      margin: 0;
+      max-width: 500px;
+      font-size: 18px;
+      line-height: 1.7;
+      color: rgba(255, 255, 255, 0.78);
     }
 
-
-    .cl-panel-copy h1 {
-
-      margin:
-        0 0 18px;
-
-      max-width:
-        500px;
-
-      color:
-        #ffffff;
-
-      font-size:
-        clamp(34px, 4vw, 52px);
-
-      line-height:
-        1.06;
-
-      letter-spacing:
-        -1.8px;
-
-      font-weight:
-        850;
-
+    .cl-login-highlights {
+      display: grid;
+      gap: 14px;
+      margin-top: 42px;
     }
 
-
-    .cl-panel-copy h1 span {
-
-      color:
-        #99f6e4;
-
+    .cl-login-highlight {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 14px;
+      line-height: 1.55;
     }
 
-
-    .cl-panel-copy p {
-
-      margin:
-        0;
-
-      max-width:
-        480px;
-
-      color:
-        rgba(255,255,255,.78);
-
-      font-size:
-        16px;
-
-      line-height:
-        1.7;
-
+    .cl-login-highlight-icon {
+      flex: 0 0 auto;
+      width: 24px;
+      height: 24px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.12);
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 800;
     }
-
-
-    /* =====================================================
-       PANEL FEATURES
-    ====================================================== */
-
-    .cl-panel-features {
-
-      display:
-        grid;
-
-      grid-template-columns:
-        repeat(3, 1fr);
-
-      gap:
-        12px;
-
-      margin-top:
-        45px;
-
-    }
-
-
-    .cl-panel-feature {
-
-      padding:
-        15px;
-
-      border:
-        1px solid
-        rgba(255,255,255,.12);
-
-      border-radius:
-        13px;
-
-      background:
-        rgba(255,255,255,.07);
-
-      backdrop-filter:
-        blur(8px);
-
-    }
-
-
-    .cl-panel-feature strong {
-
-      display:
-        block;
-
-      color:
-        #ffffff;
-
-      font-size:
-        13px;
-
-      margin-bottom:
-        4px;
-
-    }
-
-
-    .cl-panel-feature span {
-
-      display:
-        block;
-
-      color:
-        rgba(255,255,255,.62);
-
-      font-size:
-        11px;
-
-      line-height:
-        1.4;
-
-    }
-
-
-    /* =====================================================
-       LOGIN PANEL
-    ====================================================== */
 
     .cl-login-form-panel {
-
-      display:
-        flex;
-
-      align-items:
-        center;
-
-      justify-content:
-        center;
-
-      padding:
-        50px 46px;
-
-      background:
-        #ffffff;
-
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 32px;
+      background: var(--cl-card);
     }
-
 
     .cl-login-form-container {
-
-      width:
-        100%;
-
-      max-width:
-        420px;
-
+      width: 100%;
+      max-width: 460px;
     }
-
 
     .cl-login-mobile-brand {
-
-      display:
-        none;
-
-      margin-bottom:
-        28px;
-
+      display: none;
+      font-size: 26px;
+      color: var(--cl-text);
+      margin-bottom: 38px;
     }
 
+    .cl-eyebrow {
+      margin-bottom: 12px;
+      color: var(--cl-primary);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+    }
 
     .cl-login-form-container h2 {
-
-      margin:
-        0 0 10px;
-
-      color:
-        var(--cl-dark);
-
-      font-size:
-        31px;
-
-      line-height:
-        1.1;
-
-      letter-spacing:
-        -1px;
-
-      font-weight:
-        850;
-
+      margin: 0;
+      font-size: 34px;
+      line-height: 1.15;
+      letter-spacing: -0.035em;
     }
-
 
     .cl-login-intro {
-
-      margin:
-        0 0 28px;
-
-      color:
-        var(--cl-muted);
-
-      font-size:
-        14px;
-
-      line-height:
-        1.65;
-
+      margin: 12px 0 30px;
+      color: var(--cl-muted);
+      font-size: 15px;
+      line-height: 1.6;
     }
-
-
-    /* =====================================================
-       ALERTS
-    ====================================================== */
-
-    .cl-login-form-container .alert {
-
-      border-radius:
-        12px;
-
-      padding:
-        13px 15px;
-
-      margin-bottom:
-        18px;
-
-      line-height:
-        1.5;
-
-      font-size:
-        14px;
-
-    }
-
-
-    .cl-login-form-container .alert-error {
-
-      color:
-        var(--cl-danger);
-
-      background:
-        #fff1f2;
-
-      border:
-        1px solid
-        #fecdd3;
-
-    }
-
-
-    .cl-login-form-container .alert-info {
-
-      color:
-        #155e75;
-
-      background:
-        #ecfeff;
-
-      border:
-        1px solid
-        #bae6fd;
-
-    }
-
-
-    /* =====================================================
-       FORM
-    ====================================================== */
 
     .cl-login-form {
-
-      display:
-        flex;
-
-      flex-direction:
-        column;
-
-      gap:
-        18px;
-
+      display: grid;
+      gap: 20px;
     }
 
-
-    .cl-login-field {
-
-      display:
-        flex;
-
-      flex-direction:
-        column;
-
-      gap:
-        7px;
-
+    .cl-form-group {
+      display: grid;
+      gap: 8px;
     }
 
-
-    .cl-login-field label {
-
-      color:
-        var(--cl-dark);
-
-      font-size:
-        13px;
-
-      font-weight:
-        750;
-
+    .cl-form-group label {
+      font-size: 13px;
+      font-weight: 700;
     }
 
-
-    .cl-login-field input {
-
-      width:
-        100%;
-
-      min-height:
-        50px;
-
-      padding:
-        12px 14px;
-
-      border:
-        1px solid
-        var(--cl-border);
-
-      border-radius:
-        11px;
-
-      background:
-        #ffffff;
-
-      color:
-        var(--cl-dark);
-
-      font:
-        inherit;
-
-      font-size:
-        14px;
-
-      outline:
-        none;
-
+    .cl-form-group input {
+      width: 100%;
+      min-height: 50px;
+      padding: 0 14px;
+      border: 1px solid var(--cl-border);
+      border-radius: 10px;
+      background: #ffffff;
+      color: var(--cl-text);
+      font: inherit;
+      outline: none;
       transition:
-        border-color .18s ease,
-        box-shadow .18s ease;
-
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
     }
 
-
-    .cl-login-field input::placeholder {
-
-      color:
-        #94a3b8;
-
+    .cl-form-group input:focus {
+      border-color: var(--cl-primary);
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
     }
-
-
-    .cl-login-field input:hover {
-
-      border-color:
-        #a7f3d0;
-
-    }
-
-
-    .cl-login-field input:focus {
-
-      border-color:
-        var(--cl-primary-light);
-
-      box-shadow:
-        0 0 0 4px
-        rgba(20,184,166,.12);
-
-    }
-
-
-    /* =====================================================
-       PASSWORD HEADER
-    ====================================================== */
-
-    .cl-password-label-row {
-
-      display:
-        flex;
-
-      align-items:
-        center;
-
-      justify-content:
-        space-between;
-
-      gap:
-        12px;
-
-    }
-
-
-    .cl-forgot-password {
-
-      color:
-        var(--cl-primary);
-
-      font-size:
-        12px;
-
-      font-weight:
-        750;
-
-      text-decoration:
-        none;
-
-      white-space:
-        nowrap;
-
-      transition:
-        color .18s ease;
-
-    }
-
-
-    .cl-forgot-password:hover {
-
-      color:
-        var(--cl-primary-dark);
-
-      text-decoration:
-        underline;
-
-    }
-
-
-    .cl-forgot-password:focus-visible {
-
-      outline:
-        3px solid
-        rgba(20,184,166,.20);
-
-      outline-offset:
-        3px;
-
-      border-radius:
-        4px;
-
-    }
-
-
-    /* =====================================================
-       PASSWORD ROW
-    ====================================================== */
 
     .cl-password-wrap {
-
-      position:
-        relative;
-
+      position: relative;
     }
-
 
     .cl-password-wrap input {
-
-      padding-right:
-        72px;
-
+      padding-right: 92px;
     }
-
 
     .cl-password-toggle {
-
-      position:
-        absolute;
-
-      right:
-        10px;
-
-      top:
-        50%;
-
-      transform:
-        translateY(-50%);
-
-      border:
-        0;
-
-      background:
-        transparent;
-
-      color:
-        var(--cl-primary);
-
-      font-size:
-        12px;
-
-      font-weight:
-        750;
-
-      cursor:
-        pointer;
-
-      padding:
-        6px;
-
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      border: 0;
+      background: transparent;
+      color: var(--cl-primary);
+      font: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
     }
-
-
-    .cl-password-toggle:hover {
-
-      color:
-        var(--cl-primary-dark);
-
-    }
-
-
-    /* =====================================================
-       LOGIN BUTTON
-    ====================================================== */
 
     .cl-login-button {
-
-      width:
-        100%;
-
-      min-height:
-        52px;
-
-      border:
-        0;
-
-      border-radius:
-        12px;
-
-      background:
-        linear-gradient(
-          135deg,
-          var(--cl-primary),
-          var(--cl-primary-light)
-        );
-
-      color:
-        #ffffff;
-
-      font-size:
-        15px;
-
-      font-weight:
-        800;
-
-      cursor:
-        pointer;
-
-      box-shadow:
-        0 12px 25px
-        rgba(15,118,110,.20);
-
+      width: 100%;
+      min-height: 50px;
+      border: 0;
+      border-radius: 10px;
+      padding: 0 18px;
+      background: var(--cl-primary);
+      color: #ffffff;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(15, 118, 110, 0.16);
       transition:
-        transform .18s ease,
-        box-shadow .18s ease,
-        opacity .18s ease;
-
+        background 0.2s ease,
+        transform 0.2s ease;
     }
-
 
     .cl-login-button:hover {
-
-      transform:
-        translateY(-1px);
-
-      box-shadow:
-        0 16px 30px
-        rgba(15,118,110,.26);
-
+      background: var(--cl-primary-dark);
+      transform: translateY(-1px);
     }
 
-
-    .cl-login-button:active {
-
-      transform:
-        translateY(0);
-
+    .cl-login-button:focus-visible {
+      outline: 3px solid rgba(20, 184, 166, 0.35);
+      outline-offset: 2px;
     }
-
-
-    .cl-login-button:disabled {
-
-      opacity:
-        .65;
-
-      cursor:
-        not-allowed;
-
-      transform:
-        none;
-
-      box-shadow:
-        none;
-
-    }
-
-
-    /* =====================================================
-       ACCOUNT LINKS
-    ====================================================== */
 
     .cl-login-links {
-
-      margin-top:
-        24px;
-
-      padding-top:
-        22px;
-
-      border-top:
-        1px solid
-        #edf2f4;
-
-      text-align:
-        center;
-
-      color:
-        var(--cl-muted);
-
-      font-size:
-        13px;
-
-      line-height:
-        1.7;
-
+      margin-top: 24px;
+      display: grid;
+      gap: 10px;
+      text-align: center;
+      color: var(--cl-muted);
+      font-size: 13px;
+      line-height: 1.5;
     }
-
 
     .cl-login-links a {
-
-      color:
-        var(--cl-primary);
-
-      font-weight:
-        750;
-
-      text-decoration:
-        none;
-
+      color: var(--cl-primary);
+      font-weight: 700;
+      text-decoration: none;
     }
-
 
     .cl-login-links a:hover {
-
-      text-decoration:
-        underline;
-
+      text-decoration: underline;
     }
-
-
-    /* =====================================================
-       SECURITY NOTE
-    ====================================================== */
 
     .cl-security-note {
-
-      display:
-        flex;
-
-      align-items:
-        flex-start;
-
-      gap:
-        9px;
-
-      margin-top:
-        22px;
-
-      padding:
-        12px 13px;
-
-      border-radius:
-        11px;
-
-      background:
-        #f8fafc;
-
-      border:
-        1px solid
-        #e2e8f0;
-
-      color:
-        var(--cl-muted);
-
-      font-size:
-        11px;
-
-      line-height:
-        1.5;
-
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-top: 28px;
+      padding: 14px;
+      border: 1px solid var(--cl-border);
+      border-radius: 10px;
+      background: #f8fafc;
+      color: var(--cl-muted);
+      font-size: 12px;
+      line-height: 1.55;
     }
-
 
     .cl-security-icon {
-
-      flex:
-        0 0 auto;
-
-      width:
-        22px;
-
-      height:
-        22px;
-
-      display:
-        grid;
-
-      place-items:
-        center;
-
-      border-radius:
-        7px;
-
-      background:
-        var(--cl-accent);
-
-      color:
-        var(--cl-primary);
-
-      font-size:
-        12px;
-
-      font-weight:
-        800;
-
+      flex: 0 0 auto;
+      width: 22px;
+      height: 22px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--cl-success-bg);
+      color: var(--cl-success);
+      font-size: 12px;
+      font-weight: 800;
     }
 
+    #error,
+    #status {
+      display: none;
+    }
 
-    /* =====================================================
-       RESPONSIVE
-    ====================================================== */
-
-    @media (max-width: 850px) {
-
-      .cl-login-layout {
-
-        grid-template-columns:
-          1fr;
-
-        max-width:
-          520px;
-
+    @media (max-width: 900px) {
+      .cl-login-page {
+        grid-template-columns: 1fr;
       }
-
 
       .cl-login-brand-panel {
-
-        display:
-          none;
-
+        display: none;
       }
 
+      .cl-login-form-panel {
+        min-height: 100vh;
+        padding: 36px 24px;
+      }
 
       .cl-login-mobile-brand {
-
-        display:
-          inline-flex;
-
+        display: inline-flex;
       }
-
-
-      .cl-login-form-panel {
-
-        padding:
-          40px 30px;
-
-      }
-
     }
-
 
     @media (max-width: 520px) {
-
-      .cl-login-shell {
-
-        padding:
-          12px;
-
-      }
-
-
-      .cl-login-layout {
-
-        border-radius:
-          18px;
-
-      }
-
-
       .cl-login-form-panel {
-
-        padding:
-          32px 20px;
-
+        padding: 28px 18px;
       }
-
 
       .cl-login-form-container h2 {
-
-        font-size:
-          28px;
-
+        font-size: 30px;
       }
-
-
-      .cl-login-intro {
-
-        margin-bottom:
-          24px;
-
-      }
-
-
-      .cl-password-label-row {
-
-        align-items:
-          flex-start;
-
-      }
-
-
-      .cl-forgot-password {
-
-        font-size:
-          11px;
-
-      }
-
     }
-
-
-    @media (max-width: 360px) {
-
-      .cl-login-form-panel {
-
-        padding:
-          26px 15px;
-
-      }
-
-
-      .cl-password-label-row {
-
-        flex-direction:
-          column;
-
-        gap:
-          4px;
-
-      }
-
-    }
-
-
-    /* =====================================================
-       REDUCED MOTION
-    ====================================================== */
-
-    @media (prefers-reduced-motion: reduce) {
-
-      * {
-
-        transition:
-          none !important;
-
-        scroll-behavior:
-          auto !important;
-
-      }
-
-    }
-
   </style>
-
 </head>
 
+<body>
 
-<body class="cl-login-body">
+  <main class="cl-login-page">
 
+    <!-- BRAND PANEL -->
 
-<main class="cl-login-shell">
+    <section class="cl-login-brand-panel">
 
+      <div class="cl-brand-content">
 
-  <section class="cl-login-layout">
+        <a
+          href="index.html"
+          class="cl-brand cl-login-brand"
+          aria-label="CHAMA LIVE home"
+        >
+          CHAMA <span>LIVE</span>
+        </a>
 
+        <h1>
+          Run your group with clarity.
+        </h1>
 
-    <!-- =================================================
-         BRAND / MARKETING PANEL
-    ================================================== -->
+        <p>
+          CHAMA LIVE helps groups manage members,
+          contributions, activities, records and
+          group operations in one digital system.
+        </p>
 
-    <aside
-      class="cl-login-brand-panel"
-      aria-label="CHAMA LIVE information"
-    >
+        <div class="cl-login-highlights">
 
-      <div class="cl-panel-content">
+          <div class="cl-login-highlight">
 
-
-        <div>
-
-          <a
-            href="index.html"
-            class="cl-brand-light"
-            aria-label="CHAMA LIVE home"
-          >
-            CHAMA <span>LIVE</span>
-          </a>
-
-
-          <div class="cl-panel-copy">
-
-
-            <div class="cl-panel-eyebrow">
-              GROUP MANAGEMENT
+            <div
+              class="cl-login-highlight-icon"
+              aria-hidden="true"
+            >
+              ✓
             </div>
 
-
-            <h1>
-              Welcome back to
-              <span>your group.</span>
-            </h1>
-
-
-            <p>
-              Keep your members, contributions,
-              expenses, meetings and reports
-              connected in one simple system.
-            </p>
-
-
-            <div class="cl-panel-features">
-
-
-              <div class="cl-panel-feature">
-
-                <strong>
-                  Members
-                </strong>
-
-                <span>
-                  One connected register
-                </span>
-
-              </div>
-
-
-              <div class="cl-panel-feature">
-
-                <strong>
-                  Money
-                </strong>
-
-                <span>
-                  Clear contribution records
-                </span>
-
-              </div>
-
-
-              <div class="cl-panel-feature">
-
-                <strong>
-                  Reports
-                </strong>
-
-                <span>
-                  Understand your group
-                </span>
-
-              </div>
-
-
+            <div>
+              Keep group records organized and accessible.
             </div>
-
 
           </div>
 
+          <div class="cl-login-highlight">
+
+            <div
+              class="cl-login-highlight-icon"
+              aria-hidden="true"
+            >
+              ✓
+            </div>
+
+            <div>
+              Give members access to the information they need.
+            </div>
+
+          </div>
+
+          <div class="cl-login-highlight">
+
+            <div
+              class="cl-login-highlight-icon"
+              aria-hidden="true"
+            >
+              ✓
+            </div>
+
+            <div>
+              Keep administration separate from member access.
+            </div>
+
+          </div>
 
         </div>
-
-
-        <div>
-
-          <p
-            style="
-              margin:0;
-              color:rgba(255,255,255,.55);
-              font-size:11px;
-            "
-          >
-            Simple. Transparent. Connected.
-          </p>
-
-        </div>
-
 
       </div>
 
-    </aside>
+    </section>
 
 
-    <!-- =================================================
-         LOGIN FORM PANEL
-    ================================================== -->
+    <!-- PORTAL SELECTION -->
 
     <section class="cl-login-form-panel">
 
-
       <div class="cl-login-form-container">
-
 
         <!-- MOBILE BRAND -->
 
@@ -1501,193 +486,89 @@
           CHAMA <span>LIVE</span>
         </a>
 
-
         <div class="cl-eyebrow">
           SECURE GROUP ACCESS
         </div>
 
-
         <h2>
-          Sign in
+          Choose your portal
         </h2>
 
-
         <p class="cl-login-intro">
-          Sign in to access your group's
-          CHAMA LIVE dashboard.
+          Select the CHAMA LIVE portal for your account.
         </p>
 
 
-        <!-- =================================================
-             EXISTING ERROR HOOK
-        ================================================== -->
+        <!-- PORTAL OPTIONS -->
 
         <div
-          id="error"
-          class="alert alert-error"
-          hidden
-          role="alert"
-        ></div>
-
-
-        <!-- =================================================
-             EXISTING STATUS HOOK
-        ================================================== -->
-
-        <div
-          id="status"
-          class="alert alert-info"
-          hidden
-          role="status"
-        ></div>
-
-
-        <!-- =================================================
-             LOGIN FORM
-
-             IMPORTANT EXISTING ID PRESERVED
-        ================================================== -->
-
-        <form
-          id="loginForm"
-          class="cl-login-form"
-          autocomplete="on"
+          class="cl-portal-options"
+          style="
+            display:flex;
+            flex-direction:column;
+            gap:14px;
+          "
         >
 
-
-          <!-- =================================================
-               EMAIL
-          ================================================== -->
-
-          <div class="cl-login-field">
-
-
-            <label for="email">
-              Email address
-            </label>
-
-
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              autocomplete="email"
-              inputmode="email"
-              placeholder="you@example.com"
-            >
-
-
-          </div>
-
-
-          <!-- =================================================
-               PASSWORD
-          ================================================== -->
-
-          <div class="cl-login-field">
-
-
-            <div class="cl-password-label-row">
-
-
-              <label for="password">
-                Password
-              </label>
-
-
-              <!-- =================================================
-                   FORGOT PASSWORD
-
-                   Dedicated navigation link.
-                   Existing login authentication is untouched.
-              ================================================== -->
-
-              <a
-                id="forgotPasswordLink"
-                class="cl-forgot-password"
-                href="forgot-password.html"
-              >
-                Forgot password?
-              </a>
-
-
-            </div>
-
-
-            <div class="cl-password-wrap">
-
-
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                autocomplete="current-password"
-                placeholder="Enter your password"
-              >
-
-
-              <button
-                type="button"
-                class="cl-password-toggle"
-                id="togglePassword"
-                aria-label="Show password"
-                aria-pressed="false"
-              >
-                Show
-              </button>
-
-
-            </div>
-
-
-          </div>
-
-
-          <!-- =================================================
-               SIGN IN
-          ================================================== -->
-
-          <button
-            id="loginButton"
+          <a
+            href="admin-login.html"
             class="cl-login-button"
-            type="submit"
+            style="
+              display:flex;
+              align-items:center;
+              justify-content:center;
+              text-decoration:none;
+            "
           >
-            Sign In
-          </button>
+            Admin Login
+          </a>
+
+          <a
+            href="member-login.html"
+            class="cl-login-button"
+            style="
+              display:flex;
+              align-items:center;
+              justify-content:center;
+              text-decoration:none;
+              background:#ffffff;
+              color:var(--cl-primary);
+              border:1px solid var(--cl-primary);
+              box-shadow:none;
+            "
+          >
+            Member Login
+          </a>
+
+        </div>
 
 
-        </form>
-
-
-        <!-- =================================================
-             ACCOUNT LINKS
-        ================================================== -->
+        <!-- PASSWORD RECOVERY / SIGNUP -->
 
         <div class="cl-login-links">
 
-
           <div>
+            Forgot your password?
 
+            <a href="forgot-password.html">
+              Reset it here
+            </a>
+          </div>
+
+          <div style="margin-top:8px;">
             Don't have a group account?
 
             <a href="signup.html">
               Create your group
             </a>
-
           </div>
-
 
         </div>
 
 
-        <!-- =================================================
-             SECURITY NOTE
-        ================================================== -->
+        <!-- SECURITY NOTE -->
 
         <div class="cl-security-note">
-
 
           <div
             class="cl-security-icon"
@@ -1696,122 +577,18 @@
             ✓
           </div>
 
-
           <div>
-
-            Your group records are protected by
-            CHAMA LIVE's group-scoped access system.
-            You will only see data belonging to the
-            group associated with your account.
-
+            Choose the portal registered for your account.
+            Your account access is checked after sign-in.
           </div>
-
 
         </div>
 
-
       </div>
-
 
     </section>
 
-
-  </section>
-
-
-</main>
-
-
-<!-- =======================================================
-     EXISTING LOGIN AUTHENTICATION
-
-     DO NOT REMOVE.
-
-     This continues to handle:
-
-     Supabase Auth
-       ↓
-     Member lookup
-       ↓
-     Authentication result
-       ↓
-     Approved account → dashboard.html
-======================================================== -->
-
-<script
-  type="module"
-  src="js/login.js"
-></script>
-
-
-<!-- =======================================================
-     PASSWORD VISIBILITY TOGGLE
-
-     This is intentionally independent from login.js.
-======================================================== -->
-
-<script>
-
-  const togglePassword =
-    document.getElementById(
-      "togglePassword"
-    );
-
-
-  const passwordInput =
-    document.getElementById(
-      "password"
-    );
-
-
-  if (
-    togglePassword &&
-    passwordInput
-  ) {
-
-    togglePassword.addEventListener(
-      "click",
-      () => {
-
-        const isPassword =
-          passwordInput.type ===
-          "password";
-
-
-        passwordInput.type =
-          isPassword
-            ? "text"
-            : "password";
-
-
-        togglePassword.textContent =
-          isPassword
-            ? "Hide"
-            : "Show";
-
-
-        togglePassword.setAttribute(
-          "aria-label",
-          isPassword
-            ? "Hide password"
-            : "Show password"
-        );
-
-
-        togglePassword.setAttribute(
-          "aria-pressed",
-          String(isPassword)
-        );
-
-      }
-    );
-
-  }
-
-</script>
-
+  </main>
 
 </body>
-
 </html>
-
