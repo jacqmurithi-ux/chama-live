@@ -1,4 +1,4 @@
-limport { getMyApplicationContext } from "./auth.js";
+import { getMyApplicationContext } from "./auth.js";
 
 const ADMIN_ROLES = new Set([
   "admin",
