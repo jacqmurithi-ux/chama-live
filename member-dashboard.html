@@ -17,45 +17,50 @@
 
   <link
     rel="stylesheet"
-    href="css/app.css"
+    href="./css/app.css"
   >
 </head>
 
 <body>
 
   <!--
-    Member Portal navigation is reconciled by
-    member-layout.js.
+    =========================================================
+    CHAMA LIVE — MEMBER DASHBOARD
+    ---------------------------------------------------------
+    MEMBER PORTAL
 
-    It owns:
-      - portal authorization
-      - navigation
-      - mobile navigation
-      - current member/group context
-      - logout
+    member-layout.js owns:
+      • authentication
+      • member/group context
+      • portal authorization
+      • desktop navigation
+      • mobile navigation
+      • current-page feature loading
+      • logout
+
+    member-dashboard.js owns:
+      • dashboard data
+      • member contribution summary
+      • group financial overview
+      • recent group activity
+      • meetings
+      • plans/goals
+      • group assets
+
+    IMPORTANT:
+      This page does NOT independently call getMyApplicationContext().
+      member-layout.js loads the context once and passes it to
+      initMemberDashboard(context).
+    =========================================================
   -->
 
-  <nav
-    class="top-nav"
-    aria-label="Member navigation"
-  >
 
-    <a
-      href="member-dashboard.html"
-      class="active"
-      aria-current="page"
-    >
-      Home
-    </a>
-
-    <a href="member-getting-started.html">
-      Getting Started
-    </a>
-
-  </nav>
-
+  <!-- =======================================================
+       PAGE
+  ======================================================== -->
 
   <main class="member-dashboard">
+
 
     <!-- =====================================================
          MEMBER HERO
@@ -108,7 +113,7 @@
 
 
     <!-- =====================================================
-         DASHBOARD GRID
+         DASHBOARD CONTENT
     ====================================================== -->
 
     <section
@@ -172,10 +177,8 @@
 
           <a
             class="member-action"
-            href="member-contributions.html"
-            aria-label="View my contribution statement"
+            href="./member-contributions.html"
           >
-
             <span
               class="member-action-icon"
               aria-hidden="true"
@@ -184,9 +187,8 @@
             </span>
 
             <span>
-              View My Statement
+              View My Contributions
             </span>
-
           </a>
 
         </div>
@@ -195,13 +197,13 @@
 
 
       <!-- ===================================================
-           MY PROFILE / ACCOUNT
+           MEMBER ACCOUNT
       ==================================================== -->
 
       <article class="member-card">
 
         <div class="eyebrow">
-          PROFILE
+          MY ACCOUNT
         </div>
 
         <h2>
@@ -279,10 +281,8 @@
 
           <a
             class="member-action"
-            href="member-profile.html"
-            aria-label="View my profile"
+            href="./member-profile.html"
           >
-
             <span
               class="member-action-icon"
               aria-hidden="true"
@@ -293,7 +293,6 @@
             <span>
               View My Profile
             </span>
-
           </a>
 
         </div>
@@ -335,6 +334,7 @@
 
           </div>
 
+
           <div class="member-health-item">
 
             <span class="member-health-label">
@@ -349,6 +349,7 @@
             </span>
 
           </div>
+
 
           <div class="member-health-item">
 
@@ -365,6 +366,7 @@
 
           </div>
 
+
           <div class="member-health-item">
 
             <span class="member-health-label">
@@ -379,6 +381,7 @@
             </span>
 
           </div>
+
 
           <div class="member-health-item">
 
@@ -399,6 +402,7 @@
               aria-label="Group contribution participation"
               aria-valuemin="0"
               aria-valuemax="100"
+              aria-valuenow="0"
             >
 
               <span
@@ -409,6 +413,7 @@
             </div>
 
           </div>
+
 
           <div class="member-health-item">
 
@@ -512,8 +517,29 @@
           id="memberActivities"
           class="member-list"
         >
-
           Loading group activities...
+        </div>
+
+        <div
+          class="member-actions"
+          style="margin-top:16px;"
+        >
+
+          <a
+            class="member-action"
+            href="./member-activities.html"
+          >
+            <span
+              class="member-action-icon"
+              aria-hidden="true"
+            >
+              →
+            </span>
+
+            <span>
+              View Activities
+            </span>
+          </a>
 
         </div>
 
@@ -538,9 +564,7 @@
           id="memberMeetings"
           class="member-list"
         >
-
           Loading meetings...
-
         </div>
 
       </article>
@@ -564,9 +588,7 @@
           id="memberPlans"
           class="member-list"
         >
-
           Loading plans and goals...
-
         </div>
 
       </article>
@@ -590,8 +612,29 @@
           id="memberAssets"
           class="member-list"
         >
-
           Loading group assets...
+        </div>
+
+        <div
+          class="member-actions"
+          style="margin-top:16px;"
+        >
+
+          <a
+            class="member-action"
+            href="./member-assets.html"
+          >
+            <span
+              class="member-action-icon"
+              aria-hidden="true"
+            >
+              →
+            </span>
+
+            <span>
+              View Group Assets
+            </span>
+          </a>
 
         </div>
 
@@ -599,7 +642,7 @@
 
 
       <!-- ===================================================
-           GROUP SUMMARY
+           GROUP SNAPSHOT
       ==================================================== -->
 
       <article class="member-card member-card-wide">
@@ -629,6 +672,7 @@
 
           </div>
 
+
           <div class="member-health-item">
 
             <span class="member-health-label">
@@ -643,6 +687,7 @@
             </span>
 
           </div>
+
 
           <div class="member-health-item">
 
@@ -669,9 +714,12 @@
   </main>
 
 
-  <!-- =====================================================
+  <!-- =======================================================
        MEMBER PORTAL BOOT
-  ====================================================== -->
+       -------------------------------------------------------
+       member-layout.js loads the authenticated context once
+       and passes it to initMemberDashboard(context).
+  ======================================================== -->
 
   <script type="module">
 
@@ -684,4 +732,4 @@
   </script>
 
 </body>
-</html>a
+</html>
