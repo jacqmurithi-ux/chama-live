@@ -355,16 +355,51 @@ function renderDesktopNavigation() {
     );
   }
 
-  const target =
+  const topNav =
     document.querySelector(
       ".topbar .top-nav"
     ) ||
     document.querySelector(
+      ".top-nav"
+    );
+
+  if (topNav) {
+    const memberHrefs =
+      new Set(
+        MEMBER_NAVIGATION.map(
+          ([href]) => href
+        )
+      );
+
+    topNav
+      .querySelectorAll("a[href]")
+      .forEach((link) => {
+        const href =
+          link
+            .getAttribute("href")
+            ?.split("#")[0]
+            .split("?")[0]
+            .toLowerCase();
+
+        if (
+          memberHrefs.has(href)
+        ) {
+          link.remove();
+        }
+      });
+
+    topNav.appendChild(nav);
+
+    return;
+  }
+
+  const topbar =
+    document.querySelector(
       ".topbar"
     );
 
-  if (target) {
-    target.appendChild(nav);
+  if (topbar) {
+    topbar.appendChild(nav);
   }
 }
 
