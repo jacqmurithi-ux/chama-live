@@ -10,6 +10,7 @@
    - Render responsive mobile navigation
    - Render canonical Logout action
    - Load the current Member Portal page feature
+   - Pass authenticated context to page features
 
    SECURITY CONTRACT
    ---------------------------------------------------------
@@ -55,6 +56,7 @@ const MEMBER_PAGES = new Set([
   "member-contributions.html",
   "member-activities.html",
   "member-assets.html",
+  "member-milestones.html",
   "member-getting-started.html"
 ]);
 
@@ -83,6 +85,11 @@ const PAGE_SCRIPTS = {
   "member-assets.html": [
     "./member-assets.js",
     "initMemberAssets"
+  ],
+
+  "member-milestones.html": [
+    "./member-milestones.js",
+    "initMemberMilestones"
   ]
 
 };
@@ -203,6 +210,11 @@ const MEMBER_NAVIGATION = [
   ],
 
   [
+    "member-milestones.html",
+    "Milestones"
+  ],
+
+  [
     "member-getting-started.html",
     "Getting Started"
   ]
@@ -236,10 +248,6 @@ function injectStyles() {
 
 
   style.textContent = `
-
-    /* =====================================================
-       DESKTOP MEMBER NAVIGATION
-    ====================================================== */
 
     .chama-member-nav {
 
@@ -325,10 +333,6 @@ function injectStyles() {
 
     }
 
-
-    /* =====================================================
-       DESKTOP LOGOUT
-    ====================================================== */
 
     .chama-member-logout {
 
@@ -437,10 +441,6 @@ function injectStyles() {
     }
 
 
-    /* =====================================================
-       MOBILE ELEMENTS
-    ====================================================== */
-
     .chama-member-menu,
     .chama-member-back,
     .chama-member-bottom {
@@ -451,12 +451,7 @@ function injectStyles() {
     }
 
 
-    /* =====================================================
-       MOBILE
-    ====================================================== */
-
     @media (max-width: 800px) {
-
 
       .chama-member-nav {
 
@@ -465,10 +460,6 @@ function injectStyles() {
 
       }
 
-
-      /* ---------------------------------------------------
-         BACKDROP
-      ---------------------------------------------------- */
 
       .chama-member-back {
 
@@ -494,10 +485,6 @@ function injectStyles() {
 
       }
 
-
-      /* ---------------------------------------------------
-         MOBILE MENU
-      ---------------------------------------------------- */
 
       .chama-member-menu {
 
@@ -545,10 +532,6 @@ function injectStyles() {
 
       }
 
-
-      /* ---------------------------------------------------
-         MOBILE HEADER
-      ---------------------------------------------------- */
 
       .chama-member-head {
 
@@ -604,10 +587,6 @@ function injectStyles() {
 
       }
 
-
-      /* ---------------------------------------------------
-         MOBILE MENU LINKS
-      ---------------------------------------------------- */
 
       .chama-member-menu a {
 
@@ -665,10 +644,6 @@ function injectStyles() {
 
       }
 
-
-      /* ---------------------------------------------------
-         MOBILE LOGOUT
-      ---------------------------------------------------- */
 
       .chama-member-mobile-logout {
 
@@ -730,10 +705,6 @@ function injectStyles() {
 
       }
 
-
-      /* ---------------------------------------------------
-         MOBILE MENU BUTTON
-      ---------------------------------------------------- */
 
       .chama-member-menu-toggle {
 
@@ -798,10 +769,6 @@ function injectStyles() {
 
       }
 
-
-      /* ---------------------------------------------------
-         MOBILE BOTTOM NAVIGATION
-      ---------------------------------------------------- */
 
       .chama-member-bottom {
 
@@ -910,10 +877,6 @@ function injectStyles() {
       }
 
 
-      /* ---------------------------------------------------
-         PAGE SPACE FOR BOTTOM NAV
-      ---------------------------------------------------- */
-
       .main {
 
         padding-bottom:
@@ -931,10 +894,6 @@ function injectStyles() {
 
     }
 
-
-    /* =====================================================
-       VERY SMALL PHONES
-    ====================================================== */
 
     @media (max-width: 380px) {
 
@@ -967,10 +926,6 @@ function injectStyles() {
     }
 
 
-    /* =====================================================
-       REDUCED MOTION
-    ====================================================== */
-
     @media (prefers-reduced-motion: reduce) {
 
       .chama-member-nav a,
@@ -995,7 +950,7 @@ function injectStyles() {
 
 
 /* =========================================================
-   OPEN MOBILE MENU
+   MOBILE MENU
 ========================================================= */
 
 function openMemberMobileMenu() {
@@ -1005,12 +960,10 @@ function openMemberMobileMenu() {
       "chamaMemberMenu"
     );
 
-
   const backdrop =
     document.getElementById(
       "chamaMemberBack"
     );
-
 
   const button =
     document.querySelector(
@@ -1022,17 +975,14 @@ function openMemberMobileMenu() {
     "open"
   );
 
-
   backdrop?.classList.add(
     "open"
   );
-
 
   button?.setAttribute(
     "aria-expanded",
     "true"
   );
-
 
   button?.setAttribute(
     "aria-label",
@@ -1042,10 +992,6 @@ function openMemberMobileMenu() {
 }
 
 
-/* =========================================================
-   CLOSE MOBILE MENU
-========================================================= */
-
 function closeMemberMobileMenu() {
 
   const menu =
@@ -1053,12 +999,10 @@ function closeMemberMobileMenu() {
       "chamaMemberMenu"
     );
 
-
   const backdrop =
     document.getElementById(
       "chamaMemberBack"
     );
-
 
   const button =
     document.querySelector(
@@ -1070,17 +1014,14 @@ function closeMemberMobileMenu() {
     "open"
   );
 
-
   backdrop?.classList.remove(
     "open"
   );
-
 
   button?.setAttribute(
     "aria-expanded",
     "false"
   );
-
 
   button?.setAttribute(
     "aria-label",
@@ -1091,19 +1032,15 @@ function closeMemberMobileMenu() {
 
 
 /* =========================================================
-   CANONICAL LOGOUT
+   LOGOUT
 ========================================================= */
 
 async function handleMemberLogout(
   button
 ) {
 
-  if (!button) {
-    return;
-  }
-
-
   if (
+    !button ||
     button.disabled
   ) {
 
@@ -1137,10 +1074,8 @@ async function handleMemberLogout(
       error
     );
 
-
     button.disabled =
       false;
-
 
     button.textContent =
       originalText ||
@@ -1150,10 +1085,6 @@ async function handleMemberLogout(
 
 }
 
-
-/* =========================================================
-   CREATE LOGOUT BUTTON
-========================================================= */
 
 function createLogoutButton(
   className
@@ -1168,15 +1099,12 @@ function createLogoutButton(
   button.type =
     "button";
 
-
   button.className =
     className ||
     "chama-member-logout";
 
-
   button.textContent =
     "Logout";
-
 
   button.setAttribute(
     "aria-label",
@@ -1324,21 +1252,17 @@ function renderMobileLogout(
   );
 
 
-  const button =
+  menu.appendChild(
     createLogoutButton(
       "chama-member-mobile-logout"
-    );
-
-
-  menu.appendChild(
-    button
+    )
   );
 
 }
 
 
 /* =========================================================
-   DESKTOP MEMBER NAVIGATION
+   DESKTOP NAVIGATION
 ========================================================= */
 
 function renderDesktopNavigation() {
@@ -1364,7 +1288,6 @@ function renderDesktopNavigation() {
 
   nav.className =
     "chama-member-nav";
-
 
   nav.setAttribute(
     "aria-label",
@@ -1413,7 +1336,7 @@ function renderDesktopNavigation() {
         "a[href]"
       )
       .forEach(
-        (link) => {
+        link => {
 
           const href =
             link
@@ -1470,7 +1393,7 @@ function renderDesktopNavigation() {
 
 
 /* =========================================================
-   MOBILE MEMBER NAVIGATION
+   MOBILE NAVIGATION
 ========================================================= */
 
 function renderMobileNavigation() {
@@ -1492,10 +1415,6 @@ function renderMobileNavigation() {
   }
 
 
-  /* -------------------------------------------------------
-     BACKDROP
-  -------------------------------------------------------- */
-
   const backdrop =
     document.createElement(
       "div"
@@ -1505,14 +1424,9 @@ function renderMobileNavigation() {
   backdrop.id =
     "chamaMemberBack";
 
-
   backdrop.className =
     "chama-member-back";
 
-
-  /* -------------------------------------------------------
-     MENU
-  -------------------------------------------------------- */
 
   const menu =
     document.createElement(
@@ -1523,20 +1437,14 @@ function renderMobileNavigation() {
   menu.id =
     "chamaMemberMenu";
 
-
   menu.className =
     "chama-member-menu";
-
 
   menu.setAttribute(
     "aria-label",
     "Member Portal menu"
   );
 
-
-  /* -------------------------------------------------------
-     MENU HEADER
-  -------------------------------------------------------- */
 
   const header =
     document.createElement(
@@ -1574,20 +1482,14 @@ function renderMobileNavigation() {
     groupName
   );
 
-
   header.appendChild(
     memberName
   );
-
 
   menu.appendChild(
     header
   );
 
-
-  /* -------------------------------------------------------
-     MENU LINKS
-  -------------------------------------------------------- */
 
   for (
     const [
@@ -1606,32 +1508,19 @@ function renderMobileNavigation() {
   }
 
 
-  /* -------------------------------------------------------
-     LOGOUT
-  -------------------------------------------------------- */
-
   renderMobileLogout(
     menu
   );
 
 
-  /* -------------------------------------------------------
-     ATTACH MENU
-  -------------------------------------------------------- */
-
   document.body.appendChild(
     backdrop
   );
-
 
   document.body.appendChild(
     menu
   );
 
-
-  /* -------------------------------------------------------
-     MENU BUTTON
-  -------------------------------------------------------- */
 
   let button =
     document.querySelector(
@@ -1659,20 +1548,16 @@ function renderMobileNavigation() {
     button.type =
       "button";
 
-
     button.className =
       "menu-toggle chama-member-menu-toggle";
 
-
     button.textContent =
       "☰";
-
 
     button.setAttribute(
       "aria-label",
       "Open menu"
     );
-
 
     button.setAttribute(
       "aria-expanded",
@@ -1711,10 +1596,6 @@ function renderMobileNavigation() {
   }
 
 
-  /* -------------------------------------------------------
-     TOGGLE EVENT
-  -------------------------------------------------------- */
-
   if (
     !button.dataset
       .chamaMemberBound
@@ -1729,13 +1610,11 @@ function renderMobileNavigation() {
       "click",
       () => {
 
-        const isOpen =
+        if (
           menu.classList.contains(
             "open"
-          );
-
-
-        if (isOpen) {
+          )
+        ) {
 
           closeMemberMobileMenu();
 
@@ -1753,26 +1632,18 @@ function renderMobileNavigation() {
   }
 
 
-  /* -------------------------------------------------------
-     BACKDROP EVENT
-  -------------------------------------------------------- */
-
   backdrop.addEventListener(
     "click",
     closeMemberMobileMenu
   );
 
 
-  /* -------------------------------------------------------
-     LINK EVENTS
-  -------------------------------------------------------- */
-
   menu
     .querySelectorAll(
       "a"
     )
     .forEach(
-      (link) => {
+      link => {
 
         link.addEventListener(
           "click",
@@ -1811,12 +1682,16 @@ function renderMobileBottomNavigation() {
   nav.className =
     "chama-member-bottom";
 
-
   nav.setAttribute(
     "aria-label",
     "Primary member navigation"
   );
 
+
+  /*
+   * Five slots are retained for the mobile layout.
+   * Milestones is available from the menu and page links.
+   */
 
   const items = [
 
@@ -1836,8 +1711,8 @@ function renderMobileBottomNavigation() {
     ],
 
     [
-      "member-assets.html",
-      "Assets"
+      "member-milestones.html",
+      "Milestones"
     ],
 
     [
@@ -1863,7 +1738,6 @@ function renderMobileBottomNavigation() {
 
     link.href =
       href;
-
 
     link.textContent =
       label;
@@ -1915,8 +1789,7 @@ async function loadCurrentPageFeature() {
 
 
   /*
-   * Getting Started is intentionally a layout-only page.
-   * It does not require a separate feature script.
+   * Getting Started is intentionally layout-only.
    */
 
   if (!entry) {
@@ -1950,7 +1823,17 @@ async function loadCurrentPageFeature() {
   }
 
 
-  await initializer();
+  /*
+   * Pass the already-resolved authenticated
+   * context into the page feature.
+   *
+   * Existing initializers that do not accept
+   * an argument continue to work normally.
+   */
+
+  await initializer(
+    context
+  );
 
 }
 
@@ -1971,18 +1854,13 @@ function showLayoutError(
 
     document.getElementById(
       "memberError"
+    ),
+
+    document.getElementById(
+      "memberMilestonesError"
     )
 
   ].filter(Boolean);
-
-
-  if (
-    errorBoxes.length === 0
-  ) {
-
-    return;
-
-  }
 
 
   for (
@@ -1991,7 +1869,6 @@ function showLayoutError(
 
     errorBox.hidden =
       false;
-
 
     errorBox.textContent =
       message;
@@ -2002,7 +1879,7 @@ function showLayoutError(
 
 
 /* =========================================================
-   HIDE LAYOUT LOADING
+   HIDE PAGE LOADING
 ========================================================= */
 
 function hideLayoutLoading() {
@@ -2015,6 +1892,10 @@ function hideLayoutLoading() {
 
     document.getElementById(
       "memberLoading"
+    ),
+
+    document.getElementById(
+      "memberMilestonesLoading"
     )
 
   ].filter(Boolean);
@@ -2052,7 +1933,7 @@ export async function boot() {
   try {
 
     /* -----------------------------------------------------
-       RESOLVE AUTHENTICATED CONTEXT
+       AUTHENTICATED CONTEXT
     ------------------------------------------------------ */
 
     context =
@@ -2139,10 +2020,6 @@ export async function boot() {
     }
 
 
-    /* -----------------------------------------------------
-       PREVENT PAGE FLASH
-    ------------------------------------------------------ */
-
     window.__CHAMA_LIVE_LAYOUT_LOADING__ =
       true;
 
@@ -2172,12 +2049,11 @@ export async function boot() {
     await loadCurrentPageFeature();
 
 
-    /* -----------------------------------------------------
-       HIDE PAGE LOADING INDICATORS
-       Feature pages may manage their own loading state.
-       Getting Started has no feature script, so the layout
-       handles its loading indicator here.
-    ------------------------------------------------------ */
+    /*
+     * Getting Started has no feature script.
+     * Its loading indicator therefore needs to be
+     * dismissed by the layout.
+     */
 
     hideLayoutLoading();
 
