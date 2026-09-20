@@ -2,203 +2,574 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Getting Started — Member Portal | CHAMA LIVE</title>
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
 
-  <link rel="stylesheet" href="./css/app.css">
+  <title>
+    Getting Started — Member Portal | CHAMA LIVE
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="./css/app.css"
+  >
 
   <style>
+
+    /* =====================================================
+       CHAMA LIVE — MEMBER GETTING STARTED
+    ====================================================== */
+
     .member-getting-started {
-      max-width: 1000px;
-      margin: 0 auto;
-      padding: 28px 16px 60px;
+
+      max-width:
+        1000px;
+
+      margin:
+        0 auto;
+
+      padding:
+        28px 16px 60px;
+
     }
+
+
+    /* =====================================================
+       HERO
+    ====================================================== */
 
     .getting-started-hero {
-      margin-bottom: 24px;
+
+      margin-bottom:
+        24px;
+
     }
+
 
     .getting-started-eyebrow {
-      margin: 0 0 6px;
-      color: #0f766e;
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: .08em;
-      text-transform: uppercase;
+
+      margin:
+        0 0 6px;
+
+      color:
+        #0f766e;
+
+      font-size:
+        12px;
+
+      font-weight:
+        800;
+
+      letter-spacing:
+        .08em;
+
+      text-transform:
+        uppercase;
+
     }
+
 
     .getting-started-hero h1 {
-      margin: 0 0 8px;
-      font-size: clamp(1.7rem, 4vw, 2.25rem);
-      line-height: 1.15;
+
+      margin:
+        0 0 8px;
+
+      font-size:
+        clamp(
+          1.7rem,
+          4vw,
+          2.25rem
+        );
+
+      line-height:
+        1.15;
+
     }
+
 
     .getting-started-hero p {
-      max-width: 720px;
-      margin: 0;
-      color: #667085;
-      line-height: 1.65;
+
+      max-width:
+        720px;
+
+      margin:
+        0;
+
+      color:
+        #667085;
+
+      line-height:
+        1.65;
+
     }
+
+
+    /* =====================================================
+       BACK TO DASHBOARD
+    ====================================================== */
 
     .getting-started-back {
-      display: inline-flex;
-      align-items: center;
-      min-height: 40px;
-      margin-top: 16px;
-      padding: 8px 13px;
-      border: 1px solid #d0d5dd;
-      border-radius: 9px;
-      background: #fff;
-      color: #344054;
-      text-decoration: none;
-      font-size: 14px;
-      font-weight: 700;
+
+      display:
+        inline-flex;
+
+      align-items:
+        center;
+
+      min-height:
+        40px;
+
+      margin-top:
+        16px;
+
+      padding:
+        8px 13px;
+
+      border:
+        1px solid #d0d5dd;
+
+      border-radius:
+        9px;
+
+      background:
+        #ffffff;
+
+      color:
+        #344054;
+
+      text-decoration:
+        none;
+
+      font-size:
+        14px;
+
+      font-weight:
+        700;
+
+      transition:
+        background .18s ease,
+        border-color .18s ease;
+
     }
+
 
     .getting-started-back:hover {
-      background: #f8fafc;
+
+      background:
+        #f8fafc;
+
+      border-color:
+        #cbd5e1;
+
     }
+
+
+    .getting-started-back:focus-visible {
+
+      outline:
+        3px solid
+        rgba(15,118,110,.25);
+
+      outline-offset:
+        2px;
+
+    }
+
+
+    /* =====================================================
+       CONTENT GRID
+    ====================================================== */
 
     .getting-started-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 18px;
+
+      display:
+        grid;
+
+      grid-template-columns:
+        repeat(
+          2,
+          minmax(0, 1fr)
+        );
+
+      gap:
+        18px;
+
     }
+
+
+    /* =====================================================
+       CARDS
+    ====================================================== */
 
     .getting-started-card {
-      min-width: 0;
-      padding: 22px;
-      border: 1px solid #e5e7eb;
-      border-radius: 14px;
-      background: #fff;
-      box-shadow: 0 4px 14px rgba(16, 24, 40, 0.04);
+
+      min-width:
+        0;
+
+      padding:
+        22px;
+
+      border:
+        1px solid #e5e7eb;
+
+      border-radius:
+        14px;
+
+      background:
+        #ffffff;
+
+      box-shadow:
+        0 4px 14px
+        rgba(16,24,40,.04);
+
     }
+
 
     .getting-started-card-wide {
-      grid-column: 1 / -1;
+
+      grid-column:
+        1 / -1;
+
     }
+
 
     .getting-started-card h2 {
-      margin: 0 0 9px;
-      font-size: 1.08rem;
-      line-height: 1.35;
+
+      margin:
+        0 0 9px;
+
+      font-size:
+        1.08rem;
+
+      line-height:
+        1.35;
+
     }
+
 
     .getting-started-card p {
-      margin: 0;
-      color: #667085;
-      line-height: 1.6;
+
+      margin:
+        0;
+
+      color:
+        #667085;
+
+      line-height:
+        1.6;
+
     }
+
+
+    /* =====================================================
+       LISTS
+    ====================================================== */
 
     .getting-started-list {
-      margin: 14px 0 0;
-      padding-left: 20px;
-      color: #667085;
-      line-height: 1.65;
+
+      margin:
+        14px 0 0;
+
+      padding-left:
+        20px;
+
+      color:
+        #667085;
+
+      line-height:
+        1.65;
+
     }
+
 
     .getting-started-list li + li {
-      margin-top: 6px;
+
+      margin-top:
+        6px;
+
     }
+
+
+    /* =====================================================
+       CARD ACTIONS
+    ====================================================== */
 
     .getting-started-link {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 42px;
-      margin-top: 17px;
-      padding: 9px 15px;
-      border-radius: 9px;
-      background: #0f766e;
-      color: #fff;
-      text-decoration: none;
-      font-size: 14px;
-      font-weight: 750;
+
+      display:
+        inline-flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        center;
+
+      min-height:
+        42px;
+
+      margin-top:
+        17px;
+
+      padding:
+        9px 15px;
+
+      border-radius:
+        9px;
+
+      background:
+        #0f766e;
+
+      color:
+        #ffffff;
+
+      text-decoration:
+        none;
+
+      font-size:
+        14px;
+
+      font-weight:
+        750;
+
+      transition:
+        opacity .18s ease,
+        transform .18s ease;
+
     }
+
 
     .getting-started-link:hover {
-      opacity: .92;
+
+      opacity:
+        .92;
+
+      transform:
+        translateY(-1px);
+
     }
+
+
+    .getting-started-link:focus-visible {
+
+      outline:
+        3px solid
+        rgba(15,118,110,.25);
+
+      outline-offset:
+        2px;
+
+    }
+
+
+    /* =====================================================
+       HELP NOTE
+    ====================================================== */
 
     .getting-started-note {
-      margin-top: 18px;
-      padding: 15px 16px;
-      border-radius: 10px;
-      background: #ecfdf5;
-      color: #115e59;
-      line-height: 1.6;
+
+      margin-top:
+        18px;
+
+      padding:
+        15px 16px;
+
+      border-radius:
+        10px;
+
+      background:
+        #ecfdf5;
+
+      color:
+        #115e59;
+
+      line-height:
+        1.6;
+
     }
+
+
+    /* =====================================================
+       LOADING
+    ====================================================== */
 
     .member-loading {
-      padding: 14px 0;
-      color: #667085;
+
+      padding:
+        14px 0;
+
+      color:
+        #667085;
+
     }
+
+
+    /* =====================================================
+       ERROR
+    ====================================================== */
 
     .member-error {
-      display: none;
-      margin: 16px 0;
-      padding: 12px 15px;
-      border: 1px solid #fecdca;
-      border-radius: 9px;
-      background: #fef3f2;
-      color: #b42318;
-      line-height: 1.5;
+
+      display:
+        none;
+
+      margin:
+        16px 0;
+
+      padding:
+        12px 15px;
+
+      border:
+        1px solid #fecdca;
+
+      border-radius:
+        9px;
+
+      background:
+        #fef3f2;
+
+      color:
+        #b42318;
+
+      line-height:
+        1.5;
+
     }
 
-    @media (max-width: 700px) {
+
+    /* =====================================================
+       MOBILE
+    ====================================================== */
+
+    @media (max-width: 800px) {
+
       .member-getting-started {
-        padding: 22px 12px 48px;
+
+        padding:
+          22px 12px 105px;
+
       }
+
 
       .getting-started-grid {
-        grid-template-columns: 1fr;
+
+        grid-template-columns:
+          1fr;
+
       }
+
 
       .getting-started-card-wide {
-        grid-column: auto;
+
+        grid-column:
+          auto;
+
       }
+
 
       .getting-started-card {
-        padding: 19px;
+
+        padding:
+          19px;
+
       }
+
 
       .getting-started-link {
-        width: 100%;
+
+        width:
+          100%;
+
       }
+
     }
 
+
+    /* =====================================================
+       VERY SMALL PHONES
+    ====================================================== */
+
+    @media (max-width: 380px) {
+
+      .member-getting-started {
+
+        padding-left:
+          10px;
+
+        padding-right:
+          10px;
+
+      }
+
+
+      .getting-started-card {
+
+        padding:
+          17px;
+
+      }
+
+
+      .getting-started-hero h1 {
+
+        font-size:
+          1.6rem;
+
+      }
+
+    }
+
+
+    /* =====================================================
+       REDUCED MOTION
+    ====================================================== */
+
     @media (prefers-reduced-motion: reduce) {
+
       .getting-started-link,
       .getting-started-back {
-        transition: none;
+
+        transition:
+          none;
+
       }
+
     }
+
   </style>
 </head>
+
 
 <body>
 
   <!--
+    =======================================================
     CHAMA LIVE — MEMBER PORTAL
 
     This page belongs exclusively to the Member Portal.
-    Do not route this page through the Admin Portal Getting Started page.
+
+    member-layout.js owns:
+      - authentication
+      - member authorization
+      - Member Portal navigation
+      - responsive mobile navigation
+      - logout
+      - portal protection
+
+    Do NOT add another portal navigation here.
+    =======================================================
   -->
 
-  <nav class="top-nav" aria-label="Member navigation">
-    <a href="member-dashboard.html">Home</a>
-
-    <a
-      href="member-getting-started.html"
-      class="active"
-      aria-current="page"
-    >
-      Getting Started
-    </a>
-  </nav>
 
   <main class="member-getting-started">
+
+
+    <!-- ===================================================
+         HERO
+    ==================================================== -->
 
     <section class="getting-started-hero">
 
@@ -206,7 +577,11 @@
         Member Portal
       </p>
 
-      <h1>Getting Started</h1>
+
+      <h1>
+        Getting Started
+      </h1>
+
 
       <p>
         Welcome to your CHAMA LIVE Member Portal.
@@ -214,6 +589,7 @@
         to you and quickly find your member information,
         contribution records and group activity.
       </p>
+
 
       <a
         class="getting-started-back"
@@ -224,6 +600,11 @@
 
     </section>
 
+
+    <!-- ===================================================
+         LOADING
+    ==================================================== -->
+
     <div
       id="memberLoading"
       class="member-loading"
@@ -232,6 +613,11 @@
       Loading your member information...
     </div>
 
+
+    <!-- ===================================================
+         ERROR
+    ==================================================== -->
+
     <div
       id="memberError"
       class="member-error"
@@ -239,15 +625,29 @@
       aria-live="assertive"
     ></div>
 
+
+    <!-- ===================================================
+         GETTING STARTED CONTENT
+    ==================================================== -->
+
     <section class="getting-started-grid">
 
-      <!-- Welcome -->
 
-      <article class="getting-started-card getting-started-card-wide">
+      <!-- =================================================
+           WELCOME
+      ================================================== -->
+
+      <article
+        class="
+          getting-started-card
+          getting-started-card-wide
+        "
+      >
 
         <h2 id="memberWelcomeHeading">
           Welcome to your Member Portal
         </h2>
+
 
         <p id="memberWelcomeText">
           Your Member Portal gives you access to information
@@ -256,11 +656,17 @@
 
       </article>
 
-      <!-- Dashboard -->
+
+      <!-- =================================================
+           DASHBOARD
+      ================================================== -->
 
       <article class="getting-started-card">
 
-        <h2>My Dashboard</h2>
+        <h2>
+          My Dashboard
+        </h2>
+
 
         <p>
           Your dashboard gives you a quick overview of your
@@ -268,12 +674,27 @@
           to you.
         </p>
 
+
         <ul class="getting-started-list">
-          <li>View your member information.</li>
-          <li>Review your contribution position.</li>
-          <li>See upcoming meetings and group activity.</li>
-          <li>View available plans, goals, milestones and assets.</li>
+
+          <li>
+            View your member information.
+          </li>
+
+          <li>
+            Review your contribution position.
+          </li>
+
+          <li>
+            See upcoming meetings and group activity.
+          </li>
+
+          <li>
+            View available plans, goals, milestones and assets.
+          </li>
+
         </ul>
+
 
         <a
           class="getting-started-link"
@@ -284,11 +705,17 @@
 
       </article>
 
-      <!-- Contributions -->
+
+      <!-- =================================================
+           CONTRIBUTIONS
+      ================================================== -->
 
       <article class="getting-started-card">
 
-        <h2>My Contributions</h2>
+        <h2>
+          My Contributions
+        </h2>
+
 
         <p>
           Review the contribution records associated with
@@ -296,11 +723,23 @@
           available to you.
         </p>
 
+
         <ul class="getting-started-list">
-          <li>Review recorded contribution entries.</li>
-          <li>Check contribution dates and amounts.</li>
-          <li>Review your available contribution history.</li>
+
+          <li>
+            Review recorded contribution entries.
+          </li>
+
+          <li>
+            Check contribution dates and amounts.
+          </li>
+
+          <li>
+            Review your available contribution history.
+          </li>
+
         </ul>
+
 
         <a
           class="getting-started-link"
@@ -311,22 +750,40 @@
 
       </article>
 
-      <!-- Activities -->
+
+      <!-- =================================================
+           ACTIVITIES
+      ================================================== -->
 
       <article class="getting-started-card">
 
-        <h2>Group Activities</h2>
+        <h2>
+          Group Activities
+        </h2>
+
 
         <p>
           Stay informed about activities and plans taking
           place within your group.
         </p>
 
+
         <ul class="getting-started-list">
-          <li>View group activities.</li>
-          <li>Check activity status and dates.</li>
-          <li>See activities connected to group plans.</li>
+
+          <li>
+            View group activities.
+          </li>
+
+          <li>
+            Check activity status and dates.
+          </li>
+
+          <li>
+            See activities connected to group plans.
+          </li>
+
         </ul>
+
 
         <a
           class="getting-started-link"
@@ -337,53 +794,97 @@
 
       </article>
 
-      <!-- Member Account -->
+
+      <!-- =================================================
+           MEMBER ACCOUNT
+      ================================================== -->
 
       <article class="getting-started-card">
 
-        <h2>Your Member Account</h2>
+        <h2>
+          Your Member Account
+        </h2>
+
 
         <p>
           Your Member Portal is connected to your membership
           within your group.
         </p>
 
+
         <ul class="getting-started-list">
-          <li>Your member details are linked to your group.</li>
-          <li>Your access is based on your member role.</li>
-          <li>Your member pages are separate from administration.</li>
+
+          <li>
+            Your member details are linked to your group.
+          </li>
+
+          <li>
+            Your access is based on your member role.
+          </li>
+
+          <li>
+            Your member pages are separate from administration.
+          </li>
+
         </ul>
 
       </article>
 
-      <!-- Help -->
 
-      <article class="getting-started-card getting-started-card-wide">
+      <!-- =================================================
+           HELP
+      ================================================== -->
 
-        <h2>Need Help?</h2>
+      <article
+        class="
+          getting-started-card
+          getting-started-card-wide
+        "
+      >
+
+        <h2>
+          Need Help?
+        </h2>
+
 
         <p>
-          If information on your Member Portal appears incorrect,
-          contact your group administrator so they can review
-          your membership records.
+          If information on your Member Portal appears
+          incorrect, contact your group administrator so
+          they can review your membership records.
         </p>
 
+
         <div class="getting-started-note">
-          You are using the <strong>Member Portal</strong>.
+
+          You are using the
+          <strong>Member Portal</strong>.
+
           Administrative functions belong to the separate
           Admin Portal and are not available from this page.
+
         </div>
 
       </article>
+
 
     </section>
 
   </main>
 
+
+  <!-- =====================================================
+       MEMBER PORTAL BOOT
+  ====================================================== -->
+
   <script type="module">
-    import { boot } from "./js/member-layout.js";
+
+    import {
+      boot
+    } from "./js/member-layout.js";
+
 
     boot();
+
   </script>
 
 </body>
