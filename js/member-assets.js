@@ -167,9 +167,14 @@ function formatDate(value) {
     return "—";
   }
 
+  const raw =
+    String(value);
+
   const date =
     new Date(
-      `${value}T00:00:00`
+      /^\d{4}-\d{2}-\d{2}$/.test(raw)
+        ? `${raw}T00:00:00`
+        : raw
     );
 
   if (
@@ -177,7 +182,7 @@ function formatDate(value) {
       date.getTime()
     )
   ) {
-    return String(value);
+    return raw;
   }
 
   return date.toLocaleDateString(
@@ -220,8 +225,23 @@ function normalize(value) {
 
 
 /* =========================================================
-   UI
+   UI STATE
 ========================================================= */
+
+function showLoading() {
+  if (els.loading) {
+    els.loading.hidden = false;
+  }
+
+  if (els.error) {
+    els.error.hidden = true;
+  }
+
+  if (els.content) {
+    els.content.hidden = true;
+  }
+}
+
 
 function showError(message) {
   if (els.loading) {
@@ -355,6 +375,7 @@ function getFilteredAssets() {
 
   return state.assets.filter(
     asset => {
+
       const searchable =
         [
           asset.asset_name,
@@ -368,7 +389,9 @@ function getFilteredAssets() {
 
       if (
         search &&
-        !searchable.includes(search)
+        !searchable.includes(
+          search
+        )
       ) {
         return false;
       }
@@ -398,6 +421,36 @@ function getFilteredAssets() {
 
 
 /* =========================================================
+   EMPTY STATE
+========================================================= */
+
+function renderEmptyState() {
+  if (!els.rows) {
+    return;
+  }
+
+  els.rows.innerHTML = `
+    <tr>
+      <td colspan="8">
+
+        <div class="member-assets-empty">
+
+          <strong>
+            No matching assets
+          </strong>
+
+          No assets match the current
+          search or filters.
+
+        </div>
+
+      </td>
+    </tr>
+  `;
+}
+
+
+/* =========================================================
    TABLE
 ========================================================= */
 
@@ -410,105 +463,111 @@ function renderRows() {
     getFilteredAssets();
 
   if (!assets.length) {
-    els.rows.innerHTML = `
-      <tr>
-        <td colspan="8">
-          <div class="empty">
-            <strong>No matching assets</strong>
-            No assets match the current filters.
-          </div>
-        </td>
-      </tr>
-    `;
-
+    renderEmptyState();
     return;
   }
 
   els.rows.innerHTML =
-    assets.map(
-      asset => `
-        <tr>
+    assets
+      .map(
+        asset => {
 
-          <td>
-            <div class="asset-name">
-              ${escapeHtml(
-                asset.asset_name ||
-                "Group Asset"
-              )}
-            </div>
-          </td>
+          const statusClass =
+            normalize(
+              asset.status
+            )
+              .replace(
+                /[^a-z0-9_-]/g,
+                ""
+              );
 
-          <td>
-            ${escapeHtml(
-              asset.category ||
-              "—"
-            )}
-          </td>
+          return `
+            <tr>
 
-          <td>
-            ${escapeHtml(
-              formatDate(
-                asset.acquired_date
-              )
-            )}
-          </td>
+              <td>
+                <div class="member-assets-name">
+                  ${escapeHtml(
+                    asset.asset_name ||
+                    "Group Asset"
+                  )}
+                </div>
+              </td>
 
-          <td>
-            ${escapeHtml(
-              money(
-                asset.acquisition_cost
-              )
-            )}
-          </td>
+              <td>
+                ${escapeHtml(
+                  asset.category ||
+                  "—"
+                )}
+              </td>
 
-          <td>
-            ${escapeHtml(
-              money(
-                asset.current_value
-              )
-            )}
-          </td>
+              <td>
+                ${escapeHtml(
+                  formatDate(
+                    asset.acquired_date
+                  )
+                )}
+              </td>
 
-          <td>
-            ${escapeHtml(
-              asset.location ||
-              "—"
-            )}
-          </td>
+              <td>
+                ${escapeHtml(
+                  money(
+                    asset.acquisition_cost
+                  )
+                )}
+              </td>
 
-          <td>
-            <span
-              class="status ${escapeHtml(
-                normalize(
-                  asset.status
-                )
-              )}"
-            >
-              ${escapeHtml(
-                displayStatus(
-                  asset.status
-                )
-              )}
-            </span>
-          </td>
+              <td>
+                ${escapeHtml(
+                  money(
+                    asset.current_value
+                  )
+                )}
+              </td>
 
-          <td>
-            ${
-              asset.description
-                ? `
-                  <div class="asset-description">
-                    ${escapeHtml(
-                      asset.description
-                    )}
-                  </div>
-                `
-                : "—"
-            }
-          </td>
+              <td>
+                ${escapeHtml(
+                  asset.location ||
+                  "—"
+                )}
+              </td>
 
-        </tr>
-      `
-    ).join("");
+              <td>
+
+                <span
+                  class="member-assets-status ${escapeHtml(
+                    statusClass
+                  )}"
+                >
+                  ${escapeHtml(
+                    displayStatus(
+                      asset.status
+                    )
+                  )}
+                </span>
+
+              </td>
+
+              <td>
+
+                ${
+                  asset.description
+                    ? `
+                      <div class="member-assets-description">
+                        ${escapeHtml(
+                          asset.description
+                        )}
+                      </div>
+                    `
+                    : "—"
+                }
+
+              </td>
+
+            </tr>
+          `;
+        }
+      )
+      .join("");
 }
 
 
@@ -559,6 +618,28 @@ async function loadAssets() {
 
 
 /* =========================================================
+   FILTER EVENTS
+========================================================= */
+
+function bindFilters() {
+  els.search?.addEventListener(
+    "input",
+    renderRows
+  );
+
+  els.category?.addEventListener(
+    "change",
+    renderRows
+  );
+
+  els.status?.addEventListener(
+    "change",
+    renderRows
+  );
+}
+
+
+/* =========================================================
    INITIALIZE
 ========================================================= */
 
@@ -572,15 +653,20 @@ export async function initMemberAssets() {
   state.initialized =
     true;
 
+  showLoading();
+
   try {
+
     const context =
       await getMyApplicationContext();
 
     const member =
-      context?.member || null;
+      context?.member ||
+      null;
 
     const group =
-      context?.group || null;
+      context?.group ||
+      null;
 
     state.groupId =
       member?.group_id ||
@@ -605,11 +691,15 @@ export async function initMemberAssets() {
     await loadAssets();
 
     renderSummary();
+
     renderRows();
 
+    bindFilters();
+
     showContent();
-  }
-  catch (error) {
+
+  } catch (error) {
+
     console.error(
       "CHAMA LIVE: Member Assets",
       error
@@ -620,23 +710,12 @@ export async function initMemberAssets() {
       "Unable to load group assets."
     );
   }
-
-  els.search?.addEventListener(
-    "input",
-    renderRows
-  );
-
-  els.category?.addEventListener(
-    "change",
-    renderRows
-  );
-
-  els.status?.addEventListener(
-    "change",
-    renderRows
-  );
 }
 
+
+/* =========================================================
+   MODULE STATUS
+========================================================= */
 
 console.log(
   "CHAMA LIVE: member-assets.js loaded"
