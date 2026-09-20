@@ -1519,147 +1519,6 @@ async function loadPlansAndGoals() {
 
 
 /* =========================================================
-   MILESTONES
-========================================================= */
-
-async function loadMilestones() {
-
-  const container =
-    byId(
-      "memberMilestones"
-    );
-
-  if (!container) {
-    return;
-  }
-
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("group_milestones")
-      .select(`
-        id,
-        plan_id,
-        title,
-        description,
-        milestone_date,
-        category,
-        amount
-      `)
-      .eq(
-        "group_id",
-        groupId
-      )
-      .order(
-        "milestone_date",
-        {
-          ascending: true,
-          nullsFirst: false
-        }
-      )
-      .limit(5);
-
-
-  if (error) {
-    throw error;
-  }
-
-
-  const rows =
-    Array.isArray(data)
-      ? data
-      : [];
-
-
-  if (!rows.length) {
-
-    container.innerHTML = `
-      <div class="member-list-item">
-
-        <strong>
-          No milestones
-        </strong>
-
-        <span class="member-muted">
-          No group milestones have been recorded.
-        </span>
-
-      </div>
-    `;
-
-    return;
-  }
-
-
-  container.innerHTML =
-    rows.map(
-      milestone => `
-
-        <div class="member-list-item">
-
-          <strong>
-            ${escapeHtml(
-              milestone.title ||
-              "Milestone"
-            )}
-          </strong>
-
-          ${
-            milestone.description
-              ? `
-                <span class="member-muted">
-                  ${escapeHtml(
-                    milestone.description
-                  )}
-                </span>
-              `
-              : ""
-          }
-
-          <span class="member-muted">
-
-            ${
-              milestone.milestone_date
-                ? escapeHtml(
-                    formatDate(
-                      milestone.milestone_date
-                    )
-                  )
-                : "No date"
-            }
-
-            ${
-              milestone.category
-                ? ` · ${escapeHtml(
-                    milestone.category
-                  )}`
-                : ""
-            }
-
-            ${
-              milestone.amount !== null &&
-              milestone.amount !== undefined
-                ? ` · ${escapeHtml(
-                    formatMoney(
-                      milestone.amount
-                    )
-                  )}`
-                : ""
-            }
-
-          </span>
-
-        </div>
-
-      `
-    ).join("");
-}
-
-
-/* =========================================================
    ASSETS
 ========================================================= */
 
@@ -1860,9 +1719,9 @@ async function loadDashboard() {
 
 
     /*
-     * The member's existing dashboard sections are kept
-     * independent. A failure in one optional group section
-     * must not erase the rest of the dashboard.
+     * The member dashboard sections are kept independent.
+     * A failure in one optional group section must not
+     * erase the rest of the dashboard.
      */
 
     const results =
@@ -1877,8 +1736,6 @@ async function loadDashboard() {
         loadActivities(),
 
         loadPlansAndGoals(),
-
-        loadMilestones(),
 
         loadAssets()
 
