@@ -8,6 +8,11 @@
     content="width=device-width, initial-scale=1.0"
   >
 
+  <meta
+    name="theme-color"
+    content="#0f766e"
+  >
+
   <title>Member Dashboard — CHAMA LIVE</title>
 
   <link
@@ -38,6 +43,7 @@
     <a
       href="member-dashboard.html"
       class="active"
+      aria-current="page"
     >
       Home
     </a>
@@ -51,9 +57,14 @@
 
   <main class="member-dashboard">
 
-    <!-- HERO -->
+    <!-- =====================================================
+         MEMBER HERO
+    ====================================================== -->
 
-    <section class="member-hero">
+    <section
+      class="member-hero"
+      aria-labelledby="memberGreeting"
+    >
 
       <div class="eyebrow">
         MEMBER PORTAL
@@ -70,7 +81,9 @@
     </section>
 
 
-    <!-- LOADING -->
+    <!-- =====================================================
+         LOADING
+    ====================================================== -->
 
     <div
       id="memberLoading"
@@ -81,7 +94,9 @@
     </div>
 
 
-    <!-- ERROR -->
+    <!-- =====================================================
+         ERROR
+    ====================================================== -->
 
     <div
       id="memberError"
@@ -92,10 +107,19 @@
     ></div>
 
 
-    <section class="member-grid">
+    <!-- =====================================================
+         DASHBOARD GRID
+    ====================================================== -->
+
+    <section
+      class="member-grid"
+      aria-label="Member dashboard"
+    >
 
 
-      <!-- MY CONTRIBUTIONS -->
+      <!-- ===================================================
+           MY CONTRIBUTIONS
+      ==================================================== -->
 
       <article class="member-card">
 
@@ -149,9 +173,13 @@
           <a
             class="member-action"
             href="member-contributions.html"
+            aria-label="View my contribution statement"
           >
 
-            <span class="member-action-icon">
+            <span
+              class="member-action-icon"
+              aria-hidden="true"
+            >
               →
             </span>
 
@@ -166,7 +194,9 @@
       </article>
 
 
-      <!-- MY ACCOUNT -->
+      <!-- ===================================================
+           MY PROFILE / ACCOUNT
+      ==================================================== -->
 
       <article class="member-card">
 
@@ -250,9 +280,13 @@
           <a
             class="member-action"
             href="member-profile.html"
+            aria-label="View my profile"
           >
 
-            <span class="member-action-icon">
+            <span
+              class="member-action-icon"
+              aria-hidden="true"
+            >
               →
             </span>
 
@@ -267,15 +301,20 @@
       </article>
 
 
-      <!-- GROUP FINANCIAL HEALTH -->
+      <!-- ===================================================
+           GROUP FINANCIAL HEALTH
+      ==================================================== -->
 
-      <article class="member-card member-card-wide">
+      <article
+        class="member-card member-card-wide"
+        aria-labelledby="groupFinancialHealthTitle"
+      >
 
         <div class="eyebrow">
           GROUP OVERVIEW
         </div>
 
-        <h2>
+        <h2 id="groupFinancialHealthTitle">
           Group Financial Health
         </h2>
 
@@ -354,7 +393,13 @@
               —
             </span>
 
-            <div class="member-progress">
+            <div
+              class="member-progress"
+              role="progressbar"
+              aria-label="Group contribution participation"
+              aria-valuemin="0"
+              aria-valuemax="100"
+            >
 
               <span
                 id="groupParticipationBar"
@@ -385,7 +430,9 @@
       </article>
 
 
-      <!-- RECENT GROUP CONTRIBUTIONS -->
+      <!-- ===================================================
+           RECENT GROUP CONTRIBUTIONS
+      ==================================================== -->
 
       <article class="member-card">
 
@@ -415,7 +462,9 @@
       </article>
 
 
-      <!-- RECENT GROUP EXPENSES -->
+      <!-- ===================================================
+           RECENT GROUP EXPENSES
+      ==================================================== -->
 
       <article class="member-card">
 
@@ -445,7 +494,9 @@
       </article>
 
 
-      <!-- GROUP ACTIVITIES -->
+      <!-- ===================================================
+           GROUP ACTIVITIES
+      ==================================================== -->
 
       <article class="member-card">
 
@@ -461,13 +512,17 @@
           id="memberActivities"
           class="member-list"
         >
+
           Loading group activities...
+
         </div>
 
       </article>
 
 
-      <!-- UPCOMING MEETINGS -->
+      <!-- ===================================================
+           UPCOMING MEETINGS
+      ==================================================== -->
 
       <article class="member-card">
 
@@ -483,13 +538,17 @@
           id="memberMeetings"
           class="member-list"
         >
+
           Loading meetings...
+
         </div>
 
       </article>
 
 
-      <!-- PLANS AND GOALS -->
+      <!-- ===================================================
+           PLANS AND GOALS
+      ==================================================== -->
 
       <article class="member-card">
 
@@ -505,13 +564,17 @@
           id="memberPlans"
           class="member-list"
         >
+
           Loading plans and goals...
+
         </div>
 
       </article>
 
 
-      <!-- GROUP ASSETS -->
+      <!-- ===================================================
+           GROUP ASSETS
+      ==================================================== -->
 
       <article class="member-card member-card-wide">
 
@@ -527,13 +590,17 @@
           id="memberAssets"
           class="member-list"
         >
+
           Loading group assets...
+
         </div>
 
       </article>
 
 
-      <!-- GROUP SUMMARY -->
+      <!-- ===================================================
+           GROUP SUMMARY
+      ==================================================== -->
 
       <article class="member-card member-card-wide">
 
@@ -602,6 +669,10 @@
   </main>
 
 
+  <!-- =====================================================
+       MEMBER PORTAL BOOT
+  ====================================================== -->
+
   <script type="module">
 
     import {
@@ -613,4 +684,4 @@
   </script>
 
 </body>
-</html>
+</html>a
