@@ -726,8 +726,8 @@ function renderGroupFinancialHealth() {
         Math.round(
           safeParticipation
         )
-      );
-
+      )
+    );
   }
 
 
