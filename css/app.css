@@ -168,6 +168,33 @@ html {
 
   --shadow-hover:
     0 9px 24px rgba(15, 118, 110, 0.10);
+
+
+  /* =====================================================
+     VISUAL FOUNDATION
+     Dashboard / Members / Contributions
+  ====================================================== */
+
+  --cl-page-bg:
+    #eef4f3;
+
+  --cl-hero-bg:
+    #f0fdfa;
+
+  --cl-hero-border:
+    #d5eeea;
+
+  --cl-blue:
+    #2563eb;
+
+  --cl-blue-soft:
+    #eff6ff;
+
+  --cl-blue-border:
+    #dbeafe;
+
+  --cl-finance-soft:
+    #f0fdfa;
 }
 
 
@@ -546,14 +573,7 @@ button {
 /*
  * IMPORTANT
  * ---------------------------------------------------------
- * The previous CSS deliberately hid the sidebar:
- *
- *   display: none !important;
- *
- * That prevented every sidebar-enabled page from displaying
- * its navigation.
- *
- * The sidebar is now a first-class desktop navigation.
+ * The sidebar is a first-class desktop navigation.
  */
 
 
@@ -604,12 +624,6 @@ button {
   z-index:
     900;
 }
-
-
-/*
- * Do not allow the sidebar itself to disappear merely because
- * another page uses the global navigation reconciliation.
- */
 
 
 .sidebar .nav {
@@ -753,7 +767,6 @@ button {
 
 /* =========================================================
    SIDEBAR OVERLAY
-   Used only if a page/mobile navigation creates one.
 ========================================================= */
 
 
@@ -785,18 +798,6 @@ button {
 /* =========================================================
    LAYOUT
 ========================================================= */
-
-
-/*
- * Desktop layout:
- *
- *   TOPBAR
- *   ┌───────────────┬───────────────────────────┐
- *   │   SIDEBAR     │                           │
- *   │               │       MAIN CONTENT        │
- *   │               │                           │
- *   └───────────────┴───────────────────────────┘
- */
 
 
 .layout {
@@ -839,6 +840,9 @@ button {
 
   flex:
     1 1 auto;
+
+  position:
+    relative;
 }
 
 
@@ -1517,11 +1521,6 @@ button {
 
 @media (max-width: 800px) {
 
-  /*
-   * The desktop sidebar gives way to the responsive mobile
-   * navigation on smaller screens.
-   */
-
   .sidebar {
 
     display:
@@ -1681,21 +1680,12 @@ button {
   }
 
 
-  /*
-   * On mobile the full top navigation is replaced by the
-   * hamburger menu supplied by layout.js.
-   */
-
   .topbar-nav {
 
     display:
       none !important;
   }
 
-
-  /*
-   * Mobile menu button becomes visible.
-   */
 
   .menu-toggle {
 
@@ -1794,10 +1784,6 @@ button {
 
 
 /*
- * These rules intentionally use stronger specificity than
- * legacy page-specific styles that may have attempted to hide
- * the sidebar.
- *
  * Desktop:
  *   sidebar = visible
  *
@@ -1861,5 +1847,458 @@ button {
 
 
 /* =========================================================
-   END OF APP CSS
+   CHAMA LIVE — VISUAL FOUNDATION
+   Dashboard / Members / Contributions
+========================================================= */
+
+
+/* ---------- Shared page atmosphere ---------- */
+
+
+body {
+  background:
+    radial-gradient(
+      circle at 92% 4%,
+      rgba(15, 118, 110, .07),
+      transparent 24rem
+    ),
+    var(--cl-page-bg);
+}
+
+
+.dashboard-header,
+.members-header,
+.contributions-page-header {
+
+  position:
+    relative;
+
+  overflow:
+    hidden;
+
+  border:
+    1px solid var(--cl-hero-border);
+
+  border-radius:
+    22px;
+
+  padding:
+    26px 28px;
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--cl-hero-bg),
+      #ffffff 72%
+    );
+
+  box-shadow:
+    0 8px 28px rgba(15, 118, 110, .06);
+}
+
+
+.dashboard-header::after,
+.members-header::after,
+.contributions-page-header::after {
+
+  content:
+    "";
+
+  position:
+    absolute;
+
+  width:
+    190px;
+
+  height:
+    190px;
+
+  right:
+    -70px;
+
+  top:
+    -95px;
+
+  border-radius:
+    50%;
+
+  border:
+    28px solid rgba(15, 118, 110, .055);
+
+  pointer-events:
+    none;
+}
+
+
+.dashboard-header h1,
+.members-title-wrap h1,
+.contributions-page-header h1 {
+
+  position:
+    relative;
+
+  z-index:
+    1;
+
+  letter-spacing:
+    -.8px;
+}
+
+
+.dashboard-header p,
+.members-title-wrap p,
+.contributions-page-header p {
+
+  position:
+    relative;
+
+  z-index:
+    1;
+
+  max-width:
+    760px;
+}
+
+
+.dashboard-header .eyebrow,
+.contributions-page-header .eyebrow {
+
+  position:
+    relative;
+
+  z-index:
+    1;
+}
+
+
+/* ---------- Dashboard theme ---------- */
+
+
+body:has(.dashboard-header) .main {
+
+  background:
+    radial-gradient(
+      circle at 8% 22%,
+      rgba(16, 185, 129, .035),
+      transparent 20rem
+    );
+}
+
+
+.dashboard-header {
+
+  margin-bottom:
+    18px;
+}
+
+
+.dashboard-metrics {
+
+  position:
+    relative;
+
+  z-index:
+    1;
+}
+
+
+.dashboard-metrics .metric-card {
+
+  border-color:
+    #dfeae8;
+
+  background:
+    rgba(255, 255, 255, .96);
+
+  box-shadow:
+    0 6px 20px rgba(15, 118, 110, .055);
+}
+
+
+.dashboard-metrics .metric-card:hover {
+
+  transform:
+    translateY(-2px);
+}
+
+
+.dashboard-section,
+.activity-card,
+.meetings-card {
+
+  border-color:
+    #dfeae8;
+}
+
+
+.dashboard-section.card,
+.activity-card.card,
+.meetings-card.card {
+
+  background:
+    rgba(255, 255, 255, .97);
+}
+
+
+/* ---------- Members theme ---------- */
+
+
+body:has(.members-page) .main {
+
+  background:
+    radial-gradient(
+      circle at 92% 22%,
+      rgba(37, 99, 235, .035),
+      transparent 20rem
+    );
+}
+
+
+.members-header {
+
+  border-color:
+    var(--cl-blue-border);
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--cl-blue-soft),
+      #ffffff 72%
+    );
+}
+
+
+.members-header::after {
+
+  border-color:
+    rgba(37, 99, 235, .055);
+}
+
+
+.members-header .group-context {
+
+  position:
+    relative;
+
+  z-index:
+    1;
+}
+
+
+.member-stats {
+
+  position:
+    relative;
+
+  z-index:
+    1;
+}
+
+
+.member-stat-card {
+
+  transition:
+    transform .2s ease,
+    box-shadow .2s ease,
+    border-color .2s ease;
+}
+
+
+.member-stat-card:hover {
+
+  transform:
+    translateY(-2px);
+
+  box-shadow:
+    0 9px 24px rgba(37, 99, 235, .09);
+
+  border-color:
+    #dbeafe;
+}
+
+
+.members-list-card {
+
+  border-color:
+    #dfe7f1;
+
+  box-shadow:
+    0 6px 22px rgba(15, 23, 42, .045);
+}
+
+
+/* ---------- Contributions theme ---------- */
+
+
+body:has(.contributions-page-header) .main {
+
+  background:
+    radial-gradient(
+      circle at 90% 18%,
+      rgba(16, 185, 129, .04),
+      transparent 22rem
+    );
+}
+
+
+.contributions-page-header {
+
+  border-color:
+    var(--cl-hero-border);
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--cl-finance-soft),
+      #ffffff 72%
+    );
+}
+
+
+.contributions-page-header::after {
+
+  border-color:
+    rgba(16, 185, 129, .055);
+}
+
+
+.contributions-page-header + .card,
+.contributions-page-header ~ .card {
+
+  border-color:
+    #dfeae8;
+
+  box-shadow:
+    0 6px 22px rgba(15, 118, 110, .045);
+}
+
+
+.contributions-page-header ~ .card:hover {
+
+  border-color:
+    #d4e5e2;
+}
+
+
+.contributions-page-header ~ .card h2 {
+
+  letter-spacing:
+    -.25px;
+}
+
+
+/* ---------- Shared data surfaces ---------- */
+
+
+.dashboard-section.card,
+.members-list-card,
+.contributions-page-header ~ .card {
+
+  border-radius:
+    16px;
+}
+
+
+.table-wrapper,
+.table-wrap,
+.members-table-wrap {
+
+  scrollbar-width:
+    thin;
+}
+
+
+.table-wrapper table thead th,
+.table-wrap table thead th,
+.members-table thead th {
+
+  background:
+    #f7faf9;
+}
+
+
+.status-badge,
+.member-status-badge,
+.member-role-badge,
+.login-badge,
+.members-list-count,
+.group-context {
+
+  letter-spacing:
+    .05px;
+}
+
+
+/* =========================================================
+   VISUAL FOUNDATION — RESPONSIVE
+========================================================= */
+
+
+@media (max-width: 800px) {
+
+  .dashboard-header,
+  .members-header,
+  .contributions-page-header {
+
+    border-radius:
+      17px;
+
+    padding:
+      21px 20px;
+  }
+
+
+  .dashboard-header::after,
+  .members-header::after,
+  .contributions-page-header::after {
+
+    width:
+      140px;
+
+    height:
+      140px;
+
+    right:
+      -65px;
+
+    top:
+      -70px;
+
+    border-width:
+      20px;
+  }
+
+
+  .dashboard-metrics {
+
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+}
+
+
+@media (max-width: 520px) {
+
+  .dashboard-metrics,
+  .member-stats {
+
+    grid-template-columns:
+      1fr;
+  }
+
+
+  .dashboard-header,
+  .members-header,
+  .contributions-page-header {
+
+    padding:
+      19px 17px;
+  }
+
+}
+
+
+/* =========================================================
+   END OF CHAMA LIVE APP CSS
 ========================================================= */
