@@ -1,3 +1,10 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Member Dashboard — CHAMA LIVE</title>
+
   <style>
     .member-dashboard {
       max-width: 1200px;
@@ -145,4 +152,196 @@
         grid-template-columns: 1fr;
       }
     }
-  </style>a
+  </style>
+</head>
+
+<body>
+
+  <!--
+    IMPORTANT:
+    Keep only canonical member-safe destinations here.
+    member-layout.js reconciles this navigation after loading
+    the user's authenticated application context.
+  -->
+  <nav class="top-nav" aria-label="Member navigation">
+    <a href="member-dashboard.html" class="active">Home</a>
+    <a href="member-getting-started.html">Getting Started</a>
+  </nav>
+
+  <main class="member-dashboard">
+
+    <section class="member-hero">
+      <h1 id="memberGreeting">Welcome</h1>
+      <p id="memberGroupName">Your group</p>
+    </section>
+
+    <div
+      id="memberLoading"
+      class="member-loading"
+      aria-live="polite"
+    >
+      Loading your member dashboard...
+    </div>
+
+    <div
+      id="memberError"
+      class="member-error"
+      role="alert"
+      aria-live="assertive"
+    ></div>
+
+    <section class="member-grid">
+
+      <!-- Member account -->
+      <article class="member-card member-card-wide">
+        <h2>My Account</h2>
+
+        <div class="member-account-row">
+
+          <div class="member-account-item">
+            <span class="member-account-label">Name</span>
+            <span
+              id="memberName"
+              class="member-account-value"
+            >—</span>
+          </div>
+
+          <div class="member-account-item">
+            <span class="member-account-label">Member Number</span>
+            <span
+              id="memberNumber"
+              class="member-account-value"
+            >—</span>
+          </div>
+
+          <div class="member-account-item">
+            <span class="member-account-label">Role</span>
+            <span
+              id="memberRole"
+              class="member-account-value"
+            >—</span>
+          </div>
+
+          <div class="member-account-item">
+            <span class="member-account-label">Status</span>
+            <span
+              id="memberStatus"
+              class="member-account-value"
+            >—</span>
+          </div>
+
+        </div>
+      </article>
+
+      <!-- My contributions -->
+      <article class="member-card">
+        <h2>My Contributions</h2>
+
+        <div class="member-summary">
+
+          <div class="member-summary-item">
+            <span class="member-summary-label">
+              Total Recorded
+            </span>
+
+            <span
+              id="myContributionTotal"
+              class="member-summary-value"
+            >
+              KSh 0
+            </span>
+          </div>
+
+          <div class="member-summary-item">
+            <span class="member-summary-label">
+              Contribution Records
+            </span>
+
+            <span
+              id="myContributionCount"
+              class="member-summary-value"
+            >
+              0
+            </span>
+          </div>
+
+        </div>
+      </article>
+
+      <!-- Upcoming meetings -->
+      <article class="member-card">
+        <h2>Upcoming Meetings</h2>
+
+        <div
+          id="memberMeetings"
+          class="member-loading"
+          aria-live="polite"
+        >
+          Loading meetings...
+        </div>
+      </article>
+
+      <!-- Group activity -->
+      <article class="member-card">
+        <h2>Group Activity</h2>
+
+        <div
+          id="memberActivities"
+          class="member-loading"
+          aria-live="polite"
+        >
+          Loading group activity...
+        </div>
+      </article>
+
+      <!-- Plans and goals -->
+      <article class="member-card">
+        <h2>Plans &amp; Goals</h2>
+
+        <div
+          id="memberPlans"
+          class="member-loading"
+          aria-live="polite"
+        >
+          Loading plans and goals...
+        </div>
+      </article>
+
+      <!-- Milestones -->
+      <article class="member-card">
+        <h2>Milestones</h2>
+
+        <div
+          id="memberMilestones"
+          class="member-loading"
+          aria-live="polite"
+        >
+          Loading milestones...
+        </div>
+      </article>
+
+      <!-- Group assets -->
+      <article class="member-card member-card-wide">
+        <h2>Group Assets</h2>
+
+        <div
+          id="memberAssets"
+          class="member-loading"
+          aria-live="polite"
+        >
+          Loading group assets...
+        </div>
+      </article>
+
+    </section>
+  </main>
+
+  <!-- Canonical member portal/layout bootstrap -->
+  <script type="module">
+    import { boot } from "./js/member-layout.js";
+
+    boot();
+  </script>
+
+</body>
+</html>
