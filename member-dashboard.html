@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
   <meta charset="UTF-8">
 
   <meta
@@ -15,7 +14,6 @@
     rel="stylesheet"
     href="css/app.css"
   >
-
 </head>
 
 <body>
@@ -29,6 +27,7 @@
       - navigation
       - mobile navigation
       - current member/group context
+      - logout
   -->
 
   <nav
@@ -52,10 +51,7 @@
 
   <main class="member-dashboard">
 
-
-    <!-- ===================================================
-         HERO
-    ==================================================== -->
+    <!-- HERO -->
 
     <section class="member-hero">
 
@@ -74,9 +70,7 @@
     </section>
 
 
-    <!-- ===================================================
-         LOADING
-    ==================================================== -->
+    <!-- LOADING -->
 
     <div
       id="memberLoading"
@@ -87,9 +81,7 @@
     </div>
 
 
-    <!-- ===================================================
-         ERROR
-    ==================================================== -->
+    <!-- ERROR -->
 
     <div
       id="memberError"
@@ -103,9 +95,7 @@
     <section class="member-grid">
 
 
-      <!-- =================================================
-           MY CONTRIBUTIONS
-      ================================================== -->
+      <!-- MY CONTRIBUTIONS -->
 
       <article class="member-card">
 
@@ -134,7 +124,6 @@
 
           </div>
 
-
           <div class="member-summary-item">
 
             <span class="member-summary-label">
@@ -152,24 +141,10 @@
 
         </div>
 
-
-        <div class="member-actions" style="margin-top:16px;">
-
-          <a
-            class="member-action"
-            href="member-contributions.html"
-          >
-
-            <span class="member-action-icon">
-              ₵
-            </span>
-
-            <span>
-              View My Contributions
-            </span>
-
-          </a>
-
+        <div
+          class="member-actions"
+          style="margin-top:16px;"
+        >
 
           <a
             class="member-action"
@@ -181,7 +156,7 @@
             </span>
 
             <span>
-              View Statement
+              View My Statement
             </span>
 
           </a>
@@ -191,9 +166,7 @@
       </article>
 
 
-      <!-- =================================================
-           ACCOUNT
-      ================================================== -->
+      <!-- MY ACCOUNT -->
 
       <article class="member-card">
 
@@ -222,7 +195,6 @@
 
           </div>
 
-
           <div class="member-account-item">
 
             <span class="member-account-label">
@@ -238,7 +210,6 @@
 
           </div>
 
-
           <div class="member-account-item">
 
             <span class="member-account-label">
@@ -253,7 +224,6 @@
             </span>
 
           </div>
-
 
           <div class="member-account-item">
 
@@ -272,14 +242,32 @@
 
         </div>
 
+        <div
+          class="member-actions"
+          style="margin-top:16px;"
+        >
+
+          <a
+            class="member-action"
+            href="member-profile.html"
+          >
+
+            <span class="member-action-icon">
+              →
+            </span>
+
+            <span>
+              View My Profile
+            </span>
+
+          </a>
+
+        </div>
+
       </article>
 
 
-      <!-- =================================================
-           GROUP FINANCIAL HEALTH
-           Values are populated only when authorized data
-           is available.
-      ================================================== -->
+      <!-- GROUP FINANCIAL HEALTH -->
 
       <article class="member-card member-card-wide">
 
@@ -308,7 +296,6 @@
 
           </div>
 
-
           <div class="member-health-item">
 
             <span class="member-health-label">
@@ -323,7 +310,6 @@
             </span>
 
           </div>
-
 
           <div class="member-health-item">
 
@@ -340,7 +326,6 @@
 
           </div>
 
-
           <div class="member-health-item">
 
             <span class="member-health-label">
@@ -355,7 +340,6 @@
             </span>
 
           </div>
-
 
           <div class="member-health-item">
 
@@ -381,7 +365,6 @@
 
           </div>
 
-
           <div class="member-health-item">
 
             <span class="member-health-label">
@@ -402,9 +385,7 @@
       </article>
 
 
-      <!-- =================================================
-           RECENT CONTRIBUTIONS
-      ================================================== -->
+      <!-- RECENT GROUP CONTRIBUTIONS -->
 
       <article class="member-card">
 
@@ -422,9 +403,11 @@
         >
 
           <div class="member-list-item">
+
             <span class="member-muted">
               Loading recent contributions...
             </span>
+
           </div>
 
         </div>
@@ -432,9 +415,7 @@
       </article>
 
 
-      <!-- =================================================
-           RECENT EXPENSES
-      ================================================== -->
+      <!-- RECENT GROUP EXPENSES -->
 
       <article class="member-card">
 
@@ -452,9 +433,11 @@
         >
 
           <div class="member-list-item">
+
             <span class="member-muted">
               Loading recent expenses...
             </span>
+
           </div>
 
         </div>
@@ -462,9 +445,7 @@
       </article>
 
 
-      <!-- =================================================
-           GROUP ACTIVITY
-      ================================================== -->
+      <!-- GROUP ACTIVITIES -->
 
       <article class="member-card">
 
@@ -473,22 +454,20 @@
         </div>
 
         <h2>
-          Group Activity
+          Group Activities
         </h2>
 
         <div
           id="memberActivities"
           class="member-list"
         >
-          Loading group activity...
+          Loading group activities...
         </div>
 
       </article>
 
 
-      <!-- =================================================
-           MEETINGS
-      ================================================== -->
+      <!-- UPCOMING MEETINGS -->
 
       <article class="member-card">
 
@@ -510,9 +489,7 @@
       </article>
 
 
-      <!-- =================================================
-           PLANS & GOALS
-      ================================================== -->
+      <!-- PLANS AND GOALS -->
 
       <article class="member-card">
 
@@ -534,33 +511,7 @@
       </article>
 
 
-      <!-- =================================================
-           MILESTONES
-      ================================================== -->
-
-      <article class="member-card">
-
-        <div class="eyebrow">
-          ACHIEVEMENTS
-        </div>
-
-        <h2>
-          Milestones
-        </h2>
-
-        <div
-          id="memberMilestones"
-          class="member-list"
-        >
-          Loading milestones...
-        </div>
-
-      </article>
-
-
-      <!-- =================================================
-           ASSETS
-      ================================================== -->
+      <!-- GROUP ASSETS -->
 
       <article class="member-card member-card-wide">
 
@@ -582,9 +533,7 @@
       </article>
 
 
-      <!-- =================================================
-           MEMBER ACTIVITY SUMMARY
-      ================================================== -->
+      <!-- GROUP SUMMARY -->
 
       <article class="member-card member-card-wide">
 
@@ -613,7 +562,6 @@
 
           </div>
 
-
           <div class="member-health-item">
 
             <span class="member-health-label">
@@ -628,7 +576,6 @@
             </span>
 
           </div>
-
 
           <div class="member-health-item">
 
@@ -648,6 +595,7 @@
         </div>
 
       </article>
+
 
     </section>
 
