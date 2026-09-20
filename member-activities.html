@@ -1,295 +1,346 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
 
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1"
-  >
+    content="width=device-width, initial-scale=1.0"
+  />
 
   <title>Group Activities — CHAMA LIVE</title>
 
+  <link
+    rel="stylesheet"
+    href="css/app.css"
+  />
+
   <style>
-    :root {
-      --border: #e5e7eb;
-      --muted: #6b7280;
-      --text: #111827;
-      --surface: #ffffff;
-      --background: #f8fafc;
-      --success: #166534;
-      --warning: #92400e;
-      --danger: #991b1b;
-      --primary: #1d4ed8;
-    }
+    /* =====================================================
+       CHAMA LIVE — MEMBER ACTIVITIES
+       Page-specific presentation.
+       Member portal shell remains owned by member-layout.js.
+    ===================================================== */
 
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      font-family:
-        system-ui,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-      background: var(--background);
-      color: var(--text);
-    }
-
-    .page {
-      width: min(1180px, 100%);
+    .member-activities-page {
+      max-width: 1200px;
       margin: 0 auto;
-      padding: 20px;
+      padding: 24px 16px 48px;
     }
 
-    .page-header {
-      margin-bottom: 20px;
+    .member-activities-header {
+      margin-bottom: 24px;
     }
 
-    .page-header h1 {
+    .member-activities-header h1 {
       margin: 0 0 6px;
-      font-size: clamp(1.5rem, 5vw, 2rem);
     }
 
-    .page-header p {
+    .member-activities-header p {
       margin: 0;
-      color: var(--muted);
+      color: var(--cl-muted, #64748b);
     }
 
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 18px;
-      margin-bottom: 18px;
-    }
-
-    .toolbar {
+    .member-activities-toolbar {
       display: grid;
       grid-template-columns:
         minmax(0, 1fr)
-        minmax(150px, 200px);
+        220px;
       gap: 12px;
-      align-items: end;
+      margin-bottom: 20px;
     }
 
-    label {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 0.85rem;
-      font-weight: 600;
+    .member-activities-filter {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
 
-    input,
-    select {
+    .member-activities-filter label {
+      font-size: .82rem;
+      font-weight: 700;
+    }
+
+    .member-activities-filter input,
+    .member-activities-filter select {
       width: 100%;
-      min-height: 44px;
-      padding: 10px 12px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: #fff;
-      color: var(--text);
+      box-sizing: border-box;
+      padding: 11px 12px;
+      border: 1px solid var(--cl-border, #d1d5db);
+      border-radius: 10px;
+      background: var(--cl-surface, #fff);
+      color: inherit;
       font: inherit;
     }
 
-    .message {
-      padding: 12px 14px;
-      border-radius: 8px;
-      margin-bottom: 16px;
+    .member-activities-filter input:focus,
+    .member-activities-filter select:focus {
+      outline: none;
+      border-color: var(--cl-primary, #0f766e);
+      box-shadow:
+        0 0 0 3px
+        rgba(15, 118, 110, .12);
     }
 
-    .message[hidden] {
-      display: none;
+    .member-activities-table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
-    .loading {
-      color: var(--muted);
+    .member-activities-table {
+      width: 100%;
+      min-width: 820px;
+      border-collapse: collapse;
     }
 
-    .error {
-      background: #fef2f2;
-      color: var(--danger);
-      border: 1px solid #fecaca;
+    .member-activities-table th,
+    .member-activities-table td {
+      padding: 12px 10px;
+      border-bottom:
+        1px solid var(--cl-border, #e5e7eb);
+      text-align: left;
+      vertical-align: top;
     }
 
-    .empty {
-      padding: 28px 12px;
-      text-align: center;
-      color: var(--muted);
+    .member-activities-table th {
+      white-space: nowrap;
+      font-size: .84rem;
+      font-weight: 700;
     }
 
-    .activity-list {
-      display: grid;
-      gap: 14px;
-    }
-
-    .activity-card {
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px;
-      background: #fff;
+    .member-activities-table td {
+      font-size: .92rem;
     }
 
     .activity-title {
-      margin: 0 0 6px;
-      font-size: 1.05rem;
+      display: grid;
+      gap: 4px;
+      min-width: 180px;
     }
 
-    .activity-description {
-      margin: 0 0 14px;
-      color: var(--muted);
-      white-space: pre-wrap;
+    .activity-title strong {
+      font-weight: 700;
     }
 
-    .activity-meta {
+    .activity-title small {
+      color: var(--cl-muted, #64748b);
+      line-height: 1.45;
+    }
+
+    .activity-status {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: fit-content;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: .75rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .status-not_started {
+      background: rgba(127, 127, 127, .14);
+    }
+
+    .status-planned {
+      background: rgba(59, 130, 246, .12);
+    }
+
+    .status-in_progress {
+      background: rgba(234, 179, 8, .16);
+    }
+
+    .status-completed {
+      background: rgba(34, 197, 94, .14);
+    }
+
+    .status-delayed {
+      background: rgba(239, 68, 68, .14);
+    }
+
+    .status-cancelled {
+      background: rgba(100, 116, 139, .14);
+    }
+
+    .progress-cell {
+      min-width: 120px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .progress-cell .progress-track {
+      flex: 1;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 7px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: var(--cl-border, #e5e7eb);
+    }
+
+    .progress-track span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--cl-primary, #0f766e);
+    }
+
+    .member-activities-mobile-list {
+      display: none;
+      gap: 12px;
+    }
+
+    .activity-card {
+      display: grid;
+      gap: 16px;
+      padding: 16px;
+      border:
+        1px solid var(--cl-border, #e5e7eb);
+      border-radius: 14px;
+      background: var(--cl-surface, #fff);
+      box-shadow:
+        0 2px 8px rgba(15, 23, 42, .04);
+    }
+
+    .activity-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .activity-card-header h3 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .activity-card-header p {
+      margin: 6px 0 0;
+      color: var(--cl-muted, #64748b);
+      line-height: 1.5;
+      font-size: .9rem;
+    }
+
+    .activity-details {
       display: grid;
       grid-template-columns:
         repeat(2, minmax(0, 1fr));
       gap: 12px;
     }
 
-    .meta-item {
-      min-width: 0;
+    .activity-details > div {
+      display: grid;
+      gap: 4px;
     }
 
-    .meta-label {
-      display: block;
-      margin-bottom: 3px;
-      color: var(--muted);
-      font-size: 0.78rem;
+    .activity-details span {
+      color: var(--cl-muted, #64748b);
+      font-size: .76rem;
     }
 
-    .meta-value {
-      font-size: 0.92rem;
-      word-break: break-word;
+    .activity-details strong {
+      font-size: .88rem;
     }
 
-    .status {
-      display: inline-flex;
-      align-items: center;
-      padding: 4px 9px;
-      border-radius: 999px;
-      font-size: 0.78rem;
-      font-weight: 700;
-      text-transform: capitalize;
+    .activity-progress {
+      display: grid;
+      gap: 7px;
     }
 
-    .status-not_started,
-    .status-planned {
-      background: #eff6ff;
-      color: #1e40af;
-    }
-
-    .status-in_progress {
-      background: #ecfdf5;
-      color: #166534;
-    }
-
-    .status-completed {
-      background: #f0fdf4;
-      color: #166534;
-    }
-
-    .status-delayed {
-      background: #fffbeb;
-      color: var(--warning);
-    }
-
-    .status-cancelled {
-      background: #fef2f2;
-      color: var(--danger);
-    }
-
-    .progress-wrap {
-      margin-top: 14px;
-    }
-
-    .progress-header {
+    .progress-heading {
       display: flex;
+      align-items: center;
       justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 6px;
-      font-size: 0.82rem;
+      gap: 12px;
     }
 
-    .progress-track {
-      width: 100%;
-      height: 9px;
-      overflow: hidden;
-      background: #e5e7eb;
-      border-radius: 999px;
+    .progress-heading span {
+      color: var(--cl-muted, #64748b);
+      font-size: .8rem;
     }
 
-    .progress-fill {
-      height: 100%;
-      border-radius: inherit;
-      background: var(--primary);
+    .empty-state {
+      padding: 28px 20px;
+      text-align: center;
+      color: var(--cl-muted, #64748b);
     }
 
-    .table-wrap {
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 850px;
-    }
-
-    th,
-    td {
-      padding: 12px;
-      border-bottom: 1px solid var(--border);
-      text-align: left;
-      vertical-align: top;
-    }
-
-    th {
-      font-size: 0.8rem;
-      color: var(--muted);
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
-    td {
-      font-size: 0.9rem;
-    }
-
-    .desktop-list {
+    .empty-state strong {
       display: block;
+      margin-bottom: 5px;
+      color: inherit;
     }
 
-    .mobile-list {
-      display: none;
+    .empty-state p {
+      margin: 0;
     }
 
-    @media (max-width: 700px) {
-      .page {
-        padding: 14px;
+    @media (max-width: 800px) {
+      .member-activities-page {
+        padding: 18px 12px 36px;
       }
 
-      .toolbar {
+      .member-activities-toolbar {
         grid-template-columns: 1fr;
       }
 
-      .activity-meta {
-        grid-template-columns: 1fr;
-      }
-
-      .desktop-list {
+      .member-activities-desktop {
         display: none;
       }
 
-      .mobile-list {
+      .member-activities-mobile-list {
         display: grid;
       }
 
-      .card {
+      .activity-details {
+        grid-template-columns: 1fr;
+      }
+
+      .activity-card-header {
+        flex-direction: column;
+      }
+    }
+
+    @media (min-width: 801px) {
+      .member-activities-mobile-list {
+        display: none !important;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .member-activities-header h1 {
+        font-size: 1.5rem;
+      }
+
+      .activity-card {
         padding: 14px;
-        border-radius: 12px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition: none !important;
+        animation: none !important;
+      }
+    }
+
+    @media print {
+      .member-activities-toolbar,
+      .member-activities-mobile-list {
+        display: none !important;
+      }
+
+      .member-activities-page {
+        max-width: none;
+        padding: 0;
       }
     }
   </style>
@@ -297,105 +348,111 @@
 
 <body>
 
-  <main class="page">
+  <main class="member-activities-page">
 
-    <header class="page-header">
-      <h1>Group Activities</h1>
+    <!-- =================================================
+         HEADER
+    ================================================== -->
+
+    <header class="member-activities-header">
+
+      <h1>
+        Group Activities
+      </h1>
 
       <p id="memberActivitiesSubtitle">
-        View activities and progress for your group.
+        Group activities and progress
       </p>
+
     </header>
 
 
+    <!-- =================================================
+         PAGE STATE
+    ================================================== -->
+
     <div
       id="memberActivitiesLoading"
-      class="message loading"
+      class="member-message info"
+      role="status"
+      aria-live="polite"
     >
-      Loading group activities…
+      Loading group activities...
     </div>
 
 
     <div
       id="memberActivitiesError"
-      class="message error"
+      class="member-message error"
+      role="alert"
       hidden
     ></div>
 
 
+    <!-- =================================================
+         CONTENT
+    ================================================== -->
+
     <section
       id="memberActivitiesContent"
+      class="member-card"
       hidden
     >
 
-      <div class="card">
+      <!-- ===============================================
+           FILTERS
+      ================================================ -->
 
-        <div class="toolbar">
+      <div class="member-activities-toolbar">
 
-          <div>
-            <label for="memberActivitySearch">
-              Search activities
-            </label>
+        <div class="member-activities-filter">
 
-            <input
-              id="memberActivitySearch"
-              type="search"
-              placeholder="Search by activity or description"
-              autocomplete="off"
-            >
-          </div>
+          <label
+            for="memberActivitySearch"
+          >
+            Search activities
+          </label>
+
+          <input
+            id="memberActivitySearch"
+            type="search"
+            placeholder="Search by activity, plan or member..."
+            autocomplete="off"
+          />
+
+        </div>
 
 
-          <div>
-            <label for="memberActivityStatus">
-              Status
-            </label>
+        <div class="member-activities-filter">
 
-            <select id="memberActivityStatus">
+          <label
+            for="memberActivityStatus"
+          >
+            Status
+          </label>
 
-              <option value="">
-                All statuses
-              </option>
-
-              <option value="not_started">
-                Not started
-              </option>
-
-              <option value="planned">
-                Planned
-              </option>
-
-              <option value="in_progress">
-                In progress
-              </option>
-
-              <option value="completed">
-                Completed
-              </option>
-
-              <option value="delayed">
-                Delayed
-              </option>
-
-              <option value="cancelled">
-                Cancelled
-              </option>
-
-            </select>
-          </div>
+          <select
+            id="memberActivityStatus"
+          >
+            <option value="">
+              All statuses
+            </option>
+          </select>
 
         </div>
 
       </div>
 
 
-      <!-- Desktop/tablet -->
+      <!-- ===============================================
+           DESKTOP TABLE
+      ================================================ -->
 
-      <section class="card desktop-list">
+      <div class="member-activities-desktop">
 
-        <div class="table-wrap">
+        <div class="member-activities-table-wrap">
 
-          <table>
+          <table class="member-activities-table">
 
             <thead>
 
@@ -403,55 +460,57 @@
                 <th>Activity</th>
                 <th>Plan</th>
                 <th>Assigned To</th>
-                <th>Dates</th>
+                <th>Start Date</th>
+                <th>Due Date</th>
                 <th>Status</th>
                 <th>Progress</th>
-                <th>Completed</th>
               </tr>
 
             </thead>
 
             <tbody id="memberActivitiesRows">
-
-              <tr>
-                <td
-                  colspan="7"
-                  class="empty"
-                >
-                  No activities found.
-                </td>
-              </tr>
-
             </tbody>
 
           </table>
 
         </div>
 
-      </section>
+      </div>
 
 
-      <!-- Mobile -->
+      <!-- ===============================================
+           MOBILE CARDS
+      ================================================ -->
 
-      <section
+      <div
         id="memberActivitiesMobileList"
-        class="mobile-list"
-      ></section>
+        class="member-activities-mobile-list"
+      ></div>
 
     </section>
 
   </main>
 
 
-  <script type="module">
+  <!-- ===================================================
+       MEMBER PORTAL LAYOUT
+  ==================================================== -->
 
-    import {
-      boot
-    } from "./js/member-layout.js";
+  <script type="module">
+    import { boot } from "./js/member-layout.js";
 
     boot();
-
   </script>
+
+
+  <!-- ===================================================
+       MEMBER ACTIVITIES CONTROLLER
+  ==================================================== -->
+
+  <script
+    type="module"
+    src="./js/member-activities.js"
+  ></script>
 
 </body>
 </html>
