@@ -1216,7 +1216,9 @@ function renderMobileLogout(
 ) {
 
   if (!menu) {
+
     return;
+
   }
 
 
