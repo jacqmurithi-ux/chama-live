@@ -1,1883 +1,126 @@
 /* =========================================================
-   CHAMA LIVE — APP CSS
-   Professional Financial Dashboard UI
+   CHAMA LIVE — SHARED VISUAL EXPERIENCE
+   ---------------------------------------------------------
+   Applies to BOTH Admin Portal and Member Portal.
 
-   GLOBAL NAVIGATION:
-   - Topbar
-   - Desktop sidebar
-   - Responsive mobile navigation
+   Design principles:
+   - No blank white-sheet pages
+   - Strong visual hierarchy
+   - Soft contextual backgrounds
+   - Cards with depth
+   - Responsive mobile-first behaviour
+   - Touch-friendly controls
+   - Reduced-motion support
 ========================================================= */
-
-
-* {
-  box-sizing:
-    border-box;
-}
-
-
-html {
-  scroll-behavior:
-    smooth;
-}
-
 
 :root {
+  --cl-page-bg: #eef4f3;
+  --cl-surface: #ffffff;
+  --cl-surface-soft: #f6faf9;
+  --cl-surface-teal: #effaf8;
 
-  /* =====================================================
-     BRAND
-  ====================================================== */
+  --cl-border: #dfeae8;
+  --cl-border-strong: #c9dedb;
 
-  --primary:
-    #0f766e;
+  --cl-primary: #0f766e;
+  --cl-primary-dark: #115e59;
+  --cl-primary-soft: #ccfbf1;
 
-  --primary-dark:
-    #115e59;
+  --cl-success: #10b981;
+  --cl-success-soft: #ecfdf3;
 
-  --primary-light:
-    #ccfbf1;
+  --cl-warning: #f59e0b;
+  --cl-warning-soft: #fffaeb;
 
+  --cl-danger: #dc2626;
+  --cl-danger-soft: #fef2f2;
 
-  /* =====================================================
-     STATUS
-  ====================================================== */
+  --cl-info: #2563eb;
+  --cl-info-soft: #eff6ff;
 
-  --success:
-    #10b981;
+  --cl-text: #172033;
+  --cl-text-strong: #101828;
+  --cl-muted: #667085;
 
-  --success-dark:
-    #047857;
+  --cl-shadow-sm:
+    0 4px 16px rgba(15, 118, 110, .045);
 
-  --success-light:
-    #ecfdf3;
+  --cl-shadow:
+    0 8px 28px rgba(15, 118, 110, .065);
 
+  --cl-shadow-hover:
+    0 14px 34px rgba(15, 118, 110, .11);
 
-  --warning:
-    #f59e0b;
-
-  --warning-dark:
-    #b45309;
-
-  --warning-light:
-    #fffaeb;
-
-
-  --danger:
-    #dc2626;
-
-  --danger-dark:
-    #b91c1c;
-
-  --danger-light:
-    #fee2e2;
-
-
-  --info:
-    #3b82f6;
-
-  --info-light:
-    #eff6ff;
-
-
-  /* =====================================================
-     TEXT
-  ====================================================== */
-
-  --text:
-    #172033;
-
-  --text-dark:
-    #101828;
-
-  --muted:
-    #667085;
-
-  --muted-light:
-    #98a2b3;
-
-
-  /* =====================================================
-     SURFACES
-  ====================================================== */
-
-  --background:
-    #f5f7fa;
-
-  --card:
-    #ffffff;
-
-  --surface-soft:
-    #f8fafc;
-
-
-  --border:
-    #e5e7eb;
-
-  --border-light:
-    #edf0f4;
-
-
-  /* =====================================================
-     NAVIGATION
-  ====================================================== */
-
-  --nav-background:
-    #ffffff;
-
-  --nav-text:
-    #475467;
-
-  --nav-hover:
-    #f0fdfa;
-
-  --nav-active:
-    #ecfdf5;
-
-
-  /* =====================================================
-     SIDEBAR
-  ====================================================== */
-
-  --sidebar-width:
-    245px;
-
-  --sidebar-background:
-    #ffffff;
-
-  --sidebar-border:
-    #e5e7eb;
-
-  --sidebar-text:
-    #475467;
-
-  --sidebar-hover:
-    #f0fdfa;
-
-  --sidebar-active:
-    #ecfdf5;
-
-
-  /* =====================================================
-     SHADOWS
-  ====================================================== */
-
-  --shadow:
-    0 2px 8px rgba(15, 118, 110, 0.05);
-
-  --shadow-medium:
-    0 5px 16px rgba(16, 24, 40, 0.07);
-
-  --shadow-hover:
-    0 9px 24px rgba(15, 118, 110, 0.10);
-
-
-  /* =====================================================
-     VISUAL FOUNDATION
-     Dashboard / Members / Contributions
-  ====================================================== */
-
-  --cl-page-bg:
-    #eef4f3;
-
-  --cl-hero-bg:
-    #f0fdfa;
-
-  --cl-hero-border:
-    #d5eeea;
-
-  --cl-blue:
-    #2563eb;
-
-  --cl-blue-soft:
-    #eff6ff;
-
-  --cl-blue-border:
-    #dbeafe;
-
-  --cl-finance-soft:
-    #f0fdfa;
-}
-
-
-/* =========================================================
-   BASE
-========================================================= */
-
-
-body {
-
-  margin:
-    0;
-
-  font-family:
-    Inter,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
-
-  background:
-    var(--background);
-
-  color:
-    var(--text);
-
-  line-height:
-    1.5;
-
-  overflow-x:
-    hidden;
-
-  -webkit-font-smoothing:
-    antialiased;
-}
-
-
-a {
-
-  text-decoration:
-    none;
-
-  color:
-    inherit;
-}
-
-
-button,
-input,
-select,
-textarea {
-
-  font:
-    inherit;
-}
-
-
-button {
-
-  -webkit-tap-highlight-color:
-    transparent;
-}
-
-
-/* =========================================================
-   TOPBAR
-========================================================= */
-
-
-.topbar {
-
-  min-height:
-    64px;
-
-  background:
-    rgba(255, 255, 255, .97);
-
-  border-bottom:
-    1px solid var(--border);
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  gap:
+  --cl-radius:
     18px;
 
-  padding:
-    8px 24px;
-
-  position:
-    sticky;
-
-  top:
-    0;
-
-  z-index:
-    1000;
-
-  backdrop-filter:
-    blur(10px);
-
-  box-shadow:
-    0 1px 4px rgba(16, 24, 40, .03);
-}
-
-
-/* =========================================================
-   BRAND
-========================================================= */
-
-
-.brand {
-
-  flex-shrink:
-    0;
-
-  font-size:
-    20px;
-
-  font-weight:
-    800;
-
-  letter-spacing:
-    -.5px;
-
-  color:
-    var(--text-dark);
-
-  white-space:
-    nowrap;
-}
-
-
-.brand span {
-
-  font-weight:
-    600;
-
-  color:
-    var(--primary);
-}
-
-
-/* =========================================================
-   TOP NAVIGATION
-========================================================= */
-
-
-.topbar-nav {
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  gap:
-    3px;
-
-  flex:
-    1;
-
-  min-width:
-    0;
-
-  overflow-x:
-    auto;
-
-  overflow-y:
-    hidden;
-
-  scrollbar-width:
-    none;
-
-  white-space:
-    nowrap;
-}
-
-
-.topbar-nav::-webkit-scrollbar {
-
-  display:
-    none;
-}
-
-
-/* =========================================================
-   TOP NAVIGATION LINKS
-========================================================= */
-
-
-.topbar-nav a {
-
-  display:
-    inline-flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  min-height:
-    38px;
-
-  padding:
-    8px 11px;
-
-  border-radius:
-    9px;
-
-  color:
-    var(--nav-text);
-
-  font-size:
-    13px;
-
-  font-weight:
-    600;
-
-  white-space:
-    nowrap;
-
-  transition:
-    background .15s ease,
-    color .15s ease,
-    transform .15s ease;
-}
-
-
-.topbar-nav a:hover {
-
-  background:
-    var(--nav-hover);
-
-  color:
-    var(--primary);
-}
-
-
-.topbar-nav a.active {
-
-  background:
-    var(--nav-active);
-
-  color:
-    var(--primary);
-
-  font-weight:
-    700;
-}
-
-
-/* =========================================================
-   TOPBAR ACTIONS
-========================================================= */
-
-
-.topbar-actions {
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  gap:
-    10px;
-
-  flex-shrink:
-    0;
-}
-
-
-.topbar-actions [data-user-name] {
-
-  max-width:
-    170px;
-
-  overflow:
-    hidden;
-
-  text-overflow:
-    ellipsis;
-
-  white-space:
-    nowrap;
-
-  font-size:
-    12px;
-
-  font-weight:
-    600;
-}
-
-
-/* =========================================================
-   MENU BUTTON
-   Desktop: hidden
-   Mobile: enabled by responsive rules
-========================================================= */
-
-
-.menu-toggle {
-
-  display:
-    none;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  width:
-    40px;
-
-  height:
-    40px;
-
-  padding:
-    0;
-
-  border:
-    1px solid var(--border);
-
-  border-radius:
-    10px;
-
-  background:
-    #ffffff;
-
-  color:
-    #344054;
-
-  cursor:
-    pointer;
-
-  font-size:
-    21px;
-
-  line-height:
-    1;
-
-  flex-shrink:
-    0;
-}
-
-
-.menu-toggle:hover {
-
-  background:
-    var(--nav-hover);
-
-  color:
-    var(--primary);
-}
-
-
-.menu-toggle:active {
-
-  transform:
-    scale(.96);
-}
-
-
-/* =========================================================
-   DESKTOP SIDEBAR
-========================================================= */
-
-
-/*
- * IMPORTANT
- * ---------------------------------------------------------
- * The sidebar is a first-class desktop navigation.
- */
-
-
-.sidebar {
-
-  display:
-    flex;
-
-  flex-direction:
-    column;
-
-  width:
-    var(--sidebar-width);
-
-  min-width:
-    var(--sidebar-width);
-
-  background:
-    var(--sidebar-background);
-
-  border-right:
-    1px solid var(--sidebar-border);
-
-  min-height:
-    calc(100vh - 64px);
-
-  position:
-    sticky;
-
-  top:
-    64px;
-
-  align-self:
-    flex-start;
-
-  height:
-    calc(100vh - 64px);
-
-  overflow-y:
-    auto;
-
-  overflow-x:
-    hidden;
-
-  scrollbar-width:
-    thin;
-
-  z-index:
-    900;
-}
-
-
-.sidebar .nav {
-
-  display:
-    flex;
-
-  flex-direction:
-    column;
-
-  gap:
-    4px;
-
-  width:
-    100%;
-
-  padding:
-    18px 13px 24px;
-}
-
-
-/* =========================================================
-   SIDEBAR NAVIGATION LINKS
-========================================================= */
-
-
-.sidebar .nav > a {
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  width:
-    100%;
-
-  min-height:
-    43px;
-
-  padding:
-    10px 13px;
-
-  border-radius:
-    10px;
-
-  color:
-    var(--sidebar-text);
-
-  font-size:
-    13px;
-
-  font-weight:
-    600;
-
-  line-height:
-    1.25;
-
-  white-space:
-    normal;
-
-  transition:
-    background .15s ease,
-    color .15s ease,
-    transform .15s ease,
-    box-shadow .15s ease;
-}
-
-
-.sidebar .nav > a:hover {
-
-  background:
-    var(--sidebar-hover);
-
-  color:
-    var(--primary);
-
-  transform:
-    translateX(1px);
-}
-
-
-.sidebar .nav > a.active {
-
-  background:
-    var(--sidebar-active);
-
-  color:
-    var(--primary);
-
-  font-weight:
-    750;
-
-  box-shadow:
-    inset 3px 0 0 var(--primary);
-}
-
-
-.sidebar .nav > a:active {
-
-  transform:
-    translateX(1px);
-}
-
-
-/* =========================================================
-   SIDEBAR SCROLLBAR
-========================================================= */
-
-
-.sidebar::-webkit-scrollbar {
-
-  width:
-    6px;
-}
-
-
-.sidebar::-webkit-scrollbar-track {
-
-  background:
-    transparent;
-}
-
-
-.sidebar::-webkit-scrollbar-thumb {
-
-  background:
-    #d0d5dd;
-
-  border-radius:
-    999px;
-}
-
-
-.sidebar::-webkit-scrollbar-thumb:hover {
-
-  background:
-    #98a2b3;
-}
-
-
-/* =========================================================
-   SIDEBAR OVERLAY
-========================================================= */
-
-
-.sidebar-overlay {
-
-  display:
-    none;
-}
-
-
-/* =========================================================
-   SIDEBAR ALTERNATIVE NAV CLASS
-========================================================= */
-
-
-.sidebar-nav {
-
-  display:
-    flex;
-
-  flex-direction:
-    column;
-
-  width:
-    100%;
-}
-
-
-/* =========================================================
-   LAYOUT
-========================================================= */
-
-
-.layout {
-
-  display:
-    flex;
-
-  align-items:
-    flex-start;
-
-  width:
-    100%;
-
-  min-height:
-    calc(100vh - 64px);
-}
-
-
-/* =========================================================
-   MAIN CONTENT
-========================================================= */
-
-
-.main {
-
-  width:
-    100%;
-
-  max-width:
-    1400px;
-
-  margin:
-    0 auto;
-
-  padding:
-    30px;
-
-  min-width:
-    0;
-
-  flex:
-    1 1 auto;
-
-  position:
-    relative;
-}
-
-
-/* =========================================================
-   PAGE HEADER
-========================================================= */
-
-
-.page-head {
-
-  display:
-    flex;
-
-  justify-content:
-    space-between;
-
-  gap:
-    20px;
-
-  align-items:
-    center;
-
-  margin-bottom:
-    22px;
-}
-
-
-.page-head h1 {
-
-  margin:
-    0 0 5px;
-
-  font-size:
-    30px;
-
-  line-height:
-    1.2;
-
-  letter-spacing:
-    -.7px;
-
-  color:
-    var(--text-dark);
-}
-
-
-.page-head p {
-
-  margin:
-    0;
-
-  font-size:
-    14px;
-}
-
-
-.eyebrow {
-
-  color:
-    var(--primary);
-
-  font-size:
-    11px;
-
-  font-weight:
-    800;
-
-  letter-spacing:
-    1px;
-
-  margin-bottom:
-    5px;
-}
-
-
-/* =========================================================
-   ACCESSIBILITY
-========================================================= */
-
-
-.topbar-nav a:focus-visible,
-.sidebar .nav a:focus-visible,
-.sidebar-nav a:focus-visible,
-.nav a:focus-visible,
-.btn:focus-visible,
-.quick-action:focus-visible,
-.menu-toggle:focus-visible {
-
-  outline:
-    3px solid
-    rgba(15, 118, 110, .25);
-
-  outline-offset:
-    2px;
-}
-
-
-/* =========================================================
-   GRID
-========================================================= */
-
-
-.grid {
-
-  display:
-    grid;
-
-  gap:
-    16px;
-}
-
-
-.grid-4 {
-
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
-}
-
-
-.grid-3 {
-
-  grid-template-columns:
-    repeat(3, minmax(0, 1fr));
-}
-
-
-.grid-2 {
-
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
-}
-
-
-/* =========================================================
-   CARD
-========================================================= */
-
-
-.card {
-
-  background:
-    var(--card);
-
-  border:
-    1px solid var(--border);
-
-  border-radius:
-    15px;
-
-  padding:
-    19px;
-
-  box-shadow:
-    var(--shadow);
-
-  transition:
-    box-shadow .2s ease,
-    border-color .2s ease,
-    transform .2s ease;
-}
-
-
-.card:hover {
-
-  box-shadow:
-    var(--shadow-hover);
-
-  border-color:
-    #dce7e6;
-}
-
-
-.card h2 {
-
-  margin:
-    0 0 8px;
-
-  font-size:
-    18px;
-
-  line-height:
-    1.3;
-
-  color:
-    var(--text-dark);
-}
-
-
-.card h3 {
-
-  margin-top:
-    0;
-}
-
-
-/* =========================================================
-   STATUS CARD
-========================================================= */
-
-
-.status-card {
-
-  border-left:
-    4px solid var(--primary);
-}
-
-
-/* =========================================================
-   DASHBOARD METRICS
-========================================================= */
-
-
-.dashboard-metrics {
-
-  margin-top:
-    0;
-}
-
-
-/* =========================================================
-   METRIC CARD
-========================================================= */
-
-
-.metric-card {
-
-  position:
-    relative;
-
-  overflow:
-    hidden;
-}
-
-
-.metric-card::after {
-
-  content:
-    "";
-
-  position:
-    absolute;
-
-  right:
-    -25px;
-
-  bottom:
-    -35px;
-
-  width:
-    90px;
-
-  height:
-    90px;
-
-  border-radius:
-    50%;
-
-  background:
-    rgba(15, 118, 110, .035);
-
-  pointer-events:
-    none;
-}
-
-
-/* =========================================================
-   METRIC LABEL
-========================================================= */
-
-
-.metric-label {
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  gap:
-    7px;
-
-  color:
-    #475467;
-
-  font-size:
-    13px;
-
-  font-weight:
-    700;
-}
-
-
-/* =========================================================
-   METRIC DOT
-========================================================= */
-
-
-.metric-dot {
-
-  width:
-    8px;
-
-  height:
-    8px;
-
-  border-radius:
-    50%;
-
-  background:
-    var(--primary);
-
-  flex-shrink:
-    0;
-}
-
-
-.metric-dot.expected {
-
-  background:
-    #64748b;
-}
-
-
-.metric-dot.success {
-
-  background:
-    var(--success);
-}
-
-
-.metric-dot.warning {
-
-  background:
-    var(--warning);
-}
-
-
-.metric-dot.balance {
-
-  background:
-    #6366f1;
-}
-
-
-/* =========================================================
-   METRIC VALUE
-========================================================= */
-
-
-.metric {
-
-  font-size:
-    28px;
-
-  font-weight:
-    800;
-
-  margin-top:
-    9px;
-
-  line-height:
-    1.2;
-
-  letter-spacing:
-    -.5px;
-
-  color:
-    var(--text-dark);
-}
-
-
-/* =========================================================
-   FINANCIAL STATES
-========================================================= */
-
-
-.metric-positive .metric {
-
-  color:
-    var(--success-dark);
-}
-
-
-.metric-warning .metric {
-
-  color:
-    var(--warning-dark);
-}
-
-
-.metric-danger .metric {
-
-  color:
-    var(--danger-dark);
-}
-
-
-.metric-neutral .metric {
-
-  color:
-    var(--text-dark);
-}
-
-
-/* =========================================================
-   MUTED
-========================================================= */
-
-
-.muted {
-
-  color:
-    var(--muted);
-}
-
-
-.card small {
-
-  color:
-    var(--muted);
-
-  font-size:
+  --cl-radius-sm:
     12px;
 }
 
 
-.card strong {
-
-  font-weight:
-    750;
-}
-
-
 /* =========================================================
-   HOVER SAFETY
+   GLOBAL PAGE ATMOSPHERE
 ========================================================= */
-
-
-@media (hover: none) {
-
-  .card:hover {
-
-    box-shadow:
-      var(--shadow);
-
-    border-color:
-      var(--border);
-  }
-
-}
-
-
-/* =========================================================
-   CONTRIBUTION STATUS UI
-========================================================= */
-
-
-#memberStatusRows td {
-
-  vertical-align:
-    middle;
-}
-
-
-#memberStatusRows td:nth-child(2),
-#memberStatusRows td:nth-child(3),
-#memberStatusRows td:nth-child(4) {
-
-  font-weight:
-    600;
-}
-
-
-#memberStatusRows td:nth-child(4) {
-
-  color:
-    var(--warning-dark);
-}
-
-
-#memberStatusRows td:nth-child(3) {
-
-  color:
-    var(--success-dark);
-}
-
-
-#memberStatusRows td:last-child {
-
-  font-weight:
-    700;
-
-  font-size:
-    12px;
-
-  text-transform:
-    uppercase;
-
-  letter-spacing:
-    .2px;
-}
-
-
-#memberStatusRows td:first-child {
-
-  color:
-    var(--text-dark);
-
-  font-weight:
-    600;
-}
-
-
-#memberStatusRows tr {
-
-  transition:
-    background .15s ease;
-}
-
-
-#memberStatusRows tr:hover {
-
-  background:
-    #f7fbfa;
-}
-
-
-/* =========================================================
-   TABLES
-========================================================= */
-
-
-.table-wrap {
-
-  width:
-    100%;
-
-  max-width:
-    100%;
-
-  overflow-x:
-    auto;
-
-  -webkit-overflow-scrolling:
-    touch;
-}
-
-
-.table th {
-
-  text-transform:
-    none;
-
-  letter-spacing:
-    .1px;
-}
-
-
-.table td {
-
-  vertical-align:
-    middle;
-}
-
-
-/* =========================================================
-   TABLET
-========================================================= */
-
-
-@media (max-width: 1100px) {
-
-  .topbar {
-
-    gap:
-      10px;
-
-    padding:
-      8px 16px;
-  }
-
-
-  .topbar-nav a {
-
-    padding:
-      8px 9px;
-
-    font-size:
-      12px;
-  }
-
-
-  .topbar-actions [data-user-name] {
-
-    max-width:
-      110px;
-  }
-
-
-  .sidebar {
-
-    width:
-      220px;
-
-    min-width:
-      220px;
-  }
-
-
-  .sidebar .nav {
-
-    padding:
-      16px 10px 22px;
-  }
-
-
-  .sidebar .nav > a {
-
-    padding:
-      9px 11px;
-
-    font-size:
-      12px;
-  }
-
-
-  .main {
-
-    padding:
-      24px;
-  }
-
-}
-
-
-/* =========================================================
-   COMPACT DESKTOP / TABLET
-========================================================= */
-
-
-@media (max-width: 950px) {
-
-  .sidebar {
-
-    width:
-      210px;
-
-    min-width:
-      210px;
-  }
-
-
-  .main {
-
-    padding:
-      22px;
-  }
-
-
-  .sidebar .nav > a {
-
-    min-height:
-      41px;
-
-    font-size:
-      12px;
-  }
-
-}
-
-
-/* =========================================================
-   MOBILE
-========================================================= */
-
-
-@media (max-width: 800px) {
-
-  .sidebar {
-
-    display:
-      none !important;
-  }
-
-
-  .sidebar-overlay {
-
-    display:
-      none;
-  }
-
-
-  .sidebar .nav,
-  .sidebar-nav {
-
-    display:
-      none;
-  }
-
-
-  .layout {
-
-    display:
-      block;
-
-    width:
-      100%;
-
-    min-height:
-      calc(100vh - 64px);
-  }
-
-
-  .topbar {
-
-    flex-wrap:
-      wrap;
-
-    min-height:
-      auto;
-
-    padding:
-      9px 12px;
-
-    gap:
-      7px 10px;
-  }
-
-
-  .brand {
-
-    font-size:
-      18px;
-  }
-
-
-  .topbar-actions {
-
-    margin-left:
-      auto;
-  }
-
-
-  .topbar-nav {
-
-    order:
-      3;
-
-    flex-basis:
-      100%;
-
-    width:
-      100%;
-  }
-
-
-  .topbar-nav a {
-
-    min-height:
-      35px;
-
-    padding:
-      7px 9px;
-
-    font-size:
-      11px;
-  }
-
-
-  .main {
-
-    padding:
-      20px 14px;
-  }
-
-
-  .grid-4 {
-
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-  }
-
-
-  .grid-3 {
-
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-  }
-
-
-  .grid-2 {
-
-    grid-template-columns:
-      1fr;
-  }
-
-}
-
-
-/* =========================================================
-   SMALL MOBILE
-========================================================= */
-
-
-@media (max-width: 650px) {
-
-  .topbar {
-
-    padding:
-      8px 10px;
-  }
-
-
-  .brand {
-
-    font-size:
-      16px;
-  }
-
-
-  .topbar-actions [data-user-name] {
-
-    display:
-      none;
-  }
-
-
-  .topbar-actions .btn {
-
-    padding:
-      7px 10px;
-
-    font-size:
-      11px;
-  }
-
-
-  .topbar-nav {
-
-    display:
-      none !important;
-  }
-
-
-  .menu-toggle {
-
-    display:
-      inline-flex !important;
-  }
-
-
-  .main {
-
-    padding:
-      16px 10px 96px 10px;
-  }
-
-
-  .page-head {
-
-    align-items:
-      flex-start;
-
-    flex-direction:
-      column;
-
-    gap:
-      12px;
-  }
-
-
-  .page-head h1 {
-
-    font-size:
-      24px;
-  }
-
-
-  .card {
-
-    padding:
-      16px;
-  }
-
-
-  .grid-4,
-  .grid-3 {
-
-    grid-template-columns:
-      1fr;
-  }
-
-
-  #memberStatusRows td {
-
-    padding:
-      11px 12px;
-  }
-
-
-  #memberStatusRows td:first-child {
-
-    min-width:
-      150px;
-  }
-
-}
-
-
-/* =========================================================
-   VERY SMALL MOBILE
-========================================================= */
-
-
-@media (max-width: 390px) {
-
-  .menu-toggle {
-
-    width:
-      38px;
-
-    height:
-      38px;
-  }
-
-
-  .main {
-
-    padding:
-      14px 9px 92px 9px;
-  }
-
-}
-
-
-/* =========================================================
-   SIDEBAR SAFETY
-========================================================= */
-
-
-/*
- * Desktop:
- *   sidebar = visible
- *
- * Mobile:
- *   sidebar = hidden and mobile menu takes over
- */
-
-
-@media (min-width: 801px) {
-
-  .layout > .sidebar {
-
-    display:
-      flex !important;
-  }
-
-
-  .layout > .sidebar > .nav {
-
-    display:
-      flex !important;
-  }
-
-}
-
-
-/* =========================================================
-   SIDEBAR ACTIVE PAGE SAFETY
-========================================================= */
-
-
-@media (min-width: 801px) {
-
-  .sidebar .nav > a.active {
-
-    display:
-      flex !important;
-
-    visibility:
-      visible !important;
-
-    opacity:
-      1 !important;
-  }
-
-}
-
-
-/* =========================================================
-   SIDEBAR CONTENT SAFETY
-========================================================= */
-
-
-.sidebar,
-.sidebar .nav,
-.sidebar .nav > a {
-
-  box-sizing:
-    border-box;
-}
-
-
-/* =========================================================
-   CHAMA LIVE — VISUAL FOUNDATION
-   Dashboard / Members / Contributions
-========================================================= */
-
-
-/* ---------- Shared page atmosphere ---------- */
-
 
 body {
   background:
     radial-gradient(
-      circle at 92% 4%,
-      rgba(15, 118, 110, .07),
+      circle at 94% 3%,
+      rgba(15, 118, 110, .075),
       transparent 24rem
+    ),
+    radial-gradient(
+      circle at 4% 32%,
+      rgba(16, 185, 129, .035),
+      transparent 22rem
     ),
     var(--cl-page-bg);
 }
 
 
-.dashboard-header,
-.members-header,
-.contributions-page-header {
+/* =========================================================
+   MAIN CONTENT ATMOSPHERE
+========================================================= */
 
-  position:
-    relative;
+.main {
+  position: relative;
+  background:
+    radial-gradient(
+      circle at 8% 10%,
+      rgba(15, 118, 110, .025),
+      transparent 20rem
+    );
+}
 
-  overflow:
-    hidden;
+
+/* =========================================================
+   GLOBAL CARDS
+========================================================= */
+
+.card {
+  border-color: var(--cl-border);
+  background: rgba(255, 255, 255, .96);
+  box-shadow: var(--cl-shadow-sm);
+  border-radius: var(--cl-radius);
+}
+
+.card:hover {
+  border-color: var(--cl-border-strong);
+  box-shadow: var(--cl-shadow);
+}
+
+
+/* =========================================================
+   DASHBOARD HEADER
+========================================================= */
+
+.dashboard-header {
+  position: relative;
+  overflow: hidden;
 
   border:
-    1px solid var(--cl-hero-border);
+    1px solid var(--cl-border-strong);
 
   border-radius:
     22px;
@@ -1888,214 +131,61 @@ body {
   background:
     linear-gradient(
       135deg,
-      var(--cl-hero-bg),
+      #effaf8 0%,
       #ffffff 72%
     );
 
   box-shadow:
-    0 8px 28px rgba(15, 118, 110, .06);
-}
-
-
-.dashboard-header::after,
-.members-header::after,
-.contributions-page-header::after {
-
-  content:
-    "";
-
-  position:
-    absolute;
-
-  width:
-    190px;
-
-  height:
-    190px;
-
-  right:
-    -70px;
-
-  top:
-    -95px;
-
-  border-radius:
-    50%;
-
-  border:
-    28px solid rgba(15, 118, 110, .055);
-
-  pointer-events:
-    none;
-}
-
-
-.dashboard-header h1,
-.members-title-wrap h1,
-.contributions-page-header h1 {
-
-  position:
-    relative;
-
-  z-index:
-    1;
-
-  letter-spacing:
-    -.8px;
-}
-
-
-.dashboard-header p,
-.members-title-wrap p,
-.contributions-page-header p {
-
-  position:
-    relative;
-
-  z-index:
-    1;
-
-  max-width:
-    760px;
-}
-
-
-.dashboard-header .eyebrow,
-.contributions-page-header .eyebrow {
-
-  position:
-    relative;
-
-  z-index:
-    1;
-}
-
-
-/* ---------- Dashboard theme ---------- */
-
-
-body:has(.dashboard-header) .main {
-
-  background:
-    radial-gradient(
-      circle at 8% 22%,
-      rgba(16, 185, 129, .035),
-      transparent 20rem
-    );
-}
-
-
-.dashboard-header {
+    var(--cl-shadow);
 
   margin-bottom:
-    18px;
+    20px;
+}
+
+.dashboard-header::after {
+  content: "";
+
+  position: absolute;
+
+  width: 190px;
+  height: 190px;
+
+  right: -70px;
+  top: -95px;
+
+  border-radius: 50%;
+
+  border:
+    28px solid
+    rgba(15, 118, 110, .055);
+
+  pointer-events: none;
+}
+
+.dashboard-header h1,
+.dashboard-header p,
+.dashboard-header .eyebrow {
+  position: relative;
+  z-index: 1;
 }
 
 
-.dashboard-metrics {
-
-  position:
-    relative;
-
-  z-index:
-    1;
-}
-
+/* =========================================================
+   ADMIN KPI CARDS
+========================================================= */
 
 .dashboard-metrics .metric-card {
-
-  border-color:
-    #dfeae8;
+  border:
+    1px solid var(--cl-border);
 
   background:
-    rgba(255, 255, 255, .96);
+    rgba(255,255,255,.97);
 
   box-shadow:
-    0 6px 20px rgba(15, 118, 110, .055);
-}
+    var(--cl-shadow-sm);
 
-
-.dashboard-metrics .metric-card:hover {
-
-  transform:
-    translateY(-2px);
-}
-
-
-.dashboard-section,
-.activity-card,
-.meetings-card {
-
-  border-color:
-    #dfeae8;
-}
-
-
-.dashboard-section.card,
-.activity-card.card,
-.meetings-card.card {
-
-  background:
-    rgba(255, 255, 255, .97);
-}
-
-
-/* ---------- Members theme ---------- */
-
-
-body:has(.members-page) .main {
-
-  background:
-    radial-gradient(
-      circle at 92% 22%,
-      rgba(37, 99, 235, .035),
-      transparent 20rem
-    );
-}
-
-
-.members-header {
-
-  border-color:
-    var(--cl-blue-border);
-
-  background:
-    linear-gradient(
-      135deg,
-      var(--cl-blue-soft),
-      #ffffff 72%
-    );
-}
-
-
-.members-header::after {
-
-  border-color:
-    rgba(37, 99, 235, .055);
-}
-
-
-.members-header .group-context {
-
-  position:
-    relative;
-
-  z-index:
-    1;
-}
-
-
-.member-stats {
-
-  position:
-    relative;
-
-  z-index:
-    1;
-}
-
-
-.member-stat-card {
+  border-radius:
+    18px;
 
   transition:
     transform .2s ease,
@@ -2103,202 +193,1210 @@ body:has(.members-page) .main {
     border-color .2s ease;
 }
 
-
-.member-stat-card:hover {
-
+.dashboard-metrics .metric-card:hover {
   transform:
-    translateY(-2px);
-
-  box-shadow:
-    0 9px 24px rgba(37, 99, 235, .09);
+    translateY(-3px);
 
   border-color:
-    #dbeafe;
+    var(--cl-border-strong);
+
+  box-shadow:
+    var(--cl-shadow-hover);
 }
 
 
-.members-list-card {
+/* =========================================================
+   ADMIN DASHBOARD SECTIONS
+========================================================= */
 
+.dashboard-section.card,
+.member-status-card,
+.activity-card,
+.meetings-card {
   border-color:
-    #dfe7f1;
-
-  box-shadow:
-    0 6px 22px rgba(15, 23, 42, .045);
-}
-
-
-/* ---------- Contributions theme ---------- */
-
-
-body:has(.contributions-page-header) .main {
+    var(--cl-border);
 
   background:
-    radial-gradient(
-      circle at 90% 18%,
-      rgba(16, 185, 129, .04),
-      transparent 22rem
+    rgba(255,255,255,.97);
+
+  box-shadow:
+    var(--cl-shadow-sm);
+}
+
+
+/* =========================================================
+   PROGRESS
+========================================================= */
+
+.progress-card .progress {
+  background:
+    #e5efed;
+}
+
+.progress-card .progress-bar {
+  background:
+    linear-gradient(
+      90deg,
+      #0f766e,
+      #10b981
     );
 }
 
 
-.contributions-page-header {
+/* =========================================================
+   TABLES
+========================================================= */
 
-  border-color:
-    var(--cl-hero-border);
+.member-status-table table thead th,
+.activity-card table thead th,
+.meetings-card table thead th {
+  background:
+    #f6faf9;
+}
+
+.member-status-table tr:hover,
+.activity-card tr:hover,
+.meetings-card tr:hover {
+  background:
+    #f7fbfa;
+}
+
+
+/* =========================================================
+   BUTTONS / ACTIONS
+========================================================= */
+
+.quick-action,
+.action-card,
+.action-tile,
+button.btn,
+a.btn {
+  transition:
+    transform .18s ease,
+    box-shadow .18s ease,
+    border-color .18s ease;
+}
+
+.quick-action:hover,
+.action-card:hover,
+.action-tile:hover {
+  transform:
+    translateY(-3px);
+
+  box-shadow:
+    var(--cl-shadow-hover);
+}
+
+
+/* =========================================================
+   STATUS BADGES
+========================================================= */
+
+.status-badge {
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  gap:
+    5px;
+
+  min-height:
+    28px;
+
+  padding:
+    5px 9px;
+
+  border-radius:
+    999px;
+
+  background:
+    #f2f4f7;
+
+  color:
+    #475467;
+
+  font-size:
+    11px;
+
+  font-weight:
+    750;
+
+  white-space:
+    nowrap;
+}
+
+.status-paid,
+.status-active,
+.status-approved,
+.status-completed,
+.status-success {
+  background:
+    var(--cl-success-soft);
+
+  color:
+    #047857;
+}
+
+.status-partial,
+.status-pending,
+.status-warning {
+  background:
+    var(--cl-warning-soft);
+
+  color:
+    #b45309;
+}
+
+.status-outstanding,
+.status-rejected,
+.status-danger {
+  background:
+    var(--cl-danger-soft);
+
+  color:
+    #b91c1c;
+}
+
+
+/* =========================================================
+   LOADING SKELETONS
+========================================================= */
+
+.cl-skeleton {
+  position: relative;
+  overflow: hidden;
+
+  background:
+    #edf2f1;
+
+  border-radius:
+    9px;
+
+  color:
+    transparent !important;
+}
+
+.cl-skeleton::after {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  transform:
+    translateX(-100%);
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(255,255,255,.65),
+      transparent
+    );
+
+  animation:
+    clSkeleton 1.25s infinite;
+}
+
+@keyframes clSkeleton {
+  100% {
+    transform:
+      translateX(100%);
+  }
+}
+
+
+/* =========================================================
+   TOAST
+========================================================= */
+
+.cl-toast {
+  position: fixed;
+
+  right: 18px;
+  bottom: 18px;
+
+  z-index: 50000;
+
+  max-width: 360px;
+
+  padding:
+    13px 16px;
+
+  border:
+    1px solid var(--cl-border);
+
+  border-radius:
+    13px;
+
+  background:
+    rgba(255,255,255,.98);
+
+  box-shadow:
+    0 16px 40px rgba(16,24,40,.16);
+
+  color:
+    var(--cl-text-strong);
+
+  font-size:
+    13px;
+
+  font-weight:
+    650;
+
+  animation:
+    clToastIn .22s ease;
+}
+
+@keyframes clToastIn {
+  from {
+    opacity: 0;
+    transform:
+      translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform:
+      translateY(0);
+  }
+}
+
+
+/* =========================================================
+   MEMBER PORTAL
+========================================================= */
+
+.member-dashboard {
+  position: relative;
+
+  max-width:
+    1240px;
+
+  margin:
+    0 auto;
+
+  padding:
+    28px 18px 60px;
+}
+
+
+/* =========================================================
+   MEMBER HERO
+========================================================= */
+
+.member-hero {
+  position: relative;
+  overflow: hidden;
+
+  margin-bottom:
+    20px;
+
+  padding:
+    28px;
+
+  border:
+    1px solid var(--cl-border-strong);
+
+  border-radius:
+    22px;
 
   background:
     linear-gradient(
       135deg,
-      var(--cl-finance-soft),
-      #ffffff 72%
+      #effaf8 0%,
+      #ffffff 70%
     );
-}
-
-
-.contributions-page-header::after {
-
-  border-color:
-    rgba(16, 185, 129, .055);
-}
-
-
-.contributions-page-header + .card,
-.contributions-page-header ~ .card {
-
-  border-color:
-    #dfeae8;
 
   box-shadow:
-    0 6px 22px rgba(15, 118, 110, .045);
+    var(--cl-shadow);
 }
 
+.member-hero::after {
+  content: "";
 
-.contributions-page-header ~ .card:hover {
+  position: absolute;
 
-  border-color:
-    #d4e5e2;
-}
+  width:
+    180px;
 
+  height:
+    180px;
 
-.contributions-page-header ~ .card h2 {
+  right:
+    -60px;
 
-  letter-spacing:
-    -.25px;
-}
+  top:
+    -80px;
 
-
-/* ---------- Shared data surfaces ---------- */
-
-
-.dashboard-section.card,
-.members-list-card,
-.contributions-page-header ~ .card {
+  border:
+    26px solid
+    rgba(15,118,110,.05);
 
   border-radius:
-    16px;
+    50%;
+
+  pointer-events:
+    none;
 }
 
-
-.table-wrapper,
-.table-wrap,
-.members-table-wrap {
-
-  scrollbar-width:
-    thin;
+.member-hero h1,
+.member-hero p {
+  position: relative;
+  z-index: 1;
 }
 
+.member-hero h1 {
+  margin:
+    0 0 7px;
 
-.table-wrapper table thead th,
-.table-wrap table thead th,
-.members-table thead th {
+  color:
+    var(--cl-text-strong);
 
-  background:
-    #f7faf9;
-}
-
-
-.status-badge,
-.member-status-badge,
-.member-role-badge,
-.login-badge,
-.members-list-count,
-.group-context {
+  font-size:
+    clamp(24px, 4vw, 34px);
 
   letter-spacing:
-    .05px;
+    -.7px;
+}
+
+.member-hero p {
+  margin:
+    0;
+
+  color:
+    var(--cl-muted);
+
+  font-size:
+    14px;
+
+  font-weight:
+    600;
 }
 
 
 /* =========================================================
-   VISUAL FOUNDATION — RESPONSIVE
+   MEMBER GRID
 ========================================================= */
 
+.member-grid {
+  display:
+    grid;
 
-@media (max-width: 800px) {
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
 
-  .dashboard-header,
-  .members-header,
-  .contributions-page-header {
-
-    border-radius:
-      17px;
-
-    padding:
-      21px 20px;
-  }
-
-
-  .dashboard-header::after,
-  .members-header::after,
-  .contributions-page-header::after {
-
-    width:
-      140px;
-
-    height:
-      140px;
-
-    right:
-      -65px;
-
-    top:
-      -70px;
-
-    border-width:
-      20px;
-  }
-
-
-  .dashboard-metrics {
-
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-  }
-
+  gap:
+    18px;
 }
 
 
-@media (max-width: 520px) {
+/* =========================================================
+   MEMBER CARDS
+========================================================= */
 
-  .dashboard-metrics,
-  .member-stats {
+.member-card {
+  position: relative;
+  overflow: hidden;
 
+  padding:
+    21px;
+
+  border:
+    1px solid var(--cl-border);
+
+  border-radius:
+    var(--cl-radius);
+
+  background:
+    rgba(255,255,255,.97);
+
+  box-shadow:
+    var(--cl-shadow-sm);
+
+  transition:
+    transform .2s ease,
+    box-shadow .2s ease,
+    border-color .2s ease;
+}
+
+.member-card:hover {
+  transform:
+    translateY(-2px);
+
+  border-color:
+    var(--cl-border-strong);
+
+  box-shadow:
+    var(--cl-shadow-hover);
+}
+
+.member-card::after {
+  content: "";
+
+  position: absolute;
+
+  width:
+    90px;
+
+  height:
+    90px;
+
+  right:
+    -35px;
+
+  bottom:
+    -40px;
+
+  border-radius:
+    50%;
+
+  background:
+    rgba(15,118,110,.035);
+
+  pointer-events:
+    none;
+}
+
+.member-card h2 {
+  position:
+    relative;
+
+  z-index:
+    1;
+
+  margin:
+    0 0 16px;
+
+  color:
+    var(--cl-text-strong);
+
+  font-size:
+    17px;
+
+  letter-spacing:
+    -.2px;
+}
+
+.member-card-wide {
+  grid-column:
+    1 / -1;
+}
+
+
+/* =========================================================
+   MEMBER ACCOUNT
+========================================================= */
+
+.member-account-row {
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(4, minmax(0,1fr));
+
+  gap:
+    12px;
+}
+
+.member-account-item {
+  padding:
+    15px;
+
+  border:
+    1px solid var(--cl-border);
+
+  border-radius:
+    13px;
+
+  background:
+    var(--cl-surface-soft);
+}
+
+.member-account-label {
+  display:
+    block;
+
+  margin-bottom:
+    5px;
+
+  color:
+    var(--cl-muted);
+
+  font-size:
+    11px;
+
+  font-weight:
+    750;
+
+  text-transform:
+    uppercase;
+
+  letter-spacing:
+    .05em;
+}
+
+.member-account-value {
+  display:
+    block;
+
+  color:
+    var(--cl-text-strong);
+
+  font-weight:
+    750;
+
+  word-break:
+    break-word;
+}
+
+
+/* =========================================================
+   MEMBER CONTRIBUTION SUMMARY
+========================================================= */
+
+.member-summary {
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0,1fr));
+
+  gap:
+    12px;
+}
+
+.member-summary-item {
+  padding:
+    17px;
+
+  border:
+    1px solid var(--cl-border);
+
+  border-radius:
+    14px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #f7fbfa,
+      #ffffff
+    );
+}
+
+.member-summary-label {
+  display:
+    block;
+
+  margin-bottom:
+    6px;
+
+  color:
+    var(--cl-muted);
+
+  font-size:
+    12px;
+
+  font-weight:
+    650;
+}
+
+.member-summary-value {
+  display:
+    block;
+
+  color:
+    var(--cl-text-strong);
+
+  font-size:
+    23px;
+
+  font-weight:
+    800;
+
+  letter-spacing:
+    -.4px;
+}
+
+
+/* =========================================================
+   MEMBER LISTS
+========================================================= */
+
+.member-list {
+  margin:
+    0;
+
+  padding:
+    0;
+
+  list-style:
+    none;
+}
+
+.member-list-item {
+  position:
+    relative;
+
+  display:
+    flex;
+
+  flex-direction:
+    column;
+
+  gap:
+    5px;
+
+  padding:
+    13px 0;
+
+  border-bottom:
+    1px solid var(--cl-border);
+}
+
+.member-list-item:last-child {
+  border-bottom:
+    0;
+}
+
+.member-list-item strong {
+  color:
+    var(--cl-text-strong);
+
+  font-size:
+    13px;
+}
+
+.member-muted {
+  color:
+    var(--cl-muted);
+
+  font-size:
+    12px;
+
+  line-height:
+    1.5;
+}
+
+.member-status {
+  align-self:
+    flex-start;
+
+  display:
+    inline-flex;
+
+  padding:
+    4px 8px;
+
+  border-radius:
+    999px;
+
+  background:
+    var(--cl-primary-soft);
+
+  color:
+    var(--cl-primary-dark);
+
+  font-size:
+    10px;
+
+  font-weight:
+    750;
+}
+
+
+/* =========================================================
+   MEMBER LOADING
+========================================================= */
+
+.member-loading {
+  color:
+    var(--cl-muted);
+
+  font-size:
+    13px;
+}
+
+
+/* =========================================================
+   MEMBER ERROR
+========================================================= */
+
+.member-error {
+  margin:
+    0 0 18px;
+
+  padding:
+    13px 16px;
+
+  border:
+    1px solid #fecaca;
+
+  border-radius:
+    13px;
+
+  background:
+    var(--cl-danger-soft);
+
+  color:
+    #b91c1c;
+
+  font-size:
+    13px;
+
+  font-weight:
+    600;
+}
+
+
+/* =========================================================
+   MEMBER FINANCIAL HEALTH
+========================================================= */
+
+.member-financial-health {
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0,1fr));
+
+  gap:
+    12px;
+}
+
+.member-health-item {
+  padding:
+    15px;
+
+  border:
+    1px solid var(--cl-border);
+
+  border-radius:
+    13px;
+
+  background:
+    var(--cl-surface-soft);
+}
+
+.member-health-label {
+  display:
+    block;
+
+  margin-bottom:
+    5px;
+
+  color:
+    var(--cl-muted);
+
+  font-size:
+    11px;
+
+  font-weight:
+    700;
+}
+
+.member-health-value {
+  color:
+    var(--cl-text-strong);
+
+  font-size:
+    19px;
+
+  font-weight:
+    800;
+}
+
+
+/* =========================================================
+   MEMBER RECENT TRANSACTIONS
+========================================================= */
+
+.member-transaction {
+  display:
+    grid;
+
+  grid-template-columns:
+    1fr auto;
+
+  gap:
+    12px;
+
+  align-items:
+    center;
+
+  padding:
+    13px 0;
+
+  border-bottom:
+    1px solid var(--cl-border);
+}
+
+.member-transaction:last-child {
+  border-bottom:
+    0;
+}
+
+.member-transaction-main {
+  min-width:
+    0;
+}
+
+.member-transaction-title {
+  color:
+    var(--cl-text-strong);
+
+  font-size:
+    13px;
+
+  font-weight:
+    750;
+}
+
+.member-transaction-meta {
+  margin-top:
+    3px;
+
+  color:
+    var(--cl-muted);
+
+  font-size:
+    11px;
+}
+
+.member-transaction-amount {
+  color:
+    var(--cl-primary-dark);
+
+  font-size:
+    14px;
+
+  font-weight:
+    800;
+
+  white-space:
+    nowrap;
+}
+
+
+/* =========================================================
+   MEMBER PROGRESS
+========================================================= */
+
+.member-progress {
+  width:
+    100%;
+
+  height:
+    8px;
+
+  margin-top:
+    8px;
+
+  overflow:
+    hidden;
+
+  border-radius:
+    999px;
+
+  background:
+    #e5efed;
+}
+
+.member-progress > span {
+  display:
+    block;
+
+  height:
+    100%;
+
+  border-radius:
+    inherit;
+
+  background:
+    linear-gradient(
+      90deg,
+      #0f766e,
+      #10b981
+    );
+
+  transition:
+    width .6s ease;
+}
+
+
+/* =========================================================
+   MEMBER QUICK ACTIONS
+========================================================= */
+
+.member-actions {
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0,1fr));
+
+  gap:
+    12px;
+}
+
+.member-action {
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    10px;
+
+  min-height:
+    58px;
+
+  padding:
+    12px 14px;
+
+  border:
+    1px solid var(--cl-border);
+
+  border-radius:
+    14px;
+
+  background:
+    #ffffff;
+
+  color:
+    var(--cl-text-strong);
+
+  font-size:
+    12px;
+
+  font-weight:
+    750;
+
+  transition:
+    transform .18s ease,
+    box-shadow .18s ease,
+    border-color .18s ease;
+}
+
+.member-action:hover {
+  transform:
+    translateY(-2px);
+
+  border-color:
+    var(--cl-border-strong);
+
+  box-shadow:
+    var(--cl-shadow);
+}
+
+.member-action-icon {
+  display:
+    grid;
+
+  place-items:
+    center;
+
+  width:
+    36px;
+
+  height:
+    36px;
+
+  flex-shrink:
+    0;
+
+  border-radius:
+    11px;
+
+  background:
+    var(--cl-primary-soft);
+
+  color:
+    var(--cl-primary-dark);
+
+  font-size:
+    15px;
+}
+
+
+/* =========================================================
+   LOGOUT
+========================================================= */
+
+.logout-button,
+#logoutButton,
+[data-action="logout"] {
+  min-height:
+    38px;
+
+  padding:
+    8px 13px;
+
+  border:
+    1px solid #dfe4ea;
+
+  border-radius:
+    10px;
+
+  background:
+    #ffffff;
+
+  color:
+    #475467;
+
+  font-size:
+    12px;
+
+  font-weight:
+    750;
+
+  cursor:
+    pointer;
+
+  transition:
+    background .18s ease,
+    border-color .18s ease,
+    color .18s ease,
+    transform .18s ease;
+}
+
+.logout-button:hover,
+#logoutButton:hover,
+[data-action="logout"]:hover {
+  border-color:
+    #fecaca;
+
+  background:
+    #fff7f7;
+
+  color:
+    #b91c1c;
+
+  transform:
+    translateY(-1px);
+}
+
+
+/* =========================================================
+   FOCUS
+========================================================= */
+
+.member-card a:focus-visible,
+.member-action:focus-visible,
+.logout-button:focus-visible,
+#logoutButton:focus-visible,
+[data-action="logout"]:focus-visible {
+  outline:
+    3px solid
+    rgba(15,118,110,.25);
+
+  outline-offset:
+    2px;
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 900px) {
+
+  .member-grid {
     grid-template-columns:
       1fr;
   }
 
-
-  .dashboard-header,
-  .members-header,
-  .contributions-page-header {
-
-    padding:
-      19px 17px;
+  .member-card-wide {
+    grid-column:
+      auto;
   }
 
+  .member-account-row {
+    grid-template-columns:
+      repeat(2,minmax(0,1fr));
+  }
+
+  .member-financial-health {
+    grid-template-columns:
+      repeat(2,minmax(0,1fr));
+  }
+
+  .member-actions {
+    grid-template-columns:
+      repeat(2,minmax(0,1fr));
+  }
+}
+
+
+@media (max-width: 600px) {
+
+  .member-dashboard {
+    padding:
+      18px 12px 90px;
+  }
+
+  .member-hero {
+    padding:
+      21px 19px;
+
+    border-radius:
+      18px;
+  }
+
+  .member-grid {
+    gap:
+      13px;
+  }
+
+  .member-card {
+    padding:
+      17px;
+
+    border-radius:
+      16px;
+  }
+
+  .member-account-row,
+  .member-summary,
+  .member-financial-health,
+  .member-actions {
+    grid-template-columns:
+      1fr;
+  }
+
+  .member-transaction {
+    grid-template-columns:
+      1fr;
+  }
+
+  .member-transaction-amount {
+    justify-self:
+      start;
+  }
 }
 
 
 /* =========================================================
-   END OF CHAMA LIVE APP CSS
+   REDUCED MOTION
 ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior:
+      auto !important;
+
+    animation-duration:
+      .01ms !important;
+
+    animation-iteration-count:
+      1 !important;
+
+    transition-duration:
+      .01ms !important;
+  }
+}
