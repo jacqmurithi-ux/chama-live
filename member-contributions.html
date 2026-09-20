@@ -229,7 +229,7 @@
   <nav class="top-nav">
     <a href="member-dashboard.html">My Dashboard</a>
     <a href="member-contributions.html" class="active">My Contributions</a>
-    <a href="getting-started.html">Getting Started</a>
+    <a href="member-getting-started.html">Getting Started</a>
   </nav>
 
   <main class="member-page">
@@ -519,60 +519,25 @@
           <button
             id="downloadStatement"
             type="button">
-            Download My Statement
+            Download Statement
           </button>
 
           <button
             id="printStatement"
             type="button">
-            Print / Save PDF
+            Print Statement
           </button>
-
-        </div>
-
-        <div class="member-grid">
-
-          <div class="member-stat">
-            <span class="member-stat-label">
-              Total Recorded
-            </span>
-
-            <span
-              id="totalRecorded"
-              class="member-stat-value">
-              KES 0
-            </span>
-          </div>
-
-          <div class="member-stat">
-            <span class="member-stat-label">
-              Contribution Records
-            </span>
-
-            <span
-              id="contributionRecordCount"
-              class="member-stat-value">
-              0
-            </span>
-          </div>
 
         </div>
 
       </section>
 
 
-      <!-- CONTRIBUTION HISTORY -->
+      <!-- CONTRIBUTION RECORDS -->
 
       <section class="member-card">
 
-        <h2>Contribution History</h2>
-
-        <div
-          id="contributionEmpty"
-          class="member-message info"
-          hidden>
-          No contribution records were found for your account.
-        </div>
+        <h2>My Contribution Records</h2>
 
         <div class="member-table-wrap">
 
@@ -581,10 +546,12 @@
             <thead>
               <tr>
                 <th>Date</th>
+                <th>Month</th>
                 <th>Amount</th>
                 <th>Type</th>
-                <th>Payment Method</th>
+                <th>Method</th>
                 <th>Reference</th>
+                <th>Notes</th>
               </tr>
             </thead>
 
@@ -600,6 +567,7 @@
     </section>
 
   </main>
+
 
   <script type="module">
     import { boot } from "./js/member-layout.js";
