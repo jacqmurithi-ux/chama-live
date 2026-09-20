@@ -1,179 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
   <title>Member Dashboard — CHAMA LIVE</title>
 
-  <style>
-    .member-dashboard {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 24px 16px 48px;
-    }
+  <link
+    rel="stylesheet"
+    href="css/app.css"
+  >
 
-    .member-hero {
-      margin-bottom: 24px;
-    }
-
-    .member-hero h1 {
-      margin: 0 0 8px;
-    }
-
-    .member-hero p {
-      margin: 0;
-      opacity: 0.75;
-    }
-
-    .member-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 16px;
-    }
-
-    .member-card {
-      padding: 20px;
-      border-radius: 12px;
-      border: 1px solid rgba(128, 128, 128, 0.25);
-      background: var(--card-bg, #fff);
-    }
-
-    .member-card h2 {
-      margin: 0 0 16px;
-      font-size: 1.05rem;
-    }
-
-    .member-card-wide {
-      grid-column: 1 / -1;
-    }
-
-    .member-account-row {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
-    }
-
-    .member-account-item {
-      padding: 12px;
-      border-radius: 8px;
-      background: rgba(128, 128, 128, 0.08);
-    }
-
-    .member-account-label {
-      display: block;
-      font-size: 0.8rem;
-      opacity: 0.7;
-      margin-bottom: 4px;
-    }
-
-    .member-account-value {
-      font-weight: 600;
-      word-break: break-word;
-    }
-
-    .member-summary {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-    }
-
-    .member-summary-item {
-      padding: 16px;
-      border-radius: 8px;
-      background: rgba(128, 128, 128, 0.08);
-    }
-
-    .member-summary-label {
-      display: block;
-      font-size: 0.85rem;
-      opacity: 0.7;
-      margin-bottom: 6px;
-    }
-
-    .member-summary-value {
-      font-size: 1.4rem;
-      font-weight: 700;
-    }
-
-    .member-list {
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-
-    .member-list-item {
-      padding: 12px 0;
-      border-bottom: 1px solid rgba(128, 128, 128, 0.2);
-    }
-
-    .member-list-item:last-child {
-      border-bottom: 0;
-    }
-
-    .member-empty {
-      opacity: 0.7;
-      padding: 12px 0;
-    }
-
-    .member-loading {
-      opacity: 0.7;
-    }
-
-    .member-error {
-      display: none;
-      margin: 16px 0;
-      padding: 12px 16px;
-      border-radius: 8px;
-      background: rgba(220, 53, 69, 0.1);
-      color: #b42318;
-    }
-
-    @media (max-width: 768px) {
-      .member-dashboard {
-        padding: 16px 12px 40px;
-      }
-
-      .member-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .member-card-wide {
-        grid-column: auto;
-      }
-
-      .member-account-row {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-    }
-
-    @media (max-width: 480px) {
-      .member-account-row,
-      .member-summary {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
 </head>
 
 <body>
 
   <!--
-    IMPORTANT:
-    Keep only canonical member-safe destinations here.
-    member-layout.js reconciles this navigation after loading
-    the user's authenticated application context.
+    Member Portal navigation is reconciled by
+    member-layout.js.
+
+    It owns:
+      - portal authorization
+      - navigation
+      - mobile navigation
+      - current member/group context
   -->
-  <nav class="top-nav" aria-label="Member navigation">
-    <a href="member-dashboard.html" class="active">Home</a>
-    <a href="member-getting-started.html">Getting Started</a>
+
+  <nav
+    class="top-nav"
+    aria-label="Member navigation"
+  >
+
+    <a
+      href="member-dashboard.html"
+      class="active"
+    >
+      Home
+    </a>
+
+    <a href="member-getting-started.html">
+      Getting Started
+    </a>
+
   </nav>
+
 
   <main class="member-dashboard">
 
+
+    <!-- ===================================================
+         HERO
+    ==================================================== -->
+
     <section class="member-hero">
-      <h1 id="memberGreeting">Welcome</h1>
-      <p id="memberGroupName">Your group</p>
+
+      <div class="eyebrow">
+        MEMBER PORTAL
+      </div>
+
+      <h1 id="memberGreeting">
+        Welcome
+      </h1>
+
+      <p id="memberGroupName">
+        Your group
+      </p>
+
     </section>
+
+
+    <!-- ===================================================
+         LOADING
+    ==================================================== -->
 
     <div
       id="memberLoading"
@@ -183,63 +86,41 @@
       Loading your member dashboard...
     </div>
 
+
+    <!-- ===================================================
+         ERROR
+    ==================================================== -->
+
     <div
       id="memberError"
       class="member-error"
       role="alert"
       aria-live="assertive"
+      hidden
     ></div>
+
 
     <section class="member-grid">
 
-      <!-- Member account -->
-      <article class="member-card member-card-wide">
-        <h2>My Account</h2>
 
-        <div class="member-account-row">
+      <!-- =================================================
+           MY CONTRIBUTIONS
+      ================================================== -->
 
-          <div class="member-account-item">
-            <span class="member-account-label">Name</span>
-            <span
-              id="memberName"
-              class="member-account-value"
-            >—</span>
-          </div>
-
-          <div class="member-account-item">
-            <span class="member-account-label">Member Number</span>
-            <span
-              id="memberNumber"
-              class="member-account-value"
-            >—</span>
-          </div>
-
-          <div class="member-account-item">
-            <span class="member-account-label">Role</span>
-            <span
-              id="memberRole"
-              class="member-account-value"
-            >—</span>
-          </div>
-
-          <div class="member-account-item">
-            <span class="member-account-label">Status</span>
-            <span
-              id="memberStatus"
-              class="member-account-value"
-            >—</span>
-          </div>
-
-        </div>
-      </article>
-
-      <!-- My contributions -->
       <article class="member-card">
-        <h2>My Contributions</h2>
+
+        <div class="eyebrow">
+          MY FINANCES
+        </div>
+
+        <h2>
+          My Contributions
+        </h2>
 
         <div class="member-summary">
 
           <div class="member-summary-item">
+
             <span class="member-summary-label">
               Total Recorded
             </span>
@@ -248,11 +129,14 @@
               id="myContributionTotal"
               class="member-summary-value"
             >
-              KSh 0
+              KSh 0.00
             </span>
+
           </div>
 
+
           <div class="member-summary-item">
+
             <span class="member-summary-label">
               Contribution Records
             </span>
@@ -263,84 +147,521 @@
             >
               0
             </span>
+
           </div>
 
         </div>
+
+
+        <div class="member-actions" style="margin-top:16px;">
+
+          <a
+            class="member-action"
+            href="member-contributions.html"
+          >
+
+            <span class="member-action-icon">
+              ₵
+            </span>
+
+            <span>
+              View My Contributions
+            </span>
+
+          </a>
+
+
+          <a
+            class="member-action"
+            href="member-contributions.html"
+          >
+
+            <span class="member-action-icon">
+              →
+            </span>
+
+            <span>
+              View Statement
+            </span>
+
+          </a>
+
+        </div>
+
       </article>
 
-      <!-- Upcoming meetings -->
+
+      <!-- =================================================
+           ACCOUNT
+      ================================================== -->
+
       <article class="member-card">
-        <h2>Upcoming Meetings</h2>
+
+        <div class="eyebrow">
+          PROFILE
+        </div>
+
+        <h2>
+          My Account
+        </h2>
+
+        <div class="member-account-row">
+
+          <div class="member-account-item">
+
+            <span class="member-account-label">
+              Name
+            </span>
+
+            <span
+              id="memberName"
+              class="member-account-value"
+            >
+              —
+            </span>
+
+          </div>
+
+
+          <div class="member-account-item">
+
+            <span class="member-account-label">
+              Member Number
+            </span>
+
+            <span
+              id="memberNumber"
+              class="member-account-value"
+            >
+              —
+            </span>
+
+          </div>
+
+
+          <div class="member-account-item">
+
+            <span class="member-account-label">
+              Role
+            </span>
+
+            <span
+              id="memberRole"
+              class="member-account-value"
+            >
+              —
+            </span>
+
+          </div>
+
+
+          <div class="member-account-item">
+
+            <span class="member-account-label">
+              Status
+            </span>
+
+            <span
+              id="memberStatus"
+              class="member-account-value"
+            >
+              —
+            </span>
+
+          </div>
+
+        </div>
+
+      </article>
+
+
+      <!-- =================================================
+           GROUP FINANCIAL HEALTH
+           Values are populated only when authorized data
+           is available.
+      ================================================== -->
+
+      <article class="member-card member-card-wide">
+
+        <div class="eyebrow">
+          GROUP OVERVIEW
+        </div>
+
+        <h2>
+          Group Financial Health
+        </h2>
+
+        <div class="member-financial-health">
+
+          <div class="member-health-item">
+
+            <span class="member-health-label">
+              Members
+            </span>
+
+            <span
+              id="groupMemberCount"
+              class="member-health-value"
+            >
+              —
+            </span>
+
+          </div>
+
+
+          <div class="member-health-item">
+
+            <span class="member-health-label">
+              Contributions This Month
+            </span>
+
+            <span
+              id="groupMonthlyContributions"
+              class="member-health-value"
+            >
+              —
+            </span>
+
+          </div>
+
+
+          <div class="member-health-item">
+
+            <span class="member-health-label">
+              Expenses This Month
+            </span>
+
+            <span
+              id="groupMonthlyExpenses"
+              class="member-health-value"
+            >
+              —
+            </span>
+
+          </div>
+
+
+          <div class="member-health-item">
+
+            <span class="member-health-label">
+              Net Movement
+            </span>
+
+            <span
+              id="groupNetMovement"
+              class="member-health-value"
+            >
+              —
+            </span>
+
+          </div>
+
+
+          <div class="member-health-item">
+
+            <span class="member-health-label">
+              Contribution Participation
+            </span>
+
+            <span
+              id="groupParticipation"
+              class="member-health-value"
+            >
+              —
+            </span>
+
+            <div class="member-progress">
+
+              <span
+                id="groupParticipationBar"
+                style="width:0%"
+              ></span>
+
+            </div>
+
+          </div>
+
+
+          <div class="member-health-item">
+
+            <span class="member-health-label">
+              Expense Activity
+            </span>
+
+            <span
+              id="groupExpenseActivity"
+              class="member-health-value"
+            >
+              —
+            </span>
+
+          </div>
+
+        </div>
+
+      </article>
+
+
+      <!-- =================================================
+           RECENT CONTRIBUTIONS
+      ================================================== -->
+
+      <article class="member-card">
+
+        <div class="eyebrow">
+          GROUP ACTIVITY
+        </div>
+
+        <h2>
+          Recent Group Contributions
+        </h2>
 
         <div
-          id="memberMeetings"
-          class="member-loading"
-          aria-live="polite"
+          id="memberRecentContributions"
+          class="member-list"
         >
-          Loading meetings...
+
+          <div class="member-list-item">
+            <span class="member-muted">
+              Loading recent contributions...
+            </span>
+          </div>
+
         </div>
+
       </article>
 
-      <!-- Group activity -->
+
+      <!-- =================================================
+           RECENT EXPENSES
+      ================================================== -->
+
       <article class="member-card">
-        <h2>Group Activity</h2>
+
+        <div class="eyebrow">
+          ACCOUNTABILITY
+        </div>
+
+        <h2>
+          Recent Group Expenses
+        </h2>
+
+        <div
+          id="memberRecentExpenses"
+          class="member-list"
+        >
+
+          <div class="member-list-item">
+            <span class="member-muted">
+              Loading recent expenses...
+            </span>
+          </div>
+
+        </div>
+
+      </article>
+
+
+      <!-- =================================================
+           GROUP ACTIVITY
+      ================================================== -->
+
+      <article class="member-card">
+
+        <div class="eyebrow">
+          PARTICIPATION
+        </div>
+
+        <h2>
+          Group Activity
+        </h2>
 
         <div
           id="memberActivities"
-          class="member-loading"
-          aria-live="polite"
+          class="member-list"
         >
           Loading group activity...
         </div>
+
       </article>
 
-      <!-- Plans and goals -->
+
+      <!-- =================================================
+           MEETINGS
+      ================================================== -->
+
       <article class="member-card">
-        <h2>Plans &amp; Goals</h2>
+
+        <div class="eyebrow">
+          COMMUNITY
+        </div>
+
+        <h2>
+          Upcoming Meetings
+        </h2>
+
+        <div
+          id="memberMeetings"
+          class="member-list"
+        >
+          Loading meetings...
+        </div>
+
+      </article>
+
+
+      <!-- =================================================
+           PLANS & GOALS
+      ================================================== -->
+
+      <article class="member-card">
+
+        <div class="eyebrow">
+          PROGRESS
+        </div>
+
+        <h2>
+          Plans &amp; Goals
+        </h2>
 
         <div
           id="memberPlans"
-          class="member-loading"
-          aria-live="polite"
+          class="member-list"
         >
           Loading plans and goals...
         </div>
+
       </article>
 
-      <!-- Milestones -->
+
+      <!-- =================================================
+           MILESTONES
+      ================================================== -->
+
       <article class="member-card">
-        <h2>Milestones</h2>
+
+        <div class="eyebrow">
+          ACHIEVEMENTS
+        </div>
+
+        <h2>
+          Milestones
+        </h2>
 
         <div
           id="memberMilestones"
-          class="member-loading"
-          aria-live="polite"
+          class="member-list"
         >
           Loading milestones...
         </div>
+
       </article>
 
-      <!-- Group assets -->
+
+      <!-- =================================================
+           ASSETS
+      ================================================== -->
+
       <article class="member-card member-card-wide">
-        <h2>Group Assets</h2>
+
+        <div class="eyebrow">
+          GROUP RESOURCES
+        </div>
+
+        <h2>
+          Group Assets
+        </h2>
 
         <div
           id="memberAssets"
-          class="member-loading"
-          aria-live="polite"
+          class="member-list"
         >
           Loading group assets...
         </div>
+
+      </article>
+
+
+      <!-- =================================================
+           MEMBER ACTIVITY SUMMARY
+      ================================================== -->
+
+      <article class="member-card member-card-wide">
+
+        <div class="eyebrow">
+          AT A GLANCE
+        </div>
+
+        <h2>
+          Your Group Today
+        </h2>
+
+        <div class="member-financial-health">
+
+          <div class="member-health-item">
+
+            <span class="member-health-label">
+              Members
+            </span>
+
+            <span
+              id="activityMemberCount"
+              class="member-health-value"
+            >
+              —
+            </span>
+
+          </div>
+
+
+          <div class="member-health-item">
+
+            <span class="member-health-label">
+              Recent Contributions
+            </span>
+
+            <span
+              id="activityContributionCount"
+              class="member-health-value"
+            >
+              —
+            </span>
+
+          </div>
+
+
+          <div class="member-health-item">
+
+            <span class="member-health-label">
+              Recent Expenses
+            </span>
+
+            <span
+              id="activityExpenseCount"
+              class="member-health-value"
+            >
+              —
+            </span>
+
+          </div>
+
+        </div>
+
       </article>
 
     </section>
+
   </main>
 
-  <!-- Canonical member portal/layout bootstrap -->
+
   <script type="module">
-    import { boot } from "./js/member-layout.js";
+
+    import {
+      boot
+    } from "./js/member-layout.js";
 
     boot();
+
   </script>
 
 </body>
