@@ -39,28 +39,37 @@
       • logout
 
     member-dashboard.js owns:
-      • dashboard data
       • member contribution summary
       • group financial overview
-      • recent group activity
+      • recent group contributions
+      • recent group expenses
       • meetings
+      • activities
       • plans/goals
       • group assets
 
+    SECURITY CONTRACT:
+      • Read-only dashboard
+      • No INSERT
+      • No UPDATE
+      • No DELETE
+      • No financial mutation
+      • No group mutation
+      • No member mutation
+
     IMPORTANT:
-      This page does NOT independently call getMyApplicationContext().
-      member-layout.js loads the context once and passes it to
-      initMemberDashboard(context).
+      This page does not independently resolve authentication.
+      member-layout.js resolves the authenticated context and
+      passes it to initMemberDashboard(context).
     =========================================================
   -->
 
 
   <!-- =======================================================
-       PAGE
+       MEMBER DASHBOARD
   ======================================================== -->
 
   <main class="member-dashboard">
-
 
     <!-- =====================================================
          MEMBER HERO
@@ -709,6 +718,124 @@
       </article>
 
 
+      <!-- ===================================================
+           MEMBER PORTAL DESTINATIONS
+      ==================================================== -->
+
+      <article class="member-card member-card-wide">
+
+        <div class="eyebrow">
+          MEMBER PORTAL
+        </div>
+
+        <h2>
+          Explore Your Portal
+        </h2>
+
+        <p class="member-muted">
+          Access your personal contributions and explore
+          information available to members of your group.
+        </p>
+
+        <div
+          class="member-actions"
+          style="
+            margin-top:16px;
+            display:flex;
+            flex-wrap:wrap;
+            gap:10px;
+          "
+        >
+
+          <a
+            class="member-action"
+            href="./member-contributions.html"
+          >
+            <span
+              class="member-action-icon"
+              aria-hidden="true"
+            >
+              →
+            </span>
+
+            <span>
+              My Contributions
+            </span>
+          </a>
+
+
+          <a
+            class="member-action"
+            href="./member-activities.html"
+          >
+            <span
+              class="member-action-icon"
+              aria-hidden="true"
+            >
+              →
+            </span>
+
+            <span>
+              Activities
+            </span>
+          </a>
+
+
+          <a
+            class="member-action"
+            href="./member-assets.html"
+          >
+            <span
+              class="member-action-icon"
+              aria-hidden="true"
+            >
+              →
+            </span>
+
+            <span>
+              Group Assets
+            </span>
+          </a>
+
+
+          <a
+            class="member-action"
+            href="./member-milestones.html"
+          >
+            <span
+              class="member-action-icon"
+              aria-hidden="true"
+            >
+              →
+            </span>
+
+            <span>
+              Milestones
+            </span>
+          </a>
+
+
+          <a
+            class="member-action"
+            href="./member-getting-started.html"
+          >
+            <span
+              class="member-action-icon"
+              aria-hidden="true"
+            >
+              →
+            </span>
+
+            <span>
+              Getting Started
+            </span>
+          </a>
+
+        </div>
+
+      </article>
+
+
     </section>
 
   </main>
@@ -717,8 +844,12 @@
   <!-- =======================================================
        MEMBER PORTAL BOOT
        -------------------------------------------------------
-       member-layout.js loads the authenticated context once
-       and passes it to initMemberDashboard(context).
+       member-layout.js:
+         • resolves authentication
+         • protects the portal
+         • renders navigation
+         • loads member-dashboard.js
+         • passes authenticated context
   ======================================================== -->
 
   <script type="module">
