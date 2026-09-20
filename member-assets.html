@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>Group Assets — CHAMA LIVE</title>
+
+  <style>
+    :root {
+      --border: #e5e7eb;
+      --muted: #667085;
+      --text: #101828;
+      --surface: #ffffff;
+      --background: #f8fafc;
+      --primary: #0f766e;
+      --primary-soft: #ecfdf5;
+      --danger: #b42318;
+      --danger-soft: #fef3f2;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family:
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+      background: var(--background);
+      color: var(--text);
+    }
+
+    .member-assets-page {
+      width: min(1180px, 100%);
+      margin: 0 auto;
+      padding: 24px 16px 100px;
+    }
+
+    .page-header {
+      margin-bottom: 22px;
+    }
+
+    .page-header h1 {
+      margin: 0 0 7px;
+      font-size: clamp(1.6rem, 5vw, 2.25rem);
+    }
+
+    .page-header p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .group-name {
+      margin-top: 10px;
+      color: var(--primary);
+      font-weight: 750;
+    }
+
+    .message {
+      margin-bottom: 18px;
+      padding: 13px 15px;
+      border-radius: 10px;
+      line-height: 1.45;
+    }
+
+    .message[hidden] {
+      display: none;
+    }
+
+    .loading {
+      color: var(--muted);
+    }
+
+    .error {
+      background: var(--danger-soft);
+      color: var(--danger);
+      border: 1px solid #fecdca;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .summary-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+    }
+
+    .summary-label {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 650;
+    }
+
+    .summary-value {
+      display: block;
+      font-size: 1.35rem;
+      font-weight: 800;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns:
+        minmax(0, 1fr)
+        minmax(160px, 190px)
+        minmax(160px, 190px);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    input,
+    select {
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: #fff;
+      color: var(--text);
+      font: inherit;
+    }
+
+    .assets-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    .assets-card-header {
+      padding: 18px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .assets-card-header h2 {
+      margin: 0 0 5px;
+      font-size: 1.1rem;
+    }
+
+    .assets-card-header p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      min-width: 760px;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 13px 14px;
+      border-bottom: 1px solid #edf0f2;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f8fafc;
+      color: var(--muted);
+      font-size: 0.75rem;
+      font-weight: 750;
+      text-transform: uppercase;
+      letter-spacing: .03em;
+      white-space: nowrap;
+    }
+
+    td {
+      font-size: 0.88rem;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .asset-name {
+      font-weight: 750;
+      color: var(--primary);
+    }
+
+    .asset-description {
+      max-width: 300px;
+      color: var(--muted);
+      line-height: 1.45;
+      white-space: pre-wrap;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: #f2f4f7;
+      color: #475467;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: capitalize;
+      white-space: nowrap;
+    }
+
+    .status.active {
+      background: var(--primary-soft);
+      color: #047857;
+    }
+
+    .empty {
+      padding: 42px 18px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .empty strong {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--text);
+    }
+
+    @media (max-width: 850px) {
+      .summary {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+
+      .toolbar {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .member-assets-page {
+        padding: 18px 12px 100px;
+      }
+
+      .summary {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="member-assets-page">
+
+    <header class="page-header">
+      <h1>Group Assets</h1>
+
+      <p>
+        View the assets recorded for your group.
+        This member view is read-only.
+      </p>
+
+      <div
+        id="memberAssetsGroupName"
+        class="group-name"
+      >
+        Loading group…
+      </div>
+    </header>
+
+    <div
+      id="memberAssetsLoading"
+      class="message loading"
+      aria-live="polite"
+    >
+      Loading group assets…
+    </div>
+
+    <div
+      id="memberAssetsError"
+      class="message error"
+      role="alert"
+      aria-live="assertive"
+      hidden
+    ></div>
+
+    <section
+      id="memberAssetsContent"
+      hidden
+    >
+
+      <section
+        class="summary"
+        aria-label="Asset summary"
+      >
+
+        <article class="summary-card">
+          <span class="summary-label">
+            Total Assets
+          </span>
+
+          <span
+            id="memberAssetTotal"
+            class="summary-value"
+          >
+            0
+          </span>
+        </article>
+
+        <article class="summary-card">
+          <span class="summary-label">
+            Active Assets
+          </span>
+
+          <span
+            id="memberAssetActive"
+            class="summary-value"
+          >
+            0
+          </span>
+        </article>
+
+        <article class="summary-card">
+          <span class="summary-label">
+            Acquisition Cost
+          </span>
+
+          <span
+            id="memberAssetAcquisitionCost"
+            class="summary-value"
+          >
+            KSh 0.00
+          </span>
+        </article>
+
+        <article class="summary-card">
+          <span class="summary-label">
+            Current Value
+          </span>
+
+          <span
+            id="memberAssetCurrentValue"
+            class="summary-value"
+          >
+            KSh 0.00
+          </span>
+        </article>
+
+      </section>
+
+      <section
+        class="toolbar"
+        aria-label="Asset filters"
+      >
+
+        <input
+          id="memberAssetSearch"
+          type="search"
+          placeholder="Search assets…"
+          aria-label="Search assets"
+        >
+
+        <select
+          id="memberAssetCategory"
+          aria-label="Filter by category"
+        >
+          <option value="">
+            All categories
+          </option>
+          <option value="land">Land</option>
+          <option value="building">Building</option>
+          <option value="vehicle">Vehicle</option>
+          <option value="equipment">Equipment</option>
+          <option value="livestock">Livestock</option>
+          <option value="farm">Farm</option>
+          <option value="furniture">Furniture</option>
+          <option value="investment">Investment</option>
+          <option value="shares">Shares</option>
+          <option value="other">Other</option>
+        </select>
+
+        <select
+          id="memberAssetStatus"
+          aria-label="Filter by status"
+        >
+          <option value="">
+            All statuses
+          </option>
+          <option value="active">Active</option>
+          <option value="disposed">Disposed</option>
+          <option value="sold">Sold</option>
+          <option value="lost">Lost</option>
+          <option value="inactive">Inactive</option>
+        </select>
+
+      </section>
+
+      <section class="assets-card">
+
+        <div class="assets-card-header">
+          <h2>Asset Register</h2>
+
+          <p>
+            Information comes from the group's existing asset register.
+          </p>
+        </div>
+
+        <div class="table-wrap">
+
+          <table>
+            <thead>
+              <tr>
+                <th>Asset</th>
+                <th>Category</th>
+                <th>Acquired</th>
+                <th>Cost</th>
+                <th>Current Value</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+
+            <tbody id="memberAssetsRows">
+              <tr>
+                <td colspan="8">
+                  <div class="empty">
+                    Loading assets…
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+        </div>
+
+      </section>
+
+    </section>
+
+  </main>
+
+  <script type="module">
+    import { boot } from "./js/member-layout.js";
+
+    boot();
+  </script>
+
+</body>
+</html>
