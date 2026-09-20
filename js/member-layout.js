@@ -11,22 +11,29 @@ const MEMBER_PAGES = new Set([
   "member-dashboard.html",
   "member-contributions.html",
   "member-activities.html",
+  "member-assets.html",
   "member-getting-started.html"
 ]);
 
-/*
- * Only member-activities requires the layout to invoke
- * a page initializer.
- *
- * member-dashboard.js and member-contributions.js
- * currently contain their own direct compatibility boot.
- * The layout-loading flag prevents those modules from
- * starting their compatibility boot during the transition.
- */
 const PAGE_SCRIPTS = {
+  "member-dashboard.html": [
+    "./member-dashboard.js",
+    "initMemberDashboard"
+  ],
+
+  "member-contributions.html": [
+    "./member-contributions.js",
+    "initMemberContributions"
+  ],
+
   "member-activities.html": [
     "./member-activities.js",
     "initMemberActivities"
+  ],
+
+  "member-assets.html": [
+    "./member-assets.js",
+    "initMemberAssets"
   ]
 };
 
@@ -89,6 +96,10 @@ const MEMBER_NAVIGATION = [
   [
     "member-activities.html",
     "Activities"
+  ],
+  [
+    "member-assets.html",
+    "Assets"
   ],
   [
     "member-getting-started.html",
@@ -554,12 +565,12 @@ function renderMobileBottomNavigation() {
       "Activities"
     ],
     [
-      "member-getting-started.html",
-      "Guide"
+      "member-assets.html",
+      "Assets"
     ],
     [
-      "#more",
-      "More"
+      "member-getting-started.html",
+      "Guide"
     ]
   ];
 
@@ -584,18 +595,6 @@ function renderMobileBottomNavigation() {
       link.setAttribute(
         "aria-current",
         "page"
-      );
-    }
-
-    if (href === "#more") {
-      link.href = "#";
-
-      link.addEventListener(
-        "click",
-        (event) => {
-          event.preventDefault();
-          openMemberMobileMenu();
-        }
       );
     }
 
@@ -693,11 +692,6 @@ export async function boot() {
       return;
     }
 
-    /*
-     * Prevent compatibility boot code in existing
-     * member page modules from running while the
-     * portal layout owns initialization.
-     */
     window.__CHAMA_LIVE_LAYOUT_LOADING__ =
       true;
 
