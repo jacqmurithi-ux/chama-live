@@ -3,55 +3,61 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Getting Started — Member Portal | CHAMA LIVE</title>
 
+  <link rel="stylesheet" href="./css/app.css">
+
   <style>
-    :root {
-      --primary: #0f766e;
-      --primary-light: #ecfdf5;
-      --text: #101828;
-      --muted: #667085;
-      --border: #e5e7eb;
-      --card: #ffffff;
-      --background: #f8fafc;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      background: var(--background);
-      color: var(--text);
-      font-family:
-        system-ui,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-    }
-
     .member-getting-started {
       max-width: 1000px;
       margin: 0 auto;
-      padding: 32px 16px 60px;
+      padding: 28px 16px 60px;
     }
 
     .getting-started-hero {
-      margin-bottom: 28px;
+      margin-bottom: 24px;
+    }
+
+    .getting-started-eyebrow {
+      margin: 0 0 6px;
+      color: #0f766e;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
     }
 
     .getting-started-hero h1 {
-      margin: 0 0 10px;
-      font-size: 2rem;
-      line-height: 1.2;
+      margin: 0 0 8px;
+      font-size: clamp(1.7rem, 4vw, 2.25rem);
+      line-height: 1.15;
     }
 
     .getting-started-hero p {
+      max-width: 720px;
       margin: 0;
-      color: var(--muted);
-      line-height: 1.6;
+      color: #667085;
+      line-height: 1.65;
+    }
+
+    .getting-started-back {
+      display: inline-flex;
+      align-items: center;
+      min-height: 40px;
+      margin-top: 16px;
+      padding: 8px 13px;
+      border: 1px solid #d0d5dd;
+      border-radius: 9px;
+      background: #fff;
+      color: #344054;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .getting-started-back:hover {
+      background: #f8fafc;
     }
 
     .getting-started-grid {
@@ -61,10 +67,12 @@
     }
 
     .getting-started-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
+      min-width: 0;
       padding: 22px;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      background: #fff;
+      box-shadow: 0 4px 14px rgba(16, 24, 40, 0.04);
     }
 
     .getting-started-card-wide {
@@ -72,75 +80,75 @@
     }
 
     .getting-started-card h2 {
-      margin: 0 0 10px;
-      font-size: 1.1rem;
+      margin: 0 0 9px;
+      font-size: 1.08rem;
+      line-height: 1.35;
     }
 
     .getting-started-card p {
       margin: 0;
-      color: var(--muted);
+      color: #667085;
       line-height: 1.6;
     }
 
     .getting-started-list {
       margin: 14px 0 0;
       padding-left: 20px;
-      color: var(--muted);
-      line-height: 1.7;
+      color: #667085;
+      line-height: 1.65;
     }
 
     .getting-started-list li + li {
-      margin-top: 7px;
+      margin-top: 6px;
     }
 
     .getting-started-link {
       display: inline-flex;
       align-items: center;
-      margin-top: 16px;
+      justify-content: center;
       min-height: 42px;
-      padding: 9px 14px;
+      margin-top: 17px;
+      padding: 9px 15px;
       border-radius: 9px;
-      background: var(--primary);
-      color: #ffffff;
+      background: #0f766e;
+      color: #fff;
       text-decoration: none;
       font-size: 14px;
-      font-weight: 700;
+      font-weight: 750;
     }
 
     .getting-started-link:hover {
-      opacity: 0.92;
+      opacity: .92;
     }
 
     .getting-started-note {
-      margin-top: 24px;
-      padding: 16px;
+      margin-top: 18px;
+      padding: 15px 16px;
       border-radius: 10px;
-      background: var(--primary-light);
+      background: #ecfdf5;
       color: #115e59;
       line-height: 1.6;
     }
 
     .member-loading {
-      color: var(--muted);
-      padding: 16px 0;
+      padding: 14px 0;
+      color: #667085;
     }
 
     .member-error {
       display: none;
       margin: 16px 0;
-      padding: 12px 16px;
-      border-radius: 8px;
-      background: rgba(220, 53, 69, 0.1);
+      padding: 12px 15px;
+      border: 1px solid #fecdca;
+      border-radius: 9px;
+      background: #fef3f2;
       color: #b42318;
+      line-height: 1.5;
     }
 
     @media (max-width: 700px) {
       .member-getting-started {
-        padding: 22px 12px 50px;
-      }
-
-      .getting-started-hero h1 {
-        font-size: 1.65rem;
+        padding: 22px 12px 48px;
       }
 
       .getting-started-grid {
@@ -150,6 +158,21 @@
       .getting-started-card-wide {
         grid-column: auto;
       }
+
+      .getting-started-card {
+        padding: 19px;
+      }
+
+      .getting-started-link {
+        width: 100%;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .getting-started-link,
+      .getting-started-back {
+        transition: none;
+      }
     }
   </style>
 </head>
@@ -157,13 +180,15 @@
 <body>
 
   <!--
-    IMPORTANT:
+    CHAMA LIVE — MEMBER PORTAL
+
     This page belongs exclusively to the Member Portal.
-    Do not link this page to the Admin Portal Getting Started page.
+    Do not route this page through the Admin Portal Getting Started page.
   -->
 
   <nav class="top-nav" aria-label="Member navigation">
     <a href="member-dashboard.html">Home</a>
+
     <a
       href="member-getting-started.html"
       class="active"
@@ -176,12 +201,27 @@
   <main class="member-getting-started">
 
     <section class="getting-started-hero">
+
+      <p class="getting-started-eyebrow">
+        Member Portal
+      </p>
+
       <h1>Getting Started</h1>
+
       <p>
         Welcome to your CHAMA LIVE Member Portal.
-        Use this area to learn how to navigate your group
-        information and member account.
+        Use this page to understand the main areas available
+        to you and quickly find your member information,
+        contribution records and group activity.
       </p>
+
+      <a
+        class="getting-started-back"
+        href="member-dashboard.html"
+      >
+        ← Back to My Dashboard
+      </a>
+
     </section>
 
     <div
@@ -201,28 +241,36 @@
 
     <section class="getting-started-grid">
 
+      <!-- Welcome -->
+
       <article class="getting-started-card getting-started-card-wide">
+
         <h2 id="memberWelcomeHeading">
           Welcome to your Member Portal
         </h2>
 
         <p id="memberWelcomeText">
           Your Member Portal gives you access to information
-          relevant to your membership in the group.
+          relevant to your membership and your group.
         </p>
+
       </article>
 
+      <!-- Dashboard -->
+
       <article class="getting-started-card">
+
         <h2>My Dashboard</h2>
 
         <p>
-          Your dashboard gives you an overview of your member
-          account and group activity.
+          Your dashboard gives you a quick overview of your
+          member account and the group information available
+          to you.
         </p>
 
         <ul class="getting-started-list">
           <li>View your member information.</li>
-          <li>Review your recorded contributions.</li>
+          <li>Review your contribution position.</li>
           <li>See upcoming meetings and group activity.</li>
           <li>View available plans, goals, milestones and assets.</li>
         </ul>
@@ -233,20 +281,25 @@
         >
           Go to My Dashboard
         </a>
+
       </article>
 
+      <!-- Contributions -->
+
       <article class="getting-started-card">
+
         <h2>My Contributions</h2>
 
         <p>
-          Use the contributions area to review contribution
-          records associated with your member account.
+          Review the contribution records associated with
+          your member account and the contribution information
+          available to you.
         </p>
 
         <ul class="getting-started-list">
           <li>Review recorded contribution entries.</li>
           <li>Check contribution dates and amounts.</li>
-          <li>Review the contribution history available to you.</li>
+          <li>Review your available contribution history.</li>
         </ul>
 
         <a
@@ -255,20 +308,24 @@
         >
           View My Contributions
         </a>
+
       </article>
 
+      <!-- Activities -->
+
       <article class="getting-started-card">
+
         <h2>Group Activities</h2>
 
         <p>
-          Stay informed about activities and events that are
-          available through your group.
+          Stay informed about activities and plans taking
+          place within your group.
         </p>
 
         <ul class="getting-started-list">
           <li>View group activities.</li>
-          <li>Check activity information and dates.</li>
-          <li>Keep up with relevant group updates.</li>
+          <li>Check activity status and dates.</li>
+          <li>See activities connected to group plans.</li>
         </ul>
 
         <a
@@ -277,40 +334,50 @@
         >
           View Activities
         </a>
+
       </article>
 
+      <!-- Member Account -->
+
       <article class="getting-started-card">
+
         <h2>Your Member Account</h2>
 
         <p>
-          Your Member Portal is designed to show information
-          connected to your membership and group.
+          Your Member Portal is connected to your membership
+          within your group.
         </p>
 
         <ul class="getting-started-list">
           <li>Your member details are linked to your group.</li>
-          <li>Your portal access is based on your member role.</li>
-          <li>Member pages are separate from the Admin Portal.</li>
+          <li>Your access is based on your member role.</li>
+          <li>Your member pages are separate from administration.</li>
         </ul>
+
       </article>
 
+      <!-- Help -->
+
       <article class="getting-started-card getting-started-card-wide">
+
         <h2>Need Help?</h2>
 
         <p>
           If information on your Member Portal appears incorrect,
-          contact your group administrator so they can review your
-          membership records.
+          contact your group administrator so they can review
+          your membership records.
         </p>
 
         <div class="getting-started-note">
           You are using the <strong>Member Portal</strong>.
           Administrative functions belong to the separate
-          Admin Portal and are not part of this page.
+          Admin Portal and are not available from this page.
         </div>
+
       </article>
 
     </section>
+
   </main>
 
   <script type="module">
