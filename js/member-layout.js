@@ -327,7 +327,7 @@ function injectStyles() {
 
 
     /* =====================================================
-       LOGOUT
+       DESKTOP LOGOUT
     ====================================================== */
 
     .chama-member-logout {
@@ -405,7 +405,8 @@ function injectStyles() {
         translateY(-1px);
 
       box-shadow:
-        0 5px 15px rgba(185,28,28,.08);
+        0 5px 15px
+        rgba(185,28,28,.08);
 
     }
 
@@ -1091,8 +1092,6 @@ function closeMemberMobileMenu() {
 
 /* =========================================================
    CANONICAL LOGOUT
-   ---------------------------------------------------------
-   Uses auth.js signOut().
 ========================================================= */
 
 async function handleMemberLogout(
@@ -1107,7 +1106,9 @@ async function handleMemberLogout(
   if (
     button.disabled
   ) {
+
     return;
+
   }
 
 
@@ -1144,13 +1145,6 @@ async function handleMemberLogout(
     button.textContent =
       originalText ||
       "Logout";
-
-
-    /*
-     * The canonical auth layer owns redirect behaviour.
-     * If signOut() throws, remain on the page and allow
-     * the user to try again.
-     */
 
   }
 
@@ -1193,9 +1187,11 @@ function createLogoutButton(
   button.addEventListener(
     "click",
     () => {
+
       handleMemberLogout(
         button
       );
+
     }
   );
 
@@ -1232,10 +1228,6 @@ function renderDesktopLogout() {
     "chamaMemberLogout";
 
 
-  /*
-   * Prefer the topbar's action area if one already exists.
-   */
-
   const existingActions =
     document.querySelector(
       ".topbar-actions"
@@ -1253,10 +1245,6 @@ function renderDesktopLogout() {
   }
 
 
-  /*
-   * Otherwise append it to the topbar.
-   */
-
   const topbar =
     document.querySelector(
       ".topbar"
@@ -1273,10 +1261,6 @@ function renderDesktopLogout() {
 
   }
 
-
-  /*
-   * Final fallback: place it beside the member nav.
-   */
 
   const memberNav =
     document.querySelector(
@@ -1491,16 +1475,16 @@ function renderDesktopNavigation() {
 
 function renderMobileNavigation() {
 
-  if (
+  const existingMenu =
     document.getElementById(
       "chamaMemberMenu"
-    )
-  ) {
+    );
+
+
+  if (existingMenu) {
 
     renderMobileLogout(
-      document.getElementById(
-        "chamaMemberMenu"
-      )
+      existingMenu
     );
 
     return;
@@ -1646,7 +1630,7 @@ function renderMobileNavigation() {
 
 
   /* -------------------------------------------------------
-     MENU TOGGLE
+     MENU BUTTON
   -------------------------------------------------------- */
 
   let button =
@@ -1654,10 +1638,6 @@ function renderMobileNavigation() {
       ".menu-toggle"
     );
 
-
-  /*
-   * If the page already has a menu-toggle, reuse it.
-   */
 
   if (button) {
 
@@ -1667,10 +1647,6 @@ function renderMobileNavigation() {
 
   }
 
-
-  /*
-   * Otherwise create one.
-   */
 
   if (!button) {
 
@@ -1739,30 +1715,42 @@ function renderMobileNavigation() {
      TOGGLE EVENT
   -------------------------------------------------------- */
 
-  button.addEventListener(
-    "click",
-    () => {
+  if (
+    !button.dataset
+      .chamaMemberBound
+  ) {
 
-      const isOpen =
-        menu.classList.contains(
-          "open"
-        );
+    button.dataset
+      .chamaMemberBound =
+      "true";
 
 
-      if (isOpen) {
+    button.addEventListener(
+      "click",
+      () => {
 
-        closeMemberMobileMenu();
+        const isOpen =
+          menu.classList.contains(
+            "open"
+          );
+
+
+        if (isOpen) {
+
+          closeMemberMobileMenu();
+
+        }
+
+        else {
+
+          openMemberMobileMenu();
+
+        }
 
       }
+    );
 
-      else {
-
-        openMemberMobileMenu();
-
-      }
-
-    }
-  );
+  }
 
 
   /* -------------------------------------------------------
@@ -1926,6 +1914,11 @@ async function loadCurrentPageFeature() {
     PAGE_SCRIPTS[page];
 
 
+  /*
+   * Getting Started is intentionally a layout-only page.
+   * It does not require a separate feature script.
+   */
+
   if (!entry) {
 
     return;
@@ -1958,6 +1951,83 @@ async function loadCurrentPageFeature() {
 
 
   await initializer();
+
+}
+
+
+/* =========================================================
+   ERROR DISPLAY
+========================================================= */
+
+function showLayoutError(
+  message
+) {
+
+  const errorBoxes = [
+
+    document.getElementById(
+      "error"
+    ),
+
+    document.getElementById(
+      "memberError"
+    )
+
+  ].filter(Boolean);
+
+
+  if (
+    errorBoxes.length === 0
+  ) {
+
+    return;
+
+  }
+
+
+  for (
+    const errorBox of errorBoxes
+  ) {
+
+    errorBox.hidden =
+      false;
+
+
+    errorBox.textContent =
+      message;
+
+  }
+
+}
+
+
+/* =========================================================
+   HIDE LAYOUT LOADING
+========================================================= */
+
+function hideLayoutLoading() {
+
+  const loadingBoxes = [
+
+    document.getElementById(
+      "loading"
+    ),
+
+    document.getElementById(
+      "memberLoading"
+    )
+
+  ].filter(Boolean);
+
+
+  for (
+    const loadingBox of loadingBoxes
+  ) {
+
+    loadingBox.hidden =
+      true;
+
+  }
 
 }
 
@@ -2101,6 +2171,16 @@ export async function boot() {
 
     await loadCurrentPageFeature();
 
+
+    /* -----------------------------------------------------
+       HIDE PAGE LOADING INDICATORS
+       Feature pages may manage their own loading state.
+       Getting Started has no feature script, so the layout
+       handles its loading indicator here.
+    ------------------------------------------------------ */
+
+    hideLayoutLoading();
+
   }
 
   catch (error) {
@@ -2111,23 +2191,13 @@ export async function boot() {
     );
 
 
-    const errorBox =
-      document.getElementById(
-        "error"
-      );
+    hideLayoutLoading();
 
 
-    if (errorBox) {
-
-      errorBox.hidden =
-        false;
-
-
-      errorBox.textContent =
-        error?.message ||
-        "Unable to load the Member Portal.";
-
-    }
+    showLayoutError(
+      error?.message ||
+      "Unable to load the Member Portal."
+    );
 
   }
 
