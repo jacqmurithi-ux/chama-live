@@ -657,10 +657,14 @@ function renderGroupFinancialHealth() {
   }
 
 
+  const memberCount =
+    activeMembers.length ||
+    groupMembers.length;
+
+
   setText(
     "groupMemberCount",
-    activeMembers.length ||
-    groupMembers.length
+    memberCount
   );
 
   setText(
@@ -696,6 +700,7 @@ function renderGroupFinancialHealth() {
     expenseActivity
   );
 
+
   const bar =
     byId(
       "groupParticipationBar"
@@ -703,21 +708,32 @@ function renderGroupFinancialHealth() {
 
   if (bar) {
 
-    bar.style.width =
-      `${Math.max(
+    const safeParticipation =
+      Math.max(
         0,
         Math.min(
           100,
           participation
         )
-      )}%`;
+      );
+
+    bar.style.width =
+      `${safeParticipation}%`;
+
+    bar.setAttribute(
+      "aria-valuenow",
+      String(
+        Math.round(
+          safeParticipation
+        )
+      );
 
   }
 
+
   setText(
     "activityMemberCount",
-    activeMembers.length ||
-    groupMembers.length
+    memberCount
   );
 
   setText(
@@ -1211,9 +1227,11 @@ async function loadActivities() {
             </span>
 
             <div class="member-progress">
+
               <span
                 style="width:${progress}%"
               ></span>
+
             </div>
 
             <span class="member-muted">
@@ -1835,9 +1853,6 @@ async function loadDashboard() {
         )
       );
 
-      const firstFailure =
-        failures[0]?.reason;
-
 
       /*
        * Optional sections should not make the entire
@@ -1848,6 +1863,9 @@ async function loadDashboard() {
         failures.length >=
         results.length
       ) {
+
+        const firstFailure =
+          failures[0]?.reason;
 
         showError(
           firstFailure?.message ||
