@@ -1,30 +1,35 @@
 /* =========================================================
    CHAMA LIVE — MEMBER DASHBOARD
-
-   MEMBER PORTAL
    ---------------------------------------------------------
-   Read-only dashboard.
+   MEMBER PORTAL
 
-   NO:
-     - INSERT
-     - UPDATE
-     - DELETE
-     - financial mutation
-     - member mutation
-     - group mutation
-     - administrative action
-========================================================= */
+   PURPOSE
+   ---------------------------------------------------------
+   • Show the authenticated member's own account information.
+   • Show the member's own contribution summary.
+   • Show read-only group-level information.
+   • Provide navigation into the member portal.
+
+   SECURITY CONTRACT
+   ---------------------------------------------------------
+   • Member identity comes from the authenticated session.
+   • Member/group context comes from getMyApplicationContext().
+   • This page is READ-ONLY.
+   • No INSERT / UPDATE / DELETE.
+   • No financial mutation.
+   • No member mutation.
+   • No group mutation.
+   • No admin mutation.
+
+   IMPORTANT
+   ---------------------------------------------------------
+   • Do not assume contributions.group_id exists.
+   • Group contribution data is resolved through members.
+   • member-layout.js owns portal navigation/auth/logout.
+   ========================================================= */
 
 import { supabase } from "./supabase.js";
-
-import {
-  getMyApplicationContext
-} from "./auth.js";
-
-
-/* =========================================================
-   STATE
-========================================================= */
+import { getMyApplicationContext } from "./auth.js";
 
 let currentUser = null;
 let currentMember = null;
@@ -41,8 +46,8 @@ let initialized = false;
 
 
 /* =========================================================
-   HELPERS
-========================================================= */
+   DOM HELPERS
+   ========================================================= */
 
 function byId(id) {
   return document.getElementById(id);
@@ -50,15 +55,7 @@ function byId(id) {
 
 
 function escapeHtml(value) {
-
-  if (
-    value === null ||
-    value === undefined
-  ) {
-    return "";
-  }
-
-  return String(value)
+  return String(value ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -68,228 +65,134 @@ function escapeHtml(value) {
 
 
 function numberValue(value) {
-
-  const number =
-    Number(value);
-
-  return Number.isFinite(number)
-    ? number
-    : 0;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
 }
 
 
-function formatMoney(amount) {
-
-  return (
-    "KSh " +
-    numberValue(amount)
-      .toLocaleString(
-        "en-KE",
-        {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2
-        }
-      )
-  );
+function formatMoney(value) {
+  return new Intl.NumberFormat("en-KE", {
+    style: "currency",
+    currency: "KES",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(numberValue(value));
 }
 
 
 function formatDate(value) {
-
   if (!value) {
     return "—";
   }
 
-  const date =
-    new Date(value);
+  const date = new Date(value);
 
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
+  if (Number.isNaN(date.getTime())) {
     return String(value);
   }
 
-  return date.toLocaleDateString(
-    "en-KE",
-    {
-      day: "2-digit",
-      month: "short",
-      year: "numeric"
-    }
-  );
+  return date.toLocaleDateString("en-KE", {
+    year: "numeric",
+    month: "short",
+    day: "numeric"
+  });
 }
 
 
 function todayIso() {
+  const date = new Date();
 
-  const now =
-    new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
 
-  return [
-    now.getFullYear(),
-    String(
-      now.getMonth() + 1
-    ).padStart(2, "0"),
-    String(
-      now.getDate()
-    ).padStart(2, "0")
-  ].join("-");
+  return `${year}-${month}-${day}`;
 }
 
 
 function currentMonthStart() {
+  const date = new Date();
 
-  const now =
-    new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
 
-  return [
-    now.getFullYear(),
-    String(
-      now.getMonth() + 1
-    ).padStart(2, "0"),
-    "01"
-  ].join("-");
+  return `${year}-${month}-01`;
 }
 
 
 function displayRole(role) {
+  if (!role) {
+    return "Member";
+  }
 
-  const value =
-    String(
-      role || "member"
-    )
-      .trim()
-      .toLowerCase();
-
-  const labels = {
-    admin: "Admin",
-    member: "Member",
-    chairperson: "Chairperson",
-    secretary: "Secretary",
-    treasurer: "Treasurer"
-  };
-
-  return (
-    labels[value] ||
-    (
-      value.charAt(0).toUpperCase() +
-      value.slice(1)
-    )
-  );
+  return String(role)
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, letter => letter.toUpperCase());
 }
 
 
 function displayStatus(status) {
-
-  const value =
-    String(
-      status || "active"
-    )
-      .trim()
-      .toLowerCase();
-
-  if (!value) {
-    return "Active";
+  if (!status) {
+    return "—";
   }
 
-  return (
-    value.charAt(0).toUpperCase() +
-    value.slice(1)
-  );
+  return String(status)
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, letter => letter.toUpperCase());
 }
 
 
 function setText(id, value) {
+  const element = byId(id);
 
-  const node =
-    byId(id);
-
-  if (!node) {
-    return;
+  if (element) {
+    element.textContent = value ?? "—";
   }
-
-  node.textContent =
-    value === null ||
-    value === undefined
-      ? "—"
-      : String(value);
 }
 
 
 /* =========================================================
-   UI STATE
-========================================================= */
+   LOADING / ERROR
+   ========================================================= */
 
 function showLoading(show) {
+  const loading = byId("memberLoading");
 
-  const node =
-    byId("memberLoading");
-
-  if (!node) {
-    return;
+  if (loading) {
+    loading.hidden = !show;
   }
-
-  node.hidden =
-    !show;
 }
 
 
 function showError(message) {
+  const error = byId("memberError");
 
-  console.error(
-    "CHAMA LIVE: Member Dashboard",
-    message
-  );
-
-  const node =
-    byId("memberError");
-
-  if (!node) {
+  if (!error) {
     return;
   }
 
-  node.textContent =
-    message ||
-    "Unable to load your dashboard.";
-
-  node.hidden =
-    false;
+  error.textContent = message || "Unable to load your member dashboard.";
+  error.hidden = false;
 }
 
 
 function clearError() {
+  const error = byId("memberError");
 
-  const node =
-    byId("memberError");
-
-  if (!node) {
-    return;
+  if (error) {
+    error.hidden = true;
+    error.textContent = "";
   }
-
-  node.textContent =
-    "";
-
-  node.hidden =
-    true;
 }
 
 
 /* =========================================================
    ACCOUNT
-========================================================= */
+   ========================================================= */
 
 function renderAccount() {
-
-  const memberName =
-    currentMember?.name ||
-    "Member";
-
-  const memberNumber =
-    currentMember?.member_number ||
-    currentMember?.membership_number ||
-    "—";
+  const memberName = currentMember?.name || "Member";
+  const groupName = currentGroup?.name || "Your group";
 
   setText(
     "memberGreeting",
@@ -298,8 +201,7 @@ function renderAccount() {
 
   setText(
     "memberGroupName",
-    currentGroup?.name ||
-    "Your Group"
+    groupName
   );
 
   setText(
@@ -309,79 +211,53 @@ function renderAccount() {
 
   setText(
     "memberNumber",
-    memberNumber
+    currentMember?.member_number ||
+    currentMember?.membership_number ||
+    currentMember?.member_no ||
+    currentMember?.id ||
+    "—"
   );
 
   setText(
     "memberRole",
-    displayRole(
-      currentMember?.role
-    )
+    displayRole(currentMember?.role)
   );
 
   setText(
     "memberStatus",
-    displayStatus(
-      currentMember?.status
-    )
+    displayStatus(currentMember?.status)
   );
 }
 
 
 /* =========================================================
-   MY CONTRIBUTIONS
-   ---------------------------------------------------------
-   OWN MEMBER DATA ONLY
-========================================================= */
+   MEMBER CONTRIBUTIONS
+   ========================================================= */
 
 async function loadMyContributions() {
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("contributions")
-      .select(`
-        id,
-        member_id,
-        amount,
-        contribution_date,
-        contribution_type,
-        payment_method
-      `)
-      .eq(
-        "member_id",
-        memberId
-      )
-      .order(
-        "contribution_date",
-        {
-          ascending: false
-        }
-      );
+  const { data, error } = await supabase
+    .from("contributions")
+    .select(
+      "id, member_id, amount, contribution_date, contribution_type, payment_method"
+    )
+    .eq("member_id", memberId)
+    .order("contribution_date", {
+      ascending: false
+    });
 
   if (error) {
     throw error;
   }
 
-  const rows =
-    Array.isArray(data)
-      ? data
-      : [];
+  const contributions = Array.isArray(data)
+    ? data
+    : [];
 
-  const total =
-    rows.reduce(
-      (
-        sum,
-        row
-      ) =>
-        sum +
-        numberValue(
-          row.amount
-        ),
-      0
-    );
+  const total = contributions.reduce(
+    (sum, contribution) =>
+      sum + numberValue(contribution.amount),
+    0
+  );
 
   setText(
     "myContributionTotal",
@@ -390,309 +266,192 @@ async function loadMyContributions() {
 
   setText(
     "myContributionCount",
-    rows.length
+    String(contributions.length)
   );
 }
 
 
 /* =========================================================
    GROUP READ DATA
-   ---------------------------------------------------------
-   These are SELECT-only.
-
-   IMPORTANT:
-   contributions are linked to members through member_id;
-   we do NOT assume contributions has group_id.
-========================================================= */
+   ========================================================= */
 
 async function loadGroupReadData() {
-
-  const membersResult =
-    await supabase
+  const [
+    membersResult,
+    expensesResult
+  ] = await Promise.all([
+    supabase
       .from("members")
-      .select(`
-        id,
-        group_id,
-        name,
-        status
-      `)
-      .eq(
-        "group_id",
-        groupId
-      );
+      .select(
+        "id, group_id, name, status"
+      )
+      .eq("group_id", groupId),
+
+    supabase
+      .from("expenses")
+      .select(
+        "id, description, category, amount, date, approval_status"
+      )
+      .eq("group_id", groupId)
+      .order("date", {
+        ascending: false
+      })
+      .limit(50)
+  ]);
 
   if (membersResult.error) {
     throw membersResult.error;
   }
 
-  groupMembers =
-    Array.isArray(
-      membersResult.data
-    )
-      ? membersResult.data
-      : [];
-
-
-  const memberIds =
-    groupMembers
-      .map(
-        member =>
-          member.id
-      )
-      .filter(Boolean);
-
-
-  if (memberIds.length) {
-
-    const contributionsResult =
-      await supabase
-        .from("contributions")
-        .select(`
-          id,
-          member_id,
-          amount,
-          contribution_date,
-          contribution_type,
-          payment_method
-        `)
-        .in(
-          "member_id",
-          memberIds
-        )
-        .order(
-          "contribution_date",
-          {
-            ascending: false
-          }
-        )
-        .limit(50);
-
-    if (contributionsResult.error) {
-      throw contributionsResult.error;
-    }
-
-    groupContributions =
-      Array.isArray(
-        contributionsResult.data
-      )
-        ? contributionsResult.data
-        : [];
-
-  }
-  else {
-
-    groupContributions = [];
-
-  }
-
-
-  const expensesResult =
-    await supabase
-      .from("expenses")
-      .select(`
-        id,
-        description,
-        category,
-        amount,
-        date,
-        approval_status
-      `)
-      .eq(
-        "group_id",
-        groupId
-      )
-      .order(
-        "date",
-        {
-          ascending: false
-        }
-      )
-      .limit(50);
-
   if (expensesResult.error) {
     throw expensesResult.error;
   }
 
-  groupExpenses =
-    Array.isArray(
-      expensesResult.data
+  groupMembers = Array.isArray(membersResult.data)
+    ? membersResult.data
+    : [];
+
+  groupExpenses = Array.isArray(expensesResult.data)
+    ? expensesResult.data
+    : [];
+
+  const memberIds = groupMembers
+    .map(member => member.id)
+    .filter(Boolean);
+
+  if (!memberIds.length) {
+    groupContributions = [];
+    return;
+  }
+
+  const contributionsResult = await supabase
+    .from("contributions")
+    .select(
+      "id, member_id, amount, contribution_date, contribution_type, payment_method"
     )
-      ? expensesResult.data
-      : [];
+    .in("member_id", memberIds)
+    .order("contribution_date", {
+      ascending: false
+    })
+    .limit(50);
+
+  if (contributionsResult.error) {
+    throw contributionsResult.error;
+  }
+
+  groupContributions = Array.isArray(
+    contributionsResult.data
+  )
+    ? contributionsResult.data
+    : [];
 }
 
 
 /* =========================================================
    GROUP FINANCIAL HEALTH
-========================================================= */
+   ========================================================= */
 
 function renderGroupFinancialHealth() {
-
-  const monthStart =
-    currentMonthStart();
+  const monthStart = currentMonthStart();
 
   const monthlyContributions =
-    groupContributions.filter(
-      contribution =>
-        String(
-          contribution.contribution_date || ""
-        ).slice(0, 10) >=
-        monthStart
-    );
-
-  const monthlyExpenses =
-    groupExpenses.filter(
-      expense =>
-        String(
-          expense.date || ""
-        ).slice(0, 10) >=
-        monthStart
-    );
-
-
-  const contributionTotal =
-    monthlyContributions.reduce(
-      (
-        total,
-        row
-      ) =>
-        total +
-        numberValue(
-          row.amount
-        ),
-      0
-    );
-
-
-  const approvedExpenses =
-    monthlyExpenses
-      .filter(
-        expense =>
-          String(
-            expense.approval_status || ""
-          )
-            .trim()
-            .toLowerCase() ===
-          "approved"
+    groupContributions
+      .filter(contribution =>
+        contribution.contribution_date &&
+        String(contribution.contribution_date)
+          .slice(0, 10) >= monthStart
+      )
+      .reduce(
+        (sum, contribution) =>
+          sum + numberValue(contribution.amount),
+        0
       );
 
-
-  const expenseTotal =
-    approvedExpenses.reduce(
-      (
-        total,
-        row
-      ) =>
-        total +
-        numberValue(
-          row.amount
-        ),
-      0
-    );
-
+  const monthlyExpenses =
+    groupExpenses
+      .filter(expense =>
+        expense.date &&
+        String(expense.date).slice(0, 10) >= monthStart &&
+        String(expense.approval_status || "").toLowerCase() ===
+          "approved"
+      )
+      .reduce(
+        (sum, expense) =>
+          sum + numberValue(expense.amount),
+        0
+      );
 
   const netMovement =
-    contributionTotal -
-    expenseTotal;
-
+    monthlyContributions - monthlyExpenses;
 
   const activeMembers =
-    groupMembers.filter(
-      member =>
-        String(
-          member.status || ""
-        )
-          .trim()
-          .toLowerCase() ===
-        "active"
+    groupMembers.filter(member =>
+      String(member.status || "").toLowerCase() === "active"
     );
 
+  const activeMemberIds = new Set(
+    activeMembers.map(member => member.id)
+  );
 
-  const activeMemberIds =
+  const activeContributors =
     new Set(
-      activeMembers.map(
-        member =>
-          String(member.id)
-      )
-    );
-
-
-  const contributingMemberIds =
-    new Set(
-      monthlyContributions
-        .filter(
-          contribution =>
-            activeMemberIds.has(
-              String(
-                contribution.member_id
-              )
-            )
+      groupContributions
+        .filter(contribution =>
+          activeMemberIds.has(contribution.member_id) &&
+          contribution.contribution_date &&
+          String(contribution.contribution_date)
+            .slice(0, 10) >= monthStart
         )
-        .map(
-          contribution =>
-            String(
-              contribution.member_id
-            )
-        )
+        .map(contribution => contribution.member_id)
     );
-
 
   const participation =
-    activeMembers.length > 0
-      ? (
-          contributingMemberIds.size /
-          activeMembers.length
-        ) * 100
+    activeMembers.length
+      ? (activeContributors.size / activeMembers.length) * 100
       : 0;
 
+  const safeParticipation = Math.max(
+    0,
+    Math.min(100, participation)
+  );
 
-  let expenseActivity =
-    "Quiet";
+  const expenseCount =
+    groupExpenses.filter(expense =>
+      expense.date &&
+      String(expense.date).slice(0, 10) >= monthStart
+    ).length;
 
-  if (monthlyExpenses.length >= 5) {
+  let expenseActivity = "Quiet";
+
+  if (expenseCount >= 5) {
     expenseActivity = "Active";
-  }
-  else if (monthlyExpenses.length > 0) {
+  } else if (expenseCount >= 1) {
     expenseActivity = "Normal";
   }
 
-
-  const memberCount =
-    activeMembers.length ||
-    groupMembers.length;
-
-
   setText(
     "groupMemberCount",
-    memberCount
+    String(groupMembers.length)
   );
 
   setText(
     "groupMonthlyContributions",
-    formatMoney(
-      contributionTotal
-    )
+    formatMoney(monthlyContributions)
   );
 
   setText(
     "groupMonthlyExpenses",
-    formatMoney(
-      expenseTotal
-    )
+    formatMoney(monthlyExpenses)
   );
 
   setText(
     "groupNetMovement",
-    formatMoney(
-      netMovement
-    )
+    formatMoney(netMovement)
   );
 
   setText(
     "groupParticipation",
-    `${Math.round(
-      participation
-    )}%`
+    `${Math.round(safeParticipation)}%`
   );
 
   setText(
@@ -700,25 +459,25 @@ function renderGroupFinancialHealth() {
     expenseActivity
   );
 
+  setText(
+    "activityMemberCount",
+    String(groupMembers.length)
+  );
 
-  const bar =
-    byId(
-      "groupParticipationBar"
-    );
+  setText(
+    "activityContributionCount",
+    String(groupContributions.length)
+  );
+
+  setText(
+    "activityExpenseCount",
+    String(groupExpenses.length)
+  );
+
+  const bar = byId("groupParticipationBar");
 
   if (bar) {
-
-    const safeParticipation =
-      Math.max(
-        0,
-        Math.min(
-          100,
-          participation
-        )
-      );
-
-    bar.style.width =
-      `${safeParticipation}%`;
+    bar.style.width = `${safeParticipation}%`;
 
     bar.setAttribute(
       "aria-valuenow",
@@ -729,611 +488,326 @@ function renderGroupFinancialHealth() {
       )
     );
   }
-
-
-  setText(
-    "activityMemberCount",
-    memberCount
-  );
-
-  setText(
-    "activityContributionCount",
-    monthlyContributions.length
-  );
-
-  setText(
-    "activityExpenseCount",
-    monthlyExpenses.length
-  );
 }
 
 
 /* =========================================================
-   RECENT CONTRIBUTIONS
-========================================================= */
+   RECENT GROUP CONTRIBUTIONS
+   ========================================================= */
 
 function renderRecentGroupContributions() {
-
-  const container =
-    byId(
-      "memberRecentContributions"
-    );
+  const container = byId(
+    "memberRecentContributions"
+  );
 
   if (!container) {
     return;
   }
 
-  const memberNames =
-    new Map(
-      groupMembers.map(
-        member => [
-          String(member.id),
-          member.name ||
-          "Member"
-        ]
-      )
-    );
-
-
-  const rows =
-    groupContributions
-      .slice(
-        0,
-        5
-      );
-
-
-  if (!rows.length) {
-
-    container.innerHTML = `
-      <div class="member-list-item">
-        <strong>No recent contributions</strong>
-        <span class="member-muted">
-          Recent group contributions will appear here.
-        </span>
-      </div>
-    `;
-
+  if (!groupContributions.length) {
+    container.innerHTML =
+      "<p>No recent group contributions recorded.</p>";
     return;
   }
 
+  const memberNames = new Map(
+    groupMembers.map(member => [
+      member.id,
+      member.name || "Member"
+    ])
+  );
 
-  container.innerHTML =
-    rows.map(
-      contribution => {
+  const recent =
+    groupContributions.slice(0, 5);
 
-        const memberName =
-          memberNames.get(
-            String(
-              contribution.member_id
-            )
-          ) ||
-          "Member";
+  container.innerHTML = recent
+    .map(contribution => {
+      const name =
+        memberNames.get(
+          contribution.member_id
+        ) || "Member";
 
-        return `
-          <div class="member-transaction">
-
-            <div class="member-transaction-main">
-
-              <div class="member-transaction-title">
-                ${escapeHtml(
-                  memberName
-                )}
-              </div>
-
-              <div class="member-transaction-meta">
-
-                ${
-                  contribution.contribution_type
-                    ? escapeHtml(
-                        contribution.contribution_type
-                      )
-                    : "Contribution"
-                }
-
-                ·
-
-                ${escapeHtml(
-                  formatDate(
-                    contribution.contribution_date
-                  )
-                )}
-
-              </div>
-
-            </div>
-
-            <div class="member-transaction-amount">
+      return `
+        <div class="member-dashboard-list-item">
+          <div>
+            <strong>${escapeHtml(name)}</strong>
+            <small>
               ${escapeHtml(
-                formatMoney(
-                  contribution.amount
+                contribution.contribution_type ||
+                "Contribution"
+              )}
+              ·
+              ${escapeHtml(
+                formatDate(
+                  contribution.contribution_date
                 )
               )}
-            </div>
-
+            </small>
           </div>
-        `;
-      }
-    ).join("");
+
+          <strong>
+            ${escapeHtml(
+              formatMoney(contribution.amount)
+            )}
+          </strong>
+        </div>
+      `;
+    })
+    .join("");
 }
 
 
 /* =========================================================
-   RECENT EXPENSES
-========================================================= */
+   RECENT GROUP EXPENSES
+   ========================================================= */
 
 function renderRecentGroupExpenses() {
-
-  const container =
-    byId(
-      "memberRecentExpenses"
-    );
+  const container = byId(
+    "memberRecentExpenses"
+  );
 
   if (!container) {
     return;
   }
 
-
-  const rows =
-    groupExpenses
-      .slice(
-        0,
-        3
-      );
-
-
-  if (!rows.length) {
-
-    container.innerHTML = `
-      <div class="member-list-item">
-        <strong>No recent expenses</strong>
-        <span class="member-muted">
-          Recent group expenses will appear here.
-        </span>
-      </div>
-    `;
-
+  if (!groupExpenses.length) {
+    container.innerHTML =
+      "<p>No recent group expenses recorded.</p>";
     return;
   }
 
+  const recent =
+    groupExpenses.slice(0, 3);
 
-  container.innerHTML =
-    rows.map(
-      expense => {
+  container.innerHTML = recent
+    .map(expense => {
+      const status =
+        expense.approval_status ||
+        "Pending";
 
-        const approved =
-          String(
-            expense.approval_status || ""
-          )
-            .trim()
-            .toLowerCase() ===
-          "approved";
+      const approved =
+        String(status).toLowerCase() ===
+        "approved";
 
-        return `
-          <div class="member-transaction">
-
-            <div class="member-transaction-main">
-
-              <div class="member-transaction-title">
-                ${escapeHtml(
-                  expense.description ||
-                  expense.category ||
-                  "Group Expense"
-                )}
-              </div>
-
-              <div class="member-transaction-meta">
-
-                ${
-                  expense.category
-                    ? escapeHtml(
-                        expense.category
-                      )
-                    : "Expense"
-                }
-
-                ·
-
-                ${escapeHtml(
-                  formatDate(
-                    expense.date
-                  )
-                )}
-
-                ·
-
-                ${escapeHtml(
-                  displayStatus(
-                    expense.approval_status ||
-                    "pending"
-                  )
-                )}
-
-              </div>
-
-            </div>
-
-            <div
-              class="member-transaction-amount"
-              ${approved ? "" : "style=\"color:#b45309\""}
-            >
+      return `
+        <div class="member-dashboard-list-item">
+          <div>
+            <strong>
               ${escapeHtml(
-                formatMoney(
-                  expense.amount
-                )
+                expense.description ||
+                expense.category ||
+                "Expense"
               )}
-            </div>
+            </strong>
 
+            <small>
+              ${escapeHtml(
+                expense.category || "Expense"
+              )}
+              ·
+              ${escapeHtml(
+                formatDate(expense.date)
+              )}
+              ·
+              ${escapeHtml(status)}
+            </small>
           </div>
-        `;
-      }
-    ).join("");
+
+          <strong${approved ? "" : ' style="opacity:.75;"'}>
+            ${escapeHtml(
+              formatMoney(expense.amount)
+            )}
+          </strong>
+        </div>
+      `;
+    })
+    .join("");
 }
 
 
 /* =========================================================
    MEETINGS
-========================================================= */
+   ========================================================= */
 
 async function loadMeetings() {
-
-  const container =
-    byId(
-      "memberMeetings"
-    );
+  const container = byId(
+    "memberMeetings"
+  );
 
   if (!container) {
     return;
   }
 
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("meetings")
-      .select(`
-        id,
-        date,
-        title,
-        venue,
-        status
-      `)
-      .eq(
-        "group_id",
-        groupId
-      )
-      .gte(
-        "date",
-        todayIso()
-      )
-      .order(
-        "date",
-        {
-          ascending: true
-        }
-      )
-      .limit(5);
-
+  const { data, error } = await supabase
+    .from("meetings")
+    .select(
+      "id, date, title, venue, status"
+    )
+    .eq("group_id", groupId)
+    .gte("date", todayIso())
+    .order("date", {
+      ascending: true
+    })
+    .limit(5);
 
   if (error) {
     throw error;
   }
 
+  const meetings = Array.isArray(data)
+    ? data
+    : [];
 
-  const rows =
-    Array.isArray(data)
-      ? data
-      : [];
-
-
-  if (!rows.length) {
-
-    container.innerHTML = `
-      <div class="member-list-item">
-
-        <strong>
-          No upcoming meetings
-        </strong>
-
-        <span class="member-muted">
-          No upcoming group meetings are scheduled.
-        </span>
-
-      </div>
-    `;
-
+  if (!meetings.length) {
+    container.innerHTML =
+      "<p>No upcoming meetings recorded.</p>";
     return;
   }
 
-
-  container.innerHTML =
-    rows.map(
-      meeting => `
-        <div class="member-list-item">
-
+  container.innerHTML = meetings
+    .map(meeting => `
+      <div class="member-dashboard-list-item">
+        <div>
           <strong>
             ${escapeHtml(
-              meeting.title ||
-              "Group Meeting"
+              meeting.title || "Meeting"
             )}
           </strong>
 
-          <span class="member-muted">
-
+          <small>
             ${escapeHtml(
-              formatDate(
-                meeting.date
-              )
+              formatDate(meeting.date)
             )}
-
-            ${
-              meeting.venue
-                ? ` · ${escapeHtml(
-                    meeting.venue
-                  )}`
-                : ""
-            }
-
-          </span>
-
-          ${
-            meeting.status
-              ? `
-                <span class="member-status">
-                  ${escapeHtml(
-                    displayStatus(
-                      meeting.status
-                    )
-                  )}
-                </span>
-              `
-              : ""
-          }
-
+            ${meeting.venue
+              ? ` · ${escapeHtml(meeting.venue)}`
+              : ""}
+          </small>
         </div>
-      `
-    ).join("");
+
+        <span>
+          ${escapeHtml(
+            meeting.status || "Scheduled"
+          )}
+        </span>
+      </div>
+    `)
+    .join("");
 }
 
 
 /* =========================================================
    GROUP ACTIVITIES
-========================================================= */
+   ========================================================= */
 
 async function loadActivities() {
-
-  const container =
-    byId(
-      "memberActivities"
-    );
+  const container = byId(
+    "memberActivities"
+  );
 
   if (!container) {
     return;
   }
 
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("group_activities")
-      .select(`
-        id,
-        plan_id,
-        title,
-        description,
-        start_date,
-        due_date,
-        status,
-        progress_percent
-      `)
-      .eq(
-        "group_id",
-        groupId
-      )
-      .order(
-        "due_date",
-        {
-          ascending: true,
-          nullsFirst: false
-        }
-      )
-      .limit(5);
-
+  const { data, error } = await supabase
+    .from("group_activities")
+    .select(
+      "id, plan_id, title, description, start_date, due_date, status, progress_percent"
+    )
+    .eq("group_id", groupId)
+    .order("due_date", {
+      ascending: true,
+      nullsFirst: false
+    })
+    .limit(5);
 
   if (error) {
     throw error;
   }
 
+  const activities = Array.isArray(data)
+    ? data
+    : [];
 
-  const rows =
-    Array.isArray(data)
-      ? data
-      : [];
-
-
-  if (!rows.length) {
-
-    container.innerHTML = `
-      <div class="member-list-item">
-
-        <strong>
-          No group activities
-        </strong>
-
-        <span class="member-muted">
-          No activities have been recorded yet.
-        </span>
-
-      </div>
-    `;
-
+  if (!activities.length) {
+    container.innerHTML =
+      "<p>No group activities recorded.</p>";
     return;
   }
 
+  container.innerHTML = activities
+    .map(activity => `
+      <div class="member-dashboard-list-item">
+        <div>
+          <strong>
+            ${escapeHtml(
+              activity.title || "Activity"
+            )}
+          </strong>
 
-  container.innerHTML =
-    rows.map(
-      activity => {
+          <small>
+            ${escapeHtml(
+              activity.status || "Planned"
+            )}
+            ${activity.due_date
+              ? ` · Due ${escapeHtml(
+                  formatDate(activity.due_date)
+                )}`
+              : ""}
+          </small>
+        </div>
 
-        const progress =
-          Math.max(
-            0,
-            Math.min(
-              100,
-              numberValue(
-                activity.progress_percent
-              )
-            )
-          );
-
-        return `
-          <div class="member-list-item">
-
-            <strong>
-              ${escapeHtml(
-                activity.title ||
-                "Group Activity"
-              )}
-            </strong>
-
-            ${
-              activity.description
-                ? `
-                  <span class="member-muted">
-                    ${escapeHtml(
-                      activity.description
-                    )}
-                  </span>
-                `
-                : ""
-            }
-
-            <span class="member-muted">
-
-              ${
-                activity.due_date
-                  ? `Due ${escapeHtml(
-                      formatDate(
-                        activity.due_date
-                      )
-                    )}`
-                  : "No due date"
-              }
-
-            </span>
-
-            <div class="member-progress">
-
-              <span
-                style="width:${progress}%"
-              ></span>
-
-            </div>
-
-            <span class="member-muted">
-              ${progress}% complete
-            </span>
-
-            ${
-              activity.status
-                ? `
-                  <span class="member-status">
-                    ${escapeHtml(
-                      displayStatus(
-                        activity.status
-                      )
-                    )}
-                  </span>
-                `
-                : ""
-            }
-
-          </div>
-        `;
-      }
-    ).join("");
+        <span>
+          ${numberValue(
+            activity.progress_percent
+          )}%
+        </span>
+      </div>
+    `)
+    .join("");
 }
 
 
 /* =========================================================
    PLANS & GOALS
-========================================================= */
+   ========================================================= */
 
 async function loadPlansAndGoals() {
-
-  const container =
-    byId(
-      "memberPlans"
-    );
+  const container = byId(
+    "memberPlans"
+  );
 
   if (!container) {
     return;
   }
 
-
   const [
     plansResult,
     goalsResult
-  ] =
-    await Promise.all([
+  ] = await Promise.all([
+    supabase
+      .from("group_plans")
+      .select(
+        "id, title, description, category, start_date, target_date, status, progress_percent"
+      )
+      .eq("group_id", groupId)
+      .order("target_date", {
+        ascending: true,
+        nullsFirst: false
+      })
+      .limit(5),
 
-      supabase
-        .from("group_plans")
-        .select(`
-          id,
-          title,
-          description,
-          category,
-          start_date,
-          target_date,
-          status,
-          progress_percent
-        `)
-        .eq(
-          "group_id",
-          groupId
-        )
-        .order(
-          "target_date",
-          {
-            ascending: true,
-            nullsFirst: false
-          }
-        )
-        .limit(5),
-
-      supabase
-        .from("contribution_goals")
-        .select(`
-          id,
-          goal_name,
-          category,
-          description,
-          frequency,
-          start_date,
-          end_date,
-          target_amount,
-          status
-        `)
-        .eq(
-          "group_id",
-          groupId
-        )
-        .order(
-          "end_date",
-          {
-            ascending: true,
-            nullsFirst: false
-          }
-        )
-        .limit(5)
-
-    ]);
-
+    supabase
+      .from("contribution_goals")
+      .select(
+        "id, goal_name, category, description, frequency, start_date, end_date, target_amount, status"
+      )
+      .eq("group_id", groupId)
+      .order("end_date", {
+        ascending: true,
+        nullsFirst: false
+      })
+      .limit(5)
+  ]);
 
   if (plansResult.error) {
     throw plansResult.error;
@@ -1343,444 +817,247 @@ async function loadPlansAndGoals() {
     throw goalsResult.error;
   }
 
+  const plans = Array.isArray(plansResult.data)
+    ? plansResult.data
+    : [];
 
-  const plans =
-    Array.isArray(
-      plansResult.data
-    )
-      ? plansResult.data
-      : [];
+  const goals = Array.isArray(goalsResult.data)
+    ? goalsResult.data
+    : [];
 
+  const combined = [
+    ...plans.map(plan => ({
+      type: "Plan",
+      title: plan.title,
+      description: plan.description,
+      status: plan.status,
+      progress: plan.progress_percent,
+      date: plan.target_date
+    })),
 
-  const goals =
-    Array.isArray(
-      goalsResult.data
-    )
-      ? goalsResult.data
-      : [];
+    ...goals.map(goal => ({
+      type: "Goal",
+      title: goal.goal_name,
+      description: goal.description,
+      status: goal.status,
+      progress: null,
+      date: goal.end_date
+    }))
+  ]
+    .sort((a, b) => {
+      const first =
+        a.date
+          ? new Date(a.date).getTime()
+          : Number.MAX_SAFE_INTEGER;
 
+      const second =
+        b.date
+          ? new Date(b.date).getTime()
+          : Number.MAX_SAFE_INTEGER;
 
-  const items = [];
+      return first - second;
+    })
+    .slice(0, 5);
 
-
-  plans.forEach(
-    plan => {
-
-      items.push({
-        type: "Plan",
-        title:
-          plan.title ||
-          "Group Plan",
-        description:
-          plan.description,
-        date:
-          plan.target_date,
-        status:
-          plan.status,
-        progress:
-          plan.progress_percent
-      });
-
-    }
-  );
-
-
-  goals.forEach(
-    goal => {
-
-      items.push({
-        type: "Goal",
-        title:
-          goal.goal_name ||
-          "Contribution Goal",
-        description:
-          goal.description,
-        date:
-          goal.end_date,
-        status:
-          goal.status,
-        amount:
-          goal.target_amount
-      });
-
-    }
-  );
-
-
-  if (!items.length) {
-
-    container.innerHTML = `
-      <div class="member-list-item">
-
-        <strong>
-          No plans or goals
-        </strong>
-
-        <span class="member-muted">
-          No group plans or contribution goals have been recorded.
-        </span>
-
-      </div>
-    `;
-
+  if (!combined.length) {
+    container.innerHTML =
+      "<p>No plans or goals recorded.</p>";
     return;
   }
 
+  container.innerHTML = combined
+    .map(item => `
+      <div class="member-dashboard-list-item">
+        <div>
+          <strong>
+            ${escapeHtml(
+              item.title || item.type
+            )}
+          </strong>
 
-  items.sort(
-    (
-      a,
-      b
-    ) => {
+          <small>
+            ${escapeHtml(item.type)}
+            ${item.status
+              ? ` · ${escapeHtml(item.status)}`
+              : ""}
+            ${item.date
+              ? ` · ${escapeHtml(
+                  formatDate(item.date)
+                )}`
+              : ""}
+          </small>
+        </div>
 
-      if (!a.date) return 1;
-      if (!b.date) return -1;
-
-      return (
-        new Date(a.date) -
-        new Date(b.date)
-      );
-
-    }
-  );
-
-
-  container.innerHTML =
-    items
-      .slice(
-        0,
-        8
-      )
-      .map(
-        item => `
-
-          <div class="member-list-item">
-
-            <strong>
-              ${escapeHtml(
-                item.title
-              )}
-            </strong>
-
-            <span class="member-muted">
-
-              ${escapeHtml(
-                item.type
-              )}
-
-              ${
-                item.date
-                  ? ` · Target ${escapeHtml(
-                      formatDate(
-                        item.date
-                      )
-                    )}`
-                  : ""
-              }
-
-              ${
-                item.amount !== undefined &&
-                item.amount !== null
-                  ? ` · ${escapeHtml(
-                      formatMoney(
-                        item.amount
-                      )
-                    )}`
-                  : ""
-              }
-
-            </span>
-
-            ${
-              item.progress !== undefined &&
-              item.progress !== null
-                ? `
-                  <div class="member-progress">
-
-                    <span
-                      style="width:${Math.max(
-                        0,
-                        Math.min(
-                          100,
-                          numberValue(
-                            item.progress
-                          )
-                        )
-                      )}%"
-                    ></span>
-
-                  </div>
-                `
-                : ""
-            }
-
-            ${
-              item.status
-                ? `
-                  <span class="member-status">
-                    ${escapeHtml(
-                      displayStatus(
-                        item.status
-                      )
-                    )}
-                  </span>
-                `
-                : ""
-            }
-
-          </div>
-
-        `
-      )
-      .join("");
+        <span>
+          ${
+            item.progress !== null &&
+            item.progress !== undefined
+              ? `${numberValue(item.progress)}%`
+              : ""
+          }
+        </span>
+      </div>
+    `)
+    .join("");
 }
 
 
 /* =========================================================
-   ASSETS
-========================================================= */
+   GROUP ASSETS
+   ========================================================= */
 
 async function loadAssets() {
-
-  const container =
-    byId(
-      "memberAssets"
-    );
+  const container = byId(
+    "memberAssets"
+  );
 
   if (!container) {
     return;
   }
 
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("group_assets")
-      .select(`
-        id,
-        asset_name,
-        category,
-        description,
-        acquired_date,
-        acquisition_cost,
-        current_value,
-        location,
-        status
-      `)
-      .eq(
-        "group_id",
-        groupId
-      )
-      .order(
-        "created_at",
-        {
-          ascending: false
-        }
-      )
-      .limit(5);
-
+  const { data, error } = await supabase
+    .from("group_assets")
+    .select(
+      "id, asset_name, category, description, acquired_date, acquisition_cost, current_value, location, status"
+    )
+    .eq("group_id", groupId)
+    .order("created_at", {
+      ascending: false
+    })
+    .limit(5);
 
   if (error) {
     throw error;
   }
 
+  const assets = Array.isArray(data)
+    ? data
+    : [];
 
-  const rows =
-    Array.isArray(data)
-      ? data
-      : [];
-
-
-  if (!rows.length) {
-
-    container.innerHTML = `
-      <div class="member-list-item">
-
-        <strong>
-          No group assets
-        </strong>
-
-        <span class="member-muted">
-          No assets have been recorded yet.
-        </span>
-
-      </div>
-    `;
-
+  if (!assets.length) {
+    container.innerHTML =
+      "<p>No group assets recorded.</p>";
     return;
   }
 
-
-  container.innerHTML =
-    rows.map(
-      asset => `
-
-        <div class="member-list-item">
-
+  container.innerHTML = assets
+    .map(asset => `
+      <div class="member-dashboard-list-item">
+        <div>
           <strong>
             ${escapeHtml(
-              asset.asset_name ||
-              "Group Asset"
+              asset.asset_name || "Asset"
             )}
           </strong>
 
-          <span class="member-muted">
-
-            ${
-              asset.category
-                ? escapeHtml(
-                    asset.category
-                  )
-                : "Asset"
-            }
-
-            ${
-              asset.location
-                ? ` · ${escapeHtml(
-                    asset.location
-                  )}`
-                : ""
-            }
-
-            ${
-              asset.status
-                ? ` · ${escapeHtml(
-                    displayStatus(
-                      asset.status
-                    )
-                  )}`
-                : ""
-            }
-
-          </span>
-
-          ${
-            asset.description
-              ? `
-                <span class="member-muted">
-                  ${escapeHtml(
-                    asset.description
-                  )}
-                </span>
-              `
-              : ""
-          }
-
+          <small>
+            ${escapeHtml(
+              asset.category || "Asset"
+            )}
+            ${asset.location
+              ? ` · ${escapeHtml(asset.location)}`
+              : ""}
+            ${asset.status
+              ? ` · ${escapeHtml(asset.status)}`
+              : ""}
+          </small>
         </div>
 
-      `
-    ).join("");
+        <span>
+          ${asset.current_value !== null &&
+          asset.current_value !== undefined
+            ? escapeHtml(
+                formatMoney(asset.current_value)
+              )
+            : ""}
+        </span>
+      </div>
+    `)
+    .join("");
 }
 
 
 /* =========================================================
-   LOAD DASHBOARD
-========================================================= */
+   DASHBOARD LOAD
+   ========================================================= */
 
 async function loadDashboard() {
-
   clearError();
   showLoading(true);
 
-
   try {
-
     const context =
       await getMyApplicationContext();
 
-
     currentUser =
-      context?.user ||
-      null;
+      context?.user || null;
 
     currentMember =
-      context?.member ||
-      null;
+      context?.member || null;
 
     currentGroup =
-      context?.group ||
-      null;
-
+      context?.group || null;
 
     groupId =
       currentMember?.group_id ||
       currentGroup?.id ||
       null;
 
-
     memberId =
       currentMember?.id ||
       null;
 
+    if (!currentMember) {
+      throw new Error(
+        "Your member account could not be loaded."
+      );
+    }
 
     if (!groupId) {
-
       throw new Error(
-        "No group is associated with your member account."
+        "Your group could not be identified."
       );
-
     }
-
 
     if (!memberId) {
-
       throw new Error(
-        "No member record is associated with your account."
+        "Your member identity could not be identified."
       );
-
     }
-
 
     renderAccount();
 
-
-    /*
-     * The member dashboard sections are kept independent.
-     * A failure in one optional group section must not
-     * erase the rest of the dashboard.
-     */
-
     const results =
       await Promise.allSettled([
-
         loadMyContributions(),
-
         loadGroupReadData(),
-
         loadMeetings(),
-
         loadActivities(),
-
         loadPlansAndGoals(),
-
         loadAssets()
-
       ]);
 
-
-    /*
-     * Render group financial information only when its
-     * SELECT queries succeeded.
-     */
-
-    const groupDataResult =
-      results[1];
+    const [
+      myContributionsResult,
+      groupDataResult,
+      meetingsResult,
+      activitiesResult,
+      plansResult,
+      assetsResult
+    ] = results;
 
     if (
-      groupDataResult?.status ===
+      groupDataResult.status ===
       "fulfilled"
     ) {
-
       renderGroupFinancialHealth();
-
       renderRecentGroupContributions();
-
       renderRecentGroupExpenses();
-
-    }
-    else {
+    } else {
+      console.warn(
+        "Member dashboard group read data failed:",
+        groupDataResult.reason
+      );
 
       setText(
         "groupMemberCount",
@@ -1789,17 +1066,17 @@ async function loadDashboard() {
 
       setText(
         "groupMonthlyContributions",
-        "Not available"
+        "—"
       );
 
       setText(
         "groupMonthlyExpenses",
-        "Not available"
+        "—"
       );
 
       setText(
         "groupNetMovement",
-        "Not available"
+        "—"
       );
 
       setText(
@@ -1809,7 +1086,7 @@ async function loadDashboard() {
 
       setText(
         "groupExpenseActivity",
-        "Not available"
+        "—"
       );
 
       setText(
@@ -1827,89 +1104,81 @@ async function loadDashboard() {
         "—"
       );
 
-      console.warn(
-        "CHAMA LIVE: group financial read data unavailable.",
-        groupDataResult?.reason
-      );
+      const contributionContainer =
+        byId("memberRecentContributions");
 
-    }
-
-
-    const failures =
-      results.filter(
-        result =>
-          result.status ===
-          "rejected"
-      );
-
-
-    if (failures.length) {
-
-      console.error(
-        "CHAMA LIVE: some member dashboard sections failed",
-        failures.map(
-          failure =>
-            failure.reason
-        )
-      );
-
-
-      /*
-       * Optional sections should not make the entire
-       * dashboard look broken.
-       */
-
-      if (
-        failures.length >=
-        results.length
-      ) {
-
-        const firstFailure =
-          failures[0]?.reason;
-
-        showError(
-          firstFailure?.message ||
-          "Unable to load your dashboard information."
-        );
-
+      if (contributionContainer) {
+        contributionContainer.innerHTML =
+          "<p>Group contribution data could not be loaded.</p>";
       }
 
+      const expenseContainer =
+        byId("memberRecentExpenses");
+
+      if (expenseContainer) {
+        expenseContainer.innerHTML =
+          "<p>Group expense data could not be loaded.</p>";
+      }
     }
 
-  }
-  catch (error) {
+    const failures = results.filter(
+      result =>
+        result.status === "rejected"
+    );
+
+    if (failures.length) {
+      console.warn(
+        "Some member dashboard sections failed to load:",
+        failures.map(
+          failure => failure.reason
+        )
+      );
+    }
+
+    if (failures.length === results.length) {
+      throw new Error(
+        "The member dashboard could not load its data."
+      );
+    }
+
+    void myContributionsResult;
+    void meetingsResult;
+    void activitiesResult;
+    void plansResult;
+    void assetsResult;
+
+  } catch (error) {
+    console.error(
+      "Member dashboard load failed:",
+      error
+    );
 
     showError(
       error?.message ||
       "Unable to load your member dashboard."
     );
 
-  }
-  finally {
-
+  } finally {
     showLoading(false);
-
   }
 }
 
 
 /* =========================================================
-   INITIALIZE
-========================================================= */
+   INITIALIZER
+   ========================================================= */
 
 export async function initMemberDashboard() {
-
   if (initialized) {
     return;
   }
 
-  initialized =
-    true;
+  initialized = true;
 
   await loadDashboard();
 }
 
 
 console.log(
-  "CHAMA LIVE: member-dashboard.js loaded"
+  "CHAMA LIVE member-dashboard.js loaded."
 );
