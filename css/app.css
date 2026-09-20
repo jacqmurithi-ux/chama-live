@@ -686,7 +686,7 @@ a.btn {
 
 
 /* =========================================================
-   MEMBER ACCOUNT
+   MEMBER ACCOUNT / PROFILE
 ========================================================= */
 
 .member-account-row {
@@ -712,6 +712,22 @@ a.btn {
 
   background:
     var(--cl-surface-soft);
+
+  transition:
+    border-color .18s ease,
+    background .18s ease,
+    transform .18s ease;
+}
+
+.member-account-item:hover {
+  border-color:
+    var(--cl-border-strong);
+
+  background:
+    #f1f8f6;
+
+  transform:
+    translateY(-1px);
 }
 
 .member-account-label {
@@ -749,6 +765,81 @@ a.btn {
 
   word-break:
     break-word;
+}
+
+.member-profile-link {
+  position:
+    relative;
+
+  z-index:
+    2;
+
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  gap:
+    8px;
+
+  min-height:
+    42px;
+
+  margin-top:
+    16px;
+
+  padding:
+    9px 14px;
+
+  border:
+    1px solid var(--cl-border-strong);
+
+  border-radius:
+    11px;
+
+  background:
+    var(--cl-surface-teal);
+
+  color:
+    var(--cl-primary-dark);
+
+  font-size:
+    12px;
+
+  font-weight:
+    750;
+
+  text-decoration:
+    none;
+
+  transition:
+    transform .18s ease,
+    background .18s ease,
+    border-color .18s ease,
+    box-shadow .18s ease;
+}
+
+.member-profile-link:hover {
+  transform:
+    translateY(-1px);
+
+  border-color:
+    var(--cl-primary);
+
+  background:
+    var(--cl-primary-soft);
+
+  box-shadow:
+    var(--cl-shadow-sm);
+}
+
+.member-profile-link:active {
+  transform:
+    translateY(0);
 }
 
 
@@ -977,6 +1068,22 @@ a.btn {
 
   background:
     var(--cl-surface-soft);
+
+  transition:
+    transform .18s ease,
+    border-color .18s ease,
+    box-shadow .18s ease;
+}
+
+.member-health-item:hover {
+  transform:
+    translateY(-1px);
+
+  border-color:
+    var(--cl-border-strong);
+
+  box-shadow:
+    var(--cl-shadow-sm);
 }
 
 .member-health-label {
@@ -1030,6 +1137,10 @@ a.btn {
 
   border-bottom:
     1px solid var(--cl-border);
+
+  transition:
+    background .18s ease,
+    padding .18s ease;
 }
 
 .member-transaction:last-child {
@@ -1174,10 +1285,14 @@ a.btn {
   font-weight:
     750;
 
+  text-decoration:
+    none;
+
   transition:
     transform .18s ease,
     box-shadow .18s ease,
-    border-color .18s ease;
+    border-color .18s ease,
+    background .18s ease;
 }
 
 .member-action:hover {
@@ -1187,8 +1302,16 @@ a.btn {
   border-color:
     var(--cl-border-strong);
 
+  background:
+    #fbfefd;
+
   box-shadow:
     var(--cl-shadow);
+}
+
+.member-action:active {
+  transform:
+    translateY(0);
 }
 
 .member-action-icon {
@@ -1218,6 +1341,91 @@ a.btn {
 
   font-size:
     15px;
+}
+
+
+/* =========================================================
+   MEMBER DASHBOARD SECTION LABELS
+========================================================= */
+
+.member-section-label {
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  gap:
+    6px;
+
+  margin-bottom:
+    7px;
+
+  color:
+    var(--cl-primary-dark);
+
+  font-size:
+    10px;
+
+  font-weight:
+    800;
+
+  text-transform:
+    uppercase;
+
+  letter-spacing:
+    .08em;
+}
+
+
+/* =========================================================
+   MEMBER EMPTY STATES
+========================================================= */
+
+.member-empty {
+  padding:
+    18px 0;
+
+  color:
+    var(--cl-muted);
+
+  font-size:
+    12px;
+
+  line-height:
+    1.6;
+
+  text-align:
+    center;
+}
+
+.member-empty-icon {
+  display:
+    grid;
+
+  place-items:
+    center;
+
+  width:
+    40px;
+
+  height:
+    40px;
+
+  margin:
+    0 auto 9px;
+
+  border-radius:
+    12px;
+
+  background:
+    var(--cl-surface-teal);
+
+  color:
+    var(--cl-primary);
+
+  font-size:
+    16px;
 }
 
 
@@ -1285,6 +1493,7 @@ a.btn {
 
 .member-card a:focus-visible,
 .member-action:focus-visible,
+.member-profile-link:focus-visible,
 .logout-button:focus-visible,
 #logoutButton:focus-visible,
 [data-action="logout"]:focus-visible {
@@ -1374,6 +1583,57 @@ a.btn {
   .member-transaction-amount {
     justify-self:
       start;
+  }
+
+  .member-profile-link {
+    width:
+      100%;
+  }
+
+  .member-action {
+    min-height:
+      54px;
+  }
+}
+
+
+/* =========================================================
+   SMALL PHONES
+========================================================= */
+
+@media (max-width: 380px) {
+
+  .member-dashboard {
+    padding-left:
+      9px;
+
+    padding-right:
+      9px;
+  }
+
+  .member-hero {
+    padding:
+      19px 16px;
+  }
+
+  .member-card {
+    padding:
+      15px;
+  }
+
+  .member-card h2 {
+    font-size:
+      16px;
+  }
+
+  .member-summary-value {
+    font-size:
+      21px;
+  }
+
+  .member-health-value {
+    font-size:
+      18px;
   }
 }
 
