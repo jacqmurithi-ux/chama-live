@@ -11,7 +11,7 @@
      auth.js
 
    Page/portal authorization:
-     layout.js
+     member-layout.js
 
    Database access:
      Supabase SELECT only
@@ -23,6 +23,7 @@
 ========================================================= */
 
 import { supabase } from "./supabase.js";
+
 import {
   getMyApplicationContext
 } from "./auth.js";
@@ -52,7 +53,6 @@ function byId(id) {
 
 
 function escapeHtml(value) {
-
   if (
     value === null ||
     value === undefined
@@ -66,12 +66,10 @@ function escapeHtml(value) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
-
 }
 
 
 function formatMoney(amount) {
-
   const value =
     Number(amount || 0);
 
@@ -85,12 +83,10 @@ function formatMoney(amount) {
       }
     )
   );
-
 }
 
 
 function formatDate(value) {
-
   if (!value) {
     return "—";
   }
@@ -114,12 +110,10 @@ function formatDate(value) {
       year: "numeric"
     }
   );
-
 }
 
 
 function todayIso() {
-
   const now =
     new Date();
 
@@ -137,12 +131,10 @@ function todayIso() {
     ).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
-
 }
 
 
 function displayRole(role) {
-
   const value =
     String(
       role || "member"
@@ -165,12 +157,10 @@ function displayRole(role) {
       value.slice(1)
     )
   );
-
 }
 
 
 function displayStatus(status) {
-
   const value =
     String(
       status || "active"
@@ -186,7 +176,6 @@ function displayStatus(status) {
     value.charAt(0).toUpperCase() +
     value.slice(1)
   );
-
 }
 
 
@@ -195,7 +184,6 @@ function displayStatus(status) {
 ========================================================= */
 
 function showLoading(show) {
-
   const node =
     byId("memberLoading");
 
@@ -205,12 +193,10 @@ function showLoading(show) {
 
   node.hidden =
     !show;
-
 }
 
 
 function showError(message) {
-
   console.error(
     "CHAMA LIVE: Member Dashboard",
     message
@@ -229,12 +215,10 @@ function showError(message) {
 
   node.hidden =
     false;
-
 }
 
 
 function clearError() {
-
   const node =
     byId("memberError");
 
@@ -247,7 +231,6 @@ function clearError() {
 
   node.hidden =
     true;
-
 }
 
 
@@ -255,7 +238,6 @@ function setText(
   id,
   value
 ) {
-
   const node =
     byId(id);
 
@@ -268,7 +250,6 @@ function setText(
     value === undefined
       ? "—"
       : String(value);
-
 }
 
 
@@ -277,7 +258,6 @@ function setText(
 ========================================================= */
 
 function renderAccount() {
-
   const memberName =
     currentMember?.name ||
     "Member";
@@ -321,7 +301,6 @@ function renderAccount() {
       currentMember?.status
     )
   );
-
 }
 
 
@@ -332,7 +311,6 @@ function renderAccount() {
 ========================================================= */
 
 async function loadMyContributions() {
-
   const {
     data,
     error
@@ -389,7 +367,6 @@ async function loadMyContributions() {
     "myContributionCount",
     rows.length
   );
-
 }
 
 
@@ -398,7 +375,6 @@ async function loadMyContributions() {
 ========================================================= */
 
 async function loadMeetings() {
-
   const container =
     byId("memberMeetings");
 
@@ -445,7 +421,6 @@ async function loadMeetings() {
       : [];
 
   if (!rows.length) {
-
     container.innerHTML = `
       <div class="member-list-item">
         <strong>No upcoming meetings</strong>
@@ -476,11 +451,14 @@ async function loadMeetings() {
                 meeting.date
               )
             )}
-            ${meeting.venue
-              ? ` · ${escapeHtml(
-                  meeting.venue
-                )}`
-              : ""}
+
+            ${
+              meeting.venue
+                ? ` · ${escapeHtml(
+                    meeting.venue
+                  )}`
+                : ""
+            }
           </span>
 
           ${
@@ -500,7 +478,6 @@ async function loadMeetings() {
         </div>
       `
     ).join("");
-
 }
 
 
@@ -509,7 +486,6 @@ async function loadMeetings() {
 ========================================================= */
 
 async function loadActivities() {
-
   const container =
     byId("memberActivities");
 
@@ -556,7 +532,6 @@ async function loadActivities() {
       : [];
 
   if (!rows.length) {
-
     container.innerHTML = `
       <div class="member-list-item">
         <strong>No group activities</strong>
@@ -572,7 +547,6 @@ async function loadActivities() {
   container.innerHTML =
     rows.map(
       activity => {
-
         const progress =
           Number(
             activity.progress_percent || 0
@@ -610,7 +584,9 @@ async function loadActivities() {
                     )}`
                   : "No due date"
               }
+
               ·
+
               ${Math.max(
                 0,
                 Math.min(
@@ -636,10 +612,8 @@ async function loadActivities() {
 
           </div>
         `;
-
       }
     ).join("");
-
 }
 
 
@@ -648,7 +622,6 @@ async function loadActivities() {
 ========================================================= */
 
 async function loadPlansAndGoals() {
-
   const container =
     byId("memberPlans");
 
@@ -739,7 +712,6 @@ async function loadPlansAndGoals() {
 
   plans.forEach(
     plan => {
-
       items.push({
         type: "Plan",
         title:
@@ -754,13 +726,11 @@ async function loadPlansAndGoals() {
         progress:
           plan.progress_percent
       });
-
     }
   );
 
   goals.forEach(
     goal => {
-
       items.push({
         type: "Goal",
         title:
@@ -775,12 +745,10 @@ async function loadPlansAndGoals() {
         amount:
           goal.target_amount
       });
-
     }
   );
 
   if (!items.length) {
-
     container.innerHTML = `
       <div class="member-list-item">
         <strong>No plans or goals</strong>
@@ -793,30 +761,26 @@ async function loadPlansAndGoals() {
     return;
   }
 
-  items
-    .sort(
-      (
-        a,
-        b
-      ) => {
+  items.sort(
+    (
+      a,
+      b
+    ) => {
+      if (!a.date) return 1;
+      if (!b.date) return -1;
 
-        if (!a.date) return 1;
-        if (!b.date) return -1;
-
-        return (
-          new Date(a.date) -
-          new Date(b.date)
-        );
-
-      }
-    );
+      return (
+        new Date(a.date) -
+        new Date(b.date)
+      );
+    }
+  );
 
   container.innerHTML =
     items
       .slice(0, 8)
       .map(
         item => `
-
           <div class="member-list-item">
 
             <strong>
@@ -886,11 +850,9 @@ async function loadPlansAndGoals() {
             }
 
           </div>
-
         `
       )
       .join("");
-
 }
 
 
@@ -899,7 +861,6 @@ async function loadPlansAndGoals() {
 ========================================================= */
 
 async function loadMilestones() {
-
   const container =
     byId("memberMilestones");
 
@@ -945,7 +906,6 @@ async function loadMilestones() {
       : [];
 
   if (!rows.length) {
-
     container.innerHTML = `
       <div class="member-list-item">
         <strong>No milestones</strong>
@@ -961,7 +921,6 @@ async function loadMilestones() {
   container.innerHTML =
     rows.map(
       milestone => `
-
         <div class="member-list-item">
 
           <strong>
@@ -1015,10 +974,8 @@ async function loadMilestones() {
           </span>
 
         </div>
-
       `
     ).join("");
-
 }
 
 
@@ -1027,7 +984,6 @@ async function loadMilestones() {
 ========================================================= */
 
 async function loadAssets() {
-
   const container =
     byId("memberAssets");
 
@@ -1074,7 +1030,6 @@ async function loadAssets() {
       : [];
 
   if (!rows.length) {
-
     container.innerHTML = `
       <div class="member-list-item">
         <strong>No group assets</strong>
@@ -1090,7 +1045,6 @@ async function loadAssets() {
   container.innerHTML =
     rows.map(
       asset => `
-
         <div class="member-list-item">
 
           <strong>
@@ -1143,10 +1097,8 @@ async function loadAssets() {
           }
 
         </div>
-
       `
     ).join("");
-
 }
 
 
@@ -1155,16 +1107,10 @@ async function loadAssets() {
 ========================================================= */
 
 async function loadDashboard() {
-
   clearError();
   showLoading(true);
 
   try {
-
-    /* =====================================================
-       CANONICAL APPLICATION CONTEXT
-    ===================================================== */
-
     const context =
       await getMyApplicationContext();
 
@@ -1186,37 +1132,19 @@ async function loadDashboard() {
       currentMember?.id ||
       null;
 
-
     if (!groupId) {
-
       throw new Error(
         "No group is associated with your member account."
       );
-
     }
 
-
     if (!memberId) {
-
       throw new Error(
         "No member record is associated with your account."
       );
-
     }
 
-
-    /* =====================================================
-       ACCOUNT
-    ===================================================== */
-
     renderAccount();
-
-
-    /* =====================================================
-       READ-ONLY DASHBOARD DATA
-       -----------------------------------------------------
-       Each loader performs SELECT operations only.
-    ===================================================== */
 
     const results =
       await Promise.allSettled([
@@ -1228,7 +1156,6 @@ async function loadDashboard() {
         loadAssets()
       ]);
 
-
     const failures =
       results.filter(
         result =>
@@ -1236,9 +1163,7 @@ async function loadDashboard() {
           "rejected"
       );
 
-
     if (failures.length) {
-
       console.error(
         "CHAMA LIVE: some member dashboard sections failed",
         failures.map(
@@ -1246,14 +1171,6 @@ async function loadDashboard() {
             failure.reason
         )
       );
-
-
-      /*
-       * Do not erase successfully loaded sections.
-       *
-       * Show a single useful dashboard-level warning while
-       * preserving whatever data loaded successfully.
-       */
 
       const firstFailure =
         failures[0]?.reason;
@@ -1265,35 +1182,27 @@ async function loadDashboard() {
       showError(
         `Some dashboard information could not be loaded: ${message}`
       );
-
     }
-
   }
-
   catch (error) {
-
     showError(
       error?.message ||
       "Unable to load your member dashboard."
     );
-
   }
-
   finally {
-
     showLoading(false);
-
   }
-
 }
 
 
 /* =========================================================
    INITIALIZE
+   ---------------------------------------------------------
+   Owned by member-layout.js.
 ========================================================= */
 
-async function init() {
-
+export async function initMemberDashboard() {
   if (initialized) {
     return;
   }
@@ -1302,18 +1211,7 @@ async function init() {
     true;
 
   await loadDashboard();
-
 }
-
-
-/* =========================================================
-   BOOT
-   ---------------------------------------------------------
-   layout.js loads this module after the authenticated
-   portal context has been established.
-========================================================= */
-
-init();
 
 
 console.log(
