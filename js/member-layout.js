@@ -130,6 +130,7 @@ function createNavLink(
 
   if (targetPage === currentPage) {
     link.classList.add("active");
+
     link.setAttribute(
       "aria-current",
       "page"
@@ -241,6 +242,40 @@ function injectStyles() {
       cursor: wait;
     }
 
+    /*
+     * Standalone logout fallback.
+     *
+     * Important:
+     * This is deliberately NOT placed inside
+     * .chama-member-nav because .chama-member-nav
+     * is hidden on mobile.
+     */
+    .chama-member-desktop-logout-wrap {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .chama-member-desktop-logout {
+      min-height: 40px;
+      padding: 0.55rem 0.9rem;
+      border: 1px solid rgba(185, 28, 28, 0.35);
+      border-radius: 10px;
+      background: #ffffff;
+      color: #b91c1c;
+      box-shadow:
+        0 4px 14px rgba(0, 0, 0, 0.12);
+    }
+
+    .chama-member-desktop-logout:hover {
+      background: #fef2f2;
+      opacity: 1;
+    }
+
     .chama-member-mobile-backdrop {
       position: fixed;
       inset: 0;
@@ -258,13 +293,15 @@ function injectStyles() {
       overflow-y: auto;
       padding: 1.25rem;
       background: var(--surface, #ffffff);
-      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.16);
+      box-shadow:
+        -10px 0 30px rgba(0, 0, 0, 0.16);
     }
 
     .chama-member-mobile-header {
       margin-bottom: 1rem;
       padding-bottom: 1rem;
-      border-bottom: 1px solid rgba(127, 127, 127, 0.2);
+      border-bottom:
+        1px solid rgba(127, 127, 127, 0.2);
     }
 
     .chama-member-mobile-header strong {
@@ -313,6 +350,20 @@ function injectStyles() {
         display: none !important;
       }
 
+      /*
+       * Keep the standalone logout visible on mobile.
+       */
+      .chama-member-desktop-logout-wrap {
+        top: 10px;
+        right: 10px;
+      }
+
+      .chama-member-desktop-logout {
+        min-height: 38px;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.82rem;
+      }
+
       .chama-member-menu-toggle {
         display: inline-flex !important;
         align-items: center;
@@ -331,9 +382,12 @@ function injectStyles() {
         padding:
           0.4rem
           0.35rem
-          calc(0.4rem + env(safe-area-inset-bottom));
+          calc(
+            0.4rem + env(safe-area-inset-bottom)
+          );
         background: var(--surface, #ffffff);
-        border-top: 1px solid rgba(127, 127, 127, 0.2);
+        border-top:
+          1px solid rgba(127, 127, 127, 0.2);
       }
 
       .chama-member-bottom-nav a {
@@ -476,6 +530,9 @@ function openMobileMenu() {
 
   menu.appendChild(links);
 
+  /*
+   * Mobile menu keeps its own Logout action.
+   */
   const logout =
     createLogoutButton(
       "Logout"
@@ -511,10 +568,12 @@ function createLogoutButton(
     document.createElement("button");
 
   button.type = "button";
+
   button.className =
     "chama-member-logout";
 
-  button.textContent = label;
+  button.textContent =
+    label;
 
   button.addEventListener(
     "click",
@@ -524,6 +583,7 @@ function createLogoutButton(
       }
 
       button.disabled = true;
+
       button.textContent =
         "Signing out…";
 
@@ -540,6 +600,7 @@ function createLogoutButton(
         );
 
         button.disabled = false;
+
         button.textContent =
           label;
 
@@ -556,12 +617,28 @@ function createLogoutButton(
 
 
 function renderDesktopLogout() {
-  const existing =
+  /*
+   * Prevent duplicate standalone logout.
+   */
+  const existingStandalone =
+    document.querySelector(
+      ".chama-member-desktop-logout-wrap"
+    );
+
+  if (existingStandalone) {
+    return;
+  }
+
+  /*
+   * Prevent duplicate logout when a real
+   * topbar already contains one.
+   */
+  const existingDesktop =
     document.querySelector(
       ".chama-member-desktop-logout"
     );
 
-  if (existing) {
+  if (existingDesktop) {
     return;
   }
 
@@ -605,7 +682,9 @@ function renderDesktopLogout() {
       actions.className =
         "topbar-actions";
 
-      topbar.appendChild(actions);
+      topbar.appendChild(
+        actions
+      );
     }
 
     actions.appendChild(
@@ -615,42 +694,29 @@ function renderDesktopLogout() {
     return;
   }
 
-  const existingNav =
-    document.querySelector(
-      ".chama-member-nav"
-    );
+  /*
+   * IMPORTANT:
+   *
+   * Do NOT append Logout to
+   * .chama-member-nav.
+   *
+   * .chama-member-nav is hidden on
+   * mobile, which was the reason Logout
+   * disappeared on the mobile dashboard.
+   */
+  const wrapper =
+    document.createElement("div");
 
-  if (existingNav) {
-    existingNav.appendChild(
-      logout
-    );
+  wrapper.className =
+    "chama-member-desktop-logout-wrap";
 
-    return;
-  }
+  wrapper.appendChild(
+    logout
+  );
 
-  const body =
-    document.body;
-
-  if (body) {
-    const fallback =
-      document.createElement("div");
-
-    fallback.style.cssText =
-      [
-        "position:fixed",
-        "top:12px",
-        "right:12px",
-        "z-index:9999"
-      ].join(";");
-
-    fallback.appendChild(
-      logout
-    );
-
-    body.appendChild(
-      fallback
-    );
-  }
+  document.body.appendChild(
+    wrapper
+  );
 }
 
 
@@ -766,6 +832,7 @@ function renderMobileMenuToggle() {
       document.createElement("button");
 
     button.type = "button";
+
     button.className =
       "menu-toggle";
 
