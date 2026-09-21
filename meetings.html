@@ -1,5 +1,289 @@
 <div class="meeting-page">
 
+  <style>
+    .meeting-page {
+      width: 100%;
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    .meeting-page .page-head {
+      margin-bottom: 20px;
+    }
+
+    .meeting-page .page-head h1 {
+      margin: 0;
+      font-size: clamp(24px, 4vw, 32px);
+      line-height: 1.15;
+    }
+
+    .meeting-page .page-head p {
+      margin: 7px 0 0;
+      font-size: 14px;
+    }
+
+    .meeting-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .meeting-metric-card {
+      min-width: 0;
+      padding: 16px 18px;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      box-shadow: 0 4px 16px rgba(16, 24, 40, 0.05);
+    }
+
+    .meeting-metric-label {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .meeting-metric-value {
+      margin-top: 5px;
+      color: #101828;
+      font-size: 25px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .meeting-section {
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    .meeting-section-header {
+      margin-bottom: 18px;
+    }
+
+    .meeting-section-header h2 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.3;
+    }
+
+    .meeting-section-header p {
+      margin: 5px 0 0;
+      font-size: 13px;
+    }
+
+    .meeting-form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .meeting-form-full {
+      grid-column: 1 / -1;
+    }
+
+    .meeting-form-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .meeting-filter-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+      padding: 12px;
+      background: #f8fafc;
+      border: 1px solid #edf0f4;
+      border-radius: 12px;
+    }
+
+    .meeting-filter-label {
+      color: #475467;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .meeting-filter-bar select {
+      width: auto;
+      min-width: 180px;
+    }
+
+    .meeting-table {
+      width: 100%;
+      min-width: 680px;
+    }
+
+    .meeting-table th {
+      white-space: nowrap;
+    }
+
+    .meeting-table td {
+      vertical-align: middle;
+    }
+
+    .meeting-details-card {
+      scroll-margin-top: 80px;
+    }
+
+    .meeting-detail-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin: 20px 0 26px;
+      padding-top: 18px;
+      border-top: 1px solid #edf0f4;
+    }
+
+    .meeting-record-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .meeting-record-box {
+      min-width: 0;
+      padding: 15px;
+      background: #f8fafc;
+      border: 1px solid #edf0f4;
+      border-radius: 14px;
+    }
+
+    .meeting-save-row {
+      display: flex;
+      justify-content: flex-start;
+      margin-top: 14px;
+    }
+
+    .meeting-page textarea {
+      resize: vertical;
+      min-height: 120px;
+    }
+
+    .meeting-page button,
+    .meeting-page input,
+    .meeting-page select,
+    .meeting-page textarea {
+      max-width: 100%;
+    }
+
+    @media (max-width: 760px) {
+      .meeting-page {
+        max-width: 100%;
+      }
+
+      .meeting-metrics {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .meeting-metric-card {
+        padding: 13px 11px;
+        border-radius: 12px;
+      }
+
+      .meeting-metric-label {
+        font-size: 10px;
+      }
+
+      .meeting-metric-value {
+        font-size: 21px;
+      }
+
+      .meeting-form-grid {
+        grid-template-columns: 1fr;
+        gap: 13px;
+      }
+
+      .meeting-form-full {
+        grid-column: auto;
+      }
+
+      .meeting-filter-bar {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .meeting-filter-bar select {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .meeting-table-wrap,
+      .meeting-page .table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .meeting-detail-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .meeting-detail-actions .btn {
+        width: 100%;
+      }
+
+      .meeting-record-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .meeting-record-box {
+        padding: 13px;
+      }
+
+      .meeting-form-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .meeting-form-actions .btn {
+        width: 100%;
+      }
+
+      .meeting-save-row .btn {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .meeting-metrics {
+        gap: 6px;
+      }
+
+      .meeting-metric-card {
+        padding: 11px 8px;
+      }
+
+      .meeting-metric-label {
+        font-size: 9px;
+        letter-spacing: 0.02em;
+      }
+
+      .meeting-metric-value {
+        font-size: 19px;
+      }
+
+      .meeting-section {
+        margin-bottom: 14px;
+      }
+
+      .meeting-section-header h2 {
+        font-size: 17px;
+      }
+
+      .meeting-section-header p {
+        font-size: 12px;
+      }
+    }
+  </style>
+
 
   <!-- =================================================
        PAGE HEADER
@@ -55,7 +339,6 @@
 
   <div class="meeting-metrics">
 
-
     <div class="meeting-metric-card">
 
       <div class="meeting-metric-label muted">
@@ -70,7 +353,6 @@
       </div>
 
     </div>
-
 
 
     <div class="meeting-metric-card">
@@ -89,7 +371,6 @@
     </div>
 
 
-
     <div class="meeting-metric-card">
 
       <div class="meeting-metric-label muted">
@@ -104,7 +385,6 @@
       </div>
 
     </div>
-
 
   </div>
 
@@ -133,9 +413,6 @@
 
       <div class="meeting-form-grid">
 
-
-        <!-- TITLE -->
-
         <div class="form-group">
 
           <label for="title">
@@ -154,9 +431,6 @@
         </div>
 
 
-
-        <!-- DATE -->
-
         <div class="form-group">
 
           <label for="meetingDate">
@@ -172,9 +446,6 @@
 
         </div>
 
-
-
-        <!-- VENUE -->
 
         <div class="form-group">
 
@@ -193,9 +464,6 @@
         </div>
 
 
-
-        <!-- AGENDA -->
-
         <div class="form-group meeting-form-full">
 
           <label for="agenda">
@@ -205,7 +473,7 @@
           <textarea
             id="agenda"
             name="agenda"
-            rows="6"
+            rows="5"
             placeholder="Enter one agenda item per line..."
           ></textarea>
 
@@ -215,9 +483,7 @@
 
         </div>
 
-
       </div>
-
 
 
       <div class="meeting-form-actions">
@@ -240,7 +506,6 @@
         </button>
 
       </div>
-
 
     </form>
 
@@ -297,7 +562,6 @@
       </select>
 
     </div>
-
 
 
     <div class="table-wrap">
@@ -366,8 +630,6 @@
     <div id="meetingDetails"></div>
 
 
-    <!-- ACTIONS -->
-
     <div class="meeting-detail-actions">
 
       <button
@@ -414,9 +676,6 @@
     </div>
 
 
-
-    <!-- MINUTES / RESOLUTIONS -->
-
     <div class="meeting-section-header">
 
       <h2>
@@ -432,7 +691,6 @@
 
     <div class="meeting-record-grid">
 
-
       <div class="meeting-record-box">
 
         <div class="form-group">
@@ -443,14 +701,13 @@
 
           <textarea
             id="minutes"
-            rows="9"
+            rows="8"
             placeholder="Enter meeting minutes..."
           ></textarea>
 
         </div>
 
       </div>
-
 
 
       <div class="meeting-record-box">
@@ -463,7 +720,7 @@
 
           <textarea
             id="resolution"
-            rows="9"
+            rows="8"
             placeholder="Enter resolutions and decisions..."
           ></textarea>
 
@@ -471,9 +728,7 @@
 
       </div>
 
-
     </div>
-
 
 
     <div class="meeting-save-row">
@@ -488,8 +743,6 @@
 
     </div>
 
-
   </section>
-
 
 </div>
