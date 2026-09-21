@@ -118,6 +118,11 @@ const PAGE_SCRIPTS = {
   "plans-activities.html": [
     "./plans-activities.js",
     "initPage"
+  ],
+
+  "support-welfare.html": [
+    "./support-welfare.js",
+    "initPage"
   ]
 
 };
