@@ -1,4 +1,51 @@
-import { getMyApplicationContext } from "./auth.js";
+/* =========================================================
+   CHAMA LIVE — ADMIN PORTAL LAYOUT
+
+   RESPONSIBILITIES
+   ---------------------------------------------------------
+   - Admin authentication / authorization
+   - Admin page allowlist
+   - Desktop navigation
+   - Mobile navigation
+   - Mobile bottom navigation
+   - Current-page module boot
+
+   IMPORTANT
+   ---------------------------------------------------------
+   This module does NOT perform database mutations.
+
+   It does NOT:
+   - INSERT
+   - UPDATE
+   - DELETE
+   - ALTER
+   - CREATE
+   - change RLS
+   - change privileges
+   - replace database functions
+
+   PAGE MODULES
+   ---------------------------------------------------------
+   Each page remains responsible for its own data/rendering.
+
+   dashboard.html
+       ↓
+   admin-layout.js
+       ↓
+   dashboard.js
+       ↓
+   initDashboard()
+
+   ========================================================= */
+
+import {
+  getMyApplicationContext
+} from "./auth.js";
+
+
+/* =========================================================
+   ADMIN ROLES
+========================================================= */
 
 const ADMIN_ROLES = new Set([
   "admin",
@@ -6,6 +53,11 @@ const ADMIN_ROLES = new Set([
   "secretary",
   "treasurer"
 ]);
+
+
+/* =========================================================
+   ADMIN PAGE ALLOWLIST
+========================================================= */
 
 const ADMIN_PAGES = new Set([
   "dashboard.html",
@@ -23,14 +75,20 @@ const ADMIN_PAGES = new Set([
   "data-migration.html"
 ]);
 
-/*
- * Only pages whose existing modules are designed to be
- * initialized by the shared layout are loaded here.
- *
- * Independently booted modules remain independently booted
- * until their HTML contracts are migrated and verified.
- */
+
+/* =========================================================
+   PAGE MODULES
+=========================================================
+
+   Only pages whose existing modules are designed to be
+   initialized by the shared layout are loaded here.
+
+   Independently booted modules remain independently booted
+   until their HTML contracts are migrated and verified.
+========================================================= */
+
 const PAGE_SCRIPTS = {
+
   "dashboard.html": [
     "./dashboard.js",
     "initDashboard"
@@ -65,12 +123,25 @@ const PAGE_SCRIPTS = {
     "./group-management.js",
     "initGroupManagement"
   ]
+
 };
 
+
+/* =========================================================
+   RUNTIME STATE
+========================================================= */
+
 let bootStarted = false;
+
 let context = null;
 
+
+/* =========================================================
+   CURRENT PAGE
+========================================================= */
+
 function getCurrentPage() {
+
   return (
     window.location.pathname
       .split("/")
@@ -78,37 +149,77 @@ function getCurrentPage() {
       .toLowerCase() ||
     "dashboard.html"
   );
+
 }
 
+
+/* =========================================================
+   ADMIN AUTHORIZATION
+========================================================= */
+
 function isAdminAccount() {
+
   return (
     context?.isOwner === true ||
     ADMIN_ROLES.has(
-      String(context?.role || "")
+      String(
+        context?.role || ""
+      )
         .trim()
         .toLowerCase()
     )
   );
+
 }
 
-function createNavLink(href, label) {
-  const link = document.createElement("a");
 
-  link.href = href;
-  link.textContent = label;
+/* =========================================================
+   NAVIGATION LINK
+========================================================= */
 
-  if (getCurrentPage() === href) {
-    link.classList.add("active");
+function createNavLink(
+  href,
+  label
+) {
+
+  const link =
+    document.createElement("a");
+
+  link.href =
+    href;
+
+  link.textContent =
+    label;
+
+
+  if (
+    getCurrentPage() ===
+    href
+  ) {
+
+    link.classList.add(
+      "active"
+    );
+
     link.setAttribute(
       "aria-current",
       "page"
     );
+
   }
 
+
   return link;
+
 }
 
+
+/* =========================================================
+   ADMIN NAVIGATION GROUPS
+========================================================= */
+
 const NAVIGATION_GROUPS = [
+
   [
     "Home",
     [
@@ -190,9 +301,16 @@ const NAVIGATION_GROUPS = [
       ]
     ]
   ]
+
 ];
 
+
+/* =========================================================
+   INJECT LAYOUT STYLES
+========================================================= */
+
 function injectStyles() {
+
   if (
     document.getElementById(
       "chama-admin-layout"
@@ -201,202 +319,799 @@ function injectStyles() {
     return;
   }
 
+
   const style =
     document.createElement("style");
 
   style.id =
     "chama-admin-layout";
 
+
   style.textContent = `
+
+    /* ===================================================
+       ADMIN DESKTOP NAVIGATION
+    =================================================== */
+
     .chama-admin-nav {
       display: flex;
       align-items: center;
       gap: 4px;
       margin-left: auto;
+      min-width: 0;
     }
+
 
     .chama-admin-nav a,
     .chama-admin-nav summary {
-      min-height: 42px;
-      padding: 9px 12px;
+
+      min-height: 40px;
+
+      padding:
+        8px
+        10px;
+
       display: flex;
       align-items: center;
+
       border-radius: 10px;
+
       text-decoration: none;
+
       color: #344054;
-      font-size: 13px;
+
+      font-size: 12px;
+
       font-weight: 700;
+
       cursor: pointer;
+
       white-space: nowrap;
+
       box-sizing: border-box;
+
+      transition:
+        background-color 0.15s ease,
+        color 0.15s ease;
+
     }
+
 
     .chama-admin-nav a:hover,
     .chama-admin-nav a.active,
     .chama-admin-nav summary:hover {
+
       background: #ecfdf5;
+
       color: #0f766e;
+
     }
+
 
     .chama-admin-group {
       position: relative;
     }
 
+
     .chama-admin-group summary {
+
       list-style: none;
+
     }
+
 
     .chama-admin-group summary::-webkit-details-marker {
       display: none;
     }
 
+
     .chama-admin-group-panel {
+
       position: absolute;
-      top: 48px;
+
+      top: 46px;
+
       left: 0;
+
       min-width: 220px;
+
+      max-width: 280px;
+
       padding: 6px;
+
       background: #ffffff;
-      border: 1px solid #e5e7eb;
+
+      border:
+        1px solid
+        #e5e7eb;
+
       border-radius: 14px;
-      box-shadow: 0 18px 45px rgba(16, 24, 40, 0.15);
+
+      box-shadow:
+        0
+        18px
+        45px
+        rgba(
+          16,
+          24,
+          40,
+          0.14
+        );
+
       z-index: 20000;
+
     }
 
+
     .chama-admin-group-panel a {
+
       width: 100%;
+
     }
+
+
+    /* ===================================================
+       MOBILE ELEMENTS
+    =================================================== */
 
     .chama-mobile-menu,
     .chama-mobile-backdrop,
     .chama-admin-bottom {
+
       display: none;
+
     }
+
+
+    /* ===================================================
+       MOBILE MENU BUTTON
+    =================================================== */
+
+    .menu-toggle {
+
+      display: none;
+
+      width: 40px;
+
+      height: 40px;
+
+      flex:
+        0 0
+        40px;
+
+      align-items: center;
+
+      justify-content: center;
+
+      padding: 0;
+
+      border:
+        1px solid
+        #e5e7eb;
+
+      border-radius: 10px;
+
+      background: #ffffff;
+
+      color: #344054;
+
+      font-size: 19px;
+
+      line-height: 1;
+
+      cursor: pointer;
+
+      box-sizing: border-box;
+
+    }
+
+
+    .menu-toggle:hover {
+
+      background:
+        #f8fafc;
+
+    }
+
+
+    .menu-toggle:focus-visible {
+
+      outline:
+        3px solid
+        rgba(
+          15,
+          118,
+          110,
+          0.18
+        );
+
+      outline-offset: 2px;
+
+    }
+
+
+    /* ===================================================
+       MOBILE
+    =================================================== */
 
     @media (max-width: 800px) {
+
+      /* -----------------------------------------------
+         DESKTOP NAV HIDDEN
+      ----------------------------------------------- */
+
       .chama-admin-nav {
+
         display: none;
+
       }
+
+
+      /* -----------------------------------------------
+         MENU BUTTON
+      ----------------------------------------------- */
+
+      .menu-toggle {
+
+        display: inline-flex;
+
+      }
+
+
+      /* -----------------------------------------------
+         BACKDROP
+      ----------------------------------------------- */
 
       .chama-mobile-backdrop {
+
         position: fixed;
+
         inset: 0;
-        background: rgba(15, 23, 42, 0.42);
+
+        background:
+          rgba(
+            15,
+            23,
+            42,
+            0.38
+          );
+
         z-index: 20000;
+
+        opacity: 0;
+
+        pointer-events: none;
+
+        transition:
+          opacity 0.18s ease;
+
       }
+
 
       .chama-mobile-backdrop.open {
+
         display: block;
+
+        opacity: 1;
+
+        pointer-events: auto;
+
       }
+
+
+      /* -----------------------------------------------
+         MOBILE MENU
+      ----------------------------------------------- */
 
       .chama-mobile-menu {
+
         position: fixed;
-        top: 64px;
+
+        top: 66px;
+
         left: 10px;
+
         right: 10px;
-        max-height: calc(100vh - 145px);
+
+        max-height:
+          calc(
+            100vh -
+            145px
+          );
+
         overflow-y: auto;
-        background: #ffffff;
-        border: 1px solid #e5e7eb;
+
+        overscroll-behavior: contain;
+
+        background:
+          #ffffff;
+
+        border:
+          1px solid
+          #e5e7eb;
+
         border-radius: 18px;
+
         z-index: 20001;
-        box-shadow: 0 22px 55px rgba(16, 24, 40, 0.20);
+
+        box-shadow:
+          0
+          22px
+          55px
+          rgba(
+            16,
+            24,
+            40,
+            0.18
+          );
+
+        opacity: 0;
+
+        transform:
+          translateY(-6px);
+
+        pointer-events: none;
+
+        transition:
+          opacity 0.18s ease,
+          transform 0.18s ease;
+
       }
+
 
       .chama-mobile-menu.open {
+
         display: block;
+
+        opacity: 1;
+
+        transform:
+          translateY(0);
+
+        pointer-events: auto;
+
       }
+
+
+      /* -----------------------------------------------
+         MOBILE MENU HEADER
+      ----------------------------------------------- */
 
       .chama-mobile-head {
-        padding: 16px;
-        background: #f8fafc;
-        border-bottom: 1px solid #edf0f4;
+
+        padding:
+          15px
+          16px;
+
+        background:
+          #f8fafc;
+
+        border-bottom:
+          1px solid
+          #edf0f4;
+
+        border-radius:
+          17px
+          17px
+          0
+          0;
+
       }
+
 
       .chama-mobile-head strong {
+
         display: block;
-        color: #101828;
+
+        color:
+          #101828;
+
+        font-size: 14px;
+
+        line-height: 1.35;
+
+        overflow:
+          hidden;
+
+        text-overflow:
+          ellipsis;
+
+        white-space:
+          nowrap;
+
       }
+
 
       .chama-mobile-head span {
+
         display: block;
-        color: #667085;
-        font-size: 12px;
+
+        color:
+          #667085;
+
+        font-size: 11px;
+
         margin-top: 3px;
+
+        overflow:
+          hidden;
+
+        text-overflow:
+          ellipsis;
+
+        white-space:
+          nowrap;
+
       }
+
+
+      /* -----------------------------------------------
+         MOBILE SECTIONS
+      ----------------------------------------------- */
 
       .chama-mobile-section {
-        padding: 12px 10px 2px;
+
+        padding:
+          11px
+          10px
+          2px;
+
       }
+
+
+      .chama-mobile-section:last-child {
+
+        padding-bottom:
+          11px;
+
+      }
+
 
       .chama-mobile-section h2 {
-        margin: 0 7px 5px;
-        color: #667085;
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
+
+        margin:
+          0
+          7px
+          5px;
+
+        color:
+          #667085;
+
+        font-size:
+          10px;
+
+        font-weight:
+          800;
+
+        text-transform:
+          uppercase;
+
+        letter-spacing:
+          0.08em;
+
       }
+
 
       .chama-mobile-menu a {
+
         display: flex;
+
         align-items: center;
-        min-height: 48px;
-        padding: 10px 12px;
-        border-radius: 10px;
-        color: #344054;
-        text-decoration: none;
-        font-size: 13px;
-        font-weight: 700;
-        box-sizing: border-box;
+
+        min-height:
+          45px;
+
+        padding:
+          9px
+          12px;
+
+        border-radius:
+          10px;
+
+        color:
+          #344054;
+
+        text-decoration:
+          none;
+
+        font-size:
+          13px;
+
+        font-weight:
+          700;
+
+        box-sizing:
+          border-box;
+
       }
+
+
+      .chama-mobile-menu a:hover {
+
+        background:
+          #f8fafc;
+
+      }
+
 
       .chama-mobile-menu a.active {
-        background: #ecfdf5;
-        color: #0f766e;
+
+        background:
+          #ecfdf5;
+
+        color:
+          #0f766e;
+
       }
+
+
+      /* -----------------------------------------------
+         MOBILE BOTTOM NAVIGATION
+      ----------------------------------------------- */
 
       .chama-admin-bottom {
-        position: fixed;
+
+        position:
+          fixed;
+
         left: 0;
+
         right: 0;
+
         bottom: 0;
-        height: 70px;
-        display: grid;
-        grid-template-columns: repeat(5, 1fr);
-        padding: 6px 6px env(safe-area-inset-bottom);
-        background: #ffffff;
-        border-top: 1px solid #e5e7eb;
-        z-index: 15000;
-        box-sizing: border-box;
+
+        height:
+          70px;
+
+        display:
+          grid;
+
+        grid-template-columns:
+          repeat(
+            5,
+            minmax(
+              0,
+              1fr
+            )
+          );
+
+        gap:
+          4px;
+
+        padding:
+          6px
+          6px
+          env(
+            safe-area-inset-bottom
+          );
+
+        background:
+          rgba(
+            255,
+            255,
+            255,
+            0.98
+          );
+
+        border-top:
+          1px solid
+          #e5e7eb;
+
+        z-index:
+          15000;
+
+        box-sizing:
+          border-box;
+
+        backdrop-filter:
+          blur(10px);
+
       }
+
 
       .chama-admin-bottom a {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 0;
-        border-radius: 11px;
-        color: #64748b;
-        text-decoration: none;
-        font-size: 10px;
-        font-weight: 700;
+
+        display:
+          flex;
+
+        align-items:
+          center;
+
+        justify-content:
+          center;
+
+        min-width:
+          0;
+
+        min-height:
+          42px;
+
+        padding:
+          5px
+          3px;
+
+        border-radius:
+          11px;
+
+        color:
+          #64748b;
+
+        text-decoration:
+          none;
+
+        font-size:
+          10px;
+
+        font-weight:
+          700;
+
+        line-height:
+          1.15;
+
+        text-align:
+          center;
+
+        white-space:
+          nowrap;
+
       }
+
+
+      .chama-admin-bottom a:hover {
+
+        background:
+          #f8fafc;
+
+      }
+
 
       .chama-admin-bottom a.active {
-        color: #0f766e;
-        background: #ecfdf5;
+
+        color:
+          #0f766e;
+
+        background:
+          #ecfdf5;
+
       }
+
+
+      /* -----------------------------------------------
+         PAGE BOTTOM SPACE
+      ----------------------------------------------- */
 
       .main {
-        padding-bottom: 95px !important;
+
+        padding-bottom:
+          95px !important;
+
       }
+
     }
+
+
+    /* ===================================================
+       SMALL MOBILE
+    =================================================== */
+
+    @media (max-width: 520px) {
+
+      .chama-mobile-menu {
+
+        left:
+          8px;
+
+        right:
+          8px;
+
+        border-radius:
+          16px;
+
+      }
+
+
+      .chama-mobile-head {
+
+        border-radius:
+          15px
+          15px
+          0
+          0;
+
+      }
+
+
+      .chama-admin-bottom {
+
+        height:
+          68px;
+
+      }
+
+
+      .chama-admin-bottom a {
+
+        font-size:
+          9px;
+
+      }
+
+    }
+
+
+    /* ===================================================
+       VERY SMALL DEVICES
+    =================================================== */
+
+    @media (max-width: 360px) {
+
+      .chama-admin-bottom {
+
+        gap:
+          2px;
+
+        padding-left:
+          4px;
+
+        padding-right:
+          4px;
+
+      }
+
+
+      .chama-admin-bottom a {
+
+        font-size:
+          8px;
+
+      }
+
+
+      .chama-mobile-menu a {
+
+        min-height:
+          43px;
+
+        font-size:
+          12px;
+
+      }
+
+    }
+
+
+    /* ===================================================
+       REDUCED MOTION
+    =================================================== */
+
+    @media (prefers-reduced-motion: reduce) {
+
+      .chama-mobile-menu,
+      .chama-mobile-backdrop {
+
+        transition:
+          none;
+
+      }
+
+    }
+
   `;
 
-  document.head.appendChild(style);
+
+  document.head.appendChild(
+    style
+  );
+
 }
 
+
+/* =========================================================
+   DESKTOP NAVIGATION
+========================================================= */
+
 function renderDesktopNavigation() {
+
   if (
     document.querySelector(
       ".chama-admin-nav"
@@ -405,8 +1120,11 @@ function renderDesktopNavigation() {
     return;
   }
 
+
   const nav =
-    document.createElement("nav");
+    document.createElement(
+      "nav"
+    );
 
   nav.className =
     "chama-admin-nav";
@@ -416,13 +1134,20 @@ function renderDesktopNavigation() {
     "Admin navigation"
   );
 
+
   for (
     const [
       title,
       items
-    ] of NAVIGATION_GROUPS
+    ]
+    of NAVIGATION_GROUPS
   ) {
-    if (items.length === 1) {
+
+    if (
+      items.length ===
+      1
+    ) {
+
       nav.appendChild(
         createNavLink(
           items[0][0],
@@ -431,7 +1156,9 @@ function renderDesktopNavigation() {
       );
 
       continue;
+
     }
+
 
     const details =
       document.createElement(
@@ -441,6 +1168,7 @@ function renderDesktopNavigation() {
     details.className =
       "chama-admin-group";
 
+
     const summary =
       document.createElement(
         "summary"
@@ -449,26 +1177,51 @@ function renderDesktopNavigation() {
     summary.textContent =
       title;
 
-    details.appendChild(summary);
+
+    details.appendChild(
+      summary
+    );
+
 
     const panel =
-      document.createElement("div");
+      document.createElement(
+        "div"
+      );
 
     panel.className =
       "chama-admin-group-panel";
 
-    for (const item of items) {
+
+    for (
+      const item
+      of items
+    ) {
+
       panel.appendChild(
         createNavLink(
           item[0],
           item[1]
         )
       );
+
     }
 
-    details.appendChild(panel);
-    nav.appendChild(details);
+
+    details.appendChild(
+      panel
+    );
+
+    nav.appendChild(
+      details
+    );
+
   }
+
+
+  /*
+   * Billing remains a separate account destination.
+   * This does not change its existing page contract.
+   */
 
   nav.appendChild(
     createNavLink(
@@ -476,6 +1229,7 @@ function renderDesktopNavigation() {
       "Billing"
     )
   );
+
 
   const target =
     document.querySelector(
@@ -485,62 +1239,130 @@ function renderDesktopNavigation() {
       ".topbar"
     );
 
+
   if (target) {
-    target.appendChild(nav);
+
+    target.appendChild(
+      nav
+    );
+
   }
+
 }
 
+
+/* =========================================================
+   OPEN MOBILE MENU
+========================================================= */
+
 function openAdminMobileMenu() {
+
   const menu =
     document.getElementById(
       "chamaAdminMenu"
     );
+
 
   const backdrop =
     document.getElementById(
       "chamaAdminBack"
     );
 
+
   const button =
     document.querySelector(
       ".menu-toggle"
     );
 
-  menu?.classList.add("open");
-  backdrop?.classList.add("open");
+
+  menu?.classList.add(
+    "open"
+  );
+
+
+  backdrop?.classList.add(
+    "open"
+  );
+
 
   button?.setAttribute(
     "aria-expanded",
     "true"
   );
+
+
+  button?.setAttribute(
+    "aria-label",
+    "Close menu"
+  );
+
+
+  document.body.classList.add(
+    "chama-admin-menu-open"
+  );
+
 }
 
+
+/* =========================================================
+   CLOSE MOBILE MENU
+========================================================= */
+
 function closeAdminMobileMenu() {
+
   const menu =
     document.getElementById(
       "chamaAdminMenu"
     );
+
 
   const backdrop =
     document.getElementById(
       "chamaAdminBack"
     );
 
+
   const button =
     document.querySelector(
       ".menu-toggle"
     );
 
-  menu?.classList.remove("open");
-  backdrop?.classList.remove("open");
+
+  menu?.classList.remove(
+    "open"
+  );
+
+
+  backdrop?.classList.remove(
+    "open"
+  );
+
 
   button?.setAttribute(
     "aria-expanded",
     "false"
   );
+
+
+  button?.setAttribute(
+    "aria-label",
+    "Open menu"
+  );
+
+
+  document.body.classList.remove(
+    "chama-admin-menu-open"
+  );
+
 }
 
+
+/* =========================================================
+   MOBILE NAVIGATION
+========================================================= */
+
 function renderMobileNavigation() {
+
   if (
     document.getElementById(
       "chamaAdminMenu"
@@ -549,8 +1371,15 @@ function renderMobileNavigation() {
     return;
   }
 
+
+  /* -------------------------------------------------------
+     BACKDROP
+  ------------------------------------------------------- */
+
   const backdrop =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
 
   backdrop.id =
     "chamaAdminBack";
@@ -558,8 +1387,20 @@ function renderMobileNavigation() {
   backdrop.className =
     "chama-mobile-backdrop";
 
+  backdrop.setAttribute(
+    "aria-hidden",
+    "true"
+  );
+
+
+  /* -------------------------------------------------------
+     MENU
+  ------------------------------------------------------- */
+
   const menu =
-    document.createElement("aside");
+    document.createElement(
+      "aside"
+    );
 
   menu.id =
     "chamaAdminMenu";
@@ -567,37 +1408,71 @@ function renderMobileNavigation() {
   menu.className =
     "chama-mobile-menu";
 
+  menu.setAttribute(
+    "aria-label",
+    "Admin menu"
+  );
+
+
+  /* -------------------------------------------------------
+     MENU HEADER
+  ------------------------------------------------------- */
+
   const header =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
 
   header.className =
     "chama-mobile-head";
 
+
   const groupName =
-    document.createElement("strong");
+    document.createElement(
+      "strong"
+    );
 
   groupName.textContent =
     context?.group?.name ||
     "CHAMA";
 
+
   const memberName =
-    document.createElement("span");
+    document.createElement(
+      "span"
+    );
 
   memberName.textContent =
     context?.member?.name ||
     "Admin";
 
-  header.appendChild(groupName);
-  header.appendChild(memberName);
 
-  menu.appendChild(header);
+  header.appendChild(
+    groupName
+  );
+
+  header.appendChild(
+    memberName
+  );
+
+
+  menu.appendChild(
+    header
+  );
+
+
+  /* -------------------------------------------------------
+     NAVIGATION GROUPS
+  ------------------------------------------------------- */
 
   for (
     const [
       title,
       items
-    ] of NAVIGATION_GROUPS
+    ]
+    of NAVIGATION_GROUPS
   ) {
+
     const section =
       document.createElement(
         "section"
@@ -606,25 +1481,46 @@ function renderMobileNavigation() {
     section.className =
       "chama-mobile-section";
 
+
     const heading =
-      document.createElement("h2");
+      document.createElement(
+        "h2"
+      );
 
     heading.textContent =
       title;
 
-    section.appendChild(heading);
 
-    for (const item of items) {
+    section.appendChild(
+      heading
+    );
+
+
+    for (
+      const item
+      of items
+    ) {
+
       section.appendChild(
         createNavLink(
           item[0],
           item[1]
         )
       );
+
     }
 
-    menu.appendChild(section);
+
+    menu.appendChild(
+      section
+    );
+
   }
+
+
+  /* -------------------------------------------------------
+     BILLING / ACCOUNT
+  ------------------------------------------------------- */
 
   const billingSection =
     document.createElement(
@@ -634,15 +1530,20 @@ function renderMobileNavigation() {
   billingSection.className =
     "chama-mobile-section";
 
+
   const billingHeading =
-    document.createElement("h2");
+    document.createElement(
+      "h2"
+    );
 
   billingHeading.textContent =
     "Account";
 
+
   billingSection.appendChild(
     billingHeading
   );
+
 
   billingSection.appendChild(
     createNavLink(
@@ -651,9 +1552,15 @@ function renderMobileNavigation() {
     )
   );
 
+
   menu.appendChild(
     billingSection
   );
+
+
+  /* -------------------------------------------------------
+     INSERT MOBILE ELEMENTS
+  ------------------------------------------------------- */
 
   document.body.appendChild(
     backdrop
@@ -663,12 +1570,19 @@ function renderMobileNavigation() {
     menu
   );
 
+
+  /* -------------------------------------------------------
+     MENU BUTTON
+  ------------------------------------------------------- */
+
   let button =
     document.querySelector(
       ".menu-toggle"
     );
 
+
   if (!button) {
+
     button =
       document.createElement(
         "button"
@@ -693,60 +1607,158 @@ function renderMobileNavigation() {
       "false"
     );
 
+
     const topbar =
       document.querySelector(
         ".topbar"
       );
 
-    if (topbar) {
-      topbar.prepend(button);
+
+    const topbarInner =
+      document.querySelector(
+        ".topbar-inner"
+      );
+
+
+    /*
+     * Prefer the inner topbar so the menu button participates
+     * correctly in the existing mobile header layout.
+     */
+
+    if (topbarInner) {
+
+      topbarInner.prepend(
+        button
+      );
+
     }
+    else if (topbar) {
+
+      topbar.prepend(
+        button
+      );
+
+    }
+
   }
 
-  const hasExpanded =
-    button.hasAttribute(
-      "aria-expanded"
-    );
 
-  if (!hasExpanded) {
+  if (
+    !button.hasAttribute(
+      "aria-expanded"
+    )
+  ) {
+
     button.setAttribute(
       "aria-expanded",
       "false"
     );
+
   }
+
+
+  if (
+    !button.hasAttribute(
+      "aria-label"
+    )
+  ) {
+
+    button.setAttribute(
+      "aria-label",
+      "Open menu"
+    );
+
+  }
+
+
+  /* -------------------------------------------------------
+     BUTTON EVENT
+  ------------------------------------------------------- */
 
   button.addEventListener(
     "click",
     () => {
+
       const isOpen =
         menu.classList.contains(
           "open"
         );
 
+
       if (isOpen) {
+
         closeAdminMobileMenu();
-      } else {
-        openAdminMobileMenu();
+
       }
+      else {
+
+        openAdminMobileMenu();
+
+      }
+
     }
   );
+
+
+  /* -------------------------------------------------------
+     BACKDROP EVENT
+  ------------------------------------------------------- */
 
   backdrop.addEventListener(
     "click",
     closeAdminMobileMenu
   );
 
+
+  /* -------------------------------------------------------
+     LINK EVENTS
+  ------------------------------------------------------- */
+
   menu
     .querySelectorAll("a")
-    .forEach((link) => {
-      link.addEventListener(
-        "click",
-        closeAdminMobileMenu
-      );
-    });
+    .forEach(
+      link => {
+
+        link.addEventListener(
+          "click",
+          closeAdminMobileMenu
+        );
+
+      }
+    );
+
+
+  /* -------------------------------------------------------
+     ESCAPE KEY
+  ------------------------------------------------------- */
+
+  document.addEventListener(
+    "keydown",
+    event => {
+
+      if (
+        event.key === "Escape" &&
+        menu.classList.contains(
+          "open"
+        )
+      ) {
+
+        closeAdminMobileMenu();
+
+      }
+
+    }
+  );
+
 }
 
+
+/* =========================================================
+   MOBILE BOTTOM NAVIGATION
+========================================================= */
+
 function renderMobileBottomNavigation() {
+
   if (
     document.querySelector(
       ".chama-admin-bottom"
@@ -755,8 +1767,11 @@ function renderMobileBottomNavigation() {
     return;
   }
 
+
   const nav =
-    document.createElement("nav");
+    document.createElement(
+      "nav"
+    );
 
   nav.className =
     "chama-admin-bottom";
@@ -766,116 +1781,208 @@ function renderMobileBottomNavigation() {
     "Primary mobile navigation"
   );
 
+
   const items = [
+
     [
       "dashboard.html",
       "Home"
     ],
+
     [
       "members.html",
       "Members"
     ],
+
     [
       "contributions.html",
       "Finance"
     ],
+
     [
       "meetings.html",
       "Group"
     ],
+
     [
       "#more",
       "More"
     ]
+
   ];
 
-  for (const [
-    href,
-    label
-  ] of items) {
-    const link =
-      document.createElement("a");
 
-    link.href = href;
-    link.textContent = label;
+  for (
+    const [
+      href,
+      label
+    ]
+    of items
+  ) {
+
+    const link =
+      document.createElement(
+        "a"
+      );
+
+
+    link.href =
+      href;
+
+    link.textContent =
+      label;
+
 
     if (
       href ===
       getCurrentPage()
     ) {
+
       link.classList.add(
         "active"
       );
+
+      link.setAttribute(
+        "aria-current",
+        "page"
+      );
+
     }
 
-    if (href === "#more") {
-      link.href = "#";
+
+    if (
+      href ===
+      "#more"
+    ) {
+
+      link.href =
+        "#";
+
+
+      link.setAttribute(
+        "aria-label",
+        "Open more admin navigation"
+      );
+
 
       link.addEventListener(
         "click",
-        (event) => {
+        event => {
+
           event.preventDefault();
+
           openAdminMobileMenu();
+
         }
       );
+
     }
 
-    nav.appendChild(link);
+
+    nav.appendChild(
+      link
+    );
+
   }
 
-  document.body.appendChild(nav);
+
+  document.body.appendChild(
+    nav
+  );
+
 }
 
+
+/* =========================================================
+   LOAD CURRENT PAGE FEATURE
+========================================================= */
+
 async function loadCurrentPageFeature() {
+
   const page =
     getCurrentPage();
 
+
   const entry =
     PAGE_SCRIPTS[page];
+
 
   if (!entry) {
     return;
   }
 
+
   const module =
-    await import(entry[0]);
+    await import(
+      entry[0]
+    );
+
 
   const initializer =
     module?.[entry[1]] ||
     module?.initPage ||
     module?.init;
 
+
   if (
     typeof initializer !==
     "function"
   ) {
+
     throw new Error(
       `No initializer exported for ${page}.`
     );
+
   }
+
 
   await initializer();
+
 }
 
+
+/* =========================================================
+   ADMIN PORTAL BOOT
+========================================================= */
+
 export async function boot() {
+
   if (bootStarted) {
+
     return;
+
   }
 
-  bootStarted = true;
+
+  bootStarted =
+    true;
+
 
   try {
+
+    /* -----------------------------------------------------
+       LOAD AUTHENTICATED GROUP CONTEXT
+    ----------------------------------------------------- */
+
     context =
       await getMyApplicationContext();
+
 
     if (
       !context?.user ||
       !context?.member?.group_id
     ) {
+
       throw new Error(
         "Your account is not linked to a group."
       );
+
     }
+
+
+    /* -----------------------------------------------------
+       NORMALIZE ROLE
+    ----------------------------------------------------- */
 
     context.role =
       String(
@@ -884,34 +1991,63 @@ export async function boot() {
         .trim()
         .toLowerCase();
 
-    if (!isAdminAccount()) {
+
+    /* -----------------------------------------------------
+       ADMIN GATE
+    ----------------------------------------------------- */
+
+    if (
+      !isAdminAccount()
+    ) {
+
       window.location.replace(
         "member-dashboard.html"
       );
 
       return;
+
     }
+
+
+    /* -----------------------------------------------------
+       PAGE GATE
+    ----------------------------------------------------- */
 
     const page =
       getCurrentPage();
 
+
     if (
-      !ADMIN_PAGES.has(page)
+      !ADMIN_PAGES.has(
+        page
+      )
     ) {
+
       window.location.replace(
         "dashboard.html"
       );
 
       return;
+
     }
 
-    /*
-     * Prevent legacy page modules that still contain
-     * compatibility boot logic from initializing while
-     * the new portal layout owns initialization.
-     */
+
+    /* -----------------------------------------------------
+       LAYOUT BOOT FLAG
+    -----------------------------------------------------
+
+       Prevent legacy page modules that still contain
+       compatibility boot logic from initializing while
+       this layout owns initialization.
+    ----------------------------------------------------- */
+
     window.__CHAMA_LIVE_LAYOUT_LOADING__ =
       true;
+
+
+    /* -----------------------------------------------------
+       BUILD ADMIN UI
+    ----------------------------------------------------- */
 
     injectStyles();
 
@@ -921,35 +2057,62 @@ export async function boot() {
 
     renderMobileBottomNavigation();
 
+
+    /* -----------------------------------------------------
+       LOAD CURRENT PAGE MODULE
+    ----------------------------------------------------- */
+
     await loadCurrentPageFeature();
+
   }
   catch (error) {
+
     console.error(
       "CHAMA LIVE Admin Portal boot failed:",
       error
     );
+
 
     const errorBox =
       document.getElementById(
         "error"
       );
 
+
     if (errorBox) {
-      errorBox.hidden = false;
+
+      errorBox.hidden =
+        false;
 
       errorBox.textContent =
         error?.message ||
         "Unable to load the Admin Portal.";
+
     }
+
   }
   finally {
+
     delete window.__CHAMA_LIVE_LAYOUT_LOADING__;
+
   }
+
 }
 
+
+/* =========================================================
+   LAYOUT STATE
+========================================================= */
+
 export function getLayoutState() {
+
   return {
+
     ...context,
-    portal: "admin"
+
+    portal:
+      "admin"
+
   };
+
 }
