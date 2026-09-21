@@ -14,31 +14,21 @@
   <link rel="stylesheet" href="./css/app.css">
 
   <style>
-    :root {
-      --cl-green: #075c3a;
-      --cl-green-dark: #043c28;
-      --cl-green-mid: #08764b;
-      --cl-green-light: #eaf7f0;
-      --cl-gold: #d4a72c;
-      --cl-gold-light: #fff8df;
-      --cl-bg: #f3f8f5;
-      --cl-border: #dce9e2;
-      --cl-text: #17352a;
-      --cl-muted: #6b7d74;
-      --cl-danger: #b42318;
-      --cl-danger-bg: #fff0ee;
-      --cl-shadow: 0 10px 28px rgba(7, 92, 58, 0.08);
-      --cl-radius: 18px;
-    }
-
     * {
       box-sizing: border-box;
     }
 
+    html,
     body {
       margin: 0;
-      background: var(--cl-bg);
-      color: var(--cl-text);
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
+    body {
+      background: #f4f7f5;
+      color: #17352a;
       font-family:
         Inter,
         system-ui,
@@ -55,69 +45,60 @@
       font: inherit;
     }
 
-    .assets-page {
-      min-height: 100vh;
-      padding: 24px;
+    .main {
+      min-width: 0;
+      overflow-x: hidden;
+      padding-bottom: 95px;
     }
 
-    .assets-shell {
+    .assets-page {
+      width: 100%;
       max-width: 1500px;
       margin: 0 auto;
-    }
-
-    .assets-back {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      margin-bottom: 14px;
-      color: var(--cl-green-dark);
-      text-decoration: none;
-      font-size: 14px;
-      font-weight: 800;
-    }
-
-    .assets-back:hover {
-      text-decoration: underline;
+      padding: 24px;
     }
 
     .assets-hero {
       position: relative;
       overflow: hidden;
-      margin-bottom: 22px;
+      margin-bottom: 20px;
       padding: 30px;
-      border-radius: 24px;
+      border-radius: 22px;
       background:
         linear-gradient(
           135deg,
-          var(--cl-green-dark),
-          var(--cl-green)
+          #043c28 0%,
+          #075c3a 58%,
+          #08764b 100%
         );
-      color: white;
-      box-shadow: var(--cl-shadow);
+      color: #fff;
+      box-shadow: 0 10px 28px rgba(7, 92, 58, 0.10);
     }
 
     .assets-hero::after {
       content: "";
       position: absolute;
-      right: -70px;
-      top: -100px;
       width: 260px;
       height: 260px;
+      right: -80px;
+      top: -110px;
+      border: 34px solid rgba(212, 167, 44, 0.16);
       border-radius: 50%;
-      border: 35px solid rgba(212, 167, 44, 0.16);
     }
 
     .assets-badge {
+      position: relative;
+      z-index: 1;
       display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: 7px;
       padding: 7px 12px;
+      border: 1px solid rgba(255,255,255,.2);
       border-radius: 999px;
-      background: rgba(255,255,255,0.12);
-      border: 1px solid rgba(255,255,255,0.2);
-      font-size: 12px;
+      background: rgba(255,255,255,.11);
+      font-size: 11px;
       font-weight: 800;
-      letter-spacing: .04em;
+      letter-spacing: .06em;
       text-transform: uppercase;
     }
 
@@ -142,104 +123,127 @@
       position: relative;
       z-index: 1;
       display: inline-flex;
+      align-items: center;
       margin-top: 18px;
       padding: 9px 13px;
       border-radius: 10px;
-      background: rgba(0,0,0,.13);
-      font-size: 14px;
-      font-weight: 700;
+      background: rgba(0,0,0,.14);
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .assets-context strong {
+      margin-left: 6px;
     }
 
     .status {
       margin-bottom: 18px;
       padding: 12px 14px;
       border-radius: 12px;
-      background: var(--cl-green-light);
-      color: var(--cl-green-dark);
-      font-weight: 700;
+      background: #eaf7f0;
+      color: #043c28;
+      font-size: 13px;
+      font-weight: 750;
     }
 
     .status.error {
-      background: var(--cl-danger-bg);
-      color: var(--cl-danger);
+      background: #fff0ee;
+      color: #b42318;
     }
 
     .hidden {
       display: none !important;
     }
 
+    .access-denied {
+      margin-bottom: 18px;
+      padding: 16px 18px;
+      border: 1px solid #f2d1cc;
+      border-radius: 14px;
+      background: #fff0ee;
+      color: #a5261c;
+      font-size: 13px;
+      line-height: 1.5;
+      font-weight: 700;
+    }
+
     .assets-kpis {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 16px;
-      margin-bottom: 22px;
+      gap: 15px;
+      margin-bottom: 20px;
     }
 
     .assets-kpi {
-      padding: 21px;
-      background: white;
-      border: 1px solid var(--cl-border);
-      border-radius: var(--cl-radius);
-      box-shadow: var(--cl-shadow);
+      min-width: 0;
+      padding: 20px;
+      border: 1px solid #dce9e2;
+      border-radius: 17px;
+      background: #fff;
+      box-shadow: 0 8px 24px rgba(7,92,58,.06);
     }
 
     .assets-kpi-label {
-      color: var(--cl-muted);
-      font-size: 13px;
-      font-weight: 700;
-      margin-bottom: 8px;
+      margin-bottom: 7px;
+      color: #6b7d74;
+      font-size: 12px;
+      font-weight: 750;
     }
 
     .assets-kpi-value {
-      color: var(--cl-green-dark);
-      font-size: 27px;
+      color: #043c28;
+      font-size: clamp(22px, 3vw, 29px);
       font-weight: 850;
+      line-height: 1.15;
+      overflow-wrap: anywhere;
     }
 
     .assets-grid {
       display: grid;
-      grid-template-columns: minmax(320px, 390px) minmax(0, 1fr);
-      gap: 22px;
+      grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+      gap: 20px;
       align-items: start;
     }
 
     .assets-card {
-      background: white;
-      border: 1px solid var(--cl-border);
-      border-radius: var(--cl-radius);
-      box-shadow: var(--cl-shadow);
+      min-width: 0;
       overflow: hidden;
+      border: 1px solid #dce9e2;
+      border-radius: 18px;
+      background: #fff;
+      box-shadow: 0 8px 24px rgba(7,92,58,.06);
     }
 
     .assets-card-header {
-      padding: 20px 22px;
-      border-bottom: 1px solid var(--cl-border);
+      padding: 19px 21px;
+      border-bottom: 1px solid #e8efeb;
     }
 
     .assets-card-header h2 {
       margin: 0;
-      color: var(--cl-green-dark);
-      font-size: 19px;
+      color: #043c28;
+      font-size: 18px;
     }
 
     .assets-card-header p {
       margin: 6px 0 0;
-      color: var(--cl-muted);
-      font-size: 13px;
+      color: #6b7d74;
+      font-size: 12px;
       line-height: 1.5;
     }
 
     .assets-card-body {
-      padding: 22px;
+      padding: 21px;
     }
 
     .assets-form-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 15px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
     }
 
     .assets-field {
+      min-width: 0;
       display: flex;
       flex-direction: column;
       gap: 7px;
@@ -250,8 +254,8 @@
     }
 
     .assets-field label {
-      color: var(--cl-green-dark);
-      font-size: 13px;
+      color: #043c28;
+      font-size: 12px;
       font-weight: 800;
     }
 
@@ -259,13 +263,13 @@
     .assets-field select,
     .assets-field textarea {
       width: 100%;
+      min-width: 0;
       border: 1px solid #cddbd4;
-      border-radius: 11px;
-      padding: 11px 12px;
+      border-radius: 10px;
+      padding: 10px 11px;
       background: #fff;
-      color: var(--cl-text);
+      color: #17352a;
       outline: none;
-      transition: .15s ease;
     }
 
     .assets-field textarea {
@@ -276,84 +280,90 @@
     .assets-field input:focus,
     .assets-field select:focus,
     .assets-field textarea:focus {
-      border-color: var(--cl-green);
+      border-color: #075c3a;
       box-shadow: 0 0 0 3px rgba(7,92,58,.09);
     }
 
     .assets-form-actions {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 18px;
+      gap: 9px;
+      margin-top: 17px;
     }
 
     .assets-btn {
+      min-height: 42px;
       border: 0;
-      border-radius: 11px;
-      padding: 11px 16px;
+      border-radius: 10px;
+      padding: 10px 15px;
       cursor: pointer;
+      font-size: 13px;
       font-weight: 800;
-      transition: transform .12s ease, opacity .12s ease;
-    }
-
-    .assets-btn:hover {
-      transform: translateY(-1px);
     }
 
     .assets-btn-primary {
-      background: var(--cl-green);
-      color: white;
+      background: #075c3a;
+      color: #fff;
     }
 
     .assets-btn-secondary {
       background: #edf3f0;
-      color: var(--cl-green-dark);
-    }
-
-    .assets-btn-danger {
-      background: var(--cl-danger-bg);
-      color: var(--cl-danger);
+      color: #043c28;
     }
 
     .assets-btn:disabled {
       opacity: .55;
       cursor: not-allowed;
-      transform: none;
+    }
+
+    .role-note {
+      margin-top: 14px;
+      padding: 11px 12px;
+      border-radius: 10px;
+      background: #fff8df;
+      color: #715400;
+      font-size: 11px;
+      line-height: 1.5;
     }
 
     .assets-toolbar {
       display: flex;
-      gap: 10px;
       flex-wrap: wrap;
-      padding: 18px 22px;
-      border-bottom: 1px solid var(--cl-border);
+      gap: 9px;
+      padding: 15px 20px;
+      border-bottom: 1px solid #e8efeb;
       background: #fbfdfc;
     }
 
     .assets-toolbar input,
     .assets-toolbar select {
-      min-width: 160px;
-      flex: 1;
+      min-width: 150px;
+      flex: 1 1 160px;
       border: 1px solid #cddbd4;
-      border-radius: 10px;
-      padding: 10px 11px;
-      background: white;
-      color: var(--cl-text);
+      border-radius: 9px;
+      padding: 9px 10px;
+      background: #fff;
+      color: #17352a;
+    }
+
+    .assets-toolbar button {
+      flex: 0 0 auto;
     }
 
     .assets-table-wrap {
+      width: 100%;
       overflow-x: auto;
     }
 
     .assets-table {
       width: 100%;
-      border-collapse: collapse;
       min-width: 900px;
+      border-collapse: collapse;
     }
 
     .assets-table th,
     .assets-table td {
-      padding: 14px 16px;
+      padding: 13px 15px;
       border-bottom: 1px solid #edf2ef;
       text-align: left;
       vertical-align: middle;
@@ -361,27 +371,28 @@
 
     .assets-table th {
       background: #f8fbf9;
-      color: var(--cl-green-dark);
-      font-size: 12px;
+      color: #043c28;
+      font-size: 11px;
       font-weight: 850;
       text-transform: uppercase;
-      letter-spacing: .035em;
+      letter-spacing: .04em;
       white-space: nowrap;
     }
 
     .assets-table td {
-      font-size: 13px;
+      color: #31483d;
+      font-size: 12px;
     }
 
     .asset-name {
+      color: #043c28;
       font-weight: 850;
-      color: var(--cl-green-dark);
     }
 
     .asset-description {
       max-width: 260px;
-      color: var(--cl-muted);
-      line-height: 1.45;
+      color: #6b7d74;
+      line-height: 1.4;
     }
 
     .asset-status {
@@ -389,15 +400,15 @@
       align-items: center;
       padding: 5px 9px;
       border-radius: 999px;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 850;
       text-transform: capitalize;
       white-space: nowrap;
     }
 
     .asset-status.active {
-      background: var(--cl-green-light);
-      color: var(--cl-green-dark);
+      background: #eaf7f0;
+      color: #075c3a;
     }
 
     .asset-status.inactive {
@@ -412,71 +423,53 @@
     }
 
     .asset-status.lost {
-      background: var(--cl-danger-bg);
-      color: var(--cl-danger);
+      background: #fff0ee;
+      color: #b42318;
     }
 
     .asset-actions {
       display: flex;
-      gap: 7px;
       flex-wrap: wrap;
+      gap: 6px;
     }
 
     .asset-action {
-      border: 1px solid var(--cl-border);
-      background: white;
-      color: var(--cl-green-dark);
+      border: 1px solid #dce9e2;
       border-radius: 8px;
-      padding: 6px 9px;
+      padding: 6px 8px;
+      background: #fff;
+      color: #043c28;
       cursor: pointer;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 800;
     }
 
     .asset-action.delete {
-      color: var(--cl-danger);
-      background: var(--cl-danger-bg);
-      border-color: #f4d0cb;
+      border-color: #f2d1cc;
+      background: #fff0ee;
+      color: #b42318;
     }
 
     .assets-empty {
-      padding: 45px 20px;
+      padding: 42px 20px;
       text-align: center;
-      color: var(--cl-muted);
+      color: #6b7d74;
     }
 
     .assets-empty-icon {
-      font-size: 35px;
-      margin-bottom: 10px;
+      margin-bottom: 9px;
+      font-size: 32px;
     }
 
     .assets-empty strong {
       display: block;
       margin-bottom: 5px;
-      color: var(--cl-green-dark);
-    }
-
-    .access-denied {
-      padding: 22px;
-      border-radius: var(--cl-radius);
-      background: var(--cl-danger-bg);
-      color: var(--cl-danger);
-      font-weight: 700;
-    }
-
-    .role-note {
-      margin-top: 14px;
-      padding: 11px 13px;
-      border-radius: 10px;
-      background: var(--cl-gold-light);
-      color: #715400;
-      font-size: 12px;
-      line-height: 1.5;
+      color: #043c28;
     }
 
     @media (max-width: 1100px) {
       .assets-kpis {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
       .assets-grid {
@@ -507,20 +500,26 @@
       }
 
       .assets-card-body {
-        padding: 17px;
+        padding: 16px;
       }
 
       .assets-card-header {
-        padding: 17px;
+        padding: 16px;
       }
 
       .assets-toolbar {
-        padding: 15px;
+        padding: 13px;
       }
 
       .assets-toolbar input,
       .assets-toolbar select {
         min-width: 100%;
+        flex-basis: 100%;
+      }
+
+      .assets-context {
+        max-width: 100%;
+        overflow-wrap: anywhere;
       }
     }
   </style>
@@ -528,335 +527,452 @@
 
 <body>
 
-  <div class="assets-page">
-    <div class="assets-shell">
-
-      <a
-        href="dashboard.html"
-        class="assets-back"
-      >
-        ← Back to Dashboard
-      </a>
-
-      <section class="assets-hero">
-        <span class="assets-badge">🏢 Group Operations</span>
-
-        <h1>Assets</h1>
-
-        <p>
-          Keep a clear, group-owned register of property, equipment,
-          investments and other assets held by your chama.
-        </p>
-
-        <div class="assets-context">
-          Current group:
-          <span id="groupName" style="margin-left:6px;">Loading…</span>
-        </div>
-      </section>
-
-      <div id="status" class="status hidden"></div>
-
-      <div id="error" class="status error hidden"></div>
-
-      <div id="accessDenied" class="access-denied hidden">
-        You can view group assets, but you do not have permission to
-        create, edit or delete them.
+  <!-- Required by admin-layout.js -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <a href="dashboard.html">CHAMA LIVE</a>
       </div>
 
-      <section id="assetsContent">
+      <div class="top-nav"></div>
 
-        <section class="assets-kpis">
-          <div class="assets-kpi">
-            <div class="assets-kpi-label">Total Assets</div>
-            <div id="totalAssets" class="assets-kpi-value">0</div>
+      <button
+        id="logout"
+        type="button"
+        class="logout"
+      >
+        Sign out
+      </button>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <main class="main">
+
+      <div class="assets-page">
+
+        <section class="assets-hero">
+
+          <span class="assets-badge">
+            🏢 Group Operations
+          </span>
+
+          <h1>Assets</h1>
+
+          <p>
+            Keep a clear, group-owned register of property,
+            equipment, investments and other assets held by your chama.
+          </p>
+
+          <div class="assets-context">
+            Current group:
+            <strong
+              id="groupName"
+              data-group-name
+            >
+              Loading…
+            </strong>
           </div>
 
-          <div class="assets-kpi">
-            <div class="assets-kpi-label">Active Assets</div>
-            <div id="activeAssets" class="assets-kpi-value">0</div>
-          </div>
-
-          <div class="assets-kpi">
-            <div class="assets-kpi-label">Acquisition Cost</div>
-            <div id="totalAcquisitionCost" class="assets-kpi-value">
-              KSh 0.00
-            </div>
-          </div>
-
-          <div class="assets-kpi">
-            <div class="assets-kpi-label">Current Value</div>
-            <div id="totalCurrentValue" class="assets-kpi-value">
-              KSh 0.00
-            </div>
-          </div>
         </section>
 
-        <section class="assets-grid">
+        <div
+          id="status"
+          class="status hidden"
+          role="status"
+          aria-live="polite"
+        ></div>
 
-          <article class="assets-card">
-            <div class="assets-card-header">
-              <h2 id="formTitle">Add Asset</h2>
-              <p>
-                Record the asset without changing the financial ledger.
-              </p>
-            </div>
+        <div
+          id="error"
+          class="status error hidden"
+          role="alert"
+          aria-live="assertive"
+        ></div>
 
-            <div class="assets-card-body">
+        <div
+          id="accessDenied"
+          class="access-denied hidden"
+        >
+          You can view group assets, but your current role does not
+          have permission to create, edit or delete them.
+        </div>
 
-              <form id="assetForm">
+        <section id="assetsContent">
 
-                <input
-                  type="hidden"
-                  id="assetId"
-                  value=""
-                >
+          <section class="assets-kpis">
 
-                <div class="assets-form-grid">
-
-                  <div class="assets-field full">
-                    <label for="assetName">
-                      Asset name *
-                    </label>
-
-                    <input
-                      id="assetName"
-                      type="text"
-                      maxlength="200"
-                      required
-                      placeholder="e.g. Group dairy cow"
-                    >
-                  </div>
-
-                  <div class="assets-field">
-                    <label for="assetCategory">
-                      Category *
-                    </label>
-
-                    <select id="assetCategory" required>
-                      <option value="land">Land</option>
-                      <option value="building">Building</option>
-                      <option value="vehicle">Vehicle</option>
-                      <option value="equipment">Equipment</option>
-                      <option value="livestock">Livestock</option>
-                      <option value="farm">Farm</option>
-                      <option value="furniture">Furniture</option>
-                      <option value="investment">Investment</option>
-                      <option value="shares">Shares</option>
-                      <option value="other" selected>Other</option>
-                    </select>
-                  </div>
-
-                  <div class="assets-field">
-                    <label for="assetStatus">
-                      Status *
-                    </label>
-
-                    <select id="assetStatus" required>
-                      <option value="active" selected>Active</option>
-                      <option value="disposed">Disposed</option>
-                      <option value="sold">Sold</option>
-                      <option value="lost">Lost</option>
-                      <option value="inactive">Inactive</option>
-                    </select>
-                  </div>
-
-                  <div class="assets-field">
-                    <label for="acquiredDate">
-                      Acquired date
-                    </label>
-
-                    <input
-                      id="acquiredDate"
-                      type="date"
-                    >
-                  </div>
-
-                  <div class="assets-field">
-                    <label for="assetLocation">
-                      Location
-                    </label>
-
-                    <input
-                      id="assetLocation"
-                      type="text"
-                      maxlength="250"
-                      placeholder="e.g. Timau"
-                    >
-                  </div>
-
-                  <div class="assets-field">
-                    <label for="acquisitionCost">
-                      Acquisition cost
-                    </label>
-
-                    <input
-                      id="acquisitionCost"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder="0.00"
-                    >
-                  </div>
-
-                  <div class="assets-field">
-                    <label for="currentValue">
-                      Current value
-                    </label>
-
-                    <input
-                      id="currentValue"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder="0.00"
-                    >
-                  </div>
-
-                  <div class="assets-field full">
-                    <label for="assetDescription">
-                      Description
-                    </label>
-
-                    <textarea
-                      id="assetDescription"
-                      maxlength="2000"
-                      placeholder="Add useful details about the asset..."
-                    ></textarea>
-                  </div>
-
-                </div>
-
-                <div class="assets-form-actions">
-                  <button
-                    id="saveAsset"
-                    class="assets-btn assets-btn-primary"
-                    type="submit"
-                  >
-                    Save Asset
-                  </button>
-
-                  <button
-                    id="resetAsset"
-                    class="assets-btn assets-btn-secondary"
-                    type="button"
-                  >
-                    Reset
-                  </button>
-                </div>
-
-              </form>
-
-              <div class="role-note">
-                Asset management is restricted to
-                <strong>admin, chairperson and treasurer</strong>.
-                Deletion is restricted to <strong>admin</strong>.
+            <div class="assets-kpi">
+              <div class="assets-kpi-label">
+                Total Assets
               </div>
 
-            </div>
-          </article>
-
-          <article class="assets-card">
-
-            <div class="assets-card-header">
-              <h2>Asset Register</h2>
-              <p>
-                Assets shown here belong only to the authenticated
-                member's current group.
-              </p>
+              <div
+                id="totalAssets"
+                class="assets-kpi-value"
+              >
+                0
+              </div>
             </div>
 
-            <div class="assets-toolbar">
+            <div class="assets-kpi">
+              <div class="assets-kpi-label">
+                Active Assets
+              </div>
 
-              <input
-                id="assetSearch"
-                type="search"
-                placeholder="Search assets..."
-                aria-label="Search assets"
+              <div
+                id="activeAssets"
+                class="assets-kpi-value"
               >
-
-              <select
-                id="assetFilterCategory"
-                aria-label="Filter by category"
-              >
-                <option value="">All categories</option>
-                <option value="land">Land</option>
-                <option value="building">Building</option>
-                <option value="vehicle">Vehicle</option>
-                <option value="equipment">Equipment</option>
-                <option value="livestock">Livestock</option>
-                <option value="farm">Farm</option>
-                <option value="furniture">Furniture</option>
-                <option value="investment">Investment</option>
-                <option value="shares">Shares</option>
-                <option value="other">Other</option>
-              </select>
-
-              <select
-                id="assetFilterStatus"
-                aria-label="Filter by status"
-              >
-                <option value="">All statuses</option>
-                <option value="active">Active</option>
-                <option value="disposed">Disposed</option>
-                <option value="sold">Sold</option>
-                <option value="lost">Lost</option>
-                <option value="inactive">Inactive</option>
-              </select>
-
-              <button
-                id="refreshAssets"
-                class="assets-btn assets-btn-secondary"
-                type="button"
-              >
-                Refresh
-              </button>
-
+                0
+              </div>
             </div>
 
-            <div class="assets-table-wrap">
+            <div class="assets-kpi">
+              <div class="assets-kpi-label">
+                Acquisition Cost
+              </div>
 
-              <table class="assets-table">
-                <thead>
-                  <tr>
-                    <th>Asset</th>
-                    <th>Category</th>
-                    <th>Acquired</th>
-                    <th>Cost</th>
-                    <th>Current Value</th>
-                    <th>Location</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
+              <div
+                id="totalAcquisitionCost"
+                class="assets-kpi-value"
+              >
+                KSh 0
+              </div>
+            </div>
 
-                <tbody id="assetsBody">
-                  <tr>
-                    <td colspan="8">
-                      <div class="assets-empty">
-                        <div class="assets-empty-icon">🏢</div>
-                        <strong>Loading assets…</strong>
+            <div class="assets-kpi">
+              <div class="assets-kpi-label">
+                Current Value
+              </div>
+
+              <div
+                id="totalCurrentValue"
+                class="assets-kpi-value"
+              >
+                KSh 0
+              </div>
+            </div>
+
+          </section>
+
+          <section class="assets-grid">
+
+            <article class="assets-card">
+
+              <div class="assets-card-header">
+                <h2 id="formTitle">
+                  Add Asset
+                </h2>
+
+                <p>
+                  Record group property without changing the
+                  financial ledger.
+                </p>
+              </div>
+
+              <div class="assets-card-body">
+
+                <form id="assetForm">
+
+                  <input
+                    type="hidden"
+                    id="assetId"
+                    value=""
+                  >
+
+                  <div class="assets-form-grid">
+
+                    <div class="assets-field full">
+                      <label for="assetName">
+                        Asset name *
+                      </label>
+
+                      <input
+                        id="assetName"
+                        type="text"
+                        maxlength="200"
+                        required
+                        placeholder="e.g. Group dairy cow"
+                      >
+                    </div>
+
+                    <div class="assets-field">
+                      <label for="assetCategory">
+                        Category *
+                      </label>
+
+                      <select
+                        id="assetCategory"
+                        required
+                      >
+                        <option value="land">Land</option>
+                        <option value="building">Building</option>
+                        <option value="vehicle">Vehicle</option>
+                        <option value="equipment">Equipment</option>
+                        <option value="livestock">Livestock</option>
+                        <option value="farm">Farm</option>
+                        <option value="furniture">Furniture</option>
+                        <option value="investment">Investment</option>
+                        <option value="shares">Shares</option>
+                        <option value="other" selected>Other</option>
+                      </select>
+                    </div>
+
+                    <div class="assets-field">
+                      <label for="assetStatus">
+                        Status *
+                      </label>
+
+                      <select
+                        id="assetStatus"
+                        required
+                      >
+                        <option value="active" selected>
+                          Active
+                        </option>
+
+                        <option value="disposed">
+                          Disposed
+                        </option>
+
+                        <option value="sold">
+                          Sold
+                        </option>
+
+                        <option value="lost">
+                          Lost
+                        </option>
+
+                        <option value="inactive">
+                          Inactive
+                        </option>
+                      </select>
+                    </div>
+
+                    <div class="assets-field">
+                      <label for="acquiredDate">
+                        Acquired date
+                      </label>
+
+                      <input
+                        id="acquiredDate"
+                        type="date"
+                      >
+                    </div>
+
+                    <div class="assets-field">
+                      <label for="assetLocation">
+                        Location
+                      </label>
+
+                      <input
+                        id="assetLocation"
+                        type="text"
+                        maxlength="250"
+                        placeholder="e.g. Timau"
+                      >
+                    </div>
+
+                    <div class="assets-field">
+                      <label for="acquisitionCost">
+                        Acquisition cost
+                      </label>
+
+                      <input
+                        id="acquisitionCost"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                      >
+                    </div>
+
+                    <div class="assets-field">
+                      <label for="currentValue">
+                        Current value
+                      </label>
+
+                      <input
+                        id="currentValue"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                      >
+                    </div>
+
+                    <div class="assets-field full">
+                      <label for="assetDescription">
+                        Description
+                      </label>
+
+                      <textarea
+                        id="assetDescription"
+                        maxlength="2000"
+                        placeholder="Add useful details about the asset..."
+                      ></textarea>
+                    </div>
+
+                  </div>
+
+                  <div class="assets-form-actions">
+
+                    <button
+                      id="saveAsset"
+                      class="assets-btn assets-btn-primary"
+                      type="submit"
+                    >
+                      Save Asset
+                    </button>
+
+                    <button
+                      id="resetAsset"
+                      class="assets-btn assets-btn-secondary"
+                      type="button"
+                    >
+                      Reset
+                    </button>
+
+                  </div>
+
+                </form>
+
+                <div class="role-note">
+                  Asset management is restricted to
+                  <strong>admin, chairperson and treasurer</strong>.
+                  Deletion is restricted to
+                  <strong>admin</strong>.
+                </div>
+
+              </div>
+
+            </article>
+
+            <article class="assets-card">
+
+              <div class="assets-card-header">
+                <h2>
+                  Asset Register
+                </h2>
+
+                <p>
+                  Assets shown here belong only to the authenticated
+                  member's current group.
+                </p>
+              </div>
+
+              <div class="assets-toolbar">
+
+                <input
+                  id="assetSearch"
+                  type="search"
+                  placeholder="Search assets..."
+                  aria-label="Search assets"
+                >
+
+                <select
+                  id="assetFilterCategory"
+                  aria-label="Filter by category"
+                >
+                  <option value="">
+                    All categories
+                  </option>
+
+                  <option value="land">Land</option>
+                  <option value="building">Building</option>
+                  <option value="vehicle">Vehicle</option>
+                  <option value="equipment">Equipment</option>
+                  <option value="livestock">Livestock</option>
+                  <option value="farm">Farm</option>
+                  <option value="furniture">Furniture</option>
+                  <option value="investment">Investment</option>
+                  <option value="shares">Shares</option>
+                  <option value="other">Other</option>
+                </select>
+
+                <select
+                  id="assetFilterStatus"
+                  aria-label="Filter by status"
+                >
+                  <option value="">
+                    All statuses
+                  </option>
+
+                  <option value="active">Active</option>
+                  <option value="disposed">Disposed</option>
+                  <option value="sold">Sold</option>
+                  <option value="lost">Lost</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+
+                <button
+                  id="refreshAssets"
+                  type="button"
+                  class="assets-btn assets-btn-secondary"
+                >
+                  Refresh
+                </button>
+
+              </div>
+
+              <div class="assets-table-wrap">
+
+                <table class="assets-table">
+
+                  <thead>
+                    <tr>
+                      <th>Asset</th>
+                      <th>Category</th>
+                      <th>Acquired</th>
+                      <th>Cost</th>
+                      <th>Current Value</th>
+                      <th>Location</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+
+                  <tbody id="assetsBody">
+
+                    <tr>
+                      <td
+                        colspan="8"
+                        class="assets-empty"
+                      >
+                        <div class="assets-empty-icon">
+                          ⏳
+                        </div>
+
+                        <strong>
+                          Loading assets…
+                        </strong>
+
                         Please wait.
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
+                      </td>
+                    </tr>
 
-              </table>
+                  </tbody>
 
-            </div>
+                </table>
 
-          </article>
+              </div>
+
+            </article>
+
+          </section>
 
         </section>
 
-      </section>
+      </div>
 
-    </div>
+    </main>
+
   </div>
 
   <script type="module">
-    import "./js/layout.js";
-    import "./js/assets.js";
+    import "./js/admin-layout.js";
   </script>
 
 </body>
