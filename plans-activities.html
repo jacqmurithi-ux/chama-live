@@ -1530,17 +1530,27 @@
 
 <header class="topbar">
 
-  <div class="brand">
-    CHAMA <span>LIVE</span>
-  </div>
+  <div class="topbar-inner">
 
-  <button
-    class="btn btn-secondary"
-    id="logout"
-    type="button"
-  >
-    Sign out
-  </button>
+    <div class="brand">
+      CHAMA <span>LIVE</span>
+    </div>
+
+    <div class="top-nav"></div>
+
+    <div class="topbar-actions">
+
+      <button
+        class="btn btn-secondary"
+        id="logout"
+        type="button"
+      >
+        Sign out
+      </button>
+
+    </div>
+
+  </div>
 
 </header>
 
@@ -2434,7 +2444,6 @@
                   class="empty"
                 >
                   Loading plans…
-
                 </td>
 
               </tr>
@@ -2600,7 +2609,6 @@
                   class="empty"
                 >
                   Loading activities…
-
                 </td>
 
               </tr>
@@ -2659,16 +2667,14 @@
 
 
 <!-- =====================================================
-     SHARED LAYOUT + PAGE SCRIPT
+     ADMIN PORTAL BOOT
 ===================================================== -->
 
 <script type="module">
 
   import {
     boot
-  } from "./js/layout.js";
-
-  import "./js/plans-activities.js";
+  } from "./js/admin-layout.js";
 
   boot();
 
