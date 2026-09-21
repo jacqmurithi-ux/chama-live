@@ -33,9 +33,7 @@ const state = {
 
 const els = {};
 
-document.addEventListener("DOMContentLoaded", init);
-
-async function init() {
+export async function initPage() {
   cacheElements();
   bindEvents();
 
@@ -692,9 +690,7 @@ async function updateMilestone() {
   }
 }
 
-function beginMilestoneEdit(
-  id
-) {
+function beginMilestoneEdit(id) {
   if (!isManagementRole()) {
     showMessage(
       "You do not have permission to edit milestones.",
@@ -786,9 +782,7 @@ function cancelMilestoneEdit() {
   setEditMode(false);
 }
 
-function setEditMode(
-  editing
-) {
+function setEditMode(editing) {
   if (els.formHeading) {
     els.formHeading.textContent =
       editing
@@ -818,9 +812,7 @@ function setEditMode(
   }
 }
 
-async function handleTableAction(
-  event
-) {
+async function handleTableAction(event) {
   const button =
     event.target.closest(
       "button[data-action]"
@@ -840,9 +832,7 @@ async function handleTableAction(
     return;
   }
 
-  if (
-    action === "edit"
-  ) {
+  if (action === "edit") {
     beginMilestoneEdit(
       milestoneId
     );
@@ -850,18 +840,14 @@ async function handleTableAction(
     return;
   }
 
-  if (
-    action === "delete"
-  ) {
+  if (action === "delete") {
     await deleteMilestone(
       milestoneId
     );
   }
 }
 
-async function deleteMilestone(
-  id
-) {
+async function deleteMilestone(id) {
   if (!isManagementRole()) {
     showMessage(
       "You do not have permission to delete milestones.",
@@ -1234,9 +1220,7 @@ function clearForm() {
   setEditMode(false);
 }
 
-function setFormBusy(
-  busy
-) {
+function setFormBusy(busy) {
   if (!els.createButton) {
     return;
   }
@@ -1264,9 +1248,7 @@ function setFormBusy(
   }
 }
 
-function getPlanTitle(
-  planId
-) {
+function getPlanTitle(planId) {
   if (!planId) {
     return "";
   }
@@ -1284,9 +1266,7 @@ function getPlanTitle(
   );
 }
 
-function numericAmount(
-  value
-) {
+function numericAmount(value) {
   if (
     value === null ||
     value === undefined ||
@@ -1305,9 +1285,7 @@ function numericAmount(
     : 0;
 }
 
-function formatCurrency(
-  value
-) {
+function formatCurrency(value) {
   return `KSh ${numericAmount(
     value
   ).toLocaleString(
@@ -1319,9 +1297,7 @@ function formatCurrency(
   )}`;
 }
 
-function formatDate(
-  value
-) {
+function formatDate(value) {
   if (!value) {
     return "—";
   }
@@ -1349,9 +1325,7 @@ function formatDate(
   );
 }
 
-function formatDateTime(
-  value
-) {
+function formatDateTime(value) {
   if (!value) {
     return "—";
   }
@@ -1379,9 +1353,7 @@ function formatDateTime(
   );
 }
 
-function formatStatus(
-  value
-) {
+function formatStatus(value) {
   if (!value) {
     return "";
   }
@@ -1424,17 +1396,13 @@ function todayString() {
   return `${year}-${month}-${day}`;
 }
 
-function isUuid(
-  value
-) {
+function isUuid(value) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
     value
   );
 }
 
-function escapeHtml(
-  value
-) {
+function escapeHtml(value) {
   return String(
     value ?? ""
   )
@@ -1460,9 +1428,7 @@ function escapeHtml(
     );
 }
 
-function normalizeError(
-  error
-) {
+function normalizeError(error) {
   if (!error) {
     return "An unexpected error occurred.";
   }
