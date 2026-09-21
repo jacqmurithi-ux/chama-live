@@ -36,6 +36,14 @@
        ↓
    initDashboard()
 
+   plans-activities.html
+       ↓
+   admin-layout.js
+       ↓
+   plans-activities.js
+       ↓
+   initPage()
+
    ========================================================= */
 
 import {
@@ -127,6 +135,11 @@ const PAGE_SCRIPTS = {
   "group-management.html": [
     "./group-management.js",
     "initGroupManagement"
+  ],
+
+  "plans-activities.html": [
+    "./plans-activities.js",
+    "initPage"
   ]
 
 };
