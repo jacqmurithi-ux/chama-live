@@ -1,31 +1,69 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
-
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
 
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
   >
 
-  <title>Dashboard — CHAMA LIVE</title>
+  <meta
+    name="theme-color"
+    content="#ffffff"
+  >
+
+  <title>CHAMA LIVE — Dashboard</title>
 
   <link
     rel="stylesheet"
-    href="css/app.css"
+    href="./css/app.css"
   >
 
   <style>
-
     /* =====================================================
-       CHAMA LIVE — DASHBOARD
-       Recurring Monthly Contribution System
+       CHAMA LIVE — ADMIN DASHBOARD
+       LIGHT / MOBILE-FRIENDLY DASHBOARD LAYER
+
+       IMPORTANT:
+       - admin-layout.js owns navigation
+       - dashboard.js owns data/accounting rendering
+       - Existing DOM IDs are preserved
+       - No database logic belongs here
     ===================================================== */
 
+    :root {
+      --dashboard-bg: #f8fafc;
+      --dashboard-card: #ffffff;
+      --dashboard-border: #e5e7eb;
+      --dashboard-text: #101828;
+      --dashboard-muted: #667085;
+      --dashboard-soft: #f8fafc;
+      --dashboard-accent: #0f766e;
+      --dashboard-accent-soft: #ecfdf5;
+      --dashboard-warning: #b54708;
+      --dashboard-danger: #b42318;
+      --dashboard-radius: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-width: 320px;
+      background: var(--dashboard-bg);
+    }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      background: var(--dashboard-bg);
+      color: var(--dashboard-text);
+    }
+
     /* =====================================================
-       TOP NAVIGATION
+       TOPBAR
     ===================================================== */
 
     .topbar {
@@ -33,72 +71,49 @@
       top: 0;
       z-index: 1000;
       width: 100%;
+      background: rgba(255, 255, 255, 0.96);
+      border-bottom: 1px solid var(--dashboard-border);
+      backdrop-filter: blur(10px);
     }
 
     .topbar-inner {
-      width: 100%;
+      width: min(1440px, 100%);
+      min-height: 64px;
+      margin: 0 auto;
+      padding: 0 20px;
       display: flex;
       align-items: center;
-      gap: 24px;
+      gap: 16px;
     }
 
     .brand {
-      flex-shrink: 0;
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      color: #101828;
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+    }
+
+    .brand span {
+      color: var(--dashboard-accent);
+      margin-left: 3px;
     }
 
     .top-nav {
+      flex: 1 1 auto;
+      min-width: 0;
       display: flex;
       align-items: center;
-      gap: 4px;
-      flex: 1;
-      min-width: 0;
-      overflow-x: auto;
-      scrollbar-width: none;
     }
-
-    .top-nav::-webkit-scrollbar {
-      display: none;
-    }
-
-    .top-nav a {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 8px 11px;
-      border-radius: 8px;
-      text-decoration: none;
-      white-space: nowrap;
-      font-size: 13px;
-      font-weight: 600;
-      color: inherit;
-      transition:
-        background .2s ease,
-        color .2s ease;
-    }
-
-    .top-nav a:hover {
-      background:
-        rgba(15, 118, 110, .08);
-      color:
-        #0f766e;
-    }
-
-    .top-nav a.active {
-      background:
-        #0f766e;
-      color:
-        #fff;
-    }
-
-    /* =====================================================
-       TOPBAR ACTIONS
-    ===================================================== */
 
     .topbar-actions {
+      flex: 0 0 auto;
       display: flex;
       align-items: center;
       gap: 10px;
-      flex-shrink: 0;
     }
 
     .user-name {
@@ -109,28 +124,74 @@
     }
 
     /* =====================================================
-       FULL WIDTH LAYOUT
+       MOBILE MENU BUTTON
+       admin-layout.js creates .menu-toggle when required.
+    ===================================================== */
+
+    .menu-toggle {
+      display: none;
+      width: 40px;
+      height: 40px;
+      flex: 0 0 40px;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      border: 1px solid var(--dashboard-border);
+      border-radius: 10px;
+      background: #ffffff;
+      color: #344054;
+      font-size: 20px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .menu-toggle:active {
+      transform: scale(0.97);
+    }
+
+    /* =====================================================
+       MAIN
     ===================================================== */
 
     .layout {
-      display:
-        block !important;
-      width:
-        100%;
+      width: 100%;
+      min-height: calc(100vh - 64px);
     }
 
     .sidebar {
-      display:
-        none !important;
+      display: none;
     }
 
     .main {
-      width:
-        100%;
-      max-width:
-        1400px;
-      margin:
-        0 auto;
+      width: min(1440px, 100%);
+      margin: 0 auto;
+      padding: 28px 20px 50px;
+    }
+
+    /* =====================================================
+       STATUS / ERROR
+    ===================================================== */
+
+    #status {
+      margin: 0 0 18px;
+      padding: 12px 14px;
+      border: 1px solid #d1fae5;
+      border-radius: 12px;
+      background: #ecfdf5;
+      color: #065f46;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    #error {
+      margin: 0 0 18px;
+      padding: 13px 14px;
+      border: 1px solid #fecaca;
+      border-radius: 12px;
+      background: #fef2f2;
+      color: var(--dashboard-danger);
+      font-size: 13px;
+      line-height: 1.5;
     }
 
     /* =====================================================
@@ -138,395 +199,289 @@
     ===================================================== */
 
     .dashboard-header {
-      margin-bottom:
-        24px;
+      margin-bottom: 22px;
     }
 
     .dashboard-header h1 {
-      margin:
-        0 0 6px;
+      margin: 0;
+      color: var(--dashboard-text);
+      font-size: clamp(24px, 3vw, 32px);
+      line-height: 1.15;
+      letter-spacing: -0.03em;
     }
 
     .dashboard-header p {
-      margin:
-        0;
+      margin: 7px 0 0;
+      color: var(--dashboard-muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .dashboard-header strong {
+      color: #344054;
     }
 
     /* =====================================================
-       FINANCIAL METRICS
-    ===================================================== */
-
-    .dashboard-metrics {
-      display:
-        grid;
-      grid-template-columns:
-        repeat(4, minmax(0, 1fr));
-      gap:
-        14px;
-      margin-bottom:
-        24px;
-    }
-
-    .metric-card {
-      min-width:
-        0;
-    }
-
-    .metric-label {
-      font-size:
-        12px;
-      font-weight:
-        600;
-      color:
-        #64748b;
-    }
-
-    .metric {
-      font-size:
-        26px;
-      font-weight:
-        800;
-      margin:
-        8px 0 4px;
-    }
-
-    .muted {
-      color:
-        #64748b;
-    }
-
-    .eyebrow {
-      font-size:
-        10px;
-      font-weight:
-        800;
-      letter-spacing:
-        .08em;
-      color:
-        #0f766e;
-    }
-
-    /* =====================================================
-       DASHBOARD SECTIONS
+       SECTION
     ===================================================== */
 
     .dashboard-section {
-      margin-bottom:
-        24px;
+      margin-top: 22px;
     }
 
     .section-heading {
-      margin-bottom:
-        16px;
+      margin-bottom: 11px;
     }
 
     .section-heading h2 {
-      margin:
-        4px 0;
+      margin: 0;
+      color: var(--dashboard-text);
+      font-size: 17px;
+      line-height: 1.3;
+      letter-spacing: -0.01em;
+    }
+
+    .section-heading p {
+      margin: 4px 0 0;
+      color: var(--dashboard-muted);
+      font-size: 12px;
+      line-height: 1.45;
     }
 
     /* =====================================================
-       CONTRIBUTION PROGRESS
+       METRIC CARDS
+    ===================================================== */
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .metric-card {
+      min-width: 0;
+      padding: 18px;
+      border: 1px solid var(--dashboard-border);
+      border-radius: var(--dashboard-radius);
+      background: var(--dashboard-card);
+      box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
+    }
+
+    .metric-label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--dashboard-muted);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .metric-value {
+      display: block;
+      color: var(--dashboard-text);
+      font-size: clamp(22px, 2.6vw, 29px);
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.025em;
+      overflow-wrap: anywhere;
+    }
+
+    .metric-meta {
+      display: block;
+      margin-top: 7px;
+      color: var(--dashboard-muted);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .metric-value.positive,
+    .metric-value.amount-positive {
+      color: #087443;
+    }
+
+    .metric-value.negative,
+    .metric-value.amount-negative {
+      color: var(--dashboard-danger);
+    }
+
+    /* =====================================================
+       PROGRESS CARD
     ===================================================== */
 
     .progress-card {
-      margin-bottom:
-        24px;
+      padding: 20px;
+      border: 1px solid var(--dashboard-border);
+      border-radius: var(--dashboard-radius);
+      background: var(--dashboard-card);
+      box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
     }
 
-    .progress-percentage {
-      font-size:
-        28px;
-      font-weight:
-        800;
-      margin-bottom:
-        12px;
+    .progress-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
     }
 
-    .progress {
-      width:
-        100%;
-      height:
-        12px;
-      overflow:
-        hidden;
-      border-radius:
-        999px;
-      background:
-        #e5e7eb;
+    .progress-title {
+      min-width: 0;
     }
 
-    .progress-bar {
-      height:
-        100%;
-      width:
-        0%;
-      border-radius:
-        inherit;
-      background:
-        #0f766e;
-      transition:
-        width .4s ease;
+    .progress-title h3 {
+      margin: 0;
+      color: var(--dashboard-text);
+      font-size: 16px;
     }
 
-    .progress-footer {
-      display:
-        flex;
-      justify-content:
-        space-between;
-      align-items:
-        center;
-      gap:
-        10px;
-      margin-top:
-        10px;
+    .progress-title p {
+      margin: 4px 0 0;
+      color: var(--dashboard-muted);
+      font-size: 12px;
     }
 
-    /* =====================================================
-       CONTRIBUTOR SUMMARY
-    ===================================================== */
-
-    .contributor-summary {
-      display:
-        grid;
-      grid-template-columns:
-        repeat(3, minmax(0, 1fr));
-      gap:
-        10px;
-      margin-top:
-        18px;
+    #progressPercentage {
+      flex: 0 0 auto;
+      color: var(--dashboard-accent);
+      font-size: 24px;
+      font-weight: 800;
     }
 
-    .contributor-stat {
-      padding:
-        12px;
-      border:
-        1px solid #e5e7eb;
-      border-radius:
-        12px;
-      background:
-        #f8fafc;
+    .progress-track {
+      width: 100%;
+      height: 10px;
+      margin-top: 18px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e5e7eb;
     }
 
-    .contributor-stat-label {
-      font-size:
-        11px;
-      color:
-        #64748b;
-      margin-bottom:
-        4px;
+    #progressBar {
+      width: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--dashboard-accent);
+      transition: width 0.35s ease;
     }
 
-    .contributor-stat-value {
-      font-size:
-        18px;
-      font-weight:
-        800;
-      color:
-        #172033;
+    .progress-summary {
+      margin-top: 9px;
+      color: var(--dashboard-muted);
+      font-size: 12px;
+    }
+
+    .progress-stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .progress-stat {
+      min-width: 0;
+      padding: 12px;
+      border: 1px solid #edf0f4;
+      border-radius: 12px;
+      background: var(--dashboard-soft);
+    }
+
+    .progress-stat-label {
+      display: block;
+      color: var(--dashboard-muted);
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .progress-stat-value {
+      display: block;
+      margin-top: 5px;
+      color: var(--dashboard-text);
+      font-size: 14px;
+      font-weight: 800;
+      overflow-wrap: anywhere;
     }
 
     /* =====================================================
-       CONTRIBUTION BREAKDOWN
+       TWO COLUMN AREA
     ===================================================== */
 
-    .contribution-breakdown {
-      display:
-        flex;
-      flex-wrap:
-        wrap;
-      gap:
-        8px 18px;
-      margin-top:
-        14px;
-      font-size:
-        12px;
-    }
-
-    .contribution-breakdown span {
-      display:
-        inline-flex;
-      align-items:
-        center;
-      gap:
-        5px;
-    }
-
-    .breakdown-dot {
-      width:
-        7px;
-      height:
-        7px;
-      border-radius:
-        50%;
-      background:
-        #0f766e;
-      flex-shrink:
-        0;
-    }
-
-    .breakdown-dot.credit {
-      background:
-        #10b981;
-    }
-
-    .breakdown-dot.outstanding {
-      background:
-        #f59e0b;
+    .dashboard-columns {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 16px;
+      margin-top: 22px;
     }
 
     /* =====================================================
-       MEMBER STATUS TABLE
+       CARD
     ===================================================== */
 
-    .member-status-card {
-      margin-bottom:
-        24px;
+    .dashboard-card {
+      min-width: 0;
+      border: 1px solid var(--dashboard-border);
+      border-radius: var(--dashboard-radius);
+      background: var(--dashboard-card);
+      box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
+      overflow: hidden;
     }
 
-    .member-status-table {
-      width:
-        100%;
+    .card-header {
+      padding: 17px 18px 13px;
+      border-bottom: 1px solid #edf0f4;
     }
 
-    .member-status-table table {
-      min-width:
-        900px;
+    .card-header h2,
+    .card-header h3 {
+      margin: 0;
+      color: var(--dashboard-text);
+      font-size: 15px;
+      line-height: 1.3;
     }
 
-    .member-status-table td {
-      vertical-align:
-        middle;
+    .card-header p {
+      margin: 4px 0 0;
+      color: var(--dashboard-muted);
+      font-size: 12px;
+      line-height: 1.4;
     }
 
-    .member-status-table td:first-child {
-      font-weight:
-        600;
+    .card-body {
+      padding: 0;
     }
 
     /* =====================================================
-       STATUS BADGES
+       OPERATIONS SNAPSHOT
     ===================================================== */
 
-    .status-badge {
-      display:
-        inline-flex;
-      align-items:
-        center;
-      justify-content:
-        center;
-      padding:
-        4px 8px;
-      border-radius:
-        999px;
-      font-size:
-        10px;
-      font-weight:
-        700;
-      white-space:
-        nowrap;
+    .operations-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      padding: 16px;
     }
 
-    .status-cleared,
-    .status-paid,
-    .status-credit {
-      background:
-        #ecfdf3;
-      color:
-        #047857;
+    .operation-item {
+      min-width: 0;
+      padding: 13px;
+      border: 1px solid #edf0f4;
+      border-radius: 12px;
+      background: var(--dashboard-soft);
     }
 
-    .status-partial {
-      background:
-        #fffaeb;
-      color:
-        #b45309;
+    .operation-item span {
+      display: block;
+      color: var(--dashboard-muted);
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1.3;
     }
 
-    .status-outstanding,
-    .status-pending {
-      background:
-        #fee2e2;
-      color:
-        #b91c1c;
-    }
-
-    .status-neutral {
-      background:
-        #f1f5f9;
-      color:
-        #475569;
-    }
-
-    /* =====================================================
-       VALUE COLORS
-    ===================================================== */
-
-    .credit-value {
-      color:
-        #047857;
-      font-weight:
-        700;
-    }
-
-    .outstanding-value {
-      color:
-        #b45309;
-      font-weight:
-        700;
-    }
-
-    .applied-value {
-      color:
-        #0f766e;
-      font-weight:
-        700;
-    }
-
-    /* =====================================================
-       ACTIVITY GRID
-    ===================================================== */
-
-    .activity-grid {
-      display:
-        grid;
-      grid-template-columns:
-        repeat(2, minmax(0, 1fr));
-      gap:
-        18px;
-    }
-
-    .activity-card {
-      min-width:
-        0;
-    }
-
-    .activity-card .section-heading,
-    .meetings-card .section-heading {
-      display:
-        flex;
-      align-items:
-        flex-start;
-      justify-content:
-        space-between;
-      gap:
-        15px;
-    }
-
-    .btn-small {
-      padding:
-        7px 11px;
-      font-size:
-        11px;
-      white-space:
-        nowrap;
-      flex-shrink:
-        0;
-    }
-
-    .meetings-card {
-      margin-bottom:
-        30px;
+    .operation-item strong {
+      display: block;
+      margin-top: 6px;
+      color: var(--dashboard-text);
+      font-size: 20px;
+      line-height: 1.1;
     }
 
     /* =====================================================
@@ -534,198 +489,189 @@
     ===================================================== */
 
     .table-wrap {
-      width:
-        100%;
-      max-width:
-        100%;
-      overflow-x:
-        auto;
-      -webkit-overflow-scrolling:
-        touch;
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .dashboard-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 620px;
+    }
+
+    .dashboard-table th,
+    .dashboard-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #edf0f4;
+      text-align: left;
+      vertical-align: middle;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .dashboard-table th {
+      color: #667085;
+      background: #fcfcfd;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.045em;
+      white-space: nowrap;
+    }
+
+    .dashboard-table td {
+      color: #475467;
+    }
+
+    .dashboard-table tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .dashboard-table td strong {
+      color: #344054;
     }
 
     /* =====================================================
-       GETTING STARTED SUCCESS POPUP
+       STATUS BADGES
     ===================================================== */
 
-    .getting-started-popup {
-      position:
-        fixed;
-      inset:
-        0;
-      z-index:
-        5000;
-      display:
-        flex;
-      align-items:
-        center;
-      justify-content:
-        center;
-      padding:
-        20px;
-      background:
-        rgba(15, 23, 42, .58);
-      backdrop-filter:
-        blur(4px);
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 25px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #f2f4f7;
+      color: #475467;
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1;
+      white-space: nowrap;
     }
 
-    .getting-started-popup[hidden] {
-      display:
-        none;
+    .status-paid,
+    .status-approved,
+    .status-active {
+      background: #ecfdf3;
+      color: #067647;
     }
 
-    .getting-started-popup-card {
-      width:
-        100%;
-      max-width:
-        460px;
-      padding:
-        28px;
-      border-radius:
-        20px;
-      background:
-        #fff;
-      box-shadow:
-        0 24px 70px
-        rgba(15, 23, 42, .25);
-      text-align:
-        center;
-      animation:
-        gettingStartedPopupIn
-        .25s ease-out;
+    .status-partial,
+    .status-pending,
+    .status-upcoming {
+      background: #fffaeb;
+      color: #b54708;
     }
 
-    .getting-started-popup-icon {
-      width:
-        56px;
-      height:
-        56px;
-      margin:
-        0 auto 16px;
-      display:
-        flex;
-      align-items:
-        center;
-      justify-content:
-        center;
-      border-radius:
-        50%;
-      background:
-        #ecfdf3;
-      color:
-        #047857;
-      font-size:
-        28px;
-      font-weight:
-        800;
-    }
-
-    .getting-started-popup-card h2 {
-      margin:
-        0 0 10px;
-      font-size:
-        22px;
-      color:
-        #172033;
-    }
-
-    .getting-started-popup-card p {
-      margin:
-        0 0 22px;
-      color:
-        #64748b;
-      font-size:
-        14px;
-      line-height:
-        1.6;
-    }
-
-    .getting-started-popup-actions {
-      display:
-        flex;
-      align-items:
-        center;
-      justify-content:
-        center;
-      gap:
-        10px;
-      flex-wrap:
-        wrap;
-    }
-
-    .getting-started-popup-actions .btn {
-      min-width:
-        150px;
-    }
-
-    @keyframes gettingStartedPopupIn {
-
-      from {
-        opacity:
-          0;
-        transform:
-          translateY(12px)
-          scale(.98);
-      }
-
-      to {
-        opacity:
-          1;
-        transform:
-          translateY(0)
-          scale(1);
-      }
-
+    .status-outstanding,
+    .status-rejected,
+    .status-inactive,
+    .status-suspended,
+    .status-removed {
+      background: #fef3f2;
+      color: #b42318;
     }
 
     /* =====================================================
-       DESKTOP
+       EMPTY STATE
     ===================================================== */
 
-    @media (min-width: 801px) {
+    .empty-state {
+      min-height: 105px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 5px;
+    }
 
-      .topbar {
-        padding-left:
-          24px;
-        padding-right:
-          24px;
-      }
+    .empty-state strong {
+      color: #344054;
+      font-size: 13px;
+    }
 
-      .main {
-        padding:
-          30px 28px;
-      }
+    .empty-state span {
+      color: #667085;
+      font-size: 11px;
+      line-height: 1.45;
+    }
 
+    /* =====================================================
+       GETTING STARTED POPUP
+    ===================================================== */
+
+    #gettingStartedPopup {
+      position: fixed;
+      inset: 0;
+      z-index: 30000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(16, 24, 40, 0.48);
+    }
+
+    #gettingStartedPopup[hidden] {
+      display: none;
+    }
+
+    .getting-started-dialog {
+      width: min(460px, 100%);
+      padding: 24px;
+      border: 1px solid var(--dashboard-border);
+      border-radius: 18px;
+      background: #ffffff;
+      box-shadow: 0 24px 60px rgba(16, 24, 40, 0.22);
+    }
+
+    .getting-started-dialog h2 {
+      margin: 0;
+      color: var(--dashboard-text);
+      font-size: 20px;
+      line-height: 1.25;
+    }
+
+    .getting-started-dialog p {
+      margin: 9px 0 0;
+      color: var(--dashboard-muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .getting-started-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 9px;
+      margin-top: 20px;
     }
 
     /* =====================================================
        TABLET
     ===================================================== */
 
-    @media (max-width: 1000px) {
+    @media (max-width: 1100px) {
+      .metrics-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .dashboard-columns {
+        grid-template-columns: 1fr;
+      }
 
       .topbar-inner {
-        gap:
-          14px;
+        padding-left: 16px;
+        padding-right: 16px;
       }
 
-      .top-nav a {
-        padding:
-          7px 9px;
-        font-size:
-          12px;
+      .main {
+        padding-left: 16px;
+        padding-right: 16px;
       }
-
-      .user-name {
-        display:
-          none;
-      }
-
-      .dashboard-metrics {
-        grid-template-columns:
-          repeat(2, minmax(0, 1fr));
-      }
-
     }
 
     /* =====================================================
@@ -733,420 +679,224 @@
     ===================================================== */
 
     @media (max-width: 800px) {
-
-      .topbar {
-        padding:
-          10px 12px;
-      }
-
       .topbar-inner {
-        display:
-          grid;
-        grid-template-columns:
-          auto 1fr auto;
-        gap:
-          10px;
-        align-items:
-          center;
+        min-height: 60px;
+        padding: 0 12px;
+        gap: 9px;
       }
 
-      .top-nav {
-        min-width:
-          0;
-        gap:
-          3px;
+      .menu-toggle {
+        display: inline-flex;
       }
 
-      .top-nav a {
-        padding:
-          7px 9px;
-        font-size:
-          11px;
+      .brand {
+        font-size: 16px;
       }
 
       .topbar-actions {
-        gap:
-          6px;
+        margin-left: auto;
+      }
+
+      .topbar-actions .user-name {
+        display: none;
       }
 
       .topbar-actions .btn {
-        padding:
-          7px 9px;
-        font-size:
-          11px;
-      }
-
-      .dashboard-metrics {
-        grid-template-columns:
-          repeat(2, minmax(0, 1fr));
-      }
-
-      .activity-grid {
-        grid-template-columns:
-          1fr;
-      }
-
-      .contributor-summary {
-        grid-template-columns:
-          1fr;
+        min-height: 38px;
+        padding: 7px 10px;
+        font-size: 12px;
       }
 
       .main {
-        width:
-          100%;
+        padding: 20px 12px 100px;
       }
 
+      .dashboard-header {
+        margin-bottom: 18px;
+      }
+
+      .dashboard-header h1 {
+        font-size: 25px;
+      }
+
+      .dashboard-header p {
+        font-size: 13px;
+      }
+
+      .metrics-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .metric-card {
+        padding: 14px;
+        border-radius: 14px;
+      }
+
+      .metric-value {
+        font-size: 21px;
+      }
+
+      .progress-card {
+        padding: 16px;
+        border-radius: 14px;
+      }
+
+      .progress-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .operations-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        padding: 12px;
+      }
+
+      .dashboard-card {
+        border-radius: 14px;
+      }
+
+      .card-header {
+        padding: 15px;
+      }
+
+      .dashboard-table {
+        min-width: 600px;
+      }
     }
 
     /* =====================================================
        SMALL MOBILE
     ===================================================== */
 
-    @media (max-width: 650px) {
-
-      .topbar {
-        padding:
-          9px 10px;
-      }
-
-      .brand {
-        font-size:
-          15px;
-      }
-
-      .top-nav a {
-        padding:
-          7px 8px;
-        font-size:
-          10px;
-      }
-
-      .dashboard-header {
-        margin-bottom:
-          18px;
-      }
-
-      .dashboard-header h1 {
-        font-size:
-          23px;
-      }
-
-      .dashboard-header p {
-        font-size:
-          12px;
-      }
-
-      .dashboard-metrics {
-        gap:
-          10px;
+    @media (max-width: 520px) {
+      .metrics-grid {
+        grid-template-columns: 1fr 1fr;
       }
 
       .metric-card {
-        padding:
-          14px;
-        border-radius:
-          16px;
+        padding: 13px;
       }
 
       .metric-label {
-        font-size:
-          10px;
+        font-size: 10px;
       }
 
-      .metric {
-        font-size:
-          21px;
-        margin:
-          7px 0 3px;
+      .metric-value {
+        font-size: 19px;
       }
 
-      .metric-card .muted {
-        font-size:
-          10px;
+      .metric-meta {
+        font-size: 10px;
       }
 
-      .dashboard-section {
-        margin-bottom:
-          18px;
+      .progress-top {
+        gap: 10px;
       }
 
-      .dashboard-section.card,
-      .member-status-card,
-      .activity-card,
-      .meetings-card {
-        padding:
-          16px 12px;
-        border-radius:
-          17px;
+      #progressPercentage {
+        font-size: 21px;
       }
 
-      .section-heading h2 {
-        font-size:
-          17px;
+      .progress-summary {
+        font-size: 11px;
       }
 
-      .eyebrow {
-        font-size:
-          9px;
+      .operations-grid {
+        gap: 8px;
       }
 
-      .muted {
-        font-size:
-          11px;
+      .operation-item {
+        padding: 11px;
       }
 
-      .progress {
-        height:
-          10px;
+      .operation-item strong {
+        font-size: 18px;
       }
 
-      .progress-footer {
-        font-size:
-          11px;
+      .getting-started-dialog {
+        padding: 20px;
       }
 
-      .contribution-breakdown {
-        flex-direction:
-          column;
-        gap:
-          7px;
+      .getting-started-actions {
+        flex-direction: column-reverse;
       }
 
-      .activity-grid {
-        gap:
-          12px;
+      .getting-started-actions .btn {
+        width: 100%;
       }
-
-      .activity-card table {
-        min-width:
-          480px;
-      }
-
-      .meetings-card table {
-        min-width:
-          560px;
-      }
-
-      .member-status-table table {
-        min-width:
-          900px;
-      }
-
-      .member-status-table th,
-      .member-status-table td,
-      .activity-card th,
-      .activity-card td,
-      .meetings-card th,
-      .meetings-card td {
-        padding:
-          10px 8px;
-        font-size:
-          11px;
-      }
-
     }
 
     /* =====================================================
-       VERY SMALL MOBILE
+       VERY SMALL DEVICES
     ===================================================== */
 
-    @media (max-width: 480px) {
+    @media (max-width: 360px) {
+      .main {
+        padding-left: 9px;
+        padding-right: 9px;
+      }
 
       .topbar-inner {
-        grid-template-columns:
-          1fr auto;
+        padding-left: 8px;
+        padding-right: 8px;
       }
 
-      .brand {
-        order:
-          1;
-      }
-
-      .topbar-actions {
-        order:
-          2;
-      }
-
-      .top-nav {
-        grid-column:
-          1 / -1;
-        grid-row:
-          2;
-        width:
-          100%;
-        border-top:
-          1px solid
-          rgba(100, 116, 139, .15);
-        padding-top:
-          7px;
-      }
-
-      .top-nav a {
-        flex-shrink:
-          0;
-      }
-
-      .dashboard-metrics {
-        gap:
-          8px;
+      .metrics-grid {
+        gap: 7px;
       }
 
       .metric-card {
-        padding:
-          12px 10px;
+        padding: 11px;
       }
 
-      .metric {
-        font-size:
-          19px;
+      .metric-value {
+        font-size: 17px;
       }
 
-      .progress-percentage {
-        font-size:
-          24px;
-      }
-
-      .contributor-stat {
-        padding:
-          11px;
-      }
-
-      .contributor-stat-value {
-        font-size:
-          17px;
-      }
-
-      .getting-started-popup {
-        padding:
-          14px;
-      }
-
-      .getting-started-popup-card {
-        padding:
-          24px 18px;
-        border-radius:
-          18px;
-      }
-
-      .getting-started-popup-card h2 {
-        font-size:
-          20px;
-      }
-
-      .getting-started-popup-card p {
-        font-size:
-          13px;
-      }
-
-      .getting-started-popup-actions {
-        flex-direction:
-          column;
-      }
-
-      .getting-started-popup-actions .btn {
-        width:
-          100%;
-      }
-
-    }
-
-    /* =====================================================
-       390PX
-    ===================================================== */
-
-    @media (max-width: 390px) {
-
-      .top-nav a {
-        padding:
-          6px 7px;
-        font-size:
-          9px;
+      .brand {
+        font-size: 14px;
       }
 
       .topbar-actions .btn {
-        font-size:
-          10px;
-        padding:
-          6px 8px;
+        padding-left: 8px;
+        padding-right: 8px;
       }
-
-      .metric {
-        font-size:
-          18px;
-      }
-
     }
 
-  </style>
+    /* =====================================================
+       REDUCED MOTION
+    ===================================================== */
 
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition: none !important;
+        animation: none !important;
+      }
+    }
+  </style>
 </head>
 
 <body>
 
   <!-- =====================================================
-       TOP BAR
-  ====================================================== -->
+       ADMIN TOPBAR
+       admin-layout.js owns the navigation injected here.
+  ===================================================== -->
 
   <header class="topbar">
-
     <div class="topbar-inner">
 
-      <!-- BRAND -->
-
-      <div class="brand">
+      <div class="brand" aria-label="CHAMA LIVE">
         CHAMA <span>LIVE</span>
       </div>
 
-      <!-- =================================================
-           TOP NAVIGATION
-      ================================================== -->
-
-      <nav class="top-nav">
-
-        <a
-          href="dashboard.html"
-          class="active"
-        >
-          Dashboard
-        </a>
-
-        <a href="members.html">
-          Members
-        </a>
-
-        <a href="contributions.html">
-          Contributions
-        </a>
-
-        <a href="expenses.html">
-          Expenses
-        </a>
-
-        <a href="meetings.html">
-          Meetings
-        </a>
-
-        <a href="reports.html">
-          Reports
-        </a>
-
-        <a href="monthly-closing.html">
-          Monthly Closing
-        </a>
-
-        <a href="group-management.html">
-          Group Management
-        </a>
-
-        <a href="assets.html">
-          Assets
-        </a>
-
-      </nav>
-
-      <!-- =================================================
-           USER / LOGOUT
-      ================================================== -->
+      <nav
+        class="top-nav"
+        aria-label="Admin navigation"
+      ></nav>
 
       <div class="topbar-actions">
 
@@ -1168,641 +918,560 @@
       </div>
 
     </div>
-
   </header>
 
+
   <!-- =====================================================
-       APPLICATION LAYOUT
-  ====================================================== -->
+       MAIN LAYOUT
+  ===================================================== -->
 
   <div class="layout">
 
-    <!-- ===================================================
-         MAIN CONTENT
-    ==================================================== -->
+    <aside class="sidebar" aria-hidden="true"></aside>
 
     <main class="main">
 
-      <!-- =================================================
-           STATUS
-      ================================================== -->
+      <!-- STATUS -->
 
       <div
         id="status"
-        class="muted"
-        style="margin-bottom:12px;"
+        hidden
+        role="status"
+        aria-live="polite"
       >
         Loading dashboard...
       </div>
 
-      <!-- =================================================
-           ERROR
-      ================================================== -->
+      <!-- ERROR -->
 
       <div
         id="error"
-        class="card"
         hidden
-        style="
-          margin-bottom:20px;
-          color:#b91c1c;
-        "
+        role="alert"
+        aria-live="assertive"
       ></div>
+
 
       <!-- =================================================
            DASHBOARD HEADER
-      ================================================== -->
+      ================================================= -->
 
       <section class="dashboard-header">
 
-        <div class="eyebrow">
-          GROUP DASHBOARD
-        </div>
-
         <h1>
-
-          Welcome to
-
-          <span data-group-name>
-            CHAMA
-          </span>
-
+          Group Dashboard
         </h1>
 
-        <p class="muted">
-          Here's an overview of your group's activities.
+        <p>
+          Welcome to
+          <strong data-group-name>your group</strong>.
+          Here is your group's current financial and
+          operational overview.
         </p>
 
       </section>
 
-      <!-- =================================================
-           FINANCIAL METRICS
-      ================================================== -->
-
-      <section class="dashboard-metrics">
-
-        <div class="card metric-card">
-
-          <div class="metric-label">
-            Active Members
-          </div>
-
-          <div
-            id="activeMembers"
-            class="metric"
-          >
-            0
-          </div>
-
-          <div class="muted">
-
-            <span id="membersCount">
-              0
-            </span>
-
-            total members
-
-          </div>
-
-        </div>
-
-        <div class="card metric-card">
-
-          <div class="metric-label">
-            Monthly Expected
-          </div>
-
-          <div
-            id="monthlyExpected"
-            class="metric"
-          >
-            KSh 0
-          </div>
-
-          <div class="muted">
-            Recurring monthly due
-          </div>
-
-        </div>
-
-        <div class="card metric-card">
-
-          <div class="metric-label">
-            Monthly Applied
-          </div>
-
-          <div
-            id="monthlyCollected"
-            class="metric"
-          >
-            KSh 0
-          </div>
-
-          <div class="muted">
-            Applied toward this month's dues
-          </div>
-
-        </div>
-
-        <div class="card metric-card">
-
-          <div class="metric-label">
-            Current Balance
-          </div>
-
-          <div
-            id="currentBalance"
-            class="metric"
-          >
-            KSh 0
-          </div>
-
-          <div class="muted">
-            Group balance
-          </div>
-
-        </div>
-
-      </section>
 
       <!-- =================================================
-           CONTRIBUTION PROGRESS
-      ================================================== -->
-
-      <section
-        class="card dashboard-section progress-card"
-      >
-
-        <div class="section-heading">
-
-          <div class="eyebrow">
-            THIS MONTH
-          </div>
-
-          <h2>
-            Contribution Progress
-          </h2>
-
-          <p
-            id="progressMonth"
-            class="muted"
-          >
-            Current month
-          </p>
-
-        </div>
-
-        <div
-          id="progressPercentage"
-          class="progress-percentage"
-        >
-          0%
-        </div>
-
-        <div
-          class="progress"
-          role="progressbar"
-          aria-label="Monthly contribution progress"
-          aria-valuemin="0"
-          aria-valuemax="100"
-          aria-valuenow="0"
-        >
-
-          <div
-            id="progressBar"
-            class="progress-bar"
-          ></div>
-
-        </div>
-
-        <div class="progress-footer">
-
-          <strong id="progressText">
-            KSh 0 / KSh 0
-          </strong>
-
-          <span class="muted">
-            Collection rate
-          </span>
-
-        </div>
-
-        <div class="contributor-summary">
-
-          <div class="contributor-stat">
-
-            <div class="contributor-stat-label">
-              Members Contributed
-            </div>
-
-            <div
-              id="contributorsCount"
-              class="contributor-stat-value"
-            >
-              0 / 0
-            </div>
-
-          </div>
-
-          <div class="contributor-stat">
-
-            <div class="contributor-stat-label">
-              Member Participation
-            </div>
-
-            <div
-              id="contributorsPercentage"
-              class="contributor-stat-value"
-            >
-              0%
-            </div>
-
-          </div>
-
-          <div class="contributor-stat">
-
-            <div class="contributor-stat-label">
-              Current Outstanding
-            </div>
-
-            <div
-              id="monthlyOutstanding"
-              class="contributor-stat-value"
-            >
-              KSh 0
-            </div>
-
-          </div>
-
-        </div>
-
-        <div class="contribution-breakdown">
-
-          <span>
-
-            <span class="breakdown-dot"></span>
-
-            Applied this month:
-
-            <strong
-              id="progressApplied"
-              class="applied-value"
-            >
-              KSh 0
-            </strong>
-
-          </span>
-
-          <span>
-
-            <span class="breakdown-dot credit"></span>
-
-            Carry-forward credit:
-
-            <strong
-              id="progressCarryForward"
-              class="credit-value"
-            >
-              KSh 0
-            </strong>
-
-          </span>
-
-          <span>
-
-            <span class="breakdown-dot outstanding"></span>
-
-            Outstanding:
-
-            <strong
-              id="progressOutstanding"
-              class="outstanding-value"
-            >
-              KSh 0
-            </strong>
-
-          </span>
-
-        </div>
-
-        <p class="muted">
-
-          Payments first clear previous outstanding balances.
-          Any amount remaining after the monthly recurring
-          contribution is carried forward as credit to the
-          next month.
-
-        </p>
-
-      </section>
-
-      <!-- =================================================
-           MEMBER CONTRIBUTION STATUS
-      ================================================== -->
-
-      <section
-        class="card member-status-card"
-      >
-
-        <div class="section-heading">
-
-          <div class="eyebrow">
-            MEMBER PAYMENTS
-          </div>
-
-          <h2>
-            Contribution Status
-          </h2>
-
-          <p class="muted">
-            Monthly recurring contribution status after applying
-            previous outstanding balances and carry-forward
-            credits.
-          </p>
-
-        </div>
-
-        <div
-          class="table-wrap member-status-table"
-        >
-
-          <table class="table">
-
-            <thead>
-
-              <tr>
-
-                <th>
-                  Member
-                </th>
-
-                <th>
-                  Monthly Due
-                </th>
-
-                <th>
-                  Previous Outstanding
-                </th>
-
-                <th>
-                  Applied This Month
-                </th>
-
-                <th>
-                  Carry Forward
-                </th>
-
-                <th>
-                  Current Outstanding
-                </th>
-
-                <th>
-                  Status
-                </th>
-
-              </tr>
-
-            </thead>
-
-            <tbody id="memberStatusRows">
-
-              <tr>
-
-                <td colspan="7">
-                  Loading contribution status...
-                </td>
-
-              </tr>
-
-            </tbody>
-
-          </table>
-
-        </div>
-
-      </section>
-
-      <!-- =================================================
-           OPERATIONS SNAPSHOT
-      ================================================== -->
-
-      <section
-        class="card dashboard-section"
-        id="operationsSnapshot"
-      >
-
-        <div class="section-heading">
-
-          <div class="eyebrow">
-            GROUP OPERATIONS
-          </div>
-
-          <h2>
-            Operations Snapshot
-          </h2>
-
-          <p class="muted">
-            A read-only overview of welfare, plans, activities,
-            milestones, assets and contribution goals.
-          </p>
-
-        </div>
-
-        <div class="dashboard-metrics">
-
-          <div class="card metric-card">
-
-            <div class="metric-label">
-              Support Cases
-            </div>
-
-            <div
-              id="operationsSupportCases"
-              class="metric"
-            >
-              0
-            </div>
-
-            <div class="muted">
-              Active welfare cases
-            </div>
-
-          </div>
-
-          <div class="card metric-card">
-
-            <div class="metric-label">
-              Plans
-            </div>
-
-            <div
-              id="operationsPlans"
-              class="metric"
-            >
-              0
-            </div>
-
-            <div class="muted">
-              Group plans
-            </div>
-
-          </div>
-
-          <div class="card metric-card">
-
-            <div class="metric-label">
-              Activities
-            </div>
-
-            <div
-              id="operationsActivities"
-              class="metric"
-            >
-              0
-            </div>
-
-            <div class="muted">
-              Planned activities
-            </div>
-
-          </div>
-
-          <div class="card metric-card">
-
-            <div class="metric-label">
-              Milestones
-            </div>
-
-            <div
-              id="operationsMilestones"
-              class="metric"
-            >
-              0
-            </div>
-
-            <div class="muted">
-              Plan milestones
-            </div>
-
-          </div>
-
-          <div class="card metric-card">
-
-            <div class="metric-label">
-              Assets
-            </div>
-
-            <div
-              id="operationsAssets"
-              class="metric"
-            >
-              0
-            </div>
-
-            <div class="muted">
-              Registered assets
-            </div>
-
-          </div>
-
-          <div class="card metric-card">
-
-            <div class="metric-label">
-              Contribution Goals
-            </div>
-
-            <div
-              id="operationsContributionGoals"
-              class="metric"
-            >
-              0
-            </div>
-
-            <div class="muted">
-              Active contribution goals
-            </div>
-
-          </div>
-
-        </div>
-
-      </section>
-
-      <!-- =================================================
-           RECENT ACTIVITY
-      ================================================== -->
+           FINANCIAL OVERVIEW
+      ================================================= -->
 
       <section
         class="dashboard-section"
+        aria-labelledby="financialOverviewTitle"
       >
 
-        <div class="activity-grid">
+        <div class="section-heading">
+          <h2 id="financialOverviewTitle">
+            Financial overview
+          </h2>
 
-          <div class="card activity-card">
+          <p>
+            Current membership, contribution and group
+            balance information.
+          </p>
+        </div>
 
-            <div class="section-heading">
 
-              <div>
+        <div class="metrics-grid">
 
-                <div class="eyebrow">
-                  CONTRIBUTIONS
-                </div>
+          <!-- ACTIVE MEMBERS -->
 
-                <h2>
-                  Recent Contributions
-                </h2>
+          <article class="metric-card">
 
-                <p class="muted">
-                  Latest money received.
-                </p>
+            <span class="metric-label">
+              Active Members
+            </span>
 
-              </div>
+            <strong
+              id="activeMembers"
+              class="metric-value"
+            >
+              —
+            </strong>
 
-              <a
-                href="contributions.html"
-                class="btn btn-secondary btn-small"
-              >
-                View all
-              </a>
+            <span
+              id="membersCount"
+              class="metric-meta"
+            >
+              —
+            </span>
+
+          </article>
+
+
+          <!-- MONTHLY EXPECTED -->
+
+          <article class="metric-card">
+
+            <span class="metric-label">
+              Monthly Expected
+            </span>
+
+            <strong
+              id="monthlyExpected"
+              class="metric-value"
+            >
+              KSh 0
+            </strong>
+
+            <span class="metric-meta">
+              Current month obligation
+            </span>
+
+          </article>
+
+
+          <!-- MONTHLY COLLECTED -->
+
+          <article class="metric-card">
+
+            <span class="metric-label">
+              Applied This Month
+            </span>
+
+            <strong
+              id="monthlyCollected"
+              class="metric-value"
+            >
+              KSh 0
+            </strong>
+
+            <span class="metric-meta">
+              Canonical payment allocation
+            </span>
+
+          </article>
+
+
+          <!-- CURRENT BALANCE -->
+
+          <article class="metric-card">
+
+            <span class="metric-label">
+              Current Balance
+            </span>
+
+            <strong
+              id="currentBalance"
+              class="metric-value"
+            >
+              KSh 0
+            </strong>
+
+            <span class="metric-meta">
+              Contributions less approved expenses
+            </span>
+
+          </article>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           CONTRIBUTION PROGRESS
+      ================================================= -->
+
+      <section
+        class="dashboard-section"
+        aria-labelledby="contributionProgressTitle"
+      >
+
+        <div class="section-heading">
+          <h2 id="contributionProgressTitle">
+            Contribution progress
+          </h2>
+
+          <p>
+            Canonical monthly obligation and allocation status.
+          </p>
+        </div>
+
+
+        <article class="progress-card">
+
+          <div class="progress-top">
+
+            <div class="progress-title">
+
+              <h3 id="progressMonth">
+                Current month
+              </h3>
+
+              <p>
+                Applied contribution against the expected
+                monthly amount.
+              </p>
 
             </div>
 
+            <strong id="progressPercentage">
+              0%
+            </strong>
+
+          </div>
+
+
+          <div
+            class="progress-track"
+            role="progressbar"
+            aria-label="Monthly contribution progress"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="0"
+          >
+            <div id="progressBar"></div>
+          </div>
+
+
+          <div
+            id="progressText"
+            class="progress-summary"
+          >
+            KSh 0 of KSh 0
+          </div>
+
+
+          <div class="progress-stats">
+
+            <div class="progress-stat">
+
+              <span class="progress-stat-label">
+                Contributors
+              </span>
+
+              <strong
+                id="contributorsCount"
+                class="progress-stat-value"
+              >
+                0
+              </strong>
+
+            </div>
+
+
+            <div class="progress-stat">
+
+              <span class="progress-stat-label">
+                Participation
+              </span>
+
+              <strong
+                id="contributorsPercentage"
+                class="progress-stat-value"
+              >
+                0%
+              </strong>
+
+            </div>
+
+
+            <div class="progress-stat">
+
+              <span class="progress-stat-label">
+                Outstanding
+              </span>
+
+              <strong
+                id="monthlyOutstanding"
+                class="progress-stat-value"
+              >
+                KSh 0
+              </strong>
+
+            </div>
+
+
+            <div class="progress-stat">
+
+              <span class="progress-stat-label">
+                Applied
+              </span>
+
+              <strong
+                id="progressApplied"
+                class="progress-stat-value"
+              >
+                KSh 0
+              </strong>
+
+            </div>
+
+          </div>
+
+
+          <div
+            class="progress-stats"
+            style="margin-top: 10px;"
+          >
+
+            <div class="progress-stat">
+
+              <span class="progress-stat-label">
+                Carry Forward
+              </span>
+
+              <strong
+                id="progressCarryForward"
+                class="progress-stat-value"
+              >
+                KSh 0
+              </strong>
+
+            </div>
+
+
+            <div class="progress-stat">
+
+              <span class="progress-stat-label">
+                Current Outstanding
+              </span>
+
+              <strong
+                id="progressOutstanding"
+                class="progress-stat-value"
+              >
+                KSh 0
+              </strong>
+
+            </div>
+
+          </div>
+
+        </article>
+
+      </section>
+
+
+      <!-- =================================================
+           MEMBER CONTRIBUTION STATUS
+      ================================================= -->
+
+      <section
+        class="dashboard-section"
+        aria-labelledby="memberPaymentsTitle"
+      >
+
+        <div class="section-heading">
+          <h2 id="memberPaymentsTitle">
+            Member payment status
+          </h2>
+
+          <p>
+            Monthly member obligations and canonical allocation
+            status.
+          </p>
+        </div>
+
+
+        <article class="dashboard-card">
+
+          <div class="table-wrap">
+
+            <table class="dashboard-table">
+
+              <thead>
+                <tr>
+                  <th scope="col">Member</th>
+                  <th scope="col">Monthly Due</th>
+                  <th scope="col">Previous Outstanding</th>
+                  <th scope="col">Applied</th>
+                  <th scope="col">Carry Forward</th>
+                  <th scope="col">Outstanding</th>
+                  <th scope="col">Status</th>
+                </tr>
+              </thead>
+
+              <tbody id="memberStatusRows">
+
+                <tr>
+                  <td colspan="7">
+                    <div class="empty-state">
+                      <strong>
+                        Loading member status...
+                      </strong>
+                    </div>
+                  </td>
+                </tr>
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </article>
+
+      </section>
+
+
+      <!-- =================================================
+           OPERATIONS SNAPSHOT
+      ================================================= -->
+
+      <section
+        class="dashboard-section"
+        aria-labelledby="operationsTitle"
+      >
+
+        <div class="section-heading">
+          <h2 id="operationsTitle">
+            Operations snapshot
+          </h2>
+
+          <p>
+            Read-only overview of the group's operational records.
+          </p>
+        </div>
+
+
+        <article class="dashboard-card">
+
+          <div class="operations-grid">
+
+            <div class="operation-item">
+              <span>
+                Support &amp; Welfare
+              </span>
+
+              <strong id="operationsSupportCases">
+                0
+              </strong>
+            </div>
+
+
+            <div class="operation-item">
+              <span>
+                Plans
+              </span>
+
+              <strong id="operationsPlans">
+                0
+              </strong>
+            </div>
+
+
+            <div class="operation-item">
+              <span>
+                Activities
+              </span>
+
+              <strong id="operationsActivities">
+                0
+              </strong>
+            </div>
+
+
+            <div class="operation-item">
+              <span>
+                Milestones
+              </span>
+
+              <strong id="operationsMilestones">
+                0
+              </strong>
+            </div>
+
+
+            <div class="operation-item">
+              <span>
+                Assets
+              </span>
+
+              <strong id="operationsAssets">
+                0
+              </strong>
+            </div>
+
+
+            <div class="operation-item">
+              <span>
+                Contribution Goals
+              </span>
+
+              <strong id="operationsContributionGoals">
+                0
+              </strong>
+            </div>
+
+          </div>
+
+        </article>
+
+      </section>
+
+
+      <!-- =================================================
+           RECENT CONTRIBUTIONS + RECENT EXPENSES
+      ================================================= -->
+
+      <section class="dashboard-section">
+
+        <div class="dashboard-columns">
+
+
+          <!-- RECENT CONTRIBUTIONS -->
+
+          <article class="dashboard-card">
+
+            <div class="card-header">
+
+              <h2>
+                Recent contributions
+              </h2>
+
+              <p>
+                Latest recorded contribution transactions.
+              </p>
+
+            </div>
+
+
             <div class="table-wrap">
 
-              <table class="table">
+              <table class="dashboard-table">
 
                 <thead>
-
                   <tr>
-
-                    <th>
-                      Member
-                    </th>
-
-                    <th>
-                      Amount
-                    </th>
-
-                    <th>
-                      Type
-                    </th>
-
-                    <th>
-                      Date
-                    </th>
-
+                    <th scope="col">Member</th>
+                    <th scope="col">Amount</th>
+                    <th scope="col">Type</th>
+                    <th scope="col">Date</th>
                   </tr>
-
                 </thead>
 
                 <tbody id="recentContributionRows">
 
                   <tr>
-
                     <td colspan="4">
-                      Loading...
+                      <div class="empty-state">
+                        <strong>
+                          Loading contributions...
+                        </strong>
+                      </div>
                     </td>
-
                   </tr>
 
                 </tbody>
@@ -1811,73 +1480,49 @@
 
             </div>
 
-          </div>
+          </article>
 
-          <div class="card activity-card">
 
-            <div class="section-heading">
+          <!-- RECENT EXPENSES -->
 
-              <div>
+          <article class="dashboard-card">
 
-                <div class="eyebrow">
-                  EXPENSES
-                </div>
+            <div class="card-header">
 
-                <h2>
-                  Recent Expenses
-                </h2>
+              <h2>
+                Recent expenses
+              </h2>
 
-                <p class="muted">
-                  Latest group spending.
-                </p>
-
-              </div>
-
-              <a
-                href="expenses.html"
-                class="btn btn-secondary btn-small"
-              >
-                View all
-              </a>
+              <p>
+                Latest group expenses and approval status.
+              </p>
 
             </div>
 
+
             <div class="table-wrap">
 
-              <table class="table">
+              <table class="dashboard-table">
 
                 <thead>
-
                   <tr>
-
-                    <th>
-                      Description
-                    </th>
-
-                    <th>
-                      Amount
-                    </th>
-
-                    <th>
-                      Category
-                    </th>
-
-                    <th>
-                      Status
-                    </th>
-
+                    <th scope="col">Description</th>
+                    <th scope="col">Amount</th>
+                    <th scope="col">Category</th>
+                    <th scope="col">Status</th>
                   </tr>
-
                 </thead>
 
                 <tbody id="recentExpenseRows">
 
                   <tr>
-
                     <td colspan="4">
-                      Loading...
+                      <div class="empty-state">
+                        <strong>
+                          Loading expenses...
+                        </strong>
+                      </div>
                     </td>
-
                   </tr>
 
                 </tbody>
@@ -1886,90 +1531,67 @@
 
             </div>
 
-          </div>
+          </article>
 
         </div>
 
       </section>
 
+
       <!-- =================================================
            UPCOMING MEETINGS
-      ================================================== -->
+      ================================================= -->
 
       <section
-        class="card meetings-card"
+        class="dashboard-section"
+        aria-labelledby="meetingsTitle"
       >
 
         <div class="section-heading">
+          <h2 id="meetingsTitle">
+            Upcoming meetings
+          </h2>
 
-          <div>
+          <p>
+            Scheduled group meetings from today onward.
+          </p>
+        </div>
 
-            <div class="eyebrow">
-              ORGANISATION
-            </div>
 
-            <h2>
-              Upcoming Meetings
-            </h2>
+        <article class="dashboard-card">
 
-            <p class="muted">
-              Keep your group organised.
-            </p>
+          <div class="table-wrap">
+
+            <table class="dashboard-table">
+
+              <thead>
+                <tr>
+                  <th scope="col">Date</th>
+                  <th scope="col">Meeting</th>
+                  <th scope="col">Venue</th>
+                  <th scope="col">Status</th>
+                </tr>
+              </thead>
+
+              <tbody id="upcomingMeetingRows">
+
+                <tr>
+                  <td colspan="4">
+                    <div class="empty-state">
+                      <strong>
+                        Loading meetings...
+                      </strong>
+                    </div>
+                  </td>
+                </tr>
+
+              </tbody>
+
+            </table>
 
           </div>
 
-          <a
-            href="meetings.html"
-            class="btn btn-secondary btn-small"
-          >
-            View meetings
-          </a>
-
-        </div>
-
-        <div class="table-wrap">
-
-          <table class="table">
-
-            <thead>
-
-              <tr>
-
-                <th>
-                  Date
-                </th>
-
-                <th>
-                  Meeting
-                </th>
-
-                <th>
-                  Venue
-                </th>
-
-                <th>
-                  Status
-                </th>
-
-              </tr>
-
-            </thead>
-
-            <tbody id="upcomingMeetingRows">
-
-              <tr>
-
-                <td colspan="4">
-                  Loading...
-                </td>
-
-              </tr>
-
-            </tbody>
-
-          </table>
-
-        </div>
+        </article>
 
       </section>
 
@@ -1977,52 +1599,47 @@
 
   </div>
 
+
   <!-- =====================================================
-       GETTING STARTED SUCCESS POPUP
-  ====================================================== -->
+       GETTING STARTED POPUP
+  ===================================================== -->
 
   <div
     id="gettingStartedPopup"
-    class="getting-started-popup"
     hidden
     role="dialog"
     aria-modal="true"
     aria-labelledby="gettingStartedPopupTitle"
+    aria-describedby="gettingStartedPopupMessage"
   >
 
-    <div class="getting-started-popup-card">
-
-      <div
-        class="getting-started-popup-icon"
-        aria-hidden="true"
-      >
-        ✓
-      </div>
+    <div
+      class="getting-started-dialog"
+      role="document"
+    >
 
       <h2 id="gettingStartedPopupTitle">
-        Your group is ready
+        Welcome to CHAMA LIVE
       </h2>
 
       <p id="gettingStartedPopupMessage">
-        Your CHAMA LIVE group workspace has been
-        created successfully. Take the guided tour
-        to see how your new workspace works.
+        Your group dashboard is ready.
       </p>
 
-      <div class="getting-started-popup-actions">
+      <div class="getting-started-actions">
 
         <button
           id="gettingStartedPopupClose"
-          class="btn btn-secondary"
           type="button"
+          class="btn btn-secondary"
         >
           Maybe later
         </button>
 
         <button
           id="gettingStartedPopupTour"
-          class="btn btn-primary"
           type="button"
+          class="btn btn-primary"
         >
           Take Guided Tour
         </button>
@@ -2033,299 +1650,210 @@
 
   </div>
 
+
   <!-- =====================================================
-       PAGE BOOT
-  ====================================================== -->
+       ADMIN PORTAL BOOT
+  ===================================================== -->
 
   <script type="module">
-
     import {
       boot
     } from "./js/admin-layout.js";
 
     boot();
-
   </script>
 
+
   <!-- =====================================================
-       GETTING STARTED SUCCESS POPUP
-  ====================================================== -->
+       GETTING STARTED POPUP BEHAVIOUR
+  ===================================================== -->
 
   <script>
+    (() => {
 
-    /* =====================================================
-       CHAMA LIVE — GETTING STARTED SUCCESS POPUP
+      const POPUP_EVENT_KEY =
+        "chama_live_getting_started_event";
 
-       The event is created by:
-       - confirm.html      → new-group
-       - members.js        → new-member
+      const POPUP_DELAY =
+        10000;
 
-       Dashboard waits 10 seconds after opening before
-       displaying the popup.
+      const popup =
+        document.getElementById(
+          "gettingStartedPopup"
+        );
 
-       The event is removed only after the popup displays.
-    ===================================================== */
+      const title =
+        document.getElementById(
+          "gettingStartedPopupTitle"
+        );
 
-    const POPUP_EVENT_KEY =
-      "chama_live_getting_started_event";
+      const message =
+        document.getElementById(
+          "gettingStartedPopupMessage"
+        );
 
-    const POPUP_DELAY =
-      10000;
+      const closeButton =
+        document.getElementById(
+          "gettingStartedPopupClose"
+        );
 
-    const gettingStartedPopup =
-      document.getElementById(
-        "gettingStartedPopup"
-      );
-
-    const gettingStartedPopupTitle =
-      document.getElementById(
-        "gettingStartedPopupTitle"
-      );
-
-    const gettingStartedPopupMessage =
-      document.getElementById(
-        "gettingStartedPopupMessage"
-      );
-
-    const gettingStartedPopupClose =
-      document.getElementById(
-        "gettingStartedPopupClose"
-      );
-
-    const gettingStartedPopupTour =
-      document.getElementById(
-        "gettingStartedPopupTour"
-      );
+      const tourButton =
+        document.getElementById(
+          "gettingStartedPopupTour"
+        );
 
 
-    /* =====================================================
-       CLOSE POPUP
-    ===================================================== */
-
-    function closeGettingStartedPopup() {
-
-      if (!gettingStartedPopup) {
+      if (
+        !popup ||
+        !title ||
+        !message ||
+        !closeButton ||
+        !tourButton
+      ) {
         return;
       }
 
-      gettingStartedPopup.hidden =
-        true;
 
-    }
+      let eventType = null;
 
+      try {
 
-    /* =====================================================
-       SHOW POPUP
-    ===================================================== */
+        eventType =
+          sessionStorage.getItem(
+            POPUP_EVENT_KEY
+          );
 
-    function showGettingStartedPopup(
-      eventType
-    ) {
+      }
+      catch {
+        eventType = null;
+      }
+
 
       if (
         eventType !== "new-group" &&
         eventType !== "new-member"
       ) {
-        return false;
-      }
-
-
-      /* ===================================================
-         NEW GROUP
-      =================================================== */
-
-      if (eventType === "new-group") {
-
-        gettingStartedPopupTitle.textContent =
-          "Your group is ready";
-
-        gettingStartedPopupMessage.textContent =
-          "Your CHAMA LIVE group workspace has been created successfully. Take the guided tour to see how your new workspace works.";
-
-      }
-
-
-      /* ===================================================
-         NEW MEMBER
-      =================================================== */
-
-      if (eventType === "new-member") {
-
-        gettingStartedPopupTitle.textContent =
-          "Member added successfully";
-
-        gettingStartedPopupMessage.textContent =
-          "The new member has been added to your group. Take a quick guided tour to see how members and the rest of your workspace fit together.";
-
-      }
-
-
-      /* ===================================================
-         DISPLAY POPUP
-      =================================================== */
-
-      gettingStartedPopup.hidden =
-        false;
-
-
-      /* ===================================================
-         CONSUME EVENT
-
-         Only remove the event AFTER the popup has
-         actually been displayed.
-      =================================================== */
-
-      sessionStorage.removeItem(
-        POPUP_EVENT_KEY
-      );
-
-
-      return true;
-
-    }
-
-
-    /* =====================================================
-       START POPUP TIMER
-    ===================================================== */
-
-    function startGettingStartedPopup() {
-
-      const onboardingEvent =
-        sessionStorage.getItem(
-          POPUP_EVENT_KEY
-        );
-
-
-      /* ===================================================
-         NO ONBOARDING EVENT
-      =================================================== */
-
-      if (
-        onboardingEvent !== "new-group" &&
-        onboardingEvent !== "new-member"
-      ) {
         return;
       }
 
 
-      /* ===================================================
-         WAIT 10 SECONDS
+      if (eventType === "new-group") {
 
-         Dashboard is already open at this point.
-         The sessionStorage event remains available
-         during the delay.
-      =================================================== */
+        title.textContent =
+          "Your group is ready";
 
-      window.setTimeout(
-        () => {
+        message.textContent =
+          "Welcome to CHAMA LIVE. Take a quick guided tour to see how your group dashboard works.";
 
-          /*
-           * Re-read the event before showing it.
-           *
-           * This protects against another page/script
-           * consuming the event while the timer is active.
-           */
+      }
+      else {
 
-          const currentEvent =
-            sessionStorage.getItem(
-              POPUP_EVENT_KEY
-            );
+        title.textContent =
+          "Welcome to CHAMA LIVE";
 
-          if (
-            currentEvent !== "new-group" &&
-            currentEvent !== "new-member"
-          ) {
-            return;
-          }
+        message.textContent =
+          "Your account is ready. Take a quick guided tour to learn where to manage your group.";
 
-          showGettingStartedPopup(
-            currentEvent
-          );
+      }
 
-        },
-        POPUP_DELAY
+
+      let timer = null;
+
+
+      function closePopup() {
+
+        popup.hidden =
+          true;
+
+        if (timer) {
+          window.clearTimeout(timer);
+          timer = null;
+        }
+
+      }
+
+
+      function showPopup() {
+
+        popup.hidden =
+          false;
+
+        closeButton.focus();
+
+      }
+
+
+      timer =
+        window.setTimeout(
+          () => {
+
+            try {
+
+              sessionStorage.removeItem(
+                POPUP_EVENT_KEY
+              );
+
+            }
+            catch {
+              /* Ignore storage cleanup failures. */
+            }
+
+            showPopup();
+
+          },
+          POPUP_DELAY
+        );
+
+
+      closeButton.addEventListener(
+        "click",
+        closePopup
       );
 
-    }
 
+      tourButton.addEventListener(
+        "click",
+        () => {
 
-    /* =====================================================
-       CLOSE BUTTON
-    ===================================================== */
+          closePopup();
 
-    gettingStartedPopupClose?.addEventListener(
-      "click",
-      closeGettingStartedPopup
-    );
-
-
-    /* =====================================================
-       BACKDROP CLICK
-    ===================================================== */
-
-    gettingStartedPopup?.addEventListener(
-      "click",
-      event => {
-
-        if (
-          event.target ===
-          gettingStartedPopup
-        ) {
-
-          closeGettingStartedPopup();
+          window.location.href =
+            "getting-started.html";
 
         }
-
-      }
-    );
+      );
 
 
-    /* =====================================================
-       ESCAPE KEY
-    ===================================================== */
+      popup.addEventListener(
+        "click",
+        (event) => {
 
-    document.addEventListener(
-      "keydown",
-      event => {
-
-        if (
-          event.key === "Escape" &&
-          gettingStartedPopup &&
-          !gettingStartedPopup.hidden
-        ) {
-
-          closeGettingStartedPopup();
+          if (
+            event.target === popup
+          ) {
+            closePopup();
+          }
 
         }
-
-      }
-    );
+      );
 
 
-    /* =====================================================
-       GUIDED TOUR
-    ===================================================== */
+      document.addEventListener(
+        "keydown",
+        (event) => {
 
-    gettingStartedPopupTour?.addEventListener(
-      "click",
-      () => {
+          if (
+            event.key === "Escape" &&
+            !popup.hidden
+          ) {
+            closePopup();
+          }
 
-        window.location.href =
-          "getting-started.html";
+        }
+      );
 
-      }
-    );
-
-
-    /* =====================================================
-       START
-    ===================================================== */
-
-    startGettingStartedPopup();
-
+    })();
   </script>
 
 </body>
-
 </html>
