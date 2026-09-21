@@ -114,6 +114,11 @@ const PAGE_SCRIPTS = {
     "initPage"
   ],
 
+  "reports.html": [
+    "./reports.js",
+    "initPage"
+  ],
+
   "monthly-closing.html": [
     "./monthly-closing.js",
     "initPage"
@@ -329,10 +334,6 @@ function injectStyles() {
 
   style.textContent = `
 
-    /* ===================================================
-       ADMIN DESKTOP NAVIGATION
-    =================================================== */
-
     .chama-admin-nav {
       display: flex;
       align-items: center;
@@ -341,757 +342,314 @@ function injectStyles() {
       min-width: 0;
     }
 
-
     .chama-admin-nav a,
     .chama-admin-nav summary {
-
       min-height: 40px;
-
-      padding:
-        8px
-        10px;
-
+      padding: 8px 10px;
       display: flex;
       align-items: center;
-
       border-radius: 10px;
-
       text-decoration: none;
-
       color: #344054;
-
       font-size: 12px;
-
       font-weight: 700;
-
       cursor: pointer;
-
       white-space: nowrap;
-
       box-sizing: border-box;
-
       transition:
         background-color 0.15s ease,
         color 0.15s ease;
-
     }
-
 
     .chama-admin-nav a:hover,
     .chama-admin-nav a.active,
     .chama-admin-nav summary:hover {
-
       background: #ecfdf5;
-
       color: #0f766e;
-
     }
-
 
     .chama-admin-group {
       position: relative;
     }
 
-
     .chama-admin-group summary {
-
       list-style: none;
-
     }
-
 
     .chama-admin-group summary::-webkit-details-marker {
       display: none;
     }
 
-
     .chama-admin-group-panel {
-
       position: absolute;
-
       top: 46px;
-
       left: 0;
-
       min-width: 220px;
-
       max-width: 280px;
-
       padding: 6px;
-
       background: #ffffff;
-
-      border:
-        1px solid
-        #e5e7eb;
-
+      border: 1px solid #e5e7eb;
       border-radius: 14px;
-
       box-shadow:
-        0
-        18px
-        45px
-        rgba(
-          16,
-          24,
-          40,
-          0.14
-        );
-
+        0 18px 45px rgba(16, 24, 40, 0.14);
       z-index: 20000;
-
     }
-
 
     .chama-admin-group-panel a {
-
       width: 100%;
-
     }
-
-
-    /* ===================================================
-       MOBILE ELEMENTS
-    =================================================== */
 
     .chama-mobile-menu,
     .chama-mobile-backdrop,
     .chama-admin-bottom {
-
       display: none;
-
     }
-
-
-    /* ===================================================
-       MOBILE MENU BUTTON
-    =================================================== */
 
     .menu-toggle {
-
       display: none;
-
       width: 40px;
-
       height: 40px;
-
-      flex:
-        0 0
-        40px;
-
+      flex: 0 0 40px;
       align-items: center;
-
       justify-content: center;
-
       padding: 0;
-
-      border:
-        1px solid
-        #e5e7eb;
-
+      border: 1px solid #e5e7eb;
       border-radius: 10px;
-
       background: #ffffff;
-
       color: #344054;
-
       font-size: 19px;
-
       line-height: 1;
-
       cursor: pointer;
-
       box-sizing: border-box;
-
     }
-
 
     .menu-toggle:hover {
-
-      background:
-        #f8fafc;
-
+      background: #f8fafc;
     }
-
 
     .menu-toggle:focus-visible {
-
       outline:
-        3px solid
-        rgba(
-          15,
-          118,
-          110,
-          0.18
-        );
-
+        3px solid rgba(15, 118, 110, 0.18);
       outline-offset: 2px;
-
     }
-
-
-    /* ===================================================
-       MOBILE
-    =================================================== */
 
     @media (max-width: 800px) {
 
-      /* -----------------------------------------------
-         DESKTOP NAV HIDDEN
-      ----------------------------------------------- */
-
       .chama-admin-nav {
-
         display: none;
-
       }
-
-
-      /* -----------------------------------------------
-         MENU BUTTON
-      ----------------------------------------------- */
 
       .menu-toggle {
-
         display: inline-flex;
-
       }
-
-
-      /* -----------------------------------------------
-         BACKDROP
-      ----------------------------------------------- */
 
       .chama-mobile-backdrop {
-
         position: fixed;
-
         inset: 0;
-
-        background:
-          rgba(
-            15,
-            23,
-            42,
-            0.38
-          );
-
+        background: rgba(15, 23, 42, 0.38);
         z-index: 20000;
-
         opacity: 0;
-
         pointer-events: none;
-
-        transition:
-          opacity 0.18s ease;
-
+        transition: opacity 0.18s ease;
       }
-
 
       .chama-mobile-backdrop.open {
-
         display: block;
-
         opacity: 1;
-
         pointer-events: auto;
-
       }
 
-
-      /* -----------------------------------------------
-         MOBILE MENU
-      ----------------------------------------------- */
-
       .chama-mobile-menu {
-
         position: fixed;
-
         top: 66px;
-
         left: 10px;
-
         right: 10px;
-
-        max-height:
-          calc(
-            100vh -
-            145px
-          );
-
+        max-height: calc(100vh - 145px);
         overflow-y: auto;
-
         overscroll-behavior: contain;
-
-        background:
-          #ffffff;
-
-        border:
-          1px solid
-          #e5e7eb;
-
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
         border-radius: 18px;
-
         z-index: 20001;
-
         box-shadow:
-          0
-          22px
-          55px
-          rgba(
-            16,
-            24,
-            40,
-            0.18
-          );
-
+          0 22px 55px rgba(16, 24, 40, 0.18);
         opacity: 0;
-
-        transform:
-          translateY(-6px);
-
+        transform: translateY(-6px);
         pointer-events: none;
-
         transition:
           opacity 0.18s ease,
           transform 0.18s ease;
-
       }
-
 
       .chama-mobile-menu.open {
-
         display: block;
-
         opacity: 1;
-
-        transform:
-          translateY(0);
-
+        transform: translateY(0);
         pointer-events: auto;
-
       }
-
-
-      /* -----------------------------------------------
-         MOBILE MENU HEADER
-      ----------------------------------------------- */
 
       .chama-mobile-head {
-
-        padding:
-          15px
-          16px;
-
-        background:
-          #f8fafc;
-
-        border-bottom:
-          1px solid
-          #edf0f4;
-
-        border-radius:
-          17px
-          17px
-          0
-          0;
-
+        padding: 15px 16px;
+        background: #f8fafc;
+        border-bottom: 1px solid #edf0f4;
+        border-radius: 17px 17px 0 0;
       }
-
 
       .chama-mobile-head strong {
-
         display: block;
-
-        color:
-          #101828;
-
+        color: #101828;
         font-size: 14px;
-
         line-height: 1.35;
-
-        overflow:
-          hidden;
-
-        text-overflow:
-          ellipsis;
-
-        white-space:
-          nowrap;
-
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
-
 
       .chama-mobile-head span {
-
         display: block;
-
-        color:
-          #667085;
-
+        color: #667085;
         font-size: 11px;
-
         margin-top: 3px;
-
-        overflow:
-          hidden;
-
-        text-overflow:
-          ellipsis;
-
-        white-space:
-          nowrap;
-
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
-
-
-      /* -----------------------------------------------
-         MOBILE SECTIONS
-      ----------------------------------------------- */
 
       .chama-mobile-section {
-
-        padding:
-          11px
-          10px
-          2px;
-
+        padding: 11px 10px 2px;
       }
-
 
       .chama-mobile-section:last-child {
-
-        padding-bottom:
-          11px;
-
+        padding-bottom: 11px;
       }
-
 
       .chama-mobile-section h2 {
-
-        margin:
-          0
-          7px
-          5px;
-
-        color:
-          #667085;
-
-        font-size:
-          10px;
-
-        font-weight:
-          800;
-
-        text-transform:
-          uppercase;
-
-        letter-spacing:
-          0.08em;
-
+        margin: 0 7px 5px;
+        color: #667085;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
       }
-
 
       .chama-mobile-menu a {
-
         display: flex;
-
         align-items: center;
-
-        min-height:
-          45px;
-
-        padding:
-          9px
-          12px;
-
-        border-radius:
-          10px;
-
-        color:
-          #344054;
-
-        text-decoration:
-          none;
-
-        font-size:
-          13px;
-
-        font-weight:
-          700;
-
-        box-sizing:
-          border-box;
-
+        min-height: 45px;
+        padding: 9px 12px;
+        border-radius: 10px;
+        color: #344054;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 700;
+        box-sizing: border-box;
       }
-
 
       .chama-mobile-menu a:hover {
-
-        background:
-          #f8fafc;
-
+        background: #f8fafc;
       }
-
 
       .chama-mobile-menu a.active {
-
-        background:
-          #ecfdf5;
-
-        color:
-          #0f766e;
-
+        background: #ecfdf5;
+        color: #0f766e;
       }
-
-
-      /* -----------------------------------------------
-         MOBILE BOTTOM NAVIGATION
-      ----------------------------------------------- */
 
       .chama-admin-bottom {
-
-        position:
-          fixed;
-
+        position: fixed;
         left: 0;
-
         right: 0;
-
         bottom: 0;
-
-        height:
-          70px;
-
-        display:
-          grid;
-
+        height: 70px;
+        display: grid;
         grid-template-columns:
-          repeat(
-            5,
-            minmax(
-              0,
-              1fr
-            )
-          );
-
-        gap:
-          4px;
-
+          repeat(5, minmax(0, 1fr));
+        gap: 4px;
         padding:
           6px
           6px
-          env(
-            safe-area-inset-bottom
-          );
-
-        background:
-          rgba(
-            255,
-            255,
-            255,
-            0.98
-          );
-
-        border-top:
-          1px solid
-          #e5e7eb;
-
-        z-index:
-          15000;
-
-        box-sizing:
-          border-box;
-
-        backdrop-filter:
-          blur(10px);
-
+          env(safe-area-inset-bottom);
+        background: rgba(255, 255, 255, 0.98);
+        border-top: 1px solid #e5e7eb;
+        z-index: 15000;
+        box-sizing: border-box;
+        backdrop-filter: blur(10px);
       }
-
 
       .chama-admin-bottom a {
-
-        display:
-          flex;
-
-        align-items:
-          center;
-
-        justify-content:
-          center;
-
-        min-width:
-          0;
-
-        min-height:
-          42px;
-
-        padding:
-          5px
-          3px;
-
-        border-radius:
-          11px;
-
-        color:
-          #64748b;
-
-        text-decoration:
-          none;
-
-        font-size:
-          10px;
-
-        font-weight:
-          700;
-
-        line-height:
-          1.15;
-
-        text-align:
-          center;
-
-        white-space:
-          nowrap;
-
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 0;
+        min-height: 42px;
+        padding: 5px 3px;
+        border-radius: 11px;
+        color: #64748b;
+        text-decoration: none;
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 1.15;
+        text-align: center;
+        white-space: nowrap;
       }
-
 
       .chama-admin-bottom a:hover {
-
-        background:
-          #f8fafc;
-
+        background: #f8fafc;
       }
-
 
       .chama-admin-bottom a.active {
-
-        color:
-          #0f766e;
-
-        background:
-          #ecfdf5;
-
+        color: #0f766e;
+        background: #ecfdf5;
       }
-
-
-      /* -----------------------------------------------
-         PAGE BOTTOM SPACE
-      ----------------------------------------------- */
 
       .main {
-
-        padding-bottom:
-          95px !important;
-
+        padding-bottom: 95px !important;
       }
-
     }
-
-
-    /* ===================================================
-       SMALL MOBILE
-    =================================================== */
 
     @media (max-width: 520px) {
 
       .chama-mobile-menu {
-
-        left:
-          8px;
-
-        right:
-          8px;
-
-        border-radius:
-          16px;
-
+        left: 8px;
+        right: 8px;
+        border-radius: 16px;
       }
-
 
       .chama-mobile-head {
-
-        border-radius:
-          15px
-          15px
-          0
-          0;
-
+        border-radius: 15px 15px 0 0;
       }
-
 
       .chama-admin-bottom {
-
-        height:
-          68px;
-
+        height: 68px;
       }
-
 
       .chama-admin-bottom a {
-
-        font-size:
-          9px;
-
+        font-size: 9px;
       }
-
     }
-
-
-    /* ===================================================
-       VERY SMALL DEVICES
-    =================================================== */
 
     @media (max-width: 360px) {
 
       .chama-admin-bottom {
-
-        gap:
-          2px;
-
-        padding-left:
-          4px;
-
-        padding-right:
-          4px;
-
+        gap: 2px;
+        padding-left: 4px;
+        padding-right: 4px;
       }
-
 
       .chama-admin-bottom a {
-
-        font-size:
-          8px;
-
+        font-size: 8px;
       }
-
 
       .chama-mobile-menu a {
-
-        min-height:
-          43px;
-
-        font-size:
-          12px;
-
+        min-height: 43px;
+        font-size: 12px;
       }
-
     }
-
-
-    /* ===================================================
-       REDUCED MOTION
-    =================================================== */
 
     @media (prefers-reduced-motion: reduce) {
 
       .chama-mobile-menu,
       .chama-mobile-backdrop {
-
-        transition:
-          none;
-
+        transition: none;
       }
 
     }
@@ -1122,9 +680,7 @@ function renderDesktopNavigation() {
 
 
   const nav =
-    document.createElement(
-      "nav"
-    );
+    document.createElement("nav");
 
   nav.className =
     "chama-admin-nav";
@@ -1144,8 +700,7 @@ function renderDesktopNavigation() {
   ) {
 
     if (
-      items.length ===
-      1
+      items.length === 1
     ) {
 
       nav.appendChild(
@@ -1161,18 +716,14 @@ function renderDesktopNavigation() {
 
 
     const details =
-      document.createElement(
-        "details"
-      );
+      document.createElement("details");
 
     details.className =
       "chama-admin-group";
 
 
     const summary =
-      document.createElement(
-        "summary"
-      );
+      document.createElement("summary");
 
     summary.textContent =
       title;
@@ -1184,9 +735,7 @@ function renderDesktopNavigation() {
 
 
     const panel =
-      document.createElement(
-        "div"
-      );
+      document.createElement("div");
 
     panel.className =
       "chama-admin-group-panel";
@@ -1262,12 +811,10 @@ function openAdminMobileMenu() {
       "chamaAdminMenu"
     );
 
-
   const backdrop =
     document.getElementById(
       "chamaAdminBack"
     );
-
 
   const button =
     document.querySelector(
@@ -1279,23 +826,19 @@ function openAdminMobileMenu() {
     "open"
   );
 
-
   backdrop?.classList.add(
     "open"
   );
-
 
   button?.setAttribute(
     "aria-expanded",
     "true"
   );
 
-
   button?.setAttribute(
     "aria-label",
     "Close menu"
   );
-
 
   document.body.classList.add(
     "chama-admin-menu-open"
@@ -1315,12 +858,10 @@ function closeAdminMobileMenu() {
       "chamaAdminMenu"
     );
 
-
   const backdrop =
     document.getElementById(
       "chamaAdminBack"
     );
-
 
   const button =
     document.querySelector(
@@ -1332,23 +873,19 @@ function closeAdminMobileMenu() {
     "open"
   );
 
-
   backdrop?.classList.remove(
     "open"
   );
-
 
   button?.setAttribute(
     "aria-expanded",
     "false"
   );
 
-
   button?.setAttribute(
     "aria-label",
     "Open menu"
   );
-
 
   document.body.classList.remove(
     "chama-admin-menu-open"
@@ -1372,14 +909,8 @@ function renderMobileNavigation() {
   }
 
 
-  /* -------------------------------------------------------
-     BACKDROP
-  ------------------------------------------------------- */
-
   const backdrop =
-    document.createElement(
-      "div"
-    );
+    document.createElement("div");
 
   backdrop.id =
     "chamaAdminBack";
@@ -1393,14 +924,8 @@ function renderMobileNavigation() {
   );
 
 
-  /* -------------------------------------------------------
-     MENU
-  ------------------------------------------------------- */
-
   const menu =
-    document.createElement(
-      "aside"
-    );
+    document.createElement("aside");
 
   menu.id =
     "chamaAdminMenu";
@@ -1414,23 +939,15 @@ function renderMobileNavigation() {
   );
 
 
-  /* -------------------------------------------------------
-     MENU HEADER
-  ------------------------------------------------------- */
-
   const header =
-    document.createElement(
-      "div"
-    );
+    document.createElement("div");
 
   header.className =
     "chama-mobile-head";
 
 
   const groupName =
-    document.createElement(
-      "strong"
-    );
+    document.createElement("strong");
 
   groupName.textContent =
     context?.group?.name ||
@@ -1438,9 +955,7 @@ function renderMobileNavigation() {
 
 
   const memberName =
-    document.createElement(
-      "span"
-    );
+    document.createElement("span");
 
   memberName.textContent =
     context?.member?.name ||
@@ -1455,15 +970,10 @@ function renderMobileNavigation() {
     memberName
   );
 
-
   menu.appendChild(
     header
   );
 
-
-  /* -------------------------------------------------------
-     NAVIGATION GROUPS
-  ------------------------------------------------------- */
 
   for (
     const [
@@ -1474,18 +984,14 @@ function renderMobileNavigation() {
   ) {
 
     const section =
-      document.createElement(
-        "section"
-      );
+      document.createElement("section");
 
     section.className =
       "chama-mobile-section";
 
 
     const heading =
-      document.createElement(
-        "h2"
-      );
+      document.createElement("h2");
 
     heading.textContent =
       title;
@@ -1518,23 +1024,15 @@ function renderMobileNavigation() {
   }
 
 
-  /* -------------------------------------------------------
-     BILLING / ACCOUNT
-  ------------------------------------------------------- */
-
   const billingSection =
-    document.createElement(
-      "section"
-    );
+    document.createElement("section");
 
   billingSection.className =
     "chama-mobile-section";
 
 
   const billingHeading =
-    document.createElement(
-      "h2"
-    );
+    document.createElement("h2");
 
   billingHeading.textContent =
     "Account";
@@ -1558,10 +1056,6 @@ function renderMobileNavigation() {
   );
 
 
-  /* -------------------------------------------------------
-     INSERT MOBILE ELEMENTS
-  ------------------------------------------------------- */
-
   document.body.appendChild(
     backdrop
   );
@@ -1570,10 +1064,6 @@ function renderMobileNavigation() {
     menu
   );
 
-
-  /* -------------------------------------------------------
-     MENU BUTTON
-  ------------------------------------------------------- */
 
   let button =
     document.querySelector(
@@ -1613,17 +1103,11 @@ function renderMobileNavigation() {
         ".topbar"
       );
 
-
     const topbarInner =
       document.querySelector(
         ".topbar-inner"
       );
 
-
-    /*
-     * Prefer the inner topbar so the menu button participates
-     * correctly in the existing mobile header layout.
-     */
 
     if (topbarInner) {
 
@@ -1671,10 +1155,6 @@ function renderMobileNavigation() {
   }
 
 
-  /* -------------------------------------------------------
-     BUTTON EVENT
-  ------------------------------------------------------- */
-
   button.addEventListener(
     "click",
     () => {
@@ -1700,19 +1180,11 @@ function renderMobileNavigation() {
   );
 
 
-  /* -------------------------------------------------------
-     BACKDROP EVENT
-  ------------------------------------------------------- */
-
   backdrop.addEventListener(
     "click",
     closeAdminMobileMenu
   );
 
-
-  /* -------------------------------------------------------
-     LINK EVENTS
-  ------------------------------------------------------- */
 
   menu
     .querySelectorAll("a")
@@ -1727,10 +1199,6 @@ function renderMobileNavigation() {
       }
     );
 
-
-  /* -------------------------------------------------------
-     ESCAPE KEY
-  ------------------------------------------------------- */
 
   document.addEventListener(
     "keydown",
@@ -1769,9 +1237,7 @@ function renderMobileBottomNavigation() {
 
 
   const nav =
-    document.createElement(
-      "nav"
-    );
+    document.createElement("nav");
 
   nav.className =
     "chama-admin-bottom";
@@ -1821,9 +1287,7 @@ function renderMobileBottomNavigation() {
   ) {
 
     const link =
-      document.createElement(
-        "a"
-      );
+      document.createElement("a");
 
 
     link.href =
@@ -1960,10 +1424,6 @@ export async function boot() {
 
   try {
 
-    /* -----------------------------------------------------
-       LOAD AUTHENTICATED GROUP CONTEXT
-    ----------------------------------------------------- */
-
     context =
       await getMyApplicationContext();
 
@@ -1980,10 +1440,6 @@ export async function boot() {
     }
 
 
-    /* -----------------------------------------------------
-       NORMALIZE ROLE
-    ----------------------------------------------------- */
-
     context.role =
       String(
         context.role || ""
@@ -1991,10 +1447,6 @@ export async function boot() {
         .trim()
         .toLowerCase();
 
-
-    /* -----------------------------------------------------
-       ADMIN GATE
-    ----------------------------------------------------- */
 
     if (
       !isAdminAccount()
@@ -2008,10 +1460,6 @@ export async function boot() {
 
     }
 
-
-    /* -----------------------------------------------------
-       PAGE GATE
-    ----------------------------------------------------- */
 
     const page =
       getCurrentPage();
@@ -2032,22 +1480,9 @@ export async function boot() {
     }
 
 
-    /* -----------------------------------------------------
-       LAYOUT BOOT FLAG
-    -----------------------------------------------------
-
-       Prevent legacy page modules that still contain
-       compatibility boot logic from initializing while
-       this layout owns initialization.
-    ----------------------------------------------------- */
-
     window.__CHAMA_LIVE_LAYOUT_LOADING__ =
       true;
 
-
-    /* -----------------------------------------------------
-       BUILD ADMIN UI
-    ----------------------------------------------------- */
 
     injectStyles();
 
@@ -2057,10 +1492,6 @@ export async function boot() {
 
     renderMobileBottomNavigation();
 
-
-    /* -----------------------------------------------------
-       LOAD CURRENT PAGE MODULE
-    ----------------------------------------------------- */
 
     await loadCurrentPageFeature();
 
