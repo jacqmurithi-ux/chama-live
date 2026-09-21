@@ -123,6 +123,11 @@ const PAGE_SCRIPTS = {
   "support-welfare.html": [
     "./support-welfare.js",
     "initPage"
+  ],
+
+  "milestones.html": [
+    "./milestones.js",
+    "initPage"
   ]
 
 };
@@ -683,13 +688,6 @@ function renderDesktopNavigation() {
    *
    * Clear any legacy/static content first so an old
    * "Pages" link cannot remain above the current navigation.
-   *
-   * This does not touch:
-   * - brand
-   * - topbar-actions
-   * - logout
-   * - sidebar
-   * - mobile navigation
    */
 
   target.replaceChildren();
