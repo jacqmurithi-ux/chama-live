@@ -16,6 +16,7 @@ import { requireAuth, getMyMember } from "./auth.js";
    - Does not modify cl_2b_refresh_member().
    - Uses the authenticated member's group_id as context.
    - Database RLS and validators remain authoritative.
+   - Admin Portal layout owns page boot.
    ========================================================= */
 
 
@@ -70,7 +71,9 @@ const state = {
 
   plans: [],
 
-  activities: []
+  activities: [],
+
+  initialized: false
 
 };
 
@@ -79,7 +82,8 @@ const state = {
    DOM
    ========================================================= */
 
-const $ = (id) => document.getElementById(id);
+const $ = (id) =>
+  document.getElementById(id);
 
 
 /* =========================================================
@@ -88,11 +92,15 @@ const $ = (id) => document.getElementById(id);
 
 function showStatus(message) {
 
-  const element = $("status");
+  const element =
+    $("status");
 
-  if (!element) return;
+  if (!element) {
+    return;
+  }
 
-  element.textContent = message || "";
+  element.textContent =
+    message || "";
 
   element.classList.toggle(
     "hidden",
@@ -104,11 +112,15 @@ function showStatus(message) {
 
 function showError(message) {
 
-  const element = $("error");
+  const element =
+    $("error");
 
-  if (!element) return;
+  if (!element) {
+    return;
+  }
 
-  element.textContent = message || "";
+  element.textContent =
+    message || "";
 
   element.classList.toggle(
     "hidden",
@@ -140,7 +152,9 @@ function normalizeError(error) {
 
   if (error.code === "42501") {
 
-    return "You do not have permission to perform this action.";
+    return (
+      "You do not have permission to perform this action."
+    );
 
   }
 
@@ -188,15 +202,10 @@ function normalizeError(error) {
 function escapeHtml(value) {
 
   return String(value ?? "")
-
     .replaceAll("&", "&amp;")
-
     .replaceAll("<", "&lt;")
-
     .replaceAll(">", "&gt;")
-
     .replaceAll('"', "&quot;")
-
     .replaceAll("'", "&#039;");
 
 }
@@ -213,12 +222,15 @@ function formatDate(value) {
   }
 
 
-  const date = new Date(
-    `${value}T00:00:00`
-  );
+  const date =
+    new Date(`${value}T00:00:00`);
 
 
-  if (Number.isNaN(date.getTime())) {
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
 
     return escapeHtml(value);
 
@@ -244,10 +256,15 @@ function formatDateTime(value) {
   }
 
 
-  const date = new Date(value);
+  const date =
+    new Date(value);
 
 
-  if (Number.isNaN(date.getTime())) {
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
 
     return "—";
 
@@ -276,7 +293,8 @@ function statusLabel(value) {
 
 function badge(value) {
 
-  const safe = escapeHtml(value);
+  const safe =
+    escapeHtml(value);
 
   return `
     <span class="badge status-${safe}">
@@ -289,13 +307,14 @@ function badge(value) {
 
 function progress(value) {
 
-  const number = Math.max(
-    0,
-    Math.min(
-      100,
-      Number(value) || 0
-    )
-  );
+  const number =
+    Math.max(
+      0,
+      Math.min(
+        100,
+        Number(value) || 0
+      )
+    );
 
 
   return `
@@ -354,7 +373,8 @@ async function loadContext() {
   await requireAuth();
 
 
-  const member = await getMyMember();
+  const member =
+    await getMyMember();
 
 
   if (
@@ -369,12 +389,17 @@ async function loadContext() {
   }
 
 
-  state.currentMember = member;
+  state.currentMember =
+    member;
 
-  state.groupId = member.group_id;
+  state.groupId =
+    member.group_id;
 
 
-  const { data: group, error } = await supabase
+  const {
+    data: group,
+    error
+  } = await supabase
 
     .from("groups")
 
@@ -406,18 +431,44 @@ async function loadContext() {
     group.name || "";
 
 
-  $("groupName").textContent =
-    state.groupName ||
-    "Current group";
+  const groupName =
+    $("groupName");
+
+  if (groupName) {
+
+    groupName.textContent =
+      state.groupName ||
+      "Current group";
+
+  }
+
+
+  const plansGroupDisplay =
+    $("plansGroupDisplay");
+
+  if (plansGroupDisplay) {
+
+    plansGroupDisplay.textContent =
+      state.groupName ||
+      "Current group";
+
+  }
 
 
   console.log(
     "CHAMA LIVE: Plans & Activities context",
     {
-      groupId: state.groupId,
-      groupName: state.groupName,
-      memberId: state.currentMember.id,
-      role: state.currentMember.role
+      groupId:
+        state.groupId,
+
+      groupName:
+        state.groupName,
+
+      memberId:
+        state.currentMember.id,
+
+      role:
+        state.currentMember.role
     }
   );
 
@@ -437,7 +488,9 @@ function canManage() {
     ).toLowerCase();
 
 
-  return MANAGEMENT_ROLES.includes(role);
+  return MANAGEMENT_ROLES.includes(
+    role
+  );
 
 }
 
@@ -448,7 +501,10 @@ function canManage() {
 
 async function loadMembers() {
 
-  const { data, error } = await supabase
+  const {
+    data,
+    error
+  } = await supabase
 
     .from("members")
 
@@ -474,7 +530,8 @@ async function loadMembers() {
   }
 
 
-  state.members = data || [];
+  state.members =
+    data || [];
 
 
   const activeMembers =
@@ -484,45 +541,61 @@ async function loadMembers() {
     );
 
 
-  $("activityAssignee").innerHTML =
-    `
-      <option value="">
-        Unassigned
-      </option>
-    ` +
-
-    activeMembers
-      .map(
-        (member) => `
-          <option value="${escapeHtml(member.id)}">
-            ${escapeHtml(member.name)}
-            ${
-              member.member_number
-                ? ` (${escapeHtml(member.member_number)})`
-                : ""
-            }
-          </option>
-        `
-      )
-      .join("");
+  const activityAssignee =
+    $("activityAssignee");
 
 
-  $("activityFilterAssignee").innerHTML =
-    `
-      <option value="">
-        All assignees
-      </option>
-    ` +
+  if (activityAssignee) {
 
-    activeMembers
-      .map(
-        (member) => `
-          <option value="${escapeHtml(member.id)}">
-            ${escapeHtml(member.name)}
-          </option>
-        `
-      )
-      .join("");
+    activityAssignee.innerHTML =
+      `
+        <option value="">
+          Unassigned
+        </option>
+      ` +
+
+      activeMembers
+        .map(
+          (member) => `
+            <option value="${escapeHtml(member.id)}">
+              ${escapeHtml(member.name)}
+              ${
+                member.member_number
+                  ? ` (${escapeHtml(member.member_number)})`
+                  : ""
+              }
+            </option>
+          `
+        )
+        .join("");
+
+  }
+
+
+  const activityFilterAssignee =
+    $("activityFilterAssignee");
+
+
+  if (activityFilterAssignee) {
+
+    activityFilterAssignee.innerHTML =
+      `
+        <option value="">
+          All assignees
+        </option>
+      ` +
+
+      activeMembers
+        .map(
+          (member) => `
+            <option value="${escapeHtml(member.id)}">
+              ${escapeHtml(member.name)}
+            </option>
+          `
+        )
+        .join("");
+
+  }
 
 }
 
@@ -533,7 +606,10 @@ async function loadMembers() {
 
 async function loadPlans() {
 
-  const { data, error } = await supabase
+  const {
+    data,
+    error
+  } = await supabase
 
     .from("group_plans")
 
@@ -580,7 +656,8 @@ async function loadPlans() {
   }
 
 
-  state.plans = data || [];
+  state.plans =
+    data || [];
 
 
   populatePlanSelect();
@@ -598,7 +675,10 @@ async function loadPlans() {
 
 async function loadActivities() {
 
-  const { data, error } = await supabase
+  const {
+    data,
+    error
+  } = await supabase
 
     .from("group_activities")
 
@@ -666,6 +746,11 @@ function populatePlanSelect() {
 
   const select =
     $("activityPlan");
+
+
+  if (!select) {
+    return;
+  }
 
 
   select.innerHTML =
@@ -748,15 +833,27 @@ function renderPlans() {
     $("plansBody");
 
 
+  if (!body) {
+    return;
+  }
+
+
+  const statusElement =
+    $("planFilterStatus");
+
+
+  const searchElement =
+    $("planSearch");
+
+
   const status =
-    $("planFilterStatus").value;
+    statusElement?.value || "";
 
 
   const search =
-    $("planSearch")
-      .value
+    searchElement?.value
       .trim()
-      .toLowerCase();
+      .toLowerCase() || "";
 
 
   const rows =
@@ -888,6 +985,7 @@ function renderPlans() {
                               class="action"
                               data-plan-action="active"
                               data-id="${escapeHtml(plan.id)}"
+                              type="button"
                             >
                               Activate
                             </button>
@@ -903,6 +1001,7 @@ function renderPlans() {
                               class="action"
                               data-plan-action="completed"
                               data-id="${escapeHtml(plan.id)}"
+                              type="button"
                             >
                               Complete
                             </button>
@@ -918,6 +1017,7 @@ function renderPlans() {
                               class="action"
                               data-plan-action="paused"
                               data-id="${escapeHtml(plan.id)}"
+                              type="button"
                             >
                               Pause
                             </button>
@@ -933,6 +1033,7 @@ function renderPlans() {
                               class="action"
                               data-plan-action="cancelled"
                               data-id="${escapeHtml(plan.id)}"
+                              type="button"
                             >
                               Cancel
                             </button>
@@ -966,19 +1067,35 @@ function renderActivities() {
     $("activitiesBody");
 
 
+  if (!body) {
+    return;
+  }
+
+
+  const statusElement =
+    $("activityFilterStatus");
+
+
+  const assigneeElement =
+    $("activityFilterAssignee");
+
+
+  const searchElement =
+    $("activitySearch");
+
+
   const status =
-    $("activityFilterStatus").value;
+    statusElement?.value || "";
 
 
   const assignee =
-    $("activityFilterAssignee").value;
+    assigneeElement?.value || "";
 
 
   const search =
-    $("activitySearch")
-      .value
+    searchElement?.value
       .trim()
-      .toLowerCase();
+      .toLowerCase() || "";
 
 
   const rows =
@@ -1138,6 +1255,7 @@ function renderActivities() {
                               class="action"
                               data-activity-action="in_progress"
                               data-id="${escapeHtml(activity.id)}"
+                              type="button"
                             >
                               Start
                             </button>
@@ -1153,6 +1271,7 @@ function renderActivities() {
                               class="action"
                               data-activity-action="completed"
                               data-id="${escapeHtml(activity.id)}"
+                              type="button"
                             >
                               Complete
                             </button>
@@ -1170,6 +1289,7 @@ function renderActivities() {
                               class="action"
                               data-activity-action="delayed"
                               data-id="${escapeHtml(activity.id)}"
+                              type="button"
                             >
                               Delay
                             </button>
@@ -1186,6 +1306,7 @@ function renderActivities() {
                               class="action"
                               data-activity-action="cancelled"
                               data-id="${escapeHtml(activity.id)}"
+                              type="button"
                             >
                               Cancel
                             </button>
@@ -1215,34 +1336,63 @@ function renderActivities() {
 
 function updateSummary() {
 
-  $("totalPlans").textContent =
-    state.plans.length;
+  const totalPlans =
+    $("totalPlans");
+
+  const activePlans =
+    $("activePlans");
+
+  const openActivities =
+    $("openActivities");
+
+  const completedActivities =
+    $("completedActivities");
 
 
-  $("activePlans").textContent =
-    state.plans.filter(
-      (plan) =>
-        plan.status === "active"
-    ).length;
+  if (totalPlans) {
+
+    totalPlans.textContent =
+      state.plans.length;
+
+  }
 
 
-  $("openActivities").textContent =
-    state.activities.filter(
-      (activity) =>
-        ![
-          "completed",
-          "cancelled"
-        ].includes(
-          activity.status
-        )
-    ).length;
+  if (activePlans) {
+
+    activePlans.textContent =
+      state.plans.filter(
+        (plan) =>
+          plan.status === "active"
+      ).length;
+
+  }
 
 
-  $("completedActivities").textContent =
-    state.activities.filter(
-      (activity) =>
-        activity.status === "completed"
-    ).length;
+  if (openActivities) {
+
+    openActivities.textContent =
+      state.activities.filter(
+        (activity) =>
+          ![
+            "completed",
+            "cancelled"
+          ].includes(
+            activity.status
+          )
+      ).length;
+
+  }
+
+
+  if (completedActivities) {
+
+    completedActivities.textContent =
+      state.activities.filter(
+        (activity) =>
+          activity.status === "completed"
+      ).length;
+
+  }
 
 }
 
@@ -1253,26 +1403,76 @@ function updateSummary() {
 
 function resetPlanForm() {
 
-  $("planForm").reset();
+  const form =
+    $("planForm");
 
-  $("planStatus").value =
-    "planned";
+  if (!form) {
+    return;
+  }
 
-  $("planProgress").value =
-    "0";
+
+  form.reset();
+
+
+  const status =
+    $("planStatus");
+
+  const progressInput =
+    $("planProgress");
+
+
+  if (status) {
+
+    status.value =
+      "planned";
+
+  }
+
+
+  if (progressInput) {
+
+    progressInput.value =
+      "0";
+
+  }
 
 }
 
 
 function resetActivityForm() {
 
-  $("activityForm").reset();
+  const form =
+    $("activityForm");
 
-  $("activityStatus").value =
-    "not_started";
+  if (!form) {
+    return;
+  }
 
-  $("activityProgress").value =
-    "0";
+
+  form.reset();
+
+
+  const status =
+    $("activityStatus");
+
+  const progressInput =
+    $("activityProgress");
+
+
+  if (status) {
+
+    status.value =
+      "not_started";
+
+  }
+
+
+  if (progressInput) {
+
+    progressInput.value =
+      "0";
+
+  }
 
 }
 
@@ -1400,42 +1600,44 @@ async function createPlan(event) {
     $("savePlan");
 
 
-  button.disabled = true;
+  button.disabled =
+    true;
 
 
   try {
 
-    const { error } =
-      await supabase
+    const {
+      error
+    } = await supabase
 
-        .from("group_plans")
+      .from("group_plans")
 
-        .insert({
+      .insert({
 
-          group_id:
-            state.groupId,
+        group_id:
+          state.groupId,
 
-          title,
+        title,
 
-          description,
+        description,
 
-          category,
+        category,
 
-          start_date:
-            startDate,
+        start_date:
+          startDate,
 
-          target_date:
-            targetDate,
+        target_date:
+          targetDate,
 
-          status,
+        status,
 
-          progress_percent:
-            progressPercent,
+        progress_percent:
+          progressPercent,
 
-          created_by:
-            state.currentMember.id
+        created_by:
+          state.currentMember.id
 
-        });
+      });
 
 
     if (error) {
@@ -1457,7 +1659,8 @@ async function createPlan(event) {
 
   finally {
 
-    button.disabled = false;
+    button.disabled =
+      false;
 
   }
 
@@ -1581,51 +1784,53 @@ async function createActivity(event) {
     $("saveActivity");
 
 
-  button.disabled = true;
+  button.disabled =
+    true;
 
 
   try {
 
-    const { error } =
-      await supabase
+    const {
+      error
+    } = await supabase
 
-        .from("group_activities")
+      .from("group_activities")
 
-        .insert({
+      .insert({
 
-          group_id:
-            state.groupId,
+        group_id:
+          state.groupId,
 
-          plan_id:
-            planId,
+        plan_id:
+          planId,
 
-          title,
+        title,
 
-          description,
+        description,
 
-          assigned_to:
-            assignedTo,
+        assigned_to:
+          assignedTo,
 
-          start_date:
-            startDate,
+        start_date:
+          startDate,
 
-          due_date:
-            dueDate,
+        due_date:
+          dueDate,
 
-          status,
+        status,
 
-          progress_percent:
-            progressPercent,
+        progress_percent:
+          progressPercent,
 
-          completed_at:
-            status === "completed"
-              ? new Date().toISOString()
-              : null,
+        completed_at:
+          status === "completed"
+            ? new Date().toISOString()
+            : null,
 
-          created_by:
-            state.currentMember.id
+        created_by:
+          state.currentMember.id
 
-        });
+      });
 
 
     if (error) {
@@ -1647,7 +1852,8 @@ async function createActivity(event) {
 
   finally {
 
-    button.disabled = false;
+    button.disabled =
+      false;
 
   }
 
@@ -1715,22 +1921,23 @@ async function updatePlanStatus(
   }
 
 
-  const { error } =
-    await supabase
+  const {
+    error
+  } = await supabase
 
-      .from("group_plans")
+    .from("group_plans")
 
-      .update(update)
+    .update(update)
 
-      .eq(
-        "id",
-        id
-      )
+    .eq(
+      "id",
+      id
+    )
 
-      .eq(
-        "group_id",
-        state.groupId
-      );
+    .eq(
+      "group_id",
+      state.groupId
+    );
 
 
   if (error) {
@@ -1821,22 +2028,23 @@ async function updateActivityStatus(
   }
 
 
-  const { error } =
-    await supabase
+  const {
+    error
+  } = await supabase
 
-      .from("group_activities")
+    .from("group_activities")
 
-      .update(update)
+    .update(update)
 
-      .eq(
-        "id",
-        id
-      )
+    .eq(
+      "id",
+      id
+    )
 
-      .eq(
-        "group_id",
-        state.groupId
-      );
+    .eq(
+      "group_id",
+      state.groupId
+    );
 
 
   if (error) {
@@ -1898,9 +2106,12 @@ async function refreshAll() {
 
 function bindEvents() {
 
+  const planForm =
+    $("planForm");
 
-  $("planForm")
-    .addEventListener(
+  if (planForm) {
+
+    planForm.addEventListener(
       "submit",
       (event) => {
 
@@ -1915,9 +2126,15 @@ function bindEvents() {
       }
     );
 
+  }
 
-  $("activityForm")
-    .addEventListener(
+
+  const activityForm =
+    $("activityForm");
+
+  if (activityForm) {
+
+    activityForm.addEventListener(
       "submit",
       (event) => {
 
@@ -1932,58 +2149,106 @@ function bindEvents() {
       }
     );
 
+  }
 
-  $("resetPlan")
-    .addEventListener(
+
+  const resetPlan =
+    $("resetPlan");
+
+  if (resetPlan) {
+
+    resetPlan.addEventListener(
       "click",
       resetPlanForm
     );
 
+  }
 
-  $("resetActivity")
-    .addEventListener(
+
+  const resetActivity =
+    $("resetActivity");
+
+  if (resetActivity) {
+
+    resetActivity.addEventListener(
       "click",
       resetActivityForm
     );
 
+  }
 
-  $("planFilterStatus")
-    .addEventListener(
+
+  const planFilterStatus =
+    $("planFilterStatus");
+
+  if (planFilterStatus) {
+
+    planFilterStatus.addEventListener(
       "change",
       renderPlans
     );
 
+  }
 
-  $("planSearch")
-    .addEventListener(
+
+  const planSearch =
+    $("planSearch");
+
+  if (planSearch) {
+
+    planSearch.addEventListener(
       "input",
       renderPlans
     );
 
+  }
 
-  $("activityFilterStatus")
-    .addEventListener(
+
+  const activityFilterStatus =
+    $("activityFilterStatus");
+
+  if (activityFilterStatus) {
+
+    activityFilterStatus.addEventListener(
       "change",
       renderActivities
     );
 
+  }
 
-  $("activityFilterAssignee")
-    .addEventListener(
+
+  const activityFilterAssignee =
+    $("activityFilterAssignee");
+
+  if (activityFilterAssignee) {
+
+    activityFilterAssignee.addEventListener(
       "change",
       renderActivities
     );
 
+  }
 
-  $("activitySearch")
-    .addEventListener(
+
+  const activitySearch =
+    $("activitySearch");
+
+  if (activitySearch) {
+
+    activitySearch.addEventListener(
       "input",
       renderActivities
     );
 
+  }
 
-  $("refreshPlans")
-    .addEventListener(
+
+  const refreshPlans =
+    $("refreshPlans");
+
+  if (refreshPlans) {
+
+    refreshPlans.addEventListener(
       "click",
       () => {
 
@@ -2006,9 +2271,15 @@ function bindEvents() {
       }
     );
 
+  }
 
-  $("refreshActivities")
-    .addEventListener(
+
+  const refreshActivities =
+    $("refreshActivities");
+
+  if (refreshActivities) {
+
+    refreshActivities.addEventListener(
       "click",
       () => {
 
@@ -2031,9 +2302,15 @@ function bindEvents() {
       }
     );
 
+  }
 
-  $("plansBody")
-    .addEventListener(
+
+  const plansBody =
+    $("plansBody");
+
+  if (plansBody) {
+
+    plansBody.addEventListener(
       "click",
       (event) => {
 
@@ -2056,7 +2333,8 @@ function bindEvents() {
           button.dataset.planAction;
 
 
-        button.disabled = true;
+        button.disabled =
+          true;
 
 
         updatePlanStatus(
@@ -2073,16 +2351,23 @@ function bindEvents() {
 
           .finally(
             () => {
-              button.disabled = false;
+              button.disabled =
+                false;
             }
           );
 
       }
     );
 
+  }
 
-  $("activitiesBody")
-    .addEventListener(
+
+  const activitiesBody =
+    $("activitiesBody");
+
+  if (activitiesBody) {
+
+    activitiesBody.addEventListener(
       "click",
       (event) => {
 
@@ -2105,7 +2390,8 @@ function bindEvents() {
           button.dataset.activityAction;
 
 
-        button.disabled = true;
+        button.disabled =
+          true;
 
 
         updateActivityStatus(
@@ -2122,21 +2408,35 @@ function bindEvents() {
 
           .finally(
             () => {
-              button.disabled = false;
+              button.disabled =
+                false;
             }
           );
 
       }
     );
 
+  }
+
 }
 
 
 /* =========================================================
-   BOOT
+   ADMIN PORTAL PAGE INITIALIZER
+   ---------------------------------------------------------
+   admin-layout.js is the sole page bootloader.
    ========================================================= */
 
-async function boot() {
+async function initPage() {
+
+  if (state.initialized) {
+    return;
+  }
+
+
+  state.initialized =
+    true;
+
 
   console.log(
     "CHAMA LIVE: plans-activities.js loaded"
@@ -2198,9 +2498,10 @@ async function boot() {
 }
 
 
-boot();
-
+/* =========================================================
+   EXPORT
+========================================================= */
 
 export {
-  boot
+  initPage
 };
