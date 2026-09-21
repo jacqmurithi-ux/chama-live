@@ -530,6 +530,7 @@
   <!-- Required by admin-layout.js -->
   <header class="topbar">
     <div class="topbar-inner">
+
       <div class="brand">
         <a href="dashboard.html">CHAMA LIVE</a>
       </div>
@@ -543,8 +544,10 @@
       >
         Sign out
       </button>
+
     </div>
   </header>
+
 
   <div class="layout">
 
@@ -566,16 +569,20 @@
           </p>
 
           <div class="assets-context">
+
             Current group:
+
             <strong
               id="groupName"
               data-group-name
             >
               Loading…
             </strong>
+
           </div>
 
         </section>
+
 
         <div
           id="status"
@@ -584,12 +591,14 @@
           aria-live="polite"
         ></div>
 
+
         <div
           id="error"
           class="status error hidden"
           role="alert"
           aria-live="assertive"
         ></div>
+
 
         <div
           id="accessDenied"
@@ -599,11 +608,13 @@
           have permission to create, edit or delete them.
         </div>
 
+
         <section id="assetsContent">
 
           <section class="assets-kpis">
 
             <div class="assets-kpi">
+
               <div class="assets-kpi-label">
                 Total Assets
               </div>
@@ -614,9 +625,12 @@
               >
                 0
               </div>
+
             </div>
 
+
             <div class="assets-kpi">
+
               <div class="assets-kpi-label">
                 Active Assets
               </div>
@@ -627,9 +641,12 @@
               >
                 0
               </div>
+
             </div>
 
+
             <div class="assets-kpi">
+
               <div class="assets-kpi-label">
                 Acquisition Cost
               </div>
@@ -640,9 +657,12 @@
               >
                 KSh 0
               </div>
+
             </div>
 
+
             <div class="assets-kpi">
+
               <div class="assets-kpi-label">
                 Current Value
               </div>
@@ -653,15 +673,18 @@
               >
                 KSh 0
               </div>
+
             </div>
 
           </section>
+
 
           <section class="assets-grid">
 
             <article class="assets-card">
 
               <div class="assets-card-header">
+
                 <h2 id="formTitle">
                   Add Asset
                 </h2>
@@ -670,7 +693,9 @@
                   Record group property without changing the
                   financial ledger.
                 </p>
+
               </div>
+
 
               <div class="assets-card-body">
 
@@ -682,9 +707,11 @@
                     value=""
                   >
 
+
                   <div class="assets-form-grid">
 
                     <div class="assets-field full">
+
                       <label for="assetName">
                         Asset name *
                       </label>
@@ -696,9 +723,12 @@
                         required
                         placeholder="e.g. Group dairy cow"
                       >
+
                     </div>
 
+
                     <div class="assets-field">
+
                       <label for="assetCategory">
                         Category *
                       </label>
@@ -707,20 +737,57 @@
                         id="assetCategory"
                         required
                       >
-                        <option value="land">Land</option>
-                        <option value="building">Building</option>
-                        <option value="vehicle">Vehicle</option>
-                        <option value="equipment">Equipment</option>
-                        <option value="livestock">Livestock</option>
-                        <option value="farm">Farm</option>
-                        <option value="furniture">Furniture</option>
-                        <option value="investment">Investment</option>
-                        <option value="shares">Shares</option>
-                        <option value="other" selected>Other</option>
+
+                        <option value="land">
+                          Land
+                        </option>
+
+                        <option value="building">
+                          Building
+                        </option>
+
+                        <option value="vehicle">
+                          Vehicle
+                        </option>
+
+                        <option value="equipment">
+                          Equipment
+                        </option>
+
+                        <option value="livestock">
+                          Livestock
+                        </option>
+
+                        <option value="farm">
+                          Farm
+                        </option>
+
+                        <option value="furniture">
+                          Furniture
+                        </option>
+
+                        <option value="investment">
+                          Investment
+                        </option>
+
+                        <option value="shares">
+                          Shares
+                        </option>
+
+                        <option
+                          value="other"
+                          selected
+                        >
+                          Other
+                        </option>
+
                       </select>
+
                     </div>
 
+
                     <div class="assets-field">
+
                       <label for="assetStatus">
                         Status *
                       </label>
@@ -729,7 +796,11 @@
                         id="assetStatus"
                         required
                       >
-                        <option value="active" selected>
+
+                        <option
+                          value="active"
+                          selected
+                        >
                           Active
                         </option>
 
@@ -748,10 +819,14 @@
                         <option value="inactive">
                           Inactive
                         </option>
+
                       </select>
+
                     </div>
 
+
                     <div class="assets-field">
+
                       <label for="acquiredDate">
                         Acquired date
                       </label>
@@ -760,9 +835,12 @@
                         id="acquiredDate"
                         type="date"
                       >
+
                     </div>
 
+
                     <div class="assets-field">
+
                       <label for="assetLocation">
                         Location
                       </label>
@@ -773,9 +851,12 @@
                         maxlength="250"
                         placeholder="e.g. Timau"
                       >
+
                     </div>
 
+
                     <div class="assets-field">
+
                       <label for="acquisitionCost">
                         Acquisition cost
                       </label>
@@ -787,9 +868,12 @@
                         step="0.01"
                         placeholder="0.00"
                       >
+
                     </div>
 
+
                     <div class="assets-field">
+
                       <label for="currentValue">
                         Current value
                       </label>
@@ -801,9 +885,12 @@
                         step="0.01"
                         placeholder="0.00"
                       >
+
                     </div>
 
+
                     <div class="assets-field full">
+
                       <label for="assetDescription">
                         Description
                       </label>
@@ -813,9 +900,11 @@
                         maxlength="2000"
                         placeholder="Add useful details about the asset..."
                       ></textarea>
+
                     </div>
 
                   </div>
+
 
                   <div class="assets-form-actions">
 
@@ -839,20 +928,26 @@
 
                 </form>
 
+
                 <div class="role-note">
+
                   Asset management is restricted to
                   <strong>admin, chairperson and treasurer</strong>.
+
                   Deletion is restricted to
                   <strong>admin</strong>.
+
                 </div>
 
               </div>
 
             </article>
 
+
             <article class="assets-card">
 
               <div class="assets-card-header">
+
                 <h2>
                   Asset Register
                 </h2>
@@ -861,7 +956,9 @@
                   Assets shown here belong only to the authenticated
                   member's current group.
                 </p>
+
               </div>
+
 
               <div class="assets-toolbar">
 
@@ -872,40 +969,90 @@
                   aria-label="Search assets"
                 >
 
+
                 <select
                   id="assetFilterCategory"
                   aria-label="Filter by category"
                 >
+
                   <option value="">
                     All categories
                   </option>
 
-                  <option value="land">Land</option>
-                  <option value="building">Building</option>
-                  <option value="vehicle">Vehicle</option>
-                  <option value="equipment">Equipment</option>
-                  <option value="livestock">Livestock</option>
-                  <option value="farm">Farm</option>
-                  <option value="furniture">Furniture</option>
-                  <option value="investment">Investment</option>
-                  <option value="shares">Shares</option>
-                  <option value="other">Other</option>
+                  <option value="land">
+                    Land
+                  </option>
+
+                  <option value="building">
+                    Building
+                  </option>
+
+                  <option value="vehicle">
+                    Vehicle
+                  </option>
+
+                  <option value="equipment">
+                    Equipment
+                  </option>
+
+                  <option value="livestock">
+                    Livestock
+                  </option>
+
+                  <option value="farm">
+                    Farm
+                  </option>
+
+                  <option value="furniture">
+                    Furniture
+                  </option>
+
+                  <option value="investment">
+                    Investment
+                  </option>
+
+                  <option value="shares">
+                    Shares
+                  </option>
+
+                  <option value="other">
+                    Other
+                  </option>
+
                 </select>
+
 
                 <select
                   id="assetFilterStatus"
                   aria-label="Filter by status"
                 >
+
                   <option value="">
                     All statuses
                   </option>
 
-                  <option value="active">Active</option>
-                  <option value="disposed">Disposed</option>
-                  <option value="sold">Sold</option>
-                  <option value="lost">Lost</option>
-                  <option value="inactive">Inactive</option>
+                  <option value="active">
+                    Active
+                  </option>
+
+                  <option value="disposed">
+                    Disposed
+                  </option>
+
+                  <option value="sold">
+                    Sold
+                  </option>
+
+                  <option value="lost">
+                    Lost
+                  </option>
+
+                  <option value="inactive">
+                    Inactive
+                  </option>
+
                 </select>
+
 
                 <button
                   id="refreshAssets"
@@ -917,11 +1064,13 @@
 
               </div>
 
+
               <div class="assets-table-wrap">
 
                 <table class="assets-table">
 
                   <thead>
+
                     <tr>
                       <th>Asset</th>
                       <th>Category</th>
@@ -932,15 +1081,19 @@
                       <th>Status</th>
                       <th>Actions</th>
                     </tr>
+
                   </thead>
+
 
                   <tbody id="assetsBody">
 
                     <tr>
+
                       <td
                         colspan="8"
                         class="assets-empty"
                       >
+
                         <div class="assets-empty-icon">
                           ⏳
                         </div>
@@ -950,7 +1103,9 @@
                         </strong>
 
                         Please wait.
+
                       </td>
+
                     </tr>
 
                   </tbody>
@@ -971,8 +1126,47 @@
 
   </div>
 
+
+  <!-- Admin Portal bootstrap -->
   <script type="module">
-    import "./js/admin-layout.js";
+
+    import {
+      boot
+    } from "./js/admin-layout.js";
+
+
+    boot().catch(
+      (error) => {
+
+        console.error(
+          "CHAMA LIVE: Admin portal boot failed",
+          error
+        );
+
+
+        const errorElement =
+          document.getElementById(
+            "error"
+          );
+
+
+        if (errorElement) {
+
+          errorElement.hidden =
+            false;
+
+          errorElement.textContent =
+            error?.message ||
+            "The Admin Portal could not finish loading.";
+
+          errorElement.className =
+            "status error show";
+
+        }
+
+      }
+    );
+
   </script>
 
 </body>
