@@ -28,24 +28,7 @@
    PAGE MODULES
    ---------------------------------------------------------
    Each page remains responsible for its own data/rendering.
-
-   dashboard.html
-       ↓
-   admin-layout.js
-       ↓
-   dashboard.js
-       ↓
-   initDashboard()
-
-   plans-activities.html
-       ↓
-   admin-layout.js
-       ↓
-   plans-activities.js
-       ↓
-   initPage()
-
-   ========================================================= */
+========================================================= */
 
 import {
   getMyApplicationContext,
@@ -88,13 +71,6 @@ const ADMIN_PAGES = new Set([
 
 /* =========================================================
    PAGE MODULES
-=========================================================
-
-   Only pages whose existing modules are designed to be
-   initialized by the shared layout are loaded here.
-
-   Independently booted modules remain independently booted
-   until their HTML contracts are migrated and verified.
 ========================================================= */
 
 const PAGE_SCRIPTS = {
@@ -685,13 +661,33 @@ function injectStyles() {
 
 function renderDesktopNavigation() {
 
-  if (
+  const target =
     document.querySelector(
-      ".chama-admin-nav"
-    )
-  ) {
+      ".topbar .top-nav"
+    );
+
+
+  if (!target) {
     return;
   }
+
+
+  /*
+   * The top-nav element is the dedicated Admin navigation
+   * mount point.
+   *
+   * Clear any legacy/static content first so an old
+   * "Pages" link cannot remain above the current navigation.
+   *
+   * This does not touch:
+   * - brand
+   * - topbar-actions
+   * - logout
+   * - sidebar
+   * - mobile navigation
+   */
+
+  target.replaceChildren();
 
 
   const nav =
@@ -784,7 +780,6 @@ function renderDesktopNavigation() {
 
   /*
    * Billing remains a separate account destination.
-   * This does not change its existing page contract.
    */
 
   nav.appendChild(
@@ -795,22 +790,9 @@ function renderDesktopNavigation() {
   );
 
 
-  const target =
-    document.querySelector(
-      ".topbar .top-nav"
-    ) ||
-    document.querySelector(
-      ".topbar"
-    );
-
-
-  if (target) {
-
-    target.appendChild(
-      nav
-    );
-
-  }
+  target.appendChild(
+    nav
+  );
 
 }
 
@@ -831,10 +813,6 @@ function bindAdminLogout() {
     return;
   }
 
-
-  /*
-   * Prevent duplicate logout listeners.
-   */
 
   if (
     logoutButton.dataset.adminLogoutBound ===
@@ -1223,14 +1201,14 @@ function renderMobileNavigation() {
     );
 
 
-    const topbar =
-      document.querySelector(
-        ".topbar"
-      );
-
     const topbarInner =
       document.querySelector(
         ".topbar-inner"
+      );
+
+    const topbar =
+      document.querySelector(
+        ".topbar"
       );
 
 
