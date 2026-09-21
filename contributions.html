@@ -12,7 +12,7 @@
 
   <meta
     name="description"
-    content="CHAMA LIVE — Member contributions management"
+    content="CHAMA LIVE — Contribution management"
   >
 
   <title>
@@ -27,111 +27,66 @@
   <style>
 
     /* =====================================================
-       CONTRIBUTIONS PAGE
-       SHARED CHAMA LIVE LAYOUT
+       CHAMA LIVE — CONTRIBUTIONS
+       LIGHT / MOBILE-FIRST ADMIN SURFACE
     ====================================================== */
 
     html,
     body {
-
       width: 100%;
       max-width: 100%;
       margin: 0;
-
       overflow-x: hidden;
-
     }
-
 
     *,
     *::before,
     *::after {
-
       box-sizing: border-box;
-
     }
 
-
-    .main {
-
+    .main,
+    .page,
+    .card {
       width: 100%;
       max-width: 100%;
       min-width: 0;
-
     }
-
-
-    .page {
-
-      width: 100%;
-      max-width: 100%;
-      min-width: 0;
-
-    }
-
 
     .card {
-
-      width: 100%;
-      max-width: 100%;
-      min-width: 0;
-
       overflow: hidden;
-
     }
 
 
     /* =====================================================
-       CONTRIBUTION PAGE HEADER
+       PAGE HEADER
     ====================================================== */
 
     .contributions-page-header {
-
       width: 100%;
       max-width: 1500px;
-
-      margin:
-        0 auto 24px;
-
+      margin: 0 auto 20px;
     }
-
 
     .contributions-page-header .eyebrow {
-
       margin-bottom: 5px;
-
       color: #0f766e;
-
-      font-size: 11px;
-
+      font-size: 10px;
       font-weight: 800;
-
-      letter-spacing: 1.3px;
-
+      letter-spacing: 1.2px;
     }
-
 
     .contributions-page-header h1 {
-
-      margin:
-        0 0 7px;
-
+      margin: 0 0 6px;
       color: #0f172a;
-
-      font-size:
-        clamp(25px, 4vw, 34px);
-
+      font-size: clamp(25px, 4vw, 34px);
       line-height: 1.15;
-
     }
 
-
     .contributions-page-header p {
-
+      max-width: 700px;
       margin: 0;
-
-      max-width: 720px;
-
+      line-height: 1.55;
     }
 
 
@@ -140,721 +95,355 @@
     ====================================================== */
 
     #contributionSummary {
-
       display: grid;
-
       grid-template-columns:
         repeat(4, minmax(0, 1fr));
-
-      gap: 14px;
-
+      gap: 12px;
       width: 100%;
-
       max-width: 1500px;
-
-      margin:
-        0 auto 20px;
-
+      margin: 0 auto 18px;
     }
-
 
     .cl-contribution-summary-card {
-
       min-width: 0;
-
-      padding: 18px;
-
-      border:
-        1px solid #e2e8f0;
-
-      border-radius: 16px;
-
+      padding: 15px;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
       background: #ffffff;
-
       box-shadow:
-        0 8px 25px
-        rgba(15, 23, 42, .05);
-
+        0 5px 18px rgba(15, 23, 42, .04);
     }
-
 
     .cl-contribution-summary-card span {
-
       display: block;
-
       color: #64748b;
-
-      font-size: 10px;
-
+      font-size: 9px;
       font-weight: 800;
-
-      letter-spacing: .8px;
-
+      letter-spacing: .7px;
     }
-
 
     .cl-contribution-summary-card strong {
-
       display: block;
-
-      margin:
-        7px 0 3px;
-
+      margin: 6px 0 2px;
       color: #0f172a;
-
-      font-size: 23px;
-
+      font-size: 21px;
+      line-height: 1.2;
       overflow: hidden;
-
       text-overflow: ellipsis;
-
     }
-
 
     .cl-contribution-summary-card small {
-
       color: #64748b;
-
-      font-size: 11px;
-
+      font-size: 10px;
     }
 
 
     /* =====================================================
-       MEMBER PAYMENT EVIDENCE
+       STATUS / ERROR
     ====================================================== */
 
-    #memberPaymentEvidenceCard {
-
-      display: none;
-
+    #status {
       width: 100%;
-
-      max-width: 100%;
-
-    }
-
-
-    #memberPaymentEvidenceCard.cl-member-evidence-visible {
-
-      display: block;
-
-    }
-
-
-    .cl-evidence-intro {
-
-      margin:
-        0 0 16px;
-
-      color: #64748b;
-
+      margin-bottom: 12px;
+      color: #0f766e;
       font-size: 12px;
-
-      line-height: 1.55;
-
-    }
-
-
-    #memberPaymentEvidenceForm {
-
-      width: 100%;
-
-      max-width: 100%;
-
-    }
-
-
-    #memberPaymentEvidenceForm .form-group {
-
-      width: 100%;
-
-      min-width: 0;
-
-      margin-bottom: 13px;
-
-    }
-
-
-    #memberPaymentEvidenceForm label {
-
-      display: block;
-
-      margin-bottom: 6px;
-
-      color: #0f172a;
-
-      font-size: 12px;
-
-      font-weight: 750;
-
-    }
-
-
-    #memberPaymentEvidenceForm input,
-    #memberPaymentEvidenceForm select,
-    #memberPaymentEvidenceForm textarea {
-
-      display: block;
-
-      width: 100%;
-
-      max-width: 100%;
-
-      min-width: 0;
-
-      min-height: 46px;
-
-      padding:
-        10px 12px;
-
-      border:
-        1px solid #e2e8f0;
-
-      border-radius: 10px;
-
-      background: #ffffff;
-
-      color: #0f172a;
-
-      font: inherit;
-
-    }
-
-
-    #memberPaymentEvidenceForm textarea {
-
-      min-height: 95px;
-
-      resize: vertical;
-
-    }
-
-
-    #memberPaymentEvidenceForm input:focus,
-    #memberPaymentEvidenceForm select:focus,
-    #memberPaymentEvidenceForm textarea:focus {
-
-      outline: none;
-
-      border-color: #14b8a6;
-
-      box-shadow:
-        0 0 0 4px
-        rgba(20, 184, 166, .10);
-
-    }
-
-
-    .cl-evidence-submit {
-
-      width: 100%;
-
-      min-height: 49px;
-
-      border: 0;
-
-      border-radius: 11px;
-
-      font-weight: 800;
-
-    }
-
-
-    .cl-evidence-message {
-
-      margin:
-        0 0 16px;
-
-      padding: 12px 14px;
-
-      border:
-        1px solid #ccfbf1;
-
-      border-radius: 11px;
-
-      background: #f0fdfa;
-
-      color: #115e59;
-
-      font-size: 11px;
-
-      line-height: 1.5;
-
-    }
-
-
-    .cl-evidence-message[hidden] {
-
-      display: none;
-
-    }
-
-
-    .cl-evidence-reference-note {
-
-      display: block;
-
-      margin-top: 5px;
-
-      color: #64748b;
-
-      font-size: 10px;
-
-      line-height: 1.4;
-
-    }
-
-
-    .cl-evidence-status-badge {
-
-      display: inline-flex;
-
-      align-items: center;
-
-      justify-content: center;
-
-      width: fit-content;
-
-      max-width: 100%;
-
-      padding:
-        5px 9px;
-
-      border-radius: 999px;
-
-      font-size: 10px;
-
-      font-weight: 800;
-
-      white-space: nowrap;
-
-    }
-
-
-    .cl-evidence-status-pending {
-
-      color: #92400e;
-
-      background: #fffbeb;
-
-    }
-
-
-    .cl-evidence-status-verified {
-
-      color: #047857;
-
-      background: #ecfdf5;
-
-    }
-
-
-    .cl-evidence-status-rejected {
-
-      color: #be123c;
-
-      background: #fff1f2;
-
-    }
-
-
-    .cl-evidence-reason {
-
-      display: block;
-
-      max-width: 240px;
-
-      margin-top: 4px;
-
-      color: #64748b;
-
-      font-size: 10px;
-
+      font-weight: 650;
       line-height: 1.45;
-
-      white-space: normal;
-
       overflow-wrap: anywhere;
-
     }
 
-
-    .cl-evidence-empty {
-
-      padding: 18px;
-
-      text-align: center;
-
-      color: #64748b;
-
-      font-size: 11px;
-
+    #error {
+      width: 100%;
+      margin-bottom: 16px;
+      overflow-wrap: anywhere;
     }
 
 
     /* =====================================================
-       VERIFIER PAYMENT EVIDENCE
-       AUTHORISED VERIFIER SURFACE
+       GENERAL FORM SURFACES
     ====================================================== */
 
-    #verifierPaymentEvidenceCard {
-
+    #contributionForm,
+    #memberPaymentEvidenceForm {
       width: 100%;
-
       max-width: 100%;
-
     }
 
-
-    #verifierPaymentEvidenceCard[hidden] {
-
-      display: none;
-
-    }
-
-
-    .cl-verifier-intro {
-
-      margin:
-        0 0 16px;
-
-      color: #64748b;
-
-      font-size: 12px;
-
-      line-height: 1.55;
-
-    }
-
-
-    .cl-verifier-actions {
-
-      display: flex;
-
-      flex-wrap: wrap;
-
-      gap: 7px;
-
-    }
-
-
-    .cl-verifier-button {
-
-      min-height: 38px;
-
-      padding:
-        8px 12px;
-
-      border: 0;
-
-      border-radius: 9px;
-
-      font: inherit;
-
-      font-size: 11px;
-
-      font-weight: 800;
-
-      cursor: pointer;
-
-    }
-
-
-    .cl-verifier-button:disabled {
-
-      opacity: .6;
-
-      cursor: not-allowed;
-
-    }
-
-
-    .cl-verifier-button-primary {
-
-      background: #0f766e;
-
-      color: #ffffff;
-
-    }
-
-
-    .cl-verifier-button-danger {
-
-      background: #fff1f2;
-
-      color: #be123c;
-
-      border:
-        1px solid #fecdd3;
-
-    }
-
-
-    .cl-verifier-button-secondary {
-
-      background: #f8fafc;
-
-      color: #334155;
-
-      border:
-        1px solid #e2e8f0;
-
-    }
-
-
-    .cl-verifier-detail {
-
-      margin-top: 18px;
-
-      padding: 16px;
-
-      border:
-        1px solid #ccfbf1;
-
-      border-radius: 14px;
-
-      background: #f8fffe;
-
-    }
-
-
-    .cl-verifier-detail[hidden] {
-
-      display: none;
-
-    }
-
-
-    .cl-verifier-detail-grid {
-
-      display: grid;
-
-      grid-template-columns:
-        repeat(2, minmax(0, 1fr));
-
-      gap: 12px;
-
-      margin-bottom: 16px;
-
-    }
-
-
-    .cl-verifier-detail-item {
-
+    #contributionForm .form-group,
+    #memberPaymentEvidenceForm .form-group {
+      width: 100%;
       min-width: 0;
-
-      padding: 11px;
-
-      border:
-        1px solid #e2e8f0;
-
-      border-radius: 10px;
-
-      background: #ffffff;
-
+      margin-bottom: 12px;
     }
 
-
-    .cl-verifier-detail-item span {
-
+    #contributionForm label,
+    #memberPaymentEvidenceForm label {
       display: block;
-
-      margin-bottom: 4px;
-
-      color: #94a3b8;
-
-      font-size: 9px;
-
-      font-weight: 800;
-
-      letter-spacing: .55px;
-
-      text-transform: uppercase;
-
-    }
-
-
-    .cl-verifier-detail-item strong {
-
-      display: block;
-
-      color: #0f172a;
-
-      font-size: 12px;
-
-      overflow-wrap: anywhere;
-
-    }
-
-
-    .cl-verifier-detail-evidence {
-
-      margin-bottom: 16px;
-
-      padding: 13px;
-
-      border:
-        1px solid #e2e8f0;
-
-      border-radius: 10px;
-
-      background: #ffffff;
-
-    }
-
-
-    .cl-verifier-detail-evidence span {
-
-      display: block;
-
       margin-bottom: 5px;
-
-      color: #94a3b8;
-
-      font-size: 9px;
-
-      font-weight: 800;
-
-      letter-spacing: .55px;
-
-      text-transform: uppercase;
-
-    }
-
-
-    .cl-verifier-detail-evidence p {
-
-      margin: 0;
-
-      color: #334155;
-
-      font-size: 11px;
-
-      line-height: 1.55;
-
-      white-space: pre-wrap;
-
-      overflow-wrap: anywhere;
-
-    }
-
-
-    .cl-verifier-detail-actions {
-
-      display: flex;
-
-      flex-wrap: wrap;
-
-      gap: 8px;
-
-    }
-
-
-    .cl-verifier-empty {
-
-      padding: 18px;
-
-      text-align: center;
-
-      color: #64748b;
-
-      font-size: 11px;
-
-    }
-
-
-    /* =====================================================
-       FORM
-    ====================================================== */
-
-    #contributionForm {
-
-      width: 100%;
-
-      max-width: 100%;
-
-    }
-
-
-    #contributionForm .form-group {
-
-      width: 100%;
-
-      min-width: 0;
-
-      margin-bottom: 13px;
-
-    }
-
-
-    #contributionForm label {
-
-      display: block;
-
-      margin-bottom: 6px;
-
       color: #0f172a;
-
-      font-size: 12px;
-
+      font-size: 11px;
       font-weight: 750;
-
     }
-
 
     #contributionForm input,
     #contributionForm select,
-    #contributionForm textarea {
-
+    #contributionForm textarea,
+    #memberPaymentEvidenceForm input,
+    #memberPaymentEvidenceForm select,
+    #memberPaymentEvidenceForm textarea {
       display: block;
-
       width: 100%;
-
       max-width: 100%;
-
       min-width: 0;
-
-      min-height: 46px;
-
-      padding:
-        10px 12px;
-
-      border:
-        1px solid #e2e8f0;
-
+      min-height: 44px;
+      padding: 9px 11px;
+      border: 1px solid #e2e8f0;
       border-radius: 10px;
-
       background: #ffffff;
-
       color: #0f172a;
-
       font: inherit;
-
+      font-size: 13px;
     }
 
-
-    #contributionForm textarea {
-
-      min-height: 95px;
-
+    #contributionForm textarea,
+    #memberPaymentEvidenceForm textarea {
+      min-height: 90px;
       resize: vertical;
-
     }
-
 
     #contributionForm input:focus,
     #contributionForm select:focus,
-    #contributionForm textarea:focus {
-
+    #contributionForm textarea:focus,
+    #memberPaymentEvidenceForm input:focus,
+    #memberPaymentEvidenceForm select:focus,
+    #memberPaymentEvidenceForm textarea:focus {
       outline: none;
-
       border-color: #14b8a6;
-
       box-shadow:
-        0 0 0 4px
-        rgba(20, 184, 166, .10);
+        0 0 0 3px rgba(20, 184, 166, .10);
+    }
 
+
+    /* =====================================================
+       PAYMENT EVIDENCE
+    ====================================================== */
+
+    #memberPaymentEvidenceCard {
+      display: none;
+      width: 100%;
+      max-width: 100%;
+    }
+
+    #memberPaymentEvidenceCard.cl-member-evidence-visible {
+      display: block;
+    }
+
+    .cl-evidence-intro,
+    .cl-verifier-intro {
+      margin: 0 0 14px;
+      color: #64748b;
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    .cl-evidence-submit {
+      width: 100%;
+      min-height: 46px;
+      border: 0;
+      border-radius: 10px;
+      font-weight: 800;
+    }
+
+    .cl-evidence-message {
+      margin: 0 0 14px;
+      padding: 11px 13px;
+      border: 1px solid #ccfbf1;
+      border-radius: 10px;
+      background: #f0fdfa;
+      color: #115e59;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .cl-evidence-message[hidden] {
+      display: none;
+    }
+
+    .cl-evidence-reference-note {
+      display: block;
+      margin-top: 4px;
+      color: #64748b;
+      font-size: 9px;
+      line-height: 1.4;
+    }
+
+
+    /* =====================================================
+       EVIDENCE STATUS
+    ====================================================== */
+
+    .cl-evidence-status-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: fit-content;
+      max-width: 100%;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 9px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .cl-evidence-status-pending {
+      color: #92400e;
+      background: #fffbeb;
+    }
+
+    .cl-evidence-status-verified {
+      color: #047857;
+      background: #ecfdf5;
+    }
+
+    .cl-evidence-status-rejected {
+      color: #be123c;
+      background: #fff1f2;
+    }
+
+    .cl-evidence-reason {
+      display: block;
+      max-width: 240px;
+      margin-top: 4px;
+      color: #64748b;
+      font-size: 9px;
+      line-height: 1.4;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    .cl-evidence-empty,
+    .cl-verifier-empty {
+      padding: 18px;
+      text-align: center;
+      color: #64748b;
+      font-size: 10px;
+    }
+
+
+    /* =====================================================
+       VERIFIER
+    ====================================================== */
+
+    #verifierPaymentEvidenceCard {
+      width: 100%;
+      max-width: 100%;
+    }
+
+    #verifierPaymentEvidenceCard[hidden] {
+      display: none;
+    }
+
+    .cl-verifier-actions,
+    .cl-verifier-detail-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .cl-verifier-button {
+      min-height: 36px;
+      padding: 7px 11px;
+      border: 0;
+      border-radius: 9px;
+      font: inherit;
+      font-size: 10px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .cl-verifier-button:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+
+    .cl-verifier-button-primary {
+      background: #0f766e;
+      color: #ffffff;
+    }
+
+    .cl-verifier-button-danger {
+      border: 1px solid #fecdd3;
+      background: #fff1f2;
+      color: #be123c;
+    }
+
+    .cl-verifier-button-secondary {
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      color: #334155;
+    }
+
+    .cl-verifier-detail {
+      margin-top: 16px;
+      padding: 14px;
+      border: 1px solid #ccfbf1;
+      border-radius: 13px;
+      background: #f8fffe;
+    }
+
+    .cl-verifier-detail[hidden] {
+      display: none;
+    }
+
+    .cl-verifier-detail-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .cl-verifier-detail-item {
+      min-width: 0;
+      padding: 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 9px;
+      background: #ffffff;
+    }
+
+    .cl-verifier-detail-item span,
+    .cl-verifier-detail-evidence span {
+      display: block;
+      margin-bottom: 4px;
+      color: #94a3b8;
+      font-size: 8px;
+      font-weight: 800;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+    }
+
+    .cl-verifier-detail-item strong {
+      display: block;
+      color: #0f172a;
+      font-size: 11px;
+      overflow-wrap: anywhere;
+    }
+
+    .cl-verifier-detail-evidence {
+      margin-bottom: 14px;
+      padding: 11px;
+      border: 1px solid #e2e8f0;
+      border-radius: 9px;
+      background: #ffffff;
+    }
+
+    .cl-verifier-detail-evidence p {
+      margin: 0;
+      color: #334155;
+      font-size: 10px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
     }
 
 
@@ -863,195 +452,119 @@
     ====================================================== */
 
     .cl-other-type-wrap {
-
-      padding: 14px;
-
-      border:
-        1px solid #99f6e4;
-
-      border-radius: 12px;
-
-      background:
-        #f0fdfa;
-
+      padding: 12px;
+      border: 1px solid #99f6e4;
+      border-radius: 11px;
+      background: #f0fdfa;
     }
-
 
     .cl-other-type-wrap[hidden] {
-
       display: none;
-
     }
 
-
     .cl-other-type-wrap small {
-
       display: block;
-
-      margin-top: 5px;
-
+      margin-top: 4px;
     }
 
 
     /* =====================================================
-       SAVE BUTTON
+       SAVE
     ====================================================== */
 
     #saveContribution {
-
       width: 100%;
-
-      min-height: 49px;
-
+      min-height: 47px;
       border: 0;
-
-      border-radius: 11px;
-
+      border-radius: 10px;
       font-weight: 800;
-
     }
 
 
     /* =====================================================
-       TABLES
+       TABLE SYSTEM
     ====================================================== */
 
     .table-wrapper {
-
       width: 100%;
-
       max-width: 100%;
-
       min-width: 0;
-
       overflow-x: auto;
-
       overflow-y: hidden;
-
       -webkit-overflow-scrolling: touch;
-
     }
-
 
     .table-wrapper table {
-
       width: 100%;
-
-      min-width: 720px;
-
+      min-width: 700px;
     }
 
-
     .table-wrapper th {
-
       white-space: nowrap;
+      font-size: 10px;
+    }
 
+    .table-wrapper td {
+      font-size: 11px;
+      overflow-wrap: anywhere;
     }
 
 
     /* =====================================================
-       ACCOUNTING MONTH SELECTOR
+       ACCOUNTING MONTH
     ====================================================== */
 
     .cl-accounting-month-control {
-
       display: grid;
-
       grid-template-columns:
         minmax(160px, 220px)
-        minmax(180px, 260px)
-        auto;
-
+        minmax(180px, 1fr);
       align-items: end;
-
-      gap: 12px;
-
-      margin:
-        0 0 18px;
-
-      padding: 14px;
-
-      border:
-        1px solid #ccfbf1;
-
-      border-radius: 14px;
-
-      background:
-        #f0fdfa;
-
+      gap: 10px;
+      margin: 0 0 16px;
+      padding: 12px;
+      border: 1px solid #ccfbf1;
+      border-radius: 12px;
+      background: #f0fdfa;
     }
-
 
     .cl-accounting-month-control label {
-
       display: block;
-
-      margin-bottom: 6px;
-
+      margin-bottom: 5px;
       color: #0f172a;
-
-      font-size: 12px;
-
+      font-size: 10px;
       font-weight: 800;
-
     }
-
 
     .cl-accounting-month-control select {
-
       display: block;
-
       width: 100%;
-
-      min-height: 44px;
-
-      padding:
-        9px 11px;
-
-      border:
-        1px solid #99f6e4;
-
-      border-radius: 10px;
-
+      min-height: 42px;
+      padding: 8px 10px;
+      border: 1px solid #99f6e4;
+      border-radius: 9px;
       background: #ffffff;
-
       color: #0f172a;
-
       font: inherit;
-
+      font-size: 12px;
       font-weight: 700;
-
     }
-
 
     .cl-accounting-month-control select:focus {
-
       outline: none;
-
       border-color: #14b8a6;
-
       box-shadow:
-        0 0 0 4px
-        rgba(20, 184, 166, .10);
-
+        0 0 0 3px rgba(20, 184, 166, .10);
     }
-
 
     .cl-accounting-month-viewing {
-
       align-self: center;
-
       color: #475569;
-
-      font-size: 11px;
-
+      font-size: 10px;
     }
 
-
     .cl-accounting-month-viewing strong {
-
       color: #0f766e;
-
     }
 
 
@@ -1060,59 +573,35 @@
     ====================================================== */
 
     #memberStatusRows td {
-
       vertical-align: middle;
-
     }
-
 
     .cl-member-cell strong {
-
       color: #0f172a;
-
     }
-
 
     .cl-money-cell {
-
       color: #115e59;
-
       font-weight: 700;
-
     }
-
 
     .cl-arrears {
-
       color: #be123c;
-
       font-weight: 750;
-
     }
-
 
     .cl-carry-forward {
-
       color: #047857;
-
       font-weight: 800;
-
     }
-
 
     .cl-outstanding-amount {
-
       color: #be123c;
-
       font-weight: 800;
-
     }
 
-
     .cl-zero {
-
       color: #94a3b8;
-
     }
 
 
@@ -1123,97 +612,53 @@
     .cl-type-badge,
     .cl-payment-badge,
     .cl-status-badge {
-
       display: inline-flex;
-
       align-items: center;
-
       justify-content: center;
-
       width: fit-content;
-
       max-width: 100%;
-
-      padding:
-        5px 9px;
-
+      padding: 4px 8px;
       border-radius: 999px;
-
-      font-size: 10px;
-
+      font-size: 9px;
       font-weight: 800;
-
       white-space: nowrap;
-
     }
-
 
     .cl-type-badge {
-
-      color: #0f766e;
-
+      border: 1px solid #ccfbf1;
       background: #f0fdfa;
-
-      border:
-        1px solid #ccfbf1;
-
+      color: #0f766e;
     }
-
 
     .cl-payment-badge {
-
-      color: #475569;
-
+      border: 1px solid #e2e8f0;
       background: #f8fafc;
-
-      border:
-        1px solid #e2e8f0;
-
+      color: #475569;
     }
-
 
     .cl-status-paid {
-
-      color: #047857;
-
       background: #ecfdf5;
-
+      color: #047857;
     }
-
 
     .cl-status-credit {
-
-      color: #0f766e;
-
       background: #ccfbf1;
-
+      color: #0f766e;
     }
-
 
     .cl-status-partial {
-
-      color: #b45309;
-
       background: #fffbeb;
-
+      color: #b45309;
     }
-
 
     .cl-status-outstanding {
-
-      color: #be123c;
-
       background: #fff1f2;
-
+      color: #be123c;
     }
 
-
     .cl-status-neutral {
-
-      color: #475569;
-
       background: #f1f5f9;
-
+      color: #475569;
     }
 
 
@@ -1222,44 +667,28 @@
     ====================================================== */
 
     .cl-paid-cell {
-
       min-width: 100px;
-
     }
-
 
     .cl-mini-progress {
-
       width: 80px;
-
       height: 4px;
-
       margin-top: 5px;
-
       overflow: hidden;
-
       border-radius: 999px;
-
       background: #e2e8f0;
-
     }
 
-
     .cl-mini-progress span {
-
       display: block;
-
       height: 100%;
-
       border-radius: inherit;
-
       background:
         linear-gradient(
           90deg,
           #0f766e,
           #14b8a6
         );
-
     }
 
 
@@ -1268,42 +697,24 @@
     ====================================================== */
 
     .cl-sub-detail {
-
       display: block;
-
       max-width: 180px;
-
-      margin-top: 4px;
-
+      margin-top: 3px;
       color: #64748b;
-
-      font-size: 10px;
-
+      font-size: 9px;
       line-height: 1.4;
-
       white-space: normal;
-
       overflow-wrap: anywhere;
-
     }
 
-
     .cl-note-text {
-
       display: block;
-
       max-width: 190px;
-
       color: #64748b;
-
-      font-size: 10px;
-
-      line-height: 1.45;
-
+      font-size: 9px;
+      line-height: 1.4;
       white-space: normal;
-
       overflow-wrap: anywhere;
-
     }
 
 
@@ -1312,191 +723,92 @@
     ====================================================== */
 
     .cl-goal-card {
-
       width: 100%;
-
-      margin-bottom: 10px;
-
-      padding: 15px;
-
-      border:
-        1px solid #e2e8f0;
-
-      border-radius: 14px;
-
+      margin-bottom: 9px;
+      padding: 13px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
       background: #ffffff;
-
     }
-
 
     .cl-goal-top,
     .cl-goal-bottom {
-
       display: flex;
-
       align-items: center;
-
       justify-content: space-between;
-
-      gap: 12px;
-
+      gap: 10px;
     }
-
 
     .cl-goal-top strong {
-
       color: #0f172a;
-
+      font-size: 12px;
     }
-
 
     .cl-goal-top small {
-
       display: block;
-
-      margin-top: 3px;
-
+      margin-top: 2px;
       color: #64748b;
-
+      font-size: 9px;
     }
-
 
     .cl-goal-progress {
-
       width: 100%;
-
-      height: 8px;
-
-      margin:
-        12px 0 8px;
-
+      height: 7px;
+      margin: 10px 0 7px;
       overflow: hidden;
-
       border-radius: 999px;
-
       background: #e2e8f0;
-
     }
 
-
     .cl-goal-progress span {
-
       display: block;
-
       height: 100%;
-
       border-radius: inherit;
-
       background:
         linear-gradient(
           90deg,
           #0f766e,
           #14b8a6
         );
-
     }
-
 
     .cl-goal-bottom {
-
       color: #64748b;
-
-      font-size: 11px;
-
+      font-size: 10px;
     }
-
 
     .cl-goals-empty {
-
       display: flex;
-
       flex-direction: column;
-
       align-items: center;
-
       justify-content: center;
-
-      min-height: 150px;
-
-      padding: 25px;
-
+      min-height: 130px;
+      padding: 20px;
       text-align: center;
-
     }
-
 
     .cl-goals-empty strong {
-
       color: #0f172a;
-
+      font-size: 12px;
     }
-
 
     .cl-goals-empty span {
-
-      margin-top: 5px;
-
+      margin-top: 4px;
       color: #64748b;
-
-      font-size: 11px;
-
+      font-size: 10px;
     }
-
 
     .cl-empty-icon {
-
       display: grid;
-
       place-items: center;
-
-      width: 44px;
-
-      height: 44px;
-
-      margin-bottom: 10px;
-
-      border-radius: 14px;
-
+      width: 40px;
+      height: 40px;
+      margin-bottom: 8px;
+      border-radius: 12px;
       background: #f0fdfa;
-
       color: #0f766e;
-
-      font-size: 24px;
-
+      font-size: 21px;
       font-weight: 800;
-
-    }
-
-
-    /* =====================================================
-       STATUS / ERROR
-    ====================================================== */
-
-    #status {
-
-      width: 100%;
-
-      margin-bottom: 14px;
-
-      color: #0f766e;
-
-      font-size: 12px;
-
-      font-weight: 650;
-
-      overflow-wrap: anywhere;
-
-    }
-
-
-    #error {
-
-      width: 100%;
-
-      margin-bottom: 18px;
-
-      overflow-wrap: anywhere;
-
     }
 
 
@@ -1507,26 +819,13 @@
     @media (max-width: 900px) {
 
       #contributionSummary {
-
         grid-template-columns:
           repeat(2, minmax(0, 1fr));
-
       }
-
 
       .cl-accounting-month-control {
-
         grid-template-columns:
           repeat(2, minmax(0, 1fr));
-
-      }
-
-
-      .cl-accounting-month-viewing {
-
-        grid-column:
-          1 / -1;
-
       }
 
     }
@@ -1539,229 +838,133 @@
     @media (max-width: 650px) {
 
       .contributions-page-header {
-
-        margin-bottom: 18px;
-
+        margin-bottom: 16px;
       }
-
 
       .contributions-page-header h1 {
-
         font-size: 25px;
-
       }
-
 
       #contributionSummary {
-
-        gap: 9px;
-
+        gap: 8px;
       }
-
 
       .cl-contribution-summary-card {
-
-        padding: 14px;
-
-        border-radius: 14px;
-
+        padding: 12px;
+        border-radius: 12px;
       }
-
 
       .cl-contribution-summary-card strong {
-
-        font-size: 19px;
-
+        font-size: 18px;
       }
-
 
       .cl-contribution-summary-card small {
-
         display: block;
-
         overflow: hidden;
-
         text-overflow: ellipsis;
-
       }
-
 
       .cl-accounting-month-control {
-
         grid-template-columns: 1fr;
-
         gap: 8px;
-
-        padding: 13px;
-
+        padding: 11px;
       }
-
 
       .cl-accounting-month-viewing {
-
         grid-column: auto;
-
       }
-
 
       .cl-verifier-detail-grid {
-
         grid-template-columns: 1fr;
-
       }
-
 
       .cl-verifier-actions,
       .cl-verifier-detail-actions {
-
         width: 100%;
-
       }
-
 
       .cl-verifier-button {
-
         flex: 1 1 auto;
-
       }
 
+
+      /* -----------------------------------------------
+         MOBILE TABLE CARDS
+      ------------------------------------------------ */
 
       .table-wrapper {
-
         overflow: visible;
-
       }
-
 
       .table-wrapper table {
-
         display: block;
-
         min-width: 0;
-
       }
-
 
       .table-wrapper thead {
-
         display: none;
-
       }
-
 
       .table-wrapper tbody {
-
         display: grid;
-
         width: 100%;
-
-        gap: 10px;
-
+        gap: 9px;
       }
-
 
       .table-wrapper tr {
-
         display: grid;
-
         grid-template-columns:
           1fr 1fr;
-
         width: 100%;
-
         min-width: 0;
-
-        padding: 8px;
-
-        border:
-          1px solid #e2e8f0;
-
-        border-radius: 13px;
-
+        padding: 7px;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
         background: #ffffff;
-
       }
-
 
       .table-wrapper td {
-
         display: flex;
-
         flex-direction: column;
-
         align-items: flex-start;
-
         justify-content: center;
-
         width: 100%;
-
         min-width: 0;
-
-        padding:
-          8px 7px;
-
+        padding: 7px;
         border: 0 !important;
-
         white-space: normal !important;
-
         overflow-wrap: anywhere;
-
       }
-
 
       .table-wrapper td::before {
-
-        content:
-          attr(data-label);
-
+        content: attr(data-label);
         display: block;
-
         margin-bottom: 3px;
-
         color: #94a3b8;
-
-        font-size: 9px;
-
+        font-size: 8px;
         font-weight: 800;
-
-        letter-spacing: .55px;
-
+        letter-spacing: .5px;
         text-transform: uppercase;
-
       }
-
 
       .cl-member-cell {
-
-        grid-column:
-          1 / -1;
-
+        grid-column: 1 / -1;
       }
-
 
       .cl-sub-detail,
       .cl-note-text,
       .cl-evidence-reason {
-
         max-width: 100%;
-
       }
-
 
       .cl-mini-progress {
-
         width: 100%;
-
         max-width: 100px;
-
       }
-
 
       .cl-goal-top,
       .cl-goal-bottom {
-
         align-items: flex-start;
-
       }
 
     }
@@ -1774,53 +977,33 @@
     @media (max-width: 390px) {
 
       #contributionSummary {
-
         grid-template-columns:
           1fr 1fr;
-
       }
-
 
       .cl-contribution-summary-card {
-
-        padding: 11px;
-
+        padding: 10px;
       }
-
 
       .cl-contribution-summary-card strong {
-
-        font-size: 17px;
-
+        font-size: 16px;
       }
-
 
       .cl-contribution-summary-card small {
-
         display: none;
-
       }
-
 
       .table-wrapper tr {
-
         grid-template-columns: 1fr;
-
       }
-
 
       .table-wrapper td {
-
-        padding: 7px;
-
+        padding: 6px;
       }
-
 
       .cl-goal-top,
       .cl-goal-bottom {
-
         flex-wrap: wrap;
-
       }
 
     }
@@ -1830,16 +1013,13 @@
        REDUCED MOTION
     ====================================================== */
 
-    @media (
-      prefers-reduced-motion: reduce
-    ) {
+    @media (prefers-reduced-motion: reduce) {
 
-      * {
-
+      *,
+      *::before,
+      *::after {
         animation: none !important;
-
         transition: none !important;
-
       }
 
     }
@@ -1853,81 +1033,23 @@
 
 
   <!-- =====================================================
-       SHARED CHAMA LIVE TOP BAR
+       ADMIN PORTAL TOPBAR
+       Navigation is injected by admin-layout.js
   ====================================================== -->
 
   <header class="topbar">
 
     <div class="topbar-inner">
 
-
       <div class="brand">
-
         CHAMA
         <span>LIVE</span>
-
       </div>
 
-
-      <nav class="top-nav">
-
-        <a href="dashboard.html">
-          Dashboard
-        </a>
-
-        <a href="members.html">
-          Members
-        </a>
-
-        <a
-          href="contributions.html"
-          class="active"
-        >
-          Contributions
-        </a>
-
-        <a href="expenses.html">
-          Expenses
-        </a>
-
-        <a href="meetings.html">
-          Meetings
-        </a>
-
-        <a href="reports.html">
-          Reports
-        </a>
-
-        <a href="monthly-closing.html">
-          Monthly Closing
-        </a>
-
-        <a href="group-management.html">
-          Group Management
-        </a>
-
-        <a href="assets.html">
-          Assets
-        </a>
-
-        <a href="plans-activities.html">
-          Plans &amp; Activities
-        </a>
-
-        <a href="support-welfare.html">
-          Support &amp; Welfare
-        </a>
-
-        <a href="milestones.html">
-          Milestones
-        </a>
-
-        <a href="data-migration.html">
-          Data Migration
-        </a>
-
-      </nav>
-
+      <nav
+        class="top-nav"
+        aria-label="Admin navigation"
+      ></nav>
 
       <div class="topbar-actions">
 
@@ -1935,7 +1057,7 @@
           data-user-name
           class="muted user-name"
         >
-          Member
+          Admin
         </span>
 
         <button
@@ -1953,1038 +1075,886 @@
   </header>
 
 
-  <div class="layout">
+  <main class="main">
 
 
-    <aside class="sidebar">
+    <!-- ===================================================
+         STATUS
+    ==================================================== -->
 
-      <nav class="nav">
-
-        <a href="dashboard.html">
-          Dashboard
-        </a>
-
-        <a href="members.html">
-          Members
-        </a>
-
-        <a
-          href="contributions.html"
-          class="active"
-          aria-current="page"
-        >
-          Contributions
-        </a>
-
-        <a href="expenses.html">
-          Expenses
-        </a>
-
-        <a href="meetings.html">
-          Meetings
-        </a>
-
-        <a href="reports.html">
-          Reports
-        </a>
-
-        <a href="monthly-closing.html">
-          Monthly Closing
-        </a>
-
-        <a href="group-management.html">
-          Group Management
-        </a>
-
-        <a href="assets.html">
-          Assets
-        </a>
-
-        <a href="plans-activities.html">
-          Plans &amp; Activities
-        </a>
-
-        <a href="support-welfare.html">
-          Support &amp; Welfare
-        </a>
-
-        <a href="milestones.html">
-          Milestones
-        </a>
-
-        <a href="data-migration.html">
-          Data Migration
-        </a>
-
-      </nav>
-
-    </aside>
+    <div
+      id="status"
+      class="status"
+      hidden
+      aria-live="polite"
+    ></div>
 
 
-    <main class="main">
+    <div
+      id="error"
+      class="error"
+      hidden
+      role="alert"
+    ></div>
+
+
+    <!-- ===================================================
+         PAGE HEADER
+    ==================================================== -->
+
+    <section class="contributions-page-header">
+
+      <div class="eyebrow">
+        FINANCIAL MANAGEMENT
+      </div>
+
+      <h1>
+        Contributions
+      </h1>
+
+      <p class="muted">
+        Record member contributions, track monthly
+        commitments and keep group payments organised
+        in one connected ledger.
+      </p>
+
+    </section>
+
+
+    <!-- ===================================================
+         MEMBER PAYMENT EVIDENCE
+    ==================================================== -->
+
+    <section
+      id="memberPaymentEvidenceCard"
+      class="card"
+    >
+
+      <div class="card-header">
+
+        <div>
+
+          <h2>
+            Submit Payment Evidence
+          </h2>
+
+          <p class="muted">
+            Send payment details for verification.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <p class="cl-evidence-intro">
+        Submit your payment details after making a
+        contribution. Your submission remains pending
+        until an authorised group verifier reviews it.
+      </p>
 
 
       <div
-        id="status"
-        class="status"
+        id="memberEvidenceMessage"
+        class="cl-evidence-message"
         hidden
         aria-live="polite"
       ></div>
 
 
-      <div
-        id="error"
-        class="error"
-        hidden
-        role="alert"
-      ></div>
-
-
-      <section class="contributions-page-header">
-
-        <div class="eyebrow">
-          FINANCIAL MANAGEMENT
-        </div>
-
-        <h1>
-          Contributions
-        </h1>
-
-        <p class="muted">
-
-          Record member contributions, track monthly
-          commitments and keep every group payment
-          organised in one connected ledger.
-
-        </p>
-
-      </section>
-
-
-      <!-- =================================================
-           MEMBER PAYMENT EVIDENCE
-           MEMBER-ONLY SUBMISSION SURFACE
-      ================================================== -->
-
-      <section
-        id="memberPaymentEvidenceCard"
-        class="card"
+      <form
+        id="memberPaymentEvidenceForm"
+        novalidate
       >
 
-        <div class="card-header">
-
-          <div>
-
-            <h2>
-              Submit Payment Evidence
-            </h2>
-
-            <p class="muted">
-              Send payment details for verification.
-            </p>
-
-          </div>
-
-        </div>
-
-
-        <p class="cl-evidence-intro">
-
-          Submit your payment details here when you have
-          made a contribution. Your submission will remain
-          pending until an authorised group verifier reviews it.
-
-        </p>
-
-
-        <div
-          id="memberEvidenceMessage"
-          class="cl-evidence-message"
-          hidden
-          aria-live="polite"
-        ></div>
-
-
-        <form
-          id="memberPaymentEvidenceForm"
-          novalidate
-        >
-
-
-          <div class="form-group">
-
-            <label for="memberEvidenceAmount">
-              Amount
-            </label>
-
-            <input
-              id="memberEvidenceAmount"
-              name="memberEvidenceAmount"
-              type="number"
-              min="0.01"
-              step="0.01"
-              placeholder="200"
-              required
-            >
-
-          </div>
-
-
-          <div class="form-group">
-
-            <label for="memberEvidenceDate">
-              Payment Date
-            </label>
-
-            <input
-              id="memberEvidenceDate"
-              name="memberEvidenceDate"
-              type="date"
-              required
-            >
-
-          </div>
-
-
-          <div class="form-group">
-
-            <label for="memberEvidenceMethod">
-              Payment Method
-            </label>
-
-            <select
-              id="memberEvidenceMethod"
-              name="memberEvidenceMethod"
-              required
-            >
-
-              <option value="M-Pesa">
-                M-Pesa
-              </option>
-
-              <option value="Cash">
-                Cash
-              </option>
-
-              <option value="Bank transfer">
-                Bank transfer
-              </option>
-
-            </select>
-
-          </div>
-
-
-          <div
-            id="memberEvidenceMpesaWrap"
-            class="form-group"
-          >
-
-            <label for="memberEvidenceMpesaReference">
-              M-Pesa Reference
-            </label>
-
-            <input
-              id="memberEvidenceMpesaReference"
-              name="memberEvidenceMpesaReference"
-              type="text"
-              maxlength="100"
-              autocomplete="off"
-              placeholder="e.g. QWE123XYZ"
-            >
-
-            <small class="cl-evidence-reference-note">
-
-              Required for M-Pesa payments.
-
-            </small>
-
-          </div>
-
-
-          <div class="form-group">
-
-            <label for="memberEvidenceText">
-              Payment Details
-            </label>
-
-            <textarea
-              id="memberEvidenceText"
-              name="memberEvidenceText"
-              rows="4"
-              maxlength="1000"
-              placeholder="Add any useful payment details"
-              required
-            ></textarea>
-
-          </div>
-
-
-          <div class="form-actions">
-
-            <button
-              id="submitMemberPaymentEvidence"
-              type="submit"
-              class="button button-primary cl-evidence-submit"
-            >
-              Submit Payment Evidence
-            </button>
-
-          </div>
-
-        </form>
-
-
-        <div
-          class="card-header"
-          style="margin-top:24px;"
-        >
-
-          <div>
-
-            <h2>
-              My Payment Evidence
-            </h2>
-
-            <p class="muted">
-              Your submitted payment evidence and verification status.
-            </p>
-
-          </div>
-
-        </div>
-
-
-        <div class="table-wrapper">
-
-          <table>
-
-            <thead>
-
-              <tr>
-
-                <th>
-                  Date
-                </th>
-
-                <th>
-                  Amount
-                </th>
-
-                <th>
-                  Method
-                </th>
-
-                <th>
-                  Reference
-                </th>
-
-                <th>
-                  Submitted
-                </th>
-
-                <th>
-                  Status
-                </th>
-
-                <th>
-                  Details
-                </th>
-
-              </tr>
-
-            </thead>
-
-
-            <tbody id="memberPaymentEvidenceRows">
-
-              <tr>
-
-                <td colspan="7">
-                  Loading payment evidence...
-                </td>
-
-              </tr>
-
-            </tbody>
-
-          </table>
-
-        </div>
-
-      </section>
-
-
-      <!-- =================================================
-           VERIFIER PAYMENT EVIDENCE
-           AUTHORISED VERIFIER SURFACE
-      ================================================== -->
-
-      <section
-        id="verifierPaymentEvidenceCard"
-        class="card"
-        hidden
-      >
-
-        <div class="card-header">
-
-          <div>
-
-            <h2>
-              Payment Evidence Review
-            </h2>
-
-            <p class="muted">
-              Review pending member payment evidence before
-              it enters canonical accounting.
-            </p>
-
-          </div>
-
-        </div>
-
-
-        <p class="cl-verifier-intro">
-
-          Pending payment evidence is shown only for your
-          current group. Verification is processed through
-          the canonical database verification workflow.
-
-        </p>
-
-
-        <div
-          id="verifierPaymentEvidenceMessage"
-          class="cl-evidence-message"
-          hidden
-          aria-live="polite"
-        ></div>
-
-
-        <div class="table-wrapper">
-
-          <table>
-
-            <thead>
-
-              <tr>
-
-                <th>
-                  Member
-                </th>
-
-                <th>
-                  Amount
-                </th>
-
-                <th>
-                  Payment Date
-                </th>
-
-                <th>
-                  Method
-                </th>
-
-                <th>
-                  Reference
-                </th>
-
-                <th>
-                  Submitted
-                </th>
-
-                <th>
-                  Action
-                </th>
-
-              </tr>
-
-            </thead>
-
-
-            <tbody id="verifierPaymentEvidenceRows">
-
-              <tr>
-
-                <td colspan="7">
-                  Loading pending payment evidence...
-                </td>
-
-              </tr>
-
-            </tbody>
-
-          </table>
-
-        </div>
-
-
-        <div
-          id="verifierPaymentEvidenceDetail"
-          class="cl-verifier-detail"
-          hidden
-        ></div>
-
-      </section>
-
-
-      <!-- =================================================
-           RECORD CONTRIBUTION
-           EXISTING AUTHORISED CONTRIBUTION PATH
-      ================================================== -->
-
-      <section
-        id="recordContributionCard"
-        class="card"
-      >
-
-        <div class="card-header">
-
-          <div>
-
-            <h2>
-              Record Contribution
-            </h2>
-
-            <p class="muted">
-              Record a contribution for a group member.
-            </p>
-
-          </div>
-
-        </div>
-
-
-        <form
-          id="contributionForm"
-          novalidate
-        >
-
-
-          <div class="form-group">
-
-            <label for="member">
-              Member
-            </label>
-
-            <select
-              id="member"
-              name="member"
-              required
-            >
-
-              <option value="">
-                Select member
-              </option>
-
-            </select>
-
-          </div>
-
-
-          <div class="form-group">
-
-            <label for="amount">
-              Amount
-            </label>
-
-            <input
-              id="amount"
-              name="amount"
-              type="number"
-              min="0.01"
-              step="0.01"
-              placeholder="200"
-              required
-            >
-
-          </div>
-
-
-          <div class="form-group">
-
-            <label for="contributionDate">
-              Contribution Date
-            </label>
-
-            <input
-              id="contributionDate"
-              name="contributionDate"
-              type="date"
-              required
-            >
-
-          </div>
-
-
-          <div class="form-group">
-
-            <label for="contributionType">
-              Contribution Type
-            </label>
-
-            <select
-              id="contributionType"
-              name="contributionType"
-              required
-            >
-
-              <option value="monthly">
-                Monthly Contribution
-              </option>
-
-              <option value="welfare">
-                Welfare
-              </option>
-
-              <option value="emergency">
-                Emergency
-              </option>
-
-              <option value="fundraising">
-                Fundraising
-              </option>
-
-              <option value="project">
-                Project
-              </option>
-
-              <option value="event">
-                Event
-              </option>
-
-              <option value="other">
-                Other
-              </option>
-
-            </select>
-
-          </div>
-
-
-          <div
-            id="otherContributionTypeWrap"
-            class="form-group cl-other-type-wrap"
-            hidden
-          >
-
-            <label
-              for="otherContributionType"
-            >
-              Other Contribution Name
-            </label>
-
-            <input
-              id="otherContributionType"
-              name="otherContributionType"
-              type="text"
-              maxlength="120"
-              autocomplete="off"
-              placeholder="e.g. Birthday contribution"
-            >
-
-            <small class="muted">
-              Enter the name of this contribution.
-            </small>
-
-          </div>
-
-
-          <div class="form-group">
-
-            <label for="paymentMethod">
-              Payment Method
-            </label>
-
-            <select
-              id="paymentMethod"
-              name="paymentMethod"
-              required
-            >
-
-              <option value="M-Pesa">
-                M-Pesa
-              </option>
-
-              <option value="Cash">
-                Cash
-              </option>
-
-              <option value="Bank transfer">
-                Bank transfer
-              </option>
-
-            </select>
-
-          </div>
-
-
-          <div
-            id="mpesaReferenceWrap"
-            class="form-group"
-            hidden
-          >
-
-            <label for="mpesaReference">
-              M-Pesa Reference
-            </label>
-
-            <input
-              id="mpesaReference"
-              name="mpesaReference"
-              type="text"
-              maxlength="100"
-              autocomplete="off"
-              placeholder="e.g. QWE123XYZ"
-            >
-
-            <small class="muted">
-              Required for M-Pesa payments.
-            </small>
-
-          </div>
-
+        <div class="form-group">
+
+          <label for="memberEvidenceAmount">
+            Amount
+          </label>
 
           <input
-            id="contributionIdempotencyKey"
-            name="contributionIdempotencyKey"
-            type="hidden"
-            value=""
-            autocomplete="off"
+            id="memberEvidenceAmount"
+            name="memberEvidenceAmount"
+            type="number"
+            min="0.01"
+            step="0.01"
+            placeholder="200"
+            required
           >
 
-
-          <div class="form-group">
-
-            <label for="goal">
-              Contribution Goal
-            </label>
-
-            <select
-              id="goal"
-              name="goal"
-            >
-
-              <option value="">
-                General contribution
-              </option>
-
-            </select>
-
-          </div>
+        </div>
 
 
-          <div class="form-group">
+        <div class="form-group">
 
-            <label for="notes">
-              Notes
-            </label>
+          <label for="memberEvidenceDate">
+            Payment Date
+          </label>
 
-            <textarea
-              id="notes"
-              name="notes"
-              rows="3"
-              maxlength="500"
-              placeholder="Optional notes about this contribution"
-            ></textarea>
+          <input
+            id="memberEvidenceDate"
+            name="memberEvidenceDate"
+            type="date"
+            required
+          >
 
-          </div>
-
-
-          <div class="form-actions">
-
-            <button
-              id="saveContribution"
-              type="submit"
-              class="button button-primary"
-            >
-              Record Contribution
-            </button>
-
-          </div>
-
-        </form>
-
-      </section>
+        </div>
 
 
-      <section class="card">
+        <div class="form-group">
 
-        <h2>
-          Monthly Contribution
-        </h2>
+          <label for="memberEvidenceMethod">
+            Payment Method
+          </label>
 
-        <p class="muted">
+          <select
+            id="memberEvidenceMethod"
+            name="memberEvidenceMethod"
+            required
+          >
 
-          Expected monthly contribution:
+            <option value="M-Pesa">
+              M-Pesa
+            </option>
 
-          <strong id="monthlyExpected">
-            KSh 0
-          </strong>
+            <option value="Cash">
+              Cash
+            </option>
 
-        </p>
+            <option value="Bank transfer">
+              Bank transfer
+            </option>
 
-      </section>
-
-
-      <section class="card">
-
-        <div class="card-header">
-
-          <div>
-
-            <h2>
-              Monthly Contribution Status
-            </h2>
-
-            <p class="muted">
-
-              Canonical monthly accounting for the
-              selected accounting month.
-
-            </p>
-
-          </div>
+          </select>
 
         </div>
 
 
         <div
-          class="cl-accounting-month-control"
+          id="memberEvidenceMpesaWrap"
+          class="form-group"
         >
 
-          <div>
+          <label for="memberEvidenceMpesaReference">
+            M-Pesa Reference
+          </label>
 
-            <label
-              for="accountingMonth"
-            >
-              Accounting Month
-            </label>
-
-            <select
-              id="accountingMonth"
-              aria-label="Accounting Month"
-            >
-
-              <option value="">
-                Loading months...
-              </option>
-
-            </select>
-
-          </div>
-
-
-          <div
-            class="cl-accounting-month-viewing"
+          <input
+            id="memberEvidenceMpesaReference"
+            name="memberEvidenceMpesaReference"
+            type="text"
+            maxlength="100"
+            autocomplete="off"
+            placeholder="e.g. QWE123XYZ"
           >
 
-            Viewing:
-
-            <strong
-              id="selectedAccountingMonthLabel"
-            >
-              September 2026
-            </strong>
-
-          </div>
+          <small class="cl-evidence-reference-note">
+            Required for M-Pesa payments.
+          </small>
 
         </div>
 
 
-        <div class="table-wrapper">
+        <div class="form-group">
 
-          <table>
+          <label for="memberEvidenceText">
+            Payment Details
+          </label>
 
-            <thead>
-
-              <tr>
-
-                <th>
-                  Member
-                </th>
-
-                <th>
-                  Current Due
-                </th>
-
-                <th>
-                  Previous Arrears
-                </th>
-
-                <th>
-                  Current Paid
-                </th>
-
-                <th>
-                  Carry Forward
-                </th>
-
-                <th>
-                  Outstanding
-                </th>
-
-                <th>
-                  Status
-                </th>
-
-              </tr>
-
-            </thead>
-
-
-            <tbody id="memberStatusRows">
-
-              <tr>
-
-                <td colspan="7">
-                  Loading...
-                </td>
-
-              </tr>
-
-            </tbody>
-
-          </table>
-
-        </div>
-
-      </section>
-
-
-      <section class="card">
-
-        <div class="card-header">
-
-          <div>
-
-            <h2>
-              Contribution Goals
-            </h2>
-
-            <p class="muted">
-
-              Track progress toward active group goals.
-
-            </p>
-
-          </div>
+          <textarea
+            id="memberEvidenceText"
+            name="memberEvidenceText"
+            rows="4"
+            maxlength="1000"
+            placeholder="Add any useful payment details"
+            required
+          ></textarea>
 
         </div>
 
 
-        <div id="goalProgressContainer">
+        <div class="form-actions">
+
+          <button
+            id="submitMemberPaymentEvidence"
+            type="submit"
+            class="button button-primary cl-evidence-submit"
+          >
+            Submit Payment Evidence
+          </button>
+
+        </div>
+
+      </form>
+
+
+      <div
+        class="card-header"
+        style="margin-top:20px;"
+      >
+
+        <div>
+
+          <h2>
+            My Payment Evidence
+          </h2>
 
           <p class="muted">
-            Loading contribution goals...
+            Submitted payment evidence and verification status.
           </p>
 
         </div>
 
-      </section>
+      </div>
 
 
-      <section class="card">
+      <div class="table-wrapper">
 
-        <div class="card-header">
+        <table>
 
-          <div>
+          <thead>
 
-            <h2>
-              Contribution History
-            </h2>
+            <tr>
+              <th>Date</th>
+              <th>Amount</th>
+              <th>Method</th>
+              <th>Reference</th>
+              <th>Submitted</th>
+              <th>Status</th>
+              <th>Details</th>
+            </tr>
 
-            <p class="muted">
+          </thead>
 
-              Recent contribution records for this group.
+          <tbody id="memberPaymentEvidenceRows">
 
-            </p>
+            <tr>
 
-          </div>
+              <td colspan="7">
+                Loading payment evidence...
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         VERIFIER PAYMENT EVIDENCE
+    ==================================================== -->
+
+    <section
+      id="verifierPaymentEvidenceCard"
+      class="card"
+      hidden
+    >
+
+      <div class="card-header">
+
+        <div>
+
+          <h2>
+            Payment Evidence Review
+          </h2>
+
+          <p class="muted">
+            Review pending member payment evidence before
+            it enters canonical accounting.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <p class="cl-verifier-intro">
+        Pending payment evidence is shown only for your
+        current group. Verification uses the authorised
+        canonical database workflow.
+      </p>
+
+
+      <div
+        id="verifierPaymentEvidenceMessage"
+        class="cl-evidence-message"
+        hidden
+        aria-live="polite"
+      ></div>
+
+
+      <div class="table-wrapper">
+
+        <table>
+
+          <thead>
+
+            <tr>
+              <th>Member</th>
+              <th>Amount</th>
+              <th>Payment Date</th>
+              <th>Method</th>
+              <th>Reference</th>
+              <th>Submitted</th>
+              <th>Action</th>
+            </tr>
+
+          </thead>
+
+          <tbody id="verifierPaymentEvidenceRows">
+
+            <tr>
+
+              <td colspan="7">
+                Loading pending payment evidence...
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+
+      <div
+        id="verifierPaymentEvidenceDetail"
+        class="cl-verifier-detail"
+        hidden
+      ></div>
+
+    </section>
+
+
+    <!-- ===================================================
+         RECORD CONTRIBUTION
+    ==================================================== -->
+
+    <section
+      id="recordContributionCard"
+      class="card"
+    >
+
+      <div class="card-header">
+
+        <div>
+
+          <h2>
+            Record Contribution
+          </h2>
+
+          <p class="muted">
+            Record a contribution for a group member.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <form
+        id="contributionForm"
+        novalidate
+      >
+
+        <div class="form-group">
+
+          <label for="member">
+            Member
+          </label>
+
+          <select
+            id="member"
+            name="member"
+            required
+          >
+
+            <option value="">
+              Select member
+            </option>
+
+          </select>
 
         </div>
 
 
-        <div class="table-wrapper">
+        <div class="form-group">
 
-          <table>
+          <label for="amount">
+            Amount
+          </label>
 
-            <thead>
-
-              <tr>
-
-                <th>
-                  Date
-                </th>
-
-                <th>
-                  Member
-                </th>
-
-                <th>
-                  Amount
-                </th>
-
-                <th>
-                  Type
-                </th>
-
-                <th>
-                  Payment Method
-                </th>
-
-                <th>
-                  Goal
-                </th>
-
-                <th>
-                  Reference
-                </th>
-
-                <th>
-                  Notes
-                </th>
-
-              </tr>
-
-            </thead>
-
-
-            <tbody id="contributionRows">
-
-              <tr>
-
-                <td colspan="8">
-                  Loading contributions...
-                </td>
-
-              </tr>
-
-            </tbody>
-
-          </table>
+          <input
+            id="amount"
+            name="amount"
+            type="number"
+            min="0.01"
+            step="0.01"
+            placeholder="200"
+            required
+          >
 
         </div>
 
-      </section>
+
+        <div class="form-group">
+
+          <label for="contributionDate">
+            Contribution Date
+          </label>
+
+          <input
+            id="contributionDate"
+            name="contributionDate"
+            type="date"
+            required
+          >
+
+        </div>
 
 
-      <section class="card">
+        <div class="form-group">
+
+          <label for="contributionType">
+            Contribution Type
+          </label>
+
+          <select
+            id="contributionType"
+            name="contributionType"
+            required
+          >
+
+            <option value="monthly">
+              Monthly Contribution
+            </option>
+
+            <option value="welfare">
+              Welfare
+            </option>
+
+            <option value="emergency">
+              Emergency
+            </option>
+
+            <option value="fundraising">
+              Fundraising
+            </option>
+
+            <option value="project">
+              Project
+            </option>
+
+            <option value="event">
+              Event
+            </option>
+
+            <option value="other">
+              Other
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div
+          id="otherContributionTypeWrap"
+          class="form-group cl-other-type-wrap"
+          hidden
+        >
+
+          <label for="otherContributionType">
+            Other Contribution Name
+          </label>
+
+          <input
+            id="otherContributionType"
+            name="otherContributionType"
+            type="text"
+            maxlength="120"
+            autocomplete="off"
+            placeholder="e.g. Birthday contribution"
+          >
+
+          <small class="muted">
+            Enter the name of this contribution.
+          </small>
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label for="paymentMethod">
+            Payment Method
+          </label>
+
+          <select
+            id="paymentMethod"
+            name="paymentMethod"
+            required
+          >
+
+            <option value="M-Pesa">
+              M-Pesa
+            </option>
+
+            <option value="Cash">
+              Cash
+            </option>
+
+            <option value="Bank transfer">
+              Bank transfer
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div
+          id="mpesaReferenceWrap"
+          class="form-group"
+          hidden
+        >
+
+          <label for="mpesaReference">
+            M-Pesa Reference
+          </label>
+
+          <input
+            id="mpesaReference"
+            name="mpesaReference"
+            type="text"
+            maxlength="100"
+            autocomplete="off"
+            placeholder="e.g. QWE123XYZ"
+          >
+
+          <small class="muted">
+            Required for M-Pesa payments.
+          </small>
+
+        </div>
+
+
+        <input
+          id="contributionIdempotencyKey"
+          name="contributionIdempotencyKey"
+          type="hidden"
+          value=""
+          autocomplete="off"
+        >
+
+
+        <div class="form-group">
+
+          <label for="goal">
+            Contribution Goal
+          </label>
+
+          <select
+            id="goal"
+            name="goal"
+          >
+
+            <option value="">
+              General contribution
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label for="notes">
+            Notes
+          </label>
+
+          <textarea
+            id="notes"
+            name="notes"
+            rows="3"
+            maxlength="500"
+            placeholder="Optional notes about this contribution"
+          ></textarea>
+
+        </div>
+
+
+        <div class="form-actions">
+
+          <button
+            id="saveContribution"
+            type="submit"
+            class="button button-primary"
+          >
+            Record Contribution
+          </button>
+
+        </div>
+
+      </form>
+
+    </section>
+
+
+    <!-- ===================================================
+         MONTHLY EXPECTED
+    ==================================================== -->
+
+    <section class="card">
+
+      <div class="card-header">
+
+        <div>
+
+          <h2>
+            Monthly Contribution
+          </h2>
+
+          <p class="muted">
+            Current expected monthly contribution.
+          </p>
+
+        </div>
+
+      </div>
+
+      <p class="muted">
+
+        Expected monthly contribution:
+
+        <strong id="monthlyExpected">
+          KSh 0
+        </strong>
+
+      </p>
+
+    </section>
+
+
+    <!-- ===================================================
+         MONTHLY STATUS
+    ==================================================== -->
+
+    <section class="card">
+
+      <div class="card-header">
+
+        <div>
+
+          <h2>
+            Monthly Contribution Status
+          </h2>
+
+          <p class="muted">
+            Canonical monthly accounting for the selected
+            accounting month.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div class="cl-accounting-month-control">
+
+        <div>
+
+          <label for="accountingMonth">
+            Accounting Month
+          </label>
+
+          <select
+            id="accountingMonth"
+            aria-label="Accounting Month"
+          >
+
+            <option value="">
+              Loading months...
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="cl-accounting-month-viewing">
+
+          Viewing:
+
+          <strong id="selectedAccountingMonthLabel">
+            September 2026
+          </strong>
+
+        </div>
+
+      </div>
+
+
+      <div class="table-wrapper">
+
+        <table>
+
+          <thead>
+
+            <tr>
+              <th>Member</th>
+              <th>Current Due</th>
+              <th>Previous Arrears</th>
+              <th>Current Paid</th>
+              <th>Carry Forward</th>
+              <th>Outstanding</th>
+              <th>Status</th>
+            </tr>
+
+          </thead>
+
+          <tbody id="memberStatusRows">
+
+            <tr>
+
+              <td colspan="7">
+                Loading...
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         CONTRIBUTION GOALS
+    ==================================================== -->
+
+    <section class="card">
+
+      <div class="card-header">
+
+        <div>
+
+          <h2>
+            Contribution Goals
+          </h2>
+
+          <p class="muted">
+            Track progress toward active group goals.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div id="goalProgressContainer">
 
         <p class="muted">
-
-          All contribution records are scoped to the
-          currently authenticated group.
-
+          Loading contribution goals...
         </p>
 
-      </section>
+      </div>
+
+    </section>
 
 
-    </main>
+    <!-- ===================================================
+         CONTRIBUTION HISTORY
+    ==================================================== -->
 
-  </div>
+    <section class="card">
 
+      <div class="card-header">
+
+        <div>
+
+          <h2>
+            Contribution History
+          </h2>
+
+          <p class="muted">
+            Recent contribution records for this group.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div class="table-wrapper">
+
+        <table>
+
+          <thead>
+
+            <tr>
+              <th>Date</th>
+              <th>Member</th>
+              <th>Amount</th>
+              <th>Type</th>
+              <th>Payment Method</th>
+              <th>Goal</th>
+              <th>Reference</th>
+              <th>Notes</th>
+            </tr>
+
+          </thead>
+
+          <tbody id="contributionRows">
+
+            <tr>
+
+              <td colspan="8">
+                Loading contributions...
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         SCOPE NOTE
+    ==================================================== -->
+
+    <section class="card">
+
+      <p class="muted">
+        All contribution records are scoped to the
+        currently authenticated group.
+      </p>
+
+    </section>
+
+
+  </main>
+
+
+  <!-- =====================================================
+       ADMIN PORTAL BOOT
+  ====================================================== -->
 
   <script type="module">
 
