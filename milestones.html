@@ -60,168 +60,649 @@
       margin: 0 auto;
     }
 
-    .context-card {
+    /* =====================================================
+       HERO
+    ===================================================== */
+
+    .milestones-hero {
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 18px;
+      padding: 28px;
+      border: 1px solid #dfe5e1;
+      border-radius: 22px;
+      background:
+        linear-gradient(
+          135deg,
+          #f0fdf7 0%,
+          #ffffff 58%,
+          #f8fafc 100%
+        );
+    }
+
+    .milestones-hero::after {
+      content: "";
+      position: absolute;
+      right: -55px;
+      top: -70px;
+      width: 190px;
+      height: 190px;
+      border-radius: 50%;
+      background: rgba(16, 185, 129, 0.08);
+      pointer-events: none;
+    }
+
+    .milestones-eyebrow {
+      position: relative;
+      z-index: 1;
+      margin-bottom: 7px;
+      color: #047857;
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .milestones-hero h1 {
+      position: relative;
+      z-index: 1;
+      margin: 0;
+      color: #101828;
+      font-size: clamp(26px, 4vw, 36px);
+      font-weight: 850;
+      line-height: 1.1;
+    }
+
+    .milestones-hero p {
+      position: relative;
+      z-index: 1;
+      max-width: 720px;
+      margin: 10px 0 0;
+      color: #667085;
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    /* =====================================================
+       CONTEXT
+    ===================================================== */
+
+    .milestones-context {
       display: grid;
       grid-template-columns:
         repeat(2, minmax(0, 1fr));
-      gap: 16px;
+      gap: 12px;
+      margin-bottom: 16px;
     }
 
-    .context-item {
+    .milestones-context-item {
       min-width: 0;
+      padding: 15px 17px;
+      border: 1px solid #e4e7ec;
+      border-radius: 15px;
+      background: #ffffff;
     }
 
-    .context-item-value {
+    .milestones-context-label {
+      margin-bottom: 5px;
+      color: #667085;
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .milestones-context-value {
       min-width: 0;
       overflow: hidden;
+      color: #101828;
+      font-size: 14px;
+      font-weight: 800;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    .kpi-grid {
+    /* =====================================================
+       MESSAGE / ERROR
+    ===================================================== */
+
+    #message.message.show,
+    #error.message:not([hidden]) {
+      margin-bottom: 14px;
+    }
+
+    /* =====================================================
+       KPI
+    ===================================================== */
+
+    .milestones-kpi-grid {
       display: grid;
       grid-template-columns:
         repeat(4, minmax(0, 1fr));
-      gap: 16px;
+      gap: 14px;
+      margin-bottom: 18px;
     }
 
-    .form-grid {
+    .milestones-kpi {
+      position: relative;
+      min-width: 0;
+      padding: 18px;
+      overflow: hidden;
+      border: 1px solid #e4e7ec;
+      border-radius: 17px;
+      background: #ffffff;
+    }
+
+    .milestones-kpi::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 4px;
+      height: 100%;
+      background: #10b981;
+    }
+
+    .milestones-kpi-label {
+      color: #667085;
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: 0.055em;
+      text-transform: uppercase;
+    }
+
+    .milestones-kpi-value {
+      margin-top: 8px;
+      color: #101828;
+      font-size: 27px;
+      font-weight: 850;
+      line-height: 1.1;
+    }
+
+    .milestones-kpi-amount .milestones-kpi-value {
+      font-size: 20px;
+    }
+
+    /* =====================================================
+       SECTION
+    ===================================================== */
+
+    .milestones-section {
+      margin-bottom: 18px;
+      border: 1px solid #e4e7ec;
+      border-radius: 19px;
+      background: #ffffff;
+      overflow: hidden;
+    }
+
+    .milestones-section-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 19px 20px;
+      border-bottom: 1px solid #edf0f4;
+      background:
+        linear-gradient(
+          180deg,
+          #fafbfc 0%,
+          #ffffff 100%
+        );
+    }
+
+    .milestones-section-header h2 {
+      margin: 0;
+      color: #101828;
+      font-size: 18px;
+      font-weight: 850;
+      line-height: 1.3;
+    }
+
+    .milestones-section-header p {
+      margin: 5px 0 0;
+      color: #667085;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .milestones-section-body {
+      min-width: 0;
+      padding: 20px;
+    }
+
+    /* =====================================================
+       MANAGEMENT NOTE
+    ===================================================== */
+
+    #management-note {
+      margin-bottom: 15px;
+      padding: 11px 13px;
+      border: 1px solid #fed7aa;
+      border-radius: 11px;
+      background: #fff7ed;
+      color: #9a3412;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    /* =====================================================
+       FORM
+    ===================================================== */
+
+    .milestones-form-grid {
       display: grid;
       grid-template-columns:
         repeat(2, minmax(0, 1fr));
       gap: 16px;
     }
 
-    .field {
+    .milestones-field {
       min-width: 0;
     }
 
-    .field.full {
+    .milestones-field.full {
       grid-column: 1 / -1;
     }
 
-    .field input,
-    .field select,
-    .field textarea,
-    .toolbar input,
-    .toolbar select {
+    .milestones-field label {
+      display: block;
+      margin-bottom: 6px;
+      color: #344054;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .milestones-field input,
+    .milestones-field select,
+    .milestones-field textarea {
       width: 100%;
       max-width: 100%;
       min-width: 0;
       box-sizing: border-box;
+      border-radius: 11px;
     }
 
-    .table-wrap {
+    .milestones-field textarea {
+      min-height: 115px;
+      resize: vertical;
+    }
+
+    .milestones-help {
+      margin-top: 5px;
+      color: #667085;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .milestones-form-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 9px;
+      margin-top: 18px;
+    }
+
+    .milestones-form-actions button {
+      min-height: 42px;
+    }
+
+    /* =====================================================
+       FILTERS
+    ===================================================== */
+
+    .milestones-filter-bar {
+      display: grid;
+      grid-template-columns:
+        minmax(0, 1fr)
+        190px
+        auto;
+      gap: 10px;
+      align-items: end;
+      margin-bottom: 16px;
+    }
+
+    .milestones-filter-field {
+      min-width: 0;
+    }
+
+    .milestones-filter-field label {
+      display: block;
+      margin-bottom: 6px;
+      color: #667085;
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: 0.055em;
+      text-transform: uppercase;
+    }
+
+    .milestones-filter-field input,
+    .milestones-filter-field select {
       width: 100%;
-      max-width: 100%;
+      min-height: 42px;
+      box-sizing: border-box;
+      border-radius: 11px;
+    }
+
+    .milestones-refresh {
+      min-height: 42px;
+      white-space: nowrap;
+    }
+
+    /* =====================================================
+       REGISTER
+    ===================================================== */
+
+    .milestones-register {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid #e4e7ec;
+      border-radius: 15px;
+      overflow: hidden;
+    }
+
+    .milestones-table-wrap {
+      width: 100%;
       min-width: 0;
       overflow-x: auto;
-      overflow-y: hidden;
       -webkit-overflow-scrolling: touch;
     }
 
-    table {
-      min-width: 980px;
+    .milestones-table {
+      width: 100%;
+      min-width: 950px;
+      border-collapse: separate;
+      border-spacing: 0;
     }
 
-    .toolbar {
-      display: grid;
-      grid-template-columns:
-        minmax(220px, 1fr)
-        180px
-        auto;
-      gap: 10px;
-      min-width: 0;
+    .milestones-table th {
+      padding: 12px 14px;
+      border-bottom: 1px solid #e4e7ec;
+      background: #f8fafc;
+      color: #667085;
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: 0.055em;
+      text-align: left;
+      text-transform: uppercase;
+      white-space: nowrap;
     }
 
-    .actions {
+    .milestones-table td {
+      padding: 14px;
+      border-bottom: 1px solid #f1f3f5;
+      color: #344054;
+      font-size: 12px;
+      line-height: 1.45;
+      vertical-align: top;
+    }
+
+    .milestones-table tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .milestones-table tbody tr:hover {
+      background: #fcfdfd;
+    }
+
+    .milestone-title-cell strong {
+      display: block;
+      color: #101828;
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .milestone-plan-cell {
+      color: #475467;
+      font-weight: 650;
+    }
+
+    .milestone-date-cell {
+      color: #344054;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .milestone-description-cell {
+      max-width: 230px;
+      color: #667085;
+    }
+
+    .milestone-amount-cell {
+      color: #101828;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    /* =====================================================
+       CATEGORY
+    ===================================================== */
+
+    .milestone-category {
+      display: inline-flex;
+      align-items: center;
+      min-height: 25px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 850;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .milestone-category.general {
+      background: #f2f4f7;
+      color: #475467;
+    }
+
+    .milestone-category.investment,
+    .milestone-category.business {
+      background: #ecfdf3;
+      color: #027a48;
+    }
+
+    .milestone-category.property,
+    .milestone-category.infrastructure {
+      background: #eff8ff;
+      color: #175cd3;
+    }
+
+    .milestone-category.welfare {
+      background: #fdf2fa;
+      color: #c11574;
+    }
+
+    .milestone-category.education {
+      background: #f4f3ff;
+      color: #5925dc;
+    }
+
+    .milestone-category.membership {
+      background: #fff6ed;
+      color: #b54708;
+    }
+
+    .milestone-category.fundraising {
+      background: #f0fdf9;
+      color: #0f766e;
+    }
+
+    .milestone-category.other {
+      background: #f8fafc;
+      color: #475467;
+    }
+
+    /* =====================================================
+       ACTIONS
+    ===================================================== */
+
+    .milestone-actions {
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
+      min-width: 130px;
     }
 
+    .milestone-actions button {
+      min-height: 34px;
+      padding: 6px 9px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    /* =====================================================
+       EMPTY STATE
+    ===================================================== */
+
+    .milestones-empty {
+      padding: 46px 20px !important;
+      text-align: center;
+    }
+
+    .milestones-empty-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 12px;
+      border-radius: 14px;
+      background: #ecfdf5;
+      color: #047857;
+      font-size: 21px;
+      font-weight: 850;
+    }
+
+    .milestones-empty-title {
+      margin: 0;
+      color: #101828;
+      font-size: 14px;
+      font-weight: 850;
+    }
+
+    .milestones-empty-text {
+      max-width: 420px;
+      margin: 6px auto 0;
+      color: #667085;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    /* =====================================================
+       MOBILE
+    ===================================================== */
+
     @media (max-width: 900px) {
-      .kpi-grid {
+      .milestones-kpi-grid {
         grid-template-columns:
           repeat(2, minmax(0, 1fr));
+      }
+
+      .milestones-filter-bar {
+        grid-template-columns:
+          minmax(0, 1fr)
+          minmax(150px, 190px);
+      }
+
+      .milestones-refresh {
+        grid-column: 1 / -1;
+        width: 100%;
       }
     }
 
     @media (max-width: 760px) {
-      html,
-      body {
-        max-width: 100%;
-        overflow-x: hidden;
-      }
-
-      .layout,
-      .main {
-        width: 100%;
-        max-width: 100%;
-        min-width: 0;
-      }
-
       .main {
         padding:
           16px
           12px
           95px !important;
-        overflow-x: hidden;
       }
 
-      .page {
-        width: 100%;
-        max-width: 100%;
-        min-width: 0;
+      .milestones-hero {
+        padding: 21px 18px;
+        border-radius: 18px;
       }
 
-      .context-card,
-      .form-grid {
-        grid-template-columns:
-          minmax(0, 1fr);
+      .milestones-context {
+        grid-template-columns: 1fr;
       }
 
-      .kpi-grid {
-        grid-template-columns:
-          repeat(2, minmax(0, 1fr));
-        gap: 10px;
+      .milestones-form-grid {
+        grid-template-columns: 1fr;
       }
 
-      .section-header,
-      .section-body {
-        min-width: 0;
+      .milestones-field.full {
+        grid-column: auto;
       }
 
-      .toolbar {
-        grid-template-columns:
-          minmax(0, 1fr);
+      .milestones-filter-bar {
+        grid-template-columns: 1fr;
       }
 
-      .table-wrap {
-        width: 100%;
-        max-width: 100%;
-        min-width: 0;
+      .milestones-refresh {
+        grid-column: auto;
+      }
+
+      .milestones-section-body {
+        padding: 15px;
+      }
+
+      .milestones-section-header {
+        padding: 16px;
       }
     }
 
     @media (max-width: 480px) {
-      .kpi-grid {
-        grid-template-columns:
-          minmax(0, 1fr);
+      .milestones-kpi-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 9px;
       }
 
-      .form-actions {
+      .milestones-kpi {
+        padding: 14px;
+        border-radius: 14px;
+      }
+
+      .milestones-kpi-label {
+        font-size: 9px;
+      }
+
+      .milestones-kpi-value {
+        font-size: 21px;
+      }
+
+      .milestones-kpi-amount
+      .milestones-kpi-value {
+        font-size: 16px;
+      }
+
+      .milestones-form-actions {
         flex-direction: column;
         align-items: stretch;
       }
 
-      .form-actions button {
+      .milestones-form-actions button {
         width: 100%;
       }
 
       .main {
         padding-left: 10px !important;
         padding-right: 10px !important;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .milestones-kpi {
+        padding: 12px;
+      }
+
+      .milestones-kpi-value {
+        font-size: 19px;
+      }
+
+      .milestones-kpi-amount
+      .milestones-kpi-value {
+        font-size: 14px;
       }
     }
   </style>
@@ -247,11 +728,12 @@
       ></nav>
 
       <div class="topbar-actions">
+
         <span
           id="topbar-group-name"
           data-group-name
         >
-          Loading...
+          Loading group…
         </span>
 
         <button
@@ -260,6 +742,7 @@
         >
           Logout
         </button>
+
       </div>
 
     </div>
@@ -271,8 +754,11 @@
 
       <div class="page">
 
-        <section class="hero">
-          <div class="eyebrow">
+        <!-- HERO -->
+
+        <section class="milestones-hero">
+
+          <div class="milestones-eyebrow">
             Group Operations
           </div>
 
@@ -285,35 +771,47 @@
             linked plans, dates, and associated amounts in one
             group-scoped register.
           </p>
+
         </section>
 
-        <section class="context-card">
 
-          <div class="context-item">
-            <div class="context-item-label">
+        <!-- GROUP CONTEXT -->
+
+        <section class="milestones-context">
+
+          <div class="milestones-context-item">
+
+            <div class="milestones-context-label">
               Current Group
             </div>
 
             <div
               id="current-group-name"
-              class="context-item-value"
+              class="milestones-context-value"
               data-group-name
             >
-              Loading...
+              Loading group…
             </div>
+
           </div>
 
-          <div class="context-item">
-            <div class="context-item-label">
+
+          <div class="milestones-context-item">
+
+            <div class="milestones-context-label">
               Context Boundary
             </div>
 
-            <div class="context-item-value">
+            <div class="milestones-context-value">
               Authenticated member group
             </div>
+
           </div>
 
         </section>
+
+
+        <!-- STATUS -->
 
         <div
           id="message"
@@ -322,66 +820,94 @@
           aria-live="polite"
         ></div>
 
-        <section class="kpi-grid">
 
-          <div class="kpi-card">
-            <div class="kpi-label">
+        <div
+          id="error"
+          class="message error"
+          role="alert"
+          aria-live="assertive"
+          hidden
+        ></div>
+
+
+        <!-- KPI -->
+
+        <section class="milestones-kpi-grid">
+
+          <div class="milestones-kpi">
+
+            <div class="milestones-kpi-label">
               Total Milestones
             </div>
 
             <div
               id="total-milestones"
-              class="kpi-value"
+              class="milestones-kpi-value"
             >
               0
             </div>
+
           </div>
 
-          <div class="kpi-card">
-            <div class="kpi-label">
-              Upcoming Milestones
+
+          <div class="milestones-kpi">
+
+            <div class="milestones-kpi-label">
+              Upcoming
             </div>
 
             <div
               id="upcoming-milestones"
-              class="kpi-value"
+              class="milestones-kpi-value"
             >
               0
             </div>
+
           </div>
 
-          <div class="kpi-card">
-            <div class="kpi-label">
+
+          <div class="milestones-kpi">
+
+            <div class="milestones-kpi-label">
               Linked to Plans
             </div>
 
             <div
               id="linked-milestones"
-              class="kpi-value"
+              class="milestones-kpi-value"
             >
               0
             </div>
+
           </div>
 
-          <div class="kpi-card">
-            <div class="kpi-label">
+
+          <div class="milestones-kpi milestones-kpi-amount">
+
+            <div class="milestones-kpi-label">
               Total Amount
             </div>
 
             <div
               id="milestone-amount"
-              class="kpi-value"
+              class="milestones-kpi-value"
             >
               KSh 0.00
             </div>
+
           </div>
 
         </section>
 
-        <section class="section">
 
-          <div class="section-header">
+        <!-- CREATE / EDIT -->
+
+        <section class="milestones-section">
+
+          <div class="milestones-section-header">
+
             <div>
+
               <h2 id="milestone-form-heading">
                 Create Milestone
               </h2>
@@ -389,27 +915,32 @@
               <p id="milestone-form-description">
                 Add a new milestone to the current authenticated group.
               </p>
+
             </div>
+
           </div>
 
-          <div class="section-body">
+
+          <div class="milestones-section-body">
 
             <div
               id="management-note"
-              class="management-note"
+              class="milestone-management-note"
             >
               Milestone creation is restricted to authorised
               group management roles.
             </div>
+
 
             <form
               id="milestone-form"
               novalidate
             >
 
-              <div class="form-grid">
+              <div class="milestones-form-grid">
 
-                <div class="field full">
+                <div class="milestones-field full">
+
                   <label for="milestone-title">
                     Milestone Title
                   </label>
@@ -423,9 +954,12 @@
                     placeholder="e.g. Purchase group plot"
                     required
                   >
+
                 </div>
 
-                <div class="field">
+
+                <div class="milestones-field">
+
                   <label for="milestone-category">
                     Category
                   </label>
@@ -434,40 +968,54 @@
                     id="milestone-category"
                     name="category"
                   >
+
                     <option value="general">
                       General
                     </option>
+
                     <option value="investment">
                       Investment
                     </option>
+
                     <option value="property">
                       Property
                     </option>
+
                     <option value="welfare">
                       Welfare
                     </option>
+
                     <option value="business">
                       Business
                     </option>
+
                     <option value="education">
                       Education
                     </option>
+
                     <option value="membership">
                       Membership
                     </option>
+
                     <option value="fundraising">
                       Fundraising
                     </option>
+
                     <option value="infrastructure">
                       Infrastructure
                     </option>
+
                     <option value="other">
                       Other
                     </option>
+
                   </select>
+
                 </div>
 
-                <div class="field">
+
+                <div class="milestones-field">
+
                   <label for="milestone-plan">
                     Linked Plan
                   </label>
@@ -476,13 +1024,18 @@
                     id="milestone-plan"
                     name="plan_id"
                   >
+
                     <option value="">
                       No linked plan
                     </option>
+
                   </select>
+
                 </div>
 
-                <div class="field">
+
+                <div class="milestones-field">
+
                   <label for="milestone-date">
                     Milestone Date
                   </label>
@@ -493,9 +1046,12 @@
                     type="date"
                     required
                   >
+
                 </div>
 
-                <div class="field">
+
+                <div class="milestones-field">
+
                   <label for="milestone-amount">
                     Amount
                   </label>
@@ -509,9 +1065,12 @@
                     inputmode="decimal"
                     placeholder="0.00"
                   >
+
                 </div>
 
-                <div class="field">
+
+                <div class="milestones-field">
+
                   <label for="milestone-document-id">
                     Document ID
                   </label>
@@ -525,12 +1084,15 @@
                     placeholder="Optional document UUID"
                   >
 
-                  <div class="help-text">
+                  <div class="milestones-help">
                     Optional UUID of an associated document.
                   </div>
+
                 </div>
 
-                <div class="field full">
+
+                <div class="milestones-field full">
+
                   <label for="milestone-description">
                     Description
                   </label>
@@ -541,11 +1103,13 @@
                     maxlength="2000"
                     placeholder="Describe the milestone..."
                   ></textarea>
+
                 </div>
 
               </div>
 
-              <div class="form-actions">
+
+              <div class="milestones-form-actions">
 
                 <button
                   id="create-milestone-btn"
@@ -554,6 +1118,7 @@
                 >
                   Create Milestone
                 </button>
+
 
                 <button
                   id="clear-milestone-btn"
@@ -571,11 +1136,15 @@
 
         </section>
 
-        <section class="section">
 
-          <div class="section-header">
+        <!-- REGISTER -->
+
+        <section class="milestones-section">
+
+          <div class="milestones-section-header">
 
             <div>
+
               <h2>
                 Milestone Register
               </h2>
@@ -583,113 +1152,162 @@
               <p>
                 Search, filter and manage milestones for this group.
               </p>
+
             </div>
 
           </div>
 
-          <div class="section-body">
 
-            <div class="toolbar">
+          <div class="milestones-section-body">
 
-              <input
-                id="milestone-search"
-                type="search"
-                placeholder="Search milestones..."
-                aria-label="Search milestones"
-              >
+            <div class="milestones-filter-bar">
 
-              <select
-                id="milestone-category-filter"
-                aria-label="Filter milestones by category"
-              >
-                <option value="">
-                  All categories
-                </option>
+              <div class="milestones-filter-field">
 
-                <option value="general">
-                  General
-                </option>
+                <label for="milestone-search">
+                  Search
+                </label>
 
-                <option value="investment">
-                  Investment
-                </option>
+                <input
+                  id="milestone-search"
+                  type="search"
+                  placeholder="Search milestones..."
+                  aria-label="Search milestones"
+                >
 
-                <option value="property">
-                  Property
-                </option>
+              </div>
 
-                <option value="welfare">
-                  Welfare
-                </option>
 
-                <option value="business">
-                  Business
-                </option>
+              <div class="milestones-filter-field">
 
-                <option value="education">
-                  Education
-                </option>
+                <label for="milestone-category-filter">
+                  Category
+                </label>
 
-                <option value="membership">
-                  Membership
-                </option>
+                <select
+                  id="milestone-category-filter"
+                  aria-label="Filter milestones by category"
+                >
 
-                <option value="fundraising">
-                  Fundraising
-                </option>
+                  <option value="">
+                    All categories
+                  </option>
 
-                <option value="infrastructure">
-                  Infrastructure
-                </option>
+                  <option value="general">
+                    General
+                  </option>
 
-                <option value="other">
-                  Other
-                </option>
-              </select>
+                  <option value="investment">
+                    Investment
+                  </option>
+
+                  <option value="property">
+                    Property
+                  </option>
+
+                  <option value="welfare">
+                    Welfare
+                  </option>
+
+                  <option value="business">
+                    Business
+                  </option>
+
+                  <option value="education">
+                    Education
+                  </option>
+
+                  <option value="membership">
+                    Membership
+                  </option>
+
+                  <option value="fundraising">
+                    Fundraising
+                  </option>
+
+                  <option value="infrastructure">
+                    Infrastructure
+                  </option>
+
+                  <option value="other">
+                    Other
+                  </option>
+
+                </select>
+
+              </div>
+
 
               <button
                 id="refresh-milestones-btn"
                 type="button"
-                class="btn-secondary"
+                class="btn-secondary milestones-refresh"
               >
                 Refresh
               </button>
 
             </div>
 
-            <div class="table-wrap">
 
-              <table>
-                <thead>
-                  <tr>
-                    <th>Milestone</th>
-                    <th>Category</th>
-                    <th>Plan</th>
-                    <th>Date</th>
-                    <th>Amount</th>
-                    <th>Description</th>
-                    <th>Created</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
+            <div class="milestones-register">
 
-                <tbody id="milestones-body">
-                  <tr>
-                    <td
-                      colspan="8"
-                      class="empty-state"
-                    >
-                      Loading milestones...
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+              <div class="milestones-table-wrap">
+
+                <table class="milestones-table">
+
+                  <thead>
+
+                    <tr>
+                      <th>Milestone</th>
+                      <th>Category</th>
+                      <th>Plan</th>
+                      <th>Date</th>
+                      <th>Amount</th>
+                      <th>Description</th>
+                      <th>Created</th>
+                      <th>Actions</th>
+                    </tr>
+
+                  </thead>
+
+
+                  <tbody id="milestones-body">
+
+                    <tr>
+
+                      <td
+                        colspan="8"
+                        class="empty-state milestones-empty"
+                      >
+
+                        <div class="milestones-empty-icon">
+                          …
+                        </div>
+
+                        <p class="milestones-empty-title">
+                          Loading milestones
+                        </p>
+
+                        <p class="milestones-empty-text">
+                          Loading the milestone register for the current group.
+                        </p>
+
+                      </td>
+
+                    </tr>
+
+                  </tbody>
+
+                </table>
+
+              </div>
 
             </div>
 
           </div>
 
         </section>
+
 
         <footer>
           CHAMA LIVE · Milestones
@@ -701,12 +1319,46 @@
 
   </div>
 
+
   <script type="module">
+
     import {
       boot
     } from "./js/admin-layout.js";
 
-    boot();
+
+    boot().catch(
+      (error) => {
+
+        console.error(
+          "CHAMA LIVE: Admin portal boot failed",
+          error
+        );
+
+
+        const errorElement =
+          document.getElementById(
+            "error"
+          );
+
+
+        if (errorElement) {
+
+          errorElement.hidden =
+            false;
+
+          errorElement.textContent =
+            error?.message ||
+            "The Admin Portal could not finish loading.";
+
+          errorElement.className =
+            "message error show";
+
+        }
+
+      }
+    );
+
   </script>
 
 </body>
