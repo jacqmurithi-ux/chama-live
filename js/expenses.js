@@ -37,12 +37,12 @@ layout.js is the sole page bootloader for this page.
 import { supabase } from "./supabase.js";
 
 import {
-requireAuth,
-getMyMember
+  requireAuth,
+  getMyMember
 } from "./auth.js";
 
 console.log(
-"CHAMA LIVE: expenses.js loaded"
+  "CHAMA LIVE: expenses.js loaded"
 );
 
 /* =========================================================
@@ -50,93 +50,91 @@ ELEMENTS
 ========================================================= */
 
 const statusEl =
-document.getElementById("status");
+  document.getElementById("status");
 
 const errorEl =
-document.getElementById("error");
+  document.getElementById("error");
 
 const form =
-document.getElementById("expenseForm");
+  document.getElementById("expenseForm");
 
 const descriptionInput =
-document.getElementById("description");
+  document.getElementById("description");
 
 const categoryInput =
-document.getElementById("category");
+  document.getElementById("category");
 
 const otherDetailsBox =
-document.getElementById("otherDetailsBox");
+  document.getElementById("otherDetailsBox");
 
 const otherDetailsInput =
-document.getElementById("otherDetails");
+  document.getElementById("otherDetails");
 
 const amountInput =
-document.getElementById("amount");
+  document.getElementById("amount");
 
 const dateInput =
-document.getElementById("expenseDate");
+  document.getElementById("expenseDate");
 
 const receiptInput =
-document.getElementById("receiptUrl");
+  document.getElementById("receiptUrl");
 
 const saveButton =
-document.getElementById("saveExpense");
+  document.getElementById("saveExpense");
 
 const statusFilter =
-document.getElementById("statusFilter");
+  document.getElementById("statusFilter");
 
 const categoryFilter =
-document.getElementById("categoryFilter");
+  document.getElementById("categoryFilter");
 
 const expenseRows =
-document.getElementById("expenseRows");
+  document.getElementById("expenseRows");
 
 const approvedTotalEl =
-document.getElementById("approvedTotal");
+  document.getElementById("approvedTotal");
 
 const pendingTotalEl =
-document.getElementById("pendingTotal");
+  document.getElementById("pendingTotal");
 
 const rejectedTotalEl =
-document.getElementById("rejectedTotal");
+  document.getElementById("rejectedTotal");
 
 /* =========================================================
 STATE
 ========================================================= */
 
 let currentUser =
-null;
+  null;
 
 let currentMember =
-null;
+  null;
 
 let groupId =
-null;
+  null;
 
 let expenses =
-[];
+  [];
 
 let initialized =
-false;
+  false;
 
 /* =========================================================
 HELPERS
 ========================================================= */
 
 function money(value) {
-
-return new Intl.NumberFormat(
-"en-KE",
-{
-style: "currency",
-currency: "KES",
-minimumFractionDigits: 0,
-maximumFractionDigits: 2
-}
-).format(
-Number(value || 0)
-);
-
+  return new Intl.NumberFormat(
+    "en-KE",
+    {
+      style: "currency",
+      currency: "KES",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    }
+  ).format(
+    Number(value || 0)
+  );
 }
 
 /* =========================================================
@@ -144,67 +142,52 @@ DATE
 ========================================================= */
 
 function todayString() {
+  const now =
+    new Date();
 
-const now =
-new Date();
+  return [
+    now.getFullYear(),
 
-return [
-now.getFullYear(),
+    String(
+      now.getMonth() + 1
+    ).padStart(
+      2,
+      "0"
+    ),
 
-```
-String(
-  now.getMonth() + 1
-).padStart(
-  2,
-  "0"
-),
-
-String(
-  now.getDate()
-).padStart(
-  2,
-  "0"
-)
-```
-
-].join("-");
-
+    String(
+      now.getDate()
+    ).padStart(
+      2,
+      "0"
+    )
+  ].join("-");
 }
 
 function formatDate(value) {
+  if (!value) {
+    return "—";
+  }
 
-if (!value) {
+  const date =
+    new Date(value);
 
-```
-return "—";
-```
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return String(value);
+  }
 
-}
-
-const date =
-new Date(value);
-
-if (
-Number.isNaN(
-date.getTime()
-)
-) {
-
-```
-return String(value);
-```
-
-}
-
-return date.toLocaleDateString(
-"en-KE",
-{
-year: "numeric",
-month: "short",
-day: "numeric"
-}
-);
-
+  return date.toLocaleDateString(
+    "en-KE",
+    {
+      year: "numeric",
+      month: "short",
+      day: "numeric"
+    }
+  );
 }
 
 /* =========================================================
@@ -212,31 +195,29 @@ SECURITY
 ========================================================= */
 
 function escapeHtml(value) {
-
-return String(
-value ?? ""
-)
-.replaceAll(
-"&",
-"&"
-)
-.replaceAll(
-"<",
-"<"
-)
-.replaceAll(
-">",
-">"
-)
-.replaceAll(
-'"',
-"""
-)
-.replaceAll(
-"'",
-"'"
-);
-
+  return String(
+    value ?? ""
+  )
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
 }
 
 /* =========================================================
@@ -244,46 +225,34 @@ NORMALIZATION
 ========================================================= */
 
 function normalizeStatus(value) {
+  const status =
+    String(
+      value || "pending"
+    )
+      .trim()
+      .toLowerCase();
 
-const status =
-String(
-value || "pending"
-)
-.trim()
-.toLowerCase();
+  if (
+    status === "approved"
+  ) {
+    return "approved";
+  }
 
-if (
-status === "approved"
-) {
+  if (
+    status === "rejected"
+  ) {
+    return "rejected";
+  }
 
-```
-return "approved";
-```
-
-}
-
-if (
-status === "rejected"
-) {
-
-```
-return "rejected";
-```
-
-}
-
-return "pending";
-
+  return "pending";
 }
 
 function normalizeCategory(value) {
-
-return String(
-value || "other"
-)
-.trim()
-.toLowerCase();
-
+  return String(
+    value || "other"
+  )
+    .trim()
+    .toLowerCase();
 }
 
 /* =========================================================
@@ -291,65 +260,47 @@ MESSAGES
 ========================================================= */
 
 function showStatus(message) {
+  if (!statusEl) {
+    return;
+  }
 
-if (!statusEl) {
+  statusEl.textContent =
+    message || "";
 
-```
-return;
-```
-
-}
-
-statusEl.textContent =
-message || "";
-
-statusEl.hidden =
-!message;
-
+  statusEl.hidden =
+    !message;
 }
 
 function clearError() {
+  if (!errorEl) {
+    return;
+  }
 
-if (!errorEl) {
+  errorEl.textContent =
+    "";
 
-```
-return;
-```
-
-}
-
-errorEl.textContent =
-"";
-
-errorEl.hidden =
-true;
-
+  errorEl.hidden =
+    true;
 }
 
 function showPageError(error) {
+  console.error(
+    "CHAMA LIVE Expenses:",
+    error
+  );
 
-console.error(
-"CHAMA LIVE Expenses:",
-error
-);
+  const message =
+    error?.message ||
+    String(error) ||
+    "Unable to process expense.";
 
-const message =
-error?.message ||
-String(error) ||
-"Unable to process expense.";
+  if (errorEl) {
+    errorEl.textContent =
+      message;
 
-if (errorEl) {
-
-```
-errorEl.textContent =
-  message;
-
-errorEl.hidden =
-  false;
-```
-
-}
-
+    errorEl.hidden =
+      false;
+  }
 }
 
 /* =========================================================
@@ -357,19 +308,13 @@ DEFAULT DATE
 ========================================================= */
 
 function setDefaultDate() {
-
-if (
-dateInput &&
-!dateInput.value
-) {
-
-```
-dateInput.value =
-  todayString();
-```
-
-}
-
+  if (
+    dateInput &&
+    !dateInput.value
+  ) {
+    dateInput.value =
+      todayString();
+  }
 }
 
 /* =========================================================
@@ -377,61 +322,41 @@ OTHER CATEGORY
 ========================================================= */
 
 function updateOtherCategoryField() {
+  if (
+    !categoryInput ||
+    !otherDetailsBox
+  ) {
+    return;
+  }
 
-if (
-!categoryInput ||
-!otherDetailsBox
-) {
+  const isOther =
+    normalizeCategory(
+      categoryInput.value
+    ) === "other";
 
-```
-return;
-```
+  if (isOther) {
+    otherDetailsBox.classList.add(
+      "visible"
+    );
 
-}
+    if (otherDetailsInput) {
+      otherDetailsInput.required =
+        true;
+    }
+  }
+  else {
+    otherDetailsBox.classList.remove(
+      "visible"
+    );
 
-const isOther =
-normalizeCategory(
-categoryInput.value
-) === "other";
+    if (otherDetailsInput) {
+      otherDetailsInput.required =
+        false;
 
-if (isOther) {
-
-```
-otherDetailsBox.classList.add(
-  "visible"
-);
-
-
-if (otherDetailsInput) {
-
-  otherDetailsInput.required =
-    true;
-
-}
-```
-
-}
-else {
-
-```
-otherDetailsBox.classList.remove(
-  "visible"
-);
-
-
-if (otherDetailsInput) {
-
-  otherDetailsInput.required =
-    false;
-
-  otherDetailsInput.value =
-    "";
-
-}
-```
-
-}
-
+      otherDetailsInput.value =
+        "";
+    }
+  }
 }
 
 /* =========================================================
@@ -439,44 +364,39 @@ RECEIPT / REFERENCE
 ========================================================= */
 
 function renderReceipt(value) {
+  const reference =
+    String(
+      value || ""
+    ).trim();
 
-const reference =
-String(
-value || ""
-).trim();
+  if (!reference) {
+    return "—";
+  }
 
-if (!reference) {
+  const isUrl =
+    /^https?:\/\/[^\s]+$/i.test(
+      reference
+    );
 
-```
-return "—";
-```
+  if (!isUrl) {
+    return `
+      <span class="expense-reference">
+        ${escapeHtml(reference)}
+      </span>
+    `;
+  }
 
-}
-
-const isUrl =
-/^https?://[^\s]+$/i.test(
-reference
-);
-
-if (!isUrl) {
-
-```
-return `
-  <span class="expense-reference">
-    ${escapeHtml(reference)}
-  </span>
-`;
-```
-
-}
-
-return `     <span class="expense-reference">       <a
+  return `
+    <span class="expense-reference">
+      <a
         href="${escapeHtml(reference)}"
         target="_blank"
-        rel="noopener noreferrer"       >
-        View document       </a>     </span>
+        rel="noopener noreferrer"
+      >
+        View document
+      </a>
+    </span>
   `;
-
 }
 
 /* =========================================================
@@ -484,24 +404,20 @@ LOAD EXPENSES
 ========================================================= */
 
 async function loadExpenses() {
+  if (!groupId) {
+    throw new Error(
+      "No group is associated with this account."
+    );
+  }
 
-if (!groupId) {
-
-```
-throw new Error(
-  "No group is associated with this account."
-);
-```
-
-}
-
-const {
-data,
-error
-} =
-await supabase
-.from("expenses")
-.select(`         id,
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("expenses")
+      .select(`
+        id,
         group_id,
         description,
         category,
@@ -512,34 +428,29 @@ await supabase
         approval_status,
         created_at
       `)
-.eq(
-"group_id",
-groupId
-)
-.order(
-"date",
-{
-ascending: false
-}
-)
-.order(
-"created_at",
-{
-ascending: false
-}
-);
+      .eq(
+        "group_id",
+        groupId
+      )
+      .order(
+        "date",
+        {
+          ascending: false
+        }
+      )
+      .order(
+        "created_at",
+        {
+          ascending: false
+        }
+      );
 
-if (error) {
+  if (error) {
+    throw error;
+  }
 
-```
-throw error;
-```
-
-}
-
-expenses =
-data || [];
-
+  expenses =
+    data || [];
 }
 
 /* =========================================================
@@ -547,86 +458,60 @@ METRICS
 ========================================================= */
 
 function renderMetrics() {
+  let approved =
+    0;
 
-let approved =
-0;
+  let pending =
+    0;
 
-let pending =
-0;
+  let rejected =
+    0;
 
-let rejected =
-0;
+  for (
+    const expense of expenses
+  ) {
+    const amount =
+      Number(
+        expense.amount || 0
+      );
 
-for (
-const expense of expenses
-) {
+    const status =
+      normalizeStatus(
+        expense.approval_status
+      );
 
-```
-const amount =
-  Number(
-    expense.amount || 0
-  );
+    if (
+      status === "approved"
+    ) {
+      approved +=
+        amount;
+    }
+    else if (
+      status === "rejected"
+    ) {
+      rejected +=
+        amount;
+    }
+    else {
+      pending +=
+        amount;
+    }
+  }
 
+  if (approvedTotalEl) {
+    approvedTotalEl.textContent =
+      money(approved);
+  }
 
-const status =
-  normalizeStatus(
-    expense.approval_status
-  );
+  if (pendingTotalEl) {
+    pendingTotalEl.textContent =
+      money(pending);
+  }
 
-
-if (
-  status === "approved"
-) {
-
-  approved +=
-    amount;
-
-}
-else if (
-  status === "rejected"
-) {
-
-  rejected +=
-    amount;
-
-}
-else {
-
-  pending +=
-    amount;
-
-}
-```
-
-}
-
-if (approvedTotalEl) {
-
-```
-approvedTotalEl.textContent =
-  money(approved);
-```
-
-}
-
-if (pendingTotalEl) {
-
-```
-pendingTotalEl.textContent =
-  money(pending);
-```
-
-}
-
-if (rejectedTotalEl) {
-
-```
-rejectedTotalEl.textContent =
-  money(rejected);
-```
-
-}
-
+  if (rejectedTotalEl) {
+    rejectedTotalEl.textContent =
+      money(rejected);
+  }
 }
 
 /* =========================================================
@@ -634,59 +519,48 @@ FILTERING
 ========================================================= */
 
 function getFilteredExpenses() {
+  const selectedStatus =
+    String(
+      statusFilter?.value ||
+      "all"
+    )
+      .trim()
+      .toLowerCase();
 
-const selectedStatus =
-String(
-statusFilter?.value ||
-"all"
-)
-.trim()
-.toLowerCase();
+  const selectedCategory =
+    String(
+      categoryFilter?.value ||
+      "all"
+    )
+      .trim()
+      .toLowerCase();
 
-const selectedCategory =
-String(
-categoryFilter?.value ||
-"all"
-)
-.trim()
-.toLowerCase();
+  return expenses.filter(
+    expense => {
+      const status =
+        normalizeStatus(
+          expense.approval_status
+        );
 
-return expenses.filter(
-expense => {
+      const category =
+        normalizeCategory(
+          expense.category
+        );
 
-```
-  const status =
-    normalizeStatus(
-      expense.approval_status
-    );
+      const statusMatches =
+        selectedStatus === "all" ||
+        selectedStatus === status;
 
+      const categoryMatches =
+        selectedCategory === "all" ||
+        selectedCategory === category;
 
-  const category =
-    normalizeCategory(
-      expense.category
-    );
-
-
-  const statusMatches =
-    selectedStatus === "all" ||
-    selectedStatus === status;
-
-
-  const categoryMatches =
-    selectedCategory === "all" ||
-    selectedCategory === category;
-
-
-  return (
-    statusMatches &&
-    categoryMatches
+      return (
+        statusMatches &&
+        categoryMatches
+      );
+    }
   );
-
-}
-```
-
-);
-
 }
 
 /* =========================================================
@@ -694,15 +568,16 @@ STATUS BADGE
 ========================================================= */
 
 function statusBadge(status) {
+  const normalized =
+    normalizeStatus(status);
 
-const normalized =
-normalizeStatus(status);
-
-return `     <span
-      class="expense-status expense-status-${normalized}"     >
-      ${escapeHtml(normalized)}     </span>
+  return `
+    <span
+      class="expense-status expense-status-${normalized}"
+    >
+      ${escapeHtml(normalized)}
+    </span>
   `;
-
 }
 
 /* =========================================================
@@ -710,42 +585,36 @@ CATEGORY LABEL
 ========================================================= */
 
 function categoryLabel(category) {
+  const normalized =
+    normalizeCategory(category);
 
-const normalized =
-normalizeCategory(category);
+  const labels = {
+    meeting:
+      "Meeting",
 
-const labels = {
+    welfare:
+      "Welfare",
 
-```
-meeting:
-  "Meeting",
+    transport:
+      "Transport",
 
-welfare:
-  "Welfare",
+    food:
+      "Food",
 
-transport:
-  "Transport",
+    supplies:
+      "Supplies",
 
-food:
-  "Food",
+    bank_charges:
+      "Bank Charges",
 
-supplies:
-  "Supplies",
+    other:
+      "Other"
+  };
 
-bank_charges:
-  "Bank Charges",
-
-other:
-  "Other"
-```
-
-};
-
-return (
-labels[normalized] ||
-normalized
-);
-
+  return (
+    labels[normalized] ||
+    normalized
+  );
 }
 
 /* =========================================================
@@ -753,245 +622,183 @@ RENDER EXPENSES
 ========================================================= */
 
 function renderExpenses() {
-
-if (!expenseRows) {
-
-```
-return;
-```
-
-}
-
-const list =
-getFilteredExpenses();
-
-if (!list.length) {
-
-```
-expenseRows.innerHTML = `
-
-  <tr>
-
-    <td
-      colspan="7"
-      class="expense-empty"
-    >
-
-      <div class="expense-empty-title">
-        No expenses found
-      </div>
-
-      <div class="muted expense-empty-text">
-        There are no expenses matching the selected filters.
-      </div>
-
-    </td>
-
-  </tr>
-
-`;
-
-return;
-```
-
-}
-
-expenseRows.innerHTML =
-list.map(
-expense => {
-
-```
-    const status =
-      normalizeStatus(
-        expense.approval_status
-      );
-
-
-    const category =
-      normalizeCategory(
-        expense.category
-      );
-
-
-    let actions =
-      "";
-
-
-    /* -----------------------------------------------
-       PENDING
-    ----------------------------------------------- */
-
-    if (
-      status === "pending"
-    ) {
-
-      actions += `
-
-        <button
-          type="button"
-          class="btn btn-secondary"
-          data-action="approve"
-          data-id="${escapeHtml(expense.id)}"
-        >
-          Approve
-        </button>
-
-        <button
-          type="button"
-          class="btn btn-secondary"
-          data-action="reject"
-          data-id="${escapeHtml(expense.id)}"
-        >
-          Reject
-        </button>
-
-      `;
-
-    }
-
-
-    /* -----------------------------------------------
-       APPROVED
-    ----------------------------------------------- */
-
-    else if (
-      status === "approved"
-    ) {
-
-      actions += `
-
-        <button
-          type="button"
-          class="btn btn-secondary"
-          data-action="reject"
-          data-id="${escapeHtml(expense.id)}"
-        >
-          Reject
-        </button>
-
-      `;
-
-    }
-
-
-    /* -----------------------------------------------
-       REJECTED
-    ----------------------------------------------- */
-
-    else {
-
-      actions += `
-
-        <button
-          type="button"
-          class="btn btn-secondary"
-          data-action="pending"
-          data-id="${escapeHtml(expense.id)}"
-        >
-          Restore
-        </button>
-
-      `;
-
-    }
-
-
-    /* -----------------------------------------------
-       DELETE
-    ----------------------------------------------- */
-
-    actions += `
-
-      <button
-        type="button"
-        class="btn btn-secondary"
-        data-action="delete"
-        data-id="${escapeHtml(expense.id)}"
-      >
-        Delete
-      </button>
-
-    `;
-
-
-    return `
-
-      <tr>
-
-        <td>
-          ${escapeHtml(
-            formatDate(expense.date)
-          )}
-        </td>
-
-
-        <td>
-
-          <div class="expense-description">
-            ${escapeHtml(
-              expense.description
-            )}
-          </div>
-
-        </td>
-
-
-        <td>
-
-          <span class="expense-category">
-            ${escapeHtml(
-              categoryLabel(category)
-            )}
-          </span>
-
-        </td>
-
-
-        <td>
-
-          <span class="expense-amount">
-            ${escapeHtml(
-              money(expense.amount)
-            )}
-          </span>
-
-        </td>
-
-
-        <td>
-
-          ${statusBadge(status)}
-
-        </td>
-
-
-        <td>
-
-          ${renderReceipt(
-            expense.receipt_url
-          )}
-
-        </td>
-
-
-        <td>
-
-          <div class="expense-actions">
-
-            ${actions}
-
-          </div>
-
-        </td>
-
-      </tr>
-
-    `;
-
+  if (!expenseRows) {
+    return;
   }
-).join("");
-```
 
+  const list =
+    getFilteredExpenses();
+
+  if (!list.length) {
+    expenseRows.innerHTML = `
+      <tr>
+        <td
+          colspan="7"
+          class="expense-empty"
+        >
+          <div class="expense-empty-title">
+            No expenses found
+          </div>
+
+          <div class="muted expense-empty-text">
+            There are no expenses matching the selected filters.
+          </div>
+        </td>
+      </tr>
+    `;
+
+    return;
+  }
+
+  expenseRows.innerHTML =
+    list.map(
+      expense => {
+        const status =
+          normalizeStatus(
+            expense.approval_status
+          );
+
+        const category =
+          normalizeCategory(
+            expense.category
+          );
+
+        let actions =
+          "";
+
+        /* -----------------------------------------------
+           PENDING
+        ----------------------------------------------- */
+
+        if (
+          status === "pending"
+        ) {
+          actions += `
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-action="approve"
+              data-id="${escapeHtml(expense.id)}"
+            >
+              Approve
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-action="reject"
+              data-id="${escapeHtml(expense.id)}"
+            >
+              Reject
+            </button>
+          `;
+        }
+
+        /* -----------------------------------------------
+           APPROVED
+        ----------------------------------------------- */
+
+        else if (
+          status === "approved"
+        ) {
+          actions += `
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-action="reject"
+              data-id="${escapeHtml(expense.id)}"
+            >
+              Reject
+            </button>
+          `;
+        }
+
+        /* -----------------------------------------------
+           REJECTED
+        ----------------------------------------------- */
+
+        else {
+          actions += `
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-action="pending"
+              data-id="${escapeHtml(expense.id)}"
+            >
+              Restore
+            </button>
+          `;
+        }
+
+        /* -----------------------------------------------
+           DELETE
+        ----------------------------------------------- */
+
+        actions += `
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-action="delete"
+            data-id="${escapeHtml(expense.id)}"
+          >
+            Delete
+          </button>
+        `;
+
+        return `
+          <tr>
+
+            <td>
+              ${escapeHtml(
+                formatDate(expense.date)
+              )}
+            </td>
+
+            <td>
+              <div class="expense-description">
+                ${escapeHtml(
+                  expense.description
+                )}
+              </div>
+            </td>
+
+            <td>
+              <span class="expense-category">
+                ${escapeHtml(
+                  categoryLabel(category)
+                )}
+              </span>
+            </td>
+
+            <td>
+              <span class="expense-amount">
+                ${escapeHtml(
+                  money(expense.amount)
+                )}
+              </span>
+            </td>
+
+            <td>
+              ${statusBadge(status)}
+            </td>
+
+            <td>
+              ${renderReceipt(
+                expense.receipt_url
+              )}
+            </td>
+
+            <td>
+              <div class="expense-actions">
+                ${actions}
+              </div>
+            </td>
+
+          </tr>
+        `;
+      }
+    )
+    .join("");
 }
 
 /* =========================================================
@@ -999,330 +806,262 @@ CREATE EXPENSE
 ========================================================= */
 
 async function createExpense(event) {
+  event.preventDefault();
 
-event.preventDefault();
+  clearError();
 
-clearError();
+  showStatus("");
 
-showStatus("");
+  try {
+    if (!groupId) {
+      throw new Error(
+        "No group is associated with this account."
+      );
+    }
 
-try {
+    if (!currentMember?.id) {
+      throw new Error(
+        "Your member record could not be found."
+      );
+    }
 
-```
-if (!groupId) {
+    const description =
+      String(
+        descriptionInput?.value ||
+        ""
+      ).trim();
 
-  throw new Error(
-    "No group is associated with this account."
-  );
+    const category =
+      String(
+        categoryInput?.value ||
+        ""
+      )
+        .trim()
+        .toLowerCase();
 
-}
+    const otherDetails =
+      String(
+        otherDetailsInput?.value ||
+        ""
+      ).trim();
 
+    const amount =
+      Number(
+        amountInput?.value ||
+        0
+      );
 
-if (!currentMember?.id) {
+    const date =
+      String(
+        dateInput?.value ||
+        ""
+      ).trim();
 
-  throw new Error(
-    "Your member record could not be found."
-  );
+    const receiptUrl =
+      String(
+        receiptInput?.value ||
+        ""
+      ).trim();
 
-}
+    /* =====================================================
+       VALIDATION
+    ====================================================== */
 
+    if (!description) {
+      throw new Error(
+        "Please enter an expense description."
+      );
+    }
 
-const description =
-  String(
-    descriptionInput?.value ||
-    ""
-  ).trim();
+    if (!category) {
+      throw new Error(
+        "Please select an expense category."
+      );
+    }
 
+    if (
+      category === "other" &&
+      !otherDetails
+    ) {
+      throw new Error(
+        "Please enter details for the Other expense category."
+      );
+    }
 
-const category =
-  String(
-    categoryInput?.value ||
-    ""
-  ).trim()
-  .toLowerCase();
+    if (
+      !Number.isFinite(amount) ||
+      amount <= 0
+    ) {
+      throw new Error(
+        "Please enter a valid expense amount."
+      );
+    }
 
+    if (!date) {
+      throw new Error(
+        "Please select the expense date."
+      );
+    }
 
-const otherDetails =
-  String(
-    otherDetailsInput?.value ||
-    ""
-  ).trim();
+    /* =====================================================
+       DESCRIPTION
 
+       We do not invent a new database column.
 
-const amount =
-  Number(
-    amountInput?.value ||
-    0
-  );
+       For "Other", the details are stored inside the
+       existing description column.
+    ====================================================== */
 
+    let finalDescription =
+      description;
 
-const date =
-  String(
-    dateInput?.value ||
-    ""
-  ).trim();
+    if (
+      category === "other"
+    ) {
+      finalDescription =
+        `${description} — Other details: ${otherDetails}`;
+    }
 
-
-const receiptUrl =
-  String(
-    receiptInput?.value ||
-    ""
-  ).trim();
-
-
-/* =====================================================
-   VALIDATION
-====================================================== */
-
-if (!description) {
-
-  throw new Error(
-    "Please enter an expense description."
-  );
-
-}
-
-
-if (!category) {
-
-  throw new Error(
-    "Please select an expense category."
-  );
-
-}
-
-
-if (
-  category === "other" &&
-  !otherDetails
-) {
-
-  throw new Error(
-    "Please enter details for the Other expense category."
-  );
-
-}
-
-
-if (
-  !Number.isFinite(amount) ||
-  amount <= 0
-) {
-
-  throw new Error(
-    "Please enter a valid expense amount."
-  );
-
-}
-
-
-if (!date) {
-
-  throw new Error(
-    "Please select the expense date."
-  );
-
-}
-
-
-/* =====================================================
-   DESCRIPTION
-
-   We do not invent a new database column.
-
-   For "Other", the details are stored inside the
-   existing description column.
-====================================================== */
-
-let finalDescription =
-  description;
-
-
-if (
-  category === "other"
-) {
-
-  finalDescription =
-    `${description} — Other details: ${otherDetails}`;
-
-}
-
-
-if (
-  finalDescription.length >
-  255
-) {
-
-  finalDescription =
-    finalDescription.substring(
-      0,
+    if (
+      finalDescription.length >
       255
+    ) {
+      finalDescription =
+        finalDescription.substring(
+          0,
+          255
+        );
+    }
+
+    /* =====================================================
+       BUTTON STATE
+    ====================================================== */
+
+    if (saveButton) {
+      saveButton.disabled =
+        true;
+
+      saveButton.textContent =
+        "Saving...";
+    }
+
+    showStatus(
+      "Recording expense..."
     );
 
-}
+    /* =====================================================
+       INSERT
 
+       recorded_by = MEMBER ID
+    ====================================================== */
 
-/* =====================================================
-   BUTTON STATE
-====================================================== */
+    const payload = {
+      group_id:
+        groupId,
 
-if (saveButton) {
+      description:
+        finalDescription,
 
-  saveButton.disabled =
-    true;
+      category:
+        category,
 
-  saveButton.textContent =
-    "Saving...";
+      amount:
+        amount,
 
-}
+      date:
+        date,
 
+      recorded_by:
+        currentMember.id,
 
-showStatus(
-  "Recording expense..."
-);
+      receipt_url:
+        receiptUrl ||
+        null,
 
+      approval_status:
+        "pending"
+    };
 
-/* =====================================================
-   INSERT
+    console.log(
+      "CHAMA LIVE: expense insert",
+      payload
+    );
 
-   recorded_by = MEMBER ID
-====================================================== */
+    const {
+      data,
+      error
+    } =
+      await supabase
+        .from("expenses")
+        .insert(payload)
+        .select(`
+          id,
+          group_id,
+          description,
+          category,
+          amount,
+          date,
+          recorded_by,
+          receipt_url,
+          approval_status,
+          created_at
+        `)
+        .single();
 
-const payload = {
+    if (error) {
+      throw error;
+    }
 
-  group_id:
-    groupId,
+    console.log(
+      "CHAMA LIVE: expense created",
+      data
+    );
 
-  description:
-    finalDescription,
+    /* =====================================================
+       RESET
+    ====================================================== */
 
-  category:
-    category,
+    if (form) {
+      form.reset();
+    }
 
-  amount:
-    amount,
+    updateOtherCategoryField();
 
-  date:
-    date,
+    setDefaultDate();
 
-  recorded_by:
-    currentMember.id,
+    /* =====================================================
+       REFRESH
+    ====================================================== */
 
-  receipt_url:
-    receiptUrl ||
-    null,
+    await loadExpenses();
 
-  approval_status:
-    "pending"
+    renderMetrics();
 
-};
+    renderExpenses();
 
+    showStatus(
+      "Expense recorded successfully."
+    );
 
-console.log(
-  "CHAMA LIVE: expense insert",
-  payload
-);
+    setTimeout(
+      () => showStatus(""),
+      3000
+    );
+  }
+  catch (error) {
+    showStatus("");
 
+    showPageError(error);
+  }
+  finally {
+    if (saveButton) {
+      saveButton.disabled =
+        false;
 
-const {
-  data,
-  error
-} =
-  await supabase
-    .from("expenses")
-    .insert(payload)
-    .select(`
-      id,
-      group_id,
-      description,
-      category,
-      amount,
-      date,
-      recorded_by,
-      receipt_url,
-      approval_status,
-      created_at
-    `)
-    .single();
-
-
-if (error) {
-
-  throw error;
-
-}
-
-
-console.log(
-  "CHAMA LIVE: expense created",
-  data
-);
-
-
-/* =====================================================
-   RESET
-====================================================== */
-
-if (form) {
-
-  form.reset();
-
-}
-
-
-updateOtherCategoryField();
-
-setDefaultDate();
-
-
-/* =====================================================
-   REFRESH
-====================================================== */
-
-await loadExpenses();
-
-renderMetrics();
-
-renderExpenses();
-
-
-showStatus(
-  "Expense recorded successfully."
-);
-
-
-setTimeout(
-  () => showStatus(""),
-  3000
-);
-```
-
-}
-catch (error) {
-
-```
-showStatus("");
-
-showPageError(error);
-```
-
-}
-finally {
-
-```
-if (saveButton) {
-
-  saveButton.disabled =
-    false;
-
-  saveButton.textContent =
-    "Record Expense";
-
-}
-```
-
-}
-
+      saveButton.textContent =
+        "Record Expense";
+    }
+  }
 }
 
 /* =========================================================
@@ -1330,78 +1069,62 @@ UPDATE STATUS
 ========================================================= */
 
 async function updateStatus(
-id,
-newStatus
+  id,
+  newStatus
 ) {
+  const allowed = [
+    "pending",
+    "approved",
+    "rejected"
+  ];
 
-const allowed = [
+  const status =
+    String(
+      newStatus || ""
+    )
+      .trim()
+      .toLowerCase();
 
-```
-"pending",
-"approved",
-"rejected"
-```
+  if (
+    !allowed.includes(status)
+  ) {
+    throw new Error(
+      "Invalid expense status."
+    );
+  }
 
-];
+  if (!id) {
+    throw new Error(
+      "Expense ID is missing."
+    );
+  }
 
-const status =
-String(
-newStatus || ""
-)
-.trim()
-.toLowerCase();
+  if (!groupId) {
+    throw new Error(
+      "Group context is missing."
+    );
+  }
 
-if (
-!allowed.includes(status)
-) {
-
-```
-throw new Error(
-  "Invalid expense status."
-);
-```
-
-}
-
-if (!id) {
-
-```
-throw new Error(
-  "Expense ID is missing."
-);
-```
-
-}
-
-if (!groupId) {
-
-```
-throw new Error(
-  "Group context is missing."
-);
-```
-
-}
-
-const {
-data,
-error
-} =
-await supabase
-.from("expenses")
-.update({
-approval_status:
-status
-})
-.eq(
-"id",
-id
-)
-.eq(
-"group_id",
-groupId
-)
-.select(`         id,
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("expenses")
+      .update({
+        approval_status:
+          status
+      })
+      .eq(
+        "id",
+        id
+      )
+      .eq(
+        "group_id",
+        groupId
+      )
+      .select(`
+        id,
         group_id,
         description,
         category,
@@ -1412,41 +1135,32 @@ groupId
         approval_status,
         created_at
       `)
-.single();
+      .single();
 
-if (error) {
+  if (error) {
+    throw error;
+  }
 
-```
-throw error;
-```
+  if (!data) {
+    throw new Error(
+      "Expense was not updated. You may not have permission to modify it."
+    );
+  }
 
-}
+  await loadExpenses();
 
-if (!data) {
+  renderMetrics();
 
-```
-throw new Error(
-  "Expense was not updated. You may not have permission to modify it."
-);
-```
+  renderExpenses();
 
-}
+  showStatus(
+    `Expense marked ${status}.`
+  );
 
-await loadExpenses();
-
-renderMetrics();
-
-renderExpenses();
-
-showStatus(
-`Expense marked ${status}.`
-);
-
-setTimeout(
-() => showStatus(""),
-3000
-);
-
+  setTimeout(
+    () => showStatus(""),
+    3000
+  );
 }
 
 /* =========================================================
@@ -1454,78 +1168,60 @@ DELETE
 ========================================================= */
 
 async function deleteExpense(id) {
+  if (!id) {
+    throw new Error(
+      "Expense ID is missing."
+    );
+  }
 
-if (!id) {
+  if (!groupId) {
+    throw new Error(
+      "Group context is missing."
+    );
+  }
 
-```
-throw new Error(
-  "Expense ID is missing."
-);
-```
+  const confirmed =
+    window.confirm(
+      "Are you sure you want to delete this expense?"
+    );
 
-}
+  if (!confirmed) {
+    return;
+  }
 
-if (!groupId) {
+  const {
+    error
+  } =
+    await supabase
+      .from("expenses")
+      .delete()
+      .eq(
+        "id",
+        id
+      )
+      .eq(
+        "group_id",
+        groupId
+      );
 
-```
-throw new Error(
-  "Group context is missing."
-);
-```
+  if (error) {
+    throw error;
+  }
 
-}
+  await loadExpenses();
 
-const confirmed =
-window.confirm(
-"Are you sure you want to delete this expense?"
-);
+  renderMetrics();
 
-if (!confirmed) {
+  renderExpenses();
 
-```
-return;
-```
+  showStatus(
+    "Expense deleted successfully."
+  );
 
-}
-
-const {
-error
-} =
-await supabase
-.from("expenses")
-.delete()
-.eq(
-"id",
-id
-)
-.eq(
-"group_id",
-groupId
-);
-
-if (error) {
-
-```
-throw error;
-```
-
-}
-
-await loadExpenses();
-
-renderMetrics();
-
-renderExpenses();
-
-showStatus(
-"Expense deleted successfully."
-);
-
-setTimeout(
-() => showStatus(""),
-3000
-);
-
+  setTimeout(
+    () => showStatus(""),
+    3000
+  );
 }
 
 /* =========================================================
@@ -1533,71 +1229,53 @@ ACTION HANDLER
 ========================================================= */
 
 async function handleExpenseAction(
-action,
-id
+  action,
+  id
 ) {
+  if (
+    action === "approve"
+  ) {
+    await updateStatus(
+      id,
+      "approved"
+    );
 
-if (
-action === "approve"
-) {
+    return;
+  }
 
-```
-await updateStatus(
-  id,
-  "approved"
-);
+  if (
+    action === "reject"
+  ) {
+    await updateStatus(
+      id,
+      "rejected"
+    );
 
-return;
-```
+    return;
+  }
 
-}
+  if (
+    action === "pending"
+  ) {
+    await updateStatus(
+      id,
+      "pending"
+    );
 
-if (
-action === "reject"
-) {
+    return;
+  }
 
-```
-await updateStatus(
-  id,
-  "rejected"
-);
+  if (
+    action === "delete"
+  ) {
+    await deleteExpense(id);
 
-return;
-```
+    return;
+  }
 
-}
-
-if (
-action === "pending"
-) {
-
-```
-await updateStatus(
-  id,
-  "pending"
-);
-
-return;
-```
-
-}
-
-if (
-action === "delete"
-) {
-
-```
-await deleteExpense(id);
-
-return;
-```
-
-}
-
-throw new Error(
-`Unknown expense action: ${action}`
-);
-
+  throw new Error(
+    `Unknown expense action: ${action}`
+  );
 }
 
 /* =========================================================
@@ -1605,91 +1283,65 @@ ACTION EVENTS
 ========================================================= */
 
 function setupActions() {
-
-if (!expenseRows) {
-
-```
-return;
-```
-
-}
-
-expenseRows.addEventListener(
-"click",
-async event => {
-
-```
-  const button =
-    event.target.closest(
-      "button[data-action]"
-    );
-
-
-  if (!button) {
-
+  if (!expenseRows) {
     return;
-
   }
 
+  expenseRows.addEventListener(
+    "click",
+    async event => {
+      const button =
+        event.target.closest(
+          "button[data-action]"
+        );
 
-  const action =
-    String(
-      button.dataset.action ||
-      ""
-    )
-      .trim()
-      .toLowerCase();
+      if (!button) {
+        return;
+      }
 
+      const action =
+        String(
+          button.dataset.action ||
+          ""
+        )
+          .trim()
+          .toLowerCase();
 
-  const id =
-    button.dataset.id;
+      const id =
+        button.dataset.id;
 
+      if (!id) {
+        showPageError(
+          new Error(
+            "Expense ID is missing."
+          )
+        );
 
-  if (!id) {
+        return;
+      }
 
-    showPageError(
-      new Error(
-        "Expense ID is missing."
-      )
-    );
+      try {
+        clearError();
 
-    return;
+        button.disabled =
+          true;
 
-  }
-
-
-  try {
-
-    clearError();
-
-    button.disabled =
-      true;
-
-    await handleExpenseAction(
-      action,
-      id
-    );
-
-  }
-  catch (error) {
-
-    showPageError(
-      error
-    );
-
-  }
-  finally {
-
-    button.disabled =
-      false;
-
-  }
-
-}
-```
-
-);
-
+        await handleExpenseAction(
+          action,
+          id
+        );
+      }
+      catch (error) {
+        showPageError(
+          error
+        );
+      }
+      finally {
+        button.disabled =
+          false;
+      }
+    }
+  );
 }
 
 /* =========================================================
@@ -1697,17 +1349,15 @@ FILTER EVENTS
 ========================================================= */
 
 function setupFilters() {
+  statusFilter?.addEventListener(
+    "change",
+    renderExpenses
+  );
 
-statusFilter?.addEventListener(
-"change",
-renderExpenses
-);
-
-categoryFilter?.addEventListener(
-"change",
-renderExpenses
-);
-
+  categoryFilter?.addEventListener(
+    "change",
+    renderExpenses
+  );
 }
 
 /* =========================================================
@@ -1715,14 +1365,12 @@ CATEGORY EVENTS
 ========================================================= */
 
 function setupCategoryField() {
+  categoryInput?.addEventListener(
+    "change",
+    updateOtherCategoryField
+  );
 
-categoryInput?.addEventListener(
-"change",
-updateOtherCategoryField
-);
-
-updateOtherCategoryField();
-
+  updateOtherCategoryField();
 }
 
 /* =========================================================
@@ -1730,157 +1378,123 @@ INITIALIZE
 ========================================================= */
 
 export async function initPage() {
-
-if (initialized) {
-
-```
-return;
-```
-
-}
-
-initialized =
-true;
-
-try {
-
-```
-clearError();
-
-showStatus(
-  "Loading expenses..."
-);
-
-
-/* =====================================================
-   AUTH
-====================================================== */
-
-currentUser =
-  await requireAuth();
-
-
-if (!currentUser) {
-
-  throw new Error(
-    "You are not signed in."
-  );
-
-}
-
-
-/* =====================================================
-   MEMBER
-====================================================== */
-
-currentMember =
-  await getMyMember();
-
-
-if (!currentMember) {
-
-  throw new Error(
-    "No member record is linked to this account."
-  );
-
-}
-
-
-/* =====================================================
-   GROUP
-====================================================== */
-
-groupId =
-  currentMember.group_id;
-
-
-if (!groupId) {
-
-  throw new Error(
-    "Your member record is not linked to a group."
-  );
-
-}
-
-
-console.log(
-  "CHAMA LIVE: expense context",
-  {
-    userId:
-      currentUser.id,
-
-    memberId:
-      currentMember.id,
-
-    groupId:
-      groupId
+  if (initialized) {
+    return;
   }
-);
 
+  initialized =
+    true;
 
-/* =====================================================
-   EVENTS
-====================================================== */
+  try {
+    clearError();
 
-setupActions();
+    showStatus(
+      "Loading expenses..."
+    );
 
-setupFilters();
+    /* =====================================================
+       AUTH
+    ====================================================== */
 
-setupCategoryField();
+    currentUser =
+      await requireAuth();
 
+    if (!currentUser) {
+      throw new Error(
+        "You are not signed in."
+      );
+    }
 
-form?.addEventListener(
-  "submit",
-  createExpense
-);
+    /* =====================================================
+       MEMBER
+    ====================================================== */
 
+    currentMember =
+      await getMyMember();
 
-setDefaultDate();
+    if (!currentMember) {
+      throw new Error(
+        "No member record is linked to this account."
+      );
+    }
 
+    /* =====================================================
+       GROUP
+    ====================================================== */
 
-/* =====================================================
-   DATA
-====================================================== */
+    groupId =
+      currentMember.group_id;
 
-await loadExpenses();
+    if (!groupId) {
+      throw new Error(
+        "Your member record is not linked to a group."
+      );
+    }
 
-renderMetrics();
+    console.log(
+      "CHAMA LIVE: expense context",
+      {
+        userId:
+          currentUser.id,
 
-renderExpenses();
+        memberId:
+          currentMember.id,
 
+        groupId:
+          groupId
+      }
+    );
 
-showStatus(
-  "Expenses ready."
-);
+    /* =====================================================
+       EVENTS
+    ====================================================== */
 
+    setupActions();
 
-setTimeout(
-  () => showStatus(""),
-  2000
-);
+    setupFilters();
 
+    setupCategoryField();
 
-console.log(
-  "CHAMA LIVE: expenses initialized"
-);
-```
+    form?.addEventListener(
+      "submit",
+      createExpense
+    );
 
-}
-catch (error) {
+    setDefaultDate();
 
-```
-initialized =
-  false;
+    /* =====================================================
+       DATA
+    ====================================================== */
 
-showStatus("");
+    await loadExpenses();
 
-showPageError(
-  error
-);
-```
+    renderMetrics();
 
-}
+    renderExpenses();
 
+    showStatus(
+      "Expenses ready."
+    );
+
+    setTimeout(
+      () => showStatus(""),
+      2000
+    );
+
+    console.log(
+      "CHAMA LIVE: expenses initialized"
+    );
+  }
+  catch (error) {
+    initialized =
+      false;
+
+    showStatus("");
+
+    showPageError(
+      error
+    );
+  }
 }
 
 /* =========================================================
@@ -1888,7 +1502,7 @@ PUBLIC ALIAS
 ========================================================= */
 
 export const initExpenses =
-initPage;
+  initPage;
 
 /* =========================================================
 NO AUTO BOOT
@@ -1897,5 +1511,5 @@ layout.js is the sole page bootloader.
 ========================================================= */
 
 console.log(
-"CHAMA LIVE: expenses.js ready"
+  "CHAMA LIVE: expenses.js ready"
 );
