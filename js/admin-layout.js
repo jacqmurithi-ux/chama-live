@@ -8,6 +8,7 @@
    - Desktop navigation
    - Mobile navigation
    - Mobile bottom navigation
+   - Admin logout
    - Current-page module boot
 
    IMPORTANT
@@ -47,7 +48,8 @@
    ========================================================= */
 
 import {
-  getMyApplicationContext
+  getMyApplicationContext,
+  signOut
 } from "./auth.js";
 
 
@@ -814,6 +816,114 @@ function renderDesktopNavigation() {
 
 
 /* =========================================================
+   ADMIN LOGOUT
+========================================================= */
+
+function bindAdminLogout() {
+
+  const logoutButton =
+    document.getElementById(
+      "logout"
+    );
+
+
+  if (!logoutButton) {
+    return;
+  }
+
+
+  /*
+   * Prevent duplicate logout listeners.
+   */
+
+  if (
+    logoutButton.dataset.adminLogoutBound ===
+    "true"
+  ) {
+
+    return;
+
+  }
+
+
+  logoutButton.dataset.adminLogoutBound =
+    "true";
+
+
+  logoutButton.addEventListener(
+    "click",
+    async () => {
+
+      if (
+        logoutButton.disabled
+      ) {
+
+        return;
+
+      }
+
+
+      logoutButton.disabled =
+        true;
+
+
+      const originalText =
+        logoutButton.textContent;
+
+
+      logoutButton.textContent =
+        "Signing out…";
+
+
+      try {
+
+        await signOut();
+
+      }
+
+      catch (error) {
+
+        console.error(
+          "CHAMA LIVE: Admin logout failed:",
+          error
+        );
+
+
+        logoutButton.disabled =
+          false;
+
+
+        logoutButton.textContent =
+          originalText ||
+          "Sign out";
+
+
+        const errorBox =
+          document.getElementById(
+            "error"
+          );
+
+
+        if (errorBox) {
+
+          errorBox.hidden =
+            false;
+
+          errorBox.textContent =
+            error?.message ||
+            "Unable to sign out.";
+
+        }
+
+      }
+
+    }
+  );
+
+}
+
+
+/* =========================================================
    OPEN MOBILE MENU
 ========================================================= */
 
@@ -918,7 +1028,9 @@ function renderMobileNavigation() {
       "chamaAdminMenu"
     )
   ) {
+
     return;
+
   }
 
 
@@ -1245,7 +1357,9 @@ function renderMobileBottomNavigation() {
       ".chama-admin-bottom"
     )
   ) {
+
     return;
+
   }
 
 
@@ -1505,10 +1619,13 @@ export async function boot() {
 
     renderMobileBottomNavigation();
 
+    bindAdminLogout();
+
 
     await loadCurrentPageFeature();
 
   }
+
   catch (error) {
 
     console.error(
@@ -1535,6 +1652,7 @@ export async function boot() {
     }
 
   }
+
   finally {
 
     delete window.__CHAMA_LIVE_LAYOUT_LOADING__;
