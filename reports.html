@@ -1,8 +1,14 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Reports — CHAMA LIVE</title>  <link rel="stylesheet" href="./css/app.css" />  <style>
+
+  <title>Reports — CHAMA LIVE</title>
+
+  <link rel="stylesheet" href="./css/app.css" />
+
+  <style>
     :root {
       --report-radius: 16px;
       --report-border: #e5e7eb;
@@ -20,9 +26,23 @@
       box-sizing: border-box;
     }
 
+    html,
+    body {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
     body {
       margin: 0;
       background: var(--report-bg);
+    }
+
+    .reports-page,
+    .reports-main {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
     }
 
     .reports-page {
@@ -78,11 +98,13 @@
       padding: 20px;
       margin-bottom: 20px;
       box-shadow: 0 5px 18px rgba(15, 23, 42, .05);
+      min-width: 0;
     }
 
     .report-card h2,
     .report-card h3 {
       margin-top: 0;
+      overflow-wrap: anywhere;
     }
 
     .builder-header {
@@ -109,6 +131,7 @@
       display: flex;
       flex-direction: column;
       gap: 6px;
+      min-width: 0;
     }
 
     .filter-field label {
@@ -120,6 +143,8 @@
     .filter-field select,
     .filter-field input {
       width: 100%;
+      min-width: 0;
+      max-width: 100%;
       min-height: 42px;
       border: 1px solid #d1d5db;
       border-radius: 10px;
@@ -251,6 +276,7 @@
       border-radius: 15px;
       padding: 16px;
       box-shadow: 0 4px 14px rgba(15,23,42,.04);
+      min-width: 0;
     }
 
     .summary-label {
@@ -266,6 +292,7 @@
       font-size: 22px;
       font-weight: 900;
       color: #111827;
+      overflow-wrap: anywhere;
     }
 
     .summary-note {
@@ -307,9 +334,11 @@
 
     .table-wrap {
       width: 100%;
+      max-width: 100%;
       overflow-x: auto;
       border: 1px solid var(--report-border);
       border-radius: 12px;
+      -webkit-overflow-scrolling: touch;
     }
 
     table {
@@ -401,12 +430,14 @@
       background: #f8fafc;
       border-radius: 12px;
       padding: 14px;
+      min-width: 0;
     }
 
     .report-kpi strong {
       display: block;
       font-size: 20px;
       margin-top: 5px;
+      overflow-wrap: anywhere;
     }
 
     .breakdown-grid {
@@ -427,6 +458,7 @@
       border-radius: 12px;
       padding: 14px;
       background: #fff;
+      min-width: 0;
     }
 
     .meeting-card strong {
@@ -443,6 +475,29 @@
 
     .print-header {
       display: none;
+    }
+
+    /* =====================================================
+       ADMIN PORTAL INTEGRATION
+    ===================================================== */
+
+    .reports-main {
+      padding: 0;
+    }
+
+    .reports-hero,
+    .report-card,
+    .summary-card,
+    .report-kpi,
+    .meeting-card {
+      min-width: 0;
+    }
+
+    .reports-hero h1,
+    .reports-hero p,
+    .report-card h2,
+    .report-card h3 {
+      overflow-wrap: anywhere;
     }
 
     @media (max-width: 1100px) {
@@ -471,10 +526,20 @@
       .reports-hero {
         padding: 20px;
         border-radius: 17px;
+        margin-bottom: 16px;
       }
 
       .reports-hero h1 {
         font-size: 25px;
+      }
+
+      .reports-hero p {
+        font-size: 13px;
+      }
+
+      .hero-chip {
+        max-width: 100%;
+        overflow-wrap: anywhere;
       }
 
       .filter-grid,
@@ -494,8 +559,45 @@
         padding: 15px;
       }
 
+      .summary-card {
+        padding: 14px;
+      }
+
+      .summary-value {
+        font-size: 20px;
+      }
+
+      .report-kpi {
+        padding: 13px;
+      }
+
+      .report-kpi strong {
+        font-size: 19px;
+      }
+
+      .action-bar {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
       .action-bar .report-button {
-        flex: 1 1 calc(50% - 10px);
+        width: 100%;
+        min-width: 0;
+      }
+    }
+
+    @media (max-width: 430px) {
+      .hero-meta {
+        gap: 7px;
+      }
+
+      .hero-chip {
+        width: 100%;
+        font-size: 12px;
+      }
+
+      .action-bar {
+        grid-template-columns: 1fr;
       }
     }
 
@@ -563,412 +665,896 @@
         display: block !important;
       }
     }
-  </style></head><body>
-  <div class="reports-page"><main class="reports-main">
+  </style>
+</head>
 
-  <header class="reports-hero no-print">
-    <h1>Reports</h1>
-    <p>
-      CHAMA LIVE reporting centre — analyse contributions, member accounting,
-      arrears, carry-forward credit, expenses, cash flow and meetings from one place.
-    </p>
+<body>
 
-    <div class="hero-meta">
-      <span class="hero-chip">Group: <strong id="groupLabel">—</strong></span>
-      <span class="hero-chip">Canonical accounting</span>
-      <span class="hero-chip">Print + CSV + Excel</span>
+  <!-- =====================================================
+       ADMIN PORTAL SHELL
+  ====================================================== -->
+
+  <header class="topbar">
+    <div class="topbar-inner">
+
+      <div class="brand">
+        CHAMA
+        <span>LIVE</span>
+      </div>
+
+      <nav
+        class="top-nav"
+        aria-label="Admin navigation">
+      </nav>
+
+      <div class="topbar-actions">
+        <span
+          data-user-name
+          class="muted user-name">
+          Admin
+        </span>
+
+        <button
+          id="logout"
+          class="btn btn-secondary"
+          type="button">
+          Sign out
+        </button>
+      </div>
+
     </div>
   </header>
 
-  <div id="statusMessage" class="status-message hidden"></div>
-  <div id="errorMessage" class="error-message hidden"></div>
+  <div class="layout">
 
-  <section class="print-header">
-    <h1>CHAMA LIVE — <span id="printGroupName">Group Report</span></h1>
-    <p><strong>Report:</strong> <span id="printReportType">Executive Summary</span></p>
-    <p><strong>Period:</strong> <span id="printPeriod">—</span></p>
-    <p><strong>Accounting Month:</strong> <span id="printAccountingMonth">—</span></p>
-    <p><strong>Generated:</strong> <span id="printGeneratedAt">—</span></p>
-  </section>
+    <aside
+      class="sidebar"
+      aria-label="Admin navigation">
+    </aside>
 
-  <!-- REPORT BUILDER -->
-  <section class="report-card builder-card no-print">
-    <div class="builder-header">
-      <div>
-        <h2>Report Builder</h2>
-        <p>Select the report, period, member and accounting filters.</p>
+    <main class="main">
+
+      <div class="reports-page">
+
+        <div class="reports-main">
+
+          <header class="reports-hero no-print">
+            <h1>Reports</h1>
+
+            <p>
+              CHAMA LIVE reporting centre — analyse contributions, member accounting,
+              arrears, carry-forward credit, expenses, cash flow and meetings from one place.
+            </p>
+
+            <div class="hero-meta">
+              <span class="hero-chip">
+                Group:
+                <strong id="groupLabel">—</strong>
+              </span>
+
+              <span class="hero-chip">
+                Canonical accounting
+              </span>
+
+              <span class="hero-chip">
+                Print + CSV + Excel
+              </span>
+            </div>
+          </header>
+
+          <div
+            id="statusMessage"
+            class="status-message hidden">
+          </div>
+
+          <div
+            id="errorMessage"
+            class="error-message hidden">
+          </div>
+
+          <section class="print-header">
+            <h1>
+              CHAMA LIVE —
+              <span id="printGroupName">
+                Group Report
+              </span>
+            </h1>
+
+            <p>
+              <strong>Report:</strong>
+              <span id="printReportType">
+                Executive Summary
+              </span>
+            </p>
+
+            <p>
+              <strong>Period:</strong>
+              <span id="printPeriod">—</span>
+            </p>
+
+            <p>
+              <strong>Accounting Month:</strong>
+              <span id="printAccountingMonth">—</span>
+            </p>
+
+            <p>
+              <strong>Generated:</strong>
+              <span id="printGeneratedAt">—</span>
+            </p>
+          </section>
+
+          <!-- REPORT BUILDER -->
+
+          <section class="report-card builder-card no-print">
+
+            <div class="builder-header">
+              <div>
+                <h2>Report Builder</h2>
+
+                <p>
+                  Select the report, period, member and accounting filters.
+                </p>
+              </div>
+            </div>
+
+            <div class="filter-grid">
+
+              <div class="filter-field">
+                <label for="reportType">
+                  Report Type
+                </label>
+
+                <select id="reportType">
+                  <option value="executive">
+                    Executive Summary
+                  </option>
+
+                  <option value="member-contributions">
+                    Member Contributions
+                  </option>
+
+                  <option value="arrears">
+                    Arrears &amp; Outstanding
+                  </option>
+
+                  <option value="credit">
+                    Carry-forward / Credit
+                  </option>
+
+                  <option value="contribution-types">
+                    Contribution Types
+                  </option>
+
+                  <option value="payment-methods">
+                    Payment Methods
+                  </option>
+
+                  <option value="expenses">
+                    Expenses
+                  </option>
+
+                  <option value="cash-flow">
+                    Cash Flow
+                  </option>
+
+                  <option value="meetings">
+                    Meetings
+                  </option>
+
+                  <option value="full">
+                    Full Chama Report
+                  </option>
+                </select>
+              </div>
+
+              <div class="filter-field">
+                <label for="periodPreset">
+                  Period
+                </label>
+
+                <select id="periodPreset">
+                  <option value="this-month">
+                    This Month
+                  </option>
+
+                  <option value="last-month">
+                    Last Month
+                  </option>
+
+                  <option value="this-quarter">
+                    This Quarter
+                  </option>
+
+                  <option value="this-year">
+                    This Year
+                  </option>
+
+                  <option value="custom">
+                    Custom
+                  </option>
+                </select>
+              </div>
+
+              <div class="filter-field">
+                <label for="fromDate">
+                  From
+                </label>
+
+                <input
+                  type="date"
+                  id="fromDate" />
+              </div>
+
+              <div class="filter-field">
+                <label for="toDate">
+                  To
+                </label>
+
+                <input
+                  type="date"
+                  id="toDate" />
+              </div>
+
+              <div class="filter-field">
+                <label for="accountingMonth">
+                  Accounting Month
+                </label>
+
+                <input
+                  type="month"
+                  id="accountingMonth" />
+              </div>
+
+              <div class="filter-field">
+                <label for="memberFilter">
+                  Member
+                </label>
+
+                <select id="memberFilter">
+                  <option value="all">
+                    All Members
+                  </option>
+                </select>
+              </div>
+
+              <div class="filter-field">
+                <label for="statusFilter">
+                  Member Accounting Status
+                </label>
+
+                <select id="statusFilter">
+                  <option value="all">
+                    All Statuses
+                  </option>
+
+                  <option value="paid">
+                    Paid
+                  </option>
+
+                  <option value="partial">
+                    Partial
+                  </option>
+
+                  <option value="outstanding">
+                    Outstanding / Arrears
+                  </option>
+
+                  <option value="credit">
+                    Credit / Carry-forward
+                  </option>
+
+                  <option value="no-payment">
+                    No Payment
+                  </option>
+                </select>
+              </div>
+
+              <div class="filter-field">
+                <label for="contributionTypeFilter">
+                  Contribution Type
+                </label>
+
+                <select id="contributionTypeFilter">
+                  <option value="all">
+                    All Types
+                  </option>
+
+                  <option value="monthly">
+                    Monthly
+                  </option>
+
+                  <option value="other">
+                    Other Savings
+                  </option>
+                </select>
+              </div>
+
+              <div class="filter-field">
+                <label for="paymentMethodFilter">
+                  Payment Method
+                </label>
+
+                <select id="paymentMethodFilter">
+                  <option value="all">
+                    All Methods
+                  </option>
+                </select>
+              </div>
+
+              <div class="filter-field">
+                <label for="groupBy">
+                  Group By
+                </label>
+
+                <select id="groupBy">
+                  <option value="member">
+                    Member
+                  </option>
+
+                  <option value="month">
+                    Month
+                  </option>
+
+                  <option value="contribution_type">
+                    Contribution Type
+                  </option>
+
+                  <option value="payment_method">
+                    Payment Method
+                  </option>
+
+                  <option value="expense_category">
+                    Expense Category
+                  </option>
+
+                  <option value="status">
+                    Status
+                  </option>
+                </select>
+              </div>
+
+            </div>
+
+            <div class="quick-filters">
+
+              <button
+                class="quick-filter active"
+                type="button"
+                data-quick="all">
+                All Members
+              </button>
+
+              <button
+                class="quick-filter"
+                type="button"
+                data-quick="attention">
+                Needs Attention
+              </button>
+
+              <button
+                class="quick-filter"
+                type="button"
+                data-quick="arrears">
+                Has Arrears
+              </button>
+
+              <button
+                class="quick-filter"
+                type="button"
+                data-quick="credit">
+                Has Credit
+              </button>
+
+            </div>
+
+            <div class="action-bar">
+
+              <button
+                id="applyFilters"
+                class="report-button primary"
+                type="button">
+                Generate Report
+              </button>
+
+              <button
+                id="resetFilters"
+                class="report-button"
+                type="button">
+                Reset
+              </button>
+
+              <button
+                id="printReport"
+                class="report-button dark"
+                type="button">
+                Print
+              </button>
+
+              <button
+                id="csvButton"
+                class="report-button success"
+                type="button">
+                CSV
+              </button>
+
+              <button
+                id="excelButton"
+                class="report-button purple"
+                type="button">
+                Excel
+              </button>
+
+            </div>
+
+          </section>
+
+          <!-- SUMMARY -->
+
+          <section class="summary-grid">
+
+            <div class="summary-card">
+              <div class="summary-label">
+                Contributions Received
+              </div>
+
+              <div
+                class="summary-value"
+                id="totalContributions">
+                KSh 0.00
+              </div>
+
+              <div class="summary-note">
+                Actual cash received in period
+              </div>
+            </div>
+
+            <div class="summary-card summary-success">
+              <div class="summary-label">
+                Approved Expenses
+              </div>
+
+              <div
+                class="summary-value"
+                id="approvedExpenses">
+                KSh 0.00
+              </div>
+
+              <div class="summary-note">
+                Approved expenses in period
+              </div>
+            </div>
+
+            <div class="summary-card">
+              <div class="summary-label">
+                Period Net
+              </div>
+
+              <div
+                class="summary-value"
+                id="currentBalance">
+                KSh 0.00
+              </div>
+
+              <div class="summary-note">
+                Contributions less approved expenses
+              </div>
+            </div>
+
+            <div class="summary-card summary-warning">
+              <div class="summary-label">
+                Pending Expenses
+              </div>
+
+              <div
+                class="summary-value"
+                id="pendingExpenses">
+                KSh 0.00
+              </div>
+
+              <div class="summary-note">
+                Awaiting approval
+              </div>
+            </div>
+
+            <div class="summary-card summary-danger">
+              <div class="summary-label">
+                Rejected Expenses
+              </div>
+
+              <div
+                class="summary-value"
+                id="rejectedExpenses">
+                KSh 0.00
+              </div>
+
+              <div class="summary-note">
+                Rejected expense records
+              </div>
+            </div>
+
+            <div class="summary-card summary-purple">
+              <div class="summary-label">
+                Active Members
+              </div>
+
+              <div
+                class="summary-value"
+                id="activeMembers">
+                0
+              </div>
+
+              <div class="summary-note">
+                Based on membership status
+              </div>
+            </div>
+
+          </section>
+
+          <section class="report-kpi-grid">
+
+            <div class="report-kpi">
+              <span>Applied This Month</span>
+              <strong id="reportApplied">
+                KSh 0.00
+              </strong>
+            </div>
+
+            <div class="report-kpi">
+              <span>Outstanding</span>
+              <strong id="reportOutstanding">
+                KSh 0.00
+              </strong>
+            </div>
+
+            <div class="report-kpi">
+              <span>Carry-forward</span>
+              <strong id="reportCarryForward">
+                KSh 0.00
+              </strong>
+            </div>
+
+            <div class="report-kpi">
+              <span>Collection Rate</span>
+              <strong id="reportCollectionRate">
+                0%
+              </strong>
+            </div>
+
+          </section>
+
+          <!-- DYNAMIC REPORT -->
+
+          <section class="report-card">
+
+            <div class="section-title">
+
+              <div>
+                <h2 id="reportOutputTitle">
+                  Executive Summary
+                </h2>
+
+                <p id="reportOutputSubtitle">
+                  Overview of the selected reporting period.
+                </p>
+              </div>
+
+            </div>
+
+            <div
+              id="reportOutput"
+              class="report-output">
+            </div>
+
+          </section>
+
+          <!-- CONTRIBUTION BREAKDOWN -->
+
+          <section class="report-card">
+
+            <div class="section-title">
+
+              <div>
+                <h2>
+                  Contribution Breakdown
+                </h2>
+
+                <p>
+                  Actual cash received by contribution type.
+                </p>
+              </div>
+
+            </div>
+
+            <div class="table-wrap">
+
+              <table>
+
+                <thead>
+                  <tr>
+                    <th>Contribution Type</th>
+                    <th class="amount">Entries</th>
+                    <th class="amount">Amount</th>
+                    <th class="amount">Share</th>
+                  </tr>
+                </thead>
+
+                <tbody id="contributionBreakdownRows">
+
+                  <tr>
+                    <td
+                      colspan="4"
+                      class="report-empty">
+                      No data.
+                    </td>
+                  </tr>
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+          </section>
+
+          <!-- EXPENSE BREAKDOWN -->
+
+          <section class="report-card">
+
+            <div class="section-title">
+
+              <div>
+                <h2>
+                  Expense Breakdown
+                </h2>
+
+                <p>
+                  Approved expenses grouped by category.
+                </p>
+              </div>
+
+            </div>
+
+            <div class="table-wrap">
+
+              <table>
+
+                <thead>
+                  <tr>
+                    <th>Category</th>
+                    <th class="amount">Entries</th>
+                    <th class="amount">Amount</th>
+                    <th class="amount">Share</th>
+                  </tr>
+                </thead>
+
+                <tbody id="expenseBreakdownRows">
+
+                  <tr>
+                    <td
+                      colspan="4"
+                      class="report-empty">
+                      No data.
+                    </td>
+                  </tr>
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+          </section>
+
+          <!-- CONTRIBUTION ENTRIES -->
+
+          <section class="report-card">
+
+            <div class="section-title">
+
+              <div>
+                <h2>
+                  Contribution Entries
+                </h2>
+
+                <p>
+                  Actual contribution cash records matching the selected filters.
+                </p>
+              </div>
+
+            </div>
+
+            <div class="table-wrap">
+
+              <table>
+
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Member</th>
+                    <th>Type</th>
+                    <th>Payment Method</th>
+                    <th>Reference</th>
+                    <th class="amount">Amount</th>
+                  </tr>
+                </thead>
+
+                <tbody id="reportContributionEntries">
+
+                  <tr>
+                    <td
+                      colspan="6"
+                      class="report-empty">
+                      No data.
+                    </td>
+                  </tr>
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+          </section>
+
+          <!-- EXPENSE ENTRIES -->
+
+          <section class="report-card">
+
+            <div class="section-title">
+
+              <div>
+                <h2>
+                  Expense Entries
+                </h2>
+
+                <p>
+                  Expenses matching the selected period and group.
+                </p>
+              </div>
+
+            </div>
+
+            <div class="table-wrap">
+
+              <table>
+
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th class="amount">Amount</th>
+                  </tr>
+                </thead>
+
+                <tbody id="reportExpenseEntries">
+
+                  <tr>
+                    <td
+                      colspan="5"
+                      class="report-empty">
+                      No data.
+                    </td>
+                  </tr>
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+          </section>
+
+          <!-- MEETINGS -->
+
+          <section class="report-card">
+
+            <div class="section-title">
+
+              <div>
+                <h2>
+                  Meeting Summary
+                </h2>
+
+                <p>
+                  Meetings within the selected reporting period.
+                </p>
+              </div>
+
+            </div>
+
+            <div class="meeting-cards">
+
+              <div class="meeting-card">
+                <span>Total Meetings</span>
+
+                <strong id="totalMeetings">
+                  0
+                </strong>
+              </div>
+
+              <div class="meeting-card">
+                <span>Upcoming</span>
+
+                <strong id="upcomingMeetings">
+                  0
+                </strong>
+              </div>
+
+              <div class="meeting-card">
+                <span>Completed</span>
+
+                <strong id="completedMeetings">
+                  0
+                </strong>
+              </div>
+
+              <div class="meeting-card">
+                <span>Cancelled</span>
+
+                <strong id="cancelledMeetings">
+                  0
+                </strong>
+              </div>
+
+            </div>
+
+            <div class="table-wrap">
+
+              <table>
+
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Title</th>
+                    <th>Venue</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+
+                <tbody id="meetingRows">
+
+                  <tr>
+                    <td
+                      colspan="4"
+                      class="report-empty">
+                      No meetings.
+                    </td>
+                  </tr>
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+          </section>
+
+          <p class="report-footer-note no-print">
+            CHAMA LIVE uses the canonical obligation → payment → allocation → arrears/credit
+            accounting chain. Reports do not recalculate member accounting in JavaScript.
+          </p>
+
+        </div>
+
       </div>
-    </div>
 
-    <div class="filter-grid">
+    </main>
 
-      <div class="filter-field">
-        <label for="reportType">Report Type</label>
-        <select id="reportType">
-          <option value="executive">Executive Summary</option>
-          <option value="member-contributions">Member Contributions</option>
-          <option value="arrears">Arrears & Outstanding</option>
-          <option value="credit">Carry-forward / Credit</option>
-          <option value="contribution-types">Contribution Types</option>
-          <option value="payment-methods">Payment Methods</option>
-          <option value="expenses">Expenses</option>
-          <option value="cash-flow">Cash Flow</option>
-          <option value="meetings">Meetings</option>
-          <option value="full">Full Chama Report</option>
-        </select>
-      </div>
+  </div>
 
-      <div class="filter-field">
-        <label for="periodPreset">Period</label>
-        <select id="periodPreset">
-          <option value="this-month">This Month</option>
-          <option value="last-month">Last Month</option>
-          <option value="this-quarter">This Quarter</option>
-          <option value="this-year">This Year</option>
-          <option value="custom">Custom</option>
-        </select>
-      </div>
+  <!-- =====================================================
+       SHARED ADMIN PORTAL BOOT
+  ====================================================== -->
 
-      <div class="filter-field">
-        <label for="fromDate">From</label>
-        <input type="date" id="fromDate" />
-      </div>
+  <script type="module">
+    import {
+      boot
+    } from "./js/admin-layout.js";
 
-      <div class="filter-field">
-        <label for="toDate">To</label>
-        <input type="date" id="toDate" />
-      </div>
+    boot();
+  </script>
 
-      <div class="filter-field">
-        <label for="accountingMonth">Accounting Month</label>
-        <input type="month" id="accountingMonth" />
-      </div>
-
-      <div class="filter-field">
-        <label for="memberFilter">Member</label>
-        <select id="memberFilter">
-          <option value="all">All Members</option>
-        </select>
-      </div>
-
-      <div class="filter-field">
-        <label for="statusFilter">Member Accounting Status</label>
-        <select id="statusFilter">
-          <option value="all">All Statuses</option>
-          <option value="paid">Paid</option>
-          <option value="partial">Partial</option>
-          <option value="outstanding">Outstanding / Arrears</option>
-          <option value="credit">Credit / Carry-forward</option>
-          <option value="no-payment">No Payment</option>
-        </select>
-      </div>
-
-      <div class="filter-field">
-        <label for="contributionTypeFilter">Contribution Type</label>
-        <select id="contributionTypeFilter">
-          <option value="all">All Types</option>
-          <option value="monthly">Monthly</option>
-          <option value="other">Other Savings</option>
-        </select>
-      </div>
-
-      <div class="filter-field">
-        <label for="paymentMethodFilter">Payment Method</label>
-        <select id="paymentMethodFilter">
-          <option value="all">All Methods</option>
-        </select>
-      </div>
-
-      <div class="filter-field">
-        <label for="groupBy">Group By</label>
-        <select id="groupBy">
-          <option value="member">Member</option>
-          <option value="month">Month</option>
-          <option value="contribution_type">Contribution Type</option>
-          <option value="payment_method">Payment Method</option>
-          <option value="expense_category">Expense Category</option>
-          <option value="status">Status</option>
-        </select>
-      </div>
-
-    </div>
-
-    <div class="quick-filters">
-      <button class="quick-filter active" type="button" data-quick="all">All Members</button>
-      <button class="quick-filter" type="button" data-quick="attention">Needs Attention</button>
-      <button class="quick-filter" type="button" data-quick="arrears">Has Arrears</button>
-      <button class="quick-filter" type="button" data-quick="credit">Has Credit</button>
-    </div>
-
-    <div class="action-bar">
-      <button id="applyFilters" class="report-button primary" type="button">
-        Generate Report
-      </button>
-
-      <button id="resetFilters" class="report-button" type="button">
-        Reset
-      </button>
-
-      <button id="printReport" class="report-button dark" type="button">
-        Print
-      </button>
-
-      <button id="csvButton" class="report-button success" type="button">
-        CSV
-      </button>
-
-      <button id="excelButton" class="report-button purple" type="button">
-        Excel
-      </button>
-    </div>
-  </section>
-
-  <!-- SUMMARY -->
-  <section class="summary-grid">
-    <div class="summary-card">
-      <div class="summary-label">Contributions Received</div>
-      <div class="summary-value" id="totalContributions">KSh 0.00</div>
-      <div class="summary-note">Actual cash received in period</div>
-    </div>
-
-    <div class="summary-card summary-success">
-      <div class="summary-label">Approved Expenses</div>
-      <div class="summary-value" id="approvedExpenses">KSh 0.00</div>
-      <div class="summary-note">Approved expenses in period</div>
-    </div>
-
-    <div class="summary-card">
-      <div class="summary-label">Period Net</div>
-      <div class="summary-value" id="currentBalance">KSh 0.00</div>
-      <div class="summary-note">Contributions less approved expenses</div>
-    </div>
-
-    <div class="summary-card summary-warning">
-      <div class="summary-label">Pending Expenses</div>
-      <div class="summary-value" id="pendingExpenses">KSh 0.00</div>
-      <div class="summary-note">Awaiting approval</div>
-    </div>
-
-    <div class="summary-card summary-danger">
-      <div class="summary-label">Rejected Expenses</div>
-      <div class="summary-value" id="rejectedExpenses">KSh 0.00</div>
-      <div class="summary-note">Rejected expense records</div>
-    </div>
-
-    <div class="summary-card summary-purple">
-      <div class="summary-label">Active Members</div>
-      <div class="summary-value" id="activeMembers">0</div>
-      <div class="summary-note">Based on membership status</div>
-    </div>
-  </section>
-
-  <section class="report-kpi-grid">
-    <div class="report-kpi">
-      <span>Applied This Month</span>
-      <strong id="reportApplied">KSh 0.00</strong>
-    </div>
-
-    <div class="report-kpi">
-      <span>Outstanding</span>
-      <strong id="reportOutstanding">KSh 0.00</strong>
-    </div>
-
-    <div class="report-kpi">
-      <span>Carry-forward</span>
-      <strong id="reportCarryForward">KSh 0.00</strong>
-    </div>
-
-    <div class="report-kpi">
-      <span>Collection Rate</span>
-      <strong id="reportCollectionRate">0%</strong>
-    </div>
-  </section>
-
-  <!-- DYNAMIC REPORT -->
-  <section class="report-card">
-    <div class="section-title">
-      <div>
-        <h2 id="reportOutputTitle">Executive Summary</h2>
-        <p id="reportOutputSubtitle">
-          Overview of the selected reporting period.
-        </p>
-      </div>
-    </div>
-
-    <div id="reportOutput" class="report-output"></div>
-  </section>
-
-  <!-- CONTRIBUTION BREAKDOWN -->
-  <section class="report-card">
-    <div class="section-title">
-      <div>
-        <h2>Contribution Breakdown</h2>
-        <p>Actual cash received by contribution type.</p>
-      </div>
-    </div>
-
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Contribution Type</th>
-            <th class="amount">Entries</th>
-            <th class="amount">Amount</th>
-            <th class="amount">Share</th>
-          </tr>
-        </thead>
-        <tbody id="contributionBreakdownRows">
-          <tr>
-            <td colspan="4" class="report-empty">No data.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <!-- EXPENSE BREAKDOWN -->
-  <section class="report-card">
-    <div class="section-title">
-      <div>
-        <h2>Expense Breakdown</h2>
-        <p>Approved expenses grouped by category.</p>
-      </div>
-    </div>
-
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Category</th>
-            <th class="amount">Entries</th>
-            <th class="amount">Amount</th>
-            <th class="amount">Share</th>
-          </tr>
-        </thead>
-        <tbody id="expenseBreakdownRows">
-          <tr>
-            <td colspan="4" class="report-empty">No data.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <!-- CONTRIBUTION ENTRIES -->
-  <section class="report-card">
-    <div class="section-title">
-      <div>
-        <h2>Contribution Entries</h2>
-        <p>Actual contribution cash records matching the selected filters.</p>
-      </div>
-    </div>
-
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Member</th>
-            <th>Type</th>
-            <th>Payment Method</th>
-            <th>Reference</th>
-            <th class="amount">Amount</th>
-          </tr>
-        </thead>
-        <tbody id="reportContributionEntries">
-          <tr>
-            <td colspan="6" class="report-empty">No data.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <!-- EXPENSE ENTRIES -->
-  <section class="report-card">
-    <div class="section-title">
-      <div>
-        <h2>Expense Entries</h2>
-        <p>Expenses matching the selected period and group.</p>
-      </div>
-    </div>
-
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Description</th>
-            <th>Category</th>
-            <th>Status</th>
-            <th class="amount">Amount</th>
-          </tr>
-        </thead>
-        <tbody id="reportExpenseEntries">
-          <tr>
-            <td colspan="5" class="report-empty">No data.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <!-- MEETINGS -->
-  <section class="report-card">
-    <div class="section-title">
-      <div>
-        <h2>Meeting Summary</h2>
-        <p>Meetings within the selected reporting period.</p>
-      </div>
-    </div>
-
-    <div class="meeting-cards">
-      <div class="meeting-card">
-        <span>Total Meetings</span>
-        <strong id="totalMeetings">0</strong>
-      </div>
-
-      <div class="meeting-card">
-        <span>Upcoming</span>
-        <strong id="upcomingMeetings">0</strong>
-      </div>
-
-      <div class="meeting-card">
-        <span>Completed</span>
-        <strong id="completedMeetings">0</strong>
-      </div>
-
-      <div class="meeting-card">
-        <span>Cancelled</span>
-        <strong id="cancelledMeetings">0</strong>
-      </div>
-    </div>
-
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Title</th>
-            <th>Venue</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody id="meetingRows">
-          <tr>
-            <td colspan="4" class="report-empty">No meetings.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <p class="report-footer-note no-print">
-    CHAMA LIVE uses the canonical obligation → payment → allocation → arrears/credit
-    accounting chain. Reports do not recalculate member accounting in JavaScript.
-  </p>
-
-</main>
-
-  </div>  <script type="module" src="./js/reports.js"></script></body>
+</body>
 </html>
