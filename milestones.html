@@ -15,206 +15,43 @@
 
   <title>Milestones — CHAMA LIVE</title>
 
-  <style>
-    :root {
-      --bg: #f5f7fb;
-      --surface: #ffffff;
-      --surface-soft: #f8fafc;
-      --border: #e2e8f0;
-      --text: #0f172a;
-      --muted: #64748b;
-      --primary: #2563eb;
-      --primary-dark: #1d4ed8;
-      --success: #15803d;
-      --danger: #dc2626;
-      --warning: #b45309;
-      --shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
-      --radius: 14px;
-    }
+  <link
+    rel="stylesheet"
+    href="./css/app.css"
+  >
 
+  <style>
     * {
       box-sizing: border-box;
     }
 
+    html,
     body {
+      width: 100%;
+      max-width: 100%;
       margin: 0;
-      font-family:
-        Inter,
-        ui-sans-serif,
-        system-ui,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.5;
+      overflow-x: hidden;
     }
 
-    a {
-      color: inherit;
+    body {
+      min-width: 0;
     }
 
-    button,
-    input,
-    select,
-    textarea {
-      font: inherit;
-    }
-
-    .topbar {
-      position: sticky;
-      top: 0;
-      z-index: 50;
-
-      min-height: 64px;
-      padding: 0 24px;
-
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-
-      font-weight: 800;
-      letter-spacing: -0.02em;
-    }
-
-    .brand-mark {
-      width: 36px;
-      height: 36px;
-
-      display: grid;
-      place-items: center;
-
-      border-radius: 10px;
-      background: var(--primary);
-      color: white;
-      font-weight: 900;
-    }
-
-    .brand-text {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .brand-title {
-      font-size: 16px;
-    }
-
-    .brand-subtitle {
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 600;
-    }
-
-    .topbar-right {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .topbar-context {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 2px;
-    }
-
-    .context-label {
-      color: var(--muted);
-      font-size: 11px;
-    }
-
-    .context-value {
-      font-size: 13px;
-      font-weight: 700;
-    }
-
-    .logout-btn {
-      border: 1px solid var(--border);
-      background: var(--surface);
-      color: var(--text);
-
-      padding: 8px 13px;
-      border-radius: 9px;
-
-      cursor: pointer;
-      font-weight: 700;
-    }
-
-    .logout-btn:hover {
-      background: var(--surface-soft);
-    }
-
-    .app-shell {
-      display: flex;
-      min-height: calc(100vh - 64px);
-    }
-
-    .sidebar {
-      width: 235px;
-      flex: 0 0 235px;
-
-      padding: 20px 14px;
-
-      background: var(--surface);
-      border-right: 1px solid var(--border);
-    }
-
-    .sidebar-title {
-      padding: 0 10px 10px;
-
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-
-    .sidebar nav {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .sidebar nav a {
-      display: flex;
-      align-items: center;
-
-      min-height: 40px;
-      padding: 9px 10px;
-
-      border-radius: 9px;
-
-      color: #334155;
-      text-decoration: none;
-      font-size: 13px;
-      font-weight: 650;
-    }
-
-    .sidebar nav a:hover {
-      background: var(--surface-soft);
-    }
-
-    .sidebar nav a.active {
-      background: #eff6ff;
-      color: var(--primary);
+    .layout,
+    .main,
+    .page,
+    .section,
+    .section-body,
+    .context-card,
+    .kpi-grid,
+    .form-grid {
+      min-width: 0;
+      max-width: 100%;
     }
 
     .main {
-      min-width: 0;
-      flex: 1;
-
-      padding: 28px;
+      overflow-x: hidden;
+      padding-bottom: 95px;
     }
 
     .page {
@@ -223,298 +60,68 @@
       margin: 0 auto;
     }
 
-    .hero {
-      margin-bottom: 22px;
-    }
-
-    .eyebrow {
-      margin-bottom: 5px;
-
-      color: var(--primary);
-      font-size: 12px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-
-    h1 {
-      margin: 0;
-
-      font-size: clamp(26px, 3vw, 36px);
-      line-height: 1.1;
-      letter-spacing: -0.035em;
-    }
-
-    .hero p {
-      max-width: 760px;
-      margin: 9px 0 0;
-
-      color: var(--muted);
-      font-size: 14px;
-    }
-
     .context-card {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
       gap: 16px;
-
-      margin-bottom: 20px;
-      padding: 18px;
-
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
     }
 
     .context-item {
       min-width: 0;
     }
 
-    .context-item-label {
-      margin-bottom: 4px;
-
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-    }
-
     .context-item-value {
+      min-width: 0;
       overflow: hidden;
-
-      font-size: 16px;
-      font-weight: 800;
       text-overflow: ellipsis;
       white-space: nowrap;
-    }
-
-    .message {
-      display: none;
-
-      margin-bottom: 18px;
-      padding: 12px 14px;
-
-      border: 1px solid transparent;
-      border-radius: 10px;
-
-      font-size: 13px;
-      font-weight: 650;
-    }
-
-    .message.show {
-      display: block;
-    }
-
-    .message.success {
-      border-color: #bbf7d0;
-      background: #f0fdf4;
-      color: #166534;
-    }
-
-    .message.error {
-      border-color: #fecaca;
-      background: #fef2f2;
-      color: #991b1b;
     }
 
     .kpi-grid {
       display: grid;
       grid-template-columns:
         repeat(4, minmax(0, 1fr));
-
       gap: 16px;
-      margin-bottom: 22px;
-    }
-
-    .kpi-card {
-      padding: 18px;
-
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-    }
-
-    .kpi-label {
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    .kpi-value {
-      margin-top: 5px;
-
-      font-size: 25px;
-      font-weight: 850;
-      letter-spacing: -0.025em;
-    }
-
-    .section {
-      margin-bottom: 22px;
-
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-    }
-
-    .section-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 16px;
-
-      padding: 18px 20px;
-
-      border-bottom: 1px solid var(--border);
-    }
-
-    .section-header h2 {
-      margin: 0;
-
-      font-size: 17px;
-      letter-spacing: -0.015em;
-    }
-
-    .section-header p {
-      margin: 4px 0 0;
-
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .section-body {
-      padding: 20px;
-    }
-
-    .management-note {
-      display: none;
-
-      margin-bottom: 16px;
-      padding: 12px 14px;
-
-      border: 1px solid #fde68a;
-      border-radius: 10px;
-
-      background: #fffbeb;
-      color: #92400e;
-
-      font-size: 12px;
-      font-weight: 650;
     }
 
     .form-grid {
       display: grid;
       grid-template-columns:
         repeat(2, minmax(0, 1fr));
-
       gap: 16px;
     }
 
     .field {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
+      min-width: 0;
     }
 
     .field.full {
       grid-column: 1 / -1;
     }
 
-    .field label {
-      color: #334155;
-      font-size: 12px;
-      font-weight: 750;
-    }
-
     .field input,
     .field select,
-    .field textarea {
+    .field textarea,
+    .toolbar input,
+    .toolbar select {
       width: 100%;
-
-      padding: 10px 11px;
-
-      border: 1px solid #cbd5e1;
-      border-radius: 9px;
-
-      background: white;
-      color: var(--text);
-      outline: none;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
     }
 
-    .field input:focus,
-    .field select:focus,
-    .field textarea:focus {
-      border-color: var(--primary);
-      box-shadow:
-        0 0 0 3px
-        rgba(37, 99, 235, 0.10);
+    .table-wrap {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
     }
 
-    .field textarea {
-      min-height: 100px;
-      resize: vertical;
-    }
-
-    .help-text {
-      color: var(--muted);
-      font-size: 11px;
-    }
-
-    .form-actions {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-
-      margin-top: 18px;
-    }
-
-    .btn-primary,
-    .btn-secondary,
-    .btn-danger {
-      border: 0;
-      border-radius: 9px;
-
-      padding: 9px 14px;
-
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 750;
-    }
-
-    .btn-primary {
-      background: var(--primary);
-      color: white;
-    }
-
-    .btn-primary:hover {
-      background: var(--primary-dark);
-    }
-
-    .btn-secondary {
-      border: 1px solid var(--border);
-      background: white;
-      color: var(--text);
-    }
-
-    .btn-secondary:hover {
-      background: var(--surface-soft);
-    }
-
-    .btn-danger {
-      background: #fee2e2;
-      color: #b91c1c;
-    }
-
-    .btn-danger:hover {
-      background: #fecaca;
-    }
-
-    button:disabled {
-      cursor: not-allowed;
-      opacity: 0.55;
+    table {
+      min-width: 980px;
     }
 
     .toolbar {
@@ -523,139 +130,17 @@
         minmax(220px, 1fr)
         180px
         auto;
-
       gap: 10px;
-      align-items: center;
-
-      margin-bottom: 16px;
-    }
-
-    .toolbar input,
-    .toolbar select {
-      width: 100%;
-
-      padding: 9px 11px;
-
-      border: 1px solid #cbd5e1;
-      border-radius: 9px;
-
-      background: white;
-      color: var(--text);
-    }
-
-    .table-wrap {
-      width: 100%;
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      min-width: 980px;
-
-      border-collapse: collapse;
-    }
-
-    th,
-    td {
-      padding: 12px 10px;
-
-      border-bottom: 1px solid var(--border);
-
-      text-align: left;
-      vertical-align: top;
-
-      font-size: 12px;
-    }
-
-    th {
-      background: var(--surface-soft);
-      color: #475569;
-
-      font-size: 11px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    tbody tr:hover {
-      background: #fafcff;
-    }
-
-    .amount {
-      white-space: nowrap;
-      font-weight: 750;
-    }
-
-    .status-badge {
-      display: inline-flex;
-      align-items: center;
-
-      padding: 4px 8px;
-
-      border-radius: 999px;
-
-      background: #f1f5f9;
-      color: #475569;
-
-      font-size: 10px;
-      font-weight: 800;
-      white-space: nowrap;
-    }
-
-    .status-badge.investment,
-    .status-badge.business {
-      background: #eff6ff;
-      color: #1d4ed8;
-    }
-
-    .status-badge.welfare,
-    .status-badge.education {
-      background: #f0fdf4;
-      color: #15803d;
-    }
-
-    .status-badge.property,
-    .status-badge.infrastructure {
-      background: #fefce8;
-      color: #a16207;
-    }
-
-    .status-badge.fundraising {
-      background: #faf5ff;
-      color: #7e22ce;
+      min-width: 0;
     }
 
     .actions {
       display: flex;
-      gap: 6px;
       flex-wrap: wrap;
+      gap: 6px;
     }
 
-    .empty-state {
-      padding: 35px 20px !important;
-
-      color: var(--muted);
-      text-align: center;
-    }
-
-    footer {
-      padding: 8px 0 28px;
-
-      color: var(--muted);
-      font-size: 11px;
-      text-align: center;
-    }
-
-    @media (max-width: 1050px) {
-      .sidebar {
-        width: 210px;
-        flex-basis: 210px;
-      }
-
-      .main {
-        padding: 22px;
-      }
-
+    @media (max-width: 900px) {
       .kpi-grid {
         grid-template-columns:
           repeat(2, minmax(0, 1fr));
@@ -663,60 +148,66 @@
     }
 
     @media (max-width: 760px) {
-      .topbar {
-        padding: 0 14px;
+      html,
+      body {
+        max-width: 100%;
+        overflow-x: hidden;
       }
 
-      .topbar-context {
-        display: none;
-      }
-
-      .app-shell {
-        display: block;
-      }
-
-      .sidebar {
-        display: none;
+      .layout,
+      .main {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
       }
 
       .main {
-        padding: 18px 14px 90px;
+        padding:
+          16px
+          12px
+          95px !important;
+        overflow-x: hidden;
+      }
+
+      .page {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
       }
 
       .context-card,
       .form-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns:
+          minmax(0, 1fr);
       }
 
       .kpi-grid {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
         gap: 10px;
       }
 
-      .kpi-card {
-        padding: 14px;
-      }
-
-      .kpi-value {
-        font-size: 21px;
-      }
-
-      .section-header {
-        padding: 16px;
-      }
-
+      .section-header,
       .section-body {
-        padding: 16px;
+        min-width: 0;
       }
 
       .toolbar {
-        grid-template-columns: 1fr;
+        grid-template-columns:
+          minmax(0, 1fr);
+      }
+
+      .table-wrap {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
       }
     }
 
     @media (max-width: 480px) {
       .kpi-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns:
+          minmax(0, 1fr);
       }
 
       .form-actions {
@@ -727,118 +218,59 @@
       .form-actions button {
         width: 100%;
       }
+
+      .main {
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+      }
     }
   </style>
 </head>
 
 <body>
+
   <header class="topbar">
-    <div class="brand">
-      <div class="brand-mark">C</div>
+    <div class="topbar-inner">
 
-      <div class="brand-text">
-        <div class="brand-title">
-          CHAMA LIVE
-        </div>
-
-        <div class="brand-subtitle">
-          Group Operations
-        </div>
+      <div class="brand">
+        <a
+          href="dashboard.html"
+          class="brand-link"
+        >
+          <strong>CHAMA LIVE</strong>
+        </a>
       </div>
-    </div>
 
-    <div class="topbar-right">
-      <div class="topbar-context">
-        <span class="context-label">
-          Current group
-        </span>
+      <nav
+        class="top-nav"
+        aria-label="Admin navigation"
+      ></nav>
 
+      <div class="topbar-actions">
         <span
           id="topbar-group-name"
-          class="context-value"
           data-group-name
         >
           Loading...
         </span>
+
+        <button
+          id="logout"
+          type="button"
+        >
+          Logout
+        </button>
       </div>
 
-      <button
-        id="logout"
-        type="button"
-        class="logout-btn"
-      >
-        Logout
-      </button>
     </div>
   </header>
 
-  <div class="app-shell">
-    <aside class="sidebar">
-      <div class="sidebar-title">
-        Navigation
-      </div>
-
-      <nav class="nav">
-        <a href="dashboard.html">
-          Dashboard
-        </a>
-
-        <a href="members.html">
-          Members
-        </a>
-
-        <a href="contributions.html">
-          Contributions
-        </a>
-
-        <a href="expenses.html">
-          Expenses
-        </a>
-
-        <a href="meetings.html">
-          Meetings
-        </a>
-
-        <a href="reports.html">
-          Reports
-        </a>
-
-        <a href="monthly-closing.html">
-          Monthly Closing
-        </a>
-
-        <a href="group-management.html">
-          Group Management
-        </a>
-
-        <a href="assets.html">
-          Assets
-        </a>
-
-        <a href="plans-activities.html">
-          Plans &amp; Activities
-        </a>
-
-        <a href="support-welfare.html">
-          Support &amp; Welfare
-        </a>
-
-        <a
-          href="milestones.html"
-          class="active"
-          aria-current="page"
-        >
-          Milestones
-        </a>
-
-        <a href="data-migration.html">
-          Data Migration
-        </a>
-      </nav>
-    </aside>
+  <div class="layout">
 
     <main class="main">
+
       <div class="page">
+
         <section class="hero">
           <div class="eyebrow">
             Group Operations
@@ -856,6 +288,7 @@
         </section>
 
         <section class="context-card">
+
           <div class="context-item">
             <div class="context-item-label">
               Current Group
@@ -879,6 +312,7 @@
               Authenticated member group
             </div>
           </div>
+
         </section>
 
         <div
@@ -889,6 +323,7 @@
         ></div>
 
         <section class="kpi-grid">
+
           <div class="kpi-card">
             <div class="kpi-label">
               Total Milestones
@@ -940,9 +375,11 @@
               KSh 0.00
             </div>
           </div>
+
         </section>
 
         <section class="section">
+
           <div class="section-header">
             <div>
               <h2 id="milestone-form-heading">
@@ -956,6 +393,7 @@
           </div>
 
           <div class="section-body">
+
             <div
               id="management-note"
               class="management-note"
@@ -968,7 +406,9 @@
               id="milestone-form"
               novalidate
             >
+
               <div class="form-grid">
+
                 <div class="field full">
                   <label for="milestone-title">
                     Milestone Title
@@ -997,39 +437,30 @@
                     <option value="general">
                       General
                     </option>
-
                     <option value="investment">
                       Investment
                     </option>
-
                     <option value="property">
                       Property
                     </option>
-
                     <option value="welfare">
                       Welfare
                     </option>
-
                     <option value="business">
                       Business
                     </option>
-
                     <option value="education">
                       Education
                     </option>
-
                     <option value="membership">
                       Membership
                     </option>
-
                     <option value="fundraising">
                       Fundraising
                     </option>
-
                     <option value="infrastructure">
                       Infrastructure
                     </option>
-
                     <option value="other">
                       Other
                     </option>
@@ -1080,7 +511,7 @@
                   >
                 </div>
 
-                <div class="field full">
+                <div class="field">
                   <label for="milestone-document-id">
                     Document ID
                   </label>
@@ -1089,12 +520,13 @@
                     id="milestone-document-id"
                     name="document_id"
                     type="text"
+                    maxlength="100"
                     autocomplete="off"
                     placeholder="Optional document UUID"
                   >
 
                   <div class="help-text">
-                    Optional. When supplied, this must be a valid UUID.
+                    Optional UUID of an associated document.
                   </div>
                 </div>
 
@@ -1110,9 +542,11 @@
                     placeholder="Describe the milestone..."
                   ></textarea>
                 </div>
+
               </div>
 
               <div class="form-actions">
+
                 <button
                   id="create-milestone-btn"
                   type="submit"
@@ -1128,32 +562,39 @@
                 >
                   Clear
                 </button>
+
               </div>
+
             </form>
+
           </div>
+
         </section>
 
         <section class="section">
+
           <div class="section-header">
+
             <div>
               <h2>
-                Group Milestone Register
+                Milestone Register
               </h2>
 
               <p>
-                Milestones are always loaded within the authenticated
-                member's current group context.
+                Search, filter and manage milestones for this group.
               </p>
             </div>
+
           </div>
 
           <div class="section-body">
+
             <div class="toolbar">
+
               <input
                 id="milestone-search"
                 type="search"
                 placeholder="Search milestones..."
-                autocomplete="off"
                 aria-label="Search milestones"
               >
 
@@ -1162,7 +603,7 @@
                 aria-label="Filter milestones by category"
               >
                 <option value="">
-                  All Categories
+                  All categories
                 </option>
 
                 <option value="general">
@@ -1213,43 +654,22 @@
               >
                 Refresh
               </button>
+
             </div>
 
             <div class="table-wrap">
+
               <table>
                 <thead>
                   <tr>
-                    <th>
-                      Milestone
-                    </th>
-
-                    <th>
-                      Category
-                    </th>
-
-                    <th>
-                      Linked Plan
-                    </th>
-
-                    <th>
-                      Date
-                    </th>
-
-                    <th>
-                      Amount
-                    </th>
-
-                    <th>
-                      Description
-                    </th>
-
-                    <th>
-                      Created
-                    </th>
-
-                    <th>
-                      Actions
-                    </th>
+                    <th>Milestone</th>
+                    <th>Category</th>
+                    <th>Plan</th>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Description</th>
+                    <th>Created</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
 
@@ -1264,29 +684,30 @@
                   </tr>
                 </tbody>
               </table>
+
             </div>
+
           </div>
+
         </section>
 
         <footer>
-          CHAMA LIVE · Milestones are scoped to the authenticated
-          member's current group.
+          CHAMA LIVE · Milestones
         </footer>
+
       </div>
+
     </main>
+
   </div>
 
   <script type="module">
     import {
       boot
-    } from "./js/layout.js";
+    } from "./js/admin-layout.js";
 
     boot();
   </script>
 
-  <script
-    type="module"
-    src="./js/milestones.js"
-  ></script>
 </body>
 </html>
