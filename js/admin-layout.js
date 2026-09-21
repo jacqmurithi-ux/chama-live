@@ -914,6 +914,10 @@ function bindAdminLogout() {
           errorBox.hidden =
             false;
 
+          errorBox.classList.remove(
+            "hidden"
+          );
+
           errorBox.textContent =
             error?.message ||
             "Unable to sign out.";
@@ -1572,15 +1576,15 @@ export async function boot() {
     }
 
 
-    renderCurrentGroupName();
-
-
     context.role =
       String(
         context.role || ""
       )
         .trim()
         .toLowerCase();
+
+
+    renderCurrentGroupName();
 
 
     if (
@@ -1652,6 +1656,10 @@ export async function boot() {
 
       errorBox.hidden =
         false;
+
+      errorBox.classList.remove(
+        "hidden"
+      );
 
       errorBox.textContent =
         error?.message ||
