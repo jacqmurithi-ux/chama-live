@@ -1,87 +1,260 @@
-<div class="meeting-page">
+<!doctype html>
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <meta
+    name="description"
+    content="CHAMA LIVE — Group meeting management"
+  >
+
+  <title>Meetings — CHAMA LIVE</title>
+
+  <link
+    rel="stylesheet"
+    href="css/app.css"
+  >
 
   <style>
+
+    /* =====================================================
+       CHAMA LIVE — ADMIN MEETINGS
+       LIGHT + MOBILE-FRIENDLY PAGE
+
+       IMPORTANT:
+       - admin-layout.js owns navigation and boot
+       - meetings.js owns meeting data and actions
+       - Existing Meetings DOM IDs are preserved
+       - No database logic belongs here
+    ====================================================== */
+
+
+    html,
+    body {
+      width: 100%;
+      max-width: 100%;
+      margin: 0;
+      overflow-x: hidden;
+    }
+
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+
+    .main,
     .meeting-page {
       width: 100%;
+      max-width: 100%;
+      min-width: 0;
+    }
+
+
+    .meeting-page {
       max-width: 1180px;
       margin: 0 auto;
     }
 
+
+    /* =====================================================
+       PAGE HEADER
+    ====================================================== */
+
     .meeting-page .page-head {
-      margin-bottom: 20px;
+      margin: 0 auto 20px;
     }
+
 
     .meeting-page .page-head h1 {
       margin: 0;
-      font-size: clamp(24px, 4vw, 32px);
+      color: #0f172a;
+      font-size: clamp(25px, 4vw, 34px);
       line-height: 1.15;
+      letter-spacing: -0.02em;
     }
 
+
     .meeting-page .page-head p {
+      max-width: 680px;
       margin: 7px 0 0;
       font-size: 14px;
+      line-height: 1.55;
     }
+
+
+    /* =====================================================
+       STATUS / ERROR
+    ====================================================== */
+
+    .meeting-page #status,
+    .meeting-page #error {
+      width: 100%;
+      margin: 0 0 14px;
+      padding: 11px 13px;
+      border-radius: 11px;
+      font-size: 12px;
+      font-weight: 650;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+
+    .meeting-page #status {
+      color: #0f766e;
+      background: #f0fdfa;
+      border: 1px solid #ccfbf1;
+    }
+
+
+    .meeting-page #error {
+      color: #9f1239;
+      background: #fff1f2;
+      border: 1px solid #fecdd3;
+    }
+
+
+    .meeting-page #status[hidden],
+    .meeting-page #error[hidden] {
+      display: none;
+    }
+
+
+    /* =====================================================
+       METRICS
+    ====================================================== */
 
     .meeting-metrics {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 14px;
-      margin-bottom: 20px;
-    }
-
-    .meeting-metric-card {
-      min-width: 0;
-      padding: 16px 18px;
-      background: #ffffff;
-      border: 1px solid #e5e7eb;
-      border-radius: 14px;
-      box-shadow: 0 4px 16px rgba(16, 24, 40, 0.05);
-    }
-
-    .meeting-metric-label {
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    .meeting-metric-value {
-      margin-top: 5px;
-      color: #101828;
-      font-size: 25px;
-      font-weight: 800;
-      line-height: 1;
-    }
-
-    .meeting-section {
-      margin-bottom: 20px;
-      overflow: hidden;
-    }
-
-    .meeting-section-header {
+      grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+      gap: 12px;
       margin-bottom: 18px;
     }
 
+
+    .meeting-metric-card {
+      position: relative;
+      min-width: 0;
+      overflow: hidden;
+      padding: 17px;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 15px;
+      box-shadow:
+        0 5px 18px
+        rgba(15, 23, 42, .04);
+    }
+
+
+    .meeting-metric-card::after {
+      content: "";
+      position: absolute;
+      width: 64px;
+      height: 64px;
+      right: -22px;
+      bottom: -26px;
+      border-radius: 50%;
+      background: rgba(15, 118, 110, .05);
+      pointer-events: none;
+    }
+
+
+    .meeting-metric-label {
+      position: relative;
+      z-index: 1;
+      margin-bottom: 7px;
+      color: #667085;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+
+    .meeting-metric-value {
+      position: relative;
+      z-index: 1;
+      color: #0f172a;
+      font-size: clamp(21px, 3vw, 27px);
+      font-weight: 800;
+      line-height: 1.15;
+    }
+
+
+    /* =====================================================
+       SECTIONS / CARDS
+    ====================================================== */
+
+    .meeting-section {
+      width: 100%;
+      min-width: 0;
+      margin-bottom: 18px;
+      overflow: hidden;
+    }
+
+
+    .meeting-section-header {
+      margin-bottom: 17px;
+    }
+
+
     .meeting-section-header h2 {
-      margin: 0;
+      margin: 0 0 5px;
+      color: #0f172a;
       font-size: 18px;
       line-height: 1.3;
     }
 
+
     .meeting-section-header p {
-      margin: 5px 0 0;
+      margin: 0;
       font-size: 13px;
+      line-height: 1.5;
     }
+
+
+    /* =====================================================
+       FORM
+    ====================================================== */
 
     .meeting-form-grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 16px;
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      width: 100%;
+      min-width: 0;
     }
+
 
     .meeting-form-full {
       grid-column: 1 / -1;
     }
+
+
+    .meeting-page input,
+    .meeting-page select,
+    .meeting-page textarea,
+    .meeting-page button {
+      max-width: 100%;
+    }
+
+
+    .meeting-page textarea {
+      resize: vertical;
+      min-height: 120px;
+    }
+
 
     .meeting-form-actions {
       display: flex;
@@ -89,6 +262,11 @@
       gap: 10px;
       margin-top: 18px;
     }
+
+
+    /* =====================================================
+       FILTER
+    ====================================================== */
 
     .meeting-filter-bar {
       display: flex;
@@ -102,33 +280,238 @@
       border-radius: 12px;
     }
 
+
     .meeting-filter-label {
       color: #475467;
       font-size: 13px;
       font-weight: 700;
     }
 
+
     .meeting-filter-bar select {
       width: auto;
       min-width: 180px;
     }
+
+
+    /* =====================================================
+       MEETING TABLE
+    ====================================================== */
+
+    .meeting-table-wrap {
+      width: 100%;
+      min-width: 0;
+    }
+
 
     .meeting-table {
       width: 100%;
       min-width: 680px;
     }
 
+
     .meeting-table th {
       white-space: nowrap;
     }
+
 
     .meeting-table td {
       vertical-align: middle;
     }
 
+
+    .meeting-title-main {
+      color: #0f172a;
+      font-weight: 700;
+      line-height: 1.4;
+      overflow-wrap: anywhere;
+    }
+
+
+    .meeting-venue,
+    .meeting-date {
+      white-space: nowrap;
+    }
+
+
+    .meeting-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+
+    /* =====================================================
+       STATUS BADGES
+    ====================================================== */
+
+    .meeting-status {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 27px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: capitalize;
+      white-space: nowrap;
+    }
+
+
+    .meeting-status-upcoming {
+      color: #166534;
+      background: #f0fdf4;
+      border: 1px solid #dcfce7;
+    }
+
+
+    .meeting-status-completed {
+      color: #1d4ed8;
+      background: #eff6ff;
+      border: 1px solid #dbeafe;
+    }
+
+
+    .meeting-status-cancelled {
+      color: #9f1239;
+      background: #fff1f2;
+      border: 1px solid #ffe4e6;
+    }
+
+
+    /* =====================================================
+       EMPTY STATE
+    ====================================================== */
+
+    .meeting-empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 120px;
+      padding: 24px 14px;
+      text-align: center;
+    }
+
+
+    .meeting-empty-icon {
+      display: grid;
+      width: 38px;
+      height: 38px;
+      margin-bottom: 9px;
+      place-items: center;
+      border-radius: 12px;
+      background: #f0fdfa;
+      color: #0f766e;
+      font-size: 21px;
+    }
+
+
+    .meeting-empty-text {
+      color: #667085;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+
+    /* =====================================================
+       DETAILS
+    ====================================================== */
+
     .meeting-details-card {
       scroll-margin-top: 80px;
     }
+
+
+    .meeting-detail-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+
+    .meeting-detail-title {
+      margin: 0 0 5px;
+      color: #0f172a;
+      font-size: clamp(20px, 3vw, 25px);
+      line-height: 1.25;
+    }
+
+
+    .meeting-detail-meta {
+      display: grid;
+      grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 17px;
+    }
+
+
+    .meeting-meta-box {
+      min-width: 0;
+      padding: 13px;
+      background: #f8fafc;
+      border: 1px solid #edf0f4;
+      border-radius: 13px;
+    }
+
+
+    .meeting-meta-label {
+      display: block;
+      margin-bottom: 5px;
+      color: #98a2b3;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+
+    .meeting-meta-value {
+      display: block;
+      color: #101828;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+
+    .meeting-agenda-box {
+      margin-top: 16px;
+      padding: 15px;
+      background: #f8fafc;
+      border: 1px solid #edf0f4;
+      border-radius: 14px;
+    }
+
+
+    .meeting-subtitle {
+      margin-bottom: 9px;
+      color: #344054;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+
+    .meeting-agenda-list {
+      margin: 0;
+      padding-left: 22px;
+      color: #475467;
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+
+    .meeting-agenda-list li + li {
+      margin-top: 4px;
+    }
+
 
     .meeting-detail-actions {
       display: flex;
@@ -139,12 +522,19 @@
       border-top: 1px solid #edf0f4;
     }
 
+
+    /* =====================================================
+       MINUTES / RESOLUTIONS
+    ====================================================== */
+
     .meeting-record-grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 16px;
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+      gap: 14px;
       margin-top: 16px;
     }
+
 
     .meeting-record-box {
       min-width: 0;
@@ -154,595 +544,783 @@
       border-radius: 14px;
     }
 
+
     .meeting-save-row {
       display: flex;
       justify-content: flex-start;
       margin-top: 14px;
     }
 
-    .meeting-page textarea {
-      resize: vertical;
-      min-height: 120px;
-    }
 
-    .meeting-page button,
-    .meeting-page input,
-    .meeting-page select,
-    .meeting-page textarea {
-      max-width: 100%;
-    }
+    /* =====================================================
+       MOBILE
+    ====================================================== */
 
     @media (max-width: 760px) {
+
       .meeting-page {
         max-width: 100%;
       }
 
+
       .meeting-metrics {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns:
+          repeat(3, minmax(0, 1fr));
         gap: 8px;
       }
+
 
       .meeting-metric-card {
         padding: 13px 11px;
         border-radius: 12px;
       }
 
+
       .meeting-metric-label {
-        font-size: 10px;
+        font-size: 9px;
       }
+
 
       .meeting-metric-value {
         font-size: 21px;
       }
+
 
       .meeting-form-grid {
         grid-template-columns: 1fr;
         gap: 13px;
       }
 
+
       .meeting-form-full {
         grid-column: auto;
       }
+
 
       .meeting-filter-bar {
         align-items: stretch;
         flex-direction: column;
       }
 
+
       .meeting-filter-bar select {
         width: 100%;
         min-width: 0;
       }
 
+
       .meeting-table-wrap,
       .meeting-page .table-wrap {
+        width: 100%;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
       }
+
+
+      .meeting-detail-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+
+      .meeting-detail-meta {
+        grid-template-columns: 1fr;
+        gap: 9px;
+      }
+
 
       .meeting-detail-actions {
         display: grid;
         grid-template-columns: 1fr;
       }
 
+
       .meeting-detail-actions .btn {
         width: 100%;
       }
+
 
       .meeting-record-grid {
         grid-template-columns: 1fr;
         gap: 12px;
       }
 
+
       .meeting-record-box {
         padding: 13px;
       }
+
 
       .meeting-form-actions {
         display: grid;
         grid-template-columns: 1fr;
       }
 
+
       .meeting-form-actions .btn {
         width: 100%;
       }
 
+
       .meeting-save-row .btn {
         width: 100%;
       }
+
     }
 
-    @media (max-width: 520px) {
+
+    /* =====================================================
+       SMALL PHONES
+    ====================================================== */
+
+    @media (max-width: 430px) {
+
       .meeting-metrics {
         gap: 6px;
       }
 
+
       .meeting-metric-card {
-        padding: 11px 8px;
+        padding: 10px 8px;
       }
+
 
       .meeting-metric-label {
-        font-size: 9px;
-        letter-spacing: 0.02em;
+        font-size: 7px;
+        letter-spacing: .03em;
       }
 
+
       .meeting-metric-value {
-        font-size: 19px;
+        font-size: 18px;
       }
+
 
       .meeting-section {
         margin-bottom: 14px;
       }
 
+
       .meeting-section-header h2 {
         font-size: 17px;
       }
 
+
       .meeting-section-header p {
         font-size: 12px;
       }
+
+
+      .meeting-detail-title {
+        font-size: 20px;
+      }
+
     }
+
+
+    /* =====================================================
+       REDUCED MOTION
+    ====================================================== */
+
+    @media (prefers-reduced-motion: reduce) {
+
+      *,
+      *::before,
+      *::after {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+      }
+
+    }
+
   </style>
 
+</head>
 
-  <!-- =================================================
-       PAGE HEADER
-  ================================================== -->
 
-  <div class="page-head">
+<body>
 
-    <div>
 
-      <h1>
-        Meetings
-      </h1>
+  <!-- =====================================================
+       ADMIN PORTAL HEADER
+       Navigation is injected by admin-layout.js
+  ====================================================== -->
 
-      <p class="muted">
-        Plan, record and manage group meetings.
-      </p>
+  <header class="topbar">
 
-    </div>
+    <div class="topbar-inner">
 
-  </div>
-
-
-
-  <!-- =================================================
-       STATUS
-  ================================================== -->
-
-  <div
-    id="status"
-    class="card"
-    style="margin-bottom:20px;"
-    hidden
-  ></div>
-
-
-
-  <!-- =================================================
-       ERROR
-  ================================================== -->
-
-  <div
-    id="error"
-    class="error"
-    hidden
-    style="margin-bottom:20px;"
-  ></div>
-
-
-
-  <!-- =================================================
-       METRICS
-  ================================================== -->
-
-  <div class="meeting-metrics">
-
-    <div class="meeting-metric-card">
-
-      <div class="meeting-metric-label muted">
-        Upcoming
-      </div>
-
-      <div
-        class="meeting-metric-value"
-        id="upcomingCount"
-      >
-        0
-      </div>
-
-    </div>
-
-
-    <div class="meeting-metric-card">
-
-      <div class="meeting-metric-label muted">
-        Completed
-      </div>
-
-      <div
-        class="meeting-metric-value"
-        id="completedCount"
-      >
-        0
-      </div>
-
-    </div>
-
-
-    <div class="meeting-metric-card">
-
-      <div class="meeting-metric-label muted">
-        Cancelled
-      </div>
-
-      <div
-        class="meeting-metric-value"
-        id="cancelledCount"
-      >
-        0
-      </div>
-
-    </div>
-
-  </div>
-
-
-
-  <!-- =================================================
-       SCHEDULE MEETING
-  ================================================== -->
-
-  <section class="card meeting-section">
-
-    <div class="meeting-section-header">
-
-      <h2>
-        Schedule Meeting
-      </h2>
-
-      <p class="muted">
-        Create a meeting and add its agenda.
-      </p>
-
-    </div>
-
-
-    <form id="meetingForm">
-
-      <div class="meeting-form-grid">
-
-        <div class="form-group">
-
-          <label for="title">
-            Meeting Title
-          </label>
-
-          <input
-            id="title"
-            name="title"
-            type="text"
-            required
-            maxlength="255"
-            placeholder="e.g. Monthly Chama Meeting"
-          >
-
-        </div>
-
-
-        <div class="form-group">
-
-          <label for="meetingDate">
-            Date
-          </label>
-
-          <input
-            id="meetingDate"
-            name="date"
-            type="date"
-            required
-          >
-
-        </div>
-
-
-        <div class="form-group">
-
-          <label for="venue">
-            Venue
-          </label>
-
-          <input
-            id="venue"
-            name="venue"
-            type="text"
-            maxlength="255"
-            placeholder="e.g. Timau Primary"
-          >
-
-        </div>
-
-
-        <div class="form-group meeting-form-full">
-
-          <label for="agenda">
-            Agenda
-          </label>
-
-          <textarea
-            id="agenda"
-            name="agenda"
-            rows="5"
-            placeholder="Enter one agenda item per line..."
-          ></textarea>
-
-          <small class="muted">
-            Add each agenda item on a separate line.
-          </small>
-
-        </div>
-
+      <div class="brand">
+        CHAMA
+        <span>LIVE</span>
       </div>
 
 
-      <div class="meeting-form-actions">
+      <nav
+        class="top-nav"
+        aria-label="Admin navigation"
+      ></nav>
 
-        <button
-          class="btn btn-primary"
-          id="saveMeeting"
-          type="submit"
+
+      <div class="topbar-actions">
+
+        <span
+          data-user-name
+          class="muted user-name"
         >
-          Schedule Meeting
-        </button>
+          Admin
+        </span>
+
 
         <button
+          id="logout"
           class="btn btn-secondary"
-          id="cancelEdit"
           type="button"
-          hidden
         >
-          Cancel Edit
+          Sign out
         </button>
 
       </div>
 
-    </form>
-
-  </section>
-
-
-
-  <!-- =================================================
-       MEETING RECORDS
-  ================================================== -->
-
-  <section class="card meeting-section">
-
-    <div class="meeting-section-header">
-
-      <h2>
-        Meeting Records
-      </h2>
-
-      <p class="muted">
-        View and manage your group's meeting history.
-      </p>
-
     </div>
 
-
-    <div class="meeting-filter-bar">
-
-      <div class="meeting-filter-label">
-        Filter meetings
-      </div>
-
-      <select
-        id="statusFilter"
-        aria-label="Filter meetings by status"
-      >
-
-        <option value="all">
-          All Meetings
-        </option>
-
-        <option value="upcoming">
-          Upcoming
-        </option>
-
-        <option value="completed">
-          Completed
-        </option>
-
-        <option value="cancelled">
-          Cancelled
-        </option>
-
-      </select>
-
-    </div>
+  </header>
 
 
-    <div class="table-wrap">
+  <!-- =====================================================
+       ADMIN LAYOUT
+  ====================================================== -->
 
-      <table class="table meeting-table">
+  <div class="layout">
 
-        <thead>
-
-          <tr>
-
-            <th>
-              Date
-            </th>
-
-            <th>
-              Meeting
-            </th>
-
-            <th>
-              Venue
-            </th>
-
-            <th>
-              Status
-            </th>
-
-            <th>
-              Actions
-            </th>
-
-          </tr>
-
-        </thead>
+    <aside
+      class="sidebar"
+      aria-label="Admin navigation"
+    ></aside>
 
 
-        <tbody id="meetingRows">
+    <main class="main">
 
-          <tr>
-
-            <td colspan="5">
-              Loading...
-            </td>
-
-          </tr>
-
-        </tbody>
-
-      </table>
-
-    </div>
-
-  </section>
+      <div class="meeting-page">
 
 
+        <!-- =================================================
+             PAGE HEADER
+        ================================================== -->
 
-  <!-- =================================================
-       MEETING DETAILS
-  ================================================== -->
+        <div class="page-head">
 
-  <section
-    class="card meeting-section meeting-details-card"
-    id="detailsCard"
-    hidden
-  >
+          <div>
 
-    <div id="meetingDetails"></div>
+            <h1>
+              Meetings
+            </h1>
 
+            <p class="muted">
+              Plan, record and manage group meetings.
+            </p>
 
-    <div class="meeting-detail-actions">
-
-      <button
-        class="btn btn-secondary"
-        id="editMeeting"
-        type="button"
-      >
-        Edit Meeting
-      </button>
-
-      <button
-        class="btn btn-secondary"
-        id="completeMeeting"
-        type="button"
-      >
-        Mark Completed
-      </button>
-
-      <button
-        class="btn btn-secondary"
-        id="cancelMeeting"
-        type="button"
-      >
-        Cancel Meeting
-      </button>
-
-      <button
-        class="btn btn-secondary"
-        id="restoreMeeting"
-        type="button"
-        hidden
-      >
-        Restore Meeting
-      </button>
-
-      <button
-        class="btn btn-secondary"
-        id="deleteMeeting"
-        type="button"
-      >
-        Delete Meeting
-      </button>
-
-    </div>
-
-
-    <div class="meeting-section-header">
-
-      <h2>
-        Meeting Record
-      </h2>
-
-      <p class="muted">
-        Save the official minutes and resolutions for this meeting.
-      </p>
-
-    </div>
-
-
-    <div class="meeting-record-grid">
-
-      <div class="meeting-record-box">
-
-        <div class="form-group">
-
-          <label for="minutes">
-            Meeting Minutes
-          </label>
-
-          <textarea
-            id="minutes"
-            rows="8"
-            placeholder="Enter meeting minutes..."
-          ></textarea>
+          </div>
 
         </div>
 
+
+        <!-- =================================================
+             STATUS
+        ================================================== -->
+
+        <div
+          id="status"
+          hidden
+          aria-live="polite"
+        ></div>
+
+
+        <!-- =================================================
+             ERROR
+        ================================================== -->
+
+        <div
+          id="error"
+          hidden
+          role="alert"
+        ></div>
+
+
+        <!-- =================================================
+             METRICS
+        ================================================== -->
+
+        <section
+          class="meeting-metrics"
+          aria-label="Meeting summary"
+        >
+
+          <article class="meeting-metric-card">
+
+            <div class="meeting-metric-label">
+              Upcoming
+            </div>
+
+            <div
+              class="meeting-metric-value"
+              id="upcomingCount"
+            >
+              0
+            </div>
+
+          </article>
+
+
+          <article class="meeting-metric-card">
+
+            <div class="meeting-metric-label">
+              Completed
+            </div>
+
+            <div
+              class="meeting-metric-value"
+              id="completedCount"
+            >
+              0
+            </div>
+
+          </article>
+
+
+          <article class="meeting-metric-card">
+
+            <div class="meeting-metric-label">
+              Cancelled
+            </div>
+
+            <div
+              class="meeting-metric-value"
+              id="cancelledCount"
+            >
+              0
+            </div>
+
+          </article>
+
+        </section>
+
+
+        <!-- =================================================
+             SCHEDULE MEETING
+        ================================================== -->
+
+        <section
+          class="card meeting-section"
+          aria-labelledby="scheduleMeetingTitle"
+        >
+
+          <div class="meeting-section-header">
+
+            <h2 id="scheduleMeetingTitle">
+              Schedule Meeting
+            </h2>
+
+            <p class="muted">
+              Create a meeting and add its agenda.
+            </p>
+
+          </div>
+
+
+          <form id="meetingForm">
+
+            <div class="meeting-form-grid">
+
+
+              <!-- MEETING TITLE -->
+
+              <div class="form-group">
+
+                <label for="title">
+                  Meeting Title
+                </label>
+
+                <input
+                  id="title"
+                  name="title"
+                  type="text"
+                  required
+                  maxlength="255"
+                  placeholder="e.g. Monthly Chama Meeting"
+                >
+
+              </div>
+
+
+              <!-- DATE -->
+
+              <div class="form-group">
+
+                <label for="meetingDate">
+                  Date
+                </label>
+
+                <input
+                  id="meetingDate"
+                  name="date"
+                  type="date"
+                  required
+                >
+
+              </div>
+
+
+              <!-- VENUE -->
+
+              <div class="form-group">
+
+                <label for="venue">
+                  Venue
+                </label>
+
+                <input
+                  id="venue"
+                  name="venue"
+                  type="text"
+                  maxlength="255"
+                  placeholder="e.g. Timau Primary"
+                >
+
+              </div>
+
+
+              <!-- AGENDA -->
+
+              <div class="form-group meeting-form-full">
+
+                <label for="agenda">
+                  Agenda
+                </label>
+
+                <textarea
+                  id="agenda"
+                  name="agenda"
+                  rows="5"
+                  placeholder="Enter one agenda item per line..."
+                ></textarea>
+
+                <small class="muted">
+                  Add each agenda item on a separate line.
+                </small>
+
+              </div>
+
+            </div>
+
+
+            <div class="meeting-form-actions">
+
+              <button
+                class="btn btn-primary"
+                id="saveMeeting"
+                type="submit"
+              >
+                Schedule Meeting
+              </button>
+
+
+              <button
+                class="btn btn-secondary"
+                id="cancelEdit"
+                type="button"
+                hidden
+              >
+                Cancel Edit
+              </button>
+
+            </div>
+
+          </form>
+
+        </section>
+
+
+        <!-- =================================================
+             MEETING RECORDS
+        ================================================== -->
+
+        <section
+          class="card meeting-section"
+          aria-labelledby="meetingRecordsTitle"
+        >
+
+          <div class="meeting-section-header">
+
+            <h2 id="meetingRecordsTitle">
+              Meeting Records
+            </h2>
+
+            <p class="muted">
+              View and manage your group's meeting history.
+            </p>
+
+          </div>
+
+
+          <div class="meeting-filter-bar">
+
+            <div class="meeting-filter-label">
+              Filter meetings
+            </div>
+
+
+            <select
+              id="statusFilter"
+              aria-label="Filter meetings by status"
+            >
+
+              <option value="all">
+                All Meetings
+              </option>
+
+              <option value="upcoming">
+                Upcoming
+              </option>
+
+              <option value="completed">
+                Completed
+              </option>
+
+              <option value="cancelled">
+                Cancelled
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div class="meeting-table-wrap">
+
+            <table class="table meeting-table">
+
+              <thead>
+
+                <tr>
+
+                  <th scope="col">
+                    Date
+                  </th>
+
+                  <th scope="col">
+                    Meeting
+                  </th>
+
+                  <th scope="col">
+                    Venue
+                  </th>
+
+                  <th scope="col">
+                    Status
+                  </th>
+
+                  <th scope="col">
+                    Actions
+                  </th>
+
+                </tr>
+
+              </thead>
+
+
+              <tbody id="meetingRows">
+
+                <tr>
+
+                  <td colspan="5">
+
+                    <div class="meeting-empty-state">
+
+                      Loading...
+
+                    </div>
+
+                  </td>
+
+                </tr>
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </section>
+
+
+        <!-- =================================================
+             MEETING DETAILS
+        ================================================== -->
+
+        <section
+          class="card meeting-section meeting-details-card"
+          id="detailsCard"
+          hidden
+          aria-labelledby="meetingRecordTitle"
+        >
+
+          <div id="meetingDetails"></div>
+
+
+          <!-- MEETING ACTIONS -->
+
+          <div class="meeting-detail-actions">
+
+            <button
+              class="btn btn-secondary"
+              id="editMeeting"
+              type="button"
+            >
+              Edit Meeting
+            </button>
+
+
+            <button
+              class="btn btn-secondary"
+              id="completeMeeting"
+              type="button"
+            >
+              Mark Completed
+            </button>
+
+
+            <button
+              class="btn btn-secondary"
+              id="cancelMeeting"
+              type="button"
+            >
+              Cancel Meeting
+            </button>
+
+
+            <button
+              class="btn btn-secondary"
+              id="restoreMeeting"
+              type="button"
+              hidden
+            >
+              Restore Meeting
+            </button>
+
+
+            <button
+              class="btn btn-secondary"
+              id="deleteMeeting"
+              type="button"
+            >
+              Delete Meeting
+            </button>
+
+          </div>
+
+
+          <!-- OFFICIAL RECORD -->
+
+          <div class="meeting-section-header">
+
+            <h2 id="meetingRecordTitle">
+              Meeting Record
+            </h2>
+
+            <p class="muted">
+              Save the official minutes and resolutions for this meeting.
+            </p>
+
+          </div>
+
+
+          <div class="meeting-record-grid">
+
+
+            <!-- MINUTES -->
+
+            <div class="meeting-record-box">
+
+              <div class="form-group">
+
+                <label for="minutes">
+                  Meeting Minutes
+                </label>
+
+                <textarea
+                  id="minutes"
+                  rows="8"
+                  placeholder="Enter meeting minutes..."
+                ></textarea>
+
+              </div>
+
+            </div>
+
+
+            <!-- RESOLUTIONS -->
+
+            <div class="meeting-record-box">
+
+              <div class="form-group">
+
+                <label for="resolution">
+                  Resolutions
+                </label>
+
+                <textarea
+                  id="resolution"
+                  rows="8"
+                  placeholder="Enter resolutions and decisions..."
+                ></textarea>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <div class="meeting-save-row">
+
+            <button
+              class="btn btn-primary"
+              id="saveMinutes"
+              type="button"
+            >
+              Save Minutes &amp; Resolutions
+            </button>
+
+          </div>
+
+        </section>
+
       </div>
 
+    </main>
 
-      <div class="meeting-record-box">
-
-        <div class="form-group">
-
-          <label for="resolution">
-            Resolutions
-          </label>
-
-          <textarea
-            id="resolution"
-            rows="8"
-            placeholder="Enter resolutions and decisions..."
-          ></textarea>
-
-        </div>
-
-      </div>
-
-    </div>
+  </div>
 
 
-    <div class="meeting-save-row">
+  <!-- =====================================================
+       ADMIN PORTAL BOOT
+       admin-layout.js is the sole page boot owner.
+  ====================================================== -->
 
-      <button
-        class="btn btn-primary"
-        id="saveMinutes"
-        type="button"
-      >
-        Save Minutes &amp; Resolutions
-      </button>
+  <script type="module">
 
-    </div>
+    import {
+      boot
+    } from "./js/admin-layout.js";
 
-  </section>
 
-</div>
+    boot();
+
+  </script>
+
+
+</body>
+
+</html>
