@@ -154,7 +154,7 @@
       right: -22px;
       bottom: -26px;
       border-radius: 50%;
-      background: rgba(255,255,255,.38);
+      background: rgba(255, 255, 255, .38);
       pointer-events: none;
     }
 
@@ -883,8 +883,6 @@
 
   <!-- =====================================================
        ADMIN LAYOUT
-       Sidebar is retained as structural fallback.
-       admin-layout.js owns the active navigation.
   ====================================================== -->
 
   <div class="layout">
@@ -1191,7 +1189,9 @@
 
               <!-- RECEIPT -->
 
-              <div class="form-group expense-form-full">
+              <div
+                class="form-group expense-form-full"
+              >
 
                 <label for="receiptUrl">
                   Receipt / Reference
@@ -1207,8 +1207,8 @@
                 >
 
                 <small class="muted">
-                  Optional. Enter a receipt number, reference
-                  or document URL.
+                  Optional. Enter a receipt number,
+                  reference or document URL.
                 </small>
 
               </div>
@@ -1216,6 +1216,8 @@
 
             </div>
 
+
+            <!-- FORM ACTION -->
 
             <div class="expense-form-actions">
 
@@ -1258,6 +1260,8 @@
 
             </div>
 
+
+            <!-- FILTERS -->
 
             <div
               class="ledger-filters"
@@ -1331,6 +1335,8 @@
 
           </div>
 
+
+          <!-- TABLE -->
 
           <div class="table-wrap">
 
