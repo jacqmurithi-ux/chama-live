@@ -1542,6 +1542,65 @@ async function loadCurrentPageFeature() {
 
 
 /* =========================================================
+   BOOT ERROR DISPLAY
+========================================================= */
+
+function showBootError(
+  message,
+  stage
+) {
+
+  const errorBox =
+    document.getElementById(
+      "error"
+    );
+
+
+  const loadingElements =
+    document.querySelectorAll(
+      "[data-loading], .loading, .page-loading"
+    );
+
+
+  loadingElements.forEach(
+    element => {
+
+      element.setAttribute(
+        "hidden",
+        ""
+      );
+
+    }
+  );
+
+
+  if (!errorBox) {
+
+    return;
+
+  }
+
+
+  errorBox.hidden =
+    false;
+
+  errorBox.classList.remove(
+    "hidden"
+  );
+
+  errorBox.classList.add(
+    "show",
+    "error"
+  );
+
+
+  errorBox.textContent =
+    `Admin Portal loading failed during ${stage}: ${message}`;
+
+}
+
+
+/* =========================================================
    ADMIN PORTAL BOOT
 ========================================================= */
 
@@ -1558,7 +1617,14 @@ export async function boot() {
     true;
 
 
+  let stage =
+    "authentication";
+
+
   try {
+
+    stage =
+      "application context";
 
     context =
       await getMyApplicationContext();
@@ -1584,8 +1650,14 @@ export async function boot() {
         .toLowerCase();
 
 
+    stage =
+      "group identity";
+
     renderCurrentGroupName();
 
+
+    stage =
+      "admin authorization";
 
     if (
       !isAdminAccount()
@@ -1603,6 +1675,9 @@ export async function boot() {
     const page =
       getCurrentPage();
 
+
+    stage =
+      "page authorization";
 
     if (
       !ADMIN_PAGES.has(
@@ -1623,6 +1698,9 @@ export async function boot() {
       true;
 
 
+    stage =
+      "admin navigation";
+
     injectStyles();
 
     renderDesktopNavigation();
@@ -1634,7 +1712,25 @@ export async function boot() {
     bindAdminLogout();
 
 
+    stage =
+      `${page} module`;
+
+
     await loadCurrentPageFeature();
+
+
+    document
+      .querySelectorAll(
+        "[data-admin-loading]"
+      )
+      .forEach(
+        element => {
+
+          element.hidden =
+            true;
+
+        }
+      );
 
   }
 
@@ -1642,30 +1738,18 @@ export async function boot() {
 
     console.error(
       "CHAMA LIVE Admin Portal boot failed:",
-      error
+      {
+        stage,
+        error
+      }
     );
 
 
-    const errorBox =
-      document.getElementById(
-        "error"
-      );
-
-
-    if (errorBox) {
-
-      errorBox.hidden =
-        false;
-
-      errorBox.classList.remove(
-        "hidden"
-      );
-
-      errorBox.textContent =
-        error?.message ||
-        "Unable to load the Admin Portal.";
-
-    }
+    showBootError(
+      error?.message ||
+        "Unable to load the Admin Portal.",
+      stage
+    );
 
   }
 
