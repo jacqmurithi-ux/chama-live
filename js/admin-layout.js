@@ -129,6 +129,11 @@ const PAGE_SCRIPTS = {
   "milestones.html": [
     "./milestones.js",
     "initPage"
+  ],
+
+  "assets.html": [
+    "./assets.js",
+    "initPage"
   ]
 
 };
@@ -182,12 +187,6 @@ function isAdminAccount() {
 
 /* =========================================================
    CURRENT GROUP DISPLAY
-   ---------------------------------------------------------
-   Uses the authenticated application context so every
-   [data-group-name] element receives the same authoritative
-   group name.
-
-   This keeps the topbar and page context synchronized.
 ========================================================= */
 
 function renderCurrentGroupName() {
@@ -357,7 +356,9 @@ function injectStyles() {
       "chama-admin-layout"
     )
   ) {
+
     return;
+
   }
 
 
@@ -717,14 +718,6 @@ function renderDesktopNavigation() {
   }
 
 
-  /*
-   * The top-nav element is the dedicated Admin navigation
-   * mount point.
-   *
-   * Clear any legacy/static content first so an old
-   * "Pages" link cannot remain above the current navigation.
-   */
-
   target.replaceChildren();
 
 
@@ -815,10 +808,6 @@ function renderDesktopNavigation() {
 
   }
 
-
-  /*
-   * Billing remains a separate account destination.
-   */
 
   nav.appendChild(
     createNavLink(
@@ -1582,16 +1571,6 @@ export async function boot() {
 
     }
 
-
-    /*
-     * Populate every group-name element from the same
-     * authenticated application context.
-     *
-     * This includes:
-     * - #topbar-group-name
-     * - #current-group-name
-     * - any future [data-group-name] elements
-     */
 
     renderCurrentGroupName();
 
