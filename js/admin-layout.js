@@ -10,6 +10,7 @@
    - Mobile bottom navigation
    - Admin logout
    - Current-page module boot
+   - Current group identity display
 
    IMPORTANT
    ---------------------------------------------------------
@@ -175,6 +176,40 @@ function isAdminAccount() {
         .toLowerCase()
     )
   );
+
+}
+
+
+/* =========================================================
+   CURRENT GROUP DISPLAY
+   ---------------------------------------------------------
+   Uses the authenticated application context so every
+   [data-group-name] element receives the same authoritative
+   group name.
+
+   This keeps the topbar and page context synchronized.
+========================================================= */
+
+function renderCurrentGroupName() {
+
+  const groupName =
+    context?.group?.name ||
+    context?.member?.group_name ||
+    "CHAMA";
+
+
+  document
+    .querySelectorAll(
+      "[data-group-name]"
+    )
+    .forEach(
+      element => {
+
+        element.textContent =
+          groupName;
+
+      }
+    );
 
 }
 
@@ -1546,6 +1581,19 @@ export async function boot() {
       );
 
     }
+
+
+    /*
+     * Populate every group-name element from the same
+     * authenticated application context.
+     *
+     * This includes:
+     * - #topbar-group-name
+     * - #current-group-name
+     * - any future [data-group-name] elements
+     */
+
+    renderCurrentGroupName();
 
 
     context.role =
