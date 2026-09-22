@@ -6,9 +6,14 @@
         name="viewport"
         content="width=device-width, initial-scale=1.0"
     >
+
     <title>Group Management | CHAMA LIVE</title>
 
     <style>
+        /* =====================================================
+           BASE
+        ===================================================== */
+
         * {
             box-sizing: border-box;
         }
@@ -36,9 +41,13 @@
             font: inherit;
         }
 
+        a {
+            color: inherit;
+        }
+
         /* =====================================================
            PAGE
-           ===================================================== */
+        ===================================================== */
 
         .group-management-page {
             width: 100%;
@@ -49,9 +58,7 @@
 
         /* =====================================================
            HERO
-           Explicitly scoped to prevent shared layout styles
-           from flattening or hiding the hero.
-           ===================================================== */
+        ===================================================== */
 
         .group-management-page .page-hero {
             display: block;
@@ -60,6 +67,7 @@
             min-height: 190px;
             margin: 0 0 24px;
             padding: 30px 32px;
+
             background:
                 linear-gradient(
                     135deg,
@@ -67,8 +75,10 @@
                     #1e293b 55%,
                     #334155 100%
                 );
+
             border: 1px solid #334155;
             border-radius: 20px;
+
             color: #ffffff;
             overflow: hidden;
             isolation: isolate;
@@ -100,18 +110,19 @@
             z-index: -1;
         }
 
-        .group-management-page .page-hero-content {
+        .page-hero-content {
             display: block;
             position: relative;
             z-index: 2;
             max-width: 780px;
         }
 
-        .group-management-page .page-hero-kicker {
+        .page-hero-kicker {
             display: inline-flex;
             align-items: center;
             gap: 8px;
             margin: 0 0 10px;
+
             color: #cbd5e1;
             font-size: 13px;
             line-height: 1.3;
@@ -120,10 +131,11 @@
             text-transform: uppercase;
         }
 
-        .group-management-page .page-hero h1 {
+        .page-hero h1 {
             display: block;
             margin: 0 0 10px;
             padding: 0;
+
             color: #ffffff;
             font-size: clamp(30px, 4vw, 42px);
             line-height: 1.12;
@@ -131,25 +143,27 @@
             letter-spacing: -0.025em;
         }
 
-        .group-management-page .page-hero p {
+        .page-hero p {
             display: block;
             margin: 0;
             padding: 0;
             max-width: 700px;
+
             color: #cbd5e1;
             font-size: 15px;
             line-height: 1.7;
         }
 
         /* =====================================================
-           STATUS / ERROR
-           ===================================================== */
+           STATUS
+        ===================================================== */
 
         .status-message {
             display: none;
             margin: 0 0 20px;
             padding: 14px 16px;
             border-radius: 12px;
+
             font-size: 14px;
             line-height: 1.5;
         }
@@ -169,12 +183,15 @@
         }
 
         /* =====================================================
-           GRID
-           ===================================================== */
+           MAIN GRID
+        ===================================================== */
 
         .management-grid {
             display: grid;
-            grid-template-columns: minmax(0, 1.55fr) minmax(300px, 0.85fr);
+            grid-template-columns:
+                minmax(0, 1.55fr)
+                minmax(300px, 0.85fr);
+
             gap: 22px;
             align-items: start;
         }
@@ -196,13 +213,16 @@
 
         /* =====================================================
            CARDS
-           ===================================================== */
+        ===================================================== */
 
         .management-card {
             background: #ffffff;
             border: 1px solid #e2e8f0;
             border-radius: 16px;
-            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.045);
+
+            box-shadow:
+                0 4px 16px rgba(15, 23, 42, 0.045);
+
             overflow: hidden;
         }
 
@@ -211,6 +231,7 @@
             align-items: flex-start;
             justify-content: space-between;
             gap: 16px;
+
             padding: 20px 22px;
             border-bottom: 1px solid #e2e8f0;
         }
@@ -221,6 +242,7 @@
 
         .card-header h2 {
             margin: 0;
+
             color: #0f172a;
             font-size: 18px;
             line-height: 1.3;
@@ -229,6 +251,7 @@
 
         .card-header p {
             margin: 5px 0 0;
+
             color: #64748b;
             font-size: 13px;
             line-height: 1.5;
@@ -240,17 +263,20 @@
 
         /* =====================================================
            GROUP OVERVIEW
-           ===================================================== */
+        ===================================================== */
 
         .overview-grid {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns:
+                repeat(3, minmax(0, 1fr));
+
             gap: 12px;
         }
 
         .overview-item {
             min-width: 0;
             padding: 16px;
+
             background: #f8fafc;
             border: 1px solid #e2e8f0;
             border-radius: 12px;
@@ -259,29 +285,35 @@
         .overview-label {
             display: block;
             margin-bottom: 6px;
+
             color: #64748b;
             font-size: 12px;
             font-weight: 650;
+
             text-transform: uppercase;
             letter-spacing: 0.035em;
         }
 
         .overview-value {
             display: block;
+
             color: #0f172a;
             font-size: 15px;
             line-height: 1.4;
             font-weight: 700;
+
             overflow-wrap: anywhere;
         }
 
         /* =====================================================
            FORM
-           ===================================================== */
+        ===================================================== */
 
         .form-grid {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+
             gap: 18px;
         }
 
@@ -296,6 +328,7 @@
         .form-field label {
             display: block;
             margin-bottom: 7px;
+
             color: #334155;
             font-size: 13px;
             font-weight: 700;
@@ -306,12 +339,16 @@
             display: block;
             width: 100%;
             min-height: 46px;
+
             padding: 11px 13px;
+
             background: #ffffff;
             border: 1px solid #cbd5e1;
             border-radius: 10px;
+
             color: #0f172a;
             outline: none;
+
             transition:
                 border-color 0.15s ease,
                 box-shadow 0.15s ease;
@@ -320,7 +357,10 @@
         .form-field input:focus,
         .form-field select:focus {
             border-color: #64748b;
-            box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.12);
+
+            box-shadow:
+                0 0 0 3px
+                rgba(100, 116, 139, 0.12);
         }
 
         .form-field input:disabled,
@@ -332,6 +372,7 @@
 
         .field-help {
             margin: 6px 0 0;
+
             color: #64748b;
             font-size: 12px;
             line-height: 1.5;
@@ -340,9 +381,11 @@
         .contribution-preview {
             margin-top: 8px;
             padding: 10px 12px;
+
             background: #f8fafc;
             border: 1px solid #e2e8f0;
             border-radius: 9px;
+
             color: #475569;
             font-size: 12px;
             line-height: 1.4;
@@ -350,29 +393,42 @@
 
         /* =====================================================
            FORM ACTIONS
-           ===================================================== */
+        ===================================================== */
 
         .form-actions {
             display: flex;
             align-items: center;
             justify-content: flex-end;
             gap: 10px;
+
             margin-top: 22px;
             padding-top: 20px;
+
             border-top: 1px solid #e2e8f0;
         }
+
+        /* =====================================================
+           BUTTONS
+        ===================================================== */
 
         .btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
+
             min-height: 42px;
             padding: 10px 16px;
+
             border: 1px solid transparent;
             border-radius: 10px;
+
             cursor: pointer;
+
             font-size: 14px;
             font-weight: 700;
+
+            text-decoration: none;
+
             transition:
                 background 0.15s ease,
                 border-color 0.15s ease,
@@ -412,14 +468,16 @@
         }
 
         /* =====================================================
-           BILLING / ACCOUNT ACTION
-           ===================================================== */
+           ACCOUNT
+        ===================================================== */
 
         .account-action {
             display: flex;
             align-items: flex-start;
             gap: 14px;
+
             padding: 16px;
+
             background: #f8fafc;
             border: 1px solid #e2e8f0;
             border-radius: 12px;
@@ -427,13 +485,18 @@
 
         .account-action-icon {
             flex: 0 0 42px;
+
             width: 42px;
             height: 42px;
+
             display: grid;
             place-items: center;
+
             border-radius: 10px;
+
             background: #e2e8f0;
             color: #334155;
+
             font-size: 20px;
         }
 
@@ -443,6 +506,7 @@
 
         .account-action-content h3 {
             margin: 0 0 5px;
+
             color: #0f172a;
             font-size: 15px;
             line-height: 1.4;
@@ -450,19 +514,20 @@
 
         .account-action-content p {
             margin: 0 0 12px;
+
             color: #64748b;
             font-size: 13px;
             line-height: 1.5;
         }
 
         /* =====================================================
-           SUBSCRIPTION CARD
-           Dynamically appended by group-management.js
+           SUBSCRIPTION
            ===================================================== */
 
         .subscription-panel {
             margin-top: 18px;
             padding: 16px;
+
             background: #f8fafc;
             border: 1px solid #e2e8f0;
             border-radius: 12px;
@@ -470,18 +535,22 @@
 
         .subscription-panel h3 {
             margin: 0 0 14px;
+
             color: #0f172a;
             font-size: 15px;
         }
 
         .subscription-grid {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+
             gap: 10px;
         }
 
         .subscription-item {
             padding: 11px 12px;
+
             background: #ffffff;
             border: 1px solid #e2e8f0;
             border-radius: 9px;
@@ -490,24 +559,28 @@
         .subscription-item span {
             display: block;
             margin-bottom: 4px;
+
             color: #64748b;
             font-size: 11px;
             font-weight: 650;
+
             text-transform: uppercase;
             letter-spacing: 0.03em;
         }
 
         .subscription-item strong {
             display: block;
+
             color: #0f172a;
             font-size: 13px;
             line-height: 1.4;
+
             overflow-wrap: anywhere;
         }
 
         /* =====================================================
-           CONTEXT CARD
-           ===================================================== */
+           GROUP CONTEXT
+        ===================================================== */
 
         .context-list {
             display: grid;
@@ -519,7 +592,9 @@
             align-items: flex-start;
             justify-content: space-between;
             gap: 18px;
+
             padding: 13px 0;
+
             border-bottom: 1px solid #e2e8f0;
         }
 
@@ -539,85 +614,111 @@
 
         .context-value {
             max-width: 62%;
+
             color: #0f172a;
             font-size: 13px;
             font-weight: 700;
+
             text-align: right;
             overflow-wrap: anywhere;
         }
 
         /* =====================================================
-           PERMISSION NOTICE
-           ===================================================== */
+           PERMISSION
+        ===================================================== */
 
         .permission-note {
             margin-top: 16px;
             padding: 12px 13px;
+
             background: #fffbeb;
             border: 1px solid #fde68a;
             border-radius: 10px;
+
             color: #92400e;
             font-size: 12px;
             line-height: 1.5;
         }
 
         /* =====================================================
-           LOADING
-           ===================================================== */
+           ADMIN LOADING
+           
+           IMPORTANT:
+           admin-layout.js sets element.hidden = true.
+           The hidden selector MUST override display:flex.
+        ===================================================== */
 
         [data-admin-loading] {
             position: fixed;
             inset: 0;
-            z-index: 9999;
+
+            z-index: 99999;
+
             display: flex;
             align-items: center;
             justify-content: center;
+
             background: #f8fafc;
+        }
+
+        [data-admin-loading][hidden] {
+            display: none !important;
         }
 
         .loading-card {
             padding: 22px 26px;
+
             background: #ffffff;
             border: 1px solid #e2e8f0;
             border-radius: 14px;
-            box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
+
+            box-shadow:
+                0 8px 30px
+                rgba(15, 23, 42, 0.08);
+
             color: #475569;
             font-size: 14px;
         }
 
         /* =====================================================
-           MOBILE
-           ===================================================== */
+           RESPONSIVE
+        ===================================================== */
 
         @media (max-width: 950px) {
+
             .management-grid {
                 grid-template-columns: 1fr;
             }
 
             .side-column {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
+                grid-template-columns:
+                    repeat(2, minmax(0, 1fr));
             }
         }
 
         @media (max-width: 800px) {
+
             .group-management-page {
-                padding: 20px 16px 105px;
+                padding:
+                    20px
+                    16px
+                    105px;
             }
 
-            .group-management-page .page-hero {
-                min-height: auto;
-                margin-bottom: 18px;
-                padding: 24px 20px;
-                border-radius: 16px;
+            .page-hero {
+                min-height: auto !important;
+                margin-bottom: 18px !important;
+                padding: 24px 20px !important;
+                border-radius: 16px !important;
             }
 
-            .group-management-page .page-hero h1 {
-                font-size: 29px;
+            .page-hero h1 {
+                font-size: 29px !important;
             }
 
-            .group-management-page .page-hero p {
-                font-size: 14px;
-                line-height: 1.6;
+            .page-hero p {
+                font-size: 14px !important;
+                line-height: 1.6 !important;
             }
 
             .side-column {
@@ -631,6 +732,7 @@
         }
 
         @media (max-width: 600px) {
+
             .group-management-page {
                 padding-left: 12px;
                 padding-right: 12px;
@@ -642,12 +744,12 @@
                 gap: 14px;
             }
 
-            .group-management-page .page-hero {
-                padding: 22px 18px;
+            .page-hero {
+                padding: 22px 18px !important;
             }
 
-            .group-management-page .page-hero h1 {
-                font-size: 27px;
+            .page-hero h1 {
+                font-size: 27px !important;
             }
 
             .overview-grid,
@@ -686,8 +788,13 @@
 
 <body>
 
-    <!-- Shared admin layout expects this topbar skeleton -->
+    <!-- =====================================================
+         ADMIN TOPBAR
+         Owned by admin-layout.js
+    ====================================================== -->
+
     <header class="topbar">
+
         <div class="topbar-inner">
 
             <div class="brand">
@@ -700,6 +807,7 @@
             ></nav>
 
             <div class="topbar-actions">
+
                 <button
                     class="btn btn-secondary"
                     id="logout"
@@ -707,21 +815,28 @@
                 >
                     Sign out
                 </button>
+
             </div>
 
         </div>
+
     </header>
 
-    <!-- Shared admin layout controls authorization/navigation -->
+
+    <!-- =====================================================
+         ADMIN LAYOUT
+    ====================================================== -->
+
     <div class="layout">
 
         <main class="main group-management-page">
 
             <!-- =================================================
                  HERO
-                 ================================================= -->
+            ================================================== -->
 
             <section class="page-hero">
+
                 <div class="page-hero-content">
 
                     <div class="page-hero-kicker">
@@ -733,16 +848,18 @@
                     </h1>
 
                     <p>
-                        Manage your group's identity, contribution settings
-                        and core information from one place.
+                        Manage your group's identity, contribution
+                        settings and core information from one place.
                     </p>
 
                 </div>
+
             </section>
 
+
             <!-- =================================================
-                 STATUS / ERROR
-                 ================================================= -->
+                 STATUS
+            ================================================== -->
 
             <div
                 id="status"
@@ -751,6 +868,7 @@
                 aria-live="polite"
             ></div>
 
+
             <div
                 id="error"
                 class="status-message"
@@ -758,37 +876,52 @@
                 aria-live="assertive"
             ></div>
 
+
             <!-- =================================================
-                 MAIN GRID
-                 ================================================= -->
+                 CONTENT GRID
+            ================================================== -->
 
             <div class="management-grid">
 
-                <!-- ================================
+
+                <!-- =============================================
                      MAIN COLUMN
-                     ================================ -->
+                ============================================== -->
 
                 <div class="main-column">
 
-                    <!-- GROUP OVERVIEW -->
+
+                    <!-- =========================================
+                         GROUP OVERVIEW
+                    ========================================== -->
 
                     <section class="management-card">
 
                         <div class="card-header">
+
                             <div class="card-heading">
-                                <h2>Group Overview</h2>
+
+                                <h2>
+                                    Group Overview
+                                </h2>
+
                                 <p>
-                                    A quick view of your group's current
-                                    identity and membership.
+                                    A quick view of your group's
+                                    current identity and membership.
                                 </p>
+
                             </div>
+
                         </div>
+
 
                         <div class="card-body">
 
                             <div class="overview-grid">
 
+
                                 <div class="overview-item">
+
                                     <span class="overview-label">
                                         Group
                                     </span>
@@ -799,9 +932,12 @@
                                     >
                                         Loading...
                                     </span>
+
                                 </div>
 
+
                                 <div class="overview-item">
+
                                     <span class="overview-label">
                                         Members
                                     </span>
@@ -812,9 +948,12 @@
                                     >
                                         —
                                     </span>
+
                                 </div>
 
+
                                 <div class="overview-item">
+
                                     <span class="overview-label">
                                         Group ID
                                     </span>
@@ -825,7 +964,9 @@
                                     >
                                         —
                                     </span>
+
                                 </div>
+
 
                             </div>
 
@@ -834,26 +975,38 @@
                     </section>
 
 
-                    <!-- GROUP SETTINGS -->
+                    <!-- =========================================
+                         GROUP INFORMATION
+                    ========================================== -->
 
                     <section class="management-card">
 
                         <div class="card-header">
+
                             <div class="card-heading">
-                                <h2>Group Information</h2>
+
+                                <h2>
+                                    Group Information
+                                </h2>
 
                                 <p>
-                                    Update the information used to identify
-                                    and manage your group.
+                                    Update the information used to
+                                    identify and manage your group.
                                 </p>
+
                             </div>
+
                         </div>
+
 
                         <div class="card-body">
 
                             <form id="groupForm">
 
                                 <div class="form-grid">
+
+
+                                    <!-- GROUP NAME -->
 
                                     <div class="form-field full-width">
 
@@ -873,6 +1026,8 @@
                                     </div>
 
 
+                                    <!-- GROUP TYPE -->
+
                                     <div class="form-field">
 
                                         <label for="groupType">
@@ -884,6 +1039,7 @@
                                             name="groupType"
                                             required
                                         >
+
                                             <option value="">
                                                 Select group type
                                             </option>
@@ -907,10 +1063,13 @@
                                             <option value="Other">
                                                 Other
                                             </option>
+
                                         </select>
 
                                     </div>
 
+
+                                    <!-- COUNTRY -->
 
                                     <div class="form-field">
 
@@ -923,6 +1082,7 @@
                                             name="country"
                                             required
                                         >
+
                                             <option value="">
                                                 Select country
                                             </option>
@@ -946,14 +1106,19 @@
                                             <option value="Other">
                                                 Other
                                             </option>
+
                                         </select>
 
                                     </div>
 
 
+                                    <!-- MONTHLY CONTRIBUTION -->
+
                                     <div class="form-field full-width">
 
-                                        <label for="monthlyContribution">
+                                        <label
+                                            for="monthlyContribution"
+                                        >
                                             Standard Monthly Contribution
                                         </label>
 
@@ -969,8 +1134,8 @@
 
                                         <p class="field-help">
                                             Set the standard contribution
-                                            amount expected from members each
-                                            month.
+                                            amount expected from members
+                                            each month.
                                         </p>
 
                                         <div
@@ -982,8 +1147,11 @@
 
                                     </div>
 
+
                                 </div>
 
+
+                                <!-- FORM ACTION -->
 
                                 <div class="form-actions">
 
@@ -1003,33 +1171,47 @@
 
                     </section>
 
+
                 </div>
 
 
-                <!-- ================================
+                <!-- =============================================
                      SIDE COLUMN
-                     ================================ -->
+                ============================================== -->
 
                 <aside class="side-column">
 
-                    <!-- ACCOUNT / BILLING -->
 
-                    <section class="management-card account-card">
+                    <!-- =========================================
+                         ACCOUNT
+                    ========================================== -->
+
+                    <section
+                        class="management-card account-card"
+                    >
 
                         <div class="card-header">
+
                             <div class="card-heading">
-                                <h2>Account</h2>
+
+                                <h2>
+                                    Account
+                                </h2>
 
                                 <p>
-                                    Subscription and account information for
-                                    this group.
+                                    Subscription and account
+                                    information for this group.
                                 </p>
+
                             </div>
+
                         </div>
+
 
                         <div class="card-body">
 
                             <div class="account-action">
+
 
                                 <div
                                     class="account-action-icon"
@@ -1038,6 +1220,7 @@
                                     💳
                                 </div>
 
+
                                 <div class="account-action-content">
 
                                     <h3>
@@ -1045,8 +1228,9 @@
                                     </h3>
 
                                     <p>
-                                        View the group's subscription status,
-                                        pricing and account details.
+                                        View the group's subscription
+                                        status, pricing and account
+                                        details.
                                     </p>
 
                                     <a
@@ -1065,24 +1249,34 @@
                     </section>
 
 
-                    <!-- GROUP CONTEXT -->
+                    <!-- =========================================
+                         GROUP CONTEXT
+                    ========================================== -->
 
                     <section class="management-card">
 
                         <div class="card-header">
+
                             <div class="card-heading">
-                                <h2>Group Context</h2>
+
+                                <h2>
+                                    Group Context
+                                </h2>
 
                                 <p>
-                                    Current group information used by the
-                                    admin portal.
+                                    Current group information used
+                                    by the admin portal.
                                 </p>
+
                             </div>
+
                         </div>
+
 
                         <div class="card-body">
 
                             <div class="context-list">
+
 
                                 <div class="context-row">
 
@@ -1099,20 +1293,19 @@
 
                                 </div>
 
+
                                 <div class="context-row">
 
                                     <span class="context-label">
                                         Members
                                     </span>
 
-                                    <span
-                                        class="context-value"
-                                        id="contextMemberCount"
-                                    >
+                                    <span class="context-value">
                                         Managed by group
                                     </span>
 
                                 </div>
+
 
                                 <div class="context-row">
 
@@ -1126,16 +1319,22 @@
 
                                 </div>
 
+
                             </div>
 
+
                             <div class="permission-note">
-                                Group settings can be changed by the group
-                                owner or an authorized administrator.
+
+                                Group settings can be changed by
+                                the group owner or an authorized
+                                administrator.
+
                             </div>
 
                         </div>
 
                     </section>
+
 
                 </aside>
 
@@ -1146,35 +1345,43 @@
     </div>
 
 
-    <!-- =========================================================
-         ADMIN LOADING STATE
-         ========================================================= -->
+    <!-- =====================================================
+         ADMIN LOADING OVERLAY
+
+         admin-layout.js hides this with:
+         element.hidden = true
+
+         The CSS below explicitly respects hidden.
+    ====================================================== -->
 
     <div
         data-admin-loading
         aria-live="polite"
     >
+
         <div class="loading-card">
             Loading Group Management...
         </div>
+
     </div>
 
 
-    <!-- =========================================================
-         ADMIN LAYOUT
-         Owns:
-         - authentication
-         - authorization
-         - navigation
-         - logout
-         - page feature boot
-         ========================================================= -->
+    <!-- =====================================================
+         ADMIN LAYOUT BOOT
+
+         This remains the single boot owner.
+    ====================================================== -->
 
     <script type="module">
-        import { boot } from "./js/admin-layout.js";
+
+        import {
+            boot
+        } from "./js/admin-layout.js";
+
 
         boot();
+
     </script>
 
 </body>
-</html>2
+</html>
