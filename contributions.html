@@ -467,6 +467,13 @@
       margin-top: 4px;
     }
 
+    .cl-form-note {
+      display: block;
+      margin-top: 4px;
+      font-size: 9px;
+      line-height: 1.4;
+    }
+
 
     /* =====================================================
        SAVE
@@ -565,6 +572,13 @@
 
     .cl-accounting-month-viewing strong {
       color: #0f766e;
+    }
+
+    .cl-accounting-month-note {
+      grid-column: 1 / -1;
+      margin-top: -2px;
+      font-size: 9px;
+      line-height: 1.4;
     }
 
 
@@ -874,6 +888,10 @@
         grid-column: auto;
       }
 
+      .cl-accounting-month-note {
+        grid-column: auto;
+      }
+
       .cl-verifier-detail-grid {
         grid-template-columns: 1fr;
       }
@@ -1113,9 +1131,9 @@
       </h1>
 
       <p class="muted">
-        Record member contributions, track monthly
-        commitments and keep group payments organised
-        in one connected ledger.
+        Record canonical monthly contributions, track
+        member payment positions and manage payment
+        evidence through one connected ledger.
       </p>
 
     </section>
@@ -1562,6 +1580,10 @@
 
           </select>
 
+          <small class="muted cl-form-note">
+            The canonical 2B recording workflow currently accepts Monthly Contribution only. Other contribution categories remain available for compatibility with existing contribution history.
+          </small>
+
         </div>
 
 
@@ -1799,6 +1821,10 @@
           </strong>
 
         </div>
+
+        <small class="muted cl-accounting-month-note">
+          Changing the month refreshes canonical member accounting for that month.
+        </small>
 
       </div>
 
