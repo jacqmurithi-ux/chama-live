@@ -1,5 +1,4 @@
 <!doctype html>
-
 <html lang="en">
 
 <head>
@@ -11,9 +10,7 @@
     content="width=device-width, initial-scale=1"
   >
 
-  <title>
-    Group Management — CHAMA LIVE
-  </title>
+  <title>Group Management — CHAMA LIVE</title>
 
   <link
     rel="stylesheet"
@@ -24,10 +21,23 @@
 
     /* =====================================================
        CHAMA LIVE — GROUP MANAGEMENT
-       VISUAL LAYER
+       PAGE VISUAL LAYER
+
+       admin-layout.js owns:
+       - authentication
+       - navigation
+       - mobile navigation
+       - application shell
+       - page module boot
+    ===================================================== */
+
+
+    /* =====================================================
+       PAGE
     ===================================================== */
 
     .group-page {
+      width: 100%;
       max-width: 1180px;
       margin: 0 auto;
     }
@@ -54,35 +64,40 @@
           )
         );
       color: #fff;
-      box-shadow: 0 14px 35px rgba(0,0,0,.10);
+      box-shadow:
+        0 14px 35px rgba(0, 0, 0, .10);
     }
 
-    .group-hero::after {
-      content: "";
-      position: absolute;
-      width: 210px;
-      height: 210px;
-      right: -65px;
-      top: -80px;
-      border-radius: 50%;
-      background: rgba(255,255,255,.09);
-    }
 
     .group-hero::before {
       content: "";
       position: absolute;
-      width: 120px;
-      height: 120px;
-      right: 120px;
-      bottom: -80px;
+      width: 140px;
+      height: 140px;
+      right: 105px;
+      bottom: -95px;
       border-radius: 50%;
-      background: rgba(255,255,255,.07);
+      background: rgba(255, 255, 255, .07);
     }
+
+
+    .group-hero::after {
+      content: "";
+      position: absolute;
+      width: 220px;
+      height: 220px;
+      right: -70px;
+      top: -85px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .09);
+    }
+
 
     .group-hero-content {
       position: relative;
-      z-index: 2;
+      z-index: 1;
     }
+
 
     .group-hero-badge {
       display: inline-flex;
@@ -91,12 +106,14 @@
       margin-bottom: 12px;
       padding: 7px 12px;
       border-radius: 999px;
-      background: rgba(255,255,255,.14);
+      background: rgba(255, 255, 255, .14);
+      color: #fff;
       font-size: 12px;
       font-weight: 800;
-      letter-spacing: .03em;
+      letter-spacing: .04em;
       text-transform: uppercase;
     }
+
 
     .group-hero h1 {
       margin: 0 0 8px;
@@ -105,10 +122,11 @@
       line-height: 1.1;
     }
 
+
     .group-hero p {
       max-width: 680px;
       margin: 0;
-      color: rgba(255,255,255,.84);
+      color: rgba(255, 255, 255, .84);
       font-size: 15px;
       line-height: 1.7;
     }
@@ -116,14 +134,14 @@
 
     /* =====================================================
        STATUS
-    ====================================================== */
+    ===================================================== */
 
     .group-status {
       margin-bottom: 20px;
       padding: 13px 16px;
+      border: 1px solid var(--border-light);
       border-radius: 12px;
       background: var(--surface-soft);
-      border: 1px solid var(--border-light);
       font-size: 14px;
       font-weight: 700;
     }
@@ -131,7 +149,7 @@
 
     /* =====================================================
        ERROR
-    ====================================================== */
+    ===================================================== */
 
     .group-error {
       margin-bottom: 20px;
@@ -139,26 +157,39 @@
 
 
     /* =====================================================
-       SECTION HEADER
-    ====================================================== */
+       SECTION
+    ===================================================== */
+
+    .group-section {
+      margin-bottom: 24px;
+    }
+
 
     .section-heading {
-      margin-bottom: 20px;
+      margin-bottom: 18px;
     }
+
 
     .section-heading h2 {
       margin-bottom: 5px;
     }
 
 
+    .section-heading p {
+      margin: 0;
+      line-height: 1.6;
+    }
+
+
     /* =====================================================
-       BILLING CARD
-    ====================================================== */
+       BILLING
+    ===================================================== */
 
     .billing-card {
       margin-bottom: 24px;
       padding: 24px;
     }
+
 
     .billing-card-content {
       display: flex;
@@ -168,13 +199,17 @@
       flex-wrap: wrap;
     }
 
+
     .billing-card-copy {
+      min-width: 0;
       max-width: 720px;
     }
+
 
     .billing-card-copy h2 {
       margin-bottom: 6px;
     }
+
 
     .billing-card-copy p {
       margin: 0;
@@ -183,9 +218,14 @@
     }
 
 
+    .billing-card-action {
+      flex: 0 0 auto;
+    }
+
+
     /* =====================================================
-       OVERVIEW CARDS
-    ====================================================== */
+       GROUP OVERVIEW
+    ===================================================== */
 
     .group-overview {
       display: grid;
@@ -194,6 +234,7 @@
       gap: 16px;
     }
 
+
     .overview-card {
       position: relative;
       overflow: hidden;
@@ -201,16 +242,20 @@
       border: 1px solid var(--border-light);
       border-radius: 18px;
       background: var(--surface);
-      box-shadow: 0 7px 20px rgba(0,0,0,.045);
+      box-shadow:
+        0 7px 20px rgba(0, 0, 0, .045);
       transition:
         transform .2s ease,
         box-shadow .2s ease;
     }
 
+
     .overview-card:hover {
       transform: translateY(-2px);
-      box-shadow: 0 12px 28px rgba(0,0,0,.08);
+      box-shadow:
+        0 12px 28px rgba(0, 0, 0, .08);
     }
+
 
     .overview-icon {
       display: flex;
@@ -224,6 +269,7 @@
       font-size: 20px;
     }
 
+
     .overview-label {
       display: block;
       margin-bottom: 6px;
@@ -234,6 +280,7 @@
       text-transform: uppercase;
     }
 
+
     .overview-value {
       display: block;
       color: var(--text-dark);
@@ -241,6 +288,7 @@
       font-weight: 850;
       line-height: 1.25;
     }
+
 
     .overview-id {
       font-size: 12px;
@@ -250,8 +298,8 @@
 
 
     /* =====================================================
-       MAIN MANAGEMENT GRID
-    ====================================================== */
+       MANAGEMENT GRID
+    ===================================================== */
 
     .management-grid {
       display: grid;
@@ -264,19 +312,21 @@
 
 
     /* =====================================================
-       FORM CARD
-    ====================================================== */
+       GROUP INFORMATION
+    ===================================================== */
 
     .management-card {
       padding: 26px;
     }
 
+
     .form-section-title {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 12px;
-      margin-bottom: 20px;
+      margin-bottom: 22px;
     }
+
 
     .form-section-icon {
       display: flex;
@@ -290,14 +340,18 @@
       font-size: 18px;
     }
 
+
     .form-section-title h2 {
       margin: 0;
     }
 
+
     .form-section-title p {
-      margin: 3px 0 0;
+      margin: 4px 0 0;
       font-size: 13px;
+      line-height: 1.55;
     }
+
 
     .form-grid {
       display: grid;
@@ -306,9 +360,11 @@
       gap: 18px;
     }
 
+
     .form-full {
       grid-column: 1 / -1;
     }
+
 
     .form-help {
       margin-top: 7px;
@@ -316,6 +372,43 @@
       font-size: 12px;
       line-height: 1.55;
     }
+
+
+    /* =====================================================
+       CONTRIBUTION PREVIEW
+    ===================================================== */
+
+    .contribution-highlight {
+      margin-top: 22px;
+      padding: 20px;
+      border: 1px solid var(--border-light);
+      border-radius: 17px;
+      background: var(--surface-soft);
+    }
+
+
+    .contribution-highlight-label {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+
+    .contribution-highlight-value {
+      display: block;
+      font-size: 25px;
+      font-weight: 900;
+      line-height: 1.2;
+    }
+
+
+    /* =====================================================
+       SAVE AREA
+    ===================================================== */
 
     .save-area {
       display: flex;
@@ -328,26 +421,30 @@
       border-top: 1px solid var(--border-light);
     }
 
+
     .save-hint {
       margin: 0;
       font-size: 12px;
+      line-height: 1.5;
     }
 
 
     /* =====================================================
-       ACCOUNT CARD
-    ====================================================== */
+       ACCOUNT
+    ===================================================== */
 
     .account-card {
       padding: 24px;
     }
 
+
     .account-box {
       padding: 18px;
-      border-radius: 16px;
       border: 1px solid var(--border-light);
+      border-radius: 16px;
       background: var(--surface-soft);
     }
+
 
     .account-status {
       display: flex;
@@ -357,18 +454,23 @@
       font-weight: 800;
     }
 
+
     .account-dot {
       width: 10px;
       height: 10px;
+      flex: 0 0 10px;
       border-radius: 50%;
       background: #22c55e;
-      box-shadow: 0 0 0 5px rgba(34,197,94,.12);
+      box-shadow:
+        0 0 0 5px rgba(34, 197, 94, .12);
     }
+
 
     .account-card p {
       font-size: 13px;
       line-height: 1.7;
     }
+
 
     .context-list {
       margin: 20px 0 0;
@@ -376,59 +478,64 @@
       list-style: none;
     }
 
+
     .context-list li {
       display: flex;
       gap: 10px;
       padding: 11px 0;
       border-bottom: 1px solid var(--border-light);
       font-size: 13px;
+      line-height: 1.5;
     }
+
 
     .context-list li:last-child {
       border-bottom: 0;
     }
 
+
     .context-check {
+      flex: 0 0 auto;
       font-weight: 900;
     }
 
 
     /* =====================================================
-       CONTRIBUTION SETTINGS HIGHLIGHT
-    ====================================================== */
+       DYNAMIC SUBSCRIPTION BLOCK
 
-    .contribution-highlight {
+       Rendered by group-management.js.
+    ===================================================== */
+
+    .account-card
+    [data-group-subscription] {
       margin-top: 20px;
-      padding: 20px;
-      border-radius: 17px;
-      border: 1px solid var(--border-light);
-      background: var(--surface-soft);
     }
 
-    .contribution-highlight-label {
-      display: block;
-      margin-bottom: 7px;
-      color: var(--muted);
-      font-size: 12px;
+
+    .account-card
+    [data-group-subscription] > div {
+      margin-top: 7px;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+
+    .account-card
+    [data-group-subscription] strong {
       font-weight: 800;
-      text-transform: uppercase;
-    }
-
-    .contribution-highlight-value {
-      font-size: 25px;
-      font-weight: 900;
     }
 
 
     /* =====================================================
-       MOBILE
-    ====================================================== */
+       TABLET
+    ===================================================== */
 
     @media (max-width: 900px) {
 
       .management-grid {
         grid-template-columns: 1fr;
       }
+
 
       .group-overview {
         grid-template-columns:
@@ -438,16 +545,33 @@
     }
 
 
+    /* =====================================================
+       MOBILE
+    ===================================================== */
+
     @media (max-width: 650px) {
 
       .group-hero {
+        margin-bottom: 18px;
         padding: 24px 20px;
         border-radius: 18px;
       }
 
+
+      .group-hero h1 {
+        font-size: 30px;
+      }
+
+
+      .group-hero p {
+        font-size: 14px;
+      }
+
+
       .group-overview {
         grid-template-columns: 1fr;
       }
+
 
       .management-card,
       .account-card,
@@ -455,30 +579,62 @@
         padding: 20px;
       }
 
+
       .form-grid {
         grid-template-columns: 1fr;
       }
+
 
       .form-full {
         grid-column: auto;
       }
 
-      .save-area {
-        align-items: stretch;
-        flex-direction: column;
-      }
-
-      .save-area .btn {
-        width: 100%;
-      }
 
       .billing-card-content {
         align-items: stretch;
         flex-direction: column;
       }
 
-      .billing-card-content .btn {
+
+      .billing-card-action,
+      .billing-card-action .btn {
         width: 100%;
+      }
+
+
+      .save-area {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+
+      .save-area .btn {
+        width: 100%;
+      }
+
+    }
+
+
+    /* =====================================================
+       SMALL PHONES
+    ===================================================== */
+
+    @media (max-width: 420px) {
+
+      .group-hero {
+        padding: 22px 18px;
+      }
+
+
+      .overview-card {
+        padding: 19px;
+      }
+
+
+      .management-card,
+      .account-card,
+      .billing-card {
+        padding: 18px;
       }
 
     }
@@ -487,594 +643,605 @@
 
 </head>
 
+
 <body>
 
-<header class="topbar">
 
-  <div class="brand">
-    CHAMA <span>LIVE</span>
-  </div>
+  <!-- ===================================================
+       STANDARD ADMIN TOPBAR
 
-  <button
-    class="btn btn-secondary"
-    id="logout"
-    type="button"
-  >
-    Sign out
-  </button>
+       admin-layout.js fills .top-nav and adds the
+       mobile menu button.
+  ==================================================== -->
 
-</header>
+  <header class="topbar">
 
-<div class="layout">
+    <div class="topbar-inner">
 
-  <!-- ==================================================
-       SIDEBAR
-  =================================================== -->
+      <div class="brand">
+        CHAMA <span>LIVE</span>
+      </div>
 
-  <aside class="sidebar">
 
-    <nav class="nav">
+      <nav
+        class="top-nav"
+        aria-label="Admin navigation"
+      ></nav>
 
-      <a href="dashboard.html">
-        Dashboard
-      </a>
 
-      <a href="members.html">
-        Members
-      </a>
+      <div class="topbar-actions">
 
-      <a href="contributions.html">
-        Contributions
-      </a>
+        <button
+          class="btn btn-secondary"
+          id="logout"
+          type="button"
+        >
+          Sign out
+        </button>
 
-      <a href="expenses.html">
-        Expenses
-      </a>
+      </div>
 
-      <a href="meetings.html">
-        Meetings
-      </a>
+    </div>
 
-      <a href="reports.html">
-        Reports
-      </a>
+  </header>
 
-      <a href="monthly-closing.html">
-        Monthly Closing
-      </a>
 
-      <a
-        class="active"
-        href="group-management.html"
-      >
-        Group Management
-      </a>
+  <!-- ===================================================
+       ADMIN CONTENT SHELL
 
-      <a href="assets.html">
-        Assets
-      </a>
+       No hard-coded sidebar here.
+       admin-layout.js owns navigation.
+  ==================================================== -->
 
-    </nav>
+  <div class="layout">
 
-  </aside>
 
-  <!-- ==================================================
-       MAIN
-  =================================================== -->
+    <main class="main">
 
-  <main class="main">
-
-    <div class="group-page">
-
-
-      <!-- =================================================
-           HERO
-      ================================================== -->
-
-      <section class="group-hero">
-
-        <div class="group-hero-content">
-
-          <div class="group-hero-badge">
-            ⚙ Group Settings
-          </div>
-
-          <h1>
-            Group Management
-          </h1>
-
-          <p>
-            Manage your group's identity, contribution
-            settings and core information from one place.
-          </p>
-
-        </div>
-
-      </section>
-
-
-      <!-- =================================================
-           BILLING
-      ================================================== -->
-
-      <section class="card billing-card">
-
-        <div class="billing-card-content">
-
-          <div class="billing-card-copy">
-
-            <h2>
-              Billing
-            </h2>
-
-            <p class="muted">
-              View your group's subscription, invoices,
-              billing cycles and payment records.
-            </p>
-
-          </div>
-
-          <a
-            class="btn btn-primary"
-            href="billing.html"
-          >
-            Open Billing
-          </a>
-
-        </div>
-
-      </section>
-
-
-      <!-- STATUS -->
-
-      <div
-        id="status"
-        class="group-status"
-        hidden
-      ></div>
-
-
-      <!-- ERROR -->
-
-      <div
-        id="error"
-        class="error group-error"
-        hidden
-      ></div>
-
-
-      <!-- =================================================
-           GROUP OVERVIEW
-      ================================================== -->
-
-      <section class="card">
-
-        <div class="section-heading">
-
-          <h2>
-            Group Overview
-          </h2>
-
-          <p class="muted">
-            Your current CHAMA LIVE group context.
-          </p>
-
-        </div>
-
-
-        <div class="group-overview">
-
-
-          <!-- GROUP -->
-
-          <div class="overview-card">
-
-            <div class="overview-icon">
-              👥
-            </div>
-
-            <span class="overview-label">
-              Group
-            </span>
-
-            <strong
-              id="currentGroupName"
-              class="overview-value"
-            >
-              —
-            </strong>
-
-          </div>
-
-
-          <!-- MEMBERS -->
-
-          <div class="overview-card">
-
-            <div class="overview-icon">
-              🧑‍🤝‍🧑
-            </div>
-
-            <span class="overview-label">
-              Members
-            </span>
-
-            <strong
-              id="memberCount"
-              class="overview-value"
-            >
-              0
-            </strong>
-
-          </div>
-
-
-          <!-- GROUP ID -->
-
-          <div class="overview-card">
-
-            <div class="overview-icon">
-              🔐
-            </div>
-
-            <span class="overview-label">
-              Group ID
-            </span>
-
-            <strong
-              id="groupId"
-              class="overview-value overview-id"
-            >
-              —
-            </strong>
-
-          </div>
-
-
-        </div>
-
-      </section>
-
-
-      <br>
-
-
-      <!-- =================================================
-           MANAGEMENT GRID
-      ================================================== -->
-
-      <div class="management-grid">
+      <div class="group-page">
 
 
         <!-- =================================================
-             GROUP INFORMATION
+             HERO
         ================================================== -->
 
-        <section class="card management-card">
+        <section class="group-hero">
 
+          <div class="group-hero-content">
 
-          <div class="form-section-title">
-
-            <div class="form-section-icon">
-              ✏️
+            <div class="group-hero-badge">
+              ⚙ Group Settings
             </div>
 
-            <div>
+            <h1>
+              Group Management
+            </h1>
 
-              <h2>
-                Group Information
-              </h2>
-
-              <p class="muted">
-                Update the information used throughout
-                CHAMA LIVE.
-              </p>
-
-            </div>
+            <p>
+              Manage your group's identity, contribution
+              settings and core information from one place.
+            </p>
 
           </div>
-
-
-          <form id="groupForm">
-
-
-            <div class="form-grid">
-
-
-              <!-- GROUP NAME -->
-
-              <div class="form-group form-full">
-
-                <label
-                  for="groupName"
-                >
-                  Group Name
-                </label>
-
-                <input
-                  id="groupName"
-                  type="text"
-                  required
-                  maxlength="150"
-                  placeholder="e.g. Timau Community Welfare Group"
-                >
-
-              </div>
-
-
-              <!-- GROUP TYPE -->
-
-              <div class="form-group">
-
-                <label
-                  for="groupType"
-                >
-                  Group Type
-                </label>
-
-                <select
-                  id="groupType"
-                  required
-                >
-
-                  <option value="chama">
-                    Chama
-                  </option>
-
-                  <option value="welfare">
-                    Welfare Group
-                  </option>
-
-                  <option value="investment">
-                    Investment Group
-                  </option>
-
-                  <option value="sacco">
-                    SACCO
-                  </option>
-
-                  <option value="community">
-                    Community Group
-                  </option>
-
-                  <option value="other">
-                    Other
-                  </option>
-
-                </select>
-
-                <p class="muted form-help">
-                  Stored in the group's
-                  <strong>category</strong> field.
-                </p>
-
-              </div>
-
-
-              <!-- COUNTRY -->
-
-              <div class="form-group">
-
-                <label
-                  for="country"
-                >
-                  Country
-                </label>
-
-                <input
-                  id="country"
-                  type="text"
-                  required
-                  maxlength="100"
-                  placeholder="Kenya"
-                >
-
-              </div>
-
-
-              <!-- MONTHLY CONTRIBUTION -->
-
-              <div class="form-group form-full">
-
-                <label
-                  for="monthlyContribution"
-                >
-                  Default Monthly Contribution
-                </label>
-
-                <input
-                  id="monthlyContribution"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  required
-                  placeholder="200"
-                >
-
-                <p class="muted form-help">
-                  Default amount expected from each
-                  active member every month.
-                </p>
-
-              </div>
-
-
-            </div>
-
-
-            <!-- CONTRIBUTION PREVIEW -->
-
-            <div class="contribution-highlight">
-
-              <span class="contribution-highlight-label">
-                Current Default Contribution
-              </span>
-
-              <strong
-                id="contributionPreview"
-                class="contribution-highlight-value"
-              >
-                KSh 0
-              </strong>
-
-            </div>
-
-
-            <!-- SAVE -->
-
-            <div class="save-area">
-
-              <p class="muted save-hint">
-                Changes apply to this group only.
-              </p>
-
-              <button
-                class="btn btn-primary"
-                id="saveGroup"
-                type="submit"
-              >
-                Save Changes
-              </button>
-
-            </div>
-
-
-          </form>
 
         </section>
 
 
         <!-- =================================================
-             ACCOUNT / CONTEXT
+             STATUS
         ================================================== -->
 
-        <aside class="card account-card">
+        <div
+          id="status"
+          class="group-status"
+          hidden
+          role="status"
+          aria-live="polite"
+        ></div>
 
 
-          <div class="form-section-title">
+        <!-- =================================================
+             ERROR
+        ================================================== -->
 
-            <div class="form-section-icon">
-              🔒
-            </div>
+        <div
+          id="error"
+          class="error group-error"
+          hidden
+          role="alert"
+        ></div>
 
-            <div>
+
+        <!-- =================================================
+             BILLING
+        ================================================== -->
+
+        <section class="card billing-card">
+
+          <div class="billing-card-content">
+
+            <div class="billing-card-copy">
 
               <h2>
-                Group Account
+                Billing & Subscription
               </h2>
 
               <p class="muted">
-                Account and data scope.
+                View your group's subscription, invoices,
+                billing cycles and payment records.
               </p>
+
+            </div>
+
+
+            <div class="billing-card-action">
+
+              <a
+                class="btn btn-primary"
+                href="billing.html"
+              >
+                Open Billing
+              </a>
 
             </div>
 
           </div>
 
+        </section>
 
-          <div class="account-box">
 
-            <div class="account-status">
+        <!-- =================================================
+             GROUP OVERVIEW
+        ================================================== -->
 
-              <span class="account-dot"></span>
+        <section class="card group-section">
 
-              <span>
-                Group-scoped account
-              </span>
+          <div class="section-heading">
 
-            </div>
+            <h2>
+              Group Overview
+            </h2>
 
             <p class="muted">
-              Your CHAMA LIVE records are loaded using
-              your member's group ID. This keeps your
-              group's information separated from other
-              groups.
+              Your current CHAMA LIVE group context.
             </p>
 
           </div>
 
 
-          <ul class="context-list">
+          <div class="group-overview">
 
-            <li>
 
-              <span class="context-check">
-                ✓
+            <!-- GROUP -->
+
+            <div class="overview-card">
+
+              <div
+                class="overview-icon"
+                aria-hidden="true"
+              >
+                👥
+              </div>
+
+              <span class="overview-label">
+                Group
               </span>
 
-              <span>
-                Members are linked to this group.
+              <strong
+                id="currentGroupName"
+                class="overview-value"
+              >
+                —
+              </strong>
+
+            </div>
+
+
+            <!-- MEMBERS -->
+
+            <div class="overview-card">
+
+              <div
+                class="overview-icon"
+                aria-hidden="true"
+              >
+                🧑‍🤝‍🧑
+              </div>
+
+              <span class="overview-label">
+                Members
               </span>
 
-            </li>
+              <strong
+                id="memberCount"
+                class="overview-value"
+              >
+                0
+              </strong>
 
-            <li>
+            </div>
 
-              <span class="context-check">
-                ✓
+
+            <!-- GROUP ID -->
+
+            <div class="overview-card">
+
+              <div
+                class="overview-icon"
+                aria-hidden="true"
+              >
+                🔐
+              </div>
+
+              <span class="overview-label">
+                Group ID
               </span>
 
-              <span>
-                Contributions use this group context.
-              </span>
+              <strong
+                id="groupId"
+                class="overview-value overview-id"
+              >
+                —
+              </strong>
 
-            </li>
-
-            <li>
-
-              <span class="context-check">
-                ✓
-              </span>
-
-              <span>
-                Expenses use this group context.
-              </span>
-
-            </li>
-
-            <li>
-
-              <span class="context-check">
-                ✓
-              </span>
-
-              <span>
-                Reports and monthly closing use this
-                group context.
-              </span>
-
-            </li>
-
-          </ul>
+            </div>
 
 
-        </aside>
+          </div>
+
+        </section>
+
+
+        <!-- =================================================
+             MANAGEMENT GRID
+        ================================================== -->
+
+        <div class="management-grid">
+
+
+          <!-- =================================================
+               GROUP INFORMATION
+          ================================================== -->
+
+          <section class="card management-card">
+
+            <div class="form-section-title">
+
+              <div
+                class="form-section-icon"
+                aria-hidden="true"
+              >
+                ✏️
+              </div>
+
+              <div>
+
+                <h2>
+                  Group Information
+                </h2>
+
+                <p class="muted">
+                  Update the information used throughout
+                  CHAMA LIVE.
+                </p>
+
+              </div>
+
+            </div>
+
+
+            <form id="groupForm">
+
+
+              <div class="form-grid">
+
+
+                <!-- GROUP NAME -->
+
+                <div class="form-group form-full">
+
+                  <label for="groupName">
+                    Group Name
+                  </label>
+
+                  <input
+                    id="groupName"
+                    type="text"
+                    required
+                    maxlength="150"
+                    autocomplete="organization"
+                    placeholder="e.g. Timau Community Welfare Group"
+                  >
+
+                </div>
+
+
+                <!-- GROUP TYPE -->
+
+                <div class="form-group">
+
+                  <label for="groupType">
+                    Group Type
+                  </label>
+
+                  <select
+                    id="groupType"
+                    required
+                  >
+
+                    <option value="chama">
+                      Chama
+                    </option>
+
+                    <option value="welfare">
+                      Welfare Group
+                    </option>
+
+                    <option value="investment">
+                      Investment Group
+                    </option>
+
+                    <option value="sacco">
+                      SACCO
+                    </option>
+
+                    <option value="community">
+                      Community Group
+                    </option>
+
+                    <option value="other">
+                      Other
+                    </option>
+
+                  </select>
+
+                  <p class="muted form-help">
+                    Stored in the group's
+                    <strong>category</strong> field.
+                  </p>
+
+                </div>
+
+
+                <!-- COUNTRY -->
+
+                <div class="form-group">
+
+                  <label for="country">
+                    Country
+                  </label>
+
+                  <input
+                    id="country"
+                    type="text"
+                    required
+                    maxlength="100"
+                    autocomplete="country-name"
+                    placeholder="Kenya"
+                  >
+
+                </div>
+
+
+                <!-- MONTHLY CONTRIBUTION -->
+
+                <div class="form-group form-full">
+
+                  <label for="monthlyContribution">
+                    Default Monthly Contribution
+                  </label>
+
+                  <input
+                    id="monthlyContribution"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    required
+                    inputmode="decimal"
+                    placeholder="200"
+                  >
+
+                  <p class="muted form-help">
+                    Default amount expected from each
+                    active member every month.
+                  </p>
+
+                </div>
+
+
+              </div>
+
+
+              <!-- =================================================
+                   CONTRIBUTION PREVIEW
+              ================================================== -->
+
+              <div class="contribution-highlight">
+
+                <span class="contribution-highlight-label">
+                  Current Default Contribution
+                </span>
+
+                <strong
+                  id="contributionPreview"
+                  class="contribution-highlight-value"
+                >
+                  KSh 0.00
+                </strong>
+
+              </div>
+
+
+              <!-- =================================================
+                   SAVE
+              ================================================== -->
+
+              <div class="save-area">
+
+                <p class="muted save-hint">
+                  Changes apply to this group only.
+                </p>
+
+                <button
+                  class="btn btn-primary"
+                  id="saveGroup"
+                  type="submit"
+                >
+                  Save Changes
+                </button>
+
+              </div>
+
+
+            </form>
+
+          </section>
+
+
+          <!-- =================================================
+               ACCOUNT / CONTEXT
+          ================================================== -->
+
+          <aside class="card account-card">
+
+            <div class="form-section-title">
+
+              <div
+                class="form-section-icon"
+                aria-hidden="true"
+              >
+                🔒
+              </div>
+
+              <div>
+
+                <h2>
+                  Group Account
+                </h2>
+
+                <p class="muted">
+                  Account and data scope.
+                </p>
+
+              </div>
+
+            </div>
+
+
+            <div class="account-box">
+
+              <div class="account-status">
+
+                <span
+                  class="account-dot"
+                  aria-hidden="true"
+                ></span>
+
+                <span>
+                  Group-scoped account
+                </span>
+
+              </div>
+
+              <p class="muted">
+                Your CHAMA LIVE records are loaded using
+                your member's group ID. This keeps your
+                group's information separated from other
+                groups.
+              </p>
+
+            </div>
+
+
+            <ul class="context-list">
+
+              <li>
+
+                <span class="context-check">
+                  ✓
+                </span>
+
+                <span>
+                  Members are linked to this group.
+                </span>
+
+              </li>
+
+              <li>
+
+                <span class="context-check">
+                  ✓
+                </span>
+
+                <span>
+                  Contributions use this group context.
+                </span>
+
+              </li>
+
+              <li>
+
+                <span class="context-check">
+                  ✓
+                </span>
+
+                <span>
+                  Expenses use this group context.
+                </span>
+
+              </li>
+
+              <li>
+
+                <span class="context-check">
+                  ✓
+                </span>
+
+                <span>
+                  Reports and monthly closing use this
+                  group context.
+                </span>
+
+              </li>
+
+            </ul>
+
+
+          </aside>
+
+
+        </div>
 
 
       </div>
 
+    </main>
 
-    </div>
-
-  </main>
-
-</div>
+  </div>
 
 
-<!-- =====================================================
-     PAGE BOOT
-====================================================== -->
+  <!-- =====================================================
+       PAGE BOOT
 
-<script type="module">
+       admin-layout.js:
+       - authenticates
+       - authorizes admin access
+       - renders navigation
+       - creates mobile navigation
+       - loads group-management.js
+       - calls initGroupManagement()
+  ====================================================== -->
 
-  import {
-    boot
-  } from "./js/admin-layout.js";
+  <script type="module">
 
-  boot();
+    import {
+      boot
+    } from "./js/admin-layout.js";
 
-</script>
+    boot();
+
+  </script>
+
 
 </body>
 
