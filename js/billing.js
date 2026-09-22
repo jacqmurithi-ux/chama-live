@@ -37,6 +37,12 @@
    - get_group_subscription(uuid)
 
    This page is read-only.
+
+   BOOT OWNERSHIP
+   ---------------------------------------------------------
+   - admin-layout.js owns page boot.
+   - initBilling() is exported for admin-layout.js.
+   - This file does not auto-run initBilling().
 ========================================================= */
 
 
@@ -74,7 +80,7 @@ const ADMIN_ROLES = new Set([
 ]);
 
 const MEMBER_DASHBOARD_URL =
-  "https://jacqmurithi-ux.github.io/chama-live/member-dashboard.html";
+  "member-dashboard.html";
 
 
 function canAccessBilling() {
@@ -1319,7 +1325,6 @@ function renderInvoices() {
           text(
             cycle?.cycle_number
           )
-        )
       );
 
 
@@ -1750,9 +1755,11 @@ async function loadBilling() {
 
 /* =========================================================
    INITIALIZER
+   ---------------------------------------------------------
+   admin-layout.js owns page boot.
 ========================================================= */
 
-async function initBilling() {
+export async function initBilling() {
 
   try {
 
@@ -1776,13 +1783,3 @@ async function initBilling() {
   }
 
 }
-
-
-/* =========================================================
-   PAGE BOOT
-   ---------------------------------------------------------
-   This page owns its own billing initialization.
-   No database write is performed.
-========================================================= */
-
-initBilling();
