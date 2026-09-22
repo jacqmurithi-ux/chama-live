@@ -16,20 +16,16 @@
    ---------------------------------------------------------
    This module does NOT perform database mutations.
 
-   It does NOT:
-   - INSERT
-   - UPDATE
-   - DELETE
-   - ALTER
-   - CREATE
-   - change RLS
-   - change privileges
-   - replace database functions
-
    PAGE MODULES
    ---------------------------------------------------------
    Each page remains responsible for its own data/rendering.
+
+   BILLING
+   ---------------------------------------------------------
+   billing.html is an admin page.
+   billing.js exports initBilling().
 ========================================================= */
+
 
 import {
   getMyApplicationContext,
@@ -147,11 +143,10 @@ const PAGE_SCRIPTS = {
 
 
 /* =========================================================
-   RUNTIME STATE
+   STATE
 ========================================================= */
 
 let bootStarted = false;
-
 let context = null;
 
 
@@ -173,7 +168,7 @@ function getCurrentPage() {
 
 
 /* =========================================================
-   ADMIN AUTHORIZATION
+   AUTHORIZATION
 ========================================================= */
 
 function isAdminAccount() {
@@ -181,9 +176,7 @@ function isAdminAccount() {
   return (
     context?.isOwner === true ||
     ADMIN_ROLES.has(
-      String(
-        context?.role || ""
-      )
+      String(context?.role || "")
         .trim()
         .toLowerCase()
     )
@@ -193,7 +186,7 @@ function isAdminAccount() {
 
 
 /* =========================================================
-   CURRENT GROUP DISPLAY
+   CURRENT GROUP
 ========================================================= */
 
 function renderCurrentGroupName() {
@@ -203,17 +196,14 @@ function renderCurrentGroupName() {
     context?.member?.group_name ||
     "CHAMA";
 
-
   document
     .querySelectorAll(
       "[data-group-name]"
     )
     .forEach(
       element => {
-
         element.textContent =
           groupName;
-
       }
     );
 
@@ -221,7 +211,7 @@ function renderCurrentGroupName() {
 
 
 /* =========================================================
-   NAVIGATION LINK
+   NAV LINK
 ========================================================= */
 
 function createNavLink(
@@ -238,10 +228,8 @@ function createNavLink(
   link.textContent =
     label;
 
-
   if (
-    getCurrentPage() ===
-    href
+    getCurrentPage() === href
   ) {
 
     link.classList.add(
@@ -255,14 +243,13 @@ function createNavLink(
 
   }
 
-
   return link;
 
 }
 
 
 /* =========================================================
-   ADMIN NAVIGATION GROUPS
+   NAVIGATION GROUPS
 ========================================================= */
 
 const NAVIGATION_GROUPS = [
@@ -353,7 +340,7 @@ const NAVIGATION_GROUPS = [
 
 
 /* =========================================================
-   INJECT LAYOUT STYLES
+   STYLES
 ========================================================= */
 
 function injectStyles() {
@@ -363,18 +350,14 @@ function injectStyles() {
       "chama-admin-layout"
     )
   ) {
-
     return;
-
   }
-
 
   const style =
     document.createElement("style");
 
   style.id =
     "chama-admin-layout";
-
 
   style.textContent = `
 
@@ -400,9 +383,6 @@ function injectStyles() {
       cursor: pointer;
       white-space: nowrap;
       box-sizing: border-box;
-      transition:
-        background-color 0.15s ease,
-        color 0.15s ease;
     }
 
     .chama-admin-nav a:hover,
@@ -429,7 +409,6 @@ function injectStyles() {
       top: 46px;
       left: 0;
       min-width: 220px;
-      max-width: 280px;
       padding: 6px;
       background: #ffffff;
       border: 1px solid #e5e7eb;
@@ -464,17 +443,6 @@ function injectStyles() {
       font-size: 19px;
       line-height: 1;
       cursor: pointer;
-      box-sizing: border-box;
-    }
-
-    .menu-toggle:hover {
-      background: #f8fafc;
-    }
-
-    .menu-toggle:focus-visible {
-      outline:
-        3px solid rgba(15, 118, 110, 0.18);
-      outline-offset: 2px;
     }
 
     @media (max-width: 800px) {
@@ -494,7 +462,6 @@ function injectStyles() {
         z-index: 20000;
         opacity: 0;
         pointer-events: none;
-        transition: opacity 0.18s ease;
       }
 
       .chama-mobile-backdrop.open {
@@ -510,7 +477,6 @@ function injectStyles() {
         right: 10px;
         max-height: calc(100vh - 145px);
         overflow-y: auto;
-        overscroll-behavior: contain;
         background: #ffffff;
         border: 1px solid #e5e7eb;
         border-radius: 18px;
@@ -520,9 +486,6 @@ function injectStyles() {
         opacity: 0;
         transform: translateY(-6px);
         pointer-events: none;
-        transition:
-          opacity 0.18s ease,
-          transform 0.18s ease;
       }
 
       .chama-mobile-menu.open {
@@ -536,14 +499,12 @@ function injectStyles() {
         padding: 15px 16px;
         background: #f8fafc;
         border-bottom: 1px solid #edf0f4;
-        border-radius: 17px 17px 0 0;
       }
 
       .chama-mobile-head strong {
         display: block;
         color: #101828;
         font-size: 14px;
-        line-height: 1.35;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -551,9 +512,9 @@ function injectStyles() {
 
       .chama-mobile-head span {
         display: block;
+        margin-top: 3px;
         color: #667085;
         font-size: 11px;
-        margin-top: 3px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -561,10 +522,6 @@ function injectStyles() {
 
       .chama-mobile-section {
         padding: 11px 10px 2px;
-      }
-
-      .chama-mobile-section:last-child {
-        padding-bottom: 11px;
       }
 
       .chama-mobile-section h2 {
@@ -586,11 +543,6 @@ function injectStyles() {
         text-decoration: none;
         font-size: 13px;
         font-weight: 700;
-        box-sizing: border-box;
-      }
-
-      .chama-mobile-menu a:hover {
-        background: #f8fafc;
       }
 
       .chama-mobile-menu a.active {
@@ -631,13 +583,8 @@ function injectStyles() {
         text-decoration: none;
         font-size: 10px;
         font-weight: 700;
-        line-height: 1.15;
         text-align: center;
         white-space: nowrap;
-      }
-
-      .chama-admin-bottom a:hover {
-        background: #f8fafc;
       }
 
       .chama-admin-bottom a.active {
@@ -655,11 +602,6 @@ function injectStyles() {
       .chama-mobile-menu {
         left: 8px;
         right: 8px;
-        border-radius: 16px;
-      }
-
-      .chama-mobile-head {
-        border-radius: 15px 15px 0 0;
       }
 
       .chama-admin-bottom {
@@ -671,35 +613,7 @@ function injectStyles() {
       }
     }
 
-    @media (max-width: 360px) {
-
-      .chama-admin-bottom {
-        gap: 2px;
-        padding-left: 4px;
-        padding-right: 4px;
-      }
-
-      .chama-admin-bottom a {
-        font-size: 8px;
-      }
-
-      .chama-mobile-menu a {
-        min-height: 43px;
-        font-size: 12px;
-      }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-
-      .chama-mobile-menu,
-      .chama-mobile-backdrop {
-        transition: none;
-      }
-
-    }
-
   `;
-
 
   document.head.appendChild(
     style
@@ -719,14 +633,11 @@ function renderDesktopNavigation() {
       ".topbar .top-nav"
     );
 
-
   if (!target) {
     return;
   }
 
-
   target.replaceChildren();
-
 
   const nav =
     document.createElement("nav");
@@ -739,7 +650,6 @@ function renderDesktopNavigation() {
     "Admin navigation"
   );
 
-
   for (
     const [
       title,
@@ -748,9 +658,7 @@ function renderDesktopNavigation() {
     of NAVIGATION_GROUPS
   ) {
 
-    if (
-      items.length === 1
-    ) {
+    if (items.length === 1) {
 
       nav.appendChild(
         createNavLink(
@@ -760,35 +668,35 @@ function renderDesktopNavigation() {
       );
 
       continue;
-
     }
 
-
     const details =
-      document.createElement("details");
+      document.createElement(
+        "details"
+      );
 
     details.className =
       "chama-admin-group";
 
-
     const summary =
-      document.createElement("summary");
+      document.createElement(
+        "summary"
+      );
 
     summary.textContent =
       title;
-
 
     details.appendChild(
       summary
     );
 
-
     const panel =
-      document.createElement("div");
+      document.createElement(
+        "div"
+      );
 
     panel.className =
       "chama-admin-group-panel";
-
 
     for (
       const item
@@ -804,7 +712,6 @@ function renderDesktopNavigation() {
 
     }
 
-
     details.appendChild(
       panel
     );
@@ -815,14 +722,12 @@ function renderDesktopNavigation() {
 
   }
 
-
   nav.appendChild(
     createNavLink(
       "billing.html",
       "Billing"
     )
   );
-
 
   target.appendChild(
     nav
@@ -832,7 +737,7 @@ function renderDesktopNavigation() {
 
 
 /* =========================================================
-   ADMIN LOGOUT
+   LOGOUT
 ========================================================= */
 
 function bindAdminLogout() {
@@ -842,50 +747,36 @@ function bindAdminLogout() {
       "logout"
     );
 
-
   if (!logoutButton) {
     return;
   }
-
 
   if (
     logoutButton.dataset.adminLogoutBound ===
     "true"
   ) {
-
     return;
-
   }
-
 
   logoutButton.dataset.adminLogoutBound =
     "true";
-
 
   logoutButton.addEventListener(
     "click",
     async () => {
 
-      if (
-        logoutButton.disabled
-      ) {
-
+      if (logoutButton.disabled) {
         return;
-
       }
-
 
       logoutButton.disabled =
         true;
 
-
       const originalText =
         logoutButton.textContent;
 
-
       logoutButton.textContent =
         "Signing out…";
-
 
       try {
 
@@ -900,30 +791,22 @@ function bindAdminLogout() {
           error
         );
 
-
         logoutButton.disabled =
           false;
-
 
         logoutButton.textContent =
           originalText ||
           "Sign out";
-
 
         const errorBox =
           document.getElementById(
             "error"
           );
 
-
         if (errorBox) {
 
           errorBox.hidden =
             false;
-
-          errorBox.classList.remove(
-            "hidden"
-          );
 
           errorBox.textContent =
             error?.message ||
@@ -940,7 +823,7 @@ function bindAdminLogout() {
 
 
 /* =========================================================
-   OPEN MOBILE MENU
+   MOBILE MENU
 ========================================================= */
 
 function openAdminMobileMenu() {
@@ -960,7 +843,6 @@ function openAdminMobileMenu() {
       ".menu-toggle"
     );
 
-
   menu?.classList.add(
     "open"
   );
@@ -979,16 +861,8 @@ function openAdminMobileMenu() {
     "Close menu"
   );
 
-  document.body.classList.add(
-    "chama-admin-menu-open"
-  );
-
 }
 
-
-/* =========================================================
-   CLOSE MOBILE MENU
-========================================================= */
 
 function closeAdminMobileMenu() {
 
@@ -1006,7 +880,6 @@ function closeAdminMobileMenu() {
     document.querySelector(
       ".menu-toggle"
     );
-
 
   menu?.classList.remove(
     "open"
@@ -1026,10 +899,6 @@ function closeAdminMobileMenu() {
     "Open menu"
   );
 
-  document.body.classList.remove(
-    "chama-admin-menu-open"
-  );
-
 }
 
 
@@ -1044,11 +913,8 @@ function renderMobileNavigation() {
       "chamaAdminMenu"
     )
   ) {
-
     return;
-
   }
-
 
   const backdrop =
     document.createElement("div");
@@ -1058,12 +924,6 @@ function renderMobileNavigation() {
 
   backdrop.className =
     "chama-mobile-backdrop";
-
-  backdrop.setAttribute(
-    "aria-hidden",
-    "true"
-  );
-
 
   const menu =
     document.createElement("aside");
@@ -1079,13 +939,11 @@ function renderMobileNavigation() {
     "Admin menu"
   );
 
-
   const header =
     document.createElement("div");
 
   header.className =
     "chama-mobile-head";
-
 
   const groupName =
     document.createElement("strong");
@@ -1094,14 +952,12 @@ function renderMobileNavigation() {
     context?.group?.name ||
     "CHAMA";
 
-
   const memberName =
     document.createElement("span");
 
   memberName.textContent =
     context?.member?.name ||
     "Admin";
-
 
   header.appendChild(
     groupName
@@ -1115,7 +971,6 @@ function renderMobileNavigation() {
     header
   );
 
-
   for (
     const [
       title,
@@ -1125,23 +980,24 @@ function renderMobileNavigation() {
   ) {
 
     const section =
-      document.createElement("section");
+      document.createElement(
+        "section"
+      );
 
     section.className =
       "chama-mobile-section";
 
-
     const heading =
-      document.createElement("h2");
+      document.createElement(
+        "h2"
+      );
 
     heading.textContent =
       title;
 
-
     section.appendChild(
       heading
     );
-
 
     for (
       const item
@@ -1157,32 +1013,31 @@ function renderMobileNavigation() {
 
     }
 
-
     menu.appendChild(
       section
     );
 
   }
 
-
   const billingSection =
-    document.createElement("section");
+    document.createElement(
+      "section"
+    );
 
   billingSection.className =
     "chama-mobile-section";
 
-
   const billingHeading =
-    document.createElement("h2");
+    document.createElement(
+      "h2"
+    );
 
   billingHeading.textContent =
     "Account";
 
-
   billingSection.appendChild(
     billingHeading
   );
-
 
   billingSection.appendChild(
     createNavLink(
@@ -1191,11 +1046,9 @@ function renderMobileNavigation() {
     )
   );
 
-
   menu.appendChild(
     billingSection
   );
-
 
   document.body.appendChild(
     backdrop
@@ -1205,12 +1058,10 @@ function renderMobileNavigation() {
     menu
   );
 
-
   let button =
     document.querySelector(
       ".menu-toggle"
     );
-
 
   if (!button) {
 
@@ -1238,17 +1089,10 @@ function renderMobileNavigation() {
       "false"
     );
 
-
     const topbarInner =
       document.querySelector(
         ".topbar-inner"
       );
-
-    const topbar =
-      document.querySelector(
-        ".topbar"
-      );
-
 
     if (topbarInner) {
 
@@ -1257,60 +1101,23 @@ function renderMobileNavigation() {
       );
 
     }
-    else if (topbar) {
-
-      topbar.prepend(
-        button
-      );
-
-    }
 
   }
-
-
-  if (
-    !button.hasAttribute(
-      "aria-expanded"
-    )
-  ) {
-
-    button.setAttribute(
-      "aria-expanded",
-      "false"
-    );
-
-  }
-
-
-  if (
-    !button.hasAttribute(
-      "aria-label"
-    )
-  ) {
-
-    button.setAttribute(
-      "aria-label",
-      "Open menu"
-    );
-
-  }
-
 
   button.addEventListener(
     "click",
     () => {
 
-      const isOpen =
+      if (
         menu.classList.contains(
           "open"
-        );
-
-
-      if (isOpen) {
+        )
+      ) {
 
         closeAdminMobileMenu();
 
       }
+
       else {
 
         openAdminMobileMenu();
@@ -1320,12 +1127,10 @@ function renderMobileNavigation() {
     }
   );
 
-
   backdrop.addEventListener(
     "click",
     closeAdminMobileMenu
   );
-
 
   menu
     .querySelectorAll("a")
@@ -1339,25 +1144,6 @@ function renderMobileNavigation() {
 
       }
     );
-
-
-  document.addEventListener(
-    "keydown",
-    event => {
-
-      if (
-        event.key === "Escape" &&
-        menu.classList.contains(
-          "open"
-        )
-      ) {
-
-        closeAdminMobileMenu();
-
-      }
-
-    }
-  );
 
 }
 
@@ -1373,11 +1159,8 @@ function renderMobileBottomNavigation() {
       ".chama-admin-bottom"
     )
   ) {
-
     return;
-
   }
-
 
   const nav =
     document.createElement("nav");
@@ -1389,7 +1172,6 @@ function renderMobileBottomNavigation() {
     "aria-label",
     "Primary mobile navigation"
   );
-
 
   const items = [
 
@@ -1420,7 +1202,6 @@ function renderMobileBottomNavigation() {
 
   ];
 
-
   for (
     const [
       href,
@@ -1432,13 +1213,11 @@ function renderMobileBottomNavigation() {
     const link =
       document.createElement("a");
 
-
     link.href =
       href;
 
     link.textContent =
       label;
-
 
     if (
       href ===
@@ -1456,21 +1235,12 @@ function renderMobileBottomNavigation() {
 
     }
 
-
     if (
-      href ===
-      "#more"
+      href === "#more"
     ) {
 
       link.href =
         "#";
-
-
-      link.setAttribute(
-        "aria-label",
-        "Open more admin navigation"
-      );
-
 
       link.addEventListener(
         "click",
@@ -1485,13 +1255,11 @@ function renderMobileBottomNavigation() {
 
     }
 
-
     nav.appendChild(
       link
     );
 
   }
-
 
   document.body.appendChild(
     nav
@@ -1501,7 +1269,7 @@ function renderMobileBottomNavigation() {
 
 
 /* =========================================================
-   LOAD CURRENT PAGE FEATURE
+   CURRENT PAGE FEATURE
 ========================================================= */
 
 async function loadCurrentPageFeature() {
@@ -1509,27 +1277,22 @@ async function loadCurrentPageFeature() {
   const page =
     getCurrentPage();
 
-
   const entry =
     PAGE_SCRIPTS[page];
-
 
   if (!entry) {
     return;
   }
-
 
   const module =
     await import(
       entry[0]
     );
 
-
   const initializer =
     module?.[entry[1]] ||
     module?.initPage ||
     module?.init;
-
 
   if (
     typeof initializer !==
@@ -1542,14 +1305,52 @@ async function loadCurrentPageFeature() {
 
   }
 
-
   await initializer();
 
 }
 
 
 /* =========================================================
-   BOOT ERROR DISPLAY
+   HIDE ALL LOADERS
+   ---------------------------------------------------------
+   This is deliberately centralized so a module failure
+   cannot leave a full-screen loading overlay covering the
+   page forever.
+========================================================= */
+
+function hideAdminLoaders() {
+
+  document
+    .querySelectorAll(
+      "[data-admin-loading]"
+    )
+    .forEach(
+      element => {
+
+        element.hidden =
+          true;
+
+      }
+    );
+
+  document
+    .querySelectorAll(
+      "[data-loading], .loading, .page-loading"
+    )
+    .forEach(
+      element => {
+
+        element.hidden =
+          true;
+
+      }
+    );
+
+}
+
+
+/* =========================================================
+   BOOT ERROR
 ========================================================= */
 
 function showBootError(
@@ -1557,49 +1358,36 @@ function showBootError(
   stage
 ) {
 
+  hideAdminLoaders();
+
   const errorBox =
     document.getElementById(
       "error"
     );
 
+  if (!errorBox) {
 
-  const loadingElements =
-    document.querySelectorAll(
-      "[data-loading], .loading, .page-loading"
-    );
-
-
-  loadingElements.forEach(
-    element => {
-
-      element.setAttribute(
-        "hidden",
-        ""
+    const billingError =
+      document.getElementById(
+        "billingError"
       );
 
+    if (billingError) {
+
+      billingError.hidden =
+        false;
+
+      billingError.textContent =
+        `Admin Portal loading failed during ${stage}: ${message}`;
+
     }
-  );
-
-
-  if (!errorBox) {
 
     return;
 
   }
 
-
   errorBox.hidden =
     false;
-
-  errorBox.classList.remove(
-    "hidden"
-  );
-
-  errorBox.classList.add(
-    "show",
-    "error"
-  );
-
 
   errorBox.textContent =
     `Admin Portal loading failed during ${stage}: ${message}`;
@@ -1614,19 +1402,14 @@ function showBootError(
 export async function boot() {
 
   if (bootStarted) {
-
     return;
-
   }
-
 
   bootStarted =
     true;
 
-
   let stage =
     "authentication";
-
 
   try {
 
@@ -1635,7 +1418,6 @@ export async function boot() {
 
     context =
       await getMyApplicationContext();
-
 
     if (
       !context?.user ||
@@ -1648,7 +1430,6 @@ export async function boot() {
 
     }
 
-
     context.role =
       String(
         context.role || ""
@@ -1656,12 +1437,10 @@ export async function boot() {
         .trim()
         .toLowerCase();
 
-
     stage =
       "group identity";
 
     renderCurrentGroupName();
-
 
     stage =
       "admin authorization";
@@ -1678,18 +1457,14 @@ export async function boot() {
 
     }
 
-
     const page =
       getCurrentPage();
-
 
     stage =
       "page authorization";
 
     if (
-      !ADMIN_PAGES.has(
-        page
-      )
+      !ADMIN_PAGES.has(page)
     ) {
 
       window.location.replace(
@@ -1700,10 +1475,8 @@ export async function boot() {
 
     }
 
-
     window.__CHAMA_LIVE_LAYOUT_LOADING__ =
       true;
-
 
     stage =
       "admin navigation";
@@ -1718,26 +1491,12 @@ export async function boot() {
 
     bindAdminLogout();
 
-
     stage =
       `${page} module`;
 
-
     await loadCurrentPageFeature();
 
-
-    document
-      .querySelectorAll(
-        "[data-admin-loading]"
-      )
-      .forEach(
-        element => {
-
-          element.hidden =
-            true;
-
-        }
-      );
+    hideAdminLoaders();
 
   }
 
@@ -1750,7 +1509,6 @@ export async function boot() {
         error
       }
     );
-
 
     showBootError(
       error?.message ||
