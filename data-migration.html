@@ -8,7 +8,7 @@
     content="width=device-width, initial-scale=1.0"
   >
 
-  <title>Data Migration | CHAMA LIVE</title>
+  <title>Data Import | CHAMA LIVE</title>
 
   <link
     rel="stylesheet"
@@ -16,59 +16,426 @@
   >
 
   <style>
-    .migration-header {
+    :root {
+      --import-border: #e5e7eb;
+      --import-muted: #6b7280;
+      --import-soft: #f8fafc;
+      --import-blue: #2563eb;
+      --import-blue-soft: #eff6ff;
+      --import-green: #16a34a;
+      --import-green-soft: #f0fdf4;
+      --import-orange: #f59e0b;
+      --import-orange-soft: #fffbeb;
+      --import-purple: #7c3aed;
+      --import-purple-soft: #f5f3ff;
+    }
+
+    .import-page {
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    /* -------------------------------------------------------
+       HEADER
+    ------------------------------------------------------- */
+
+    .import-page-header {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 1rem;
-      flex-wrap: wrap;
       margin-bottom: 1.5rem;
+      flex-wrap: wrap;
     }
 
-    .migration-header h1 {
+    .import-page-title {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.9rem;
+    }
+
+    .import-title-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: var(--import-blue-soft);
+      color: var(--import-blue);
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+
+    .import-page-title h1 {
       margin: 0;
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      line-height: 1.15;
     }
 
-    .migration-header p {
-      margin: 0.35rem 0 0;
+    .import-page-title p {
+      margin: 0.4rem 0 0;
+      color: var(--import-muted);
     }
 
-    .migration-actions {
+    .import-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    /* -------------------------------------------------------
+       MESSAGE
+    ------------------------------------------------------- */
+
+    #migrationMessage {
+      margin-bottom: 1.25rem;
+    }
+
+    /* -------------------------------------------------------
+       IMPORT PIPELINE
+    ------------------------------------------------------- */
+
+    .import-pipeline {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .pipeline-step {
+      position: relative;
       display: flex;
       align-items: center;
       gap: 0.75rem;
+      padding: 0.9rem 1rem;
+      border: 1px solid var(--import-border);
+      border-radius: 12px;
+      background: #fff;
+      color: var(--import-muted);
+    }
+
+    .pipeline-number {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--import-soft);
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .pipeline-step.active {
+      border-color: #bfdbfe;
+      background: var(--import-blue-soft);
+      color: #1e40af;
+    }
+
+    .pipeline-step.active .pipeline-number {
+      background: var(--import-blue);
+      color: #fff;
+    }
+
+    .pipeline-step strong {
+      display: block;
+      font-size: 0.9rem;
+    }
+
+    .pipeline-step small {
+      display: block;
+      margin-top: 0.15rem;
+      opacity: 0.75;
+    }
+
+    /* -------------------------------------------------------
+       MAIN IMPORT GRID
+    ------------------------------------------------------- */
+
+    .import-main-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.7fr) minmax(260px, 0.8fr);
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    .import-card {
+      background: #fff;
+      border: 1px solid var(--import-border);
+      border-radius: 16px;
+      padding: 1.25rem;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    }
+
+    .import-card + .import-card {
+      margin-top: 1rem;
+    }
+
+    .import-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .import-card-header h2 {
+      margin: 0;
+      font-size: 1.05rem;
+    }
+
+    .import-card-header p {
+      margin: 0.35rem 0 0;
+      color: var(--import-muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .import-card-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      font-size: 1.1rem;
+    }
+
+    .icon-blue {
+      background: var(--import-blue-soft);
+      color: var(--import-blue);
+    }
+
+    .icon-green {
+      background: var(--import-green-soft);
+      color: var(--import-green);
+    }
+
+    .icon-orange {
+      background: var(--import-orange-soft);
+      color: var(--import-orange);
+    }
+
+    .icon-purple {
+      background: var(--import-purple-soft);
+      color: var(--import-purple);
+    }
+
+    /* -------------------------------------------------------
+       DROP ZONE
+    ------------------------------------------------------- */
+
+    .upload-zone {
+      position: relative;
+      border: 2px dashed #bfdbfe;
+      border-radius: 16px;
+      background: linear-gradient(
+        180deg,
+        #f8fbff 0%,
+        #ffffff 100%
+      );
+      padding: 2rem 1.25rem;
+      text-align: center;
+      transition:
+        border-color 0.2s ease,
+        background 0.2s ease,
+        transform 0.2s ease;
+    }
+
+    .upload-zone:hover {
+      border-color: var(--import-blue);
+      background: var(--import-blue-soft);
+    }
+
+    .upload-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 1rem;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      background: var(--import-blue-soft);
+      color: var(--import-blue);
+      font-size: 1.7rem;
+    }
+
+    .upload-zone h3 {
+      margin: 0;
+      font-size: 1.05rem;
+    }
+
+    .upload-zone p {
+      max-width: 500px;
+      margin: 0.45rem auto 1rem;
+      color: var(--import-muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .upload-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      min-height: 42px;
+      padding: 0.7rem 1rem;
+      border-radius: 9px;
+      background: var(--import-blue);
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+      border: 0;
+    }
+
+    .upload-button:hover {
+      opacity: 0.92;
+    }
+
+    #migrationFile {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .upload-hint {
+      margin-top: 0.8rem;
+      font-size: 0.75rem;
+      color: var(--import-muted);
+    }
+
+    /* -------------------------------------------------------
+       IMPORT TYPES
+    ------------------------------------------------------- */
+
+    .import-types {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.7rem;
+      margin-top: 1rem;
+    }
+
+    .import-type {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.8rem;
+      border: 1px solid var(--import-border);
+      border-radius: 10px;
+      background: var(--import-soft);
+    }
+
+    .import-type-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      display: grid;
+      place-items: center;
+      background: #fff;
+      flex-shrink: 0;
+    }
+
+    .import-type strong {
+      display: block;
+      font-size: 0.82rem;
+    }
+
+    .import-type span {
+      display: block;
+      margin-top: 0.1rem;
+      font-size: 0.7rem;
+      color: var(--import-muted);
+    }
+
+    /* -------------------------------------------------------
+       SIDE STATUS
+    ------------------------------------------------------- */
+
+    .status-panel {
+      display: grid;
+      gap: 0.7rem;
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.8rem;
+      border: 1px solid var(--import-border);
+      border-radius: 11px;
+    }
+
+    .status-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+
+    .status-item strong {
+      display: block;
+      font-size: 0.82rem;
+    }
+
+    .status-item span {
+      display: block;
+      color: var(--import-muted);
+      font-size: 0.72rem;
+      margin-top: 0.15rem;
+    }
+
+    .security-note {
+      margin-top: 1rem;
+      padding: 0.85rem;
+      border-radius: 11px;
+      background: var(--import-green-soft);
+      border: 1px solid #bbf7d0;
+      color: #166534;
+      font-size: 0.78rem;
+      line-height: 1.5;
+    }
+
+    /* -------------------------------------------------------
+       RECOVERY
+    ------------------------------------------------------- */
+
+    .recovery-card {
+      margin-top: 1.25rem;
+    }
+
+    .recovery-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
       flex-wrap: wrap;
+      margin-bottom: 1rem;
     }
 
-    .migration-card {
-      margin-bottom: 1.25rem;
+    .recovery-toolbar p {
+      margin: 0;
+      color: var(--import-muted);
+      font-size: 0.88rem;
     }
 
-    .migration-steps {
+    .recovery-actions {
       display: flex;
       gap: 0.5rem;
       flex-wrap: wrap;
-      margin-bottom: 1.25rem;
-    }
-
-    .migration-step {
-      padding: 0.5rem 0.75rem;
-      border-radius: 999px;
-      border: 1px solid var(--border, #ddd);
-      opacity: 0.65;
-    }
-
-    .migration-step.active {
-      opacity: 1;
-      font-weight: 700;
-    }
-
-    .hidden {
-      display: none !important;
     }
 
     .recovery-list {
       display: grid;
+      grid-template-columns: repeat(
+        auto-fit,
+        minmax(260px, 1fr)
+      );
       gap: 0.75rem;
     }
 
@@ -76,10 +443,11 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 1rem;
+      gap: 0.75rem;
       padding: 1rem;
-      border: 1px solid var(--border, #ddd);
-      border-radius: 0.75rem;
+      border: 1px solid var(--import-border);
+      border-radius: 12px;
+      background: var(--import-soft);
     }
 
     .recovery-item-main {
@@ -89,23 +457,49 @@
     .recovery-item-main strong {
       display: block;
       overflow-wrap: anywhere;
+      font-size: 0.85rem;
     }
 
-    .muted {
-      opacity: 0.7;
-      margin-top: 0.25rem;
+    .recovery-item-main .muted {
+      margin-top: 0.3rem;
+      color: var(--import-muted);
+      font-size: 0.72rem;
+    }
+
+    .recovery-item button {
+      flex-shrink: 0;
+    }
+
+    /* -------------------------------------------------------
+       MAPPING / PREVIEW
+    ------------------------------------------------------- */
+
+    [data-panel="mapping"],
+    [data-panel="preview"] {
+      margin-top: 1.25rem;
     }
 
     .mapping-grid {
       display: grid;
-      gap: 0.75rem;
+      gap: 0.7rem;
     }
 
     .mapping-row {
       display: grid;
-      grid-template-columns: minmax(150px, 1fr) minmax(180px, 2fr);
+      grid-template-columns:
+        minmax(150px, 0.7fr)
+        minmax(180px, 1.3fr);
       gap: 1rem;
       align-items: center;
+      padding: 0.7rem;
+      border: 1px solid var(--import-border);
+      border-radius: 10px;
+      background: var(--import-soft);
+    }
+
+    .mapping-row span {
+      font-weight: 600;
+      font-size: 0.82rem;
     }
 
     .table-wrap {
@@ -120,32 +514,131 @@
     th,
     td {
       padding: 0.75rem;
-      border-bottom: 1px solid var(--border, #ddd);
+      border-bottom: 1px solid var(--import-border);
       text-align: left;
       vertical-align: top;
     }
 
+    th {
+      background: var(--import-soft);
+      font-size: 0.78rem;
+    }
+
+    td {
+      font-size: 0.8rem;
+    }
+
     pre {
-      max-width: 420px;
-      max-height: 220px;
+      max-width: 500px;
+      max-height: 240px;
       overflow: auto;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
+      font-size: 0.72rem;
     }
 
-    @media (max-width: 700px) {
-      .migration-header {
+    /* -------------------------------------------------------
+       CURRENT GROUP
+    ------------------------------------------------------- */
+
+    .group-status {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+    }
+
+    .group-stat {
+      padding: 0.9rem;
+      border-radius: 11px;
+      background: var(--import-soft);
+      border: 1px solid var(--import-border);
+    }
+
+    .group-stat span {
+      display: block;
+      color: var(--import-muted);
+      font-size: 0.72rem;
+    }
+
+    .group-stat strong {
+      display: block;
+      margin-top: 0.25rem;
+      font-size: 0.9rem;
+      overflow-wrap: anywhere;
+    }
+
+    /* -------------------------------------------------------
+       UTILITIES
+    ------------------------------------------------------- */
+
+    .hidden {
+      display: none !important;
+    }
+
+    .import-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+
+    .muted {
+      color: var(--import-muted);
+    }
+
+    /* -------------------------------------------------------
+       MOBILE
+    ------------------------------------------------------- */
+
+    @media (max-width: 900px) {
+      .import-main-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .import-types {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 650px) {
+      .import-page-header {
         align-items: stretch;
       }
 
-      .migration-actions {
+      .import-header-actions {
         width: 100%;
       }
 
-      .migration-actions a,
-      .migration-actions button {
+      .import-header-actions a {
         width: 100%;
         text-align: center;
+      }
+
+      .import-pipeline {
+        grid-template-columns: 1fr;
+      }
+
+      .pipeline-step {
+        padding: 0.75rem;
+      }
+
+      .import-card {
+        padding: 1rem;
+        border-radius: 13px;
+      }
+
+      .upload-zone {
+        padding: 1.5rem 1rem;
+      }
+
+      .group-status {
+        grid-template-columns: 1fr;
+      }
+
+      .mapping-row {
+        grid-template-columns: 1fr;
+        gap: 0.4rem;
       }
 
       .recovery-item {
@@ -157,9 +650,12 @@
         width: 100%;
       }
 
-      .mapping-row {
-        grid-template-columns: 1fr;
-        gap: 0.4rem;
+      .recovery-actions {
+        width: 100%;
+      }
+
+      .recovery-actions button {
+        flex: 1;
       }
     }
   </style>
@@ -224,227 +720,681 @@
 
     <main class="main">
 
-      <div class="migration-header">
+      <div class="import-page">
 
-        <div>
-          <h1>Data Migration</h1>
+        <!-- =====================================================
+             PAGE HEADER
+        ====================================================== -->
 
-          <p class="muted">
-            Contributions, Expenses and Members —
-            Preview Only
-          </p>
-        </div>
+        <div class="import-page-header">
 
-        <div class="migration-actions">
+          <div class="import-page-title">
 
-          <a
-            href="dashboard.html"
-            class="secondary"
-          >
-            ← Back to Dashboard
-          </a>
+            <div
+              class="import-title-icon"
+              aria-hidden="true"
+            >
+              ⇧
+            </div>
 
-        </div>
+            <div>
+              <h1>Data Import</h1>
 
-      </div>
+              <p>
+                Bring your existing group records into
+                CHAMA LIVE safely and systematically.
+              </p>
+            </div>
 
-      <div
-        id="migrationMessage"
-        class="notice info"
-        aria-live="polite"
-      >
-        Loading Data Migration...
-      </div>
-
-      <div class="migration-steps">
-
-        <div
-          class="migration-step active"
-          data-step="upload"
-        >
-          1. Upload
-        </div>
-
-        <div
-          class="migration-step"
-          data-step="mapping"
-        >
-          2. Mapping
-        </div>
-
-        <div
-          class="migration-step"
-          data-step="preview"
-        >
-          3. Preview
-        </div>
-
-      </div>
-
-      <section
-        class="card migration-card"
-        data-panel="upload"
-      >
-
-        <h2>Import Data</h2>
-
-        <p>
-          Upload a CSV file for validation and
-          preview. Group context comes from the
-          authenticated account and is not accepted
-          from the migration file.
-        </p>
-
-        <label for="migrationFile">
-          CSV file
-        </label>
-
-        <input
-          id="migrationFile"
-          type="file"
-          accept=".csv,text/csv"
-        >
-
-        <p class="muted">
-          Contributions and expenses can proceed
-          through the controlled migration flow.
-          Member records remain preview-only.
-        </p>
-
-      </section>
-
-      <section
-        class="card migration-card"
-        data-panel="mapping"
-      >
-
-        <h2>Map Columns</h2>
-
-        <p>
-          Review the detected source columns before
-          generating the migration preview.
-        </p>
-
-        <div id="mappingTable">
-          <div class="notice info">
-            No source columns are currently loaded.
           </div>
-        </div>
 
-        <div class="migration-actions">
-          <button
-            type="button"
-            id="continueToPreview"
-          >
-            Continue to Preview
-          </button>
-        </div>
+          <div class="import-header-actions">
 
-      </section>
+            <a
+              href="dashboard.html"
+              class="secondary"
+            >
+              ← Back to Dashboard
+            </a>
 
-      <section
-        class="card migration-card"
-        data-panel="preview"
-      >
-
-        <h2>Migration Preview</h2>
-
-        <div class="migration-actions">
-          <button
-            type="button"
-            id="backToMapping"
-            class="secondary"
-          >
-            Back to Mapping
-          </button>
-        </div>
-
-        <div id="previewTable">
-          <div class="notice info">
-            No staged rows are available for preview.
           </div>
+
         </div>
 
-      </section>
-
-      <section class="card migration-card">
-
-        <h2>Recover Existing Import</h2>
-
-        <p>
-          Resume a previously staged or interrupted
-          migration using the persisted batch, row
-          status, normalized data and idempotency
-          keys. Imported rows are not regenerated or
-          re-imported unnecessarily.
-        </p>
+        <!-- =====================================================
+             MESSAGE
+        ====================================================== -->
 
         <div
-          id="recoveryLoading"
+          id="migrationMessage"
           class="notice info"
+          aria-live="polite"
         >
-          Loading recoverable migration batches...
+          Loading Data Import...
         </div>
 
-        <div class="migration-actions">
+        <!-- =====================================================
+             PIPELINE
+        ====================================================== -->
 
-          <button
-            type="button"
-            id="loadRecovery"
-            class="secondary"
-          >
-            Recover Selected Batch
-          </button>
+        <div class="import-pipeline">
 
-          <button
-            type="button"
-            id="refreshRecovery"
-            class="secondary"
+          <div
+            class="pipeline-step active"
+            data-step="upload"
           >
-            Refresh
-          </button>
+
+            <div class="pipeline-number">
+              1
+            </div>
+
+            <div>
+              <strong>Upload</strong>
+              <small>Select your CSV file</small>
+            </div>
+
+          </div>
+
+          <div
+            class="pipeline-step"
+            data-step="mapping"
+          >
+
+            <div class="pipeline-number">
+              2
+            </div>
+
+            <div>
+              <strong>Map</strong>
+              <small>Match your columns</small>
+            </div>
+
+          </div>
+
+          <div
+            class="pipeline-step"
+            data-step="preview"
+          >
+
+            <div class="pipeline-number">
+              3
+            </div>
+
+            <div>
+              <strong>Review</strong>
+              <small>Preview before import</small>
+            </div>
+
+          </div>
 
         </div>
 
-        <div
-          id="recoveryList"
-          class="recovery-list"
+        <!-- =====================================================
+             MAIN IMPORT AREA
+        ====================================================== -->
+
+        <div class="import-main-grid">
+
+          <!-- LEFT -->
+          <section
+            class="import-card"
+            data-panel="upload"
+          >
+
+            <div class="import-card-header">
+
+              <div>
+                <h2>Import your existing records</h2>
+
+                <p>
+                  Start by uploading a CSV exported
+                  from Excel, another system, or your
+                  existing group records.
+                </p>
+              </div>
+
+              <div
+                class="import-card-icon icon-blue"
+                aria-hidden="true"
+              >
+                ⇧
+              </div>
+
+            </div>
+
+            <div class="upload-zone">
+
+              <div
+                class="upload-icon"
+                aria-hidden="true"
+              >
+                ▣
+              </div>
+
+              <h3>
+                Drop your CSV file here
+              </h3>
+
+              <p>
+                Upload your group data and CHAMA LIVE
+                will prepare it for review. Nothing is
+                written to your member records merely
+                by selecting a file.
+              </p>
+
+              <label
+                for="migrationFile"
+                class="upload-button"
+              >
+                Choose CSV File
+              </label>
+
+              <input
+                id="migrationFile"
+                type="file"
+                accept=".csv,text/csv"
+              >
+
+              <div class="upload-hint">
+                CSV files only · Review before import
+              </div>
+
+            </div>
+
+            <div class="import-types">
+
+              <div class="import-type">
+
+                <div
+                  class="import-type-icon icon-green"
+                  aria-hidden="true"
+                >
+                  ✓
+                </div>
+
+                <div>
+                  <strong>Contributions</strong>
+                  <span>
+                    Financial records
+                  </span>
+                </div>
+
+              </div>
+
+              <div class="import-type">
+
+                <div
+                  class="import-type-icon icon-orange"
+                  aria-hidden="true"
+                >
+                  K
+                </div>
+
+                <div>
+                  <strong>Expenses</strong>
+                  <span>
+                    Group expenditure
+                  </span>
+                </div>
+
+              </div>
+
+              <div class="import-type">
+
+                <div
+                  class="import-type-icon icon-purple"
+                  aria-hidden="true"
+                >
+                  #
+                </div>
+
+                <div>
+                  <strong>Members</strong>
+                  <span>
+                    Preview & mapping only
+                  </span>
+                </div>
+
+              </div>
+
+            </div>
+
+          </section>
+
+          <!-- RIGHT -->
+          <aside>
+
+            <section class="import-card">
+
+              <div class="import-card-header">
+
+                <div>
+                  <h2>Import status</h2>
+
+                  <p>
+                    Current migration environment
+                  </p>
+                </div>
+
+                <div
+                  class="import-card-icon icon-green"
+                  aria-hidden="true"
+                >
+                  ✓
+                </div>
+
+              </div>
+
+              <div class="status-panel">
+
+                <div class="status-item">
+
+                  <div
+                    class="status-icon icon-green"
+                    aria-hidden="true"
+                  >
+                    ✓
+                  </div>
+
+                  <div>
+                    <strong>
+                      Group context
+                    </strong>
+
+                    <span>
+                      Authenticated group
+                    </span>
+                  </div>
+
+                </div>
+
+                <div class="status-item">
+
+                  <div
+                    class="status-icon icon-blue"
+                    aria-hidden="true"
+                  >
+                    ✓
+                  </div>
+
+                  <div>
+                    <strong>
+                      Validation
+                    </strong>
+
+                    <span>
+                      Review before confirmation
+                    </span>
+                  </div>
+
+                </div>
+
+                <div class="status-item">
+
+                  <div
+                    class="status-icon icon-orange"
+                    aria-hidden="true"
+                  >
+                    ↻
+                  </div>
+
+                  <div>
+                    <strong>
+                      Recovery
+                    </strong>
+
+                    <span>
+                      Interrupted imports can resume
+                    </span>
+                  </div>
+
+                </div>
+
+              </div>
+
+              <div class="security-note">
+                <strong>Protected import flow</strong><br>
+                Member rows are mapped, validated and
+                previewed only. No member target write
+                occurs from this screen.
+              </div>
+
+            </section>
+
+            <section class="import-card">
+
+              <div class="import-card-header">
+
+                <div>
+                  <h2>What happens next?</h2>
+
+                  <p>
+                    Your file stays under review until
+                    the migration flow is completed.
+                  </p>
+                </div>
+
+              </div>
+
+              <div class="status-panel">
+
+                <div class="status-item">
+
+                  <div
+                    class="status-icon icon-blue"
+                    aria-hidden="true"
+                  >
+                    1
+                  </div>
+
+                  <div>
+                    <strong>
+                      Detect
+                    </strong>
+
+                    <span>
+                      Identify your data type
+                    </span>
+                  </div>
+
+                </div>
+
+                <div class="status-item">
+
+                  <div
+                    class="status-icon icon-blue"
+                    aria-hidden="true"
+                  >
+                    2
+                  </div>
+
+                  <div>
+                    <strong>
+                      Validate
+                    </strong>
+
+                    <span>
+                      Check records and mappings
+                    </span>
+                  </div>
+
+                </div>
+
+                <div class="status-item">
+
+                  <div
+                    class="status-icon icon-blue"
+                    aria-hidden="true"
+                  >
+                    3
+                  </div>
+
+                  <div>
+                    <strong>
+                      Review
+                    </strong>
+
+                    <span>
+                      Preview before confirmation
+                    </span>
+                  </div>
+
+                </div>
+
+              </div>
+
+            </section>
+
+          </aside>
+
+        </div>
+
+        <!-- =====================================================
+             MAPPING
+        ====================================================== -->
+
+        <section
+          class="import-card"
+          data-panel="mapping"
         >
-          <div class="notice info">
+
+          <div class="import-card-header">
+
+            <div>
+              <h2>Map your data</h2>
+
+              <p>
+                Match the columns in your file to
+                CHAMA LIVE fields before continuing.
+              </p>
+            </div>
+
+            <div
+              class="import-card-icon icon-blue"
+              aria-hidden="true"
+            >
+              ⇄
+            </div>
+
+          </div>
+
+          <div id="mappingTable">
+
+            <div class="notice info">
+              No source columns are currently loaded.
+            </div>
+
+          </div>
+
+          <div class="import-actions">
+
+            <button
+              type="button"
+              id="continueToPreview"
+            >
+              Continue to Review →
+            </button>
+
+          </div>
+
+        </section>
+
+        <!-- =====================================================
+             PREVIEW
+        ====================================================== -->
+
+        <section
+          class="import-card"
+          data-panel="preview"
+        >
+
+          <div class="import-card-header">
+
+            <div>
+              <h2>Review import</h2>
+
+              <p>
+                Review the prepared records before
+                proceeding with any controlled import.
+              </p>
+            </div>
+
+            <div
+              class="import-card-icon icon-green"
+              aria-hidden="true"
+            >
+              ✓
+            </div>
+
+          </div>
+
+          <div class="import-actions">
+
+            <button
+              type="button"
+              id="backToMapping"
+              class="secondary"
+            >
+              ← Back to Mapping
+            </button>
+
+          </div>
+
+          <div id="previewTable">
+
+            <div class="notice info">
+              No staged rows are available for preview.
+            </div>
+
+          </div>
+
+        </section>
+
+        <!-- =====================================================
+             RECOVERY
+        ====================================================== -->
+
+        <section class="import-card recovery-card">
+
+          <div class="import-card-header">
+
+            <div>
+              <h2>Recover an existing import</h2>
+
+              <p>
+                Continue a staged or interrupted
+                migration using its persisted batch
+                and row state.
+              </p>
+            </div>
+
+            <div
+              class="import-card-icon icon-orange"
+              aria-hidden="true"
+            >
+              ↻
+            </div>
+
+          </div>
+
+          <div class="recovery-toolbar">
+
+            <p>
+              Previously staged batches for this group
+              appear here when available.
+            </p>
+
+            <div class="recovery-actions">
+
+              <button
+                type="button"
+                id="loadRecovery"
+                class="secondary"
+              >
+                Recover Selected Batch
+              </button>
+
+              <button
+                type="button"
+                id="refreshRecovery"
+                class="secondary"
+              >
+                Refresh
+              </button>
+
+            </div>
+
+          </div>
+
+          <div
+            id="recoveryLoading"
+            class="notice info"
+          >
             Loading recoverable migration batches...
           </div>
-        </div>
 
-      </section>
+          <div
+            id="recoveryList"
+            class="recovery-list"
+          >
 
-      <section class="card migration-card">
+            <div class="notice info">
+              Loading recoverable migration batches...
+            </div>
 
-        <h2>Current Group</h2>
+          </div>
 
-        <p>
-          Group:
-          <strong id="migrationGroupName">
-            Loading...
-          </strong>
-        </p>
+        </section>
 
-        <p>
-          Migration entity:
-          <strong id="migrationEntityType">
-            —
-          </strong>
-        </p>
+        <!-- =====================================================
+             CURRENT GROUP
+        ====================================================== -->
 
-        <p class="muted">
-          Member migration is restricted to
-          mapping, validation and preview. This
-          screen does not create or update public
-          member records, roles, status,
-          onboarding state or authentication
-          identity.
-        </p>
+        <section class="import-card">
 
-      </section>
+          <div class="import-card-header">
+
+            <div>
+              <h2>Import destination</h2>
+
+              <p>
+                The authenticated group receiving this
+                migration context.
+              </p>
+            </div>
+
+            <div
+              class="import-card-icon icon-purple"
+              aria-hidden="true"
+            >
+              ◆
+            </div>
+
+          </div>
+
+          <div class="group-status">
+
+            <div class="group-stat">
+
+              <span>
+                Group
+              </span>
+
+              <strong id="migrationGroupName">
+                Loading...
+              </strong>
+
+            </div>
+
+            <div class="group-stat">
+
+              <span>
+                Migration type
+              </span>
+
+              <strong id="migrationEntityType">
+                —
+              </strong>
+
+            </div>
+
+          </div>
+
+          <div class="security-note">
+
+            <strong>Data protection</strong><br>
+
+            Member migration is restricted to mapping,
+            validation and preview. This screen does not
+            create or update public member records,
+            roles, status, onboarding state or
+            authentication identity.
+
+          </div>
+
+        </section>
+
+      </div>
 
     </main>
 
