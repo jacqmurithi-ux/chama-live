@@ -66,7 +66,8 @@ const ADMIN_PAGES = new Set([
   "plans-activities.html",
   "support-welfare.html",
   "milestones.html",
-  "data-migration.html"
+  "data-migration.html",
+  "admin-getting-started.html"
 ]);
 
 
