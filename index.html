@@ -1,1184 +1,1139 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <meta charset="utf-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1"
-  >
+  <title>CHAMA LIVE — Simple Digital Management for Groups</title>
 
   <meta
     name="description"
-    content="CHAMA LIVE helps chamas, welfare groups, investment groups and community organizations manage members, contributions, expenses, meetings and reports in one simple system."
+    content="CHAMA LIVE helps chamas, CBOs and community groups manage members, contributions, expenses, meetings and group records in one simple digital system."
   >
 
-  <meta
-    name="theme-color"
-    content="#0f766e"
-  >
+  <meta name="theme-color" content="#0f766e">
 
-  <meta
-    name="robots"
-    content="index, follow"
-  >
-
-  <title>
-    CHAMA LIVE — Simple Group Management That Works
-  </title>
-
-  <link
-    rel="stylesheet"
-    href="css/landing.css"
-  >
+  <link rel="stylesheet" href="css/landing.css">
 
   <style>
+    /* =========================================================
+       CHAMA LIVE — LIGHT LANDING PAGE ENHANCEMENTS
+       ========================================================= */
 
-    /* =====================================================
-       ENHANCED LANDING PAGE
-       Existing design preserved.
-       Marketing + pricing + account access additions.
-    ====================================================== */
-
-    .hero-account-options {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
-      margin-top: 24px;
-      max-width: 720px;
+    :root {
+      --cl-primary: #0f766e;
+      --cl-primary-dark: #115e59;
+      --cl-primary-soft: #ecfdf5;
+      --cl-text: #102a2a;
+      --cl-muted: #64748b;
+      --cl-border: #e2e8f0;
+      --cl-surface: #ffffff;
+      --cl-background: #f8fafc;
+      --cl-radius: 18px;
+      --cl-shadow: 0 10px 30px rgba(15, 23, 42, 0.07);
     }
 
-    .account-option {
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background: var(--cl-background);
+      color: var(--cl-text);
+      font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+
+    button,
+    a {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    /* =========================================================
+       HEADER
+       ========================================================= */
+
+    .cl-header {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: rgba(248, 250, 252, 0.94);
+      border-bottom: 1px solid rgba(226, 232, 240, 0.85);
+      backdrop-filter: blur(12px);
+    }
+
+    .cl-header-inner {
+      width: min(1120px, calc(100% - 32px));
+      min-height: 68px;
+      margin: 0 auto;
       display: flex;
       align-items: center;
-      gap: 14px;
-      padding: 15px 17px;
-      border: 1px solid rgba(15, 118, 110, 0.15);
-      border-radius: 14px;
-      background: rgba(255,255,255,.86);
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .cl-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
       text-decoration: none;
-      transition:
-        transform .2s ease,
-        box-shadow .2s ease,
-        border-color .2s ease;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      font-size: 1.15rem;
     }
 
-    .account-option:hover {
-      transform: translateY(-2px);
-      border-color: rgba(15,118,110,.35);
-      box-shadow: 0 10px 30px rgba(15,118,110,.10);
-    }
-
-    .account-option-icon {
-      width: 42px;
-      height: 42px;
-      min-width: 42px;
+    .cl-brand-mark {
+      width: 36px;
+      height: 36px;
+      border-radius: 11px;
       display: grid;
       place-items: center;
-      border-radius: 12px;
-      background: #ecfdf5;
-      font-size: 20px;
+      background: var(--cl-primary);
+      color: white;
+      font-size: 0.9rem;
+      font-weight: 900;
     }
 
-    .account-option strong {
-      display: block;
-      color: #0f172a;
-      font-size: 14px;
-      margin-bottom: 3px;
-    }
-
-    .account-option small {
-      display: block;
-      color: #64748b;
-      line-height: 1.4;
-    }
-
-
-    /* =====================================================
-       PRICING
-    ====================================================== */
-
-    .pricing-section {
-      background:
-        linear-gradient(
-          180deg,
-          #f8fafc 0%,
-          #ffffff 100%
-        );
-    }
-
-    .pricing-heading {
-      max-width: 760px;
-      margin: 0 auto 42px;
-      text-align: center;
-    }
-
-    .pricing-heading h2 {
-      margin-bottom: 12px;
-    }
-
-    .pricing-heading p {
-      color: #64748b;
-      max-width: 660px;
-      margin: 0 auto;
-      line-height: 1.7;
-    }
-
-
-    /* =====================================================
-       PROMOTIONAL OFFER
-    ====================================================== */
-
-    .pricing-offer {
-      max-width: 760px;
-      margin: 26px auto 0;
-      padding: 19px 22px;
-      border: 2px solid rgba(15,118,110,.20);
-      border-radius: 18px;
-      background:
-        linear-gradient(
-          135deg,
-          #ecfdf5 0%,
-          #f0fdfa 100%
-        );
-      text-align: center;
-      box-shadow: 0 10px 28px rgba(15,118,110,.07);
-    }
-
-    .pricing-offer strong {
-      display: block;
-      color: #0f766e;
-      font-size: 18px;
-      margin-bottom: 6px;
-    }
-
-    .pricing-offer span {
-      display: block;
-      color: #475569;
-      font-size: 14px;
-      line-height: 1.6;
-    }
-
-    .pricing-offer-badge {
-      display: inline-block;
-      margin-bottom: 9px;
-      padding: 5px 11px;
-      border-radius: 999px;
-      background: #0f766e;
-      color: #fff;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: .05em;
-      text-transform: uppercase;
-    }
-
-
-    .pricing-toggle {
-      display: inline-flex;
-      padding: 5px;
-      margin-top: 22px;
-      border: 1px solid #dbe4ea;
-      background: #fff;
-      border-radius: 999px;
-      gap: 4px;
-    }
-
-    .pricing-toggle button {
-      border: 0;
-      background: transparent;
-      padding: 9px 16px;
-      border-radius: 999px;
-      cursor: pointer;
-      color: #64748b;
-      font-weight: 700;
-    }
-
-    .pricing-toggle button.active {
-      background: #0f766e;
-      color: #fff;
-    }
-
-    .pricing-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+    .cl-nav {
+      display: flex;
+      align-items: center;
       gap: 22px;
-      align-items: stretch;
     }
 
-    .pricing-card {
-      position: relative;
+    .cl-nav a {
+      text-decoration: none;
+      color: #475569;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .cl-nav a:hover {
+      color: var(--cl-primary);
+    }
+
+    .cl-header-actions {
       display: flex;
-      flex-direction: column;
-      padding: 30px;
-      background: #fff;
-      border: 1px solid #e2e8f0;
-      border-radius: 22px;
-      box-shadow: 0 10px 30px rgba(15,23,42,.05);
-      transition:
-        transform .2s ease,
-        box-shadow .2s ease,
-        border-color .2s ease;
+      align-items: center;
+      gap: 9px;
     }
 
-    .pricing-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 20px 45px rgba(15,23,42,.10);
-    }
-
-    .pricing-card.featured {
-      border: 2px solid #0f766e;
-      box-shadow: 0 20px 50px rgba(15,118,110,.14);
-    }
-
-    .pricing-popular {
-      position: absolute;
-      top: -13px;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 6px 14px;
-      border-radius: 999px;
-      background: #0f766e;
-      color: #fff;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: .04em;
-      white-space: nowrap;
-    }
-
-    .pricing-card-label {
-      color: #0f766e;
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      margin-bottom: 9px;
-    }
-
-    .pricing-card h3 {
-      margin: 0 0 9px;
-      font-size: 24px;
-      color: #0f172a;
-    }
-
-    .pricing-description {
-      color: #64748b;
-      min-height: 54px;
-      line-height: 1.55;
-    }
-
-    .pricing-price {
-      display: flex;
-      align-items: baseline;
-      gap: 5px;
-      margin: 24px 0 8px;
-    }
-
-    .pricing-price strong {
-      font-size: 38px;
-      line-height: 1;
-      color: #0f172a;
-    }
-
-    .pricing-price span {
-      color: #64748b;
-      font-size: 14px;
-    }
-
-    .pricing-original-price {
-      margin-bottom: 16px;
-      color: #94a3b8;
-      font-size: 13px;
-    }
-
-    .pricing-original-price s {
-      margin-right: 4px;
-    }
-
-    .pricing-promo {
-      margin-bottom: 20px;
-      padding: 12px 13px;
-      border-radius: 12px;
-      background: #f0fdfa;
-      border: 1px solid rgba(15,118,110,.12);
-      color: #0f766e;
-      font-size: 13px;
-      line-height: 1.6;
+    .cl-login-link {
+      text-decoration: none;
+      font-size: 0.9rem;
       font-weight: 700;
+      color: var(--cl-primary);
+      padding: 9px 12px;
     }
 
-    .pricing-promo strong {
-      color: #0f766e;
-    }
-
-    .pricing-promo .promo-free {
-      font-size: 14px;
-      font-weight: 900;
-    }
-
-    .pricing-promo .promo-discount {
-      font-weight: 800;
-    }
-
-    .pricing-features {
-      list-style: none;
-      padding: 0;
-      margin: 0 0 28px;
-    }
-
-    .pricing-features li {
-      display: flex;
-      gap: 10px;
-      align-items: flex-start;
-      margin: 13px 0;
-      color: #334155;
-      line-height: 1.5;
-    }
-
-    .pricing-features li::before {
-      content: "✓";
-      flex: 0 0 auto;
-      color: #0f766e;
-      font-weight: 900;
-    }
-
-    .pricing-card .button {
-      width: 100%;
+    .cl-primary-btn {
+      display: inline-flex;
+      align-items: center;
       justify-content: center;
-      margin-top: auto;
+      min-height: 42px;
+      padding: 10px 16px;
+      border: 0;
+      border-radius: 11px;
+      background: var(--cl-primary);
+      color: #fff;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 750;
+      cursor: pointer;
+      transition:
+        transform 0.15s ease,
+        background 0.15s ease;
     }
 
-    .pricing-note {
-      margin-top: 25px;
-      text-align: center;
-      color: #64748b;
-      font-size: 13px;
-      line-height: 1.7;
+    .cl-primary-btn:hover {
+      background: var(--cl-primary-dark);
+      transform: translateY(-1px);
     }
 
-
-    /* =====================================================
-       MEMBER PORTAL CHARGES
-       HIGH-VISIBILITY VERSION
-    ====================================================== */
-
-    .member-charge-note {
-      margin-top: 28px;
-      padding: 24px 24px;
-      border-radius: 18px;
-      background:
-        linear-gradient(
-          135deg,
-          #ecfdf5 0%,
-          #f0fdfa 100%
-        );
-      border: 2px solid #0f766e;
-      color: #334155;
-      font-size: 14px;
-      line-height: 1.65;
-      text-align: center;
-      box-shadow: 0 12px 32px rgba(15,118,110,.10);
-    }
-
-    .member-charge-badge {
-      display: inline-block;
-      margin-bottom: 10px;
-      padding: 6px 12px;
-      border-radius: 999px;
-      background: #0f766e;
-      color: #ffffff;
-      font-size: 10px;
-      font-weight: 900;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-    }
-
-    .member-charge-note h3 {
-      margin: 0 0 8px;
-      color: #0f766e;
-      font-size: 25px;
-      line-height: 1.2;
-      font-weight: 900;
-    }
-
-    .member-charge-note p {
-      max-width: 720px;
-      margin: 0 auto 12px;
-      color: #334155;
-      line-height: 1.7;
-    }
-
-    .member-charge-note p strong,
-    .member-charge-note strong {
-      color: #0f766e;
-    }
-
-    .member-charge-billing {
-      max-width: 620px;
-      margin: 14px auto 12px;
-      padding: 12px 15px;
-      border-radius: 12px;
-      background: #ffffff;
-      border: 1px solid rgba(15,118,110,.15);
-      color: #0f172a;
-      font-weight: 800;
-    }
-
-    .member-charge-note small {
-      display: block;
-      color: #64748b;
-      font-size: 12px;
-      line-height: 1.55;
-      font-weight: 700;
-    }
-
-
-    /* =====================================================
-       VALUE / OUTCOME CARDS
-    ====================================================== */
-
-    .benefit-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 20px;
-      margin-top: 42px;
-    }
-
-    .benefit-card {
-      padding: 24px;
-      border: 1px solid #e2e8f0;
-      border-radius: 18px;
+    .cl-secondary-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 10px 16px;
+      border: 1px solid var(--cl-border);
+      border-radius: 11px;
       background: #fff;
+      color: var(--cl-text);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 750;
     }
 
-    .benefit-card-icon {
-      font-size: 25px;
+    .cl-menu-button {
+      display: none;
+      width: 42px;
+      height: 42px;
+      border: 1px solid var(--cl-border);
+      border-radius: 10px;
+      background: white;
+      cursor: pointer;
+      font-size: 1.2rem;
+    }
+
+    /* =========================================================
+       HERO
+       ========================================================= */
+
+    .cl-hero {
+      padding: 54px 0 28px;
+    }
+
+    .cl-container {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .cl-hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(330px, 0.85fr);
+      gap: 42px;
+      align-items: center;
+    }
+
+    .cl-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 13px;
+      color: var(--cl-primary);
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+    }
+
+    .cl-eyebrow-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--cl-primary);
+    }
+
+    .cl-hero h1 {
+      margin: 0;
+      max-width: 690px;
+      font-size: clamp(2.15rem, 5vw, 4rem);
+      line-height: 0.98;
+      letter-spacing: -0.055em;
+    }
+
+    .cl-hero h1 span {
+      color: var(--cl-primary);
+    }
+
+    .cl-hero-copy {
+      max-width: 650px;
+      margin: 18px 0 0;
+      color: var(--cl-muted);
+      font-size: clamp(1rem, 2vw, 1.12rem);
+      line-height: 1.6;
+    }
+
+    .cl-hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .cl-hero-note {
+      margin-top: 13px;
+      color: #64748b;
+      font-size: 0.78rem;
+    }
+
+    /* =========================================================
+       PORTAL ENTRY CARD
+       ========================================================= */
+
+    .cl-portal-card {
+      padding: 20px;
+      background: white;
+      border: 1px solid var(--cl-border);
+      border-radius: 22px;
+      box-shadow: var(--cl-shadow);
+    }
+
+    .cl-portal-card-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
       margin-bottom: 15px;
     }
 
-    .benefit-card h3 {
-      margin: 0 0 8px;
-      color: #0f172a;
-    }
-
-    .benefit-card p {
+    .cl-portal-card h2 {
       margin: 0;
-      color: #64748b;
-      line-height: 1.65;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
     }
 
-
-    /* =====================================================
-       ADMIN / MEMBER ACCESS
-    ====================================================== */
-
-    .portal-section {
-      background: #f8fafc;
+    .cl-portal-card-header p {
+      margin: 5px 0 0;
+      color: var(--cl-muted);
+      font-size: 0.78rem;
+      line-height: 1.4;
     }
 
-    .portal-grid {
+    .cl-live-dot {
+      width: 9px;
+      height: 9px;
+      flex: 0 0 auto;
+      margin-top: 5px;
+      border-radius: 50%;
+      background: #16a34a;
+      box-shadow: 0 0 0 5px #dcfce7;
+    }
+
+    .cl-portal-options {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 22px;
-      margin-top: 40px;
+      gap: 9px;
     }
 
-    .portal-card {
+    .cl-portal-option {
       display: flex;
-      flex-direction: column;
-      padding: 30px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      padding: 14px;
+      border: 1px solid var(--cl-border);
+      border-radius: 14px;
+      text-decoration: none;
       background: #fff;
-      border: 1px solid #e2e8f0;
+      transition:
+        border-color 0.15s ease,
+        transform 0.15s ease;
+    }
+
+    .cl-portal-option:hover {
+      border-color: #99f6e4;
+      transform: translateY(-1px);
+    }
+
+    .cl-portal-option strong {
+      display: block;
+      font-size: 0.92rem;
+    }
+
+    .cl-portal-option small {
+      display: block;
+      margin-top: 3px;
+      color: var(--cl-muted);
+      font-size: 0.73rem;
+      line-height: 1.35;
+    }
+
+    .cl-portal-arrow {
+      color: var(--cl-primary);
+      font-weight: 900;
+    }
+
+    /* =========================================================
+       QUICK VALUE STRIP
+       ========================================================= */
+
+    .cl-quick-strip {
+      padding: 8px 0 32px;
+    }
+
+    .cl-quick-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border: 1px solid var(--cl-border);
+      border-radius: 16px;
+      background: white;
+      overflow: hidden;
+    }
+
+    .cl-quick-item {
+      padding: 16px 18px;
+      border-right: 1px solid var(--cl-border);
+    }
+
+    .cl-quick-item:last-child {
+      border-right: 0;
+    }
+
+    .cl-quick-item strong {
+      display: block;
+      font-size: 0.9rem;
+    }
+
+    .cl-quick-item span {
+      display: block;
+      margin-top: 3px;
+      color: var(--cl-muted);
+      font-size: 0.74rem;
+    }
+
+    /* =========================================================
+       COMPACT FEATURES
+       ========================================================= */
+
+    .cl-section {
+      padding: 46px 0;
+    }
+
+    .cl-section-heading {
+      max-width: 650px;
+      margin-bottom: 22px;
+    }
+
+    .cl-section-heading h2 {
+      margin: 0;
+      font-size: clamp(1.55rem, 3vw, 2.15rem);
+      line-height: 1.1;
+      letter-spacing: -0.04em;
+    }
+
+    .cl-section-heading p {
+      margin: 9px 0 0;
+      color: var(--cl-muted);
+      line-height: 1.55;
+      font-size: 0.92rem;
+    }
+
+    .cl-feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .cl-feature {
+      padding: 18px;
+      background: white;
+      border: 1px solid var(--cl-border);
+      border-radius: 16px;
+    }
+
+    .cl-feature-number {
+      color: var(--cl-primary);
+      font-size: 0.72rem;
+      font-weight: 850;
+    }
+
+    .cl-feature h3 {
+      margin: 7px 0 5px;
+      font-size: 0.98rem;
+    }
+
+    .cl-feature p {
+      margin: 0;
+      color: var(--cl-muted);
+      font-size: 0.8rem;
+      line-height: 1.5;
+    }
+
+    /* =========================================================
+       PORTAL SEPARATION
+       ========================================================= */
+
+    .cl-portals-section {
+      padding: 48px 0;
+    }
+
+    .cl-portals-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+
+    .cl-portal-panel {
+      padding: 24px;
+      border-radius: 20px;
+      border: 1px solid var(--cl-border);
+      background: white;
+    }
+
+    .cl-portal-panel.admin {
+      border-top: 4px solid var(--cl-primary);
+    }
+
+    .cl-portal-panel.member {
+      border-top: 4px solid #64748b;
+    }
+
+    .cl-panel-label {
+      color: var(--cl-primary);
+      font-size: 0.72rem;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .cl-portal-panel.member .cl-panel-label {
+      color: #475569;
+    }
+
+    .cl-portal-panel h2 {
+      margin: 7px 0 8px;
+      font-size: 1.35rem;
+      letter-spacing: -0.035em;
+    }
+
+    .cl-portal-panel p {
+      margin: 0;
+      color: var(--cl-muted);
+      font-size: 0.86rem;
+      line-height: 1.55;
+    }
+
+    .cl-panel-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 16px;
+    }
+
+    .cl-panel-list span {
+      padding: 7px 9px;
+      border-radius: 9px;
+      background: var(--cl-background);
+      border: 1px solid var(--cl-border);
+      color: #475569;
+      font-size: 0.73rem;
+      font-weight: 650;
+    }
+
+    .cl-portal-panel .cl-secondary-btn,
+    .cl-portal-panel .cl-primary-btn {
+      margin-top: 18px;
+      width: 100%;
+    }
+
+    /* =========================================================
+       PRICING
+       ========================================================= */
+
+    .cl-pricing {
+      padding: 48px 0;
+    }
+
+    .cl-pricing-card {
+      padding: 25px;
+      border-radius: 22px;
+      background: #0f2928;
+      color: white;
+    }
+
+    .cl-pricing-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+    }
+
+    .cl-pricing-top h2 {
+      margin: 0;
+      font-size: 1.55rem;
+      letter-spacing: -0.035em;
+    }
+
+    .cl-pricing-top p {
+      max-width: 550px;
+      margin: 7px 0 0;
+      color: #cbd5d1;
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+
+    .cl-pricing-toggle {
+      display: inline-flex;
+      padding: 3px;
+      flex: 0 0 auto;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.1);
+    }
+
+    .cl-pricing-toggle button {
+      border: 0;
+      padding: 7px 10px;
+      border-radius: 8px;
+      background: transparent;
+      color: #cbd5d1;
+      cursor: pointer;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    .cl-pricing-toggle button.active {
+      background: white;
+      color: #0f2928;
+    }
+
+    .cl-pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .cl-price {
+      padding: 17px;
+      border-radius: 15px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .cl-price-name {
+      font-size: 0.8rem;
+      font-weight: 750;
+    }
+
+    .cl-price-amount {
+      margin-top: 7px;
+      font-size: 1.45rem;
+      font-weight: 850;
+    }
+
+    .cl-price-amount span {
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: #cbd5d1;
+    }
+
+    .cl-price p {
+      margin: 7px 0 0;
+      color: #cbd5d1;
+      font-size: 0.72rem;
+      line-height: 1.45;
+    }
+
+    .cl-price-note {
+      margin-top: 14px;
+      color: #cbd5d1;
+      font-size: 0.72rem;
+      line-height: 1.45;
+    }
+
+    /* =========================================================
+       SIMPLE HOW IT WORKS
+       ========================================================= */
+
+    .cl-steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .cl-step {
+      display: flex;
+      gap: 12px;
+      padding: 17px;
+      border: 1px solid var(--cl-border);
+      background: white;
+      border-radius: 15px;
+    }
+
+    .cl-step-number {
+      width: 28px;
+      height: 28px;
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      border-radius: 9px;
+      background: var(--cl-primary-soft);
+      color: var(--cl-primary);
+      font-size: 0.75rem;
+      font-weight: 850;
+    }
+
+    .cl-step strong {
+      display: block;
+      font-size: 0.85rem;
+    }
+
+    .cl-step p {
+      margin: 4px 0 0;
+      color: var(--cl-muted);
+      font-size: 0.76rem;
+      line-height: 1.45;
+    }
+
+    /* =========================================================
+       FINAL CTA
+       ========================================================= */
+
+    .cl-final {
+      padding: 20px 0 50px;
+    }
+
+    .cl-final-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 25px;
+      background: var(--cl-primary-soft);
+      border: 1px solid #ccfbf1;
       border-radius: 20px;
     }
 
-    .portal-card.admin {
-      border-color: rgba(15,118,110,.22);
+    .cl-final-card h2 {
+      margin: 0;
+      font-size: 1.35rem;
+      letter-spacing: -0.035em;
     }
 
-    .portal-card.member {
-      border-color: rgba(30,64,175,.16);
+    .cl-final-card p {
+      margin: 6px 0 0;
+      color: var(--cl-muted);
+      font-size: 0.82rem;
     }
 
-    .portal-card-icon {
-      width: 48px;
-      height: 48px;
-      display: grid;
-      place-items: center;
-      border-radius: 14px;
-      background: #ecfdf5;
-      font-size: 22px;
-      margin-bottom: 18px;
+    /* =========================================================
+       FOOTER
+       ========================================================= */
+
+    .cl-footer {
+      border-top: 1px solid var(--cl-border);
+      background: white;
+      padding: 28px 0;
     }
 
-    .portal-card h3 {
-      margin: 0 0 8px;
-      color: #0f172a;
+    .cl-footer-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
     }
 
-    .portal-card p {
+    .cl-footer-copy {
+      color: var(--cl-muted);
+      font-size: 0.73rem;
+    }
+
+    .cl-footer-links {
+      display: flex;
+      gap: 16px;
+    }
+
+    .cl-footer-links a {
       color: #64748b;
-      line-height: 1.65;
-      margin: 0 0 20px;
+      font-size: 0.73rem;
+      text-decoration: none;
     }
 
-    .portal-card .button {
-      align-self: flex-start;
-      margin-top: auto;
-    }
-
-
-    /* =====================================================
-       CTA IMPROVEMENT
-    ====================================================== */
-
-    .cta-secondary-text {
-      margin-top: 17px;
-      color: rgba(255,255,255,.78);
-      font-size: 14px;
-    }
-
-
-    /* =====================================================
-       RESPONSIVE
-    ====================================================== */
+    /* =========================================================
+       MOBILE
+       ========================================================= */
 
     @media (max-width: 900px) {
-
-      .pricing-grid {
-        grid-template-columns: 1fr;
-        max-width: 560px;
-        margin-left: auto;
-        margin-right: auto;
+      .cl-nav {
+        display: none;
       }
 
-      .benefit-grid {
+      .cl-menu-button {
+        display: inline-grid;
+        place-items: center;
+      }
+
+      .cl-hero-grid {
+        grid-template-columns: 1fr;
+        gap: 25px;
+      }
+
+      .cl-hero {
+        padding-top: 38px;
+      }
+
+      .cl-feature-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .cl-pricing-grid {
         grid-template-columns: 1fr;
       }
 
-      .portal-grid {
-        grid-template-columns: 1fr;
+      .cl-pricing-top {
+        flex-direction: column;
       }
-
     }
-
 
     @media (max-width: 650px) {
+      .cl-header-inner,
+      .cl-container {
+        width: min(100% - 24px, 1120px);
+      }
 
-      .hero-account-options {
+      .cl-header-inner {
+        min-height: 62px;
+      }
+
+      .cl-header-actions .cl-primary-btn {
+        display: none;
+      }
+
+      .cl-login-link {
+        padding: 8px;
+      }
+
+      .cl-brand-mark {
+        width: 33px;
+        height: 33px;
+      }
+
+      .cl-hero {
+        padding: 30px 0 18px;
+      }
+
+      .cl-hero h1 {
+        font-size: clamp(2rem, 11vw, 3rem);
+      }
+
+      .cl-hero-copy {
+        font-size: 0.94rem;
+        line-height: 1.5;
+      }
+
+      .cl-hero-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .cl-hero-actions a {
+        width: 100%;
+      }
+
+      .cl-hero-note {
+        font-size: 0.7rem;
+      }
+
+      .cl-quick-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .cl-quick-item {
+        border-bottom: 1px solid var(--cl-border);
+      }
+
+      .cl-quick-item:nth-child(2) {
+        border-right: 0;
+      }
+
+      .cl-quick-item:nth-child(3),
+      .cl-quick-item:nth-child(4) {
+        border-bottom: 0;
+      }
+
+      .cl-feature-grid,
+      .cl-portals-grid,
+      .cl-steps {
         grid-template-columns: 1fr;
       }
 
-      .pricing-card {
-        padding: 24px;
+      .cl-section,
+      .cl-portals-section,
+      .cl-pricing {
+        padding: 34px 0;
       }
 
-      .pricing-offer {
-        padding: 16px;
+      .cl-section-heading {
+        margin-bottom: 17px;
       }
 
-      .member-charge-note {
-        padding: 21px 17px;
+      .cl-portal-panel,
+      .cl-pricing-card {
+        padding: 19px;
       }
 
-      .member-charge-note h3 {
-        font-size: 22px;
+      .cl-final-card {
+        display: block;
+        padding: 20px;
       }
 
+      .cl-final-card .cl-primary-btn {
+        width: 100%;
+        margin-top: 15px;
+      }
+
+      .cl-footer-inner {
+        align-items: flex-start;
+        flex-direction: column;
+      }
     }
 
+    /* =========================================================
+       MOBILE NAV
+       ========================================================= */
+
+    .cl-mobile-nav {
+      position: fixed;
+      inset: 0;
+      z-index: 2000;
+      display: none;
+    }
+
+    .cl-mobile-nav.open {
+      display: block;
+    }
+
+    .cl-mobile-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.38);
+    }
+
+    .cl-mobile-panel {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: min(310px, 88vw);
+      height: 100%;
+      padding: 22px;
+      background: white;
+      box-shadow: -12px 0 30px rgba(15,23,42,0.12);
+      overflow-y: auto;
+    }
+
+    .cl-mobile-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 25px;
+    }
+
+    .cl-mobile-close {
+      width: 38px;
+      height: 38px;
+      border: 1px solid var(--cl-border);
+      border-radius: 9px;
+      background: white;
+      cursor: pointer;
+      font-size: 1.1rem;
+    }
+
+    .cl-mobile-links {
+      display: grid;
+      gap: 5px;
+    }
+
+    .cl-mobile-links a {
+      padding: 12px 10px;
+      border-radius: 9px;
+      color: #334155;
+      text-decoration: none;
+      font-weight: 650;
+      font-size: 0.9rem;
+    }
+
+    .cl-mobile-links a:hover {
+      background: var(--cl-background);
+    }
+
+    .cl-mobile-login {
+      margin-top: 22px;
+      width: 100%;
+    }
   </style>
-
 </head>
-
 
 <body>
 
-
-  <!-- =====================================================
+  <!-- =======================================================
        HEADER
-  ====================================================== -->
+       ======================================================== -->
 
-  <header class="landing-header">
+  <header class="cl-header">
+    <div class="cl-header-inner">
 
-    <div class="container nav-container">
-
-      <a
-        href="index.html"
-        class="landing-logo"
-        aria-label="CHAMA LIVE home"
-      >
-
-        <span class="logo-main">
-          CHAMA
-        </span>
-
-        <span class="logo-live">
-          LIVE
-        </span>
-
+      <a href="index.html" class="cl-brand" aria-label="CHAMA LIVE home">
+        <span class="cl-brand-mark">CL</span>
+        <span>CHAMA LIVE</span>
       </a>
 
-
-      <button
-        class="mobile-menu-button"
-        id="mobileMenuButton"
-        type="button"
-        aria-label="Open navigation"
-        aria-expanded="false"
-        aria-controls="landingNavigation"
-      >
-
-        <span></span>
-        <span></span>
-        <span></span>
-
-      </button>
-
-
-      <nav
-        class="landing-navigation"
-        id="landingNavigation"
-        aria-label="Main navigation"
-      >
-
-        <a href="#features">
-          Features
-        </a>
-
-        <a href="#pricing">
-          Plans
-        </a>
-
-        <a href="#how-it-works">
-          How It Works
-        </a>
-
-        <a href="#groups">
-          For Groups
-        </a>
-
-        <a href="#about">
-          About
-        </a>
-
-
-        <div class="nav-actions">
-
-          <a
-            href="login.html"
-            class="nav-login"
-          >
-            Sign In
-          </a>
-
-          <a
-            href="signup.html"
-            class="button button-primary button-small"
-          >
-            Create Group
-          </a>
-
-        </div>
-
+      <nav class="cl-nav" aria-label="Main navigation">
+        <a href="#features">Features</a>
+        <a href="#portals">Portals</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#how-it-works">How It Works</a>
       </nav>
 
-    </div>
+      <div class="cl-header-actions">
+        <a href="login.html" class="cl-login-link">Sign In</a>
+        <a href="signup.html" class="cl-primary-btn">Create Group</a>
 
+        <button
+          type="button"
+          class="cl-menu-button"
+          id="clMenuButton"
+          aria-label="Open menu"
+          aria-expanded="false"
+        >
+          ☰
+        </button>
+      </div>
+
+    </div>
   </header>
 
 
+  <!-- =======================================================
+       MOBILE MENU
+       ======================================================== -->
+
+  <div class="cl-mobile-nav" id="clMobileNav" aria-hidden="true">
+
+    <div class="cl-mobile-backdrop" id="clMobileBackdrop"></div>
+
+    <div class="cl-mobile-panel">
+
+      <div class="cl-mobile-head">
+        <a href="index.html" class="cl-brand">
+          <span class="cl-brand-mark">CL</span>
+          <span>CHAMA LIVE</span>
+        </a>
+
+        <button
+          type="button"
+          class="cl-mobile-close"
+          id="clMobileClose"
+          aria-label="Close menu"
+        >
+          ×
+        </button>
+      </div>
+
+      <nav class="cl-mobile-links">
+        <a href="#features">Features</a>
+        <a href="#portals">Portals</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#how-it-works">How It Works</a>
+      </nav>
+
+      <a href="login.html" class="cl-primary-btn cl-mobile-login">
+        Sign In
+      </a>
+
+      <a
+        href="signup.html"
+        class="cl-secondary-btn"
+        style="width:100%; margin-top:9px;"
+      >
+        Create Group
+      </a>
+
+    </div>
+  </div>
+
+
+  <!-- =======================================================
+       HERO
+       ======================================================== -->
 
   <main>
 
+    <section class="cl-hero">
 
-    <!-- ===================================================
-         HERO
-    ==================================================== -->
+      <div class="cl-container">
 
-    <section class="hero-section">
+        <div class="cl-hero-grid">
 
-      <div
-        class="hero-background-shape hero-shape-one"
-        aria-hidden="true"
-      ></div>
+          <div>
 
-      <div
-        class="hero-background-shape hero-shape-two"
-        aria-hidden="true"
-      ></div>
-
-
-      <div class="container hero-grid">
-
-
-        <div class="hero-content">
-
-
-          <div class="hero-badge">
-
-            <span
-              class="badge-dot"
-              aria-hidden="true"
-            ></span>
-
-            Built for Chamas & Community Groups
-
-          </div>
-
-
-          <h1>
-
-            Your group.
-
-            <span>
-              One simple system.
-            </span>
-
-          </h1>
-
-
-          <p class="hero-description">
-
-            Stop chasing notebooks, spreadsheets and
-            WhatsApp messages. CHAMA LIVE brings your
-            members, contributions, expenses, meetings
-            and reports together in one place.
-
-          </p>
-
-
-          <div class="hero-actions">
-
-            <a
-              href="signup.html"
-              class="button button-primary button-large"
-            >
-
-              Create Your Group
-
-              <span aria-hidden="true">
-                →
-              </span>
-
-            </a>
-
-
-            <a
-              href="login.html"
-              class="button button-secondary button-large"
-            >
-
-              Sign In
-
-            </a>
-
-          </div>
-
-
-          <!-- =================================================
-               CLEAR ACCOUNT PATHS
-          ================================================== -->
-
-          <div class="hero-account-options">
-
-            <a
-              href="signup.html"
-              class="account-option"
-            >
-
-              <span
-                class="account-option-icon"
-                aria-hidden="true"
-              >
-                🚀
-              </span>
-
-              <span>
-
-                <strong>
-                  Starting a new group?
-                </strong>
-
-                <small>
-                  Create your group account and start
-                  managing your group in one place.
-                </small>
-
-              </span>
-
-            </a>
-
-
-            <a
-              href="login.html"
-              class="account-option"
-            >
-
-              <span
-                class="account-option-icon"
-                aria-hidden="true"
-              >
-                🔐
-              </span>
-
-              <span>
-
-                <strong>
-                  Already part of a group?
-                </strong>
-
-                <small>
-                  Sign in to your members portal —
-                  for admins and members.
-                </small>
-
-              </span>
-
-            </a>
-
-          </div>
-
-
-          <div class="hero-trust">
-
-            <div class="trust-item">
-
-              <strong>
-                Members
-              </strong>
-
-              <span>
-                Organized
-              </span>
-
+            <div class="cl-eyebrow">
+              <span class="cl-eyebrow-dot"></span>
+              Digital group management
             </div>
 
+            <h1>
+              Your group.
+              <span>One simple system.</span>
+            </h1>
 
-            <div
-              class="trust-divider"
-              aria-hidden="true"
-            ></div>
+            <p class="cl-hero-copy">
+              CHAMA LIVE brings your members, contributions, expenses,
+              meetings and group records together in one easy-to-use
+              digital workspace.
+            </p>
 
+            <div class="cl-hero-actions">
+              <a href="signup.html" class="cl-primary-btn">
+                Create Your Group
+              </a>
 
-            <div class="trust-item">
-
-              <strong>
-                Contributions
-              </strong>
-
-              <span>
-                Tracked
-              </span>
-
+              <a href="login.html" class="cl-secondary-btn">
+                Sign In
+              </a>
             </div>
 
-
-            <div
-              class="trust-divider"
-              aria-hidden="true"
-            ></div>
-
-
-            <div class="trust-item">
-
-              <strong>
-                Reports
-              </strong>
-
-              <span>
-                Ready
-              </span>
-
+            <div class="cl-hero-note">
+              Built for chamas, CBOs and community groups.
             </div>
 
           </div>
 
-        </div>
 
+          <!-- PORTAL ENTRY -->
 
+          <div class="cl-portal-card">
 
-        <!-- =================================================
-             EXISTING DASHBOARD PREVIEW
-        ================================================== -->
+            <div class="cl-portal-card-header">
 
-        <div
-          class="hero-dashboard"
-          aria-label="CHAMA LIVE dashboard preview"
-        >
-
-          <div class="dashboard-window">
-
-            <div class="dashboard-topbar">
-
-              <div class="dashboard-brand">
-
-                <span>
-                  CHAMA
-                </span>
-
-                LIVE
-
+              <div>
+                <h2>Choose your workspace</h2>
+                <p>
+                  CHAMA LIVE keeps administration and member access separate.
+                </p>
               </div>
 
-
-              <div class="dashboard-user">
-
-                <span class="user-avatar">
-                  JM
-                </span>
-
-                <span class="user-name">
-                  Group Admin
-                </span>
-
-              </div>
+              <span class="cl-live-dot" aria-hidden="true"></span>
 
             </div>
 
+            <div class="cl-portal-options">
 
-
-            <div class="dashboard-body">
-
-              <div class="dashboard-welcome">
+              <a href="login.html" class="cl-portal-option">
 
                 <div>
-
-                  <span class="dashboard-eyebrow">
-                    GROUP OVERVIEW
-                  </span>
-
-                  <h3>
-                    Welcome back 👋
-                  </h3>
-
-                </div>
-
-                <span class="dashboard-month">
-                  August 2026
-                </span>
-
-              </div>
-
-
-
-              <div class="dashboard-stat-grid">
-
-                <div class="dashboard-stat-card">
-
-                  <span class="stat-icon members-icon">
-                    👥
-                  </span>
-
-                  <span class="stat-label">
-                    Active Members
-                  </span>
-
-                  <strong>
-                    48
-                  </strong>
-
+                  <strong>Admin Portal</strong>
                   <small>
-                    Group members
+                    Manage members, finances, records and group operations.
                   </small>
-
                 </div>
 
+                <span class="cl-portal-arrow">→</span>
 
-                <div class="dashboard-stat-card">
+              </a>
 
-                  <span class="stat-icon contribution-icon">
-                    💰
-                  </span>
+              <a href="login.html" class="cl-portal-option">
 
-                  <span class="stat-label">
-                    Contributions
-                  </span>
-
-                  <strong>
-                    KSh 96,400
-                  </strong>
-
+                <div>
+                  <strong>Member Portal</strong>
                   <small>
-                    This month
+                    Access your group information and member experience.
                   </small>
-
                 </div>
 
+                <span class="cl-portal-arrow">→</span>
 
-                <div class="dashboard-stat-card">
-
-                  <span class="stat-icon expense-icon">
-                    📊
-                  </span>
-
-                  <span class="stat-label">
-                    Expenses
-                  </span>
-
-                  <strong>
-                    KSh 18,500
-                  </strong>
-
-                  <small>
-                    Approved
-                  </small>
-
-                </div>
-
-
-                <div class="dashboard-stat-card">
-
-                  <span class="stat-icon balance-icon">
-                    ✓
-                  </span>
-
-                  <span class="stat-label">
-                    Group Balance
-                  </span>
-
-                  <strong>
-                    KSh 77,900
-                  </strong>
-
-                  <small>
-                    Current balance
-                  </small>
-
-                </div>
-
-              </div>
-
-
-
-              <div class="dashboard-lower">
-
-                <div class="mini-chart-card">
-
-                  <div class="mini-card-heading">
-
-                    <div>
-
-                      <span>
-                        Contribution Activity
-                      </span>
-
-                      <strong>
-                        Monthly
-                      </strong>
-
-                    </div>
-
-                    <span class="chart-total">
-                      KSh 96.4K
-                    </span>
-
-                  </div>
-
-
-                  <div
-                    class="chart"
-                    aria-hidden="true"
-                  >
-
-                    <div class="chart-line">
-
-                      <span style="height:35%"></span>
-                      <span style="height:55%"></span>
-                      <span style="height:45%"></span>
-                      <span style="height:70%"></span>
-                      <span style="height:60%"></span>
-                      <span style="height:85%"></span>
-                      <span style="height:78%"></span>
-
-                    </div>
-
-                  </div>
-
-                </div>
-
-
-                <div class="activity-card">
-
-                  <div class="mini-card-heading">
-
-                    <span>
-                      Recent Activity
-                    </span>
-
-                    <span>
-                      Live
-                    </span>
-
-                  </div>
-
-
-                  <div class="activity-item">
-
-                    <span class="activity-avatar">
-                      MK
-                    </span>
-
-                    <div>
-
-                      <strong>
-                        Contribution recorded
-                      </strong>
-
-                      <small>
-                        Michael • KSh 2,000
-                      </small>
-
-                    </div>
-
-                  </div>
-
-
-                  <div class="activity-item">
-
-                    <span class="activity-avatar">
-                      AW
-                    </span>
-
-                    <div>
-
-                      <strong>
-                        Expense approved
-                      </strong>
-
-                      <small>
-                        Office supplies • KSh 3,500
-                      </small>
-
-                    </div>
-
-                  </div>
-
-
-                  <div class="activity-item">
-
-                    <span class="activity-avatar">
-                      JM
-                    </span>
-
-                    <div>
-
-                      <strong>
-                        Meeting scheduled
-                      </strong>
-
-                      <small>
-                        Monthly meeting • 31 Aug
-                      </small>
-
-                    </div>
-
-                  </div>
-
-                </div>
-
-              </div>
+              </a>
 
             </div>
 
@@ -1191,86 +1146,34 @@
     </section>
 
 
+    <!-- =====================================================
+         QUICK INFORMATION
+         ====================================================== -->
 
-    <!-- ===================================================
-         VALUE STRIP
-    ==================================================== -->
+    <section class="cl-quick-strip">
 
-    <section class="value-strip">
+      <div class="cl-container">
 
-      <div class="container value-grid">
+        <div class="cl-quick-grid">
 
-        <div class="value-item">
-
-          <span>✓</span>
-
-          <div>
-
-            <strong>
-              One group account
-            </strong>
-
-            <small>
-              Everything in one place
-            </small>
-
+          <div class="cl-quick-item">
+            <strong>Members</strong>
+            <span>Keep member records organised.</span>
           </div>
 
-        </div>
-
-
-        <div class="value-item">
-
-          <span>✓</span>
-
-          <div>
-
-            <strong>
-              Real-time records
-            </strong>
-
-            <small>
-              Keep your group up to date
-            </small>
-
+          <div class="cl-quick-item">
+            <strong>Contributions</strong>
+            <span>Track group payments clearly.</span>
           </div>
 
-        </div>
-
-
-        <div class="value-item">
-
-          <span>✓</span>
-
-          <div>
-
-            <strong>
-              Clear accountability
-            </strong>
-
-            <small>
-              Know where money goes
-            </small>
-
+          <div class="cl-quick-item">
+            <strong>Expenses</strong>
+            <span>Record group spending.</span>
           </div>
 
-        </div>
-
-
-        <div class="value-item">
-
-          <span>✓</span>
-
-          <div>
-
-            <strong>
-              Simple to use
-            </strong>
-
-            <small>
-              Designed for everyday groups
-            </small>
-
+          <div class="cl-quick-item">
+            <strong>Reports</strong>
+            <span>Understand your group records.</span>
           </div>
 
         </div>
@@ -1280,287 +1183,158 @@
     </section>
 
 
-
-    <!-- ===================================================
-         WHY CHAMA LIVE
-    ==================================================== -->
-
-    <section class="section">
-
-      <div class="container">
-
-        <div class="section-heading centered">
-
-          <span class="section-label">
-            WHY CHAMA LIVE
-          </span>
-
-          <h2>
-            Less administration.
-            <span>More control.</span>
-          </h2>
-
-          <p>
-            CHAMA LIVE is built to help your group spend
-            less time searching for records and more time
-            managing what matters.
-          </p>
-
-        </div>
-
-
-        <div class="benefit-grid">
-
-          <article class="benefit-card">
-
-            <div class="benefit-card-icon">
-              📒
-            </div>
-
-            <h3>
-              Leave the notebook behind
-            </h3>
-
-            <p>
-              Keep your member records, contributions,
-              expenses and group activities together instead
-              of scattering them across books and files.
-            </p>
-
-          </article>
-
-
-          <article class="benefit-card">
-
-            <div class="benefit-card-icon">
-              💰
-            </div>
-
-            <h3>
-              Understand your money
-            </h3>
-
-            <p>
-              See what members have contributed, what the
-              group has spent and where the group's finances
-              stand.
-            </p>
-
-          </article>
-
-
-          <article class="benefit-card">
-
-            <div class="benefit-card-icon">
-              🤝
-            </div>
-
-            <h3>
-              Keep everyone connected
-            </h3>
-
-            <p>
-              Give administrators and members a shared
-              place to access the information that matters
-              to the group.
-            </p>
-
-          </article>
-
-        </div>
-
-      </div>
-
-    </section>
-
-
-
-    <!-- ===================================================
+    <!-- =====================================================
          FEATURES
-    ==================================================== -->
+         ====================================================== -->
 
-    <section
-      class="section features-section"
-      id="features"
-    >
+    <section class="cl-section" id="features">
 
-      <div class="container">
+      <div class="cl-container">
 
-        <div class="section-heading">
-
-          <span class="section-label">
-            EVERYTHING YOUR GROUP NEEDS
-          </span>
-
-          <h2>
-            Replace scattered records
-            with one clear system.
-          </h2>
+        <div class="cl-section-heading">
+          <h2>Everything important, without the paperwork.</h2>
 
           <p>
-            Everything your group needs to stay organized,
-            accountable and ready for the next meeting.
+            Keep the core work of your group in one place instead of
+            spreading records across notebooks, spreadsheets and messages.
+          </p>
+        </div>
+
+        <div class="cl-feature-grid">
+
+          <article class="cl-feature">
+            <div class="cl-feature-number">01</div>
+            <h3>Members</h3>
+            <p>
+              Organise member information and keep your group records current.
+            </p>
+          </article>
+
+          <article class="cl-feature">
+            <div class="cl-feature-number">02</div>
+            <h3>Contributions</h3>
+            <p>
+              Record contributions and maintain a clear financial history.
+            </p>
+          </article>
+
+          <article class="cl-feature">
+            <div class="cl-feature-number">03</div>
+            <h3>Expenses</h3>
+            <p>
+              Keep track of group expenses and their supporting records.
+            </p>
+          </article>
+
+          <article class="cl-feature">
+            <div class="cl-feature-number">04</div>
+            <h3>Meetings</h3>
+            <p>
+              Keep meetings, dates and important group decisions organised.
+            </p>
+          </article>
+
+          <article class="cl-feature">
+            <div class="cl-feature-number">05</div>
+            <h3>Reports</h3>
+            <p>
+              Turn your group records into information you can understand.
+            </p>
+          </article>
+
+          <article class="cl-feature">
+            <div class="cl-feature-number">06</div>
+            <h3>Group Management</h3>
+            <p>
+              Keep your group details and account information in one place.
+            </p>
+          </article>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         PORTAL SEPARATION
+         ====================================================== -->
+
+    <section class="cl-portals-section" id="portals">
+
+      <div class="cl-container">
+
+        <div class="cl-section-heading">
+
+          <h2>Two portals. Clear responsibilities.</h2>
+
+          <p>
+            CHAMA LIVE separates group administration from the member
+            experience so each person sees the workspace relevant to them.
           </p>
 
         </div>
 
 
+        <div class="cl-portals-grid">
 
-        <div class="features-grid">
+          <!-- ADMIN -->
 
-          <article class="feature-card feature-card-large">
+          <article class="cl-portal-panel admin">
 
-            <div class="feature-icon">
-              👥
+            <div class="cl-panel-label">
+              Admin Portal
             </div>
 
-            <span class="feature-number">
-              01
-            </span>
-
-            <h3>
-              Members
-            </h3>
+            <h2>Run the group</h2>
 
             <p>
-              Keep a central member register with
-              membership details, status, roles and
-              group information.
+              The admin workspace brings the group's operational,
+              financial and management work together.
             </p>
 
-            <a href="signup.html">
-              Organize your members →
+            <div class="cl-panel-list">
+              <span>Members</span>
+              <span>Contributions</span>
+              <span>Expenses</span>
+              <span>Meetings</span>
+              <span>Reports</span>
+              <span>Group Management</span>
+              <span>Financial records</span>
+            </div>
+
+            <a href="login.html" class="cl-primary-btn">
+              Admin Sign In
             </a>
 
           </article>
 
 
-          <article class="feature-card">
+          <!-- MEMBER -->
 
-            <div class="feature-icon">
-              💰
+          <article class="cl-portal-panel member">
+
+            <div class="cl-panel-label">
+              Member Portal
             </div>
 
-            <span class="feature-number">
-              02
-            </span>
-
-            <h3>
-              Contributions
-            </h3>
+            <h2>Stay connected to your group</h2>
 
             <p>
-              Record member payments and follow monthly
-              contributions, arrears and balances.
+              Members get a separate portal designed around their own
+              group information and member experience.
             </p>
 
-            <a href="signup.html">
-              Track contributions →
-            </a>
-
-          </article>
-
-
-          <article class="feature-card">
-
-            <div class="feature-icon">
-              🧾
+            <div class="cl-panel-list">
+              <span>Member access</span>
+              <span>Group information</span>
+              <span>Personal records</span>
+              <span>Member experience</span>
             </div>
 
-            <span class="feature-number">
-              03
-            </span>
-
-            <h3>
-              Expenses
-            </h3>
-
-            <p>
-              Record group spending and maintain a clear
-              view of approved expenses.
-            </p>
-
-            <a href="signup.html">
-              Manage expenses →
-            </a>
-
-          </article>
-
-
-          <article class="feature-card">
-
-            <div class="feature-icon">
-              📅
-            </div>
-
-            <span class="feature-number">
-              04
-            </span>
-
-            <h3>
-              Meetings
-            </h3>
-
-            <p>
-              Keep meeting dates, attendance, minutes
-              and important decisions organized.
-            </p>
-
-            <a href="signup.html">
-              Manage meetings →
-            </a>
-
-          </article>
-
-
-          <article class="feature-card">
-
-            <div class="feature-icon">
-              📈
-            </div>
-
-            <span class="feature-number">
-              05
-            </span>
-
-            <h3>
-              Reports
-            </h3>
-
-            <p>
-              Turn your group records into useful financial,
-              membership and activity reports.
-            </p>
-
-            <a href="signup.html">
-              View better reports →
-            </a>
-
-          </article>
-
-
-          <article class="feature-card feature-card-highlight">
-
-            <div class="feature-icon">
-              ⚙️
-            </div>
-
-            <span class="feature-number">
-              06
-            </span>
-
-            <h3>
-              Group Management
-            </h3>
-
-            <p>
-              Manage group details, contribution rules,
-              goals and administrative settings from one
-              place.
-            </p>
-
-            <a href="signup.html">
-              Take control →
+            <a href="login.html" class="cl-secondary-btn">
+              Member Sign In
             </a>
 
           </article>
@@ -1572,561 +1346,119 @@
     </section>
 
 
-
-    <!-- ===================================================
+    <!-- =====================================================
          PRICING
-    ==================================================== -->
+         ====================================================== -->
 
-    <section
-      class="section pricing-section"
-      id="pricing"
-    >
+    <section class="cl-pricing" id="pricing">
 
-      <div class="container">
+      <div class="cl-container">
 
-        <div class="pricing-heading">
+        <div class="cl-pricing-card">
 
-          <span class="section-label">
-            SIMPLE GROUP PLANS
-          </span>
+          <div class="cl-pricing-top">
 
-          <h2>
-            Choose a plan that fits
-            <span>your group.</span>
-          </h2>
+            <div>
+              <h2>Simple group pricing.</h2>
 
-          <p>
-            Start managing your group digitally without
-            buying complicated accounting software. Choose
-            the plan that matches the way your organization
-            operates.
-          </p>
+              <p>
+                Start with a plan that fits your group. Pricing is based
+                on the group account, with member portal usage billed to
+                the group.
+              </p>
+            </div>
 
+            <div class="cl-pricing-toggle" aria-label="Pricing period">
 
-          <!-- =================================================
-               PROMOTIONAL OFFER
-          ================================================== -->
+              <button
+                type="button"
+                class="active"
+                data-period="monthly"
+              >
+                Monthly
+              </button>
 
-          <div class="pricing-offer">
+              <button
+                type="button"
+                data-period="yearly"
+              >
+                Yearly
+              </button>
 
-            <span class="pricing-offer-badge">
-              NEW GROUP LAUNCH OFFER
-            </span>
-
-            <strong>
-              First month FREE — next 4 months 30% OFF
-            </strong>
-
-            <span>
-              The introductory offer applies across all
-              CHAMA LIVE plan categories. After the first
-              five months, the applicable standard plan price
-              resumes.
-            </span>
+            </div>
 
           </div>
 
 
-          <div class="pricing-toggle">
+          <div class="cl-pricing-grid">
 
-            <button
-              type="button"
-              class="active"
-              data-pricing-period="monthly"
-            >
-              Monthly
-            </button>
+            <div class="cl-price">
 
-            <button
-              type="button"
-              data-pricing-period="yearly"
-            >
-              Yearly
-            </button>
+              <div class="cl-price-name">
+                Chama
+              </div>
 
-          </div>
-
-        </div>
-
-
-
-        <div class="pricing-grid">
-
-
-          <!-- =================================================
-               BASIC / CHAMA
-          ================================================== -->
-
-          <article class="pricing-card">
-
-            <span class="pricing-card-label">
-              For small groups
-            </span>
-
-            <h3>
-              Chama
-            </h3>
-
-            <p class="pricing-description">
-              A simple starting point for savings,
-              welfare and member-led groups.
-            </p>
-
-
-            <div class="pricing-price">
-
-              <strong
-                data-monthly="500"
-                data-yearly="5000"
+              <div
+                class="cl-price-amount"
+                data-monthly="KSh 500"
+                data-yearly="KSh 5,000"
               >
                 KSh 500
-              </strong>
+                <span>/month</span>
+              </div>
 
-              <span data-price-period>
-                / month
-              </span>
-
-            </div>
-
-
-            <div
-              class="pricing-original-price"
-              data-standard-price
-            >
-              Standard monthly price:
-              <s>KSh 500</s>
-            </div>
-
-
-            <div class="pricing-promo">
-
-              <span class="promo-free">
-                Month 1: FREE
-              </span>
-
-              <br>
-
-              <span class="promo-discount">
-                Months 2–5: KSh 350/month — 30% OFF
-              </span>
+              <p>
+                For community and chama groups.
+              </p>
 
             </div>
 
 
-            <ul class="pricing-features">
+            <div class="cl-price">
 
-              <li>
-                Member management
-              </li>
+              <div class="cl-price-name">
+                CBO
+              </div>
 
-              <li>
-                Contribution tracking
-              </li>
-
-              <li>
-                Expense management
-              </li>
-
-              <li>
-                Meetings and group records
-              </li>
-
-              <li>
-                Group reports
-              </li>
-
-            </ul>
-
-
-            <a
-              href="signup.html"
-              class="button button-secondary"
-            >
-              Start Your Group
-            </a>
-
-          </article>
-
-
-
-          <!-- =================================================
-               CBO
-          ================================================== -->
-
-          <article class="pricing-card featured">
-
-            <span class="pricing-popular">
-              INTRODUCTORY OFFER
-            </span>
-
-            <span class="pricing-card-label">
-              For larger groups
-            </span>
-
-            <h3>
-              CBO
-            </h3>
-
-            <p class="pricing-description">
-              More room for organizations managing
-              broader community activities.
-            </p>
-
-
-            <div class="pricing-price">
-
-              <strong
-                data-monthly="1000"
-                data-yearly="10000"
+              <div
+                class="cl-price-amount"
+                data-monthly="KSh 1,000"
+                data-yearly="KSh 10,000"
               >
                 KSh 1,000
-              </strong>
+                <span>/month</span>
+              </div>
 
-              <span data-price-period>
-                / month
-              </span>
-
-            </div>
-
-
-            <div
-              class="pricing-original-price"
-              data-standard-price
-            >
-              Standard monthly price:
-              <s>KSh 1,000</s>
-            </div>
-
-
-            <div class="pricing-promo">
-
-              <span class="promo-free">
-                Month 1: FREE
-              </span>
-
-              <br>
-
-              <span class="promo-discount">
-                Months 2–5: KSh 700/month — 30% OFF
-              </span>
+              <p>
+                For community-based organisations.
+              </p>
 
             </div>
 
 
-            <ul class="pricing-features">
+            <div class="cl-price">
 
-              <li>
-                Everything in Chama
-              </li>
+              <div class="cl-price-name">
+                Organization
+              </div>
 
-              <li>
-                Community organization management
-              </li>
+              <div class="cl-price-amount">
+                Custom
+              </div>
 
-              <li>
-                Expanded group administration
-              </li>
-
-              <li>
-                Financial and activity records
-              </li>
-
-              <li>
-                Reporting and accountability tools
-              </li>
-
-            </ul>
-
-
-            <a
-              href="signup.html"
-              class="button button-primary"
-            >
-              Create Your Group
-            </a>
-
-          </article>
-
-
-
-          <!-- =================================================
-               ORGANIZATION
-          ================================================== -->
-
-          <article class="pricing-card">
-
-            <span class="pricing-card-label">
-              For organizations
-            </span>
-
-            <h3>
-              Organization
-            </h3>
-
-            <p class="pricing-description">
-              Need a setup for a larger or more specialized
-              organization? Talk to us about your requirements.
-            </p>
-
-
-            <div class="pricing-price">
-
-              <strong>
-                Let's talk
-              </strong>
+              <p>
+                For larger or specialised organisations.
+              </p>
 
             </div>
 
-
-            <div
-              class="pricing-original-price"
-              data-standard-price
-            >
-              Custom organization pricing
-            </div>
-
-
-            <div class="pricing-promo">
-
-              <span class="promo-free">
-                Month 1: FREE
-              </span>
-
-              <br>
-
-              <span class="promo-discount">
-                Next 4 months: 30% OFF
-              </span>
-
-              <br>
-
-              Pricing is agreed according to the
-              organization's requirements.
-
-            </div>
-
-
-            <ul class="pricing-features">
-
-              <li>
-                Tailored group workflows
-              </li>
-
-              <li>
-                Larger organization requirements
-              </li>
-
-              <li>
-                Specialized reporting needs
-              </li>
-
-              <li>
-                Flexible implementation
-              </li>
-
-            </ul>
-
-
-            <a
-              href="signup.html"
-              class="button button-secondary"
-            >
-              Get Started
-            </a>
-
-          </article>
-
-        </div>
-
-
-
-        <!-- =================================================
-             MEMBER CHARGE — VERY PROMINENT
-        ================================================== -->
-
-        <div class="member-charge-note">
-
-          <span class="member-charge-badge">
-            MEMBERS PORTAL ACCESS
-          </span>
-
-          <h3>
-            KSh 20 per active member / month
-          </h3>
-
-          <p>
-            Each group member with an
-            <strong>active CHAMA LIVE Members Portal login</strong>
-            is charged
-            <strong>KSh 20 per month</strong>.
-          </p>
-
-          <div class="member-charge-billing">
-            The KSh 20 monthly member charge is
-            <strong>billed to the group account</strong>.
           </div>
 
-          <small>
-            Being listed in the group's member register does not
-            create this charge. The member must have an active
-            Members Portal login. Members without an active login
-            are not charged for Members Portal access.
-          </small>
-
-        </div>
-
-
-        <p class="pricing-note">
-
-          <strong>
-            Launch offer:
-          </strong>
-
-          First month FREE, followed by 30% OFF for the next
-          four months across all plan categories.
-
-          <br>
-
-          <strong>
-            Member Portal:
-          </strong>
-
-          KSh 20 per month applies only to each member with
-          an active Members Portal login, and the charge is
-          billed to the group account.
-
-        </p>
-
-      </div>
-
-    </section>
-
-
-
-    <!-- ===================================================
-         ADMIN + MEMBER PORTAL
-    ==================================================== -->
-
-    <section
-      class="section portal-section"
-      id="portal"
-    >
-
-      <div class="container">
-
-        <div class="section-heading centered">
-
-          <span class="section-label">
-            ALREADY HAVE A GROUP?
-          </span>
-
-          <h2>
-            Your group already has an account?
-            <span>You're in the right place.</span>
-          </h2>
-
-          <p>
-            CHAMA LIVE has one secure sign-in for people
-            already connected to a group.
-          </p>
-
-        </div>
-
-
-
-        <div class="portal-grid">
-
-
-          <article class="portal-card admin">
-
-            <div class="portal-card-icon">
-              👨‍💼
-            </div>
-
-            <h3>
-              Group administrators
-            </h3>
-
-            <p>
-              Manage your group's members, contributions,
-              expenses, meetings, reports and group settings
-              from your administrator dashboard.
-            </p>
-
-            <a
-              href="login.html"
-              class="button button-primary"
-            >
-              Admin Sign In →
-            </a>
-
-          </article>
-
-
-
-          <article class="portal-card member">
-
-            <div class="portal-card-icon">
-              👥
-            </div>
-
-            <h3>
-              Members Portal
-            </h3>
-
-            <p>
-              Already a member of a CHAMA LIVE group?
-              Sign in with your active login to access your
-              group's Members Portal.
-            </p>
-
-            <p>
-              <strong>
-                KSh 20 per active member per month,
-                billed to the group account.
-              </strong>
-            </p>
-
-            <a
-              href="login.html"
-              class="button button-secondary"
-            >
-              Member Sign In →
-            </a>
-
-          </article>
-
-        </div>
-
-
-        <div class="member-charge-note">
-
-          <span class="member-charge-badge">
-            ACTIVE LOGIN REQUIRED
-          </span>
-
-          <h3>
-            Member charge applies only when portal access is active
-          </h3>
-
-          <p>
-            A member must have an
-            <strong>active CHAMA LIVE login</strong>
-            to the group's Members Portal for the
-            <strong>KSh 20 monthly member charge</strong>
-            to apply.
-          </p>
-
-          <div class="member-charge-billing">
-            Member portal charges are
-            <strong>billed to the group account</strong>.
+          <div class="cl-price-note">
+            Launch offer: first month free, followed by 30% off for the
+            next four months. Member portal usage is KSh 20 per active
+            member login per month, billed to the group.
           </div>
-
-          <small>
-            A member who is only recorded in the group's
-            membership register and does not have an active
-            Members Portal login is not charged for portal access.
-          </small>
 
         </div>
 
@@ -2135,115 +1467,77 @@
     </section>
 
 
-
-    <!-- ===================================================
+    <!-- =====================================================
          HOW IT WORKS
-    ==================================================== -->
+         ====================================================== -->
 
-    <section
-      class="section how-section"
-      id="how-it-works"
-    >
+    <section class="cl-section" id="how-it-works">
 
-      <div class="container">
+      <div class="cl-container">
 
-        <div class="section-heading centered">
+        <div class="cl-section-heading">
 
-          <span class="section-label">
-            HOW IT WORKS
-          </span>
-
-          <h2>
-            From paper records to
-            <span>CHAMA LIVE.</span>
-          </h2>
+          <h2>Get your group organised in a few steps.</h2>
 
           <p>
-            Getting your group started is designed to be simple.
+            Start with your group account, bring your records together
+            and use the appropriate portal for your role.
           </p>
 
         </div>
 
 
+        <div class="cl-steps">
 
-        <div class="steps-grid">
+          <div class="cl-step">
 
-          <div class="step-card">
-
-            <div class="step-number">
-              01
+            <div class="cl-step-number">
+              1
             </div>
 
-            <div class="step-line"></div>
+            <div>
+              <strong>Create your group</strong>
 
-            <h3>
-              Create your group
-            </h3>
-
-            <p>
-              Start your group account and enter your
-              basic group information.
-            </p>
+              <p>
+                Set up your group account and basic group information.
+              </p>
+            </div>
 
           </div>
 
 
-          <div class="step-card">
+          <div class="cl-step">
 
-            <div class="step-number">
-              02
+            <div class="cl-step-number">
+              2
             </div>
 
-            <div class="step-line"></div>
+            <div>
+              <strong>Set up your records</strong>
 
-            <h3>
-              Verify your account
-            </h3>
-
-            <p>
-              Confirm your account when required so your
-              administrator identity is securely established.
-            </p>
+              <p>
+                Organise members, contributions, expenses and other
+                important group information.
+              </p>
+            </div>
 
           </div>
 
 
-          <div class="step-card">
+          <div class="cl-step">
 
-            <div class="step-number">
-              03
+            <div class="cl-step-number">
+              3
             </div>
 
-            <div class="step-line"></div>
+            <div>
+              <strong>Run your group</strong>
 
-            <h3>
-              Set up your group
-            </h3>
-
-            <p>
-              Add your members, configure group rules and
-              prepare your group workspace.
-            </p>
-
-          </div>
-
-
-          <div class="step-card">
-
-            <div class="step-number">
-              04
+              <p>
+                Admins manage the group while members use their own
+                portal to stay connected.
+              </p>
             </div>
-
-            <div class="step-line"></div>
-
-            <h3>
-              Run your group
-            </h3>
-
-            <p>
-              Manage members, contributions, expenses,
-              meetings, reports and monthly closing.
-            </p>
 
           </div>
 
@@ -2254,549 +1548,33 @@
     </section>
 
 
-
-    <!-- ===================================================
-         GROUP TYPES
-    ==================================================== -->
-
-    <section
-      class="section groups-section"
-      id="groups"
-    >
-
-      <div class="container groups-layout">
-
-        <div class="groups-content">
-
-          <span class="section-label">
-            BUILT FOR GROUPS
-          </span>
-
-          <h2>
-            One platform.
-            <span>Many kinds of groups.</span>
-          </h2>
-
-          <p>
-            CHAMA LIVE is designed around the way
-            community groups actually operate — not around
-            complicated accounting software.
-          </p>
-
-
-          <a
-            href="signup.html"
-            class="button button-primary"
-          >
-
-            Start Your Group
-
-            <span>
-              →
-            </span>
-
-          </a>
-
-        </div>
-
-
-
-        <div class="groups-list">
-
-          <div class="group-type">
-
-            <span>01</span>
-
-            <strong>
-              Chamas
-            </strong>
-
-            <small>
-              Savings & investment groups
-            </small>
-
-          </div>
-
-
-          <div class="group-type">
-
-            <span>02</span>
-
-            <strong>
-              Welfare Groups
-            </strong>
-
-            <small>
-              Community support groups
-            </small>
-
-          </div>
-
-
-          <div class="group-type">
-
-            <span>03</span>
-
-            <strong>
-              Community Groups
-            </strong>
-
-            <small>
-              Organized local initiatives
-            </small>
-
-          </div>
-
-
-          <div class="group-type">
-
-            <span>04</span>
-
-            <strong>
-              Self-Help Groups
-            </strong>
-
-            <small>
-              Member-led organizations
-            </small>
-
-          </div>
-
-
-          <div class="group-type">
-
-            <span>05</span>
-
-            <strong>
-              Investment Groups
-            </strong>
-
-            <small>
-              Shared financial goals
-            </small>
-
-          </div>
-
-
-          <div class="group-type">
-
-            <span>06</span>
-
-            <strong>
-              Other Groups
-            </strong>
-
-            <small>
-              Flexible group management
-            </small>
-
-          </div>
-
-        </div>
-
-      </div>
-
-    </section>
-
-
-
-    <!-- ===================================================
-         TRANSPARENCY
-    ==================================================== -->
-
-    <section class="section transparency-section">
-
-      <div class="container transparency-grid">
-
-        <div class="transparency-visual">
-
-          <div class="ledger-card">
-
-            <div class="ledger-header">
-
-              <div>
-
-                <span>
-                  GROUP LEDGER
-                </span>
-
-                <strong>
-                  August 2026
-                </strong>
-
-              </div>
-
-              <span class="ledger-status">
-                Live
-              </span>
-
-            </div>
-
-
-            <div class="ledger-row">
-
-              <div>
-
-                <span class="ledger-avatar">
-                  MK
-                </span>
-
-                <div>
-
-                  <strong>
-                    Monthly contribution
-                  </strong>
-
-                  <small>
-                    Michael K.
-                  </small>
-
-                </div>
-
-              </div>
-
-              <strong class="ledger-positive">
-                + KSh 2,000
-              </strong>
-
-            </div>
-
-
-            <div class="ledger-row">
-
-              <div>
-
-                <span class="ledger-avatar">
-                  AW
-                </span>
-
-                <div>
-
-                  <strong>
-                    Office supplies
-                  </strong>
-
-                  <small>
-                    Approved expense
-                  </small>
-
-                </div>
-
-              </div>
-
-              <strong class="ledger-negative">
-                − KSh 3,500
-              </strong>
-
-            </div>
-
-
-            <div class="ledger-row">
-
-              <div>
-
-                <span class="ledger-avatar">
-                  JN
-                </span>
-
-                <div>
-
-                  <strong>
-                    Monthly contribution
-                  </strong>
-
-                  <small>
-                    Jane N.
-                  </small>
-
-                </div>
-
-              </div>
-
-              <strong class="ledger-positive">
-                + KSh 2,000
-              </strong>
-
-            </div>
-
-
-            <div class="ledger-total">
-
-              <span>
-                Current balance
-              </span>
-
-              <strong>
-                KSh 77,900
-              </strong>
-
-            </div>
-
-          </div>
-
-        </div>
-
-
-
-        <div class="transparency-content">
-
-          <span class="section-label">
-            TRANSPARENCY
-          </span>
-
-          <h2>
-            Everyone deserves
-            <span>clear records.</span>
-          </h2>
-
-          <p>
-            Good group management starts with knowing
-            what has happened. CHAMA LIVE connects the
-            records that matter so your group can make
-            decisions with confidence.
-          </p>
-
-
-
-          <ul class="check-list">
-
-            <li>
-
-              <span>
-                ✓
-              </span>
-
-              <div>
-
-                <strong>
-                  Know what came in
-                </strong>
-
-                <small>
-                  Track member contributions and goals.
-                </small>
-
-              </div>
-
-            </li>
-
-
-            <li>
-
-              <span>
-                ✓
-              </span>
-
-              <div>
-
-                <strong>
-                  Know what went out
-                </strong>
-
-                <small>
-                  Keep approved group expenses visible.
-                </small>
-
-              </div>
-
-            </li>
-
-
-            <li>
-
-              <span>
-                ✓
-              </span>
-
-              <div>
-
-                <strong>
-                  Know where you stand
-                </strong>
-
-                <small>
-                  Understand balances and monthly obligations.
-                </small>
-
-              </div>
-
-            </li>
-
-
-            <li>
-
-              <span>
-                ✓
-              </span>
-
-              <div>
-
-                <strong>
-                  Know what happened
-                </strong>
-
-                <small>
-                  Keep meetings and reports organized.
-                </small>
-
-              </div>
-
-            </li>
-
-          </ul>
-
-        </div>
-
-      </div>
-
-    </section>
-
-
-
-    <!-- ===================================================
-         ABOUT
-    ==================================================== -->
-
-    <section
-      class="section about-section"
-      id="about"
-    >
-
-      <div class="container about-container">
-
-        <span class="section-label">
-          ABOUT CHAMA LIVE
-        </span>
-
-
-        <h2>
-          Built for the way
-          <span>groups work.</span>
-        </h2>
-
-
-        <p>
-          Many groups still depend on notebooks,
-          spreadsheets, WhatsApp messages and scattered
-          records. CHAMA LIVE brings those everyday
-          activities into one connected system.
-        </p>
-
-
-
-        <div class="about-points">
-
-          <div>
-
-            <strong>
-              Simple
-            </strong>
-
-            <span>
-              No complicated accounting language.
-            </span>
-
-          </div>
-
-
-          <div>
-
-            <strong>
-              Connected
-            </strong>
-
-            <span>
-              Members, money and meetings stay linked.
-            </span>
-
-          </div>
-
-
-          <div>
-
-            <strong>
-              Practical
-            </strong>
-
-            <span>
-              Designed around real group workflows.
-            </span>
-
-          </div>
-
-        </div>
-
-      </div>
-
-    </section>
-
-
-
-    <!-- ===================================================
+    <!-- =====================================================
          FINAL CTA
-    ==================================================== -->
+         ====================================================== -->
 
-    <section class="cta-section">
+    <section class="cl-final">
 
-      <div
-        class="cta-pattern"
-        aria-hidden="true"
-      ></div>
+      <div class="cl-container">
 
+        <div class="cl-final-card">
 
-      <div class="container cta-container">
+          <div>
 
-        <span class="cta-label">
-          READY TO GET ORGANIZED?
-        </span>
+            <h2>
+              Ready to move your group beyond paper?
+            </h2>
 
+            <p>
+              Start with a digital workspace built around the way
+              community groups actually operate.
+            </p>
 
-        <h2>
-          Run your group with
-          <span>clarity.</span>
-        </h2>
+          </div>
 
-
-        <p>
-          Bring your members, contributions, expenses,
-          meetings and reports together with CHAMA LIVE.
-        </p>
-
-
-        <div class="cta-actions">
-
-          <a
-            href="signup.html"
-            class="button button-light button-large"
-          >
-
+          <a href="signup.html" class="cl-primary-btn">
             Create Your Group
-
-            <span>
-              →
-            </span>
-
           </a>
 
-
-          <a
-            href="login.html"
-            class="cta-login"
-          >
-
-            Already registered?
-
-            <strong>
-              Sign in to your members portal →
-            </strong>
-
-          </a>
-
-        </div>
-
-
-        <div class="cta-secondary-text">
-          Group administrators and active members use the same secure sign-in.
         </div>
 
       </div>
@@ -2806,423 +1584,173 @@
   </main>
 
 
-
-  <!-- =====================================================
+  <!-- =======================================================
        FOOTER
-  ====================================================== -->
+       ======================================================== -->
 
-  <footer class="landing-footer">
+  <footer class="cl-footer">
 
-    <div class="container footer-grid">
+    <div class="cl-container">
 
-      <div class="footer-brand">
+      <div class="cl-footer-inner">
 
-        <a
-          href="index.html"
-          class="landing-logo"
-        >
+        <div class="cl-footer-copy">
+          © 2026 CHAMA LIVE. Digital management for groups.
+        </div>
 
-          <span class="logo-main">
-            CHAMA
-          </span>
-
-          <span class="logo-live">
-            LIVE
-          </span>
-
-        </a>
-
-
-        <p>
-          Simple, transparent group management
-          for modern community organizations.
-        </p>
+        <div class="cl-footer-links">
+          <a href="#features">Features</a>
+          <a href="#portals">Portals</a>
+          <a href="#pricing">Pricing</a>
+          <a href="login.html">Sign In</a>
+        </div>
 
       </div>
-
-
-
-      <div class="footer-column">
-
-        <h3>
-          Platform
-        </h3>
-
-        <a href="#features">
-          Features
-        </a>
-
-        <a href="#pricing">
-          Plans
-        </a>
-
-        <a href="#how-it-works">
-          How It Works
-        </a>
-
-        <a href="#groups">
-          For Groups
-        </a>
-
-      </div>
-
-
-
-      <div class="footer-column">
-
-        <h3>
-          Account
-        </h3>
-
-        <a href="login.html">
-          Admin & Member Sign In
-        </a>
-
-        <a href="signup.html">
-          Create Group
-        </a>
-
-      </div>
-
-
-
-      <div class="footer-column">
-
-        <h3>
-          CHAMA LIVE
-        </h3>
-
-        <a href="#about">
-          About
-        </a>
-
-        <a href="#portal">
-          Members Portal
-        </a>
-
-      </div>
-
-    </div>
-
-
-
-    <div class="container footer-bottom">
-
-      <span>
-        © 2026 CHAMA LIVE. All rights reserved.
-      </span>
-
-      <span>
-        Built for better group management.
-      </span>
 
     </div>
 
   </footer>
 
 
-
-  <!-- =====================================================
-       INTERACTION
-  ====================================================== -->
+  <!-- =======================================================
+       JAVASCRIPT
+       ======================================================== -->
 
   <script>
+    /* =========================================================
+       MOBILE NAVIGATION
+       ========================================================= */
 
-    (() => {
+    const menuButton = document.getElementById("clMenuButton");
+    const mobileNav = document.getElementById("clMobileNav");
+    const mobileClose = document.getElementById("clMobileClose");
+    const mobileBackdrop = document.getElementById("clMobileBackdrop");
 
-      /* -----------------------------------------------
-         MOBILE NAVIGATION
-      ------------------------------------------------ */
+    function openMobileMenu() {
+      if (!mobileNav) return;
 
-      const button =
-        document.getElementById(
-          "mobileMenuButton"
-        );
+      mobileNav.classList.add("open");
+      mobileNav.setAttribute("aria-hidden", "false");
 
-
-      const navigation =
-        document.getElementById(
-          "landingNavigation"
-        );
-
-
-      if (
-        button &&
-        navigation
-      ) {
-
-        button.addEventListener(
-          "click",
-          () => {
-
-            const isOpen =
-              navigation.classList.toggle(
-                "is-open"
-              );
-
-
-            button.setAttribute(
-              "aria-expanded",
-              String(isOpen)
-            );
-
-
-            button.setAttribute(
-              "aria-label",
-              isOpen
-                ? "Close navigation"
-                : "Open navigation"
-            );
-
-          }
-        );
-
-
-        navigation
-          .querySelectorAll("a")
-          .forEach(
-            link => {
-
-              link.addEventListener(
-                "click",
-                () => {
-
-                  navigation.classList.remove(
-                    "is-open"
-                  );
-
-
-                  button.setAttribute(
-                    "aria-expanded",
-                    "false"
-                  );
-
-
-                  button.setAttribute(
-                    "aria-label",
-                    "Open navigation"
-                  );
-
-                }
-              );
-
-            }
-          );
-
-
-        document.addEventListener(
-          "click",
-          event => {
-
-            if (
-              !navigation.classList.contains(
-                "is-open"
-              )
-            ) {
-
-              return;
-
-            }
-
-
-            if (
-              navigation.contains(
-                event.target
-              ) ||
-              button.contains(
-                event.target
-              )
-            ) {
-
-              return;
-
-            }
-
-
-            navigation.classList.remove(
-              "is-open"
-            );
-
-
-            button.setAttribute(
-              "aria-expanded",
-              "false"
-            );
-
-
-            button.setAttribute(
-              "aria-label",
-              "Open navigation"
-            );
-
-          }
-        );
-
+      if (menuButton) {
+        menuButton.setAttribute("aria-expanded", "true");
       }
 
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeMobileMenu() {
+      if (!mobileNav) return;
+
+      mobileNav.classList.remove("open");
+      mobileNav.setAttribute("aria-hidden", "true");
+
+      if (menuButton) {
+        menuButton.setAttribute("aria-expanded", "false");
+      }
+
+      document.body.style.overflow = "";
+    }
+
+    menuButton?.addEventListener("click", openMobileMenu);
+    mobileClose?.addEventListener("click", closeMobileMenu);
+    mobileBackdrop?.addEventListener("click", closeMobileMenu);
+
+    document.querySelectorAll(".cl-mobile-links a").forEach((link) => {
+      link.addEventListener("click", closeMobileMenu);
+    });
 
 
-      /* -----------------------------------------------
-         PRICING TOGGLE
-      ------------------------------------------------ */
+    /* =========================================================
+       ESCAPE KEY
+       ========================================================= */
 
-      const pricingButtons =
-        document.querySelectorAll(
-          "[data-pricing-period]"
-        );
-
-
-      const pricingAmounts =
-        document.querySelectorAll(
-          "[data-monthly]"
-        );
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        closeMobileMenu();
+      }
+    });
 
 
-      pricingButtons.forEach(
-        button => {
+    /* =========================================================
+       PRICING TOGGLE
+       ========================================================= */
 
-          button.addEventListener(
-            "click",
-            () => {
+    const pricingButtons =
+      document.querySelectorAll("[data-period]");
 
-              const period =
-                button.dataset.pricingPeriod;
+    const priceAmounts =
+      document.querySelectorAll("[data-monthly]");
 
+    pricingButtons.forEach((button) => {
 
-              pricingButtons.forEach(
-                item => {
+      button.addEventListener("click", () => {
 
-                  item.classList.toggle(
-                    "active",
-                    item === button
-                  );
+        const selectedPeriod =
+          button.dataset.period;
 
-                }
-              );
-
-
-              pricingAmounts.forEach(
-                amount => {
-
-                  const value =
-                    amount.dataset[period];
-
-
-                  if (!value) {
-                    return;
-                  }
-
-
-                  const formatted =
-                    Number(value).toLocaleString(
-                      "en-KE"
-                    );
-
-
-                  amount.textContent =
-                    `KSh ${formatted}`;
-
-                }
-              );
-
-
-              document
-                .querySelectorAll(
-                  "[data-price-period]"
-                )
-                .forEach(
-                  periodElement => {
-
-                    periodElement.textContent =
-                      period === "yearly"
-                        ? "/ year"
-                        : "/ month";
-
-                  }
-                );
-
-
-              /*
-               * The introductory offer remains a
-               * five-month offer:
-               *
-               * Month 1 = FREE
-               * Months 2–5 = 30% OFF
-               *
-               * The member portal charge remains
-               * KSh 20/month per active-login member
-               * and is billed to the group account.
-               */
-
-            }
+        pricingButtons.forEach((item) => {
+          item.classList.toggle(
+            "active",
+            item.dataset.period === selectedPeriod
           );
+        });
 
+        priceAmounts.forEach((amount) => {
+
+          const value =
+            selectedPeriod === "yearly"
+              ? amount.dataset.yearly
+              : amount.dataset.monthly;
+
+          const suffix =
+            selectedPeriod === "yearly"
+              ? " /year"
+              : " /month";
+
+          amount.innerHTML =
+            `${value}<span>${suffix}</span>`;
+        });
+
+      });
+
+    });
+
+
+    /* =========================================================
+       SMOOTH ANCHOR SCROLLING
+       ========================================================= */
+
+    document.querySelectorAll('a[href^="#"]').forEach((link) => {
+
+      link.addEventListener("click", (event) => {
+
+        const targetId =
+          link.getAttribute("href");
+
+        if (!targetId || targetId === "#") {
+          return;
         }
-      );
 
+        const target =
+          document.querySelector(targetId);
 
+        if (!target) {
+          return;
+        }
 
-      /* -----------------------------------------------
-         SMOOTH SCROLL
-      ------------------------------------------------ */
+        event.preventDefault();
 
-      document
-        .querySelectorAll(
-          'a[href^="#"]'
-        )
-        .forEach(
-          link => {
+        target.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
 
-            link.addEventListener(
-              "click",
-              event => {
+      });
 
-                const targetId =
-                  link.getAttribute(
-                    "href"
-                  );
-
-
-                if (
-                  !targetId ||
-                  targetId === "#"
-                ) {
-
-                  return;
-
-                }
-
-
-                const target =
-                  document.querySelector(
-                    targetId
-                  );
-
-
-                if (!target) {
-                  return;
-                }
-
-
-                event.preventDefault();
-
-
-                target.scrollIntoView({
-                  behavior: "smooth",
-                  block: "start"
-                });
-
-              }
-            );
-
-          }
-        );
-
-    })();
+    });
 
   </script>
 
-
 </body>
-
 </html>
