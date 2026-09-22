@@ -79,6 +79,18 @@
        financial_periods
        monthly_closings
 
+   REQUIRED UI CONTRACT
+   ---------------------------------------------------------
+   Cash Received may appear in more than one UI location.
+
+   All Cash Received displays must use:
+       calculatedData.total_contributions_collected
+
+   Applied This Month must use:
+       calculatedData.applied_this_month
+
+   These values must NEVER be substituted for one another.
+
    Required exports:
        initPage()
        initMonthlyClosing
@@ -174,9 +186,32 @@ const currentOutstandingEl =
     "currentOutstanding"
   );
 
+/*
+  Primary Cash Received display.
+
+  This is the existing contract used by the main
+  financial snapshot.
+*/
 const cashReceivedEl =
   document.getElementById(
     "cashReceived"
+  );
+
+/*
+  Optional secondary Cash Received display.
+
+  The updated monthly-closing.html should use:
+
+      id="cashReceivedBreakdown"
+
+  for the second 2B accounting card.
+
+  This prevents duplicate HTML IDs while allowing both
+  UI locations to remain synchronized.
+*/
+const cashReceivedBreakdownEl =
+  document.getElementById(
+    "cashReceivedBreakdown"
   );
 
 const carryForwardEl =
@@ -429,6 +464,75 @@ function renderSelectedMonth() {
 
 
 /* =========================================================
+   RENDER CASH RECEIVED
+   ---------------------------------------------------------
+   SINGLE SOURCE OF TRUTH FOR ALL CASH RECEIVED DISPLAYS.
+
+   This deliberately updates both locations when present:
+
+       #cashReceived
+       #cashReceivedBreakdown
+
+   Both receive the canonical actual-cash value.
+
+   Neither receives applied_this_month.
+========================================================= */
+
+function renderCashReceived(
+  value
+) {
+
+  const amount =
+    money(value);
+
+
+  if (cashReceivedEl) {
+
+    cashReceivedEl.textContent =
+      amount;
+
+  }
+
+
+  if (cashReceivedBreakdownEl) {
+
+    cashReceivedBreakdownEl.textContent =
+      amount;
+
+  }
+
+
+  const cashDescription =
+    document.getElementById(
+      "cashCollectedDescription"
+    );
+
+
+  if (cashDescription) {
+
+    cashDescription.textContent =
+      "Actual contribution cash received during this month.";
+
+  }
+
+
+  const collectedLabelEl =
+    document.getElementById(
+      "totalCollectedLabel"
+    );
+
+
+  if (collectedLabelEl) {
+
+    collectedLabelEl.textContent =
+      "Actual cash received";
+
+  }
+
+}
+
+
+/* =========================================================
    LOAD OTHER SAVINGS
 ========================================================= */
 
@@ -577,14 +681,16 @@ function renderOptionalAccountingFields(
   }
 
 
-  if (cashReceivedEl) {
+  /*
+    IMPORTANT:
 
-    cashReceivedEl.textContent =
-      money(
-        data.total_contributions_collected
-      );
+    Both Cash Received locations are updated from the
+    canonical total_contributions_collected value.
+  */
 
-  }
+  renderCashReceived(
+    data.total_contributions_collected
+  );
 
 
   const collectionLabelEl =
@@ -596,19 +702,6 @@ function renderOptionalAccountingFields(
 
     collectionLabelEl.textContent =
       "Applied to current month obligations";
-
-  }
-
-
-  const collectedLabelEl =
-    document.getElementById(
-      "totalCollectedLabel"
-    );
-
-  if (collectedLabelEl) {
-
-    collectedLabelEl.textContent =
-      "Actual cash received";
 
   }
 
@@ -1256,6 +1349,15 @@ async function loadCanonicalAccounting(
      CANONICAL 2B VALUES
   ------------------------------------------------------- */
 
+  /*
+    ACTUAL CASH RECEIVED
+
+    This is the authoritative cash value for the selected
+    financial month.
+
+    It is intentionally separate from applied.
+  */
+
   const totalCollected =
     Number(
       summary
@@ -1263,6 +1365,10 @@ async function loadCanonicalAccounting(
       0
     );
 
+
+  /*
+    EXPECTED MONTHLY OBLIGATIONS
+  */
 
   const expected =
     Number(
@@ -1272,6 +1378,12 @@ async function loadCanonicalAccounting(
     );
 
 
+  /*
+    APPLIED TO CURRENT MONTH OBLIGATIONS
+
+    This may include payments received in an earlier month.
+  */
+
   const applied =
     Number(
       summary
@@ -1280,6 +1392,10 @@ async function loadCanonicalAccounting(
     );
 
 
+  /*
+    CARRY-FORWARD CREDIT
+  */
+
   const carryForward =
     Number(
       summary
@@ -1287,6 +1403,10 @@ async function loadCanonicalAccounting(
       0
     );
 
+
+  /*
+    CURRENT MONTH OUTSTANDING
+  */
 
   const outstanding =
     Number(
@@ -1298,6 +1418,13 @@ async function loadCanonicalAccounting(
 
   /* -------------------------------------------------------
      CASH CLOSING
+     -------------------------------------------------------
+     Opening Balance
+     + Actual Cash Received
+     - Approved Expenses
+     = Closing Balance
+
+     Applied is NOT used in this cash balance calculation.
   ------------------------------------------------------- */
 
   const closingBalance =
@@ -1419,6 +1546,12 @@ function renderCalculation() {
     );
 
 
+  /*
+    ACTUAL CASH RECEIVED
+
+    This remains distinct from applied.
+  */
+
   const collected =
     Number(
       calculatedData
@@ -1426,6 +1559,10 @@ function renderCalculation() {
       0
     );
 
+
+  /*
+    APPLIED TO CURRENT MONTH OBLIGATIONS
+  */
 
   const applied =
     Number(
@@ -1491,6 +1628,12 @@ function renderCalculation() {
   }
 
 
+  /*
+    Main Total Collected display.
+
+    This means ACTUAL CASH RECEIVED.
+  */
+
   if (collectedEl) {
 
     collectedEl.textContent =
@@ -1498,6 +1641,12 @@ function renderCalculation() {
 
   }
 
+
+  /*
+    Applied This Month display.
+
+    This is deliberately NOT collected.
+  */
 
   if (appliedThisMonthEl) {
 
@@ -1523,12 +1672,13 @@ function renderCalculation() {
   }
 
 
-  if (cashReceivedEl) {
+  /*
+    Synchronize every Cash Received UI location.
+  */
 
-    cashReceivedEl.textContent =
-      money(collected);
-
-  }
+  renderCashReceived(
+    collected
+  );
 
 
   if (expensesEl) {
@@ -1716,20 +1866,6 @@ function renderCalculation() {
   }
 
 
-  const cashDescription =
-    document.getElementById(
-      "cashCollectedDescription"
-    );
-
-
-  if (cashDescription) {
-
-    cashDescription.textContent =
-      "Actual contribution cash received during this month.";
-
-  }
-
-
   const appliedDescription =
     document.getElementById(
       "appliedDescription"
@@ -1816,6 +1952,25 @@ function renderCalculation() {
    periodStatus is authoritative.
 
    currentClosing is historical metadata only.
+
+   IMPORTANT:
+   Do NOT overwrite canonical accounting values here.
+
+   The canonical summary remains responsible for:
+
+       total_contributions_collected
+       applied_this_month
+       other_savings
+       carry_forward
+       current_outstanding
+       approved_expenses
+       closing_balance
+
+   currentClosing is used for:
+
+       closed_at
+       notes
+       historical metadata
 ========================================================= */
 
 function renderClosingStatus() {
@@ -1877,46 +2032,27 @@ function renderClosingStatus() {
     }
 
 
-    if (currentClosing) {
+    /*
+      IMPORTANT 2B FIX
 
-      if (expectedEl) {
+      Do not copy:
 
-        expectedEl.textContent =
-          money(
-            currentClosing.total_expected
-          );
+          currentClosing.total_collected
 
-      }
+      over:
 
+          calculatedData.total_contributions_collected
 
-      if (collectedEl) {
+      The canonical calculation has already rendered both
+      Cash Received locations.
 
-        collectedEl.textContent =
-          money(
-            currentClosing.total_collected
-          );
+      This preserves the distinction between actual cash
+      received and allocations.
+    */
 
-      }
+    if (calculatedData) {
 
-
-      if (expensesEl) {
-
-        expensesEl.textContent =
-          money(
-            currentClosing.total_expenses
-          );
-
-      }
-
-
-      if (balanceEl) {
-
-        balanceEl.textContent =
-          money(
-            currentClosing.closing_balance
-          );
-
-      }
+      renderCalculation();
 
     }
 
@@ -2130,12 +2266,23 @@ function applyFinancialReport(
         0
       ),
 
+    /*
+      Actual cash received.
+    */
+
     total_contributions_collected:
       Number(
         report.total_contributions_collected ??
         calculatedData?.total_contributions_collected ??
         0
       ),
+
+    /*
+      Amount applied against the selected month's
+      obligations.
+
+      This remains independent of cash received.
+    */
 
     applied_this_month:
       Number(
@@ -2252,8 +2399,6 @@ async function closeMonth() {
 
 
     /*
-      VERIFIED CHANGE:
-
       A closed period is handled as a state condition.
       Do not throw an invented client-side error.
     */
@@ -2298,8 +2443,6 @@ async function closeMonth() {
 
 
     /*
-      VERIFIED CHANGE:
-
       If another process closed the period while this
       screen was calculating, simply render the current
       authoritative state and stop.
@@ -2606,8 +2749,6 @@ async function reopenMonth() {
 
 
     /*
-      VERIFIED CHANGE:
-
       An already-open period is handled as a state condition.
       Do not throw an invented client-side error.
     */
@@ -3114,4 +3255,3 @@ export const initMonthlyClosing =
 console.log(
   "CHAMA LIVE: monthly closing.js ready"
 );
-
