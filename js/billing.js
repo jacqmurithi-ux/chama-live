@@ -1,48 +1,30 @@
 /* =========================================================
    CHAMA LIVE — BILLING
 
-   CONTROLLED APPLICATION-LAYER VERSION
-
-   Scope
+   RESPONSIBILITIES
    ---------------------------------------------------------
-   - Reads the existing subscription/billing model.
-   - Displays authoritative database state.
-   - Uses the existing auth.js application context.
-   - Does not calculate settlement state.
-   - Does not create billing records.
-   - Does not modify contribution/accounting data.
-   - Does not introduce replacement RPCs.
-   - Database remains the authoritative security boundary.
+   - Read existing subscription/billing state
+   - Display authoritative database records
+   - Use existing auth/application context
+   - Keep billing page read-only
 
-   Access
-   ---------------------------------------------------------
-   - Owner: allowed
-   - Admin: allowed
-   - Chairperson: allowed
-   - Secretary: allowed
-   - Treasurer: allowed
-   - Member: redirected to Member Portal
-
-   Canonical relationship
-   ---------------------------------------------------------
-   group_subscriptions
-        ↓
-   subscription_cycles
-        ↓
-   subscription_invoices
-        ↓
-   subscription_payments
-
-   Existing RPC intentionally used for subscription lookup:
-   - get_group_subscription(uuid)
-
-   This page is read-only.
+   DOES NOT:
+   - create billing records
+   - modify subscriptions
+   - modify invoices
+   - modify payments
+   - calculate settlement
+   - modify contribution accounting
+   - replace database RPCs
 
    BOOT OWNERSHIP
    ---------------------------------------------------------
-   - admin-layout.js owns page boot.
-   - initBilling() is exported for admin-layout.js.
-   - This file does not auto-run initBilling().
+   admin-layout.js owns page boot.
+
+   This file exports:
+     initBilling()
+
+   This file does NOT auto-run initBilling().
 ========================================================= */
 
 
@@ -69,7 +51,7 @@ let payments = [];
 
 
 /* =========================================================
-   PORTAL ACCESS
+   ACCESS
 ========================================================= */
 
 const ADMIN_ROLES = new Set([
@@ -87,9 +69,7 @@ function canAccessBilling() {
 
   return (
     currentIsOwner ||
-    ADMIN_ROLES.has(
-      currentRole
-    )
+    ADMIN_ROLES.has(currentRole)
   );
 
 }
@@ -97,14 +77,9 @@ function canAccessBilling() {
 
 function enforceBillingAccess() {
 
-  if (
-    canAccessBilling()
-  ) {
-
+  if (canAccessBilling()) {
     return true;
-
   }
-
 
   window.location.replace(
     MEMBER_DASHBOARD_URL
@@ -162,35 +137,26 @@ const paymentContainerEl =
 function clearMessages() {
 
   if (statusEl) {
-
     statusEl.hidden = true;
     statusEl.textContent = "";
-
   }
 
-
   if (errorEl) {
-
     errorEl.hidden = true;
     errorEl.textContent = "";
-
   }
 
 }
 
 
-function showStatus(
-  message
-) {
+function showStatus(message) {
 
   if (!statusEl) {
     return;
   }
 
-
   statusEl.textContent =
     message;
-
 
   statusEl.hidden =
     false;
@@ -198,18 +164,14 @@ function showStatus(
 }
 
 
-function showError(
-  message
-) {
+function showError(message) {
 
   if (!errorEl) {
     return;
   }
 
-
   errorEl.textContent =
     message;
-
 
   errorEl.hidden =
     false;
@@ -218,21 +180,8 @@ function showError(
 
 
 /* =========================================================
-   AUTHORIZATION / APPLICATION CONTEXT
+   APPLICATION CONTEXT
 ========================================================= */
-
-/*
- * Use the existing centralized application context.
- *
- * Do not independently determine:
- *
- *     owner_user_id
- *     group ownership
- *     member role
- *     current group
- *
- * The database/RLS remains authoritative.
- */
 
 async function loadApplicationContext() {
 
@@ -245,50 +194,29 @@ async function loadApplicationContext() {
   } =
     await getMyApplicationContext();
 
-
   currentUser =
     user;
-
 
   currentMember =
     member;
 
-
   currentGroup =
     group;
 
-
   currentIsOwner =
-    Boolean(
-      isOwner
-    );
-
+    Boolean(isOwner);
 
   currentRole =
-    String(
-      role || ""
-    )
+    String(role || "")
       .trim()
       .toLowerCase();
 
-
   return {
-
-    user:
-      currentUser,
-
-    member:
-      currentMember,
-
-    group:
-      currentGroup,
-
-    isOwner:
-      currentIsOwner,
-
-    role:
-      currentRole
-
+    user: currentUser,
+    member: currentMember,
+    group: currentGroup,
+    isOwner: currentIsOwner,
+    role: currentRole
   };
 
 }
@@ -298,37 +226,16 @@ async function loadApplicationContext() {
    SUBSCRIPTION
 ========================================================= */
 
-/*
- * Existing authoritative RPC:
- *
- *     get_group_subscription(uuid)
- *
- * Returned fields include:
- *
- *     subscription_id
- *     group_id
- *     status
- *     started_at
- *     pricing_tier_code
- *     standard_group_amount
- *     standard_member_login_amount
- *     currency
- */
-
 async function loadSubscription() {
 
   const groupId =
     currentGroup?.id;
 
-
   if (!groupId) {
-
     throw new Error(
       "No group is associated with this account."
     );
-
   }
-
 
   const {
     data,
@@ -337,30 +244,18 @@ async function loadSubscription() {
     await supabase.rpc(
       "get_group_subscription",
       {
-        p_group_id:
-          groupId
+        p_group_id: groupId
       }
     );
-
 
   if (error) {
     throw error;
   }
 
-
   subscription =
-    Array.isArray(
-      data
-    )
-      ? (
-          data[0] ||
-          null
-        )
-      : (
-          data ||
-          null
-        );
-
+    Array.isArray(data)
+      ? data[0] || null
+      : data || null;
 
   return subscription;
 
@@ -368,85 +263,52 @@ async function loadSubscription() {
 
 
 /* =========================================================
-   DIRECT TABLE READS
-========================================================= */
-
-/*
- * These reads retrieve records already created by
- * the authoritative billing model.
- *
- * No settlement logic is recreated here.
- *
- * RLS remains responsible for access control.
- */
-
-
-/* ---------------------------------------------------------
    CYCLES
---------------------------------------------------------- */
+========================================================= */
 
 async function loadCycles() {
 
   const subscriptionId =
     subscription?.subscription_id;
 
-
   if (!subscriptionId) {
-
-    cycles =
-      [];
-
+    cycles = [];
     return cycles;
-
   }
-
 
   const {
     data,
     error
   } =
     await supabase
-
-      .from(
-        "subscription_cycles"
-      )
-
-      .select(
-        "*"
-      )
-
+      .from("subscription_cycles")
+      .select("*")
       .eq(
         "subscription_id",
         subscriptionId
       )
-
       .order(
         "cycle_number",
         {
-          ascending:
-            false
+          ascending: false
         }
       );
-
 
   if (error) {
     throw error;
   }
 
-
   cycles =
-    data ||
-    [];
-
+    data || [];
 
   return cycles;
 
 }
 
 
-/* ---------------------------------------------------------
+/* =========================================================
    INVOICES
---------------------------------------------------------- */
+========================================================= */
 
 async function loadInvoices() {
 
@@ -456,125 +318,83 @@ async function loadInvoices() {
   const groupId =
     currentGroup?.id;
 
-
-  if (
-    !subscriptionId ||
-    !groupId
-  ) {
-
-    invoices =
-      [];
-
+  if (!subscriptionId || !groupId) {
+    invoices = [];
     return invoices;
-
   }
-
 
   const {
     data,
     error
   } =
     await supabase
-
-      .from(
-        "subscription_invoices"
-      )
-
-      .select(
-        "*"
-      )
-
+      .from("subscription_invoices")
+      .select("*")
       .eq(
         "subscription_id",
         subscriptionId
       )
-
       .eq(
         "group_id",
         groupId
       )
-
       .order(
         "issued_at",
         {
-          ascending:
-            false
+          ascending: false
         }
       );
-
 
   if (error) {
     throw error;
   }
 
-
   invoices =
-    data ||
-    [];
-
+    data || [];
 
   return invoices;
 
 }
 
 
-/* ---------------------------------------------------------
+/* =========================================================
    PAYMENTS
---------------------------------------------------------- */
+========================================================= */
 
 async function loadPayments() {
 
   const groupId =
     currentGroup?.id;
 
-
   if (!groupId) {
-
-    payments =
-      [];
-
+    payments = [];
     return payments;
-
   }
-
 
   const {
     data,
     error
   } =
     await supabase
-
-      .from(
-        "subscription_payments"
-      )
-
-      .select(
-        "*"
-      )
-
+      .from("subscription_payments")
+      .select("*")
       .eq(
         "group_id",
         groupId
       )
-
       .order(
         "created_at",
         {
-          ascending:
-            false
+          ascending: false
         }
       );
-
 
   if (error) {
     throw error;
   }
 
-
   payments =
-    data ||
-    [];
-
+    data || [];
 
   return payments;
 
@@ -582,185 +402,153 @@ async function loadPayments() {
 
 
 /* =========================================================
-   FORMATTING
+   HELPERS
 ========================================================= */
 
 function formatAmount(
   amount,
-  currency
+  currency = "KES"
 ) {
 
   if (
     amount === null ||
-    amount === undefined
+    amount === undefined ||
+    amount === ""
   ) {
-
     return "—";
-
   }
 
+  const numeric =
+    Number(amount);
 
-  const numericAmount =
-    Number(
-      amount
-    );
-
-
-  if (
-    !Number.isFinite(
-      numericAmount
-    )
-  ) {
-
-    return String(
-      amount
-    );
-
+  if (!Number.isFinite(numeric)) {
+    return String(amount);
   }
 
+  try {
 
-  const code =
-    String(
-      currency ||
-      subscription?.currency ||
-      "KES"
-    )
-      .toUpperCase();
-
-
-  return (
-    `${code} ` +
-    numericAmount.toLocaleString(
+    return new Intl.NumberFormat(
       "en-KE",
       {
-        minimumFractionDigits:
-          2,
-
-        maximumFractionDigits:
-          2
+        style: "currency",
+        currency: currency || "KES",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
       }
-    )
-  );
+    ).format(numeric);
+
+  }
+
+  catch {
+    return `${currency || "KES"} ${numeric.toFixed(2)}`;
+  }
 
 }
 
 
-function formatDate(
-  value
-) {
+function formatDate(value) {
 
   if (!value) {
     return "—";
   }
 
-
   const date =
-    new Date(
-      value
-    );
-
+    new Date(value);
 
   if (
     Number.isNaN(
       date.getTime()
     )
   ) {
-
-    return String(
-      value
-    );
-
+    return String(value);
   }
 
-
-  return date.toLocaleString(
+  return new Intl.DateTimeFormat(
     "en-KE",
     {
-      dateStyle:
-        "medium",
-
-      timeStyle:
-        "short"
+      year: "numeric",
+      month: "short",
+      day: "numeric"
     }
-  );
+  ).format(date);
 
 }
 
 
-function text(
-  value,
-  fallback = "—"
-) {
+function text(value) {
 
   if (
     value === null ||
     value === undefined ||
     value === ""
   ) {
-
-    return fallback;
-
+    return "—";
   }
 
-
-  return String(
-    value
-  );
+  return String(value);
 
 }
 
 
 function createElement(
   tag,
-  className,
-  content
+  className = null,
+  content = null
 ) {
 
   const element =
-    document.createElement(
-      tag
-    );
-
+    document.createElement(tag);
 
   if (className) {
-
     element.className =
       className;
-
   }
-
 
   if (
+    content !== null &&
     content !== undefined
   ) {
-
     element.textContent =
       content;
-
   }
-
 
   return element;
 
 }
 
 
-/* =========================================================
-   STATUS BADGE
-========================================================= */
+function createStatusBadge(status) {
 
-function createStatusBadge(
-  value
+  const badge =
+    createElement(
+      "span",
+      "billing-badge-status"
+    );
+
+  badge.textContent =
+    text(status);
+
+  return badge;
+
+}
+
+
+function renderEmpty(
+  container,
+  message
 ) {
 
-  return createElement(
-    "span",
-    "billing-badge-status",
-    text(
-      value
-    ).replace(
-      /_/g,
-      " "
+  if (!container) {
+    return;
+  }
+
+  container.replaceChildren();
+
+  container.appendChild(
+    createElement(
+      "div",
+      "billing-empty",
+      message
     )
   );
 
@@ -768,7 +556,7 @@ function createStatusBadge(
 
 
 /* =========================================================
-   BILLING OVERVIEW
+   BILLING SUMMARY
 ========================================================= */
 
 function renderBillingSummary() {
@@ -777,113 +565,79 @@ function renderBillingSummary() {
     return;
   }
 
-
   billingSummaryGridEl.replaceChildren();
 
-
   const currentInvoice =
-    invoices.length > 0
-      ? invoices[0]
-      : null;
-
+    invoices[0] || null;
 
   const lastPayment =
-    payments.length > 0
-      ? payments[0]
-      : null;
-
+    payments[0] || null;
 
   const currentCycle =
-    cycles.length > 0
-      ? cycles[0]
-      : null;
-
+    cycles[0] || null;
 
   const cards = [
 
     [
       "Plan",
-
-      text(
-        subscription?.pricing_tier_code
-      ),
-
-      text(
-        subscription?.status
-      )
+      subscription?.pricing_tier_code || "—",
+      subscription?.status || ""
     ],
-
 
     [
       "Current Invoice",
-
+      currentInvoice?.invoice_number ||
+        currentInvoice?.id ||
+        "—",
       currentInvoice
         ? formatAmount(
-            currentInvoice.total_amount,
-            currentInvoice.currency
+            currentInvoice.total_amount ??
+            currentInvoice.amount ??
+            currentInvoice.total,
+            subscription?.currency
           )
-        : "No invoice",
-
-      currentInvoice
-        ? text(
-            currentInvoice.status
-          )
-        : "—"
+        : ""
     ],
-
 
     [
       "Due Date",
-
       currentInvoice
         ? formatDate(
-            currentInvoice.due_at
+            currentInvoice.due_at ??
+            currentInvoice.due_date
           )
         : "—",
-
       currentCycle
-        ? `Cycle ${text(
-            currentCycle.cycle_number
-          )}`
-        : "—"
+        ? `Cycle ${text(currentCycle.cycle_number)}`
+        : ""
     ],
-
 
     [
       "Last Payment",
-
       lastPayment
         ? formatAmount(
             lastPayment.amount,
             subscription?.currency
           )
-        : "No payments",
-
+        : "—",
       lastPayment
         ? formatDate(
-            lastPayment.paid_at
+            lastPayment.paid_at ??
+            lastPayment.created_at
           )
-        : "—"
+        : ""
     ]
 
   ];
 
-
   cards.forEach(
-    function (
-      [
-        label,
-        value,
-        subvalue
-      ]
-    ) {
+    ([label, value, subvalue]) => {
 
       const card =
         createElement(
           "div",
           "billing-card billing-summary-card"
         );
-
 
       card.appendChild(
         createElement(
@@ -893,7 +647,6 @@ function renderBillingSummary() {
         )
       );
 
-
       card.appendChild(
         createElement(
           "span",
@@ -902,15 +655,15 @@ function renderBillingSummary() {
         )
       );
 
-
-      card.appendChild(
-        createElement(
-          "span",
-          "billing-subvalue",
-          subvalue
-        )
-      );
-
+      if (subvalue) {
+        card.appendChild(
+          createElement(
+            "span",
+            "billing-subvalue",
+            subvalue
+          )
+        );
+      }
 
       billingSummaryGridEl.appendChild(
         card
@@ -923,7 +676,7 @@ function renderBillingSummary() {
 
 
 /* =========================================================
-   SUBSCRIPTION RENDER
+   SUBSCRIPTION
 ========================================================= */
 
 function renderSubscription() {
@@ -932,76 +685,61 @@ function renderSubscription() {
     return;
   }
 
-
   subscriptionGridEl.replaceChildren();
-
 
   if (!subscription) {
 
-    subscriptionGridEl.appendChild(
-      createElement(
-        "div",
-        "billing-empty",
-        "No subscription record is available for this group."
-      )
+    renderEmpty(
+      subscriptionGridEl,
+      "No subscription record is currently available for this group."
     );
-
 
     return;
 
   }
 
-
   const cards = [
 
     [
       "Status",
-      subscription.status
+      subscription.status || "—",
+      true
     ],
 
-
     [
-      "Pricing tier",
-      subscription.pricing_tier_code
+      "Pricing Tier",
+      subscription.pricing_tier_code || "—",
+      false
     ],
 
-
     [
-      "Group amount",
-
+      "Group Amount",
       formatAmount(
         subscription.standard_group_amount,
         subscription.currency
-      )
+      ),
+      false
     ],
 
-
     [
-      "Member login",
-
+      "Member Login",
       formatAmount(
         subscription.standard_member_login_amount,
         subscription.currency
-      )
+      ),
+      false
     ]
 
   ];
 
-
   cards.forEach(
-    function (
-      [
-        label,
-        value
-      ]
-    ) {
+    ([label, value, badge]) => {
 
       const card =
         createElement(
           "div",
           "billing-card"
         );
-
 
       card.appendChild(
         createElement(
@@ -1011,17 +749,25 @@ function renderSubscription() {
         )
       );
 
+      if (badge) {
 
-      card.appendChild(
-        createElement(
-          "span",
-          "billing-value",
-          text(
+        card.appendChild(
+          createStatusBadge(value)
+        );
+
+      }
+
+      else {
+
+        card.appendChild(
+          createElement(
+            "span",
+            "billing-value",
             value
           )
-        )
-      );
+        );
 
+      }
 
       subscriptionGridEl.appendChild(
         card
@@ -1034,7 +780,7 @@ function renderSubscription() {
 
 
 /* =========================================================
-   CURRENT CYCLE RENDER
+   CYCLES
 ========================================================= */
 
 function renderCycles() {
@@ -1043,78 +789,62 @@ function renderCycles() {
     return;
   }
 
-
   cycleGridEl.replaceChildren();
 
+  if (!cycles.length) {
 
-  const currentCycle =
-    cycles.length > 0
-      ? cycles[0]
-      : null;
-
-
-  if (!currentCycle) {
-
-    cycleGridEl.appendChild(
-      createElement(
-        "div",
-        "billing-empty",
-        "No subscription cycle is available."
-      )
+    renderEmpty(
+      cycleGridEl,
+      "No billing cycle records are currently available."
     );
-
 
     return;
 
   }
 
+  const currentCycle =
+    cycles[0];
 
   const cards = [
 
     [
       "Cycle",
-      currentCycle.cycle_number
+      currentCycle?.cycle_number
+        ? `Cycle ${currentCycle.cycle_number}`
+        : "—"
     ],
-
 
     [
       "Status",
-      currentCycle.status
+      currentCycle?.status || "—"
     ],
-
 
     [
       "Starts",
       formatDate(
-        currentCycle.starts_at
+        currentCycle?.starts_at ??
+        currentCycle?.start_date
       )
     ],
-
 
     [
       "Ends",
       formatDate(
-        currentCycle.ends_at
+        currentCycle?.ends_at ??
+        currentCycle?.end_date
       )
     ]
 
   ];
 
-
   cards.forEach(
-    function (
-      [
-        label,
-        value
-      ]
-    ) {
+    ([label, value]) => {
 
       const card =
         createElement(
           "div",
           "billing-card"
         );
-
 
       card.appendChild(
         createElement(
@@ -1124,33 +854,13 @@ function renderCycles() {
         )
       );
 
-
-      if (
-        label === "Status"
-      ) {
-
-        card.appendChild(
-          createStatusBadge(
-            value
-          )
-        );
-
-      }
-
-      else {
-
-        card.appendChild(
-          createElement(
-            "span",
-            "billing-value",
-            text(
-              value
-            )
-          )
-        );
-
-      }
-
+      card.appendChild(
+        createElement(
+          "span",
+          "billing-value",
+          value
+        )
+      );
 
       cycleGridEl.appendChild(
         card
@@ -1163,7 +873,7 @@ function renderCycles() {
 
 
 /* =========================================================
-   INVOICE RENDER
+   INVOICES
 ========================================================= */
 
 function renderInvoices() {
@@ -1172,28 +882,18 @@ function renderInvoices() {
     return;
   }
 
-
   invoiceContainerEl.replaceChildren();
 
+  if (!invoices.length) {
 
-  if (
-    !invoices ||
-    invoices.length === 0
-  ) {
-
-    invoiceContainerEl.appendChild(
-      createElement(
-        "div",
-        "billing-empty",
-        "No invoices are available for this subscription."
-      )
+    renderEmpty(
+      invoiceContainerEl,
+      "No invoices are currently available."
     );
-
 
     return;
 
   }
-
 
   const wrapper =
     createElement(
@@ -1201,25 +901,17 @@ function renderInvoices() {
       "billing-table-wrap"
     );
 
-
   const table =
     createElement(
       "table",
       "billing-table"
     );
 
-
   const thead =
-    document.createElement(
-      "thead"
-    );
-
+    document.createElement("thead");
 
   const headerRow =
-    document.createElement(
-      "tr"
-    );
-
+    document.createElement("tr");
 
   [
     "Invoice",
@@ -1229,9 +921,7 @@ function renderInvoices() {
     "Due",
     "Total"
   ].forEach(
-    function (
-      heading
-    ) {
+    heading => {
 
       headerRow.appendChild(
         createElement(
@@ -1244,95 +934,61 @@ function renderInvoices() {
     }
   );
 
-
   thead.appendChild(
     headerRow
   );
-
 
   table.appendChild(
     thead
   );
 
-
   const tbody =
-    document.createElement(
-      "tbody"
-    );
-
+    document.createElement("tbody");
 
   invoices.forEach(
-    function (
-      invoice
-    ) {
+    invoice => {
 
       const row =
-        document.createElement(
-          "tr"
-        );
-
-
-      const cycle =
-        cycles.find(
-          function (
-            item
-          ) {
-
-            return (
-              item.id ===
-              invoice.cycle_id
-            );
-
-          }
-        );
-
+        document.createElement("tr");
 
       const invoiceCell =
-        document.createElement(
-          "td"
-        );
-
+        document.createElement("td");
 
       invoiceCell.appendChild(
         createElement(
           "strong",
           null,
-          text(
-            invoice.invoice_number
-          )
+          invoice.invoice_number ||
+          invoice.id ||
+          "—"
         )
       );
-
 
       invoiceCell.appendChild(
         createElement(
           "span",
           "billing-subvalue",
-          invoice.id
+          invoice.description ||
+          ""
         )
       );
-
 
       row.appendChild(
         invoiceCell
       );
-
 
       row.appendChild(
         createElement(
           "td",
           null,
           text(
-            cycle?.cycle_number
+            invoice.cycle_number
           )
+        )
       );
 
-
       const statusCell =
-        document.createElement(
-          "td"
-        );
-
+        document.createElement("td");
 
       statusCell.appendChild(
         createStatusBadge(
@@ -1340,45 +996,44 @@ function renderInvoices() {
         )
       );
 
-
       row.appendChild(
         statusCell
       );
 
+      row.appendChild(
+        createElement(
+          "td",
+          null,
+          formatDate(
+            invoice.issued_at ??
+            invoice.issued_date
+          )
+        )
+      );
 
       row.appendChild(
         createElement(
           "td",
           null,
           formatDate(
-            invoice.issued_at
+            invoice.due_at ??
+            invoice.due_date
           )
         )
       );
-
-
-      row.appendChild(
-        createElement(
-          "td",
-          null,
-          formatDate(
-            invoice.due_at
-          )
-        )
-      );
-
 
       row.appendChild(
         createElement(
           "td",
           "amount",
           formatAmount(
-            invoice.total_amount,
-            invoice.currency
+            invoice.total_amount ??
+            invoice.amount ??
+            invoice.total,
+            subscription?.currency
           )
         )
       );
-
 
       tbody.appendChild(
         row
@@ -1387,16 +1042,13 @@ function renderInvoices() {
     }
   );
 
-
   table.appendChild(
     tbody
   );
 
-
   wrapper.appendChild(
     table
   );
-
 
   invoiceContainerEl.appendChild(
     wrapper
@@ -1406,7 +1058,7 @@ function renderInvoices() {
 
 
 /* =========================================================
-   PAYMENT RENDER
+   PAYMENTS
 ========================================================= */
 
 function renderPayments() {
@@ -1415,28 +1067,18 @@ function renderPayments() {
     return;
   }
 
-
   paymentContainerEl.replaceChildren();
 
+  if (!payments.length) {
 
-  if (
-    !payments ||
-    payments.length === 0
-  ) {
-
-    paymentContainerEl.appendChild(
-      createElement(
-        "div",
-        "billing-empty",
-        "No subscription payments are available."
-      )
+    renderEmpty(
+      paymentContainerEl,
+      "No payment records are currently available."
     );
-
 
     return;
 
   }
-
 
   const wrapper =
     createElement(
@@ -1444,25 +1086,17 @@ function renderPayments() {
       "billing-table-wrap"
     );
 
-
   const table =
     createElement(
       "table",
       "billing-table"
     );
 
-
   const thead =
-    document.createElement(
-      "thead"
-    );
-
+    document.createElement("thead");
 
   const headerRow =
-    document.createElement(
-      "tr"
-    );
-
+    document.createElement("tr");
 
   [
     "Payment",
@@ -1472,9 +1106,7 @@ function renderPayments() {
     "Paid",
     "Amount"
   ].forEach(
-    function (
-      heading
-    ) {
+    heading => {
 
       headerRow.appendChild(
         createElement(
@@ -1487,39 +1119,25 @@ function renderPayments() {
     }
   );
 
-
   thead.appendChild(
     headerRow
   );
-
 
   table.appendChild(
     thead
   );
 
-
   const tbody =
-    document.createElement(
-      "tbody"
-    );
-
+    document.createElement("tbody");
 
   payments.forEach(
-    function (
-      payment
-    ) {
+    payment => {
 
       const row =
-        document.createElement(
-          "tr"
-        );
-
+        document.createElement("tr");
 
       const paymentCell =
-        document.createElement(
-          "td"
-        );
-
+        document.createElement("td");
 
       paymentCell.appendChild(
         createElement(
@@ -1528,7 +1146,6 @@ function renderPayments() {
           payment.id
         )
       );
-
 
       paymentCell.appendChild(
         createElement(
@@ -1539,11 +1156,9 @@ function renderPayments() {
         )
       );
 
-
       row.appendChild(
         paymentCell
       );
-
 
       row.appendChild(
         createElement(
@@ -1555,12 +1170,8 @@ function renderPayments() {
         )
       );
 
-
       const statusCell =
-        document.createElement(
-          "td"
-        );
-
+        document.createElement("td");
 
       statusCell.appendChild(
         createStatusBadge(
@@ -1568,11 +1179,9 @@ function renderPayments() {
         )
       );
 
-
       row.appendChild(
         statusCell
       );
-
 
       row.appendChild(
         createElement(
@@ -1584,7 +1193,6 @@ function renderPayments() {
         )
       );
 
-
       row.appendChild(
         createElement(
           "td",
@@ -1594,7 +1202,6 @@ function renderPayments() {
           )
         )
       );
-
 
       row.appendChild(
         createElement(
@@ -1607,7 +1214,6 @@ function renderPayments() {
         )
       );
 
-
       tbody.appendChild(
         row
       );
@@ -1615,16 +1221,13 @@ function renderPayments() {
     }
   );
 
-
   table.appendChild(
     tbody
   );
 
-
   wrapper.appendChild(
     table
   );
-
 
   paymentContainerEl.appendChild(
     wrapper
@@ -1634,73 +1237,35 @@ function renderPayments() {
 
 
 /* =========================================================
-   LOAD ALL BILLING STATE
+   LOAD BILLING
 ========================================================= */
 
 async function loadBilling() {
 
   clearMessages();
 
-
   showStatus(
-    "Checking billing access…"
+    "Checking billing access..."
   );
-
-
-  /*
-   * Step 1:
-   * Existing centralized application context.
-   */
 
   await loadApplicationContext();
 
-
-  /*
-   * Step 2:
-   * Billing is an administrative surface.
-   *
-   * Owner remains a separate authorization path.
-   * Member users are redirected to the member portal.
-   */
-
-  if (
-    !enforceBillingAccess()
-  ) {
-
+  if (!enforceBillingAccess()) {
     return;
-
   }
 
-
   showStatus(
-    "Loading authoritative billing information…"
+    "Loading authoritative billing information..."
   );
 
-
-  /*
-   * Step 3:
-   * Existing authoritative subscription RPC.
-   */
-
   await loadSubscription();
-
-
-  /*
-   * If no subscription exists, there is no valid
-   * subscription/cycle/invoice/payment chain to
-   * manufacture in the frontend.
-   */
 
   if (!subscription) {
 
     renderBillingSummary();
-
     renderSubscription();
-
     renderCycles();
-
     renderInvoices();
-
     renderPayments();
 
     showStatus(
@@ -1711,40 +1276,17 @@ async function loadBilling() {
 
   }
 
-
-  /*
-   * Step 4:
-   * Read existing authoritative records.
-   *
-   * Only records actually displayed by this page
-   * are loaded.
-   */
-
   await Promise.all([
     loadCycles(),
     loadInvoices(),
     loadPayments()
   ]);
 
-
-  /*
-   * Step 5:
-   * Render the customer-facing billing view.
-   *
-   * No settlement calculation is performed.
-   * No allocation or credit state is recreated.
-   */
-
   renderBillingSummary();
-
   renderSubscription();
-
   renderCycles();
-
   renderInvoices();
-
   renderPayments();
-
 
   showStatus(
     "Billing information loaded."
@@ -1754,9 +1296,7 @@ async function loadBilling() {
 
 
 /* =========================================================
-   INITIALIZER
-   ---------------------------------------------------------
-   admin-layout.js owns page boot.
+   ADMIN LAYOUT INITIALIZER
 ========================================================= */
 
 export async function initBilling() {
@@ -1773,7 +1313,6 @@ export async function initBilling() {
       "CHAMA LIVE: billing page failed to load",
       error
     );
-
 
     showError(
       error?.message ||
