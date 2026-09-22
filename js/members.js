@@ -2460,12 +2460,26 @@ async function loadMemberContributionPosition(
 
   setContributionPositionLoading();
 
+  /*
+    READ-ONLY RPC
+
+    get_member_contribution_position()
+    is SECURITY INVOKER / STABLE and does not
+    create payments, allocations, obligations,
+    or reconciliation records.
+
+    The `get: true` option explicitly marks this
+    frontend call as a read-only RPC request.
+  */
   const result =
     await supabase.rpc(
       "get_member_contribution_position",
       {
         p_member_id:
           memberId
+      },
+      {
+        get: true
       }
     );
 
