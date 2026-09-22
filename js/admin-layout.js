@@ -62,6 +62,7 @@ const ADMIN_PAGES = new Set([
   "reports.html",
   "monthly-closing.html",
   "group-management.html",
+  "billing.html",
   "assets.html",
   "plans-activities.html",
   "support-welfare.html",
@@ -115,6 +116,11 @@ const PAGE_SCRIPTS = {
   "group-management.html": [
     "./group-management.js",
     "initGroupManagement"
+  ],
+
+  "billing.html": [
+    "./billing.js",
+    "initBilling"
   ],
 
   "plans-activities.html": [
