@@ -407,6 +407,7 @@
       line-height: 1.4;
     }
 
+
     /* =====================================================
        CONTRIBUTION SETUP
     ===================================================== */
@@ -1094,7 +1095,7 @@
 
 
     /* =====================================================
-       CONTRIBUTION POSITION IN MODAL
+       CONTRIBUTION ACCOUNTING
     ===================================================== */
 
     .member-accounting-panel {
@@ -1112,7 +1113,7 @@
 
     .member-accounting-heading {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 10px;
       margin-bottom: 11px;
@@ -1126,12 +1127,14 @@
     .member-accounting-heading span {
       color: #64748b;
       font-size: 10px;
+      text-align: right;
+      line-height: 1.4;
     }
 
     .member-accounting-summary {
       display: grid;
       grid-template-columns:
-        repeat(3, minmax(0, 1fr));
+        repeat(5, minmax(0, 1fr));
       gap: 8px;
     }
 
@@ -1157,6 +1160,40 @@
       display: block;
       color: #334155;
       font-size: 12px;
+      line-height: 1.25;
+      word-break: break-word;
+    }
+
+    #viewContributionStatus {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 20px;
+      padding: 3px 7px;
+      border-radius: 999px;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .02em;
+    }
+
+    #viewContributionStatus.status-arrears {
+      background: rgba(220, 38, 38, .09);
+      color: #b91c1c;
+    }
+
+    #viewContributionStatus.status-credit {
+      background: rgba(22, 163, 74, .09);
+      color: #15803d;
+    }
+
+    #viewContributionStatus.status-up-to-date {
+      background: rgba(37, 99, 235, .09);
+      color: #1d4ed8;
+    }
+
+    #viewContributionStatus.status-unknown {
+      background: #f1f5f9;
+      color: #64748b;
     }
 
     .accounting-status {
@@ -1201,6 +1238,11 @@
       .member-stats {
         grid-template-columns:
           repeat(2, minmax(0, 1fr));
+      }
+
+      .member-accounting-summary {
+        grid-template-columns:
+          repeat(3, minmax(0, 1fr));
       }
 
     }
@@ -1262,6 +1304,19 @@
       }
 
       #memberContributionPreviewText {
+        text-align: left;
+      }
+
+      .member-accounting-summary {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+
+      .member-accounting-heading {
+        flex-direction: column;
+      }
+
+      .member-accounting-heading span {
         text-align: left;
       }
 
@@ -1328,7 +1383,7 @@
       }
 
       .member-accounting-summary {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
       }
 
       .member-modal-actions {
@@ -1367,6 +1422,10 @@
       .member-action,
       .mobile-action {
         min-height: 36px;
+      }
+
+      .member-accounting-summary {
+        grid-template-columns: 1fr;
       }
 
     }
@@ -1901,8 +1960,6 @@
 
           <!-- =================================================
                CONTRIBUTION SETUP
-
-               members.js enhances this section dynamically.
           ================================================== -->
 
           <div
@@ -2467,6 +2524,14 @@
 
         <!-- =================================================
              CONTRIBUTION ACCOUNTING
+
+             READ-ONLY POSITION
+
+             Source:
+             public.get_member_contribution_position(uuid)
+
+             Historical reconciliation remains a separate
+             explicit action and is NOT triggered here.
         ================================================== -->
 
         <section
@@ -2481,7 +2546,7 @@
             </strong>
 
             <span>
-              Existing payments are reconciled separately.
+              Current monthly contribution position
             </span>
 
           </div>
@@ -2491,6 +2556,7 @@
             class="member-accounting-summary"
           >
 
+
             <div class="accounting-mini-card">
 
               <span>
@@ -2499,6 +2565,37 @@
 
               <strong
                 id="viewContributionStatus"
+                class="status-unknown"
+              >
+                Loading...
+              </strong>
+
+            </div>
+
+
+            <div class="accounting-mini-card">
+
+              <span>
+                Total Due
+              </span>
+
+              <strong
+                id="viewContributionDue"
+              >
+                —
+              </strong>
+
+            </div>
+
+
+            <div class="accounting-mini-card">
+
+              <span>
+                Allocated
+              </span>
+
+              <strong
+                id="viewContributionAllocated"
               >
                 —
               </strong>
@@ -2535,6 +2632,7 @@
 
             </div>
 
+
           </div>
 
 
@@ -2543,8 +2641,7 @@
             id="viewContributionDescription"
             aria-live="polite"
           >
-            Contribution position will appear after
-            the member's accounting record is available.
+            Loading contribution position...
           </div>
 
 
@@ -2560,6 +2657,7 @@
             </button>
 
           </div>
+
 
         </section>
 
