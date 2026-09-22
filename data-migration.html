@@ -540,12 +540,24 @@
           </h1>
 
           <p class="muted">
-            Controlled import of
-            <strong>contributions</strong>
+            Controlled migration preview/import for
+            <strong>contributions</strong>,
+            <strong>expenses</strong>,
             and
-            <strong>expenses</strong>
-            only.
+            <strong>members</strong>.
+            Member migration is currently preview-only until a
+            server-side member-import contract is approved.
           </p>
+
+          <div
+            id="memberImportNotice"
+            class="notice warn hidden"
+          >
+            Members can be mapped, validated and previewed only.
+            This workflow will not insert or update members,
+            change roles, activate accounts, or change onboarding
+            status.
+          </div>
 
           <div
             id="message"
@@ -653,6 +665,10 @@
                   Expenses
                 </option>
 
+                <option value="member">
+                  Members — Preview Only
+                </option>
+
               </select>
 
             </div>
@@ -755,8 +771,10 @@
           <p class="muted">
             Only fields defined by the migration contract
             can be mapped. Group identity, recorder identity,
-            obligations, allocations and financial-period
-            fields are forbidden.
+            authentication identity, obligations, allocations
+            and financial-period fields are forbidden.
+            Member records are preview-only and are never
+            inserted or updated by this workflow.
           </p>
 
           <div
@@ -860,7 +878,9 @@
               closed periods are blocked, no financial period
               will be created, and contributions will be
               recorded only through the canonical 2B
-              contribution function.
+              contribution function. Member migrations are
+              preview-only and will not create, update,
+              activate, deactivate, or change member accounts.
             </span>
 
           </label>
@@ -910,7 +930,9 @@
           writes contribution_allocations or
           contribution_obligations, never creates
           financial_periods, never accepts a group_id from
-          the page, and never uses a service-role key.
+          the page, never uses a service-role key, and never
+          writes or modifies public.members through the
+          Members preview workflow.
         </p>
 
       </div>
