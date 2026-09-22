@@ -67,6 +67,10 @@
       -webkit-font-smoothing: antialiased;
     }
 
+    body.menu-open {
+      overflow: hidden;
+    }
+
     a {
       color: inherit;
       text-decoration: none;
@@ -75,6 +79,10 @@
     button,
     a {
       -webkit-tap-highlight-color: transparent;
+    }
+
+    button {
+      font: inherit;
     }
 
     img {
@@ -697,17 +705,34 @@
     }
 
     /* =========================================================
-       CORE VALUE
+       PRICING
        ========================================================= */
 
-    .value-section {
-      padding: 60px 0;
+    .pricing-section {
+      padding: 68px 0;
+      background: var(--green-pale);
+      border-top: 1px solid #edf4f0;
+      border-bottom: 1px solid #edf4f0;
+    }
+
+    .pricing-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 24px;
+      margin-bottom: 25px;
     }
 
     .section-heading {
       max-width: 680px;
       margin: 0 auto 30px;
       text-align: center;
+    }
+
+    .pricing-header .section-heading {
+      margin: 0;
+      text-align: left;
+      max-width: 560px;
     }
 
     .section-kicker {
@@ -729,78 +754,6 @@
       margin: 0;
       color: var(--muted);
       font-size: 0.9rem;
-    }
-
-    .value-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 14px;
-    }
-
-    .value-card {
-      padding: 22px;
-      border: 1px solid var(--line);
-      border-radius: var(--radius-md);
-      background: var(--white);
-      transition:
-        transform 0.2s ease,
-        box-shadow 0.2s ease;
-    }
-
-    .value-card:hover {
-      transform: translateY(-3px);
-      box-shadow: var(--shadow-sm);
-    }
-
-    .value-icon {
-      width: 40px;
-      height: 40px;
-      display: grid;
-      place-items: center;
-      margin-bottom: 16px;
-      border-radius: 11px;
-      background: var(--green-soft);
-      color: var(--green-dark);
-      font-size: 0.9rem;
-      font-weight: 800;
-    }
-
-    .value-card h3 {
-      margin: 0 0 6px;
-      font-size: 0.98rem;
-      letter-spacing: -0.02em;
-    }
-
-    .value-card p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 0.78rem;
-      line-height: 1.65;
-    }
-
-    /* =========================================================
-       PRICING
-       ========================================================= */
-
-    .pricing-section {
-      padding: 68px 0;
-      background: var(--green-pale);
-      border-top: 1px solid #edf4f0;
-      border-bottom: 1px solid #edf4f0;
-    }
-
-    .pricing-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      gap: 24px;
-      margin-bottom: 25px;
-    }
-
-    .pricing-header .section-heading {
-      margin: 0;
-      text-align: left;
-      max-width: 560px;
     }
 
     .pricing-toggle {
@@ -1228,19 +1181,16 @@
         min-width: 0;
       }
 
-      .value-section,
       .pricing-section,
       .steps-section {
         padding: 52px 0;
       }
 
-      .value-grid,
       .pricing-grid,
       .steps {
         grid-template-columns: 1fr;
       }
 
-      .value-card,
       .price-card,
       .step {
         padding: 20px;
@@ -1315,12 +1265,19 @@
   <header class="site-header">
     <div class="container header-inner">
 
-      <a href="index.html" class="brand" aria-label="CHAMA LIVE home">
+      <a
+        href="index.html"
+        class="brand"
+        aria-label="CHAMA LIVE home"
+      >
         <span class="brand-mark">CL</span>
         <span class="brand-text">CHAMA LIVE</span>
       </a>
 
-      <nav class="desktop-nav" aria-label="Main navigation">
+      <nav
+        class="desktop-nav"
+        aria-label="Main navigation"
+      >
         <a href="#product">Product</a>
         <a href="#pricing">Pricing</a>
         <a href="#how-it-works">How it works</a>
@@ -1328,19 +1285,27 @@
 
       <div class="header-actions">
 
-        <a href="login.html" class="header-signin">
+        <a
+          href="login.html"
+          class="header-signin"
+        >
           Sign in
         </a>
 
-        <a href="signup.html" class="header-cta">
+        <a
+          href="signup.html"
+          class="header-cta"
+        >
           Create your group
         </a>
 
         <button
           type="button"
           class="mobile-menu-button"
+          id="mobileMenuButton"
           aria-label="Open navigation"
-          onclick="toggleMobileMenu()"
+          aria-expanded="false"
+          aria-controls="mobileNavigation"
         >
           ☰
         </button>
@@ -1348,16 +1313,84 @@
       </div>
 
     </div>
+
+    <!-- Mobile navigation -->
+    <div
+      id="mobileNavigation"
+      hidden
+      style="
+        border-top: 1px solid var(--line);
+        background: var(--white);
+      "
+    >
+      <nav
+        class="container"
+        aria-label="Mobile navigation"
+        style="
+          display: grid;
+          gap: 4px;
+          padding-top: 12px;
+          padding-bottom: 14px;
+        "
+      >
+        <a
+          href="#product"
+          style="padding: 11px 8px; font-weight: 600;"
+        >
+          Product
+        </a>
+
+        <a
+          href="#pricing"
+          style="padding: 11px 8px; font-weight: 600;"
+        >
+          Pricing
+        </a>
+
+        <a
+          href="#how-it-works"
+          style="padding: 11px 8px; font-weight: 600;"
+        >
+          How it works
+        </a>
+
+        <a
+          href="login.html"
+          style="
+            padding: 11px 8px;
+            color: var(--green-dark);
+            font-weight: 700;
+          "
+        >
+          Sign in
+        </a>
+
+        <a
+          href="signup.html"
+          class="btn btn-primary"
+          style="margin-top: 4px;"
+        >
+          Create your group
+        </a>
+      </nav>
+    </div>
   </header>
 
 
   <!-- =======================================================
-       HERO
+       MAIN
        ======================================================= -->
 
   <main>
 
-    <section class="hero" id="product">
+    <!-- =====================================================
+         HERO
+         ===================================================== -->
+
+    <section
+      class="hero"
+      id="product"
+    >
 
       <div class="container hero-grid">
 
@@ -1374,18 +1407,25 @@
           </h1>
 
           <p class="hero-description">
-            CHAMA LIVE brings your members, contributions, expenses and
-            reports into one organised digital workspace — so your group
-            can spend less time chasing records and more time moving forward.
+            CHAMA LIVE brings your members, contributions, expenses
+            and reports into one organised digital workspace — so
+            your group can spend less time chasing records and more
+            time moving forward.
           </p>
 
           <div class="hero-actions">
 
-            <a href="signup.html" class="btn btn-primary">
+            <a
+              href="signup.html"
+              class="btn btn-primary"
+            >
               Create Your Group
             </a>
 
-            <a href="login.html" class="btn btn-secondary">
+            <a
+              href="login.html"
+              class="btn btn-secondary"
+            >
               Sign In
             </a>
 
@@ -1398,7 +1438,9 @@
         </div>
 
 
-        <!-- PRODUCT PREVIEW -->
+        <!-- =================================================
+             PRODUCT PREVIEW
+             ================================================= -->
 
         <div class="product-preview-wrap">
 
@@ -1682,8 +1724,9 @@
             </div>
 
             <p class="portal-description">
-              Group administrators manage the organisation. Members get
-              their own focused space to access what concerns them.
+              Group administrators manage the organisation.
+              Members get their own focused space to access what
+              concerns them.
             </p>
 
           </div>
@@ -1691,7 +1734,10 @@
 
           <div class="portal-actions">
 
-            <a href="login.html" class="portal-button">
+            <a
+              href="login.html"
+              class="portal-button"
+            >
 
               <strong>
                 Admin Portal
@@ -1704,7 +1750,10 @@
             </a>
 
 
-            <a href="login.html" class="portal-button">
+            <a
+              href="login.html"
+              class="portal-button"
+            >
 
               <strong>
                 Member Portal
@@ -1726,152 +1775,13 @@
 
 
     <!-- =====================================================
-         CORE VALUE
-         ===================================================== -->
-
-    <section class="value-section">
-
-      <div class="container">
-
-        <div class="section-heading">
-
-          <div class="section-kicker">
-            Everything important
-          </div>
-
-          <h2>
-            Stop managing your group from scattered records.
-          </h2>
-
-          <p>
-            Keep the core information your group depends on together,
-            organised and easier to access.
-          </p>
-
-        </div>
-
-
-        <div class="value-grid">
-
-          <article class="value-card">
-
-            <div class="value-icon">
-              M
-            </div>
-
-            <h3>
-              Members
-            </h3>
-
-            <p>
-              Keep member records organised and make it easier to know
-              who belongs to the group.
-            </p>
-
-          </article>
-
-
-          <article class="value-card">
-
-            <div class="value-icon">
-              K
-            </div>
-
-            <h3>
-              Contributions
-            </h3>
-
-            <p>
-              Keep contribution records together and maintain a clearer
-              picture of group finances.
-            </p>
-
-          </article>
-
-
-          <article class="value-card">
-
-            <div class="value-icon">
-              E
-            </div>
-
-            <h3>
-              Expenses
-            </h3>
-
-            <p>
-              Record group spending and keep financial activity easier
-              to follow.
-            </p>
-
-          </article>
-
-
-          <article class="value-card">
-
-            <div class="value-icon">
-              R
-            </div>
-
-            <h3>
-              Reports
-            </h3>
-
-            <p>
-              Turn your recorded group information into useful views
-              for administration and decision-making.
-            </p>
-
-          </article>
-
-
-          <article class="value-card">
-
-            <div class="value-icon">
-              G
-            </div>
-
-            <h3>
-              Group management
-            </h3>
-
-            <p>
-              Keep important group details and account information
-              together in one place.
-            </p>
-
-          </article>
-
-
-          <article class="value-card">
-
-            <div class="value-icon">
-              A
-            </div>
-
-            <h3>
-              Admin &amp; member spaces
-            </h3>
-
-            <p>
-              Give administrators and members a focused experience
-              designed around what each needs to do.
-            </p>
-
-          </article>
-
-        </div>
-
-      </div>
-
-    </section>
-
-
-    <!-- =====================================================
          PRICING
          ===================================================== -->
 
-    <section class="pricing-section" id="pricing">
+    <section
+      class="pricing-section"
+      id="pricing"
+    >
 
       <div class="container">
 
@@ -1888,20 +1798,22 @@
             </h2>
 
             <p>
-              Choose the plan that fits your organisation. Your group
-              stays in control of its records and account.
+              Choose the plan that fits your organisation.
+              Your group stays in control of its records and account.
             </p>
 
           </div>
 
 
-          <div class="pricing-toggle" aria-label="Billing period">
+          <div
+            class="pricing-toggle"
+            aria-label="Billing period"
+          >
 
             <button
               type="button"
               class="active"
               data-period="monthly"
-              onclick="setPricingPeriod('monthly')"
             >
               Monthly
             </button>
@@ -1909,7 +1821,6 @@
             <button
               type="button"
               data-period="yearly"
-              onclick="setPricingPeriod('yearly')"
             >
               Yearly
             </button>
@@ -1970,7 +1881,10 @@
 
             </ul>
 
-            <a href="signup.html" class="price-button">
+            <a
+              href="signup.html"
+              class="price-button"
+            >
               Choose Chama
             </a>
 
@@ -2031,7 +1945,10 @@
 
             </ul>
 
-            <a href="signup.html" class="price-button">
+            <a
+              href="signup.html"
+              class="price-button"
+            >
               Choose CBO
             </a>
 
@@ -2099,8 +2016,8 @@
 
 
         <p class="pricing-footer-note">
-          Member portal access is charged to the group at KSh 20 per
-          active member login per month.
+          Member portal access is charged to the group at KSh 20
+          per active member login per month.
         </p>
 
       </div>
@@ -2149,8 +2066,8 @@
             </h3>
 
             <p>
-              Set up your group account and enter the basic information
-              needed to get started.
+              Set up your group account and enter the basic
+              information needed to get started.
             </p>
 
           </article>
@@ -2185,8 +2102,8 @@
             </h3>
 
             <p>
-              Manage the group from the Admin Portal while members use
-              their own dedicated Member Portal.
+              Manage the group from the Admin Portal while members
+              use their own dedicated Member Portal.
             </p>
 
           </article>
@@ -2267,123 +2184,185 @@
        ======================================================= -->
 
   <script>
-    function setPricingPeriod(period) {
-      const buttons = document.querySelectorAll(
-        ".pricing-toggle button"
+    (() => {
+      "use strict";
+
+      const mobileMenuButton =
+        document.getElementById("mobileMenuButton");
+
+      const mobileNavigation =
+        document.getElementById("mobileNavigation");
+
+      const pricingButtons =
+        document.querySelectorAll(
+          ".pricing-toggle button"
+        );
+
+      const priceElements =
+        document.querySelectorAll(
+          ".monthly-price"
+        );
+
+
+      /* -------------------------------------------------------
+         MOBILE NAVIGATION
+         ------------------------------------------------------- */
+
+      function openMobileMenu() {
+        if (!mobileMenuButton || !mobileNavigation) {
+          return;
+        }
+
+        mobileNavigation.hidden = false;
+
+        mobileMenuButton.setAttribute(
+          "aria-expanded",
+          "true"
+        );
+
+        mobileMenuButton.setAttribute(
+          "aria-label",
+          "Close navigation"
+        );
+
+        mobileMenuButton.textContent = "✕";
+
+        document.body.classList.add("menu-open");
+      }
+
+
+      function closeMobileMenu() {
+        if (!mobileMenuButton || !mobileNavigation) {
+          return;
+        }
+
+        mobileNavigation.hidden = true;
+
+        mobileMenuButton.setAttribute(
+          "aria-expanded",
+          "false"
+        );
+
+        mobileMenuButton.setAttribute(
+          "aria-label",
+          "Open navigation"
+        );
+
+        mobileMenuButton.textContent = "☰";
+
+        document.body.classList.remove("menu-open");
+      }
+
+
+      function toggleMobileMenu() {
+        if (!mobileNavigation) {
+          return;
+        }
+
+        if (mobileNavigation.hidden) {
+          openMobileMenu();
+        } else {
+          closeMobileMenu();
+        }
+      }
+
+
+      if (mobileMenuButton) {
+        mobileMenuButton.addEventListener(
+          "click",
+          toggleMobileMenu
+        );
+      }
+
+
+      if (mobileNavigation) {
+        mobileNavigation
+          .querySelectorAll("a")
+          .forEach((link) => {
+            link.addEventListener(
+              "click",
+              closeMobileMenu
+            );
+          });
+      }
+
+
+      document.addEventListener(
+        "keydown",
+        (event) => {
+          if (event.key === "Escape") {
+            closeMobileMenu();
+          }
+        }
       );
 
-      buttons.forEach((button) => {
-        button.classList.toggle(
-          "active",
-          button.dataset.period === period
+
+      window.addEventListener(
+        "resize",
+        () => {
+          if (
+            window.innerWidth > 900
+          ) {
+            closeMobileMenu();
+          }
+        }
+      );
+
+
+      /* -------------------------------------------------------
+         PRICING PERIOD
+         ------------------------------------------------------- */
+
+      function setPricingPeriod(period) {
+        pricingButtons.forEach((button) => {
+          button.classList.toggle(
+            "active",
+            button.dataset.period === period
+          );
+        });
+
+
+        priceElements.forEach((element) => {
+          const amount =
+            period === "yearly"
+              ? element.dataset.yearly
+              : element.dataset.monthly;
+
+          const suffix =
+            period === "yearly"
+              ? "/ year"
+              : "/ month";
+
+          element.innerHTML =
+            "KSh " +
+            Number(amount).toLocaleString() +
+            " <small>" +
+            suffix +
+            "</small>";
+        });
+      }
+
+
+      pricingButtons.forEach((button) => {
+        button.addEventListener(
+          "click",
+          () => {
+            setPricingPeriod(
+              button.dataset.period
+            );
+          }
         );
       });
 
-      const priceElements = document.querySelectorAll(
-        ".monthly-price"
-      );
 
-      priceElements.forEach((element) => {
-        const amount =
-          period === "yearly"
-            ? element.dataset.yearly
-            : element.dataset.monthly;
+      /* -------------------------------------------------------
+         INITIAL STATE
+         ------------------------------------------------------- */
 
-        const suffix =
-          period === "yearly"
-            ? "/ year"
-            : "/ month";
+      setPricingPeriod("monthly");
 
-        element.innerHTML =
-          "KSh " +
-          Number(amount).toLocaleString() +
-          " <small>" +
-          suffix +
-          "</small>";
-      });
-    }
-
-
-    function toggleMobileMenu() {
-      const nav = document.querySelector(".desktop-nav");
-
-      if (!nav) {
-        return;
-      }
-
-      const isVisible =
-        nav.style.display === "flex";
-
-      nav.style.display =
-        isVisible ? "" : "flex";
-
-      if (!isVisible) {
-        nav.style.position = "absolute";
-        nav.style.top = "62px";
-        nav.style.left = "12px";
-        nav.style.right = "12px";
-        nav.style.flexDirection = "column";
-        nav.style.alignItems = "stretch";
-        nav.style.gap = "0";
-        nav.style.padding = "8px";
-        nav.style.border = "1px solid var(--line)";
-        nav.style.borderRadius = "14px";
-        nav.style.background = "var(--white)";
-        nav.style.boxShadow = "var(--shadow-md)";
-
-        nav.querySelectorAll("a").forEach((link) => {
-          link.style.padding = "11px";
-          link.style.borderRadius = "8px";
-        });
-      }
-    }
-
-
-    document.addEventListener(
-      "click",
-      function (event) {
-        const nav =
-          document.querySelector(".desktop-nav");
-
-        const menuButton =
-          document.querySelector(".mobile-menu-button");
-
-        if (!nav || !menuButton) {
-          return;
-        }
-
-        if (
-          window.innerWidth <= 900 &&
-          nav.style.display === "flex" &&
-          !nav.contains(event.target) &&
-          !menuButton.contains(event.target)
-        ) {
-          nav.style.display = "";
-        }
-      }
-    );
-
-
-    window.addEventListener(
-      "resize",
-      function () {
-        const nav =
-          document.querySelector(".desktop-nav");
-
-        if (!nav) {
-          return;
-        }
-
-        if (window.innerWidth > 900) {
-          nav.removeAttribute("style");
-
-          nav.querySelectorAll("a").forEach((link) => {
-            link.removeAttribute("style");
-          });
-        }
-      }
-    );
+    })();
   </script>
 
 </body>
-</html>2
+</html>
