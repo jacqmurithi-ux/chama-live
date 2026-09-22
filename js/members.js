@@ -16,6 +16,21 @@
    Initial contribution status
       ↓
    Optional historical reconciliation
+
+   MEMBER VIEW FLOW
+   ---------------------------------------------------------
+   View Member
+      ↓
+   get_member_contribution_position()
+      ↓
+   Read-only contribution position
+      ↓
+   Total Due / Allocated / Arrears / Credit
+
+   HISTORICAL RECONCILIATION
+   ---------------------------------------------------------
+   Separate explicit action only:
+   reconcile_member_historical_payments()
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -690,6 +705,9 @@ function ensureContributionUI() {
   if (joinDate && effectiveFrom) {
     effectiveFrom.value =
       joinDate.value;
+
+    effectiveFrom.dataset.auto =
+      "true";
 
     joinDate.addEventListener(
       "change",
@@ -1614,6 +1632,39 @@ async function openAddMember() {
 
     effectiveFrom.dataset.auto =
       "true";
+
+    effectiveFrom.disabled =
+      false;
+  }
+
+  const amount =
+    byId(
+      "memberContributionAmount"
+    );
+
+  if (amount) {
+    amount.disabled =
+      false;
+  }
+
+  const firstPeriod =
+    byId(
+      "memberFirstPeriodRule"
+    );
+
+  if (firstPeriod) {
+    firstPeriod.disabled =
+      false;
+  }
+
+  const setup =
+    byId(
+      "memberContributionSetup"
+    );
+
+  if (setup) {
+    setup.style.opacity =
+      "1";
   }
 
   clearFormMessage();
@@ -1627,11 +1678,6 @@ async function openAddMember() {
         0
       );
 
-    const amount =
-      byId(
-        "memberContributionAmount"
-      );
-
     if (
       amount &&
       !amount.value &&
@@ -1642,6 +1688,7 @@ async function openAddMember() {
     }
 
     updateContributionPreview();
+
   } catch (error) {
     showFormMessage(
       error?.message ||
@@ -2163,6 +2210,369 @@ function contributionResultMessage(
 
 
 /* =========================================================
+   READ-ONLY CONTRIBUTION POSITION
+   ---------------------------------------------------------
+   This function only reads the current accounting position.
+
+   It does NOT:
+   - create payments
+   - create allocations
+   - reconcile historical payments
+   - modify obligations
+========================================================= */
+
+function ensureContributionPositionUI() {
+  const modal =
+    byId("memberModal");
+
+  if (
+    !modal ||
+    byId("memberContributionPosition")
+  ) {
+    return;
+  }
+
+  const section =
+    document.createElement("section");
+
+  section.id =
+    "memberContributionPosition";
+
+  section.className =
+    "member-contribution-position";
+
+  section.innerHTML = `
+    <div class="member-contribution-position-header">
+
+      <div>
+        <span class="member-detail-label">
+          Contribution Position
+        </span>
+
+        <strong>
+          Current accounting position
+        </strong>
+      </div>
+
+      <span
+        id="viewContributionStatus"
+        class="contribution-status-badge"
+      >
+        Loading...
+      </span>
+
+    </div>
+
+    <p
+      id="viewContributionDescription"
+      class="member-contribution-description"
+      aria-live="polite"
+    >
+      Loading contribution position...
+    </p>
+
+    <div class="contribution-position-grid">
+
+      <div class="contribution-metric">
+        <span>
+          Total Due
+        </span>
+
+        <strong id="viewContributionDue">
+          —
+        </strong>
+      </div>
+
+      <div class="contribution-metric">
+        <span>
+          Allocated
+        </span>
+
+        <strong id="viewContributionAllocated">
+          —
+        </strong>
+      </div>
+
+      <div class="contribution-metric">
+        <span>
+          Arrears
+        </span>
+
+        <strong id="viewContributionArrears">
+          —
+        </strong>
+      </div>
+
+      <div class="contribution-metric">
+        <span>
+          Credit
+        </span>
+
+        <strong id="viewContributionCredit">
+          —
+        </strong>
+      </div>
+
+    </div>
+  `;
+
+  const detailGrid =
+    modal.querySelector(
+      ".member-detail-grid"
+    );
+
+  const modalActions =
+    modal.querySelector(
+      ".member-modal-actions, " +
+      ".modal-actions, " +
+      ".member-actions"
+    );
+
+  if (modalActions) {
+    modal.insertBefore(
+      section,
+      modalActions
+    );
+
+    return;
+  }
+
+  if (detailGrid?.parentElement) {
+    detailGrid.parentElement.appendChild(
+      section
+    );
+
+    return;
+  }
+
+  modal
+    .querySelector(
+      ".member-modal-content, " +
+      ".modal-content"
+    )
+    ?.appendChild(section);
+}
+
+function setContributionPositionLoading(
+  message = "Loading contribution position..."
+) {
+  ensureContributionPositionUI();
+
+  const status =
+    byId(
+      "viewContributionStatus"
+    );
+
+  const due =
+    byId(
+      "viewContributionDue"
+    );
+
+  const allocated =
+    byId(
+      "viewContributionAllocated"
+    );
+
+  const arrears =
+    byId(
+      "viewContributionArrears"
+    );
+
+  const credit =
+    byId(
+      "viewContributionCredit"
+    );
+
+  const description =
+    byId(
+      "viewContributionDescription"
+    );
+
+  if (status) {
+    status.textContent =
+      "Loading...";
+
+    status.className =
+      "contribution-status-badge";
+  }
+
+  if (due) {
+    due.textContent =
+      "—";
+  }
+
+  if (allocated) {
+    allocated.textContent =
+      "—";
+  }
+
+  if (arrears) {
+    arrears.textContent =
+      "—";
+  }
+
+  if (credit) {
+    credit.textContent =
+      "—";
+  }
+
+  if (description) {
+    description.textContent =
+      message;
+  }
+}
+
+function contributionPositionStatusClass(
+  status
+) {
+  const value =
+    String(
+      status || ""
+    )
+      .trim()
+      .toLowerCase();
+
+  if (
+    value === "arrears"
+  ) {
+    return "status-arrears";
+  }
+
+  if (
+    value === "credit"
+  ) {
+    return "status-credit";
+  }
+
+  if (
+    value === "up_to_date"
+  ) {
+    return "status-up-to-date";
+  }
+
+  return "status-unknown";
+}
+
+async function loadMemberContributionPosition(
+  memberId
+) {
+  ensureContributionPositionUI();
+
+  setContributionPositionLoading();
+
+  const result =
+    await supabase.rpc(
+      "get_member_contribution_position",
+      {
+        p_member_id:
+          memberId
+      }
+    );
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  const position =
+    Array.isArray(
+      result.data
+    )
+      ? result.data[0]
+      : result.data;
+
+  if (!position) {
+    throw new Error(
+      "No contribution position was returned for this member."
+    );
+  }
+
+  const status =
+    byId(
+      "viewContributionStatus"
+    );
+
+  const due =
+    byId(
+      "viewContributionDue"
+    );
+
+  const allocated =
+    byId(
+      "viewContributionAllocated"
+    );
+
+  const arrears =
+    byId(
+      "viewContributionArrears"
+    );
+
+  const credit =
+    byId(
+      "viewContributionCredit"
+    );
+
+  const description =
+    byId(
+      "viewContributionDescription"
+    );
+
+  const statusLabel =
+    contributionStatusLabel(
+      position.status
+    );
+
+  if (status) {
+    status.textContent =
+      statusLabel;
+
+    status.className =
+      `contribution-status-badge ${contributionPositionStatusClass(
+        position.status
+      )}`;
+  }
+
+  if (due) {
+    due.textContent =
+      formatMoney(
+        position.total_due
+      );
+  }
+
+  if (allocated) {
+    allocated.textContent =
+      formatMoney(
+        position.total_allocated
+      );
+  }
+
+  if (arrears) {
+    arrears.textContent =
+      formatMoney(
+        position.arrears
+      );
+  }
+
+  if (credit) {
+    credit.textContent =
+      formatMoney(
+        position.credit
+      );
+  }
+
+  if (description) {
+    description.textContent =
+      `Expected ${formatMoney(
+        position.total_due
+      )} · Allocated ${formatMoney(
+        position.total_allocated
+      )}. This position is read-only. Historical reconciliation is a separate action.`;
+  }
+
+  return position;
+}
+
+
+/* =========================================================
    SAVE MEMBER
 ========================================================= */
 
@@ -2457,6 +2867,10 @@ async function saveMember(
 
 /* =========================================================
    HISTORICAL RECONCILIATION
+   ---------------------------------------------------------
+   IMPORTANT:
+   This remains the ONLY explicit mutating accounting action
+   from the member modal.
 ========================================================= */
 
 async function reconcileMemberHistoricalPayments(
@@ -2565,7 +2979,7 @@ async function handleHistoricalReconciliation(
       )}: ${result.allocations_created || 0} allocation(s) created.`
     );
 
-    openMemberModal(
+    await openMemberModal(
       memberId
     );
 
@@ -2707,7 +3121,7 @@ async function sendMemberInvitation(
       modal &&
       !modal.hidden
     ) {
-      openMemberModal(
+      await openMemberModal(
         member.id
       );
     }
@@ -2750,7 +3164,7 @@ async function sendMemberInvitation(
    MEMBER MODAL
 ========================================================= */
 
-function openMemberModal(
+async function openMemberModal(
   memberId
 ) {
   const member =
@@ -2765,6 +3179,7 @@ function openMemberModal(
   }
 
   ensureNationalIdUI();
+  ensureContributionPositionUI();
 
   const values = {
     viewMemberName:
@@ -2866,7 +3281,123 @@ function openMemberModal(
 
 
   /* -------------------------------------------------------
+     OPEN MODAL BEFORE ASYNC ACCOUNTING LOAD
+     -------------------------------------------------------
+     This allows the user to see the member details while
+     the read-only accounting position is loading.
+  ------------------------------------------------------- */
+
+  const modal =
+    byId("memberModal");
+
+  if (!modal) {
+    return;
+  }
+
+  modal.hidden =
+    false;
+
+  modal.style.display =
+    "flex";
+
+  document.body.classList.add(
+    "modal-open"
+  );
+
+
+  /* -------------------------------------------------------
+     READ-ONLY CONTRIBUTION POSITION
+     -------------------------------------------------------
+     IMPORTANT:
+     This is a read-only RPC.
+
+     It does NOT call:
+       reconcile_member_historical_payments()
+
+     Historical reconciliation remains separate.
+  ------------------------------------------------------- */
+
+  try {
+    await loadMemberContributionPosition(
+      member.id
+    );
+
+  } catch (error) {
+    console.error(
+      "CHAMA LIVE: contribution position load failed",
+      error
+    );
+
+    const status =
+      byId(
+        "viewContributionStatus"
+      );
+
+    const due =
+      byId(
+        "viewContributionDue"
+      );
+
+    const allocated =
+      byId(
+        "viewContributionAllocated"
+      );
+
+    const arrears =
+      byId(
+        "viewContributionArrears"
+      );
+
+    const credit =
+      byId(
+        "viewContributionCredit"
+      );
+
+    const description =
+      byId(
+        "viewContributionDescription"
+      );
+
+    if (status) {
+      status.textContent =
+        "Unavailable";
+
+      status.className =
+        "contribution-status-badge status-unknown";
+    }
+
+    if (due) {
+      due.textContent =
+        "—";
+    }
+
+    if (allocated) {
+      allocated.textContent =
+        "—";
+    }
+
+    if (arrears) {
+      arrears.textContent =
+        "—";
+    }
+
+    if (credit) {
+      credit.textContent =
+        "—";
+    }
+
+    if (description) {
+      description.textContent =
+        error?.message ||
+        "Contribution position could not be loaded.";
+    }
+  }
+
+
+  /* -------------------------------------------------------
      HISTORICAL RECONCILIATION CONTROL
+     -------------------------------------------------------
+     This remains an explicit user action.
   ------------------------------------------------------- */
 
   let reconciliationButton =
@@ -2911,24 +3442,6 @@ function openMemberModal(
     reconciliationButton.dataset.action =
       "reconcile";
   }
-
-
-  const modal =
-    byId("memberModal");
-
-  if (!modal) {
-    return;
-  }
-
-  modal.hidden =
-    false;
-
-  modal.style.display =
-    "flex";
-
-  document.body.classList.add(
-    "modal-open"
-  );
 
   setTimeout(
     () =>
