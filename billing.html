@@ -2,7 +2,6 @@
 <html lang="en">
 
 <head>
-
   <meta charset="UTF-8">
 
   <meta
@@ -10,9 +9,7 @@
     content="width=device-width, initial-scale=1.0"
   >
 
-  <title>
-    Billing | CHAMA LIVE
-  </title>
+  <title>Billing | CHAMA LIVE</title>
 
   <link
     rel="stylesheet"
@@ -20,122 +17,374 @@
   >
 
   <style>
-    /* Billing page layout */
+    /* =========================================================
+       CHAMA LIVE — BILLING PAGE
+       ---------------------------------------------------------
+       Page-specific presentation only.
+       Admin portal shell is owned by admin-layout.js.
+    ========================================================= */
+
+    .billing-page {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* ---------------------------------------------------------
+       HERO
+    --------------------------------------------------------- */
+
+    .billing-hero {
+      margin-bottom: 1.25rem;
+      padding: 1.5rem;
+      border-radius: 16px;
+      background: linear-gradient(
+        135deg,
+        #ffffff,
+        #f8fafc
+      );
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    }
+
+    .billing-hero-inner {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .billing-hero-copy {
+      min-width: 0;
+    }
+
+    .billing-hero-icon {
+      width: 48px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 48px;
+      border-radius: 14px;
+      background: #f1f5f9;
+      font-size: 1.35rem;
+    }
+
+    .billing-eyebrow {
+      margin: 0 0 0.3rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+
+    .billing-hero h1 {
+      margin: 0;
+      font-size: clamp(1.7rem, 4vw, 2.25rem);
+      line-height: 1.15;
+      color: #0f172a;
+    }
+
+    .billing-hero p {
+      max-width: 700px;
+      margin: 0.55rem 0 0;
+      line-height: 1.55;
+      color: #64748b;
+    }
+
+    /* ---------------------------------------------------------
+       BACK LINK
+    --------------------------------------------------------- */
+
+    .billing-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-bottom: 1rem;
+      color: #475569;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .billing-back:hover {
+      color: #0f172a;
+      text-decoration: underline;
+    }
+
+    /* ---------------------------------------------------------
+       STATUS / ERROR
+    --------------------------------------------------------- */
+
+    .billing-message {
+      margin-bottom: 1rem;
+      padding: 0.8rem 1rem;
+      border-radius: 10px;
+      line-height: 1.45;
+    }
+
+    #billingStatus:empty,
+    #billingError:empty {
+      display: none;
+    }
+
+    #billingStatus {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      color: #475569;
+    }
+
+    #billingError {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+    }
+
+    /* ---------------------------------------------------------
+       SECTIONS
+    --------------------------------------------------------- */
 
     .billing-section {
       margin-top: 1.5rem;
     }
 
+    .billing-section:first-of-type {
+      margin-top: 0;
+    }
+
     .billing-section-heading {
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.8rem;
     }
 
     .billing-section-heading h2 {
-      margin-bottom: 0.25rem;
+      margin: 0 0 0.25rem;
+      font-size: 1.15rem;
+      color: #0f172a;
     }
 
     .billing-section-heading p {
       margin: 0;
+      color: #64748b;
       line-height: 1.45;
+      font-size: 0.9rem;
     }
+
+    /* ---------------------------------------------------------
+       CARD GRID
+    --------------------------------------------------------- */
 
     .billing-grid {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 0.75rem;
+      grid-template-columns: repeat(
+        4,
+        minmax(0, 1fr)
+      );
+      gap: 0.8rem;
     }
 
     .billing-card {
       min-width: 0;
       padding: 1rem;
       border-radius: 12px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
       overflow-wrap: anywhere;
+    }
+
+    .billing-card .billing-label {
+      display: block;
+      color: #64748b;
+      font-size: 0.78rem;
+      font-weight: 600;
     }
 
     .billing-card .billing-value {
       display: block;
       margin-top: 0.35rem;
+      color: #0f172a;
       font-size: 1.05rem;
       line-height: 1.3;
-      font-weight: 600;
+      font-weight: 700;
     }
 
     .billing-card .billing-subvalue {
       display: block;
       margin-top: 0.3rem;
+      color: #64748b;
       font-size: 0.82rem;
       line-height: 1.35;
       overflow-wrap: anywhere;
     }
 
-    /* Prevent long invoice/payment content from breaking the page */
+    .billing-summary-card {
+      min-height: 118px;
+    }
 
-    #invoiceContainer,
-    #paymentContainer {
+    /* ---------------------------------------------------------
+       STATUS BADGE
+    --------------------------------------------------------- */
+
+    .billing-badge-status {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      max-width: 100%;
+      margin-top: 0.4rem;
+      padding: 0.3rem 0.55rem;
+      border-radius: 999px;
+      background: #f1f5f9;
+      color: #334155;
+      font-size: 0.78rem;
+      font-weight: 700;
+      line-height: 1.2;
+      overflow-wrap: anywhere;
+    }
+
+    /* ---------------------------------------------------------
+       EMPTY STATE
+    --------------------------------------------------------- */
+
+    .billing-empty {
+      padding: 1.25rem;
+      border: 1px dashed #cbd5e1;
+      border-radius: 12px;
+      background: #f8fafc;
+      color: #64748b;
+      line-height: 1.5;
+    }
+
+    /* ---------------------------------------------------------
+       TABLES
+    --------------------------------------------------------- */
+
+    .billing-table-wrap {
       width: 100%;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      background: #ffffff;
     }
 
-    #invoiceContainer table,
-    #paymentContainer table {
+    .billing-table {
       width: 100%;
+      min-width: 760px;
       border-collapse: collapse;
     }
 
-    #invoiceContainer th,
-    #invoiceContainer td,
-    #paymentContainer th,
-    #paymentContainer td {
-      padding: 0.75rem;
+    .billing-table th,
+    .billing-table td {
+      padding: 0.8rem;
       vertical-align: top;
       text-align: left;
+      border-bottom: 1px solid #e2e8f0;
     }
 
-    /* Tablet */
+    .billing-table th {
+      background: #f8fafc;
+      color: #475569;
+      font-size: 0.78rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
 
-    @media (max-width: 900px) {
+    .billing-table td {
+      color: #334155;
+      font-size: 0.86rem;
+      line-height: 1.4;
+    }
+
+    .billing-table tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .billing-table .amount {
+      font-weight: 700;
+      white-space: nowrap;
+      color: #0f172a;
+    }
+
+    .billing-table strong {
+      display: block;
+      color: #0f172a;
+      overflow-wrap: anywhere;
+    }
+
+    /* ---------------------------------------------------------
+       LOADING
+    --------------------------------------------------------- */
+
+    [data-admin-loading] {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      background: #f8fafc;
+    }
+
+    [data-admin-loading][hidden] {
+      display: none !important;
+    }
+
+    .billing-loading-card {
+      width: min(360px, 100%);
+      padding: 1.25rem;
+      border-radius: 14px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+      text-align: center;
+      color: #475569;
+    }
+
+    /* ---------------------------------------------------------
+       TABLET
+    --------------------------------------------------------- */
+
+    @media (max-width: 1000px) {
 
       .billing-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(
+          2,
+          minmax(0, 1fr)
+        );
       }
 
     }
 
-    /* Mobile */
+    /* ---------------------------------------------------------
+       MOBILE
+    --------------------------------------------------------- */
 
     @media (max-width: 700px) {
 
-      .page-container {
-        padding-left: 0.9rem;
-        padding-right: 0.9rem;
-      }
-
-      .main-nav {
-        display: flex;
-        gap: 0.5rem;
-        overflow-x: auto;
-        white-space: nowrap;
-        -webkit-overflow-scrolling: touch;
-        padding-bottom: 0.35rem;
-      }
-
-      .main-nav a {
-        flex: 0 0 auto;
+      .billing-page {
+        width: 100%;
       }
 
       .billing-hero {
-        margin-top: 0.75rem;
         padding: 1rem;
+        border-radius: 13px;
       }
 
-      .billing-hero h1 {
-        margin-bottom: 0.35rem;
-        font-size: 1.75rem;
+      .billing-hero-inner {
+        gap: 0.75rem;
+      }
+
+      .billing-hero-icon {
+        width: 42px;
+        height: 42px;
+        flex-basis: 42px;
+        border-radius: 11px;
+        font-size: 1.15rem;
       }
 
       .billing-hero p {
-        line-height: 1.45;
+        font-size: 0.9rem;
       }
 
       .billing-section {
@@ -143,7 +392,11 @@
       }
 
       .billing-section-heading h2 {
-        font-size: 1.2rem;
+        font-size: 1.05rem;
+      }
+
+      .billing-section-heading p {
+        font-size: 0.84rem;
       }
 
       .billing-grid {
@@ -156,34 +409,33 @@
         border-radius: 10px;
       }
 
+      .billing-summary-card {
+        min-height: 105px;
+      }
+
       .billing-card .billing-value {
-        font-size: 0.98rem;
+        font-size: 0.95rem;
       }
 
       .billing-card .billing-subvalue {
-        font-size: 0.78rem;
+        font-size: 0.76rem;
       }
 
-      /*
-        Invoice and payment tables become
-        horizontally scrollable on phones.
-      */
-
-      #invoiceContainer,
-      #paymentContainer {
-        overflow-x: auto;
-      }
-
-      #invoiceContainer table,
-      #paymentContainer table {
-        min-width: 650px;
+      .billing-table {
+        min-width: 700px;
       }
 
     }
 
-    /* Small phones */
+    /* ---------------------------------------------------------
+       SMALL PHONES
+    --------------------------------------------------------- */
 
     @media (max-width: 430px) {
+
+      .billing-hero-inner {
+        flex-direction: column;
+      }
 
       .billing-grid {
         grid-template-columns: 1fr;
@@ -197,13 +449,8 @@
         font-size: 1.55rem;
       }
 
-      .billing-section-heading h2 {
-        font-size: 1.1rem;
-      }
-
-      #invoiceContainer table,
-      #paymentContainer table {
-        min-width: 600px;
+      .billing-table {
+        min-width: 680px;
       }
 
     }
@@ -212,240 +459,274 @@
 
 </head>
 
-
 <body>
+
+  <!--
+    Admin-layout owns:
+    - authentication
+    - authorization
+    - desktop navigation
+    - mobile navigation
+    - logout
+    - page feature boot
+  -->
 
   <header class="topbar">
 
     <div class="topbar-inner">
 
       <div class="brand">
-        <strong>
-          CHAMA LIVE
-        </strong>
+        CHAMA <span>LIVE</span>
       </div>
 
-      <button
-        id="signOutBtn"
-        type="button"
-      >
-        Sign out
-      </button>
+      <nav
+        class="top-nav"
+        aria-label="Admin navigation"
+      ></nav>
+
+      <div class="topbar-actions">
+
+        <button
+          class="btn btn-secondary"
+          id="logout"
+          type="button"
+        >
+          Sign out
+        </button>
+
+      </div>
 
     </div>
 
   </header>
 
 
-  <nav class="main-nav">
+  <div class="layout">
 
-    <a href="dashboard.html">
-      Dashboard
-    </a>
+    <main class="main">
 
-    <a href="members.html">
-      Members
-    </a>
+      <div class="billing-page">
 
-    <a href="contributions.html">
-      Contributions
-    </a>
-
-    <a href="expenses.html">
-      Expenses
-    </a>
-
-    <a href="meetings.html">
-      Meetings
-    </a>
-
-    <a href="group-management.html">
-      Group Management
-    </a>
-
-  </nav>
+        <a
+          href="group-management.html"
+          class="billing-back"
+        >
+          ← Back to Group Management
+        </a>
 
 
-  <main class="page-container">
+        <section class="billing-hero">
 
-    <a
-      href="group-management.html"
-      class="back-link"
-    >
-      ← Back to Group Management
-    </a>
+          <div class="billing-hero-inner">
+
+            <div class="billing-hero-copy">
+
+              <p class="billing-eyebrow">
+                ACCOUNT
+              </p>
+
+              <h1>
+                Billing
+              </h1>
+
+              <p>
+                View your group's subscription,
+                billing cycle, invoices and payments.
+              </p>
+
+            </div>
+
+            <div
+              class="billing-hero-icon"
+              aria-hidden="true"
+            >
+              💳
+            </div>
+
+          </div>
+
+        </section>
 
 
-    <section class="billing-hero">
+        <div
+          id="billingStatus"
+          class="billing-message"
+          aria-live="polite"
+          hidden
+        ></div>
 
-      <div>
 
-        <p class="eyebrow">
-          ACCOUNT
-        </p>
+        <div
+          id="billingError"
+          class="billing-message"
+          aria-live="assertive"
+          hidden
+        ></div>
 
-        <h1>
-          Billing
-        </h1>
 
-        <p>
-          View your group's subscription,
-          billing cycle, invoices and payments.
-        </p>
+        <!-- =================================================
+             BILLING OVERVIEW
+        ================================================== -->
+
+        <section class="billing-section">
+
+          <div class="billing-section-heading">
+
+            <h2>
+              Billing Overview
+            </h2>
+
+            <p>
+              A quick view of your current billing status.
+            </p>
+
+          </div>
+
+          <div
+            id="billingSummaryGrid"
+            class="billing-grid"
+          ></div>
+
+        </section>
+
+
+        <!-- =================================================
+             SUBSCRIPTION
+        ================================================== -->
+
+        <section class="billing-section">
+
+          <div class="billing-section-heading">
+
+            <h2>
+              Subscription
+            </h2>
+
+            <p>
+              Your group's current subscription details.
+            </p>
+
+          </div>
+
+          <div
+            id="subscriptionGrid"
+            class="billing-grid"
+          ></div>
+
+        </section>
+
+
+        <!-- =================================================
+             CURRENT BILLING CYCLE
+        ================================================== -->
+
+        <section class="billing-section">
+
+          <div class="billing-section-heading">
+
+            <h2>
+              Current Billing Cycle
+            </h2>
+
+            <p>
+              The cycle shown here is the authoritative
+              cycle associated with the subscription.
+            </p>
+
+          </div>
+
+          <div
+            id="cycleGrid"
+            class="billing-grid"
+          ></div>
+
+        </section>
+
+
+        <!-- =================================================
+             INVOICES
+        ================================================== -->
+
+        <section class="billing-section">
+
+          <div class="billing-section-heading">
+
+            <h2>
+              Invoices
+            </h2>
+
+            <p>
+              Invoice state is displayed as stored by
+              the billing system.
+            </p>
+
+          </div>
+
+          <div
+            id="invoiceContainer"
+          ></div>
+
+        </section>
+
+
+        <!-- =================================================
+             PAYMENTS
+        ================================================== -->
+
+        <section class="billing-section">
+
+          <div class="billing-section-heading">
+
+            <h2>
+              Payments
+            </h2>
+
+            <p>
+              Payment records are displayed without
+              recreating settlement calculations.
+            </p>
+
+          </div>
+
+          <div
+            id="paymentContainer"
+          ></div>
+
+        </section>
 
       </div>
 
-    </section>
+    </main>
+
+  </div>
 
 
-    <div
-      id="billingStatus"
-      class="status-message"
-      aria-live="polite"
-    ></div>
+  <!--
+    Admin layout owns the page boot.
+    Billing must therefore expose initBilling()
+    rather than auto-running itself.
+  -->
+
+  <div
+    data-admin-loading
+    aria-live="polite"
+  >
+    <div class="billing-loading-card">
+      Loading Billing...
+    </div>
+  </div>
 
 
-    <div
-      id="billingError"
-      class="error-message"
-      aria-live="assertive"
-    ></div>
+  <script type="module">
+
+    import {
+      boot
+    } from "./js/admin-layout.js";
 
 
-    <!-- Billing Overview -->
+    boot();
 
-    <section class="billing-section">
-
-      <div class="billing-section-heading">
-
-        <h2>
-          Billing Overview
-        </h2>
-
-        <p>
-          A quick view of your current billing
-          status.
-        </p>
-
-      </div>
-
-
-      <div
-        id="billingSummaryGrid"
-        class="billing-grid"
-      ></div>
-
-    </section>
-
-
-    <!-- Subscription -->
-
-    <section class="billing-section">
-
-      <div class="billing-section-heading">
-
-        <h2>
-          Subscription
-        </h2>
-
-        <p>
-          Your group's current subscription
-          details.
-        </p>
-
-      </div>
-
-
-      <div
-        id="subscriptionGrid"
-        class="billing-grid"
-      ></div>
-
-    </section>
-
-
-    <!-- Current Billing Cycle -->
-
-    <section class="billing-section">
-
-      <div class="billing-section-heading">
-
-        <h2>
-          Current Billing Cycle
-        </h2>
-
-        <p>
-          The cycle shown here is the authoritative
-          cycle associated with the subscription.
-        </p>
-
-      </div>
-
-
-      <div
-        id="cycleGrid"
-        class="billing-grid"
-      ></div>
-
-    </section>
-
-
-    <!-- Invoices -->
-
-    <section class="billing-section">
-
-      <div class="billing-section-heading">
-
-        <h2>
-          Invoices
-        </h2>
-
-        <p>
-          Invoice state is displayed as stored by
-          the billing system.
-        </p>
-
-      </div>
-
-
-      <div
-        id="invoiceContainer"
-      ></div>
-
-    </section>
-
-
-    <!-- Payments -->
-
-    <section class="billing-section">
-
-      <div class="billing-section-heading">
-
-        <h2>
-          Payments
-        </h2>
-
-        <p>
-          Payment records are displayed without
-          recreating settlement calculations.
-        </p>
-
-      </div>
-
-
-      <div
-        id="paymentContainer"
-      ></div>
-
-    </section>
-
-  </main>
-
-
-  <script
-    type="module"
-    src="js/billing.js"
-  ></script>
+  </script>
 
 </body>
 
