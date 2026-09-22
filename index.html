@@ -2,13 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>CHAMA LIVE — Simple Digital Management for Groups</title>
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>CHAMA LIVE — Digital Management for Groups</title>
 
   <meta
     name="description"
-    content="CHAMA LIVE helps chamas, CBOs and community groups manage members, contributions, expenses, meetings and group records in one simple digital system."
+    content="CHAMA LIVE is a simple digital management system for chamas, CBOs and community groups. Manage your group from one connected workspace."
   >
 
   <meta name="theme-color" content="#0f766e">
@@ -17,20 +21,28 @@
 
   <style>
     /* =========================================================
-       CHAMA LIVE — LIGHT LANDING PAGE ENHANCEMENTS
+       CHAMA LIVE
+       LIGHT LANDING PAGE
        ========================================================= */
 
     :root {
       --cl-primary: #0f766e;
       --cl-primary-dark: #115e59;
-      --cl-primary-soft: #ecfdf5;
+      --cl-primary-light: #14b8a6;
+      --cl-soft: #ecfdf5;
+
       --cl-text: #102a2a;
       --cl-muted: #64748b;
+
+      --cl-bg: #f8fafc;
+      --cl-white: #ffffff;
       --cl-border: #e2e8f0;
-      --cl-surface: #ffffff;
-      --cl-background: #f8fafc;
+
       --cl-radius: 18px;
-      --cl-shadow: 0 10px 30px rgba(15, 23, 42, 0.07);
+      --cl-shadow:
+        0 18px 45px rgba(15, 23, 42, 0.08);
+
+      --cl-container: 1120px;
     }
 
     * {
@@ -43,7 +55,7 @@
 
     body {
       margin: 0;
-      background: var(--cl-background);
+      background: var(--cl-bg);
       color: var(--cl-text);
       font-family:
         Inter,
@@ -56,9 +68,12 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    img {
-      max-width: 100%;
-      height: auto;
+    body.menu-open {
+      overflow: hidden;
+    }
+
+    a {
+      color: inherit;
     }
 
     button,
@@ -66,8 +81,16 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    a {
-      color: inherit;
+    button {
+      font: inherit;
+    }
+
+    .cl-container {
+      width: min(
+        var(--cl-container),
+        calc(100% - 32px)
+      );
+      margin: 0 auto;
     }
 
     /* =========================================================
@@ -78,18 +101,24 @@
       position: sticky;
       top: 0;
       z-index: 1000;
-      background: rgba(248, 250, 252, 0.94);
-      border-bottom: 1px solid rgba(226, 232, 240, 0.85);
-      backdrop-filter: blur(12px);
+
+      background:
+        rgba(248, 250, 252, 0.94);
+
+      border-bottom:
+        1px solid rgba(226, 232, 240, 0.9);
+
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
     }
 
     .cl-header-inner {
-      width: min(1120px, calc(100% - 32px));
       min-height: 68px;
-      margin: 0 auto;
+
       display: flex;
       align-items: center;
       justify-content: space-between;
+
       gap: 20px;
     }
 
@@ -97,35 +126,49 @@
       display: inline-flex;
       align-items: center;
       gap: 10px;
+
+      color: var(--cl-text);
       text-decoration: none;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      font-size: 1.15rem;
+
+      font-size: 1.08rem;
+      font-weight: 850;
+      letter-spacing: -0.035em;
     }
 
     .cl-brand-mark {
       width: 36px;
       height: 36px;
-      border-radius: 11px;
+
       display: grid;
       place-items: center;
+
+      border-radius: 11px;
+
       background: var(--cl-primary);
       color: white;
-      font-size: 0.9rem;
+
+      font-size: 0.72rem;
       font-weight: 900;
+
+      box-shadow:
+        0 5px 15px rgba(15, 118, 110, 0.2);
     }
 
     .cl-nav {
       display: flex;
       align-items: center;
-      gap: 22px;
+      gap: 25px;
     }
 
     .cl-nav a {
-      text-decoration: none;
       color: #475569;
-      font-size: 0.9rem;
-      font-weight: 600;
+      text-decoration: none;
+
+      font-size: 0.84rem;
+      font-weight: 650;
+
+      transition:
+        color 0.15s ease;
     }
 
     .cl-nav a:hover {
@@ -135,65 +178,104 @@
     .cl-header-actions {
       display: flex;
       align-items: center;
-      gap: 9px;
+      gap: 7px;
     }
 
     .cl-login-link {
-      text-decoration: none;
-      font-size: 0.9rem;
-      font-weight: 700;
+      padding: 9px 11px;
+
       color: var(--cl-primary);
-      padding: 9px 12px;
+      text-decoration: none;
+
+      font-size: 0.84rem;
+      font-weight: 750;
     }
 
     .cl-primary-btn {
+      min-height: 42px;
+
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-height: 42px;
-      padding: 10px 16px;
+
+      padding: 10px 17px;
+
       border: 0;
       border-radius: 11px;
+
       background: var(--cl-primary);
-      color: #fff;
+      color: white;
+
       text-decoration: none;
-      font-size: 0.9rem;
-      font-weight: 750;
+
+      font-size: 0.84rem;
+      font-weight: 800;
+
       cursor: pointer;
+
+      box-shadow:
+        0 7px 18px rgba(15, 118, 110, 0.15);
+
       transition:
         transform 0.15s ease,
-        background 0.15s ease;
+        background 0.15s ease,
+        box-shadow 0.15s ease;
     }
 
     .cl-primary-btn:hover {
       background: var(--cl-primary-dark);
-      transform: translateY(-1px);
+
+      transform:
+        translateY(-1px);
+
+      box-shadow:
+        0 9px 22px rgba(15, 118, 110, 0.2);
     }
 
     .cl-secondary-btn {
+      min-height: 42px;
+
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-height: 42px;
-      padding: 10px 16px;
+
+      padding: 10px 17px;
+
       border: 1px solid var(--cl-border);
       border-radius: 11px;
-      background: #fff;
+
+      background: white;
       color: var(--cl-text);
+
       text-decoration: none;
-      font-size: 0.9rem;
-      font-weight: 750;
+
+      font-size: 0.84rem;
+      font-weight: 800;
+
+      transition:
+        border-color 0.15s ease,
+        transform 0.15s ease;
+    }
+
+    .cl-secondary-btn:hover {
+      border-color: #94a3b8;
+      transform: translateY(-1px);
     }
 
     .cl-menu-button {
       display: none;
+
       width: 42px;
       height: 42px;
+
       border: 1px solid var(--cl-border);
       border-radius: 10px;
+
       background: white;
+
       cursor: pointer;
-      font-size: 1.2rem;
+
+      font-size: 1.15rem;
     }
 
     /* =========================================================
@@ -201,385 +283,679 @@
        ========================================================= */
 
     .cl-hero {
-      padding: 54px 0 28px;
-    }
+      position: relative;
+      overflow: hidden;
 
-    .cl-container {
-      width: min(1120px, calc(100% - 32px));
-      margin: 0 auto;
+      padding: 62px 0 48px;
+
+      background:
+        radial-gradient(
+          circle at 78% 25%,
+          rgba(20, 184, 166, 0.11),
+          transparent 31%
+        ),
+        radial-gradient(
+          circle at 10% 70%,
+          rgba(15, 118, 110, 0.07),
+          transparent 28%
+        );
     }
 
     .cl-hero-grid {
       display: grid;
-      grid-template-columns: minmax(0, 1.15fr) minmax(330px, 0.85fr);
-      gap: 42px;
+
+      grid-template-columns:
+        minmax(0, 1.03fr)
+        minmax(350px, 0.97fr);
+
+      gap: 55px;
+
       align-items: center;
     }
 
     .cl-eyebrow {
       display: inline-flex;
       align-items: center;
-      gap: 7px;
-      margin-bottom: 13px;
+      gap: 8px;
+
+      margin-bottom: 15px;
+
       color: var(--cl-primary);
-      font-size: 0.78rem;
-      font-weight: 800;
+
+      font-size: 0.72rem;
+      font-weight: 850;
+
       text-transform: uppercase;
-      letter-spacing: 0.09em;
+      letter-spacing: 0.1em;
     }
 
     .cl-eyebrow-dot {
       width: 7px;
       height: 7px;
+
       border-radius: 50%;
+
       background: var(--cl-primary);
     }
 
     .cl-hero h1 {
+      max-width: 650px;
+
       margin: 0;
-      max-width: 690px;
-      font-size: clamp(2.15rem, 5vw, 4rem);
-      line-height: 0.98;
-      letter-spacing: -0.055em;
+
+      font-size:
+        clamp(2.55rem, 6vw, 4.45rem);
+
+      line-height: 0.97;
+
+      letter-spacing: -0.06em;
     }
 
     .cl-hero h1 span {
+      display: block;
       color: var(--cl-primary);
     }
 
     .cl-hero-copy {
-      max-width: 650px;
-      margin: 18px 0 0;
+      max-width: 600px;
+
+      margin: 20px 0 0;
+
       color: var(--cl-muted);
-      font-size: clamp(1rem, 2vw, 1.12rem);
-      line-height: 1.6;
+
+      font-size:
+        clamp(0.98rem, 2vw, 1.08rem);
+
+      line-height: 1.62;
     }
 
     .cl-hero-actions {
       display: flex;
       flex-wrap: wrap;
+
       gap: 10px;
-      margin-top: 22px;
+
+      margin-top: 25px;
     }
 
     .cl-hero-note {
       margin-top: 13px;
-      color: #64748b;
-      font-size: 0.78rem;
+
+      color: #94a3b8;
+
+      font-size: 0.72rem;
     }
 
     /* =========================================================
-       PORTAL ENTRY CARD
+       PRODUCT PREVIEW
        ========================================================= */
 
-    .cl-portal-card {
-      padding: 20px;
-      background: white;
-      border: 1px solid var(--cl-border);
-      border-radius: 22px;
-      box-shadow: var(--cl-shadow);
+    .cl-preview-wrap {
+      position: relative;
     }
 
-    .cl-portal-card-header {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      align-items: flex-start;
-      margin-bottom: 15px;
-    }
+    .cl-preview-glow {
+      position: absolute;
 
-    .cl-portal-card h2 {
-      margin: 0;
-      font-size: 1.05rem;
-      letter-spacing: -0.02em;
-    }
+      width: 220px;
+      height: 220px;
 
-    .cl-portal-card-header p {
-      margin: 5px 0 0;
-      color: var(--cl-muted);
-      font-size: 0.78rem;
-      line-height: 1.4;
-    }
+      right: -35px;
+      top: -45px;
 
-    .cl-live-dot {
-      width: 9px;
-      height: 9px;
-      flex: 0 0 auto;
-      margin-top: 5px;
       border-radius: 50%;
-      background: #16a34a;
-      box-shadow: 0 0 0 5px #dcfce7;
+
+      background:
+        rgba(20, 184, 166, 0.12);
+
+      filter: blur(5px);
+
+      pointer-events: none;
     }
 
-    .cl-portal-options {
-      display: grid;
-      gap: 9px;
+    .cl-preview {
+      position: relative;
+      z-index: 1;
+
+      overflow: hidden;
+
+      border:
+        1px solid rgba(226, 232, 240, 0.95);
+
+      border-radius: 22px;
+
+      background: white;
+
+      box-shadow:
+        0 24px 55px rgba(15, 23, 42, 0.1);
     }
 
-    .cl-portal-option {
+    .cl-preview-top {
+      min-height: 51px;
+
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 15px;
-      padding: 14px;
-      border: 1px solid var(--cl-border);
-      border-radius: 14px;
-      text-decoration: none;
-      background: #fff;
-      transition:
-        border-color 0.15s ease,
-        transform 0.15s ease;
+
+      padding: 0 16px;
+
+      border-bottom:
+        1px solid var(--cl-border);
+
+      background: #fcfdfd;
     }
 
-    .cl-portal-option:hover {
-      border-color: #99f6e4;
-      transform: translateY(-1px);
+    .cl-preview-brand {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+
+      font-size: 0.72rem;
+      font-weight: 800;
     }
 
-    .cl-portal-option strong {
+    .cl-preview-mini-mark {
+      width: 25px;
+      height: 25px;
+
+      display: grid;
+      place-items: center;
+
+      border-radius: 7px;
+
+      background: var(--cl-primary);
+      color: white;
+
+      font-size: 0.52rem;
+      font-weight: 900;
+    }
+
+    .cl-preview-user {
+      width: 26px;
+      height: 26px;
+
+      display: grid;
+      place-items: center;
+
+      border-radius: 50%;
+
+      background: var(--cl-soft);
+
+      color: var(--cl-primary);
+
+      font-size: 0.65rem;
+      font-weight: 800;
+    }
+
+    .cl-preview-body {
+      padding: 20px;
+    }
+
+    .cl-preview-heading {
+      margin-bottom: 16px;
+    }
+
+    .cl-preview-heading small {
       display: block;
-      font-size: 0.92rem;
-    }
 
-    .cl-portal-option small {
-      display: block;
-      margin-top: 3px;
+      margin-bottom: 4px;
+
       color: var(--cl-muted);
-      font-size: 0.73rem;
-      line-height: 1.35;
+
+      font-size: 0.66rem;
     }
 
-    .cl-portal-arrow {
+    .cl-preview-heading strong {
+      font-size: 1.12rem;
+      letter-spacing: -0.025em;
+    }
+
+    .cl-preview-stats {
+      display: grid;
+
+      grid-template-columns:
+        repeat(3, 1fr);
+
+      gap: 8px;
+    }
+
+    .cl-stat {
+      padding: 12px;
+
+      border:
+        1px solid var(--cl-border);
+
+      border-radius: 12px;
+
+      background: #fff;
+    }
+
+    .cl-stat-label {
+      display: block;
+
+      color: var(--cl-muted);
+
+      font-size: 0.59rem;
+    }
+
+    .cl-stat-value {
+      display: block;
+
+      margin-top: 4px;
+
+      font-size: 0.9rem;
+      font-weight: 850;
+    }
+
+    .cl-preview-panel {
+      margin-top: 10px;
+
+      padding: 14px;
+
+      border-radius: 13px;
+
+      background: #f8fafc;
+
+      border:
+        1px solid var(--cl-border);
+    }
+
+    .cl-preview-panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      margin-bottom: 11px;
+    }
+
+    .cl-preview-panel-head strong {
+      font-size: 0.72rem;
+    }
+
+    .cl-preview-panel-head span {
+      color: var(--cl-primary);
+
+      font-size: 0.62rem;
+      font-weight: 750;
+    }
+
+    .cl-progress {
+      height: 7px;
+
+      overflow: hidden;
+
+      border-radius: 99px;
+
+      background: #e2e8f0;
+    }
+
+    .cl-progress span {
+      display: block;
+
+      width: 68%;
+      height: 100%;
+
+      border-radius: inherit;
+
+      background:
+        linear-gradient(
+          90deg,
+          var(--cl-primary),
+          var(--cl-primary-light)
+        );
+    }
+
+    .cl-preview-list {
+      display: grid;
+      gap: 7px;
+
+      margin-top: 12px;
+    }
+
+    .cl-preview-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      padding: 8px 9px;
+
+      border-radius: 9px;
+
+      background: white;
+
+      border:
+        1px solid var(--cl-border);
+    }
+
+    .cl-preview-row-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cl-avatar {
+      width: 25px;
+      height: 25px;
+
+      display: grid;
+      place-items: center;
+
+      border-radius: 8px;
+
+      background: var(--cl-soft);
+
+      color: var(--cl-primary);
+
+      font-size: 0.55rem;
+      font-weight: 850;
+    }
+
+    .cl-preview-row strong {
+      display: block;
+
+      font-size: 0.64rem;
+    }
+
+    .cl-preview-row small {
+      display: block;
+
+      margin-top: 2px;
+
+      color: var(--cl-muted);
+
+      font-size: 0.55rem;
+    }
+
+    .cl-preview-amount {
+      font-size: 0.65rem;
+      font-weight: 800;
+    }
+
+    /* =========================================================
+       TRUST / VALUE LINE
+       ========================================================= */
+
+    .cl-trust {
+      padding: 0 0 38px;
+    }
+
+    .cl-trust-inner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      gap: 24px;
+
+      padding: 14px 18px;
+
+      border:
+        1px solid var(--cl-border);
+
+      border-radius: 13px;
+
+      background: white;
+    }
+
+    .cl-trust-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+
+      color: #475569;
+
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    .cl-trust-check {
       color: var(--cl-primary);
       font-weight: 900;
     }
 
-    /* =========================================================
-       QUICK VALUE STRIP
-       ========================================================= */
+    .cl-trust-divider {
+      width: 1px;
+      height: 18px;
 
-    .cl-quick-strip {
-      padding: 8px 0 32px;
-    }
-
-    .cl-quick-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      border: 1px solid var(--cl-border);
-      border-radius: 16px;
-      background: white;
-      overflow: hidden;
-    }
-
-    .cl-quick-item {
-      padding: 16px 18px;
-      border-right: 1px solid var(--cl-border);
-    }
-
-    .cl-quick-item:last-child {
-      border-right: 0;
-    }
-
-    .cl-quick-item strong {
-      display: block;
-      font-size: 0.9rem;
-    }
-
-    .cl-quick-item span {
-      display: block;
-      margin-top: 3px;
-      color: var(--cl-muted);
-      font-size: 0.74rem;
+      background: var(--cl-border);
     }
 
     /* =========================================================
-       COMPACT FEATURES
+       PORTALS
        ========================================================= */
 
     .cl-section {
-      padding: 46px 0;
+      padding: 54px 0;
     }
 
     .cl-section-heading {
       max-width: 650px;
-      margin-bottom: 22px;
+
+      margin-bottom: 23px;
     }
 
     .cl-section-heading h2 {
       margin: 0;
-      font-size: clamp(1.55rem, 3vw, 2.15rem);
-      line-height: 1.1;
-      letter-spacing: -0.04em;
+
+      font-size:
+        clamp(1.65rem, 3.5vw, 2.25rem);
+
+      line-height: 1.05;
+
+      letter-spacing: -0.045em;
     }
 
     .cl-section-heading p {
       margin: 9px 0 0;
+
       color: var(--cl-muted);
+
+      font-size: 0.88rem;
+
       line-height: 1.55;
-      font-size: 0.92rem;
-    }
-
-    .cl-feature-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-    }
-
-    .cl-feature {
-      padding: 18px;
-      background: white;
-      border: 1px solid var(--cl-border);
-      border-radius: 16px;
-    }
-
-    .cl-feature-number {
-      color: var(--cl-primary);
-      font-size: 0.72rem;
-      font-weight: 850;
-    }
-
-    .cl-feature h3 {
-      margin: 7px 0 5px;
-      font-size: 0.98rem;
-    }
-
-    .cl-feature p {
-      margin: 0;
-      color: var(--cl-muted);
-      font-size: 0.8rem;
-      line-height: 1.5;
-    }
-
-    /* =========================================================
-       PORTAL SEPARATION
-       ========================================================= */
-
-    .cl-portals-section {
-      padding: 48px 0;
     }
 
     .cl-portals-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+
+      grid-template-columns:
+        repeat(2, 1fr);
+
       gap: 14px;
     }
 
     .cl-portal-panel {
-      padding: 24px;
+      position: relative;
+
+      overflow: hidden;
+
+      padding: 25px;
+
+      border:
+        1px solid var(--cl-border);
+
       border-radius: 20px;
-      border: 1px solid var(--cl-border);
+
       background: white;
+
+      box-shadow:
+        0 8px 25px rgba(15, 23, 42, 0.035);
     }
 
-    .cl-portal-panel.admin {
-      border-top: 4px solid var(--cl-primary);
+    .cl-portal-panel::after {
+      content: "";
+
+      position: absolute;
+
+      width: 100px;
+      height: 100px;
+
+      right: -35px;
+      bottom: -40px;
+
+      border-radius: 50%;
+
+      background:
+        rgba(20, 184, 166, 0.07);
     }
 
-    .cl-portal-panel.member {
-      border-top: 4px solid #64748b;
+    .cl-portal-panel.member::after {
+      background:
+        rgba(100, 116, 139, 0.07);
     }
 
     .cl-panel-label {
       color: var(--cl-primary);
-      font-size: 0.72rem;
+
+      font-size: 0.68rem;
       font-weight: 850;
+
       text-transform: uppercase;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.1em;
     }
 
-    .cl-portal-panel.member .cl-panel-label {
+    .cl-portal-panel.member
+    .cl-panel-label {
       color: #475569;
     }
 
-    .cl-portal-panel h2 {
-      margin: 7px 0 8px;
+    .cl-portal-panel h3 {
+      margin: 8px 0 7px;
+
       font-size: 1.35rem;
+
       letter-spacing: -0.035em;
     }
 
     .cl-portal-panel p {
+      max-width: 470px;
+
       margin: 0;
+
       color: var(--cl-muted);
-      font-size: 0.86rem;
+
+      font-size: 0.82rem;
+
       line-height: 1.55;
     }
 
-    .cl-panel-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 7px;
-      margin-top: 16px;
+    .cl-panel-points {
+      display: grid;
+
+      grid-template-columns:
+        repeat(2, 1fr);
+
+      gap: 8px;
+
+      margin-top: 17px;
     }
 
-    .cl-panel-list span {
-      padding: 7px 9px;
+    .cl-panel-point {
+      padding: 9px 10px;
+
+      border:
+        1px solid var(--cl-border);
+
       border-radius: 9px;
-      background: var(--cl-background);
-      border: 1px solid var(--cl-border);
+
+      background: #f8fafc;
+
       color: #475569;
-      font-size: 0.73rem;
+
+      font-size: 0.68rem;
       font-weight: 650;
     }
 
-    .cl-portal-panel .cl-secondary-btn,
-    .cl-portal-panel .cl-primary-btn {
-      margin-top: 18px;
+    .cl-panel-button {
+      position: relative;
+      z-index: 2;
+
       width: 100%;
+
+      margin-top: 18px;
     }
 
     /* =========================================================
        PRICING
        ========================================================= */
 
-    .cl-pricing {
-      padding: 48px 0;
+    .cl-pricing-section {
+      padding: 25px 0 55px;
     }
 
     .cl-pricing-card {
-      padding: 25px;
-      border-radius: 22px;
-      background: #0f2928;
+      overflow: hidden;
+
+      padding: 27px;
+
+      border-radius: 23px;
+
+      background:
+        linear-gradient(
+          135deg,
+          #0f2928,
+          #123c39
+        );
+
       color: white;
+
+      box-shadow:
+        0 20px 45px rgba(15, 41, 40, 0.14);
     }
 
     .cl-pricing-top {
       display: flex;
-      justify-content: space-between;
       align-items: flex-start;
+      justify-content: space-between;
+
       gap: 20px;
     }
 
     .cl-pricing-top h2 {
       margin: 0;
-      font-size: 1.55rem;
-      letter-spacing: -0.035em;
+
+      font-size: 1.6rem;
+
+      letter-spacing: -0.04em;
     }
 
     .cl-pricing-top p {
-      max-width: 550px;
+      max-width: 600px;
+
       margin: 7px 0 0;
+
       color: #cbd5d1;
-      font-size: 0.82rem;
+
+      font-size: 0.78rem;
+
       line-height: 1.5;
     }
 
     .cl-pricing-toggle {
       display: inline-flex;
-      padding: 3px;
+
       flex: 0 0 auto;
+
+      padding: 3px;
+
       border-radius: 10px;
-      background: rgba(255,255,255,0.1);
+
+      background:
+        rgba(255,255,255,0.1);
     }
 
     .cl-pricing-toggle button {
-      border: 0;
       padding: 7px 10px;
+
+      border: 0;
       border-radius: 8px;
+
       background: transparent;
       color: #cbd5d1;
+
       cursor: pointer;
-      font-size: 0.72rem;
-      font-weight: 700;
+
+      font-size: 0.68rem;
+      font-weight: 750;
     }
 
     .cl-pricing-toggle button.active {
@@ -589,90 +965,127 @@
 
     .cl-pricing-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
+
+      grid-template-columns:
+        repeat(3, 1fr);
+
+      gap: 9px;
+
       margin-top: 20px;
     }
 
     .cl-price {
-      padding: 17px;
-      border-radius: 15px;
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.1);
+      padding: 16px;
+
+      border:
+        1px solid rgba(255,255,255,0.1);
+
+      border-radius: 14px;
+
+      background:
+        rgba(255,255,255,0.07);
     }
 
     .cl-price-name {
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       font-weight: 750;
     }
 
     .cl-price-amount {
       margin-top: 7px;
-      font-size: 1.45rem;
-      font-weight: 850;
+
+      font-size: 1.4rem;
+      font-weight: 900;
+
+      letter-spacing: -0.035em;
     }
 
     .cl-price-amount span {
-      font-size: 0.72rem;
-      font-weight: 500;
       color: #cbd5d1;
+
+      font-size: 0.66rem;
+      font-weight: 500;
     }
 
     .cl-price p {
-      margin: 7px 0 0;
+      margin: 6px 0 0;
+
       color: #cbd5d1;
-      font-size: 0.72rem;
-      line-height: 1.45;
+
+      font-size: 0.68rem;
+
+      line-height: 1.4;
     }
 
     .cl-price-note {
       margin-top: 14px;
+
       color: #cbd5d1;
-      font-size: 0.72rem;
-      line-height: 1.45;
+
+      font-size: 0.68rem;
+
+      line-height: 1.5;
     }
 
     /* =========================================================
-       SIMPLE HOW IT WORKS
+       HOW IT WORKS
        ========================================================= */
 
     .cl-steps {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+
+      grid-template-columns:
+        repeat(3, 1fr);
+
       gap: 12px;
     }
 
     .cl-step {
       display: flex;
+
       gap: 12px;
+
       padding: 17px;
-      border: 1px solid var(--cl-border);
-      background: white;
+
+      border:
+        1px solid var(--cl-border);
+
       border-radius: 15px;
+
+      background: white;
     }
 
     .cl-step-number {
-      width: 28px;
-      height: 28px;
+      width: 29px;
+      height: 29px;
+
       flex: 0 0 auto;
+
       display: grid;
       place-items: center;
+
       border-radius: 9px;
-      background: var(--cl-primary-soft);
+
+      background: var(--cl-soft);
       color: var(--cl-primary);
-      font-size: 0.75rem;
-      font-weight: 850;
+
+      font-size: 0.7rem;
+      font-weight: 900;
     }
 
     .cl-step strong {
       display: block;
-      font-size: 0.85rem;
+
+      font-size: 0.83rem;
     }
 
     .cl-step p {
       margin: 4px 0 0;
+
       color: var(--cl-muted);
-      font-size: 0.76rem;
+
+      font-size: 0.72rem;
+
       line-height: 1.45;
     }
 
@@ -681,30 +1094,77 @@
        ========================================================= */
 
     .cl-final {
-      padding: 20px 0 50px;
+      padding: 8px 0 55px;
     }
 
     .cl-final-card {
+      position: relative;
+      overflow: hidden;
+
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 20px;
-      padding: 25px;
-      background: var(--cl-primary-soft);
-      border: 1px solid #ccfbf1;
-      border-radius: 20px;
+
+      gap: 25px;
+
+      padding: 28px;
+
+      border:
+        1px solid #ccfbf1;
+
+      border-radius: 21px;
+
+      background:
+        linear-gradient(
+          120deg,
+          #ecfdf5,
+          #f8fafc
+        );
+    }
+
+    .cl-final-card::after {
+      content: "";
+
+      position: absolute;
+
+      width: 170px;
+      height: 170px;
+
+      right: -70px;
+      top: -70px;
+
+      border-radius: 50%;
+
+      background:
+        rgba(20, 184, 166, 0.1);
+    }
+
+    .cl-final-content {
+      position: relative;
+      z-index: 1;
     }
 
     .cl-final-card h2 {
       margin: 0;
-      font-size: 1.35rem;
-      letter-spacing: -0.035em;
+
+      font-size: 1.4rem;
+
+      letter-spacing: -0.04em;
     }
 
     .cl-final-card p {
       margin: 6px 0 0;
+
       color: var(--cl-muted);
-      font-size: 0.82rem;
+
+      font-size: 0.78rem;
+    }
+
+    .cl-final-card .cl-primary-btn {
+      position: relative;
+      z-index: 2;
+
+      flex: 0 0 auto;
     }
 
     /* =========================================================
@@ -712,21 +1172,27 @@
        ========================================================= */
 
     .cl-footer {
-      border-top: 1px solid var(--cl-border);
+      padding: 27px 0;
+
+      border-top:
+        1px solid var(--cl-border);
+
       background: white;
-      padding: 28px 0;
     }
 
     .cl-footer-inner {
       display: flex;
-      justify-content: space-between;
+
       align-items: center;
+      justify-content: space-between;
+
       gap: 20px;
     }
 
     .cl-footer-copy {
       color: var(--cl-muted);
-      font-size: 0.73rem;
+
+      font-size: 0.68rem;
     }
 
     .cl-footer-links {
@@ -736,50 +1202,156 @@
 
     .cl-footer-links a {
       color: #64748b;
-      font-size: 0.73rem;
+
       text-decoration: none;
+
+      font-size: 0.68rem;
+    }
+
+    .cl-footer-links a:hover {
+      color: var(--cl-primary);
     }
 
     /* =========================================================
-       MOBILE
+       MOBILE NAVIGATION
+       ========================================================= */
+
+    .cl-mobile-nav {
+      position: fixed;
+      inset: 0;
+
+      z-index: 3000;
+
+      display: none;
+    }
+
+    .cl-mobile-nav.open {
+      display: block;
+    }
+
+    .cl-mobile-backdrop {
+      position: absolute;
+      inset: 0;
+
+      background:
+        rgba(15, 23, 42, 0.38);
+    }
+
+    .cl-mobile-panel {
+      position: absolute;
+
+      top: 0;
+      right: 0;
+
+      width:
+        min(320px, 88vw);
+
+      height: 100%;
+
+      padding: 20px;
+
+      overflow-y: auto;
+
+      background: white;
+
+      box-shadow:
+        -15px 0 35px rgba(15, 23, 42, 0.13);
+    }
+
+    .cl-mobile-head {
+      display: flex;
+
+      align-items: center;
+      justify-content: space-between;
+
+      margin-bottom: 25px;
+    }
+
+    .cl-mobile-close {
+      width: 38px;
+      height: 38px;
+
+      border:
+        1px solid var(--cl-border);
+
+      border-radius: 9px;
+
+      background: white;
+
+      cursor: pointer;
+
+      font-size: 1.1rem;
+    }
+
+    .cl-mobile-links {
+      display: grid;
+      gap: 4px;
+    }
+
+    .cl-mobile-links a {
+      padding: 12px 10px;
+
+      border-radius: 9px;
+
+      color: #334155;
+
+      text-decoration: none;
+
+      font-size: 0.88rem;
+      font-weight: 700;
+    }
+
+    .cl-mobile-links a:hover {
+      background: var(--cl-bg);
+    }
+
+    .cl-mobile-actions {
+      display: grid;
+      gap: 8px;
+
+      margin-top: 20px;
+    }
+
+    /* =========================================================
+       RESPONSIVE
        ========================================================= */
 
     @media (max-width: 900px) {
+
       .cl-nav {
         display: none;
       }
 
       .cl-menu-button {
-        display: inline-grid;
+        display: grid;
         place-items: center;
       }
 
       .cl-hero-grid {
         grid-template-columns: 1fr;
-        gap: 25px;
+
+        gap: 35px;
       }
 
       .cl-hero {
-        padding-top: 38px;
+        padding-top: 45px;
       }
 
-      .cl-feature-grid {
-        grid-template-columns: repeat(2, 1fr);
+      .cl-preview-wrap {
+        max-width: 650px;
       }
 
       .cl-pricing-grid {
         grid-template-columns: 1fr;
       }
 
-      .cl-pricing-top {
-        flex-direction: column;
-      }
     }
 
-    @media (max-width: 650px) {
-      .cl-header-inner,
+    @media (max-width: 700px) {
+
       .cl-container {
-        width: min(100% - 24px, 1120px);
+        width:
+          calc(100% - 24px);
       }
 
       .cl-header-inner {
@@ -794,190 +1366,202 @@
         padding: 8px;
       }
 
-      .cl-brand-mark {
-        width: 33px;
-        height: 33px;
-      }
-
       .cl-hero {
-        padding: 30px 0 18px;
+        padding: 32px 0 32px;
       }
 
       .cl-hero h1 {
-        font-size: clamp(2rem, 11vw, 3rem);
+        font-size:
+          clamp(2.25rem, 12vw, 3.35rem);
       }
 
       .cl-hero-copy {
-        font-size: 0.94rem;
-        line-height: 1.5;
+        font-size: 0.92rem;
+        line-height: 1.55;
       }
 
       .cl-hero-actions {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+
+        grid-template-columns:
+          1fr 1fr;
       }
 
       .cl-hero-actions a {
         width: 100%;
       }
 
-      .cl-hero-note {
-        font-size: 0.7rem;
+      .cl-preview-body {
+        padding: 15px;
       }
 
-      .cl-quick-grid {
-        grid-template-columns: repeat(2, 1fr);
+      .cl-preview-stats {
+        gap: 6px;
       }
 
-      .cl-quick-item {
-        border-bottom: 1px solid var(--cl-border);
+      .cl-stat {
+        padding: 10px;
       }
 
-      .cl-quick-item:nth-child(2) {
-        border-right: 0;
+      .cl-trust {
+        padding-bottom: 24px;
       }
 
-      .cl-quick-item:nth-child(3),
-      .cl-quick-item:nth-child(4) {
-        border-bottom: 0;
+      .cl-trust-inner {
+        display: grid;
+
+        grid-template-columns:
+          repeat(2, 1fr);
+
+        gap: 10px;
+
+        padding: 13px;
       }
 
-      .cl-feature-grid,
+      .cl-trust-divider {
+        display: none;
+      }
+
       .cl-portals-grid,
       .cl-steps {
         grid-template-columns: 1fr;
       }
 
-      .cl-section,
-      .cl-portals-section,
-      .cl-pricing {
-        padding: 34px 0;
+      .cl-section {
+        padding: 38px 0;
       }
 
       .cl-section-heading {
-        margin-bottom: 17px;
+        margin-bottom: 18px;
       }
 
-      .cl-portal-panel,
+      .cl-portal-panel {
+        padding: 20px;
+      }
+
+      .cl-panel-points {
+        grid-template-columns:
+          repeat(2, 1fr);
+      }
+
+      .cl-pricing-section {
+        padding: 10px 0 40px;
+      }
+
       .cl-pricing-card {
-        padding: 19px;
+        padding: 20px;
+        border-radius: 19px;
+      }
+
+      .cl-pricing-top {
+        flex-direction: column;
+        gap: 13px;
+      }
+
+      .cl-pricing-toggle {
+        align-self: flex-start;
+      }
+
+      .cl-final {
+        padding-bottom: 40px;
       }
 
       .cl-final-card {
         display: block;
-        padding: 20px;
+        padding: 21px;
       }
 
       .cl-final-card .cl-primary-btn {
         width: 100%;
-        margin-top: 15px;
+        margin-top: 17px;
       }
 
       .cl-footer-inner {
-        align-items: flex-start;
         flex-direction: column;
+        align-items: flex-start;
       }
+
     }
 
-    /* =========================================================
-       MOBILE NAV
-       ========================================================= */
+    @media (max-width: 420px) {
 
-    .cl-mobile-nav {
-      position: fixed;
-      inset: 0;
-      z-index: 2000;
-      display: none;
+      .cl-brand {
+        font-size: 1rem;
+      }
+
+      .cl-brand-mark {
+        width: 33px;
+        height: 33px;
+      }
+
+      .cl-hero-actions {
+        grid-template-columns: 1fr;
+      }
+
+      .cl-preview-stats {
+        grid-template-columns: 1fr;
+      }
+
+      .cl-panel-points {
+        grid-template-columns: 1fr;
+      }
+
+      .cl-footer-links {
+        flex-wrap: wrap;
+      }
+
     }
 
-    .cl-mobile-nav.open {
-      display: block;
-    }
-
-    .cl-mobile-backdrop {
-      position: absolute;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.38);
-    }
-
-    .cl-mobile-panel {
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: min(310px, 88vw);
-      height: 100%;
-      padding: 22px;
-      background: white;
-      box-shadow: -12px 0 30px rgba(15,23,42,0.12);
-      overflow-y: auto;
-    }
-
-    .cl-mobile-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 25px;
-    }
-
-    .cl-mobile-close {
-      width: 38px;
-      height: 38px;
-      border: 1px solid var(--cl-border);
-      border-radius: 9px;
-      background: white;
-      cursor: pointer;
-      font-size: 1.1rem;
-    }
-
-    .cl-mobile-links {
-      display: grid;
-      gap: 5px;
-    }
-
-    .cl-mobile-links a {
-      padding: 12px 10px;
-      border-radius: 9px;
-      color: #334155;
-      text-decoration: none;
-      font-weight: 650;
-      font-size: 0.9rem;
-    }
-
-    .cl-mobile-links a:hover {
-      background: var(--cl-background);
-    }
-
-    .cl-mobile-login {
-      margin-top: 22px;
-      width: 100%;
-    }
   </style>
 </head>
 
+
 <body>
+
 
   <!-- =======================================================
        HEADER
        ======================================================== -->
 
   <header class="cl-header">
-    <div class="cl-header-inner">
 
-      <a href="index.html" class="cl-brand" aria-label="CHAMA LIVE home">
+    <div class="cl-container cl-header-inner">
+
+      <a
+        href="index.html"
+        class="cl-brand"
+        aria-label="CHAMA LIVE home"
+      >
         <span class="cl-brand-mark">CL</span>
         <span>CHAMA LIVE</span>
       </a>
 
-      <nav class="cl-nav" aria-label="Main navigation">
-        <a href="#features">Features</a>
+
+      <nav
+        class="cl-nav"
+        aria-label="Main navigation"
+      >
         <a href="#portals">Portals</a>
         <a href="#pricing">Pricing</a>
         <a href="#how-it-works">How It Works</a>
       </nav>
 
+
       <div class="cl-header-actions">
-        <a href="login.html" class="cl-login-link">Sign In</a>
-        <a href="signup.html" class="cl-primary-btn">Create Group</a>
+
+        <a
+          href="login.html"
+          class="cl-login-link"
+        >
+          Sign In
+        </a>
+
+        <a
+          href="signup.html"
+          class="cl-primary-btn"
+        >
+          Create Group
+        </a>
 
         <button
           type="button"
@@ -988,9 +1572,11 @@
         >
           ☰
         </button>
+
       </div>
 
     </div>
+
   </header>
 
 
@@ -998,14 +1584,26 @@
        MOBILE MENU
        ======================================================== -->
 
-  <div class="cl-mobile-nav" id="clMobileNav" aria-hidden="true">
+  <div
+    class="cl-mobile-nav"
+    id="clMobileNav"
+    aria-hidden="true"
+  >
 
-    <div class="cl-mobile-backdrop" id="clMobileBackdrop"></div>
+    <div
+      class="cl-mobile-backdrop"
+      id="clMobileBackdrop"
+    ></div>
+
 
     <div class="cl-mobile-panel">
 
       <div class="cl-mobile-head">
-        <a href="index.html" class="cl-brand">
+
+        <a
+          href="index.html"
+          class="cl-brand"
+        >
           <span class="cl-brand-mark">CL</span>
           <span>CHAMA LIVE</span>
         </a>
@@ -1018,36 +1616,60 @@
         >
           ×
         </button>
+
       </div>
 
+
       <nav class="cl-mobile-links">
-        <a href="#features">Features</a>
-        <a href="#portals">Portals</a>
-        <a href="#pricing">Pricing</a>
-        <a href="#how-it-works">How It Works</a>
+
+        <a href="#portals">
+          Portals
+        </a>
+
+        <a href="#pricing">
+          Pricing
+        </a>
+
+        <a href="#how-it-works">
+          How It Works
+        </a>
+
       </nav>
 
-      <a href="login.html" class="cl-primary-btn cl-mobile-login">
-        Sign In
-      </a>
 
-      <a
-        href="signup.html"
-        class="cl-secondary-btn"
-        style="width:100%; margin-top:9px;"
-      >
-        Create Group
-      </a>
+      <div class="cl-mobile-actions">
+
+        <a
+          href="login.html"
+          class="cl-primary-btn"
+        >
+          Sign In
+        </a>
+
+        <a
+          href="signup.html"
+          class="cl-secondary-btn"
+        >
+          Create Group
+        </a>
+
+      </div>
 
     </div>
+
   </div>
 
 
   <!-- =======================================================
-       HERO
+       MAIN
        ======================================================== -->
 
   <main>
+
+
+    <!-- =====================================================
+         HERO
+         ====================================================== -->
 
     <section class="cl-hero">
 
@@ -1055,85 +1677,275 @@
 
         <div class="cl-hero-grid">
 
+
+          <!-- HERO COPY -->
+
           <div>
 
             <div class="cl-eyebrow">
+
               <span class="cl-eyebrow-dot"></span>
+
               Digital group management
+
             </div>
 
+
             <h1>
+
               Your group.
+
               <span>One simple system.</span>
+
             </h1>
 
+
             <p class="cl-hero-copy">
-              CHAMA LIVE brings your members, contributions, expenses,
-              meetings and group records together in one easy-to-use
-              digital workspace.
+
+              CHAMA LIVE brings your group records,
+              finances and member experience together
+              in one simple digital workspace.
+
             </p>
 
+
             <div class="cl-hero-actions">
-              <a href="signup.html" class="cl-primary-btn">
+
+              <a
+                href="signup.html"
+                class="cl-primary-btn"
+              >
                 Create Your Group
               </a>
 
-              <a href="login.html" class="cl-secondary-btn">
+              <a
+                href="login.html"
+                class="cl-secondary-btn"
+              >
                 Sign In
               </a>
+
             </div>
+
 
             <div class="cl-hero-note">
+
               Built for chamas, CBOs and community groups.
+
             </div>
 
           </div>
 
 
-          <!-- PORTAL ENTRY -->
+          <!-- PRODUCT PREVIEW -->
 
-          <div class="cl-portal-card">
+          <div class="cl-preview-wrap">
 
-            <div class="cl-portal-card-header">
+            <div
+              class="cl-preview-glow"
+              aria-hidden="true"
+            ></div>
 
-              <div>
-                <h2>Choose your workspace</h2>
-                <p>
-                  CHAMA LIVE keeps administration and member access separate.
-                </p>
+
+            <div class="cl-preview">
+
+
+              <div class="cl-preview-top">
+
+                <div class="cl-preview-brand">
+
+                  <span class="cl-preview-mini-mark">
+                    CL
+                  </span>
+
+                  <span>
+                    Group Dashboard
+                  </span>
+
+                </div>
+
+
+                <div class="cl-preview-user">
+                  MJ
+                </div>
+
               </div>
 
-              <span class="cl-live-dot" aria-hidden="true"></span>
 
-            </div>
+              <div class="cl-preview-body">
 
-            <div class="cl-portal-options">
 
-              <a href="login.html" class="cl-portal-option">
+                <div class="cl-preview-heading">
 
-                <div>
-                  <strong>Admin Portal</strong>
                   <small>
-                    Manage members, finances, records and group operations.
+                    Welcome back
                   </small>
+
+                  <strong>
+                    Your Group Overview
+                  </strong>
+
                 </div>
 
-                <span class="cl-portal-arrow">→</span>
 
-              </a>
+                <div class="cl-preview-stats">
 
-              <a href="login.html" class="cl-portal-option">
+                  <div class="cl-stat">
 
-                <div>
-                  <strong>Member Portal</strong>
-                  <small>
-                    Access your group information and member experience.
-                  </small>
+                    <span class="cl-stat-label">
+                      Members
+                    </span>
+
+                    <span class="cl-stat-value">
+                      24
+                    </span>
+
+                  </div>
+
+
+                  <div class="cl-stat">
+
+                    <span class="cl-stat-label">
+                      Contributions
+                    </span>
+
+                    <span class="cl-stat-value">
+                      KSh 48K
+                    </span>
+
+                  </div>
+
+
+                  <div class="cl-stat">
+
+                    <span class="cl-stat-label">
+                      Expenses
+                    </span>
+
+                    <span class="cl-stat-value">
+                      KSh 12K
+                    </span>
+
+                  </div>
+
                 </div>
 
-                <span class="cl-portal-arrow">→</span>
 
-              </a>
+                <div class="cl-preview-panel">
+
+                  <div class="cl-preview-panel-head">
+
+                    <strong>
+                      Group progress
+                    </strong>
+
+                    <span>
+                      Current
+                    </span>
+
+                  </div>
+
+
+                  <div class="cl-progress">
+                    <span></span>
+                  </div>
+
+
+                  <div class="cl-preview-list">
+
+
+                    <div class="cl-preview-row">
+
+                      <div class="cl-preview-row-left">
+
+                        <div class="cl-avatar">
+                          JK
+                        </div>
+
+                        <div>
+
+                          <strong>
+                            Member records
+                          </strong>
+
+                          <small>
+                            Updated
+                          </small>
+
+                        </div>
+
+                      </div>
+
+                      <div class="cl-preview-amount">
+                        Ready
+                      </div>
+
+                    </div>
+
+
+                    <div class="cl-preview-row">
+
+                      <div class="cl-preview-row-left">
+
+                        <div class="cl-avatar">
+                          +
+                        </div>
+
+                        <div>
+
+                          <strong>
+                            Contributions
+                          </strong>
+
+                          <small>
+                            Recorded
+                          </small>
+
+                        </div>
+
+                      </div>
+
+                      <div class="cl-preview-amount">
+                        86%
+                      </div>
+
+                    </div>
+
+
+                    <div class="cl-preview-row">
+
+                      <div class="cl-preview-row-left">
+
+                        <div class="cl-avatar">
+                          R
+                        </div>
+
+                        <div>
+
+                          <strong>
+                            Latest report
+                          </strong>
+
+                          <small>
+                            Available
+                          </small>
+
+                        </div>
+
+                      </div>
+
+                      <div class="cl-preview-amount">
+                        View
+                      </div>
+
+                    </div>
+
+
+                  </div>
+
+                </div>
+
+              </div>
 
             </div>
 
@@ -1147,108 +1959,49 @@
 
 
     <!-- =====================================================
-         QUICK INFORMATION
+         TRUST LINE
          ====================================================== -->
 
-    <section class="cl-quick-strip">
+    <section class="cl-trust">
 
       <div class="cl-container">
 
-        <div class="cl-quick-grid">
+        <div class="cl-trust-inner">
 
-          <div class="cl-quick-item">
-            <strong>Members</strong>
-            <span>Keep member records organised.</span>
+          <div class="cl-trust-item">
+            <span class="cl-trust-check">✓</span>
+            Simple to use
           </div>
 
-          <div class="cl-quick-item">
-            <strong>Contributions</strong>
-            <span>Track group payments clearly.</span>
+          <span
+            class="cl-trust-divider"
+            aria-hidden="true"
+          ></span>
+
+          <div class="cl-trust-item">
+            <span class="cl-trust-check">✓</span>
+            Admin & member portals
           </div>
 
-          <div class="cl-quick-item">
-            <strong>Expenses</strong>
-            <span>Record group spending.</span>
+          <span
+            class="cl-trust-divider"
+            aria-hidden="true"
+          ></span>
+
+          <div class="cl-trust-item">
+            <span class="cl-trust-check">✓</span>
+            Mobile friendly
           </div>
 
-          <div class="cl-quick-item">
-            <strong>Reports</strong>
-            <span>Understand your group records.</span>
+          <span
+            class="cl-trust-divider"
+            aria-hidden="true"
+          ></span>
+
+          <div class="cl-trust-item">
+            <span class="cl-trust-check">✓</span>
+            Built for groups
           </div>
-
-        </div>
-
-      </div>
-
-    </section>
-
-
-    <!-- =====================================================
-         FEATURES
-         ====================================================== -->
-
-    <section class="cl-section" id="features">
-
-      <div class="cl-container">
-
-        <div class="cl-section-heading">
-          <h2>Everything important, without the paperwork.</h2>
-
-          <p>
-            Keep the core work of your group in one place instead of
-            spreading records across notebooks, spreadsheets and messages.
-          </p>
-        </div>
-
-        <div class="cl-feature-grid">
-
-          <article class="cl-feature">
-            <div class="cl-feature-number">01</div>
-            <h3>Members</h3>
-            <p>
-              Organise member information and keep your group records current.
-            </p>
-          </article>
-
-          <article class="cl-feature">
-            <div class="cl-feature-number">02</div>
-            <h3>Contributions</h3>
-            <p>
-              Record contributions and maintain a clear financial history.
-            </p>
-          </article>
-
-          <article class="cl-feature">
-            <div class="cl-feature-number">03</div>
-            <h3>Expenses</h3>
-            <p>
-              Keep track of group expenses and their supporting records.
-            </p>
-          </article>
-
-          <article class="cl-feature">
-            <div class="cl-feature-number">04</div>
-            <h3>Meetings</h3>
-            <p>
-              Keep meetings, dates and important group decisions organised.
-            </p>
-          </article>
-
-          <article class="cl-feature">
-            <div class="cl-feature-number">05</div>
-            <h3>Reports</h3>
-            <p>
-              Turn your group records into information you can understand.
-            </p>
-          </article>
-
-          <article class="cl-feature">
-            <div class="cl-feature-number">06</div>
-            <h3>Group Management</h3>
-            <p>
-              Keep your group details and account information in one place.
-            </p>
-          </article>
 
         </div>
 
@@ -1261,17 +2014,23 @@
          PORTAL SEPARATION
          ====================================================== -->
 
-    <section class="cl-portals-section" id="portals">
+    <section
+      class="cl-section"
+      id="portals"
+    >
 
       <div class="cl-container">
 
+
         <div class="cl-section-heading">
 
-          <h2>Two portals. Clear responsibilities.</h2>
+          <h2>
+            The right workspace for everyone.
+          </h2>
 
           <p>
-            CHAMA LIVE separates group administration from the member
-            experience so each person sees the workspace relevant to them.
+            CHAMA LIVE separates group administration from
+            the member experience, keeping each portal focused.
           </p>
 
         </div>
@@ -1279,39 +2038,60 @@
 
         <div class="cl-portals-grid">
 
-          <!-- ADMIN -->
 
-          <article class="cl-portal-panel admin">
+          <!-- ADMIN PORTAL -->
+
+          <article class="cl-portal-panel">
 
             <div class="cl-panel-label">
               Admin Portal
             </div>
 
-            <h2>Run the group</h2>
+
+            <h3>
+              Run your group.
+            </h3>
+
 
             <p>
-              The admin workspace brings the group's operational,
-              financial and management work together.
+              A central workspace for authorised group
+              leaders to manage records, finances and
+              day-to-day group operations.
             </p>
 
-            <div class="cl-panel-list">
-              <span>Members</span>
-              <span>Contributions</span>
-              <span>Expenses</span>
-              <span>Meetings</span>
-              <span>Reports</span>
-              <span>Group Management</span>
-              <span>Financial records</span>
+
+            <div class="cl-panel-points">
+
+              <div class="cl-panel-point">
+                Members & records
+              </div>
+
+              <div class="cl-panel-point">
+                Contributions
+              </div>
+
+              <div class="cl-panel-point">
+                Expenses & reports
+              </div>
+
+              <div class="cl-panel-point">
+                Group management
+              </div>
+
             </div>
 
-            <a href="login.html" class="cl-primary-btn">
+
+            <a
+              href="login.html"
+              class="cl-primary-btn cl-panel-button"
+            >
               Admin Sign In
             </a>
 
           </article>
 
 
-          <!-- MEMBER -->
+          <!-- MEMBER PORTAL -->
 
           <article class="cl-portal-panel member">
 
@@ -1319,25 +2099,49 @@
               Member Portal
             </div>
 
-            <h2>Stay connected to your group</h2>
+
+            <h3>
+              Stay connected.
+            </h3>
+
 
             <p>
-              Members get a separate portal designed around their own
-              group information and member experience.
+              A separate member workspace focused on
+              accessing relevant group information and
+              the member experience.
             </p>
 
-            <div class="cl-panel-list">
-              <span>Member access</span>
-              <span>Group information</span>
-              <span>Personal records</span>
-              <span>Member experience</span>
+
+            <div class="cl-panel-points">
+
+              <div class="cl-panel-point">
+                Member access
+              </div>
+
+              <div class="cl-panel-point">
+                Group information
+              </div>
+
+              <div class="cl-panel-point">
+                Personal records
+              </div>
+
+              <div class="cl-panel-point">
+                Member experience
+              </div>
+
             </div>
 
-            <a href="login.html" class="cl-secondary-btn">
+
+            <a
+              href="login.html"
+              class="cl-secondary-btn cl-panel-button"
+            >
               Member Sign In
             </a>
 
           </article>
+
 
         </div>
 
@@ -1350,25 +2154,37 @@
          PRICING
          ====================================================== -->
 
-    <section class="cl-pricing" id="pricing">
+    <section
+      class="cl-pricing-section"
+      id="pricing"
+    >
 
       <div class="cl-container">
 
+
         <div class="cl-pricing-card">
+
 
           <div class="cl-pricing-top">
 
             <div>
-              <h2>Simple group pricing.</h2>
+
+              <h2>
+                Simple group pricing.
+              </h2>
 
               <p>
-                Start with a plan that fits your group. Pricing is based
-                on the group account, with member portal usage billed to
-                the group.
+                Choose a group plan that fits your organisation.
+                Member portal usage is billed to the group.
               </p>
+
             </div>
 
-            <div class="cl-pricing-toggle" aria-label="Pricing period">
+
+            <div
+              class="cl-pricing-toggle"
+              aria-label="Pricing period"
+            >
 
               <button
                 type="button"
@@ -1391,6 +2207,7 @@
 
 
           <div class="cl-pricing-grid">
+
 
             <div class="cl-price">
 
@@ -1452,12 +2269,17 @@
 
             </div>
 
+
           </div>
 
+
           <div class="cl-price-note">
-            Launch offer: first month free, followed by 30% off for the
-            next four months. Member portal usage is KSh 20 per active
+
+            Launch offer: first month free, followed by
+            30% off for the next four months.
+            Member portal usage is KSh 20 per active
             member login per month, billed to the group.
+
           </div>
 
         </div>
@@ -1471,23 +2293,31 @@
          HOW IT WORKS
          ====================================================== -->
 
-    <section class="cl-section" id="how-it-works">
+    <section
+      class="cl-section"
+      id="how-it-works"
+    >
 
       <div class="cl-container">
 
+
         <div class="cl-section-heading">
 
-          <h2>Get your group organised in a few steps.</h2>
+          <h2>
+            Start simple. Grow with your group.
+          </h2>
 
           <p>
-            Start with your group account, bring your records together
-            and use the appropriate portal for your role.
+            Get your group into one digital workspace
+            and let each person use the portal designed
+            for their role.
           </p>
 
         </div>
 
 
         <div class="cl-steps">
+
 
           <div class="cl-step">
 
@@ -1496,11 +2326,16 @@
             </div>
 
             <div>
-              <strong>Create your group</strong>
+
+              <strong>
+                Create your group
+              </strong>
 
               <p>
-                Set up your group account and basic group information.
+                Set up your group account and basic
+                group information.
               </p>
+
             </div>
 
           </div>
@@ -1513,12 +2348,16 @@
             </div>
 
             <div>
-              <strong>Set up your records</strong>
+
+              <strong>
+                Organise your records
+              </strong>
 
               <p>
-                Organise members, contributions, expenses and other
-                important group information.
+                Bring your members and important group
+                records into one workspace.
               </p>
+
             </div>
 
           </div>
@@ -1531,15 +2370,20 @@
             </div>
 
             <div>
-              <strong>Run your group</strong>
+
+              <strong>
+                Run your group
+              </strong>
 
               <p>
-                Admins manage the group while members use their own
-                portal to stay connected.
+                Admins manage the group while members
+                use their own portal.
               </p>
+
             </div>
 
           </div>
+
 
         </div>
 
@@ -1549,7 +2393,7 @@
 
 
     <!-- =====================================================
-         FINAL CTA
+         FINAL CALL TO ACTION
          ====================================================== -->
 
     <section class="cl-final">
@@ -1558,28 +2402,35 @@
 
         <div class="cl-final-card">
 
-          <div>
+
+          <div class="cl-final-content">
 
             <h2>
-              Ready to move your group beyond paper?
+              Ready to take your group digital?
             </h2>
 
             <p>
-              Start with a digital workspace built around the way
-              community groups actually operate.
+              Start managing your group from one simple
+              digital workspace.
             </p>
 
           </div>
 
-          <a href="signup.html" class="cl-primary-btn">
+
+          <a
+            href="signup.html"
+            class="cl-primary-btn"
+          >
             Create Your Group
           </a>
+
 
         </div>
 
       </div>
 
     </section>
+
 
   </main>
 
@@ -1594,16 +2445,35 @@
 
       <div class="cl-footer-inner">
 
+
         <div class="cl-footer-copy">
-          © 2026 CHAMA LIVE. Digital management for groups.
+
+          © 2026 CHAMA LIVE.
+          Digital management for groups.
+
         </div>
 
+
         <div class="cl-footer-links">
-          <a href="#features">Features</a>
-          <a href="#portals">Portals</a>
-          <a href="#pricing">Pricing</a>
-          <a href="login.html">Sign In</a>
+
+          <a href="#portals">
+            Portals
+          </a>
+
+          <a href="#pricing">
+            Pricing
+          </a>
+
+          <a href="#how-it-works">
+            How It Works
+          </a>
+
+          <a href="login.html">
+            Sign In
+          </a>
+
         </div>
+
 
       </div>
 
@@ -1617,59 +2487,110 @@
        ======================================================== -->
 
   <script>
+
     /* =========================================================
-       MOBILE NAVIGATION
+       MOBILE MENU
        ========================================================= */
 
-    const menuButton = document.getElementById("clMenuButton");
-    const mobileNav = document.getElementById("clMobileNav");
-    const mobileClose = document.getElementById("clMobileClose");
-    const mobileBackdrop = document.getElementById("clMobileBackdrop");
+    const menuButton =
+      document.getElementById("clMenuButton");
+
+    const mobileNav =
+      document.getElementById("clMobileNav");
+
+    const mobileClose =
+      document.getElementById("clMobileClose");
+
+    const mobileBackdrop =
+      document.getElementById("clMobileBackdrop");
+
 
     function openMobileMenu() {
+
       if (!mobileNav) return;
 
       mobileNav.classList.add("open");
-      mobileNav.setAttribute("aria-hidden", "false");
 
-      if (menuButton) {
-        menuButton.setAttribute("aria-expanded", "true");
-      }
+      mobileNav.setAttribute(
+        "aria-hidden",
+        "false"
+      );
 
-      document.body.style.overflow = "hidden";
+      menuButton?.setAttribute(
+        "aria-expanded",
+        "true"
+      );
+
+      document.body.classList.add(
+        "menu-open"
+      );
+
     }
 
+
     function closeMobileMenu() {
+
       if (!mobileNav) return;
 
       mobileNav.classList.remove("open");
-      mobileNav.setAttribute("aria-hidden", "true");
 
-      if (menuButton) {
-        menuButton.setAttribute("aria-expanded", "false");
-      }
+      mobileNav.setAttribute(
+        "aria-hidden",
+        "true"
+      );
 
-      document.body.style.overflow = "";
+      menuButton?.setAttribute(
+        "aria-expanded",
+        "false"
+      );
+
+      document.body.classList.remove(
+        "menu-open"
+      );
+
     }
 
-    menuButton?.addEventListener("click", openMobileMenu);
-    mobileClose?.addEventListener("click", closeMobileMenu);
-    mobileBackdrop?.addEventListener("click", closeMobileMenu);
 
-    document.querySelectorAll(".cl-mobile-links a").forEach((link) => {
-      link.addEventListener("click", closeMobileMenu);
-    });
+    menuButton?.addEventListener(
+      "click",
+      openMobileMenu
+    );
 
 
-    /* =========================================================
-       ESCAPE KEY
-       ========================================================= */
+    mobileClose?.addEventListener(
+      "click",
+      closeMobileMenu
+    );
 
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") {
-        closeMobileMenu();
+
+    mobileBackdrop?.addEventListener(
+      "click",
+      closeMobileMenu
+    );
+
+
+    document
+      .querySelectorAll(".cl-mobile-links a")
+      .forEach((link) => {
+
+        link.addEventListener(
+          "click",
+          closeMobileMenu
+        );
+
+      });
+
+
+    document.addEventListener(
+      "keydown",
+      (event) => {
+
+        if (event.key === "Escape") {
+          closeMobileMenu();
+        }
+
       }
-    });
+    );
 
 
     /* =========================================================
@@ -1677,78 +2598,129 @@
        ========================================================= */
 
     const pricingButtons =
-      document.querySelectorAll("[data-period]");
+      document.querySelectorAll(
+        "[data-period]"
+      );
 
     const priceAmounts =
-      document.querySelectorAll("[data-monthly]");
+      document.querySelectorAll(
+        "[data-monthly]"
+      );
+
 
     pricingButtons.forEach((button) => {
 
-      button.addEventListener("click", () => {
+      button.addEventListener(
+        "click",
+        () => {
 
-        const selectedPeriod =
-          button.dataset.period;
+          const selectedPeriod =
+            button.dataset.period;
 
-        pricingButtons.forEach((item) => {
-          item.classList.toggle(
-            "active",
-            item.dataset.period === selectedPeriod
-          );
-        });
 
-        priceAmounts.forEach((amount) => {
+          pricingButtons.forEach((item) => {
 
-          const value =
-            selectedPeriod === "yearly"
-              ? amount.dataset.yearly
-              : amount.dataset.monthly;
+            item.classList.toggle(
+              "active",
+              item.dataset.period ===
+                selectedPeriod
+            );
 
-          const suffix =
-            selectedPeriod === "yearly"
-              ? " /year"
-              : " /month";
+          });
 
-          amount.innerHTML =
-            `${value}<span>${suffix}</span>`;
-        });
 
-      });
+          priceAmounts.forEach((amount) => {
+
+            const value =
+              selectedPeriod === "yearly"
+                ? amount.dataset.yearly
+                : amount.dataset.monthly;
+
+
+            const suffix =
+              selectedPeriod === "yearly"
+                ? " /year"
+                : " /month";
+
+
+            amount.innerHTML =
+              `${value}<span>${suffix}</span>`;
+
+          });
+
+        }
+      );
 
     });
 
 
     /* =========================================================
-       SMOOTH ANCHOR SCROLLING
+       SMOOTH ANCHOR NAVIGATION
        ========================================================= */
 
-    document.querySelectorAll('a[href^="#"]').forEach((link) => {
+    document
+      .querySelectorAll(
+        'a[href^="#"]'
+      )
+      .forEach((link) => {
 
-      link.addEventListener("click", (event) => {
+        link.addEventListener(
+          "click",
+          (event) => {
 
-        const targetId =
-          link.getAttribute("href");
+            const targetId =
+              link.getAttribute("href");
 
-        if (!targetId || targetId === "#") {
-          return;
-        }
 
-        const target =
-          document.querySelector(targetId);
+            if (
+              !targetId ||
+              targetId === "#"
+            ) {
+              return;
+            }
 
-        if (!target) {
-          return;
-        }
 
-        event.preventDefault();
+            const target =
+              document.querySelector(
+                targetId
+              );
 
-        target.scrollIntoView({
-          behavior: "smooth",
-          block: "start"
-        });
+
+            if (!target) {
+              return;
+            }
+
+
+            event.preventDefault();
+
+
+            target.scrollIntoView({
+              behavior: "smooth",
+              block: "start"
+            });
+
+          }
+        );
 
       });
 
-    });
+
+    /* =========================================================
+       RESET MOBILE MENU AFTER RESIZE
+       ========================================================= */
+
+    window.addEventListener(
+      "resize",
+      () => {
+
+        if (
+          window.innerWidth > 900
+        ) {
+          closeMobileMenu();
+        }
+
+      }
+    );
 
   </script>
 
