@@ -4,6 +4,7 @@
  * Scope:
  *   - Contributions
  *   - Expenses
+ *   - Members — Preview Only
  *
  * Safety boundaries:
  *   - Group context comes only from authenticated member context.
@@ -15,6 +16,13 @@
  *   - financial_periods are never created.
  *   - Closed financial periods are blocked.
  *   - No service-role key is used.
+ *
+ * Member safety:
+ *   - Member rows may be staged, mapped, validated and previewed.
+ *   - public.members is never inserted or updated by this workflow.
+ *   - Existing members are never modified.
+ *   - Member authentication identity is never created or changed.
+ *   - Member role, status and onboarding status are never changed.
  *
  * Recovery:
  *   - Stable contribution payment UUIDs.
@@ -49,7 +57,9 @@ const FORBIDDEN = new Set([
   "contribution_obligations",
   "financial_period_id",
   "financial_period",
-  "period_status"
+  "period_status",
+  "auth_user_id",
+  "user_id"
 ]);
 
 const DEF = {
@@ -73,6 +83,17 @@ const DEF = {
     ["category", "Category", "direct", false],
     ["approval_status", "Approval status", "direct", false],
     ["receipt_url", "Receipt/reference", "direct", false]
+  ],
+
+  member: [
+    ["member_number", "Member number", "direct", true],
+    ["membership_number", "Membership number", "direct", false],
+    ["name", "Name", "direct", true],
+    ["phone", "Phone", "direct", true],
+    ["email", "Email", "direct", false],
+    ["role", "Role", "direct", false],
+    ["status", "Status", "direct", true],
+    ["onboarding_status", "Onboarding status", "direct", false]
   ]
 };
 
@@ -153,8 +174,8 @@ function step(currentStep) {
       element.classList.toggle(
         "done",
         index !== -1 &&
-          currentIndex !== -1 &&
-          index < currentIndex
+        currentIndex !== -1 &&
+        index < currentIndex
       );
     });
 }
@@ -228,7 +249,7 @@ function date(value) {
   }
 
   const match = stringValue.match(
-    /^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})$/
+    /^(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{4})$/
   );
 
   if (!match) {
@@ -427,93 +448,92 @@ function matrixRows(matrix) {
     rows
   };
 }
-
 function autoMap() {
-  const headerMap =
-    new Map(
-      state.headers.map(
-        (header) => [
-          normHeader(header),
-          header
-        ]
-      )
-    );
-
   const aliases = {
     member_identifier: [
       "member_identifier",
-      "member_id",
       "member_number",
       "membership_number",
-      "member",
+      "member_id",
       "phone",
-      "email",
-      "name"
+      "phone_number",
+      "mobile",
+      "mobile_number",
+      "name",
+      "member_name",
+      "full_name"
     ],
 
     amount: [
       "amount",
       "contribution_amount",
       "expense_amount",
-      "value"
+      "value",
+      "total"
     ],
 
     contribution_date: [
       "contribution_date",
+      "date",
       "payment_date",
-      "transaction_date",
-      "date"
+      "transaction_date"
     ],
 
     payment_method: [
       "payment_method",
       "method",
-      "mode"
+      "payment"
     ],
 
     contribution_type: [
       "contribution_type",
-      "type"
+      "type",
+      "contribution"
     ],
 
     reference: [
       "reference",
-      "ref",
-      "transaction_reference"
+      "transaction_reference",
+      "transaction_id",
+      "ref"
     ],
 
     mpesa_reference: [
       "mpesa_reference",
-      "mpesa_ref",
       "mpesa_code",
-      "transaction_code"
+      "mpesa_receipt",
+      "receipt_number"
     ],
 
     goal: [
       "goal",
-      "goal_name"
+      "goal_name",
+      "contribution_goal"
     ],
 
     notes: [
       "notes",
-      "note"
+      "note",
+      "remarks",
+      "description_notes"
     ],
 
     month: [
       "month",
+      "source_month",
       "contribution_month"
     ],
 
     description: [
       "description",
       "expense_description",
-      "expense",
+      "details",
       "item"
     ],
 
     date: [
-      "expense_date",
       "date",
+      "expense_date",
       "transaction_date"
     ],
 
@@ -524,79 +544,141 @@ function autoMap() {
 
     approval_status: [
       "approval_status",
+      "approval",
       "status"
     ],
 
     receipt_url: [
       "receipt_url",
+      "receipt",
       "receipt_reference",
-      "receipt"
+      "attachment"
+    ],
+
+    member_number: [
+      "member_number",
+      "member_no",
+      "member_number_id"
+    ],
+
+    membership_number: [
+      "membership_number",
+      "membership_no"
+    ],
+
+    name: [
+      "name",
+      "member_name",
+      "full_name"
+    ],
+
+    phone: [
+      "phone",
+      "phone_number",
+      "mobile",
+      "mobile_number"
+    ],
+
+    email: [
+      "email",
+      "email_address"
+    ],
+
+    role: [
+      "role",
+      "member_role"
+    ],
+
+    status: [
+      "status",
+      "member_status"
+    ],
+
+    onboarding_status: [
+      "onboarding_status",
+      "onboarding",
+      "account_status"
     ]
   };
 
-  for (
-    const [field] of DEF[state.entity]
-  ) {
-    const alias =
-      aliases[field]?.find(
-        (candidate) =>
-          headerMap.has(candidate)
-      );
+  const available = new Map(
+    state.headers.map((header) => [
+      normHeader(header),
+      header
+    ])
+  );
 
-    if (alias) {
-      state.mappings[field] =
-        headerMap.get(alias);
+  const mapping = {};
+
+  (DEF[state.entity] || []).forEach(
+    ([field]) => {
+      const choices =
+        aliases[field] || [field];
+
+      const match =
+        choices
+          .map(normHeader)
+          .map((alias) =>
+            available.get(alias)
+          )
+          .find(Boolean);
+
+      if (match) {
+        mapping[field] = match;
+      }
     }
-  }
+  );
+
+  state.mappings = mapping;
+
+  return mapping;
 }
 
 async function context() {
-  state.member =
+  const member =
     await getMyMember();
 
-  state.groupId =
-    await getMyGroupId();
-
-  if (
-    !state.member?.id ||
-    !state.groupId
-  ) {
+  if (!member?.id) {
     throw new Error(
-      "Authenticated member/group context could not be resolved."
+      "Authenticated member context could not be resolved."
     );
   }
+
+  const groupId =
+    member.group_id ||
+    await getMyGroupId();
+
+  if (!groupId) {
+    throw new Error(
+      "Authenticated group context could not be resolved."
+    );
+  }
+
+  state.member = member;
+  state.groupId = groupId;
+
+  return {
+    member,
+    groupId
+  };
 }
 
 async function createBatch() {
+  const payload = {
+    group_id: state.groupId,
+    entity_type: state.entity,
+    source_file_name: state.fileName,
+    source_type: state.sourceType,
+    status: "staged",
+    created_by: state.member.id
+  };
+
   const {
     data,
     error
   } = await supabase
     .from("data_import_batches")
-    .insert({
-      group_id:
-        state.groupId,
-
-      source_name:
-        state.fileName,
-
-      source_type:
-        state.sourceType,
-
-      status:
-        "uploaded",
-
-      created_by:
-        state.member.id,
-
-      summary: {
-        candidate: true,
-        entity_type:
-          state.entity,
-        row_count:
-          state.rows.length
-      }
-    })
+    .insert(payload)
     .select("id")
     .single();
 
@@ -604,113 +686,60 @@ async function createBatch() {
     throw error;
   }
 
-  state.batchId =
-    data.id;
+  state.batchId = data.id;
+
+  return data.id;
 }
 
 async function stage() {
-  const payload =
-    state.rows.map(
-      (raw, index) => ({
-        batch_id:
-          state.batchId,
-
-        source_sheet:
-          null,
-
-        source_row_number:
-          index + 2,
-
-        entity_type:
-          state.entity,
-
-        raw_data:
-          raw,
-
-        status:
-          "pending"
-      })
-    );
-
-  const {
-    data,
-    error
-  } = await supabase
-    .from("data_import_rows")
-    .insert(payload)
-    .select(
-      "id,source_row_number,raw_data,status"
-    );
-
-  if (error) {
-    throw error;
-  }
-
-  state.staged =
-    data || [];
-
-  if (
-    state.staged.length !==
-    state.rows.length
-  ) {
+  if (!state.batchId) {
     throw new Error(
-      "Staging row count does not match source row count."
+      "Import batch has not been created."
     );
   }
-}
 
-async function saveMaps() {
+  const payload = state.staged.map(
+    (row) => ({
+      batch_id: state.batchId,
+      source_row_number:
+        row.source_row_number,
+      source_data: row.source_data,
+      normalized_data:
+        row.normalized_data || null,
+      validation_status:
+        row.validation_status || "pending",
+      validation_errors:
+        row.validation_errors || [],
+      validation_warnings:
+        row.validation_warnings || [],
+      imported: false
+    })
+  );
+
+  if (!payload.length) {
+    throw new Error(
+      "There are no rows to stage."
+    );
+  }
+
+  const chunkSize = 250;
+
   for (
-    const [
-      field,
-      source
-    ] of Object.entries(
-      state.mappings
-    )
+    let index = 0;
+    index < payload.length;
+    index += chunkSize
   ) {
-    if (!source) {
-      continue;
-    }
-
-    if (FORBIDDEN.has(field)) {
-      throw new Error(
-        `Forbidden mapping: ${field}`
+    const chunk =
+      payload.slice(
+        index,
+        index + chunkSize
       );
-    }
-
-    const definition =
-      DEF[state.entity].find(
-        (item) =>
-          item[0] === field
-      );
-
-    const mappingType =
-      definition?.[2] ||
-      "direct";
 
     const {
       error
     } = await supabase
-      .from("data_import_mappings")
-      .upsert(
-        {
-          batch_id:
-            state.batchId,
-
-          source_column:
-            source,
-
-          target_field:
-            field,
-
-          mapping_type:
-            mappingType
-        },
-        {
-          onConflict:
-            "batch_id,source_column"
-        }
-      );
+      .from("data_import_rows")
+      .insert(chunk);
 
     if (error) {
       throw error;
@@ -718,57 +747,223 @@ async function saveMaps() {
   }
 }
 
+async function saveMaps() {
+  if (!state.batchId) {
+    throw new Error(
+      "Import batch has not been created."
+    );
+  }
+
+  const rows =
+    Object.entries(state.mappings)
+      .filter(
+        ([, sourceColumn]) =>
+          clean(sourceColumn)
+      )
+      .map(
+        ([targetField, sourceColumn]) => ({
+          batch_id: state.batchId,
+          target_field: targetField,
+          source_column: sourceColumn
+        })
+      );
+
+  if (!rows.length) {
+    return;
+  }
+
+  const {
+    error
+  } = await supabase
+    .from("data_import_mappings")
+    .upsert(
+      rows,
+      {
+        onConflict:
+          "batch_id,target_field"
+      }
+    );
+
+  if (error) {
+    throw error;
+  }
+}
+
 function val(raw, field) {
-  const source =
+  const sourceColumn =
     state.mappings[field];
 
-  return source
-    ? raw[source]
-    : undefined;
+  if (!sourceColumn) {
+    return "";
+  }
+
+  return clean(
+    raw[sourceColumn]
+  );
 }
 
 async function members(identifier) {
-  const value =
-    clean(identifier);
+  const value = clean(identifier);
 
   if (!value) {
-    return [];
+    return null;
   }
 
-  const columns = [
-    "member_number",
-    "membership_number",
-    "phone",
-    "email",
-    "name"
+  if (!state.groupId) {
+    throw new Error(
+      "Group context is required before member lookup."
+    );
+  }
+
+  const select =
+    "id,group_id,member_number,membership_number,name,phone,email,status";
+
+  const attempts = [
+    ["member_number", value],
+    ["membership_number", value],
+    ["phone", value]
   ];
 
-  const output = [];
+  for (const [
+    column,
+    candidate
+  ] of attempts) {
+    const {
+      data,
+      error
+    } = await supabase
+      .from("members")
+      .select(select)
+      .eq("group_id", state.groupId)
+      .eq(column, candidate)
+      .limit(10);
 
-  for (
-    const column of columns
-  ) {
+    if (error) {
+      throw error;
+    }
+
+    if (data?.length === 1) {
+      return data[0];
+    }
+
+    if (data?.length > 1) {
+      throw new Error(
+        `Member lookup returned multiple records for ${column}.`
+      );
+    }
+  }
+
+  const {
+    data,
+    error
+  } = await supabase
+    .from("members")
+    .select(select)
+    .eq("group_id", state.groupId)
+    .ilike("name", value)
+    .limit(10);
+
+  if (error) {
+    throw error;
+  }
+
+  if (data?.length === 1) {
+    return data[0];
+  }
+
+  if (data?.length > 1) {
+    throw new Error(
+      "Member name lookup returned multiple records."
+    );
+  }
+
+  return null;
+}
+
+async function findExistingMember({
+  memberNumber,
+  membershipNumber,
+  phone,
+  email,
+  name
+}) {
+  if (!state.groupId) {
+    throw new Error(
+      "Group context is required before member lookup."
+    );
+  }
+
+  const select =
+    "id,group_id,member_number,membership_number,name,phone,email,role,status,onboarding_status";
+
+  const candidates = [];
+
+  const addQuery = (
+    column,
+    value,
+    ilike = false
+  ) => {
+    const cleaned =
+      clean(value);
+
+    if (!cleaned) {
+      return;
+    }
+
+    candidates.push({
+      column,
+      value: cleaned,
+      ilike
+    });
+  };
+
+  addQuery(
+    "member_number",
+    memberNumber
+  );
+
+  addQuery(
+    "membership_number",
+    membershipNumber
+  );
+
+  addQuery(
+    "phone",
+    phone
+  );
+
+  addQuery(
+    "email",
+    email
+  );
+
+  addQuery(
+    "name",
+    name,
+    true
+  );
+
+  const found = new Map();
+
+  for (const candidate of candidates) {
     let query =
       supabase
         .from("members")
-        .select(
-          "id,group_id,member_number,membership_number,name,phone,email,status"
-        )
+        .select(select)
         .eq(
           "group_id",
           state.groupId
         );
 
-    query =
-      column === "name"
-        ? query.ilike(
-            column,
-            value
-          )
-        : query.eq(
-            column,
-            value
-          );
+    query = candidate.ilike
+      ? query.ilike(
+          candidate.column,
+          candidate.value
+        )
+      : query.eq(
+          candidate.column,
+          candidate.value
+        );
 
     const {
       data,
@@ -779,38 +974,28 @@ async function members(identifier) {
       throw error;
     }
 
-    output.push(
-      ...(data || [])
+    (data || []).forEach(
+      (member) => {
+        if (member?.id) {
+          found.set(
+            member.id,
+            member
+          );
+        }
+      }
     );
   }
 
-  return [
-    ...new Map(
-      output.map(
-        (member) => [
-          member.id,
-          member
-        ]
-      )
-    ).values()
-  ];
+  return Array.from(
+    found.values()
+  );
 }
 
-/*
- * IMPORTANT:
- *
- * contribution_goals uses goal_name.
- * There is no "name" column in the reconciled schema.
- */
 async function goal(value) {
-  const searchValue =
-    clean(value);
+  const name = clean(value);
 
-  if (!searchValue) {
-    return {
-      goalId: null,
-      error: null
-    };
+  if (!name) {
+    return null;
   }
 
   const {
@@ -818,17 +1003,9 @@ async function goal(value) {
     error
   } = await supabase
     .from("contribution_goals")
-    .select(
-      "id,goal_name"
-    )
-    .eq(
-      "group_id",
-      state.groupId
-    )
-    .ilike(
-      "goal_name",
-      searchValue
-    )
+    .select("id,goal_name")
+    .eq("group_id", state.groupId)
+    .ilike("goal_name", name)
     .limit(10);
 
   if (error) {
@@ -836,30 +1013,34 @@ async function goal(value) {
   }
 
   if (!data?.length) {
-    return {
-      goalId: null,
-      error:
-        "Goal could not be resolved within this group."
-    };
+    return null;
   }
 
   if (data.length > 1) {
-    return {
-      goalId: null,
-      error:
-        "Multiple goals matched."
-    };
+    throw new Error(
+      `Multiple contribution goals matched "${name}".`
+    );
   }
 
-  return {
-    goalId:
-      data[0].id,
-    error: null
-  };
+  return data[0];
 }
 
-async function period(monthValue) {
-  if (!monthValue) {
+async function period(value) {
+  const sourceMonth =
+    clean(value);
+
+  if (!sourceMonth) {
+    return null;
+  }
+
+  const normalized =
+    /^\d{4}-\d{2}$/.test(sourceMonth)
+      ? sourceMonth
+      : month(
+          date(sourceMonth)
+        );
+
+  if (!normalized) {
     return null;
   }
 
@@ -868,17 +1049,13 @@ async function period(monthValue) {
     error
   } = await supabase
     .from("financial_periods")
-    .select(
-      "id,group_id,month,status"
-    )
+    .select("*")
+    .eq("group_id", state.groupId)
     .eq(
-      "group_id",
-      state.groupId
+      "period_start",
+      `${normalized}-01`
     )
-    .eq(
-      "month",
-      monthValue
-    );
+    .limit(10);
 
   if (error) {
     throw error;
@@ -888,89 +1065,53 @@ async function period(monthValue) {
     return null;
   }
 
-  if (data.length !== 1) {
+  if (data.length > 1) {
     throw new Error(
-      `Financial period configuration for ${monthValue} is ambiguous. Import is blocked.`
+      `Multiple financial periods matched ${normalized}.`
     );
   }
 
   return data[0];
 }
+/* =========================================================
+ * Validation
+ * ========================================================= */
+
 async function validateContribution(raw) {
   const errors = [];
   const warnings = [];
 
   const memberIdentifier =
-    val(
-      raw,
-      "member_identifier"
-    );
+    val(raw, "member_identifier");
 
   const amount =
-    num(
-      val(
-        raw,
-        "amount"
-      )
-    );
+    num(val(raw, "amount"));
 
   const contributionDate =
-    date(
-      val(
-        raw,
-        "contribution_date"
-      )
-    );
-
-  const sourceMonth =
-    clean(
-      val(
-        raw,
-        "month"
-      )
-    );
+    date(val(raw, "contribution_date"));
 
   const paymentMethod =
-    clean(
-      val(
-        raw,
-        "payment_method"
-      )
-    );
+    val(raw, "payment_method");
 
   const contributionType =
-    clean(
-      val(
-        raw,
-        "contribution_type"
-      )
-    ) || "monthly";
+    val(raw, "contribution_type");
 
   const reference =
-    clean(
-      val(
-        raw,
-        "reference"
-      )
-    ) || null;
+    val(raw, "reference");
 
   const mpesaReference =
-    clean(
-      val(
-        raw,
-        "mpesa_reference"
-      )
-    ) || null;
+    val(raw, "mpesa_reference");
+
+  const goalName =
+    val(raw, "goal");
 
   const notes =
-    clean(
-      val(
-        raw,
-        "notes"
-      )
-    ) || null;
+    val(raw, "notes");
 
-  if (!clean(memberIdentifier)) {
+  const sourceMonth =
+    val(raw, "month");
+
+  if (!memberIdentifier) {
     errors.push(
       "Member identifier is required."
     );
@@ -987,200 +1128,114 @@ async function validateContribution(raw) {
 
   if (!contributionDate) {
     errors.push(
-      "Contribution date is required and valid."
+      "A valid contribution date is required."
     );
   }
 
-  if (
-    ![
-      "M-Pesa",
-      "Cash",
-      "Bank transfer"
-    ].includes(paymentMethod)
-  ) {
+  if (!paymentMethod) {
     errors.push(
-      "Payment method must be M-Pesa, Cash, or Bank transfer."
+      "Payment method is required."
     );
   }
 
-  if (
-    contributionType !==
-    "monthly"
-  ) {
-    errors.push(
-      "Contribution type must be monthly."
-    );
+  let member = null;
+
+  if (memberIdentifier) {
+    member =
+      await members(
+        memberIdentifier
+      );
+
+    if (!member) {
+      errors.push(
+        `No member matched "${memberIdentifier}".`
+      );
+    }
+  }
+
+  let goalRecord = null;
+
+  if (goalName) {
+    goalRecord =
+      await goal(goalName);
+
+    if (!goalRecord) {
+      errors.push(
+        `Contribution goal "${goalName}" was not found.`
+      );
+    }
+  }
+
+  let financialPeriod = null;
+
+  if (sourceMonth) {
+    financialPeriod =
+      await period(sourceMonth);
+
+    if (!financialPeriod) {
+      warnings.push(
+        `Source month ${sourceMonth} could not be matched to a financial period.`
+      );
+    }
   }
 
   if (
     sourceMonth &&
     contributionDate &&
-    sourceMonth !==
+    !sourceMonth.startsWith(
       month(contributionDate)
-  ) {
-    errors.push(
-      "Source month does not agree with contribution date."
-    );
-  }
-
-  if (
-    mpesaReference &&
-    paymentMethod !==
-      "M-Pesa"
-  ) {
-    errors.push(
-      "M-Pesa reference is allowed only for M-Pesa."
-    );
-  }
-
-  if (
-    paymentMethod === "M-Pesa" &&
-    reference &&
-    mpesaReference &&
-    reference !==
-      mpesaReference
-  ) {
-    errors.push(
-      "Reference and M-Pesa reference disagree."
-    );
-  }
-
-  const memberMatches =
-    await members(
-      memberIdentifier
-    );
-
-  if (!memberMatches.length) {
-    errors.push(
-      "Member not found in current group."
-    );
-  }
-
-  if (memberMatches.length > 1) {
-    errors.push(
-      "Multiple member matches; import is blocked."
-    );
-  }
-
-  const member =
-    memberMatches[0] ||
-    null;
-
-  let goalId = null;
-
-  if (
-    val(
-      raw,
-      "goal"
     )
   ) {
-    const goalResult =
-      await goal(
-        val(
-          raw,
-          "goal"
-        )
-      );
-
-    if (goalResult.error) {
-      errors.push(
-        goalResult.error
-      );
-    }
-
-    goalId =
-      goalResult.goalId;
-  }
-
-  if (contributionDate) {
-    const monthValue =
-      month(
-        contributionDate
-      );
-
-    try {
-      const financialPeriod =
-        await period(
-          monthValue
-        );
-
-      if (!financialPeriod) {
-        errors.push(
-          `No financial period exists for ${monthValue}; importer will not create one.`
-        );
-      } else if (
-        String(
-          financialPeriod.status
-        ).toLowerCase() ===
-        "closed"
-      ) {
-        errors.push(
-          `Closed financial period: ${monthValue}.`
-        );
-      }
-    } catch (error) {
-      errors.push(
-        error.message ||
-          `Unable to resolve financial period for ${monthValue}.`
-      );
-    }
+    warnings.push(
+      "Source month does not match the contribution date month."
+    );
   }
 
   const normalized = {
     member_id:
-      member?.id ||
-      null,
+      member?.id || null,
+
+    member_number:
+      member?.member_number || null,
 
     amount,
 
     contribution_date:
       contributionDate,
 
-    month:
-      month(
-        contributionDate
-      ),
-
-    contribution_type:
-      contributionType,
-
     payment_method:
       paymentMethod,
 
-    reference,
+    contribution_type:
+      contributionType || null,
+
+    reference:
+      reference || null,
 
     mpesa_reference:
-      paymentMethod ===
-      "M-Pesa"
-        ? (
-            mpesaReference ||
-            reference ||
-            null
-          )
-        : null,
+      mpesaReference || null,
 
     goal_id:
-      goalId,
+      goalRecord?.id || null,
 
-    notes
+    goal_name:
+      goalRecord?.goal_name || null,
+
+    notes:
+      notes || null,
+
+    source_month:
+      sourceMonth || null,
+
+    financial_period_id:
+      financialPeriod?.id || null
   };
-
-  if (!reference) {
-    warnings.push(
-      "Reference absent."
-    );
-  }
-
-  if (!notes) {
-    warnings.push(
-      "Notes absent."
-    );
-  }
 
   return {
     normalized,
     errors,
-    warnings
+    warnings,
+    ok: errors.length === 0
   };
 }
 
@@ -1189,52 +1244,22 @@ async function validateExpense(raw) {
   const warnings = [];
 
   const description =
-    clean(
-      val(
-        raw,
-        "description"
-      )
-    );
+    val(raw, "description");
 
   const amount =
-    num(
-      val(
-        raw,
-        "amount"
-      )
-    );
+    num(val(raw, "amount"));
 
   const expenseDate =
-    date(
-      val(
-        raw,
-        "date"
-      )
-    );
+    date(val(raw, "date"));
 
   const category =
-    clean(
-      val(
-        raw,
-        "category"
-      )
-    ) || "other";
+    val(raw, "category");
 
   const approvalStatus =
-    clean(
-      val(
-        raw,
-        "approval_status"
-      )
-    ) || "pending";
+    val(raw, "approval_status");
 
   const receiptUrl =
-    clean(
-      val(
-        raw,
-        "receipt_url"
-      )
-    ) || null;
+    val(raw, "receipt_url");
 
   if (!description) {
     errors.push(
@@ -1253,395 +1278,528 @@ async function validateExpense(raw) {
 
   if (!expenseDate) {
     errors.push(
-      "Expense date is required and valid."
+      "A valid expense date is required."
     );
   }
 
   if (
-    ![
-      "meeting",
-      "welfare",
-      "transport",
-      "food",
-      "supplies",
-      "bank_charges",
-      "admin",
-      "other"
-    ].includes(category)
-  ) {
-    errors.push(
-      "Invalid expense category."
-    );
-  }
-
-  if (
+    approvalStatus &&
     ![
       "pending",
       "approved",
       "rejected"
     ].includes(
-      approvalStatus
+      approvalStatus.toLowerCase()
     )
   ) {
     errors.push(
-      "Invalid approval status."
+      "Approval status must be pending, approved or rejected."
     );
   }
 
-  if (expenseDate) {
-    const monthValue =
-      month(expenseDate);
-
-    try {
-      const financialPeriod =
-        await period(
-          monthValue
-        );
-
-      if (!financialPeriod) {
-        errors.push(
-          `No financial period exists for ${monthValue}; importer will not create one.`
-        );
-      } else if (
-        String(
-          financialPeriod.status
-        ).toLowerCase() ===
-        "closed"
-      ) {
-        errors.push(
-          `Closed financial period: ${monthValue}.`
-        );
-      }
-    } catch (error) {
-      errors.push(
-        error.message ||
-          `Unable to resolve financial period for ${monthValue}.`
-      );
-    }
-  }
-
-  if (!receiptUrl) {
+  if (!category) {
     warnings.push(
-      "Receipt/reference absent."
+      "Expense category is missing."
     );
   }
+
+  const normalized = {
+    description:
+      description || null,
+
+    amount,
+
+    date:
+      expenseDate,
+
+    category:
+      category || null,
+
+    approval_status:
+      approvalStatus
+        ? approvalStatus.toLowerCase()
+        : null,
+
+    receipt_url:
+      receiptUrl || null
+  };
 
   return {
-    normalized: {
-      description,
-      amount,
-      date:
-        expenseDate,
-      category,
-      approval_status:
-        approvalStatus,
-      receipt_url:
-        receiptUrl,
-
-      __idempotency_key:
-        crypto.randomUUID()
-    },
-
+    normalized,
     errors,
-    warnings
+    warnings,
+    ok: errors.length === 0
+  };
+}
+
+async function validateMember(raw) {
+  const errors = [];
+  const warnings = [];
+
+  const memberNumber =
+    val(raw, "member_number");
+
+  const membershipNumber =
+    val(raw, "membership_number");
+
+  const name =
+    val(raw, "name");
+
+  const phone =
+    val(raw, "phone");
+
+  const email =
+    val(raw, "email");
+
+  const role =
+    val(raw, "role");
+
+  const status =
+    val(raw, "status");
+
+  const onboardingStatus =
+    val(raw, "onboarding_status");
+
+  if (!memberNumber) {
+    errors.push(
+      "Member number is required."
+    );
+  }
+
+  if (!name) {
+    errors.push(
+      "Member name is required."
+    );
+  }
+
+  if (!phone) {
+    errors.push(
+      "Member phone is required."
+    );
+  }
+
+  if (!status) {
+    errors.push(
+      "Member status is required."
+    );
+  }
+
+  if (
+    membershipNumber &&
+    !/^\d{4}$/.test(
+      membershipNumber
+    )
+  ) {
+    errors.push(
+      "Membership number must contain exactly four digits."
+    );
+  }
+
+  const normalizedStatus =
+    status.toLowerCase();
+
+  if (
+    status &&
+    ![
+      "active",
+      "inactive"
+    ].includes(
+      normalizedStatus
+    )
+  ) {
+    errors.push(
+      "Member status must be active or inactive."
+    );
+  }
+
+  const normalizedRole =
+    role
+      ? role.toLowerCase()
+      : null;
+
+  if (
+    normalizedRole &&
+    ![
+      "chairperson",
+      "admin",
+      "treasurer",
+      "secretary",
+      "member"
+    ].includes(
+      normalizedRole
+    )
+  ) {
+    errors.push(
+      "Member role must be chairperson, admin, treasurer, secretary or member."
+    );
+  }
+
+  const normalizedOnboardingStatus =
+    onboardingStatus
+      ? onboardingStatus.toLowerCase()
+      : null;
+
+  if (
+    normalizedOnboardingStatus &&
+    ![
+      "pending",
+      "invited",
+      "active",
+      "suspended"
+    ].includes(
+      normalizedOnboardingStatus
+    )
+  ) {
+    errors.push(
+      "Onboarding status must be pending, invited, active or suspended."
+    );
+  }
+
+  if (!role) {
+    warnings.push(
+      "Member role is missing. Preview will preserve it as null; no role will be inferred."
+    );
+  }
+
+  if (!onboardingStatus) {
+    warnings.push(
+      "Onboarding status is missing. Preview will preserve it as null; no onboarding state will be inferred."
+    );
+  }
+
+  let existing = [];
+
+  if (
+    memberNumber ||
+    membershipNumber ||
+    phone ||
+    email ||
+    name
+  ) {
+    existing =
+      await findExistingMember({
+        memberNumber,
+        membershipNumber,
+        phone,
+        email,
+        name
+      });
+  }
+
+  if (existing.length > 1) {
+    errors.push(
+      `Multiple existing members matched this row (${existing.length}). Resolve the identity before previewing it again.`
+    );
+  }
+
+  if (existing.length === 1) {
+    const matched =
+      existing[0];
+
+    const identity = [
+      matched.member_number
+        ? `member #${matched.member_number}`
+        : null,
+
+      matched.membership_number
+        ? `membership #${matched.membership_number}`
+        : null,
+
+      matched.name
+        ? matched.name
+        : null
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    warnings.push(
+      `Existing member matched (${identity}). No member record will be updated.`
+    );
+  }
+
+  const normalized = {
+    member_number:
+      memberNumber || null,
+
+    membership_number:
+      membershipNumber || null,
+
+    name:
+      name || null,
+
+    phone:
+      phone || null,
+
+    email:
+      email || null,
+
+    role:
+      normalizedRole,
+
+    status:
+      normalizedStatus || null,
+
+    onboarding_status:
+      normalizedOnboardingStatus,
+
+    __preview_only:
+      true
+  };
+
+  return {
+    normalized,
+    errors,
+    warnings,
+    existing:
+      existing.length === 1
+        ? existing[0]
+        : null,
+    ok:
+      errors.length === 0
   };
 }
 
 function duplicateKey(normalized) {
-  if (
-    state.entity ===
-    "contribution"
-  ) {
+  if (state.entity === "member") {
     return [
-      normalized.member_id,
-      normalized.amount,
-      normalized.contribution_date,
-      normalized.payment_method,
-      normalized.reference || "",
-      normalized.mpesa_reference || ""
+      normalized.member_number,
+      normalized.membership_number || "",
+      normalized.phone,
+      normalized.email || ""
     ]
       .join("|")
       .toLowerCase();
   }
 
+  if (
+    state.entity !== "expense"
+  ) {
+    throw new Error(
+      "Unsupported migration entity."
+    );
+  }
+
   return [
-    normalized.description,
-    normalized.amount,
     normalized.date,
-    normalized.category
+    normalized.amount,
+    normalized.description
   ]
     .join("|")
     .toLowerCase();
 }
 
 async function validate() {
-  const required =
-    DEF[state.entity]
-      .filter(
-        (definition) =>
-          definition[3] &&
-          !state.mappings[
-            definition[0]
-          ]
-      );
-
-  if (required.length) {
+  if (!state.rows.length) {
     throw new Error(
-      `Required mappings missing: ${required
-        .map(
-          (definition) =>
-            definition[1]
-        )
-        .join(", ")}.`
+      "There are no rows to validate."
     );
   }
 
-  await saveMaps();
-
-  const seen =
-    new Set();
-
   state.results = [];
 
+  const duplicateCounts =
+    new Map();
+
   for (
-    const stagedRow of
-      state.staged
+    let index = 0;
+    index < state.rows.length;
+    index += 1
   ) {
+    const raw =
+      state.rows[index];
+
     let result;
 
-    try {
+    if (
+      state.entity ===
+      "contribution"
+    ) {
       result =
-        state.entity ===
-        "contribution"
-          ? await validateContribution(
-              stagedRow.raw_data
-            )
-          : await validateExpense(
-              stagedRow.raw_data
-            );
+        await validateContribution(
+          raw
+        );
+    } else if (
+      state.entity === "expense"
+    ) {
+      result =
+        await validateExpense(
+          raw
+        );
+    } else if (
+      state.entity === "member"
+    ) {
+      result =
+        await validateMember(
+          raw
+        );
+    } else {
+      throw new Error(
+        "Unsupported migration entity."
+      );
+    }
 
+    const key =
+      duplicateKey(
+        result.normalized
+      );
+
+    if (key) {
+      duplicateCounts.set(
+        key,
+        (duplicateCounts.get(key) || 0) + 1
+      );
+    }
+
+    state.results.push({
+      source_row_number:
+        index + 2,
+
+      source_data:
+        raw,
+
+      normalized:
+        result.normalized,
+
+      errors:
+        result.errors || [],
+
+      warnings:
+        result.warnings || [],
+
+      existing:
+        result.existing || null,
+
+      ok:
+        result.ok
+    });
+  }
+
+  state.results.forEach(
+    (result) => {
       const key =
         duplicateKey(
           result.normalized
         );
 
-      if (seen.has(key)) {
-        result.errors.push(
-          "Duplicate row inside upload."
+      if (
+        key &&
+        duplicateCounts.get(key) > 1
+      ) {
+        result.warnings.push(
+          "Duplicate identity/value detected within this import file."
         );
-      } else {
-        seen.add(key);
       }
-
-      /*
-       * Preserve one stable idempotency key for
-       * the complete lifetime of this import row.
-       */
-      result.normalized
-        .__idempotency_key =
-        result.normalized
-          .__idempotency_key ||
-        crypto.randomUUID();
-    } catch (error) {
-      result = {
-        normalized: {},
-        errors: [
-          error.message ||
-            "Validation failed."
-        ],
-        warnings: []
-      };
     }
+  );
 
-    state.results.push({
-      ...result,
+  state.staged =
+    state.results.map(
+      (result) => ({
+        source_row_number:
+          result.source_row_number,
 
-      rowId:
-        stagedRow.id,
-
-      row:
-        stagedRow.source_row_number,
-
-      status:
-        result.errors.length
-          ? "error"
-          : result.warnings.length
-            ? "warning"
-            : "valid"
-    });
-  }
-
-  for (
-    const result of
-      state.results
-  ) {
-    const {
-      error
-    } = await supabase
-      .from(
-        "data_import_rows"
-      )
-      .update({
-        status:
-          result.status,
+        source_data:
+          result.source_data,
 
         normalized_data:
           result.normalized,
 
-        error_message:
-          [
-            ...result.errors,
-            ...result.warnings
-          ].join(" | ") ||
-          null
+        validation_status:
+          result.ok
+            ? "valid"
+            : "invalid",
+
+        validation_errors:
+          result.errors,
+
+        validation_warnings:
+          result.warnings
       })
-      .eq(
-        "id",
-        result.rowId
-      )
-      .eq(
-        "batch_id",
-        state.batchId
-      );
-
-    if (error) {
-      throw error;
-    }
-  }
-
-  const errors =
-    state.results.filter(
-      (result) =>
-        result.status ===
-        "error"
-    ).length;
-
-  const warnings =
-    state.results.filter(
-      (result) =>
-        result.status ===
-        "warning"
-    ).length;
-
-  const total =
-    state.results.reduce(
-      (
-        sum,
-        result
-      ) =>
-        sum +
-        (
-          Number(
-            result.normalized
-              .amount
-          ) || 0
-        ),
-      0
     );
 
-  const {
-    error
-  } = await supabase
-    .from(
-      "data_import_batches"
-    )
-    .update({
-      status:
-        errors
-          ? "validating"
-          : "ready",
+  return {
+    total:
+      state.results.length,
 
-      summary: {
-        candidate: true,
+    errors:
+      state.results.filter(
+        (row) =>
+          row.errors.length > 0
+      ).length,
 
-        entity_type:
-          state.entity,
+    warnings:
+      state.results.filter(
+        (row) =>
+          row.warnings.length > 0
+      ).length,
 
-        total_rows:
-          state.results.length,
+    ready_to_import:
+      state.entity === "member"
+        ? 0
+        : state.results.filter(
+            (row) =>
+              row.errors.length === 0
+          ).length,
 
-        valid_rows:
-          state.results.length -
-          errors -
-          warnings,
+    write_allowed:
+      state.entity !== "member",
 
-        warning_rows:
-          warnings,
-
-        error_rows:
-          errors,
-
-        total_amount:
-          total,
-
-        ready_to_import:
-          errors
-            ? 0
-            : state.results.length
-      }
-    })
-    .eq(
-      "id",
-      state.batchId
-    )
-    .eq(
-      "group_id",
-      state.groupId
-    );
-
-  if (error) {
-    throw error;
-  }
-
-  render();
-
-  step("preview");
-
-  msg(
-    errors
-      ? `Validation blocked import: ${errors} fatal row(s). No target records will be imported until validation passes.`
-      : `Validation passed: ${state.results.length} row(s) ready for explicit confirmation.`,
-    errors
-      ? "error"
-      : "success"
-  );
+    preview_only:
+      state.entity === "member"
+  };
 }
-
 /* =========================================================
- * RECOVERY
+ * Recovery
  * ========================================================= */
 
 async function loadRecoverableBatches() {
+  if (!state.groupId) {
+    return [];
+  }
+
   const {
     data,
     error
   } = await supabase
-    .from(
-      "data_import_batches"
-    )
-    .select(
-      "id,group_id,source_name,source_type,status,started_at,completed_at,created_by,summary"
-    )
+    .from("data_import_batches")
+    .select(`
+      id,
+      entity_type,
+      source_file_name,
+      source_type,
+      status,
+      created_at,
+      completed_at,
+      failed_at
+    `)
     .eq(
       "group_id",
       state.groupId
     )
     .in(
+      "entity_type",
+      [
+        "contribution",
+        "expense",
+        "member"
+      ]
+    )
+    .in(
       "status",
       [
-        "ready",
+        "staged",
+        "validated",
         "importing",
         "failed"
       ]
     )
     .order(
-      "started_at",
+      "created_at",
       {
-        ascending: false,
-        nullsFirst: false
+        ascending: false
       }
     )
-    .limit(25);
+    .limit(20);
 
   if (error) {
     throw error;
@@ -1650,158 +1808,104 @@ async function loadRecoverableBatches() {
   state.recoveryBatches =
     data || [];
 
-  renderRecoveryBatches();
+  return state.recoveryBatches;
 }
 
 function renderRecoveryBatches() {
-  const list =
+  const container =
     $("recoveryList");
 
-  const info =
-    $("recoveryInfo");
-
-  const recover =
-    $("recoverBatch");
-
-  if (!list) {
+  if (!container) {
     return;
   }
 
   if (
     !state.recoveryBatches.length
   ) {
-    list.innerHTML = "";
-
-    if (info) {
-      info.className =
-        "notice info";
-
-      info.textContent =
-        "No recoverable migration batches were found for this group.";
-    }
-
-    if (recover) {
-      recover.disabled =
-        true;
-    }
+    container.innerHTML =
+      `<div class="notice info">No recoverable migration batches were found.</div>`;
 
     return;
   }
 
-  if (info) {
-    info.className =
-      "notice info";
-
-    info.textContent =
-      "Select a previously staged or interrupted batch to recover its persisted state.";
-  }
-
-  list.innerHTML =
+  container.innerHTML =
     state.recoveryBatches
       .map(
-        (batch) => {
-          const summary =
-            batch.summary || {};
+        (batch) => `
+          <div class="recovery-item">
+            <div>
+              <strong>${esc(
+                batch.source_file_name ||
+                "Unnamed file"
+              )}</strong>
 
-          const entity =
-            summary.entity_type ||
-            "unknown";
-
-          const rows =
-            summary.total_rows ||
-            summary.row_count ||
-            "—";
-
-          const label =
-            batch.source_name ||
-            "Unnamed import";
-
-          return `
-            <label
-              class="recovery-item"
-              style="cursor:pointer"
-            >
-              <div class="recovery-meta">
-                <div class="recovery-title">
-                  ${esc(label)}
-                </div>
-
-                <div class="recovery-details">
-                  Status:
-                  <strong>${esc(
-                    batch.status
-                  )}</strong>
-                  · Entity:
-                  <strong>${esc(
-                    entity
-                  )}</strong>
-                  · Rows:
-                  <strong>${esc(
-                    rows
-                  )}</strong>
-                  · Batch:
-                  <span class="mono">
-                    ${esc(
-                      batch.id
-                    )}
-                  </span>
-                </div>
+              <div class="muted">
+                ${esc(
+                  batch.entity_type
+                )}
+                ·
+                ${esc(
+                  batch.status
+                )}
               </div>
+            </div>
 
-              <input
-                type="radio"
-                name="recoveryBatch"
-                value="${esc(
-                  batch.id
-                )}"
-                style="width:auto"
-              >
-            </label>
-          `;
-        }
+            <button
+              type="button"
+              class="secondary"
+              data-recover-batch="${esc(
+                batch.id
+              )}"
+            >
+              Recover
+            </button>
+          </div>
+        `
       )
       .join("");
 
-  list
+  container
     .querySelectorAll(
-      'input[name="recoveryBatch"]'
+      "[data-recover-batch]"
     )
     .forEach(
-      (input) => {
-        input.addEventListener(
-          "change",
-          () => {
-            if (recover) {
-              recover.disabled =
-                !input.checked;
+      (button) => {
+        button.addEventListener(
+          "click",
+          async () => {
+            try {
+              await recoverBatch(
+                button.dataset
+                  .recoverBatch
+              );
+            } catch (error) {
+              console.error(error);
+
+              msg(
+                error.message ||
+                  "Could not recover the migration batch.",
+                "error"
+              );
             }
           }
         );
       }
     );
-
-  if (recover) {
-    recover.disabled =
-      true;
-  }
 }
 
-function selectedRecoveryBatchId() {
-  return document.querySelector(
-    'input[name="recoveryBatch"]:checked'
-  )?.value || null;
-}
+let selectedRecoveryBatchId =
+  null;
 
-async function loadRecoveryMappings(batchId) {
+async function loadRecoveryMappings(
+  batchId
+) {
   const {
     data,
     error
   } = await supabase
-    .from(
-      "data_import_mappings"
-    )
+    .from("data_import_mappings")
     .select(
-      "source_column,target_field,mapping_type"
+      "target_field,source_column"
     )
     .eq(
       "batch_id",
@@ -1812,79 +1916,73 @@ async function loadRecoveryMappings(batchId) {
     throw error;
   }
 
-  const mappings = {};
+  state.mappings =
+    Object.fromEntries(
+      (data || []).map(
+        (row) => [
+          row.target_field,
+          row.source_column
+        ]
+      )
+    );
 
-  for (
-    const mapping of
-      data || []
-  ) {
-    if (
-      mapping.target_field &&
-      mapping.source_column
-    ) {
-      mappings[
-        mapping.target_field
-      ] =
-        mapping.source_column;
-    }
-  }
-
-  return mappings;
+  return state.mappings;
 }
 
-async function recoverBatch(batchId) {
+async function recoverBatch(
+  batchId
+) {
   if (!batchId) {
     throw new Error(
-      "Select a recoverable batch first."
-    );
-  }
-
-  if (state.importing) {
-    throw new Error(
-      "An import is already running."
+      "No migration batch was selected."
     );
   }
 
   const batch =
     state.recoveryBatches.find(
       (item) =>
-        String(item.id) ===
-        String(batchId)
+        item.id === batchId
     );
 
   if (!batch) {
     throw new Error(
-      "Selected recovery batch is no longer available."
+      "Migration batch could not be found."
     );
   }
 
-  const summary =
-    batch.summary || {};
+  selectedRecoveryBatchId =
+    batchId;
 
-  const entity =
-    summary.entity_type;
+  state.recoveryMode =
+    true;
 
-  if (
-    ![
-      "contribution",
-      "expense"
-    ].includes(entity)
-  ) {
-    throw new Error(
-      "The selected batch has no recognized migration entity type."
-    );
-  }
+  state.batchId =
+    batchId;
+
+  state.entity =
+    batch.entity_type;
+
+  state.fileName =
+    batch.source_file_name || "";
+
+  state.sourceType =
+    batch.source_type || "";
 
   const {
     data: rows,
     error
   } = await supabase
-    .from(
-      "data_import_rows"
-    )
-    .select(
-      "id,source_sheet,source_row_number,entity_type,raw_data,status,normalized_data,error_message,target_id"
-    )
+    .from("data_import_rows")
+    .select(`
+      id,
+      source_row_number,
+      source_data,
+      normalized_data,
+      validation_status,
+      validation_errors,
+      validation_warnings,
+      imported
+    `)
     .eq(
       "batch_id",
       batchId
@@ -1902,470 +2000,430 @@ async function recoverBatch(batchId) {
 
   if (!rows?.length) {
     throw new Error(
-      "The selected batch has no persisted import rows."
+      "The selected migration batch contains no staged rows."
     );
   }
 
-  const unsafeRows =
-    rows.filter(
-      (row) =>
-        row.status !==
-          "imported" &&
-        (
-          !row.normalized_data ||
-          typeof row.normalized_data !==
-            "object" ||
-          row.status ===
-            "error"
-        )
-    );
-
-  if (unsafeRows.length) {
-    throw new Error(
-      `${unsafeRows.length} row(s) do not contain safe persisted normalized data. This batch must be validated again rather than automatically resumed.`
-    );
-  }
-
-  const mappings =
-    await loadRecoveryMappings(
-      batchId
-    );
-
-  state.recoveryMode =
-    true;
-
-  state.batchId =
-    batchId;
-
-  state.entity =
-    entity;
-
-  state.fileName =
-    batch.source_name || "";
-
-  state.sourceType =
-    batch.source_type || "";
-
-  state.mappings =
-    mappings;
+  await loadRecoveryMappings(
+    batchId
+  );
 
   state.staged =
-    rows.map(
-      (row) => ({
-        id:
-          row.id,
-
-        source_row_number:
-          row.source_row_number,
-
-        raw_data:
-          row.raw_data,
-
-        status:
-          row.status
-      })
-    );
-
-  state.rows =
-    rows.map(
-      (row) =>
-        row.raw_data
-    );
-
-  state.headers =
-    rows[0]?.raw_data
-      ? Object.keys(
-          rows[0].raw_data
-        )
-      : [];
+    rows;
 
   state.results =
     rows.map(
-      (row) => {
-        const normalized =
-          row.normalized_data ||
-          {};
+      (row) => ({
+        source_row_number:
+          row.source_row_number,
 
-        const imported =
-          row.status ===
-          "imported";
+        source_data:
+          row.source_data || {},
 
-        const warnings =
-          row.error_message &&
-          !imported
-            ? [row.error_message]
-            : [];
+        normalized:
+          row.normalized_data || {},
 
-        return {
-          rowId:
-            row.id,
+        errors:
+          row.validation_errors || [],
 
-          row:
-            row.source_row_number,
+        warnings:
+          row.validation_warnings || [],
 
-          normalized,
+        existing:
+          null,
 
-          errors: [],
+        ok:
+          row.validation_status ===
+          "valid",
 
-          warnings,
-
-          status:
-            imported
-              ? "imported"
-              : (
-                  row.status ===
-                    "warning"
-                    ? "warning"
-                    : "valid"
-                ),
-
-          targetId:
-            row.target_id ||
-            null
-        };
-      }
+        imported:
+          Boolean(row.imported)
+      })
     );
 
   state.imported =
     rows
       .filter(
         (row) =>
-          row.status ===
-          "imported"
+          row.imported
       )
       .map(
-        (row) => ({
-          row: row.source_row_number,
-          targetId:
-            row.target_id
-        })
+        (row) =>
+          row.source_row_number
       );
-
-  if ($("entity")) {
-    $("entity").value =
-      state.entity;
-
-    $("entity").disabled =
-      true;
-  }
-
-  if ($("file")) {
-    $("file").disabled =
-      true;
-  }
-
-  if ($("stage")) {
-    $("stage").disabled =
-      true;
-  }
 
   renderMapping();
 
-  if ($("mappingCard")) {
-    $("mappingCard")
-      .classList.remove(
-        "hidden"
-      );
-  }
-
   render();
 
-  if ($("validationCard")) {
-    $("validationCard")
-      .classList.remove(
-        "hidden"
-      );
-  }
-
-  const importedCount =
-    rows.filter(
-      (row) =>
-        row.status ===
-        "imported"
-    ).length;
-
-  const remainingCount =
-    rows.length -
-    importedCount;
-
-  if ($("confirm")) {
-    $("confirm").disabled =
-      remainingCount === 0;
-  }
-
-  if ($("confirmSummary")) {
-    $("confirmSummary")
-      .textContent =
-      `Recovered batch "${state.fileName}" with ${rows.length} row(s). ${importedCount} row(s) are already imported and ${remainingCount} row(s) remain. Persisted idempotency keys and normalized data will be reused.`;
-  }
-
-  step(
-    remainingCount
-      ? "preview"
-      : "verify"
-  );
+  step("preview");
 
   msg(
-    remainingCount
-      ? `Recovery loaded. ${importedCount} row(s) are already imported; ${remainingCount} row(s) can resume using persisted state.`
-      : "All rows in this batch are already marked imported. Verification can be run against the persisted batch.",
-    "success"
+    `Recovered ${state.results.length} staged rows from ${state.fileName}.`,
+    "info"
   );
 }
 
 async function verifyRecoveredState() {
-  if (!state.batchId) {
-    throw new Error(
-      "No batch is selected."
-    );
+  if (!selectedRecoveryBatchId) {
+    return null;
   }
 
-  const verification =
-    await verify();
-
-  if (
-    verification.bad >
-    0
-  ) {
-    throw new Error(
-      `${verification.bad} verification check(s) failed.`
+  const {
+    data,
+    error
+  } = await supabase
+    .from("data_import_rows")
+    .select(`
+      source_row_number,
+      validation_status,
+      imported
+    `)
+    .eq(
+      "batch_id",
+      selectedRecoveryBatchId
+    )
+    .order(
+      "source_row_number",
+      {
+        ascending: true
+      }
     );
+
+  if (error) {
+    throw error;
   }
 
-  return verification;
+  return data || [];
 }
+
+/* =========================================================
+ * Rendering
+ * ========================================================= */
+
 function render() {
+  const total =
+    state.results.length;
+
   const errors =
     state.results.filter(
-      (result) =>
-        result.status ===
-        "error"
+      (row) =>
+        row.errors.length > 0
     ).length;
 
   const warnings =
     state.results.filter(
-      (result) =>
-        result.status ===
-        "warning"
+      (row) =>
+        row.warnings.length > 0
     ).length;
 
   const imported =
     state.results.filter(
-      (result) =>
-        result.status ===
-        "imported"
+      (row) =>
+        row.imported ||
+        state.imported.includes(
+          row.source_row_number
+        )
     ).length;
 
-  const valid =
-    state.results.length -
-    errors -
-    warnings -
-    imported;
+  const remaining =
+    Math.max(
+      0,
+      total - imported
+    );
 
-  const total =
+  const totalAmount =
     state.results.reduce(
-      (
-        sum,
-        result
-      ) =>
-        sum +
-        (
-          Number(
-            result.normalized
-              .amount
-          ) || 0
-        ),
+      (sum, row) => {
+        const amount =
+          num(
+            row.normalized?.amount
+          );
+
+        return sum +
+          (amount || 0);
+      },
       0
     );
 
-  const duplicateCount =
-    state.results.filter(
-      (result) =>
-        result.errors.some(
-          (message) =>
-            /duplicate/i.test(
-              message
-            )
-        ) ||
-        result.warnings.some(
-          (message) =>
-            /duplicate/i.test(
-              message
-            )
-        )
-    ).length;
+  const memberPreview =
+    state.entity === "member";
 
-  if ($("stats")) {
-    $("stats").innerHTML =
-      [
-        [
-          "Rows",
-          state.results.length
-        ],
-        [
-          "Valid",
-          valid
-        ],
-        [
-          "Imported",
-          imported
-        ],
-        [
-          "Warnings",
-          warnings
-        ],
-        [
-          "Errors",
-          errors
-        ],
-        [
-          "Amount",
-          moneySafe(total)
-        ]
-      ]
-        .map(
-          ([
-            label,
-            value
-          ]) =>
-            `<div class="stat">
-              <span class="muted">${esc(
-                label
-              )}</span>
-              <b>${esc(
-                value
-              )}</b>
-            </div>`
-        )
-        .join("");
+  if ($("totalRows")) {
+    $("totalRows").textContent =
+      total;
   }
 
-  if ($("validationMessage")) {
-    $("validationMessage")
-      .innerHTML =
-      errors
-        ? `
-          <div class="notice error">
-            Import is blocked until every fatal validation error is resolved.
-          </div>
-        `
-        : `
-          <div class="notice success">
-            No fatal validation errors remain. Review every row before explicit confirmation.
-          </div>
-        `;
+  if ($("errorRows")) {
+    $("errorRows").textContent =
+      errors;
   }
 
-  if ($("preview")) {
-    $("preview").innerHTML = `
-      <table>
-        <thead>
-          <tr>
-            <th>Source row</th>
-            <th>Status</th>
-            <th>Normalized data</th>
-            <th>Messages</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          ${state.results
-            .map(
-              (result) => `
-                <tr>
-                  <td>${esc(
-                    result.row
-                  )}</td>
-
-                  <td>
-                    <span class="pill ${esc(
-                      result.status
-                    )}">
-                      ${esc(
-                        result.status
-                      )}
-                    </span>
-                  </td>
-
-                  <td class="mono">
-                    ${esc(
-                      JSON.stringify(
-                        result.normalized
-                      )
-                    )}
-                  </td>
-
-                  <td>
-                    ${esc(
-                      [
-                        ...result.errors,
-                        ...result.warnings
-                      ].join(
-                        " | "
-                      ) || "—"
-                    )}
-                  </td>
-                </tr>
-              `
-            )
-            .join("")}
-        </tbody>
-      </table>
-    `;
+  if ($("warningRows")) {
+    $("warningRows").textContent =
+      warnings;
   }
 
-  const remaining =
-    state.results.filter(
-      (result) =>
-        result.status !==
-        "imported"
-    ).length;
+  if ($("importedRows")) {
+    $("importedRows").textContent =
+      imported;
+  }
 
-  if ($("confirm")) {
-    $("confirm").disabled =
+  if ($("remainingRows")) {
+    $("remainingRows").textContent =
+      remaining;
+  }
+
+  if ($("totalAmount")) {
+    $("totalAmount").textContent =
+      memberPreview
+        ? "—"
+        : moneySafe(totalAmount);
+  }
+
+  const memberNotice =
+    $("memberImportNotice");
+
+  if (memberNotice) {
+    memberNotice.classList.toggle(
+      "hidden",
+      !memberPreview
+    );
+  }
+
+  const validationMessage =
+    $("validationMessage");
+
+  if (validationMessage) {
+    if (memberPreview) {
+      validationMessage.className =
+        "notice info";
+
+      validationMessage.textContent =
+        "Members are preview-only. No member record will be inserted or updated, and no role, status, onboarding state, or authentication identity will be changed.";
+    } else if (errors > 0) {
+      validationMessage.className =
+        "notice error";
+
+      validationMessage.textContent =
+        `${errors} row(s) contain validation errors. Resolve them before importing.`;
+    } else if (warnings > 0) {
+      validationMessage.className =
+        "notice warn";
+
+      validationMessage.textContent =
+        `${warnings} row(s) contain warnings. Review the preview before importing.`;
+    } else if (total > 0) {
+      validationMessage.className =
+        "notice success";
+
+      validationMessage.textContent =
+        "Validation passed. Review the preview and confirm the import.";
+    } else {
+      validationMessage.className =
+        "notice info";
+
+      validationMessage.textContent =
+        "No validation results are available yet.";
+    }
+  }
+
+  const confirmButton =
+    $("confirmImport");
+
+  if (confirmButton) {
+    confirmButton.disabled =
+      memberPreview ||
       errors > 0 ||
       !state.results.length ||
       remaining === 0;
   }
 
-  const confirmationTotal =
-    state.results
-      .filter(
-        (result) =>
-          result.status !==
-          "imported"
-      )
-      .reduce(
-        (
-          sum,
-          result
-        ) =>
-          sum +
-          (
-            Number(
-              result.normalized
-                .amount
-            ) || 0
-          ),
-        0
-      );
+  const confirmSummary =
+    $("confirmSummary");
 
-  if ($("confirmSummary")) {
-    $("confirmSummary")
-      .textContent =
-      state.recoveryMode
-        ? `Recovered batch: ${remaining} row(s) remain to import. Already imported rows will be preserved. Remaining target writes total ${moneySafe(
-            confirmationTotal
-          )}.`
-        : `Confirming ${state.results.length} ${state.entity} row(s), total ${moneySafe(
-            confirmationTotal
-          )}. Target records will be written individually after confirmation; no financial period will be created.`;
+  if (confirmSummary) {
+    if (memberPreview) {
+      confirmSummary.textContent =
+        "Members are preview-only. No target member records will be written.";
+    } else {
+      confirmSummary.textContent =
+        `${remaining} row(s) are eligible for import. ${imported} row(s) have already been imported.`;
+    }
   }
+
+  const previewBody =
+    $("previewBody");
+
+  if (!previewBody) {
+    return;
+  }
+
+  if (!state.results.length) {
+    previewBody.innerHTML = `
+      <tr>
+        <td
+          colspan="7"
+          class="muted"
+        >
+          No preview rows available.
+        </td>
+      </tr>
+    `;
+
+    return;
+  }
+
+  previewBody.innerHTML =
+    state.results
+      .map(
+        (row) => {
+          const status =
+            row.errors.length
+              ? "Error"
+              : row.warnings.length
+                ? "Warning"
+                : "Ready";
+
+          const issueText = [
+            ...row.errors,
+            ...row.warnings
+          ].join(" ");
+
+          const normalized =
+            row.normalized || {};
+
+          const amount =
+            normalized.amount !==
+            undefined &&
+            normalized.amount !==
+            null
+              ? moneySafe(
+                  normalized.amount
+                )
+              : "—";
+
+          const identity =
+            memberPreview
+              ? [
+                  normalized.member_number,
+                  normalized.name,
+                  normalized.phone,
+                  normalized.status
+                ]
+                  .filter(Boolean)
+                  .join(" · ")
+              : (
+                  normalized.member_number ||
+                  normalized.description ||
+                  "—"
+                );
+
+          const importedState =
+            row.imported ||
+            state.imported.includes(
+              row.source_row_number
+            );
+
+          return `
+            <tr>
+              <td>
+                ${esc(
+                  row.source_row_number
+                )}
+              </td>
+
+              <td>
+                ${esc(identity)}
+              </td>
+
+              <td>
+                ${memberPreview
+                  ? "—"
+                  : esc(amount)}
+              </td>
+
+              <td>
+                ${esc(
+                  memberPreview
+                    ? normalized.phone ||
+                      "—"
+                    : normalized.date ||
+                      normalized.contribution_date ||
+                      "—"
+                )}
+              </td>
+
+              <td>
+                ${esc(
+                  memberPreview
+                    ? normalized.role ||
+                      "—"
+                    : normalized.category ||
+                      normalized.payment_method ||
+                      "—"
+                )}
+              </td>
+
+              <td>
+                ${esc(
+                  importedState
+                    ? "Imported"
+                    : status
+                )}
+              </td>
+
+              <td>
+                ${esc(
+                  issueText ||
+                    (
+                      memberPreview
+                        ? "Preview only — no target write."
+                        : "Ready"
+                    )
+                )}
+              </td>
+            </tr>
+          `;
+        }
+      )
+      .join("");
 }
 
+/* =========================================================
+ * Import
+ * ========================================================= */
+
 async function importContribution(result) {
+  if (!result?.normalized) {
+    throw new Error(
+      "Contribution result is missing normalized data."
+    );
+  }
+
   const normalized =
     result.normalized;
+
+  if (!normalized.member_id) {
+    throw new Error(
+      "Contribution member identity is missing."
+    );
+  }
+
+  if (
+    !normalized.amount ||
+    normalized.amount <= 0
+  ) {
+    throw new Error(
+      "Contribution amount is invalid."
+    );
+  }
+
+  if (!normalized.contribution_date) {
+    throw new Error(
+      "Contribution date is missing."
+    );
+  }
 
   const {
     data,
@@ -2373,13 +2431,6 @@ async function importContribution(result) {
   } = await supabase.rpc(
     "cl_2b_record_contribution",
     {
-      p_payment_id:
-        normalized
-          .__idempotency_key,
-
-      p_group_id:
-        state.groupId,
-
       p_member_id:
         normalized.member_id,
 
@@ -2387,23 +2438,19 @@ async function importContribution(result) {
         normalized.amount,
 
       p_contribution_date:
-        normalized
-          .contribution_date,
-
-      p_contribution_type:
-        normalized
-          .contribution_type,
+        normalized.contribution_date,
 
       p_payment_method:
-        normalized
-          .payment_method,
+        normalized.payment_method,
+
+      p_contribution_type:
+        normalized.contribution_type,
 
       p_reference:
         normalized.reference,
 
       p_mpesa_reference:
-        normalized
-          .mpesa_reference,
+        normalized.mpesa_reference,
 
       p_goal_id:
         normalized.goal_id,
@@ -2421,23 +2468,16 @@ async function importContribution(result) {
 }
 
 async function importExpense(result) {
+  if (!result?.normalized) {
+    throw new Error(
+      "Expense result is missing normalized data."
+    );
+  }
+
   const normalized =
     result.normalized;
 
-  /*
-   * Recovery must never generate a new UUID
-   * when normalized_data already contains one.
-   */
-  normalized.__idempotency_key =
-    normalized
-      .__idempotency_key ||
-    crypto.randomUUID();
-
   const payload = {
-    id:
-      normalized
-        .__idempotency_key,
-
     group_id:
       state.groupId,
 
@@ -2454,14 +2494,10 @@ async function importExpense(result) {
       normalized.category,
 
     approval_status:
-      normalized
-        .approval_status,
+      normalized.approval_status,
 
     receipt_url:
-      normalized.receipt_url,
-
-    recorded_by:
-      state.member.id
+      normalized.receipt_url
   };
 
   const {
@@ -2470,184 +2506,108 @@ async function importExpense(result) {
   } = await supabase
     .from("expenses")
     .insert(payload)
-    .select(
-      "id,group_id,amount,date,category,approval_status"
-    )
+    .select("*")
     .single();
 
-  if (!error) {
-    return data;
-  }
-
-  if (
-    error.code ===
-    "23505"
-  ) {
-    const {
-      data: existing,
-      error:
-        lookupError
-    } = await supabase
-      .from("expenses")
-      .select(
-        "id,group_id,amount,date,category,approval_status,description,receipt_url"
-      )
-      .eq(
-        "id",
-        normalized
-          .__idempotency_key
-      )
-      .eq(
-        "group_id",
-        state.groupId
-      )
-      .limit(1);
-
-    if (lookupError) {
-      throw lookupError;
-    }
-
-    if (
-      existing?.length ===
-      1
-    ) {
-      const existingExpense =
-        existing[0];
-
-      const same =
-        existingExpense.description ===
-          normalized.description &&
-        Number(
-          existingExpense.amount
-        ) ===
-          Number(
+  if (error) {
+    if (error.code === "23505") {
+      const duplicate =
+        await supabase
+          .from("expenses")
+          .select("*")
+          .eq(
+            "group_id",
+            state.groupId
+          )
+          .eq(
+            "date",
+            normalized.date
+          )
+          .eq(
+            "amount",
             normalized.amount
-          ) &&
-        existingExpense.date ===
-          normalized.date &&
-        existingExpense.category ===
-          normalized.category &&
-        existingExpense
-          .approval_status ===
-          normalized
-            .approval_status &&
-        existingExpense
-          .receipt_url ===
-          normalized
-            .receipt_url;
+          )
+          .eq(
+            "description",
+            normalized.description
+          )
+          .limit(1)
+          .maybeSingle();
 
-      if (!same) {
-        throw new Error(
-          "Expense idempotency key already exists for different data."
-        );
+      if (duplicate.error) {
+        throw duplicate.error;
       }
 
-      return existingExpense;
+      if (duplicate.data) {
+        return duplicate.data;
+      }
     }
+
+    throw error;
   }
 
-  throw error;
+  return data;
 }
 
 async function markRowImported(
-  result,
-  targetId
+  sourceRowNumber,
+  importedRecord
 ) {
-  if (!targetId) {
+  if (!state.batchId) {
     throw new Error(
-      `Imported target ID could not be resolved for source row ${result.row}.`
+      "Import batch is missing."
     );
   }
 
   const {
     error
   } = await supabase
-    .from(
-      "data_import_rows"
-    )
+    .from("data_import_rows")
     .update({
-      status:
-        "imported",
-
-      target_id:
-        targetId,
-
-      error_message:
-        null
+      imported: true,
+      imported_at:
+        new Date().toISOString(),
+      imported_record_id:
+        importedRecord?.id || null
     })
     .eq(
-      "id",
-      result.rowId
-    )
-    .eq(
       "batch_id",
       state.batchId
+    )
+    .eq(
+      "source_row_number",
+      sourceRowNumber
     );
 
-  if (!error) {
-    return;
+  if (error) {
+    throw error;
   }
 
-  const {
-    data: check,
-    error:
-      checkError
-  } = await supabase
-    .from(
-      "data_import_rows"
-    )
-    .select(
-      "status,target_id"
-    )
-    .eq(
-      "id",
-      result.rowId
-    )
-    .eq(
-      "batch_id",
-      state.batchId
-    )
-    .limit(1);
-
-  if (checkError) {
-    throw checkError;
-  }
-
-  const rowState =
-    check?.[0];
-
-  if (
-    rowState?.status ===
-      "imported" &&
-    String(
-      rowState?.target_id
-    ) ===
-      String(targetId)
-  ) {
-    return;
-  }
-
-  throw error;
+  state.imported.push(
+    sourceRowNumber
+  );
 }
 
 async function getImportedRows() {
+  if (!state.batchId) {
+    return [];
+  }
+
   const {
     data,
     error
   } = await supabase
-    .from(
-      "data_import_rows"
-    )
+    .from("data_import_rows")
     .select(
-      "id,source_row_number,status,target_id,normalized_data"
+      "source_row_number,imported,imported_record_id"
     )
     .eq(
       "batch_id",
       state.batchId
     )
     .eq(
-      "status",
-      "imported"
+      "imported",
+      true
     )
     .order(
       "source_row_number",
@@ -2664,10 +2624,9 @@ async function getImportedRows() {
 }
 
 async function verifyRow(row) {
-  const targetId =
-    row.target_id;
-
-  if (!targetId) {
+  if (
+    state.entity === "member"
+  ) {
     return {
       row:
         row.source_row_number,
@@ -2675,7 +2634,75 @@ async function verifyRow(row) {
       ok: false,
 
       detail:
-        "Imported staging row has no target ID."
+        "Member migrations are preview-only; no target member record is written."
+    };
+  }
+
+  const normalized =
+    row.normalized || {};
+
+  if (
+    state.entity ===
+    "contribution"
+  ) {
+    if (
+      !normalized.member_id ||
+      !normalized.contribution_date
+    ) {
+      return {
+        row:
+          row.source_row_number,
+
+        ok: false,
+
+        detail:
+          "Contribution verification data is incomplete."
+      };
+    }
+
+    const {
+      data,
+      error
+    } = await supabase
+      .from("contributions")
+      .select(
+        "id,member_id,amount,contribution_date"
+      )
+      .eq(
+        "group_id",
+        state.groupId
+      )
+      .eq(
+        "member_id",
+        normalized.member_id
+      )
+      .eq(
+        "amount",
+        normalized.amount
+      )
+      .eq(
+        "contribution_date",
+        normalized.contribution_date
+      )
+      .limit(10);
+
+    if (error) {
+      throw error;
+    }
+
+    return {
+      row:
+        row.source_row_number,
+
+      ok:
+        Boolean(
+          data?.length
+        ),
+
+      detail:
+        data?.length
+          ? "Contribution target record verified."
+          : "Contribution target record was not found."
     };
   }
 
@@ -2689,169 +2716,148 @@ async function verifyRow(row) {
     } = await supabase
       .from("expenses")
       .select(
-        "id,group_id,amount,date,category,approval_status"
-      )
-      .eq(
-        "id",
-        targetId
+        "id,group_id,date,amount,description"
       )
       .eq(
         "group_id",
         state.groupId
       )
-      .limit(1);
+      .eq(
+        "date",
+        normalized.date
+      )
+      .eq(
+        "amount",
+        normalized.amount
+      )
+      .eq(
+        "description",
+        normalized.description
+      )
+      .limit(10);
+
+    if (error) {
+      throw error;
+    }
 
     return {
       row:
         row.source_row_number,
 
       ok:
-        !error &&
-        !!data?.length,
+        Boolean(
+          data?.length
+        ),
 
       detail:
-        error?.message ||
-        (
-          data?.length
-            ? "Verified in current group."
-            : "Target expense not found."
-        )
+        data?.length
+          ? "Expense target record verified."
+          : "Expense target record was not found."
     };
   }
-
-  const {
-    data,
-    error
-  } = await supabase
-    .from("contributions")
-    .select(
-      "id,group_id,member_id,amount,contribution_date,contribution_type,payment_method"
-    )
-    .eq(
-      "id",
-      targetId
-    )
-    .eq(
-      "group_id",
-      state.groupId
-    )
-    .limit(1);
 
   return {
     row:
       row.source_row_number,
 
-    ok:
-      !error &&
-      !!data?.length,
+    ok: false,
 
     detail:
-      error?.message ||
-      (
-        data?.length
-          ? "Verified in current group."
-          : "Target contribution not found."
-      )
+      "Unsupported migration entity."
   };
 }
 
 async function verify() {
+  if (
+    state.entity === "member"
+  ) {
+    if ($("verifyCard")) {
+      $("verifyCard")
+        .classList
+        .remove("hidden");
+    }
+
+    if ($("verifyResult")) {
+      $("verifyResult").innerHTML = `
+        <div class="notice info">
+          Member preview completed. No target member records were written, so target-record verification is not applicable.
+        </div>
+      `;
+    }
+
+    step("preview");
+
+    return {
+      checks: [],
+      bad: 0
+    };
+  }
+
   const importedRows =
     await getImportedRows();
 
   const checks = [];
+  let bad = 0;
 
   for (
-    const row of
-      importedRows
+    const importedRow
+    of importedRows
   ) {
-    checks.push(
-      await verifyRow(
-        row
-      )
-    );
-  }
+    const result =
+      state.results.find(
+        (row) =>
+          row.source_row_number ===
+          importedRow.source_row_number
+      );
 
-  const bad =
-    checks.filter(
-      (check) =>
-        !check.ok
-    ).length;
+    if (!result) {
+      continue;
+    }
+
+    const check =
+      await verifyRow(result);
+
+    checks.push(check);
+
+    if (!check.ok) {
+      bad += 1;
+    }
+  }
 
   if ($("verifyCard")) {
     $("verifyCard")
-      .classList.remove(
-        "hidden"
-      );
+      .classList
+      .remove("hidden");
   }
 
   if ($("verifyResult")) {
-    $("verifyResult")
-      .innerHTML = `
-        <div class="notice ${
-          bad
-            ? "error"
-            : "success"
-        }">
-          ${
-            bad
-              ? `${bad} verification check(s) failed. The batch must not be treated as reconciled.`
-              : `All ${checks.length} imported row(s) verified in the current group.`
-          }
-        </div>
-
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Source row</th>
-                <th>Verified</th>
-                <th>Detail</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              ${checks
-                .map(
-                  (check) => `
-                    <tr>
-                      <td>${esc(
-                        check.row
-                      )}</td>
-
-                      <td>
-                        ${
-                          check.ok
-                            ? "YES"
-                            : "NO"
-                        }
-                      </td>
-
-                      <td>
-                        ${esc(
-                          check.detail
-                        )}
-                      </td>
-                    </tr>
-                  `
-                )
-                .join("")}
-            </tbody>
-          </table>
-        </div>
-      `;
+    $("verifyResult").innerHTML =
+      checks.length
+        ? checks
+            .map(
+              (check) => `
+                <div class="notice ${
+                  check.ok
+                    ? "success"
+                    : "error"
+                }">
+                  Row ${esc(
+                    check.row
+                  )}: ${esc(
+                    check.detail
+                  )}
+                </div>
+              `
+            )
+            .join("")
+        : `
+          <div class="notice info">
+            No imported rows are available for verification.
+          </div>
+        `;
   }
 
   step("verify");
-
-  msg(
-    bad
-      ? "Import records exist, but verification failed; do not treat the batch as reconciled."
-      : "Import and verification completed successfully.",
-    bad
-      ? "error"
-      : "success"
-  );
 
   return {
     checks,
@@ -2859,44 +2865,27 @@ async function verify() {
   };
 }
 
-async function markBatchFailed(error) {
+async function markBatchFailed(
+  error
+) {
   if (!state.batchId) {
     return;
   }
 
+  const message =
+    error?.message ||
+    String(error);
+
   const {
     error: updateError
   } = await supabase
-    .from(
-      "data_import_batches"
-    )
+    .from("data_import_batches")
     .update({
-      status:
-        "failed",
-
-      completed_at:
+      status: "failed",
+      failed_at:
         new Date().toISOString(),
-
-      summary: {
-        candidate: true,
-
-        entity_type:
-          state.entity,
-
-        total_rows:
-          state.results.length,
-
-        imported_rows:
-          state.results.filter(
-            (result) =>
-              result.status ===
-              "imported"
-          ).length,
-
-        failure_message:
-          error?.message ||
-          "Import failed."
-      }
+      error_message:
+        message
     })
     .eq(
       "id",
@@ -2909,72 +2898,25 @@ async function markBatchFailed(error) {
 
   if (updateError) {
     console.error(
-      "Unable to mark import batch failed:",
+      "Could not mark batch failed:",
       updateError
     );
   }
 }
 
 async function markBatchCompleted() {
-  const importedRows =
-    await getImportedRows();
-
-  if (
-    importedRows.length !==
-    state.results.length
-  ) {
-    throw new Error(
-      `Import verification state is incomplete: ${importedRows.length} of ${state.results.length} row(s) are marked imported.`
-    );
+  if (!state.batchId) {
+    return;
   }
-
-  const totalAmount =
-    state.results.reduce(
-      (
-        sum,
-        result
-      ) =>
-        sum +
-        (
-          Number(
-            result.normalized
-              .amount
-          ) || 0
-        ),
-      0
-    );
 
   const {
     error
   } = await supabase
-    .from(
-      "data_import_batches"
-    )
+    .from("data_import_batches")
     .update({
-      status:
-        "completed",
-
+      status: "completed",
       completed_at:
-        new Date().toISOString(),
-
-      summary: {
-        candidate: true,
-
-        entity_type:
-          state.entity,
-
-        total_rows:
-          state.results.length,
-
-        imported_rows:
-          importedRows.length,
-
-        total_amount:
-          totalAmount,
-
-        verification:
-          "passed"
-      }
+        new Date().toISOString()
     })
     .eq(
       "id",
@@ -2990,167 +2932,129 @@ async function markBatchCompleted() {
   }
 }
 
+/* =========================================================
+ * Import runner
+ * ========================================================= */
+
 async function runImport() {
-  if (state.importing) {
+  if (
+    state.entity === "member"
+  ) {
     throw new Error(
-      "An import is already running."
+      "Member import is permanently blocked in this migration workflow. Members are preview-only."
     );
   }
 
-  if (!state.batchId) {
-    throw new Error(
-      "No staged import batch is available."
-    );
+  if (state.importing) {
+    return;
   }
 
   if (!state.results.length) {
     throw new Error(
-      "No validated rows are available."
+      "Validate the migration before importing."
     );
   }
 
-  if (
-    state.results.some(
-      (result) =>
-        result.status ===
-        "error"
-    )
-  ) {
+  const invalidRows =
+    state.results.filter(
+      (row) =>
+        row.errors.length > 0
+    );
+
+  if (invalidRows.length) {
     throw new Error(
-      "Fatal validation errors remain."
+      "Import is blocked while validation errors remain."
     );
   }
 
-  state.importing =
-    true;
+  if (!state.batchId) {
+    await createBatch();
 
-  const start =
-    new Date().toISOString();
+    await stage();
+
+    await saveMaps();
+  }
+
+  state.importing = true;
 
   state.importStartedAt =
-    start;
+    new Date().toISOString();
 
-  const {
-    error: beginError
-  } = await supabase
-    .from(
-      "data_import_batches"
-    )
-    .update({
-      status:
-        "importing",
-
-      started_at:
-        start,
-
-      completed_at:
-        null
-    })
-    .eq(
-      "id",
-      state.batchId
-    )
-    .eq(
-      "group_id",
-      state.groupId
-    );
-
-  if (beginError) {
-    state.importing =
-      false;
-
-    throw beginError;
-  }
-
-  state.imported = [];
+  step("import");
 
   try {
-    for (
-      const result of
-        state.results
-    ) {
-      if (
-        result.status ===
-        "imported"
-      ) {
-        continue;
-      }
+    const importedRows =
+      await getImportedRows();
 
-      const importedRecord =
+    const alreadyImported =
+      new Set(
+        importedRows.map(
+          (row) =>
+            row.source_row_number
+        )
+      );
+
+    state.imported =
+      Array.from(
+        alreadyImported
+      );
+
+    const remaining =
+      state.results.filter(
+        (result) =>
+          !alreadyImported.has(
+            result.source_row_number
+          )
+      );
+
+    for (
+      const result
+      of remaining
+    ) {
+      let importedRecord;
+
+      if (
         state.entity ===
         "contribution"
-          ? await importContribution(
-              result
-            )
-          : await importExpense(
-              result
-            );
-
-      const targetId =
+      ) {
+        importedRecord =
+          await importContribution(
+            result
+          );
+      } else if (
         state.entity ===
         "expense"
-          ? importedRecord?.id
-          : (
-              importedRecord
-                ?.payment_id ||
-              importedRecord
-                ?.id ||
-              result.normalized
-                .__idempotency_key
-            );
-
-      if (!targetId) {
+      ) {
+        importedRecord =
+          await importExpense(
+            result
+          );
+      } else {
         throw new Error(
-          `Target ID could not be resolved for source row ${result.row}.`
+          "Member import is preview-only. No member target write is permitted."
         );
       }
 
       await markRowImported(
-        result,
-        targetId
+        result.source_row_number,
+        importedRecord
       );
 
-      state.imported.push({
-        r: result,
-        result:
-          importedRecord
-      });
+      result.imported = true;
 
-      result.status =
-        "imported";
-    }
-
-    const verification =
-      await verify();
-
-    if (
-      verification.bad >
-      0
-    ) {
-      throw new Error(
-        `${verification.bad} verification check(s) failed. Batch will not be marked completed.`
-      );
+      render();
     }
 
     await markBatchCompleted();
 
+    await verify();
+
     msg(
-      "Import and verification completed successfully. The batch is marked completed.",
+      `Import completed successfully. ${state.imported.length} row(s) are recorded as imported.`,
       "success"
     );
 
-    state.recoveryMode =
-      false;
-
-    if ($("entity")) {
-      $("entity").disabled =
-        false;
-    }
-
-    if ($("file")) {
-      $("file").disabled =
-        false;
-    }
+    step("verify");
   } catch (error) {
     await markBatchFailed(
       error
@@ -3158,109 +3062,274 @@ async function runImport() {
 
     throw error;
   } finally {
-    state.importing =
-      false;
+    state.importing = false;
   }
 }
+/* =========================================================
+ * Mapping UI
+ * ========================================================= */
 
 function renderMapping() {
-  if (!$("mapping")) {
+  const container =
+    $("mappingFields");
+
+  if (!container) {
     return;
   }
 
-  $("mapping").innerHTML =
-    DEF[state.entity]
+  const definitions =
+    DEF[state.entity] || [];
+
+  container.innerHTML =
+    definitions
       .map(
         ([
           field,
           label,
-          mappingType,
+          ,
           required
-        ]) => `
-          <div>
-            <label>
-              ${esc(label)}
-              ${
-                required
-                  ? "*"
-                  : ""
-              }
-            </label>
+        ]) => {
+          const selected =
+            state.mappings[field] || "";
 
-            <select data-field="${esc(
-              field
-            )}">
-              <option value="">
-                — Not mapped —
-              </option>
+          const options = [
+            `<option value="">Not mapped</option>`,
+            ...state.headers.map(
+              (header) => `
+                <option
+                  value="${esc(header)}"
+                  ${
+                    header === selected
+                      ? "selected"
+                      : ""
+                  }
+                >
+                  ${esc(header)}
+                </option>
+              `
+            )
+          ].join("");
 
-              ${state.headers
-                .map(
-                  (header) => `
-                    <option
-                      value="${esc(
-                        header
-                      )}"
-                      ${
-                        state
-                          .mappings[
-                          field
-                        ] ===
-                        header
-                          ? "selected"
-                          : ""
-                      }
-                    >
-                      ${esc(
-                        header
-                      )}
-                    </option>
-                  `
-                )
-                .join("")}
-            </select>
+          return `
+            <div class="mapping-row">
+              <label>
+                <span>
+                  ${esc(label)}
+                  ${
+                    required
+                      ? " *"
+                      : ""
+                  }
+                </span>
 
-            <p class="note">
-              ${esc(
-                mappingType
-              )}
-            </p>
-          </div>
-        `
+                <select
+                  data-map-field="${esc(
+                    field
+                  )}"
+                >
+                  ${options}
+                </select>
+              </label>
+            </div>
+          `;
+        }
       )
       .join("");
+
+  container
+    .querySelectorAll(
+      "[data-map-field]"
+    )
+    .forEach(
+      (select) => {
+        select.addEventListener(
+          "change",
+          () => {
+            const field =
+              select.dataset.mapField;
+
+            state.mappings[field] =
+              select.value;
+
+            updateMappingState();
+          }
+        );
+      }
+    );
+
+  updateMappingState();
+}
+
+function updateMappingState() {
+  const definitions =
+    DEF[state.entity] || [];
+
+  const missingRequired =
+    definitions
+      .filter(
+        ([
+          ,
+          ,
+          ,
+          required
+        ]) => required
+      )
+      .filter(
+        ([field]) =>
+          !state.mappings[field]
+      );
+
+  const mappingMessage =
+    $("mappingMessage");
+
+  if (mappingMessage) {
+    if (missingRequired.length) {
+      mappingMessage.className =
+        "notice warn";
+
+      mappingMessage.textContent =
+        `Required fields not mapped: ${missingRequired
+          .map(
+            ([field]) =>
+              field
+          )
+          .join(", ")}.`;
+    } else {
+      mappingMessage.className =
+        "notice success";
+
+      mappingMessage.textContent =
+        "All required fields are mapped.";
+    }
+  }
+
+  const continueButton =
+    $("continueMapping");
+
+  if (continueButton) {
+    continueButton.disabled =
+      missingRequired.length > 0;
+  }
+}
+
+async function saveCurrentMapping() {
+  const definitions =
+    DEF[state.entity] || [];
+
+  const missingRequired =
+    definitions
+      .filter(
+        ([
+          ,
+          ,
+          ,
+          required
+        ]) => required
+      )
+      .filter(
+        ([field]) =>
+          !state.mappings[field]
+      );
+
+  if (missingRequired.length) {
+    throw new Error(
+      `Map all required fields before continuing: ${missingRequired
+        .map(
+          ([field]) =>
+            field
+        )
+        .join(", ")}.`
+    );
+  }
+
+  if (!state.batchId) {
+    await createBatch();
+  }
+
+  await saveMaps();
+}
+
+/* =========================================================
+ * Upload / reset
+ * ========================================================= */
+
+async function processUpload(file) {
+  if (!file) {
+    throw new Error(
+      "Choose a CSV or XLSX file first."
+    );
+  }
+
+  const extension =
+    file.name
+      .toLowerCase()
+      .split(".")
+      .pop();
+
+  if (
+    ![
+      "csv",
+      "xlsx"
+    ].includes(extension)
+  ) {
+    throw new Error(
+      "Only CSV and XLSX files are supported."
+    );
+  }
+
+  state.fileName =
+    file.name;
+
+  state.sourceType =
+    extension;
+
+  state.batchId = null;
+  state.mappings = {};
+  state.results = [];
+  state.imported = [];
+  state.staged = [];
+  state.recoveryMode = false;
+  selectedRecoveryBatchId =
+    null;
+
+  const matrix =
+    await readFile(file);
+
+  const parsed =
+    matrixRows(matrix);
+
+  state.headers =
+    parsed.headers;
+
+  state.rows =
+    parsed.rows;
+
+  autoMap();
+
+  renderMapping();
+
+  render();
+
+  step("mapping");
+
+  msg(
+    `${state.rows.length} data row(s) loaded from ${state.fileName}.`,
+    "success"
+  );
 }
 
 function resetForNewUpload() {
-  state.recoveryMode =
-    false;
+  state.fileName = "";
+  state.sourceType = "";
 
-  state.fileName =
-    "";
+  state.headers = [];
+  state.rows = [];
+  state.staged = [];
 
-  state.sourceType =
-    "";
-
-  state.headers =
-    [];
-
-  state.rows =
-    [];
-
-  state.staged =
-    [];
-
-  state.batchId =
-    null;
-
-  state.mappings =
-    {};
-
-  state.results =
-    [];
-
-  state.imported =
-    [];
+  state.batchId = null;
+  state.mappings = {};
+  state.results = [];
+  state.imported = [];
 
   state.importStartedAt =
     null;
@@ -3268,500 +3337,528 @@ function resetForNewUpload() {
   state.importing =
     false;
 
-  if ($("entity")) {
-    $("entity").disabled =
-      false;
+  state.recoveryMode =
+    false;
+
+  selectedRecoveryBatchId =
+    null;
+
+  const fileInput =
+    $("fileInput");
+
+  if (fileInput) {
+    fileInput.value = "";
   }
 
-  if ($("file")) {
-    $("file").disabled =
-      false;
+  const mappingFields =
+    $("mappingFields");
+
+  if (mappingFields) {
+    mappingFields.innerHTML = "";
   }
 
-  if ($("stage")) {
-    $("stage").disabled =
-      false;
+  const previewBody =
+    $("previewBody");
+
+  if (previewBody) {
+    previewBody.innerHTML = "";
   }
 
-  if ($("mappingCard")) {
-    $("mappingCard")
-      .classList.add(
-        "hidden"
-      );
+  const memberNotice =
+    $("memberImportNotice");
+
+  if (memberNotice) {
+    memberNotice.classList.add(
+      "hidden"
+    );
   }
 
-  if ($("validationCard")) {
-    $("validationCard")
-      .classList.add(
-        "hidden"
-      );
+  const validationMessage =
+    $("validationMessage");
+
+  if (validationMessage) {
+    validationMessage.className =
+      "notice info";
+
+    validationMessage.textContent =
+      "Upload a file to begin.";
   }
 
-  if ($("confirmCard")) {
-    $("confirmCard")
-      .classList.add(
-        "hidden"
-      );
-  }
-
-  if ($("verifyCard")) {
-    $("verifyCard")
-      .classList.add(
-        "hidden"
-      );
-  }
-
-  if ($("stats")) {
-    $("stats").innerHTML =
-      "";
-  }
-
-  if ($("validationMessage")) {
-    $("validationMessage")
-      .innerHTML =
-      "";
-  }
-
-  if ($("preview")) {
-    $("preview").innerHTML =
-      "";
-  }
-
-  if ($("verifyResult")) {
-    $("verifyResult")
-      .innerHTML =
-      "";
-  }
-
-  if ($("confirm")) {
-    $("confirm").disabled =
-      true;
-  }
-
-  if ($("check")) {
-    $("check").checked =
-      false;
-  }
-
-  if ($("import")) {
-    $("import").disabled =
-      true;
-  }
+  render();
 
   step("upload");
+
+  msg(
+    "Ready for a new migration file.",
+    "info"
+  );
 }
+
+/* =========================================================
+ * Entity selection
+ * ========================================================= */
+
+function setEntity(entity) {
+  if (
+    ![
+      "contribution",
+      "expense",
+      "member"
+    ].includes(entity)
+  ) {
+    throw new Error(
+      "Unsupported migration entity."
+    );
+  }
+
+  if (state.importing) {
+    throw new Error(
+      "Wait for the current import to finish before changing the migration type."
+    );
+  }
+
+  state.entity =
+    entity;
+
+  state.headers = [];
+  state.rows = [];
+  state.staged = [];
+  state.batchId = null;
+  state.mappings = {};
+  state.results = [];
+  state.imported = [];
+
+  selectedRecoveryBatchId =
+    null;
+
+  const memberNotice =
+    $("memberImportNotice");
+
+  if (memberNotice) {
+    memberNotice.classList.toggle(
+      "hidden",
+      entity !== "member"
+    );
+  }
+
+  const confirmButton =
+    $("confirmImport");
+
+  if (confirmButton) {
+    confirmButton.disabled =
+      entity === "member";
+  }
+
+  const entityDescription =
+    $("entityDescription");
+
+  if (entityDescription) {
+    if (entity === "member") {
+      entityDescription.textContent =
+        "Members can be mapped, validated and previewed only. No member target record, role, status, onboarding state or authentication identity will be changed.";
+    } else if (
+      entity === "contribution"
+    ) {
+      entityDescription.textContent =
+        "Contributions are imported through the canonical contribution accounting workflow.";
+    } else {
+      entityDescription.textContent =
+        "Expenses are imported into the authenticated group's expense records.";
+    }
+  }
+
+  renderMapping();
+
+  render();
+}
+
+/* =========================================================
+ * Event bindings
+ * ========================================================= */
 
 function bind() {
-  if ($("entity")) {
-    $("entity")
-      .addEventListener(
-        "change",
-        (event) => {
-          if (state.importing) {
-            event.target.value =
-              state.entity;
+  const fileInput =
+    $("fileInput");
 
-            msg(
-              "The entity cannot be changed while an import is running.",
-              "error"
-            );
+  const uploadButton =
+    $("uploadButton");
 
-            return;
-          }
-
-          state.entity =
-            event.target.value;
-
-          state.mappings =
-            {};
-
-          state.results =
-            [];
-
-          state.staged =
-            [];
-
-          state.batchId =
-            null;
-
-          if ($("mappingCard")) {
-            $("mappingCard")
-              .classList.add(
-                "hidden"
-              );
-          }
-
-          if ($("validationCard")) {
-            $("validationCard")
-              .classList.add(
-                "hidden"
-              );
-          }
-
-          if ($("confirmCard")) {
-            $("confirmCard")
-              .classList.add(
-                "hidden"
-              );
-          }
-
-          if ($("verifyCard")) {
-            $("verifyCard")
-              .classList.add(
-                "hidden"
-              );
-          }
-
-          step("upload");
-        }
-      );
-  }
-
-  if ($("file")) {
-    $("file")
-      .addEventListener(
-        "change",
-        (event) => {
+  if (uploadButton) {
+    uploadButton.addEventListener(
+      "click",
+      async () => {
+        try {
           const file =
-            event.target.files?.[0];
+            fileInput?.files?.[0];
 
-          if ($("fileInfo")) {
-            $("fileInfo")
-              .textContent =
-              file
-                ? `${file.name} — ${file.size.toLocaleString()} bytes`
-                : "";
-          }
+          await processUpload(
+            file
+          );
+        } catch (error) {
+          console.error(error);
+
+          msg(
+            error.message ||
+              "Could not process the upload.",
+            "error"
+          );
         }
-      );
+      }
+    );
   }
 
-  if ($("stage")) {
-    $("stage")
-      .addEventListener(
-        "click",
-        async () => {
-          try {
-            if (state.importing) {
-              throw new Error(
-                "An import is already running."
-              );
-            }
+  if (fileInput) {
+    fileInput.addEventListener(
+      "change",
+      () => {
+        const file =
+          fileInput.files?.[0];
 
-            const file =
-              $("file")
-                .files?.[0];
-
-            if (!file) {
-              throw new Error(
-                "Select a CSV or XLSX file first."
-              );
-            }
-
-            const lowerName =
-              file.name.toLowerCase();
-
-            if (
-              !lowerName.endsWith(
-                ".csv"
-              ) &&
-              !lowerName.endsWith(
-                ".xlsx"
-              )
-            ) {
-              throw new Error(
-                "Only CSV and XLSX files are supported."
-              );
-            }
-
-            resetForNewUpload();
-
-            state.fileName =
-              file.name;
-
-            state.sourceType =
-              lowerName.endsWith(
-                ".xlsx"
-              )
-                ? "xlsx"
-                : "csv";
-
-            const parsed =
-              matrixRows(
-                await readFile(
-                  file
-                )
-              );
-
-            state.headers =
-              parsed.headers;
-
-            state.rows =
-              parsed.rows;
-
-            state.mappings =
-              {};
-
-            autoMap();
-
-            await createBatch();
-
-            await stage();
-
-            await saveMaps();
-
-            if ($("mappingCard")) {
-              $("mappingCard")
-                .classList.remove(
-                  "hidden"
-                );
-            }
-
-            renderMapping();
-
-            step("mapping");
-
-            msg(
-              `Staged ${state.rows.length} row(s). No target financial record has been imported.`,
-              "success"
-            );
-          } catch (error) {
-            console.error(error);
-
-            msg(
-              error.message ||
-                "Unable to stage file.",
-              "error"
-            );
-          }
+        if (file) {
+          msg(
+            `${file.name} selected. Click upload to process it.`,
+            "info"
+          );
         }
-      );
+      }
+    );
   }
 
-  if ($("mapping")) {
-    $("mapping")
-      .addEventListener(
-        "change",
-        (event) => {
-          if (
-            !event.target
-              .dataset.field
-          ) {
-            return;
-          }
+  document
+    .querySelectorAll(
+      "[data-entity]"
+    )
+    .forEach(
+      (element) => {
+        element.addEventListener(
+          "click",
+          () => {
+            try {
+              setEntity(
+                element.dataset.entity
+              );
+            } catch (error) {
+              console.error(error);
 
-          const field =
-            event.target
-              .dataset
-              .field;
-
-          const value =
-            event.target.value ||
-            null;
-
-          if (
-            FORBIDDEN.has(field)
-          ) {
-            event.target.value =
-              "";
-
-            delete state
-              .mappings[field];
-
-            msg(
-              `Forbidden mapping: ${field}`,
-              "error"
-            );
-
-            return;
-          }
-
-          state.mappings[field] =
-            value;
-        }
-      );
-  }
-
-  if ($("validate")) {
-    $("validate")
-      .addEventListener(
-        "click",
-        async () => {
-          try {
-            if (!state.batchId) {
-              throw new Error(
-                "Stage a file before validation."
+              msg(
+                error.message ||
+                  "Could not change migration type.",
+                "error"
               );
             }
+          }
+        );
+      }
+    );
 
+  const continueMapping =
+    $("continueMapping");
+
+  if (continueMapping) {
+    continueMapping.addEventListener(
+      "click",
+      async () => {
+        try {
+          await saveCurrentMapping();
+
+          const validation =
             await validate();
 
-            if ($("validationCard")) {
-              $("validationCard")
-                .classList.remove(
-                  "hidden"
-                );
-            }
-          } catch (error) {
-            console.error(error);
+          await stage();
 
-            msg(
-              error.message ||
-                "Validation failed.",
-              "error"
-            );
-          }
+          render();
+
+          step("preview");
+
+          msg(
+            validation.preview_only
+              ? "Member validation completed. The records below are preview-only; no member target write is permitted."
+              : `Validation completed. ${validation.ready_to_import} row(s) are ready for import.`,
+            validation.errors
+              ? "warn"
+              : "success"
+          );
+        } catch (error) {
+          console.error(error);
+
+          msg(
+            error.message ||
+              "Validation could not be completed.",
+            "error"
+          );
         }
-      );
+      }
+    );
   }
 
-  if ($("recoverBatch")) {
-    $("recoverBatch")
-      .addEventListener(
-        "click",
-        async () => {
-          try {
-            const batchId =
-              selectedRecoveryBatchId();
+  const confirmImport =
+    $("confirmImport");
 
-            $("recoverBatch")
-              .disabled =
-              true;
-
-            await recoverBatch(
-              batchId
-            );
-          } catch (error) {
-            console.error(error);
-
-            msg(
-              error.message ||
-                "Unable to recover migration batch.",
-              "error"
-            );
-
-            renderRecoveryBatches();
-          }
-        }
-      );
-  }
-
-  if ($("confirm")) {
-    $("confirm")
-      .addEventListener(
-        "click",
-        () => {
+  if (confirmImport) {
+    confirmImport.addEventListener(
+      "click",
+      async () => {
+        try {
           if (
-            $("confirm").disabled
+            state.entity ===
+            "member"
           ) {
-            return;
+            throw new Error(
+              "Member import is preview-only. No member records will be written."
+            );
           }
 
-          if ($("confirmCard")) {
-            $("confirmCard")
-              .classList.remove(
-                "hidden"
-              );
-          }
+          await runImport();
+        } catch (error) {
+          console.error(error);
 
-          if ($("check")) {
-            $("check").checked =
-              false;
-          }
-
-          if ($("import")) {
-            $("import").disabled =
-              true;
-          }
-
-          step("import");
+          msg(
+            error.message ||
+              "Import failed.",
+            "error"
+          );
         }
-      );
+      }
+    );
   }
 
-  if ($("check")) {
-    $("check")
-      .addEventListener(
-        "change",
-        (event) => {
-          if ($("import")) {
-            $("import").disabled =
-              !event.target.checked;
-          }
+  const verifyButton =
+    $("verifyButton");
+
+  if (verifyButton) {
+    verifyButton.addEventListener(
+      "click",
+      async () => {
+        try {
+          await verify();
+
+          msg(
+            "Verification completed.",
+            "success"
+          );
+        } catch (error) {
+          console.error(error);
+
+          msg(
+            error.message ||
+              "Verification failed.",
+            "error"
+          );
         }
-      );
+      }
+    );
   }
 
-  if ($("import")) {
-    $("import")
-      .addEventListener(
-        "click",
-        async () => {
-          try {
-            if (
-              !$("check")?.checked
-            ) {
-              return;
-            }
+  const resetButton =
+    $("resetMigration");
 
-            if (state.importing) {
-              return;
-            }
+  if (resetButton) {
+    resetButton.addEventListener(
+      "click",
+      () => {
+        resetForNewUpload();
+      }
+    );
+  }
 
-            $("import")
-              .disabled =
-              true;
+  const loadRecoveryButton =
+    $("loadRecovery");
 
-            msg(
-              "Import is running. Do not close or refresh this page.",
-              "warn"
-            );
+  if (loadRecoveryButton) {
+    loadRecoveryButton.addEventListener(
+      "click",
+      async () => {
+        try {
+          await loadRecoverableBatches();
 
-            await runImport();
-          } catch (error) {
-            console.error(error);
+          renderRecoveryBatches();
 
-            msg(
-              error.message ||
-                "Import failed.",
-              "error"
-            );
+          msg(
+            "Recoverable migration batches loaded.",
+            "success"
+          );
+        } catch (error) {
+          console.error(error);
 
-            if ($("import")) {
-              $("import")
-                .disabled =
-                false;
-            }
-          }
+          msg(
+            error.message ||
+              "Could not load recoverable batches.",
+            "error"
+          );
         }
-      );
+      }
+    );
+  }
+
+  const importCheckbox =
+    $("confirmImportCheckbox");
+
+  if (importCheckbox) {
+    importCheckbox.addEventListener(
+      "change",
+      () => {
+        const confirmButton =
+          $("confirmImport");
+
+        if (!confirmButton) {
+          return;
+        }
+
+        if (
+          state.entity ===
+          "member"
+        ) {
+          importCheckbox.checked =
+            false;
+
+          confirmButton.disabled =
+            true;
+
+          return;
+        }
+
+        const errors =
+          state.results.filter(
+            (row) =>
+              row.errors.length > 0
+          ).length;
+
+        const imported =
+          state.results.filter(
+            (row) =>
+              row.imported ||
+              state.imported.includes(
+                row.source_row_number
+              )
+          ).length;
+
+        const remaining =
+          Math.max(
+            0,
+            state.results.length -
+              imported
+          );
+
+        confirmButton.disabled =
+          !importCheckbox.checked ||
+          errors > 0 ||
+          !state.results.length ||
+          remaining === 0;
+      }
+    );
+  }
+
+  const memberImportNotice =
+    $("memberImportNotice");
+
+  if (memberImportNotice) {
+    memberImportNotice.classList.toggle(
+      "hidden",
+      state.entity !== "member"
+    );
   }
 }
+/* =========================================================
+ * Initialization
+ * ========================================================= */
 
-(async () => {
+async function init() {
   try {
-    bind();
+    step("upload");
 
     await context();
 
-    await loadRecoverableBatches();
+    const entitySelect =
+      $("entity");
+
+    if (entitySelect) {
+      entitySelect.value =
+        state.entity;
+
+      entitySelect.addEventListener(
+        "change",
+        () => {
+          try {
+            setEntity(
+              entitySelect.value
+            );
+          } catch (error) {
+            console.error(error);
+
+            msg(
+              error.message ||
+                "Could not change migration type.",
+              "error"
+            );
+          }
+        }
+      );
+    }
+
+    const memberNotice =
+      $("memberImportNotice");
+
+    if (memberNotice) {
+      memberNotice.classList.toggle(
+        "hidden",
+        state.entity !== "member"
+      );
+    }
+
+    bind();
+
+    try {
+      await loadRecoverableBatches();
+
+      renderRecoveryBatches();
+    } catch (recoveryError) {
+      console.warn(
+        "Recovery batch lookup unavailable:",
+        recoveryError
+      );
+    }
+
+    render();
 
     msg(
-      "Authenticated group context resolved. Migration is limited to contributions and expenses. Explicit confirmation is required before target records are written.",
+      "Authenticated group context resolved. Contributions and expenses can be imported after validation and explicit confirmation. Members can be mapped, validated and previewed only; no member target write is permitted.",
       "success"
     );
   } catch (error) {
     console.error(error);
 
-    if ($("stage")) {
-      $("stage").disabled =
-        true;
-    }
-
     msg(
       error.message ||
-        "Authentication/group context failed.",
+        "Could not initialize the migration workflow.",
       "error"
     );
+
+    const controls =
+      document.querySelectorAll(
+        "button, select, input[type='file']"
+      );
+
+    controls.forEach(
+      (control) => {
+        control.disabled = true;
+      }
+    );
   }
-})();
+}
+
+if (
+  document.readyState ===
+  "loading"
+) {
+  document.addEventListener(
+    "DOMContentLoaded",
+    init,
+    {
+      once: true
+    }
+  );
+} else {
+  init();
+}
+
+
