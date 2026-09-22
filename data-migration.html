@@ -1,414 +1,165 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="UTF-8">
+
   <meta
-    name="description"
-    content="CHAMA LIVE controlled Data Migration"
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
   >
-  <title>CHAMA LIVE — Data Migration</title>
+
+  <title>Data Migration | CHAMA LIVE</title>
+
+  <link
+    rel="stylesheet"
+    href="./css/style.css"
+  >
 
   <style>
-    :root{
-      font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      color:#101828;
-      background:#f8fafc
+    .migration-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
     }
 
-    *{
-      box-sizing:border-box
+    .migration-header h1 {
+      margin: 0;
     }
 
-    body{
-      margin:0;
-      background:#f8fafc
+    .migration-header p {
+      margin: 0.35rem 0 0;
     }
 
-    .topbar{
-      min-height:58px;
-      display:flex;
-      align-items:center;
-      gap:14px;
-      padding:10px 18px;
-      background:#ffffff;
-      border-bottom:1px solid #e4e7ec;
-      position:sticky;
-      top:0;
-      z-index:1000
+    .migration-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
     }
 
-    .brand{
-      font-size:18px;
-      font-weight:800;
-      letter-spacing:.2px;
-      white-space:nowrap
+    .migration-card {
+      margin-bottom: 1.25rem;
     }
 
-    .brand span{
-      color:#0f766e
+    .migration-steps {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.25rem;
     }
 
-    .layout{
-      display:grid;
-      grid-template-columns:240px minmax(0,1fr);
-      min-height:calc(100vh - 58px)
+    .migration-step {
+      padding: 0.5rem 0.75rem;
+      border-radius: 999px;
+      border: 1px solid var(--border, #ddd);
+      opacity: 0.65;
     }
 
-    .sidebar{
-      background:#ffffff;
-      border-right:1px solid #e4e7ec;
-      padding:16px 10px;
-      position:sticky;
-      top:58px;
-      height:calc(100vh - 58px);
-      overflow-y:auto
+    .migration-step.active {
+      opacity: 1;
+      font-weight: 700;
     }
 
-    .nav{
-      display:flex;
-      flex-direction:column;
-      gap:4px
+    .hidden {
+      display: none !important;
     }
 
-    .nav a{
-      display:block;
-      padding:10px 12px;
-      border-radius:9px;
-      color:#344054;
-      text-decoration:none;
-      font-size:13px;
-      font-weight:650
+    .recovery-list {
+      display: grid;
+      gap: 0.75rem;
     }
 
-    .nav a:hover{
-      background:#f0fdfa;
-      color:#0f766e
+    .recovery-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1rem;
+      border: 1px solid var(--border, #ddd);
+      border-radius: 0.75rem;
     }
 
-    .nav a.active{
-      background:#ecfdf5;
-      color:#0f766e;
-      font-weight:750
+    .recovery-item-main {
+      min-width: 0;
     }
 
-    .main{
-      min-width:0
+    .recovery-item-main strong {
+      display: block;
+      overflow-wrap: anywhere;
     }
 
-    .page{
-      max-width:1400px;
-      margin:auto;
-      padding:24px 16px 80px
+    .muted {
+      opacity: 0.7;
+      margin-top: 0.25rem;
     }
 
-    .card{
-      background:#fff;
-      border:1px solid #e4e7ec;
-      border-radius:16px;
-      padding:20px;
-      margin:16px 0;
-      box-shadow:0 2px 8px rgba(16,24,40,.04)
+    .mapping-grid {
+      display: grid;
+      gap: 0.75rem;
     }
 
-    h1,
-    h2{
-      margin-top:0
+    .mapping-row {
+      display: grid;
+      grid-template-columns: minmax(150px, 1fr) minmax(180px, 2fr);
+      gap: 1rem;
+      align-items: center;
     }
 
-    h1{
-      font-size:26px;
-      margin-bottom:6px
+    .table-wrap {
+      overflow-x: auto;
     }
 
-    h2{
-      font-size:18px
-    }
-
-    .muted,
-    .note{
-      color:#667085;
-      font-size:13px
-    }
-
-    .notice{
-      padding:13px 15px;
-      border-radius:10px;
-      margin:12px 0;
-      font-size:14px
-    }
-
-    .info{
-      background:#eff8ff;
-      border:1px solid #b2ddff;
-      color:#175cd3
-    }
-
-    .success{
-      background:#ecfdf3;
-      border:1px solid #abefc6;
-      color:#067647
-    }
-
-    .warn{
-      background:#fffaeb;
-      border:1px solid #fedf89;
-      color:#b54708
-    }
-
-    .error{
-      background:#fef3f2;
-      border:1px solid #fecdca;
-      color:#b42318
-    }
-
-    .steps{
-      display:grid;
-      grid-template-columns:repeat(6,1fr);
-      gap:8px
-    }
-
-    .step{
-      padding:9px;
-      border-radius:9px;
-      background:#f2f4f7;
-      color:#667085;
-      text-align:center;
-      font-size:12px;
-      font-weight:700
-    }
-
-    .step.active{
-      background:#ecfdf3;
-      color:#067647
-    }
-
-    .step.done{
-      background:#eff8ff;
-      color:#175cd3
-    }
-
-    .grid{
-      display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:15px
-    }
-
-    .stats{
-      display:grid;
-      grid-template-columns:repeat(6,1fr);
-      gap:10px
-    }
-
-    .stat{
-      background:#f9fafb;
-      border:1px solid #eaecf0;
-      border-radius:10px;
-      padding:11px
-    }
-
-    .stat b{
-      display:block;
-      font-size:19px;
-      margin-top:3px
-    }
-
-    label{
-      display:block;
-      font-size:13px;
-      font-weight:700;
-      color:#344054;
-      margin-bottom:6px
-    }
-
-    input,
-    select{
-      width:100%;
-      padding:10px 11px;
-      border:1px solid #d0d5dd;
-      border-radius:9px;
-      background:#fff
-    }
-
-    button{
-      border:0;
-      border-radius:9px;
-      padding:10px 15px;
-      font-weight:700;
-      cursor:pointer
-    }
-
-    button.primary{
-      background:#0f766e;
-      color:#fff
-    }
-
-    button.secondary{
-      background:#f2f4f7;
-      color:#344054
-    }
-
-    button.danger{
-      background:#b42318;
-      color:#fff
-    }
-
-    button:disabled{
-      opacity:.5;
-      cursor:not-allowed
-    }
-
-    .actions{
-      display:flex;
-      gap:9px;
-      flex-wrap:wrap;
-      margin-top:15px
-    }
-
-    .table-wrap{
-      overflow:auto;
-      border:1px solid #e4e7ec;
-      border-radius:10px;
-      margin-top:15px
-    }
-
-    table{
-      width:100%;
-      border-collapse:collapse;
-      min-width:850px
+    table {
+      width: 100%;
+      border-collapse: collapse;
     }
 
     th,
-    td{
-      padding:9px;
-      border-bottom:1px solid #eaecf0;
-      text-align:left;
-      font-size:12px;
-      vertical-align:top
+    td {
+      padding: 0.75rem;
+      border-bottom: 1px solid var(--border, #ddd);
+      text-align: left;
+      vertical-align: top;
     }
 
-    th{
-      background:#f9fafb;
-      font-weight:800
+    pre {
+      max-width: 420px;
+      max-height: 220px;
+      overflow: auto;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
     }
 
-    .mono{
-      font-family:ui-monospace,SFMono-Regular,Menlo,monospace
-    }
-
-    .pill{
-      display:inline-block;
-      padding:3px 8px;
-      border-radius:999px;
-      font-size:11px;
-      font-weight:800
-    }
-
-    .pill.valid{
-      background:#ecfdf3;
-      color:#067647
-    }
-
-    .pill.warning{
-      background:#fffaeb;
-      color:#b54708
-    }
-
-    .pill.error{
-      background:#fef3f2;
-      color:#b42318
-    }
-
-    .pill.imported{
-      background:#eff8ff;
-      color:#175cd3
-    }
-
-    .hidden{
-      display:none!important
-    }
-
-    .recovery-list{
-      display:flex;
-      flex-direction:column;
-      gap:9px;
-      margin-top:14px
-    }
-
-    .recovery-item{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:15px;
-      padding:12px;
-      border:1px solid #e4e7ec;
-      border-radius:10px;
-      background:#f9fafb
-    }
-
-    .recovery-meta{
-      min-width:0
-    }
-
-    .recovery-title{
-      font-weight:800;
-      color:#101828
-    }
-
-    .recovery-details{
-      margin-top:4px;
-      color:#667085;
-      font-size:12px
-    }
-
-    @media(max-width:1050px){
-      .layout{
-        grid-template-columns:210px minmax(0,1fr)
+    @media (max-width: 700px) {
+      .migration-header {
+        align-items: stretch;
       }
 
-      .stats{
-        grid-template-columns:repeat(3,1fr)
-      }
-    }
-
-    @media(max-width:850px){
-      .layout{
-        grid-template-columns:1fr
+      .migration-actions {
+        width: 100%;
       }
 
-      .sidebar{
-        display:none
+      .migration-actions a,
+      .migration-actions button {
+        width: 100%;
+        text-align: center;
       }
 
-      .grid,
-      .stats,
-      .steps{
-        grid-template-columns:1fr 1fr
+      .recovery-item {
+        align-items: stretch;
+        flex-direction: column;
       }
 
-      .recovery-item{
-        align-items:flex-start;
-        flex-direction:column
-      }
-    }
-
-    @media(max-width:520px){
-      .page{
-        padding:12px 10px 60px
+      .recovery-item button {
+        width: 100%;
       }
 
-      .grid,
-      .stats,
-      .steps{
-        grid-template-columns:1fr
-      }
-
-      .topbar{
-        padding:9px 10px
-      }
-
-      .brand{
-        font-size:16px
+      .mapping-row {
+        grid-template-columns: 1fr;
+        gap: 0.4rem;
       }
     }
   </style>
@@ -416,49 +167,20 @@
 
 <body>
 
-  <!-- =====================================================
-       APPLICATION TOPBAR
-  ====================================================== -->
-
   <header class="topbar">
+    <div class="topbar-inner">
 
-    <div class="brand">
-      CHAMA <span>LIVE</span>
-    </div>
+      <a
+        href="dashboard.html"
+        class="brand"
+      >
+        CHAMA LIVE
+      </a>
 
-    <div
-      data-group-name
-      style="margin-left:auto;font-size:13px;font-weight:700;color:#344054"
-    >
-    </div>
-
-    <div
-      data-user-name
-      style="font-size:12px;color:#667085"
-    >
-    </div>
-
-    <button
-      id="logout"
-      class="secondary"
-      type="button"
-    >
-      Sign out
-    </button>
-
-  </header>
-
-
-  <!-- =====================================================
-       APPLICATION LAYOUT
-  ====================================================== -->
-
-  <div class="layout">
-
-    <aside class="sidebar">
-
-      <nav class="nav" aria-label="Primary navigation">
-
+      <nav
+        class="top-nav"
+        aria-label="Primary navigation"
+      >
         <a href="dashboard.html">
           Dashboard
         </a>
@@ -475,496 +197,264 @@
           Expenses
         </a>
 
-        <a href="meetings.html">
-          Meetings
-        </a>
-
-        <a href="reports.html">
-          Reports
-        </a>
-
-        <a href="monthly-closing.html">
-          Monthly Closing
-        </a>
-
         <a href="group-management.html">
           Group Management
         </a>
-
-        <a href="assets.html">
-          Assets
-        </a>
-
-        <a href="plans-activities.html">
-          Plans &amp; Activities
-        </a>
-
-        <a href="support-welfare.html">
-          Support &amp; Welfare
-        </a>
-
-        <a href="milestones.html">
-          Milestones
-        </a>
-
-        <a
-          href="data-migration.html"
-          class="active"
-        >
-          Data Migration
-        </a>
-
       </nav>
 
-    </aside>
+      <div class="topbar-actions">
+        <button
+          type="button"
+          id="logoutButton"
+          class="secondary"
+        >
+          Sign out
+        </button>
+      </div>
 
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <aside
+      class="sidebar"
+      id="adminSidebar"
+    ></aside>
 
     <main class="main">
 
-      <div
-        id="error"
-        class="notice error hidden"
-      ></div>
+      <div class="migration-header">
 
-
-      <div class="page">
-
-        <!-- =================================================
-             PAGE HEADER
-        ================================================== -->
-
-        <section class="card">
-
-          <h1>
-            Data Migration
-          </h1>
+        <div>
+          <h1>Data Migration</h1>
 
           <p class="muted">
-            Controlled migration preview/import for
-            <strong>contributions</strong>,
-            <strong>expenses</strong>,
-            and
-            <strong>members</strong>.
-            Member migration is currently preview-only until a
-            server-side member-import contract is approved.
+            Contributions, Expenses and Members —
+            Preview Only
           </p>
+        </div>
 
-          <div
-            id="memberImportNotice"
-            class="notice warn hidden"
+        <div class="migration-actions">
+
+          <a
+            href="dashboard.html"
+            class="secondary"
           >
-            Members can be mapped, validated and previewed only.
-            This workflow will not insert or update members,
-            change roles, activate accounts, or change onboarding
-            status.
-          </div>
-
-          <div
-            id="message"
-            class="notice info"
-          >
-            NO-APPLY candidate. No GitHub write, deployment,
-            schema change, or financial-period creation is
-            performed by this candidate.
-          </div>
-
-        </section>
-
-
-        <!-- =================================================
-             MIGRATION STEPS
-        ================================================== -->
-
-        <div class="steps">
-
-          <div
-            class="step active"
-            data-step="upload"
-          >
-            1. Upload
-          </div>
-
-          <div
-            class="step"
-            data-step="mapping"
-          >
-            2. Map
-          </div>
-
-          <div
-            class="step"
-            data-step="validate"
-          >
-            3. Validate
-          </div>
-
-          <div
-            class="step"
-            data-step="preview"
-          >
-            4. Preview
-          </div>
-
-          <div
-            class="step"
-            data-step="import"
-          >
-            5. Import
-          </div>
-
-          <div
-            class="step"
-            data-step="verify"
-          >
-            6. Verify
-          </div>
+            ← Back to Dashboard
+          </a>
 
         </div>
 
+      </div>
 
-        <!-- =================================================
-             1. UPLOAD
-        ================================================== -->
+      <div
+        id="migrationMessage"
+        class="notice info"
+        aria-live="polite"
+      >
+        Loading Data Migration...
+      </div>
 
-        <section class="card">
+      <div class="migration-steps">
 
-          <h2>
-            1. Upload
-          </h2>
-
-          <div class="grid">
-
-            <div>
-
-              <label for="file">
-                CSV or XLSX
-              </label>
-
-              <input
-                id="file"
-                type="file"
-                accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-              >
-
-            </div>
-
-
-            <div>
-
-              <label for="entity">
-                Entity
-              </label>
-
-              <select id="entity">
-
-                <option value="contribution">
-                  Contributions
-                </option>
-
-                <option value="expense">
-                  Expenses
-                </option>
-
-                <option value="member">
-                  Members — Preview Only
-                </option>
-
-              </select>
-
-            </div>
-
-          </div>
-
-
-          <p
-            id="fileInfo"
-            class="note"
-          >
-          </p>
-
-
-          <div class="actions">
-
-            <button
-              id="stage"
-              class="primary"
-              type="button"
-            >
-              Analyze &amp; Stage
-            </button>
-
-          </div>
-
-        </section>
-
-
-        <!-- =================================================
-             RECOVER EXISTING IMPORT
-        ================================================== -->
-
-        <section
-          id="recoveryCard"
-          class="card"
+        <div
+          class="migration-step active"
+          data-step="upload"
         >
+          1. Upload
+        </div>
 
-          <h2>
-            Recover Existing Import
-          </h2>
-
-          <p class="muted">
-            Resume a previously staged or interrupted migration
-            using the persisted batch, row status, normalized
-            data and idempotency keys. Imported rows are not
-            regenerated or re-imported unnecessarily.
-          </p>
-
-          <div
-            id="recoveryInfo"
-            class="notice info"
-          >
-            Loading recoverable migration batches...
-          </div>
-
-          <div
-            id="recoveryList"
-            class="recovery-list"
-          >
-          </div>
-
-          <div class="actions">
-
-            <button
-              id="recoverBatch"
-              class="primary"
-              type="button"
-              disabled
-            >
-              Recover Selected Batch
-            </button>
-
-          </div>
-
-          <p class="note">
-            Recovery is resumable rather than transactional.
-            A batch is recoverable only when its persisted
-            normalized row state is sufficient to continue
-            safely. A batch with unresolved validation errors
-            is not automatically resumed.
-          </p>
-
-        </section>
-
-
-        <!-- =================================================
-             2. MAPPING
-        ================================================== -->
-
-        <section
-          id="mappingCard"
-          class="card hidden"
+        <div
+          class="migration-step"
+          data-step="mapping"
         >
+          2. Mapping
+        </div>
 
-          <h2>
-            2. Mapping
-          </h2>
-
-          <p class="muted">
-            Only fields defined by the migration contract
-            can be mapped. Group identity, recorder identity,
-            authentication identity, obligations, allocations
-            and financial-period fields are forbidden.
-            Member records are preview-only and are never
-            inserted or updated by this workflow.
-          </p>
-
-          <div
-            id="mapping"
-            class="grid"
-          >
-          </div>
-
-          <div class="actions">
-
-            <button
-              id="validate"
-              class="primary"
-              type="button"
-            >
-              Validate
-            </button>
-
-          </div>
-
-        </section>
-
-
-        <!-- =================================================
-             3–4. VALIDATION & PREVIEW
-        ================================================== -->
-
-        <section
-          id="validationCard"
-          class="card hidden"
+        <div
+          class="migration-step"
+          data-step="preview"
         >
-
-          <h2>
-            3–4. Validation &amp; Preview
-          </h2>
-
-          <div
-            id="stats"
-            class="stats"
-          >
-          </div>
-
-          <div
-            id="validationMessage"
-          >
-          </div>
-
-          <div
-            id="preview"
-            class="table-wrap"
-          >
-          </div>
-
-          <div class="actions">
-
-            <button
-              id="confirm"
-              class="danger"
-              type="button"
-              disabled
-            >
-              Review Explicit Confirmation
-            </button>
-
-          </div>
-
-        </section>
-
-
-        <!-- =================================================
-             5. EXPLICIT CONFIRMATION
-        ================================================== -->
-
-        <section
-          id="confirmCard"
-          class="card hidden"
-        >
-
-          <h2>
-            5. Explicit Confirmation
-          </h2>
-
-          <div
-            id="confirmSummary"
-            class="notice warn"
-          >
-          </div>
-
-          <label
-            style="display:flex;gap:8px;align-items:flex-start"
-          >
-
-            <input
-              id="check"
-              type="checkbox"
-              style="width:auto"
-            >
-
-            <span>
-              I confirm this exact batch. I understand that
-              closed periods are blocked, no financial period
-              will be created, and contributions will be
-              recorded only through the canonical 2B
-              contribution function. Member migrations are
-              preview-only and will not create, update,
-              activate, deactivate, or change member accounts.
-            </span>
-
-          </label>
-
-
-          <div class="actions">
-
-            <button
-              id="import"
-              class="danger"
-              type="button"
-              disabled
-            >
-              Import Confirmed Batch
-            </button>
-
-          </div>
-
-        </section>
-
-
-        <!-- =================================================
-             6. VERIFICATION
-        ================================================== -->
-
-        <section
-          id="verifyCard"
-          class="card hidden"
-        >
-
-          <h2>
-            6. Verification
-          </h2>
-
-          <div id="verifyResult">
-          </div>
-
-        </section>
-
-
-        <!-- =================================================
-             SAFETY BOUNDARY
-        ================================================== -->
-
-        <p class="note">
-          Safety boundary: this candidate never directly
-          writes contribution_allocations or
-          contribution_obligations, never creates
-          financial_periods, never accepts a group_id from
-          the page, never uses a service-role key, and never
-          writes or modifies public.members through the
-          Members preview workflow.
-        </p>
+          3. Preview
+        </div>
 
       </div>
+
+      <section
+        class="card migration-card"
+        data-panel="upload"
+      >
+
+        <h2>Import Data</h2>
+
+        <p>
+          Upload a CSV file for validation and
+          preview. Group context comes from the
+          authenticated account and is not accepted
+          from the migration file.
+        </p>
+
+        <label for="migrationFile">
+          CSV file
+        </label>
+
+        <input
+          id="migrationFile"
+          type="file"
+          accept=".csv,text/csv"
+        >
+
+        <p class="muted">
+          Contributions and expenses can proceed
+          through the controlled migration flow.
+          Member records remain preview-only.
+        </p>
+
+      </section>
+
+      <section
+        class="card migration-card"
+        data-panel="mapping"
+      >
+
+        <h2>Map Columns</h2>
+
+        <p>
+          Review the detected source columns before
+          generating the migration preview.
+        </p>
+
+        <div id="mappingTable">
+          <div class="notice info">
+            No source columns are currently loaded.
+          </div>
+        </div>
+
+        <div class="migration-actions">
+          <button
+            type="button"
+            id="continueToPreview"
+          >
+            Continue to Preview
+          </button>
+        </div>
+
+      </section>
+
+      <section
+        class="card migration-card"
+        data-panel="preview"
+      >
+
+        <h2>Migration Preview</h2>
+
+        <div class="migration-actions">
+          <button
+            type="button"
+            id="backToMapping"
+            class="secondary"
+          >
+            Back to Mapping
+          </button>
+        </div>
+
+        <div id="previewTable">
+          <div class="notice info">
+            No staged rows are available for preview.
+          </div>
+        </div>
+
+      </section>
+
+      <section class="card migration-card">
+
+        <h2>Recover Existing Import</h2>
+
+        <p>
+          Resume a previously staged or interrupted
+          migration using the persisted batch, row
+          status, normalized data and idempotency
+          keys. Imported rows are not regenerated or
+          re-imported unnecessarily.
+        </p>
+
+        <div
+          id="recoveryLoading"
+          class="notice info"
+        >
+          Loading recoverable migration batches...
+        </div>
+
+        <div class="migration-actions">
+
+          <button
+            type="button"
+            id="loadRecovery"
+            class="secondary"
+          >
+            Recover Selected Batch
+          </button>
+
+          <button
+            type="button"
+            id="refreshRecovery"
+            class="secondary"
+          >
+            Refresh
+          </button>
+
+        </div>
+
+        <div
+          id="recoveryList"
+          class="recovery-list"
+        >
+          <div class="notice info">
+            Loading recoverable migration batches...
+          </div>
+        </div>
+
+      </section>
+
+      <section class="card migration-card">
+
+        <h2>Current Group</h2>
+
+        <p>
+          Group:
+          <strong id="migrationGroupName">
+            Loading...
+          </strong>
+        </p>
+
+        <p>
+          Migration entity:
+          <strong id="migrationEntityType">
+            —
+          </strong>
+        </p>
+
+        <p class="muted">
+          Member migration is restricted to
+          mapping, validation and preview. This
+          screen does not create or update public
+          member records, roles, status,
+          onboarding state or authentication
+          identity.
+        </p>
+
+      </section>
 
     </main>
 
   </div>
 
-
-  <!-- =====================================================
-       GLOBAL LAYOUT BOOT
-
-       Data Migration remains independently booted.
-       It is intentionally NOT loaded through PAGE_SCRIPTS.
-  ====================================================== -->
-
   <script type="module">
-
-    import {
-      boot
-    } from "./js/layout.js";
+    import { boot } from "./js/admin-layout.js";
 
     boot();
-
   </script>
-
-
-  <!-- =====================================================
-       DATA MIGRATION PAGE BOOT
-
-       This remains independent from layout.js.
-  ====================================================== -->
 
   <script
     type="module"
