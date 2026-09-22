@@ -24,6 +24,12 @@
    ---------------------------------------------------------
    billing.html is an admin page.
    billing.js exports initBilling().
+
+   GETTING STARTED
+   ---------------------------------------------------------
+   Admin Getting Started is a dedicated admin page.
+   Member Getting Started remains separate:
+     member-getting-started.html
 ========================================================= */
 
 
@@ -260,6 +266,10 @@ const NAVIGATION_GROUPS = [
       [
         "dashboard.html",
         "Dashboard"
+      ],
+      [
+        "admin-getting-started.html",
+        "Getting Started"
       ]
     ]
   ],
@@ -545,6 +555,7 @@ function injectStyles() {
         font-weight: 700;
       }
 
+      .chama-mobile-menu a:hover,
       .chama-mobile-menu a.active {
         background: #ecfdf5;
         color: #0f766e;
@@ -595,6 +606,7 @@ function injectStyles() {
       .main {
         padding-bottom: 95px !important;
       }
+
     }
 
     @media (max-width: 520px) {
@@ -611,6 +623,7 @@ function injectStyles() {
       .chama-admin-bottom a {
         font-size: 9px;
       }
+
     }
 
   `;
@@ -668,6 +681,7 @@ function renderDesktopNavigation() {
       );
 
       continue;
+
     }
 
     const details =
@@ -721,6 +735,12 @@ function renderDesktopNavigation() {
     );
 
   }
+
+  /* ---------------------------------------------------------
+     BILLING
+     ---------------------------------------------------------
+     Billing remains a dedicated admin navigation item.
+  --------------------------------------------------------- */
 
   nav.appendChild(
     createNavLink(
@@ -971,6 +991,11 @@ function renderMobileNavigation() {
     header
   );
 
+
+  /* ---------------------------------------------------------
+     STANDARD ADMIN NAVIGATION
+  --------------------------------------------------------- */
+
   for (
     const [
       title,
@@ -1019,27 +1044,34 @@ function renderMobileNavigation() {
 
   }
 
-  const billingSection =
+
+  /* ---------------------------------------------------------
+     ACCOUNT
+     ---------------------------------------------------------
+     Billing is kept separate from the management group.
+  --------------------------------------------------------- */
+
+  const accountSection =
     document.createElement(
       "section"
     );
 
-  billingSection.className =
+  accountSection.className =
     "chama-mobile-section";
 
-  const billingHeading =
+  const accountHeading =
     document.createElement(
       "h2"
     );
 
-  billingHeading.textContent =
+  accountHeading.textContent =
     "Account";
 
-  billingSection.appendChild(
-    billingHeading
+  accountSection.appendChild(
+    accountHeading
   );
 
-  billingSection.appendChild(
+  accountSection.appendChild(
     createNavLink(
       "billing.html",
       "Billing"
@@ -1047,8 +1079,9 @@ function renderMobileNavigation() {
   );
 
   menu.appendChild(
-    billingSection
+    accountSection
   );
+
 
   document.body.appendChild(
     backdrop
@@ -1057,6 +1090,11 @@ function renderMobileNavigation() {
   document.body.appendChild(
     menu
   );
+
+
+  /* ---------------------------------------------------------
+     MOBILE MENU TOGGLE
+  --------------------------------------------------------- */
 
   let button =
     document.querySelector(
@@ -1104,6 +1142,7 @@ function renderMobileNavigation() {
 
   }
 
+
   button.addEventListener(
     "click",
     () => {
@@ -1127,10 +1166,12 @@ function renderMobileNavigation() {
     }
   );
 
+
   backdrop.addEventListener(
     "click",
     closeAdminMobileMenu
   );
+
 
   menu
     .querySelectorAll("a")
@@ -1202,6 +1243,7 @@ function renderMobileBottomNavigation() {
 
   ];
 
+
   for (
     const [
       href,
@@ -1235,6 +1277,7 @@ function renderMobileBottomNavigation() {
 
     }
 
+
     if (
       href === "#more"
     ) {
@@ -1255,11 +1298,13 @@ function renderMobileBottomNavigation() {
 
     }
 
+
     nav.appendChild(
       link
     );
 
   }
+
 
   document.body.appendChild(
     nav
@@ -1313,9 +1358,8 @@ async function loadCurrentPageFeature() {
 /* =========================================================
    HIDE ALL LOADERS
    ---------------------------------------------------------
-   This is deliberately centralized so a module failure
-   cannot leave a full-screen loading overlay covering the
-   page forever.
+   Prevents a page/module failure from leaving a full-screen
+   loader covering the page permanently.
 ========================================================= */
 
 function hideAdminLoaders() {
@@ -1332,6 +1376,7 @@ function hideAdminLoaders() {
 
       }
     );
+
 
   document
     .querySelectorAll(
@@ -1360,10 +1405,12 @@ function showBootError(
 
   hideAdminLoaders();
 
+
   const errorBox =
     document.getElementById(
       "error"
     );
+
 
   if (!errorBox) {
 
@@ -1385,6 +1432,7 @@ function showBootError(
     return;
 
   }
+
 
   errorBox.hidden =
     false;
@@ -1408,16 +1456,23 @@ export async function boot() {
   bootStarted =
     true;
 
+
   let stage =
     "authentication";
 
+
   try {
+
+    /* -------------------------------------------------------
+       APPLICATION CONTEXT
+    ------------------------------------------------------- */
 
     stage =
       "application context";
 
     context =
       await getMyApplicationContext();
+
 
     if (
       !context?.user ||
@@ -1430,6 +1485,7 @@ export async function boot() {
 
     }
 
+
     context.role =
       String(
         context.role || ""
@@ -1437,10 +1493,20 @@ export async function boot() {
         .trim()
         .toLowerCase();
 
+
+    /* -------------------------------------------------------
+       GROUP IDENTITY
+    ------------------------------------------------------- */
+
     stage =
       "group identity";
 
     renderCurrentGroupName();
+
+
+    /* -------------------------------------------------------
+       ADMIN AUTHORIZATION
+    ------------------------------------------------------- */
 
     stage =
       "admin authorization";
@@ -1457,14 +1523,22 @@ export async function boot() {
 
     }
 
+
+    /* -------------------------------------------------------
+       PAGE AUTHORIZATION
+    ------------------------------------------------------- */
+
     const page =
       getCurrentPage();
 
     stage =
       "page authorization";
 
+
     if (
-      !ADMIN_PAGES.has(page)
+      !ADMIN_PAGES.has(
+        page
+      )
     ) {
 
       window.location.replace(
@@ -1475,8 +1549,14 @@ export async function boot() {
 
     }
 
+
     window.__CHAMA_LIVE_LAYOUT_LOADING__ =
       true;
+
+
+    /* -------------------------------------------------------
+       ADMIN NAVIGATION
+    ------------------------------------------------------- */
 
     stage =
       "admin navigation";
@@ -1491,14 +1571,25 @@ export async function boot() {
 
     bindAdminLogout();
 
+
+    /* -------------------------------------------------------
+       CURRENT PAGE MODULE
+    ------------------------------------------------------- */
+
     stage =
       `${page} module`;
 
     await loadCurrentPageFeature();
 
+
+    /* -------------------------------------------------------
+       PAGE READY
+    ------------------------------------------------------- */
+
     hideAdminLoaders();
 
   }
+
 
   catch (error) {
 
@@ -1510,6 +1601,7 @@ export async function boot() {
       }
     );
 
+
     showBootError(
       error?.message ||
         "Unable to load the Admin Portal.",
@@ -1517,6 +1609,7 @@ export async function boot() {
     );
 
   }
+
 
   finally {
 
