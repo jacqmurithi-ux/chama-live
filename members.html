@@ -410,6 +410,19 @@
 
     /* =====================================================
        CONTRIBUTION SETUP
+       -----------------------------------------------------
+       members.js owns the Contribution Setup DOM.
+
+       The module creates:
+       - Join Date
+       - Monthly Contribution
+       - First Contribution Period
+       - Contribution Effective From
+       - Historical Contributions
+       - Paid Through
+       - Historical Payment Method
+       - Historical Preview
+       - Contribution Preview
     ===================================================== */
 
     .member-contribution-setup {
@@ -461,7 +474,8 @@
       font-weight: 700;
     }
 
-    #memberContributionPreviewText {
+    #memberContributionPreviewText,
+    #memberHistoricalPreviewText {
       color: #1d4ed8;
       font-size: 11px;
       text-align: right;
@@ -1096,7 +1110,15 @@
 
     /* =====================================================
        CONTRIBUTION ACCOUNTING
+       -----------------------------------------------------
+       IMPORTANT:
+       The ID below prevents members.js from creating
+       a second Contribution Position section.
     ===================================================== */
+
+    #memberContributionPosition {
+      margin-top: 16px;
+    }
 
     .member-accounting-panel {
       margin-top: 16px;
@@ -1303,7 +1325,8 @@
         gap: 5px;
       }
 
-      #memberContributionPreviewText {
+      #memberContributionPreviewText,
+      #memberHistoricalPreviewText {
         text-align: left;
       }
 
@@ -1748,6 +1771,14 @@
 
       <!-- =================================================
            ADD / EDIT MEMBER
+
+           IMPORTANT:
+           Contribution Setup is intentionally NOT hard-coded
+           here.
+
+           members.js owns and injects the Contribution Setup
+           and Historical Contributions controls so that its
+           event bindings and validation remain authoritative.
       ================================================== -->
 
       <section
@@ -1798,6 +1829,10 @@
 
           <!-- =================================================
                MEMBER IDENTITY
+
+               National ID is injected by members.js because
+               it is part of the current member validation
+               contract.
           ================================================== -->
 
           <div class="member-form-grid">
@@ -1960,159 +1995,11 @@
 
           <!-- =================================================
                CONTRIBUTION SETUP
+
+               Injected by members.js.
+
+               Do not add a second static copy here.
           ================================================== -->
-
-          <div
-            id="memberContributionSetup"
-            class="member-contribution-setup"
-          >
-
-            <div class="member-form-section-heading">
-
-              <strong>
-                Contribution Setup
-              </strong>
-
-              <span>
-                Define what this member is expected
-                to contribute from their membership start.
-              </span>
-
-            </div>
-
-
-            <div class="member-form-grid">
-
-
-              <div class="member-form-field">
-
-                <label
-                  class="form-section-label"
-                  for="memberJoinDate"
-                >
-                  Join Date
-                </label>
-
-                <input
-                  id="memberJoinDate"
-                  name="memberJoinDate"
-                  type="date"
-                  required
-                >
-
-                <small class="muted member-form-hint">
-                  The member's actual membership start date.
-                </small>
-
-              </div>
-
-
-              <div class="member-form-field">
-
-                <label
-                  class="form-section-label"
-                  for="memberContributionAmount"
-                >
-                  Monthly Contribution
-                </label>
-
-                <input
-                  id="memberContributionAmount"
-                  name="memberContributionAmount"
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  inputmode="decimal"
-                  placeholder="e.g. 200"
-                  required
-                >
-
-                <small
-                  class="muted member-form-hint"
-                  id="memberContributionTypeHint"
-                >
-                  Monthly contribution
-                </small>
-
-              </div>
-
-
-              <div class="member-form-field">
-
-                <label
-                  class="form-section-label"
-                  for="memberFirstPeriodRule"
-                >
-                  First Contribution Period
-                </label>
-
-                <select
-                  id="memberFirstPeriodRule"
-                  name="memberFirstPeriodRule"
-                >
-
-                  <option value="full_period">
-                    Full joining month
-                  </option>
-
-                  <option value="next_full_period">
-                    Start from next full month
-                  </option>
-
-                </select>
-
-                <small class="muted member-form-hint">
-                  Determines when the first monthly
-                  obligation begins.
-                </small>
-
-              </div>
-
-
-              <div class="member-form-field">
-
-                <label
-                  class="form-section-label"
-                  for="memberContributionEffectiveFrom"
-                >
-                  Contribution Effective From
-                </label>
-
-                <input
-                  id="memberContributionEffectiveFrom"
-                  name="memberContributionEffectiveFrom"
-                  type="date"
-                >
-
-                <small class="muted member-form-hint">
-                  Defaults to the member's join date.
-                </small>
-
-              </div>
-
-
-            </div>
-
-
-            <div
-              id="memberContributionPreview"
-              class="member-contribution-preview"
-              aria-live="polite"
-            >
-
-              <span class="preview-label">
-                Initial contribution position
-              </span>
-
-              <strong
-                id="memberContributionPreviewText"
-              >
-                Complete the contribution setup.
-              </strong>
-
-            </div>
-
-          </div>
 
 
           <!-- =================================================
@@ -2535,6 +2422,7 @@
         ================================================== -->
 
         <section
+          id="memberContributionPosition"
           class="member-accounting-panel"
           aria-label="Contribution accounting"
         >
@@ -2688,6 +2576,7 @@
 
   <!-- =====================================================
        ADMIN PORTAL BOOT
+       admin-layout.js owns page-module loading.
   ====================================================== -->
 
   <script type="module">
