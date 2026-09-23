@@ -6,7 +6,7 @@
 
   <meta
     name="description"
-    content="CHAMA LIVE member accounting, arrears, credit and member statements"
+    content="CHAMA LIVE member accounting, monthly outstanding, credit and member statements"
   >
 
   <title>Member Accounting | CHAMA LIVE</title>
@@ -481,6 +481,11 @@
       color: var(--ma-danger);
     }
 
+    .ma-badge-arrears {
+      background: #fef2f2;
+      color: var(--ma-danger);
+    }
+
     .ma-badge-credit {
       background: #f5f3ff;
       color: var(--ma-purple);
@@ -500,7 +505,7 @@
     }
 
     /* =========================================================
-       STATEMENT
+       MEMBER STATEMENT
        ========================================================= */
 
     .ma-statement {
@@ -586,6 +591,85 @@
     }
 
     /* =========================================================
+       CUMULATIVE MEMBER POSITION
+       ---------------------------------------------------------
+       IMPORTANT:
+       This deliberately does NOT use .ma-statement.
+       The statement and cumulative position have separate
+       visibility lifecycles in member-accounting.js.
+       ========================================================= */
+
+    .ma-cumulative-position {
+      display: none;
+      margin-top: 20px;
+      padding: 20px;
+    }
+
+    .ma-cumulative-position.visible {
+      display: block;
+    }
+
+    .ma-cumulative-heading {
+      margin-bottom: 15px;
+    }
+
+    .ma-cumulative-heading h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 850;
+    }
+
+    .ma-cumulative-heading p {
+      margin: 5px 0 0;
+      color: var(--ma-muted);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .ma-summary-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .ma-summary-card {
+      padding: 13px;
+      border: 1px solid #eef0f3;
+      border-radius: 12px;
+      background: #f8fafc;
+    }
+
+    .ma-summary-label {
+      display: block;
+      color: var(--ma-muted);
+      font-size: 9px;
+      font-weight: 850;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+    }
+
+    .ma-summary-value {
+      display: block;
+      margin-top: 5px;
+      font-size: 16px;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .ma-cumulative-status {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 12px;
+      padding: 12px 13px;
+      border: 1px solid #eef0f3;
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    /* =========================================================
        LOADING
        ========================================================= */
 
@@ -630,7 +714,8 @@
       .ma-filter-card,
       .ma-table-actions,
       .ma-status,
-      .ma-statement {
+      .ma-statement,
+      .ma-cumulative-position {
         display: none !important;
       }
 
@@ -718,6 +803,11 @@
         grid-template-columns:
           repeat(2, minmax(0, 1fr));
       }
+
+      .ma-summary-grid {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
     }
 
     @media (max-width: 700px) {
@@ -774,6 +864,16 @@
         grid-template-columns:
           repeat(2, minmax(0, 1fr));
       }
+
+      .ma-summary-grid {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+
+      .ma-cumulative-status {
+        align-items: flex-start;
+        flex-direction: column;
+      }
     }
 
     @media (max-width: 430px) {
@@ -782,6 +882,10 @@
       }
 
       .ma-statement-summary {
+        grid-template-columns: 1fr;
+      }
+
+      .ma-summary-grid {
         grid-template-columns: 1fr;
       }
 
@@ -844,8 +948,9 @@
 
         <p class="ma-subtitle">
           View each active member's monthly obligation,
-          payment, application, arrears and carry-forward
-          position from the canonical chama accounting system.
+          payment, application, previous outstanding,
+          current outstanding and carry-forward position
+          from the canonical chama accounting system.
         </p>
 
         <div
@@ -940,7 +1045,7 @@
             </option>
 
             <option value="outstanding">
-              Arrears / Outstanding
+              Outstanding
             </option>
 
             <option value="credit">
@@ -994,7 +1099,7 @@
           class="ma-quick"
           data-quick="arrears"
         >
-          Has Arrears
+          Has Previous Outstanding
         </button>
 
         <button
@@ -1224,7 +1329,7 @@
               </th>
 
               <th>
-                Previous Arrears
+                Previous Outstanding
               </th>
 
               <th>
@@ -1240,11 +1345,11 @@
               </th>
 
               <th>
-                Carry-forward
+                Carry-forward Credit
               </th>
 
               <th>
-                Outstanding
+                Current Outstanding
               </th>
 
               <th>
@@ -1256,7 +1361,7 @@
               </th>
 
               <th>
-                Status
+                Monthly Status
               </th>
 
             </tr>
@@ -1406,6 +1511,48 @@
 
     </section>
 
+    <!-- =======================================================
+         CUMULATIVE MEMBER CONTRIBUTION POSITION
+         -------------------------------------------------------
+         Separate from the monthly statement because this
+         section uses the canonical cumulative position RPC:
+           get_member_contribution_position(uuid)
+
+         Cumulative statuses:
+           ARREARS
+           CREDIT
+           UP_TO_DATE
+         ======================================================= -->
+
+    <section
+      id="memberCumulativePosition"
+      class="ma-card ma-cumulative-position"
+      aria-label="Cumulative member contribution position"
+    >
+
+      <div class="ma-cumulative-heading">
+
+        <h3>
+          Cumulative Contribution Position
+        </h3>
+
+        <p>
+          Cumulative position across the member's
+          canonical contribution history.
+        </p>
+
+      </div>
+
+      <div
+        id="memberCumulativePositionContent"
+      >
+        <div class="ma-empty">
+          Select a member to view the cumulative position.
+        </div>
+      </div>
+
+    </section>
+
   </main>
 
   <!-- =========================================================
@@ -1476,4 +1623,3 @@
 
 </body>
 </html>
-
