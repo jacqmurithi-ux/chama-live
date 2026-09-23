@@ -7,6 +7,7 @@
    ---------------------------------------------------------
    • Show the authenticated member's own account information.
    • Show the member's own contribution summary.
+   • Show canonical member contribution status.
    • Show read-only group-level information.
    • Provide navigation into the member portal.
 
@@ -25,6 +26,8 @@
    ---------------------------------------------------------
    • Do not assume contributions.group_id exists.
    • Group contribution data is resolved through members.
+   • Canonical member contribution position is resolved
+     through get_member_contribution_position(uuid).
    • member-layout.js owns portal navigation/auth/logout.
    ========================================================= */
 
@@ -77,6 +80,187 @@ function formatMoney(value) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   }).format(numberValue(value));
+}
+
+
+/* =========================================================
+   CANONICAL CONTRIBUTION POSITION
+   ========================================================= */
+
+function contributionPositionStatus(
+  position
+) {
+  if (!position) {
+    return "UNKNOWN";
+  }
+
+  const status =
+    String(
+      position.status || ""
+    )
+      .trim()
+      .toUpperCase();
+
+  const arrears =
+    numberValue(
+      position.arrears
+    );
+
+  const credit =
+    numberValue(
+      position.credit
+    );
+
+  if (
+    status === "ARREARS" ||
+    arrears > 0
+  ) {
+    return "ARREARS";
+  }
+
+  if (
+    status === "CREDIT" ||
+    credit > 0
+  ) {
+    return "CREDIT";
+  }
+
+  return "UP_TO_DATE";
+}
+
+
+function renderMyContributionPosition(
+  position
+) {
+  const element =
+    byId(
+      "myContributionStatus"
+    );
+
+  if (!element) {
+    return;
+  }
+
+  const status =
+    contributionPositionStatus(
+      position
+    );
+
+  element.className =
+    "member-finance-status-value";
+
+  if (
+    status === "ARREARS"
+  ) {
+    const arrears =
+      numberValue(
+        position?.arrears
+      );
+
+    element.classList.add(
+      "status-arrears"
+    );
+
+    element.textContent =
+      `Arrears — ${formatMoney(
+        arrears
+      )}`;
+
+    return;
+  }
+
+  if (
+    status === "CREDIT"
+  ) {
+    element.classList.add(
+      "status-credit"
+    );
+
+    element.textContent =
+      "Credit";
+
+    return;
+  }
+
+  if (
+    status === "UP_TO_DATE"
+  ) {
+    element.classList.add(
+      "status-up-to-date"
+    );
+
+    element.textContent =
+      "Up to date";
+
+    return;
+  }
+
+  element.classList.add(
+    "status-unknown"
+  );
+
+  element.textContent =
+    "Unavailable";
+}
+
+
+async function loadMyContributionPosition() {
+  const element =
+    byId(
+      "myContributionStatus"
+    );
+
+  if (!element) {
+    return;
+  }
+
+  element.className =
+    "member-finance-status-value status-unknown";
+
+  element.textContent =
+    "Loading...";
+
+  try {
+    const {
+      data,
+      error
+    } = await supabase.rpc(
+      "get_member_contribution_position",
+      {
+        p_member_id:
+          memberId
+      }
+    );
+
+    if (error) {
+      throw error;
+    }
+
+    const position =
+      Array.isArray(data)
+        ? data[0]
+        : data;
+
+    if (!position) {
+      throw new Error(
+        "Contribution position returned no result."
+      );
+    }
+
+    renderMyContributionPosition(
+      position
+    );
+
+  } catch (error) {
+    console.warn(
+      "Member contribution position could not be loaded:",
+      error
+    );
+
+    renderMyContributionPosition(
+      null
+    );
+  }
 }
 
 
@@ -1030,6 +1214,7 @@ async function loadDashboard() {
     const results =
       await Promise.allSettled([
         loadMyContributions(),
+        loadMyContributionPosition(),
         loadGroupReadData(),
         loadMeetings(),
         loadActivities(),
@@ -1039,6 +1224,7 @@ async function loadDashboard() {
 
     const [
       myContributionsResult,
+      myContributionPositionResult,
       groupDataResult,
       meetingsResult,
       activitiesResult,
@@ -1142,6 +1328,7 @@ async function loadDashboard() {
     }
 
     void myContributionsResult;
+    void myContributionPositionResult;
     void meetingsResult;
     void activitiesResult;
     void plansResult;
