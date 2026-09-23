@@ -26,8 +26,8 @@
    ---------------------------------------------------------
    • Do not assume contributions.group_id exists.
    • Group contribution data is resolved through members.
-   • Canonical member contribution position is resolved
-     through get_member_contribution_position(uuid).
+   • Member contribution position is resolved through
+     get_my_contribution_position().
    • member-layout.js owns portal navigation/auth/logout.
    ========================================================= */
 
@@ -69,7 +69,10 @@ function escapeHtml(value) {
 
 function numberValue(value) {
   const number = Number(value);
-  return Number.isFinite(number) ? number : 0;
+
+  return Number.isFinite(number)
+    ? number
+    : 0;
 }
 
 
@@ -79,7 +82,9 @@ function formatMoney(value) {
     currency: "KES",
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  }).format(numberValue(value));
+  }).format(
+    numberValue(value)
+  );
 }
 
 
@@ -225,11 +230,7 @@ async function loadMyContributionPosition() {
       data,
       error
     } = await supabase.rpc(
-      "get_member_contribution_position",
-      {
-        p_member_id:
-          memberId
-      }
+      "get_my_contribution_position"
     );
 
     if (error) {
@@ -271,24 +272,40 @@ function formatDate(value) {
 
   const date = new Date(value);
 
-  if (Number.isNaN(date.getTime())) {
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
     return String(value);
   }
 
-  return date.toLocaleDateString("en-KE", {
-    year: "numeric",
-    month: "short",
-    day: "numeric"
-  });
+  return date.toLocaleDateString(
+    "en-KE",
+    {
+      year: "numeric",
+      month: "short",
+      day: "numeric"
+    }
+  );
 }
 
 
 function todayIso() {
   const date = new Date();
 
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
+  const year =
+    date.getFullYear();
+
+  const month =
+    String(
+      date.getMonth() + 1
+    ).padStart(2, "0");
+
+  const day =
+    String(
+      date.getDate()
+    ).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
 }
@@ -297,8 +314,13 @@ function todayIso() {
 function currentMonthStart() {
   const date = new Date();
 
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year =
+    date.getFullYear();
+
+  const month =
+    String(
+      date.getMonth() + 1
+    ).padStart(2, "0");
 
   return `${year}-${month}-01`;
 }
@@ -310,8 +332,15 @@ function displayRole(role) {
   }
 
   return String(role)
-    .replace(/[_-]+/g, " ")
-    .replace(/\b\w/g, letter => letter.toUpperCase());
+    .replace(
+      /[_-]+/g,
+      " "
+    )
+    .replace(
+      /\b\w/g,
+      letter =>
+        letter.toUpperCase()
+    );
 }
 
 
@@ -321,16 +350,28 @@ function displayStatus(status) {
   }
 
   return String(status)
-    .replace(/[_-]+/g, " ")
-    .replace(/\b\w/g, letter => letter.toUpperCase());
+    .replace(
+      /[_-]+/g,
+      " "
+    )
+    .replace(
+      /\b\w/g,
+      letter =>
+        letter.toUpperCase()
+    );
 }
 
 
-function setText(id, value) {
-  const element = byId(id);
+function setText(
+  id,
+  value
+) {
+  const element =
+    byId(id);
 
   if (element) {
-    element.textContent = value ?? "—";
+    element.textContent =
+      value ?? "—";
   }
 }
 
@@ -340,28 +381,41 @@ function setText(id, value) {
    ========================================================= */
 
 function showLoading(show) {
-  const loading = byId("memberLoading");
+  const loading =
+    byId(
+      "memberLoading"
+    );
 
   if (loading) {
-    loading.hidden = !show;
+    loading.hidden =
+      !show;
   }
 }
 
 
 function showError(message) {
-  const error = byId("memberError");
+  const error =
+    byId(
+      "memberError"
+    );
 
   if (!error) {
     return;
   }
 
-  error.textContent = message || "Unable to load your member dashboard.";
+  error.textContent =
+    message ||
+    "Unable to load your member dashboard.";
+
   error.hidden = false;
 }
 
 
 function clearError() {
-  const error = byId("memberError");
+  const error =
+    byId(
+      "memberError"
+    );
 
   if (error) {
     error.hidden = true;
@@ -375,8 +429,13 @@ function clearError() {
    ========================================================= */
 
 function renderAccount() {
-  const memberName = currentMember?.name || "Member";
-  const groupName = currentGroup?.name || "Your group";
+  const memberName =
+    currentMember?.name ||
+    "Member";
+
+  const groupName =
+    currentGroup?.name ||
+    "Your group";
 
   setText(
     "memberGreeting",
@@ -404,12 +463,16 @@ function renderAccount() {
 
   setText(
     "memberRole",
-    displayRole(currentMember?.role)
+    displayRole(
+      currentMember?.role
+    )
   );
 
   setText(
     "memberStatus",
-    displayStatus(currentMember?.status)
+    displayStatus(
+      currentMember?.status
+    )
   );
 }
 
@@ -419,29 +482,46 @@ function renderAccount() {
    ========================================================= */
 
 async function loadMyContributions() {
-  const { data, error } = await supabase
+  const {
+    data,
+    error
+  } = await supabase
     .from("contributions")
     .select(
       "id, member_id, amount, contribution_date, contribution_type, payment_method"
     )
-    .eq("member_id", memberId)
-    .order("contribution_date", {
-      ascending: false
-    });
+    .eq(
+      "member_id",
+      memberId
+    )
+    .order(
+      "contribution_date",
+      {
+        ascending: false
+      }
+    );
 
   if (error) {
     throw error;
   }
 
-  const contributions = Array.isArray(data)
-    ? data
-    : [];
+  const contributions =
+    Array.isArray(data)
+      ? data
+      : [];
 
-  const total = contributions.reduce(
-    (sum, contribution) =>
-      sum + numberValue(contribution.amount),
-    0
-  );
+  const total =
+    contributions.reduce(
+      (
+        sum,
+        contribution
+      ) =>
+        sum +
+        numberValue(
+          contribution.amount
+        ),
+      0
+    );
 
   setText(
     "myContributionTotal",
@@ -450,7 +530,9 @@ async function loadMyContributions() {
 
   setText(
     "myContributionCount",
-    String(contributions.length)
+    String(
+      contributions.length
+    )
   );
 }
 
@@ -469,17 +551,26 @@ async function loadGroupReadData() {
       .select(
         "id, group_id, name, status"
       )
-      .eq("group_id", groupId),
+      .eq(
+        "group_id",
+        groupId
+      ),
 
     supabase
       .from("expenses")
       .select(
         "id, description, category, amount, date, approval_status"
       )
-      .eq("group_id", groupId)
-      .order("date", {
-        ascending: false
-      })
+      .eq(
+        "group_id",
+        groupId
+      )
+      .order(
+        "date",
+        {
+          ascending: false
+        }
+      )
       .limit(50)
   ]);
 
@@ -491,43 +582,63 @@ async function loadGroupReadData() {
     throw expensesResult.error;
   }
 
-  groupMembers = Array.isArray(membersResult.data)
-    ? membersResult.data
-    : [];
+  groupMembers =
+    Array.isArray(
+      membersResult.data
+    )
+      ? membersResult.data
+      : [];
 
-  groupExpenses = Array.isArray(expensesResult.data)
-    ? expensesResult.data
-    : [];
+  groupExpenses =
+    Array.isArray(
+      expensesResult.data
+    )
+      ? expensesResult.data
+      : [];
 
-  const memberIds = groupMembers
-    .map(member => member.id)
-    .filter(Boolean);
+  const memberIds =
+    groupMembers
+      .map(
+        member =>
+          member.id
+      )
+      .filter(Boolean);
 
   if (!memberIds.length) {
     groupContributions = [];
     return;
   }
 
-  const contributionsResult = await supabase
-    .from("contributions")
-    .select(
-      "id, member_id, amount, contribution_date, contribution_type, payment_method"
-    )
-    .in("member_id", memberIds)
-    .order("contribution_date", {
-      ascending: false
-    })
-    .limit(50);
+  const contributionsResult =
+    await supabase
+      .from("contributions")
+      .select(
+        "id, member_id, amount, contribution_date, contribution_type, payment_method"
+      )
+      .in(
+        "member_id",
+        memberIds
+      )
+      .order(
+        "contribution_date",
+        {
+          ascending: false
+        }
+      )
+      .limit(50);
 
-  if (contributionsResult.error) {
+  if (
+    contributionsResult.error
+  ) {
     throw contributionsResult.error;
   }
 
-  groupContributions = Array.isArray(
-    contributionsResult.data
-  )
-    ? contributionsResult.data
-    : [];
+  groupContributions =
+    Array.isArray(
+      contributionsResult.data
+    )
+      ? contributionsResult.data
+      : [];
 }
 
 
@@ -536,106 +647,174 @@ async function loadGroupReadData() {
    ========================================================= */
 
 function renderGroupFinancialHealth() {
-  const monthStart = currentMonthStart();
+  const monthStart =
+    currentMonthStart();
 
   const monthlyContributions =
     groupContributions
-      .filter(contribution =>
-        contribution.contribution_date &&
-        String(contribution.contribution_date)
-          .slice(0, 10) >= monthStart
+      .filter(
+        contribution =>
+          contribution.contribution_date &&
+          String(
+            contribution.contribution_date
+          ).slice(0, 10) >=
+            monthStart
       )
       .reduce(
-        (sum, contribution) =>
-          sum + numberValue(contribution.amount),
+        (
+          sum,
+          contribution
+        ) =>
+          sum +
+          numberValue(
+            contribution.amount
+          ),
         0
       );
 
   const monthlyExpenses =
     groupExpenses
-      .filter(expense =>
-        expense.date &&
-        String(expense.date).slice(0, 10) >= monthStart &&
-        String(expense.approval_status || "").toLowerCase() ===
-          "approved"
+      .filter(
+        expense =>
+          expense.date &&
+          String(
+            expense.date
+          ).slice(0, 10) >=
+            monthStart &&
+          String(
+            expense.approval_status || ""
+          ).toLowerCase() ===
+            "approved"
       )
       .reduce(
-        (sum, expense) =>
-          sum + numberValue(expense.amount),
+        (
+          sum,
+          expense
+        ) =>
+          sum +
+          numberValue(
+            expense.amount
+          ),
         0
       );
 
   const netMovement =
-    monthlyContributions - monthlyExpenses;
+    monthlyContributions -
+    monthlyExpenses;
 
   const activeMembers =
-    groupMembers.filter(member =>
-      String(member.status || "").toLowerCase() === "active"
+    groupMembers.filter(
+      member =>
+        String(
+          member.status || ""
+        ).toLowerCase() ===
+          "active"
     );
 
-  const activeMemberIds = new Set(
-    activeMembers.map(member => member.id)
-  );
+  const activeMemberIds =
+    new Set(
+      activeMembers.map(
+        member =>
+          member.id
+      )
+    );
 
   const activeContributors =
     new Set(
       groupContributions
-        .filter(contribution =>
-          activeMemberIds.has(contribution.member_id) &&
-          contribution.contribution_date &&
-          String(contribution.contribution_date)
-            .slice(0, 10) >= monthStart
+        .filter(
+          contribution =>
+            activeMemberIds.has(
+              contribution.member_id
+            ) &&
+            contribution.contribution_date &&
+            String(
+              contribution.contribution_date
+            ).slice(0, 10) >=
+              monthStart
         )
-        .map(contribution => contribution.member_id)
+        .map(
+          contribution =>
+            contribution.member_id
+        )
     );
 
   const participation =
     activeMembers.length
-      ? (activeContributors.size / activeMembers.length) * 100
+      ? (
+          activeContributors.size /
+          activeMembers.length
+        ) * 100
       : 0;
 
-  const safeParticipation = Math.max(
-    0,
-    Math.min(100, participation)
-  );
+  const safeParticipation =
+    Math.max(
+      0,
+      Math.min(
+        100,
+        participation
+      )
+    );
 
   const expenseCount =
-    groupExpenses.filter(expense =>
-      expense.date &&
-      String(expense.date).slice(0, 10) >= monthStart
+    groupExpenses.filter(
+      expense =>
+        expense.date &&
+        String(
+          expense.date
+        ).slice(0, 10) >=
+          monthStart
     ).length;
 
-  let expenseActivity = "Quiet";
+  let expenseActivity =
+    "Quiet";
 
-  if (expenseCount >= 5) {
-    expenseActivity = "Active";
-  } else if (expenseCount >= 1) {
-    expenseActivity = "Normal";
+  if (
+    expenseCount >= 5
+  ) {
+    expenseActivity =
+      "Active";
+
+  } else if (
+    expenseCount >= 1
+  ) {
+    expenseActivity =
+      "Normal";
   }
 
   setText(
     "groupMemberCount",
-    String(groupMembers.length)
+    String(
+      groupMembers.length
+    )
   );
 
   setText(
     "groupMonthlyContributions",
-    formatMoney(monthlyContributions)
+    formatMoney(
+      monthlyContributions
+    )
   );
 
   setText(
     "groupMonthlyExpenses",
-    formatMoney(monthlyExpenses)
+    formatMoney(
+      monthlyExpenses
+    )
   );
 
   setText(
     "groupNetMovement",
-    formatMoney(netMovement)
+    formatMoney(
+      netMovement
+    )
   );
 
   setText(
     "groupParticipation",
-    `${Math.round(safeParticipation)}%`
+    `${Math.round(
+      safeParticipation
+    )}%`
   );
 
   setText(
@@ -645,23 +824,33 @@ function renderGroupFinancialHealth() {
 
   setText(
     "activityMemberCount",
-    String(groupMembers.length)
+    String(
+      groupMembers.length
+    )
   );
 
   setText(
     "activityContributionCount",
-    String(groupContributions.length)
+    String(
+      groupContributions.length
+    )
   );
 
   setText(
     "activityExpenseCount",
-    String(groupExpenses.length)
+    String(
+      groupExpenses.length
+    )
   );
 
-  const bar = byId("groupParticipationBar");
+  const bar =
+    byId(
+      "groupParticipationBar"
+    );
 
   if (bar) {
-    bar.style.width = `${safeParticipation}%`;
+    bar.style.width =
+      `${safeParticipation}%`;
 
     bar.setAttribute(
       "aria-valuenow",
@@ -680,41 +869,56 @@ function renderGroupFinancialHealth() {
    ========================================================= */
 
 function renderRecentGroupContributions() {
-  const container = byId(
-    "memberRecentContributions"
-  );
+  const container =
+    byId(
+      "memberRecentContributions"
+    );
 
   if (!container) {
     return;
   }
 
-  if (!groupContributions.length) {
+  if (
+    !groupContributions.length
+  ) {
     container.innerHTML =
       "<p>No recent group contributions recorded.</p>";
+
     return;
   }
 
-  const memberNames = new Map(
-    groupMembers.map(member => [
-      member.id,
-      member.name || "Member"
-    ])
-  );
+  const memberNames =
+    new Map(
+      groupMembers.map(
+        member => [
+          member.id,
+          member.name ||
+            "Member"
+        ]
+      )
+    );
 
   const recent =
-    groupContributions.slice(0, 5);
+    groupContributions.slice(
+      0,
+      5
+    );
 
-  container.innerHTML = recent
-    .map(contribution => {
-      const name =
-        memberNames.get(
-          contribution.member_id
-        ) || "Member";
+  container.innerHTML =
+    recent
+      .map(
+        contribution => {
+          const name =
+            memberNames.get(
+              contribution.member_id
+            ) ||
+            "Member";
 
-      return `
+          return `
         <div class="member-dashboard-list-item">
           <div>
             <strong>${escapeHtml(name)}</strong>
+
             <small>
               ${escapeHtml(
                 contribution.contribution_type ||
@@ -731,13 +935,16 @@ function renderRecentGroupContributions() {
 
           <strong>
             ${escapeHtml(
-              formatMoney(contribution.amount)
+              formatMoney(
+                contribution.amount
+              )
             )}
           </strong>
         </div>
       `;
-    })
-    .join("");
+        }
+      )
+      .join("");
 }
 
 
@@ -746,34 +953,45 @@ function renderRecentGroupContributions() {
    ========================================================= */
 
 function renderRecentGroupExpenses() {
-  const container = byId(
-    "memberRecentExpenses"
-  );
+  const container =
+    byId(
+      "memberRecentExpenses"
+    );
 
   if (!container) {
     return;
   }
 
-  if (!groupExpenses.length) {
+  if (
+    !groupExpenses.length
+  ) {
     container.innerHTML =
       "<p>No recent group expenses recorded.</p>";
+
     return;
   }
 
   const recent =
-    groupExpenses.slice(0, 3);
+    groupExpenses.slice(
+      0,
+      3
+    );
 
-  container.innerHTML = recent
-    .map(expense => {
-      const status =
-        expense.approval_status ||
-        "Pending";
+  container.innerHTML =
+    recent
+      .map(
+        expense => {
+          const status =
+            expense.approval_status ||
+            "Pending";
 
-      const approved =
-        String(status).toLowerCase() ===
-        "approved";
+          const approved =
+            String(
+              status
+            ).toLowerCase() ===
+              "approved";
 
-      return `
+          return `
         <div class="member-dashboard-list-item">
           <div>
             <strong>
@@ -786,26 +1004,36 @@ function renderRecentGroupExpenses() {
 
             <small>
               ${escapeHtml(
-                expense.category || "Expense"
+                expense.category ||
+                "Expense"
               )}
               ·
               ${escapeHtml(
-                formatDate(expense.date)
+                formatDate(
+                  expense.date
+                )
               )}
               ·
               ${escapeHtml(status)}
             </small>
           </div>
 
-          <strong${approved ? "" : ' style="opacity:.75;"'}>
+          <strong${
+            approved
+              ? ""
+              : ' style="opacity:.75;"'
+          }>
             ${escapeHtml(
-              formatMoney(expense.amount)
+              formatMoney(
+                expense.amount
+              )
             )}
           </strong>
         </div>
       `;
-    })
-    .join("");
+        }
+      )
+      .join("");
 }
 
 
@@ -814,68 +1042,94 @@ function renderRecentGroupExpenses() {
    ========================================================= */
 
 async function loadMeetings() {
-  const container = byId(
-    "memberMeetings"
-  );
+  const container =
+    byId(
+      "memberMeetings"
+    );
 
   if (!container) {
     return;
   }
 
-  const { data, error } = await supabase
+  const {
+    data,
+    error
+  } = await supabase
     .from("meetings")
     .select(
       "id, date, title, venue, status"
     )
-    .eq("group_id", groupId)
-    .gte("date", todayIso())
-    .order("date", {
-      ascending: true
-    })
+    .eq(
+      "group_id",
+      groupId
+    )
+    .gte(
+      "date",
+      todayIso()
+    )
+    .order(
+      "date",
+      {
+        ascending: true
+      }
+    )
     .limit(5);
 
   if (error) {
     throw error;
   }
 
-  const meetings = Array.isArray(data)
-    ? data
-    : [];
+  const meetings =
+    Array.isArray(data)
+      ? data
+      : [];
 
   if (!meetings.length) {
     container.innerHTML =
       "<p>No upcoming meetings recorded.</p>";
+
     return;
   }
 
-  container.innerHTML = meetings
-    .map(meeting => `
+  container.innerHTML =
+    meetings
+      .map(
+        meeting => `
       <div class="member-dashboard-list-item">
         <div>
           <strong>
             ${escapeHtml(
-              meeting.title || "Meeting"
+              meeting.title ||
+              "Meeting"
             )}
           </strong>
 
           <small>
             ${escapeHtml(
-              formatDate(meeting.date)
+              formatDate(
+                meeting.date
+              )
             )}
-            ${meeting.venue
-              ? ` · ${escapeHtml(meeting.venue)}`
-              : ""}
+            ${
+              meeting.venue
+                ? ` · ${escapeHtml(
+                    meeting.venue
+                  )}`
+                : ""
+            }
           </small>
         </div>
 
         <span>
           ${escapeHtml(
-            meeting.status || "Scheduled"
+            meeting.status ||
+            "Scheduled"
           )}
         </span>
       </div>
-    `)
-    .join("");
+    `
+      )
+      .join("");
 }
 
 
@@ -884,59 +1138,79 @@ async function loadMeetings() {
    ========================================================= */
 
 async function loadActivities() {
-  const container = byId(
-    "memberActivities"
-  );
+  const container =
+    byId(
+      "memberActivities"
+    );
 
   if (!container) {
     return;
   }
 
-  const { data, error } = await supabase
+  const {
+    data,
+    error
+  } = await supabase
     .from("group_activities")
     .select(
       "id, plan_id, title, description, start_date, due_date, status, progress_percent"
     )
-    .eq("group_id", groupId)
-    .order("due_date", {
-      ascending: true,
-      nullsFirst: false
-    })
+    .eq(
+      "group_id",
+      groupId
+    )
+    .order(
+      "due_date",
+      {
+        ascending: true,
+        nullsFirst: false
+      }
+    )
     .limit(5);
 
   if (error) {
     throw error;
   }
 
-  const activities = Array.isArray(data)
-    ? data
-    : [];
+  const activities =
+    Array.isArray(data)
+      ? data
+      : [];
 
   if (!activities.length) {
     container.innerHTML =
       "<p>No group activities recorded.</p>";
+
     return;
   }
 
-  container.innerHTML = activities
-    .map(activity => `
+  container.innerHTML =
+    activities
+      .map(
+        activity => `
       <div class="member-dashboard-list-item">
         <div>
           <strong>
             ${escapeHtml(
-              activity.title || "Activity"
+              activity.title ||
+              "Activity"
             )}
           </strong>
 
           <small>
             ${escapeHtml(
-              activity.status || "Planned"
+              activity.status ||
+              "Planned"
             )}
-            ${activity.due_date
-              ? ` · Due ${escapeHtml(
-                  formatDate(activity.due_date)
-                )}`
-              : ""}
+            ${
+              activity.due_date
+                ? ` · Due ${escapeHtml(
+                    formatDate(
+                      activity.due_date
+                    )
+                  )}`
+                : ""
+            }
           </small>
         </div>
 
@@ -946,8 +1220,9 @@ async function loadActivities() {
           )}%
         </span>
       </div>
-    `)
-    .join("");
+    `
+      )
+      .join("");
 }
 
 
@@ -956,9 +1231,10 @@ async function loadActivities() {
    ========================================================= */
 
 async function loadPlansAndGoals() {
-  const container = byId(
-    "memberPlans"
-  );
+  const container =
+    byId(
+      "memberPlans"
+    );
 
   if (!container) {
     return;
@@ -973,11 +1249,17 @@ async function loadPlansAndGoals() {
       .select(
         "id, title, description, category, start_date, target_date, status, progress_percent"
       )
-      .eq("group_id", groupId)
-      .order("target_date", {
-        ascending: true,
-        nullsFirst: false
-      })
+      .eq(
+        "group_id",
+        groupId
+      )
+      .order(
+        "target_date",
+        {
+          ascending: true,
+          nullsFirst: false
+        }
+      )
       .limit(5),
 
     supabase
@@ -985,90 +1267,148 @@ async function loadPlansAndGoals() {
       .select(
         "id, goal_name, category, description, frequency, start_date, end_date, target_amount, status"
       )
-      .eq("group_id", groupId)
-      .order("end_date", {
-        ascending: true,
-        nullsFirst: false
-      })
+      .eq(
+        "group_id",
+        groupId
+      )
+      .order(
+        "end_date",
+        {
+          ascending: true,
+          nullsFirst: false
+        }
+      )
       .limit(5)
   ]);
 
-  if (plansResult.error) {
+  if (
+    plansResult.error
+  ) {
     throw plansResult.error;
   }
 
-  if (goalsResult.error) {
+  if (
+    goalsResult.error
+  ) {
     throw goalsResult.error;
   }
 
-  const plans = Array.isArray(plansResult.data)
-    ? plansResult.data
-    : [];
+  const plans =
+    Array.isArray(
+      plansResult.data
+    )
+      ? plansResult.data
+      : [];
 
-  const goals = Array.isArray(goalsResult.data)
-    ? goalsResult.data
-    : [];
+  const goals =
+    Array.isArray(
+      goalsResult.data
+    )
+      ? goalsResult.data
+      : [];
 
   const combined = [
-    ...plans.map(plan => ({
-      type: "Plan",
-      title: plan.title,
-      description: plan.description,
-      status: plan.status,
-      progress: plan.progress_percent,
-      date: plan.target_date
-    })),
+    ...plans.map(
+      plan => ({
+        type: "Plan",
+        title: plan.title,
+        description:
+          plan.description,
+        status:
+          plan.status,
+        progress:
+          plan.progress_percent,
+        date:
+          plan.target_date
+      })
+    ),
 
-    ...goals.map(goal => ({
-      type: "Goal",
-      title: goal.goal_name,
-      description: goal.description,
-      status: goal.status,
-      progress: null,
-      date: goal.end_date
-    }))
+    ...goals.map(
+      goal => ({
+        type: "Goal",
+        title:
+          goal.goal_name,
+        description:
+          goal.description,
+        status:
+          goal.status,
+        progress:
+          null,
+        date:
+          goal.end_date
+      })
+    )
   ]
-    .sort((a, b) => {
-      const first =
-        a.date
-          ? new Date(a.date).getTime()
-          : Number.MAX_SAFE_INTEGER;
+    .sort(
+      (
+        a,
+        b
+      ) => {
+        const first =
+          a.date
+            ? new Date(
+                a.date
+              ).getTime()
+            : Number.MAX_SAFE_INTEGER;
 
-      const second =
-        b.date
-          ? new Date(b.date).getTime()
-          : Number.MAX_SAFE_INTEGER;
+        const second =
+          b.date
+            ? new Date(
+                b.date
+              ).getTime()
+            : Number.MAX_SAFE_INTEGER;
 
-      return first - second;
-    })
-    .slice(0, 5);
+        return first -
+          second;
+      }
+    )
+    .slice(
+      0,
+      5
+    );
 
-  if (!combined.length) {
+  if (
+    !combined.length
+  ) {
     container.innerHTML =
       "<p>No plans or goals recorded.</p>";
+
     return;
   }
 
-  container.innerHTML = combined
-    .map(item => `
+  container.innerHTML =
+    combined
+      .map(
+        item => `
       <div class="member-dashboard-list-item">
         <div>
           <strong>
             ${escapeHtml(
-              item.title || item.type
+              item.title ||
+              item.type
             )}
           </strong>
 
           <small>
-            ${escapeHtml(item.type)}
-            ${item.status
-              ? ` · ${escapeHtml(item.status)}`
-              : ""}
-            ${item.date
-              ? ` · ${escapeHtml(
-                  formatDate(item.date)
-                )}`
-              : ""}
+            ${escapeHtml(
+              item.type
+            )}
+            ${
+              item.status
+                ? ` · ${escapeHtml(
+                    item.status
+                  )}`
+                : ""
+            }
+            ${
+              item.date
+                ? ` · ${escapeHtml(
+                    formatDate(
+                      item.date
+                    )
+                  )}`
+                : ""
+            }
           </small>
         </div>
 
@@ -1076,13 +1416,16 @@ async function loadPlansAndGoals() {
           ${
             item.progress !== null &&
             item.progress !== undefined
-              ? `${numberValue(item.progress)}%`
+              ? `${numberValue(
+                  item.progress
+                )}%`
               : ""
           }
         </span>
       </div>
-    `)
-    .join("");
+    `
+      )
+      .join("");
 }
 
 
@@ -1091,73 +1434,102 @@ async function loadPlansAndGoals() {
    ========================================================= */
 
 async function loadAssets() {
-  const container = byId(
-    "memberAssets"
-  );
+  const container =
+    byId(
+      "memberAssets"
+    );
 
   if (!container) {
     return;
   }
 
-  const { data, error } = await supabase
+  const {
+    data,
+    error
+  } = await supabase
     .from("group_assets")
     .select(
       "id, asset_name, category, description, acquired_date, acquisition_cost, current_value, location, status"
     )
-    .eq("group_id", groupId)
-    .order("created_at", {
-      ascending: false
-    })
+    .eq(
+      "group_id",
+      groupId
+    )
+    .order(
+      "created_at",
+      {
+        ascending: false
+      }
+    )
     .limit(5);
 
   if (error) {
     throw error;
   }
 
-  const assets = Array.isArray(data)
-    ? data
-    : [];
+  const assets =
+    Array.isArray(data)
+      ? data
+      : [];
 
   if (!assets.length) {
     container.innerHTML =
       "<p>No group assets recorded.</p>";
+
     return;
   }
 
-  container.innerHTML = assets
-    .map(asset => `
+  container.innerHTML =
+    assets
+      .map(
+        asset => `
       <div class="member-dashboard-list-item">
         <div>
           <strong>
             ${escapeHtml(
-              asset.asset_name || "Asset"
+              asset.asset_name ||
+              "Asset"
             )}
           </strong>
 
           <small>
             ${escapeHtml(
-              asset.category || "Asset"
+              asset.category ||
+              "Asset"
             )}
-            ${asset.location
-              ? ` · ${escapeHtml(asset.location)}`
-              : ""}
-            ${asset.status
-              ? ` · ${escapeHtml(asset.status)}`
-              : ""}
+            ${
+              asset.location
+                ? ` · ${escapeHtml(
+                    asset.location
+                  )}`
+                : ""
+            }
+            ${
+              asset.status
+                ? ` · ${escapeHtml(
+                    asset.status
+                  )}`
+                : ""
+            }
           </small>
         </div>
 
         <span>
-          ${asset.current_value !== null &&
-          asset.current_value !== undefined
-            ? escapeHtml(
-                formatMoney(asset.current_value)
-              )
-            : ""}
+          ${
+            asset.current_value !== null &&
+            asset.current_value !== undefined
+              ? escapeHtml(
+                  formatMoney(
+                    asset.current_value
+                  )
+                )
+              : ""
+          }
         </span>
       </div>
-    `)
-    .join("");
+    `
+      )
+      .join("");
 }
 
 
@@ -1174,13 +1546,16 @@ async function loadDashboard() {
       await getMyApplicationContext();
 
     currentUser =
-      context?.user || null;
+      context?.user ||
+      null;
 
     currentMember =
-      context?.member || null;
+      context?.member ||
+      null;
 
     currentGroup =
-      context?.group || null;
+      context?.group ||
+      null;
 
     groupId =
       currentMember?.group_id ||
@@ -1239,6 +1614,7 @@ async function loadDashboard() {
       renderGroupFinancialHealth();
       renderRecentGroupContributions();
       renderRecentGroupExpenses();
+
     } else {
       console.warn(
         "Member dashboard group read data failed:",
@@ -1291,37 +1667,53 @@ async function loadDashboard() {
       );
 
       const contributionContainer =
-        byId("memberRecentContributions");
+        byId(
+          "memberRecentContributions"
+        );
 
-      if (contributionContainer) {
+      if (
+        contributionContainer
+      ) {
         contributionContainer.innerHTML =
           "<p>Group contribution data could not be loaded.</p>";
       }
 
       const expenseContainer =
-        byId("memberRecentExpenses");
+        byId(
+          "memberRecentExpenses"
+        );
 
-      if (expenseContainer) {
+      if (
+        expenseContainer
+      ) {
         expenseContainer.innerHTML =
           "<p>Group expense data could not be loaded.</p>";
       }
     }
 
-    const failures = results.filter(
-      result =>
-        result.status === "rejected"
-    );
+    const failures =
+      results.filter(
+        result =>
+          result.status ===
+          "rejected"
+      );
 
-    if (failures.length) {
+    if (
+      failures.length
+    ) {
       console.warn(
         "Some member dashboard sections failed to load:",
         failures.map(
-          failure => failure.reason
+          failure =>
+            failure.reason
         )
       );
     }
 
-    if (failures.length === results.length) {
+    if (
+      failures.length ===
+      results.length
+    ) {
       throw new Error(
         "The member dashboard could not load its data."
       );
