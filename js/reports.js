@@ -60,6 +60,19 @@ import {
    The monthly "outstanding" value is NOT relabeled
    as cumulative arrears.
 
+   QUICK FILTER CONTRACT:
+
+   - All
+   - Needs Attention
+   - Has Previous Outstanding
+   - Has Credit
+
+   "Has Previous Outstanding" is based specifically on:
+   previous_outstanding > 0
+
+   It is NOT the same as:
+   current_outstanding > 0
+
    BOOT OWNERSHIP
 
    admin-layout.js is the sole page bootloader for this page.
@@ -97,6 +110,19 @@ let cumulativePositionsLoaded = false;
 
 let currentReportRows = [];
 let currentReportType = "executive";
+
+/*
+ * Quick filters have their own semantic state.
+ *
+ * This is deliberately separate from statusFilter because:
+ *
+ * - statusFilter = "outstanding"
+ *     means CURRENT MONTH outstanding
+ *
+ * - quick filter = "arrears"
+ *     means PREVIOUS outstanding
+ */
+let activeQuickFilter = "all";
 
 /* =========================================================
    DOM HELPERS
@@ -441,6 +467,8 @@ function setPeriodFromPreset(preset) {
 function setDefaultFilters() {
   const now = new Date();
 
+  activeQuickFilter = "all";
+
   if ($("periodPreset")) {
     $("periodPreset").value =
       "this-month";
@@ -734,10 +762,6 @@ function cumulativeStatusClass(status) {
     })
   ) {
     case "ARREARS":
-      /*
-       * Reuse the existing report status class.
-       * No new CSS contract is required.
-       */
       return "status-outstanding";
 
     case "CREDIT":
@@ -1320,6 +1344,10 @@ function filteredMeetings() {
   );
 }
 
+/* =========================================================
+   MONTHLY CANONICAL FILTERS
+========================================================= */
+
 function filteredCanonicalStatus() {
   const selectedMember =
     $("memberFilter")?.value ||
@@ -1344,16 +1372,79 @@ function filteredCanonicalStatus() {
           row.status
         );
 
+      const previousOutstanding =
+        number(
+          row.previous_outstanding
+        );
+
+      const currentOutstanding =
+        number(
+          row.current_outstanding
+        );
+
+      const carryForward =
+        number(
+          row.carry_forward
+        );
+
+      /*
+       * -----------------------------------------------------
+       * QUICK FILTER SEMANTICS
+       * -----------------------------------------------------
+       *
+       * These are evaluated separately from statusFilter.
+       *
+       * Has Previous Outstanding:
+       * previous_outstanding > 0
+       *
+       * Needs Attention:
+       * previous_outstanding > 0 OR
+       * current_outstanding > 0
+       *
+       * Has Credit:
+       * monthly carry-forward credit > 0
+       *
+       * None of these are cumulative arrears/credit.
+       */
       if (
-        selectedStatus === "all"
+        activeQuickFilter ===
+        "arrears"
       ) {
-        return true;
+        return (
+          previousOutstanding > 0
+        );
+      }
+
+      if (
+        activeQuickFilter ===
+        "attention"
+      ) {
+        return (
+          previousOutstanding > 0 ||
+          currentOutstanding > 0
+        );
+      }
+
+      if (
+        activeQuickFilter ===
+        "credit"
+      ) {
+        return (
+          carryForward > 0
+        );
       }
 
       /*
-       * Monthly semantics:
+       * -----------------------------------------------------
+       * MONTHLY STATUS FILTER
+       * -----------------------------------------------------
+       *
        * "outstanding" means current-month
        * outstanding / no-payment.
+       *
+       * It does NOT mean previous outstanding.
+       *
+       * It does NOT mean cumulative arrears.
        */
       if (
         selectedStatus ===
@@ -1372,6 +1463,32 @@ function filteredCanonicalStatus() {
       ) {
         return status ===
           "credit";
+      }
+
+      /*
+       * Cumulative filter values belong to
+       * cumulative report types and must not
+       * accidentally filter monthly RPC rows.
+       *
+       * The cumulative report renderer handles
+       * those values independently through
+       * cumulativePositions.
+       */
+      if (
+        selectedStatus ===
+          "cumulative-arrears" ||
+        selectedStatus ===
+          "cumulative-credit" ||
+        selectedStatus ===
+          "cumulative-up-to-date"
+      ) {
+        return true;
+      }
+
+      if (
+        selectedStatus === "all"
+      ) {
+        return true;
       }
 
       return status ===
@@ -1513,6 +1630,40 @@ function updateSummary(
       canonicalSummary
         ?.collection_rate
     ).toFixed(0)}%`
+  );
+
+  /*
+   * Cumulative KPI values are derived only from
+   * get_member_contribution_position().
+   */
+  const cumulativeArrears =
+    cumulativePositions.reduce(
+      (sum, position) =>
+        sum +
+        number(
+          position.arrears
+        ),
+      0
+    );
+
+  const cumulativeCredit =
+    cumulativePositions.reduce(
+      (sum, position) =>
+        sum +
+        number(
+          position.credit
+        ),
+      0
+    );
+
+  setText(
+    "reportCumulativeArrears",
+    money(cumulativeArrears)
+  );
+
+  setText(
+    "reportCumulativeCredit",
+    money(cumulativeCredit)
   );
 }
 
@@ -3215,6 +3366,13 @@ function applyQuickFilter(value) {
   const status =
     $("statusFilter");
 
+  activeQuickFilter =
+    value || "all";
+
+  /*
+   * Quick filters are intentionally kept separate from
+   * cumulative report filters.
+   */
   if (value === "all") {
     if (status) {
       status.value = "all";
@@ -3222,30 +3380,43 @@ function applyQuickFilter(value) {
   }
 
   if (value === "attention") {
+    /*
+     * Needs Attention is a monthly accounting
+     * quick filter:
+     *
+     * previous_outstanding > 0 OR
+     * current_outstanding > 0
+     */
     if (status) {
       status.value = "all";
     }
   }
 
-  /*
-   * Existing quick-filter value is retained for
-   * compatibility.
-   *
-   * Its current semantics remain MONTHLY OUTSTANDING.
-   * It does not map to cumulative arrears.
-   */
   if (value === "arrears") {
+    /*
+     * IMPORTANT:
+     *
+     * The HTML label is "Has Previous Outstanding".
+     *
+     * Do NOT set statusFilter to "outstanding"
+     * because that means CURRENT MONTH outstanding.
+     *
+     * The semantic filter is implemented in
+     * filteredCanonicalStatus() using
+     * previous_outstanding > 0.
+     */
     if (status) {
-      status.value =
-        "outstanding";
+      status.value = "all";
     }
   }
 
-  /*
-   * Existing quick-filter credit remains MONTHLY
-   * carry-forward credit.
-   */
   if (value === "credit") {
+    /*
+     * Quick-filter credit means MONTHLY
+     * carry-forward credit.
+     *
+     * It does NOT mean cumulative credit.
+     */
     if (status) {
       status.value =
         "credit";
@@ -4020,7 +4191,6 @@ function bindEvents() {
     "toDate",
     "accountingMonth",
     "memberFilter",
-    "statusFilter",
     "contributionTypeFilter",
     "paymentMethodFilter",
     "groupBy",
@@ -4028,11 +4198,69 @@ function bindEvents() {
   ].forEach(id => {
     $(id)?.addEventListener(
       "change",
-      () =>
+      () => {
+        /*
+         * A normal filter change supersedes
+         * an active quick-filter mode.
+         */
+        activeQuickFilter = "all";
+
+        document
+          .querySelectorAll(
+            ".quick-filter"
+          )
+          .forEach(button => {
+            button.classList.toggle(
+              "active",
+              button.dataset.quick ===
+                "all"
+            );
+          });
+
         generateReport()
-          .catch(reportError)
+          .catch(reportError);
+      }
     );
   });
+
+  /*
+   * Status filter has its own listener because it must
+   * remain independent from the quick-filter semantics.
+   *
+   * Examples:
+   *
+   * statusFilter = outstanding
+   *     → current-month outstanding
+   *
+   * statusFilter = credit
+   *     → monthly credit
+   *
+   * cumulative-* values
+   *     → handled by cumulative report types
+   */
+  $("statusFilter")
+    ?.addEventListener(
+      "change",
+      () => {
+        activeQuickFilter =
+          "all";
+
+        document
+          .querySelectorAll(
+            ".quick-filter"
+          )
+          .forEach(button => {
+            button.classList.toggle(
+              "active",
+              button.dataset.quick ===
+                "all"
+            );
+          });
+
+        generateReport()
+          .catch(reportError);
+      }
+    );
 
   document
     .querySelectorAll(
