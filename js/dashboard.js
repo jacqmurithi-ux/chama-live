@@ -760,12 +760,15 @@ async function loadMeetings() {
 async function loadSupportCases() {
 
   const {
-    data,
+    count,
     error
   } =
     await supabase
       .from("group_support_cases")
-      .select("id")
+      .select("id", {
+        count: "exact",
+        head: true
+      })
       .eq(
         "group_id",
         currentGroupId
@@ -778,7 +781,9 @@ async function loadSupportCases() {
 
 
   supportCases =
-    data || [];
+    Number.isFinite(count)
+      ? count
+      : 0;
 
 }
 
@@ -790,12 +795,15 @@ async function loadSupportCases() {
 async function loadPlans() {
 
   const {
-    data,
+    count,
     error
   } =
     await supabase
       .from("group_plans")
-      .select("id")
+      .select("id", {
+        count: "exact",
+        head: true
+      })
       .eq(
         "group_id",
         currentGroupId
@@ -808,7 +816,9 @@ async function loadPlans() {
 
 
   plans =
-    data || [];
+    Number.isFinite(count)
+      ? count
+      : 0;
 
 }
 
@@ -820,12 +830,15 @@ async function loadPlans() {
 async function loadActivities() {
 
   const {
-    data,
+    count,
     error
   } =
     await supabase
       .from("group_activities")
-      .select("id")
+      .select("id", {
+        count: "exact",
+        head: true
+      })
       .eq(
         "group_id",
         currentGroupId
@@ -838,7 +851,9 @@ async function loadActivities() {
 
 
   activities =
-    data || [];
+    Number.isFinite(count)
+      ? count
+      : 0;
 
 }
 
@@ -850,12 +865,15 @@ async function loadActivities() {
 async function loadMilestones() {
 
   const {
-    data,
+    count,
     error
   } =
     await supabase
       .from("group_milestones")
-      .select("id")
+      .select("id", {
+        count: "exact",
+        head: true
+      })
       .eq(
         "group_id",
         currentGroupId
@@ -868,7 +886,9 @@ async function loadMilestones() {
 
 
   milestones =
-    data || [];
+    Number.isFinite(count)
+      ? count
+      : 0;
 
 }
 
@@ -880,12 +900,15 @@ async function loadMilestones() {
 async function loadAssets() {
 
   const {
-    data,
+    count,
     error
   } =
     await supabase
       .from("group_assets")
-      .select("id")
+      .select("id", {
+        count: "exact",
+        head: true
+      })
       .eq(
         "group_id",
         currentGroupId
@@ -898,7 +921,9 @@ async function loadAssets() {
 
 
   assets =
-    data || [];
+    Number.isFinite(count)
+      ? count
+      : 0;
 
 }
 
@@ -910,12 +935,15 @@ async function loadAssets() {
 async function loadContributionGoals() {
 
   const {
-    data,
+    count,
     error
   } =
     await supabase
       .from("contribution_goals")
-      .select("id")
+      .select("id", {
+        count: "exact",
+        head: true
+      })
       .eq(
         "group_id",
         currentGroupId
@@ -928,7 +956,9 @@ async function loadContributionGoals() {
 
 
   contributionGoals =
-    data || [];
+    Number.isFinite(count)
+      ? count
+      : 0;
 
 }
 
@@ -1267,7 +1297,6 @@ async function loadData() {
     loadContributions(),
     loadExpenses(),
     loadMeetings(),
-
     loadSupportCases(),
     loadPlans(),
     loadActivities(),
@@ -1275,17 +1304,6 @@ async function loadData() {
     loadAssets(),
     loadContributionGoals()
   ]);
-
-
-  /*
-     IMPORTANT:
-
-     Do NOT calculate monthly arrears,
-     credit, allocations or outstanding
-     from raw contributions.
-
-     The canonical 2B RPC is authoritative.
-  */
 
   await loadCanonicalAccounting();
 
@@ -2286,37 +2304,37 @@ function renderOperationsSnapshot() {
 
   setText(
     "operationsSupportCases",
-    supportCases.length
+    supportCases
   );
 
 
   setText(
     "operationsPlans",
-    plans.length
+    plans
   );
 
 
   setText(
     "operationsActivities",
-    activities.length
+    activities
   );
 
 
   setText(
     "operationsMilestones",
-    milestones.length
+    milestones
   );
 
 
   setText(
     "operationsAssets",
-    assets.length
+    assets
   );
 
 
   setText(
     "operationsContributionGoals",
-    contributionGoals.length
+    contributionGoals
   );
 
 }
