@@ -226,6 +226,27 @@ async function loadApplicationContext() {
    SUBSCRIPTION
 ========================================================= */
 
+function normalizeSubscription(row) {
+
+  if (!row) {
+    return null;
+  }
+
+  return {
+    subscription_id: row.subscription_id ?? null,
+    group_id: row.group_id ?? null,
+    status: row.status ?? null,
+    started_at: row.started_at ?? null,
+    pricing_tier_code: row.pricing_tier_code ?? null,
+    standard_group_amount: row.standard_group_amount ?? null,
+    standard_member_login_amount: row.standard_member_login_amount ?? null,
+    currency: row.currency ?? "KES"
+  };
+
+}
+
+
+
 async function loadSubscription() {
 
   const groupId =
@@ -253,9 +274,11 @@ async function loadSubscription() {
   }
 
   subscription =
-    Array.isArray(data)
-      ? data[0] || null
-      : data || null;
+    normalizeSubscription(
+      Array.isArray(data)
+        ? data[0] || null
+        : data || null
+    );
 
   return subscription;
 
@@ -726,6 +749,20 @@ function renderSubscription() {
       formatAmount(
         subscription.standard_member_login_amount,
         subscription.currency
+      ),
+      false
+    ],
+
+    [
+      "Currency",
+      subscription.currency || "—",
+      false
+    ],
+
+    [
+      "Started",
+      formatDate(
+        subscription.started_at
       ),
       false
     ]
