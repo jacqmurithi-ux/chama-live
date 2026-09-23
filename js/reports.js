@@ -24,8 +24,12 @@ import {
 
    Canonical RPCs:
 
+   MONTHLY:
    - get_canonical_member_monthly_status()
    - get_canonical_monthly_accounting_summary()
+
+   CUMULATIVE:
+   - get_member_contribution_position()
 
    IMPORTANT:
    This file NEVER calls:
@@ -34,6 +38,27 @@ import {
    - cl_2b_refresh_member()
 
    Reports only READ existing accounting results.
+
+   IMPORTANT SEMANTIC DISTINCTION:
+
+   Monthly accounting:
+   - previous_outstanding
+   - previous_credit
+   - current_month_payment
+   - applied_this_month
+   - carry_forward
+   - current_outstanding
+   - monthly status
+
+   Cumulative accounting:
+   - total_due
+   - total_allocated
+   - arrears
+   - credit
+   - cumulative status
+
+   The monthly "outstanding" value is NOT relabeled
+   as cumulative arrears.
 
    BOOT OWNERSHIP
 
@@ -57,6 +82,18 @@ let meetings = [];
 
 let canonicalStatus = [];
 let canonicalSummary = null;
+
+/*
+ * Cumulative position is loaded independently from
+ * monthly accounting.
+ *
+ * The canonical RPC is authoritative for:
+ * - arrears
+ * - credit
+ * - cumulative status
+ */
+let cumulativePositions = [];
+let cumulativePositionsLoaded = false;
 
 let currentReportRows = [];
 let currentReportType = "executive";
@@ -641,6 +678,91 @@ function expenseStatus(row) {
 }
 
 /* =========================================================
+   CUMULATIVE STATUS HELPERS
+========================================================= */
+
+function cumulativePositionFor(memberId) {
+  return (
+    cumulativePositions.find(
+      row =>
+        String(row.memberId) ===
+        String(memberId)
+    ) || null
+  );
+}
+
+function cumulativeStatusKey(position) {
+  const status =
+    String(
+      position?.status || ""
+    )
+      .trim()
+      .toUpperCase();
+
+  if (status === "ARREARS") {
+    return "ARREARS";
+  }
+
+  if (status === "CREDIT") {
+    return "CREDIT";
+  }
+
+  return "UP_TO_DATE";
+}
+
+function cumulativeStatusLabel(status) {
+  switch (
+    cumulativeStatusKey({
+      status
+    })
+  ) {
+    case "ARREARS":
+      return "Cumulative Arrears";
+
+    case "CREDIT":
+      return "Cumulative Credit";
+
+    default:
+      return "Cumulative Up to Date";
+  }
+}
+
+function cumulativeStatusClass(status) {
+  switch (
+    cumulativeStatusKey({
+      status
+    })
+  ) {
+    case "ARREARS":
+      /*
+       * Reuse the existing report status class.
+       * No new CSS contract is required.
+       */
+      return "status-outstanding";
+
+    case "CREDIT":
+      return "status-credit";
+
+    default:
+      return "status-paid";
+  }
+}
+
+function cumulativeStatusBadge(status) {
+  return `
+    <span class="status-badge ${cumulativeStatusClass(
+      status
+    )}">
+      ${escapeHtml(
+        cumulativeStatusLabel(
+          status
+        )
+      )}
+    </span>
+  `;
+}
+
+/* =========================================================
    AUTHENTICATED GROUP CONTEXT
 ========================================================= */
 
@@ -918,7 +1040,7 @@ async function loadMeetings() {
 }
 
 /* =========================================================
-   LOAD CANONICAL ACCOUNTING
+   LOAD MONTHLY CANONICAL ACCOUNTING
 ========================================================= */
 
 async function loadCanonical(month) {
@@ -964,6 +1086,117 @@ async function loadCanonical(month) {
     Array.isArray(summaryData)
       ? summaryData[0] || null
       : summaryData || null;
+}
+
+/* =========================================================
+   LOAD CUMULATIVE CANONICAL ACCOUNTING
+========================================================= */
+
+async function loadCumulativePositions() {
+  cumulativePositions = [];
+  cumulativePositionsLoaded = false;
+
+  const active =
+    activeMembers();
+
+  if (!active.length) {
+    cumulativePositions = [];
+    cumulativePositionsLoaded = true;
+
+    return cumulativePositions;
+  }
+
+  /*
+   * Promise.all() is intentional.
+   *
+   * If one canonical member-position request fails,
+   * the entire cumulative result fails instead of
+   * presenting a partial dataset as complete.
+   */
+  const results =
+    await Promise.all(
+      active.map(
+        async member => {
+          const {
+            data,
+            error
+          } = await supabase.rpc(
+            "get_member_contribution_position",
+            {
+              p_member_id:
+                member.id
+            }
+          );
+
+          if (error) {
+            throw new Error(
+              `Cumulative contribution position could not be loaded for ${
+                member.name ||
+                member.id
+              }: ${error.message}`
+            );
+          }
+
+          const row =
+            Array.isArray(data)
+              ? data[0]
+              : data;
+
+          if (!row) {
+            throw new Error(
+              `Cumulative contribution position returned no result for ${
+                member.name ||
+                member.id
+              }.`
+            );
+          }
+
+          return {
+            memberId:
+              row.member_id,
+
+            groupId:
+              row.group_id,
+
+            totalDue:
+              number(
+                row.total_due
+              ),
+
+            totalAllocated:
+              number(
+                row.total_allocated
+              ),
+
+            arrears:
+              number(
+                row.arrears
+              ),
+
+            credit:
+              number(
+                row.credit
+              ),
+
+            status:
+              String(
+                row.status ||
+                "UP_TO_DATE"
+              )
+                .trim()
+                .toUpperCase()
+          };
+        }
+      )
+    );
+
+  cumulativePositions =
+    results;
+
+  cumulativePositionsLoaded =
+    true;
+
+  return cumulativePositions;
 }
 
 /* =========================================================
@@ -1117,6 +1350,11 @@ function filteredCanonicalStatus() {
         return true;
       }
 
+      /*
+       * Monthly semantics:
+       * "outstanding" means current-month
+       * outstanding / no-payment.
+       */
       if (
         selectedStatus ===
         "outstanding"
@@ -1138,6 +1376,28 @@ function filteredCanonicalStatus() {
 
       return status ===
         selectedStatus;
+    }
+  );
+}
+
+function filteredCumulativePositions() {
+  const selectedMember =
+    $("memberFilter")?.value ||
+    "all";
+
+  return cumulativePositions.filter(
+    position => {
+      if (
+        selectedMember !== "all" &&
+        String(
+          position.memberId
+        ) !==
+          String(selectedMember)
+      ) {
+        return false;
+      }
+
+      return true;
     }
   );
 }
@@ -1694,6 +1954,339 @@ function renderMeetings(rows) {
 }
 
 /* =========================================================
+   CUMULATIVE REPORT RENDERING
+========================================================= */
+
+function renderCumulativeReport(
+  type
+) {
+  const output =
+    $("reportOutput");
+
+  if (!output) {
+    return;
+  }
+
+  if (!cumulativePositionsLoaded) {
+    currentReportRows = [];
+
+    output.innerHTML = `
+      <div class="report-empty">
+        Cumulative contribution position is still loading.
+      </div>
+    `;
+
+    return;
+  }
+
+  let rows =
+    filteredCumulativePositions();
+
+  if (
+    type ===
+    "cumulative-arrears"
+  ) {
+    rows =
+      rows.filter(
+        position =>
+          cumulativeStatusKey(
+            position
+          ) === "ARREARS"
+      );
+
+    currentReportRows =
+      rows;
+
+    output.innerHTML =
+      rows.length
+        ? `
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Member</th>
+                  <th>Member No.</th>
+                  <th class="amount">
+                    Total Due
+                  </th>
+                  <th class="amount">
+                    Total Allocated
+                  </th>
+                  <th class="amount">
+                    Cumulative Arrears
+                  </th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                ${rows
+                  .map(
+                    row => `
+                      <tr>
+                        <td>
+                          ${escapeHtml(
+                            memberName(
+                              row.memberId
+                            )
+                          )}
+                        </td>
+
+                        <td>
+                          ${escapeHtml(
+                            memberNumber(
+                              row.memberId
+                            )
+                          )}
+                        </td>
+
+                        <td class="amount">
+                          ${money(
+                            row.totalDue
+                          )}
+                        </td>
+
+                        <td class="amount">
+                          ${money(
+                            row.totalAllocated
+                          )}
+                        </td>
+
+                        <td class="amount">
+                          ${money(
+                            row.arrears
+                          )}
+                        </td>
+
+                        <td>
+                          ${cumulativeStatusBadge(
+                            row.status
+                          )}
+                        </td>
+                      </tr>
+                    `
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+          </div>
+        `
+        : `
+          <div class="report-empty">
+            No members have cumulative arrears.
+          </div>
+        `;
+
+    return;
+  }
+
+  if (
+    type ===
+    "cumulative-credit"
+  ) {
+    rows =
+      rows.filter(
+        position =>
+          cumulativeStatusKey(
+            position
+          ) === "CREDIT"
+      );
+
+    currentReportRows =
+      rows;
+
+    output.innerHTML =
+      rows.length
+        ? `
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Member</th>
+                  <th>Member No.</th>
+                  <th class="amount">
+                    Total Due
+                  </th>
+                  <th class="amount">
+                    Total Allocated
+                  </th>
+                  <th class="amount">
+                    Cumulative Credit
+                  </th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                ${rows
+                  .map(
+                    row => `
+                      <tr>
+                        <td>
+                          ${escapeHtml(
+                            memberName(
+                              row.memberId
+                            )
+                          )}
+                        </td>
+
+                        <td>
+                          ${escapeHtml(
+                            memberNumber(
+                              row.memberId
+                            )
+                          )}
+                        </td>
+
+                        <td class="amount">
+                          ${money(
+                            row.totalDue
+                          )}
+                        </td>
+
+                        <td class="amount">
+                          ${money(
+                            row.totalAllocated
+                          )}
+                        </td>
+
+                        <td class="amount">
+                          ${money(
+                            row.credit
+                          )}
+                        </td>
+
+                        <td>
+                          ${cumulativeStatusBadge(
+                            row.status
+                          )}
+                        </td>
+                      </tr>
+                    `
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+          </div>
+        `
+        : `
+          <div class="report-empty">
+            No members have cumulative credit.
+          </div>
+        `;
+
+    return;
+  }
+
+  if (
+    type ===
+    "cumulative-up-to-date"
+  ) {
+    rows =
+      rows.filter(
+        position =>
+          cumulativeStatusKey(
+            position
+          ) === "UP_TO_DATE"
+      );
+
+    currentReportRows =
+      rows;
+
+    output.innerHTML =
+      rows.length
+        ? `
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Member</th>
+                  <th>Member No.</th>
+                  <th class="amount">
+                    Total Due
+                  </th>
+                  <th class="amount">
+                    Total Allocated
+                  </th>
+                  <th class="amount">
+                    Arrears
+                  </th>
+                  <th class="amount">
+                    Credit
+                  </th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                ${rows
+                  .map(
+                    row => `
+                      <tr>
+                        <td>
+                          ${escapeHtml(
+                            memberName(
+                              row.memberId
+                            )
+                          )}
+                        </td>
+
+                        <td>
+                          ${escapeHtml(
+                            memberNumber(
+                              row.memberId
+                            )
+                          )}
+                        </td>
+
+                        <td class="amount">
+                          ${money(
+                            row.totalDue
+                          )}
+                        </td>
+
+                        <td class="amount">
+                          ${money(
+                            row.totalAllocated
+                          )}
+                        </td>
+
+                        <td class="amount">
+                          ${money(
+                            row.arrears
+                          )}
+                        </td>
+
+                        <td class="amount">
+                          ${money(
+                            row.credit
+                          )}
+                        </td>
+
+                        <td>
+                          ${cumulativeStatusBadge(
+                            row.status
+                          )}
+                        </td>
+                      </tr>
+                    `
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+          </div>
+        `
+        : `
+          <div class="report-empty">
+            No members are currently up to date cumulatively.
+          </div>
+        `;
+
+    return;
+  }
+}
+
+/* =========================================================
    REPORT OUTPUT
 ========================================================= */
 
@@ -1764,6 +2357,25 @@ function renderReportOutput(
     )
   );
 
+  /*
+   * Cumulative reports are deliberately handled before
+   * monthly report branches.
+   */
+  if (
+    type ===
+      "cumulative-arrears" ||
+    type ===
+      "cumulative-credit" ||
+    type ===
+      "cumulative-up-to-date"
+  ) {
+    renderCumulativeReport(
+      type
+    );
+
+    return;
+  }
+
   if (
     type ===
     "member-contributions"
@@ -1791,12 +2403,12 @@ function renderReportOutput(
                     Applied
                   </th>
                   <th class="amount">
-                    Credit
+                    Carry-forward Credit
                   </th>
                   <th class="amount">
-                    Outstanding
+                    Current Outstanding
                   </th>
-                  <th>Status</th>
+                  <th>Monthly Status</th>
                 </tr>
               </thead>
 
@@ -1881,6 +2493,10 @@ function renderReportOutput(
     return;
   }
 
+  /*
+   * Existing "arrears" report is retained for compatibility,
+   * but its value is explicitly MONTHLY OUTSTANDING.
+   */
   if (type === "arrears") {
     const rows =
       statusRows.filter(
@@ -1903,9 +2519,9 @@ function renderReportOutput(
                   <th>Member</th>
                   <th>Member No.</th>
                   <th class="amount">
-                    Outstanding
+                    Current Outstanding
                   </th>
-                  <th>Status</th>
+                  <th>Monthly Status</th>
                 </tr>
               </thead>
 
@@ -1960,6 +2576,10 @@ function renderReportOutput(
     return;
   }
 
+  /*
+   * Existing monthly credit report remains based on
+   * carry-forward from the monthly canonical RPC.
+   */
   if (type === "credit") {
     const rows =
       statusRows.filter(
@@ -1984,7 +2604,7 @@ function renderReportOutput(
                   <th class="amount">
                     Carry-forward Credit
                   </th>
-                  <th>Status</th>
+                  <th>Monthly Status</th>
                 </tr>
               </thead>
 
@@ -2293,7 +2913,7 @@ function renderReportOutput(
         </div>
 
         <div class="report-kpi">
-          <span>Canonical Carry-forward</span>
+          <span>Canonical Carry-forward Credit</span>
           <strong>
             ${money(
               canonicalSummary
@@ -2509,7 +3129,18 @@ async function generateReport() {
     "Generating report…"
   );
 
-  await loadCanonical(month);
+  /*
+   * Both monthly and cumulative accounting are loaded
+   * from their canonical read-only RPCs.
+   *
+   * Promise.all() means a failed cumulative read cannot
+   * silently produce a report with incomplete accounting
+   * state.
+   */
+  await Promise.all([
+    loadCanonical(month),
+    loadCumulativePositions()
+  ]);
 
   const contributionRows =
     filteredContributions();
@@ -2596,6 +3227,13 @@ function applyQuickFilter(value) {
     }
   }
 
+  /*
+   * Existing quick-filter value is retained for
+   * compatibility.
+   *
+   * Its current semantics remain MONTHLY OUTSTANDING.
+   * It does not map to cumulative arrears.
+   */
   if (value === "arrears") {
     if (status) {
       status.value =
@@ -2603,6 +3241,10 @@ function applyQuickFilter(value) {
     }
   }
 
+  /*
+   * Existing quick-filter credit remains MONTHLY
+   * carry-forward credit.
+   */
   if (value === "credit") {
     if (status) {
       status.value =
@@ -2808,6 +3450,60 @@ function exportCSV() {
       ]);
     });
 
+  /*
+   * Cumulative accounting is exported as a separate
+   * explicitly labelled section.
+   *
+   * It is never mixed with the monthly accounting
+   * columns above.
+   */
+  if (cumulativePositionsLoaded) {
+    rows.push([]);
+
+    rows.push([
+      "Cumulative Contribution Position"
+    ]);
+
+    rows.push([
+      "Member",
+      "Member Number",
+      "Total Due",
+      "Total Allocated",
+      "Cumulative Arrears",
+      "Cumulative Credit",
+      "Cumulative Status"
+    ]);
+
+    filteredCumulativePositions()
+      .forEach(position => {
+        rows.push([
+          memberName(
+            position.memberId
+          ),
+
+          memberNumber(
+            position.memberId
+          ),
+
+          position.totalDue
+            .toFixed(2),
+
+          position.totalAllocated
+            .toFixed(2),
+
+          position.arrears
+            .toFixed(2),
+
+          position.credit
+            .toFixed(2),
+
+          cumulativeStatusLabel(
+            position.status
+          )
+        ]);
+      });
+  }
+
   const csv =
     rows
       .map(row =>
@@ -2980,6 +3676,65 @@ function exportExcel() {
       )
       .join("");
 
+  const cumulativeHtml =
+    cumulativePositionsLoaded
+      ? filteredCumulativePositions()
+          .map(
+            position => `
+              <tr>
+                <td>
+                  ${escapeHtml(
+                    memberName(
+                      position.memberId
+                    )
+                  )}
+                </td>
+
+                <td>
+                  ${escapeHtml(
+                    memberNumber(
+                      position.memberId
+                    )
+                  )}
+                </td>
+
+                <td>
+                  ${number(
+                    position.totalDue
+                  ).toFixed(2)}
+                </td>
+
+                <td>
+                  ${number(
+                    position.totalAllocated
+                  ).toFixed(2)}
+                </td>
+
+                <td>
+                  ${number(
+                    position.arrears
+                  ).toFixed(2)}
+                </td>
+
+                <td>
+                  ${number(
+                    position.credit
+                  ).toFixed(2)}
+                </td>
+
+                <td>
+                  ${escapeHtml(
+                    cumulativeStatusLabel(
+                      position.status
+                    )
+                  )}
+                </td>
+              </tr>
+            `
+          )
+          .join("")
+      : "";
+
   const html = `
 <!doctype html>
 <html>
@@ -3139,6 +3894,43 @@ function exportExcel() {
       }
     </tbody>
   </table>
+
+  ${
+    cumulativePositionsLoaded
+      ? `
+        <h2>
+          Cumulative Contribution Position
+        </h2>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Member</th>
+              <th>Member Number</th>
+              <th>Total Due</th>
+              <th>Total Allocated</th>
+              <th>Cumulative Arrears</th>
+              <th>Cumulative Credit</th>
+              <th>Cumulative Status</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            ${
+              cumulativeHtml ||
+              `
+                <tr>
+                  <td colspan="7">
+                    No cumulative member records.
+                  </td>
+                </tr>
+              `
+            }
+          </tbody>
+        </table>
+      `
+      : ""
+  }
 
 </body>
 </html>
