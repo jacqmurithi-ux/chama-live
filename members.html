@@ -565,7 +565,7 @@
 
     .members-table {
       width: 100%;
-      min-width: 1120px;
+      min-width: 1230px;
       border-collapse: collapse;
     }
 
@@ -675,6 +675,71 @@
       overflow: hidden;
       text-overflow: ellipsis;
       vertical-align: middle;
+    }
+
+
+    /* =====================================================
+       CONTRIBUTION STATUS
+       -----------------------------------------------------
+       Separate from membership Account Status.
+
+       Source:
+       public.get_member_contribution_position(uuid)
+
+       Values:
+       - Up to Date
+       - Arrears — KSh X
+       - Credit
+    ===================================================== */
+
+    .member-contribution-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      padding: 5px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1.25;
+      white-space: nowrap;
+    }
+
+    .member-contribution-status-dot {
+      width: 6px;
+      height: 6px;
+      flex: 0 0 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .member-contribution-status.status-up-to-date {
+      background: rgba(22, 163, 74, .09);
+      color: #15803d;
+    }
+
+    .member-contribution-status.status-arrears {
+      background: rgba(220, 38, 38, .09);
+      color: #b91c1c;
+    }
+
+    .member-contribution-status.status-credit {
+      background: rgba(37, 99, 235, .09);
+      color: #1d4ed8;
+    }
+
+    .member-contribution-status.status-loading,
+    .member-contribution-status.status-unknown {
+      background: #f1f5f9;
+      color: #64748b;
+    }
+
+    .member-contribution-status-amount {
+      font-weight: 800;
+    }
+
+    .member-contribution-status-cell {
+      min-width: 145px;
     }
 
 
@@ -957,6 +1022,15 @@
 
     .mobile-email {
       white-space: nowrap;
+    }
+
+    .member-card-contribution-status {
+      grid-column: 1 / -1;
+      min-width: 0;
+    }
+
+    .member-card-contribution-status .member-contribution-status {
+      max-width: 100%;
     }
 
     .member-card-actions {
@@ -2100,6 +2174,10 @@
 
                 <th>
                   Status
+                </th>
+
+                <th>
+                  Contribution Status
                 </th>
 
                 <th>
