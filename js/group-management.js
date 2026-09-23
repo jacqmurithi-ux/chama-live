@@ -614,27 +614,38 @@ function renderSubscription() {
     "true";
 
 
+  /*
+   * Reuse the subscription styling already defined
+   * by group-management.html.
+   */
+
   wrapper.className =
-    "contribution-highlight";
+    "subscription-panel";
 
 
-  const label =
+  const heading =
     document.createElement(
-      "span"
+      "h3"
     );
 
 
-  label.className =
-    "contribution-highlight-label";
-
-
-  label.textContent =
+  heading.textContent =
     "Subscription";
 
 
   wrapper.appendChild(
-    label
+    heading
   );
+
+
+  const grid =
+    document.createElement(
+      "div"
+    );
+
+
+  grid.className =
+    "subscription-grid";
 
 
   const rows = [
@@ -665,6 +676,13 @@ function renderSubscription() {
         subscription?.standard_member_login_amount,
         subscription?.currency
       )
+    ],
+
+    [
+      "Start date",
+      formatSubscriptionDate(
+        subscription?.started_at
+      )
     ]
 
   ];
@@ -678,44 +696,110 @@ function renderSubscription() {
       ]
     ) {
 
-      const row =
+      const item =
         document.createElement(
           "div"
         );
 
 
-      const strong =
+      item.className =
+        "subscription-item";
+
+
+      const label =
         document.createElement(
           "strong"
         );
 
 
-      strong.textContent =
-        `${name}: `;
+      label.textContent =
+        name;
 
 
-      row.appendChild(
-        strong
+      const valueEl =
+        document.createElement(
+          "span"
+        );
+
+
+      valueEl.textContent =
+        value;
+
+
+      item.appendChild(
+        label
       );
 
 
-      row.appendChild(
-        document.createTextNode(
-          value
-        )
+      item.appendChild(
+        valueEl
       );
 
 
-      wrapper.appendChild(
-        row
+      grid.appendChild(
+        item
       );
 
     }
   );
 
 
+  wrapper.appendChild(
+    grid
+  );
+
+
   accountCardEl.appendChild(
     wrapper
+  );
+
+}
+
+
+/* =========================================================
+   SUBSCRIPTION DATE FORMAT
+========================================================= */
+
+function formatSubscriptionDate(
+  value
+) {
+
+  if (!value) {
+    return "—";
+  }
+
+
+  const date =
+    new Date(
+      value
+    );
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+
+    return String(
+      value
+    );
+
+  }
+
+
+  return date.toLocaleDateString(
+    "en-KE",
+    {
+      day:
+        "2-digit",
+
+      month:
+        "short",
+
+      year:
+        "numeric"
+    }
   );
 
 }
@@ -1097,4 +1181,3 @@ export async function initGroupManagement() {
   }
 
 }
-
