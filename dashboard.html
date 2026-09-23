@@ -44,6 +44,11 @@
       --dashboard-warning: #b54708;
       --dashboard-danger: #b42318;
       --dashboard-radius: 16px;
+
+      /* Cumulative contribution status identifiers */
+      --status-up-to-date: #12b76a;
+      --status-arrears: #f04438;
+      --status-credit: #2e90fa;
     }
 
     * {
@@ -421,11 +426,56 @@
     }
 
     .cumulative-position-stat {
+      position: relative;
       min-width: 0;
       padding: 13px;
       border: 1px solid #edf0f4;
       border-radius: 12px;
       background: var(--dashboard-soft);
+    }
+
+    /* -----------------------------------------------------
+       CUMULATIVE STATUS IDENTIFIER DOT
+    ----------------------------------------------------- */
+
+    .cumulative-position-stat::before {
+      content: "";
+      display: block;
+      width: 8px;
+      height: 8px;
+      margin-bottom: 9px;
+      border-radius: 50%;
+      background: #98a2b3;
+    }
+
+    /* Members Up to Date — green */
+
+    .cumulative-position-stat:nth-child(1)::before {
+      background: var(--status-up-to-date);
+    }
+
+    /* Members in Arrears — red */
+
+    .cumulative-position-stat:nth-child(2)::before {
+      background: var(--status-arrears);
+    }
+
+    /* Members with Credit — blue */
+
+    .cumulative-position-stat:nth-child(3)::before {
+      background: var(--status-credit);
+    }
+
+    /* Cumulative Arrears — red */
+
+    .cumulative-position-stat:nth-child(4)::before {
+      background: var(--status-arrears);
+    }
+
+    /* Cumulative Credit — blue */
+
+    .cumulative-position-stat:nth-child(5)::before {
+      background: var(--status-credit);
     }
 
     .cumulative-position-stat span {
@@ -444,6 +494,28 @@
       line-height: 1.1;
       overflow-wrap: anywhere;
     }
+
+    /* -----------------------------------------------------
+       CUMULATIVE STATUS VALUE COLORS
+    ----------------------------------------------------- */
+
+    #cumulativeUpToDateCount {
+      color: var(--status-up-to-date);
+    }
+
+    #cumulativeArrearsCount,
+    #cumulativeArrearsAmount {
+      color: var(--status-arrears);
+    }
+
+    #cumulativeCreditCount,
+    #cumulativeCreditAmount {
+      color: var(--status-credit);
+    }
+
+    /* -----------------------------------------------------
+       CUMULATIVE POSITION TABLE
+    ----------------------------------------------------- */
 
     .cumulative-position-table {
       width: 100%;
@@ -1006,9 +1078,13 @@
   ===================================================== -->
 
   <header class="topbar">
+
     <div class="topbar-inner">
 
-      <div class="brand" aria-label="CHAMA LIVE">
+      <div
+        class="brand"
+        aria-label="CHAMA LIVE"
+      >
         CHAMA <span>LIVE</span>
       </div>
 
@@ -1037,6 +1113,7 @@
       </div>
 
     </div>
+
   </header>
 
 
@@ -1046,7 +1123,10 @@
 
   <div class="layout">
 
-    <aside class="sidebar" aria-hidden="true"></aside>
+    <aside
+      class="sidebar"
+      aria-hidden="true"
+    ></aside>
 
     <main class="main">
 
@@ -1060,6 +1140,7 @@
       >
         Loading dashboard...
       </div>
+
 
       <!-- ERROR -->
 
@@ -1083,7 +1164,9 @@
 
         <p>
           Welcome to
-          <strong data-group-name>your group</strong>.
+          <strong data-group-name>
+            your group
+          </strong>.
           Here is your group's current financial and
           operational overview.
         </p>
@@ -1101,6 +1184,7 @@
       >
 
         <div class="section-heading">
+
           <h2 id="financialOverviewTitle">
             Financial overview
           </h2>
@@ -1109,6 +1193,7 @@
             Current membership, contribution and group
             balance information.
           </p>
+
         </div>
 
 
@@ -1219,6 +1304,7 @@
       >
 
         <div class="section-heading">
+
           <h2 id="contributionProgressTitle">
             Contribution progress
           </h2>
@@ -1262,7 +1348,9 @@
             aria-valuemax="100"
             aria-valuenow="0"
           >
+
             <div id="progressBar"></div>
+
           </div>
 
 
@@ -1395,6 +1483,7 @@
       >
 
         <div class="section-heading">
+
           <h2 id="memberPaymentsTitle">
             Member payment status
           </h2>
@@ -1403,6 +1492,7 @@
             Monthly member obligations and canonical allocation
             status.
           </p>
+
         </div>
 
 
@@ -1413,27 +1503,56 @@
             <table class="dashboard-table">
 
               <thead>
+
                 <tr>
-                  <th scope="col">Member</th>
-                  <th scope="col">Monthly Due</th>
-                  <th scope="col">Previous Outstanding</th>
-                  <th scope="col">Applied</th>
-                  <th scope="col">Carry-forward Credit</th>
-                  <th scope="col">Current Outstanding</th>
-                  <th scope="col">Monthly Status</th>
+                  <th scope="col">
+                    Member
+                  </th>
+
+                  <th scope="col">
+                    Monthly Due
+                  </th>
+
+                  <th scope="col">
+                    Previous Outstanding
+                  </th>
+
+                  <th scope="col">
+                    Applied
+                  </th>
+
+                  <th scope="col">
+                    Carry-forward Credit
+                  </th>
+
+                  <th scope="col">
+                    Current Outstanding
+                  </th>
+
+                  <th scope="col">
+                    Monthly Status
+                  </th>
                 </tr>
+
               </thead>
+
 
               <tbody id="memberStatusRows">
 
                 <tr>
+
                   <td colspan="7">
+
                     <div class="empty-state">
+
                       <strong>
                         Loading member status...
                       </strong>
+
                     </div>
+
                   </td>
+
                 </tr>
 
               </tbody>
@@ -1478,46 +1597,72 @@
 
           <div class="cumulative-position-grid">
 
-            <div class="cumulative-position-stat">
+            <!-- UP TO DATE -->
+
+            <div
+              class="cumulative-position-stat"
+              aria-label="Members up to date"
+            >
 
               <span>
                 Members Up to Date
               </span>
 
-              <strong id="cumulativeUpToDateCount">
+              <strong
+                id="cumulativeUpToDateCount"
+              >
                 0
               </strong>
 
             </div>
 
 
-            <div class="cumulative-position-stat">
+            <!-- ARREARS -->
+
+            <div
+              class="cumulative-position-stat"
+              aria-label="Members in arrears"
+            >
 
               <span>
                 Members in Arrears
               </span>
 
-              <strong id="cumulativeArrearsCount">
+              <strong
+                id="cumulativeArrearsCount"
+              >
                 0
               </strong>
 
             </div>
 
 
-            <div class="cumulative-position-stat">
+            <!-- CREDIT -->
+
+            <div
+              class="cumulative-position-stat"
+              aria-label="Members with credit"
+            >
 
               <span>
                 Members with Credit
               </span>
 
-              <strong id="cumulativeCreditCount">
+              <strong
+                id="cumulativeCreditCount"
+              >
                 0
               </strong>
 
             </div>
 
 
-            <div class="cumulative-position-stat">
+            <!-- CUMULATIVE ARREARS -->
+
+            <div
+              class="cumulative-position-stat"
+              aria-label="Cumulative arrears"
+            >
 
               <span>
                 Cumulative Arrears
@@ -1533,7 +1678,12 @@
             </div>
 
 
-            <div class="cumulative-position-stat">
+            <!-- CUMULATIVE CREDIT -->
+
+            <div
+              class="cumulative-position-stat"
+              aria-label="Cumulative credit"
+            >
 
               <span>
                 Cumulative Credit
@@ -1556,31 +1706,60 @@
             <table class="cumulative-position-table">
 
               <thead>
+
                 <tr>
-                  <th scope="col">Member</th>
-                  <th scope="col">Total Due</th>
-                  <th scope="col">Total Allocated</th>
-                  <th scope="col">Arrears</th>
-                  <th scope="col">Credit</th>
-                  <th scope="col">Cumulative Status</th>
+
+                  <th scope="col">
+                    Member
+                  </th>
+
+                  <th scope="col">
+                    Total Due
+                  </th>
+
+                  <th scope="col">
+                    Total Allocated
+                  </th>
+
+                  <th scope="col">
+                    Arrears
+                  </th>
+
+                  <th scope="col">
+                    Credit
+                  </th>
+
+                  <th scope="col">
+                    Cumulative Status
+                  </th>
+
                 </tr>
+
               </thead>
+
 
               <tbody id="cumulativePositionRows">
 
                 <tr>
+
                   <td colspan="6">
+
                     <div class="empty-state">
+
                       <strong>
                         Loading cumulative position...
                       </strong>
 
                       <span>
-                        Lifetime accounting position is being calculated
-                        from the canonical accounting function.
+                        Lifetime accounting position is being
+                        calculated from the canonical accounting
+                        function.
                       </span>
+
                     </div>
+
                   </td>
+
                 </tr>
 
               </tbody>
@@ -1604,6 +1783,7 @@
       >
 
         <div class="section-heading">
+
           <h2 id="operationsTitle">
             Operations snapshot
           </h2>
@@ -1611,6 +1791,7 @@
           <p>
             Read-only overview of the group's operational records.
           </p>
+
         </div>
 
 
@@ -1619,6 +1800,7 @@
           <div class="operations-grid">
 
             <div class="operation-item">
+
               <span>
                 Support &amp; Welfare
               </span>
@@ -1626,10 +1808,12 @@
               <strong id="operationsSupportCases">
                 0
               </strong>
+
             </div>
 
 
             <div class="operation-item">
+
               <span>
                 Plans
               </span>
@@ -1637,10 +1821,12 @@
               <strong id="operationsPlans">
                 0
               </strong>
+
             </div>
 
 
             <div class="operation-item">
+
               <span>
                 Activities
               </span>
@@ -1648,10 +1834,12 @@
               <strong id="operationsActivities">
                 0
               </strong>
+
             </div>
 
 
             <div class="operation-item">
+
               <span>
                 Milestones
               </span>
@@ -1659,10 +1847,12 @@
               <strong id="operationsMilestones">
                 0
               </strong>
+
             </div>
 
 
             <div class="operation-item">
+
               <span>
                 Assets
               </span>
@@ -1670,10 +1860,12 @@
               <strong id="operationsAssets">
                 0
               </strong>
+
             </div>
 
 
             <div class="operation-item">
+
               <span>
                 Contribution Goals
               </span>
@@ -1681,6 +1873,7 @@
               <strong id="operationsContributionGoals">
                 0
               </strong>
+
             </div>
 
           </div>
@@ -1721,24 +1914,46 @@
               <table class="dashboard-table">
 
                 <thead>
+
                   <tr>
-                    <th scope="col">Member</th>
-                    <th scope="col">Amount</th>
-                    <th scope="col">Type</th>
-                    <th scope="col">Date</th>
+
+                    <th scope="col">
+                      Member
+                    </th>
+
+                    <th scope="col">
+                      Amount
+                    </th>
+
+                    <th scope="col">
+                      Type
+                    </th>
+
+                    <th scope="col">
+                      Date
+                    </th>
+
                   </tr>
+
                 </thead>
+
 
                 <tbody id="recentContributionRows">
 
                   <tr>
+
                     <td colspan="4">
+
                       <div class="empty-state">
+
                         <strong>
                           Loading contributions...
                         </strong>
+
                       </div>
+
                     </td>
+
                   </tr>
 
                 </tbody>
@@ -1772,24 +1987,46 @@
               <table class="dashboard-table">
 
                 <thead>
+
                   <tr>
-                    <th scope="col">Description</th>
-                    <th scope="col">Amount</th>
-                    <th scope="col">Category</th>
-                    <th scope="col">Status</th>
+
+                    <th scope="col">
+                      Description
+                    </th>
+
+                    <th scope="col">
+                      Amount
+                    </th>
+
+                    <th scope="col">
+                      Category
+                    </th>
+
+                    <th scope="col">
+                      Status
+                    </th>
+
                   </tr>
+
                 </thead>
+
 
                 <tbody id="recentExpenseRows">
 
                   <tr>
+
                     <td colspan="4">
+
                       <div class="empty-state">
+
                         <strong>
                           Loading expenses...
                         </strong>
+
                       </div>
+
                     </td>
+
                   </tr>
 
                 </tbody>
@@ -1815,6 +2052,7 @@
       >
 
         <div class="section-heading">
+
           <h2 id="meetingsTitle">
             Upcoming meetings
           </h2>
@@ -1833,24 +2071,46 @@
             <table class="dashboard-table">
 
               <thead>
+
                 <tr>
-                  <th scope="col">Date</th>
-                  <th scope="col">Meeting</th>
-                  <th scope="col">Venue</th>
-                  <th scope="col">Status</th>
+
+                  <th scope="col">
+                    Date
+                  </th>
+
+                  <th scope="col">
+                    Meeting
+                  </th>
+
+                  <th scope="col">
+                    Venue
+                  </th>
+
+                  <th scope="col">
+                    Status
+                  </th>
+
                 </tr>
+
               </thead>
+
 
               <tbody id="upcomingMeetingRows">
 
                 <tr>
+
                   <td colspan="4">
+
                     <div class="empty-state">
+
                       <strong>
                         Loading meetings...
                       </strong>
+
                     </div>
+
                   </td>
+
                 </tr>
 
               </tbody>
@@ -1921,14 +2181,16 @@
 
   <!-- =====================================================
        ADMIN PORTAL BOOT
-  ===================================================== -->
+    ===================================================== -->
 
   <script type="module">
+
     import {
       boot
     } from "./js/admin-layout.js";
 
     boot();
+
   </script>
 
 
@@ -1937,6 +2199,7 @@
   ===================================================== -->
 
   <script>
+
     (() => {
 
       const POPUP_EVENT_KEY =
@@ -2005,7 +2268,9 @@
       }
 
 
-      if (eventType === "new-group") {
+      if (
+        eventType === "new-group"
+      ) {
 
         title.textContent =
           "Your group is ready";
@@ -2034,8 +2299,13 @@
           true;
 
         if (timer) {
-          window.clearTimeout(timer);
+
+          window.clearTimeout(
+            timer
+          );
+
           timer = null;
+
         }
 
       }
@@ -2121,6 +2391,7 @@
       );
 
     })();
+
   </script>
 
 </body>
