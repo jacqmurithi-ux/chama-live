@@ -49,6 +49,10 @@ let editingMemberId = null;
 let initialized = false;
 let eventsBound = false;
 
+/* Approved performance change:
+   debounce member search rendering */
+let memberSearchTimer = null;
+
 let monthlyContributionType = null;
 let contributionTypesLoaded = false;
 
@@ -3488,6 +3492,11 @@ function closeMemberModal() {
 
 /* =========================================================
    SEARCH
+   ---------------------------------------------------------
+   APPROVED PERFORMANCE CHANGE:
+   Search rendering is debounced by 150ms so filtering
+   does not rerender the entire member table/card list
+   on every individual keystroke.
 ========================================================= */
 
 function handleSearch(
@@ -3501,37 +3510,48 @@ function handleSearch(
       .trim()
       .toLowerCase();
 
+  clearTimeout(
+    memberSearchTimer
+  );
+
   if (!query) {
-    return renderMembers();
+    renderMembers();
+    return;
   }
 
-  const filtered =
-    members.filter(
-      member =>
-        [
-          member.member_number,
-          member.membership_number,
-          member.national_id,
-          member.name,
-          member.phone,
-          member.email,
-          member.role,
-          member.status,
-          member.onboarding_status
-        ]
-          .filter(
-            value =>
-              value !== null &&
-              value !== undefined
-          )
-          .join(" ")
-          .toLowerCase()
-          .includes(query)
-    );
+  memberSearchTimer =
+    setTimeout(
+      () => {
+        const filtered =
+          members.filter(
+            member =>
+              [
+                member.member_number,
+                member.membership_number,
+                member.national_id,
+                member.name,
+                member.phone,
+                member.email,
+                member.role,
+                member.status,
+                member.onboarding_status
+              ]
+                .filter(
+                  value =>
+                    value !== null &&
+                    value !== undefined
+                )
+                .join(" ")
+                .toLowerCase()
+                .includes(query)
+          );
 
-  renderMembers(
-    filtered
-  );
+        renderMembers(
+          filtered
+        );
+      },
+      150
+    );
 }
 
 
@@ -3658,6 +3678,10 @@ function bindEvents() {
   )?.addEventListener(
     "click",
     () => {
+      clearTimeout(
+        memberSearchTimer
+      );
+
       const search =
         byId(
           "memberSearch"
