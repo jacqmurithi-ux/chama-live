@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
     <meta charset="UTF-8">
+
     <meta
         name="viewport"
         content="width=device-width, initial-scale=1.0"
@@ -10,6 +12,7 @@
     <title>Group Management | CHAMA LIVE</title>
 
     <style>
+
         /* =====================================================
            BASE
         ===================================================== */
@@ -37,13 +40,15 @@
 
         button,
         input,
-        select {
+        select,
+        textarea {
             font: inherit;
         }
 
         a {
             color: inherit;
         }
+
 
         /* =====================================================
            PAGE
@@ -55,6 +60,7 @@
             margin: 0 auto;
             padding: 28px 24px 60px;
         }
+
 
         /* =====================================================
            HERO
@@ -154,6 +160,7 @@
             line-height: 1.7;
         }
 
+
         /* =====================================================
            STATUS
         ===================================================== */
@@ -181,6 +188,7 @@
             border: 1px solid #fecaca;
             color: #991b1b;
         }
+
 
         /* =====================================================
            MAIN GRID
@@ -210,6 +218,7 @@
             display: grid;
             gap: 22px;
         }
+
 
         /* =====================================================
            CARDS
@@ -261,6 +270,7 @@
             padding: 22px;
         }
 
+
         /* =====================================================
            GROUP OVERVIEW
         ===================================================== */
@@ -305,6 +315,7 @@
             overflow-wrap: anywhere;
         }
 
+
         /* =====================================================
            FORM
         ===================================================== */
@@ -335,9 +346,11 @@
         }
 
         .form-field input,
-        .form-field select {
+        .form-field select,
+        .form-field textarea {
             display: block;
             width: 100%;
+
             min-height: 46px;
 
             padding: 11px 13px;
@@ -354,8 +367,14 @@
                 box-shadow 0.15s ease;
         }
 
+        .form-field textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
         .form-field input:focus,
-        .form-field select:focus {
+        .form-field select:focus,
+        .form-field textarea:focus {
             border-color: #64748b;
 
             box-shadow:
@@ -364,7 +383,8 @@
         }
 
         .form-field input:disabled,
-        .form-field select:disabled {
+        .form-field select:disabled,
+        .form-field textarea:disabled {
             background: #f8fafc;
             color: #64748b;
             cursor: not-allowed;
@@ -391,6 +411,7 @@
             line-height: 1.4;
         }
 
+
         /* =====================================================
            FORM ACTIONS
         ===================================================== */
@@ -406,6 +427,7 @@
 
             border-top: 1px solid #e2e8f0;
         }
+
 
         /* =====================================================
            BUTTONS
@@ -467,6 +489,17 @@
             background: #f8fafc;
         }
 
+        .btn-danger {
+            background: #ffffff;
+            border-color: #fecaca;
+            color: #b42318;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: #fef2f2;
+        }
+
+
         /* =====================================================
            ACCOUNT
         ===================================================== */
@@ -520,9 +553,10 @@
             line-height: 1.5;
         }
 
+
         /* =====================================================
            SUBSCRIPTION
-           ===================================================== */
+        ===================================================== */
 
         .subscription-panel {
             margin-top: 18px;
@@ -578,6 +612,290 @@
             overflow-wrap: anywhere;
         }
 
+
+        /* =====================================================
+           CONTRIBUTION CALENDAR
+        ===================================================== */
+
+        .calendar-summary {
+            display: grid;
+            grid-template-columns:
+                repeat(3, minmax(0, 1fr));
+
+            gap: 10px;
+            margin-bottom: 22px;
+        }
+
+        .calendar-summary-item {
+            min-width: 0;
+            padding: 13px;
+
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+        }
+
+        .calendar-summary-item span {
+            display: block;
+            margin-bottom: 5px;
+
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 650;
+
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .calendar-summary-item strong {
+            display: block;
+
+            color: #0f172a;
+            font-size: 13px;
+            line-height: 1.4;
+
+            overflow-wrap: anywhere;
+        }
+
+        .calendar-note {
+            margin-top: 14px;
+            padding: 12px 13px;
+
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 10px;
+
+            color: #1e40af;
+            font-size: 12px;
+            line-height: 1.55;
+        }
+
+
+        /* =====================================================
+           INITIATIVES
+        ===================================================== */
+
+        .initiative-form-section {
+            margin-bottom: 24px;
+            padding-bottom: 22px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .initiative-form-heading {
+            margin: 0 0 14px;
+
+            color: #0f172a;
+            font-size: 14px;
+            font-weight: 750;
+        }
+
+        .initiative-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .initiative-empty {
+            padding: 18px;
+
+            background: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            border-radius: 12px;
+
+            color: #64748b;
+            font-size: 13px;
+            line-height: 1.5;
+
+            text-align: center;
+        }
+
+        .initiative-card {
+            padding: 16px;
+
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+        }
+
+        .initiative-card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 14px;
+        }
+
+        .initiative-card-heading {
+            min-width: 0;
+        }
+
+        .initiative-card-heading h3 {
+            margin: 0;
+
+            color: #0f172a;
+            font-size: 15px;
+            line-height: 1.4;
+        }
+
+        .initiative-card-heading p {
+            margin: 4px 0 0;
+
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .initiative-status {
+            flex: 0 0 auto;
+
+            display: inline-flex;
+            align-items: center;
+
+            min-height: 28px;
+            padding: 5px 9px;
+
+            border-radius: 999px;
+
+            font-size: 11px;
+            font-weight: 750;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        .initiative-status.draft {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .initiative-status.active {
+            background: #ecfdf5;
+            color: #047857;
+        }
+
+        .initiative-status.closed {
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+
+        .initiative-status.cancelled {
+            background: #fef2f2;
+            color: #b42318;
+        }
+
+        .initiative-meta {
+            display: grid;
+            grid-template-columns:
+                repeat(3, minmax(0, 1fr));
+
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .initiative-meta-item {
+            min-width: 0;
+            padding: 10px;
+
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 9px;
+        }
+
+        .initiative-meta-item span {
+            display: block;
+            margin-bottom: 4px;
+
+            color: #64748b;
+            font-size: 10px;
+            font-weight: 650;
+
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .initiative-meta-item strong {
+            display: block;
+
+            color: #0f172a;
+            font-size: 12px;
+            line-height: 1.4;
+
+            overflow-wrap: anywhere;
+        }
+
+        .initiative-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+
+            margin-top: 14px;
+        }
+
+        .initiative-actions .btn {
+            min-height: 38px;
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+
+
+        /* =====================================================
+           MEMBER CONFIGURATION
+        ===================================================== */
+
+        .initiative-members-panel {
+            margin-top: 14px;
+            padding: 14px;
+
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+        }
+
+        .initiative-members-panel h4 {
+            margin: 0 0 10px;
+
+            color: #0f172a;
+            font-size: 13px;
+        }
+
+        .initiative-member-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .initiative-member-row {
+            display: grid;
+            grid-template-columns:
+                minmax(0, 1fr)
+                120px;
+
+            align-items: center;
+            gap: 10px;
+
+            padding: 9px 10px;
+
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+
+        .initiative-member-name {
+            min-width: 0;
+
+            color: #334155;
+            font-size: 12px;
+            font-weight: 650;
+
+            overflow-wrap: anywhere;
+        }
+
+        .initiative-member-row input {
+            width: 100%;
+            min-height: 36px;
+            padding: 7px 9px;
+
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+        }
+
+
         /* =====================================================
            GROUP CONTEXT
         ===================================================== */
@@ -623,6 +941,7 @@
             overflow-wrap: anywhere;
         }
 
+
         /* =====================================================
            PERMISSION
         ===================================================== */
@@ -640,12 +959,9 @@
             line-height: 1.5;
         }
 
+
         /* =====================================================
            ADMIN LOADING
-           
-           IMPORTANT:
-           admin-layout.js sets element.hidden = true.
-           The hidden selector MUST override display:flex.
         ===================================================== */
 
         [data-admin-loading] {
@@ -680,6 +996,7 @@
             font-size: 14px;
         }
 
+
         /* =====================================================
            RESPONSIVE
         ===================================================== */
@@ -694,7 +1011,9 @@
                 grid-template-columns:
                     repeat(2, minmax(0, 1fr));
             }
+
         }
+
 
         @media (max-width: 800px) {
 
@@ -729,7 +1048,9 @@
             .card-body {
                 padding: 18px;
             }
+
         }
+
 
         @media (max-width: 600px) {
 
@@ -754,7 +1075,9 @@
 
             .overview-grid,
             .form-grid,
-            .subscription-grid {
+            .subscription-grid,
+            .calendar-summary,
+            .initiative-meta {
                 grid-template-columns: 1fr;
             }
 
@@ -782,11 +1105,28 @@
             .account-action {
                 align-items: flex-start;
             }
+
+            .initiative-card-header {
+                flex-direction: column;
+            }
+
+            .initiative-status {
+                align-self: flex-start;
+            }
+
+            .initiative-member-row {
+                grid-template-columns: 1fr;
+            }
+
         }
+
     </style>
+
 </head>
 
+
 <body>
+
 
     <!-- =====================================================
          ADMIN TOPBAR
@@ -830,6 +1170,7 @@
     <div class="layout">
 
         <main class="main group-management-page">
+
 
             <!-- =================================================
                  HERO
@@ -876,10 +1217,6 @@
                 aria-live="assertive"
             ></div>
 
-
-            <!-- =================================================
-                 CONTENT GRID
-            ================================================== -->
 
             <div class="management-grid">
 
@@ -1006,8 +1343,6 @@
                                 <div class="form-grid">
 
 
-                                    <!-- GROUP NAME -->
-
                                     <div class="form-field full-width">
 
                                         <label for="groupName">
@@ -1025,8 +1360,6 @@
 
                                     </div>
 
-
-                                    <!-- GROUP TYPE -->
 
                                     <div class="form-field">
 
@@ -1069,8 +1402,6 @@
                                     </div>
 
 
-                                    <!-- COUNTRY -->
-
                                     <div class="form-field">
 
                                         <label for="country">
@@ -1112,13 +1443,9 @@
                                     </div>
 
 
-                                    <!-- MONTHLY CONTRIBUTION -->
-
                                     <div class="form-field full-width">
 
-                                        <label
-                                            for="monthlyContribution"
-                                        >
+                                        <label for="monthlyContribution">
                                             Standard Monthly Contribution
                                         </label>
 
@@ -1151,8 +1478,6 @@
                                 </div>
 
 
-                                <!-- FORM ACTION -->
-
                                 <div class="form-actions">
 
                                     <button
@@ -1166,6 +1491,396 @@
                                 </div>
 
                             </form>
+
+                        </div>
+
+                    </section>
+
+
+                    <!-- =========================================
+                         MONTHLY CONTRIBUTION CYCLE
+                    ========================================== -->
+
+                    <section
+                        class="management-card"
+                        id="contributionCalendarCard"
+                    >
+
+                        <div class="card-header">
+
+                            <div class="card-heading">
+
+                                <h2>
+                                    Monthly Contribution Cycle
+                                </h2>
+
+                                <p>
+                                    Set the day your group's monthly
+                                    contribution cycle closes.
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="card-body">
+
+                            <div class="calendar-summary">
+
+
+                                <div class="calendar-summary-item">
+
+                                    <span>
+                                        Current Cycle
+                                    </span>
+
+                                    <strong
+                                        id="currentContributionCycle"
+                                    >
+                                        —
+                                    </strong>
+
+                                </div>
+
+
+                                <div class="calendar-summary-item">
+
+                                    <span>
+                                        Opening Date
+                                    </span>
+
+                                    <strong
+                                        id="currentContributionOpeningDate"
+                                    >
+                                        —
+                                    </strong>
+
+                                </div>
+
+
+                                <div class="calendar-summary-item">
+
+                                    <span>
+                                        Closing Date
+                                    </span>
+
+                                    <strong
+                                        id="currentContributionClosingDate"
+                                    >
+                                        —
+                                    </strong>
+
+                                </div>
+
+
+                            </div>
+
+
+                            <form
+                                id="contributionCalendarForm"
+                            >
+
+                                <div class="form-field">
+
+                                    <label
+                                        for="monthlyClosingDay"
+                                    >
+                                        Monthly Closing Day
+                                    </label>
+
+                                    <select
+                                        id="monthlyClosingDay"
+                                        name="monthlyClosingDay"
+                                        required
+                                    >
+                                    </select>
+
+                                    <p class="field-help">
+                                        Choose a closing day from
+                                        1 to 28. The opening date is
+                                        calculated automatically.
+                                    </p>
+
+                                </div>
+
+
+                                <div class="calendar-note">
+
+                                    Changing the closing day applies
+                                    prospectively. Historical
+                                    contribution cycles remain
+                                    unchanged.
+
+                                </div>
+
+
+                                <div class="form-actions">
+
+                                    <button
+                                        type="submit"
+                                        class="btn btn-primary"
+                                        id="saveContributionCalendar"
+                                    >
+                                        Save Contribution Cycle
+                                    </button>
+
+                                </div>
+
+                            </form>
+
+                        </div>
+
+                    </section>
+
+
+                    <!-- =========================================
+                         CONTRIBUTION INITIATIVES
+                    ========================================== -->
+
+                    <section
+                        class="management-card"
+                        id="contributionInitiativesCard"
+                    >
+
+                        <div class="card-header">
+
+                            <div class="card-heading">
+
+                                <h2>
+                                    Contribution Initiatives
+                                </h2>
+
+                                <p>
+                                    Create and manage additional
+                                    contribution drives outside the
+                                    standard monthly contribution.
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="card-body">
+
+
+                            <!-- CREATE INITIATIVE -->
+
+                            <div class="initiative-form-section">
+
+                                <h3 class="initiative-form-heading">
+                                    Create New Initiative
+                                </h3>
+
+
+                                <form id="initiativeForm">
+
+                                    <div class="form-grid">
+
+
+                                        <div
+                                            class="form-field full-width"
+                                        >
+
+                                            <label
+                                                for="initiativeName"
+                                            >
+                                                Initiative Name
+                                            </label>
+
+                                            <input
+                                                type="text"
+                                                id="initiativeName"
+                                                name="initiativeName"
+                                                placeholder="e.g. School Fees Fund"
+                                                maxlength="160"
+                                                required
+                                            >
+
+                                        </div>
+
+
+                                        <div
+                                            class="form-field full-width"
+                                        >
+
+                                            <label
+                                                for="initiativeDescription"
+                                            >
+                                                Description
+                                            </label>
+
+                                            <textarea
+                                                id="initiativeDescription"
+                                                name="initiativeDescription"
+                                                placeholder="Describe the purpose of this contribution initiative."
+                                                maxlength="1000"
+                                            ></textarea>
+
+                                        </div>
+
+
+                                        <div class="form-field">
+
+                                            <label
+                                                for="initiativeType"
+                                            >
+                                                Contribution Type
+                                            </label>
+
+                                            <select
+                                                id="initiativeType"
+                                                name="initiativeType"
+                                                required
+                                            >
+
+                                                <option value="">
+                                                    Loading contribution types...
+                                                </option>
+
+                                            </select>
+
+                                        </div>
+
+
+                                        <div class="form-field">
+
+                                            <label
+                                                for="initiativeFrequency"
+                                            >
+                                                Frequency
+                                            </label>
+
+                                            <select
+                                                id="initiativeFrequency"
+                                                name="initiativeFrequency"
+                                                required
+                                            >
+
+                                                <option
+                                                    value="one_time"
+                                                >
+                                                    One-time
+                                                </option>
+
+                                                <option
+                                                    value="monthly"
+                                                >
+                                                    Monthly
+                                                </option>
+
+                                            </select>
+
+                                        </div>
+
+
+                                        <div class="form-field">
+
+                                            <label
+                                                for="initiativeStartDate"
+                                            >
+                                                Start Date
+                                            </label>
+
+                                            <input
+                                                type="date"
+                                                id="initiativeStartDate"
+                                                name="initiativeStartDate"
+                                                required
+                                            >
+
+                                        </div>
+
+
+                                        <div class="form-field">
+
+                                            <label
+                                                for="initiativeClosingDate"
+                                            >
+                                                Closing Date
+                                            </label>
+
+                                            <input
+                                                type="date"
+                                                id="initiativeClosingDate"
+                                                name="initiativeClosingDate"
+                                                required
+                                            >
+
+                                        </div>
+
+
+                                        <div class="form-field">
+
+                                            <label
+                                                for="initiativeAmount"
+                                            >
+                                                Amount per Member
+                                            </label>
+
+                                            <input
+                                                type="number"
+                                                id="initiativeAmount"
+                                                name="initiativeAmount"
+                                                min="0"
+                                                step="0.01"
+                                                inputmode="decimal"
+                                                placeholder="0.00"
+                                                required
+                                            >
+
+                                            <p class="field-help">
+                                                This is the default amount.
+                                                Individual participant
+                                                amounts can be configured
+                                                before activation.
+                                            </p>
+
+                                        </div>
+
+
+                                    </div>
+
+
+                                    <div class="form-actions">
+
+                                        <button
+                                            type="submit"
+                                            class="btn btn-primary"
+                                            id="createInitiative"
+                                        >
+                                            Create Draft Initiative
+                                        </button>
+
+                                    </div>
+
+                                </form>
+
+                            </div>
+
+
+                            <!-- INITIATIVE LIST -->
+
+                            <div>
+
+                                <h3 class="initiative-form-heading">
+                                    Existing Initiatives
+                                </h3>
+
+                                <div
+                                    id="initiativeList"
+                                    class="initiative-list"
+                                    aria-live="polite"
+                                >
+
+                                    <div class="initiative-empty">
+                                        Loading initiatives...
+                                    </div>
+
+                                </div>
+
+                            </div>
 
                         </div>
 
@@ -1211,7 +1926,6 @@
                         <div class="card-body">
 
                             <div class="account-action">
-
 
                                 <div
                                     class="account-action-icon"
@@ -1347,11 +2061,6 @@
 
     <!-- =====================================================
          ADMIN LOADING OVERLAY
-
-         admin-layout.js hides this with:
-         element.hidden = true
-
-         The CSS below explicitly respects hidden.
     ====================================================== -->
 
     <div
@@ -1368,8 +2077,7 @@
 
     <!-- =====================================================
          ADMIN LAYOUT BOOT
-
-         This remains the single boot owner.
+         Remains the single boot owner.
     ====================================================== -->
 
     <script type="module">
