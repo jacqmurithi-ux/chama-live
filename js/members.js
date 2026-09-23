@@ -9,13 +9,15 @@
       ↓
    Contribution setup
       ↓
-   create_member_with_contribution_plan()
+   Optional historical contribution setup
       ↓
-   Initial obligations
+   create_member_with_contribution_plan()
+   OR
+   create_member_with_historical_contributions()
+      ↓
+   Initial obligations / historical payments
       ↓
    Initial contribution status
-      ↓
-   Optional historical reconciliation
 
    MEMBER VIEW FLOW
    ---------------------------------------------------------
@@ -31,6 +33,17 @@
    ---------------------------------------------------------
    Separate explicit action only:
    reconcile_member_historical_payments()
+
+   IMPORTANT ACCOUNTING RULE
+   ---------------------------------------------------------
+   Historical payments are created through the canonical
+   create_member_with_historical_contributions() backend
+   transaction.
+
+   This frontend does NOT directly insert:
+   - contributions
+   - contribution_allocations
+   - contribution_obligations
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -529,8 +542,12 @@ function ensureNationalIdUI() {
 /* =========================================================
    CONTRIBUTION SETUP UI
    ---------------------------------------------------------
-   Dynamically adds the accounting fields so the current
-   members.html does not have to be replaced at this stage.
+   Dynamically adds:
+   - monthly contribution setup
+   - historical contribution setup
+
+   The current members.html does not have to be replaced
+   at this stage.
 ========================================================= */
 
 function ensureContributionUI() {
@@ -671,6 +688,130 @@ function ensureContributionUI() {
     </div>
 
     <div
+      class="member-form-section-heading"
+      style="margin-top: 1rem;"
+    >
+      <strong>
+        Historical Contributions
+      </strong>
+
+      <span>
+        Record prior monthly payments when the member
+        joins with an existing payment history.
+      </span>
+    </div>
+
+    <div class="member-form-grid">
+
+      <div class="member-form-field">
+
+        <label
+          class="form-section-label"
+          for="memberHistoricalEnabled"
+        >
+          Historical Contributions
+        </label>
+
+        <select
+          id="memberHistoricalEnabled"
+          name="memberHistoricalEnabled"
+        >
+          <option value="false">
+            No — New member from this point
+          </option>
+
+          <option value="true">
+            Yes — Member has paid prior months
+          </option>
+        </select>
+
+        <small class="muted member-form-hint">
+          Select Yes only when prior monthly payments
+          should be created as actual historical payments.
+        </small>
+
+      </div>
+
+      <div
+        class="member-form-field"
+        id="memberHistoricalPaidThroughField"
+        hidden
+      >
+
+        <label
+          class="form-section-label"
+          for="memberHistoricalPaidThrough"
+        >
+          Paid Through
+        </label>
+
+        <input
+          id="memberHistoricalPaidThrough"
+          name="memberHistoricalPaidThrough"
+          type="date"
+        >
+
+        <small class="muted member-form-hint">
+          The last month already paid by the member.
+        </small>
+
+      </div>
+
+      <div
+        class="member-form-field"
+        id="memberHistoricalPaymentMethodField"
+        hidden
+      >
+
+        <label
+          class="form-section-label"
+          for="memberHistoricalPaymentMethod"
+        >
+          Historical Payment Method
+        </label>
+
+        <select
+          id="memberHistoricalPaymentMethod"
+          name="memberHistoricalPaymentMethod"
+        >
+          <option value="Cash">
+            Cash
+          </option>
+
+          <option value="M-Pesa">
+            M-Pesa
+          </option>
+
+          <option value="Bank transfer">
+            Bank transfer
+          </option>
+        </select>
+
+        <small class="muted member-form-hint">
+          The payment method used for the historical
+          monthly payments.
+        </small>
+
+      </div>
+
+    </div>
+
+    <div
+      id="memberHistoricalPreview"
+      class="member-contribution-preview"
+      aria-live="polite"
+      hidden
+    >
+      <span class="preview-label">
+        Historical accounting preview
+      </span>
+
+      <strong id="memberHistoricalPreviewText">
+        Complete the historical contribution setup.
+      </strong>
+    </div>
+
+    <div
       id="memberContributionPreview"
       class="member-contribution-preview"
       aria-live="polite"
@@ -729,6 +870,7 @@ function ensureContributionUI() {
         }
 
         updateContributionPreview();
+        updateHistoricalPreview();
       }
     );
 
@@ -737,6 +879,8 @@ function ensureContributionUI() {
       () => {
         effectiveFrom.dataset.auto =
           "false";
+
+        updateHistoricalPreview();
       }
     );
   }
@@ -745,16 +889,51 @@ function ensureContributionUI() {
     "memberContributionAmount"
   )?.addEventListener(
     "input",
-    updateContributionPreview
+    () => {
+      updateContributionPreview();
+      updateHistoricalPreview();
+    }
   );
 
   byId(
     "memberFirstPeriodRule"
   )?.addEventListener(
     "change",
-    updateContributionPreview
+    () => {
+      updateContributionPreview();
+      updateHistoricalPreview();
+    }
   );
+
+  /* Historical controls are deliberately bound once. */
+  byId(
+    "memberHistoricalEnabled"
+  )?.addEventListener(
+    "change",
+    updateHistoricalControls
+  );
+
+  byId(
+    "memberHistoricalPaidThrough"
+  )?.addEventListener(
+    "input",
+    updateHistoricalPreview
+  );
+
+  byId(
+    "memberHistoricalPaymentMethod"
+  )?.addEventListener(
+    "change",
+    updateHistoricalPreview
+  );
+
+  updateHistoricalControls();
 }
+
+
+/* =========================================================
+   CONTRIBUTION PREVIEW
+========================================================= */
 
 function updateContributionPreview() {
   const amount =
@@ -819,6 +998,309 @@ function updateContributionPreview() {
         }
       )} per month, beginning with the joining month.`;
   }
+}
+
+
+/* =========================================================
+   HISTORICAL CONTRIBUTION HELPERS
+========================================================= */
+
+function getFirstHistoricalMonth(
+  joinDate,
+  effectiveFrom,
+  firstPeriodRule
+) {
+  if (
+    !joinDate ||
+    !effectiveFrom
+  ) {
+    return null;
+  }
+
+  const join =
+    new Date(
+      `${joinDate}T00:00:00`
+    );
+
+  const effective =
+    new Date(
+      `${effectiveFrom}T00:00:00`
+    );
+
+  if (
+    Number.isNaN(
+      join.getTime()
+    ) ||
+    Number.isNaN(
+      effective.getTime()
+    )
+  ) {
+    return null;
+  }
+
+  let year =
+    effective.getFullYear();
+
+  let month =
+    effective.getMonth();
+
+  if (
+    firstPeriodRule ===
+      "next_full_period" &&
+    year ===
+      join.getFullYear() &&
+    month ===
+      join.getMonth()
+  ) {
+    month += 1;
+
+    if (month > 11) {
+      month = 0;
+      year += 1;
+    }
+  }
+
+  return new Date(
+    year,
+    month,
+    1
+  );
+}
+
+function getMonthCount(
+  firstMonth,
+  paidThrough
+) {
+  if (
+    !firstMonth ||
+    !paidThrough
+  ) {
+    return 0;
+  }
+
+  const end =
+    new Date(
+      `${paidThrough}T00:00:00`
+    );
+
+  if (
+    Number.isNaN(
+      end.getTime()
+    )
+  ) {
+    return 0;
+  }
+
+  const endYear =
+    end.getFullYear();
+
+  const endMonth =
+    end.getMonth();
+
+  const startYear =
+    firstMonth.getFullYear();
+
+  const startMonth =
+    firstMonth.getMonth();
+
+  return (
+    (endYear - startYear) * 12 +
+    (endMonth - startMonth) +
+    1
+  );
+}
+
+function formatPreviewMoney(value) {
+  return `KSh ${Number(
+    value || 0
+  ).toLocaleString(
+    "en-KE",
+    {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }
+  )}`;
+}
+
+function updateHistoricalControls() {
+  const enabled =
+    byId(
+      "memberHistoricalEnabled"
+    )?.value === "true";
+
+  const paidThroughField =
+    byId(
+      "memberHistoricalPaidThroughField"
+    );
+
+  const paymentMethodField =
+    byId(
+      "memberHistoricalPaymentMethodField"
+    );
+
+  const paidThrough =
+    byId(
+      "memberHistoricalPaidThrough"
+    );
+
+  const paymentMethod =
+    byId(
+      "memberHistoricalPaymentMethod"
+    );
+
+  if (paidThroughField) {
+    paidThroughField.hidden =
+      !enabled;
+  }
+
+  if (paymentMethodField) {
+    paymentMethodField.hidden =
+      !enabled;
+  }
+
+  if (paidThrough) {
+    paidThrough.disabled =
+      !enabled;
+  }
+
+  if (paymentMethod) {
+    paymentMethod.disabled =
+      !enabled;
+  }
+
+  const preview =
+    byId(
+      "memberHistoricalPreview"
+    );
+
+  if (preview) {
+    preview.hidden =
+      !enabled;
+  }
+
+  if (!enabled) {
+    if (paidThrough) {
+      paidThrough.value = "";
+    }
+
+    updateHistoricalPreview();
+    return;
+  }
+
+  updateHistoricalPreview();
+}
+
+function updateHistoricalPreview() {
+  const node =
+    byId(
+      "memberHistoricalPreviewText"
+    );
+
+  if (!node) {
+    return;
+  }
+
+  const enabled =
+    byId(
+      "memberHistoricalEnabled"
+    )?.value === "true";
+
+  if (!enabled) {
+    node.textContent =
+      "No historical payments will be created.";
+    return;
+  }
+
+  const amount =
+    Number(
+      byId(
+        "memberContributionAmount"
+      )?.value || 0
+    );
+
+  const joinDate =
+    byId("memberJoinDate")
+      ?.value || "";
+
+  const effectiveFrom =
+    byId(
+      "memberContributionEffectiveFrom"
+    )?.value || "";
+
+  const firstPeriodRule =
+    byId(
+      "memberFirstPeriodRule"
+    )?.value ||
+    "full_period";
+
+  const paidThrough =
+    byId(
+      "memberHistoricalPaidThrough"
+    )?.value || "";
+
+  if (
+    !amount ||
+    amount <= 0
+  ) {
+    node.textContent =
+      "Enter the monthly contribution amount.";
+    return;
+  }
+
+  if (!joinDate) {
+    node.textContent =
+      "Select the member's join date.";
+    return;
+  }
+
+  if (!effectiveFrom) {
+    node.textContent =
+      "Enter the contribution effective date.";
+    return;
+  }
+
+  if (!paidThrough) {
+    node.textContent =
+      "Select the last month already paid.";
+    return;
+  }
+
+  const firstMonth =
+    getFirstHistoricalMonth(
+      joinDate,
+      effectiveFrom,
+      firstPeriodRule
+    );
+
+  if (!firstMonth) {
+    node.textContent =
+      "The first historical contribution month could not be determined.";
+    return;
+  }
+
+  const monthCount =
+    getMonthCount(
+      firstMonth,
+      paidThrough
+    );
+
+  if (monthCount <= 0) {
+    node.textContent =
+      "Paid-through must be on or after the first historical contribution month.";
+    return;
+  }
+
+  const total =
+    monthCount * amount;
+
+  node.textContent =
+    `${monthCount} monthly payment(s) from ${formatDate(
+      firstMonth
+    )} through ${formatDate(
+      paidThrough
+    )} · Total ${formatPreviewMoney(
+      total
+    )}. Payments will be recorded through the canonical accounting transaction.`;
 }
 
 
@@ -1604,7 +2086,7 @@ async function openAddMember() {
 
   if (description) {
     description.textContent =
-      "Register a new member and set their contribution plan.";
+      "Register a new member, set their contribution plan, and optionally record historical payments.";
   }
 
   if (form) {
@@ -1661,6 +2143,46 @@ async function openAddMember() {
       false;
   }
 
+  const historicalEnabled =
+    byId(
+      "memberHistoricalEnabled"
+    );
+
+  if (historicalEnabled) {
+    historicalEnabled.value =
+      "false";
+
+    historicalEnabled.disabled =
+      false;
+  }
+
+  const historicalPaidThrough =
+    byId(
+      "memberHistoricalPaidThrough"
+    );
+
+  if (historicalPaidThrough) {
+    historicalPaidThrough.value =
+      "";
+    historicalPaidThrough.disabled =
+      true;
+  }
+
+  const historicalPaymentMethod =
+    byId(
+      "memberHistoricalPaymentMethod"
+    );
+
+  if (historicalPaymentMethod) {
+    historicalPaymentMethod.value =
+      "Cash";
+
+    historicalPaymentMethod.disabled =
+      true;
+  }
+
+  updateHistoricalControls();
+
   const setup =
     byId(
       "memberContributionSetup"
@@ -1692,6 +2214,7 @@ async function openAddMember() {
     }
 
     updateContributionPreview();
+    updateHistoricalPreview();
 
   } catch (error) {
     showFormMessage(
@@ -1731,6 +2254,10 @@ function closeMemberForm() {
 
 /* =========================================================
    EDIT MEMBER
+   ---------------------------------------------------------
+   Historical setup is intentionally disabled for editing.
+   Editing an existing member does not create historical
+   accounting records.
 ========================================================= */
 
 function openEditMember(
@@ -1862,6 +2389,75 @@ function openEditMember(
       true;
   }
 
+  const historicalEnabled =
+    byId(
+      "memberHistoricalEnabled"
+    );
+
+  if (historicalEnabled) {
+    historicalEnabled.value =
+      "false";
+
+    historicalEnabled.disabled =
+      true;
+  }
+
+  const historicalPaidThrough =
+    byId(
+      "memberHistoricalPaidThrough"
+    );
+
+  if (historicalPaidThrough) {
+    historicalPaidThrough.value =
+      "";
+
+    historicalPaidThrough.disabled =
+      true;
+  }
+
+  const historicalPaymentMethod =
+    byId(
+      "memberHistoricalPaymentMethod"
+    );
+
+  if (historicalPaymentMethod) {
+    historicalPaymentMethod.value =
+      "Cash";
+
+    historicalPaymentMethod.disabled =
+      true;
+  }
+
+  const paidThroughField =
+    byId(
+      "memberHistoricalPaidThroughField"
+    );
+
+  if (paidThroughField) {
+    paidThroughField.hidden =
+      true;
+  }
+
+  const paymentMethodField =
+    byId(
+      "memberHistoricalPaymentMethodField"
+    );
+
+  if (paymentMethodField) {
+    paymentMethodField.hidden =
+      true;
+  }
+
+  const historicalPreview =
+    byId(
+      "memberHistoricalPreview"
+    );
+
+  if (historicalPreview) {
+    historicalPreview.hidden =
+      true;
+  }
+
   const setup =
     byId(
       "memberContributionSetup"
@@ -1944,7 +2540,23 @@ function getFormValues() {
     effectiveFrom:
       value(
         "memberContributionEffectiveFrom"
-      )
+      ),
+
+    historicalEnabled:
+      byId(
+        "memberHistoricalEnabled"
+      )?.value === "true",
+
+    historicalPaidThrough:
+      value(
+        "memberHistoricalPaidThrough"
+      ),
+
+    historicalPaymentMethod:
+      byId(
+        "memberHistoricalPaymentMethod"
+      )?.value ||
+      "Cash"
   };
 }
 
@@ -2041,6 +2653,89 @@ function validateForm(values) {
   ) {
     throw new Error(
       "The contribution effective date cannot be before the member's join date."
+    );
+  }
+
+  /* -------------------------------------------------------
+     HISTORICAL CONTRIBUTION VALIDATION
+  ------------------------------------------------------- */
+
+  if (!values.historicalEnabled) {
+    return;
+  }
+
+  if (!values.historicalPaidThrough) {
+    throw new Error(
+      "Please select the last month already paid."
+    );
+  }
+
+  if (
+    values.historicalPaidThrough >
+    getToday()
+  ) {
+    throw new Error(
+      "The historical paid-through date cannot be in the future."
+    );
+  }
+
+  const allowedMethods = [
+    "M-Pesa",
+    "Cash",
+    "Bank transfer"
+  ];
+
+  if (
+    !allowedMethods.includes(
+      values.historicalPaymentMethod
+    )
+  ) {
+    throw new Error(
+      "Please select a valid historical payment method."
+    );
+  }
+
+  const firstHistoricalMonth =
+    getFirstHistoricalMonth(
+      values.joinDate,
+      values.effectiveFrom,
+      values.firstPeriodRule
+    );
+
+  if (!firstHistoricalMonth) {
+    throw new Error(
+      "The first historical contribution month could not be determined."
+    );
+  }
+
+  const paidThrough =
+    new Date(
+      `${values.historicalPaidThrough}T00:00:00`
+    );
+
+  if (
+    Number.isNaN(
+      paidThrough.getTime()
+    )
+  ) {
+    throw new Error(
+      "Please enter a valid historical paid-through date."
+    );
+  }
+
+  const paidThroughMonth =
+    new Date(
+      paidThrough.getFullYear(),
+      paidThrough.getMonth(),
+      1
+    );
+
+  if (
+    paidThroughMonth <
+    firstHistoricalMonth
+  ) {
+    throw new Error(
+      "The historical paid-through month cannot be before the first historical contribution month."
     );
   }
 }
@@ -2174,6 +2869,20 @@ function contributionResultMessage(
       result?.total_allocated || 0
     );
 
+  const historicalCount =
+    Number(
+      result?.historical_payment_count ||
+      result?.payments_created ||
+      0
+    );
+
+  let historicalMessage = "";
+
+  if (historicalCount > 0) {
+    historicalMessage =
+      ` ${historicalCount} historical payment(s) were recorded.`;
+  }
+
   if (
     status === "ARREARS"
   ) {
@@ -2183,6 +2892,7 @@ function contributionResultMessage(
       Due ${formatMoney(due)},
       allocated ${formatMoney(allocated)},
       arrears ${formatMoney(arrears)}.
+      ${historicalMessage}
     `;
   }
 
@@ -2194,6 +2904,7 @@ function contributionResultMessage(
       Contribution status: CREDIT.
       Credit available:
       ${formatMoney(credit)}.
+      ${historicalMessage}
     `;
   }
 
@@ -2203,12 +2914,14 @@ function contributionResultMessage(
     return `
       Member added successfully.
       Contribution status: UP TO DATE.
+      ${historicalMessage}
     `;
   }
 
   return `
     Member added successfully.
     Contribution plan has been created.
+    ${historicalMessage}
   `;
 }
 
@@ -2625,7 +3338,9 @@ async function saveMember(
       button.textContent =
         wasEditing
           ? "Updating..."
-          : "Creating...";
+          : values.historicalEnabled
+            ? "Creating Accounting..."
+            : "Creating...";
     }
 
     if (
@@ -2717,6 +3432,12 @@ async function saveMember(
        -------------------------------------------------------
        All member + contribution setup work is delegated
        to the database transaction.
+
+       Normal path:
+         create_member_with_contribution_plan()
+
+       Historical path:
+         create_member_with_historical_contributions()
     ------------------------------------------------------- */
 
     const memberPayload = {
@@ -2779,21 +3500,67 @@ async function saveMember(
       }
     ];
 
-    showStatus(
-      "Creating member and contribution plan..."
-    );
+    let result;
 
-    const result =
-      await supabase.rpc(
-        "create_member_with_contribution_plan",
-        {
-          p_member:
-            memberPayload,
+    if (
+      values.historicalEnabled
+    ) {
+      const historical = {
+        enabled:
+          true,
 
-          p_contribution_plan:
-            contributionPlan
-        }
+        monthly_amount:
+          values.contributionAmount,
+
+        paid_through:
+          values.historicalPaidThrough,
+
+        payment_method:
+          values.historicalPaymentMethod
+      };
+
+      const requestId =
+        crypto.randomUUID();
+
+      showStatus(
+        "Creating member and historical accounting..."
       );
+
+      result =
+        await supabase.rpc(
+          "create_member_with_historical_contributions",
+          {
+            p_member:
+              memberPayload,
+
+            p_contribution_plan:
+              contributionPlan,
+
+            p_historical:
+              historical,
+
+            p_request_id:
+              requestId
+          }
+        );
+
+    } else {
+      showStatus(
+        "Creating member and contribution plan..."
+      );
+
+      result =
+        await supabase.rpc(
+          "create_member_with_contribution_plan",
+          {
+            p_member:
+              memberPayload,
+
+            p_contribution_plan:
+              contributionPlan
+          }
+        );
+    }
 
     if (result.error) {
       throw result.error;
@@ -2853,7 +3620,9 @@ async function saveMember(
 
     setTimeout(
       closeMemberForm,
-      1800
+      values.historicalEnabled
+        ? 2200
+        : 1800
     );
 
   } catch (error) {
@@ -2889,6 +3658,9 @@ async function saveMember(
    IMPORTANT:
    This remains the ONLY explicit mutating accounting action
    from the member modal.
+
+   It only reconciles EXISTING payments.
+   It does not create historical payments.
 ========================================================= */
 
 async function reconcileMemberHistoricalPayments(
