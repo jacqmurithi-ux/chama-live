@@ -19,6 +19,69 @@
     rel="stylesheet"
     href="./css/app.css"
   >
+
+  <style>
+    .member-finance-status {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: #f8fafc;
+    }
+
+    .member-finance-status-label {
+      margin-bottom: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: #64748b;
+    }
+
+    .member-finance-status-value {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .member-finance-status-value::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      flex: 0 0 8px;
+      border-radius: 50%;
+      background: #94a3b8;
+    }
+
+    .member-finance-status-value.status-arrears {
+      color: #b91c1c;
+    }
+
+    .member-finance-status-value.status-arrears::before {
+      background: #dc2626;
+    }
+
+    .member-finance-status-value.status-credit {
+      color: #15803d;
+    }
+
+    .member-finance-status-value.status-credit::before {
+      background: #16a34a;
+    }
+
+    .member-finance-status-value.status-up-to-date {
+      color: #1d4ed8;
+    }
+
+    .member-finance-status-value.status-up-to-date::before {
+      background: #2563eb;
+    }
+
+    .member-finance-status-value.status-unknown {
+      color: #64748b;
+    }
+  </style>
 </head>
 
 <body>
@@ -40,6 +103,7 @@
 
     member-dashboard.js owns:
       • member contribution summary
+      • canonical member contribution position
       • group financial overview
       • recent group contributions
       • recent group expenses
@@ -179,6 +243,35 @@
 
         </div>
 
+        <!-- =================================================
+             CANONICAL CONTRIBUTION POSITION
+             -------------------------------------------------
+             Read-only status from:
+               get_member_contribution_position(uuid)
+
+             This is intentionally separate from the raw
+             contribution totals above.
+        ================================================== -->
+
+        <div
+          class="member-finance-status"
+          id="myContributionPosition"
+        >
+
+          <div class="member-finance-status-label">
+            Contribution Status
+          </div>
+
+          <div
+            id="myContributionStatus"
+            class="member-finance-status-value status-unknown"
+            aria-live="polite"
+          >
+            Loading...
+          </div>
+
+        </div>
+
         <div
           class="member-actions"
           style="margin-top:16px;"
@@ -188,6 +281,7 @@
             class="member-action"
             href="./member-contributions.html"
           >
+
             <span
               class="member-action-icon"
               aria-hidden="true"
@@ -198,6 +292,7 @@
             <span>
               View My Contributions
             </span>
+
           </a>
 
         </div>
@@ -292,6 +387,7 @@
             class="member-action"
             href="./member-profile.html"
           >
+
             <span
               class="member-action-icon"
               aria-hidden="true"
@@ -302,6 +398,7 @@
             <span>
               View My Profile
             </span>
+
           </a>
 
         </div>
@@ -538,6 +635,7 @@
             class="member-action"
             href="./member-activities.html"
           >
+
             <span
               class="member-action-icon"
               aria-hidden="true"
@@ -548,6 +646,7 @@
             <span>
               View Activities
             </span>
+
           </a>
 
         </div>
@@ -633,6 +732,7 @@
             class="member-action"
             href="./member-assets.html"
           >
+
             <span
               class="member-action-icon"
               aria-hidden="true"
@@ -643,6 +743,7 @@
             <span>
               View Group Assets
             </span>
+
           </a>
 
         </div>
@@ -751,6 +852,7 @@
             class="member-action"
             href="./member-contributions.html"
           >
+
             <span
               class="member-action-icon"
               aria-hidden="true"
@@ -761,6 +863,7 @@
             <span>
               My Contributions
             </span>
+
           </a>
 
 
@@ -768,6 +871,7 @@
             class="member-action"
             href="./member-activities.html"
           >
+
             <span
               class="member-action-icon"
               aria-hidden="true"
@@ -778,6 +882,7 @@
             <span>
               Activities
             </span>
+
           </a>
 
 
@@ -785,6 +890,7 @@
             class="member-action"
             href="./member-assets.html"
           >
+
             <span
               class="member-action-icon"
               aria-hidden="true"
@@ -795,6 +901,7 @@
             <span>
               Group Assets
             </span>
+
           </a>
 
 
@@ -802,6 +909,7 @@
             class="member-action"
             href="./member-milestones.html"
           >
+
             <span
               class="member-action-icon"
               aria-hidden="true"
@@ -812,6 +920,7 @@
             <span>
               Milestones
             </span>
+
           </a>
 
 
@@ -819,6 +928,7 @@
             class="member-action"
             href="./member-getting-started.html"
           >
+
             <span
               class="member-action-icon"
               aria-hidden="true"
@@ -829,6 +939,7 @@
             <span>
               Getting Started
             </span>
+
           </a>
 
         </div>
