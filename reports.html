@@ -403,6 +403,16 @@
       color: #991b1b;
     }
 
+    .status-arrears {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .status-up-to-date {
+      background: #dcfce7;
+      color: #166534;
+    }
+
     .status-other {
       background: #e5e7eb;
       color: #374151;
@@ -420,7 +430,7 @@
 
     .report-kpi-grid {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(6, minmax(0, 1fr));
       gap: 12px;
       margin-bottom: 18px;
     }
@@ -502,6 +512,10 @@
 
     @media (max-width: 1100px) {
       .summary-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .report-kpi-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
       }
 
@@ -651,6 +665,10 @@
         grid-template-columns: repeat(3, 1fr);
       }
 
+      .report-kpi-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
       table {
         min-width: 0;
       }
@@ -723,7 +741,8 @@
 
             <p>
               CHAMA LIVE reporting centre — analyse contributions, member accounting,
-              arrears, carry-forward credit, expenses, cash flow and meetings from one place.
+              monthly outstanding balances, cumulative arrears, cumulative credit,
+              expenses, cash flow and meetings from one place.
             </p>
 
             <div class="hero-meta">
@@ -814,7 +833,19 @@
                   </option>
 
                   <option value="arrears">
-                    Arrears &amp; Outstanding
+                    Monthly Outstanding
+                  </option>
+
+                  <option value="cumulative-arrears">
+                    Cumulative Arrears
+                  </option>
+
+                  <option value="cumulative-credit">
+                    Cumulative Credit
+                  </option>
+
+                  <option value="cumulative-up-to-date">
+                    Cumulative Up to Date
                   </option>
 
                   <option value="credit">
@@ -936,11 +967,23 @@
                   </option>
 
                   <option value="outstanding">
-                    Outstanding / Arrears
+                    Monthly Outstanding
                   </option>
 
                   <option value="credit">
-                    Credit / Carry-forward
+                    Monthly Credit / Carry-forward
+                  </option>
+
+                  <option value="cumulative-arrears">
+                    Cumulative Arrears
+                  </option>
+
+                  <option value="cumulative-credit">
+                    Cumulative Credit
+                  </option>
+
+                  <option value="cumulative-up-to-date">
+                    Cumulative Up to Date
                   </option>
 
                   <option value="no-payment">
@@ -1035,7 +1078,7 @@
                 class="quick-filter"
                 type="button"
                 data-quick="arrears">
-                Has Arrears
+                Has Previous Outstanding
               </button>
 
               <button
@@ -1190,24 +1233,29 @@
 
           </section>
 
+          <!-- ACCOUNTING KPI -->
+
           <section class="report-kpi-grid">
 
             <div class="report-kpi">
               <span>Applied This Month</span>
+
               <strong id="reportApplied">
                 KSh 0.00
               </strong>
             </div>
 
             <div class="report-kpi">
-              <span>Outstanding</span>
+              <span>Current Outstanding</span>
+
               <strong id="reportOutstanding">
                 KSh 0.00
               </strong>
             </div>
 
             <div class="report-kpi">
-              <span>Carry-forward</span>
+              <span>Carry-forward Credit</span>
+
               <strong id="reportCarryForward">
                 KSh 0.00
               </strong>
@@ -1215,8 +1263,25 @@
 
             <div class="report-kpi">
               <span>Collection Rate</span>
+
               <strong id="reportCollectionRate">
                 0%
+              </strong>
+            </div>
+
+            <div class="report-kpi">
+              <span>Cumulative Arrears</span>
+
+              <strong id="reportCumulativeArrears">
+                KSh 0.00
+              </strong>
+            </div>
+
+            <div class="report-kpi">
+              <span>Cumulative Credit</span>
+
+              <strong id="reportCumulativeCredit">
+                KSh 0.00
               </strong>
             </div>
 
@@ -1533,7 +1598,9 @@
 
           <p class="report-footer-note no-print">
             CHAMA LIVE uses the canonical obligation → payment → allocation → arrears/credit
-            accounting chain. Reports do not recalculate member accounting in JavaScript.
+            accounting chain. Monthly accounting status and cumulative member position are
+            read from canonical server-side functions; reports do not recalculate member
+            accounting in JavaScript.
           </p>
 
         </div>
