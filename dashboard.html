@@ -402,6 +402,88 @@
     }
 
     /* =====================================================
+       CUMULATIVE CONTRIBUTION POSITION
+    ===================================================== */
+
+    .cumulative-position-card {
+      border: 1px solid var(--dashboard-border);
+      border-radius: var(--dashboard-radius);
+      background: var(--dashboard-card);
+      box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
+      overflow: hidden;
+    }
+
+    .cumulative-position-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      padding: 16px;
+    }
+
+    .cumulative-position-stat {
+      min-width: 0;
+      padding: 13px;
+      border: 1px solid #edf0f4;
+      border-radius: 12px;
+      background: var(--dashboard-soft);
+    }
+
+    .cumulative-position-stat span {
+      display: block;
+      color: var(--dashboard-muted);
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .cumulative-position-stat strong {
+      display: block;
+      margin-top: 6px;
+      color: var(--dashboard-text);
+      font-size: 20px;
+      line-height: 1.1;
+      overflow-wrap: anywhere;
+    }
+
+    .cumulative-position-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 680px;
+    }
+
+    .cumulative-position-table th,
+    .cumulative-position-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #edf0f4;
+      text-align: left;
+      vertical-align: middle;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .cumulative-position-table th {
+      color: #667085;
+      background: #fcfcfd;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.045em;
+      white-space: nowrap;
+    }
+
+    .cumulative-position-table td {
+      color: #475467;
+    }
+
+    .cumulative-position-table tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .cumulative-position-table td strong {
+      color: #344054;
+    }
+
+    /* =====================================================
        TWO COLUMN AREA
     ===================================================== */
 
@@ -553,7 +635,8 @@
 
     .status-paid,
     .status-approved,
-    .status-active {
+    .status-active,
+    .status-up-to-date {
       background: #ecfdf3;
       color: #067647;
     }
@@ -569,9 +652,15 @@
     .status-rejected,
     .status-inactive,
     .status-suspended,
-    .status-removed {
+    .status-removed,
+    .status-arrears {
       background: #fef3f2;
       color: #b42318;
+    }
+
+    .status-credit {
+      background: #eff8ff;
+      color: #175cd3;
     }
 
     /* =====================================================
@@ -663,6 +752,10 @@
         grid-template-columns: 1fr;
       }
 
+      .cumulative-position-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
       .topbar-inner {
         padding-left: 16px;
         padding-right: 16px;
@@ -746,6 +839,15 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
+      .cumulative-position-card {
+        border-radius: 14px;
+      }
+
+      .cumulative-position-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        padding: 12px;
+      }
+
       .operations-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         padding: 12px;
@@ -761,6 +863,10 @@
 
       .dashboard-table {
         min-width: 600px;
+      }
+
+      .cumulative-position-table {
+        min-width: 680px;
       }
     }
 
@@ -799,6 +905,19 @@
 
       .progress-summary {
         font-size: 11px;
+      }
+
+      .cumulative-position-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .cumulative-position-stat {
+        padding: 11px;
+      }
+
+      .cumulative-position-stat strong {
+        font-size: 18px;
       }
 
       .operations-grid {
@@ -1107,6 +1226,7 @@
           <p>
             Canonical monthly obligation and allocation status.
           </p>
+
         </div>
 
 
@@ -1191,7 +1311,7 @@
             <div class="progress-stat">
 
               <span class="progress-stat-label">
-                Outstanding
+                Current Outstanding
               </span>
 
               <strong
@@ -1230,7 +1350,7 @@
             <div class="progress-stat">
 
               <span class="progress-stat-label">
-                Carry Forward
+                Carry-forward Credit
               </span>
 
               <strong
@@ -1298,9 +1418,9 @@
                   <th scope="col">Monthly Due</th>
                   <th scope="col">Previous Outstanding</th>
                   <th scope="col">Applied</th>
-                  <th scope="col">Carry Forward</th>
-                  <th scope="col">Outstanding</th>
-                  <th scope="col">Status</th>
+                  <th scope="col">Carry-forward Credit</th>
+                  <th scope="col">Current Outstanding</th>
+                  <th scope="col">Monthly Status</th>
                 </tr>
               </thead>
 
@@ -1312,6 +1432,153 @@
                       <strong>
                         Loading member status...
                       </strong>
+                    </div>
+                  </td>
+                </tr>
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </article>
+
+      </section>
+
+
+      <!-- =================================================
+           CUMULATIVE CONTRIBUTION POSITION
+           Separate from monthly accounting status.
+      ================================================= -->
+
+      <section
+        class="dashboard-section"
+        aria-labelledby="cumulativePositionTitle"
+      >
+
+        <div class="section-heading">
+
+          <h2 id="cumulativePositionTitle">
+            Cumulative contribution position
+          </h2>
+
+          <p>
+            Canonical lifetime accounting position based on
+            total obligations, allocations and remaining balance.
+          </p>
+
+        </div>
+
+
+        <article
+          id="cumulativePositionCard"
+          class="cumulative-position-card"
+        >
+
+          <div class="cumulative-position-grid">
+
+            <div class="cumulative-position-stat">
+
+              <span>
+                Members Up to Date
+              </span>
+
+              <strong id="cumulativeUpToDateCount">
+                0
+              </strong>
+
+            </div>
+
+
+            <div class="cumulative-position-stat">
+
+              <span>
+                Members in Arrears
+              </span>
+
+              <strong id="cumulativeArrearsCount">
+                0
+              </strong>
+
+            </div>
+
+
+            <div class="cumulative-position-stat">
+
+              <span>
+                Members with Credit
+              </span>
+
+              <strong id="cumulativeCreditCount">
+                0
+              </strong>
+
+            </div>
+
+
+            <div class="cumulative-position-stat">
+
+              <span>
+                Cumulative Arrears
+              </span>
+
+              <strong
+                id="cumulativeArrearsAmount"
+                class="amount-negative"
+              >
+                KSh 0
+              </strong>
+
+            </div>
+
+
+            <div class="cumulative-position-stat">
+
+              <span>
+                Cumulative Credit
+              </span>
+
+              <strong
+                id="cumulativeCreditAmount"
+                class="amount-positive"
+              >
+                KSh 0
+              </strong>
+
+            </div>
+
+          </div>
+
+
+          <div class="table-wrap">
+
+            <table class="cumulative-position-table">
+
+              <thead>
+                <tr>
+                  <th scope="col">Member</th>
+                  <th scope="col">Total Due</th>
+                  <th scope="col">Total Allocated</th>
+                  <th scope="col">Arrears</th>
+                  <th scope="col">Credit</th>
+                  <th scope="col">Cumulative Status</th>
+                </tr>
+              </thead>
+
+              <tbody id="cumulativePositionRows">
+
+                <tr>
+                  <td colspan="6">
+                    <div class="empty-state">
+                      <strong>
+                        Loading cumulative position...
+                      </strong>
+
+                      <span>
+                        Lifetime accounting position is being calculated
+                        from the canonical accounting function.
+                      </span>
                     </div>
                   </td>
                 </tr>
@@ -1425,7 +1692,7 @@
 
       <!-- =================================================
            RECENT CONTRIBUTIONS + RECENT EXPENSES
-      ================================================= -->
+      ===================================================== -->
 
       <section class="dashboard-section">
 
@@ -1555,6 +1822,7 @@
           <p>
             Scheduled group meetings from today onward.
           </p>
+
         </div>
 
 
