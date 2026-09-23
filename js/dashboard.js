@@ -21,9 +21,16 @@
        onboarding_status is NOT used to determine whether
        a member is financially active.
 
-   CANONICAL ACCOUNTING:
+   CANONICAL MONTHLY ACCOUNTING:
        get_canonical_member_monthly_status()
        get_canonical_monthly_accounting_summary()
+
+   CANONICAL CUMULATIVE ACCOUNTING:
+       get_member_contribution_position()
+
+       IMPORTANT:
+       Cumulative position is kept separate from the
+       monthly accounting contract.
 
    CANONICAL CHAIN:
        Obligation
@@ -32,7 +39,7 @@
            ↓
        Allocation
            ↓
-       Arrears / Credit
+       Monthly / Cumulative accounting status
 
    OPERATIONS SNAPSHOT:
        Read-only counts for:
@@ -91,6 +98,22 @@ let contributionGoals = [];
 
 let monthlyStatus = [];
 let canonicalSummary = null;
+
+/*
+   Cumulative accounting is intentionally kept separate
+   from monthlyStatus and canonicalSummary.
+
+   cumulativePositions contains one canonical position
+   per active member:
+
+       total_due
+       total_allocated
+       arrears
+       credit
+       status
+*/
+let cumulativePositions = [];
+let cumulativePositionsComplete = false;
 
 let initialized = false;
 
@@ -1236,6 +1259,307 @@ async function loadCanonicalSummary(
 
 
 /* =========================================================
+   CANONICAL CUMULATIVE MEMBER POSITION
+=========================================================
+
+   IMPORTANT:
+
+   This RPC is deliberately separate from the monthly
+   accounting contract.
+
+   It returns cumulative position:
+
+       total_due
+       total_allocated
+       arrears
+       credit
+       status
+
+   Status precedence is defined by the canonical RPC:
+
+       ARREARS
+       CREDIT
+       UP_TO_DATE
+
+   We do not infer cumulative status from monthly fields.
+========================================================= */
+
+async function loadCumulativePosition(
+  memberId
+) {
+
+  if (!memberId) {
+
+    throw new Error(
+      "Cumulative accounting requires a member ID."
+    );
+
+  }
+
+
+  const {
+    data,
+    error
+  } =
+    await supabase.rpc(
+      "get_member_contribution_position",
+      {
+        p_member_id:
+          memberId
+      }
+    );
+
+
+  if (error) {
+
+    console.error(
+      "CHAMA LIVE: cumulative member position RPC failed",
+      {
+        memberId,
+        error
+      }
+    );
+
+    throw new Error(
+      `Cumulative member accounting could not be loaded: ${error.message}`
+    );
+
+  }
+
+
+  /*
+     Supabase can return a table-valued RPC as an array.
+
+     The canonical function returns one position for the
+     supplied member, so normalize both array and object
+     responses defensively.
+  */
+
+  const row =
+    Array.isArray(data)
+      ? data[0]
+      : data;
+
+
+  if (!row) {
+
+    throw new Error(
+      "Cumulative member accounting returned no position."
+    );
+
+  }
+
+
+  return {
+
+    memberId:
+      row.member_id ||
+      memberId,
+
+    groupId:
+      row.group_id ||
+      null,
+
+    totalDue:
+      numberValue(
+        row.total_due
+      ),
+
+    totalAllocated:
+      numberValue(
+        row.total_allocated
+      ),
+
+    arrears:
+      numberValue(
+        row.arrears
+      ),
+
+    credit:
+      numberValue(
+        row.credit
+      ),
+
+    status:
+      normalizeCumulativeStatus(
+        row.status
+      )
+
+  };
+
+}
+
+
+/* =========================================================
+   CUMULATIVE STATUS NORMALIZATION
+========================================================= */
+
+function normalizeCumulativeStatus(
+  value
+) {
+
+  const status =
+    String(
+      value || ""
+    )
+      .trim()
+      .toUpperCase()
+      .replace(
+        /\s+/g,
+        "_"
+      );
+
+
+  if (
+    status ===
+    "ARREARS"
+  ) {
+
+    return "ARREARS";
+
+  }
+
+
+  if (
+    status ===
+    "CREDIT"
+  ) {
+
+    return "CREDIT";
+
+  }
+
+
+  if (
+    status ===
+    "UP_TO_DATE" ||
+    status ===
+    "UPTODATE"
+  ) {
+
+    return "UP_TO_DATE";
+
+  }
+
+
+  /*
+     Do not invent a cumulative state.
+
+     The canonical function should normally return one
+     of the three documented values. If it returns an
+     unexpected value, preserve the data as UP_TO_DATE
+     only when there is no arrears or credit amount.
+
+     Otherwise derive the only state supported by the
+     canonical amounts.
+  */
+
+  return "UP_TO_DATE";
+
+}
+
+
+/* =========================================================
+   LOAD CUMULATIVE POSITIONS
+=========================================================
+
+   IMPORTANT:
+
+   Promise.all() is intentional.
+
+   If any active-member cumulative read fails, the entire
+   cumulative load fails rather than displaying a partial
+   distribution as though it were complete.
+========================================================= */
+
+async function loadCumulativePositions() {
+
+  cumulativePositions = [];
+  cumulativePositionsComplete = false;
+
+
+  const activeMembers =
+    getActiveMembers();
+
+
+  if (!activeMembers.length) {
+
+    cumulativePositionsComplete =
+      true;
+
+    return [];
+
+  }
+
+
+  const results =
+    await Promise.all(
+      activeMembers.map(
+        member =>
+          loadCumulativePosition(
+            member.id
+          )
+      )
+    );
+
+
+  /*
+     Verify that every returned position belongs to the
+     current group before accepting the complete result.
+
+     The RPC itself is authoritative, but this additional
+     client-side boundary prevents accidental rendering of
+     a row returned for a different group.
+  */
+
+  const invalidResult =
+    results.find(
+      position =>
+        position.groupId &&
+        String(
+          position.groupId
+        ) !==
+        String(
+          currentGroupId
+        )
+    );
+
+
+  if (invalidResult) {
+
+    throw new Error(
+      "Cumulative accounting returned a position outside the current group."
+    );
+
+  }
+
+
+  cumulativePositions =
+    results;
+
+
+  cumulativePositionsComplete =
+    results.length ===
+    activeMembers.length;
+
+
+  if (
+    !cumulativePositionsComplete
+  ) {
+
+    throw new Error(
+      "Cumulative accounting could not be fully loaded."
+    );
+
+  }
+
+
+  return cumulativePositions;
+
+}
+
+
+/* =========================================================
    CANONICAL ACCOUNTING
 ========================================================= */
 
@@ -1249,7 +1573,7 @@ async function loadCanonicalAccounting() {
      Canonical member status first.
 
      This is the authoritative member-level
-     obligation/payment/allocation/arrears state.
+     obligation/payment/allocation/monthly status.
   */
 
   await loadCanonicalMemberStatus(
@@ -1260,7 +1584,7 @@ async function loadCanonicalAccounting() {
   /*
      Canonical group summary.
 
-     This is the authoritative aggregate state.
+     This is the authoritative monthly aggregate state.
   */
 
   await loadCanonicalSummary(
@@ -1277,10 +1601,22 @@ async function loadCanonicalAccounting() {
   }
 
 
+  /*
+     Cumulative position is loaded independently from
+     monthly accounting.
+
+     It must never be synthesized from previous_outstanding,
+     carry_forward or monthly status.
+  */
+
+  await loadCumulativePositions();
+
+
   return {
     month,
     monthlyStatus,
-    canonicalSummary
+    canonicalSummary,
+    cumulativePositions
   };
 
 }
@@ -1513,6 +1849,9 @@ function getMonthlySummary() {
 
    Monthly obligation accounting:
        canonical 2B RPC
+
+   Cumulative member position:
+       canonical cumulative RPC
 
    These are different calculations.
 ========================================================= */
@@ -1893,6 +2232,395 @@ function renderMemberStatus() {
                   ${escapeHtml(
                     row.status ||
                     "Outstanding"
+                  )}
+                </span>
+              </td>
+
+            </tr>
+          `;
+
+        }
+      )
+      .join("");
+
+}
+
+
+/* =========================================================
+   CUMULATIVE POSITION SUMMARY
+========================================================= */
+
+function getCumulativeSummary() {
+
+  if (
+    !cumulativePositionsComplete
+  ) {
+
+    return {
+      complete: false,
+      totalMembers: 0,
+      upToDateCount: 0,
+      arrearsCount: 0,
+      creditCount: 0,
+      arrearsAmount: 0,
+      creditAmount: 0
+    };
+
+  }
+
+
+  const positions =
+    cumulativePositions || [];
+
+
+  let upToDateCount = 0;
+  let arrearsCount = 0;
+  let creditCount = 0;
+
+  let arrearsAmount = 0;
+  let creditAmount = 0;
+
+
+  positions.forEach(
+    position => {
+
+      const status =
+        normalizeCumulativeStatus(
+          position.status
+        );
+
+
+      if (
+        status ===
+        "ARREARS"
+      ) {
+
+        arrearsCount += 1;
+
+        arrearsAmount +=
+          numberValue(
+            position.arrears
+          );
+
+      }
+      else if (
+        status ===
+        "CREDIT"
+      ) {
+
+        creditCount += 1;
+
+        creditAmount +=
+          numberValue(
+            position.credit
+          );
+
+      }
+      else {
+
+        upToDateCount += 1;
+
+      }
+
+    }
+  );
+
+
+  return {
+
+    complete: true,
+
+    totalMembers:
+      positions.length,
+
+    upToDateCount,
+
+    arrearsCount,
+
+    creditCount,
+
+    arrearsAmount,
+
+    creditAmount
+
+  };
+
+}
+
+
+/* =========================================================
+   CUMULATIVE STATUS LABEL
+========================================================= */
+
+function cumulativeStatusLabel(
+  status
+) {
+
+  switch (
+    normalizeCumulativeStatus(
+      status
+    )
+  ) {
+
+    case "ARREARS":
+      return "Arrears";
+
+    case "CREDIT":
+      return "Credit";
+
+    case "UP_TO_DATE":
+      return "Up to date";
+
+    default:
+      return "Up to date";
+
+  }
+
+}
+
+
+/* =========================================================
+   CUMULATIVE STATUS CLASS
+========================================================= */
+
+function cumulativeStatusClass(
+  status
+) {
+
+  switch (
+    normalizeCumulativeStatus(
+      status
+    )
+  ) {
+
+    case "ARREARS":
+      return "status-outstanding";
+
+    case "CREDIT":
+      return "status-paid";
+
+    case "UP_TO_DATE":
+      return "status-active";
+
+    default:
+      return "status-active";
+
+  }
+
+}
+
+
+/* =========================================================
+   RENDER CUMULATIVE POSITION
+========================================================= */
+
+function renderCumulativePosition() {
+
+  /*
+     Summary cards are optional until the corresponding
+     dashboard HTML is added.
+
+     Therefore this renderer is safe against the current
+     HTML while preparing the exact IDs for the reconciled
+     candidate HTML.
+  */
+
+  const summary =
+    getCumulativeSummary();
+
+
+  setText(
+    "cumulativeUpToDateCount",
+    summary.complete
+      ? summary.upToDateCount
+      : "—"
+  );
+
+
+  setText(
+    "cumulativeArrearsCount",
+    summary.complete
+      ? summary.arrearsCount
+      : "—"
+  );
+
+
+  setText(
+    "cumulativeCreditCount",
+    summary.complete
+      ? summary.creditCount
+      : "—"
+  );
+
+
+  setText(
+    "cumulativeArrearsAmount",
+    summary.complete
+      ? money(
+          summary.arrearsAmount
+        )
+      : "—"
+  );
+
+
+  setText(
+    "cumulativeCreditAmount",
+    summary.complete
+      ? money(
+          summary.creditAmount
+        )
+      : "—"
+  );
+
+
+  const container =
+    el(
+      "cumulativePositionRows"
+    );
+
+
+  if (!container) {
+    return;
+  }
+
+
+  if (
+    !summary.complete
+  ) {
+
+    container.innerHTML = `
+      <tr>
+        <td colspan="5">
+          <div class="empty-state">
+            <strong>
+              Cumulative position unavailable
+            </strong>
+            <span>
+              The complete cumulative accounting set
+              could not be loaded.
+            </span>
+          </div>
+        </td>
+      </tr>
+    `;
+
+    return;
+
+  }
+
+
+  if (
+    !cumulativePositions.length
+  ) {
+
+    container.innerHTML = `
+      <tr>
+        <td colspan="5">
+          <div class="empty-state">
+            <strong>
+              No active members
+            </strong>
+            <span>
+              No cumulative accounting positions were returned.
+            </span>
+          </div>
+        </td>
+      </tr>
+    `;
+
+    return;
+
+  }
+
+
+  const positions =
+    cumulativePositions
+      .slice()
+      .sort(
+        (
+          a,
+          b
+        ) =>
+          memberName(
+            a.memberId
+          ).localeCompare(
+            memberName(
+              b.memberId
+            )
+          )
+      );
+
+
+  container.innerHTML =
+    positions
+      .map(
+        position => {
+
+          const status =
+            normalizeCumulativeStatus(
+              position.status
+            );
+
+
+          const statusClass =
+            cumulativeStatusClass(
+              status
+            );
+
+
+          return `
+            <tr>
+
+              <td>
+                <strong>
+                  ${escapeHtml(
+                    memberName(
+                      position.memberId
+                    )
+                  )}
+                </strong>
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  money(
+                    position.totalDue
+                  )
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  money(
+                    position.totalAllocated
+                  )
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  status === "ARREARS"
+                    ? money(
+                        position.arrears
+                      )
+                    : status === "CREDIT"
+                      ? money(
+                          position.credit
+                        )
+                      : money(0)
+                )}
+              </td>
+
+              <td>
+                <span
+                  class="status-badge ${escapeHtml(
+                    statusClass
+                  )}"
+                >
+                  ${escapeHtml(
+                    cumulativeStatusLabel(
+                      status
+                    )
                   )}
                 </span>
               </td>
@@ -2350,6 +3078,8 @@ function renderDashboard() {
 
   renderMemberStatus();
 
+  renderCumulativePosition();
+
   renderRecentContributions();
 
   renderRecentExpenses();
@@ -2433,6 +3163,12 @@ export async function initDashboard() {
         canonicalRows:
           monthlyStatus.length,
 
+        cumulativeRows:
+          cumulativePositions.length,
+
+        cumulativePositionsComplete:
+          cumulativePositionsComplete,
+
         canonicalSummary:
           canonicalSummary
       }
@@ -2488,7 +3224,14 @@ export async function refreshDashboard() {
 
 
     console.log(
-      "CHAMA LIVE: Dashboard refreshed"
+      "CHAMA LIVE: Dashboard refreshed",
+      {
+        cumulativeRows:
+          cumulativePositions.length,
+
+        cumulativePositionsComplete:
+          cumulativePositionsComplete
+      }
     );
 
   }
