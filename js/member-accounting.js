@@ -1,10 +1,11 @@
-
 /* =========================================================
    CHAMA LIVE — MEMBER ACCOUNTING MVP
    ---------------------------------------------------------
    Purpose:
    - Read-only canonical member accounting UI
    - Uses get_canonical_member_monthly_status()
+   - Uses get_member_contribution_position() for cumulative
+     member position
    - No browser-side canonical refresh/rebuild
    - No direct writes to accounting tables
    - Preserves filtering, statements, exports and printing
@@ -12,6 +13,7 @@
    2B APPLICATION CONTRACT:
    Browser:
      READ -> get_canonical_member_monthly_status()
+     READ -> get_member_contribution_position()
 
    Server/service-role:
      REFRESH -> protected canonical accounting refresh path
@@ -19,6 +21,21 @@
    IMPORTANT:
    The browser must NOT call:
      refresh_canonical_contribution_accounting()
+
+   MONTHLY STATUS CONTRACT:
+     paid
+     credit
+     partial
+     outstanding
+
+   CUMULATIVE POSITION CONTRACT:
+     ARREARS
+     CREDIT
+     UP_TO_DATE
+
+   IMPORTANT:
+   previous_outstanding is a monthly historical field.
+   It must NOT be relabeled as cumulative ARREARS.
 
    ========================================================= */
 
@@ -46,6 +63,19 @@ let canonicalRows = [];
 let filteredRows = [];
 
 let selectedMemberId = null;
+
+/*
+ * Cumulative positions are loaded separately from the
+ * monthly canonical accounting read.
+ *
+ * Key:
+ *   member_id
+ *
+ * Value:
+ *   canonical cumulative contribution position
+ */
+const cumulativePositionCache =
+  new Map();
 
 
 /* =========================================================
@@ -96,6 +126,16 @@ const tablePeriod =
 
 const statementSection =
   document.getElementById("statementSection");
+
+const cumulativePositionSection =
+  document.getElementById(
+    "memberCumulativePosition"
+  );
+
+const cumulativePositionContent =
+  document.getElementById(
+    "memberCumulativePositionContent"
+  );
 
 const statementTitle =
   document.getElementById("statementTitle");
@@ -285,6 +325,99 @@ function getStatus(row) {
 }
 
 
+/* =========================================================
+   CUMULATIVE POSITION HELPERS
+   ========================================================= */
+
+function getCumulativeTotalDue(position) {
+  return number(
+    position?.total_due
+  );
+}
+
+
+function getCumulativeTotalAllocated(
+  position
+) {
+  return number(
+    position?.total_allocated
+  );
+}
+
+
+function getCumulativeArrears(position) {
+  return number(
+    position?.arrears
+  );
+}
+
+
+function getCumulativeCredit(position) {
+  return number(
+    position?.credit
+  );
+}
+
+
+function getCumulativeStatus(position) {
+  return String(
+    position?.status || ""
+  )
+    .trim()
+    .toUpperCase();
+}
+
+
+function getCumulativeStatusLabel(
+  status
+) {
+  switch (
+    getCumulativeStatus({
+      status
+    })
+  ) {
+    case "ARREARS":
+      return "Arrears";
+
+    case "CREDIT":
+      return "Credit";
+
+    case "UP_TO_DATE":
+      return "Up to date";
+
+    default:
+      return status || "—";
+  }
+}
+
+
+function getCumulativeStatusClass(
+  status
+) {
+  switch (
+    getCumulativeStatus({
+      status
+    })
+  ) {
+    case "ARREARS":
+      return "ma-badge-arrears";
+
+    case "CREDIT":
+      return "ma-badge-credit";
+
+    case "UP_TO_DATE":
+      return "ma-badge-paid";
+
+    default:
+      return "ma-badge-neutral";
+  }
+}
+
+
+/* =========================================================
+   STATUS
+   ========================================================= */
+
 function setStatus(
   message,
   type = "info"
@@ -314,6 +447,10 @@ function showError(error) {
   );
 }
 
+
+/* =========================================================
+   ACCOUNTING PERIOD
+   ========================================================= */
 
 function setAccountingMonth(month) {
   if (!month) {
@@ -401,7 +538,7 @@ async function loadContext() {
    Browser-side accounting is intentionally read-only.
 
    IMPORTANT:
-   This function performs ONLY the canonical read.
+   This function performs ONLY the monthly canonical read.
 
    It does NOT call:
      refresh_canonical_contribution_accounting()
@@ -428,6 +565,201 @@ async function loadCanonicalRows() {
     Array.isArray(data)
       ? data
       : [];
+}
+
+
+/* =========================================================
+   CUMULATIVE POSITION READ
+   =========================================================
+   Canonical cumulative position:
+     get_member_contribution_position(uuid)
+
+   Contract:
+     total_due
+     total_allocated
+     arrears
+     credit
+     status
+
+   This is a read-only RPC.
+   No browser-side accounting mutation occurs here.
+   ========================================================= */
+
+async function loadMemberContributionPosition(
+  memberId
+) {
+  if (!memberId) {
+    return null;
+  }
+
+  const cacheKey =
+    String(memberId);
+
+  if (
+    cumulativePositionCache.has(
+      cacheKey
+    )
+  ) {
+    return cumulativePositionCache.get(
+      cacheKey
+    );
+  }
+
+  const {
+    data,
+    error
+  } = await supabase.rpc(
+    "get_member_contribution_position",
+    {
+      p_member_id: memberId
+    }
+  );
+
+  if (error) {
+    throw error;
+  }
+
+  const position =
+    Array.isArray(data)
+      ? data[0] || null
+      : data || null;
+
+  if (!position) {
+    throw new Error(
+      "Cumulative member contribution position returned no result."
+    );
+  }
+
+  cumulativePositionCache.set(
+    cacheKey,
+    position
+  );
+
+  return position;
+}
+
+
+function clearCumulativePositionCache() {
+  cumulativePositionCache.clear();
+}
+
+
+/* =========================================================
+   CUMULATIVE POSITION RENDER
+   ========================================================= */
+
+function renderCumulativePosition(
+  position
+) {
+  if (!cumulativePositionContent) {
+    return;
+  }
+
+  if (!position) {
+    cumulativePositionContent.innerHTML = `
+      <div class="ma-empty">
+        No cumulative contribution position
+        is available for this member.
+      </div>
+    `;
+
+    return;
+  }
+
+  const totalDue =
+    getCumulativeTotalDue(
+      position
+    );
+
+  const totalAllocated =
+    getCumulativeTotalAllocated(
+      position
+    );
+
+  const arrears =
+    getCumulativeArrears(
+      position
+    );
+
+  const credit =
+    getCumulativeCredit(
+      position
+    );
+
+  const status =
+    getCumulativeStatus(
+      position
+    );
+
+  const statusLabel =
+    getCumulativeStatusLabel(
+      status
+    );
+
+  const statusClass =
+    getCumulativeStatusClass(
+      status
+    );
+
+  cumulativePositionContent.innerHTML = `
+    <div class="ma-summary-grid">
+
+      <div class="ma-summary-card">
+        <span class="ma-summary-label">
+          Total due to date
+        </span>
+
+        <strong class="ma-summary-value">
+          ${formatCurrency(totalDue)}
+        </strong>
+      </div>
+
+      <div class="ma-summary-card">
+        <span class="ma-summary-label">
+          Total allocated
+        </span>
+
+        <strong class="ma-summary-value">
+          ${formatCurrency(totalAllocated)}
+        </strong>
+      </div>
+
+      <div class="ma-summary-card">
+        <span class="ma-summary-label">
+          Cumulative arrears
+        </span>
+
+        <strong class="ma-summary-value">
+          ${formatCurrency(arrears)}
+        </strong>
+      </div>
+
+      <div class="ma-summary-card">
+        <span class="ma-summary-label">
+          Cumulative credit
+        </span>
+
+        <strong class="ma-summary-value">
+          ${formatCurrency(credit)}
+        </strong>
+      </div>
+
+    </div>
+
+    <div class="ma-cumulative-status">
+      <span class="ma-summary-label">
+        Cumulative position
+      </span>
+
+      <span
+        class="ma-badge ${statusClass}"
+      >
+        ${escapeHtml(
+          statusLabel
+        )}
+      </span>
+    </div>
+  `;
 }
 
 
@@ -501,6 +833,12 @@ function matchesQuickFilter(
         getPreviousOutstanding(row) > 0
       );
 
+    /*
+     * This quick filter is intentionally based on
+     * previous monthly outstanding.
+     *
+     * It is NOT the cumulative ARREARS position.
+     */
     case "arrears":
       return (
         getPreviousOutstanding(row) > 0
@@ -834,7 +1172,7 @@ function renderSummary() {
    MEMBER STATEMENT
    ========================================================= */
 
-function openMemberStatement(
+async function openMemberStatement(
   memberId
 ) {
   const row =
@@ -904,7 +1242,7 @@ function openMemberStatement(
   if (statementBody) {
     statementBody.innerHTML = `
       <tr>
-        <td>Previous arrears</td>
+        <td>Previous outstanding</td>
         <td>${formatCurrency(
           getPreviousOutstanding(row)
         )}</td>
@@ -932,7 +1270,7 @@ function openMemberStatement(
       </tr>
 
       <tr>
-        <td>Carry-forward</td>
+        <td>Carry-forward credit</td>
         <td>${formatCurrency(
           getCarryForward(row)
         )}</td>
@@ -960,7 +1298,7 @@ function openMemberStatement(
       </tr>
 
       <tr>
-        <td>Status</td>
+        <td>Monthly status</td>
         <td>${escapeHtml(
           getStatus(row) || "—"
         )}</td>
@@ -968,8 +1306,52 @@ function openMemberStatement(
     `;
   }
 
+  /*
+   * Load cumulative accounting separately.
+   *
+   * Failure here must not silently relabel monthly data
+   * as cumulative data.
+   */
+  try {
+    if (cumulativePositionContent) {
+      cumulativePositionContent.innerHTML = `
+        <div class="ma-empty">
+          Loading cumulative position…
+        </div>
+      `;
+    }
+
+    const position =
+      await loadMemberContributionPosition(
+        memberId
+      );
+
+    renderCumulativePosition(
+      position
+    );
+  } catch (error) {
+    console.error(
+      "Cumulative member position error:",
+      error
+    );
+
+    if (cumulativePositionContent) {
+      cumulativePositionContent.innerHTML = `
+        <div class="ma-empty">
+          Cumulative position could not be loaded.
+        </div>
+      `;
+    }
+  }
+
   if (statementSection) {
     statementSection.classList.add(
+      "visible"
+    );
+  }
+
+  if (cumulativePositionSection) {
+    cumulativePositionSection.classList.add(
       "visible"
     );
   }
@@ -982,6 +1364,12 @@ function closeMemberStatement() {
 
   if (statementSection) {
     statementSection.classList.remove(
+      "visible"
+    );
+  }
+
+  if (cumulativePositionSection) {
+    cumulativePositionSection.classList.remove(
       "visible"
     );
   }
@@ -1108,15 +1496,15 @@ function exportCsv() {
     "Member Number",
     "Member Name",
     "Monthly Due",
-    "Previous Arrears",
+    "Previous Outstanding",
     "Previous Credit",
     "Current Payment",
     "Applied",
-    "Carry-forward",
-    "Outstanding",
+    "Carry-forward Credit",
+    "Current Outstanding",
     "Total Paid",
     "Total Due",
-    "Status"
+    "Monthly Status"
   ];
 
   const rows =
@@ -1171,15 +1559,15 @@ function exportExcel() {
     "Member Number",
     "Member Name",
     "Monthly Due",
-    "Previous Arrears",
+    "Previous Outstanding",
     "Previous Credit",
     "Current Payment",
     "Applied",
-    "Carry-forward",
-    "Outstanding",
+    "Carry-forward Credit",
+    "Current Outstanding",
     "Total Paid",
     "Total Due",
-    "Status"
+    "Monthly Status"
   ];
 
   const rows =
@@ -1307,6 +1695,8 @@ function setupEvents() {
           accountingMonthInput.value
         );
 
+        clearCumulativePositionCache();
+
         await loadAccounting();
       }
     );
@@ -1344,6 +1734,8 @@ function setupEvents() {
     refreshButton.addEventListener(
       "click",
       async () => {
+        clearCumulativePositionCache();
+
         await loadAccounting();
       }
     );
@@ -1412,6 +1804,12 @@ async function loadAccounting() {
     );
 
     await loadCanonicalRows();
+
+    /*
+     * Monthly data has changed, so cumulative
+     * statement reads should not rely on stale cache.
+     */
+    clearCumulativePositionCache();
 
     populateMemberFilter();
 
