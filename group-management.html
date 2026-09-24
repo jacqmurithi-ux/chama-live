@@ -1,331 +1,224 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
 
-    <meta charset="UTF-8">
+<head>
+    <meta charset="utf-8">
 
     <meta
         name="viewport"
-        content="width=device-width, initial-scale=1.0"
+        content="width=device-width, initial-scale=1"
+    >
+
+    <meta
+        name="description"
+        content="CHAMA LIVE — Group management"
     >
 
     <title>Group Management | CHAMA LIVE</title>
 
     <style>
-
-        /* =====================================================
-           BASE
-        ===================================================== */
+        :root {
+            --page-bg: #f7f9fc;
+            --card-bg: #ffffff;
+            --border: #e5e7eb;
+            --text: #111827;
+            --muted: #6b7280;
+            --primary: #166534;
+            --primary-dark: #14532d;
+            --success-bg: #ecfdf5;
+            --success-text: #166534;
+            --error-bg: #fef2f2;
+            --error-text: #991b1b;
+            --warning-bg: #fffbeb;
+            --warning-text: #92400e;
+            --radius: 14px;
+            --shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+        }
 
         * {
             box-sizing: border-box;
         }
 
         html {
-            scroll-behavior: smooth;
+            min-height: 100%;
         }
 
         body {
             margin: 0;
+            min-height: 100%;
+            background: var(--page-bg);
+            color: var(--text);
             font-family:
-                Inter,
                 system-ui,
                 -apple-system,
                 BlinkMacSystemFont,
                 "Segoe UI",
                 sans-serif;
-            background: #f8fafc;
-            color: #0f172a;
+            line-height: 1.5;
         }
 
         button,
         input,
-        select,
-        textarea {
+        select {
             font: inherit;
         }
 
-        a {
-            color: inherit;
+        button {
+            cursor: pointer;
         }
-
-
-        /* =====================================================
-           PAGE
-        ===================================================== */
 
         .group-management-page {
             width: 100%;
-            max-width: 1280px;
+            max-width: 1180px;
             margin: 0 auto;
-            padding: 28px 24px 60px;
+            padding: 24px;
         }
 
-
-        /* =====================================================
+        /* ---------------------------------------------------------
            HERO
-        ===================================================== */
+        --------------------------------------------------------- */
 
-        .group-management-page .page-hero {
-            display: block;
-            position: relative;
-            width: 100%;
-            min-height: 190px;
-            margin: 0 0 24px;
-            padding: 30px 32px;
-
-            background:
-                linear-gradient(
-                    135deg,
-                    #0f172a 0%,
-                    #1e293b 55%,
-                    #334155 100%
-                );
-
-            border: 1px solid #334155;
-            border-radius: 20px;
-
-            color: #ffffff;
-            overflow: hidden;
-            isolation: isolate;
-        }
-
-        .group-management-page .page-hero::before {
-            content: "";
-            position: absolute;
-            width: 260px;
-            height: 260px;
-            right: -90px;
-            top: -130px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.055);
-            pointer-events: none;
-            z-index: -1;
-        }
-
-        .group-management-page .page-hero::after {
-            content: "";
-            position: absolute;
-            width: 150px;
-            height: 150px;
-            right: 110px;
-            bottom: -100px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.035);
-            pointer-events: none;
-            z-index: -1;
-        }
-
-        .page-hero-content {
-            display: block;
-            position: relative;
-            z-index: 2;
-            max-width: 780px;
-        }
-
-        .page-hero-kicker {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            margin: 0 0 10px;
-
-            color: #cbd5e1;
-            font-size: 13px;
-            line-height: 1.3;
-            font-weight: 700;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
+        .page-hero {
+            margin-bottom: 20px;
         }
 
         .page-hero h1 {
-            display: block;
-            margin: 0 0 10px;
-            padding: 0;
-
-            color: #ffffff;
-            font-size: clamp(30px, 4vw, 42px);
-            line-height: 1.12;
-            font-weight: 800;
-            letter-spacing: -0.025em;
+            margin: 0 0 6px;
+            font-size: clamp(1.55rem, 3vw, 2rem);
+            line-height: 1.15;
+            letter-spacing: -0.02em;
         }
 
         .page-hero p {
-            display: block;
             margin: 0;
-            padding: 0;
-            max-width: 700px;
-
-            color: #cbd5e1;
-            font-size: 15px;
-            line-height: 1.7;
+            color: var(--muted);
+            font-size: 0.95rem;
         }
 
-
-        /* =====================================================
+        /* ---------------------------------------------------------
            STATUS
-        ===================================================== */
+        --------------------------------------------------------- */
 
         .status-message {
             display: none;
-            margin: 0 0 20px;
-            padding: 14px 16px;
-            border-radius: 12px;
+            margin-bottom: 16px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+        }
 
-            font-size: 14px;
-            line-height: 1.5;
+        .status-message.visible {
+            display: block;
         }
 
         .status-message.success {
-            display: block;
-            background: #ecfdf5;
-            border: 1px solid #a7f3d0;
-            color: #065f46;
+            background: var(--success-bg);
+            color: var(--success-text);
         }
 
         .status-message.error {
-            display: block;
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            color: #991b1b;
+            background: var(--error-bg);
+            color: var(--error-text);
         }
 
+        .status-message.warning {
+            background: var(--warning-bg);
+            color: var(--warning-text);
+        }
 
-        /* =====================================================
-           MAIN GRID
-        ===================================================== */
+        /* ---------------------------------------------------------
+           MANAGEMENT GRID
+        --------------------------------------------------------- */
 
         .management-grid {
             display: grid;
-            grid-template-columns:
-                minmax(0, 1.55fr)
-                minmax(300px, 0.85fr);
-
-            gap: 22px;
-            align-items: start;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
         }
-
-        .main-column,
-        .side-column {
-            min-width: 0;
-        }
-
-        .main-column {
-            display: grid;
-            gap: 22px;
-        }
-
-        .side-column {
-            display: grid;
-            gap: 22px;
-        }
-
-
-        /* =====================================================
-           CARDS
-        ===================================================== */
 
         .management-card {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 16px;
-
-            box-shadow:
-                0 4px 16px rgba(15, 23, 42, 0.045);
-
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
             overflow: hidden;
         }
 
+        .management-card.full-width {
+            grid-column: 1 / -1;
+        }
+
         .card-header {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 16px;
-
-            padding: 20px 22px;
-            border-bottom: 1px solid #e2e8f0;
+            padding: 18px 20px 14px;
+            border-bottom: 1px solid var(--border);
         }
 
-        .card-heading {
-            min-width: 0;
-        }
-
-        .card-header h2 {
-            margin: 0;
-
-            color: #0f172a;
-            font-size: 18px;
+        .card-heading h2 {
+            margin: 0 0 4px;
+            font-size: 1.05rem;
             line-height: 1.3;
-            font-weight: 750;
         }
 
-        .card-header p {
-            margin: 5px 0 0;
-
-            color: #64748b;
-            font-size: 13px;
-            line-height: 1.5;
+        .card-heading p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.86rem;
         }
 
         .card-body {
-            padding: 22px;
+            padding: 20px;
         }
 
-
-        /* =====================================================
+        /* ---------------------------------------------------------
            GROUP OVERVIEW
-        ===================================================== */
+        --------------------------------------------------------- */
 
-        .overview-grid {
+        .overview-card {
+            grid-column: 1 / -1;
+        }
+
+        .overview-content {
             display: grid;
-            grid-template-columns:
-                repeat(3, minmax(0, 1fr));
-
-            gap: 12px;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 20px;
+            align-items: center;
         }
 
-        .overview-item {
-            min-width: 0;
-            padding: 16px;
-
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-        }
-
-        .overview-label {
-            display: block;
-            margin-bottom: 6px;
-
-            color: #64748b;
-            font-size: 12px;
-            font-weight: 650;
-
-            text-transform: uppercase;
-            letter-spacing: 0.035em;
-        }
-
-        .overview-value {
-            display: block;
-
-            color: #0f172a;
-            font-size: 15px;
-            line-height: 1.4;
+        .group-name-display {
+            margin: 0 0 4px;
+            font-size: 1.3rem;
             font-weight: 700;
-
-            overflow-wrap: anywhere;
         }
 
+        .group-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 16px;
+            color: var(--muted);
+            font-size: 0.86rem;
+        }
 
-        /* =====================================================
+        .permission-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: #f0fdf4;
+            color: #166534;
+            font-size: 0.78rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        /* ---------------------------------------------------------
            FORM
-        ===================================================== */
+        --------------------------------------------------------- */
 
         .form-grid {
             display: grid;
-            grid-template-columns:
-                repeat(2, minmax(0, 1fr));
-
-            gap: 18px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
         }
 
         .form-field {
@@ -338,510 +231,287 @@
 
         .form-field label {
             display: block;
-            margin-bottom: 7px;
-
-            color: #334155;
-            font-size: 13px;
-            font-weight: 700;
+            margin-bottom: 6px;
+            font-size: 0.86rem;
+            font-weight: 650;
         }
 
         .form-field input,
-        .form-field select,
-        .form-field textarea {
-            display: block;
+        .form-field select {
             width: 100%;
-
-            min-height: 46px;
-
-            padding: 11px 13px;
-
-            background: #ffffff;
-            border: 1px solid #cbd5e1;
-            border-radius: 10px;
-
-            color: #0f172a;
+            min-height: 42px;
+            padding: 9px 11px;
+            border: 1px solid #d1d5db;
+            border-radius: 9px;
+            background: #fff;
+            color: var(--text);
             outline: none;
-
-            transition:
-                border-color 0.15s ease,
-                box-shadow 0.15s ease;
-        }
-
-        .form-field textarea {
-            min-height: 100px;
-            resize: vertical;
         }
 
         .form-field input:focus,
-        .form-field select:focus,
-        .form-field textarea:focus {
-            border-color: #64748b;
-
-            box-shadow:
-                0 0 0 3px
-                rgba(100, 116, 139, 0.12);
+        .form-field select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(22, 101, 52, 0.1);
         }
 
         .form-field input:disabled,
-        .form-field select:disabled,
-        .form-field textarea:disabled {
-            background: #f8fafc;
-            color: #64748b;
+        .form-field select:disabled {
+            background: #f3f4f6;
+            color: #6b7280;
             cursor: not-allowed;
         }
 
         .field-help {
             margin: 6px 0 0;
-
-            color: #64748b;
-            font-size: 12px;
-            line-height: 1.5;
+            color: var(--muted);
+            font-size: 0.78rem;
         }
-
-        .contribution-preview {
-            margin-top: 8px;
-            padding: 10px 12px;
-
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 9px;
-
-            color: #475569;
-            font-size: 12px;
-            line-height: 1.4;
-        }
-
-
-        /* =====================================================
-           FORM ACTIONS
-        ===================================================== */
 
         .form-actions {
             display: flex;
-            align-items: center;
             justify-content: flex-end;
             gap: 10px;
-
-            margin-top: 22px;
-            padding-top: 20px;
-
-            border-top: 1px solid #e2e8f0;
+            margin-top: 18px;
         }
-
-
-        /* =====================================================
-           BUTTONS
-        ===================================================== */
 
         .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-
-            min-height: 42px;
-            padding: 10px 16px;
-
-            border: 1px solid transparent;
-            border-radius: 10px;
-
-            cursor: pointer;
-
-            font-size: 14px;
-            font-weight: 700;
-
-            text-decoration: none;
-
+            min-height: 40px;
+            padding: 9px 15px;
+            border: 0;
+            border-radius: 9px;
+            font-weight: 650;
             transition:
-                background 0.15s ease,
-                border-color 0.15s ease,
-                opacity 0.15s ease,
-                transform 0.15s ease;
+                background-color 0.15s ease,
+                opacity 0.15s ease;
         }
 
-        .btn:hover {
-            transform: translateY(-1px);
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
         }
 
         .btn:disabled {
             opacity: 0.55;
             cursor: not-allowed;
-            transform: none;
         }
 
-        .btn-primary {
-            background: #0f172a;
-            border-color: #0f172a;
-            color: #ffffff;
-        }
-
-        .btn-primary:hover:not(:disabled) {
-            background: #1e293b;
-            border-color: #1e293b;
-        }
-
-        .btn-secondary {
-            background: #ffffff;
-            border-color: #cbd5e1;
-            color: #334155;
-        }
-
-        .btn-secondary:hover:not(:disabled) {
-            background: #f8fafc;
-        }
-
-        .btn-danger {
-            background: #ffffff;
-            border-color: #fecaca;
-            color: #b42318;
-        }
-
-        .btn-danger:hover:not(:disabled) {
-            background: #fef2f2;
-        }
-
-
-        /* =====================================================
-           ACCOUNT
-        ===================================================== */
-
-        .account-action {
-            display: flex;
-            align-items: flex-start;
-            gap: 14px;
-
-            padding: 16px;
-
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-        }
-
-        .account-action-icon {
-            flex: 0 0 42px;
-
-            width: 42px;
-            height: 42px;
-
-            display: grid;
-            place-items: center;
-
-            border-radius: 10px;
-
-            background: #e2e8f0;
-            color: #334155;
-
-            font-size: 20px;
-        }
-
-        .account-action-content {
-            min-width: 0;
-        }
-
-        .account-action-content h3 {
-            margin: 0 0 5px;
-
-            color: #0f172a;
-            font-size: 15px;
-            line-height: 1.4;
-        }
-
-        .account-action-content p {
-            margin: 0 0 12px;
-
-            color: #64748b;
-            font-size: 13px;
-            line-height: 1.5;
-        }
-
-
-        /* =====================================================
-           SUBSCRIPTION
-        ===================================================== */
-
-        .subscription-panel {
-            margin-top: 18px;
-            padding: 16px;
-
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-        }
-
-        .subscription-panel h3 {
-            margin: 0 0 14px;
-
-            color: #0f172a;
-            font-size: 15px;
-        }
-
-        .subscription-grid {
-            display: grid;
-            grid-template-columns:
-                repeat(2, minmax(0, 1fr));
-
-            gap: 10px;
-        }
-
-        .subscription-item {
-            padding: 11px 12px;
-
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 9px;
-        }
-
-        .subscription-item span {
-            display: block;
-            margin-bottom: 4px;
-
-            color: #64748b;
-            font-size: 11px;
-            font-weight: 650;
-
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-        }
-
-        .subscription-item strong {
-            display: block;
-
-            color: #0f172a;
-            font-size: 13px;
-            line-height: 1.4;
-
-            overflow-wrap: anywhere;
-        }
-
-
-        /* =====================================================
-           CONTRIBUTION CALENDAR
-        ===================================================== */
+        /* ---------------------------------------------------------
+           MONTHLY CONTRIBUTION CYCLE
+        --------------------------------------------------------- */
 
         .calendar-summary {
             display: grid;
-            grid-template-columns:
-                repeat(3, minmax(0, 1fr));
-
-            gap: 10px;
-            margin-bottom: 22px;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
         }
 
         .calendar-summary-item {
-            min-width: 0;
             padding: 13px;
-
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--border);
             border-radius: 10px;
+            background: #fafafa;
         }
 
         .calendar-summary-item span {
             display: block;
-            margin-bottom: 5px;
-
-            color: #64748b;
-            font-size: 11px;
-            font-weight: 650;
-
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
+            margin-bottom: 4px;
+            color: var(--muted);
+            font-size: 0.75rem;
         }
 
         .calendar-summary-item strong {
             display: block;
-
-            color: #0f172a;
-            font-size: 13px;
-            line-height: 1.4;
-
-            overflow-wrap: anywhere;
+            font-size: 0.9rem;
         }
 
         .calendar-note {
             margin-top: 14px;
-            padding: 12px 13px;
-
-            background: #eff6ff;
-            border: 1px solid #bfdbfe;
-            border-radius: 10px;
-
-            color: #1e40af;
-            font-size: 12px;
-            line-height: 1.55;
+            padding: 11px 12px;
+            border-radius: 9px;
+            background: #f8fafc;
+            color: #475569;
+            font-size: 0.78rem;
         }
 
+        /* ---------------------------------------------------------
+           ACCOUNT
+        --------------------------------------------------------- */
 
-        /* =====================================================
-           GROUP CONTEXT
-        ===================================================== */
-
-        .context-list {
-            display: grid;
-            gap: 0;
-        }
-
-        .context-row {
+        .account-content {
             display: flex;
-            align-items: flex-start;
+            align-items: center;
             justify-content: space-between;
-            gap: 18px;
-
-            padding: 13px 0;
-
-            border-bottom: 1px solid #e2e8f0;
+            gap: 16px;
         }
 
-        .context-row:first-child {
-            padding-top: 0;
+        .account-title {
+            margin: 0 0 4px;
+            font-size: 0.95rem;
+            font-weight: 700;
         }
 
-        .context-row:last-child {
+        .account-description {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.82rem;
+        }
+
+        .account-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 38px;
+            padding: 8px 13px;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            color: var(--primary);
+            background: #fff;
+            text-decoration: none;
+            font-size: 0.82rem;
+            font-weight: 650;
+            white-space: nowrap;
+        }
+
+        .account-link:hover {
+            background: #f0fdf4;
+        }
+
+        /* ---------------------------------------------------------
+           SUBSCRIPTION
+        --------------------------------------------------------- */
+
+        .subscription-panel {
+            display: grid;
+            gap: 10px;
+        }
+
+        .subscription-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+            padding-bottom: 9px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .subscription-row:last-child {
             padding-bottom: 0;
             border-bottom: 0;
         }
 
-        .context-label {
-            color: #64748b;
-            font-size: 12px;
+        .subscription-label {
+            color: var(--muted);
+            font-size: 0.8rem;
         }
 
-        .context-value {
-            max-width: 62%;
-
-            color: #0f172a;
-            font-size: 13px;
-            font-weight: 700;
-
+        .subscription-value {
+            font-size: 0.82rem;
+            font-weight: 650;
             text-align: right;
-            overflow-wrap: anywhere;
         }
 
+        /* ---------------------------------------------------------
+           GROUP CONTEXT
+        --------------------------------------------------------- */
 
-        /* =====================================================
-           PERMISSION
-        ===================================================== */
+        .context-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
 
-        .permission-note {
-            margin-top: 16px;
-            padding: 12px 13px;
-
-            background: #fffbeb;
-            border: 1px solid #fde68a;
+        .context-item {
+            padding: 12px;
+            border: 1px solid var(--border);
             border-radius: 10px;
-
-            color: #92400e;
-            font-size: 12px;
-            line-height: 1.5;
+            background: #fafafa;
         }
 
-
-        /* =====================================================
-           ADMIN LOADING
-        ===================================================== */
-
-        [data-admin-loading] {
-            position: fixed;
-            inset: 0;
-
-            z-index: 99999;
-
-            display: flex;
-            align-items: center;
-            justify-content: center;
-
-            background: #f8fafc;
+        .context-item span {
+            display: block;
+            margin-bottom: 3px;
+            color: var(--muted);
+            font-size: 0.75rem;
         }
 
-        [data-admin-loading][hidden] {
+        .context-item strong {
+            display: block;
+            font-size: 0.85rem;
+        }
+
+        /* ---------------------------------------------------------
+           LOADING / PERMISSION
+        --------------------------------------------------------- */
+
+        .admin-loading {
+            padding: 40px 20px;
+            color: var(--muted);
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .permission-message {
+            padding: 14px;
+            border-radius: 10px;
+            background: #fef2f2;
+            color: #991b1b;
+            font-size: 0.85rem;
+        }
+
+        .hidden {
             display: none !important;
         }
 
-        .loading-card {
-            padding: 22px 26px;
-
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 14px;
-
-            box-shadow:
-                0 8px 30px
-                rgba(15, 23, 42, 0.08);
-
-            color: #475569;
-            font-size: 14px;
-        }
-
-
-        /* =====================================================
-           RESPONSIVE
-        ===================================================== */
-
-        @media (max-width: 950px) {
-
-            .management-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .side-column {
-                grid-template-columns:
-                    repeat(2, minmax(0, 1fr));
-            }
-
-        }
-
+        /* ---------------------------------------------------------
+           MOBILE LIGHT
+        --------------------------------------------------------- */
 
         @media (max-width: 800px) {
-
             .group-management-page {
-                padding:
-                    16px
-                    12px
-                    90px;
-            }
-
-            .page-hero {
-                min-height: auto !important;
-                margin-bottom: 14px !important;
-                padding: 20px 18px !important;
-                border-radius: 14px !important;
-            }
-
-            .page-hero h1 {
-                font-size: 26px !important;
-            }
-
-            .page-hero p {
-                font-size: 13px !important;
-                line-height: 1.55 !important;
-            }
-
-            .management-grid {
-                gap: 14px;
-            }
-
-            .main-column,
-            .side-column {
-                gap: 14px;
-            }
-
-            .card-header,
-            .card-body {
                 padding: 16px;
             }
 
-            .card-header h2 {
-                font-size: 16px;
+            .management-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
             }
 
-            .card-header p {
-                font-size: 12px;
+            .management-card,
+            .management-card.full-width,
+            .overview-card {
+                grid-column: auto;
             }
 
-            .overview-grid,
-            .form-grid,
-            .subscription-grid,
+            .card-header {
+                padding: 14px 15px 11px;
+            }
+
+            .card-body {
+                padding: 15px;
+            }
+
+            .overview-content {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
             .calendar-summary {
                 grid-template-columns: 1fr;
+                gap: 8px;
+                margin-bottom: 15px;
+            }
+
+            .calendar-summary-item {
+                padding: 11px;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
             }
 
             .form-field.full-width {
@@ -849,775 +519,631 @@
             }
 
             .form-actions {
-                flex-direction: column-reverse;
-                align-items: stretch;
+                justify-content: stretch;
             }
 
             .form-actions .btn {
                 width: 100%;
             }
 
-        }
-
-
-        @media (max-width: 600px) {
-
-            .group-management-page {
-                padding-left: 10px;
-                padding-right: 10px;
-            }
-
-            .management-grid,
-            .main-column,
-            .side-column {
+            .account-content {
+                align-items: stretch;
+                flex-direction: column;
                 gap: 12px;
             }
 
+            .account-link {
+                width: 100%;
+            }
+
+            .context-grid {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .group-management-page {
+                padding: 12px;
+            }
+
             .page-hero {
-                padding: 18px 16px !important;
-                border-radius: 12px !important;
+                margin-bottom: 14px;
             }
 
             .page-hero h1 {
-                font-size: 24px !important;
+                font-size: 1.45rem;
             }
 
-            .card-header,
+            .page-hero p {
+                font-size: 0.84rem;
+            }
+
+            .card-header {
+                padding: 13px;
+            }
+
             .card-body {
-                padding: 14px;
+                padding: 13px;
             }
 
-            .context-row {
-                gap: 8px;
+            .group-meta {
+                flex-direction: column;
+                gap: 3px;
             }
 
-            .context-value {
-                max-width: 58%;
+            .permission-badge {
+                width: fit-content;
             }
 
-            .account-action {
-                padding: 14px;
+            .calendar-summary-item {
+                padding: 10px;
             }
 
+            .subscription-row {
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 2px;
+            }
+
+            .subscription-value {
+                text-align: left;
+            }
         }
-
     </style>
-
 </head>
-
 
 <body>
 
+    <main class="group-management-page">
 
-    <!-- =====================================================
-         ADMIN TOPBAR
-         Owned by admin-layout.js
-    ====================================================== -->
+        <header class="page-hero">
+            <h1>Group Management</h1>
+            <p>
+                Manage your group's information, contribution cycle,
+                account and subscription settings.
+            </p>
+        </header>
 
-    <header class="topbar">
+        <div
+            id="statusMessage"
+            class="status-message"
+            role="status"
+            aria-live="polite"
+        ></div>
 
-        <div class="topbar-inner">
+        <div
+            id="errorMessage"
+            class="status-message error"
+            role="alert"
+            aria-live="assertive"
+        ></div>
 
-            <div class="brand">
-                CHAMA <span>LIVE</span>
-            </div>
-
-            <nav
-                class="top-nav"
-                aria-label="Admin navigation"
-            ></nav>
-
-            <div class="topbar-actions">
-
-                <button
-                    class="btn btn-secondary"
-                    id="logout"
-                    type="button"
-                >
-                    Sign out
-                </button>
-
-            </div>
-
+        <div
+            id="adminLoading"
+            class="admin-loading"
+        >
+            Loading group management...
         </div>
 
-    </header>
+        <div
+            id="managementContent"
+            class="management-grid hidden"
+        >
 
+            <!-- =====================================================
+                 GROUP OVERVIEW
+            ====================================================== -->
 
-    <!-- =====================================================
-         ADMIN LAYOUT
-    ====================================================== -->
+            <section class="management-card overview-card">
 
-    <div class="layout">
-
-        <main class="main group-management-page">
-
-
-            <!-- =================================================
-                 HERO
-            ================================================== -->
-
-            <section class="page-hero">
-
-                <div class="page-hero-content">
-
-                    <div class="page-hero-kicker">
-                        ⚙ Group Settings
+                <div class="card-header">
+                    <div class="card-heading">
+                        <h2>Group Overview</h2>
+                        <p>Current group account summary.</p>
                     </div>
+                </div>
 
-                    <h1>
-                        Group Management
-                    </h1>
+                <div class="card-body">
 
-                    <p>
-                        Manage your group's identity, contribution
-                        settings and core information from one place.
-                    </p>
+                    <div class="overview-content">
+
+                        <div>
+                            <h3
+                                id="groupNameDisplay"
+                                class="group-name-display"
+                            >
+                                —
+                            </h3>
+
+                            <div class="group-meta">
+                                <span id="groupCategoryDisplay">—</span>
+                                <span id="groupCountryDisplay">—</span>
+                                <span>
+                                    Members:
+                                    <strong id="memberCountDisplay">—</strong>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div
+                            id="permissionBadge"
+                            class="permission-badge"
+                        >
+                            —
+                        </div>
+
+                    </div>
 
                 </div>
 
             </section>
 
+            <!-- =====================================================
+                 GROUP INFORMATION
+            ====================================================== -->
 
-            <!-- =================================================
-                 STATUS
-            ================================================== -->
+            <section class="management-card">
 
-            <div
-                id="status"
-                class="status-message"
-                role="status"
-                aria-live="polite"
-            ></div>
+                <div class="card-header">
+                    <div class="card-heading">
+                        <h2>Group Information</h2>
+                        <p>
+                            Update the basic information used across
+                            CHAMA LIVE.
+                        </p>
+                    </div>
+                </div>
 
+                <div class="card-body">
 
-            <div
-                id="error"
-                class="status-message"
-                role="alert"
-                aria-live="assertive"
-            ></div>
+                    <form id="groupForm">
 
+                        <div class="form-grid">
 
-            <div class="management-grid">
+                            <div class="form-field full-width">
 
+                                <label for="groupName">
+                                    Group Name
+                                </label>
 
-                <!-- =============================================
-                     MAIN COLUMN
-                ============================================== -->
+                                <input
+                                    id="groupName"
+                                    name="groupName"
+                                    type="text"
+                                    autocomplete="organization"
+                                    required
+                                >
 
-                <div class="main-column">
+                            </div>
 
+                            <div class="form-field">
 
-                    <!-- =========================================
-                         GROUP OVERVIEW
-                    ========================================== -->
+                                <label for="groupCategory">
+                                    Group Type
+                                </label>
 
-                    <section class="management-card">
+                                <select
+                                    id="groupCategory"
+                                    name="groupCategory"
+                                    required
+                                >
+                                    <option value="">
+                                        Select group type
+                                    </option>
+                                    <option value="Chama">
+                                        Chama
+                                    </option>
+                                    <option value="CBO">
+                                        CBO
+                                    </option>
+                                    <option value="Other">
+                                        Other
+                                    </option>
+                                </select>
 
-                        <div class="card-header">
+                            </div>
 
-                            <div class="card-heading">
+                            <div class="form-field">
 
-                                <h2>
-                                    Group Overview
-                                </h2>
+                                <label for="groupCountry">
+                                    Country
+                                </label>
 
-                                <p>
-                                    A quick view of your group's
-                                    current identity and membership.
+                                <input
+                                    id="groupCountry"
+                                    name="groupCountry"
+                                    type="text"
+                                    value="Kenya"
+                                    required
+                                >
+
+                            </div>
+
+                            <div class="form-field full-width">
+
+                                <label for="monthlyContribution">
+                                    Standard Monthly Contribution
+                                </label>
+
+                                <input
+                                    id="monthlyContribution"
+                                    name="monthlyContribution"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    inputmode="decimal"
+                                    required
+                                >
+
+                                <p class="field-help">
+                                    This is the standard monthly amount
+                                    configured for the group.
                                 </p>
 
                             </div>
 
                         </div>
 
-
-                        <div class="card-body">
-
-                            <div class="overview-grid">
-
-
-                                <div class="overview-item">
-
-                                    <span class="overview-label">
-                                        Group
-                                    </span>
-
-                                    <span
-                                        class="overview-value"
-                                        id="currentGroupName"
-                                    >
-                                        Loading...
-                                    </span>
-
-                                </div>
-
-
-                                <div class="overview-item">
-
-                                    <span class="overview-label">
-                                        Members
-                                    </span>
-
-                                    <span
-                                        class="overview-value"
-                                        id="memberCount"
-                                    >
-                                        —
-                                    </span>
-
-                                </div>
-
-
-                                <div class="overview-item">
-
-                                    <span class="overview-label">
-                                        Group ID
-                                    </span>
-
-                                    <span
-                                        class="overview-value"
-                                        id="groupId"
-                                    >
-                                        —
-                                    </span>
-
-                                </div>
-
-
-                            </div>
-
-                        </div>
-
-                    </section>
-
-
-                    <!-- =========================================
-                         GROUP INFORMATION
-                    ========================================== -->
-
-                    <section class="management-card">
-
-                        <div class="card-header">
-
-                            <div class="card-heading">
-
-                                <h2>
-                                    Group Information
-                                </h2>
-
-                                <p>
-                                    Update the information used to
-                                    identify and manage your group.
-                                </p>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="card-body">
-
-                            <form id="groupForm">
-
-                                <div class="form-grid">
-
-
-                                    <div class="form-field full-width">
-
-                                        <label for="groupName">
-                                            Group Name
-                                        </label>
-
-                                        <input
-                                            type="text"
-                                            id="groupName"
-                                            name="groupName"
-                                            placeholder="Enter group name"
-                                            autocomplete="organization"
-                                            required
-                                        >
-
-                                    </div>
-
-
-                                    <div class="form-field">
-
-                                        <label for="groupType">
-                                            Group Type
-                                        </label>
-
-                                        <select
-                                            id="groupType"
-                                            name="groupType"
-                                            required
-                                        >
-
-                                            <option value="">
-                                                Select group type
-                                            </option>
-
-                                            <option value="Chama">
-                                                Chama
-                                            </option>
-
-                                            <option value="CBO">
-                                                CBO
-                                            </option>
-
-                                            <option value="Self Help Group">
-                                                Self Help Group
-                                            </option>
-
-                                            <option value="Investment Group">
-                                                Investment Group
-                                            </option>
-
-                                            <option value="Other">
-                                                Other
-                                            </option>
-
-                                        </select>
-
-                                    </div>
-
-
-                                    <div class="form-field">
-
-                                        <label for="country">
-                                            Country
-                                        </label>
-
-                                        <select
-                                            id="country"
-                                            name="country"
-                                            required
-                                        >
-
-                                            <option value="">
-                                                Select country
-                                            </option>
-
-                                            <option value="Kenya">
-                                                Kenya
-                                            </option>
-
-                                            <option value="Uganda">
-                                                Uganda
-                                            </option>
-
-                                            <option value="Tanzania">
-                                                Tanzania
-                                            </option>
-
-                                            <option value="Rwanda">
-                                                Rwanda
-                                            </option>
-
-                                            <option value="Other">
-                                                Other
-                                            </option>
-
-                                        </select>
-
-                                    </div>
-
-
-                                    <div class="form-field full-width">
-
-                                        <label for="monthlyContribution">
-                                            Standard Monthly Contribution
-                                        </label>
-
-                                        <input
-                                            type="number"
-                                            id="monthlyContribution"
-                                            name="monthlyContribution"
-                                            min="0"
-                                            step="0.01"
-                                            inputmode="decimal"
-                                            placeholder="0.00"
-                                        >
-
-                                        <p class="field-help">
-                                            Set the standard contribution
-                                            amount expected from members
-                                            each month.
-                                        </p>
-
-                                        <div
-                                            id="contributionPreview"
-                                            class="contribution-preview"
-                                        >
-                                            Monthly contribution preview
-                                        </div>
-
-                                    </div>
-
-
-                                </div>
-
-
-                                <div class="form-actions">
-
-                                    <button
-                                        type="submit"
-                                        class="btn btn-primary"
-                                        id="saveGroup"
-                                    >
-                                        Save Group Changes
-                                    </button>
-
-                                </div>
-
-                            </form>
-
-                        </div>
-
-                    </section>
-
-
-                    <!-- =========================================
-                         MONTHLY CONTRIBUTION CYCLE
-                    ========================================== -->
-
-                    <section
-                        class="management-card"
-                        id="contributionCalendarCard"
-                    >
-
-                        <div class="card-header">
-
-                            <div class="card-heading">
-
-                                <h2>
-                                    Monthly Contribution Cycle
-                                </h2>
-
-                                <p>
-                                    Set the day your group's monthly
-                                    contribution cycle closes.
-                                </p>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="card-body">
-
-                            <div class="calendar-summary">
-
-
-                                <div class="calendar-summary-item">
-
-                                    <span>
-                                        Current Cycle
-                                    </span>
-
-                                    <strong
-                                        id="currentContributionCycle"
-                                    >
-                                        —
-                                    </strong>
-
-                                </div>
-
-
-                                <div class="calendar-summary-item">
-
-                                    <span>
-                                        Opening Date
-                                    </span>
-
-                                    <strong
-                                        id="currentContributionOpeningDate"
-                                    >
-                                        —
-                                    </strong>
-
-                                </div>
-
-
-                                <div class="calendar-summary-item">
-
-                                    <span>
-                                        Closing Date
-                                    </span>
-
-                                    <strong
-                                        id="currentContributionClosingDate"
-                                    >
-                                        —
-                                    </strong>
-
-                                </div>
-
-
-                            </div>
-
-
-                            <form
-                                id="contributionCalendarForm"
+                        <div class="form-actions">
+
+                            <button
+                                type="submit"
+                                class="btn btn-primary"
+                                id="saveGroup"
                             >
-
-                                <div class="form-field">
-
-                                    <label
-                                        for="monthlyClosingDay"
-                                    >
-                                        Monthly Closing Day
-                                    </label>
-
-                                    <select
-                                        id="monthlyClosingDay"
-                                        name="monthlyClosingDay"
-                                        required
-                                    >
-                                    </select>
-
-                                    <p class="field-help">
-                                        Choose a closing day from
-                                        1 to 28. The opening date is
-                                        calculated automatically.
-                                    </p>
-
-                                </div>
-
-
-                                <div class="calendar-note">
-
-                                    Changing the closing day applies
-                                    prospectively. Historical
-                                    contribution cycles remain
-                                    unchanged.
-
-                                </div>
-
-
-                                <div class="form-actions">
-
-                                    <button
-                                        type="submit"
-                                        class="btn btn-primary"
-                                        id="saveContributionCalendar"
-                                    >
-                                        Save Contribution Cycle
-                                    </button>
-
-                                </div>
-
-                            </form>
+                                Save Group Information
+                            </button>
 
                         </div>
 
-                    </section>
-
+                    </form>
 
                 </div>
 
+            </section>
 
-                <!-- =============================================
-                     SIDE COLUMN
-                ============================================== -->
+            <!-- =====================================================
+                 MONTHLY CONTRIBUTION CYCLE
+            ====================================================== -->
 
-                <aside class="side-column">
+            <section
+                class="management-card"
+                id="contributionCalendarCard"
+            >
 
+                <div class="card-header">
 
-                    <!-- =========================================
-                         ACCOUNT
-                    ========================================== -->
+                    <div class="card-heading">
 
-                    <section
-                        class="management-card account-card"
+                        <h2>Monthly Contribution Cycle</h2>
+
+                        <p>
+                            Set the day your group's monthly contribution
+                            cycle closes.
+                        </p>
+
+                    </div>
+
+                </div>
+
+                <div class="card-body">
+
+                    <div class="calendar-summary">
+
+                        <div class="calendar-summary-item">
+
+                            <span>Current Cycle</span>
+
+                            <strong
+                                id="currentContributionCycle"
+                            >
+                                —
+                            </strong>
+
+                        </div>
+
+                        <div class="calendar-summary-item">
+
+                            <span>Opening Date</span>
+
+                            <strong
+                                id="currentContributionOpeningDate"
+                            >
+                                —
+                            </strong>
+
+                        </div>
+
+                        <div class="calendar-summary-item">
+
+                            <span>Closing Date</span>
+
+                            <strong
+                                id="currentContributionClosingDate"
+                            >
+                                —
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                    <form id="contributionCalendarForm">
+
+                        <div class="form-field">
+
+                            <label for="monthlyClosingDay">
+                                Monthly Closing Day
+                            </label>
+
+                            <select
+                                id="monthlyClosingDay"
+                                name="monthlyClosingDay"
+                                required
+                            ></select>
+
+                            <p class="field-help">
+                                Choose a closing day from 1 to 28.
+                                The opening date is calculated automatically.
+                            </p>
+
+                        </div>
+
+                        <div class="calendar-note">
+                            Changing the closing day applies prospectively.
+                            Historical contribution cycles remain unchanged.
+                        </div>
+
+                        <div class="form-actions">
+
+                            <button
+                                type="submit"
+                                class="btn btn-primary"
+                                id="saveContributionCalendar"
+                            >
+                                Save Contribution Cycle
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </section>
+
+            <!-- =====================================================
+                 ACCOUNT
+            ====================================================== -->
+
+            <section class="management-card">
+
+                <div class="card-header">
+
+                    <div class="card-heading">
+
+                        <h2>Account</h2>
+
+                        <p>
+                            View your group's billing and subscription
+                            information.
+                        </p>
+
+                    </div>
+
+                </div>
+
+                <div class="card-body">
+
+                    <div class="account-content">
+
+                        <div>
+
+                            <p class="account-title">
+                                Billing &amp; Subscription
+                            </p>
+
+                            <p class="account-description">
+                                Review subscription status, payments,
+                                invoices and account billing.
+                            </p>
+
+                        </div>
+
+                        <a
+                            class="account-link"
+                            href="billing.html"
+                        >
+                            Manage Billing
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+            <!-- =====================================================
+                 SUBSCRIPTION
+            ====================================================== -->
+
+            <section class="management-card">
+
+                <div class="card-header">
+
+                    <div class="card-heading">
+
+                        <h2>Subscription</h2>
+
+                        <p>
+                            Current subscription state for this group.
+                        </p>
+
+                    </div>
+
+                </div>
+
+                <div class="card-body">
+
+                    <div
+                        id="subscriptionPanel"
+                        class="subscription-panel"
                     >
 
-                        <div class="card-header">
+                        <div class="subscription-row">
 
-                            <div class="card-heading">
+                            <span class="subscription-label">
+                                Status
+                            </span>
 
-                                <h2>
-                                    Account
-                                </h2>
-
-                                <p>
-                                    Subscription and account
-                                    information for this group.
-                                </p>
-
-                            </div>
+                            <strong
+                                id="subscriptionStatus"
+                                class="subscription-value"
+                            >
+                                —
+                            </strong>
 
                         </div>
 
+                        <div class="subscription-row">
 
-                        <div class="card-body">
+                            <span class="subscription-label">
+                                Plan
+                            </span>
 
-                            <div class="account-action">
-
-                                <div
-                                    class="account-action-icon"
-                                    aria-hidden="true"
-                                >
-                                    💳
-                                </div>
-
-
-                                <div class="account-action-content">
-
-                                    <h3>
-                                        Billing & Subscription
-                                    </h3>
-
-                                    <p>
-                                        View the group's subscription
-                                        status, pricing and account
-                                        details.
-                                    </p>
-
-                                    <a
-                                        class="btn btn-secondary"
-                                        href="billing.html"
-                                    >
-                                        Open Billing
-                                    </a>
-
-                                </div>
-
-                            </div>
+                            <strong
+                                id="subscriptionPlan"
+                                class="subscription-value"
+                            >
+                                —
+                            </strong>
 
                         </div>
 
-                    </section>
+                        <div class="subscription-row">
 
+                            <span class="subscription-label">
+                                Renewal / End Date
+                            </span>
 
-                    <!-- =========================================
-                         GROUP CONTEXT
-                    ========================================== -->
-
-                    <section class="management-card">
-
-                        <div class="card-header">
-
-                            <div class="card-heading">
-
-                                <h2>
-                                    Group Context
-                                </h2>
-
-                                <p>
-                                    Current group information used
-                                    by the admin portal.
-                                </p>
-
-                            </div>
+                            <strong
+                                id="subscriptionEndDate"
+                                class="subscription-value"
+                            >
+                                —
+                            </strong>
 
                         </div>
 
+                        <div class="subscription-row">
 
-                        <div class="card-body">
+                            <span class="subscription-label">
+                                Amount
+                            </span>
 
-                            <div class="context-list">
-
-
-                                <div class="context-row">
-
-                                    <span class="context-label">
-                                        Group
-                                    </span>
-
-                                    <span
-                                        class="context-value"
-                                        data-group-name
-                                    >
-                                        Loading...
-                                    </span>
-
-                                </div>
-
-
-                                <div class="context-row">
-
-                                    <span class="context-label">
-                                        Members
-                                    </span>
-
-                                    <span class="context-value">
-                                        Managed by group
-                                    </span>
-
-                                </div>
-
-
-                                <div class="context-row">
-
-                                    <span class="context-label">
-                                        Portal
-                                    </span>
-
-                                    <span class="context-value">
-                                        Admin
-                                    </span>
-
-                                </div>
-
-
-                            </div>
-
-
-                            <div class="permission-note">
-
-                                Group settings can be changed by
-                                the group owner or an authorized
-                                administrator.
-
-                            </div>
+                            <strong
+                                id="subscriptionAmount"
+                                class="subscription-value"
+                            >
+                                —
+                            </strong>
 
                         </div>
 
-                    </section>
+                    </div>
 
+                </div>
 
-                </aside>
+            </section>
 
-            </div>
+            <!-- =====================================================
+                 GROUP CONTEXT
+            ====================================================== -->
 
-        </main>
+            <section class="management-card full-width">
 
-    </div>
+                <div class="card-header">
 
+                    <div class="card-heading">
 
-    <!-- =====================================================
-         ADMIN LOADING OVERLAY
-    ====================================================== -->
+                        <h2>Group Context</h2>
 
-    <div
-        data-admin-loading
-        aria-live="polite"
-    >
+                        <p>
+                            Current account and management context.
+                        </p>
 
-        <div class="loading-card">
-            Loading Group Management...
+                    </div>
+
+                </div>
+
+                <div class="card-body">
+
+                    <div class="context-grid">
+
+                        <div class="context-item">
+
+                            <span>Group</span>
+
+                            <strong id="contextGroupName">
+                                —
+                            </strong>
+
+                        </div>
+
+                        <div class="context-item">
+
+                            <span>Your Role</span>
+
+                            <strong id="contextRole">
+                                —
+                            </strong>
+
+                        </div>
+
+                        <div class="context-item">
+
+                            <span>Access</span>
+
+                            <strong id="contextAccess">
+                                —
+                            </strong>
+
+                        </div>
+
+                        <div class="context-item">
+
+                            <span>Country</span>
+
+                            <strong id="contextCountry">
+                                —
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
         </div>
 
-    </div>
+        <div
+            id="permissionMessage"
+            class="permission-message hidden"
+        >
+            You do not have permission to manage this group.
+        </div>
 
-
-    <!-- =====================================================
-         ADMIN LAYOUT BOOT
-         Remains the single boot owner.
-    ====================================================== -->
+    </main>
 
     <script type="module">
-
-        import {
-            boot
-        } from "./js/admin-layout.js";
-
+        import { boot } from "./js/admin-layout.js";
 
         boot();
-
     </script>
 
 </body>
+
 </html>
