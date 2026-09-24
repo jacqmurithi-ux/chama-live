@@ -82,10 +82,6 @@ const LOGIN_URL =
   `${APP_URL}/login.html`;
 
 
-const DASHBOARD_URL =
-  `${APP_URL}/dashboard.html`;
-
-
 /* =======================================================
    ELEMENTS
 ======================================================= */
@@ -146,10 +142,31 @@ function showError(message) {
 
 
 /* =======================================================
-   COMPLETE ONBOARDING
+   SUBMIT GROUP APPLICATION
+   -------------------------------------------------------
+   IMPORTANT
+   -------------------------------------------------------
+   Email confirmation does NOT create a group.
+
+   The authenticated user submits a pending application
+   through the server-side RPC:
+
+     submit_group_application(
+       p_group_name,
+       p_category,
+       p_description,
+       p_admin_name,
+       p_admin_phone,
+       p_country,
+       p_location,
+       p_town
+     )
+
+   Platform Admin approval remains the group-creation
+   boundary.
 ======================================================= */
 
-async function completeOnboarding(
+async function submitGroupApplication(
   user
 ) {
 
@@ -159,24 +176,26 @@ async function completeOnboarding(
 
 
   console.log(
-    "CHAMA LIVE USER:",
+    "CHAMA LIVE CONFIRMED USER:",
     user.id
   );
 
 
+  /* =====================================================
+     ONBOARDING MARKER
+  ====================================================== */
+
   /*
    * Only accounts explicitly carrying the onboarding
-   * marker may enter the group-creation boundary.
+   * marker may submit a new group application through
+   * this confirmation boundary.
+   *
+   * Ordinary existing accounts are redirected to login.
    */
 
   const isOnboarding =
     metadata.chama_onboarding === true;
 
-
-  /*
-   * Ordinary existing accounts are not allowed to
-   * create a group through this confirmation page.
-   */
 
   if (!isOnboarding) {
 
@@ -203,7 +222,7 @@ async function completeOnboarding(
 
 
   /* =====================================================
-     READ GROUP INFORMATION
+     READ APPLICATION INFORMATION
   ====================================================== */
 
   const groupName =
@@ -220,23 +239,12 @@ async function completeOnboarding(
     ).trim();
 
 
-  const monthlyContribution =
-    Number(
-      metadata.monthly_contribution ||
-      0
-    );
-
-
-  const openingBalance =
-    Number(
-      metadata.opening_balance ||
-      0
-    );
-
-
   const description =
-    metadata.description ||
-    null;
+    metadata.description ?
+      String(
+        metadata.description
+      ).trim() :
+      null;
 
 
   const adminName =
@@ -260,6 +268,20 @@ async function completeOnboarding(
     ).trim();
 
 
+  const location =
+    String(
+      metadata.location ||
+      ""
+    ).trim();
+
+
+  const town =
+    String(
+      metadata.town ||
+      ""
+    ).trim();
+
+
   /* =====================================================
      VALIDATE
   ====================================================== */
@@ -267,7 +289,7 @@ async function completeOnboarding(
   if (!groupName) {
 
     throw new Error(
-      "Your account was confirmed, but your group setup information is missing."
+      "Your account was confirmed, but your group name is missing."
     );
 
   }
@@ -282,49 +304,48 @@ async function completeOnboarding(
   }
 
 
-  if (
-    !Number.isFinite(
-      monthlyContribution
-    ) ||
-    monthlyContribution < 0
-  ) {
+  if (!adminPhone) {
 
     throw new Error(
-      "Your group contribution amount is invalid."
+      "Your account was confirmed, but the administrator phone number is missing."
     );
 
   }
 
 
-  if (
-    !Number.isFinite(
-      openingBalance
-    ) ||
-    openingBalance < 0
-  ) {
+  if (!location) {
 
     throw new Error(
-      "Your group opening balance is invalid."
+      "Your account was confirmed, but the group location is missing."
+    );
+
+  }
+
+
+  if (!town) {
+
+    throw new Error(
+      "Your account was confirmed, but the town is missing."
     );
 
   }
 
 
   /* =====================================================
-     CREATE GROUP
+     SUBMIT APPLICATION
   ====================================================== */
 
   setStatus(
-    "Email confirmed. Creating your group..."
+    "Email confirmed. Submitting your group application for review..."
   );
 
 
   const {
-    data: onboarding,
-    error: onboardingError
+    data: application,
+    error: applicationError
   } =
     await supabase.rpc(
-      "onboard_new_group",
+      "submit_group_application",
       {
 
         p_group_name:
@@ -332,12 +353,6 @@ async function completeOnboarding(
 
         p_category:
           category,
-
-        p_monthly_contribution:
-          monthlyContribution,
-
-        p_opening_balance:
-          openingBalance,
 
         p_description:
           description,
@@ -349,22 +364,28 @@ async function completeOnboarding(
           adminPhone,
 
         p_country:
-          country
+          country,
+
+        p_location:
+          location,
+
+        p_town:
+          town
 
       }
     );
 
 
-  if (onboardingError) {
+  if (applicationError) {
 
-    throw onboardingError;
+    throw applicationError;
 
   }
 
 
   console.log(
-    "CHAMA LIVE ONBOARDING RESULT:",
-    onboarding
+    "CHAMA LIVE GROUP APPLICATION RESULT:",
+    application
   );
 
 
@@ -373,93 +394,37 @@ async function completeOnboarding(
   ====================================================== */
 
   if (
-    !onboarding ||
-    onboarding.success !== true
+    !application ||
+    application.success !== true
   ) {
 
     throw new Error(
-      "Group onboarding did not complete successfully."
+      "Your group application could not be submitted successfully."
     );
 
   }
 
 
-  if (!onboarding.group_id) {
+  if (!application.application_id) {
 
     throw new Error(
-      "Group was created but no group ID was returned."
+      "Your application was submitted, but no application ID was returned."
     );
 
   }
 
 
   /* =====================================================
-     RECORD SUCCESSFUL NEW-GROUP EVENT
+     VERIFY PENDING STATE
   ====================================================== */
 
-  /*
-   * The group has now been positively verified as created.
-   *
-   * Getting Started reads this one-time signal and
-   * displays the onboarding popup.
-   *
-   * No redirect or database behavior is changed.
-   */
+  if (
+    application.status !==
+    "pending"
+  ) {
 
-  sessionStorage.setItem(
-    "chama_live_getting_started_event",
-    "new-group"
-  );
-
-
-  /* =====================================================
-     CLEAN AUTH METADATA
-  ====================================================== */
-
-  const cleanedMetadata = {
-    ...metadata
-  };
-
-
-  delete cleanedMetadata.chama_onboarding;
-
-  delete cleanedMetadata.admin_name;
-
-  delete cleanedMetadata.admin_phone;
-
-  delete cleanedMetadata.group_name;
-
-  delete cleanedMetadata.category;
-
-  delete cleanedMetadata.monthly_contribution;
-
-  delete cleanedMetadata.opening_balance;
-
-  delete cleanedMetadata.description;
-
-  delete cleanedMetadata.country;
-
-
-  /*
-   * Metadata cleanup is non-blocking.
-   *
-   * Group creation has already completed successfully.
-   */
-
-  const {
-    error: metadataError
-  } =
-    await supabase.auth.updateUser({
-      data:
-        cleanedMetadata
-    });
-
-
-  if (metadataError) {
-
-    console.warn(
-      "CHAMA LIVE metadata cleanup warning:",
-      metadataError
+    throw new Error(
+      "Your application was submitted, but its review status could not be confirmed."
     );
 
   }
@@ -469,21 +434,40 @@ async function completeOnboarding(
      SUCCESS
   ====================================================== */
 
+  /*
+   * IMPORTANT:
+   *
+   * No group was created here.
+   *
+   * The database has only accepted the authenticated
+   * group application.
+   *
+   * Platform Admin approval remains responsible for:
+   *
+   *   group creation
+   *   creator member creation
+   *   financial period creation
+   *   subscription initialization
+   *   invoice/cycle initialization
+   *
+   * The user therefore stops at the pending-review
+   * boundary.
+   */
+
   setStatus(
-    "✓ Account confirmed and group created successfully. Redirecting..."
+    "✓ Email confirmed and group application submitted successfully. Your application is now pending platform-admin review."
   );
 
 
-  setTimeout(
-    () => {
-
-      window.location.replace(
-        DASHBOARD_URL
-      );
-
-    },
-    1000
-  );
+  /*
+   * Do not redirect to the dashboard.
+   *
+   * The account does not have an approved group yet.
+   *
+   * Keep the user on this confirmation page so the
+   * application remains explicitly separated from
+   * group creation.
+   */
 
 }
 
@@ -849,9 +833,9 @@ async function init() {
     =================================================== */
 
     /*
-     * Remove the PKCE code and any authentication
-     * parameters from the browser URL after the session
-     * has been established.
+     * Remove the PKCE code and authentication parameters
+     * from the browser URL after the session has been
+     * established.
      */
 
     window.history.replaceState(
@@ -904,10 +888,10 @@ async function init() {
 
 
     /* ===================================================
-       STEP 6 — COMPLETE GROUP ONBOARDING
+       STEP 6 — SUBMIT GROUP APPLICATION
     =================================================== */
 
-    await completeOnboarding(
+    await submitGroupApplication(
       user
     );
 
