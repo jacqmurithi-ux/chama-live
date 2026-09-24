@@ -137,12 +137,50 @@ function contributionPositionStatus(
 function renderMyContributionPosition(
   position
 ) {
-  const element =
+  const statusElement =
     byId(
       "myContributionStatus"
     );
 
-  if (!element) {
+  const totalElement =
+    byId(
+      "myContributionTotalPosition"
+    );
+
+  const arrearsElement =
+    byId(
+      "myContributionArrears"
+    );
+
+  const creditElement =
+    byId(
+      "myContributionCredit"
+    );
+
+  if (!position) {
+    if (statusElement) {
+      statusElement.className =
+        "member-finance-status-value status-unknown";
+
+      statusElement.textContent =
+        "Unavailable";
+    }
+
+    if (totalElement) {
+      totalElement.textContent =
+        "—";
+    }
+
+    if (arrearsElement) {
+      arrearsElement.textContent =
+        "—";
+    }
+
+    if (creditElement) {
+      creditElement.textContent =
+        "—";
+    }
+
     return;
   }
 
@@ -151,79 +189,89 @@ function renderMyContributionPosition(
       position
     );
 
-  element.className =
-    "member-finance-status-value";
+  if (statusElement) {
+    statusElement.className =
+      "member-finance-status-value";
 
-  if (
-    status === "ARREARS"
-  ) {
-    const arrears =
-      numberValue(
-        position?.arrears
+    if (status === "ARREARS") {
+      statusElement.classList.add(
+        "status-arrears"
       );
 
-    element.classList.add(
-      "status-arrears"
-    );
+      statusElement.textContent =
+        "ARREARS";
 
-    element.textContent =
-      `Arrears — ${formatMoney(
-        arrears
-      )}`;
+    } else if (status === "CREDIT") {
+      statusElement.classList.add(
+        "status-credit"
+      );
 
-    return;
+      statusElement.textContent =
+        "CREDIT";
+
+    } else {
+      statusElement.classList.add(
+        "status-up-to-date"
+      );
+
+      statusElement.textContent =
+        "UP TO DATE";
+    }
   }
 
-  if (
-    status === "CREDIT"
-  ) {
-    element.classList.add(
-      "status-credit"
-    );
-
-    element.textContent =
-      "Credit";
-
-    return;
+  if (totalElement) {
+    totalElement.textContent =
+      formatMoney(
+        position.total_contributed
+      );
   }
 
-  if (
-    status === "UP_TO_DATE"
-  ) {
-    element.classList.add(
-      "status-up-to-date"
-    );
-
-    element.textContent =
-      "Up to date";
-
-    return;
+  if (arrearsElement) {
+    arrearsElement.textContent =
+      formatMoney(
+        position.arrears
+      );
   }
 
-  element.classList.add(
-    "status-unknown"
-  );
-
-  element.textContent =
-    "Unavailable";
+  if (creditElement) {
+    creditElement.textContent =
+      formatMoney(
+        position.credit
+      );
+  }
 }
 
 
 async function loadMyContributionPosition() {
-  const element =
+  const statusElement =
     byId(
       "myContributionStatus"
     );
 
-  if (!element) {
+  if (!statusElement) {
     return;
   }
 
-  element.className =
+  statusElement.className =
     "member-finance-status-value status-unknown";
 
-  element.textContent =
+  statusElement.textContent =
     "Loading...";
+
+  setText(
+    "myContributionTotalPosition",
+    "—"
+  );
+
+  setText(
+    "myContributionArrears",
+    "—"
+  );
+
+  setText(
+    "myContributionCredit",
+    "—"
+  );
 
   try {
     const {
