@@ -1,0 +1,1560 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <meta
+    name="description"
+    content="CHAMA LIVE Platform Administration"
+  >
+
+  <meta
+    name="theme-color"
+    content="#0f766e"
+  >
+
+  <title>
+    Platform Admin — CHAMA LIVE
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="css/app.css"
+  >
+
+  <style>
+
+    /* =========================================================
+       PLATFORM ADMIN — PAGE SHELL
+    ========================================================= */
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--cl-text);
+    }
+
+
+    .platform-shell {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+
+    /* =========================================================
+       HEADER
+    ========================================================= */
+
+    .platform-header {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+
+      border-bottom:
+        1px solid var(--cl-border);
+
+      background:
+        rgba(255, 255, 255, .96);
+
+      backdrop-filter:
+        blur(14px);
+    }
+
+
+    .platform-header-inner {
+      width:
+        min(
+          calc(100% - 32px),
+          1240px
+        );
+
+      min-height:
+        68px;
+
+      margin:
+        0 auto;
+
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        space-between;
+
+      gap:
+        18px;
+    }
+
+
+    .platform-brand {
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      gap:
+        11px;
+
+      min-width:
+        0;
+    }
+
+
+    .platform-brand-mark {
+      width:
+        38px;
+
+      height:
+        38px;
+
+      flex:
+        0 0 auto;
+
+      display:
+        grid;
+
+      place-items:
+        center;
+
+      border-radius:
+        12px;
+
+      background:
+        linear-gradient(
+          135deg,
+          #0f766e,
+          #115e59
+        );
+
+      color:
+        #fff;
+
+      font-size:
+        12px;
+
+      font-weight:
+        800;
+
+      box-shadow:
+        0 8px 20px
+        rgba(15, 118, 110, .18);
+    }
+
+
+    .platform-brand-copy {
+      min-width:
+        0;
+    }
+
+
+    .platform-brand-title {
+      margin:
+        0;
+
+      color:
+        var(--cl-text-strong);
+
+      font-size:
+        15px;
+
+      font-weight:
+        800;
+
+      line-height:
+        1.2;
+    }
+
+
+    .platform-brand-subtitle {
+      margin:
+        2px 0 0;
+
+      color:
+        var(--cl-muted);
+
+      font-size:
+        12px;
+
+      line-height:
+        1.2;
+    }
+
+
+    .platform-header-actions {
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      gap:
+        10px;
+    }
+
+
+    .platform-refresh-button,
+    .platform-logout-button {
+      min-height:
+        40px;
+
+      padding:
+        0 14px;
+
+      border:
+        1px solid var(--cl-border-strong);
+
+      border-radius:
+        10px;
+
+      background:
+        #fff;
+
+      color:
+        var(--cl-text);
+
+      font:
+        inherit;
+
+      font-size:
+        13px;
+
+      font-weight:
+        700;
+
+      cursor:
+        pointer;
+    }
+
+
+    .platform-refresh-button:hover,
+    .platform-logout-button:hover {
+      border-color:
+        var(--cl-primary);
+
+      color:
+        var(--cl-primary);
+    }
+
+
+    .platform-refresh-button:disabled {
+      opacity:
+        .65;
+
+      cursor:
+        wait;
+    }
+
+
+    /* =========================================================
+       MAIN
+    ========================================================= */
+
+    .platform-main {
+      width:
+        min(
+          calc(100% - 32px),
+          1240px
+        );
+
+      margin:
+        0 auto;
+
+      padding:
+        28px 0 48px;
+
+      flex:
+        1;
+    }
+
+
+    /* =========================================================
+       HERO
+    ========================================================= */
+
+    .platform-hero {
+      position:
+        relative;
+
+      overflow:
+        hidden;
+
+      margin-bottom:
+        20px;
+
+      padding:
+        26px 28px;
+
+      border:
+        1px solid var(--cl-border-strong);
+
+      border-radius:
+        22px;
+
+      background:
+        linear-gradient(
+          135deg,
+          #effaf8 0%,
+          #ffffff 74%
+        );
+
+      box-shadow:
+        var(--cl-shadow);
+    }
+
+
+    .platform-hero::after {
+      content:
+        "";
+
+      position:
+        absolute;
+
+      width:
+        190px;
+
+      height:
+        190px;
+
+      right:
+        -75px;
+
+      top:
+        -100px;
+
+      border:
+        28px solid
+        rgba(15, 118, 110, .055);
+
+      border-radius:
+        50%;
+
+      pointer-events:
+        none;
+    }
+
+
+    .platform-eyebrow {
+      position:
+        relative;
+
+      z-index:
+        1;
+
+      display:
+        inline-flex;
+
+      align-items:
+        center;
+
+      gap:
+        7px;
+
+      margin-bottom:
+        10px;
+
+      color:
+        var(--cl-primary);
+
+      font-size:
+        12px;
+
+      font-weight:
+        800;
+
+      text-transform:
+        uppercase;
+
+      letter-spacing:
+        .06em;
+    }
+
+
+    .platform-eyebrow-dot {
+      width:
+        7px;
+
+      height:
+        7px;
+
+      border-radius:
+        50%;
+
+      background:
+        var(--cl-primary);
+    }
+
+
+    .platform-hero h1 {
+      position:
+        relative;
+
+      z-index:
+        1;
+
+      margin:
+        0;
+
+      color:
+        var(--cl-text-strong);
+
+      font-size:
+        clamp(
+          1.65rem,
+          3vw,
+          2.35rem
+        );
+
+      line-height:
+        1.1;
+
+      letter-spacing:
+        -.035em;
+    }
+
+
+    .platform-hero p {
+      position:
+        relative;
+
+      z-index:
+        1;
+
+      max-width:
+        700px;
+
+      margin:
+        10px 0 0;
+
+      color:
+        var(--cl-muted);
+
+      font-size:
+        14px;
+
+      line-height:
+        1.65;
+    }
+
+
+    .platform-updated {
+      position:
+        relative;
+
+      z-index:
+        1;
+
+      margin-top:
+        14px;
+
+      color:
+        var(--cl-muted);
+
+      font-size:
+        12px;
+    }
+
+
+    /* =========================================================
+       MESSAGE / ERROR
+    ========================================================= */
+
+    .platform-message {
+      margin-bottom:
+        20px;
+
+      padding:
+        14px 16px;
+
+      border:
+        1px solid var(--cl-border);
+
+      border-radius:
+        12px;
+
+      background:
+        #fff;
+
+      font-size:
+        14px;
+
+      line-height:
+        1.5;
+    }
+
+
+    .platform-message.error {
+      border-color:
+        #fecaca;
+
+      background:
+        var(--cl-danger-soft);
+
+      color:
+        #991b1b;
+    }
+
+
+    .platform-message.access-denied {
+      border-color:
+        #fed7aa;
+
+      background:
+        #fff7ed;
+
+      color:
+        #9a3412;
+    }
+
+
+    /* =========================================================
+       KPI GRID
+    ========================================================= */
+
+    .platform-grid {
+      display:
+        grid;
+
+      grid-template-columns:
+        repeat(
+          4,
+          minmax(0, 1fr)
+        );
+
+      gap:
+        16px;
+
+      margin-bottom:
+        20px;
+    }
+
+
+    .platform-card {
+      border:
+        1px solid var(--cl-border);
+
+      border-radius:
+        var(--cl-radius);
+
+      background:
+        rgba(255,255,255,.97);
+
+      box-shadow:
+        var(--cl-shadow-sm);
+    }
+
+
+    .platform-card-inner {
+      padding:
+        20px;
+    }
+
+
+    .platform-card-label {
+      margin:
+        0 0 8px;
+
+      color:
+        var(--cl-muted);
+
+      font-size:
+        12px;
+
+      font-weight:
+        700;
+
+      text-transform:
+        uppercase;
+
+      letter-spacing:
+        .045em;
+    }
+
+
+    .platform-card-value {
+      margin:
+        0;
+
+      color:
+        var(--cl-text-strong);
+
+      font-size:
+        30px;
+
+      font-weight:
+        800;
+
+      line-height:
+        1.05;
+    }
+
+
+    .platform-card-note {
+      margin:
+        8px 0 0;
+
+      color:
+        var(--cl-muted);
+
+      font-size:
+        12px;
+    }
+
+
+    /* =========================================================
+       SECTION GRID
+    ========================================================= */
+
+    .platform-section-grid {
+      display:
+        grid;
+
+      grid-template-columns:
+        repeat(
+          3,
+          minmax(0, 1fr)
+        );
+
+      gap:
+        16px;
+    }
+
+
+    .platform-section-title {
+      margin:
+        0 0 16px;
+
+      color:
+        var(--cl-text-strong);
+
+      font-size:
+        16px;
+
+      font-weight:
+        800;
+    }
+
+
+    .platform-stat-list {
+      display:
+        grid;
+
+      gap:
+        11px;
+    }
+
+
+    .platform-stat-row {
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        space-between;
+
+      gap:
+        16px;
+
+      padding:
+        10px 0;
+
+      border-bottom:
+        1px solid #edf2f1;
+    }
+
+
+    .platform-stat-row:last-child {
+      border-bottom:
+        0;
+    }
+
+
+    .platform-stat-name {
+      color:
+        var(--cl-muted);
+
+      font-size:
+        13px;
+    }
+
+
+    .platform-stat-value {
+      color:
+        var(--cl-text-strong);
+
+      font-size:
+        14px;
+
+      font-weight:
+        800;
+    }
+
+
+    /* =========================================================
+       LOADING
+    ========================================================= */
+
+    .platform-loading {
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      justify-content:
+        center;
+
+      min-height:
+        240px;
+
+      color:
+        var(--cl-muted);
+
+      font-size:
+        14px;
+    }
+
+
+    .platform-hidden {
+      display:
+        none !important;
+    }
+
+
+    /* =========================================================
+       RESPONSIVE
+    ========================================================= */
+
+    @media (max-width: 960px) {
+
+      .platform-grid {
+        grid-template-columns:
+          repeat(
+            2,
+            minmax(0, 1fr)
+          );
+      }
+
+      .platform-section-grid {
+        grid-template-columns:
+          1fr;
+      }
+
+    }
+
+
+    @media (max-width: 640px) {
+
+      .platform-header-inner,
+      .platform-main {
+        width:
+          min(
+            calc(100% - 24px),
+            1240px
+          );
+      }
+
+
+      .platform-header-inner {
+        min-height:
+          62px;
+      }
+
+
+      .platform-brand-subtitle {
+        display:
+          none;
+      }
+
+
+      .platform-header-actions {
+        gap:
+          6px;
+      }
+
+
+      .platform-refresh-button,
+      .platform-logout-button {
+        min-height:
+          38px;
+
+        padding:
+          0 10px;
+
+        font-size:
+          12px;
+      }
+
+
+      .platform-main {
+        padding-top:
+          18px;
+      }
+
+
+      .platform-hero {
+        padding:
+          22px 20px;
+      }
+
+
+      .platform-grid {
+        grid-template-columns:
+          1fr 1fr;
+
+        gap:
+          10px;
+      }
+
+
+      .platform-card-inner {
+        padding:
+          16px;
+      }
+
+
+      .platform-card-value {
+        font-size:
+          25px;
+      }
+
+    }
+
+
+    @media (max-width: 420px) {
+
+      .platform-grid {
+        grid-template-columns:
+          1fr;
+      }
+
+      .platform-logout-button {
+        display:
+          none;
+      }
+
+    }
+
+
+    @media (prefers-reduced-motion: reduce) {
+
+      *,
+      *::before,
+      *::after {
+        scroll-behavior:
+          auto !important;
+
+        transition:
+          none !important;
+      }
+
+    }
+
+  </style>
+
+</head>
+
+
+<body>
+
+  <div
+    id="platformShell"
+    class="platform-shell"
+  >
+
+    <!-- =====================================================
+         PLATFORM HEADER
+    ====================================================== -->
+
+    <header class="platform-header">
+
+      <div class="platform-header-inner">
+
+        <div class="platform-brand">
+
+          <div
+            class="platform-brand-mark"
+            aria-hidden="true"
+          >
+            CL
+          </div>
+
+          <div class="platform-brand-copy">
+
+            <p class="platform-brand-title">
+              CHAMA LIVE
+            </p>
+
+            <p class="platform-brand-subtitle">
+              Platform Administration
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="platform-header-actions">
+
+          <button
+            id="refreshButton"
+            class="platform-refresh-button"
+            type="button"
+          >
+            Refresh
+          </button>
+
+          <button
+            id="logoutButton"
+            class="platform-logout-button"
+            type="button"
+          >
+            Sign Out
+          </button>
+
+        </div>
+
+      </div>
+
+    </header>
+
+
+    <!-- =====================================================
+         MAIN
+    ====================================================== -->
+
+    <main class="platform-main">
+
+      <section class="platform-hero">
+
+        <div class="platform-eyebrow">
+
+          <span
+            class="platform-eyebrow-dot"
+            aria-hidden="true"
+          ></span>
+
+          Platform Overview
+
+        </div>
+
+
+        <h1>
+          CHAMA LIVE system overview
+        </h1>
+
+
+        <p>
+          Platform-wide operational statistics across groups,
+          members, onboarding, applications and subscriptions.
+        </p>
+
+
+        <div
+          id="generatedAt"
+          class="platform-updated"
+        >
+          Loading platform status...
+        </div>
+
+      </section>
+
+
+      <!-- ===================================================
+           MESSAGES
+      ==================================================== -->
+
+      <div
+        id="message"
+        class="platform-message platform-hidden"
+        role="alert"
+        aria-live="assertive"
+      ></div>
+
+
+      <!-- ===================================================
+           LOADING
+      ==================================================== -->
+
+      <div
+        id="loading"
+        class="platform-card"
+      >
+
+        <div class="platform-loading">
+          Loading Platform Admin overview...
+        </div>
+
+      </div>
+
+
+      <!-- ===================================================
+           OVERVIEW
+      ==================================================== -->
+
+      <div
+        id="overview"
+        class="platform-hidden"
+      >
+
+        <!-- =================================================
+             PRIMARY KPIs
+        ================================================== -->
+
+        <section
+          class="platform-grid"
+          aria-label="Platform summary"
+        >
+
+          <article class="platform-card">
+
+            <div class="platform-card-inner">
+
+              <p class="platform-card-label">
+                Groups
+              </p>
+
+              <p
+                id="groupsTotal"
+                class="platform-card-value"
+              >
+                0
+              </p>
+
+              <p class="platform-card-note">
+                Total registered groups
+              </p>
+
+            </div>
+
+          </article>
+
+
+          <article class="platform-card">
+
+            <div class="platform-card-inner">
+
+              <p class="platform-card-label">
+                Members
+              </p>
+
+              <p
+                id="membersTotal"
+                class="platform-card-value"
+              >
+                0
+              </p>
+
+              <p class="platform-card-note">
+                Total member records
+              </p>
+
+            </div>
+
+          </article>
+
+
+          <article class="platform-card">
+
+            <div class="platform-card-inner">
+
+              <p class="platform-card-label">
+                Active Members
+              </p>
+
+              <p
+                id="membersActive"
+                class="platform-card-value"
+              >
+                0
+              </p>
+
+              <p class="platform-card-note">
+                Members with active status
+              </p>
+
+            </div>
+
+          </article>
+
+
+          <article class="platform-card">
+
+            <div class="platform-card-inner">
+
+              <p class="platform-card-label">
+                Members With Login
+              </p>
+
+              <p
+                id="membersWithLogin"
+                class="platform-card-value"
+              >
+                0
+              </p>
+
+              <p class="platform-card-note">
+                Linked to Supabase Auth
+              </p>
+
+            </div>
+
+          </article>
+
+        </section>
+
+
+        <!-- =================================================
+             DETAIL SECTIONS
+        ================================================== -->
+
+        <section class="platform-section-grid">
+
+          <!-- ===============================================
+               GROUPS / MEMBERS
+          ================================================ -->
+
+          <article class="platform-card">
+
+            <div class="platform-card-inner">
+
+              <h2 class="platform-section-title">
+                Groups & Members
+              </h2>
+
+              <div class="platform-stat-list">
+
+                <div class="platform-stat-row">
+
+                  <span class="platform-stat-name">
+                    Groups created this month
+                  </span>
+
+                  <strong
+                    id="groupsCreatedThisMonth"
+                    class="platform-stat-value"
+                  >
+                    0
+                  </strong>
+
+                </div>
+
+
+                <div class="platform-stat-row">
+
+                  <span class="platform-stat-name">
+                    Members without login
+                  </span>
+
+                  <strong
+                    id="membersWithoutLogin"
+                    class="platform-stat-value"
+                  >
+                    0
+                  </strong>
+
+                </div>
+
+
+                <div class="platform-stat-row">
+
+                  <span class="platform-stat-name">
+                    Active members
+                  </span>
+
+                  <strong
+                    id="membersActiveDetail"
+                    class="platform-stat-value"
+                  >
+                    0
+                  </strong>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </article>
+
+
+          <!-- ===============================================
+               ONBOARDING
+          ================================================ -->
+
+          <article class="platform-card">
+
+            <div class="platform-card-inner">
+
+              <h2 class="platform-section-title">
+                Member Onboarding
+              </h2>
+
+              <div class="platform-stat-list">
+
+                <div class="platform-stat-row">
+
+                  <span class="platform-stat-name">
+                    Pending
+                  </span>
+
+                  <strong
+                    id="onboardingPending"
+                    class="platform-stat-value"
+                  >
+                    0
+                  </strong>
+
+                </div>
+
+
+                <div class="platform-stat-row">
+
+                  <span class="platform-stat-name">
+                    Invited
+                  </span>
+
+                  <strong
+                    id="onboardingInvited"
+                    class="platform-stat-value"
+                  >
+                    0
+                  </strong>
+
+                </div>
+
+
+                <div class="platform-stat-row">
+
+                  <span class="platform-stat-name">
+                    Active
+                  </span>
+
+                  <strong
+                    id="onboardingActive"
+                    class="platform-stat-value"
+                  >
+                    0
+                  </strong>
+
+                </div>
+
+
+                <div class="platform-stat-row">
+
+                  <span class="platform-stat-name">
+                    Suspended
+                  </span>
+
+                  <strong
+                    id="onboardingSuspended"
+                    class="platform-stat-value"
+                  >
+                    0
+                  </strong>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </article>
+
+
+          <!-- ===============================================
+               APPLICATIONS
+          ================================================ -->
+
+          <article class="platform-card">
+
+            <div class="platform-card-inner">
+
+              <h2 class="platform-section-title">
+                Group Applications
+              </h2>
+
+              <div class="platform-stat-list">
+
+                <div class="platform-stat-row">
+
+                  <span class="platform-stat-name">
+                    Pending
+                  </span>
+
+                  <strong
+                    id="applicationsPending"
+                    class="platform-stat-value"
+                  >
+                    0
+                  </strong>
+
+                </div>
+
+
+                <div class="platform-stat-row">
+
+                  <span class="platform-stat-name">
+                    Under review
+                  </span>
+
+                  <strong
+                    id="applicationsUnderReview"
+                    class="platform-stat-value"
+                  >
+                    0
+                  </strong>
+
+                </div>
+
+
+                <div class="platform-stat-row">
+
+                  <span class="platform-stat-name">
+                    Approved
+                  </span>
+
+                  <strong
+                    id="applicationsApproved"
+                    class="platform-stat-value"
+                  >
+                    0
+                  </strong>
+
+                </div>
+
+
+                <div class="platform-stat-row">
+
+                  <span class="platform-stat-name">
+                    Rejected
+                  </span>
+
+                  <strong
+                    id="applicationsRejected"
+                    class="platform-stat-value"
+                  >
+                    0
+                  </strong>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </article>
+
+
+          <!-- ===============================================
+               SUBSCRIPTIONS
+          ================================================ -->
+
+          <article class="platform-card">
+
+            <div class="platform-card-inner">
+
+              <h2 class="platform-section-title">
+                Subscriptions
+              </h2>
+
+              <div class="platform-stat-list">
+
+                <div class="platform-stat-row">
+
+                  <span class="platform-stat-name">
+                    Active
+                  </span>
+
+                  <strong
+                    id="subscriptionsActive"
+                    class="platform-stat-value"
+                  >
+                    0
+                  </strong>
+
+                </div>
+
+
+                <div class="platform-stat-row">
+
+                  <span class="platform-stat-name">
+                    Pending
+                  </span>
+
+                  <strong
+                    id="subscriptionsPending"
+                    class="platform-stat-value"
+                  >
+                    0
+                  </strong>
+
+                </div>
+
+
+                <div class="platform-stat-row">
+
+                  <span class="platform-stat-name">
+                    Suspended
+                  </span>
+
+                  <strong
+                    id="subscriptionsSuspended"
+                    class="platform-stat-value"
+                  >
+                    0
+                  </strong>
+
+                </div>
+
+
+                <div class="platform-stat-row">
+
+                  <span class="platform-stat-name">
+                    Cancelled
+                  </span>
+
+                  <strong
+                    id="subscriptionsCancelled"
+                    class="platform-stat-value"
+                  >
+                    0
+                  </strong>
+
+                </div>
+
+
+                <div class="platform-stat-row">
+
+                  <span class="platform-stat-name">
+                    Expired
+                  </span>
+
+                  <strong
+                    id="subscriptionsExpired"
+                    class="platform-stat-value"
+                  >
+                    0
+                  </strong>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </article>
+
+
+          <!-- ===============================================
+               BILLING
+          ================================================ -->
+
+          <article class="platform-card">
+
+            <div class="platform-card-inner">
+
+              <h2 class="platform-section-title">
+                Subscription Billing
+              </h2>
+
+              <div class="platform-stat-list">
+
+                <div class="platform-stat-row">
+
+                  <span class="platform-stat-name">
+                    Paid invoices
+                  </span>
+
+                  <strong
+                    id="invoicesPaid"
+                    class="platform-stat-value"
+                  >
+                    0
+                  </strong>
+
+                </div>
+
+
+                <div class="platform-stat-row">
+
+                  <span class="platform-stat-name">
+                    Unpaid invoices
+                  </span>
+
+                  <strong
+                    id="invoicesUnpaid"
+                    class="platform-stat-value"
+                  >
+                    0
+                  </strong>
+
+                </div>
+
+
+                <div class="platform-stat-row">
+
+                  <span class="platform-stat-name">
+                    Payment records
+                  </span>
+
+                  <strong
+                    id="subscriptionPaymentsTotal"
+                    class="platform-stat-value"
+                  >
+                    0
+                  </strong>
+
+                </div>
+
+
+                <div class="platform-stat-row">
+
+                  <span class="platform-stat-name">
+                    Confirmed revenue
+                  </span>
+
+                  <strong
+                    id="subscriptionRevenueTotal"
+                    class="platform-stat-value"
+                  >
+                    KSh 0
+                  </strong>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </article>
+
+        </section>
+
+      </div>
+
+    </main>
+
+  </div>
+
+
+  <script
+    type="module"
+    src="js/platform-admin.js"
+  ></script>
+
+</body>
+
+</html>
