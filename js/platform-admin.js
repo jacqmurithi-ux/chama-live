@@ -1,13 +1,15 @@
 /* =========================================================
    CHAMA LIVE — PLATFORM ADMIN
    ---------------------------------------------------------
-   Platform-wide read-only overview.
+   Platform-wide administration.
 
    AUTHORIZATION
    ---------------------------------------------------------
    Platform Admin authorization is enforced server-side by:
 
      public.get_platform_admin_overview()
+     public.get_platform_admin_applications()
+     public.approve_group_application(uuid)
 
    The frontend does NOT query platform_admins directly.
 
@@ -25,11 +27,29 @@
 
    DATABASE
    ---------------------------------------------------------
-   Read-only RPC:
+   READ RPCs:
 
      get_platform_admin_overview()
+     get_platform_admin_applications()
 
-   No database mutation is performed by this file.
+   MUTATION RPC:
+
+     approve_group_application(uuid)
+
+   The frontend does NOT perform direct database writes.
+
+   APPLICATION REVIEW
+   ---------------------------------------------------------
+   The application-review surface:
+
+     1. Reads pending / under-review applications through
+        get_platform_admin_applications().
+     2. Displays the application details.
+     3. Requires explicit confirmation before approval.
+     4. Calls the existing approve_group_application(uuid).
+     5. Refreshes the overview and application list.
+
+   No provisioning logic exists in this file.
 ========================================================= */
 
 
@@ -73,11 +93,35 @@ const logoutButton =
   );
 
 
+/* ---------------------------------------------------------
+   APPLICATION REVIEW DOM
+--------------------------------------------------------- */
+
+const applicationReviewLoading =
+  document.getElementById(
+    "applicationReviewLoading"
+  );
+
+const applicationReviewEmpty =
+  document.getElementById(
+    "applicationReviewEmpty"
+  );
+
+const applicationReviewList =
+  document.getElementById(
+    "applicationReviewList"
+  );
+
+
 /* =========================================================
    STATE
 ========================================================= */
 
 let loadingOverview = false;
+
+let loadingApplications = false;
+
+let approvingApplication = false;
 
 
 /* =========================================================
@@ -219,6 +263,60 @@ function formatTimestamp(
 }
 
 
+function formatApplicationDate(
+  value
+) {
+
+  if (!value) {
+
+    return "Date unavailable";
+
+  }
+
+
+  const date =
+    new Date(value);
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+
+    return "Date unavailable";
+
+  }
+
+
+  return date.toLocaleString(
+    "en-KE",
+    {
+      dateStyle: "medium",
+      timeStyle: "short"
+    }
+  );
+
+}
+
+
+function applicationText(
+  value,
+  fallback = "Not provided"
+) {
+
+  const text =
+    String(
+      value ?? ""
+    ).trim();
+
+
+  return text ||
+    fallback;
+
+}
+
+
 /* =========================================================
    MESSAGES
 ========================================================= */
@@ -250,13 +348,31 @@ function showMessage(
   message.textContent =
     text;
 
+
+  let messageClass =
+    "error";
+
+
+  if (
+    type === "access-denied"
+  ) {
+
+    messageClass =
+      "access-denied";
+
+  } else if (
+    type === "success"
+  ) {
+
+    messageClass =
+      "success";
+
+  }
+
+
   message.className =
     "platform-message " +
-    (
-      type === "access-denied"
-        ? "access-denied"
-        : "error"
-    );
+    messageClass;
 
 }
 
@@ -404,12 +520,155 @@ function normalizeError(
 
 
 /* =========================================================
+   APPLICATION ERROR NORMALIZATION
+========================================================= */
+
+function normalizeApplicationError(
+  error
+) {
+
+  const messageText =
+    String(
+      error?.message ||
+      error ||
+      ""
+    ).trim();
+
+
+  const lower =
+    messageText.toLowerCase();
+
+
+  if (
+    lower.includes(
+      "platform admin access required"
+    )
+  ) {
+
+    return {
+      type: "access-denied",
+      message:
+        "Access denied. This area is restricted to Platform Administrators."
+    };
+
+  }
+
+
+  if (
+    lower.includes(
+      "jwt"
+    ) &&
+    lower.includes(
+      "expired"
+    )
+  ) {
+
+    return {
+      type: "session-expired",
+      message:
+        "Your session has expired. Please sign in again."
+    };
+
+  }
+
+
+  if (
+    lower.includes(
+      "not authenticated"
+    ) ||
+    lower.includes(
+      "authentication required"
+    )
+  ) {
+
+    return {
+      type: "authentication-required",
+      message:
+        "Authentication is required. Please sign in again."
+    };
+
+  }
+
+
+  if (
+    lower.includes(
+      "already approved"
+    )
+  ) {
+
+    return {
+      type: "approval-conflict",
+      message:
+        "This application has already been approved. Refreshing the application list."
+    };
+
+  }
+
+
+  if (
+    lower.includes(
+      "already rejected"
+    )
+  ) {
+
+    return {
+      type: "approval-conflict",
+      message:
+        "This application has already been rejected. Refreshing the application list."
+    };
+
+  }
+
+
+  if (
+    lower.includes(
+      "application not found"
+    )
+  ) {
+
+    return {
+      type: "approval-conflict",
+      message:
+        "This application is no longer available. Refreshing the application list."
+    };
+
+  }
+
+
+  if (
+    lower.includes(
+      "failed to fetch"
+    ) ||
+    lower.includes(
+      "network"
+    )
+  ) {
+
+    return {
+      type: "error",
+      message:
+        "Unable to connect to CHAMA LIVE. Please check your internet connection."
+    };
+
+  }
+
+
+  return {
+    type: "error",
+    message:
+      "Unable to approve this application. Please try again."
+  };
+
+}
+
+
+/* =========================================================
    AUTHENTICATION CHECK
    ---------------------------------------------------------
    This confirms that an authenticated Supabase user exists.
 
-   Platform Admin authorization itself remains server-side in
-   get_platform_admin_overview().
+   Platform Admin authorization remains server-side in the
+   Platform Admin RPCs.
 ========================================================= */
 
 async function requireAuthenticatedSession() {
@@ -447,10 +706,7 @@ async function requireAuthenticatedSession() {
 /* =========================================================
    NORMALIZE RPC RESULT
    ---------------------------------------------------------
-   Supabase may return a row as an object or a one-row array
-   depending on the RPC/table-return representation.
-
-   The verified function returns one aggregate row.
+   Supabase may return a row as an object or an array.
 ========================================================= */
 
 function normalizeOverviewRow(
@@ -477,6 +733,65 @@ function normalizeOverviewRow(
 
 
   return null;
+
+}
+
+
+/* =========================================================
+   NORMALIZE APPLICATION ROW
+========================================================= */
+
+function normalizeApplicationRow(
+  row
+) {
+
+  if (
+    !row ||
+    typeof row !== "object"
+  ) {
+
+    return null;
+
+  }
+
+
+  return {
+    application_id:
+      row.application_id ?? null,
+
+    group_name:
+      row.group_name ?? "",
+
+    category:
+      row.category ?? "",
+
+    description:
+      row.description ?? "",
+
+    admin_name:
+      row.admin_name ?? "",
+
+    admin_phone:
+      row.admin_phone ?? "",
+
+    email:
+      row.email ?? "",
+
+    country:
+      row.country ?? "",
+
+    location:
+      row.location ?? "",
+
+    town:
+      row.town ?? "",
+
+    status:
+      row.status ?? "",
+
+    created_at:
+      row.created_at ?? null
+  };
 
 }
 
@@ -716,7 +1031,7 @@ function renderOverview(
 
   /* -------------------------------------------------------
      TIMESTAMP
-  ------------------------------------------------------- */
+  --------------------------------------------------------- */
 
   setText(
     "generatedAt",
@@ -724,6 +1039,730 @@ function renderOverview(
       row.generated_at
     )
   );
+
+}
+
+
+/* =========================================================
+   APPLICATION REVIEW UI
+========================================================= */
+
+function clearApplicationReview() {
+
+  if (applicationReviewList) {
+
+    applicationReviewList.replaceChildren();
+
+  }
+
+
+  if (applicationReviewEmpty) {
+
+    applicationReviewEmpty.classList.add(
+      "platform-hidden"
+    );
+
+  }
+
+}
+
+
+function showApplicationReviewLoading() {
+
+  if (applicationReviewLoading) {
+
+    applicationReviewLoading.classList.remove(
+      "platform-hidden"
+    );
+
+  }
+
+}
+
+
+function hideApplicationReviewLoading() {
+
+  if (applicationReviewLoading) {
+
+    applicationReviewLoading.classList.add(
+      "platform-hidden"
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   APPLICATION DETAIL HELPER
+========================================================= */
+
+function createApplicationDetail(
+  label,
+  value
+) {
+
+  const detail =
+    document.createElement(
+      "div"
+    );
+
+  detail.className =
+    "platform-application-detail";
+
+
+  const strong =
+    document.createElement(
+      "strong"
+    );
+
+  strong.textContent =
+    label + ":";
+
+
+  detail.appendChild(
+    strong
+  );
+
+
+  detail.appendChild(
+    document.createTextNode(
+      " " +
+      applicationText(
+        value
+      )
+    )
+  );
+
+
+  return detail;
+
+}
+
+
+/* =========================================================
+   RENDER APPLICATIONS
+========================================================= */
+
+function renderPendingApplications(
+  rows
+) {
+
+  clearApplicationReview();
+
+
+  const applications =
+    Array.isArray(rows)
+      ? rows
+          .map(
+            normalizeApplicationRow
+          )
+          .filter(
+            application =>
+              application &&
+              application.application_id
+          )
+      : [];
+
+
+  if (
+    applications.length === 0
+  ) {
+
+    if (applicationReviewEmpty) {
+
+      applicationReviewEmpty.classList.remove(
+        "platform-hidden"
+      );
+
+    }
+
+    return;
+
+  }
+
+
+  if (!applicationReviewList) {
+
+    return;
+
+  }
+
+
+  const fragment =
+    document.createDocumentFragment();
+
+
+  for (
+    const application
+    of applications
+  ) {
+
+    const item =
+      document.createElement(
+        "article"
+      );
+
+    item.className =
+      "platform-application-item";
+
+
+    /* -----------------------------------------------------
+       HEADER
+    ----------------------------------------------------- */
+
+    const header =
+      document.createElement(
+        "div"
+      );
+
+    header.className =
+      "platform-application-header";
+
+
+    const headingContainer =
+      document.createElement(
+        "div"
+      );
+
+
+    const name =
+      document.createElement(
+        "h3"
+      );
+
+    name.className =
+      "platform-application-name";
+
+    name.textContent =
+      applicationText(
+        application.group_name,
+        "Unnamed group"
+      );
+
+
+    headingContainer.appendChild(
+      name
+    );
+
+
+    const meta =
+      document.createElement(
+        "p"
+      );
+
+    meta.className =
+      "platform-application-meta";
+
+    meta.textContent =
+      "Administrator: " +
+      applicationText(
+        application.admin_name
+      );
+
+
+    headingContainer.appendChild(
+      meta
+    );
+
+
+    const status =
+      document.createElement(
+        "p"
+      );
+
+    status.className =
+      "platform-application-meta";
+
+    status.textContent =
+      "Status: " +
+      applicationText(
+        application.status
+      );
+
+
+    header.appendChild(
+      headingContainer
+    );
+
+    header.appendChild(
+      status
+    );
+
+
+    item.appendChild(
+      header
+    );
+
+
+    /* -----------------------------------------------------
+       DETAILS
+    ----------------------------------------------------- */
+
+    const details =
+      document.createElement(
+        "div"
+      );
+
+    details.className =
+      "platform-application-details";
+
+
+    details.appendChild(
+      createApplicationDetail(
+        "Phone",
+        application.admin_phone
+      )
+    );
+
+
+    details.appendChild(
+      createApplicationDetail(
+        "Email",
+        application.email
+      )
+    );
+
+
+    details.appendChild(
+      createApplicationDetail(
+        "Location",
+        application.location
+      )
+    );
+
+
+    details.appendChild(
+      createApplicationDetail(
+        "Town",
+        application.town
+      )
+    );
+
+
+    details.appendChild(
+      createApplicationDetail(
+        "Country",
+        application.country
+      )
+    );
+
+
+    details.appendChild(
+      createApplicationDetail(
+        "Category",
+        application.category
+      )
+    );
+
+
+    details.appendChild(
+      createApplicationDetail(
+        "Submitted",
+        formatApplicationDate(
+          application.created_at
+        )
+      )
+    );
+
+
+    details.appendChild(
+      createApplicationDetail(
+        "Description",
+        application.description
+      )
+    );
+
+
+    item.appendChild(
+      details
+    );
+
+
+    /* -----------------------------------------------------
+       ACTION
+    ----------------------------------------------------- */
+
+    const actions =
+      document.createElement(
+        "div"
+      );
+
+    actions.className =
+      "platform-application-actions";
+
+
+    const approveButton =
+      document.createElement(
+        "button"
+      );
+
+    approveButton.type =
+      "button";
+
+    approveButton.className =
+      "platform-application-approve";
+
+    approveButton.textContent =
+      "Approve Application";
+
+
+    approveButton.addEventListener(
+      "click",
+      () => {
+
+        approveApplication(
+          application,
+          approveButton
+        );
+
+      }
+    );
+
+
+    actions.appendChild(
+      approveButton
+    );
+
+
+    item.appendChild(
+      actions
+    );
+
+
+    fragment.appendChild(
+      item
+    );
+
+  }
+
+
+  applicationReviewList.appendChild(
+    fragment
+  );
+
+}
+
+
+/* =========================================================
+   LOAD APPLICATIONS
+   ---------------------------------------------------------
+   Read-only RPC.
+
+   Authorization is enforced by:
+     public.get_platform_admin_applications()
+========================================================= */
+
+async function loadPendingApplications() {
+
+  if (
+    loadingApplications
+  ) {
+
+    return;
+
+  }
+
+
+  loadingApplications =
+    true;
+
+
+  showApplicationReviewLoading();
+
+
+  try {
+
+    const {
+      data,
+      error
+    } =
+      await supabase.rpc(
+        "get_platform_admin_applications"
+      );
+
+
+    if (error) {
+
+      throw error;
+
+    }
+
+
+    renderPendingApplications(
+      data
+    );
+
+  } catch (error) {
+
+    clearApplicationReview();
+
+
+    const normalized =
+      normalizeApplicationError(
+        error
+      );
+
+
+    if (
+      normalized.type ===
+        "session-expired" ||
+      normalized.type ===
+        "authentication-required"
+    ) {
+
+      showMessage(
+        normalized.message,
+        "error"
+      );
+
+      redirectToPlatformAdminLogin();
+
+      return;
+
+    }
+
+
+    showMessage(
+      normalized.message,
+      normalized.type
+    );
+
+  } finally {
+
+    loadingApplications =
+      false;
+
+    hideApplicationReviewLoading();
+
+  }
+
+}
+
+
+/* =========================================================
+   APPROVE APPLICATION
+   ---------------------------------------------------------
+   The existing server-side approval RPC remains the sole
+   provisioning boundary.
+
+   This frontend does NOT:
+
+     - create groups
+     - create members
+     - create financial periods
+     - create subscriptions
+     - create invoices
+     - generate access codes
+     - update group_applications directly
+========================================================= */
+
+async function approveApplication(
+  application,
+  button
+) {
+
+  if (
+    approvingApplication
+  ) {
+
+    return;
+
+  }
+
+
+  const applicationId =
+    application?.application_id;
+
+
+  if (!applicationId) {
+
+    showMessage(
+      "This application has no valid application ID.",
+      "error"
+    );
+
+    return;
+
+  }
+
+
+  const groupName =
+    applicationText(
+      application.group_name,
+      "this group"
+    );
+
+
+  const confirmed =
+    window.confirm(
+      `Approve "${groupName}"? This will create the group account, administrator member, financial period and initial subscription records.`
+    );
+
+
+  if (!confirmed) {
+
+    return;
+
+  }
+
+
+  approvingApplication =
+    true;
+
+
+  if (button) {
+
+    button.disabled =
+      true;
+
+    button.textContent =
+      "Approving...";
+
+  }
+
+
+  try {
+
+    /*
+     * Confirm that an authenticated session still exists
+     * immediately before the mutation.
+     */
+
+    await requireAuthenticatedSession();
+
+
+    /*
+     * Existing canonical provisioning boundary.
+     *
+     * Do not replace this with direct table writes.
+     */
+
+    const {
+      data,
+      error
+    } =
+      await supabase.rpc(
+        "approve_group_application",
+        {
+          p_application_id:
+            applicationId
+        }
+      );
+
+
+    if (error) {
+
+      throw error;
+
+    }
+
+
+    if (
+      !data ||
+      data.success !== true
+    ) {
+
+      throw new Error(
+        "Application approval did not return a successful result."
+      );
+
+    }
+
+
+    showMessage(
+      `Application approved for ${groupName}.`,
+      "success"
+    );
+
+
+    /*
+     * Refresh both the platform-wide counters and the
+     * application review surface after successful approval.
+     */
+
+    await Promise.all([
+      loadPlatformOverview(),
+      loadPendingApplications()
+    ]);
+
+  } catch (error) {
+
+    const normalized =
+      normalizeApplicationError(
+        error
+      );
+
+
+    if (
+      normalized.type ===
+        "session-expired" ||
+      normalized.type ===
+        "authentication-required"
+    ) {
+
+      showMessage(
+        normalized.message,
+        "error"
+      );
+
+      redirectToPlatformAdminLogin();
+
+      return;
+
+    }
+
+
+    /*
+     * A concurrent administrator may have processed the
+     * same application between display and confirmation.
+     *
+     * Refresh the read surfaces so the UI reflects the
+     * authoritative server state.
+     */
+
+    if (
+      normalized.type ===
+        "approval-conflict"
+    ) {
+
+      showMessage(
+        normalized.message,
+        "error"
+      );
+
+      await Promise.all([
+        loadPlatformOverview(),
+        loadPendingApplications()
+      ]);
+
+      return;
+
+    }
+
+
+    showMessage(
+      normalized.message,
+      normalized.type
+    );
+
+  } finally {
+
+    approvingApplication =
+      false;
+
+
+    if (button) {
+
+      button.disabled =
+        false;
+
+      button.textContent =
+        "Approve Application";
+
+    }
+
+  }
 
 }
 
@@ -806,6 +1845,15 @@ async function loadPlatformOverview() {
 
 
     showOverview();
+
+
+    /*
+     * Only load application-review data after the
+     * Platform Admin overview has successfully passed
+     * its server-side authorization boundary.
+     */
+
+    await loadPendingApplications();
 
   } catch (error) {
 
