@@ -63,13 +63,18 @@ const dom = {
     managementContent: document.getElementById("managementContent"),
     permissionMessage: document.getElementById("permissionMessage"),
 
-    groupNameDisplay: document.getElementById("groupNameDisplay"),
+    groupNameDisplay: document.getElementById(
+        "groupNameDisplay"
+    ),
+
     groupCategoryDisplay: document.getElementById(
         "groupCategoryDisplay"
     ),
+
     groupCountryDisplay: document.getElementById(
         "groupCountryDisplay"
     ),
+
     memberCountDisplay: document.getElementById(
         "memberCountDisplay"
     ),
@@ -82,17 +87,21 @@ const dom = {
     groupName: document.getElementById("groupName"),
     groupCategory: document.getElementById("groupCategory"),
     groupCountry: document.getElementById("groupCountry"),
+
     monthlyContribution: document.getElementById(
         "monthlyContribution"
     ),
+
     saveGroup: document.getElementById("saveGroup"),
 
     contributionCalendarForm: document.getElementById(
         "contributionCalendarForm"
     ),
+
     monthlyClosingDay: document.getElementById(
         "monthlyClosingDay"
     ),
+
     saveContributionCalendar: document.getElementById(
         "saveContributionCalendar"
     ),
@@ -100,9 +109,11 @@ const dom = {
     currentContributionCycle: document.getElementById(
         "currentContributionCycle"
     ),
+
     currentContributionOpeningDate: document.getElementById(
         "currentContributionOpeningDate"
     ),
+
     currentContributionClosingDate: document.getElementById(
         "currentContributionClosingDate"
     ),
@@ -110,15 +121,19 @@ const dom = {
     subscriptionPanel: document.getElementById(
         "subscriptionPanel"
     ),
+
     subscriptionStatus: document.getElementById(
         "subscriptionStatus"
     ),
+
     subscriptionPlan: document.getElementById(
         "subscriptionPlan"
     ),
+
     subscriptionEndDate: document.getElementById(
         "subscriptionEndDate"
     ),
+
     subscriptionAmount: document.getElementById(
         "subscriptionAmount"
     ),
@@ -126,12 +141,15 @@ const dom = {
     contextGroupName: document.getElementById(
         "contextGroupName"
     ),
+
     contextRole: document.getElementById(
         "contextRole"
     ),
+
     contextAccess: document.getElementById(
         "contextAccess"
     ),
+
     contextCountry: document.getElementById(
         "contextCountry"
     )
@@ -150,7 +168,8 @@ function clearMessages() {
 
     if (dom.errorMessage) {
         dom.errorMessage.textContent = "";
-        dom.errorMessage.className = "status-message error";
+        dom.errorMessage.className =
+            "status-message error";
     }
 }
 
@@ -161,6 +180,7 @@ function showStatus(message) {
     }
 
     dom.statusMessage.textContent = message;
+
     dom.statusMessage.className =
         "status-message visible success";
 }
@@ -172,6 +192,7 @@ function showError(message) {
     }
 
     dom.errorMessage.textContent = message;
+
     dom.errorMessage.className =
         "status-message visible error";
 }
@@ -251,7 +272,8 @@ function formatSubscriptionAmount(value) {
    ========================================================= */
 
 async function loadAuthorizationContext() {
-    const context = await getMyApplicationContext();
+    const context =
+        await getMyApplicationContext();
 
     if (!context) {
         throw new Error(
@@ -288,13 +310,22 @@ async function loadAuthorizationContext() {
             false
         );
 
+    /*
+     * IMPORTANT:
+     * Do not mix ?? and || without parentheses.
+     */
+
     canManageGroup =
         Boolean(
             context.canManageGroup ??
             context.can_manage_group ??
-            currentIsOwner ||
-            ["owner", "admin"].includes(
-                String(currentRole || "").toLowerCase()
+            (
+                currentIsOwner ||
+                ["owner", "admin"].includes(
+                    String(
+                        currentRole || ""
+                    ).toLowerCase()
+                )
             )
         );
 
@@ -311,34 +342,42 @@ async function loadAuthorizationContext() {
    ========================================================= */
 
 function applyAuthorizationUI() {
-    const editable = Boolean(canManageGroup);
+    const editable =
+        Boolean(canManageGroup);
 
     if (dom.groupName) {
-        dom.groupName.disabled = !editable;
+        dom.groupName.disabled =
+            !editable;
     }
 
     if (dom.groupCategory) {
-        dom.groupCategory.disabled = !editable;
+        dom.groupCategory.disabled =
+            !editable;
     }
 
     if (dom.groupCountry) {
-        dom.groupCountry.disabled = !editable;
+        dom.groupCountry.disabled =
+            !editable;
     }
 
     if (dom.monthlyContribution) {
-        dom.monthlyContribution.disabled = !editable;
+        dom.monthlyContribution.disabled =
+            !editable;
     }
 
     if (dom.monthlyClosingDay) {
-        dom.monthlyClosingDay.disabled = !editable;
+        dom.monthlyClosingDay.disabled =
+            !editable;
     }
 
     if (dom.saveGroup) {
-        dom.saveGroup.disabled = !editable;
+        dom.saveGroup.disabled =
+            !editable;
     }
 
     if (dom.saveContributionCalendar) {
-        dom.saveContributionCalendar.disabled = !editable;
+        dom.saveContributionCalendar.disabled =
+            !editable;
     }
 
     if (dom.permissionBadge) {
@@ -456,8 +495,14 @@ async function loadMemberCount() {
             count: "exact",
             head: true
         })
-        .eq("group_id", currentGroup.id)
-        .eq("status", "active");
+        .eq(
+            "group_id",
+            currentGroup.id
+        )
+        .eq(
+            "status",
+            "active"
+        );
 
     if (error) {
         console.error(
@@ -481,11 +526,12 @@ async function loadMemberCount() {
 
 
 /* =========================================================
-   MONTHLY CONTRIBUTION PREVIEW
+   MONTHLY CONTRIBUTION CYCLE
    ========================================================= */
 
 function getCurrentCycle(closingDay) {
-    const day = Number(closingDay);
+    const day =
+        Number(closingDay);
 
     if (
         !Number.isInteger(day) ||
@@ -495,22 +541,22 @@ function getCurrentCycle(closingDay) {
         return null;
     }
 
-    const today = new Date();
-
-    /*
-     * The cycle closes on the selected day.
-     *
-     * If today's day is greater than the closing day,
-     * the current cycle closes next month.
-     *
-     * Otherwise it closes this month.
-     */
+    const today =
+        new Date();
 
     let closingYear =
         today.getFullYear();
 
     let closingMonth =
         today.getMonth();
+
+    /*
+     * If today is after the selected closing day,
+     * the current cycle closes next month.
+     *
+     * If today is on or before the closing day,
+     * the current cycle closes this month.
+     */
 
     if (today.getDate() > day) {
         closingMonth += 1;
@@ -524,15 +570,24 @@ function getCurrentCycle(closingDay) {
         );
 
     /*
-     * Opening date is the day immediately after
-     * the previous closing date.
+     * The cycle is inclusive:
+     *
+     * Opening date = previous closing date + 1 day
+     *
+     * Therefore for:
+     *
+     * 05 Oct 2026 closing
+     *
+     * the opening date is:
+     *
+     * 06 Sep 2026
      */
 
     const openingDate =
         new Date(closingDate);
 
     openingDate.setDate(
-        openingDate.getDate() - 30
+        openingDate.getDate() - 29
     );
 
     return {
@@ -548,10 +603,14 @@ function updateContributionPreview() {
     }
 
     const closingDay =
-        Number(dom.monthlyClosingDay.value);
+        Number(
+            dom.monthlyClosingDay.value
+        );
 
     const cycle =
-        getCurrentCycle(closingDay);
+        getCurrentCycle(
+            closingDay
+        );
 
     if (!cycle) {
         if (dom.currentContributionCycle) {
@@ -559,12 +618,16 @@ function updateContributionPreview() {
                 "—";
         }
 
-        if (dom.currentContributionOpeningDate) {
+        if (
+            dom.currentContributionOpeningDate
+        ) {
             dom.currentContributionOpeningDate.textContent =
                 "—";
         }
 
-        if (dom.currentContributionClosingDate) {
+        if (
+            dom.currentContributionClosingDate
+        ) {
             dom.currentContributionClosingDate.textContent =
                 "—";
         }
@@ -580,14 +643,18 @@ function updateContributionPreview() {
             );
     }
 
-    if (dom.currentContributionOpeningDate) {
+    if (
+        dom.currentContributionOpeningDate
+    ) {
         dom.currentContributionOpeningDate.textContent =
             formatDate(
                 cycle.openingDate
             );
     }
 
-    if (dom.currentContributionClosingDate) {
+    if (
+        dom.currentContributionClosingDate
+    ) {
         dom.currentContributionClosingDate.textContent =
             formatDate(
                 cycle.closingDate
@@ -611,7 +678,8 @@ async function loadSubscription() {
     } = await supabase.rpc(
         "get_group_subscription",
         {
-            p_group_id: currentGroup.id
+            p_group_id:
+                currentGroup.id
         }
     );
 
@@ -622,6 +690,7 @@ async function loadSubscription() {
         );
 
         subscription = null;
+
         renderSubscription();
 
         return;
@@ -707,7 +776,8 @@ function populateClosingDayOptions() {
         dom.monthlyClosingDay.value ??
         28;
 
-    dom.monthlyClosingDay.innerHTML = "";
+    dom.monthlyClosingDay.innerHTML =
+        "";
 
     for (
         let day = 1;
@@ -715,10 +785,15 @@ function populateClosingDayOptions() {
         day += 1
     ) {
         const option =
-            document.createElement("option");
+            document.createElement(
+                "option"
+            );
 
-        option.value = String(day);
-        option.textContent = String(day);
+        option.value =
+            String(day);
+
+        option.textContent =
+            String(day);
 
         dom.monthlyClosingDay.appendChild(
             option
@@ -754,7 +829,8 @@ async function loadContributionSettings() {
     } = await supabase.rpc(
         "get_group_contribution_settings",
         {
-            p_group_id: currentGroup.id
+            p_group_id:
+                currentGroup.id
         }
     );
 
@@ -765,7 +841,7 @@ async function loadContributionSettings() {
         );
 
         /*
-         * Keep the page usable even if the optional
+         * Keep the page usable if the optional
          * settings RPC is unavailable.
          */
 
@@ -823,7 +899,9 @@ async function saveContributionSettings() {
     }
 
     const closingDay =
-        Number(dom.monthlyClosingDay?.value);
+        Number(
+            dom.monthlyClosingDay?.value
+        );
 
     if (
         !Number.isInteger(closingDay) ||
@@ -840,6 +918,7 @@ async function saveContributionSettings() {
     if (dom.saveContributionCalendar) {
         dom.saveContributionCalendar.disabled =
             true;
+
         dom.saveContributionCalendar.textContent =
             "Saving...";
     }
@@ -852,8 +931,11 @@ async function saveContributionSettings() {
         } = await supabase.rpc(
             "update_group_contribution_settings",
             {
-                p_group_id: currentGroup.id,
-                p_monthly_closing_day: closingDay
+                p_group_id:
+                    currentGroup.id,
+
+                p_monthly_closing_day:
+                    closingDay
             }
         );
 
@@ -863,7 +945,9 @@ async function saveContributionSettings() {
 
         contributionSettings = {
             ...(contributionSettings || {}),
-            monthly_closing_day: closingDay
+
+            monthly_closing_day:
+                closingDay
         };
 
         renderContributionSettings();
@@ -955,7 +1039,9 @@ async function saveGroup() {
     }
 
     if (
-        !Number.isFinite(monthlyContribution) ||
+        !Number.isFinite(
+            monthlyContribution
+        ) ||
         monthlyContribution < 0
     ) {
         showError(
@@ -966,7 +1052,9 @@ async function saveGroup() {
     }
 
     if (dom.saveGroup) {
-        dom.saveGroup.disabled = true;
+        dom.saveGroup.disabled =
+            true;
+
         dom.saveGroup.textContent =
             "Saving...";
     }
@@ -986,7 +1074,10 @@ async function saveGroup() {
                 monthly_contribution:
                     monthlyContribution
             })
-            .eq("id", currentGroup.id)
+            .eq(
+                "id",
+                currentGroup.id
+            )
             .select()
             .single();
 
@@ -996,10 +1087,13 @@ async function saveGroup() {
 
         currentGroup = {
             ...currentGroup,
+
             ...(data || {}),
+
             name,
             category,
             country,
+
             monthly_contribution:
                 monthlyContribution
         };
