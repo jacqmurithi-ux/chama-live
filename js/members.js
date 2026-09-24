@@ -411,6 +411,20 @@ function ensureContributionStatusHeader() {
 
   if (!row) return;
 
+  const existingHeader =
+    Array.from(row.children)
+      .find(header =>
+        String(header.textContent || "")
+          .replace(/\s+/g, " ")
+          .trim()
+          .toLowerCase() ===
+        "contribution status"
+      );
+
+  if (existingHeader) {
+    return;
+  }
+
   if (
     row.querySelector(
       "[data-contribution-status-header]"
@@ -434,12 +448,16 @@ function ensureContributionStatusHeader() {
   const loginHeader =
     headers.find(header =>
       String(header.textContent || "")
+        .replace(/\s+/g, " ")
         .trim()
         .toLowerCase() === "login"
     );
 
   if (loginHeader) {
-    row.insertBefore(th, loginHeader);
+    row.insertBefore(
+      th,
+      loginHeader
+    );
   } else {
     row.appendChild(th);
   }
@@ -656,35 +674,48 @@ function ensureNationalIdUI() {
       "[data-national-id-header]"
     )
   ) {
-    const th =
-      document.createElement("th");
+    const existingNationalIdHeader =
+      Array.from(headerRow.children)
+        .find(header =>
+          String(header.textContent || "")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toLowerCase() ===
+          "national id"
+        );
 
-    th.dataset.nationalIdHeader =
-      "true";
+    if (!existingNationalIdHeader) {
+      const th =
+        document.createElement("th");
 
-    th.textContent =
-      "National ID";
+      th.dataset.nationalIdHeader =
+        "true";
 
-    const headers =
-      Array.from(
-        headerRow.children
-      );
+      th.textContent =
+        "National ID";
 
-    const membershipHeader =
-      headers.find(header =>
-        String(header.textContent || "")
-          .trim()
-          .toLowerCase()
-          .includes("membership no")
-      );
+      const headers =
+        Array.from(
+          headerRow.children
+        );
 
-    if (membershipHeader) {
-      headerRow.insertBefore(
-        th,
-        membershipHeader
-      );
-    } else {
-      headerRow.appendChild(th);
+      const membershipHeader =
+        headers.find(header =>
+          String(header.textContent || "")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toLowerCase()
+            .includes("membership no")
+        );
+
+      if (membershipHeader) {
+        headerRow.insertBefore(
+          th,
+          membershipHeader
+        );
+      } else {
+        headerRow.appendChild(th);
+      }
     }
   }
 
@@ -716,6 +747,8 @@ function ensureNationalIdUI() {
     detailGrid.appendChild(item);
   }
 }
+
+
 /* =========================================================
    CONTRIBUTION SETUP UI
    ========================================================= */
@@ -1766,6 +1799,7 @@ async function openAddMember() {
 
     updateContributionPreview();
     updateHistoricalPreview();
+
   } catch (error) {
     console.error(
       "Failed to prepare contribution setup:",
@@ -2243,6 +2277,7 @@ async function saveMember(event) {
         Array.isArray(data)
           ? data[0]
           : data;
+
     } else {
       const {
         data,
@@ -2310,7 +2345,8 @@ async function saveMember(event) {
       sessionStorage.setItem(
         "chama_live_onboarding_event",
         JSON.stringify({
-          type: "new-member",
+          type:
+            "new-member",
 
           member_id:
             result?.member_id ||
@@ -2324,6 +2360,7 @@ async function saveMember(event) {
             new Date().toISOString()
         })
       );
+
     } catch (storageError) {
       console.warn(
         "Could not store onboarding event:",
@@ -2337,9 +2374,11 @@ async function saveMember(event) {
        ----------------------------------------------------- */
 
     await loadMembers();
+
     await loadMemberContributionPositions();
 
     renderMembers();
+
     updateMemberCount();
 
     showFormMessage(
@@ -2443,9 +2482,11 @@ async function handleHistoricalReconciliation(
     );
 
     await loadMembers();
+
     await loadMemberContributionPositions();
 
     renderMembers();
+
     updateMemberCount();
 
     showStatus("");
@@ -2531,9 +2572,11 @@ async function sendMemberInvitation(
   );
 
   await loadMembers();
+
   await loadMemberContributionPositions();
 
   renderMembers();
+
   updateMemberCount();
 
   if (reopenModal) {
@@ -2667,7 +2710,8 @@ function openEditMember(memberId) {
     );
 
   if (amount) {
-    amount.disabled = true;
+    amount.disabled =
+      true;
   }
 
   if (firstPeriodRule) {
@@ -2681,7 +2725,9 @@ function openEditMember(memberId) {
   }
 
   const historicalEnabled =
-    byId("memberHistoricalEnabled");
+    byId(
+      "memberHistoricalEnabled"
+    );
 
   if (historicalEnabled) {
     if (
@@ -2729,11 +2775,20 @@ function openEditMember(memberId) {
 
 /* =========================================================
    CONTRIBUTION POSITION UI
+   ---------------------------------------------------------
+   The current members.html already contains the
+   Contribution Accounting section.
+
+   Therefore:
+   - Reuse #memberContributionPosition when present.
+   - Reuse the existing viewContribution* fields.
+   - Do not create a second accounting section.
+   - Add Contribution Records only when it is missing.
    ========================================================= */
 
 function ensureContributionPositionUI() {
   const modal =
-    byId("viewMemberModal");
+    byId("memberModal");
 
   if (!modal) {
     return null;
@@ -2742,174 +2797,227 @@ function ensureContributionPositionUI() {
   let section =
     byId("memberContributionPosition");
 
-  if (section) {
-    return section;
+  if (!section) {
+    section =
+      document.createElement("section");
+
+    section.id =
+      "memberContributionPosition";
+
+    section.className =
+      "member-contribution-position";
+
+    section.innerHTML = `
+      <div class="member-accounting-header">
+
+        <div>
+          <h3>
+            Contribution Accounting
+          </h3>
+
+          <p>
+            Current contribution position
+          </p>
+        </div>
+
+        <span
+          id="memberContributionPositionStatus"
+          class="accounting-status status-unknown"
+        >
+          Loading...
+        </span>
+
+      </div>
+
+      <div
+        id="memberContributionPositionDescription"
+        class="member-accounting-description"
+      >
+        Loading contribution information...
+      </div>
+
+      <div class="member-accounting-grid">
+
+        <div class="accounting-metric due">
+
+          <div class="metric-label">
+            TOTAL DUE
+          </div>
+
+          <div
+            id="memberContributionPositionDue"
+            class="metric-value"
+          >
+            —
+          </div>
+
+          <div class="metric-help">
+            Expected contribution
+          </div>
+
+        </div>
+
+
+        <div class="accounting-metric contributed">
+
+          <div class="metric-label">
+            TOTAL CONTRIBUTED
+          </div>
+
+          <div
+            id="memberContributionPositionAllocated"
+            class="metric-value"
+          >
+            —
+          </div>
+
+          <div class="metric-help">
+            Paid / allocated
+          </div>
+
+        </div>
+
+
+        <div class="accounting-metric arrears">
+
+          <div class="metric-label">
+            TOTAL ARREARS
+          </div>
+
+          <div
+            id="memberContributionPositionArrears"
+            class="metric-value"
+          >
+            —
+          </div>
+
+          <div class="metric-help">
+            Still outstanding
+          </div>
+
+        </div>
+
+
+        <div class="accounting-metric credit">
+
+          <div class="metric-label">
+            TOTAL CREDIT
+          </div>
+
+          <div
+            id="memberContributionPositionCredit"
+            class="metric-value"
+          >
+            —
+          </div>
+
+          <div class="metric-help">
+            Excess contribution
+          </div>
+
+        </div>
+
+
+        <div class="accounting-metric records">
+
+          <div class="metric-label">
+            CONTRIBUTION RECORDS
+          </div>
+
+          <div
+            id="memberContributionPositionRecords"
+            class="metric-value"
+          >
+            —
+          </div>
+
+          <div class="metric-help">
+            Recorded payments
+          </div>
+
+        </div>
+
+      </div>
+    `;
+
+    const actions =
+      modal.querySelector(
+        ".modal-actions"
+      );
+
+    const details =
+      modal.querySelector(
+        ".member-detail-grid"
+      );
+
+    if (actions) {
+      modal.insertBefore(
+        section,
+        actions
+      );
+    } else if (details) {
+      details.insertAdjacentElement(
+        "afterend",
+        section
+      );
+    } else {
+      modal.appendChild(section);
+    }
   }
 
-  section =
-    document.createElement("section");
+  /*
+     The existing members.html has its own accounting
+     fields. Reuse them.
 
-  section.id =
-    "memberContributionPosition";
+     Only add a Contribution Records metric if the
+     current HTML does not already provide one.
+  */
 
-  section.className =
-    "member-contribution-position";
+  const existingRecords =
+    byId("viewContributionRecords") ||
+    byId("memberContributionPositionRecords");
 
-  section.innerHTML = `
-    <div class="member-accounting-header">
+  if (!existingRecords) {
+    const recordsCard =
+      document.createElement("div");
 
-      <div>
-        <h3>
-          Contribution Accounting
-        </h3>
+    recordsCard.className =
+      "accounting-metric records";
 
-        <p>
-          Current contribution position
-        </p>
+    recordsCard.dataset.contributionRecordsCard =
+      "true";
+
+    recordsCard.innerHTML = `
+      <div class="metric-label">
+        CONTRIBUTION RECORDS
       </div>
 
-      <span
-        id="memberContributionPositionStatus"
-        class="accounting-status status-unknown"
+      <div
+        id="viewContributionRecords"
+        class="metric-value"
       >
-        Loading...
-      </span>
-
-    </div>
-
-    <div
-      id="memberContributionPositionDescription"
-      class="member-accounting-description"
-    >
-      Loading contribution information...
-    </div>
-
-    <div class="member-accounting-grid">
-
-      <div class="accounting-metric due">
-
-        <div class="metric-label">
-          TOTAL DUE
-        </div>
-
-        <div
-          id="memberContributionPositionDue"
-          class="metric-value"
-        >
-          —
-        </div>
-
-        <div class="metric-help">
-          Expected contribution
-        </div>
-
+        —
       </div>
 
-
-      <div class="accounting-metric contributed">
-
-        <div class="metric-label">
-          TOTAL CONTRIBUTED
-        </div>
-
-        <div
-          id="memberContributionPositionAllocated"
-          class="metric-value"
-        >
-          —
-        </div>
-
-        <div class="metric-help">
-          Paid / allocated
-        </div>
-
+      <div class="metric-help">
+        Recorded payments
       </div>
+    `;
 
+    const summaryContainer =
+      section.querySelector(
+        ".member-accounting-grid, .member-accounting-summary"
+      );
 
-      <div class="accounting-metric arrears">
-
-        <div class="metric-label">
-          TOTAL ARREARS
-        </div>
-
-        <div
-          id="memberContributionPositionArrears"
-          class="metric-value"
-        >
-          —
-        </div>
-
-        <div class="metric-help">
-          Still outstanding
-        </div>
-
-      </div>
-
-
-      <div class="accounting-metric credit">
-
-        <div class="metric-label">
-          TOTAL CREDIT
-        </div>
-
-        <div
-          id="memberContributionPositionCredit"
-          class="metric-value"
-        >
-          —
-        </div>
-
-        <div class="metric-help">
-          Excess contribution
-        </div>
-
-      </div>
-
-
-      <div class="accounting-metric records">
-
-        <div class="metric-label">
-          CONTRIBUTION RECORDS
-        </div>
-
-        <div
-          id="memberContributionPositionRecords"
-          class="metric-value"
-        >
-          —
-        </div>
-
-        <div class="metric-help">
-          Recorded payments
-        </div>
-
-      </div>
-
-    </div>
-  `;
-
-  const actions =
-    modal.querySelector(
-      ".modal-actions"
-    );
-
-  const details =
-    modal.querySelector(
-      ".member-detail-grid"
-    );
-
-  if (actions) {
-    modal.insertBefore(
-      section,
-      actions
-    );
-  } else if (details) {
-    details.insertAdjacentElement(
-      "afterend",
-      section
-    );
-  } else {
-    modal.appendChild(section);
+    if (summaryContainer) {
+      summaryContainer.appendChild(
+        recordsCard
+      );
+    } else {
+      section.appendChild(
+        recordsCard
+      );
+    }
   }
 
   return section;
@@ -2942,7 +3050,9 @@ function ensureContributionPositionStyles() {
       background: #ffffff;
       border: 1px solid #e2e8f0;
       border-radius: 16px;
-      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+      box-shadow:
+        0 4px 14px
+        rgba(15, 23, 42, 0.05);
     }
 
     .member-accounting-header {
@@ -3011,7 +3121,8 @@ function ensureContributionPositionStyles() {
 
     .member-accounting-grid {
       display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
+      grid-template-columns:
+        repeat(5, minmax(0, 1fr));
       gap: 12px;
     }
 
@@ -3064,38 +3175,73 @@ function ensureContributionPositionStyles() {
       word-break: break-word;
     }
 
-    .accounting-metric.contributed .metric-value {
+    .accounting-metric.contributed
+      .metric-value {
       color: #15803d;
     }
 
-    .accounting-metric.arrears .metric-value {
+    .accounting-metric.arrears
+      .metric-value {
       color: #dc2626;
     }
 
-    .accounting-metric.credit .metric-value {
+    .accounting-metric.credit
+      .metric-value {
       color: #6d28d9;
     }
 
-    .accounting-metric.records .metric-value {
+    .accounting-metric.records
+      .metric-value {
       color: #2563eb;
     }
 
-    .metric-help {
-      margin-top: 5px;
-      font-size: 11px;
-      color: #64748b;
-      line-height: 1.3;
+    /*
+       Existing members.html accounting fields.
+       These IDs are the primary display contract.
+    */
+
+    #viewContributionTotal {
+      color: #15803d;
+      font-weight: 900;
+    }
+
+    #viewContributionDue {
+      color: #475569;
+      font-weight: 900;
+    }
+
+    #viewContributionAllocated {
+      color: #15803d;
+      font-weight: 900;
+    }
+
+    #viewContributionArrears {
+      color: #dc2626;
+      font-weight: 900;
+    }
+
+    #viewContributionCredit {
+      color: #6d28d9;
+      font-weight: 900;
+    }
+
+    #viewContributionRecords,
+    #memberContributionPositionRecords {
+      color: #2563eb;
+      font-weight: 900;
     }
 
     @media (max-width: 1000px) {
       .member-accounting-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns:
+          repeat(3, minmax(0, 1fr));
       }
     }
 
     @media (max-width: 700px) {
       .member-accounting-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
       }
 
       .member-accounting-header {
@@ -3124,11 +3270,11 @@ function setContributionPositionLoading() {
   ensureContributionPositionStyles();
 
   const status =
-    byId(
-      "memberContributionPositionStatus"
-    );
+    byId("viewContributionStatus") ||
+    byId("memberContributionPositionStatus");
 
   const description =
+    byId("viewContributionDescription") ||
     byId(
       "memberContributionPositionDescription"
     );
@@ -3147,6 +3293,12 @@ function setContributionPositionLoading() {
   }
 
   const fields = [
+    "viewContributionTotal",
+    "viewContributionDue",
+    "viewContributionAllocated",
+    "viewContributionArrears",
+    "viewContributionCredit",
+    "viewContributionRecords",
     "memberContributionPositionDue",
     "memberContributionPositionAllocated",
     "memberContributionPositionArrears",
@@ -3192,10 +3344,15 @@ function contributionPositionStatusClass(
 
   return "status-unknown";
 }
-
-
 /* =========================================================
    LOAD SINGLE MEMBER CONTRIBUTION POSITION
+   ---------------------------------------------------------
+   READ-ONLY ACCOUNTING DISPLAY
+
+   Canonical RPC:
+     get_member_contribution_position(uuid)
+
+   No contribution/payment write occurs here.
    ========================================================= */
 
 async function loadMemberContributionPosition(
@@ -3240,7 +3397,12 @@ async function loadMemberContributionPosition(
     );
   }
 
-  const status =
+
+  /* -------------------------------------------------------
+     NORMALIZE READ-ONLY POSITION
+     ------------------------------------------------------- */
+
+  const rawStatus =
     String(
       position.status || ""
     )
@@ -3284,124 +3446,275 @@ async function loadMemberContributionPosition(
       0
     );
 
+
+  /* -------------------------------------------------------
+     DERIVE DISPLAY STATUS
+
+     The numeric balances are used as a safe fallback
+     when the RPC status is empty or inconsistent.
+     ------------------------------------------------------- */
+
+  let displayStatus =
+    rawStatus;
+
+  if (
+    rawStatus === "arrears" ||
+    arrears > 0
+  ) {
+    displayStatus =
+      "arrears";
+
+  } else if (
+    rawStatus === "credit" ||
+    credit > 0
+  ) {
+    displayStatus =
+      "credit";
+
+  } else if (
+    rawStatus === "up_to_date"
+  ) {
+    displayStatus =
+      "up_to_date";
+
+  } else if (
+    rawStatus === "plan_not_set"
+  ) {
+    displayStatus =
+      "plan_not_set";
+  }
+
+
+  /* -------------------------------------------------------
+     DISPLAY ELEMENTS
+
+     Existing members.html IDs are preferred.
+     Dynamic IDs remain supported as fallback.
+     ------------------------------------------------------- */
+
   const statusElement =
+    byId("viewContributionStatus") ||
     byId(
       "memberContributionPositionStatus"
     );
 
   const descriptionElement =
+    byId("viewContributionDescription") ||
     byId(
       "memberContributionPositionDescription"
     );
 
+  const totalElement =
+    byId("viewContributionTotal") ||
+    byId(
+      "memberContributionPositionAllocated"
+    );
+
   const dueElement =
+    byId("viewContributionDue") ||
     byId(
       "memberContributionPositionDue"
     );
 
-  const contributedElement =
+  const allocatedElement =
+    byId("viewContributionAllocated");
+
+  const fallbackAllocatedElement =
     byId(
       "memberContributionPositionAllocated"
     );
 
   const arrearsElement =
+    byId("viewContributionArrears") ||
     byId(
       "memberContributionPositionArrears"
     );
 
   const creditElement =
+    byId("viewContributionCredit") ||
     byId(
       "memberContributionPositionCredit"
     );
 
   const recordsElement =
+    byId("viewContributionRecords") ||
     byId(
       "memberContributionPositionRecords"
     );
 
+
+  /* -------------------------------------------------------
+     STATUS TEXT
+     ------------------------------------------------------- */
+
   let statusLabel =
     "UNAVAILABLE";
+
+  let statusClass =
+    "status-unknown";
 
   let description =
     "Contribution position is currently unavailable.";
 
-  if (
-    status === "arrears" ||
-    arrears > 0
-  ) {
+
+  if (displayStatus === "arrears") {
     statusLabel =
       "ARREARS";
 
+    statusClass =
+      "status-arrears";
+
     description =
-      `Member has contributed ${formatMoney(contributed)} ` +
-      `against ${formatMoney(due)} due, leaving ` +
-      `${formatMoney(arrears)} outstanding.`;
+      `Paid ${formatMoney(contributed)} ` +
+      `of ${formatMoney(due)} due. ` +
+      `Remaining arrears: ${formatMoney(arrears)}.`;
+
   } else if (
-    status === "credit" ||
-    credit > 0
+    displayStatus === "credit"
   ) {
     statusLabel =
       "CREDIT";
 
+    statusClass =
+      "status-credit";
+
     description =
-      `Member has contributed ${formatMoney(contributed)} ` +
-      `and currently has ${formatMoney(credit)} in credit.`;
+      `Contributed ${formatMoney(contributed)}. ` +
+      `Credit balance: ${formatMoney(credit)}.`;
+
   } else if (
-    status === "up_to_date"
+    displayStatus === "up_to_date"
   ) {
     statusLabel =
       "UP TO DATE";
 
+    statusClass =
+      "status-up-to-date";
+
     description =
-      `Member has contributed ${formatMoney(contributed)} ` +
-      `against ${formatMoney(due)} due and is up to date.`;
+      `Contributed ${formatMoney(contributed)} ` +
+      `of ${formatMoney(due)} due. ` +
+      `Member is up to date.`;
+
   } else if (
-    status === "plan_not_set"
+    displayStatus === "plan_not_set"
   ) {
     statusLabel =
       "PLAN NOT SET";
 
+    statusClass =
+      "status-unknown";
+
     description =
       "No contribution plan has been established for this member.";
   }
+
+
+  /* -------------------------------------------------------
+     RENDER STATUS
+     ------------------------------------------------------- */
 
   if (statusElement) {
     statusElement.textContent =
       statusLabel;
 
     statusElement.className =
-      `accounting-status ${contributionPositionStatusClass(status)}`;
+      `accounting-status ${statusClass}`;
   }
+
+
+  /* -------------------------------------------------------
+     RENDER DESCRIPTION
+     ------------------------------------------------------- */
 
   if (descriptionElement) {
     descriptionElement.textContent =
       description;
   }
 
+
+  /* -------------------------------------------------------
+     RENDER TOTAL CONTRIBUTED
+     ------------------------------------------------------- */
+
+  if (totalElement) {
+    totalElement.textContent =
+      formatMoney(contributed);
+  }
+
+
+  /* -------------------------------------------------------
+     RENDER TOTAL DUE
+     ------------------------------------------------------- */
+
   if (dueElement) {
     dueElement.textContent =
       formatMoney(due);
   }
 
-  if (contributedElement) {
-    contributedElement.textContent =
+
+  /* -------------------------------------------------------
+     RENDER ALLOCATED
+
+     The existing HTML has both Total Contributed and
+     Allocated. Both represent the contribution amount
+     returned by the canonical read-only position.
+     ------------------------------------------------------- */
+
+  if (allocatedElement) {
+    allocatedElement.textContent =
       formatMoney(contributed);
   }
+
+  if (
+    fallbackAllocatedElement &&
+    fallbackAllocatedElement !==
+      totalElement
+  ) {
+    fallbackAllocatedElement.textContent =
+      formatMoney(contributed);
+  }
+
+
+  /* -------------------------------------------------------
+     RENDER ARREARS
+     ------------------------------------------------------- */
 
   if (arrearsElement) {
     arrearsElement.textContent =
       formatMoney(arrears);
   }
 
+
+  /* -------------------------------------------------------
+     RENDER CREDIT
+     ------------------------------------------------------- */
+
   if (creditElement) {
     creditElement.textContent =
       formatMoney(credit);
   }
 
+
+  /* -------------------------------------------------------
+     RENDER CONTRIBUTION RECORDS
+     ------------------------------------------------------- */
+
   if (recordsElement) {
     recordsElement.textContent =
       records.toLocaleString("en-KE");
   }
+
+
+  /*
+     Keep the local read-only cache synchronized.
+     This does NOT write to Supabase.
+  */
+
+  contributionPositions.set(
+    String(memberId),
+    position
+  );
 
   return position;
 }
@@ -3422,6 +3735,7 @@ async function refreshMemberContributionPosition(
     return await loadMemberContributionPosition(
       memberId
     );
+
   } catch (error) {
     console.error(
       "Failed to refresh member contribution position:",
@@ -3435,6 +3749,12 @@ async function refreshMemberContributionPosition(
 
 /* =========================================================
    OPEN MEMBER MODAL
+   ---------------------------------------------------------
+   Uses the actual members.html modal:
+
+     #memberModal
+
+   Not #viewMemberModal.
    ========================================================= */
 
 function openMemberModal(memberId) {
@@ -3454,7 +3774,7 @@ function openMemberModal(memberId) {
   }
 
   const modal =
-    byId("viewMemberModal");
+    byId("memberModal");
 
   if (!modal) {
     showError(
@@ -3464,12 +3784,26 @@ function openMemberModal(memberId) {
     return;
   }
 
+
+  /* -------------------------------------------------------
+     MEMBER DETAILS
+     ------------------------------------------------------- */
+
   const fields = {
+    viewMemberInitials:
+      getInitials(
+        member.name
+      ),
+
     viewMemberName:
-      member.name || "—",
+      member.name ||
+      "—",
 
     viewMemberNumber:
       member.member_number ||
+      "—",
+
+    viewMembershipNumber:
       member.membership_number ||
       "—",
 
@@ -3498,11 +3832,19 @@ function openMemberModal(memberId) {
         .replace(/_/g, " ")
         .toUpperCase(),
 
+    viewMemberLoginStatus:
+      getLoginStatus(member),
+
     viewMemberJoinDate:
       formatDate(
         member.join_date
-      )
+      ),
+
+    viewMemberGroup:
+      currentGroup?.name ||
+      "—"
   };
+
 
   Object.entries(fields)
     .forEach(([id, value]) => {
@@ -3515,7 +3857,31 @@ function openMemberModal(memberId) {
       }
     });
 
+
+  /* -------------------------------------------------------
+     OPEN MODAL
+
+     Explicit display override handles the current
+     members.html inline display:none.
+     ------------------------------------------------------- */
+
   modal.hidden = false;
+
+  modal.style.display =
+    "flex";
+
+  modal.classList.add(
+    "open"
+  );
+
+  document.body.classList.add(
+    "modal-open"
+  );
+
+
+  /* -------------------------------------------------------
+     CONTRIBUTION ACCOUNTING
+     ------------------------------------------------------- */
 
   setContributionPositionLoading();
 
@@ -3528,11 +3894,13 @@ function openMemberModal(memberId) {
     );
 
     const status =
+      byId("viewContributionStatus") ||
       byId(
         "memberContributionPositionStatus"
       );
 
     const description =
+      byId("viewContributionDescription") ||
       byId(
         "memberContributionPositionDescription"
       );
@@ -3568,6 +3936,11 @@ function openMemberModal(memberId) {
         "[data-action='reconcile']"
       );
 
+    /*
+       Current members.html already has this button.
+       Only create it if the page does not contain one.
+    */
+
     if (!reconcileButton) {
       reconcileButton =
         document.createElement("button");
@@ -3593,9 +3966,14 @@ function openMemberModal(memberId) {
       String(member.id);
   }
 
+
+  /* -------------------------------------------------------
+     FOCUS CLOSE CONTROL
+     ------------------------------------------------------- */
+
   const closeButton =
     modal.querySelector(
-      "[data-close-member-modal]"
+      "[data-close-member-modal], .modal-close, #doneMemberModal"
     );
 
   if (closeButton) {
@@ -3732,8 +4110,21 @@ function closeMemberModal() {
   }
 
   modal.hidden = true;
+
+  /*
+     Current members.html contains an inline
+     display:none. Restore that state explicitly.
+  */
+
+  modal.style.display =
+    "none";
+
   modal.classList.remove(
     "open"
+  );
+
+  document.body.classList.remove(
+    "modal-open"
   );
 }
 
@@ -3743,6 +4134,15 @@ function closeMemberModal() {
    ========================================================= */
 
 function bindEvents() {
+  if (eventsBound) {
+    return;
+  }
+
+
+  /* -------------------------------------------------------
+     ADD MEMBER
+     ------------------------------------------------------- */
+
   const addButton =
     byId("addMemberButton") ||
     byId("addMember");
@@ -3755,6 +4155,10 @@ function bindEvents() {
   }
 
 
+  /* -------------------------------------------------------
+     CLOSE ADD MEMBER
+     ------------------------------------------------------- */
+
   const closeAddButton =
     byId("closeAddMember");
 
@@ -3766,6 +4170,10 @@ function bindEvents() {
   }
 
 
+  /* -------------------------------------------------------
+     CANCEL ADD MEMBER
+     ------------------------------------------------------- */
+
   const cancelAddButton =
     byId("cancelAddMember");
 
@@ -3776,6 +4184,10 @@ function bindEvents() {
     );
   }
 
+
+  /* -------------------------------------------------------
+     MEMBER FORM
+     ------------------------------------------------------- */
 
   const form =
     byId("addMemberForm");
@@ -3789,7 +4201,7 @@ function bindEvents() {
 
 
   /* -------------------------------------------------------
-     SEARCH
+     MEMBER SEARCH
      ------------------------------------------------------- */
 
   const searchInput =
@@ -3819,6 +4231,10 @@ function bindEvents() {
     );
   }
 
+
+  /* -------------------------------------------------------
+     CLEAR SEARCH
+     ------------------------------------------------------- */
 
   const clearSearch =
     byId("clearMemberSearch");
@@ -3885,6 +4301,7 @@ function bindEvents() {
           event.target === modal
         ) {
           closeMemberModal();
+
           return;
         }
 
@@ -3896,7 +4313,7 @@ function bindEvents() {
 
     const closeButtons =
       modal.querySelectorAll(
-        "[data-action='close'], .modal-close"
+        "[data-action='close'], .modal-close, #doneMemberModal"
       );
 
     closeButtons.forEach(button => {
@@ -4070,6 +4487,11 @@ export async function init() {
       );
     }
 
+
+    /* -------------------------------------------------------
+       GROUP NAME
+       ------------------------------------------------------- */
+
     const groupName =
       byId("membersGroupName");
 
@@ -4079,25 +4501,57 @@ export async function init() {
         "Your Group";
     }
 
+
+    /* -------------------------------------------------------
+       PAGE UI
+       ------------------------------------------------------- */
+
     ensureNationalIdUI();
+
     ensureContributionUI();
+
     ensureContributionStatusStyles();
+
     ensureContributionPositionUI();
+
     ensureContributionPositionStyles();
+
+
+    /* -------------------------------------------------------
+       CONTRIBUTION TYPE
+       ------------------------------------------------------- */
 
     await loadMonthlyContributionType();
 
+
+    /* -------------------------------------------------------
+       MEMBERS
+       ------------------------------------------------------- */
+
     await loadMembers();
 
+
+    /* -------------------------------------------------------
+       READ-ONLY CONTRIBUTION POSITIONS
+       ------------------------------------------------------- */
+
     await loadMemberContributionPositions();
+
+
+    /* -------------------------------------------------------
+       RENDER
+       ------------------------------------------------------- */
 
     renderMembers();
 
     updateMemberCount();
 
-    if (!eventsBound) {
-      bindEvents();
-    }
+
+    /* -------------------------------------------------------
+       EVENTS
+       ------------------------------------------------------- */
+
+    bindEvents();
 
     showStatus("");
 
@@ -4151,6 +4605,7 @@ export async function refreshMembers() {
 
 export const loadPage =
   init;
+
 
 console.log(
   "CHAMA LIVE: members.js ready"
