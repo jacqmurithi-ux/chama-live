@@ -21,20 +21,43 @@
   >
 
   <style>
-    .member-finance-status {
+    .member-finance-summary {
       margin-top: 14px;
       padding: 12px 14px;
       border-radius: 12px;
       background: #f8fafc;
     }
 
-    .member-finance-status-label {
+    .member-finance-summary-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .member-finance-summary-item {
+      min-width: 0;
+      padding: 10px;
+      border-radius: 9px;
+      background: #fff;
+    }
+
+    .member-finance-summary-label {
+      display: block;
       margin-bottom: 5px;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: .04em;
       color: #64748b;
+    }
+
+    .member-finance-summary-value {
+      display: block;
+      font-size: 14px;
+      font-weight: 700;
+      color: #334155;
+      word-break: break-word;
     }
 
     .member-finance-status-value {
@@ -63,19 +86,19 @@
     }
 
     .member-finance-status-value.status-credit {
-      color: #15803d;
-    }
-
-    .member-finance-status-value.status-credit::before {
-      background: #16a34a;
-    }
-
-    .member-finance-status-value.status-up-to-date {
       color: #1d4ed8;
     }
 
-    .member-finance-status-value.status-up-to-date::before {
+    .member-finance-status-value.status-credit::before {
       background: #2563eb;
+    }
+
+    .member-finance-status-value.status-up-to-date {
+      color: #15803d;
+    }
+
+    .member-finance-status-value.status-up-to-date::before {
+      background: #16a34a;
     }
 
     .member-finance-status-value.status-unknown {
@@ -246,28 +269,84 @@
         <!-- =================================================
              CANONICAL CONTRIBUTION POSITION
              -------------------------------------------------
-             Read-only status from:
-               get_member_contribution_position(uuid)
+             Read-only position from:
+               get_my_contribution_position()
 
              This is intentionally separate from the raw
              contribution totals above.
         ================================================== -->
 
         <div
-          class="member-finance-status"
+          class="member-finance-summary"
           id="myContributionPosition"
         >
 
-          <div class="member-finance-status-label">
-            Contribution Status
-          </div>
+          <div class="member-finance-summary-grid">
 
-          <div
-            id="myContributionStatus"
-            class="member-finance-status-value status-unknown"
-            aria-live="polite"
-          >
-            Loading...
+            <div class="member-finance-summary-item">
+
+              <span class="member-finance-summary-label">
+                Status
+              </span>
+
+              <span
+                id="myContributionStatus"
+                class="member-finance-status-value status-unknown"
+                aria-live="polite"
+              >
+                Loading...
+              </span>
+
+            </div>
+
+
+            <div class="member-finance-summary-item">
+
+              <span class="member-finance-summary-label">
+                Total Contributed
+              </span>
+
+              <span
+                id="myContributionPositionTotal"
+                class="member-finance-summary-value"
+              >
+                —
+              </span>
+
+            </div>
+
+
+            <div class="member-finance-summary-item">
+
+              <span class="member-finance-summary-label">
+                Total Arrears
+              </span>
+
+              <span
+                id="myContributionArrears"
+                class="member-finance-summary-value"
+              >
+                KSh 0.00
+              </span>
+
+            </div>
+
+
+            <div class="member-finance-summary-item">
+
+              <span class="member-finance-summary-label">
+                Total Credit
+              </span>
+
+              <span
+                id="myContributionCredit"
+                class="member-finance-summary-value"
+              >
+                KSh 0.00
+              </span>
+
+            </div>
+
           </div>
 
         </div>
