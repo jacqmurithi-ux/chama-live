@@ -4350,8 +4350,9 @@ async function refreshMembers() {
    PAGE ENTRY POINT
    ========================================================= */
 
-export const loadPage =
-  init;
+export {
+  init
+};
 
 
 /* =========================================================
