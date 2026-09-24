@@ -142,9 +142,19 @@ function renderMyContributionPosition(
       "myContributionStatus"
     );
 
+  /*
+   * IMPORTANT:
+   * member-dashboard.html uses:
+   *   id="myContributionPositionTotal"
+   *
+   * The previous JavaScript used:
+   *   myContributionTotalPosition
+   *
+   * That mismatch prevented the value from rendering.
+   */
   const totalElement =
     byId(
-      "myContributionTotalPosition"
+      "myContributionPositionTotal"
     );
 
   const arrearsElement =
@@ -219,10 +229,25 @@ function renderMyContributionPosition(
     }
   }
 
+  /*
+   * get_my_contribution_position()
+   * returns:
+   *   total_due
+   *   total_allocated
+   *   arrears
+   *   credit
+   *   status
+   *
+   * It does NOT return total_contributed.
+   *
+   * The "Total Contributed" field in this canonical
+   * contribution-position block therefore uses
+   * total_allocated.
+   */
   if (totalElement) {
     totalElement.textContent =
       formatMoney(
-        position.total_contributed
+        position.total_allocated
       );
   }
 
@@ -259,7 +284,7 @@ async function loadMyContributionPosition() {
     "Loading...";
 
   setText(
-    "myContributionTotalPosition",
+    "myContributionPositionTotal",
     "—"
   );
 
