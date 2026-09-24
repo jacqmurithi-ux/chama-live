@@ -25,6 +25,8 @@
    - admin-layout.js remains the page-shell boot owner
    - No database schema changes are performed here
    - Group Type maps to groups.category
+   - Monthly Closing Day selector remains openable
+   - Saving the contribution cycle remains permission-controlled
    ========================================================= */
 
 import {
@@ -84,75 +86,101 @@ const dom = {
     ),
 
     groupForm: document.getElementById("groupForm"),
-    groupName: document.getElementById("groupName"),
-    groupCategory: document.getElementById("groupCategory"),
-    groupCountry: document.getElementById("groupCountry"),
+
+    groupName: document.getElementById(
+        "groupName"
+    ),
+
+    groupCategory: document.getElementById(
+        "groupCategory"
+    ),
+
+    groupCountry: document.getElementById(
+        "groupCountry"
+    ),
 
     monthlyContribution: document.getElementById(
         "monthlyContribution"
     ),
 
-    saveGroup: document.getElementById("saveGroup"),
-
-    contributionCalendarForm: document.getElementById(
-        "contributionCalendarForm"
+    saveGroup: document.getElementById(
+        "saveGroup"
     ),
 
-    monthlyClosingDay: document.getElementById(
-        "monthlyClosingDay"
-    ),
+    contributionCalendarForm:
+        document.getElementById(
+            "contributionCalendarForm"
+        ),
 
-    saveContributionCalendar: document.getElementById(
-        "saveContributionCalendar"
-    ),
+    monthlyClosingDay:
+        document.getElementById(
+            "monthlyClosingDay"
+        ),
 
-    currentContributionCycle: document.getElementById(
-        "currentContributionCycle"
-    ),
+    saveContributionCalendar:
+        document.getElementById(
+            "saveContributionCalendar"
+        ),
 
-    currentContributionOpeningDate: document.getElementById(
-        "currentContributionOpeningDate"
-    ),
+    currentContributionCycle:
+        document.getElementById(
+            "currentContributionCycle"
+        ),
 
-    currentContributionClosingDate: document.getElementById(
-        "currentContributionClosingDate"
-    ),
+    currentContributionOpeningDate:
+        document.getElementById(
+            "currentContributionOpeningDate"
+        ),
 
-    subscriptionPanel: document.getElementById(
-        "subscriptionPanel"
-    ),
+    currentContributionClosingDate:
+        document.getElementById(
+            "currentContributionClosingDate"
+        ),
 
-    subscriptionStatus: document.getElementById(
-        "subscriptionStatus"
-    ),
+    subscriptionPanel:
+        document.getElementById(
+            "subscriptionPanel"
+        ),
 
-    subscriptionPlan: document.getElementById(
-        "subscriptionPlan"
-    ),
+    subscriptionStatus:
+        document.getElementById(
+            "subscriptionStatus"
+        ),
 
-    subscriptionEndDate: document.getElementById(
-        "subscriptionEndDate"
-    ),
+    subscriptionPlan:
+        document.getElementById(
+            "subscriptionPlan"
+        ),
 
-    subscriptionAmount: document.getElementById(
-        "subscriptionAmount"
-    ),
+    subscriptionEndDate:
+        document.getElementById(
+            "subscriptionEndDate"
+        ),
 
-    contextGroupName: document.getElementById(
-        "contextGroupName"
-    ),
+    subscriptionAmount:
+        document.getElementById(
+            "subscriptionAmount"
+        ),
 
-    contextRole: document.getElementById(
-        "contextRole"
-    ),
+    contextGroupName:
+        document.getElementById(
+            "contextGroupName"
+        ),
 
-    contextAccess: document.getElementById(
-        "contextAccess"
-    ),
+    contextRole:
+        document.getElementById(
+            "contextRole"
+        ),
 
-    contextCountry: document.getElementById(
-        "contextCountry"
-    )
+    contextAccess:
+        document.getElementById(
+            "contextAccess"
+        ),
+
+    contextCountry:
+        document.getElementById(
+            "contextCountry"
+        )
 };
 
 
@@ -163,12 +191,14 @@ const dom = {
 function clearMessages() {
     if (dom.statusMessage) {
         dom.statusMessage.textContent = "";
+
         dom.statusMessage.className =
             "status-message";
     }
 
     if (dom.errorMessage) {
         dom.errorMessage.textContent = "";
+
         dom.errorMessage.className =
             "status-message error";
     }
@@ -309,9 +339,9 @@ function formatSubscriptionAmount(
 
    Group management permissions:
 
-   - Owner         → editable
-   - Admin         → editable
-   - Administrator → editable
+   - Owner         → management access
+   - Admin         → management access
+   - Administrator → management access
    - Member        → view only
    ========================================================= */
 
@@ -339,8 +369,9 @@ async function loadAuthorizationContext() {
 
     /*
      * Prefer the canonical role returned by
-     * getMyApplicationContext(), but fall back
-     * to the member record if necessary.
+     * getMyApplicationContext().
+     *
+     * Fall back to member.role if necessary.
      */
     currentRole =
         context.role ||
@@ -353,15 +384,7 @@ async function loadAuthorizationContext() {
         );
 
     /*
-     * Normalize the role before checking it.
-     *
-     * This handles:
-     *
-     * "admin"
-     * "Admin"
-     * "ADMIN"
-     * " administrator "
-     * "Administrator"
+     * Normalize the role.
      */
     const normalizedRole =
         String(
@@ -371,8 +394,7 @@ async function loadAuthorizationContext() {
             .toLowerCase();
 
     /*
-     * Owner and administrator-level accounts
-     * can manage the group.
+     * Management access.
      */
     canManageGroup =
         Boolean(
@@ -401,12 +423,9 @@ function applyAuthorizationUI() {
         );
 
     /*
-     * Explicitly set disabled state.
-     *
-     * This is intentional:
-     *
-     * authorized account → disabled = false
-     * unauthorized account → disabled = true
+     * ------------------------------------------------------
+     * GROUP INFORMATION
+     * ------------------------------------------------------
      */
 
     if (dom.groupName) {
@@ -429,10 +448,41 @@ function applyAuthorizationUI() {
             !editable;
     }
 
+
+    /*
+     * ------------------------------------------------------
+     * MONTHLY CONTRIBUTION CYCLE
+     * ------------------------------------------------------
+     *
+     * IMPORTANT:
+     *
+     * Do NOT disable the Monthly Closing Day selector.
+     *
+     * It must remain clickable/openable.
+     *
+     * The actual save operation is protected separately
+     * by saveContributionSettings() and the Supabase RPC.
+     */
+
     if (dom.monthlyClosingDay) {
         dom.monthlyClosingDay.disabled =
-            !editable;
+            false;
+
+        dom.monthlyClosingDay.removeAttribute(
+            "disabled"
+        );
+
+        dom.monthlyClosingDay.removeAttribute(
+            "aria-disabled"
+        );
     }
+
+
+    /*
+     * ------------------------------------------------------
+     * SAVE BUTTONS
+     * ------------------------------------------------------
+     */
 
     if (dom.saveGroup) {
         dom.saveGroup.disabled =
@@ -446,8 +496,11 @@ function applyAuthorizationUI() {
             !editable;
     }
 
+
     /*
-     * Permission badge.
+     * ------------------------------------------------------
+     * PERMISSION BADGE
+     * ------------------------------------------------------
      */
 
     if (dom.permissionBadge) {
@@ -462,8 +515,11 @@ function applyAuthorizationUI() {
         }
     }
 
+
     /*
-     * Context role.
+     * ------------------------------------------------------
+     * CONTEXT ROLE
+     * ------------------------------------------------------
      */
 
     if (dom.contextRole) {
@@ -472,8 +528,11 @@ function applyAuthorizationUI() {
             "—";
     }
 
+
     /*
-     * Context access.
+     * ------------------------------------------------------
+     * CONTEXT ACCESS
+     * ------------------------------------------------------
      */
 
     if (dom.contextAccess) {
@@ -483,11 +542,13 @@ function applyAuthorizationUI() {
                 : "View only";
     }
 
+
     /*
-     * Permission warning.
-     *
-     * Hide it for authorized accounts.
+     * ------------------------------------------------------
+     * PERMISSION MESSAGE
+     * ------------------------------------------------------
      */
+
     if (dom.permissionMessage) {
         if (editable) {
             dom.permissionMessage.classList.add(
@@ -527,6 +588,7 @@ function renderGroup() {
         currentGroup.monthly_contribution ??
         0;
 
+
     if (dom.groupNameDisplay) {
         dom.groupNameDisplay.textContent =
             groupName;
@@ -541,6 +603,7 @@ function renderGroup() {
         dom.groupCountryDisplay.textContent =
             country;
     }
+
 
     if (dom.groupName) {
         dom.groupName.value =
@@ -564,6 +627,7 @@ function renderGroup() {
         dom.monthlyContribution.value =
             monthlyAmount;
     }
+
 
     if (dom.contextGroupName) {
         dom.contextGroupName.textContent =
@@ -657,22 +721,18 @@ function getCurrentCycle(
     let closingMonth =
         today.getMonth();
 
-    /*
-     * If today is after the selected
-     * closing day, the current cycle
-     * closes next month.
-     *
-     * If today is on or before the
-     * selected closing day, the current
-     * cycle closes this month.
-     */
 
+    /*
+     * If today is after the closing day,
+     * the current cycle closes next month.
+     */
     if (
         today.getDate() >
         day
     ) {
         closingMonth += 1;
     }
+
 
     const closingDate =
         new Date(
@@ -681,19 +741,11 @@ function getCurrentCycle(
             day
         );
 
+
     /*
      * Opening date is 29 days before
      * the closing date.
-     *
-     * Example:
-     *
-     * Closing:
-     * 05 Oct 2026
-     *
-     * Opening:
-     * 06 Sep 2026
      */
-
     const openingDate =
         new Date(
             closingDate
@@ -703,12 +755,17 @@ function getCurrentCycle(
         openingDate.getDate() - 29
     );
 
+
     return {
         openingDate,
         closingDate
     };
 }
 
+
+/* =========================================================
+   CONTRIBUTION PREVIEW
+   ========================================================= */
 
 function updateContributionPreview() {
     if (!dom.monthlyClosingDay) {
@@ -724,6 +781,7 @@ function updateContributionPreview() {
         getCurrentCycle(
             closingDay
         );
+
 
     if (!cycle) {
         if (
@@ -750,6 +808,7 @@ function updateContributionPreview() {
         return;
     }
 
+
     if (
         dom.currentContributionCycle
     ) {
@@ -760,6 +819,7 @@ function updateContributionPreview() {
             );
     }
 
+
     if (
         dom.currentContributionOpeningDate
     ) {
@@ -768,6 +828,7 @@ function updateContributionPreview() {
                 cycle.openingDate
             );
     }
+
 
     if (
         dom.currentContributionClosingDate
@@ -800,6 +861,7 @@ async function loadSubscription() {
         }
     );
 
+
     if (error) {
         console.error(
             "Failed to load group subscription:",
@@ -814,6 +876,7 @@ async function loadSubscription() {
         return;
     }
 
+
     if (Array.isArray(data)) {
         subscription =
             data.length > 0
@@ -824,6 +887,7 @@ async function loadSubscription() {
             data;
     }
 
+
     renderSubscription();
 }
 
@@ -833,10 +897,12 @@ function renderSubscription() {
         subscription ||
         {};
 
+
     const status =
         value.status ||
         value.subscription_status ||
         "—";
+
 
     const plan =
         value.plan_name ||
@@ -844,11 +910,13 @@ function renderSubscription() {
         value.plan ||
         "—";
 
+
     const endDate =
         value.end_date ||
         value.current_period_end ||
         value.renewal_date ||
         null;
+
 
     const amount =
         value.amount ||
@@ -856,15 +924,18 @@ function renderSubscription() {
         value.standard_group_amount ||
         null;
 
+
     if (dom.subscriptionStatus) {
         dom.subscriptionStatus.textContent =
             String(status);
     }
 
+
     if (dom.subscriptionPlan) {
         dom.subscriptionPlan.textContent =
             String(plan);
     }
+
 
     if (dom.subscriptionEndDate) {
         dom.subscriptionEndDate.textContent =
@@ -872,6 +943,7 @@ function renderSubscription() {
                 endDate
             );
     }
+
 
     if (dom.subscriptionAmount) {
         dom.subscriptionAmount.textContent =
@@ -891,13 +963,20 @@ function populateClosingDayOptions() {
         return;
     }
 
+
     const existingValue =
         contributionSettings?.monthly_closing_day ??
         dom.monthlyClosingDay.value ??
         28;
 
+
     dom.monthlyClosingDay.innerHTML =
         "";
+
+
+    /*
+     * Generate valid closing days 1–28.
+     */
 
     for (
         let day = 1;
@@ -920,10 +999,12 @@ function populateClosingDayOptions() {
         );
     }
 
+
     const normalized =
         Number(
             existingValue
         );
+
 
     dom.monthlyClosingDay.value =
         Number.isInteger(
@@ -933,6 +1014,24 @@ function populateClosingDayOptions() {
         normalized <= 28
             ? String(normalized)
             : "28";
+
+
+    /*
+     * Make absolutely sure rebuilding
+     * the select did not disable it.
+     */
+
+    dom.monthlyClosingDay.disabled =
+        false;
+
+    dom.monthlyClosingDay.removeAttribute(
+        "disabled"
+    );
+
+    dom.monthlyClosingDay.removeAttribute(
+        "aria-disabled"
+    );
+
 
     updateContributionPreview();
 }
@@ -947,6 +1046,7 @@ async function loadContributionSettings() {
         return;
     }
 
+
     const {
         data,
         error
@@ -958,21 +1058,25 @@ async function loadContributionSettings() {
         }
     );
 
+
     if (error) {
         console.error(
             "Failed to load contribution settings:",
             error
         );
 
+
         contributionSettings = {
             monthly_closing_day:
                 28
         };
 
+
         populateClosingDayOptions();
 
         return;
     }
+
 
     if (Array.isArray(data)) {
         contributionSettings =
@@ -990,6 +1094,7 @@ async function loadContributionSettings() {
             };
     }
 
+
     populateClosingDayOptions();
 }
 
@@ -1004,8 +1109,9 @@ function renderContributionSettings() {
    ========================================================= */
 
 async function saveContributionSettings() {
+
     /*
-     * Frontend authorization guard.
+     * Permission to save remains protected.
      */
     if (!canManageGroup) {
         showError(
@@ -1015,6 +1121,7 @@ async function saveContributionSettings() {
         return;
     }
 
+
     if (!currentGroup?.id) {
         showError(
             "No group is available."
@@ -1023,10 +1130,12 @@ async function saveContributionSettings() {
         return;
     }
 
+
     const closingDay =
         Number(
             dom.monthlyClosingDay?.value
         );
+
 
     if (
         !Number.isInteger(
@@ -1042,6 +1151,7 @@ async function saveContributionSettings() {
         return;
     }
 
+
     if (
         dom.saveContributionCalendar
     ) {
@@ -1052,7 +1162,9 @@ async function saveContributionSettings() {
             "Saving...";
     }
 
+
     clearMessages();
+
 
     try {
         const {
@@ -1068,9 +1180,11 @@ async function saveContributionSettings() {
             }
         );
 
+
         if (error) {
             throw error;
         }
+
 
         contributionSettings = {
             ...(contributionSettings || {}),
@@ -1079,7 +1193,9 @@ async function saveContributionSettings() {
                 closingDay
         };
 
+
         renderContributionSettings();
+
 
         showStatus(
             "Contribution cycle updated successfully."
@@ -1091,12 +1207,28 @@ async function saveContributionSettings() {
             error
         );
 
+
         showError(
             error?.message ||
             "Unable to update the contribution cycle."
         );
 
     } finally {
+
+        /*
+         * The selector must ALWAYS remain openable.
+         */
+
+        if (dom.monthlyClosingDay) {
+            dom.monthlyClosingDay.disabled =
+                false;
+
+            dom.monthlyClosingDay.removeAttribute(
+                "disabled"
+            );
+        }
+
+
         if (
             dom.saveContributionCalendar
         ) {
@@ -1115,8 +1247,9 @@ async function saveContributionSettings() {
    ========================================================= */
 
 async function saveGroup() {
+
     /*
-     * Frontend authorization guard.
+     * Permission guard.
      */
     if (!canManageGroup) {
         showError(
@@ -1126,6 +1259,7 @@ async function saveGroup() {
         return;
     }
 
+
     if (!currentGroup?.id) {
         showError(
             "No group is available."
@@ -1134,19 +1268,24 @@ async function saveGroup() {
         return;
     }
 
+
     const name =
         dom.groupName?.value.trim();
+
 
     const category =
         dom.groupCategory?.value.trim();
 
+
     const country =
         dom.groupCountry?.value.trim();
+
 
     const monthlyContribution =
         Number(
             dom.monthlyContribution?.value
         );
+
 
     if (!name) {
         showError(
@@ -1156,6 +1295,7 @@ async function saveGroup() {
         return;
     }
 
+
     if (!category) {
         showError(
             "Group type is required."
@@ -1164,6 +1304,7 @@ async function saveGroup() {
         return;
     }
 
+
     if (!country) {
         showError(
             "Country is required."
@@ -1171,6 +1312,7 @@ async function saveGroup() {
 
         return;
     }
+
 
     if (
         !Number.isFinite(
@@ -1185,6 +1327,7 @@ async function saveGroup() {
         return;
     }
 
+
     if (dom.saveGroup) {
         dom.saveGroup.disabled =
             true;
@@ -1193,7 +1336,9 @@ async function saveGroup() {
             "Saving...";
     }
 
+
     clearMessages();
+
 
     try {
         const {
@@ -1215,9 +1360,11 @@ async function saveGroup() {
             .select()
             .single();
 
+
         if (error) {
             throw error;
         }
+
 
         currentGroup = {
             ...currentGroup,
@@ -1232,7 +1379,9 @@ async function saveGroup() {
                 monthlyContribution
         };
 
+
         renderGroup();
+
 
         showStatus(
             "Group information updated successfully."
@@ -1243,6 +1392,7 @@ async function saveGroup() {
             "Failed to save group:",
             error
         );
+
 
         showError(
             error?.message ||
@@ -1266,6 +1416,7 @@ async function saveGroup() {
    ========================================================= */
 
 function bindEvents() {
+
     if (dom.groupForm) {
         dom.groupForm.addEventListener(
             "submit",
@@ -1276,6 +1427,7 @@ function bindEvents() {
             }
         );
     }
+
 
     if (
         dom.contributionCalendarForm
@@ -1289,6 +1441,7 @@ function bindEvents() {
             }
         );
     }
+
 
     if (dom.monthlyClosingDay) {
         dom.monthlyClosingDay.addEventListener(
@@ -1306,34 +1459,39 @@ function bindEvents() {
    ========================================================= */
 
 export async function initGroupManagement() {
+
     if (initializationPromise) {
         return initializationPromise;
     }
+
 
     initializationPromise =
         (async () => {
             clearMessages();
 
+
             try {
+
                 /*
-                 * Load the authenticated user,
-                 * member, group and role first.
+                 * Load authentication context.
                  */
                 await loadAuthorizationContext();
 
+
                 /*
-                 * Render the group data.
+                 * Render group.
                  */
                 renderGroup();
 
+
                 /*
-                 * Apply Owner/Admin/Member
-                 * editability immediately.
+                 * Apply permissions.
                  */
                 applyAuthorizationUI();
 
+
                 /*
-                 * Load the remaining page data.
+                 * Load remaining data.
                  */
                 await Promise.all([
                     loadMemberCount(),
@@ -1341,23 +1499,25 @@ export async function initGroupManagement() {
                     loadContributionSettings()
                 ]);
 
+
                 renderContributionSettings();
 
+
                 /*
-                 * Re-apply authorization after all
-                 * controls have been populated.
+                 * Apply permissions one final time.
                  *
-                 * This is important because the
-                 * contribution select is rebuilt by
-                 * populateClosingDayOptions().
+                 * The closing-day selector is explicitly
+                 * kept enabled by applyAuthorizationUI().
                  */
                 applyAuthorizationUI();
+
 
                 if (dom.adminLoading) {
                     dom.adminLoading.classList.add(
                         "hidden"
                     );
                 }
+
 
                 if (
                     dom.managementContent
@@ -1368,15 +1528,18 @@ export async function initGroupManagement() {
                 }
 
             } catch (error) {
+
                 console.error(
                     "Group management initialization failed:",
                     error
                 );
 
+
                 if (dom.adminLoading) {
                     dom.adminLoading.textContent =
                         "Unable to load group management.";
                 }
+
 
                 showError(
                     error?.message ||
@@ -1384,6 +1547,7 @@ export async function initGroupManagement() {
                 );
             }
         })();
+
 
     return initializationPromise;
 }
