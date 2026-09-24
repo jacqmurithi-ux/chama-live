@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+
     <meta charset="utf-8">
 
     <meta
@@ -17,6 +18,7 @@
     <title>Group Management | CHAMA LIVE</title>
 
     <style>
+
         :root {
             --page-bg: #f7f9fc;
             --card-bg: #ffffff;
@@ -35,13 +37,16 @@
             --shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
         }
 
+
         * {
             box-sizing: border-box;
         }
 
+
         html {
             min-height: 100%;
         }
+
 
         body {
             margin: 0;
@@ -57,15 +62,18 @@
             line-height: 1.5;
         }
 
+
         button,
         input,
         select {
             font: inherit;
         }
 
+
         button {
             cursor: pointer;
         }
+
 
         .group-management-page {
             width: 100%;
@@ -74,13 +82,15 @@
             padding: 24px;
         }
 
-        /* ---------------------------------------------------------
+
+        /* =====================================================
            HERO
-        --------------------------------------------------------- */
+        ====================================================== */
 
         .page-hero {
             margin-bottom: 20px;
         }
+
 
         .page-hero h1 {
             margin: 0 0 6px;
@@ -89,15 +99,17 @@
             letter-spacing: -0.02em;
         }
 
+
         .page-hero p {
             margin: 0;
             color: var(--muted);
             font-size: 0.95rem;
         }
 
-        /* ---------------------------------------------------------
+
+        /* =====================================================
            STATUS
-        --------------------------------------------------------- */
+        ====================================================== */
 
         .status-message {
             display: none;
@@ -107,34 +119,41 @@
             font-size: 0.9rem;
         }
 
+
         .status-message.visible {
             display: block;
         }
+
 
         .status-message.success {
             background: var(--success-bg);
             color: var(--success-text);
         }
 
+
         .status-message.error {
             background: var(--error-bg);
             color: var(--error-text);
         }
+
 
         .status-message.warning {
             background: var(--warning-bg);
             color: var(--warning-text);
         }
 
-        /* ---------------------------------------------------------
+
+        /* =====================================================
            MANAGEMENT GRID
-        --------------------------------------------------------- */
+        ====================================================== */
 
         .management-grid {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
             gap: 18px;
         }
+
 
         .management-card {
             background: var(--card-bg);
@@ -144,14 +163,17 @@
             overflow: hidden;
         }
 
+
         .management-card.full-width {
             grid-column: 1 / -1;
         }
+
 
         .card-header {
             padding: 18px 20px 14px;
             border-bottom: 1px solid var(--border);
         }
+
 
         .card-heading h2 {
             margin: 0 0 4px;
@@ -159,36 +181,43 @@
             line-height: 1.3;
         }
 
+
         .card-heading p {
             margin: 0;
             color: var(--muted);
             font-size: 0.86rem;
         }
 
+
         .card-body {
             padding: 20px;
         }
 
-        /* ---------------------------------------------------------
+
+        /* =====================================================
            GROUP OVERVIEW
-        --------------------------------------------------------- */
+        ====================================================== */
 
         .overview-card {
             grid-column: 1 / -1;
         }
 
+
         .overview-content {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) auto;
+            grid-template-columns:
+                minmax(0, 1fr) auto;
             gap: 20px;
             align-items: center;
         }
+
 
         .group-name-display {
             margin: 0 0 4px;
             font-size: 1.3rem;
             font-weight: 700;
         }
+
 
         .group-meta {
             display: flex;
@@ -197,6 +226,7 @@
             color: var(--muted);
             font-size: 0.86rem;
         }
+
 
         .permission-badge {
             display: inline-flex;
@@ -211,23 +241,28 @@
             white-space: nowrap;
         }
 
-        /* ---------------------------------------------------------
+
+        /* =====================================================
            FORM
-        --------------------------------------------------------- */
+        ====================================================== */
 
         .form-grid {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
             gap: 16px;
         }
+
 
         .form-field {
             min-width: 0;
         }
 
+
         .form-field.full-width {
             grid-column: 1 / -1;
         }
+
 
         .form-field label {
             display: block;
@@ -236,10 +271,11 @@
             font-weight: 650;
         }
 
+
         .form-field input,
         .form-field select {
             width: 100%;
-            min-height: 42px;
+            min-height: 44px;
             padding: 9px 11px;
             border: 1px solid #d1d5db;
             border-radius: 9px;
@@ -248,11 +284,15 @@
             outline: none;
         }
 
+
         .form-field input:focus,
         .form-field select:focus {
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(22, 101, 52, 0.1);
+            box-shadow:
+                0 0 0 3px
+                rgba(22, 101, 52, 0.1);
         }
+
 
         .form-field input:disabled,
         .form-field select:disabled {
@@ -261,11 +301,13 @@
             cursor: not-allowed;
         }
 
+
         .field-help {
             margin: 6px 0 0;
             color: var(--muted);
             font-size: 0.78rem;
         }
+
 
         .form-actions {
             display: flex;
@@ -273,6 +315,7 @@
             gap: 10px;
             margin-top: 18px;
         }
+
 
         .btn {
             min-height: 40px;
@@ -285,30 +328,36 @@
                 opacity 0.15s ease;
         }
 
+
         .btn-primary {
             background: var(--primary);
             color: #fff;
         }
 
+
         .btn-primary:hover {
             background: var(--primary-dark);
         }
+
 
         .btn:disabled {
             opacity: 0.55;
             cursor: not-allowed;
         }
 
-        /* ---------------------------------------------------------
+
+        /* =====================================================
            MONTHLY CONTRIBUTION CYCLE
-        --------------------------------------------------------- */
+        ====================================================== */
 
         .calendar-summary {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns:
+                repeat(3, minmax(0, 1fr));
             gap: 12px;
             margin-bottom: 20px;
         }
+
 
         .calendar-summary-item {
             padding: 13px;
@@ -317,6 +366,7 @@
             background: #fafafa;
         }
 
+
         .calendar-summary-item span {
             display: block;
             margin-bottom: 4px;
@@ -324,10 +374,12 @@
             font-size: 0.75rem;
         }
 
+
         .calendar-summary-item strong {
             display: block;
             font-size: 0.9rem;
         }
+
 
         .calendar-note {
             margin-top: 14px;
@@ -338,9 +390,98 @@
             font-size: 0.78rem;
         }
 
-        /* ---------------------------------------------------------
+
+        /*
+         * ====================================================
+         * MONTHLY CLOSING DAY SELECTOR
+         * ====================================================
+         *
+         * This control must remain interactive.
+         *
+         * JavaScript controls the save permission,
+         * not the ability to open the selector.
+         */
+
+        .monthly-closing-day-select {
+            display: block;
+            position: relative;
+            z-index: 20;
+
+            width: 100%;
+            min-height: 46px;
+
+            padding: 10px 40px 10px 12px;
+
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+
+            background-color: #ffffff;
+            color: #111827;
+
+            cursor: pointer;
+
+            pointer-events: auto;
+            touch-action: manipulation;
+
+            appearance: auto;
+            -webkit-appearance: menulist;
+        }
+
+
+        .monthly-closing-day-select:enabled {
+            cursor: pointer;
+            pointer-events: auto;
+        }
+
+
+        .monthly-closing-day-select:focus {
+            outline: none;
+
+            border-color: var(--primary);
+
+            box-shadow:
+                0 0 0 3px
+                rgba(22, 101, 52, 0.1);
+        }
+
+
+        .monthly-closing-day-select:disabled {
+            cursor: pointer;
+
+            pointer-events: auto;
+
+            opacity: 1;
+
+            background-color: #ffffff;
+            color: #111827;
+        }
+
+
+        /*
+         * Prevent any accidental overlay from blocking
+         * interaction with the cycle selector.
+         */
+
+        #contributionCalendarCard {
+            position: relative;
+        }
+
+
+        #contributionCalendarForm {
+            position: relative;
+            z-index: 10;
+        }
+
+
+        #monthlyClosingDay {
+            position: relative;
+            z-index: 30;
+        }
+
+
+        /* =====================================================
            ACCOUNT
-        --------------------------------------------------------- */
+        ====================================================== */
 
         .account-content {
             display: flex;
@@ -349,17 +490,20 @@
             gap: 16px;
         }
 
+
         .account-title {
             margin: 0 0 4px;
             font-size: 0.95rem;
             font-weight: 700;
         }
 
+
         .account-description {
             margin: 0;
             color: var(--muted);
             font-size: 0.82rem;
         }
+
 
         .account-link {
             display: inline-flex;
@@ -377,18 +521,21 @@
             white-space: nowrap;
         }
 
+
         .account-link:hover {
             background: #f0fdf4;
         }
 
-        /* ---------------------------------------------------------
+
+        /* =====================================================
            SUBSCRIPTION
-        --------------------------------------------------------- */
+        ====================================================== */
 
         .subscription-panel {
             display: grid;
             gap: 10px;
         }
+
 
         .subscription-row {
             display: flex;
@@ -398,15 +545,18 @@
             border-bottom: 1px solid #f1f5f9;
         }
 
+
         .subscription-row:last-child {
             padding-bottom: 0;
             border-bottom: 0;
         }
 
+
         .subscription-label {
             color: var(--muted);
             font-size: 0.8rem;
         }
+
 
         .subscription-value {
             font-size: 0.82rem;
@@ -414,15 +564,18 @@
             text-align: right;
         }
 
-        /* ---------------------------------------------------------
+
+        /* =====================================================
            GROUP CONTEXT
-        --------------------------------------------------------- */
+        ====================================================== */
 
         .context-grid {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
             gap: 12px;
         }
+
 
         .context-item {
             padding: 12px;
@@ -431,6 +584,7 @@
             background: #fafafa;
         }
 
+
         .context-item span {
             display: block;
             margin-bottom: 3px;
@@ -438,14 +592,16 @@
             font-size: 0.75rem;
         }
 
+
         .context-item strong {
             display: block;
             font-size: 0.85rem;
         }
 
-        /* ---------------------------------------------------------
+
+        /* =====================================================
            LOADING / PERMISSION
-        --------------------------------------------------------- */
+        ====================================================== */
 
         .admin-loading {
             padding: 40px 20px;
@@ -454,7 +610,9 @@
             font-size: 0.9rem;
         }
 
+
         .permission-message {
+            margin-top: 16px;
             padding: 14px;
             border-radius: 10px;
             background: #fef2f2;
@@ -462,23 +620,28 @@
             font-size: 0.85rem;
         }
 
+
         .hidden {
             display: none !important;
         }
 
-        /* ---------------------------------------------------------
+
+        /* =====================================================
            MOBILE LIGHT
-        --------------------------------------------------------- */
+        ====================================================== */
 
         @media (max-width: 800px) {
+
             .group-management-page {
                 padding: 16px;
             }
+
 
             .management-grid {
                 grid-template-columns: 1fr;
                 gap: 12px;
             }
+
 
             .management-card,
             .management-card.full-width,
@@ -486,18 +649,22 @@
                 grid-column: auto;
             }
 
+
             .card-header {
                 padding: 14px 15px 11px;
             }
+
 
             .card-body {
                 padding: 15px;
             }
 
+
             .overview-content {
                 grid-template-columns: 1fr;
                 gap: 12px;
             }
+
 
             .calendar-summary {
                 grid-template-columns: 1fr;
@@ -505,26 +672,45 @@
                 margin-bottom: 15px;
             }
 
+
             .calendar-summary-item {
                 padding: 11px;
             }
+
 
             .form-grid {
                 grid-template-columns: 1fr;
                 gap: 12px;
             }
 
+
             .form-field.full-width {
                 grid-column: auto;
             }
+
+
+            /*
+             * Large touch target for mobile.
+             */
+
+            .monthly-closing-day-select {
+                min-height: 50px;
+                padding: 12px 40px 12px 13px;
+                font-size: 1rem;
+                pointer-events: auto;
+                touch-action: manipulation;
+            }
+
 
             .form-actions {
                 justify-content: stretch;
             }
 
+
             .form-actions .btn {
                 width: 100%;
             }
+
 
             .account-content {
                 align-items: stretch;
@@ -532,9 +718,11 @@
                 gap: 12px;
             }
 
+
             .account-link {
                 width: 100%;
             }
+
 
             .context-grid {
                 grid-template-columns: 1fr;
@@ -542,43 +730,64 @@
             }
         }
 
+
+        /* =====================================================
+           SMALL MOBILE
+        ====================================================== */
+
         @media (max-width: 480px) {
+
             .group-management-page {
                 padding: 12px;
             }
+
 
             .page-hero {
                 margin-bottom: 14px;
             }
 
+
             .page-hero h1 {
                 font-size: 1.45rem;
             }
+
 
             .page-hero p {
                 font-size: 0.84rem;
             }
 
+
             .card-header {
                 padding: 13px;
             }
 
+
             .card-body {
                 padding: 13px;
             }
+
 
             .group-meta {
                 flex-direction: column;
                 gap: 3px;
             }
 
+
             .permission-badge {
                 width: fit-content;
             }
 
+
             .calendar-summary-item {
                 padding: 10px;
             }
+
+
+            .monthly-closing-day-select {
+                min-height: 52px;
+                font-size: 1rem;
+            }
+
 
             .subscription-row {
                 align-items: flex-start;
@@ -586,24 +795,44 @@
                 gap: 2px;
             }
 
+
             .subscription-value {
                 text-align: left;
             }
         }
+
     </style>
+
 </head>
+
 
 <body>
 
     <main class="group-management-page">
 
+
+        <!-- =====================================================
+             HERO
+        ====================================================== -->
+
         <header class="page-hero">
-            <h1>Group Management</h1>
+
+            <h1>
+                Group Management
+            </h1>
+
             <p>
-                Manage your group's information, contribution cycle,
-                account and subscription settings.
+                Manage your group's information,
+                contribution cycle, account and
+                subscription settings.
             </p>
+
         </header>
+
+
+        <!-- =====================================================
+             STATUS
+        ====================================================== -->
 
         <div
             id="statusMessage"
@@ -612,12 +841,18 @@
             aria-live="polite"
         ></div>
 
+
         <div
             id="errorMessage"
             class="status-message error"
             role="alert"
             aria-live="assertive"
         ></div>
+
+
+        <!-- =====================================================
+             LOADING
+        ====================================================== -->
 
         <div
             id="adminLoading"
@@ -626,29 +861,48 @@
             Loading group management...
         </div>
 
+
+        <!-- =====================================================
+             MANAGEMENT CONTENT
+        ====================================================== -->
+
         <div
             id="managementContent"
             class="management-grid hidden"
         >
 
-            <!-- =====================================================
-                 GROUP OVERVIEW
-            ====================================================== -->
 
-            <section class="management-card overview-card">
+            <!-- =================================================
+                 GROUP OVERVIEW
+            ================================================== -->
+
+            <section
+                class="management-card overview-card"
+            >
 
                 <div class="card-header">
+
                     <div class="card-heading">
-                        <h2>Group Overview</h2>
-                        <p>Current group account summary.</p>
+
+                        <h2>
+                            Group Overview
+                        </h2>
+
+                        <p>
+                            Current group account summary.
+                        </p>
+
                     </div>
+
                 </div>
+
 
                 <div class="card-body">
 
                     <div class="overview-content">
 
                         <div>
+
                             <h3
                                 id="groupNameDisplay"
                                 class="group-name-display"
@@ -656,15 +910,34 @@
                                 —
                             </h3>
 
+
                             <div class="group-meta">
-                                <span id="groupCategoryDisplay">—</span>
-                                <span id="groupCountryDisplay">—</span>
+
+                                <span
+                                    id="groupCategoryDisplay"
+                                >
+                                    —
+                                </span>
+
+                                <span
+                                    id="groupCountryDisplay"
+                                >
+                                    —
+                                </span>
+
                                 <span>
                                     Members:
-                                    <strong id="memberCountDisplay">—</strong>
+                                    <strong
+                                        id="memberCountDisplay"
+                                    >
+                                        —
+                                    </strong>
                                 </span>
+
                             </div>
+
                         </div>
+
 
                         <div
                             id="permissionBadge"
@@ -679,21 +952,32 @@
 
             </section>
 
-            <!-- =====================================================
-                 GROUP INFORMATION
-            ====================================================== -->
 
-            <section class="management-card">
+            <!-- =================================================
+                 GROUP INFORMATION
+            ================================================== -->
+
+            <section
+                class="management-card"
+            >
 
                 <div class="card-header">
+
                     <div class="card-heading">
-                        <h2>Group Information</h2>
+
+                        <h2>
+                            Group Information
+                        </h2>
+
                         <p>
-                            Update the basic information used across
-                            CHAMA LIVE.
+                            Update the basic information
+                            used across CHAMA LIVE.
                         </p>
+
                     </div>
+
                 </div>
+
 
                 <div class="card-body">
 
@@ -701,9 +985,14 @@
 
                         <div class="form-grid">
 
-                            <div class="form-field full-width">
 
-                                <label for="groupName">
+                            <div
+                                class="form-field full-width"
+                            >
+
+                                <label
+                                    for="groupName"
+                                >
                                     Group Name
                                 </label>
 
@@ -717,9 +1006,14 @@
 
                             </div>
 
-                            <div class="form-field">
 
-                                <label for="groupCategory">
+                            <div
+                                class="form-field"
+                            >
+
+                                <label
+                                    for="groupCategory"
+                                >
                                     Group Type
                                 </label>
 
@@ -728,25 +1022,35 @@
                                     name="groupCategory"
                                     required
                                 >
+
                                     <option value="">
                                         Select group type
                                     </option>
+
                                     <option value="Chama">
                                         Chama
                                     </option>
+
                                     <option value="CBO">
                                         CBO
                                     </option>
+
                                     <option value="Other">
                                         Other
                                     </option>
+
                                 </select>
 
                             </div>
 
-                            <div class="form-field">
 
-                                <label for="groupCountry">
+                            <div
+                                class="form-field"
+                            >
+
+                                <label
+                                    for="groupCountry"
+                                >
                                     Country
                                 </label>
 
@@ -755,14 +1059,20 @@
                                     name="groupCountry"
                                     type="text"
                                     value="Kenya"
+                                    autocomplete="country-name"
                                     required
                                 >
 
                             </div>
 
-                            <div class="form-field full-width">
 
-                                <label for="monthlyContribution">
+                            <div
+                                class="form-field full-width"
+                            >
+
+                                <label
+                                    for="monthlyContribution"
+                                >
                                     Standard Monthly Contribution
                                 </label>
 
@@ -777,13 +1087,14 @@
                                 >
 
                                 <p class="field-help">
-                                    This is the standard monthly amount
-                                    configured for the group.
+                                    This is the standard monthly
+                                    amount configured for the group.
                                 </p>
 
                             </div>
 
                         </div>
+
 
                         <div class="form-actions">
 
@@ -803,9 +1114,10 @@
 
             </section>
 
-            <!-- =====================================================
+
+            <!-- =================================================
                  MONTHLY CONTRIBUTION CYCLE
-            ====================================================== -->
+            ================================================== -->
 
             <section
                 class="management-card"
@@ -816,24 +1128,38 @@
 
                     <div class="card-heading">
 
-                        <h2>Monthly Contribution Cycle</h2>
+                        <h2>
+                            Monthly Contribution Cycle
+                        </h2>
 
                         <p>
-                            Set the day your group's monthly contribution
-                            cycle closes.
+                            Set the day your group's monthly
+                            contribution cycle closes.
                         </p>
 
                     </div>
 
                 </div>
 
+
                 <div class="card-body">
 
-                    <div class="calendar-summary">
 
-                        <div class="calendar-summary-item">
+                    <!-- =========================================
+                         CURRENT CYCLE
+                    ========================================== -->
 
-                            <span>Current Cycle</span>
+                    <div
+                        class="calendar-summary"
+                    >
+
+                        <div
+                            class="calendar-summary-item"
+                        >
+
+                            <span>
+                                Current Cycle
+                            </span>
 
                             <strong
                                 id="currentContributionCycle"
@@ -843,9 +1169,14 @@
 
                         </div>
 
-                        <div class="calendar-summary-item">
 
-                            <span>Opening Date</span>
+                        <div
+                            class="calendar-summary-item"
+                        >
+
+                            <span>
+                                Opening Date
+                            </span>
 
                             <strong
                                 id="currentContributionOpeningDate"
@@ -855,9 +1186,14 @@
 
                         </div>
 
-                        <div class="calendar-summary-item">
 
-                            <span>Closing Date</span>
+                        <div
+                            class="calendar-summary-item"
+                        >
+
+                            <span>
+                                Closing Date
+                            </span>
 
                             <strong
                                 id="currentContributionClosingDate"
@@ -869,19 +1205,35 @@
 
                     </div>
 
-                    <form id="contributionCalendarForm">
 
-                        <div class="form-field">
+                    <!-- =========================================
+                         CONTRIBUTION CALENDAR FORM
+                    ========================================== -->
 
-                            <label for="monthlyClosingDay">
+                    <form
+                        id="contributionCalendarForm"
+                    >
+
+                        <div
+                            class="form-field"
+                        >
+
+                            <label
+                                for="monthlyClosingDay"
+                            >
                                 Monthly Closing Day
                             </label>
+
 
                             <select
                                 id="monthlyClosingDay"
                                 name="monthlyClosingDay"
+                                class="monthly-closing-day-select"
                                 required
-                            ></select>
+                                aria-label="Monthly Closing Day"
+                            >
+                            </select>
+
 
                             <p class="field-help">
                                 Choose a closing day from 1 to 28.
@@ -890,10 +1242,12 @@
 
                         </div>
 
+
                         <div class="calendar-note">
                             Changing the closing day applies prospectively.
                             Historical contribution cycles remain unchanged.
                         </div>
+
 
                         <div class="form-actions">
 
@@ -913,26 +1267,32 @@
 
             </section>
 
-            <!-- =====================================================
-                 ACCOUNT
-            ====================================================== -->
 
-            <section class="management-card">
+            <!-- =================================================
+                 ACCOUNT
+            ================================================== -->
+
+            <section
+                class="management-card"
+            >
 
                 <div class="card-header">
 
                     <div class="card-heading">
 
-                        <h2>Account</h2>
+                        <h2>
+                            Account
+                        </h2>
 
                         <p>
-                            View your group's billing and subscription
-                            information.
+                            View your group's billing and
+                            subscription information.
                         </p>
 
                     </div>
 
                 </div>
+
 
                 <div class="card-body">
 
@@ -945,11 +1305,13 @@
                             </p>
 
                             <p class="account-description">
-                                Review subscription status, payments,
-                                invoices and account billing.
+                                Review subscription status,
+                                payments, invoices and
+                                account billing.
                             </p>
 
                         </div>
+
 
                         <a
                             class="account-link"
@@ -964,25 +1326,32 @@
 
             </section>
 
-            <!-- =====================================================
-                 SUBSCRIPTION
-            ====================================================== -->
 
-            <section class="management-card">
+            <!-- =================================================
+                 SUBSCRIPTION
+            ================================================== -->
+
+            <section
+                class="management-card"
+            >
 
                 <div class="card-header">
 
                     <div class="card-heading">
 
-                        <h2>Subscription</h2>
+                        <h2>
+                            Subscription
+                        </h2>
 
                         <p>
-                            Current subscription state for this group.
+                            Current subscription state
+                            for this group.
                         </p>
 
                     </div>
 
                 </div>
+
 
                 <div class="card-body">
 
@@ -991,9 +1360,13 @@
                         class="subscription-panel"
                     >
 
-                        <div class="subscription-row">
+                        <div
+                            class="subscription-row"
+                        >
 
-                            <span class="subscription-label">
+                            <span
+                                class="subscription-label"
+                            >
                                 Status
                             </span>
 
@@ -1006,9 +1379,14 @@
 
                         </div>
 
-                        <div class="subscription-row">
 
-                            <span class="subscription-label">
+                        <div
+                            class="subscription-row"
+                        >
+
+                            <span
+                                class="subscription-label"
+                            >
                                 Plan
                             </span>
 
@@ -1021,9 +1399,14 @@
 
                         </div>
 
-                        <div class="subscription-row">
 
-                            <span class="subscription-label">
+                        <div
+                            class="subscription-row"
+                        >
+
+                            <span
+                                class="subscription-label"
+                            >
                                 Renewal / End Date
                             </span>
 
@@ -1036,9 +1419,14 @@
 
                         </div>
 
-                        <div class="subscription-row">
 
-                            <span class="subscription-label">
+                        <div
+                            class="subscription-row"
+                        >
+
+                            <span
+                                class="subscription-label"
+                            >
                                 Amount
                             </span>
 
@@ -1057,65 +1445,92 @@
 
             </section>
 
-            <!-- =====================================================
-                 GROUP CONTEXT
-            ====================================================== -->
 
-            <section class="management-card full-width">
+            <!-- =================================================
+                 GROUP CONTEXT
+            ================================================== -->
+
+            <section
+                class="management-card full-width"
+            >
 
                 <div class="card-header">
 
                     <div class="card-heading">
 
-                        <h2>Group Context</h2>
+                        <h2>
+                            Group Context
+                        </h2>
 
                         <p>
-                            Current account and management context.
+                            Current account and
+                            management context.
                         </p>
 
                     </div>
 
                 </div>
 
+
                 <div class="card-body">
 
                     <div class="context-grid">
 
+
                         <div class="context-item">
 
-                            <span>Group</span>
+                            <span>
+                                Group
+                            </span>
 
-                            <strong id="contextGroupName">
+                            <strong
+                                id="contextGroupName"
+                            >
                                 —
                             </strong>
 
                         </div>
 
+
                         <div class="context-item">
 
-                            <span>Your Role</span>
+                            <span>
+                                Your Role
+                            </span>
 
-                            <strong id="contextRole">
+                            <strong
+                                id="contextRole"
+                            >
                                 —
                             </strong>
 
                         </div>
 
+
                         <div class="context-item">
 
-                            <span>Access</span>
+                            <span>
+                                Access
+                            </span>
 
-                            <strong id="contextAccess">
+                            <strong
+                                id="contextAccess"
+                            >
                                 —
                             </strong>
 
                         </div>
 
+
                         <div class="context-item">
 
-                            <span>Country</span>
+                            <span>
+                                Country
+                            </span>
 
-                            <strong id="contextCountry">
+                            <strong
+                                id="contextCountry"
+                            >
                                 —
                             </strong>
 
@@ -1129,6 +1544,11 @@
 
         </div>
 
+
+        <!-- =====================================================
+             PERMISSION MESSAGE
+        ====================================================== -->
+
         <div
             id="permissionMessage"
             class="permission-message hidden"
@@ -1138,6 +1558,7 @@
 
     </main>
 
+
     <!-- =========================================================
          PAGE MODULES
          ---------------------------------------------------------
@@ -1146,10 +1567,15 @@
     ========================================================== -->
 
     <script type="module">
-        import { boot } from "./js/admin-layout.js";
+
+        import {
+            boot
+        } from "./js/admin-layout.js";
+
         import "./js/group-management.js";
 
         boot();
+
     </script>
 
 </body>
