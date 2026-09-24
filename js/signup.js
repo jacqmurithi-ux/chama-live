@@ -3,43 +3,50 @@
 
    ARCHITECTURE
    ---------------------------------------------------------
-   Create a Chama
-        ↓
    Create Supabase Auth account
         ↓
    Verify email
         ↓
    confirm.html
         ↓
-   onboard_new_group()
+   submit_group_application()
         ↓
-   Group + creator member + initial financial period
+   Pending platform-admin review
         ↓
-   Dashboard
+   approve_group_application()
+        ↓
+   Group + creator member + financial period
+        ↓
+   Group Management / Dashboard
 
    IMPORTANT
    ---------------------------------------------------------
    - Supabase Auth owns the password.
    - No password is stored in localStorage.
    - No group/member IDs are supplied by the browser.
-   - No group_applications workflow.
-   - No account-review workflow.
-   - No platform-admin approval.
-   - Group creation happens after authenticated
-     email confirmation through confirm.html.
+   - Group creation does NOT happen during signup.
+   - Group creation does NOT happen immediately after
+     email confirmation.
+   - Email confirmation submits an authenticated
+     group application for review.
+   - Platform Admin approval remains the group-creation
+     boundary.
    - Database authorization remains authoritative.
+   - Monthly contribution is configured after approval
+     in Group Management.
+   - Opening balance is not collected during onboarding.
 
    CURRENT SUPABASE CONTRACT
    ---------------------------------------------------------
-   onboard_new_group(
+   submit_group_application(
      p_group_name,
      p_category,
-     p_monthly_contribution,
-     p_opening_balance,
      p_description,
      p_admin_name,
      p_admin_phone,
-     p_country
+     p_country,
+     p_location,
+     p_town
    )
 
    CURRENT AUTH CALLBACK
@@ -285,9 +292,14 @@ function collectFormValues() {
       ) ||
       "Kenya",
 
-    monthlyContribution:
+    location:
       valueOf(
-        "monthlyContribution"
+        "location"
+      ),
+
+    town:
+      valueOf(
+        "town"
       ),
 
     description:
@@ -363,6 +375,24 @@ function validate(values) {
   }
 
 
+  if (!values.location) {
+
+    throw new Error(
+      "Please enter the group location."
+    );
+
+  }
+
+
+  if (!values.town) {
+
+    throw new Error(
+      "Please enter the town."
+    );
+
+  }
+
+
   if (!values.adminName) {
 
     throw new Error(
@@ -427,31 +457,6 @@ function validate(values) {
   }
 
 
-  const monthlyContribution =
-    Number(
-      values.monthlyContribution ||
-      0
-    );
-
-
-  if (
-    !Number.isFinite(
-      monthlyContribution
-    ) ||
-    monthlyContribution < 0
-  ) {
-
-    throw new Error(
-      "Monthly contribution must be zero or greater."
-    );
-
-  }
-
-
-  values.monthlyContribution =
-    monthlyContribution;
-
-
   return values;
 
 }
@@ -470,8 +475,11 @@ async function createAuthAccount(
    * Supabase Auth.
    *
    * Safe onboarding values are carried in Auth metadata
-   * so confirm.html can complete authenticated group
-   * creation after email verification.
+   * so confirm.html can submit the authenticated group
+   * application after email verification.
+   *
+   * Auth metadata is transport data only.
+   * Database authorization remains authoritative.
    */
 
   const {
@@ -502,12 +510,6 @@ async function createAuthAccount(
           category:
             values.category,
 
-          monthly_contribution:
-            values.monthlyContribution,
-
-          opening_balance:
-            0,
-
           description:
             values.description ||
             null,
@@ -517,6 +519,12 @@ async function createAuthAccount(
 
           admin_phone:
             values.adminPhone,
+
+          location:
+            values.location,
+
+          town:
+            values.town,
 
           country:
             values.country
@@ -560,14 +568,16 @@ function handleSignupSuccess(
   /*
    * When email confirmation is required,
    * Supabase returns the user without an active
-   * session. Group creation therefore waits for
-   * the confirmation callback.
+   * session.
+   *
+   * Group application submission therefore waits
+   * for the authenticated confirmation callback.
    */
 
   if (!data?.session) {
 
     setStatus(
-      "Account created. Please check your email and confirm your address to continue creating your Chama."
+      "Account created. Please check your email and confirm your address to continue with your group application."
     );
 
     return;
@@ -578,11 +588,13 @@ function handleSignupSuccess(
   /*
    * If the project permits an immediate session,
    * use the same confirmation boundary so there is
-   * only one group-creation path.
+   * only one application-submission path.
+   *
+   * No group is created here.
    */
 
   setStatus(
-    "Account created. Completing your Chama setup..."
+    "Account created. Completing email confirmation..."
   );
 
 
@@ -697,4 +709,3 @@ function init() {
 ========================================================= */
 
 init();
-
