@@ -3473,87 +3473,135 @@ async function openEditMember(
   });
 }
 /* =========================================================
+   PART 5 — MEMBER ACCOUNTING / CONTRIBUTION POSITION
+   ---------------------------------------------------------
+   Read-only contribution position display.
+
+   Canonical RPC:
+     get_member_contribution_position(uuid)
+
+   IMPORTANT:
+   - No contribution/payment writes here.
+   - No RPC replacement.
+   - No reconciliation function declaration here.
+   - Keep exactly one copy of each function in members.js.
+   ========================================================= */
+
+
+/* ---------------------------------------------------------
    CONTRIBUTION POSITION UI
-========================================================= */
+   --------------------------------------------------------- */
 
 function ensureContributionPositionUI() {
-  let container =
-    byId(
-      "memberContributionPosition"
-    );
-
-  if (container) {
-    return container;
-  }
-
   const modal =
-    byId(
-      "memberModal"
-    );
+    byId("viewMemberModal");
 
   if (!modal) {
     return null;
   }
 
-  container =
-    document.createElement(
-      "div"
-    );
+  let panel =
+    byId("memberContributionPosition");
 
-  container.id =
+  if (panel) {
+    return panel;
+  }
+
+  panel =
+    document.createElement("section");
+
+  panel.id =
     "memberContributionPosition";
 
-  container.innerHTML = `
-    <div class="member-contribution-position-header">
+  panel.className =
+    "member-contribution-position";
 
+  panel.innerHTML = `
+    <div class="member-contribution-position-header">
       <div>
         <h3>
-          Contribution Position
+          Contribution Accounting
         </h3>
 
-        <p
-          id="memberContributionPositionDescription"
-        >
-          Current contribution accounting position.
+        <p>
+          Current contribution position for this member.
         </p>
       </div>
 
       <span
         id="memberContributionPositionStatus"
-        class="member-contribution-status status-unknown"
+        class="member-contribution-position-status status-unknown"
       >
-        Loading...
+        Loading…
       </span>
+    </div>
 
+    <div
+      id="memberContributionPositionDescription"
+      class="member-contribution-position-description"
+    >
+      Loading contribution position…
     </div>
 
     <div class="member-contribution-position-grid">
 
-      <div>
-        <span>Total Due</span>
-        <strong id="memberContributionTotalDue">
-          KSh 0.00
+      <div class="member-contribution-metric metric-due">
+        <span class="member-contribution-metric-label">
+          Total Due
+        </span>
+
+        <strong
+          id="memberContributionPositionDue"
+        >
+          —
         </strong>
       </div>
 
-      <div>
-        <span>Allocated</span>
-        <strong id="memberContributionAllocated">
-          KSh 0.00
+      <div class="member-contribution-metric metric-paid">
+        <span class="member-contribution-metric-label">
+          Total Paid
+        </span>
+
+        <strong
+          id="memberContributionPositionAllocated"
+        >
+          —
         </strong>
       </div>
 
-      <div>
-        <span>Arrears</span>
-        <strong id="memberContributionArrears">
-          KSh 0.00
+      <div class="member-contribution-metric metric-arrears">
+        <span class="member-contribution-metric-label">
+          Total Arrears
+        </span>
+
+        <strong
+          id="memberContributionPositionArrears"
+        >
+          —
         </strong>
       </div>
 
-      <div>
-        <span>Credit</span>
-        <strong id="memberContributionCredit">
-          KSh 0.00
+      <div class="member-contribution-metric metric-credit">
+        <span class="member-contribution-metric-label">
+          Total Credit
+        </span>
+
+        <strong
+          id="memberContributionPositionCredit"
+        >
+          —
+        </strong>
+      </div>
+
+      <div class="member-contribution-metric metric-records">
+        <span class="member-contribution-metric-label">
+          Contribution Records
+        </span>
+
+        <strong
+          id="memberContributionPositionRecords"
+        >
+          —
         </strong>
       </div>
 
@@ -3565,34 +3613,212 @@ function ensureContributionPositionUI() {
       ".modal-actions"
     );
 
-  const detailGrid =
-    modal.querySelector(
-      ".member-detail-grid"
-    );
-
   if (actions) {
-    actions.before(
-      container
-    );
-  } else if (detailGrid) {
-    detailGrid.after(
-      container
-    );
+    actions.before(panel);
   } else {
-    modal.appendChild(
-      container
-    );
+    const detailGrid =
+      modal.querySelector(
+        ".member-detail-grid"
+      );
+
+    if (detailGrid) {
+      detailGrid.after(panel);
+    } else {
+      modal.appendChild(panel);
+    }
   }
 
-  return container;
+  return panel;
 }
 
 
-/* =========================================================
-   CONTRIBUTION POSITION LOADING STATE
-========================================================= */
+/* ---------------------------------------------------------
+   CONTRIBUTION POSITION STYLES
+   --------------------------------------------------------- */
+
+function ensureContributionPositionStyles() {
+  if (
+    byId(
+      "memberContributionPositionStyles"
+    )
+  ) {
+    return;
+  }
+
+  const style =
+    document.createElement("style");
+
+  style.id =
+    "memberContributionPositionStyles";
+
+  style.textContent = `
+    .member-contribution-position {
+      margin-top: 18px;
+      padding: 18px;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      background: #ffffff;
+    }
+
+    .member-contribution-position-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 10px;
+    }
+
+    .member-contribution-position-header h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .member-contribution-position-header p {
+      margin: 4px 0 0;
+      color: #64748b;
+      font-size: 12px;
+    }
+
+    .member-contribution-position-status {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 28px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .member-contribution-position-status.status-arrears {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .member-contribution-position-status.status-credit {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    .member-contribution-position-status.status-up-to-date {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .member-contribution-position-status.status-unknown {
+      background: #f1f5f9;
+      color: #64748b;
+    }
+
+    .member-contribution-position-description {
+      margin-bottom: 14px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #f8fafc;
+      color: #475569;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .member-contribution-position-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(5, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .member-contribution-metric {
+      min-width: 0;
+      padding: 13px 12px;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+    }
+
+    .member-contribution-metric-label {
+      display: block;
+      margin-bottom: 6px;
+      color: #64748b;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .member-contribution-metric strong {
+      display: block;
+      font-size: 15px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .member-contribution-metric.metric-due {
+      border-left: 4px solid #64748b;
+    }
+
+    .member-contribution-metric.metric-paid {
+      border-left: 4px solid #2563eb;
+    }
+
+    .member-contribution-metric.metric-arrears {
+      border-left: 4px solid #dc2626;
+    }
+
+    .member-contribution-metric.metric-credit {
+      border-left: 4px solid #16a34a;
+    }
+
+    .member-contribution-metric.metric-records {
+      border-left: 4px solid #7c3aed;
+    }
+
+    .member-contribution-metric.metric-paid strong {
+      color: #1d4ed8;
+    }
+
+    .member-contribution-metric.metric-arrears strong {
+      color: #b91c1c;
+    }
+
+    .member-contribution-metric.metric-credit strong {
+      color: #15803d;
+    }
+
+    @media (max-width: 850px) {
+      .member-contribution-position-grid {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 560px) {
+      .member-contribution-position {
+        padding: 14px;
+      }
+
+      .member-contribution-position-header {
+        flex-direction: column;
+      }
+
+      .member-contribution-position-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+
+/* ---------------------------------------------------------
+   POSITION LOADING STATE
+   --------------------------------------------------------- */
 
 function setContributionPositionLoading() {
+  ensureContributionPositionUI();
+
   const status =
     byId(
       "memberContributionPositionStatus"
@@ -3603,93 +3829,99 @@ function setContributionPositionLoading() {
       "memberContributionPositionDescription"
     );
 
-  const totalDue =
+  const due =
     byId(
-      "memberContributionTotalDue"
+      "memberContributionPositionDue"
     );
 
   const allocated =
     byId(
-      "memberContributionAllocated"
+      "memberContributionPositionAllocated"
     );
 
   const arrears =
     byId(
-      "memberContributionArrears"
+      "memberContributionPositionArrears"
     );
 
   const credit =
     byId(
-      "memberContributionCredit"
+      "memberContributionPositionCredit"
+    );
+
+  const records =
+    byId(
+      "memberContributionPositionRecords"
     );
 
   if (status) {
-    status.className =
-      "member-contribution-status status-unknown";
-
     status.textContent =
-      "Loading...";
+      "Loading…";
+
+    status.className =
+      "member-contribution-position-status status-unknown";
   }
 
   if (description) {
     description.textContent =
-      "Loading current contribution accounting position.";
+      "Loading contribution position…";
   }
 
-  if (totalDue) {
-    totalDue.textContent =
-      "KSh 0.00";
+  if (due) {
+    due.textContent =
+      "—";
   }
 
   if (allocated) {
     allocated.textContent =
-      "KSh 0.00";
+      "—";
   }
 
   if (arrears) {
     arrears.textContent =
-      "KSh 0.00";
+      "—";
   }
 
   if (credit) {
     credit.textContent =
-      "KSh 0.00";
+      "—";
+  }
+
+  if (records) {
+    records.textContent =
+      "—";
   }
 }
 
 
-/* =========================================================
-   CONTRIBUTION POSITION STATUS CLASS
-========================================================= */
+/* ---------------------------------------------------------
+   POSITION STATUS CLASS
+   --------------------------------------------------------- */
 
 function contributionPositionStatusClass(
   status
 ) {
   const value =
     String(
-      status ||
-      ""
+      status || ""
     )
       .trim()
       .toLowerCase();
 
   if (
-    value ===
-    "arrears"
+    value === "arrears"
   ) {
     return "status-arrears";
   }
 
   if (
-    value ===
-    "credit"
+    value === "credit"
   ) {
     return "status-credit";
   }
 
   if (
-    value ===
-    "up_to_date"
+    value === "up_to_date"
   ) {
     return "status-up-to-date";
   }
@@ -3698,17 +3930,22 @@ function contributionPositionStatusClass(
 }
 
 
-/* =========================================================
-   LOAD MEMBER CONTRIBUTION POSITION
-   READ ONLY
-========================================================= */
+/* ---------------------------------------------------------
+   READ MEMBER CONTRIBUTION POSITION
+   --------------------------------------------------------- */
 
 async function loadMemberContributionPosition(
   memberId
 ) {
   ensureContributionPositionUI();
-
+  ensureContributionPositionStyles();
   setContributionPositionLoading();
+
+  if (!memberId) {
+    throw new Error(
+      "Member ID is required."
+    );
+  }
 
   const {
     data,
@@ -3734,7 +3971,58 @@ async function loadMemberContributionPosition(
       ? data[0]
       : data;
 
+  if (!position) {
+    throw new Error(
+      "No contribution position was returned for this member."
+    );
+  }
+
   const status =
+    String(
+      position.status ||
+        ""
+    )
+      .trim()
+      .toLowerCase();
+
+  const due =
+    Number(
+      position.total_due ??
+      position.due ??
+      0
+    );
+
+  const allocated =
+    Number(
+      position.total_allocated ??
+      position.allocated ??
+      position.total_paid ??
+      position.paid ??
+      0
+    );
+
+  const arrears =
+    Number(
+      position.arrears ??
+      0
+    );
+
+  const credit =
+    Number(
+      position.credit ??
+      0
+    );
+
+  const records =
+    Number(
+      position.contribution_records ??
+      position.records_count ??
+      position.record_count ??
+      position.contribution_count ??
+      0
+    );
+
+  const statusElement =
     byId(
       "memberContributionPositionStatus"
     );
@@ -3744,259 +4032,236 @@ async function loadMemberContributionPosition(
       "memberContributionPositionDescription"
     );
 
-  const totalDue =
+  const dueElement =
     byId(
-      "memberContributionTotalDue"
+      "memberContributionPositionDue"
     );
 
-  const allocated =
+  const allocatedElement =
     byId(
-      "memberContributionAllocated"
+      "memberContributionPositionAllocated"
     );
 
-  const arrears =
+  const arrearsElement =
     byId(
-      "memberContributionArrears"
+      "memberContributionPositionArrears"
     );
 
-  const credit =
+  const creditElement =
     byId(
-      "memberContributionCredit"
+      "memberContributionPositionCredit"
     );
 
-  if (!position) {
-    if (status) {
-      status.className =
-        "member-contribution-status status-unknown";
+  const recordsElement =
+    byId(
+      "memberContributionPositionRecords"
+    );
 
-      status.textContent =
-        "Unavailable";
-    }
-
-    if (description) {
-      description.textContent =
-        "No contribution position is currently available.";
-    }
-
-    return null;
-  }
-
-  const statusValue =
-    String(
-      position.status ||
-      ""
-    )
-      .trim()
-      .toLowerCase();
-
-  if (status) {
-    status.className =
-      `member-contribution-status ${
-        contributionPositionStatusClass(
-          statusValue
-        )
-      }`;
-
-    status.textContent =
+  if (statusElement) {
+    statusElement.textContent =
       contributionStatusLabel(
-        statusValue
+        status
       );
+
+    statusElement.className =
+      `member-contribution-position-status ${contributionPositionStatusClass(status)}`;
   }
 
   if (description) {
-    description.textContent =
-      "Current contribution accounting position.";
+    if (
+      status === "arrears"
+    ) {
+      description.textContent =
+        `Member has paid ${formatMoney(allocated)} against ${formatMoney(due)} due, leaving ${formatMoney(arrears)} in arrears.`;
+    } else if (
+      status === "credit"
+    ) {
+      description.textContent =
+        `Member has contributed ${formatMoney(allocated)} and currently has ${formatMoney(credit)} in credit.`;
+    } else if (
+      status === "up_to_date"
+    ) {
+      description.textContent =
+        `Member has contributed ${formatMoney(allocated)} against ${formatMoney(due)} due and is up to date.`;
+    } else if (
+      status === "plan_not_set"
+    ) {
+      description.textContent =
+        "No contribution plan has been established for this member.";
+    } else {
+      description.textContent =
+        `Contribution position: ${contributionStatusLabel(status)}.`;
+    }
   }
 
-  if (totalDue) {
-    totalDue.textContent =
-      formatMoney(
-        position.total_due ??
-        position.due
-      );
+  if (dueElement) {
+    dueElement.textContent =
+      formatMoney(due);
   }
 
-  if (allocated) {
-    allocated.textContent =
-      formatMoney(
-        position.total_allocated ??
-        position.allocated
-      );
+  if (allocatedElement) {
+    allocatedElement.textContent =
+      formatMoney(allocated);
   }
 
-  if (arrears) {
-    arrears.textContent =
-      formatMoney(
-        position.arrears
-      );
+  if (arrearsElement) {
+    arrearsElement.textContent =
+      formatMoney(arrears);
   }
 
-  if (credit) {
-    credit.textContent =
-      formatMoney(
-        position.credit
-      );
+  if (creditElement) {
+    creditElement.textContent =
+      formatMoney(credit);
+  }
+
+  if (recordsElement) {
+    recordsElement.textContent =
+      Number.isFinite(records)
+        ? records.toLocaleString(
+            "en-KE"
+          )
+        : "0";
   }
 
   return position;
 }
 
 
-/* =========================================================
-   VIEW MEMBER MODAL
-========================================================= */
+/* ---------------------------------------------------------
+   REFRESH POSITION AFTER RECONCILIATION
+   --------------------------------------------------------- */
+
+async function refreshMemberContributionPosition(
+  memberId
+) {
+  if (!memberId) {
+    return null;
+  }
+
+  try {
+    return await loadMemberContributionPosition(
+      memberId
+    );
+  } catch (error) {
+    console.error(
+      "CHAMA LIVE: Could not refresh member contribution position",
+      error
+    );
+
+    throw error;
+  }
+}
+
+
+/* ---------------------------------------------------------
+   OPEN MEMBER MODAL
+   --------------------------------------------------------- */
 
 async function openMemberModal(
   memberId
 ) {
+  ensureNationalIdUI();
+  ensureContributionPositionUI();
+  ensureContributionPositionStyles();
+
   const member =
     members.find(
       item =>
-        String(
-          item.id
-        ) ===
-        String(
-          memberId
-        )
+        String(item.id) ===
+        String(memberId)
     );
 
   if (!member) {
     showError(
-      new Error(
-        "Member could not be found."
-      )
+      "Member could not be found."
     );
 
     return;
   }
 
-  ensureNationalIdUI();
-  ensureContributionPositionUI();
-
   const modal =
-    byId(
-      "memberModal"
-    );
+    byId("viewMemberModal");
 
   if (!modal) {
     return;
   }
 
-  const setText =
-    (
-      id,
-      value
-    ) => {
-      const element =
-        byId(id);
+  const name =
+    byId("viewMemberName");
 
-      if (element) {
-        element.textContent =
-          value ||
-          "—";
-      }
-    };
+  const memberNumber =
+    byId("viewMemberNumber");
 
-  setText(
-    "memberModalName",
-    member.name
-  );
+  const nationalId =
+    byId("viewMemberNationalId");
 
-  setText(
-    "memberModalNumber",
-    member.member_number
-  );
+  const phone =
+    byId("viewMemberPhone");
 
-  setText(
-    "memberModalMembershipNumber",
-    member.membership_number ||
-      member.member_number
-  );
+  const email =
+    byId("viewMemberEmail");
 
-  setText(
-    "memberModalNationalId",
-    member.national_id
-  );
+  const role =
+    byId("viewMemberRole");
 
-  setText(
-    "memberModalPhone",
-    member.phone
-  );
+  const status =
+    byId("viewMemberStatus");
 
-  setText(
-    "memberModalEmail",
-    member.email
-  );
+  const joinDate =
+    byId("viewMemberJoinDate");
 
-  setText(
-    "memberModalRole",
-    member.role
-  );
-
-  setText(
-    "memberModalStatus",
-    member.status
-  );
-
-  setText(
-    "memberModalJoinDate",
-    formatDate(
-      member.join_date
-    )
-  );
-
-  const reconcileButton =
-    byId(
-      "reconcileHistoricalPayments"
-    );
-
-  if (
-    !reconcileButton
-  ) {
-    const actions =
-      modal.querySelector(
-        ".modal-actions"
-      );
-
-    if (actions) {
-      const button =
-        document.createElement(
-          "button"
-        );
-
-      button.type =
-        "button";
-
-      button.id =
-        "reconcileHistoricalPayments";
-
-      button.className =
-        "member-action";
-
-      button.dataset.action =
-        "reconcile";
-
-      button.dataset.memberId =
-        member.id;
-
-      button.textContent =
-        "Reconcile Historical Payments";
-
-      actions.prepend(
-        button
-      );
-    }
-  } else {
-    reconcileButton.dataset.memberId =
-      member.id;
+  if (name) {
+    name.textContent =
+      member.name ||
+      "—";
   }
 
-  modal.hidden =
-    false;
+  if (memberNumber) {
+    memberNumber.textContent =
+      member.member_number ||
+      member.membership_number ||
+      "—";
+  }
 
-  modal.classList.add(
-    "open"
-  );
+  if (nationalId) {
+    nationalId.textContent =
+      member.national_id ||
+      "—";
+  }
+
+  if (phone) {
+    phone.textContent =
+      member.phone ||
+      "—";
+  }
+
+  if (email) {
+    email.textContent =
+      member.email ||
+      "—";
+  }
+
+  if (role) {
+    role.textContent =
+      member.role ||
+      "member";
+  }
+
+  if (status) {
+    status.textContent =
+      member.status ||
+      "—";
+  }
+
+  if (joinDate) {
+    joinDate.textContent =
+      member.join_date ||
+      "—";
+  }
+
+  modal.hidden = false;
+
+  setContributionPositionLoading();
 
   try {
     await loadMemberContributionPosition(
@@ -4004,11 +4269,11 @@ async function openMemberModal(
     );
   } catch (error) {
     console.error(
-      "CHAMA LIVE: Member contribution position error",
+      "CHAMA LIVE: Member contribution position unavailable",
       error
     );
 
-    const status =
+    const positionStatus =
       byId(
         "memberContributionPositionStatus"
       );
@@ -4018,222 +4283,69 @@ async function openMemberModal(
         "memberContributionPositionDescription"
       );
 
-    if (status) {
-      status.className =
-        "member-contribution-status status-unknown";
-
-      status.textContent =
+    if (positionStatus) {
+      positionStatus.textContent =
         "Unavailable";
+
+      positionStatus.className =
+        "member-contribution-position-status status-unknown";
     }
 
     if (description) {
       description.textContent =
+        error?.message ||
         "Contribution position could not be loaded.";
+    }
+  }
+
+  let reconcileButton =
+    byId(
+      "reconcileHistoricalPayments"
+    );
+
+  if (!reconcileButton) {
+    reconcileButton =
+      document.createElement(
+        "button"
+      );
+
+    reconcileButton.type =
+      "button";
+
+    reconcileButton.id =
+      "reconcileHistoricalPayments";
+
+    reconcileButton.className =
+      "btn btn-secondary";
+
+    reconcileButton.dataset.action =
+      "reconcile";
+
+    reconcileButton.textContent =
+      "Reconcile Historical Payments";
+
+    const actions =
+      modal.querySelector(
+        ".modal-actions"
+      );
+
+    if (actions) {
+      actions.prepend(
+        reconcileButton
+      );
     }
   }
 
   const closeButton =
     modal.querySelector(
-      "[data-action='close']"
-    ) ||
-    modal.querySelector(
-      ".modal-close"
+      "[data-close-member-modal]"
     );
 
-  closeButton?.focus();
-}
-
-
-/* =========================================================
-   HISTORICAL RECONCILIATION
-========================================================= */
-
-async function reconcileMemberHistoricalPayments(
-  memberId,
-  throughDate = null
-) {
-  const {
-    data,
-    error
-  } =
-    await supabase.rpc(
-      "reconcile_member_historical_payments",
-      {
-        p_member_id:
-          memberId,
-
-        p_through_date:
-          throughDate ||
-          null
-      }
-    );
-
-  if (error) {
-    throw error;
-  }
-
-  return Array.isArray(data)
-    ? data[0]
-    : data;
-}
-
-
-async function handleHistoricalReconciliation(
-  memberId
-) {
-  const member =
-    members.find(
-      item =>
-        String(
-          item.id
-        ) ===
-        String(
-          memberId
-        )
-    );
-
-  if (!member) {
-    showError(
-      new Error(
-        "Member could not be found."
-      )
-    );
-
-    return;
-  }
-
-  const confirmed =
-    window.confirm(
-      `Reconcile historical payments for ${member.name || "this member"}?`
-    );
-
-  if (!confirmed) {
-    return;
-  }
-
-  try {
-    showStatus(
-      "Reconciling historical payments..."
-    );
-
-    await reconcileMemberHistoricalPayments(
-      member.id
-    );
-
-    await loadMembers();
-
-    await loadMemberContributionPositions();
-
-    renderMembers();
-
-    updateMemberCount();
-
-    showStatus("");
-
-    await openMemberModal(
-      member.id
-    );
-
-  } catch (error) {
-    showStatus("");
-
-    showError(
-      error
-    );
+  if (closeButton) {
+    closeButton.focus();
   }
 }
 
-
-/* =========================================================
-   MEMBER INVITATION
-========================================================= */
-
-async function sendMemberInvitation(
-  memberId,
-  reopenModal = false
-) {
-  const member =
-    members.find(
-      item =>
-        String(
-          item.id
-        ) ===
-        String(
-          memberId
-        )
-    );
-
-  if (!member) {
-    throw new Error(
-      "Member could not be found."
-    );
-  }
-
-  const email =
-    String(
-      member.email ||
-      ""
-    )
-      .trim()
-      .toLowerCase();
-
-  if (!email) {
-    throw new Error(
-      "This member does not have an email address."
-    );
-  }
-
-  const {
-    data: sessionData,
-    error: sessionError
-  } =
-    await supabase.auth.getSession();
-
-  if (sessionError) {
-    throw sessionError;
-  }
-
-  if (
-    !sessionData?.session
-  ) {
-    throw new Error(
-      "Your session has expired. Please sign in again."
-    );
-  }
-
-  const {
-    error
-  } =
-    await supabase.functions.invoke(
-      "send-member-invitation",
-      {
-        body: {
-          member_id:
-            member.id
-        }
-      }
-    );
-
-  if (error) {
-    throw error;
-  }
-
-  await loadMembers();
-
-  await loadMemberContributionPositions();
-
-  renderMembers();
-
-  updateMemberCount();
-
-  if (
-    reopenModal
-  ) {
-    await openMemberModal(
-      member.id
-    );
-  }
-}
 /* =========================================================
    MEMBER SEARCH
 ========================================================= */
@@ -4785,15 +4897,6 @@ export const loadPage =
 console.log(
   "CHAMA LIVE: members.js ready"
 );
-
-
-
-
-
-
-
-   
-
 
 
 
