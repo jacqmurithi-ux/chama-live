@@ -1681,10 +1681,7 @@ async function approveApplication(
      * application review surface after successful approval.
      */
 
-    await Promise.all([
-      loadPlatformOverview(),
-      loadPendingApplications()
-    ]);
+    await loadPlatformOverview();
 
   } catch (error) {
 
@@ -1731,10 +1728,7 @@ async function approveApplication(
         "error"
       );
 
-      await Promise.all([
-        loadPlatformOverview(),
-        loadPendingApplications()
-      ]);
+      await loadPlatformOverview();
 
       return;
 
