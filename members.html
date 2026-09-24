@@ -1230,7 +1230,7 @@
     .member-accounting-summary {
       display: grid;
       grid-template-columns:
-        repeat(5, minmax(0, 1fr));
+        repeat(6, minmax(0, 1fr));
       gap: 8px;
     }
 
@@ -1278,13 +1278,13 @@
     }
 
     #viewContributionStatus.status-credit {
-      background: rgba(22, 163, 74, .09);
-      color: #15803d;
+      background: rgba(37, 99, 235, .09);
+      color: #1d4ed8;
     }
 
     #viewContributionStatus.status-up-to-date {
-      background: rgba(37, 99, 235, .09);
-      color: #1d4ed8;
+      background: rgba(22, 163, 74, .09);
+      color: #15803d;
     }
 
     #viewContributionStatus.status-unknown {
@@ -2534,6 +2534,21 @@
                 class="status-unknown"
               >
                 Loading...
+              </strong>
+
+            </div>
+
+
+            <div class="accounting-mini-card">
+
+              <span>
+                Total Contributed
+              </span>
+
+              <strong
+                id="viewContributionTotal"
+              >
+                —
               </strong>
 
             </div>
