@@ -1985,6 +1985,2835 @@ function createMemberCard(
     </article>
   `;
 }
+/* =========================================================
+   RENDER MEMBERS
+========================================================= */
+
+function renderMembers(
+  list = members
+) {
+  ensureNationalIdUI();
+  ensureContributionStatusHeader();
+
+  const tbody =
+    byId("memberRows");
+
+  const cards =
+    byId("memberCards");
+
+  const rows =
+    Array.isArray(list)
+      ? list
+      : [];
+
+  if (tbody) {
+    tbody.innerHTML =
+      rows.length
+        ? rows
+            .map(
+              createMemberRow
+            )
+            .join("")
+        : `
+          <tr>
+            <td
+              colspan="11"
+              class="empty-table-cell"
+            >
+              <div class="empty-state">
+
+                <div class="empty-state-icon">
+                  ♙
+                </div>
+
+                <h3>
+                  No members found
+                </h3>
+
+                <p>
+                  Add your first group
+                  member to get started.
+                </p>
+
+              </div>
+            </td>
+          </tr>
+        `;
+  }
+
+  if (cards) {
+    cards.innerHTML =
+      rows.length
+        ? rows
+            .map(
+              createMemberCard
+            )
+            .join("")
+        : `
+          <div class="empty-state mobile-empty">
+
+            <div class="empty-state-icon">
+              ♙
+            </div>
+
+            <h3>
+              No members found
+            </h3>
+
+            <p>
+              Add your first group
+              member to get started.
+            </p>
+
+          </div>
+        `;
+  }
+
+  const count =
+    byId(
+      "memberResultCount"
+    );
+
+  if (count) {
+    count.textContent =
+      rows.length ===
+      members.length
+        ? `${rows.length} members`
+        : `${rows.length} of ${members.length} members`;
+  }
+}
+
+
+/* =========================================================
+   MEMBER COUNTS
+========================================================= */
+
+function updateMemberCount() {
+  const total =
+    members.length;
+
+  const active =
+    members.filter(
+      member =>
+        String(
+          member.status ||
+          ""
+        ).toLowerCase() ===
+        "active"
+    ).length;
+
+  const loginActive =
+    members.filter(
+      member =>
+        getLoginStatus(
+          member
+        ) === "Active"
+    ).length;
+
+  const invitations =
+    members.filter(
+      member =>
+        getLoginStatus(
+          member
+        ) ===
+        "Invitation Sent"
+    ).length;
+
+  const noLogin =
+    members.filter(
+      member =>
+        getLoginStatus(
+          member
+        ) ===
+        "No Login"
+    ).length;
+
+  const totalElement =
+    byId(
+      "memberCount"
+    );
+
+  const membersElement =
+    byId(
+      "membersCount"
+    );
+
+  const activeElement =
+    byId(
+      "activeMembers"
+    );
+
+  const inactiveElement =
+    byId(
+      "inactiveMembers"
+    );
+
+  const loginElement =
+    byId(
+      "loginMembers"
+    );
+
+  const invitedElement =
+    byId(
+      "invitedMembers"
+    );
+
+  const noLoginElement =
+    byId(
+      "noLoginMembers"
+    );
+
+  if (totalElement) {
+    totalElement.textContent =
+      total;
+  }
+
+  if (membersElement) {
+    membersElement.textContent =
+      total;
+  }
+
+  if (activeElement) {
+    activeElement.textContent =
+      active;
+  }
+
+  if (inactiveElement) {
+    inactiveElement.textContent =
+      total - active;
+  }
+
+  if (loginElement) {
+    loginElement.textContent =
+      loginActive;
+  }
+
+  if (invitedElement) {
+    invitedElement.textContent =
+      invitations;
+  }
+
+  if (noLoginElement) {
+    noLoginElement.textContent =
+      noLogin;
+  }
+}
+
+
+/* =========================================================
+   OPEN ADD MEMBER
+========================================================= */
+
+async function openAddMember() {
+  editingMemberId = null;
+
+  const panel =
+    byId(
+      "addMemberPanel"
+    );
+
+  const title =
+    byId(
+      "memberFormTitle"
+    );
+
+  const description =
+    byId(
+      "memberFormDescription"
+    );
+
+  const form =
+    byId(
+      "addMemberForm"
+    );
+
+  if (panel) {
+    panel.hidden = false;
+  }
+
+  if (title) {
+    title.textContent =
+      "Add Member";
+  }
+
+  if (description) {
+    description.textContent =
+      "Register a new member, set their contribution plan, and optionally record historical payments.";
+  }
+
+  if (form) {
+    form.reset();
+  }
+
+  ensureNationalIdUI();
+  ensureContributionUI();
+
+  const today =
+    getToday();
+
+  const joinDate =
+    byId(
+      "memberJoinDate"
+    );
+
+  const effectiveFrom =
+    byId(
+      "memberContributionEffectiveFrom"
+    );
+
+  if (joinDate) {
+    joinDate.value =
+      today;
+  }
+
+  if (effectiveFrom) {
+    effectiveFrom.value =
+      today;
+
+    effectiveFrom.dataset.auto =
+      "true";
+
+    effectiveFrom.disabled =
+      false;
+  }
+
+  const amount =
+    byId(
+      "memberContributionAmount"
+    );
+
+  if (amount) {
+    amount.disabled =
+      false;
+  }
+
+  const firstPeriod =
+    byId(
+      "memberFirstPeriodRule"
+    );
+
+  if (firstPeriod) {
+    firstPeriod.disabled =
+      false;
+  }
+
+  const historicalEnabled =
+    byId(
+      "memberHistoricalEnabled"
+    );
+
+  if (historicalEnabled) {
+    historicalEnabled.value =
+      "false";
+
+    historicalEnabled.disabled =
+      false;
+  }
+
+  const historicalPaidThrough =
+    byId(
+      "memberHistoricalPaidThrough"
+    );
+
+  if (historicalPaidThrough) {
+    historicalPaidThrough.value =
+      "";
+
+    historicalPaidThrough.disabled =
+      true;
+  }
+
+  const historicalPaymentMethod =
+    byId(
+      "memberHistoricalPaymentMethod"
+    );
+
+  if (historicalPaymentMethod) {
+    historicalPaymentMethod.value =
+      "Cash";
+
+    historicalPaymentMethod.disabled =
+      true;
+  }
+
+  updateHistoricalControls();
+
+  const setup =
+    byId(
+      "memberContributionSetup"
+    );
+
+  if (setup) {
+    setup.style.opacity =
+      "1";
+  }
+
+  clearFormMessage();
+
+  try {
+    await loadMonthlyContributionType();
+
+    const groupMonthly =
+      Number(
+        currentGroup?.monthly_contribution ||
+        0
+      );
+
+    if (
+      amount &&
+      !amount.value &&
+      groupMonthly > 0
+    ) {
+      amount.value =
+        groupMonthly;
+    }
+
+    updateContributionPreview();
+    updateHistoricalPreview();
+
+  } catch (error) {
+    showFormMessage(
+      error?.message ||
+        "Could not load the group's Monthly contribution type.",
+      "error"
+    );
+  }
+
+  byId(
+    "memberNumber"
+  )?.focus();
+
+  panel?.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+}
+
+
+/* =========================================================
+   FORM VALUES
+========================================================= */
+
+function getFormValues() {
+  const value = id =>
+    byId(id)?.value?.trim() ||
+    "";
+
+  const amountRaw =
+    value(
+      "memberContributionAmount"
+    );
+
+  return {
+    memberNumber:
+      value(
+        "memberNumber"
+      ),
+
+    name:
+      value(
+        "memberName"
+      ),
+
+    nationalId:
+      value(
+        "memberNationalId"
+      ),
+
+    phone:
+      value(
+        "memberPhone"
+      ),
+
+    email:
+      String(
+        byId(
+          "memberEmail"
+        )?.value ||
+        ""
+      )
+        .trim()
+        .toLowerCase(),
+
+    role:
+      byId(
+        "memberRole"
+      )?.value ||
+      "member",
+
+    status:
+      byId(
+        "memberStatus"
+      )?.value ||
+      "active",
+
+    joinDate:
+      value(
+        "memberJoinDate"
+      ) ||
+      getToday(),
+
+    contributionAmount:
+      amountRaw
+        ? Number(
+            amountRaw
+          )
+        : 0,
+
+    firstPeriodRule:
+      byId(
+        "memberFirstPeriodRule"
+      )?.value ||
+      "full_period",
+
+    effectiveFrom:
+      value(
+        "memberContributionEffectiveFrom"
+      ),
+
+    historicalEnabled:
+      byId(
+        "memberHistoricalEnabled"
+      )?.value ===
+      "true",
+
+    historicalPaidThrough:
+      value(
+        "memberHistoricalPaidThrough"
+      ),
+
+    historicalPaymentMethod:
+      byId(
+        "memberHistoricalPaymentMethod"
+      )?.value ||
+      "Cash"
+  };
+}
+
+
+/* =========================================================
+   FORM VALIDATION
+========================================================= */
+
+async function validateForm(
+  values
+) {
+  if (
+    !values.memberNumber
+  ) {
+    throw new Error(
+      "Member number is required."
+    );
+  }
+
+  if (
+    !values.name
+  ) {
+    throw new Error(
+      "Member name is required."
+    );
+  }
+
+  if (
+    !editingMemberId &&
+    !values.nationalId
+  ) {
+    throw new Error(
+      "National ID is required for a new member."
+    );
+  }
+
+  if (
+    !values.phone
+  ) {
+    throw new Error(
+      "Phone number is required."
+    );
+  }
+
+  if (!groupId) {
+    throw new Error(
+      "Group information is required."
+    );
+  }
+
+  if (
+    editingMemberId
+  ) {
+    return true;
+  }
+
+  if (
+    !values.joinDate
+  ) {
+    throw new Error(
+      "Join date is required."
+    );
+  }
+
+  if (
+    !Number.isFinite(
+      values.contributionAmount
+    ) ||
+    values.contributionAmount <= 0
+  ) {
+    throw new Error(
+      "Monthly contribution must be greater than zero."
+    );
+  }
+
+  if (
+    !monthlyContributionType?.id
+  ) {
+    throw new Error(
+      "The group's Monthly contribution type could not be found."
+    );
+  }
+
+  if (
+    ![
+      "full_period",
+      "next_full_period"
+    ].includes(
+      values.firstPeriodRule
+    )
+  ) {
+    throw new Error(
+      "Invalid first-period contribution rule."
+    );
+  }
+
+  if (
+    !values.effectiveFrom
+  ) {
+    throw new Error(
+      "Contribution effective date is required."
+    );
+  }
+
+  if (
+    values.effectiveFrom <
+    values.joinDate
+  ) {
+    throw new Error(
+      "Contribution effective date cannot be before the member join date."
+    );
+  }
+
+  if (
+    !values.historicalEnabled
+  ) {
+    return true;
+  }
+
+  if (
+    !values.historicalPaidThrough
+  ) {
+    throw new Error(
+      "Historical paid-through date is required."
+    );
+  }
+
+  const today =
+    getToday();
+
+  if (
+    values.historicalPaidThrough >
+    today
+  ) {
+    throw new Error(
+      "Historical paid-through date cannot be in the future."
+    );
+  }
+
+  if (
+    ![
+      "M-Pesa",
+      "Cash",
+      "Bank transfer"
+    ].includes(
+      values.historicalPaymentMethod
+    )
+  ) {
+    throw new Error(
+      "Invalid historical payment method."
+    );
+  }
+
+  const firstHistoricalMonth =
+    resolveFirstHistoricalMonth(
+      values
+    );
+
+  if (
+    !firstHistoricalMonth
+  ) {
+    throw new Error(
+      "The first historical contribution month could not be determined."
+    );
+  }
+
+  if (
+    values.historicalPaidThrough <
+    firstHistoricalMonth
+  ) {
+    throw new Error(
+      "Historical paid-through date cannot be before the first historical contribution month."
+    );
+  }
+
+  return true;
+}
+
+
+/* =========================================================
+   DUPLICATE MEMBER NUMBER CHECK
+========================================================= */
+
+async function checkDuplicateMemberNumber(
+  memberNumber
+) {
+  if (
+    !groupId ||
+    !memberNumber
+  ) {
+    return false;
+  }
+
+  let query =
+    supabase
+      .from(
+        "members"
+      )
+      .select(
+        "id"
+      )
+      .eq(
+        "group_id",
+        groupId
+      )
+      .eq(
+        "member_number",
+        memberNumber
+      );
+
+  if (
+    editingMemberId
+  ) {
+    query =
+      query.neq(
+        "id",
+        editingMemberId
+      );
+  }
+
+  const {
+    data,
+    error
+  } =
+    await query
+      .limit(1);
+
+  if (error) {
+    throw error;
+  }
+
+  return Boolean(
+    data &&
+    data.length
+  );
+}
+/* =========================================================
+   SAVE MEMBER
+========================================================= */
+
+async function saveMember(
+  event
+) {
+  event?.preventDefault();
+
+  clearFormMessage();
+
+  const submitButton =
+    byId(
+      "saveMemberButton"
+    ) ||
+    byId(
+      "memberSaveButton"
+    );
+
+  const values =
+    getFormValues();
+
+  try {
+    await validateForm(
+      values
+    );
+
+    const duplicate =
+      await checkDuplicateMemberNumber(
+        values.memberNumber
+      );
+
+    if (duplicate) {
+      throw new Error(
+        "A member with this member number already exists in this group."
+      );
+    }
+
+    if (submitButton) {
+      submitButton.disabled =
+        true;
+    }
+
+    let result = null;
+
+    /* -----------------------------------------------------
+       EDIT EXISTING MEMBER
+    ----------------------------------------------------- */
+
+    if (
+      editingMemberId
+    ) {
+      const {
+        error
+      } =
+        await supabase
+          .from(
+            "members"
+          )
+          .update({
+            member_number:
+              values.memberNumber,
+
+            name:
+              values.name,
+
+            national_id:
+              values.nationalId ||
+              null,
+
+            phone:
+              values.phone,
+
+            email:
+              values.email ||
+              null,
+
+            role:
+              values.role,
+
+            status:
+              values.status,
+
+            join_date:
+              values.joinDate
+          })
+          .eq(
+            "id",
+            editingMemberId
+          )
+          .eq(
+            "group_id",
+            groupId
+          );
+
+      if (error) {
+        throw error;
+      }
+
+      await loadMembers();
+
+      await loadMemberContributionPositions();
+
+      renderMembers();
+
+      updateMemberCount();
+
+      showFormMessage(
+        "Member details updated successfully.",
+        "success"
+      );
+
+      closeAddMember();
+
+      return;
+    }
+
+
+    /* -----------------------------------------------------
+       NEW MEMBER
+    ----------------------------------------------------- */
+
+    if (
+      values.historicalEnabled
+    ) {
+      const requestId =
+        crypto.randomUUID();
+
+      const {
+        data,
+        error
+      } =
+        await supabase.rpc(
+          "create_member_with_historical_contributions",
+          {
+            p_request_id:
+              requestId,
+
+            p_group_id:
+              groupId,
+
+            p_member_number:
+              values.memberNumber,
+
+            p_name:
+              values.name,
+
+            p_national_id:
+              values.nationalId,
+
+            p_phone:
+              values.phone,
+
+            p_email:
+              values.email ||
+              null,
+
+            p_role:
+              values.role,
+
+            p_status:
+              values.status,
+
+            p_join_date:
+              values.joinDate,
+
+            p_contribution_type_id:
+              monthlyContributionType.id,
+
+            p_contribution_amount:
+              values.contributionAmount,
+
+            p_first_period_rule:
+              values.firstPeriodRule,
+
+            p_effective_from:
+              values.effectiveFrom,
+
+            p_historical_paid_through:
+              values.historicalPaidThrough,
+
+            p_historical_payment_method:
+              values.historicalPaymentMethod
+          }
+        );
+
+      if (error) {
+        throw error;
+      }
+
+      result =
+        Array.isArray(data)
+          ? data[0]
+          : data;
+
+    } else {
+      const requestId =
+        crypto.randomUUID();
+
+      const {
+        data,
+        error
+      } =
+        await supabase.rpc(
+          "create_member_with_contribution_plan",
+          {
+            p_request_id:
+              requestId,
+
+            p_group_id:
+              groupId,
+
+            p_member_number:
+              values.memberNumber,
+
+            p_name:
+              values.name,
+
+            p_national_id:
+              values.nationalId,
+
+            p_phone:
+              values.phone,
+
+            p_email:
+              values.email ||
+              null,
+
+            p_role:
+              values.role,
+
+            p_status:
+              values.status,
+
+            p_join_date:
+              values.joinDate,
+
+            p_contribution_type_id:
+              monthlyContributionType.id,
+
+            p_contribution_amount:
+              values.contributionAmount,
+
+            p_first_period_rule:
+              values.firstPeriodRule,
+
+            p_effective_from:
+              values.effectiveFrom
+          }
+        );
+
+      if (error) {
+        throw error;
+      }
+
+      result =
+        Array.isArray(data)
+          ? data[0]
+          : data;
+    }
+
+
+    /* -----------------------------------------------------
+       ONBOARDING EVENT
+    ----------------------------------------------------- */
+
+    try {
+      sessionStorage.setItem(
+        "chama_live_onboarding_event",
+        JSON.stringify({
+          type:
+            "new-member",
+          member_id:
+            result?.member_id ||
+            result?.id ||
+            null,
+          group_id:
+            groupId,
+          created_at:
+            new Date().toISOString()
+        })
+      );
+    } catch {
+      /* sessionStorage is optional */
+    }
+
+
+    /* -----------------------------------------------------
+       REFRESH MEMBER LIST + ACCOUNTING POSITION
+    ----------------------------------------------------- */
+
+    await loadMembers();
+
+    await loadMemberContributionPositions();
+
+    renderMembers();
+
+    updateMemberCount();
+
+
+    /* -----------------------------------------------------
+       SUCCESS MESSAGE
+    ----------------------------------------------------- */
+
+    const message =
+      contributionResultMessage(
+        result
+      );
+
+    showFormMessage(
+      message
+        ? `Member created successfully. ${message}`
+        : "Member created successfully.",
+      "success"
+    );
+
+    closeAddMember();
+
+  } catch (error) {
+    console.error(
+      "CHAMA LIVE: Save member error",
+      error
+    );
+
+    showFormMessage(
+      error?.message ||
+        "Could not save the member.",
+      "error"
+    );
+
+  } finally {
+    if (submitButton) {
+      submitButton.disabled =
+        false;
+    }
+  }
+}
+
+
+/* =========================================================
+   HISTORICAL RECONCILIATION
+========================================================= */
+
+async function reconcileMemberHistoricalPayments(
+  memberId,
+  throughDate = null
+) {
+  if (!memberId) {
+    throw new Error(
+      "Member ID is required."
+    );
+  }
+
+  const {
+    data,
+    error
+  } =
+    await supabase.rpc(
+      "reconcile_member_historical_payments",
+      {
+        p_member_id:
+          memberId,
+
+        p_through_date:
+          throughDate ||
+          null
+      }
+    );
+
+  if (error) {
+    throw error;
+  }
+
+  return Array.isArray(data)
+    ? data[0]
+    : data;
+}
+
+
+/* =========================================================
+   HISTORICAL RECONCILIATION HANDLER
+========================================================= */
+
+async function handleHistoricalReconciliation(
+  memberId
+) {
+  const member =
+    members.find(
+      item =>
+        String(
+          item.id
+        ) ===
+        String(
+          memberId
+        )
+    );
+
+  if (!member) {
+    showError(
+      new Error(
+        "Member could not be found."
+      )
+    );
+    return;
+  }
+
+  const confirmed =
+    window.confirm(
+      `Reconcile historical payments for ${member.name || "this member"}?`
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    showStatus(
+      "Reconciling historical payments..."
+    );
+
+    await reconcileMemberHistoricalPayments(
+      member.id
+    );
+
+    await loadMembers();
+
+    await loadMemberContributionPositions();
+
+    renderMembers();
+
+    updateMemberCount();
+
+    showStatus("");
+
+    await openMemberModal(
+      member.id
+    );
+
+  } catch (error) {
+    showStatus("");
+
+    showError(
+      error
+    );
+  }
+}
+
+
+/* =========================================================
+   MEMBER INVITATION
+========================================================= */
+
+async function sendMemberInvitation(
+  memberId,
+  reopenModal = false
+) {
+  const member =
+    members.find(
+      item =>
+        String(
+          item.id
+        ) ===
+        String(
+          memberId
+        )
+    );
+
+  if (!member) {
+    throw new Error(
+      "Member could not be found."
+    );
+  }
+
+  const email =
+    String(
+      member.email ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+  if (!email) {
+    throw new Error(
+      "This member does not have an email address."
+    );
+  }
+
+  const {
+    data: sessionData,
+    error: sessionError
+  } =
+    await supabase.auth.getSession();
+
+  if (sessionError) {
+    throw sessionError;
+  }
+
+  if (
+    !sessionData?.session
+  ) {
+    throw new Error(
+      "Your session has expired. Please sign in again."
+    );
+  }
+
+  const {
+    error
+  } =
+    await supabase.functions.invoke(
+      "send-member-invitation",
+      {
+        body: {
+          member_id:
+            member.id
+        }
+      }
+    );
+
+  if (error) {
+    throw error;
+  }
+
+  await loadMembers();
+
+  await loadMemberContributionPositions();
+
+  renderMembers();
+
+  updateMemberCount();
+
+  if (
+    reopenModal
+  ) {
+    await openMemberModal(
+      member.id
+    );
+  }
+}
+
+
+/* =========================================================
+   CLOSE ADD MEMBER
+========================================================= */
+
+function closeAddMember() {
+  const panel =
+    byId(
+      "addMemberPanel"
+    );
+
+  if (panel) {
+    panel.hidden =
+      true;
+  }
+
+  editingMemberId =
+    null;
+
+  clearFormMessage();
+}
+
+
+/* =========================================================
+   OPEN EDIT MEMBER
+========================================================= */
+
+async function openEditMember(
+  memberId
+) {
+  const member =
+    members.find(
+      item =>
+        String(
+          item.id
+        ) ===
+        String(
+          memberId
+        )
+    );
+
+  if (!member) {
+    showError(
+      new Error(
+        "Member could not be found."
+      )
+    );
+    return;
+  }
+
+  editingMemberId =
+    member.id;
+
+  const panel =
+    byId(
+      "addMemberPanel"
+    );
+
+  const title =
+    byId(
+      "memberFormTitle"
+    );
+
+  const description =
+    byId(
+      "memberFormDescription"
+    );
+
+  const form =
+    byId(
+      "addMemberForm"
+    );
+
+  if (panel) {
+    panel.hidden =
+      false;
+  }
+
+  if (title) {
+    title.textContent =
+      "Edit Member";
+  }
+
+  if (description) {
+    description.textContent =
+      "Update the member's profile details. Contribution accounting remains managed by the existing accounting system.";
+  }
+
+  if (form) {
+    form.reset();
+  }
+
+  ensureNationalIdUI();
+  ensureContributionUI();
+
+  const setValue =
+    (
+      id,
+      value
+    ) => {
+      const element =
+        byId(id);
+
+      if (element) {
+        element.value =
+          value ??
+          "";
+      }
+    };
+
+  setValue(
+    "memberNumber",
+    member.member_number
+  );
+
+  setValue(
+    "memberName",
+    member.name
+  );
+
+  setValue(
+    "memberNationalId",
+    member.national_id
+  );
+
+  setValue(
+    "memberPhone",
+    member.phone
+  );
+
+  setValue(
+    "memberEmail",
+    member.email
+  );
+
+  setValue(
+    "memberRole",
+    member.role ||
+      "member"
+  );
+
+  setValue(
+    "memberStatus",
+    member.status ||
+      "active"
+  );
+
+  setValue(
+    "memberJoinDate",
+    member.join_date
+  );
+
+  const amount =
+    byId(
+      "memberContributionAmount"
+    );
+
+  if (amount) {
+    amount.disabled =
+      true;
+  }
+
+  const firstPeriod =
+    byId(
+      "memberFirstPeriodRule"
+    );
+
+  if (firstPeriod) {
+    firstPeriod.disabled =
+      true;
+  }
+
+  const effectiveFrom =
+    byId(
+      "memberContributionEffectiveFrom"
+    );
+
+  if (effectiveFrom) {
+    effectiveFrom.disabled =
+      true;
+  }
+
+  const historicalEnabled =
+    byId(
+      "memberHistoricalEnabled"
+    );
+
+  if (historicalEnabled) {
+    historicalEnabled.value =
+      "false";
+
+    historicalEnabled.disabled =
+      true;
+  }
+
+  updateHistoricalControls();
+
+  clearFormMessage();
+
+  byId(
+    "memberNumber"
+  )?.focus();
+
+  panel?.scrollIntoView({
+    behavior:
+      "smooth",
+    block:
+      "start"
+  });
+}
+/* =========================================================
+   CONTRIBUTION POSITION UI
+========================================================= */
+
+function ensureContributionPositionUI() {
+  let container =
+    byId(
+      "memberContributionPosition"
+    );
+
+  if (container) {
+    return container;
+  }
+
+  const modal =
+    byId(
+      "memberModal"
+    );
+
+  if (!modal) {
+    return null;
+  }
+
+  container =
+    document.createElement(
+      "div"
+    );
+
+  container.id =
+    "memberContributionPosition";
+
+  container.innerHTML = `
+    <div class="member-contribution-position-header">
+
+      <div>
+        <h3>
+          Contribution Position
+        </h3>
+
+        <p
+          id="memberContributionPositionDescription"
+        >
+          Current contribution accounting position.
+        </p>
+      </div>
+
+      <span
+        id="memberContributionPositionStatus"
+        class="member-contribution-status status-unknown"
+      >
+        Loading...
+      </span>
+
+    </div>
+
+    <div class="member-contribution-position-grid">
+
+      <div>
+        <span>Total Due</span>
+        <strong id="memberContributionTotalDue">
+          KSh 0.00
+        </strong>
+      </div>
+
+      <div>
+        <span>Allocated</span>
+        <strong id="memberContributionAllocated">
+          KSh 0.00
+        </strong>
+      </div>
+
+      <div>
+        <span>Arrears</span>
+        <strong id="memberContributionArrears">
+          KSh 0.00
+        </strong>
+      </div>
+
+      <div>
+        <span>Credit</span>
+        <strong id="memberContributionCredit">
+          KSh 0.00
+        </strong>
+      </div>
+
+    </div>
+  `;
+
+  const actions =
+    modal.querySelector(
+      ".modal-actions"
+    );
+
+  const detailGrid =
+    modal.querySelector(
+      ".member-detail-grid"
+    );
+
+  if (actions) {
+    actions.before(
+      container
+    );
+  } else if (detailGrid) {
+    detailGrid.after(
+      container
+    );
+  } else {
+    modal.appendChild(
+      container
+    );
+  }
+
+  return container;
+}
+
+
+/* =========================================================
+   CONTRIBUTION POSITION LOADING STATE
+========================================================= */
+
+function setContributionPositionLoading() {
+  const status =
+    byId(
+      "memberContributionPositionStatus"
+    );
+
+  const description =
+    byId(
+      "memberContributionPositionDescription"
+    );
+
+  const totalDue =
+    byId(
+      "memberContributionTotalDue"
+    );
+
+  const allocated =
+    byId(
+      "memberContributionAllocated"
+    );
+
+  const arrears =
+    byId(
+      "memberContributionArrears"
+    );
+
+  const credit =
+    byId(
+      "memberContributionCredit"
+    );
+
+  if (status) {
+    status.className =
+      "member-contribution-status status-unknown";
+
+    status.textContent =
+      "Loading...";
+  }
+
+  if (description) {
+    description.textContent =
+      "Loading current contribution accounting position.";
+  }
+
+  if (totalDue) {
+    totalDue.textContent =
+      "KSh 0.00";
+  }
+
+  if (allocated) {
+    allocated.textContent =
+      "KSh 0.00";
+  }
+
+  if (arrears) {
+    arrears.textContent =
+      "KSh 0.00";
+  }
+
+  if (credit) {
+    credit.textContent =
+      "KSh 0.00";
+  }
+}
+
+
+/* =========================================================
+   CONTRIBUTION POSITION STATUS CLASS
+========================================================= */
+
+function contributionPositionStatusClass(
+  status
+) {
+  const value =
+    String(
+      status ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+  if (
+    value ===
+    "arrears"
+  ) {
+    return "status-arrears";
+  }
+
+  if (
+    value ===
+    "credit"
+  ) {
+    return "status-credit";
+  }
+
+  if (
+    value ===
+    "up_to_date"
+  ) {
+    return "status-up-to-date";
+  }
+
+  return "status-unknown";
+}
+
+
+/* =========================================================
+   LOAD MEMBER CONTRIBUTION POSITION
+   READ ONLY
+========================================================= */
+
+async function loadMemberContributionPosition(
+  memberId
+) {
+  ensureContributionPositionUI();
+
+  setContributionPositionLoading();
+
+  const {
+    data,
+    error
+  } =
+    await supabase.rpc(
+      "get_member_contribution_position",
+      {
+        p_member_id:
+          memberId
+      },
+      {
+        get: true
+      }
+    );
+
+  if (error) {
+    throw error;
+  }
+
+  const position =
+    Array.isArray(data)
+      ? data[0]
+      : data;
+
+  const status =
+    byId(
+      "memberContributionPositionStatus"
+    );
+
+  const description =
+    byId(
+      "memberContributionPositionDescription"
+    );
+
+  const totalDue =
+    byId(
+      "memberContributionTotalDue"
+    );
+
+  const allocated =
+    byId(
+      "memberContributionAllocated"
+    );
+
+  const arrears =
+    byId(
+      "memberContributionArrears"
+    );
+
+  const credit =
+    byId(
+      "memberContributionCredit"
+    );
+
+  if (!position) {
+    if (status) {
+      status.className =
+        "member-contribution-status status-unknown";
+
+      status.textContent =
+        "Unavailable";
+    }
+
+    if (description) {
+      description.textContent =
+        "No contribution position is currently available.";
+    }
+
+    return null;
+  }
+
+  const statusValue =
+    String(
+      position.status ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+  if (status) {
+    status.className =
+      `member-contribution-status ${
+        contributionPositionStatusClass(
+          statusValue
+        )
+      }`;
+
+    status.textContent =
+      contributionStatusLabel(
+        statusValue
+      );
+  }
+
+  if (description) {
+    description.textContent =
+      "Current contribution accounting position.";
+  }
+
+  if (totalDue) {
+    totalDue.textContent =
+      formatMoney(
+        position.total_due ??
+        position.due
+      );
+  }
+
+  if (allocated) {
+    allocated.textContent =
+      formatMoney(
+        position.total_allocated ??
+        position.allocated
+      );
+  }
+
+  if (arrears) {
+    arrears.textContent =
+      formatMoney(
+        position.arrears
+      );
+  }
+
+  if (credit) {
+    credit.textContent =
+      formatMoney(
+        position.credit
+      );
+  }
+
+  return position;
+}
+
+
+/* =========================================================
+   VIEW MEMBER MODAL
+========================================================= */
+
+async function openMemberModal(
+  memberId
+) {
+  const member =
+    members.find(
+      item =>
+        String(
+          item.id
+        ) ===
+        String(
+          memberId
+        )
+    );
+
+  if (!member) {
+    showError(
+      new Error(
+        "Member could not be found."
+      )
+    );
+
+    return;
+  }
+
+  ensureNationalIdUI();
+  ensureContributionPositionUI();
+
+  const modal =
+    byId(
+      "memberModal"
+    );
+
+  if (!modal) {
+    return;
+  }
+
+  const setText =
+    (
+      id,
+      value
+    ) => {
+      const element =
+        byId(id);
+
+      if (element) {
+        element.textContent =
+          value ||
+          "—";
+      }
+    };
+
+  setText(
+    "memberModalName",
+    member.name
+  );
+
+  setText(
+    "memberModalNumber",
+    member.member_number
+  );
+
+  setText(
+    "memberModalMembershipNumber",
+    member.membership_number ||
+      member.member_number
+  );
+
+  setText(
+    "memberModalNationalId",
+    member.national_id
+  );
+
+  setText(
+    "memberModalPhone",
+    member.phone
+  );
+
+  setText(
+    "memberModalEmail",
+    member.email
+  );
+
+  setText(
+    "memberModalRole",
+    member.role
+  );
+
+  setText(
+    "memberModalStatus",
+    member.status
+  );
+
+  setText(
+    "memberModalJoinDate",
+    formatDate(
+      member.join_date
+    )
+  );
+
+  const reconcileButton =
+    byId(
+      "reconcileHistoricalPayments"
+    );
+
+  if (
+    !reconcileButton
+  ) {
+    const actions =
+      modal.querySelector(
+        ".modal-actions"
+      );
+
+    if (actions) {
+      const button =
+        document.createElement(
+          "button"
+        );
+
+      button.type =
+        "button";
+
+      button.id =
+        "reconcileHistoricalPayments";
+
+      button.className =
+        "member-action";
+
+      button.dataset.action =
+        "reconcile";
+
+      button.dataset.memberId =
+        member.id;
+
+      button.textContent =
+        "Reconcile Historical Payments";
+
+      actions.prepend(
+        button
+      );
+    }
+  } else {
+    reconcileButton.dataset.memberId =
+      member.id;
+  }
+
+  modal.hidden =
+    false;
+
+  modal.classList.add(
+    "open"
+  );
+
+  try {
+    await loadMemberContributionPosition(
+      member.id
+    );
+  } catch (error) {
+    console.error(
+      "CHAMA LIVE: Member contribution position error",
+      error
+    );
+
+    const status =
+      byId(
+        "memberContributionPositionStatus"
+      );
+
+    const description =
+      byId(
+        "memberContributionPositionDescription"
+      );
+
+    if (status) {
+      status.className =
+        "member-contribution-status status-unknown";
+
+      status.textContent =
+        "Unavailable";
+    }
+
+    if (description) {
+      description.textContent =
+        "Contribution position could not be loaded.";
+    }
+  }
+
+  const closeButton =
+    modal.querySelector(
+      "[data-action='close']"
+    ) ||
+    modal.querySelector(
+      ".modal-close"
+    );
+
+  closeButton?.focus();
+}
+
+
+/* =========================================================
+   HISTORICAL RECONCILIATION
+========================================================= */
+
+async function reconcileMemberHistoricalPayments(
+  memberId,
+  throughDate = null
+) {
+  const {
+    data,
+    error
+  } =
+    await supabase.rpc(
+      "reconcile_member_historical_payments",
+      {
+        p_member_id:
+          memberId,
+
+        p_through_date:
+          throughDate ||
+          null
+      }
+    );
+
+  if (error) {
+    throw error;
+  }
+
+  return Array.isArray(data)
+    ? data[0]
+    : data;
+}
+
+
+async function handleHistoricalReconciliation(
+  memberId
+) {
+  const member =
+    members.find(
+      item =>
+        String(
+          item.id
+        ) ===
+        String(
+          memberId
+        )
+    );
+
+  if (!member) {
+    showError(
+      new Error(
+        "Member could not be found."
+      )
+    );
+
+    return;
+  }
+
+  const confirmed =
+    window.confirm(
+      `Reconcile historical payments for ${member.name || "this member"}?`
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    showStatus(
+      "Reconciling historical payments..."
+    );
+
+    await reconcileMemberHistoricalPayments(
+      member.id
+    );
+
+    await loadMembers();
+
+    await loadMemberContributionPositions();
+
+    renderMembers();
+
+    updateMemberCount();
+
+    showStatus("");
+
+    await openMemberModal(
+      member.id
+    );
+
+  } catch (error) {
+    showStatus("");
+
+    showError(
+      error
+    );
+  }
+}
+
+
+/* =========================================================
+   MEMBER INVITATION
+========================================================= */
+
+async function sendMemberInvitation(
+  memberId,
+  reopenModal = false
+) {
+  const member =
+    members.find(
+      item =>
+        String(
+          item.id
+        ) ===
+        String(
+          memberId
+        )
+    );
+
+  if (!member) {
+    throw new Error(
+      "Member could not be found."
+    );
+  }
+
+  const email =
+    String(
+      member.email ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+  if (!email) {
+    throw new Error(
+      "This member does not have an email address."
+    );
+  }
+
+  const {
+    data: sessionData,
+    error: sessionError
+  } =
+    await supabase.auth.getSession();
+
+  if (sessionError) {
+    throw sessionError;
+  }
+
+  if (
+    !sessionData?.session
+  ) {
+    throw new Error(
+      "Your session has expired. Please sign in again."
+    );
+  }
+
+  const {
+    error
+  } =
+    await supabase.functions.invoke(
+      "send-member-invitation",
+      {
+        body: {
+          member_id:
+            member.id
+        }
+      }
+    );
+
+  if (error) {
+    throw error;
+  }
+
+  await loadMembers();
+
+  await loadMemberContributionPositions();
+
+  renderMembers();
+
+  updateMemberCount();
+
+  if (
+    reopenModal
+  ) {
+    await openMemberModal(
+      member.id
+    );
+  }
+}
+/* =========================================================
+   MEMBER SEARCH
+========================================================= */
+
+let memberSearchTimer =
+  null;
+
+function filterMembers(
+  searchTerm
+) {
+  const term =
+    String(
+      searchTerm ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+  if (!term) {
+    return members;
+  }
+
+  return members.filter(
+    member => {
+      const values = [
+        member.member_number,
+        member.membership_number,
+        member.national_id,
+        member.name,
+        member.phone,
+        member.email,
+        member.role,
+        member.status,
+        member.onboarding_status
+      ];
+
+      return values.some(
+        value =>
+          String(
+            value ||
+            ""
+          )
+            .toLowerCase()
+            .includes(
+              term
+            )
+      );
+    }
+  );
+}
+
+
+/* =========================================================
+   MEMBER ACTION HANDLER
+========================================================= */
+
+async function handleMemberAction(
+  event
+) {
+  const button =
+    event.target.closest(
+      "[data-action]"
+    );
+
+  if (!button) {
+    return;
+  }
+
+  const action =
+    button.dataset.action;
+
+  const memberId =
+    button.dataset.memberId;
+
+  if (!action) {
+    return;
+  }
+
+  try {
+    if (
+      action ===
+      "view"
+    ) {
+      await openMemberModal(
+        memberId
+      );
+
+      return;
+    }
+
+    if (
+      action ===
+      "edit"
+    ) {
+      await openEditMember(
+        memberId
+      );
+
+      return;
+    }
+
+    if (
+      action ===
+      "invite"
+    ) {
+      button.disabled =
+        true;
+
+      await sendMemberInvitation(
+        memberId,
+        false
+      );
+
+      return;
+    }
+
+    if (
+      action ===
+      "reconcile"
+    ) {
+      await handleHistoricalReconciliation(
+        memberId
+      );
+
+      return;
+    }
+
+    if (
+      action ===
+      "close"
+    ) {
+      closeMemberModal();
+
+      return;
+    }
+
+  } catch (error) {
+    console.error(
+      "CHAMA LIVE: Member action error",
+      error
+    );
+
+    showError(
+      error
+    );
+
+  } finally {
+    if (
+      action ===
+      "invite"
+    ) {
+      button.disabled =
+        false;
+    }
+  }
+}
+
+
+/* =========================================================
+   CLOSE MEMBER MODAL
+========================================================= */
+
+function closeMemberModal() {
+  const modal =
+    byId(
+      "memberModal"
+    );
+
+  if (!modal) {
+    return;
+  }
+
+  modal.hidden =
+    true;
+
+  modal.classList.remove(
+    "open"
+  );
+}
+
+
+/* =========================================================
+   BIND EVENTS
+========================================================= */
+
+function bindEvents() {
+  const addButton =
+    byId(
+      "addMemberButton"
+    ) ||
+    byId(
+      "addMember"
+    );
+
+  addButton?.addEventListener(
+    "click",
+    () =>
+      openAddMember()
+  );
+
+  const closeAddButton =
+    byId(
+      "closeAddMember"
+    );
+
+  closeAddButton?.addEventListener(
+    "click",
+    closeAddMember
+  );
+
+  const cancelAddButton =
+    byId(
+      "cancelAddMember"
+    );
+
+  cancelAddButton?.addEventListener(
+    "click",
+    closeAddMember
+  );
+
+  const form =
+    byId(
+      "addMemberForm"
+    );
+
+  form?.addEventListener(
+    "submit",
+    saveMember
+  );
+
+  const search =
+    byId(
+      "memberSearch"
+    );
+
+  search?.addEventListener(
+    "input",
+    event => {
+      clearTimeout(
+        memberSearchTimer
+      );
+
+      memberSearchTimer =
+        setTimeout(
+          () => {
+            const filtered =
+              filterMembers(
+                event.target.value
+              );
+
+            renderMembers(
+              filtered
+            );
+          },
+          150
+        );
+    }
+  );
+
+  const clearSearch =
+    byId(
+      "clearMemberSearch"
+    );
+
+  clearSearch?.addEventListener(
+    "click",
+    () => {
+      if (search) {
+        search.value =
+          "";
+      }
+
+      renderMembers(
+        members
+      );
+    }
+  );
+
+  const rows =
+    byId(
+      "memberRows"
+    );
+
+  rows?.addEventListener(
+    "click",
+    handleMemberAction
+  );
+
+  const cards =
+    byId(
+      "memberCards"
+    );
+
+  cards?.addEventListener(
+    "click",
+    handleMemberAction
+  );
+
+  const modal =
+    byId(
+      "memberModal"
+    );
+
+  modal?.addEventListener(
+    "click",
+    event => {
+      if (
+        event.target ===
+        modal
+      ) {
+        closeMemberModal();
+
+        return;
+      }
+
+      handleMemberAction(
+        event
+      );
+    }
+  );
+
+  const modalClose =
+    modal?.querySelectorAll(
+      "[data-action='close'], .modal-close"
+    );
+
+  modalClose?.forEach(
+    button => {
+      button.addEventListener(
+        "click",
+        closeMemberModal
+      );
+    }
+  );
+
+  byId(
+    "memberHistoricalEnabled"
+  )?.addEventListener(
+    "change",
+    updateHistoricalControls
+  );
+
+  byId(
+    "memberHistoricalPaidThrough"
+  )?.addEventListener(
+    "change",
+    updateHistoricalPreview
+  );
+
+  byId(
+    "memberContributionAmount"
+  )?.addEventListener(
+    "input",
+    () => {
+      updateContributionPreview();
+      updateHistoricalPreview();
+    }
+  );
+
+  byId(
+    "memberJoinDate"
+  )?.addEventListener(
+    "change",
+    () => {
+      const effectiveFrom =
+        byId(
+          "memberContributionEffectiveFrom"
+        );
+
+      if (
+        effectiveFrom &&
+        effectiveFrom.dataset.auto ===
+          "true"
+      ) {
+        effectiveFrom.value =
+          byId(
+            "memberJoinDate"
+          )?.value ||
+          "";
+
+        updateHistoricalPreview();
+      }
+    }
+  );
+
+  document.addEventListener(
+    "keydown",
+    event => {
+      if (
+        event.key !==
+        "Escape"
+      ) {
+        return;
+      }
+
+      const memberModal =
+        byId(
+          "memberModal"
+        );
+
+      if (
+        memberModal &&
+        !memberModal.hidden
+      ) {
+        closeMemberModal();
+
+        return;
+      }
+
+      const panel =
+        byId(
+          "addMemberPanel"
+        );
+
+      if (
+        panel &&
+        !panel.hidden
+      ) {
+        closeAddMember();
+      }
+    }
+  );
+}
+
+
+/* =========================================================
+   INIT
+========================================================= */
+
+export async function init() {
+  if (initialized) {
+    return;
+  }
+
+  initialized =
+    true;
+
+  try {
+    clearError();
+
+    showStatus(
+      "Loading members..."
+    );
+
+    currentUser =
+      await requireAuth();
+
+    currentMember =
+      await getMyMember();
+
+    if (
+      !currentMember?.group_id
+    ) {
+      throw new Error(
+        "Your member record has no group."
+      );
+    }
+
+    groupId =
+      currentMember.group_id;
+
+    currentGroup =
+      await getMyGroup();
+
+    if (!currentGroup) {
+      throw new Error(
+        "Group information could not be found."
+      );
+    }
+
+    const groupName =
+      byId(
+        "membersGroupName"
+      );
+
+    if (groupName) {
+      groupName.textContent =
+        currentGroup.name ||
+        currentGroup.group_name ||
+        "Your Group";
+    }
+
+    ensureNationalIdUI();
+
+    ensureContributionUI();
+
+    ensureContributionStatusStyles();
+
+    await loadMonthlyContributionType();
+
+    await loadMembers();
+
+    await loadMemberContributionPositions();
+
+    renderMembers();
+
+    updateMemberCount();
+
+    bindEvents();
+
+    showStatus("");
+
+  } catch (error) {
+    initialized =
+      false;
+
+    showStatus("");
+
+    showError(
+      error
+    );
+  }
+}
+
+
+/* =========================================================
+   REFRESH MEMBERS
+========================================================= */
+
+export async function refreshMembers() {
+  if (!groupId) {
+    return;
+  }
+
+  try {
+    await loadMembers();
+
+    await loadMemberContributionPositions();
+
+    renderMembers();
+
+    updateMemberCount();
+
+  } catch (error) {
+    showError(
+      error
+    );
+  }
+}
+
+
+/* =========================================================
+   PAGE BOOT
+========================================================= */
+
+export const loadPage =
+  init;
+
+console.log(
+  "CHAMA LIVE: members.js ready"
+);
+
+
+
+
+
+
+
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
