@@ -2388,8 +2388,6 @@ async function openAddMember() {
     block: "start"
   });
 }
-
-
 /* =========================================================
    FORM VALUES
 ========================================================= */
@@ -2723,6 +2721,8 @@ async function checkDuplicateMemberNumber(
     data.length
   );
 }
+
+
 /* =========================================================
    SAVE MEMBER
 ========================================================= */
@@ -2845,12 +2845,12 @@ async function saveMember(
        NEW MEMBER
     ----------------------------------------------------- */
 
+    const requestId =
+      crypto.randomUUID();
+
     if (
       values.historicalEnabled
     ) {
-      const requestId =
-        crypto.randomUUID();
-
       const {
         data,
         error
@@ -2919,9 +2919,6 @@ async function saveMember(
           : data;
 
     } else {
-      const requestId =
-        crypto.randomUUID();
-
       const {
         data,
         error
@@ -2995,12 +2992,15 @@ async function saveMember(
         JSON.stringify({
           type:
             "new-member",
+
           member_id:
             result?.member_id ||
             result?.id ||
             null,
+
           group_id:
             groupId,
+
           created_at:
             new Date().toISOString()
         })
@@ -3126,6 +3126,7 @@ async function handleHistoricalReconciliation(
         "Member could not be found."
       )
     );
+
     return;
   }
 
@@ -3309,6 +3310,7 @@ async function openEditMember(
         "Member could not be found."
       )
     );
+
     return;
   }
 
@@ -3367,8 +3369,7 @@ async function openEditMember(
 
       if (element) {
         element.value =
-          value ??
-          "";
+          value ?? "";
       }
     };
 
@@ -3472,6 +3473,8 @@ async function openEditMember(
       "start"
   });
 }
+
+
 /* =========================================================
    PART 5 — MEMBER ACCOUNTING / CONTRIBUTION POSITION
    ---------------------------------------------------------
@@ -3485,30 +3488,35 @@ async function openEditMember(
    - No RPC replacement.
    - No reconciliation function declaration here.
    - Keep exactly one copy of each function in members.js.
-   ========================================================= */
+========================================================= */
 
 
 /* ---------------------------------------------------------
    CONTRIBUTION POSITION UI
-   --------------------------------------------------------- */
+--------------------------------------------------------- */
 
 function ensureContributionPositionUI() {
   const modal =
-    byId("viewMemberModal");
+    byId("viewMemberModal") ||
+    byId("memberModal");
 
   if (!modal) {
     return null;
   }
 
   let panel =
-    byId("memberContributionPosition");
+    byId(
+      "memberContributionPosition"
+    );
 
   if (panel) {
     return panel;
   }
 
   panel =
-    document.createElement("section");
+    document.createElement(
+      "section"
+    );
 
   panel.id =
     "memberContributionPosition";
@@ -3614,7 +3622,9 @@ function ensureContributionPositionUI() {
     );
 
   if (actions) {
-    actions.before(panel);
+    actions.before(
+      panel
+    );
   } else {
     const detailGrid =
       modal.querySelector(
@@ -3622,9 +3632,13 @@ function ensureContributionPositionUI() {
       );
 
     if (detailGrid) {
-      detailGrid.after(panel);
+      detailGrid.after(
+        panel
+      );
     } else {
-      modal.appendChild(panel);
+      modal.appendChild(
+        panel
+      );
     }
   }
 
@@ -3634,7 +3648,7 @@ function ensureContributionPositionUI() {
 
 /* ---------------------------------------------------------
    CONTRIBUTION POSITION STYLES
-   --------------------------------------------------------- */
+--------------------------------------------------------- */
 
 function ensureContributionPositionStyles() {
   if (
@@ -3646,7 +3660,9 @@ function ensureContributionPositionStyles() {
   }
 
   const style =
-    document.createElement("style");
+    document.createElement(
+      "style"
+    );
 
   style.id =
     "memberContributionPositionStyles";
@@ -3808,13 +3824,15 @@ function ensureContributionPositionStyles() {
     }
   `;
 
-  document.head.appendChild(style);
+  document.head.appendChild(
+    style
+  );
 }
 
 
 /* ---------------------------------------------------------
    POSITION LOADING STATE
-   --------------------------------------------------------- */
+--------------------------------------------------------- */
 
 function setContributionPositionLoading() {
   ensureContributionPositionUI();
@@ -3896,7 +3914,7 @@ function setContributionPositionLoading() {
 
 /* ---------------------------------------------------------
    POSITION STATUS CLASS
-   --------------------------------------------------------- */
+--------------------------------------------------------- */
 
 function contributionPositionStatusClass(
   status
@@ -3932,7 +3950,7 @@ function contributionPositionStatusClass(
 
 /* ---------------------------------------------------------
    READ MEMBER CONTRIBUTION POSITION
-   --------------------------------------------------------- */
+--------------------------------------------------------- */
 
 async function loadMemberContributionPosition(
   memberId
@@ -4073,21 +4091,25 @@ async function loadMemberContributionPosition(
     ) {
       description.textContent =
         `Member has paid ${formatMoney(allocated)} against ${formatMoney(due)} due, leaving ${formatMoney(arrears)} in arrears.`;
+
     } else if (
       status === "credit"
     ) {
       description.textContent =
         `Member has contributed ${formatMoney(allocated)} and currently has ${formatMoney(credit)} in credit.`;
+
     } else if (
       status === "up_to_date"
     ) {
       description.textContent =
         `Member has contributed ${formatMoney(allocated)} against ${formatMoney(due)} due and is up to date.`;
+
     } else if (
       status === "plan_not_set"
     ) {
       description.textContent =
         "No contribution plan has been established for this member.";
+
     } else {
       description.textContent =
         `Contribution position: ${contributionStatusLabel(status)}.`;
@@ -4129,7 +4151,7 @@ async function loadMemberContributionPosition(
 
 /* ---------------------------------------------------------
    REFRESH POSITION AFTER RECONCILIATION
-   --------------------------------------------------------- */
+--------------------------------------------------------- */
 
 async function refreshMemberContributionPosition(
   memberId
@@ -4142,6 +4164,7 @@ async function refreshMemberContributionPosition(
     return await loadMemberContributionPosition(
       memberId
     );
+
   } catch (error) {
     console.error(
       "CHAMA LIVE: Could not refresh member contribution position",
@@ -4155,7 +4178,7 @@ async function refreshMemberContributionPosition(
 
 /* ---------------------------------------------------------
    OPEN MEMBER MODAL
-   --------------------------------------------------------- */
+--------------------------------------------------------- */
 
 async function openMemberModal(
   memberId
@@ -4180,7 +4203,8 @@ async function openMemberModal(
   }
 
   const modal =
-    byId("viewMemberModal");
+    byId("viewMemberModal") ||
+    byId("memberModal");
 
   if (!modal) {
     return;
@@ -4259,7 +4283,8 @@ async function openMemberModal(
       "—";
   }
 
-  modal.hidden = false;
+  modal.hidden =
+    false;
 
   setContributionPositionLoading();
 
@@ -4267,6 +4292,7 @@ async function openMemberModal(
     await loadMemberContributionPosition(
       member.id
     );
+
   } catch (error) {
     console.error(
       "CHAMA LIVE: Member contribution position unavailable",
@@ -4298,6 +4324,11 @@ async function openMemberModal(
     }
   }
 
+
+  /* -------------------------------------------------------
+     HISTORICAL RECONCILIATION BUTTON
+  ------------------------------------------------------- */
+
   let reconcileButton =
     byId(
       "reconcileHistoricalPayments"
@@ -4321,9 +4352,6 @@ async function openMemberModal(
     reconcileButton.dataset.action =
       "reconcile";
 
-    reconcileButton.textContent =
-      "Reconcile Historical Payments";
-
     const actions =
       modal.querySelector(
         ".modal-actions"
@@ -4336,6 +4364,19 @@ async function openMemberModal(
     }
   }
 
+  /*
+     Important:
+     The reconciliation action must carry the
+     currently opened member ID.
+  */
+  reconcileButton.dataset.memberId =
+    String(
+      member.id
+    );
+
+  reconcileButton.textContent =
+    "Reconcile Historical Payments";
+
   const closeButton =
     modal.querySelector(
       "[data-close-member-modal]"
@@ -4346,12 +4387,13 @@ async function openMemberModal(
   }
 }
 
+
 /* =========================================================
    MEMBER SEARCH
+   ---------------------------------------------------------
+   memberSearchTimer is declared once at the top of
+   members.js. Do NOT redeclare it here.
 ========================================================= */
-
-let memberSearchTimer =
-  null;
 
 function filterMembers(
   searchTerm
@@ -4510,9 +4552,8 @@ async function handleMemberAction(
 
 function closeMemberModal() {
   const modal =
-    byId(
-      "memberModal"
-    );
+    byId("viewMemberModal") ||
+    byId("memberModal");
 
   if (!modal) {
     return;
@@ -4532,6 +4573,13 @@ function closeMemberModal() {
 ========================================================= */
 
 function bindEvents() {
+  if (eventsBound) {
+    return;
+  }
+
+  eventsBound =
+    true;
+
   const addButton =
     byId(
       "addMemberButton"
@@ -4644,10 +4692,14 @@ function bindEvents() {
     handleMemberAction
   );
 
+
+  /* -------------------------------------------------------
+     MEMBER VIEW MODAL
+  ------------------------------------------------------- */
+
   const modal =
-    byId(
-      "memberModal"
-    );
+    byId("viewMemberModal") ||
+    byId("memberModal");
 
   modal?.addEventListener(
     "click",
@@ -4680,6 +4732,11 @@ function bindEvents() {
       );
     }
   );
+
+
+  /* -------------------------------------------------------
+     HISTORICAL CONTROLS
+  ------------------------------------------------------- */
 
   byId(
     "memberHistoricalEnabled"
@@ -4731,6 +4788,11 @@ function bindEvents() {
     }
   );
 
+
+  /* -------------------------------------------------------
+     ESCAPE KEY
+  ------------------------------------------------------- */
+
   document.addEventListener(
     "keydown",
     event => {
@@ -4742,9 +4804,8 @@ function bindEvents() {
       }
 
       const memberModal =
-        byId(
-          "memberModal"
-        );
+        byId("viewMemberModal") ||
+        byId("memberModal");
 
       if (
         memberModal &&
@@ -4897,27 +4958,5 @@ export const loadPage =
 console.log(
   "CHAMA LIVE: members.js ready"
 );
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
