@@ -269,6 +269,22 @@ function formatSubscriptionAmount(value) {
 
 /* =========================================================
    AUTHORIZATION CONTEXT
+   ---------------------------------------------------------
+   Canonical getMyApplicationContext() contract:
+
+   {
+       user,
+       member,
+       group,
+       isOwner,
+       role
+   }
+
+   Group management permissions:
+
+   - Owner  → editable
+   - Admin  → editable
+   - Member → view only
    ========================================================= */
 
 async function loadAuthorizationContext() {
@@ -283,49 +299,35 @@ async function loadAuthorizationContext() {
 
     currentUser =
         context.user ||
-        context.currentUser ||
         null;
 
     currentMember =
         context.member ||
-        context.currentMember ||
         null;
 
     currentGroup =
         context.group ||
-        context.currentGroup ||
         null;
 
     currentRole =
         context.role ||
-        context.currentRole ||
         currentMember?.role ||
         null;
 
     currentIsOwner =
         Boolean(
-            context.isOwner ??
-            context.currentIsOwner ??
-            currentMember?.is_owner ??
-            false
+            context.isOwner
         );
-
-    /*
-     * IMPORTANT:
-     * Do not mix ?? and || without parentheses.
-     */
 
     canManageGroup =
         Boolean(
-            context.canManageGroup ??
-            context.can_manage_group ??
-            (
-                currentIsOwner ||
-                ["owner", "admin"].includes(
-                    String(
-                        currentRole || ""
-                    ).toLowerCase()
+            currentIsOwner ||
+            ["owner", "admin"].includes(
+                String(
+                    currentRole || ""
                 )
+                    .trim()
+                    .toLowerCase()
             )
         );
 
@@ -574,13 +576,10 @@ function getCurrentCycle(closingDay) {
      *
      * Opening date = previous closing date + 1 day
      *
-     * Therefore for:
+     * Therefore:
      *
      * 05 Oct 2026 closing
-     *
-     * the opening date is:
-     *
-     * 06 Sep 2026
+     * → 06 Sep 2026 opening
      */
 
     const openingDate =
