@@ -81,6 +81,19 @@ let loadingOverview = false;
 
 
 /* =========================================================
+   ROUTING
+========================================================= */
+
+function redirectToPlatformAdminLogin() {
+
+  window.location.replace(
+    "platform-admin-login.html"
+  );
+
+}
+
+
+/* =========================================================
    HELPERS
 ========================================================= */
 
@@ -292,6 +305,8 @@ function showOverview() {
 
 /* =========================================================
    ERROR NORMALIZATION
+   ---------------------------------------------------------
+   Raw database/RPC errors are never displayed directly.
 ========================================================= */
 
 function normalizeError(
@@ -335,7 +350,7 @@ function normalizeError(
   ) {
 
     return {
-      type: "error",
+      type: "session-expired",
       message:
         "Your session has expired. Please sign in again."
     };
@@ -353,7 +368,7 @@ function normalizeError(
   ) {
 
     return {
-      type: "error",
+      type: "authentication-required",
       message:
         "Authentication is required. Please sign in again."
     };
@@ -382,8 +397,7 @@ function normalizeError(
   return {
     type: "error",
     message:
-      messageText ||
-      "Unable to load the Platform Admin overview."
+      "Unable to load the Platform Admin overview. Please try again."
   };
 
 }
@@ -666,7 +680,7 @@ function renderOverview(
 
   /* -------------------------------------------------------
      BILLING
-  ------------------------------------------------------- */
+  --------------------------------------------------------- */
 
   setText(
     "invoicesPaid",
@@ -801,6 +815,41 @@ async function loadPlatformOverview() {
       );
 
 
+    /*
+     * Authentication/session failures must return to
+     * the dedicated Platform Admin authentication boundary.
+     *
+     * Access-denied remains on this page so that an
+     * authenticated non-admin is not silently redirected
+     * into another portal.
+     */
+
+    if (
+      normalized.type ===
+        "session-expired" ||
+      normalized.type ===
+        "authentication-required"
+    ) {
+
+      showMessage(
+        normalized.message,
+        "error"
+      );
+
+      if (generatedAt) {
+
+        generatedAt.textContent =
+          "Platform overview unavailable.";
+
+      }
+
+      redirectToPlatformAdminLogin();
+
+      return;
+
+    }
+
+
     showMessage(
       normalized.message,
       normalized.type
@@ -867,9 +916,15 @@ async function signOut() {
     }
 
 
-    window.location.replace(
-      "admin-login.html"
-    );
+    /*
+     * Platform Admin must return to the dedicated
+     * Platform Admin authentication entry point.
+     *
+     * Do NOT route to admin-login.html because that
+     * belongs to the Group Admin portal.
+     */
+
+    redirectToPlatformAdminLogin();
 
   } catch (error) {
 
