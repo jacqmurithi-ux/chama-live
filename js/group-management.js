@@ -163,7 +163,8 @@ const dom = {
 function clearMessages() {
     if (dom.statusMessage) {
         dom.statusMessage.textContent = "";
-        dom.statusMessage.className = "status-message";
+        dom.statusMessage.className =
+            "status-message";
     }
 
     if (dom.errorMessage) {
@@ -179,7 +180,8 @@ function showStatus(message) {
         return;
     }
 
-    dom.statusMessage.textContent = message;
+    dom.statusMessage.textContent =
+        message;
 
     dom.statusMessage.className =
         "status-message visible success";
@@ -191,7 +193,8 @@ function showError(message) {
         return;
     }
 
-    dom.errorMessage.textContent = message;
+    dom.errorMessage.textContent =
+        message;
 
     dom.errorMessage.className =
         "status-message visible error";
@@ -207,22 +210,36 @@ function formatDate(value) {
         return "—";
     }
 
-    const date = new Date(value);
+    const date =
+        new Date(value);
 
-    if (Number.isNaN(date.getTime())) {
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
         return "—";
     }
 
-    return new Intl.DateTimeFormat("en-KE", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric"
-    }).format(date);
+    return new Intl.DateTimeFormat(
+        "en-KE",
+        {
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+        }
+    ).format(date);
 }
 
 
-function formatDateRange(startDate, endDate) {
-    if (!startDate || !endDate) {
+function formatDateRange(
+    startDate,
+    endDate
+) {
+    if (
+        !startDate ||
+        !endDate
+    ) {
         return "—";
     }
 
@@ -231,21 +248,29 @@ function formatDateRange(startDate, endDate) {
 
 
 function formatMoney(value) {
-    const amount = Number(value);
+    const amount =
+        Number(value);
 
-    if (!Number.isFinite(amount)) {
+    if (
+        !Number.isFinite(amount)
+    ) {
         return "—";
     }
 
-    return new Intl.NumberFormat("en-KE", {
-        style: "currency",
-        currency: "KES",
-        maximumFractionDigits: 2
-    }).format(amount);
+    return new Intl.NumberFormat(
+        "en-KE",
+        {
+            style: "currency",
+            currency: "KES",
+            maximumFractionDigits: 2
+        }
+    ).format(amount);
 }
 
 
-function formatSubscriptionDate(value) {
+function formatSubscriptionDate(
+    value
+) {
     if (!value) {
         return "—";
     }
@@ -254,7 +279,9 @@ function formatSubscriptionDate(value) {
 }
 
 
-function formatSubscriptionAmount(value) {
+function formatSubscriptionAmount(
+    value
+) {
     if (
         value === null ||
         value === undefined ||
@@ -282,9 +309,10 @@ function formatSubscriptionAmount(value) {
 
    Group management permissions:
 
-   - Owner  → editable
-   - Admin  → editable
-   - Member → view only
+   - Owner         → editable
+   - Admin         → editable
+   - Administrator → editable
+   - Member        → view only
    ========================================================= */
 
 async function loadAuthorizationContext() {
@@ -309,6 +337,11 @@ async function loadAuthorizationContext() {
         context.group ||
         null;
 
+    /*
+     * Prefer the canonical role returned by
+     * getMyApplicationContext(), but fall back
+     * to the member record if necessary.
+     */
     currentRole =
         context.role ||
         currentMember?.role ||
@@ -319,16 +352,34 @@ async function loadAuthorizationContext() {
             context.isOwner
         );
 
+    /*
+     * Normalize the role before checking it.
+     *
+     * This handles:
+     *
+     * "admin"
+     * "Admin"
+     * "ADMIN"
+     * " administrator "
+     * "Administrator"
+     */
+    const normalizedRole =
+        String(
+            currentRole || ""
+        )
+            .trim()
+            .toLowerCase();
+
+    /*
+     * Owner and administrator-level accounts
+     * can manage the group.
+     */
     canManageGroup =
         Boolean(
             currentIsOwner ||
-            ["owner", "admin"].includes(
-                String(
-                    currentRole || ""
-                )
-                    .trim()
-                    .toLowerCase()
-            )
+            normalizedRole === "owner" ||
+            normalizedRole === "admin" ||
+            normalizedRole === "administrator"
         );
 
     if (!currentGroup?.id) {
@@ -345,7 +396,18 @@ async function loadAuthorizationContext() {
 
 function applyAuthorizationUI() {
     const editable =
-        Boolean(canManageGroup);
+        Boolean(
+            canManageGroup
+        );
+
+    /*
+     * Explicitly set disabled state.
+     *
+     * This is intentional:
+     *
+     * authorized account → disabled = false
+     * unauthorized account → disabled = true
+     */
 
     if (dom.groupName) {
         dom.groupName.disabled =
@@ -377,24 +439,42 @@ function applyAuthorizationUI() {
             !editable;
     }
 
-    if (dom.saveContributionCalendar) {
+    if (
+        dom.saveContributionCalendar
+    ) {
         dom.saveContributionCalendar.disabled =
             !editable;
     }
 
+    /*
+     * Permission badge.
+     */
+
     if (dom.permissionBadge) {
-        dom.permissionBadge.textContent =
-            editable
-                ? currentIsOwner
+        if (editable) {
+            dom.permissionBadge.textContent =
+                currentIsOwner
                     ? "Owner"
-                    : "Administrator"
-                : "View only";
+                    : "Administrator";
+        } else {
+            dom.permissionBadge.textContent =
+                "View only";
+        }
     }
+
+    /*
+     * Context role.
+     */
 
     if (dom.contextRole) {
         dom.contextRole.textContent =
-            currentRole || "—";
+            currentRole ||
+            "—";
     }
+
+    /*
+     * Context access.
+     */
 
     if (dom.contextAccess) {
         dom.contextAccess.textContent =
@@ -403,10 +483,21 @@ function applyAuthorizationUI() {
                 : "View only";
     }
 
-    if (!editable && dom.permissionMessage) {
-        dom.permissionMessage.classList.remove(
-            "hidden"
-        );
+    /*
+     * Permission warning.
+     *
+     * Hide it for authorized accounts.
+     */
+    if (dom.permissionMessage) {
+        if (editable) {
+            dom.permissionMessage.classList.add(
+                "hidden"
+            );
+        } else {
+            dom.permissionMessage.classList.remove(
+                "hidden"
+            );
+        }
     }
 }
 
@@ -421,16 +512,20 @@ function renderGroup() {
     }
 
     const groupName =
-        currentGroup.name || "—";
+        currentGroup.name ||
+        "—";
 
     const category =
-        currentGroup.category || "—";
+        currentGroup.category ||
+        "—";
 
     const country =
-        currentGroup.country || "—";
+        currentGroup.country ||
+        "—";
 
     const monthlyAmount =
-        currentGroup.monthly_contribution ?? 0;
+        currentGroup.monthly_contribution ??
+        0;
 
     if (dom.groupNameDisplay) {
         dom.groupNameDisplay.textContent =
@@ -449,17 +544,20 @@ function renderGroup() {
 
     if (dom.groupName) {
         dom.groupName.value =
-            currentGroup.name || "";
+            currentGroup.name ||
+            "";
     }
 
     if (dom.groupCategory) {
         dom.groupCategory.value =
-            currentGroup.category || "";
+            currentGroup.category ||
+            "";
     }
 
     if (dom.groupCountry) {
         dom.groupCountry.value =
-            currentGroup.country || "Kenya";
+            currentGroup.country ||
+            "Kenya";
     }
 
     if (dom.monthlyContribution) {
@@ -493,10 +591,13 @@ async function loadMemberCount() {
         error
     } = await supabase
         .from("members")
-        .select("id", {
-            count: "exact",
-            head: true
-        })
+        .select(
+            "id",
+            {
+                count: "exact",
+                head: true
+            }
+        )
         .eq(
             "group_id",
             currentGroup.id
@@ -522,7 +623,9 @@ async function loadMemberCount() {
 
     if (dom.memberCountDisplay) {
         dom.memberCountDisplay.textContent =
-            String(count ?? 0);
+            String(
+                count ?? 0
+            );
     }
 }
 
@@ -531,7 +634,9 @@ async function loadMemberCount() {
    MONTHLY CONTRIBUTION CYCLE
    ========================================================= */
 
-function getCurrentCycle(closingDay) {
+function getCurrentCycle(
+    closingDay
+) {
     const day =
         Number(closingDay);
 
@@ -553,14 +658,19 @@ function getCurrentCycle(closingDay) {
         today.getMonth();
 
     /*
-     * If today is after the selected closing day,
-     * the current cycle closes next month.
+     * If today is after the selected
+     * closing day, the current cycle
+     * closes next month.
      *
-     * If today is on or before the closing day,
-     * the current cycle closes this month.
+     * If today is on or before the
+     * selected closing day, the current
+     * cycle closes this month.
      */
 
-    if (today.getDate() > day) {
+    if (
+        today.getDate() >
+        day
+    ) {
         closingMonth += 1;
     }
 
@@ -572,18 +682,22 @@ function getCurrentCycle(closingDay) {
         );
 
     /*
-     * The cycle is inclusive:
+     * Opening date is 29 days before
+     * the closing date.
      *
-     * Opening date = previous closing date + 1 day
+     * Example:
      *
-     * Therefore:
+     * Closing:
+     * 05 Oct 2026
      *
-     * 05 Oct 2026 closing
-     * → 06 Sep 2026 opening
+     * Opening:
+     * 06 Sep 2026
      */
 
     const openingDate =
-        new Date(closingDate);
+        new Date(
+            closingDate
+        );
 
     openingDate.setDate(
         openingDate.getDate() - 29
@@ -612,7 +726,9 @@ function updateContributionPreview() {
         );
 
     if (!cycle) {
-        if (dom.currentContributionCycle) {
+        if (
+            dom.currentContributionCycle
+        ) {
             dom.currentContributionCycle.textContent =
                 "—";
         }
@@ -634,7 +750,9 @@ function updateContributionPreview() {
         return;
     }
 
-    if (dom.currentContributionCycle) {
+    if (
+        dom.currentContributionCycle
+    ) {
         dom.currentContributionCycle.textContent =
             formatDateRange(
                 cycle.openingDate,
@@ -688,7 +806,8 @@ async function loadSubscription() {
             error
         );
 
-        subscription = null;
+        subscription =
+            null;
 
         renderSubscription();
 
@@ -701,7 +820,8 @@ async function loadSubscription() {
                 ? data[0]
                 : null;
     } else {
-        subscription = data;
+        subscription =
+            data;
     }
 
     renderSubscription();
@@ -710,7 +830,8 @@ async function loadSubscription() {
 
 function renderSubscription() {
     const value =
-        subscription || {};
+        subscription ||
+        {};
 
     const status =
         value.status ||
@@ -800,10 +921,14 @@ function populateClosingDayOptions() {
     }
 
     const normalized =
-        Number(existingValue);
+        Number(
+            existingValue
+        );
 
     dom.monthlyClosingDay.value =
-        Number.isInteger(normalized) &&
+        Number.isInteger(
+            normalized
+        ) &&
         normalized >= 1 &&
         normalized <= 28
             ? String(normalized)
@@ -839,13 +964,9 @@ async function loadContributionSettings() {
             error
         );
 
-        /*
-         * Keep the page usable if the optional
-         * settings RPC is unavailable.
-         */
-
         contributionSettings = {
-            monthly_closing_day: 28
+            monthly_closing_day:
+                28
         };
 
         populateClosingDayOptions();
@@ -858,12 +979,14 @@ async function loadContributionSettings() {
             data.length > 0
                 ? data[0]
                 : {
-                    monthly_closing_day: 28
+                    monthly_closing_day:
+                        28
                 };
     } else {
         contributionSettings =
             data || {
-                monthly_closing_day: 28
+                monthly_closing_day:
+                    28
             };
     }
 
@@ -881,6 +1004,9 @@ function renderContributionSettings() {
    ========================================================= */
 
 async function saveContributionSettings() {
+    /*
+     * Frontend authorization guard.
+     */
     if (!canManageGroup) {
         showError(
             "You do not have permission to change the contribution cycle."
@@ -903,7 +1029,9 @@ async function saveContributionSettings() {
         );
 
     if (
-        !Number.isInteger(closingDay) ||
+        !Number.isInteger(
+            closingDay
+        ) ||
         closingDay < 1 ||
         closingDay > 28
     ) {
@@ -914,7 +1042,9 @@ async function saveContributionSettings() {
         return;
     }
 
-    if (dom.saveContributionCalendar) {
+    if (
+        dom.saveContributionCalendar
+    ) {
         dom.saveContributionCalendar.disabled =
             true;
 
@@ -967,7 +1097,9 @@ async function saveContributionSettings() {
         );
 
     } finally {
-        if (dom.saveContributionCalendar) {
+        if (
+            dom.saveContributionCalendar
+        ) {
             dom.saveContributionCalendar.disabled =
                 !canManageGroup;
 
@@ -983,6 +1115,9 @@ async function saveContributionSettings() {
    ========================================================= */
 
 async function saveGroup() {
+    /*
+     * Frontend authorization guard.
+     */
     if (!canManageGroup) {
         showError(
             "You do not have permission to update group information."
@@ -1142,7 +1277,9 @@ function bindEvents() {
         );
     }
 
-    if (dom.contributionCalendarForm) {
+    if (
+        dom.contributionCalendarForm
+    ) {
         dom.contributionCalendarForm.addEventListener(
             "submit",
             async (event) => {
@@ -1178,12 +1315,26 @@ export async function initGroupManagement() {
             clearMessages();
 
             try {
+                /*
+                 * Load the authenticated user,
+                 * member, group and role first.
+                 */
                 await loadAuthorizationContext();
 
+                /*
+                 * Render the group data.
+                 */
                 renderGroup();
 
+                /*
+                 * Apply Owner/Admin/Member
+                 * editability immediately.
+                 */
                 applyAuthorizationUI();
 
+                /*
+                 * Load the remaining page data.
+                 */
                 await Promise.all([
                     loadMemberCount(),
                     loadSubscription(),
@@ -1192,13 +1343,25 @@ export async function initGroupManagement() {
 
                 renderContributionSettings();
 
+                /*
+                 * Re-apply authorization after all
+                 * controls have been populated.
+                 *
+                 * This is important because the
+                 * contribution select is rebuilt by
+                 * populateClosingDayOptions().
+                 */
+                applyAuthorizationUI();
+
                 if (dom.adminLoading) {
                     dom.adminLoading.classList.add(
                         "hidden"
                     );
                 }
 
-                if (dom.managementContent) {
+                if (
+                    dom.managementContent
+                ) {
                     dom.managementContent.classList.remove(
                         "hidden"
                     );
