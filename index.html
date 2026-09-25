@@ -904,7 +904,7 @@
 
     .steps {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 15px;
     }
 
@@ -1042,6 +1042,12 @@
     /* =========================================================
        MOBILE
        ========================================================= */
+
+    @media (max-width: 1100px) {
+      .steps {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
 
     @media (max-width: 900px) {
       .desktop-nav {
@@ -2043,11 +2049,12 @@
           </div>
 
           <h2>
-            From paper records to a digital workspace.
+            Get your group set up with CHAMA LIVE.
           </h2>
 
           <p>
-            Keep the process simple from the beginning.
+            Create your account, submit your group for review,
+            and get started once your application is approved.
           </p>
 
         </div>
@@ -2062,12 +2069,12 @@
             </div>
 
             <h3>
-              Create your group
+              Create your administrator account
             </h3>
 
             <p>
-              Set up your group account and enter the basic
-              information needed to get started.
+              Create a secure CHAMA LIVE administrator login
+              account for managing your group.
             </p>
 
           </article>
@@ -2080,12 +2087,12 @@
             </div>
 
             <h3>
-              Organise your records
+              Confirm your email
             </h3>
 
             <p>
-              Bring your member, contribution and expense information
-              into one structured workspace.
+              Confirm your email address using the verification
+              link sent to you.
             </p>
 
           </article>
@@ -2098,12 +2105,49 @@
             </div>
 
             <h3>
-              Run your group
+              Submit your group application
             </h3>
 
             <p>
-              Manage the group from the Admin Portal while members
-              use their own dedicated Member Portal.
+              Sign in to your authenticated account and submit
+              your group application for review.
+            </p>
+
+          </article>
+
+
+          <article class="step">
+
+            <div class="step-number">
+              04
+            </div>
+
+            <h3>
+              Application review
+            </h3>
+
+            <p>
+              A CHAMA LIVE platform administrator reviews your
+              application before the group account is approved
+              and activated.
+            </p>
+
+          </article>
+
+
+          <article class="step">
+
+            <div class="step-number">
+              05
+            </div>
+
+            <h3>
+              Approval and onboarding
+            </h3>
+
+            <p>
+              Once approved, our team contacts you by phone
+              using the number provided in your application.
             </p>
 
           </article>
