@@ -829,19 +829,30 @@
     }
 
 
+    /* =========================================================
+       APPLICATION ACTIONS
+    ========================================================= */
+
     .platform-application-actions {
       display:
         flex;
 
+      flex-wrap:
+        wrap;
+
       justify-content:
         flex-end;
+
+      gap:
+        8px;
 
       margin-top:
         14px;
     }
 
 
-    .platform-application-approve {
+    .platform-application-approve,
+    .platform-application-reject {
       min-height:
         38px;
 
@@ -874,7 +885,8 @@
     }
 
 
-    .platform-application-approve:hover {
+    .platform-application-approve:hover,
+    .platform-application-reject:hover {
       border-color:
         var(--cl-primary);
 
@@ -883,12 +895,166 @@
     }
 
 
-    .platform-application-approve:disabled {
+    .platform-application-approve:disabled,
+    .platform-application-reject:disabled,
+    .platform-application-cancel:disabled,
+    .platform-application-confirm-reject:disabled {
       cursor:
         not-allowed;
 
       opacity:
         .6;
+    }
+
+
+    /* =========================================================
+       REJECTION PANEL
+    ========================================================= */
+
+    .platform-application-rejection-panel {
+      width:
+        100%;
+
+      display:
+        grid;
+
+      gap:
+        8px;
+
+      margin-top:
+        2px;
+
+      padding:
+        14px;
+
+      border:
+        1px solid var(--cl-border);
+
+      border-radius:
+        10px;
+
+      background:
+        #f8fafc;
+    }
+
+
+    .platform-application-rejection-label {
+      color:
+        var(--cl-text-strong);
+
+      font-size:
+        13px;
+
+      font-weight:
+        700;
+    }
+
+
+    .platform-application-rejection-reason {
+      width:
+        100%;
+
+      box-sizing:
+        border-box;
+
+      min-height:
+        96px;
+
+      padding:
+        10px 12px;
+
+      border:
+        1px solid var(--cl-border-strong);
+
+      border-radius:
+        8px;
+
+      background:
+        #fff;
+
+      color:
+        var(--cl-text);
+
+      font:
+        inherit;
+
+      font-size:
+        13px;
+
+      line-height:
+        1.5;
+
+      resize:
+        vertical;
+    }
+
+
+    .platform-application-rejection-reason:focus {
+      outline:
+        2px solid
+        rgba(15, 118, 110, .18);
+
+      outline-offset:
+        1px;
+
+      border-color:
+        var(--cl-primary);
+    }
+
+
+    .platform-application-rejection-controls {
+      display:
+        flex;
+
+      justify-content:
+        flex-end;
+
+      gap:
+        8px;
+    }
+
+
+    .platform-application-cancel,
+    .platform-application-confirm-reject {
+      min-height:
+        38px;
+
+      padding:
+        0 14px;
+
+      border:
+        1px solid var(--cl-border-strong);
+
+      border-radius:
+        10px;
+
+      background:
+        #fff;
+
+      color:
+        var(--cl-text-strong);
+
+      font:
+        inherit;
+
+      font-size:
+        13px;
+
+      font-weight:
+        700;
+
+      cursor:
+        pointer;
+    }
+
+
+    .platform-application-confirm-reject:hover,
+    .platform-application-cancel:hover {
+      border-color:
+        var(--cl-primary);
+
+      color:
+        var(--cl-primary);
     }
 
 
@@ -1046,7 +1212,24 @@
       }
 
 
-      .platform-application-approve {
+      .platform-application-approve,
+      .platform-application-reject {
+        flex:
+          1 1 100%;
+
+        width:
+          100%;
+      }
+
+
+      .platform-application-rejection-controls {
+        flex-direction:
+          column;
+      }
+
+
+      .platform-application-cancel,
+      .platform-application-confirm-reject {
         width:
           100%;
       }
