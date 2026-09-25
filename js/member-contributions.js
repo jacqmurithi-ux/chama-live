@@ -213,6 +213,8 @@ let group = null;
 
 let contributions = [];
 
+let recognizedPaymentTotal = 0;
+
 let memberPaymentEvidence = [];
 
 let canonicalStatus = null;
@@ -627,6 +629,13 @@ async function loadGroupContext() {
 
 /* =========================================================
    CONTRIBUTIONS
+   ---------------------------------------------------------
+   RECOGNIZED PAYMENT / HISTORY LAYER
+
+   Uses the existing server-authorized RPC rather than
+   directly querying contributions from the browser.
+
+   This remains separate from canonical monthly accounting.
 ========================================================= */
 
 async function loadMyContributions() {
@@ -635,44 +644,19 @@ async function loadMyContributions() {
     data,
     error
   } =
-    await supabase
-      .from("contributions")
-      .select(
-        `
-          id,
-          group_id,
-          member_id,
-          amount,
-          contribution_type,
-          month,
-          payment_method,
-          reference,
-          created_at,
-          contribution_date,
-          notes,
-          mpesa_reference
-        `
-      )
-      .eq(
-        "group_id",
-        groupId
-      )
-      .eq(
-        "member_id",
-        currentMember.id
-      )
-      .order(
-        "contribution_date",
-        {
-          ascending: false
-        }
-      )
-      .order(
-        "created_at",
-        {
-          ascending: false
-        }
-      );
+    await supabase.rpc(
+      "get_member_payment_statement",
+      {
+        p_member_id:
+          currentMember.id,
+
+        p_from_date:
+          null,
+
+        p_to_date:
+          null
+      }
+    );
 
 
   if (error) {
@@ -681,8 +665,103 @@ async function loadMyContributions() {
 
   }
 
+
   contributions =
-    data || [];
+    (
+      Array.isArray(data)
+        ? data
+        : []
+    )
+      .map(
+        payment => ({
+
+          id:
+            payment.payment_id,
+
+          group_id:
+            payment.group_id,
+
+          member_id:
+            payment.member_id,
+
+          amount:
+            payment.amount,
+
+          contribution_type:
+            payment.contribution_type,
+
+          /*
+           * The payment statement RPC does not return
+           * the legacy month field.
+           */
+          month:
+            null,
+
+          payment_method:
+            payment.payment_method,
+
+          reference:
+            payment.reference,
+
+          created_at:
+            payment.created_at,
+
+          contribution_date:
+            payment.payment_date,
+
+          notes:
+            payment.notes,
+
+          mpesa_reference:
+            payment.mpesa_reference
+
+        })
+      );
+
+}
+
+
+/* =========================================================
+   RECOGNIZED PAYMENT TOTAL
+   ---------------------------------------------------------
+   Separate from canonical monthly accounting.
+
+   Uses the server-recognized payment total instead of
+   summing contribution rows in the browser.
+========================================================= */
+
+async function loadRecognizedPaymentTotal() {
+
+  const {
+    data,
+    error
+  } =
+    await supabase.rpc(
+      "get_member_total_recognized_payments",
+      {
+        p_member_id:
+          currentMember.id
+      }
+    );
+
+
+  if (error) {
+
+    throw error;
+
+  }
+
+
+  const row =
+    Array.isArray(data)
+      ? data[0] || null
+      : data || null;
+
+
+  recognizedPaymentTotal =
+    number(
+      row?.total_recognized
+    );
 
 }
 
@@ -1123,8 +1202,6 @@ async function submitMemberPaymentEvidence(
   }
 
 }
-
-
 /* =========================================================
    STATUS LABEL
 ========================================================= */
@@ -1638,17 +1715,7 @@ function renderPaymentEvidence() {
 
 function getRecordedTotal() {
 
-  return contributions.reduce(
-    (
-      total,
-      contribution
-    ) =>
-      total +
-      number(
-        contribution.amount
-      ),
-    0
-  );
+  return recognizedPaymentTotal;
 
 }
 
@@ -2173,8 +2240,6 @@ function printStatement() {
   );
 
 }
-
-
 /* =========================================================
    PAGE STATE
 ========================================================= */
@@ -2303,6 +2368,7 @@ export async function initMemberContributions() {
 
     await Promise.all([
       loadMyContributions(),
+      loadRecognizedPaymentTotal(),
       loadCanonicalStatus(),
       loadMemberPaymentEvidence()
     ]);
