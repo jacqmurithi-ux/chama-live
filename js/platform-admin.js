@@ -10,6 +10,7 @@
      public.get_platform_admin_overview()
      public.get_platform_admin_applications()
      public.approve_group_application(uuid)
+     public.reject_group_application(uuid, text)
 
    The frontend does NOT query platform_admins directly.
 
@@ -32,9 +33,10 @@
      get_platform_admin_overview()
      get_platform_admin_applications()
 
-   MUTATION RPC:
+   MUTATION RPCs:
 
      approve_group_application(uuid)
+     reject_group_application(uuid, reason)
 
    The frontend does NOT perform direct database writes.
 
@@ -45,9 +47,10 @@
      1. Reads pending / under-review applications through
         get_platform_admin_applications().
      2. Displays the application details.
-     3. Requires explicit confirmation before approval.
-     4. Calls the existing approve_group_application(uuid).
-     5. Refreshes the overview and application list.
+     3. Requires explicit confirmation before approval or rejection.
+     4. Requires a rejection reason when rejecting.
+     5. Calls the canonical server-side review RPC.
+     6. Refreshes the overview and application list.
 
    No provisioning logic exists in this file.
 ========================================================= */
@@ -121,7 +124,7 @@ let loadingOverview = false;
 
 let loadingApplications = false;
 
-let approvingApplication = false;
+let processingApplication = false;
 
 
 /* =========================================================
@@ -524,7 +527,8 @@ function normalizeError(
 ========================================================= */
 
 function normalizeApplicationError(
-  error
+  error,
+  action = "review"
 ) {
 
   const messageText =
@@ -597,7 +601,7 @@ function normalizeApplicationError(
   ) {
 
     return {
-      type: "approval-conflict",
+      type: "review-conflict",
       message:
         "This application has already been approved. Refreshing the application list."
     };
@@ -612,7 +616,7 @@ function normalizeApplicationError(
   ) {
 
     return {
-      type: "approval-conflict",
+      type: "review-conflict",
       message:
         "This application has already been rejected. Refreshing the application list."
     };
@@ -627,7 +631,7 @@ function normalizeApplicationError(
   ) {
 
     return {
-      type: "approval-conflict",
+      type: "review-conflict",
       message:
         "This application is no longer available. Refreshing the application list."
     };
@@ -656,7 +660,9 @@ function normalizeApplicationError(
   return {
     type: "error",
     message:
-      "Unable to approve this application. Please try again."
+      action === "reject"
+        ? "Unable to reject this application. Please try again."
+        : "Unable to approve this application. Please try again."
   };
 
 }
@@ -1380,7 +1386,7 @@ function renderPendingApplications(
 
 
     /* -----------------------------------------------------
-       ACTION
+       ACTIONS
     ----------------------------------------------------- */
 
     const actions =
@@ -1407,6 +1413,140 @@ function renderPendingApplications(
       "Approve Application";
 
 
+    const rejectButton =
+      document.createElement(
+        "button"
+      );
+
+    rejectButton.type =
+      "button";
+
+    rejectButton.className =
+      "platform-application-reject";
+
+    rejectButton.textContent =
+      "Reject Application";
+
+
+    /* -----------------------------------------------------
+       REJECTION PANEL
+    ----------------------------------------------------- */
+
+    const rejectionPanel =
+      document.createElement(
+        "div"
+      );
+
+    rejectionPanel.className =
+      "platform-application-rejection-panel platform-hidden";
+
+
+    const rejectionLabel =
+      document.createElement(
+        "label"
+      );
+
+    rejectionLabel.className =
+      "platform-application-rejection-label";
+
+    rejectionLabel.textContent =
+      "Rejection reason";
+
+    rejectionLabel.htmlFor =
+      "rejection-reason-" +
+      application.application_id;
+
+
+    const rejectionReason =
+      document.createElement(
+        "textarea"
+      );
+
+    rejectionReason.id =
+      "rejection-reason-" +
+      application.application_id;
+
+    rejectionReason.className =
+      "platform-application-rejection-reason";
+
+    rejectionReason.rows =
+      4;
+
+    rejectionReason.maxLength =
+      1000;
+
+    rejectionReason.required =
+      true;
+
+    rejectionReason.placeholder =
+      "Enter the reason for rejecting this application.";
+
+
+    const rejectionControls =
+      document.createElement(
+        "div"
+      );
+
+    rejectionControls.className =
+      "platform-application-rejection-controls";
+
+
+    const cancelRejectButton =
+      document.createElement(
+        "button"
+      );
+
+    cancelRejectButton.type =
+      "button";
+
+    cancelRejectButton.className =
+      "platform-application-cancel";
+
+    cancelRejectButton.textContent =
+      "Cancel";
+
+
+    const confirmRejectButton =
+      document.createElement(
+        "button"
+      );
+
+    confirmRejectButton.type =
+      "button";
+
+    confirmRejectButton.className =
+      "platform-application-confirm-reject";
+
+    confirmRejectButton.textContent =
+      "Confirm Rejection";
+
+
+    rejectionControls.appendChild(
+      cancelRejectButton
+    );
+
+    rejectionControls.appendChild(
+      confirmRejectButton
+    );
+
+
+    rejectionPanel.appendChild(
+      rejectionLabel
+    );
+
+    rejectionPanel.appendChild(
+      rejectionReason
+    );
+
+    rejectionPanel.appendChild(
+      rejectionControls
+    );
+
+
+    /* -----------------------------------------------------
+       APPROVE EVENT
+    ----------------------------------------------------- */
+
     approveButton.addEventListener(
       "click",
       () => {
@@ -1420,8 +1560,109 @@ function renderPendingApplications(
     );
 
 
+    /* -----------------------------------------------------
+       REJECT OPEN EVENT
+    ----------------------------------------------------- */
+
+    rejectButton.addEventListener(
+      "click",
+      () => {
+
+        if (
+          processingApplication
+        ) {
+
+          return;
+
+        }
+
+
+        rejectionPanel.classList.remove(
+          "platform-hidden"
+        );
+
+
+        rejectButton.disabled =
+          true;
+
+        approveButton.disabled =
+          true;
+
+
+        rejectionReason.focus();
+
+      }
+    );
+
+
+    /* -----------------------------------------------------
+       REJECT CANCEL EVENT
+    ----------------------------------------------------- */
+
+    cancelRejectButton.addEventListener(
+      "click",
+      () => {
+
+        if (
+          processingApplication
+        ) {
+
+          return;
+
+        }
+
+
+        rejectionReason.value =
+          "";
+
+
+        rejectionPanel.classList.add(
+          "platform-hidden"
+        );
+
+
+        rejectButton.disabled =
+          false;
+
+        approveButton.disabled =
+          false;
+
+      }
+    );
+
+
+    /* -----------------------------------------------------
+       REJECT CONFIRM EVENT
+    ----------------------------------------------------- */
+
+    confirmRejectButton.addEventListener(
+      "click",
+      () => {
+
+        rejectApplication(
+          application,
+          approveButton,
+          rejectButton,
+          confirmRejectButton,
+          cancelRejectButton,
+          rejectionReason,
+          rejectionPanel
+        );
+
+      }
+    );
+
+
     actions.appendChild(
       approveButton
+    );
+
+    actions.appendChild(
+      rejectButton
+    );
+
+    actions.appendChild(
+      rejectionPanel
     );
 
 
@@ -1563,7 +1804,7 @@ async function approveApplication(
 ) {
 
   if (
-    approvingApplication
+    processingApplication
   ) {
 
     return;
@@ -1607,7 +1848,7 @@ async function approveApplication(
   }
 
 
-  approvingApplication =
+  processingApplication =
     true;
 
 
@@ -1687,7 +1928,8 @@ async function approveApplication(
 
     const normalized =
       normalizeApplicationError(
-        error
+        error,
+        "approve"
       );
 
 
@@ -1720,7 +1962,7 @@ async function approveApplication(
 
     if (
       normalized.type ===
-        "approval-conflict"
+        "review-conflict"
     ) {
 
       showMessage(
@@ -1742,7 +1984,7 @@ async function approveApplication(
 
   } finally {
 
-    approvingApplication =
+    processingApplication =
       false;
 
 
@@ -1753,6 +1995,321 @@ async function approveApplication(
 
       button.textContent =
         "Approve Application";
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   REJECT APPLICATION
+   ---------------------------------------------------------
+   Rejection is performed exclusively through the canonical
+   server-side RPC.
+
+   The frontend does NOT:
+
+     - update group_applications directly
+     - write platform_activity directly
+     - perform rejection-side business logic
+========================================================= */
+
+async function rejectApplication(
+  application,
+  approveButton,
+  rejectButton,
+  confirmRejectButton,
+  cancelRejectButton,
+  rejectionReason,
+  rejectionPanel
+) {
+
+  if (
+    processingApplication
+  ) {
+
+    return;
+
+  }
+
+
+  const applicationId =
+    application?.application_id;
+
+
+  if (!applicationId) {
+
+    showMessage(
+      "This application has no valid application ID.",
+      "error"
+    );
+
+    return;
+
+  }
+
+
+  const groupName =
+    applicationText(
+      application.group_name,
+      "this group"
+    );
+
+
+  const reason =
+    String(
+      rejectionReason?.value ??
+      ""
+    ).trim();
+
+
+  if (!reason) {
+
+    showMessage(
+      "A rejection reason is required.",
+      "error"
+    );
+
+    if (rejectionReason) {
+
+      rejectionReason.focus();
+
+    }
+
+    return;
+
+  }
+
+
+  const confirmed =
+    window.confirm(
+      `Reject "${groupName}"? The application will be marked as rejected and the rejection reason will be recorded.`
+    );
+
+
+  if (!confirmed) {
+
+    return;
+
+  }
+
+
+  processingApplication =
+    true;
+
+
+  if (approveButton) {
+
+    approveButton.disabled =
+      true;
+
+  }
+
+
+  if (rejectButton) {
+
+    rejectButton.disabled =
+      true;
+
+  }
+
+
+  if (confirmRejectButton) {
+
+    confirmRejectButton.disabled =
+      true;
+
+    confirmRejectButton.textContent =
+      "Rejecting...";
+
+  }
+
+
+  if (cancelRejectButton) {
+
+    cancelRejectButton.disabled =
+      true;
+
+  }
+
+
+  if (rejectionReason) {
+
+    rejectionReason.disabled =
+      true;
+
+  }
+
+
+  try {
+
+    /*
+     * Confirm that an authenticated session still exists
+     * immediately before the mutation.
+     */
+
+    await requireAuthenticatedSession();
+
+
+    /*
+     * Canonical rejection boundary.
+     *
+     * Do not replace this with direct table writes.
+     */
+
+    const {
+      data,
+      error
+    } =
+      await supabase.rpc(
+        "reject_group_application",
+        {
+          p_application_id:
+            applicationId,
+
+          p_reason:
+            reason
+        }
+      );
+
+
+    if (error) {
+
+      throw error;
+
+    }
+
+
+    if (
+      !data ||
+      data.success !== true
+    ) {
+
+      throw new Error(
+        "Application rejection did not return a successful result."
+      );
+
+    }
+
+
+    showMessage(
+      `Application rejected for ${groupName}.`,
+      "success"
+    );
+
+
+    /*
+     * Refresh both the platform-wide counters and the
+     * application review surface after successful rejection.
+     */
+
+    await loadPlatformOverview();
+
+  } catch (error) {
+
+    const normalized =
+      normalizeApplicationError(
+        error,
+        "reject"
+      );
+
+
+    if (
+      normalized.type ===
+        "session-expired" ||
+      normalized.type ===
+        "authentication-required"
+    ) {
+
+      showMessage(
+        normalized.message,
+        "error"
+      );
+
+      redirectToPlatformAdminLogin();
+
+      return;
+
+    }
+
+
+    /*
+     * A concurrent administrator may have processed the
+     * same application between display and confirmation.
+     *
+     * Refresh the read surfaces so the UI reflects the
+     * authoritative server state.
+     */
+
+    if (
+      normalized.type ===
+        "review-conflict"
+    ) {
+
+      showMessage(
+        normalized.message,
+        "error"
+      );
+
+      await loadPlatformOverview();
+
+      return;
+
+    }
+
+
+    showMessage(
+      normalized.message,
+      normalized.type
+    );
+
+  } finally {
+
+    processingApplication =
+      false;
+
+
+    if (approveButton) {
+
+      approveButton.disabled =
+        false;
+
+    }
+
+
+    if (rejectButton) {
+
+      rejectButton.disabled =
+        false;
+
+    }
+
+
+    if (confirmRejectButton) {
+
+      confirmRejectButton.disabled =
+        false;
+
+      confirmRejectButton.textContent =
+        "Confirm Rejection";
+
+    }
+
+
+    if (cancelRejectButton) {
+
+      cancelRejectButton.disabled =
+        false;
+
+    }
+
+
+    if (rejectionReason) {
+
+      rejectionReason.disabled =
+        false;
 
     }
 
