@@ -1088,12 +1088,6 @@
       gap: 10px;
     }
 
-    /*
-     * Current members.js populates [data-member-profile]
-     * dynamically. display:contents lets the generated
-     * profile items participate directly in this grid.
-     */
-
     [data-member-profile] {
       display: contents;
     }
@@ -1511,10 +1505,17 @@
         </div>
 
 
+        <!--
+          PRIMARY MEMBERS.JS CONTRACT:
+          #addMemberButton
+        -->
+
         <button
           class="btn btn-primary add-member-button"
           id="addMemberButton"
           type="button"
+          aria-controls="addMemberPanel"
+          aria-expanded="false"
         >
 
           <span
@@ -1707,10 +1708,10 @@
         </div>
 
 
-        <!-- SINGLE result-count ID -->
         <div
           class="member-result-count"
           id="memberResultCount"
+          aria-live="polite"
         >
           0 members
         </div>
@@ -1726,6 +1727,7 @@
         id="addMemberPanel"
         class="card"
         hidden
+        aria-labelledby="memberFormTitle"
       >
 
         <div class="member-form-header">
@@ -1764,18 +1766,12 @@
         ></div>
 
 
-        <!-- =================================================
-             CURRENT MEMBERS.JS PRIMARY FORM ID
-             ================================================= -->
-
         <form
           id="addMemberForm"
           novalidate
         >
 
           <div class="member-form-grid">
-
-            <!-- Member Number -->
 
             <div class="member-form-field">
 
@@ -1796,8 +1792,6 @@
 
             </div>
 
-
-            <!-- Full Name -->
 
             <div class="member-form-field">
 
@@ -1820,8 +1814,6 @@
             </div>
 
 
-            <!-- National ID -->
-
             <div class="member-form-field">
 
               <label
@@ -1843,8 +1835,6 @@
             </div>
 
 
-            <!-- Phone -->
-
             <div class="member-form-field">
 
               <label
@@ -1865,8 +1855,6 @@
 
             </div>
 
-
-            <!-- Email -->
 
             <div class="member-form-field">
 
@@ -1891,8 +1879,6 @@
 
             </div>
 
-
-            <!-- Role -->
 
             <div class="member-form-field">
 
@@ -1933,8 +1919,6 @@
             </div>
 
 
-            <!-- Account Status -->
-
             <div class="member-form-field">
 
               <label
@@ -1961,8 +1945,6 @@
 
             </div>
 
-
-            <!-- Join Date -->
 
             <div class="member-form-field">
 
@@ -2013,8 +1995,6 @@
 
             <div class="member-form-grid">
 
-              <!-- Monthly Contribution -->
-
               <div class="member-form-field">
 
                 <label
@@ -2040,8 +2020,6 @@
 
               </div>
 
-
-              <!-- First Contribution Period -->
 
               <div class="member-form-field">
 
@@ -2074,8 +2052,6 @@
               </div>
 
 
-              <!-- Contribution Effective From -->
-
               <div class="member-form-field">
 
                 <label
@@ -2099,8 +2075,6 @@
 
             </div>
 
-
-            <!-- Monthly contribution preview -->
 
             <div class="member-contribution-preview">
 
@@ -2180,14 +2154,6 @@
             </div>
 
 
-            <!--
-              IMPORTANT:
-              Current members.js controls this container through
-              [data-historical-controls] / #historicalContributionControls.
-              It starts hidden and is shown only when Historical
-              Contributions is enabled.
-            -->
-
             <div
               id="historicalContributionControls"
               class="historical-controls"
@@ -2196,8 +2162,6 @@
             >
 
               <div class="member-form-grid">
-
-                <!-- Paid Through -->
 
                 <div class="member-form-field">
 
@@ -2221,8 +2185,6 @@
 
                 </div>
 
-
-                <!-- Historical Payment Method -->
 
                 <div class="member-form-field">
 
@@ -2261,8 +2223,6 @@
 
               </div>
 
-
-              <!-- Historical preview -->
 
               <div class="member-contribution-preview">
 
@@ -2330,11 +2290,6 @@
           </div>
 
 
-          <!--
-            Deliberately NOT memberResultCount.
-            The toolbar owns the single live result-count ID.
-          -->
-
           <div
             class="members-list-count"
             id="memberListCount"
@@ -2367,11 +2322,6 @@
 
             </thead>
 
-
-            <!--
-              Current members.js primary table-body contract:
-              #memberRows
-            -->
 
             <tbody id="memberRows">
 
@@ -2411,8 +2361,6 @@
 
         </div>
 
-
-        <!-- Mobile cards -->
 
         <div
           id="memberCards"
@@ -2493,15 +2441,6 @@
 
       <div class="member-modal-body">
 
-        <!--
-          Current members.js populates this container using
-          [data-member-profile].
-
-          The data-member-profile marker is important.
-          Without it, openMemberModal() cannot render the
-          complete current member profile.
-        -->
-
         <div
           class="member-detail-grid"
           data-member-profile
@@ -2531,12 +2470,6 @@
 
           </div>
 
-
-          <!--
-            Current members.js uses these data attributes.
-            Keeping them in the static HTML prevents it from
-            creating a duplicate contribution-position panel.
-          -->
 
           <div
             class="member-accounting-summary"
@@ -2630,8 +2563,6 @@
           </div>
 
 
-          <!-- Loading state expected by current members.js -->
-
           <div
             class="accounting-status"
             data-contribution-position-loading
@@ -2641,8 +2572,6 @@
             Loading contribution position...
           </div>
 
-
-          <!-- Optional descriptive/status area -->
 
           <div
             class="accounting-status"
