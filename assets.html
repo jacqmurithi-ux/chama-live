@@ -3,39 +3,44 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>Assets | CHAMA LIVE</title>
 
-  <meta
-    name="description"
-    content="CHAMA LIVE group asset register and asset management."
-  >
-
-  <link rel="stylesheet" href="./css/app.css">
-
   <style>
+    :root {
+      --primary: #166534;
+      --primary-dark: #14532d;
+      --secondary: #15803d;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --muted: #64748b;
+      --danger: #b91c1c;
+      --danger-bg: #fef2f2;
+      --success: #166534;
+      --success-bg: #f0fdf4;
+      --warning: #92400e;
+      --warning-bg: #fffbeb;
+      --shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+      --radius: 12px;
+    }
+
     * {
       box-sizing: border-box;
     }
 
-    html,
     body {
       margin: 0;
-      width: 100%;
-      max-width: 100%;
-      overflow-x: hidden;
-    }
-
-    body {
-      background: #f4f7f5;
-      color: #17352a;
       font-family:
         Inter,
+        ui-sans-serif,
         system-ui,
         -apple-system,
         BlinkMacSystemFont,
         "Segoe UI",
         sans-serif;
+      background: var(--bg);
+      color: var(--text);
     }
 
     button,
@@ -45,1108 +50,816 @@
       font: inherit;
     }
 
-    .main {
-      min-width: 0;
-      overflow-x: hidden;
-      padding-bottom: 95px;
+    button {
+      cursor: pointer;
     }
 
-    .assets-page {
-      width: 100%;
-      max-width: 1500px;
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+
+    .topbar-inner {
+      max-width: 1400px;
       margin: 0 auto;
-      padding: 24px;
-    }
-
-    .assets-hero {
-      position: relative;
-      overflow: hidden;
-      margin-bottom: 20px;
-      padding: 30px;
-      border-radius: 22px;
-      background:
-        linear-gradient(
-          135deg,
-          #043c28 0%,
-          #075c3a 58%,
-          #08764b 100%
-        );
-      color: #fff;
-      box-shadow: 0 10px 28px rgba(7, 92, 58, 0.10);
-    }
-
-    .assets-hero::after {
-      content: "";
-      position: absolute;
-      width: 260px;
-      height: 260px;
-      right: -80px;
-      top: -110px;
-      border: 34px solid rgba(212, 167, 44, 0.16);
-      border-radius: 50%;
-    }
-
-    .assets-badge {
-      position: relative;
-      z-index: 1;
-      display: inline-flex;
+      padding: 14px 24px;
+      display: flex;
       align-items: center;
-      gap: 7px;
-      padding: 7px 12px;
-      border: 1px solid rgba(255,255,255,.2);
-      border-radius: 999px;
-      background: rgba(255,255,255,.11);
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: .06em;
-      text-transform: uppercase;
-    }
-
-    .assets-hero h1 {
-      position: relative;
-      z-index: 1;
-      margin: 14px 0 7px;
-      font-size: clamp(28px, 4vw, 42px);
-      line-height: 1.05;
-    }
-
-    .assets-hero p {
-      position: relative;
-      z-index: 1;
-      max-width: 760px;
-      margin: 0;
-      color: rgba(255,255,255,.86);
-      line-height: 1.6;
-    }
-
-    .assets-context {
-      position: relative;
-      z-index: 1;
-      display: inline-flex;
-      align-items: center;
-      margin-top: 18px;
-      padding: 9px 13px;
-      border-radius: 10px;
-      background: rgba(0,0,0,.14);
-      font-size: 13px;
-      font-weight: 750;
-    }
-
-    .assets-context strong {
-      margin-left: 6px;
-    }
-
-    .status {
-      margin-bottom: 18px;
-      padding: 12px 14px;
-      border-radius: 12px;
-      background: #eaf7f0;
-      color: #043c28;
-      font-size: 13px;
-      font-weight: 750;
-    }
-
-    .status.error {
-      background: #fff0ee;
-      color: #b42318;
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    .access-denied {
-      margin-bottom: 18px;
-      padding: 16px 18px;
-      border: 1px solid #f2d1cc;
-      border-radius: 14px;
-      background: #fff0ee;
-      color: #a5261c;
-      font-size: 13px;
-      line-height: 1.5;
-      font-weight: 700;
-    }
-
-    .assets-kpis {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 15px;
-      margin-bottom: 20px;
-    }
-
-    .assets-kpi {
-      min-width: 0;
-      padding: 20px;
-      border: 1px solid #dce9e2;
-      border-radius: 17px;
-      background: #fff;
-      box-shadow: 0 8px 24px rgba(7,92,58,.06);
-    }
-
-    .assets-kpi-label {
-      margin-bottom: 7px;
-      color: #6b7d74;
-      font-size: 12px;
-      font-weight: 750;
-    }
-
-    .assets-kpi-value {
-      color: #043c28;
-      font-size: clamp(22px, 3vw, 29px);
-      font-weight: 850;
-      line-height: 1.15;
-      overflow-wrap: anywhere;
-    }
-
-    .assets-grid {
-      display: grid;
-      grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+      justify-content: space-between;
       gap: 20px;
-      align-items: start;
     }
 
-    .assets-card {
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
       min-width: 0;
-      overflow: hidden;
-      border: 1px solid #dce9e2;
-      border-radius: 18px;
-      background: #fff;
-      box-shadow: 0 8px 24px rgba(7,92,58,.06);
     }
 
-    .assets-card-header {
-      padding: 19px 21px;
-      border-bottom: 1px solid #e8efeb;
-    }
-
-    .assets-card-header h2 {
-      margin: 0;
-      color: #043c28;
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 800;
       font-size: 18px;
     }
 
-    .assets-card-header p {
-      margin: 6px 0 0;
-      color: #6b7d74;
-      font-size: 12px;
-      line-height: 1.5;
+    .brand-copy {
+      min-width: 0;
     }
 
-    .assets-card-body {
-      padding: 21px;
+    .brand-name {
+      font-weight: 800;
+      letter-spacing: -0.02em;
     }
 
-    .assets-form-grid {
+    .brand-group {
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 360px;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      padding: 9px 14px;
+      border-radius: 9px;
+      font-weight: 650;
+      transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        transform 0.05s ease;
+    }
+
+    .btn:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      border-color: var(--primary-dark);
+    }
+
+    .btn-secondary {
+      background: #fff;
+      color: var(--primary);
+      border-color: #bbf7d0;
+    }
+
+    .btn-danger {
+      background: #fff;
+      color: var(--danger);
+      border-color: #fecaca;
+    }
+
+    .top-nav {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+      border-top: 1px solid #f1f5f9;
+    }
+
+    .top-nav a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      padding: 0 12px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 650;
+      white-space: nowrap;
+      border-bottom: 2px solid transparent;
+    }
+
+    .top-nav a:hover {
+      color: var(--primary);
+      border-bottom-color: #bbf7d0;
+    }
+
+    .layout {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 28px 24px 48px;
+    }
+
+    .main {
+      min-width: 0;
+    }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .page-title {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+    }
+
+    .page-subtitle {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      max-width: 760px;
+    }
+
+    .status {
+      margin-bottom: 16px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: var(--success-bg);
+      border: 1px solid #bbf7d0;
+      color: var(--success);
+      font-size: 14px;
+    }
+
+    .status:empty {
+      display: none;
+    }
+
+    .error {
+      margin-bottom: 16px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: var(--danger-bg);
+      border: 1px solid #fecaca;
+      color: var(--danger);
+      font-size: 14px;
+    }
+
+    .error:empty {
+      display: none;
+    }
+
+    .access-denied {
+      display: none;
+      padding: 24px;
+      border-radius: var(--radius);
+      background: var(--danger-bg);
+      border: 1px solid #fecaca;
+      color: var(--danger);
+      margin-bottom: 20px;
+    }
+
+    .access-denied h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+    }
+
+    .access-denied p {
+      margin: 0;
+      color: #7f1d1d;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .summary-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .summary-label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 650;
+      margin-bottom: 8px;
+    }
+
+    .summary-value {
+      font-size: 26px;
+      line-height: 1.1;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+    }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+
+    .section-header {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .section-title {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: -0.015em;
+    }
+
+    .section-body {
+      padding: 20px;
+    }
+
+    .form-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
+      gap: 16px;
     }
 
-    .assets-field {
-      min-width: 0;
+    .field {
       display: flex;
       flex-direction: column;
       gap: 7px;
     }
 
-    .assets-field.full {
+    .field.full {
       grid-column: 1 / -1;
     }
 
-    .assets-field label {
-      color: #043c28;
-      font-size: 12px;
-      font-weight: 800;
+    .field label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #334155;
     }
 
-    .assets-field input,
-    .assets-field select,
-    .assets-field textarea {
+    .field input,
+    .field select,
+    .field textarea {
       width: 100%;
-      min-width: 0;
-      border: 1px solid #cddbd4;
-      border-radius: 10px;
-      padding: 10px 11px;
+      border: 1px solid #cbd5e1;
       background: #fff;
-      color: #17352a;
+      color: var(--text);
+      border-radius: 9px;
+      padding: 10px 12px;
       outline: none;
     }
 
-    .assets-field textarea {
-      min-height: 100px;
+    .field textarea {
+      min-height: 110px;
       resize: vertical;
     }
 
-    .assets-field input:focus,
-    .assets-field select:focus,
-    .assets-field textarea:focus {
-      border-color: #075c3a;
-      box-shadow: 0 0 0 3px rgba(7,92,58,.09);
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      border-color: #86efac;
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
     }
 
-    .assets-form-actions {
+    .form-actions {
       display: flex;
       flex-wrap: wrap;
-      gap: 9px;
-      margin-top: 17px;
+      gap: 10px;
+      margin-top: 18px;
     }
 
-    .assets-btn {
-      min-height: 42px;
-      border: 0;
-      border-radius: 10px;
-      padding: 10px 15px;
-      cursor: pointer;
+    .filters {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) minmax(180px, 220px) minmax(180px, 220px) auto;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .filter-group label {
       font-size: 13px;
-      font-weight: 800;
+      font-weight: 700;
+      color: #334155;
     }
 
-    .assets-btn-primary {
-      background: #075c3a;
-      color: #fff;
-    }
-
-    .assets-btn-secondary {
-      background: #edf3f0;
-      color: #043c28;
-    }
-
-    .assets-btn:disabled {
-      opacity: .55;
-      cursor: not-allowed;
-    }
-
-    .assets-toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 9px;
-      padding: 15px 20px;
-      border-bottom: 1px solid #e8efeb;
-      background: #fbfdfc;
-    }
-
-    .assets-toolbar input,
-    .assets-toolbar select {
-      min-width: 150px;
-      flex: 1 1 160px;
-      border: 1px solid #cddbd4;
-      border-radius: 9px;
-      padding: 9px 10px;
+    .filter-group input,
+    .filter-group select {
+      width: 100%;
+      border: 1px solid #cbd5e1;
       background: #fff;
-      color: #17352a;
+      color: var(--text);
+      border-radius: 9px;
+      padding: 10px 12px;
+      outline: none;
     }
 
-    .assets-toolbar button {
-      flex: 0 0 auto;
-    }
-
-    .assets-table-wrap {
+    .table-wrap {
       width: 100%;
       overflow-x: auto;
     }
 
-    .assets-table {
+    table {
       width: 100%;
-      min-width: 900px;
       border-collapse: collapse;
+      min-width: 920px;
     }
 
-    .assets-table th,
-    .assets-table td {
-      padding: 13px 15px;
-      border-bottom: 1px solid #edf2ef;
+    th,
+    td {
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--border);
       text-align: left;
       vertical-align: middle;
+      font-size: 14px;
     }
 
-    .assets-table th {
-      background: #f8fbf9;
-      color: #043c28;
-      font-size: 11px;
-      font-weight: 850;
-      text-transform: uppercase;
-      letter-spacing: .04em;
-      white-space: nowrap;
-    }
-
-    .assets-table td {
-      color: #31483d;
+    th {
+      background: #f8fafc;
+      color: #475569;
       font-size: 12px;
-    }
-
-    .asset-name {
-      color: #043c28;
-      font-weight: 850;
-    }
-
-    .asset-description {
-      max-width: 260px;
-      color: #6b7d74;
-      line-height: 1.4;
-    }
-
-    .asset-status {
-      display: inline-flex;
-      align-items: center;
-      padding: 5px 9px;
-      border-radius: 999px;
-      font-size: 10px;
-      font-weight: 850;
-      text-transform: capitalize;
-      white-space: nowrap;
-    }
-
-    .asset-status.active {
-      background: #eaf7f0;
-      color: #075c3a;
-    }
-
-    .asset-status.inactive {
-      background: #eef1ef;
-      color: #56645d;
-    }
-
-    .asset-status.disposed,
-    .asset-status.sold {
-      background: #fff5df;
-      color: #815d00;
-    }
-
-    .asset-status.lost {
-      background: #fff0ee;
-      color: #b42318;
-    }
-
-    .asset-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-
-    .asset-action {
-      border: 1px solid #dce9e2;
-      border-radius: 8px;
-      padding: 6px 8px;
-      background: #fff;
-      color: #043c28;
-      cursor: pointer;
-      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
       font-weight: 800;
     }
 
-    .asset-action.delete {
-      border-color: #f2d1cc;
-      background: #fff0ee;
-      color: #b42318;
+    tbody tr:hover {
+      background: #f8fafc;
     }
 
-    .assets-empty {
-      padding: 42px 20px;
+    tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .empty-state {
+      padding: 36px 20px;
       text-align: center;
-      color: #6b7d74;
+      color: var(--muted);
     }
 
-    .assets-empty-icon {
-      margin-bottom: 9px;
-      font-size: 32px;
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 12px;
+      font-weight: 750;
+      background: #f1f5f9;
+      color: #475569;
     }
 
-    .assets-empty strong {
-      display: block;
-      margin-bottom: 5px;
-      color: #043c28;
+    .badge-active {
+      background: #dcfce7;
+      color: #166534;
     }
 
-    @media (max-width: 1100px) {
-      .assets-kpis {
+    .badge-inactive {
+      background: #f1f5f9;
+      color: #475569;
+    }
+
+    .badge-disposed {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .row-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .row-actions .btn {
+      padding: 7px 10px;
+      font-size: 12px;
+    }
+
+    .money {
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    @media (max-width: 1000px) {
+      .summary-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
-      .assets-grid {
-        grid-template-columns: 1fr;
+      .filters {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .filters .filter-actions {
+        grid-column: 1 / -1;
       }
     }
 
-    @media (max-width: 650px) {
-      .assets-page {
-        padding: 13px;
+    @media (max-width: 720px) {
+      .topbar-inner {
+        padding: 12px 16px;
       }
 
-      .assets-hero {
-        padding: 23px;
-        border-radius: 18px;
+      .top-nav {
+        padding: 0 16px;
       }
 
-      .assets-kpis {
+      .layout {
+        padding: 20px 16px 36px;
+      }
+
+      .page-header {
+        flex-direction: column;
+      }
+
+      .summary-grid {
         grid-template-columns: 1fr;
       }
 
-      .assets-form-grid {
+      .form-grid {
         grid-template-columns: 1fr;
       }
 
-      .assets-field.full {
+      .field.full {
         grid-column: auto;
       }
 
-      .assets-card-body {
-        padding: 16px;
+      .filters {
+        grid-template-columns: 1fr;
       }
 
-      .assets-card-header {
-        padding: 16px;
+      .filters .filter-actions {
+        grid-column: auto;
       }
 
-      .assets-toolbar {
-        padding: 13px;
-      }
-
-      .assets-toolbar input,
-      .assets-toolbar select {
-        min-width: 100%;
-        flex-basis: 100%;
-      }
-
-      .assets-context {
-        max-width: 100%;
-        overflow-wrap: anywhere;
+      .brand-group {
+        max-width: 180px;
       }
     }
   </style>
 </head>
 
 <body>
-
-  <!-- Required by admin-layout.js -->
   <header class="topbar">
     <div class="topbar-inner">
-
       <div class="brand">
-        <a href="dashboard.html">CHAMA LIVE</a>
+        <div class="brand-mark">CL</div>
+
+        <div class="brand-copy">
+          <div class="brand-name">CHAMA LIVE</div>
+          <div class="brand-group" id="groupName">Loading group…</div>
+        </div>
       </div>
 
-      <div class="top-nav"></div>
-
-      <button
-        id="logout"
-        type="button"
-        class="logout"
-      >
-        Sign out
-      </button>
-
+      <div class="topbar-actions">
+        <button
+          type="button"
+          class="btn btn-danger"
+          id="logout"
+        >
+          Logout
+        </button>
+      </div>
     </div>
+
+    <nav class="top-nav" aria-label="Admin navigation">
+      <a href="./dashboard.html">Dashboard</a>
+      <a href="./members.html">Members</a>
+      <a href="./contributions.html">Contributions</a>
+      <a href="./expenses.html">Expenses</a>
+      <a href="./meetings.html">Meetings</a>
+      <a href="./reports.html">Reports</a>
+      <a href="./monthly-closing.html">Monthly Closing</a>
+      <a href="./assets.html" aria-current="page">Assets</a>
+      <a href="./plans-activities.html">Plans &amp; Activities</a>
+      <a href="./support-welfare.html">Support &amp; Welfare</a>
+      <a href="./milestones.html">Milestones</a>
+      <a href="./group-management.html">Group Management</a>
+    </nav>
   </header>
 
-
   <div class="layout">
-
     <main class="main">
-
-      <div class="assets-page">
-
-        <section class="assets-hero">
-
-          <span class="assets-badge">
-            🏢 Group Operations
-          </span>
-
-          <h1>Assets</h1>
-
-          <p>
-            Keep a clear, group-owned register of property,
-            equipment, investments and other assets held by your chama.
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Assets</h1>
+          <p class="page-subtitle">
+            Record, track, and manage assets owned by your group.
           </p>
-
-          <div class="assets-context">
-
-            Current group:
-
-            <strong
-              id="groupName"
-              data-group-name
-            >
-              Loading…
-            </strong>
-
-          </div>
-
-        </section>
-
-
-        <div
-          id="status"
-          class="status hidden"
-          role="status"
-          aria-live="polite"
-        ></div>
-
-
-        <div
-          id="error"
-          class="status error hidden"
-          role="alert"
-          aria-live="assertive"
-        ></div>
-
-
-        <div
-          id="accessDenied"
-          class="access-denied hidden"
-        >
-          You can view group assets, but your current role does not
-          have permission to create, edit or delete them.
         </div>
-
-
-        <section id="assetsContent">
-
-          <section class="assets-kpis">
-
-            <div class="assets-kpi">
-
-              <div class="assets-kpi-label">
-                Total Assets
-              </div>
-
-              <div
-                id="totalAssets"
-                class="assets-kpi-value"
-              >
-                0
-              </div>
-
-            </div>
-
-
-            <div class="assets-kpi">
-
-              <div class="assets-kpi-label">
-                Active Assets
-              </div>
-
-              <div
-                id="activeAssets"
-                class="assets-kpi-value"
-              >
-                0
-              </div>
-
-            </div>
-
-
-            <div class="assets-kpi">
-
-              <div class="assets-kpi-label">
-                Acquisition Cost
-              </div>
-
-              <div
-                id="totalAcquisitionCost"
-                class="assets-kpi-value"
-              >
-                KSh 0
-              </div>
-
-            </div>
-
-
-            <div class="assets-kpi">
-
-              <div class="assets-kpi-label">
-                Current Value
-              </div>
-
-              <div
-                id="totalCurrentValue"
-                class="assets-kpi-value"
-              >
-                KSh 0
-              </div>
-
-            </div>
-
-          </section>
-
-
-          <section class="assets-grid">
-
-            <article class="assets-card">
-
-              <div class="assets-card-header">
-
-                <h2 id="formTitle">
-                  Add Asset
-                </h2>
-
-                <p>
-                  Record group property without changing the
-                  financial ledger.
-                </p>
-
-              </div>
-
-
-              <div class="assets-card-body">
-
-                <form id="assetForm">
-
-                  <input
-                    type="hidden"
-                    id="assetId"
-                    value=""
-                  >
-
-
-                  <div class="assets-form-grid">
-
-                    <div class="assets-field full">
-
-                      <label for="assetName">
-                        Asset name *
-                      </label>
-
-                      <input
-                        id="assetName"
-                        type="text"
-                        maxlength="200"
-                        required
-                        placeholder="e.g. Group dairy cow"
-                      >
-
-                    </div>
-
-
-                    <div class="assets-field">
-
-                      <label for="assetCategory">
-                        Category *
-                      </label>
-
-                      <select
-                        id="assetCategory"
-                        required
-                      >
-
-                        <option value="land">
-                          Land
-                        </option>
-
-                        <option value="building">
-                          Building
-                        </option>
-
-                        <option value="vehicle">
-                          Vehicle
-                        </option>
-
-                        <option value="equipment">
-                          Equipment
-                        </option>
-
-                        <option value="livestock">
-                          Livestock
-                        </option>
-
-                        <option value="farm">
-                          Farm
-                        </option>
-
-                        <option value="furniture">
-                          Furniture
-                        </option>
-
-                        <option value="investment">
-                          Investment
-                        </option>
-
-                        <option value="shares">
-                          Shares
-                        </option>
-
-                        <option
-                          value="other"
-                          selected
-                        >
-                          Other
-                        </option>
-
-                      </select>
-
-                    </div>
-
-
-                    <div class="assets-field">
-
-                      <label for="assetStatus">
-                        Status *
-                      </label>
-
-                      <select
-                        id="assetStatus"
-                        required
-                      >
-
-                        <option
-                          value="active"
-                          selected
-                        >
-                          Active
-                        </option>
-
-                        <option value="disposed">
-                          Disposed
-                        </option>
-
-                        <option value="sold">
-                          Sold
-                        </option>
-
-                        <option value="lost">
-                          Lost
-                        </option>
-
-                        <option value="inactive">
-                          Inactive
-                        </option>
-
-                      </select>
-
-                    </div>
-
-
-                    <div class="assets-field">
-
-                      <label for="acquiredDate">
-                        Acquired date
-                      </label>
-
-                      <input
-                        id="acquiredDate"
-                        type="date"
-                      >
-
-                    </div>
-
-
-                    <div class="assets-field">
-
-                      <label for="assetLocation">
-                        Location
-                      </label>
-
-                      <input
-                        id="assetLocation"
-                        type="text"
-                        maxlength="250"
-                        placeholder="e.g. Timau"
-                      >
-
-                    </div>
-
-
-                    <div class="assets-field">
-
-                      <label for="acquisitionCost">
-                        Acquisition cost
-                      </label>
-
-                      <input
-                        id="acquisitionCost"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        placeholder="0.00"
-                      >
-
-                    </div>
-
-
-                    <div class="assets-field">
-
-                      <label for="currentValue">
-                        Current value
-                      </label>
-
-                      <input
-                        id="currentValue"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        placeholder="0.00"
-                      >
-
-                    </div>
-
-
-                    <div class="assets-field full">
-
-                      <label for="assetDescription">
-                        Description
-                      </label>
-
-                      <textarea
-                        id="assetDescription"
-                        maxlength="2000"
-                        placeholder="Add useful details about the asset..."
-                      ></textarea>
-
-                    </div>
-
-                  </div>
-
-
-                  <div class="assets-form-actions">
-
-                    <button
-                      id="saveAsset"
-                      class="assets-btn assets-btn-primary"
-                      type="submit"
-                    >
-                      Save Asset
-                    </button>
-
-                    <button
-                      id="resetAsset"
-                      class="assets-btn assets-btn-secondary"
-                      type="button"
-                    >
-                      Reset
-                    </button>
-
-                  </div>
-
-                </form>
-
-              </div>
-
-            </article>
-
-
-            <article class="assets-card">
-
-              <div class="assets-card-header">
-
-                <h2>
-                  Asset Register
-                </h2>
-
-                <p>
-                  Assets shown here belong only to the authenticated
-                  member's current group.
-                </p>
-
-              </div>
-
-
-              <div class="assets-toolbar">
-
-                <input
-                  id="assetSearch"
-                  type="search"
-                  placeholder="Search assets..."
-                  aria-label="Search assets"
-                >
-
-
-                <select
-                  id="assetFilterCategory"
-                  aria-label="Filter by category"
-                >
-
-                  <option value="">
-                    All categories
-                  </option>
-
-                  <option value="land">
-                    Land
-                  </option>
-
-                  <option value="building">
-                    Building
-                  </option>
-
-                  <option value="vehicle">
-                    Vehicle
-                  </option>
-
-                  <option value="equipment">
-                    Equipment
-                  </option>
-
-                  <option value="livestock">
-                    Livestock
-                  </option>
-
-                  <option value="farm">
-                    Farm
-                  </option>
-
-                  <option value="furniture">
-                    Furniture
-                  </option>
-
-                  <option value="investment">
-                    Investment
-                  </option>
-
-                  <option value="shares">
-                    Shares
-                  </option>
-
-                  <option value="other">
-                    Other
-                  </option>
-
-                </select>
-
-
-                <select
-                  id="assetFilterStatus"
-                  aria-label="Filter by status"
-                >
-
-                  <option value="">
-                    All statuses
-                  </option>
-
-                  <option value="active">
-                    Active
-                  </option>
-
-                  <option value="disposed">
-                    Disposed
-                  </option>
-
-                  <option value="sold">
-                    Sold
-                  </option>
-
-                  <option value="lost">
-                    Lost
-                  </option>
-
-                  <option value="inactive">
-                    Inactive
-                  </option>
-
-                </select>
-
-
-                <button
-                  id="refreshAssets"
-                  type="button"
-                  class="assets-btn assets-btn-secondary"
-                >
-                  Refresh
-                </button>
-
-              </div>
-
-
-              <div class="assets-table-wrap">
-
-                <table class="assets-table">
-
-                  <thead>
-
-                    <tr>
-                      <th>Asset</th>
-                      <th>Category</th>
-                      <th>Acquired</th>
-                      <th>Cost</th>
-                      <th>Current Value</th>
-                      <th>Location</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-
-                  </thead>
-
-
-                  <tbody id="assetsBody">
-
-                    <tr>
-
-                      <td
-                        colspan="8"
-                        class="assets-empty"
-                      >
-
-                        <div class="assets-empty-icon">
-                          ⏳
-                        </div>
-
-                        <strong>
-                          Loading assets…
-                        </strong>
-
-                        Please wait.
-
-                      </td>
-
-                    </tr>
-
-                  </tbody>
-
-                </table>
-
-              </div>
-
-            </article>
-
-          </section>
-
-        </section>
-
       </div>
 
-    </main>
+      <div id="status" class="status" aria-live="polite"></div>
 
+      <div id="error" class="error" role="alert" aria-live="assertive"></div>
+
+      <div id="accessDenied" class="access-denied">
+        <h2>Access denied</h2>
+        <p>
+          You do not have permission to manage assets for this group.
+        </p>
+      </div>
+
+      <section class="summary-grid" aria-label="Asset summary">
+        <article class="summary-card">
+          <div class="summary-label">Total Assets</div>
+          <div class="summary-value" id="totalAssets">0</div>
+        </article>
+
+        <article class="summary-card">
+          <div class="summary-label">Active Assets</div>
+          <div class="summary-value" id="activeAssets">0</div>
+        </article>
+
+        <article class="summary-card">
+          <div class="summary-label">Total Acquisition Cost</div>
+          <div class="summary-value money" id="totalAcquisitionCost">
+            KSh 0
+          </div>
+        </article>
+
+        <article class="summary-card">
+          <div class="summary-label">Current Value</div>
+          <div class="summary-value money" id="totalCurrentValue">
+            KSh 0
+          </div>
+        </article>
+      </section>
+
+      <section class="section" aria-labelledby="asset-form-title">
+        <div class="section-header">
+          <h2 class="section-title" id="asset-form-title">
+            Add / Edit Asset
+          </h2>
+        </div>
+
+        <div class="section-body">
+          <form id="assetForm">
+            <input type="hidden" id="assetId">
+
+            <div class="form-grid">
+              <div class="field">
+                <label for="assetName">Asset Name</label>
+                <input
+                  type="text"
+                  id="assetName"
+                  name="assetName"
+                  autocomplete="off"
+                  required
+                >
+              </div>
+
+              <div class="field">
+                <label for="assetCategory">Category</label>
+                <input
+                  type="text"
+                  id="assetCategory"
+                  name="assetCategory"
+                  autocomplete="off"
+                  placeholder="e.g. Equipment, Furniture, Vehicle"
+                  required
+                >
+              </div>
+
+              <div class="field">
+                <label for="assetStatus">Status</label>
+                <select id="assetStatus" name="assetStatus">
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="disposed">Disposed</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="acquiredDate">Acquired Date</label>
+                <input
+                  type="date"
+                  id="acquiredDate"
+                  name="acquiredDate"
+                >
+              </div>
+
+              <div class="field">
+                <label for="assetLocation">Location</label>
+                <input
+                  type="text"
+                  id="assetLocation"
+                  name="assetLocation"
+                  autocomplete="off"
+                  placeholder="Where the asset is kept"
+                >
+              </div>
+
+              <div class="field">
+                <label for="acquisitionCost">Acquisition Cost</label>
+                <input
+                  type="number"
+                  id="acquisitionCost"
+                  name="acquisitionCost"
+                  min="0"
+                  step="0.01"
+                  inputmode="decimal"
+                  placeholder="0.00"
+                >
+              </div>
+
+              <div class="field">
+                <label for="currentValue">Current Value</label>
+                <input
+                  type="number"
+                  id="currentValue"
+                  name="currentValue"
+                  min="0"
+                  step="0.01"
+                  inputmode="decimal"
+                  placeholder="0.00"
+                >
+              </div>
+
+              <div class="field full">
+                <label for="assetDescription">Description</label>
+                <textarea
+                  id="assetDescription"
+                  name="assetDescription"
+                  placeholder="Optional description, serial number, condition, or other notes"
+                ></textarea>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button
+                type="submit"
+                class="btn btn-primary"
+                id="saveAsset"
+              >
+                Save Asset
+              </button>
+
+              <button
+                type="button"
+                class="btn"
+                id="resetAsset"
+              >
+                Clear
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="asset-list-title">
+        <div class="section-header">
+          <h2 class="section-title" id="asset-list-title">
+            Asset Register
+          </h2>
+
+          <button
+            type="button"
+            class="btn btn-secondary"
+            id="refreshAssets"
+          >
+            Refresh
+          </button>
+        </div>
+
+        <div class="section-body">
+          <div class="filters">
+            <div class="filter-group">
+              <label for="assetSearch">Search</label>
+              <input
+                type="search"
+                id="assetSearch"
+                placeholder="Search assets…"
+                autocomplete="off"
+              >
+            </div>
+
+            <div class="filter-group">
+              <label for="assetFilterCategory">Category</label>
+              <select id="assetFilterCategory">
+                <option value="">All categories</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label for="assetFilterStatus">Status</label>
+              <select id="assetFilterStatus">
+                <option value="">All statuses</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="disposed">Disposed</option>
+              </select>
+            </div>
+
+            <div class="filter-actions">
+              <button
+                type="button"
+                class="btn"
+                id="refreshAssets"
+              >
+                Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Asset</th>
+                <th>Category</th>
+                <th>Status</th>
+                <th>Acquired</th>
+                <th>Location</th>
+                <th>Acquisition Cost</th>
+                <th>Current Value</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+
+            <tbody id="assetsBody">
+              <tr>
+                <td colspan="8" class="empty-state">
+                  Loading assets…
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
   </div>
 
-
-  <!-- Admin Portal bootstrap -->
+  <!--
+    Boot ownership:
+    admin-layout.js is the sole page boot owner.
+    It maps assets.html -> js/assets.js -> initPage().
+    Do not add a direct initPage()/initAssets() call here.
+  -->
   <script type="module">
+    import { boot } from "./js/admin-layout.js";
 
-    import {
-      boot
-    } from "./js/admin-layout.js";
-
-
-    boot().catch(
-      (error) => {
-
-        console.error(
-          "CHAMA LIVE: Admin portal boot failed",
-          error
-        );
-
-
-        const errorElement =
-          document.getElementById(
-            "error"
-          );
-
-
-        if (errorElement) {
-
-          errorElement.hidden =
-            false;
-
-          errorElement.textContent =
-            error?.message ||
-            "The Admin Portal could not finish loading.";
-
-          errorElement.className =
-            "status error show";
-
-        }
-
-      }
-    );
-
+    boot().catch((error) => {
+      console.error("CHAMA LIVE admin layout boot failed:", error);
+    });
   </script>
-
 </body>
 </html>
