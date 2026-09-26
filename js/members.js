@@ -2151,6 +2151,48 @@ async function saveMember(event) {
        * p_contribution_plan MUST be a JSON array.
        */
 
+
+      /* ---------------------------------------------------
+         BUILD THE HISTORICAL CONTRIBUTION PLAN EXPLICITLY
+         --------------------------------------------------- */
+
+      const historicalContributionPlan = [
+        {
+          contribution_type_id:
+            monthlyContributionType?.id ||
+            null,
+
+          amount:
+            values.contribution_amount,
+
+          first_period_rule:
+            values.first_period_rule,
+
+          effective_from:
+            values.contribution_effective_from
+        }
+      ];
+
+
+      /* ---------------------------------------------------
+         CONTRACT GUARD
+         --------------------------------------------------- */
+
+      if (
+        !Array.isArray(
+          historicalContributionPlan
+        )
+      ) {
+        throw new Error(
+          "Historical contribution plan must be a JSON array."
+        );
+      }
+
+
+      /* ---------------------------------------------------
+         CANONICAL HISTORICAL RPC
+         --------------------------------------------------- */
+
       const {
         data,
         error
@@ -2187,22 +2229,8 @@ async function saveMember(event) {
               values.join_date
           },
 
-          p_contribution_plan: [
-            {
-              contribution_type_id:
-                monthlyContributionType?.id ||
-                null,
-
-              amount:
-                values.contribution_amount,
-
-              first_period_rule:
-                values.first_period_rule,
-
-              effective_from:
-                values.contribution_effective_from
-            }
-          ],
+          p_contribution_plan:
+            historicalContributionPlan,
 
           p_historical: {
             enabled:
@@ -2702,13 +2730,6 @@ async function openEditMember(
   if (contributionAmount) {
     contributionAmount.disabled =
       true;
-
-    /*
-     * Keep the existing contribution amount visible when
-     * available, but do not permit an existing-member edit
-     * to change canonical accounting through this profile
-     * update path.
-     */
   }
 
   if (firstPeriod) {
