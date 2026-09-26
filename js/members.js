@@ -36,6 +36,21 @@
 
      reconcile_member_historical_payments()
 
+   ---------------------------------------------------------
+   CANONICAL ACCOUNTING REFRESH
+   ---------------------------------------------------------
+
+     refresh_my_managed_member_accounting()
+
+   The browser does NOT directly modify accounting tables.
+
+   Before reading a member's contribution position, the page
+   invokes the authenticated canonical refresh boundary.
+   That wrapper derives the member's group and current month
+   server-side and delegates to the existing canonical
+   accounting engine.
+
+   ---------------------------------------------------------
    IMPORTANT:
    create_member_with_historical_contributions() creates a
    NEW member. It must NEVER be used to edit an existing
@@ -360,6 +375,66 @@ function contributionStatusHtml(position) {
 
 
 /* =========================================================
+   CANONICAL ACCOUNTING REFRESH
+   ---------------------------------------------------------
+   The browser does not create or modify accounting rows.
+
+   This authenticated wrapper establishes the canonical
+   current-month accounting horizon, then delegates to the
+   existing canonical refresh engine.
+
+   Only the member ID is supplied by the browser.
+
+   The wrapper derives:
+     - group_id
+     - current month
+
+   and enforces:
+     - authenticated session
+     - can_manage_members(group_id)
+
+   The underlying canonical accounting functions remain
+   unchanged.
+   ========================================================= */
+
+async function refreshManagedMemberAccounting(
+  memberId
+) {
+  if (!memberId) {
+    throw new Error(
+      "Member ID is required for accounting refresh."
+    );
+  }
+
+  const {
+    data,
+    error
+  } = await supabase.rpc(
+    "refresh_my_managed_member_accounting",
+    {
+      p_member_id:
+        memberId
+    }
+  );
+
+  if (error) {
+    throw error;
+  }
+
+  if (
+    !data ||
+    data.ok !== true
+  ) {
+    throw new Error(
+      "Canonical member accounting refresh did not complete successfully."
+    );
+  }
+
+  return data;
+}
+
+
+/* =========================================================
    CONTRIBUTION POSITION — ALL MEMBERS
    ========================================================= */
 
@@ -379,6 +454,18 @@ async function loadMemberContributionPositions() {
 
   for (const member of members) {
     try {
+
+      /* ---------------------------------------------------
+         CANONICAL ACCOUNTING REFRESH
+         ---------------------------------------------------
+         Refresh first so the subsequent read sees the
+         current canonical obligation horizon.
+         --------------------------------------------------- */
+
+      await refreshManagedMemberAccounting(
+        member.id
+      );
+
       const {
         data,
         error
@@ -416,10 +503,12 @@ async function loadMemberContributionPositions() {
 
     } catch (error) {
       console.warn(
-        "Contribution position exception:",
+        "Canonical member accounting refresh/position failed:",
         member.id,
         error
       );
+
+      continue;
     }
   }
 
@@ -3045,6 +3134,23 @@ async function loadMemberContributionPosition(
   );
 
   try {
+
+    /* -----------------------------------------------------
+       CANONICAL ACCOUNTING REFRESH
+       -----------------------------------------------------
+
+       Establish the current canonical obligation horizon
+       before reading the member's contribution position.
+
+       The wrapper derives the member's group and current
+       month server-side and enforces the existing member
+       management authorization boundary.
+       ----------------------------------------------------- */
+
+    await refreshManagedMemberAccounting(
+      memberId
+    );
+
 
     const {
       data,
