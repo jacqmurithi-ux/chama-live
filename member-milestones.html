@@ -279,7 +279,8 @@
 
     .member-milestone-mobile-card {
       padding: 16px;
-      border-bottom: 1px solid var(--cl-border-soft, #edf0f2);
+      border-bottom: 1px solid
+        var(--cl-border-soft, #edf0f2);
     }
 
     .member-milestone-mobile-card:last-child {
@@ -415,7 +416,6 @@
 
       </div>
 
-
       <div>
 
         <a
@@ -521,7 +521,6 @@
           autocomplete="off"
         >
 
-
         <select
           id="memberMilestoneCategory"
           aria-label="Filter milestones by category"
@@ -602,37 +601,28 @@
   </main>
 
 
-  <script type="module">
+  <!--
+    CHAMA LIVE MEMBER LAYOUT BOOT
 
+    member-layout.js is the sole initialization owner.
+
+    Page mapping:
+      member-milestones.html
+        -> member-milestones.js
+        -> initMemberMilestones()
+
+    Do not directly import or call
+    initMemberMilestones() from this HTML file.
+  -->
+  <script type="module">
     import { boot } from "./js/member-layout.js";
 
-    boot();
-
-  </script>
-
-
-  <script type="module">
-
-    import {
-      initMemberMilestones
-    } from "./js/member-milestones.js";
-
-    if (
-      document.readyState === "loading"
-    ) {
-
-      document.addEventListener(
-        "DOMContentLoaded",
-        () => initMemberMilestones(),
-        { once: true }
+    boot().catch((error) => {
+      console.error(
+        "CHAMA LIVE member layout boot failed:",
+        error
       );
-
-    } else {
-
-      initMemberMilestones();
-
-    }
-
+    });
   </script>
 
 </body>
