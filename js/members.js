@@ -2206,6 +2206,18 @@ async function saveMember(event) {
             member_number:
               values.member_number,
 
+            /*
+             * The deployed RPC requires both member_number
+             * and membership_number.
+             *
+             * members.html currently exposes one member
+             * number field, so the entered member number is
+             * intentionally mapped to both fields.
+             */
+
+            membership_number:
+              values.member_number,
+
             name:
               values.name,
 
@@ -2235,6 +2247,15 @@ async function saveMember(event) {
           p_historical: {
             enabled:
               true,
+
+            /*
+             * The deployed RPC requires the historical
+             * monthly amount and validates it against the
+             * contribution plan amount.
+             */
+
+            monthly_amount:
+              values.contribution_amount,
 
             paid_through:
               values.historical_paid_through,
