@@ -465,36 +465,16 @@
   </main>
 
 
+  <!-- =====================================================
+       MEMBER LAYOUT IS THE SOLE BOOT OWNER.
+       member-layout.js maps this page to
+       initMemberProfile().
+  ====================================================== -->
   <script type="module">
 
     import { boot } from "./js/member-layout.js";
 
     boot();
-
-  </script>
-
-
-  <script type="module">
-
-    import {
-      initMemberProfile
-    } from "./js/member-profile.js";
-
-    if (
-      document.readyState === "loading"
-    ) {
-
-      document.addEventListener(
-        "DOMContentLoaded",
-        () => initMemberProfile(),
-        { once: true }
-      );
-
-    } else {
-
-      initMemberProfile();
-
-    }
 
   </script>
 
