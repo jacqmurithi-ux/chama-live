@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1"
@@ -450,7 +451,7 @@
     }
 
     .historical-controls[hidden] {
-      display: none;
+      display: none !important;
     }
 
     .member-form-actions {
@@ -663,23 +664,27 @@
       background: currentColor;
     }
 
-    .member-contribution-status.status-up-to-date {
+    .member-contribution-status.status-up-to-date,
+    .contribution-status-up-to-date {
       background: rgba(22, 163, 74, .09);
       color: #15803d;
     }
 
-    .member-contribution-status.status-arrears {
+    .member-contribution-status.status-arrears,
+    .contribution-status-arrears {
       background: rgba(220, 38, 38, .09);
       color: #b91c1c;
     }
 
-    .member-contribution-status.status-credit {
+    .member-contribution-status.status-credit,
+    .contribution-status-credit {
       background: rgba(37, 99, 235, .09);
       color: #1d4ed8;
     }
 
     .member-contribution-status.status-loading,
-    .member-contribution-status.status-unknown {
+    .member-contribution-status.status-unknown,
+    .contribution-status-unknown {
       background: #f1f5f9;
       color: #64748b;
     }
@@ -1015,6 +1020,14 @@
       -webkit-backdrop-filter: blur(4px);
     }
 
+    #memberModal[hidden] {
+      display: none !important;
+    }
+
+    #memberModal:not([hidden]) {
+      display: flex !important;
+    }
+
     .member-modal-card {
       width: 100%;
       max-width: 560px;
@@ -1075,18 +1088,24 @@
       gap: 10px;
     }
 
-    .member-detail {
+    /*
+     * Current members.js populates [data-member-profile]
+     * dynamically. display:contents lets the generated
+     * profile items participate directly in this grid.
+     */
+
+    [data-member-profile] {
+      display: contents;
+    }
+
+    [data-member-profile] > div {
       min-width: 0;
       padding: 12px;
       border-radius: 10px;
       background: #f8fafc;
     }
 
-    .member-detail.full {
-      grid-column: 1 / -1;
-    }
-
-    .member-detail-label {
+    [data-member-profile] > div > span {
       display: block;
       margin-bottom: 4px;
       color: #94a3b8;
@@ -1096,7 +1115,7 @@
       font-weight: 800;
     }
 
-    .member-detail-value {
+    [data-member-profile] > div > strong {
       display: block;
       color: #334155;
       font-size: 12px;
@@ -1364,10 +1383,6 @@
         grid-template-columns: 1fr;
       }
 
-      .member-detail.full {
-        grid-column: auto;
-      }
-
       .member-modal-header,
       .member-modal-body {
         padding: 16px;
@@ -1515,7 +1530,7 @@
 
 
       <!-- =================================================
-           CURRENT MEMBERS.JS STATUS
+           STATUS
            ================================================= -->
 
       <div
@@ -1528,7 +1543,7 @@
 
 
       <!-- =================================================
-           CURRENT MEMBERS.JS ERROR
+           ERROR
            ================================================= -->
 
       <div
@@ -1692,6 +1707,7 @@
         </div>
 
 
+        <!-- SINGLE result-count ID -->
         <div
           class="member-result-count"
           id="memberResultCount"
@@ -1749,11 +1765,11 @@
 
 
         <!-- =================================================
-             CURRENT MEMBERS.JS FORM ID
+             CURRENT MEMBERS.JS PRIMARY FORM ID
              ================================================= -->
 
         <form
-          id="memberForm"
+          id="addMemberForm"
           novalidate
         >
 
@@ -2103,7 +2119,10 @@
                  HISTORICAL CONTRIBUTIONS
                  ================================================= -->
 
-            <div class="member-form-section-heading" style="margin-top:22px;">
+            <div
+              class="member-form-section-heading"
+              style="margin-top:22px;"
+            >
 
               <strong>
                 Historical Contributions
@@ -2161,9 +2180,19 @@
             </div>
 
 
+            <!--
+              IMPORTANT:
+              Current members.js controls this container through
+              [data-historical-controls] / #historicalContributionControls.
+              It starts hidden and is shown only when Historical
+              Contributions is enabled.
+            -->
+
             <div
               id="historicalContributionControls"
               class="historical-controls"
+              data-historical-controls
+              hidden
             >
 
               <div class="member-form-grid">
@@ -2183,6 +2212,7 @@
                     id="memberHistoricalPaidThrough"
                     name="memberHistoricalPaidThrough"
                     type="date"
+                    disabled
                   >
 
                   <small class="muted member-form-hint">
@@ -2206,6 +2236,7 @@
                   <select
                     id="memberHistoricalPaymentMethod"
                     name="memberHistoricalPaymentMethod"
+                    disabled
                   >
 
                     <option value="cash">
@@ -2268,7 +2299,7 @@
             <button
               class="btn btn-secondary"
               type="button"
-              id="cancelMemberForm"
+              id="cancelAddMember"
             >
               Cancel
             </button>
@@ -2299,11 +2330,17 @@
           </div>
 
 
+          <!--
+            Deliberately NOT memberResultCount.
+            The toolbar owns the single live result-count ID.
+          -->
+
           <div
             class="members-list-count"
-            id="memberResultCount"
+            id="memberListCount"
+            aria-hidden="true"
           >
-            0
+            Members
           </div>
 
         </div>
@@ -2332,10 +2369,11 @@
 
 
             <!--
-              Current members.js uses #membersTableBody.
+              Current members.js primary table-body contract:
+              #memberRows
             -->
 
-            <tbody id="membersTableBody">
+            <tbody id="memberRows">
 
               <tr>
 
@@ -2401,7 +2439,6 @@
     style="
       position: fixed;
       inset: 0;
-      display: none;
       align-items: center;
       justify-content: center;
       padding: 16px;
@@ -2443,6 +2480,7 @@
           <button
             class="btn btn-secondary modal-close"
             id="closeMemberModal"
+            data-member-modal-close
             type="button"
           >
             Close
@@ -2455,168 +2493,19 @@
 
       <div class="member-modal-body">
 
-        <div class="member-detail-grid">
+        <!--
+          Current members.js populates this container using
+          [data-member-profile].
 
-          <div class="member-detail">
+          The data-member-profile marker is important.
+          Without it, openMemberModal() cannot render the
+          complete current member profile.
+        -->
 
-            <span class="member-detail-label">
-              Member Number
-            </span>
-
-            <span
-              class="member-detail-value"
-              id="viewMemberNumber"
-            >
-              —
-            </span>
-
-          </div>
-
-
-          <div class="member-detail">
-
-            <span class="member-detail-label">
-              Membership Number
-            </span>
-
-            <span
-              class="member-detail-value"
-              id="viewMembershipNumber"
-            >
-              —
-            </span>
-
-          </div>
-
-
-          <div class="member-detail">
-
-            <span class="member-detail-label">
-              National ID
-            </span>
-
-            <span
-              class="member-detail-value"
-              id="viewMemberNationalId"
-            >
-              —
-            </span>
-
-          </div>
-
-
-          <div class="member-detail">
-
-            <span class="member-detail-label">
-              Phone
-            </span>
-
-            <span
-              class="member-detail-value"
-              id="viewMemberPhone"
-            >
-              —
-            </span>
-
-          </div>
-
-
-          <div class="member-detail">
-
-            <span class="member-detail-label">
-              Email
-            </span>
-
-            <span
-              class="member-detail-value"
-              id="viewMemberEmail"
-            >
-              —
-            </span>
-
-          </div>
-
-
-          <div class="member-detail">
-
-            <span class="member-detail-label">
-              Role
-            </span>
-
-            <span
-              class="member-detail-value"
-              id="viewMemberRole"
-            >
-              —
-            </span>
-
-          </div>
-
-
-          <div class="member-detail">
-
-            <span class="member-detail-label">
-              Account Status
-            </span>
-
-            <span
-              class="member-detail-value"
-              id="viewMemberStatus"
-            >
-              —
-            </span>
-
-          </div>
-
-
-          <div class="member-detail">
-
-            <span class="member-detail-label">
-              Login Status
-            </span>
-
-            <span
-              class="member-detail-value"
-              id="viewMemberLoginStatus"
-            >
-              —
-            </span>
-
-          </div>
-
-
-          <div class="member-detail">
-
-            <span class="member-detail-label">
-              Join Date
-            </span>
-
-            <span
-              class="member-detail-value"
-              id="viewMemberJoinDate"
-            >
-              —
-            </span>
-
-          </div>
-
-
-          <div class="member-detail full">
-
-            <span class="member-detail-label">
-              Group
-            </span>
-
-            <span
-              class="member-detail-value"
-              id="viewMemberGroup"
-            >
-              —
-            </span>
-
-          </div>
-
-        </div>
+        <div
+          class="member-detail-grid"
+          data-member-profile
+        ></div>
 
 
         <!-- =================================================
@@ -2626,6 +2515,7 @@
         <section
           id="memberContributionPosition"
           class="member-accounting-panel"
+          data-member-contribution-position
           aria-label="Contribution accounting"
         >
 
@@ -2642,7 +2532,16 @@
           </div>
 
 
-          <div class="member-accounting-summary">
+          <!--
+            Current members.js uses these data attributes.
+            Keeping them in the static HTML prevents it from
+            creating a duplicate contribution-position panel.
+          -->
+
+          <div
+            class="member-accounting-summary"
+            data-contribution-position-content
+          >
 
             <div class="accounting-mini-card">
 
@@ -2650,6 +2549,7 @@
 
               <strong
                 id="viewContributionStatus"
+                data-position-status
                 class="status-unknown"
               >
                 Loading...
@@ -2662,7 +2562,10 @@
 
               <span>Total Contributed</span>
 
-              <strong id="viewContributionTotal">
+              <strong
+                id="viewContributionTotal"
+                data-position-total-contributed
+              >
                 —
               </strong>
 
@@ -2673,7 +2576,10 @@
 
               <span>Total Due</span>
 
-              <strong id="viewContributionDue">
+              <strong
+                id="viewContributionDue"
+                data-position-total-due
+              >
                 —
               </strong>
 
@@ -2684,7 +2590,10 @@
 
               <span>Allocated</span>
 
-              <strong id="viewContributionAllocated">
+              <strong
+                id="viewContributionAllocated"
+                data-position-allocated
+              >
                 —
               </strong>
 
@@ -2695,7 +2604,10 @@
 
               <span>Arrears</span>
 
-              <strong id="viewContributionArrears">
+              <strong
+                id="viewContributionArrears"
+                data-position-arrears
+              >
                 —
               </strong>
 
@@ -2706,7 +2618,10 @@
 
               <span>Credit</span>
 
-              <strong id="viewContributionCredit">
+              <strong
+                id="viewContributionCredit"
+                data-position-credit
+              >
                 —
               </strong>
 
@@ -2715,9 +2630,24 @@
           </div>
 
 
+          <!-- Loading state expected by current members.js -->
+
+          <div
+            class="accounting-status"
+            data-contribution-position-loading
+            hidden
+            aria-live="polite"
+          >
+            Loading contribution position...
+          </div>
+
+
+          <!-- Optional descriptive/status area -->
+
           <div
             class="accounting-status"
             id="viewContributionDescription"
+            data-position-records
             aria-live="polite"
           >
             Loading contribution position...
@@ -2746,6 +2676,7 @@
             type="button"
             class="btn btn-secondary"
             id="doneMemberModal"
+            data-member-modal-close
           >
             Done
           </button>
@@ -2762,17 +2693,17 @@
   <!-- =====================================================
        ADMIN PORTAL BOOT
 
-       admin-layout.js remains the SINGLE boot owner.
-
-       It maps:
+       SINGLE BOOT OWNER
 
        members.html
           ↓
-       ./members.js
+       admin-layout.js
+          ↓
+       js/members.js
           ↓
        init()
 
-       Do not add a direct members.js import here.
+       Do NOT add a direct members.js import here.
        ===================================================== -->
 
   <script type="module">
