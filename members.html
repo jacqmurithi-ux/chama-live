@@ -81,7 +81,7 @@
        STATUS / ERROR
        ===================================================== */
 
-    #status {
+    #membersStatus {
       display: flex;
       align-items: center;
       gap: 9px;
@@ -94,11 +94,11 @@
       font-size: 13px;
     }
 
-    #status[hidden] {
+    #membersStatus[hidden] {
       display: none;
     }
 
-    #status:not([hidden])::before {
+    #membersStatus:not([hidden])::before {
       content: "";
       width: 7px;
       height: 7px;
@@ -118,7 +118,7 @@
       }
     }
 
-    #error {
+    #membersError {
       display: flex;
       align-items: flex-start;
       gap: 11px;
@@ -131,7 +131,7 @@
       font-size: 13px;
     }
 
-    #error[hidden] {
+    #membersError[hidden] {
       display: none;
     }
 
@@ -383,11 +383,6 @@
       line-height: 1.4;
     }
 
-    /* =====================================================
-       CONTRIBUTION SETUP
-       members.js owns this DOM.
-       ===================================================== */
-
     .member-contribution-setup {
       margin-top: 22px;
       padding: 17px;
@@ -514,10 +509,6 @@
       white-space: nowrap;
     }
 
-    /* =====================================================
-       DESKTOP TABLE
-       ===================================================== */
-
     .members-table-wrap {
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
@@ -637,10 +628,6 @@
       vertical-align: middle;
     }
 
-    /* =====================================================
-       CONTRIBUTION STATUS
-       ===================================================== */
-
     .member-contribution-status {
       display: inline-flex;
       align-items: center;
@@ -690,10 +677,6 @@
     .member-contribution-status-cell {
       min-width: 145px;
     }
-
-    /* =====================================================
-       BADGES
-       ===================================================== */
 
     .member-role-badge,
     .member-status-badge,
@@ -769,10 +752,6 @@
       color: #64748b;
     }
 
-    /* =====================================================
-       DESKTOP ACTIONS
-       ===================================================== */
-
     .member-actions {
       display: flex;
       flex-wrap: wrap;
@@ -837,10 +816,6 @@
       color: #94a3b8;
     }
 
-    /* =====================================================
-       EMPTY STATES
-       ===================================================== */
-
     .empty-table-cell {
       padding: 0 !important;
     }
@@ -874,10 +849,6 @@
       color: #94a3b8;
       font-size: 12px;
     }
-
-    /* =====================================================
-       MOBILE MEMBER CARDS
-       ===================================================== */
 
     .member-cards {
       display: none;
@@ -1018,10 +989,6 @@
       background: #fff;
     }
 
-    /* =====================================================
-       MEMBER MODAL
-       ===================================================== */
-
     #memberModal {
       background: rgba(15, 23, 42, .52) !important;
       backdrop-filter: blur(4px);
@@ -1116,10 +1083,6 @@
       font-weight: 700;
       word-break: break-word;
     }
-
-    /* =====================================================
-       CONTRIBUTION ACCOUNTING
-       ===================================================== */
 
     #memberContributionPosition {
       margin-top: 16px;
@@ -1252,10 +1215,6 @@
     body.modal-open {
       overflow: hidden;
     }
-
-    /* =====================================================
-       RESPONSIVE
-       ===================================================== */
 
     @media (max-width: 1100px) {
       .member-stats {
@@ -1444,7 +1403,6 @@
 
   <!-- =====================================================
        ADMIN PORTAL HEADER
-
        admin-layout.js owns Admin navigation.
        ===================================================== -->
 
@@ -1478,10 +1436,6 @@
 
     <div class="members-page">
 
-      <!-- =================================================
-           PAGE HEADER
-           ================================================= -->
-
       <section class="members-header">
 
         <div class="members-title-wrap">
@@ -1513,22 +1467,17 @@
           <span
             class="add-member-plus"
             aria-hidden="true"
-          >
-            +
-          </span>
-
+          >+</span>
           Add Member
         </button>
 
       </section>
 
 
-      <!-- =================================================
-           STATUS
-           ================================================= -->
+      <!-- IMPORTANT: IDs match members.js -->
 
       <div
-        id="status"
+        id="membersStatus"
         hidden
         aria-live="polite"
       >
@@ -1536,15 +1485,11 @@
       </div>
 
       <div
-        id="error"
+        id="membersError"
         hidden
         aria-live="assertive"
       ></div>
 
-
-      <!-- =================================================
-           MEMBER SUMMARY
-           ================================================= -->
 
       <section
         class="member-stats"
@@ -1554,7 +1499,6 @@
         <article class="member-stat-card">
 
           <div class="member-stat-top">
-
             <div class="member-stat-label">
               Total Members
             </div>
@@ -1562,18 +1506,13 @@
             <div
               class="member-stat-icon"
               aria-hidden="true"
-            >
-              ♙
-            </div>
-
+            >♙</div>
           </div>
 
           <div
             class="member-stat-number"
             id="memberCount"
-          >
-            0
-          </div>
+          >0</div>
 
           <div class="member-stat-note">
             Registered in your group
@@ -1585,7 +1524,6 @@
         <article class="member-stat-card active-stat">
 
           <div class="member-stat-top">
-
             <div class="member-stat-label">
               Active Members
             </div>
@@ -1593,18 +1531,13 @@
             <div
               class="member-stat-icon"
               aria-hidden="true"
-            >
-              ✓
-            </div>
-
+            >✓</div>
           </div>
 
           <div
             class="member-stat-number"
             id="activeMembers"
-          >
-            0
-          </div>
+          >0</div>
 
           <div class="member-stat-note">
             Currently active
@@ -1616,7 +1549,6 @@
         <article class="member-stat-card login-stat">
 
           <div class="member-stat-top">
-
             <div class="member-stat-label">
               Login Active
             </div>
@@ -1624,18 +1556,13 @@
             <div
               class="member-stat-icon"
               aria-hidden="true"
-            >
-              ◉
-            </div>
-
+            >◉</div>
           </div>
 
           <div
             class="member-stat-number"
             id="loginMembers"
-          >
-            0
-          </div>
+          >0</div>
 
           <div class="member-stat-note">
             Members with active accounts
@@ -1647,7 +1574,6 @@
         <article class="member-stat-card pending-stat">
 
           <div class="member-stat-top">
-
             <div class="member-stat-label">
               No Login
             </div>
@@ -1655,18 +1581,13 @@
             <div
               class="member-stat-icon"
               aria-hidden="true"
-            >
-              ○
-            </div>
-
+            >○</div>
           </div>
 
           <div
             class="member-stat-number"
             id="noLoginMembers"
-          >
-            0
-          </div>
+          >0</div>
 
           <div class="member-stat-note">
             Waiting for account access
@@ -1676,10 +1597,6 @@
 
       </section>
 
-
-      <!-- =================================================
-           SEARCH
-           ================================================= -->
 
       <section
         class="member-toolbar"
@@ -1691,9 +1608,7 @@
           <span
             class="member-search-icon"
             aria-hidden="true"
-          >
-            ⌕
-          </span>
+          >⌕</span>
 
           <input
             type="search"
@@ -1709,9 +1624,7 @@
             class="search-clear"
             title="Clear search"
             aria-label="Clear member search"
-          >
-            ×
-          </button>
+          >×</button>
 
         </div>
 
@@ -1727,8 +1640,6 @@
 
       <!-- =================================================
            ADD / EDIT MEMBER
-
-           members.js owns the Contribution Setup DOM.
            ================================================= -->
 
       <section
@@ -1772,11 +1683,9 @@
         ></div>
 
 
-        <form id="addMemberForm">
+        <!-- IMPORTANT: members.js requires #memberForm -->
 
-          <!-- =================================================
-               MEMBER IDENTITY
-               ================================================= -->
+        <form id="memberForm">
 
           <div class="member-form-grid">
 
@@ -1878,25 +1787,11 @@
                 id="memberRole"
                 name="memberRole"
               >
-                <option value="member">
-                  Member
-                </option>
-
-                <option value="admin">
-                  Admin
-                </option>
-
-                <option value="chairperson">
-                  Chairperson
-                </option>
-
-                <option value="secretary">
-                  Secretary
-                </option>
-
-                <option value="treasurer">
-                  Treasurer
-                </option>
+                <option value="member">Member</option>
+                <option value="admin">Admin</option>
+                <option value="chairperson">Chairperson</option>
+                <option value="secretary">Secretary</option>
+                <option value="treasurer">Treasurer</option>
               </select>
 
             </div>
@@ -1915,13 +1810,8 @@
                 id="memberStatus"
                 name="memberStatus"
               >
-                <option value="active">
-                  Active
-                </option>
-
-                <option value="inactive">
-                  Inactive
-                </option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
               </select>
 
             </div>
@@ -1929,18 +1819,8 @@
           </div>
 
 
-          <!-- =================================================
-               NATIONAL ID / CONTRIBUTION SETUP
+          <!-- members.js injects National ID / contribution controls -->
 
-               members.js injects the current controls.
-               ================================================= -->
-
-          <!-- members.js owns National ID and Contribution Setup -->
-
-
-          <!-- =================================================
-               FORM ACTIONS
-               ================================================= -->
 
           <div class="member-form-actions">
 
@@ -1952,10 +1832,12 @@
               Save Member
             </button>
 
+            <!-- IMPORTANT: members.js binds cancelMemberForm -->
+
             <button
               class="btn btn-secondary"
               type="button"
-              id="cancelAddMember"
+              id="cancelMemberForm"
             >
               Cancel
             </button>
@@ -1977,9 +1859,7 @@
 
           <div class="members-list-title">
 
-            <h2>
-              Group Members
-            </h2>
+            <h2>Group Members</h2>
 
             <p class="muted">
               Members registered in your group.
@@ -1990,14 +1870,10 @@
           <div
             class="members-list-count"
             id="membersCount"
-          >
-            0
-          </div>
+          >0</div>
 
         </div>
 
-
-        <!-- Desktop / tablet -->
 
         <div class="members-table-wrap">
 
@@ -2020,7 +1896,9 @@
 
             </thead>
 
-            <tbody id="memberRows">
+            <!-- IMPORTANT: members.js renders into #membersTableBody -->
+
+            <tbody id="membersTableBody">
 
               <tr>
 
@@ -2055,8 +1933,6 @@
 
         </div>
 
-
-        <!-- Mobile -->
 
         <div
           id="memberCards"
@@ -2102,9 +1978,7 @@
             <div
               class="member-avatar large"
               id="viewMemberInitials"
-            >
-              M
-            </div>
+            >M</div>
 
             <div>
 
@@ -2136,10 +2010,6 @@
 
       <div class="member-modal-body">
 
-        <!-- =================================================
-             MEMBER DETAILS
-             ================================================= -->
-
         <div class="member-detail-grid">
 
           <div class="member-detail">
@@ -2150,9 +2020,7 @@
             <span
               class="member-detail-value"
               id="viewMemberNumber"
-            >
-              —
-            </span>
+            >—</span>
           </div>
 
 
@@ -2164,9 +2032,7 @@
             <span
               class="member-detail-value"
               id="viewMembershipNumber"
-            >
-              —
-            </span>
+            >—</span>
           </div>
 
 
@@ -2178,9 +2044,7 @@
             <span
               class="member-detail-value"
               id="viewMemberNationalId"
-            >
-              —
-            </span>
+            >—</span>
           </div>
 
 
@@ -2192,9 +2056,7 @@
             <span
               class="member-detail-value"
               id="viewMemberPhone"
-            >
-              —
-            </span>
+            >—</span>
           </div>
 
 
@@ -2206,9 +2068,7 @@
             <span
               class="member-detail-value"
               id="viewMemberEmail"
-            >
-              —
-            </span>
+            >—</span>
           </div>
 
 
@@ -2220,9 +2080,7 @@
             <span
               class="member-detail-value"
               id="viewMemberRole"
-            >
-              —
-            </span>
+            >—</span>
           </div>
 
 
@@ -2234,9 +2092,7 @@
             <span
               class="member-detail-value"
               id="viewMemberStatus"
-            >
-              —
-            </span>
+            >—</span>
           </div>
 
 
@@ -2248,9 +2104,7 @@
             <span
               class="member-detail-value"
               id="viewMemberLoginStatus"
-            >
-              —
-            </span>
+            >—</span>
           </div>
 
 
@@ -2262,13 +2116,12 @@
             <span
               class="member-detail-value"
               id="viewMemberJoinDate"
-            >
-              —
-            </span>
+            >—</span>
           </div>
 
 
           <div class="member-detail full">
+
             <span class="member-detail-label">
               Group
             </span>
@@ -2276,9 +2129,8 @@
             <span
               class="member-detail-value"
               id="viewMemberGroup"
-            >
-              —
-            </span>
+            >—</span>
+
           </div>
 
         </div>
@@ -2286,11 +2138,6 @@
 
         <!-- =================================================
              CONTRIBUTION ACCOUNTING
-
-             Read-only position from:
-             public.get_member_contribution_position(uuid)
-
-             Historical reconciliation is an explicit action.
              ================================================= -->
 
         <section
@@ -2316,9 +2163,7 @@
 
             <div class="accounting-mini-card">
 
-              <span>
-                Status
-              </span>
+              <span>Status</span>
 
               <strong
                 id="viewContributionStatus"
@@ -2332,9 +2177,7 @@
 
             <div class="accounting-mini-card">
 
-              <span>
-                Total Contributed
-              </span>
+              <span>Total Contributed</span>
 
               <strong id="viewContributionTotal">
                 —
@@ -2345,9 +2188,7 @@
 
             <div class="accounting-mini-card">
 
-              <span>
-                Total Due
-              </span>
+              <span>Total Due</span>
 
               <strong id="viewContributionDue">
                 —
@@ -2358,9 +2199,7 @@
 
             <div class="accounting-mini-card">
 
-              <span>
-                Allocated
-              </span>
+              <span>Allocated</span>
 
               <strong id="viewContributionAllocated">
                 —
@@ -2371,9 +2210,7 @@
 
             <div class="accounting-mini-card">
 
-              <span>
-                Arrears
-              </span>
+              <span>Arrears</span>
 
               <strong id="viewContributionArrears">
                 —
@@ -2384,9 +2221,7 @@
 
             <div class="accounting-mini-card">
 
-              <span>
-                Credit
-              </span>
+              <span>Credit</span>
 
               <strong id="viewContributionCredit">
                 —
@@ -2422,10 +2257,6 @@
         </section>
 
 
-        <!-- =================================================
-             MODAL FOOTER
-             ================================================= -->
-
         <div class="modal-footer">
 
           <button
@@ -2448,20 +2279,14 @@
   <!-- =====================================================
        ADMIN PORTAL BOOT
 
-       IMPORTANT:
-       admin-layout.js is the ONLY page initializer owner.
+       admin-layout.js remains the ONLY initializer owner.
 
-       admin-layout.js must resolve:
+       members.html
+         -> admin-layout.js
+         -> ./members.js
+         -> init
 
-         members.html
-           -> ./members.js
-           -> init
-
-       DO NOT add:
-         import { init } from "./js/members.js";
-         init();
-
-       here.
+       No direct members.js initialization here.
        ===================================================== -->
 
   <script type="module">
