@@ -367,10 +367,20 @@ function renderProfile() {
       );
   }
 
+  /*
+   * Canonical member date field:
+   *   members.join_date
+   *
+   * Do not use:
+   *   member.created_at
+   *
+   * The member profile contract uses join_date
+   * for the member's joining date.
+   */
   if (els.created) {
     els.created.textContent =
       formatDate(
-        member.created_at
+        member.join_date
       );
   }
 }
