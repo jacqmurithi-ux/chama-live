@@ -1833,9 +1833,14 @@ async function loadAccounting() {
 
 /* =========================================================
    INIT
+   =========================================================
+   IMPORTANT:
+   member-layout.js is the sole feature boot owner.
+
+   This module must NOT auto-boot itself.
    ========================================================= */
 
-async function initMemberAccounting() {
+export async function initMemberAccounting() {
   try {
     setStatus(
       "Loading member accounting…"
@@ -1856,6 +1861,3 @@ async function initMemberAccounting() {
     showError(error);
   }
 }
-
-
-initMemberAccounting();
