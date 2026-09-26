@@ -85,7 +85,7 @@
        STATUS / ERROR
        ===================================================== */
 
-    #status {
+    #membersStatus {
       display: flex;
       align-items: center;
       gap: 9px;
@@ -98,11 +98,11 @@
       font-size: 13px;
     }
 
-    #status[hidden] {
+    #membersStatus[hidden] {
       display: none;
     }
 
-    #status:not([hidden])::before {
+    #membersStatus:not([hidden])::before {
       content: "";
       width: 7px;
       height: 7px;
@@ -122,7 +122,7 @@
       }
     }
 
-    #error {
+    #membersError {
       display: flex;
       align-items: flex-start;
       gap: 11px;
@@ -135,7 +135,7 @@
       font-size: 13px;
     }
 
-    #error[hidden] {
+    #membersError[hidden] {
       display: none;
     }
 
@@ -437,12 +437,20 @@
       font-weight: 700;
     }
 
-    #memberContributionPreviewText,
-    #memberHistoricalPreviewText {
+    #memberContributionPreview,
+    #memberHistoricalPreview {
       color: #1d4ed8;
       font-size: 11px;
       text-align: right;
       line-height: 1.45;
+    }
+
+    .historical-controls {
+      margin-top: 15px;
+    }
+
+    .historical-controls[hidden] {
+      display: none;
     }
 
     .member-form-actions {
@@ -1296,8 +1304,8 @@
         gap: 5px;
       }
 
-      #memberContributionPreviewText,
-      #memberHistoricalPreviewText {
+      #memberContributionPreview,
+      #memberHistoricalPreview {
         text-align: left;
       }
 
@@ -1419,8 +1427,6 @@
 
   <!-- =====================================================
        ADMIN PORTAL HEADER
-
-       admin-layout.js owns navigation and page feature boot.
        ===================================================== -->
 
   <header class="topbar">
@@ -1480,7 +1486,10 @@
 
             Group:
 
-            <span id="membersGroupName">—</span>
+            <span
+              id="membersGroupName"
+              data-group-name
+            >—</span>
 
           </div>
 
@@ -1506,13 +1515,11 @@
 
 
       <!-- =================================================
-           STATUS
-
-           Current members.js expects #status.
+           CURRENT MEMBERS.JS STATUS
            ================================================= -->
 
       <div
-        id="status"
+        id="membersStatus"
         hidden
         aria-live="polite"
       >
@@ -1521,13 +1528,11 @@
 
 
       <!-- =================================================
-           ERROR
-
-           Current members.js expects #error.
+           CURRENT MEMBERS.JS ERROR
            ================================================= -->
 
       <div
-        id="error"
+        id="membersError"
         hidden
         aria-live="assertive"
       ></div>
@@ -1653,7 +1658,7 @@
 
 
       <!-- =================================================
-           SEARCH / TOOLBAR
+           SEARCH
            ================================================= -->
 
       <section
@@ -1699,9 +1704,6 @@
 
       <!-- =================================================
            ADD / EDIT MEMBER
-
-           IMPORTANT:
-           Current members.js expects #addMemberForm.
            ================================================= -->
 
       <section
@@ -1746,11 +1748,18 @@
         ></div>
 
 
-        <!-- Current members.js expects #addMemberForm -->
+        <!-- =================================================
+             CURRENT MEMBERS.JS FORM ID
+             ================================================= -->
 
-        <form id="addMemberForm">
+        <form
+          id="memberForm"
+          novalidate
+        >
 
           <div class="member-form-grid">
+
+            <!-- Member Number -->
 
             <div class="member-form-field">
 
@@ -1765,12 +1774,14 @@
                 id="memberNumber"
                 name="memberNumber"
                 type="text"
-                placeholder="e.g. 1506"
-                required
+                placeholder="e.g. 0003"
+                autocomplete="off"
               >
 
             </div>
 
+
+            <!-- Full Name -->
 
             <div class="member-form-field">
 
@@ -1786,11 +1797,37 @@
                 name="memberName"
                 type="text"
                 placeholder="Member full name"
+                autocomplete="name"
                 required
               >
 
             </div>
 
+
+            <!-- National ID -->
+
+            <div class="member-form-field">
+
+              <label
+                class="form-section-label"
+                for="memberNationalId"
+              >
+                National ID
+              </label>
+
+              <input
+                id="memberNationalId"
+                name="memberNationalId"
+                type="text"
+                inputmode="numeric"
+                placeholder="National ID number"
+                autocomplete="off"
+              >
+
+            </div>
+
+
+            <!-- Phone -->
 
             <div class="member-form-field">
 
@@ -1807,11 +1844,13 @@
                 type="tel"
                 inputmode="tel"
                 placeholder="0712345678"
-                required
+                autocomplete="tel"
               >
 
             </div>
 
+
+            <!-- Email -->
 
             <div class="member-form-field">
 
@@ -1836,6 +1875,8 @@
 
             </div>
 
+
+            <!-- Role -->
 
             <div class="member-form-field">
 
@@ -1876,6 +1917,8 @@
             </div>
 
 
+            <!-- Account Status -->
+
             <div class="member-form-field">
 
               <label
@@ -1902,25 +1945,314 @@
 
             </div>
 
+
+            <!-- Join Date -->
+
+            <div class="member-form-field">
+
+              <label
+                class="form-section-label"
+                for="memberJoinDate"
+              >
+                Join Date
+              </label>
+
+              <input
+                id="memberJoinDate"
+                name="memberJoinDate"
+                type="date"
+              >
+
+              <small class="muted member-form-hint">
+                The date the member joined the group.
+              </small>
+
+            </div>
+
           </div>
 
 
-          <!--
-            members.js dynamically adds:
+          <!-- =================================================
+               CONTRIBUTION SETUP
+               ================================================= -->
 
-            - National ID
-            - Join Date
-            - Monthly Contribution
-            - First Contribution Period
-            - Contribution Effective From
-            - Historical Contributions
-            - Paid Through
-            - Historical Payment Method
-            - Contribution preview
+          <section
+            class="member-contribution-setup"
+            aria-label="Contribution setup"
+          >
 
-            No duplicate static controls are added here.
-          -->
+            <div class="member-form-section-heading">
 
+              <strong>
+                Contribution Setup
+              </strong>
+
+              <span>
+                Configure the member's monthly contribution and
+                determine when the contribution obligation begins.
+              </span>
+
+            </div>
+
+
+            <div class="member-form-grid">
+
+              <!-- Monthly Contribution -->
+
+              <div class="member-form-field">
+
+                <label
+                  class="form-section-label"
+                  for="memberContributionAmount"
+                >
+                  Monthly Contribution
+                </label>
+
+                <input
+                  id="memberContributionAmount"
+                  name="memberContributionAmount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  inputmode="decimal"
+                  placeholder="500"
+                >
+
+                <small class="muted member-form-hint">
+                  Amount expected for each monthly contribution period.
+                </small>
+
+              </div>
+
+
+              <!-- First Contribution Period -->
+
+              <div class="member-form-field">
+
+                <label
+                  class="form-section-label"
+                  for="memberFirstPeriodRule"
+                >
+                  First Contribution Period
+                </label>
+
+                <select
+                  id="memberFirstPeriodRule"
+                  name="memberFirstPeriodRule"
+                >
+
+                  <option value="full_period">
+                    Full contribution period
+                  </option>
+
+                  <option value="next_full_period">
+                    Start from next full period
+                  </option>
+
+                </select>
+
+                <small class="muted member-form-hint">
+                  Controls whether the joining month is included.
+                </small>
+
+              </div>
+
+
+              <!-- Contribution Effective From -->
+
+              <div class="member-form-field">
+
+                <label
+                  class="form-section-label"
+                  for="memberContributionEffectiveFrom"
+                >
+                  Contribution Effective From
+                </label>
+
+                <input
+                  id="memberContributionEffectiveFrom"
+                  name="memberContributionEffectiveFrom"
+                  type="date"
+                >
+
+                <small class="muted member-form-hint">
+                  Date from which the contribution plan becomes effective.
+                </small>
+
+              </div>
+
+            </div>
+
+
+            <!-- Monthly contribution preview -->
+
+            <div class="member-contribution-preview">
+
+              <span class="preview-label">
+                Contribution Preview
+              </span>
+
+              <span id="memberContributionPreview">
+                Monthly contribution will appear here.
+              </span>
+
+            </div>
+
+
+            <!-- =================================================
+                 HISTORICAL CONTRIBUTIONS
+                 ================================================= -->
+
+            <div class="member-form-section-heading" style="margin-top:22px;">
+
+              <strong>
+                Historical Contributions
+              </strong>
+
+              <span>
+                Use this only when previous contribution periods were
+                actually paid and need to be recorded during onboarding.
+              </span>
+
+            </div>
+
+
+            <div class="member-form-field">
+
+              <label
+                class="form-section-label"
+                for="memberHistoricalEnabled"
+              >
+                Historical Contributions
+              </label>
+
+              <label
+                style="
+                  display:flex;
+                  align-items:center;
+                  gap:9px;
+                  min-height:42px;
+                  padding:0 12px;
+                  border:1px solid rgba(15,23,42,.11);
+                  border-radius:10px;
+                  background:#fff;
+                  cursor:pointer;
+                "
+              >
+
+                <input
+                  id="memberHistoricalEnabled"
+                  name="memberHistoricalEnabled"
+                  type="checkbox"
+                  value="true"
+                >
+
+                <span>
+                  Yes — record previous paid months
+                </span>
+
+              </label>
+
+              <small class="muted member-form-hint">
+                Leave unchecked when the member has no previous paid
+                contribution periods to record.
+              </small>
+
+            </div>
+
+
+            <div
+              id="historicalContributionControls"
+              class="historical-controls"
+            >
+
+              <div class="member-form-grid">
+
+                <!-- Paid Through -->
+
+                <div class="member-form-field">
+
+                  <label
+                    class="form-section-label"
+                    for="memberHistoricalPaidThrough"
+                  >
+                    Paid Through
+                  </label>
+
+                  <input
+                    id="memberHistoricalPaidThrough"
+                    name="memberHistoricalPaidThrough"
+                    type="date"
+                  >
+
+                  <small class="muted member-form-hint">
+                    Last historical contribution period that was actually paid.
+                  </small>
+
+                </div>
+
+
+                <!-- Historical Payment Method -->
+
+                <div class="member-form-field">
+
+                  <label
+                    class="form-section-label"
+                    for="memberHistoricalPaymentMethod"
+                  >
+                    Historical Payment Method
+                  </label>
+
+                  <select
+                    id="memberHistoricalPaymentMethod"
+                    name="memberHistoricalPaymentMethod"
+                  >
+
+                    <option value="cash">
+                      Cash
+                    </option>
+
+                    <option value="mpesa">
+                      M-Pesa
+                    </option>
+
+                    <option value="bank_transfer">
+                      Bank transfer
+                    </option>
+
+                  </select>
+
+                  <small class="muted member-form-hint">
+                    Method used for the historical payments being recorded.
+                  </small>
+
+                </div>
+
+              </div>
+
+
+              <!-- Historical preview -->
+
+              <div class="member-contribution-preview">
+
+                <span class="preview-label">
+                  Historical Preview
+                </span>
+
+                <span id="memberHistoricalPreview">
+                  No historical contributions selected.
+                </span>
+
+              </div>
+
+            </div>
+
+          </section>
+
+
+          <!-- =================================================
+               FORM ACTIONS
+               ================================================= -->
 
           <div class="member-form-actions">
 
@@ -1933,12 +2265,10 @@
             </button>
 
 
-            <!-- Current members.js expects #cancelAddMember -->
-
             <button
               class="btn btn-secondary"
               type="button"
-              id="cancelAddMember"
+              id="cancelMemberForm"
             >
               Cancel
             </button>
@@ -1971,7 +2301,7 @@
 
           <div
             class="members-list-count"
-            id="membersCount"
+            id="memberResultCount"
           >
             0
           </div>
@@ -2002,16 +2332,10 @@
 
 
             <!--
-              IMPORTANT:
-
-              Current members.js searches for:
-
-                #memberRows
-
-              Therefore this ID must remain memberRows.
+              Current members.js uses #membersTableBody.
             -->
 
-            <tbody id="memberRows">
+            <tbody id="membersTableBody">
 
               <tr>
 
@@ -2050,10 +2374,7 @@
         </div>
 
 
-        <!--
-          Current members.js searches for #memberCards
-          for the mobile member-card view.
-        -->
+        <!-- Mobile cards -->
 
         <div
           id="memberCards"
@@ -2315,7 +2636,7 @@
             </strong>
 
             <span>
-              Current monthly contribution position
+              Current canonical contribution position
             </span>
 
           </div>
@@ -2441,10 +2762,9 @@
   <!-- =====================================================
        ADMIN PORTAL BOOT
 
-       IMPORTANT:
-       Do NOT import members.js directly here.
+       admin-layout.js remains the SINGLE boot owner.
 
-       admin-layout.js maps:
+       It maps:
 
        members.html
           ↓
@@ -2452,7 +2772,7 @@
           ↓
        init()
 
-       This preserves one initialization owner.
+       Do not add a direct members.js import here.
        ===================================================== -->
 
   <script type="module">
