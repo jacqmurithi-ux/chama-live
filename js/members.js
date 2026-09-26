@@ -2147,6 +2147,8 @@ async function saveMember(event) {
        *   p_contribution_plan
        *   p_historical
        *   p_request_id
+       *
+       * p_contribution_plan MUST be a JSON array.
        */
 
       const {
@@ -2185,20 +2187,22 @@ async function saveMember(event) {
               values.join_date
           },
 
-          p_contribution_plan: {
-            contribution_type_id:
-              monthlyContributionType?.id ||
-              null,
+          p_contribution_plan: [
+            {
+              contribution_type_id:
+                monthlyContributionType?.id ||
+                null,
 
-            amount:
-              values.contribution_amount,
+              amount:
+                values.contribution_amount,
 
-            first_period_rule:
-              values.first_period_rule,
+              first_period_rule:
+                values.first_period_rule,
 
-            effective_from:
-              values.contribution_effective_from
-          },
+              effective_from:
+                values.contribution_effective_from
+            }
+          ],
 
           p_historical: {
             enabled:
