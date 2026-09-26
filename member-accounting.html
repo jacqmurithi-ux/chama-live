@@ -1557,26 +1557,29 @@
 
   <!-- =========================================================
        PAGE SCRIPT
+       ---------------------------------------------------------
+       BOOT OWNERSHIP
+       ---------------------------------------------------------
+       member-layout.js is the sole feature boot owner.
+
+       It dynamically loads:
+         ./js/member-accounting.js
+
+       and calls:
+         initMemberAccounting()
+
+       Therefore this HTML page must NOT directly import or
+       initialize member-accounting.js.
        ========================================================= -->
 
   <script type="module">
 
     /*
-      CHAMA LIVE — Member Accounting
-
-      This page intentionally loads the existing
-      member-accounting.js module directly.
-
-      No new accounting logic is implemented here.
-      All accounting data comes from the canonical
-      Supabase RPCs used by member-accounting.js.
-    */
-
-    import "./js/member-accounting.js";
-
-    /*
       Print metadata is populated from the visible
       CHAMA LIVE group label after the page loads.
+
+      This listener is page-local and does not boot the
+      accounting feature.
     */
 
     window.addEventListener(
