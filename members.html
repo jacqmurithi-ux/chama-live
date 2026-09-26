@@ -1773,6 +1773,15 @@
 
           <div class="member-form-grid">
 
+            <!-- =================================================
+                 MEMBER NUMBER
+
+                 CURRENT PRODUCT CONTRACT:
+                 The single entered member number is currently
+                 used for both member_number and membership_number
+                 when the members.js historical RPC is called.
+                 ================================================= -->
+
             <div class="member-form-field">
 
               <label
@@ -1788,7 +1797,14 @@
                 type="text"
                 placeholder="e.g. 0003"
                 autocomplete="off"
+                required
               >
+
+              <small class="muted member-form-hint">
+                This is the member's group number. It is currently
+                recorded as both the Member Number and Membership Number
+                in the member record.
+              </small>
 
             </div>
 
