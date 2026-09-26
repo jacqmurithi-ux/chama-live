@@ -559,7 +559,7 @@
         var(--cl-radius);
 
       background:
-        rgba(255,255,255,.97);
+        rgba(255, 255, 255, .97);
 
       box-shadow:
         var(--cl-shadow-sm);
@@ -1272,11 +1272,12 @@
 </head>
 
 
-<body>
+<body data-platform-page="admin">
 
   <div
     id="platformShell"
     class="platform-shell"
+    data-platform-admin
   >
 
     <!-- =====================================================
@@ -1396,6 +1397,9 @@
       <div
         id="loading"
         class="platform-card"
+        role="status"
+        aria-live="polite"
+        aria-busy="true"
       >
 
         <div class="platform-loading">
@@ -1412,6 +1416,7 @@
       <div
         id="overview"
         class="platform-hidden"
+        aria-live="polite"
       >
 
         <!-- =================================================
@@ -1782,6 +1787,8 @@
               <div
                 id="applicationReviewLoading"
                 class="platform-loading"
+                role="status"
+                aria-live="polite"
               >
                 Loading applications...
               </div>
@@ -2000,6 +2007,11 @@
 
   </div>
 
+
+  <!-- =======================================================
+       PLATFORM ADMIN BOOT
+       This page intentionally does not use admin-layout.js.
+  ======================================================== -->
 
   <script
     type="module"
