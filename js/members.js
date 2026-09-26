@@ -44,6 +44,18 @@
    - contributions
    - contribution_allocations
    - contribution_obligations
+
+   IMPORTANT EDITING RULE
+   ---------------------------------------------------------
+   Existing-member profile editing does NOT call the
+   new-member historical onboarding RPC.
+
+   Historical onboarding is a creation-time operation.
+   Editing an existing member must not silently create
+   historical financial records.
+
+   Existing-member reconciliation remains a separate,
+   explicit server-side accounting action.
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -1003,7 +1015,8 @@ function ensureContributionUI() {
         <strong>Contribution Setup</strong>
         <span>
           Set the member's monthly contribution plan and,
-          where applicable, record previous paid months.
+          for a new member only, optionally record previous
+          paid months through the canonical onboarding process.
         </span>
       </div>
 
@@ -1068,10 +1081,11 @@ function ensureContributionUI() {
           </small>
         </div>
 
-        <div class="member-form-field">
+        <div class="member-form-field" id="memberHistoricalSetupField">
           <label class="form-section-label" for="memberHistoricalEnabled">
             Historical Contributions
           </label>
+
           <select
             id="memberHistoricalEnabled"
             name="memberHistoricalEnabled"
@@ -1079,10 +1093,21 @@ function ensureContributionUI() {
             <option value="false">
               No — start from the contribution plan
             </option>
+
             <option value="true">
               Yes — record previous paid months
             </option>
           </select>
+
+          <small
+            class="muted member-form-hint"
+            id="memberHistoricalEditHint"
+            hidden
+          >
+            Historical onboarding is available when creating
+            a new member. Editing an existing member does not
+            create historical accounting transactions.
+          </small>
         </div>
 
         <div
@@ -1124,6 +1149,7 @@ function ensureContributionUI() {
         <span class="preview-label">
           Contribution Preview
         </span>
+
         <span id="memberContributionPreviewText">
           Set the member's monthly contribution amount.
         </span>
@@ -1137,6 +1163,7 @@ function ensureContributionUI() {
         <span class="preview-label">
           Historical Preview
         </span>
+
         <span id="memberHistoricalPreviewText">
           Select the member's historical payment period.
         </span>
@@ -1149,13 +1176,32 @@ function ensureContributionUI() {
     );
   }
 
-  const amount = byId("memberContributionAmount");
-  const firstPeriod = byId("memberFirstPeriodRule");
-  const effectiveFrom = byId("memberContributionEffectiveFrom");
+  const amount =
+    byId(
+      "memberContributionAmount"
+    );
 
-  if (amount) amount.disabled = false;
-  if (firstPeriod) firstPeriod.disabled = false;
-  if (effectiveFrom) effectiveFrom.disabled = false;
+  const firstPeriod =
+    byId(
+      "memberFirstPeriodRule"
+    );
+
+  const effectiveFrom =
+    byId(
+      "memberContributionEffectiveFrom"
+    );
+
+  if (amount) {
+    amount.disabled = false;
+  }
+
+  if (firstPeriod) {
+    firstPeriod.disabled = false;
+  }
+
+  if (effectiveFrom) {
+    effectiveFrom.disabled = false;
+  }
 
   updateContributionPreview();
   updateHistoricalControls();
@@ -1273,17 +1319,10 @@ function updateContributionPreview() {
       ? "Set the member's monthly contribution amount."
       : `Monthly contribution: ${formatMoney(amount)}`;
 
-  if (preview) {
-    /*
-      Do not overwrite the complete preview container because
-      it contains the preview label.
-    */
-    if (previewText) {
-      previewText.textContent =
-        message;
-    }
-  }
-
+  /*
+    Do not overwrite the complete preview container because
+    it contains the preview label.
+  */
   if (previewText) {
     previewText.textContent =
       message;
@@ -1293,6 +1332,14 @@ function updateContributionPreview() {
 
 /* =========================================================
    HISTORICAL CONTROLS
+   ---------------------------------------------------------
+   Historical onboarding is valid only for NEW members.
+
+   Existing-member edit mode:
+     - disables the historical selector
+     - hides historical date/payment controls
+     - prevents the UI from implying that profile save
+       creates accounting transactions
 ========================================================= */
 
 function updateHistoricalControls() {
@@ -1300,10 +1347,6 @@ function updateHistoricalControls() {
     byId(
       "memberHistoricalEnabled"
     );
-
-  const isEnabled =
-    enabled?.value ===
-    "true";
 
   const paidThrough =
     byId(
@@ -1330,6 +1373,91 @@ function updateHistoricalControls() {
       "memberHistoricalPreview"
     );
 
+  const setupField =
+    byId(
+      "memberHistoricalSetupField"
+    );
+
+  const editHint =
+    byId(
+      "memberHistoricalEditHint"
+    );
+
+  const isEditing =
+    Boolean(
+      editingMemberId
+    );
+
+  /*
+     Existing members cannot use the new-member historical
+     onboarding selector.
+
+     Do not silently reinterpret an edit as a historical
+     accounting transaction.
+  */
+  if (isEditing) {
+    if (enabled) {
+      enabled.value =
+        "false";
+
+      enabled.disabled =
+        true;
+    }
+
+    if (paidThrough) {
+      paidThrough.value =
+        "";
+
+      paidThrough.disabled =
+        true;
+    }
+
+    if (paymentMethod) {
+      paymentMethod.disabled =
+        true;
+    }
+
+    if (paidThroughField) {
+      paidThroughField.hidden =
+        true;
+    }
+
+    if (paymentMethodField) {
+      paymentMethodField.hidden =
+        true;
+    }
+
+    if (preview) {
+      preview.hidden =
+        true;
+    }
+
+    if (editHint) {
+      editHint.hidden =
+        false;
+    }
+
+    if (setupField) {
+      setupField.classList.add(
+        "historical-edit-disabled"
+      );
+    }
+
+    return;
+  }
+
+  /*
+     New-member mode.
+  */
+  if (enabled) {
+    enabled.disabled =
+      false;
+  }
+
+  const isEnabled =
+    enabled?.value ===
+    "true";
+
   if (paidThrough) {
     paidThrough.disabled =
       !isEnabled;
@@ -1355,6 +1483,17 @@ function updateHistoricalControls() {
       !isEnabled;
   }
 
+  if (editHint) {
+    editHint.hidden =
+      true;
+  }
+
+  if (setupField) {
+    setupField.classList.remove(
+      "historical-edit-disabled"
+    );
+  }
+
   updateHistoricalPreview();
 }
 
@@ -1370,6 +1509,17 @@ function updateHistoricalPreview() {
     );
 
   if (!preview) {
+    return;
+  }
+
+  /*
+     Never render a historical onboarding preview while
+     editing an existing member.
+  */
+  if (editingMemberId) {
+    preview.hidden =
+      true;
+
     return;
   }
 
@@ -2080,894 +2230,360 @@ function createMemberCard(
             member.status
           )}
         </div>
-
       </div>
-
-      <div class="member-card-details">
-
-        <div class="member-card-detail">
-          <span class="member-card-label">
-            National ID
-          </span>
-
-          <span>
-            ${nationalId}
-          </span>
-        </div>
-
-        <div class="member-card-detail">
-          <span class="member-card-label">
-            Membership No.
-          </span>
-
-          <span>
-            ${membershipNumber}
-          </span>
-        </div>
-
-        <div class="member-card-detail">
-          <span class="member-card-label">
-            Phone
-          </span>
-
-          <span>
-            ${phone}
-          </span>
-        </div>
-
-        <div class="member-card-detail">
-          <span class="member-card-label">
-            Email
-          </span>
-
-          <span>
-            ${email}
-          </span>
-        </div>
-
-        <div class="member-card-detail">
-          <span class="member-card-label">
-            Role
-          </span>
-
-          <span>
-            ${roleBadgeHtml(
-              member.role
-            )}
-          </span>
-        </div>
-
-        <div class="member-card-detail">
-          <span class="member-card-label">
-            Login
-          </span>
-
-          <span>
-            ${loginStatusHtml(
-              member
-            )}
-          </span>
-        </div>
-
-      </div>
-
-      <div class="member-card-contribution-status">
-        ${contributionStatusHtml(
-          member
-        )}
-      </div>
-
-      <div class="member-card-actions">
-
-        <button
-          type="button"
-          class="member-action view-action"
-          data-action="view"
-          data-member-id="${id}"
-        >
-          <span>◉</span>
-          View
-        </button>
-
-        <button
-          type="button"
-          class="member-action edit-action"
-          data-action="edit"
-          data-member-id="${id}"
-        >
-          <span>✎</span>
-          Edit
-        </button>
-
-        ${invitationButton}
-
-      </div>
-
-    </article>
-  `;
-}
+/* =========================================================
+   CHAMA LIVE — MEMBERS
+   PART 2 OF 2 — UPDATED
+   ---------------------------------------------------------
+   Edit / Create / Historical Accounting / Modal / Events
+   ---------------------------------------------------------
+   IMPORTANT:
+   - Existing-member edits update member profile fields only.
+   - Historical contribution onboarding is creation-only.
+   - Existing-member reconciliation only allocates existing
+     payments against existing obligations.
+   - This file does NOT invent or call a historical-backfill
+     RPC that does not exist.
+   ========================================================= */
 
 
 /* =========================================================
-   MEMBER FILTERING
-========================================================= */
-
-function getSearchTerm() {
-  return String(
-    byId(
-      "memberSearch"
-    )?.value || ""
-  )
-    .trim()
-    .toLowerCase();
-}
-
-function filterMembers() {
-  const term =
-    getSearchTerm();
-
-  if (!term) {
-    return [...members];
-  }
-
-  return members.filter(
-    member => {
-      const haystack = [
-        member.member_number,
-        member.membership_number,
-        member.national_id,
-        member.name,
-        member.phone,
-        member.email,
-        member.role,
-        member.status,
-        member.onboarding_status
-      ]
-        .map(
-          value =>
-            String(
-              value || ""
-            ).toLowerCase()
-        )
-        .join(" ");
-
-      return haystack.includes(
-        term
-      );
-    }
-  );
-}
-
-function renderMembers() {
-  const filtered =
-    filterMembers();
-
-  const rows =
-    byId(
-      "memberRows"
-    );
-
-  const cards =
-    byId(
-      "memberCards"
-    );
-
-  if (rows) {
-    rows.innerHTML =
-      filtered.length
-        ? filtered
-            .map(
-              createMemberRow
-            )
-            .join("")
-        : `
-          <tr>
-            <td
-              colspan="11"
-              class="members-empty"
-            >
-              No members found.
-            </td>
-          </tr>
-        `;
-  }
-
-  if (cards) {
-    cards.innerHTML =
-      filtered.length
-        ? filtered
-            .map(
-              createMemberCard
-            )
-            .join("")
-        : `
-          <div class="members-empty">
-            No members found.
-          </div>
-        `;
-  }
-
-  updateMemberResultCount(
-    filtered.length
-  );
-}
-
-function updateMemberResultCount(
-  count
-) {
-  const nodes = [
-    byId(
-      "memberResultCount"
-    ),
-    byId(
-      "membersCount"
-    )
-  ];
-
-  nodes.forEach(
-    node => {
-      if (node) {
-        node.textContent =
-          String(count);
-      }
-    }
-  );
-}
-
-function updateMemberCount() {
-  const total =
-    members.length;
-
-  const active =
-    members.filter(
-      member =>
-        String(
-          member.status || ""
-        ).toLowerCase() ===
-        "active"
-    ).length;
-
-  const loginMembers =
-    members.filter(
-      member =>
-        getLoginStatus(
-          member
-        ) === "Active"
-    ).length;
-
-  const noLoginMembers =
-    members.filter(
-      member =>
-        getLoginStatus(
-          member
-        ) === "No Login"
-    ).length;
-
-  const countNode =
-    byId(
-      "memberCount"
-    );
-
-  const activeNode =
-    byId(
-      "activeMembers"
-    );
-
-  const loginNode =
-    byId(
-      "loginMembers"
-    );
-
-  const noLoginNode =
-    byId(
-      "noLoginMembers"
-    );
-
-  if (countNode) {
-    countNode.textContent =
-      String(total);
-  }
-
-  if (activeNode) {
-    activeNode.textContent =
-      String(active);
-  }
-
-  if (loginNode) {
-    loginNode.textContent =
-      String(loginMembers);
-  }
-
-  if (noLoginNode) {
-    noLoginNode.textContent =
-      String(noLoginMembers);
-  }
-
-  updateMemberResultCount(
-    filterMembers().length
-  );
-}
-
-
-/* =========================================================
-   MEMBER FORM RESET
-========================================================= */
-
-function resetMemberForm() {
-  const form =
-    byId(
-      "addMemberForm"
-    );
-
-  if (form) {
-    form.reset();
-  }
-
-  const today =
-    getToday();
-
-  const joinDate =
-    byId(
-      "memberJoinDate"
-    );
-
-  const effectiveFrom =
-    byId(
-      "memberContributionEffectiveFrom"
-    );
-
-  if (joinDate) {
-    joinDate.value =
-      today;
-  }
-
-  if (effectiveFrom) {
-    effectiveFrom.value =
-      today;
-  }
-
-  const historicalEnabled =
-    byId(
-      "memberHistoricalEnabled"
-    );
-
-  if (historicalEnabled) {
-    historicalEnabled.value =
-      "false";
-  }
-
-  const paidThrough =
-    byId(
-      "memberHistoricalPaidThrough"
-    );
-
-  if (paidThrough) {
-    paidThrough.value =
-      "";
-  }
-
-  const paymentMethod =
-    byId(
-      "memberHistoricalPaymentMethod"
-    );
-
-  if (paymentMethod) {
-    paymentMethod.value =
-      "Cash";
-  }
-
-  const role =
-    byId(
-      "memberRole"
-    );
-
-  if (role) {
-    role.value =
-      "member";
-  }
-
-  const status =
-    byId(
-      "memberStatus"
-    );
-
-  if (status) {
-    status.value =
-      "active";
-  }
-
-  const title =
-    byId(
-      "memberFormTitle"
-    );
-
-  if (title) {
-    title.textContent =
-      "Add Member";
-  }
-
-  const description =
-    byId(
-      "memberFormDescription"
-    );
-
-  if (description) {
-    description.textContent =
-      "Add a member and configure their contribution plan.";
-  }
-
-  const nationalId =
-    byId(
-      "memberNationalId"
-    );
-
-  if (nationalId) {
-    nationalId.value =
-      "";
-  }
-
-  const contributionAmount =
-    byId(
-      "memberContributionAmount"
-    );
-
-  if (contributionAmount) {
-    contributionAmount.value =
-      "";
-  }
-
-  const firstPeriodRule =
-    byId(
-      "memberFirstPeriodRule"
-    );
-
-  if (firstPeriodRule) {
-    firstPeriodRule.value =
-      "full_period";
-  }
-
-  editingMemberId =
-    null;
-
-  updateHistoricalControls();
-  updateContributionPreview();
-  clearFormMessage();
-}
-
-
-/* =========================================================
-   FORM PANEL
-========================================================= */
-
-function openAddMemberPanel() {
-  const panel =
-    byId(
-      "addMemberPanel"
-    );
-
-  if (!panel) {
-    return;
-  }
-
-  resetMemberForm();
-
-  panel.hidden =
-    false;
-
-  panel.removeAttribute(
-    "hidden"
-  );
-
-  panel.style.display =
-    "";
-
-  panel.classList.add(
-    "is-open"
-  );
-
-  byId(
-    "memberNumber"
-  )?.focus();
-}
-
-function closeAddMemberPanel() {
-  const panel =
-    byId(
-      "addMemberPanel"
-    );
-
-  if (!panel) {
-    return;
-  }
-
-  panel.classList.remove(
-    "is-open"
-  );
-
-  panel.hidden =
-    true;
-
-  panel.setAttribute(
-    "hidden",
-    ""
-  );
-
-  panel.style.display =
-    "none";
-
-  resetMemberForm();
-}
-
-function openEditMemberPanel(
-  memberId
-) {
-  const member =
-    findMember(
-      memberId
-    );
+   EDIT MEMBER
+   ========================================================= */
+
+function openEditMemberPanel(memberId) {
+  const member = members.find((item) => item.id === memberId);
 
   if (!member) {
-    showError(
-      "Member not found."
-    );
+    showError("Member could not be found.");
     return;
   }
 
-  editingMemberId =
-    member.id;
+  editingMemberId = member.id;
 
-  const panel =
-    byId(
-      "addMemberPanel"
-    );
+  const memberNumber = byId("memberNumber");
+  const nationalId = byId("memberNationalId");
+  const name = byId("memberName");
+  const phone = byId("memberPhone");
+  const email = byId("memberEmail");
+  const role = byId("memberRole");
+  const status = byId("memberStatus");
+  const joinDate = byId("memberJoinDate");
 
-  if (!panel) {
-    showError(
-      "Member edit panel is not available."
-    );
-    return;
+  if (memberNumber) {
+    memberNumber.value = member.member_number || "";
   }
 
-  const title =
-    byId(
-      "memberFormTitle"
-    );
-
-  if (title) {
-    title.textContent =
-      "Edit Member";
+  if (nationalId) {
+    nationalId.value = member.national_id || "";
   }
 
-  const description =
-    byId(
-      "memberFormDescription"
-    );
-
-  if (description) {
-    description.textContent =
-      "Update the member's profile information.";
+  if (name) {
+    name.value = member.name || "";
   }
 
-  const values = {
-    memberNumber:
-      member.member_number ||
-      "",
+  if (phone) {
+    phone.value = member.phone || "";
+  }
 
-    memberNationalId:
-      member.national_id ||
-      "",
+  if (email) {
+    email.value = member.email || "";
+  }
 
-    memberName:
-      member.name ||
-      "",
+  if (role) {
+    role.value = member.role || "member";
+  }
 
-    memberPhone:
-      member.phone ||
-      "",
+  if (status) {
+    status.value = member.status || "active";
+  }
 
-    memberEmail:
-      member.email ||
-      "",
+  if (joinDate) {
+    joinDate.value = member.join_date || "";
+  }
 
-    memberRole:
-      member.role ||
-      "member",
 
-    memberStatus:
-      member.status ||
-      "active",
+  /* ---------------------------------------------------------
+     Existing-member accounting controls
 
-    memberJoinDate:
-      member.join_date ||
-      ""
-  };
+     The current updateExistingMember() operation only updates
+     profile fields. It does NOT update contribution rules,
+     obligations, payments, or allocations.
 
-  Object.entries(
-    values
-  ).forEach(
-    ([id, value]) => {
-      const node =
-        byId(id);
+     Therefore these controls must not remain apparently
+     editable in a way that suggests they will be persisted.
+     --------------------------------------------------------- */
 
-      if (node) {
-        node.value =
-          value;
-      }
+  const accountingControls = [
+    "memberContributionAmount",
+    "memberFirstPeriodRule",
+    "memberContributionEffectiveFrom",
+    "memberHistoricalEnabled",
+    "memberHistoricalPaidThrough",
+    "memberHistoricalPaymentMethod"
+  ];
+
+  accountingControls.forEach((id) => {
+    const element = byId(id);
+
+    if (!element) {
+      return;
     }
-  );
 
-  /*
-     Critical visibility fix.
+    element.disabled = true;
+  });
 
-     The original implementation only changed
-     the hidden property/class. If the HTML/CSS
-     contains inline display:none, the panel may
-     remain invisible.
 
-     Clear the hidden attribute and inline display
-     state before opening.
-  */
-  panel.hidden =
-    false;
+  /* ---------------------------------------------------------
+     Clear historical onboarding state for edit mode.
 
-  panel.removeAttribute(
-    "hidden"
-  );
+     Historical onboarding is a member-creation operation.
+     We deliberately do not preload or fabricate historical
+     accounting values here.
+     --------------------------------------------------------- */
 
-  panel.style.display =
-    "";
+  const historicalEnabled = byId("memberHistoricalEnabled");
+  const historicalPaidThrough = byId("memberHistoricalPaidThrough");
+  const historicalPaymentMethod = byId("memberHistoricalPaymentMethod");
 
-  panel.classList.add(
-    "is-open"
-  );
+  if (historicalEnabled) {
+    historicalEnabled.value = "false";
+  }
 
-  clearFormMessage();
+  if (historicalPaidThrough) {
+    historicalPaidThrough.value = "";
+  }
+
+  if (historicalPaymentMethod) {
+    historicalPaymentMethod.value = "Cash";
+  }
 
   updateHistoricalControls();
 
-  panel.scrollIntoView({
-    behavior: "smooth",
-    block: "start"
-  });
+
+  /* ---------------------------------------------------------
+     Edit-mode description
+     --------------------------------------------------------- */
+
+  const description = byId("memberFormDescription");
+
+  if (description) {
+    description.textContent =
+      "Update the member's profile information. Contribution plan and historical accounting setup are available when creating a new member.";
+  }
+
+
+  /* ---------------------------------------------------------
+     Optional form title
+     --------------------------------------------------------- */
+
+  const title = byId("memberFormTitle");
+
+  if (title) {
+    title.textContent = "Edit Member";
+  }
+
+
+  /* ---------------------------------------------------------
+     Open the panel/modal
+     --------------------------------------------------------- */
+
+  const panel = byId("memberFormPanel");
+
+  if (panel) {
+    panel.classList.remove("hidden");
+    panel.removeAttribute("hidden");
+  }
+
+  const modal = byId("memberFormModal");
+
+  if (modal) {
+    modal.classList.remove("hidden");
+    modal.removeAttribute("hidden");
+  }
 }
 
 
 /* =========================================================
    FORM VALUES
-========================================================= */
+   ========================================================= */
 
 function getFormValues() {
   return {
     memberNumber:
-      String(
-        byId(
-          "memberNumber"
-        )?.value || ""
-      ).trim(),
+      byId("memberNumber")?.value?.trim() || "",
 
     nationalId:
-      String(
-        byId(
-          "memberNationalId"
-        )?.value || ""
-      ).trim(),
+      byId("memberNationalId")?.value?.trim() || "",
 
     name:
-      String(
-        byId(
-          "memberName"
-        )?.value || ""
-      ).trim(),
+      byId("memberName")?.value?.trim() || "",
 
     phone:
-      String(
-        byId(
-          "memberPhone"
-        )?.value || ""
-      ).trim(),
+      byId("memberPhone")?.value?.trim() || "",
 
     email:
-      String(
-        byId(
-          "memberEmail"
-        )?.value || ""
-      ).trim(),
+      byId("memberEmail")?.value?.trim() || "",
 
     role:
-      String(
-        byId(
-          "memberRole"
-        )?.value ||
-        "member"
-      ).trim(),
+      byId("memberRole")?.value || "member",
 
     status:
-      String(
-        byId(
-          "memberStatus"
-        )?.value ||
-        "active"
-      ).trim(),
+      byId("memberStatus")?.value || "active",
 
     joinDate:
-      String(
-        byId(
-          "memberJoinDate"
-        )?.value || ""
-      ).trim(),
+      byId("memberJoinDate")?.value || "",
 
     contributionAmount:
-      Number(
-        byId(
-          "memberContributionAmount"
-        )?.value || 0
+      parseMoney(
+        byId("memberContributionAmount")?.value
       ),
 
     firstPeriodRule:
-      String(
-        byId(
-          "memberFirstPeriodRule"
-        )?.value ||
-        "full_period"
-      ).trim(),
+      byId("memberFirstPeriodRule")?.value ||
+      "full_period",
 
     effectiveFrom:
-      String(
-        byId(
-          "memberContributionEffectiveFrom"
-        )?.value || ""
-      ).trim(),
+      byId("memberContributionEffectiveFrom")?.value ||
+      "",
 
     historicalEnabled:
-      byId(
-        "memberHistoricalEnabled"
-      )?.value ===
-      "true",
+      byId("memberHistoricalEnabled")?.value === "true",
 
     historicalPaidThrough:
-      String(
-        byId(
-          "memberHistoricalPaidThrough"
-        )?.value || ""
-      ).trim(),
+      byId("memberHistoricalPaidThrough")?.value ||
+      "",
 
     historicalPaymentMethod:
-      String(
-        byId(
-          "memberHistoricalPaymentMethod"
-        )?.value ||
-        "Cash"
-      ).trim()
+      byId("memberHistoricalPaymentMethod")?.value ||
+      "Cash"
   };
 }
 
 
 /* =========================================================
-   HISTORICAL MONTH RESOLUTION
-========================================================= */
+   FIRST HISTORICAL MONTH
+   ========================================================= */
 
-function resolveFirstHistoricalMonth(
-  values
-) {
-  const effectiveFrom =
-    values?.effectiveFrom ||
-    values?.joinDate ||
-    "";
+function resolveFirstHistoricalMonth(values) {
+  let sourceDate =
+    values.effectiveFrom ||
+    values.joinDate;
 
-  if (!effectiveFrom) {
-    return "";
+  if (!sourceDate) {
+    return null;
   }
 
-  const date =
-    new Date(
-      `${effectiveFrom}T00:00:00`
-    );
+  const date = new Date(`${sourceDate}T00:00:00`);
 
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-    return "";
+  if (Number.isNaN(date.getTime())) {
+    return null;
   }
 
-  if (
-    values?.firstPeriodRule ===
-    "next_full_period"
-  ) {
-    date.setMonth(
-      date.getMonth() + 1
-    );
+  /*
+   * "Start from next full period" means the month following
+   * the effective/join month.
+   */
+  if (values.firstPeriodRule === "next_full_period") {
+    date.setMonth(date.getMonth() + 1);
   }
 
-  return [
-    date.getFullYear(),
-    String(
-      date.getMonth() + 1
-    ).padStart(2, "0"),
-    "01"
-  ].join("-");
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+
+  return `${year}-${month}-01`;
 }
 
 
 /* =========================================================
    FORM VALIDATION
-========================================================= */
+   ========================================================= */
 
-function validateForm(
-  values
-) {
+function validateForm(values) {
   const errors = [];
 
   if (!values.memberNumber) {
-    errors.push(
-      "Member number is required."
-    );
+    errors.push("Member number is required.");
   }
 
   if (!values.name) {
-    errors.push(
-      "Member name is required."
-    );
+    errors.push("Member name is required.");
   }
 
   if (!values.nationalId) {
-    errors.push(
-      "National ID is required."
-    );
+    errors.push("National ID is required.");
   }
 
   if (!values.joinDate) {
-    errors.push(
-      "Join date is required."
-    );
+    errors.push("Join date is required.");
   }
 
   if (
-    values.contributionAmount <
-    0
+    values.contributionAmount === null ||
+    values.contributionAmount === undefined ||
+    Number.isNaN(values.contributionAmount)
   ) {
+    errors.push("Monthly contribution amount is required.");
+  } else if (values.contributionAmount < 0) {
+    errors.push("Monthly contribution cannot be negative.");
+  }
+
+
+  /* ---------------------------------------------------------
+     New members require the monthly contribution type.
+     Existing members do not use the creation RPC.
+     --------------------------------------------------------- */
+
+  if (!editingMemberId && !monthlyContributionType) {
     errors.push(
-      "Monthly contribution cannot be negative."
+      "The group's Monthly contribution type could not be found."
     );
   }
 
-  if (
-    !editingMemberId &&
-    !monthlyContributionType
-  ) {
+
+  /* ---------------------------------------------------------
+     IMPORTANT EXISTING-MEMBER GUARD
+
+     The current backend does not provide an existing-member
+     historical-backfill RPC.
+
+     Never silently accept historical settings and then save
+     only the profile.
+     --------------------------------------------------------- */
+
+  if (editingMemberId && values.historicalEnabled) {
     errors.push(
-      "Monthly contribution type is not available."
+      "Historical contribution setup is only available when creating a new member. Editing an existing member does not create historical accounting entries."
     );
   }
 
-  if (
-    values.historicalEnabled
-  ) {
-    if (
-      !values.historicalPaidThrough
-    ) {
+
+  /* ---------------------------------------------------------
+     Historical onboarding validation applies only to NEW
+     members.
+     --------------------------------------------------------- */
+
+  if (!editingMemberId && values.historicalEnabled) {
+    if (!values.historicalPaidThrough) {
       errors.push(
-        "Paid-through date is required when historical contributions are enabled."
+        "Paid-through date is required for historical contributions."
       );
     }
 
     if (
       values.historicalPaidThrough &&
       values.joinDate &&
-      values.historicalPaidThrough <
-        values.joinDate
+      values.historicalPaidThrough < values.joinDate
     ) {
       errors.push(
-        "Historical paid-through date cannot be before the join date."
+        "Historical paid-through date cannot be before the member's join date."
       );
     }
 
     if (
       values.historicalPaidThrough &&
       values.effectiveFrom &&
-      values.historicalPaidThrough <
-        values.effectiveFrom
+      values.historicalPaidThrough < values.effectiveFrom
     ) {
       errors.push(
         "Historical paid-through date cannot be before the contribution effective date."
@@ -2975,121 +2591,50 @@ function validateForm(
     }
   }
 
-  return errors;
+
+  if (errors.length) {
+    throw new Error(errors.join("\n"));
+  }
+
+  return true;
 }
 
 
 /* =========================================================
-   DUPLICATE MEMBER NUMBER
-========================================================= */
+   UPDATE EXISTING MEMBER
+   ========================================================= */
 
-async function checkDuplicateMemberNumber(
-  memberNumber
-) {
-  if (!groupId) {
-    return false;
-  }
-
-  let query =
-    supabase
-      .from(
-        "members"
-      )
-      .select(
-        "id",
-        {
-          count: "exact",
-          head: false
-        }
-      )
-      .eq(
-        "group_id",
-        groupId
-      )
-      .eq(
-        "member_number",
-        memberNumber
-      );
-
-  if (
-    editingMemberId
-  ) {
-    query =
-      query.neq(
-        "id",
-        editingMemberId
-      );
-  }
-
-  const {
-    data,
-    error
-  } = await query;
-
-  if (error) {
-    throw error;
-  }
-
-  return Boolean(
-    data?.length
-  );
-}
-
-
-/* =========================================================
-   SAVE MEMBER — EDIT EXISTING PROFILE
-========================================================= */
-
-async function updateExistingMember(
-  values
-) {
+async function updateExistingMember(values) {
   if (!editingMemberId) {
     throw new Error(
-      "No member selected for editing."
+      "No existing member is selected for update."
     );
   }
 
-  const {
-    error
-  } = await supabase
-    .from(
-      "members"
-    )
+  /*
+   * IMPORTANT:
+   *
+   * This operation is intentionally profile-only.
+   *
+   * Do NOT add contribution payments, obligations,
+   * allocations, or historical accounting here unless a
+   * dedicated canonical backend RPC has first been created
+   * and audited.
+   */
+
+  const { error } = await supabase
+    .from("members")
     .update({
-      member_number:
-        values.memberNumber,
-
-      national_id:
-        values.nationalId,
-
-      name:
-        values.name,
-
-      phone:
-        values.phone ||
-        null,
-
-      email:
-        values.email ||
-        null,
-
-      role:
-        values.role,
-
-      status:
-        values.status,
-
-      join_date:
-        values.joinDate
+      member_number: values.memberNumber,
+      national_id: values.nationalId,
+      name: values.name,
+      phone: values.phone,
+      email: values.email,
+      role: values.role,
+      status: values.status,
+      join_date: values.joinDate
     })
-    .eq(
-      "id",
-      editingMemberId
-    )
-    .eq(
-      "group_id",
-      groupId
-    );
+    .eq("id", editingMemberId);
 
   if (error) {
     throw error;
@@ -3100,1283 +2645,858 @@ async function updateExistingMember(
 
 
 /* =========================================================
-   CREATE MEMBER — CANONICAL RPC
-========================================================= */
+   CREATE MEMBER WITH CONTRIBUTION PLAN
+   ========================================================= */
 
-async function createMemberWithPlan(
-  values
-) {
-  if (
-    !monthlyContributionType?.id
-  ) {
+async function createMemberWithPlan(values) {
+  if (!currentGroupId) {
     throw new Error(
-      "Monthly contribution type is unavailable."
+      "No group is selected."
     );
   }
 
-  const requestId =
-    crypto.randomUUID();
+  if (!monthlyContributionType?.id) {
+    throw new Error(
+      "The group's Monthly contribution type could not be found."
+    );
+  }
 
-  const params = {
-    p_request_id:
-      requestId,
+  const requestId = crypto.randomUUID();
 
-    p_group_id:
-      groupId,
-
-    p_member_number:
-      values.memberNumber,
-
-    p_name:
-      values.name,
-
-    p_national_id:
-      values.nationalId,
-
-    p_phone:
-      values.phone ||
-      null,
-
-    p_email:
-      values.email ||
-      null,
-
-    p_role:
-      values.role,
-
-    p_status:
-      values.status,
-
-    p_join_date:
-      values.joinDate,
-
-    p_contribution_type_id:
-      monthlyContributionType.id,
-
-    p_contribution_amount:
-      values.contributionAmount,
-
-    p_first_period_rule:
-      values.firstPeriodRule,
-
-    p_effective_from:
+  const payload = {
+    request_id: requestId,
+    group_id: currentGroupId,
+    member_number: values.memberNumber,
+    national_id: values.nationalId,
+    name: values.name,
+    phone: values.phone || null,
+    email: values.email || null,
+    role: values.role,
+    status: values.status,
+    join_date: values.joinDate,
+    contribution_type_id: monthlyContributionType.id,
+    contribution_amount: values.contributionAmount,
+    first_period_rule: values.firstPeriodRule,
+    effective_from:
       values.effectiveFrom ||
       values.joinDate
   };
 
-  const {
-    data,
-    error
-  } = await supabase.rpc(
+  const { data, error } = await supabase.rpc(
     "create_member_with_contribution_plan",
-    params
+    {
+      p_request_id: requestId,
+      p_group_id: payload.group_id,
+      p_member_number: payload.member_number,
+      p_national_id: payload.national_id,
+      p_name: payload.name,
+      p_phone: payload.phone,
+      p_email: payload.email,
+      p_role: payload.role,
+      p_status: payload.status,
+      p_join_date: payload.join_date,
+      p_contribution_type_id:
+        payload.contribution_type_id,
+      p_contribution_amount:
+        payload.contribution_amount,
+      p_first_period_rule:
+        payload.first_period_rule,
+      p_effective_from:
+        payload.effective_from
+    }
   );
 
   if (error) {
     throw error;
   }
 
-  return {
-    data,
-    requestId
-  };
+  return data;
 }
 
 
 /* =========================================================
-   CREATE MEMBER — WITH HISTORICAL CONTRIBUTIONS
-========================================================= */
+   CREATE MEMBER WITH HISTORICAL CONTRIBUTIONS
+   ========================================================= */
 
-async function createMemberWithHistoricalContributions(
-  values
-) {
-  if (
-    !monthlyContributionType?.id
-  ) {
+async function createMemberWithHistoricalContributions(values) {
+  if (!currentGroupId) {
     throw new Error(
-      "Monthly contribution type is unavailable."
+      "No group is selected."
     );
   }
 
-  const requestId =
-    crypto.randomUUID();
+  if (!monthlyContributionType?.id) {
+    throw new Error(
+      "The group's Monthly contribution type could not be found."
+    );
+  }
 
   const firstHistoricalMonth =
-    resolveFirstHistoricalMonth(
-      values
+    resolveFirstHistoricalMonth(values);
+
+  if (!firstHistoricalMonth) {
+    throw new Error(
+      "Unable to determine the first historical contribution month."
     );
+  }
 
-  const params = {
-    p_request_id:
-      requestId,
+  if (!values.historicalPaidThrough) {
+    throw new Error(
+      "Historical paid-through date is required."
+    );
+  }
 
-    p_group_id:
-      groupId,
+  const requestId = crypto.randomUUID();
 
-    p_member_number:
-      values.memberNumber,
-
-    p_name:
-      values.name,
-
-    p_national_id:
-      values.nationalId,
-
-    p_phone:
-      values.phone ||
-      null,
-
-    p_email:
-      values.email ||
-      null,
-
-    p_role:
-      values.role,
-
-    p_status:
-      values.status,
-
-    p_join_date:
-      values.joinDate,
-
-    p_contribution_type_id:
-      monthlyContributionType.id,
-
-    p_contribution_amount:
-      values.contributionAmount,
-
-    p_first_period_rule:
-      values.firstPeriodRule,
-
-    p_effective_from:
-      values.effectiveFrom ||
-      values.joinDate,
-
-    p_historical_paid_through:
-      values.historicalPaidThrough,
-
-    p_historical_payment_method:
-      values.historicalPaymentMethod,
-
-    p_first_historical_month:
-      firstHistoricalMonth
+  const memberPayload = {
+    member_number: values.memberNumber,
+    national_id: values.nationalId,
+    name: values.name,
+    phone: values.phone || null,
+    email: values.email || null,
+    role: values.role,
+    status: values.status,
+    join_date: values.joinDate
   };
 
-  const {
-    data,
-    error
-  } = await supabase.rpc(
+  const contributionPayload = {
+    contribution_type_id:
+      monthlyContributionType.id,
+    contribution_amount:
+      values.contributionAmount,
+    first_period_rule:
+      values.firstPeriodRule,
+    effective_from:
+      values.effectiveFrom ||
+      values.joinDate
+  };
+
+  const historicalPayload = {
+    first_historical_month:
+      firstHistoricalMonth,
+    historical_paid_through:
+      values.historicalPaidThrough,
+    payment_method:
+      values.historicalPaymentMethod || "Cash"
+  };
+
+  const { data, error } = await supabase.rpc(
     "create_member_with_historical_contributions",
-    params
+    {
+      p_request_id: requestId,
+      p_group_id: currentGroupId,
+      p_member: memberPayload,
+      p_contribution: contributionPayload,
+      p_historical: historicalPayload
+    }
   );
 
   if (error) {
     throw error;
   }
 
-  return {
-    data,
-    requestId
-  };
+  return data;
 }
 
 
 /* =========================================================
    SAVE MEMBER
-========================================================= */
+   ========================================================= */
 
-async function saveMember(
-  event
-) {
-  event?.preventDefault();
-
-  clearError();
-  clearFormMessage();
-
-  const button =
-    byId(
-      "saveMemberButton"
-    );
-
-  const values =
-    getFormValues();
-
-  const errors =
-    validateForm(
-      values
-    );
-
-  if (
-    errors.length
-  ) {
-    showFormMessage(
-      errors.join(" "),
-      "error"
-    );
-    return;
-  }
-
-  if (button) {
-    button.disabled =
-      true;
-
-    button.dataset.originalText =
-      button.textContent;
-
-    button.textContent =
-      editingMemberId
-        ? "Saving..."
-        : "Creating...";
+async function saveMember(event) {
+  if (event) {
+    event.preventDefault();
   }
 
   try {
-    const duplicate =
-      await checkDuplicateMemberNumber(
+    const values = getFormValues();
+
+    validateForm(values);
+
+
+    /* -------------------------------------------------------
+       Duplicate member-number protection
+       ------------------------------------------------------- */
+
+    const duplicate = members.find((member) => {
+      if (
+        editingMemberId &&
+        member.id === editingMemberId
+      ) {
+        return false;
+      }
+
+      return (
+        String(member.member_number || "")
+          .trim()
+          .toLowerCase() ===
         values.memberNumber
+          .trim()
+          .toLowerCase()
       );
+    });
 
     if (duplicate) {
       throw new Error(
-        `Member number ${values.memberNumber} is already in use by another member in this group.`
+        `Member number ${values.memberNumber} is already in use.`
       );
     }
 
-    if (
-      editingMemberId
-    ) {
-      await updateExistingMember(
-        values
+
+    /* -------------------------------------------------------
+       EXISTING MEMBER
+       -------------------------------------------------------
+
+       Existing-member edits are profile-only.
+
+       Historical contribution fields are explicitly blocked
+       rather than silently ignored.
+       ------------------------------------------------------- */
+
+    if (editingMemberId) {
+      if (values.historicalEnabled) {
+        throw new Error(
+          "Historical contribution setup is only available when creating a new member."
+        );
+      }
+
+      await updateExistingMember(values);
+
+      showSuccess(
+        "Member profile updated successfully."
       );
 
-      showFormMessage(
-        "Member updated successfully.",
-        "success"
-      );
-
+      closeMemberForm();
       await loadMembers();
-      await loadMemberContributionPositions();
-
-      renderMembers();
-      updateMemberCount();
-
-      setTimeout(
-        () => {
-          closeAddMemberPanel();
-        },
-        600
-      );
 
       return;
     }
 
-    await loadMonthlyContributionType();
+
+    /* -------------------------------------------------------
+       NEW MEMBER
+       ------------------------------------------------------- */
 
     let result;
 
-    if (
-      values.historicalEnabled
-    ) {
+    if (values.historicalEnabled) {
       result =
         await createMemberWithHistoricalContributions(
           values
         );
     } else {
       result =
-        await createMemberWithPlan(
-          values
-        );
+        await createMemberWithPlan(values);
     }
 
-    console.info(
-      "CHAMA LIVE: Member creation completed",
-      result
-    );
+    /*
+     * Preserve the returned canonical accounting state.
+     * The backend is the source of truth.
+     */
+    lastMemberOperationResult = result;
 
-    showFormMessage(
+    showSuccess(
       values.historicalEnabled
-        ? "Member and historical contribution setup completed successfully."
-        : "Member and contribution plan created successfully.",
-      "success"
+        ? "Member created and historical contributions recorded."
+        : "Member created successfully."
     );
 
+    closeMemberForm();
     await loadMembers();
-    await loadMemberContributionPositions();
-
-    renderMembers();
-    updateMemberCount();
-
-    setTimeout(
-      () => {
-        closeAddMemberPanel();
-      },
-      700
-    );
 
   } catch (error) {
-    showFormMessage(
-      error?.message ||
-        String(
-          error ||
-          "Unable to save member."
-        ),
-      "error"
-    );
-
     console.error(
-      "CHAMA LIVE: Save member failed",
+      "saveMember failed:",
       error
     );
 
-  } finally {
-    if (button) {
-      button.disabled =
-        false;
-
-      button.textContent =
-        button.dataset.originalText ||
-        "Save Member";
-    }
+    showError(
+      error?.message ||
+      "Unable to save member."
+    );
   }
 }
 
 
 /* =========================================================
-   INVITATION
-========================================================= */
+   RECONCILE EXISTING HISTORICAL PAYMENTS
+   ========================================================= */
 
-async function sendMemberInvitation(
-  member
-) {
-  if (!member) {
+async function reconcileHistoricalPayments(memberId) {
+  if (!memberId) {
     throw new Error(
-      "Member not found."
+      "Member ID is required."
     );
   }
 
-  if (
-    !String(
-      member.email || ""
-    ).trim()
-  ) {
-    throw new Error(
-      "This member does not have an email address."
-    );
-  }
+  try {
+    const requestId = crypto.randomUUID();
 
-  const {
-    data,
-    error
-  } =
-    await supabase.functions.invoke(
-      "send-member-invitation",
+    const { data, error } = await supabase.rpc(
+      "reconcile_member_historical_payments",
       {
-        body: {
-          member_id:
-            member.id
-        }
+        p_member_id: memberId,
+        p_cutoff_date: null,
+        p_request_id: requestId
       }
     );
 
-  if (error) {
-    throw error;
-  }
+    if (error) {
+      throw error;
+    }
 
-  return data;
-}
+    /*
+     * IMPORTANT:
+     *
+     * This reconciliation operation works with accounting
+     * records that already exist. It does NOT manufacture
+     * missing historical obligations or historical payments.
+     */
 
-async function inviteMember(
-  memberId,
-  button
-) {
-  const member =
-    findMember(
-      memberId
-    );
+    lastMemberOperationResult = data;
 
-  if (!member) {
-    showError(
-      "Member not found."
-    );
-    return;
-  }
-
-  if (button) {
-    button.disabled =
-      true;
-
-    button.dataset.originalText =
-      button.textContent;
-
-    button.textContent =
-      "Sending...";
-  }
-
-  clearError();
-
-  try {
-    await sendMemberInvitation(
-      member
-    );
-
-    showStatus(
-      `Invitation sent to ${member.email}.`
+    showSuccess(
+      "Existing historical payments were reconciled against existing obligations."
     );
 
     await loadMembers();
 
-    renderMembers();
-    updateMemberCount();
+    return data;
 
   } catch (error) {
-    showError(
+    console.error(
+      "reconcileHistoricalPayments failed:",
       error
     );
 
-  } finally {
-    if (button) {
-      button.disabled =
-        false;
+    showError(
+      error?.message ||
+      "Unable to reconcile historical payments."
+    );
 
-      button.textContent =
-        button.dataset.originalText ||
-        "Invite";
-    }
+    throw error;
   }
 }
 
 
 /* =========================================================
-   MEMBER CONTRIBUTION POSITION
-========================================================= */
+   OPEN MEMBER MODAL
+   ========================================================= */
 
-function getPositionForMember(
-  memberId
-) {
-  return contributionPositions.get(
-    String(memberId)
+async function openMemberModal(memberId) {
+  const member = members.find(
+    (item) => item.id === memberId
   );
-}
 
-function setText(
-  id,
-  value
-) {
-  const node =
-    byId(id);
-
-  if (node) {
-    node.textContent =
-      value;
-  }
-}
-
-function renderMemberContributionPosition(
-  member
-) {
-  const panel =
-    byId(
-      "memberContributionPosition"
-    );
-
-  if (!panel) {
+  if (!member) {
+    showError("Member could not be found.");
     return;
   }
 
-  const position =
-    getPositionForMember(
-      member.id
-    );
+  activeMemberId = member.id;
 
-  if (!position) {
-    panel.hidden =
-      false;
+  const modal = byId("memberProfileModal");
 
-    panel.removeAttribute(
-      "hidden"
-    );
-
-    setText(
-      "viewContributionStatus",
-      "Unavailable"
-    );
-
-    setText(
-      "viewContributionTotal",
-      formatMoney(0)
-    );
-
-    setText(
-      "viewContributionDue",
-      formatMoney(0)
-    );
-
-    setText(
-      "viewContributionAllocated",
-      formatMoney(0)
-    );
-
-    setText(
-      "viewContributionArrears",
-      formatMoney(0)
-    );
-
-    setText(
-      "viewContributionCredit",
-      formatMoney(0)
-    );
-
-    setText(
-      "viewContributionDescription",
-      "Contribution position could not be loaded."
-    );
-
+  if (!modal) {
     return;
   }
 
-  panel.hidden =
-    false;
-
-  panel.removeAttribute(
-    "hidden"
+  const position = await loadMemberAccountingPosition(
+    member.id
   );
 
-  const status =
-    contributionStatusLabel(
-      position.status
+  renderMemberProfile(member, position);
+
+  modal.classList.remove("hidden");
+  modal.removeAttribute("hidden");
+}
+
+
+/* =========================================================
+   CLOSE MEMBER MODAL
+   ========================================================= */
+
+function closeMemberModal() {
+  const modal = byId("memberProfileModal");
+
+  if (!modal) {
+    return;
+  }
+
+  modal.classList.add("hidden");
+  modal.setAttribute("hidden", "");
+
+  activeMemberId = null;
+}
+
+
+/* =========================================================
+   MEMBER ACCOUNTING POSITION
+   ========================================================= */
+
+async function loadMemberAccountingPosition(memberId) {
+  if (!memberId) {
+    return null;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("member_accounting_position")
+      .select("*")
+      .eq("member_id", memberId)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    return data || null;
+
+  } catch (error) {
+    console.error(
+      "Unable to load member accounting position:",
+      error
+    );
+
+    /*
+     * Do not manufacture accounting values in the UI.
+     */
+    return null;
+  }
+}
+
+
+/* =========================================================
+   RENDER MEMBER PROFILE
+   ========================================================= */
+
+function renderMemberProfile(member, position) {
+  setText(
+    "profileMemberNumber",
+    member.member_number || "—"
+  );
+
+  setText(
+    "profileMembership",
+    member.member_number || "—"
+  );
+
+  setText(
+    "profileNationalId",
+    member.national_id || "—"
+  );
+
+  setText(
+    "profilePhone",
+    member.phone || "—"
+  );
+
+  setText(
+    "profileEmail",
+    member.email || "—"
+  );
+
+  setText(
+    "profileRole",
+    member.role || "—"
+  );
+
+  setText(
+    "profileStatus",
+    member.status || "—"
+  );
+
+  setText(
+    "profileLoginStatus",
+    member.login_active
+      ? "Login Active"
+      : "No Login"
+  );
+
+  setText(
+    "profileJoinDate",
+    formatDate(member.join_date)
+  );
+
+  setText(
+    "profileGroup",
+    currentGroupName || "—"
+  );
+
+
+  /* ---------------------------------------------------------
+     Canonical accounting position
+     --------------------------------------------------------- */
+
+  const totalContributed =
+    Number(
+      position?.total_contributed ?? 0
     );
 
   const totalDue =
-    position.total_due ??
-    position.due ??
-    0;
+    Number(
+      position?.total_due ?? 0
+    );
 
   const allocated =
-    position.total_allocated ??
-    position.allocated ??
-    0;
+    Number(
+      position?.allocated ?? 0
+    );
 
   const arrears =
-    position.arrears ??
-    position.outstanding ??
-    0;
+    Number(
+      position?.arrears ?? 0
+    );
 
   const credit =
-    position.credit ??
-    0;
-
-  setText(
-    "viewContributionStatus",
-    status
-  );
-
-  setText(
-    "viewContributionTotal",
-    formatMoney(
-      totalDue
-    )
-  );
-
-  setText(
-    "viewContributionDue",
-    formatMoney(
-      totalDue
-    )
-  );
-
-  setText(
-    "viewContributionAllocated",
-    formatMoney(
-      allocated
-    )
-  );
-
-  setText(
-    "viewContributionArrears",
-    formatMoney(
-      arrears
-    )
-  );
-
-  setText(
-    "viewContributionCredit",
-    formatMoney(
-      credit
-    )
-  );
-
-  let description =
-    contributionResultMessage(
-      position
+    Number(
+      position?.credit ?? 0
     );
 
-  if (
-    position.description
-  ) {
-    description =
-      String(
-        position.description
-      );
-  }
-
   setText(
-    "viewContributionDescription",
-    description
-  );
-}
-
-
-/* =========================================================
-   MEMBER MODAL
-========================================================= */
-
-async function openMemberModal(
-  memberId
-) {
-  const member =
-    findMember(
-      memberId
-    );
-
-  if (!member) {
-    showError(
-      "Member not found."
-    );
-    return;
-  }
-
-  const modal =
-    byId(
-      "memberModal"
-    );
-
-  if (!modal) {
-    showError(
-      "Member details modal is not available."
-    );
-    return;
-  }
-
-  ensureNationalIdUI();
-
-  setText(
-    "viewMemberInitials",
-    getInitials(
-      member.name
-    )
+    "profileTotalContributed",
+    formatCurrency(totalContributed)
   );
 
   setText(
-    "viewMemberName",
-    member.name ||
-      "—"
+    "profileTotalDue",
+    formatCurrency(totalDue)
   );
 
   setText(
-    "viewMemberNumber",
-    member.member_number ||
-      "—"
+    "profileAllocated",
+    formatCurrency(allocated)
   );
 
   setText(
-    "viewMembershipNumber",
-    member.membership_number ||
-      member.member_number ||
-      "—"
+    "profileArrears",
+    formatCurrency(arrears)
   );
 
   setText(
-    "viewMemberNationalId",
-    member.national_id ||
-      "—"
+    "profileCredit",
+    formatCurrency(credit)
   );
 
-  setText(
-    "viewMemberPhone",
-    member.phone ||
-      "—"
-  );
 
-  setText(
-    "viewMemberEmail",
-    member.email ||
-      "—"
-  );
+  /* ---------------------------------------------------------
+     Position status
+     --------------------------------------------------------- */
 
-  setText(
-    "viewMemberRole",
-    displayRole(
-      member.role
-    )
-  );
+  const statusElement =
+    byId("profileContributionStatus");
 
-  setText(
-    "viewMemberStatus",
-    String(
-      member.status ||
-      "—"
-    )
-  );
+  if (statusElement) {
+    let statusText = "UP TO DATE";
 
-  setText(
-    "viewMemberLoginStatus",
-    getLoginStatus(
-      member
-    )
-  );
-
-  setText(
-    "viewMemberJoinDate",
-    formatDate(
-      member.join_date
-    )
-  );
-
-  setText(
-    "viewMemberGroup",
-    currentGroup?.name ||
-      "—"
-  );
-
-  renderMemberContributionPosition(
-    member
-  );
-
-  /*
-     Critical modal visibility fix.
-
-     The HTML may contain:
-       hidden
-       style="display:none"
-
-     Setting only modal.hidden=false is not sufficient
-     when inline display:none remains.
-
-     We explicitly clear the hidden state and set the
-     visible display mode.
-  */
-  modal.hidden =
-    false;
-
-  modal.removeAttribute(
-    "hidden"
-  );
-
-  modal.style.display =
-    "flex";
-
-  modal.classList.add(
-    "is-open"
-  );
-
-  document.body.classList.add(
-    "modal-open"
-  );
-}
-
-function closeMemberModal() {
-  const modal =
-    byId(
-      "memberModal"
-    );
-
-  if (!modal) {
-    return;
-  }
-
-  modal.classList.remove(
-    "is-open"
-  );
-
-  modal.hidden =
-    true;
-
-  modal.setAttribute(
-    "hidden",
-    ""
-  );
-
-  modal.style.display =
-    "none";
-
-  document.body.classList.remove(
-    "modal-open"
-  );
-}
-
-
-/* =========================================================
-   HISTORICAL RECONCILIATION
-========================================================= */
-
-async function reconcileHistoricalPayments(
-  memberId
-) {
-  const member =
-    findMember(
-      memberId
-    );
-
-  if (!member) {
-    throw new Error(
-      "Member not found."
-    );
-  }
-
-  const requestId =
-    crypto.randomUUID();
-
-  const {
-    data,
-    error
-  } = await supabase.rpc(
-    "reconcile_member_historical_payments",
-    {
-      p_request_id:
-        requestId,
-
-      p_member_id:
-        member.id
+    if (arrears > 0) {
+      statusText = "ARREARS";
+    } else if (credit > 0) {
+      statusText = "CREDIT";
     }
-  );
 
-  if (error) {
-    throw error;
-  }
+    statusElement.textContent = statusText;
 
-  return data;
-}
-
-async function handleHistoricalReconciliation(
-  memberId,
-  button
-) {
-  const member =
-    findMember(
-      memberId
+    statusElement.classList.remove(
+      "credit",
+      "arrears",
+      "up-to-date"
     );
 
-  if (!member) {
-    showError(
-      "Member not found."
-    );
-    return;
-  }
-
-  const confirmed =
-    window.confirm(
-      `Reconcile historical payments for ${member.name}? This uses the approved server-side reconciliation process.`
-    );
-
-  if (!confirmed) {
-    return;
-  }
-
-  if (button) {
-    button.disabled =
-      true;
-
-    button.dataset.originalText =
-      button.textContent;
-
-    button.textContent =
-      "Reconciling...";
-  }
-
-  clearError();
-
-  try {
-    await reconcileHistoricalPayments(
-      member.id
-    );
-
-    await loadMemberContributionPositions();
-
-    renderMemberContributionPosition(
-      member
-    );
-
-    renderMembers();
-
-    showStatus(
-      `Historical payments reconciled for ${member.name}.`
-    );
-
-  } catch (error) {
-    showError(
-      error
-    );
-
-  } finally {
-    if (button) {
-      button.disabled =
-        false;
-
-      button.textContent =
-        button.dataset.originalText ||
-        "Reconcile Historical Payments";
+    if (credit > 0) {
+      statusElement.classList.add("credit");
+    } else if (arrears > 0) {
+      statusElement.classList.add("arrears");
+    } else {
+      statusElement.classList.add("up-to-date");
     }
   }
+
+
+  /* ---------------------------------------------------------
+     Historical reconciliation action
+     --------------------------------------------------------- */
+
+  const reconcileButton =
+    byId("reconcileHistoricalButton");
+
+  if (reconcileButton) {
+    reconcileButton.onclick = async () => {
+      reconcileButton.disabled = true;
+
+      try {
+        await reconcileHistoricalPayments(
+          member.id
+        );
+
+        /*
+         * Reload the profile so the displayed position comes
+         * from the canonical accounting state after the
+         * reconciliation.
+         */
+        const refreshedPosition =
+          await loadMemberAccountingPosition(
+            member.id
+          );
+
+        renderMemberProfile(
+          member,
+          refreshedPosition
+        );
+
+      } finally {
+        reconcileButton.disabled = false;
+      }
+    };
+  }
 }
 
 
 /* =========================================================
-   SEARCH
-========================================================= */
+   CLOSE MEMBER FORM
+   ========================================================= */
 
-function handleMemberSearch() {
-  if (
-    memberSearchTimer
-  ) {
-    clearTimeout(
-      memberSearchTimer
-    );
+function closeMemberForm() {
+  const panel = byId("memberFormPanel");
+
+  if (panel) {
+    panel.classList.add("hidden");
+    panel.setAttribute("hidden", "");
   }
 
-  memberSearchTimer =
-    setTimeout(
-      () => {
-        renderMembers();
-      },
-      120
-    );
-}
+  const modal = byId("memberFormModal");
 
-function clearMemberSearch() {
-  const input =
-    byId(
-      "memberSearch"
-    );
-
-  if (input) {
-    input.value =
-      "";
+  if (modal) {
+    modal.classList.add("hidden");
+    modal.setAttribute("hidden", "");
   }
 
-  renderMembers();
+  resetMemberForm();
 
-  input?.focus();
+  editingMemberId = null;
 }
 
 
 /* =========================================================
-   EVENT ACTION ROUTER
-========================================================= */
+   RESET MEMBER FORM
+   ========================================================= */
 
-async function handleMemberAction(
-  event
-) {
-  const button =
-    event.target.closest(
-      "[data-action]"
-    );
+function resetMemberForm() {
+  const form = byId("memberForm");
 
-  if (!button) {
-    return;
+  if (form) {
+    form.reset();
   }
 
-  const action =
-    button.dataset.action;
 
-  const memberId =
-    button.dataset.memberId;
+  /* ---------------------------------------------------------
+     Restore creation-mode defaults
+     --------------------------------------------------------- */
 
-  if (!memberId) {
-    return;
+  const role = byId("memberRole");
+
+  if (role) {
+    role.value = "member";
   }
 
-  if (
-    action === "view"
-  ) {
-    await openMemberModal(
-      memberId
-    );
-    return;
+  const status = byId("memberStatus");
+
+  if (status) {
+    status.value = "active";
   }
 
-  if (
-    action === "edit"
-  ) {
-    openEditMemberPanel(
-      memberId
-    );
-    return;
+  const firstPeriodRule =
+    byId("memberFirstPeriodRule");
+
+  if (firstPeriodRule) {
+    firstPeriodRule.value = "full_period";
   }
 
-  if (
-    action === "invite"
-  ) {
-    await inviteMember(
-      memberId,
-      button
-    );
-    return;
+  const historicalEnabled =
+    byId("memberHistoricalEnabled");
+
+  if (historicalEnabled) {
+    historicalEnabled.disabled = false;
+    historicalEnabled.value = "false";
   }
 
-  if (
-    action === "reconcile"
-  ) {
-    await handleHistoricalReconciliation(
-      memberId,
-      button
-    );
+  const historicalPaidThrough =
+    byId("memberHistoricalPaidThrough");
+
+  if (historicalPaidThrough) {
+    historicalPaidThrough.disabled = false;
+    historicalPaidThrough.value = "";
+  }
+
+  const historicalPaymentMethod =
+    byId("memberHistoricalPaymentMethod");
+
+  if (historicalPaymentMethod) {
+    historicalPaymentMethod.disabled = false;
+    historicalPaymentMethod.value = "Cash";
+  }
+
+
+  /* ---------------------------------------------------------
+     Re-enable creation accounting controls
+     --------------------------------------------------------- */
+
+  [
+    "memberContributionAmount",
+    "memberFirstPeriodRule",
+    "memberContributionEffectiveFrom"
+  ].forEach((id) => {
+    const element = byId(id);
+
+    if (element) {
+      element.disabled = false;
+    }
+  });
+
+
+  updateHistoricalControls();
+
+
+  const description =
+    byId("memberFormDescription");
+
+  if (description) {
+    description.textContent =
+      "Create a new member and configure their contribution plan.";
+  }
+
+
+  const title =
+    byId("memberFormTitle");
+
+  if (title) {
+    title.textContent = "Add Member";
   }
 }
 
 
 /* =========================================================
    EVENT BINDING
-========================================================= */
+   ========================================================= */
 
-function bindEvents() {
-  if (
-    eventsBound
-  ) {
-    return;
+function bindMemberEvents() {
+  const form = byId("memberForm");
+
+  if (form) {
+    form.addEventListener(
+      "submit",
+      saveMember
+    );
   }
 
-  eventsBound =
-    true;
 
-  byId(
-    "addMemberButton"
-  )?.addEventListener(
-    "click",
-    openAddMemberPanel
-  );
+  const historicalEnabled =
+    byId("memberHistoricalEnabled");
 
-  byId(
-    "closeAddMember"
-  )?.addEventListener(
-    "click",
-    closeAddMemberPanel
-  );
+  if (historicalEnabled) {
+    historicalEnabled.addEventListener(
+      "change",
+      updateHistoricalControls
+    );
+  }
 
-  byId(
-    "cancelAddMember"
-  )?.addEventListener(
-    "click",
-    closeAddMemberPanel
-  );
 
-  byId(
-    "addMemberForm"
-  )?.addEventListener(
-    "submit",
-    saveMember
-  );
+  const addButton =
+    byId("addMemberButton");
 
-  byId(
-    "memberSearch"
-  )?.addEventListener(
-    "input",
-    handleMemberSearch
-  );
+  if (addButton) {
+    addButton.addEventListener(
+      "click",
+      () => {
+        editingMemberId = null;
 
-  byId(
-    "clearMemberSearch"
-  )?.addEventListener(
-    "click",
-    clearMemberSearch
-  );
+        resetMemberForm();
 
-  byId(
-    "memberRows"
-  )?.addEventListener(
-    "click",
-    handleMemberAction
-  );
+        const panel =
+          byId("memberFormPanel");
 
-  byId(
-    "memberCards"
-  )?.addEventListener(
-    "click",
-    handleMemberAction
-  );
+        if (panel) {
+          panel.classList.remove("hidden");
+          panel.removeAttribute("hidden");
+        }
 
-  byId(
-    "closeMemberModal"
-  )?.addEventListener(
-    "click",
-    closeMemberModal
-  );
+        const modal =
+          byId("memberFormModal");
 
-  byId(
-    "doneMemberModal"
-  )?.addEventListener(
-    "click",
-    closeMemberModal
-  );
-
-  byId(
-    "memberHistoricalEnabled"
-  )?.addEventListener(
-    "change",
-    updateHistoricalControls
-  );
-
-  byId(
-    "memberHistoricalPaidThrough"
-  )?.addEventListener(
-    "change",
-    updateHistoricalPreview
-  );
-
-  byId(
-    "memberJoinDate"
-  )?.addEventListener(
-    "change",
-    updateHistoricalPreview
-  );
-
-  byId(
-    "memberContributionAmount"
-  )?.addEventListener(
-    "input",
-    () => {
-      updateContributionPreview();
-      updateHistoricalPreview();
-    }
-  );
-
-  byId(
-    "memberContributionEffectiveFrom"
-  )?.addEventListener(
-    "change",
-    updateHistoricalPreview
-  );
-
-  document.addEventListener(
-    "keydown",
-    event => {
-      if (
-        event.key ===
-        "Escape"
-      ) {
-        closeMemberModal();
+        if (modal) {
+          modal.classList.remove("hidden");
+          modal.removeAttribute("hidden");
+        }
       }
-    }
-  );
+    );
+  }
+
+
+  const closeFormButton =
+    byId("closeMemberForm");
+
+  if (closeFormButton) {
+    closeFormButton.addEventListener(
+      "click",
+      closeMemberForm
+    );
+  }
+
+
+  const cancelButton =
+    byId("cancelMemberForm");
+
+  if (cancelButton) {
+    cancelButton.addEventListener(
+      "click",
+      closeMemberForm
+    );
+  }
+
+
+  const closeProfileButton =
+    byId("closeMemberProfile");
+
+  if (closeProfileButton) {
+    closeProfileButton.addEventListener(
+      "click",
+      closeMemberModal
+    );
+  }
 }
 
 
 /* =========================================================
    INITIALIZATION
-========================================================= */
+   ========================================================= */
 
 async function init() {
-  if (
-    initialized
-  ) {
-    return;
-  }
-
-  initialized =
-    true;
-
-  clearError();
-
-  showStatus(
-    "Loading members..."
-  );
-
   try {
-    currentUser =
-      await requireAuth();
+    bindMemberEvents();
 
-    currentMember =
-      await getMyMember();
-
-    currentGroup =
-      await getMyGroup();
-
-    groupId =
-      currentMember?.group_id ||
-      currentGroup?.id ||
-      null;
-
-    if (!groupId) {
-      throw new Error(
-        "Your account is not associated with a group."
-      );
-    }
-
-    ensureNationalIdUI();
-    ensureContributionUI();
-    ensureContributionStatusStyles();
-
-    bindEvents();
+    resetMemberForm();
 
     await loadMonthlyContributionType();
+
     await loadMembers();
-    await loadMemberContributionPositions();
-
-    ensureContributionStatusHeader();
-
-    renderMembers();
-    updateMemberCount();
-
-    showStatus("");
 
   } catch (error) {
-    initialized =
-      false;
-
-    showError(
+    console.error(
+      "Members initialization failed:",
       error
     );
 
-    showStatus("");
-  }
-}
-
-
-/* =========================================================
-   PUBLIC REFRESH
-========================================================= */
-
-async function refreshMembers() {
-  clearError();
-
-  try {
-    await loadMembers();
-    await loadMemberContributionPositions();
-
-    renderMembers();
-    updateMemberCount();
-
-  } catch (error) {
     showError(
-      error
+      error?.message ||
+      "Unable to initialize Members."
     );
   }
-}
-
-
-/* =========================================================
-   AUTO BOOT
-========================================================= */
-
-if (
-  document.readyState ===
-  "loading"
-) {
-  document.addEventListener(
-    "DOMContentLoaded",
-    () => {
-      init();
-    },
-    {
-      once: true
-    }
-  );
-} else {
-  init();
 }
 
 
 /* =========================================================
    EXPORTS
-========================================================= */
+   ========================================================= */
 
 export {
   init,
@@ -4385,3 +3505,39 @@ export {
   openMemberModal,
   closeMemberModal
 };
+
+
+/* =========================================================
+   DIRECT-PAGE COMPATIBILITY / LAYOUT BOOT GUARD
+   =========================================================
+
+   Admin layout is the preferred boot owner.
+
+   When members.js is dynamically loaded by the layout,
+   __CHAMA_LIVE_LAYOUT_LOADING__ prevents this module from
+   independently initializing itself.
+
+   This avoids two initialization paths, duplicate event
+   handlers,
+   duplicate queries, and duplicate rendering.
+   ========================================================= */
+
+if (!window.__CHAMA_LIVE_LAYOUT_LOADING__) {
+  if (document.readyState === "loading") {
+    document.addEventListener(
+      "DOMContentLoaded",
+      () => {
+        init();
+      },
+      { once: true }
+    );
+  } else {
+    init();
+  }
+}
+
+
+
+
+
+      
