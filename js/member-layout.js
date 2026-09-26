@@ -43,9 +43,11 @@ const ADMIN_ROLES = new Set([
 const MEMBER_PAGES = new Set([
   "member-dashboard.html",
   "member-contributions.html",
+  "member-accounting.html",
   "member-activities.html",
   "member-assets.html",
   "member-milestones.html",
+  "member-profile.html",
   "member-getting-started.html"
 ]);
 
@@ -61,6 +63,11 @@ const PAGE_SCRIPTS = {
     initializer: "initMemberContributions"
   },
 
+  "member-accounting.html": {
+    path: "./member-accounting.js",
+    initializer: "initMemberAccounting"
+  },
+
   "member-activities.html": {
     path: "./member-activities.js",
     initializer: "initMemberActivities"
@@ -74,6 +81,11 @@ const PAGE_SCRIPTS = {
   "member-milestones.html": {
     path: "./member-milestones.js",
     initializer: "initMemberMilestones"
+  },
+
+  "member-profile.html": {
+    path: "./member-profile.js",
+    initializer: "initMemberProfile"
   }
 };
 
