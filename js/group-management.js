@@ -27,6 +27,7 @@
    - Group Type maps to groups.category
    - Monthly Closing Day selector remains openable
    - Saving the contribution cycle remains permission-controlled
+   - No module-level auto-boot
    ========================================================= */
 
 import {
@@ -51,6 +52,7 @@ let subscription = null;
 let contributionSettings = null;
 
 let initializationPromise = null;
+let eventsBound = false;
 
 
 /* =========================================================
@@ -1226,6 +1228,10 @@ async function saveContributionSettings() {
             dom.monthlyClosingDay.removeAttribute(
                 "disabled"
             );
+
+            dom.monthlyClosingDay.removeAttribute(
+                "aria-disabled"
+            );
         }
 
 
@@ -1417,6 +1423,17 @@ async function saveGroup() {
 
 function bindEvents() {
 
+    /*
+     * Prevent duplicate event listeners if the initializer
+     * is ever called more than once by the page shell.
+     */
+    if (eventsBound) {
+        return;
+    }
+
+    eventsBound = true;
+
+
     if (dom.groupForm) {
         dom.groupForm.addEventListener(
             "submit",
@@ -1456,6 +1473,17 @@ function bindEvents() {
 
 /* =========================================================
    INITIALIZATION
+   ---------------------------------------------------------
+   BOOT OWNERSHIP
+   ---------------------------------------------------------
+   admin-layout.js is the sole page-shell boot owner.
+
+   This module:
+   - exports initGroupManagement()
+   - does not call itself at module scope
+   - binds events once
+   - protects repeated initialization with
+     initializationPromise
    ========================================================= */
 
 export async function initGroupManagement() {
@@ -1471,6 +1499,12 @@ export async function initGroupManagement() {
 
 
             try {
+
+                /*
+                 * Bind page events exactly once.
+                 */
+                bindEvents();
+
 
                 /*
                  * Load authentication context.
@@ -1554,9 +1588,7 @@ export async function initGroupManagement() {
 
 
 /* =========================================================
-   AUTO INITIALIZATION
+   NO MODULE-LEVEL AUTO-BOOT
+   ---------------------------------------------------------
+   admin-layout.js calls initGroupManagement().
    ========================================================= */
-
-bindEvents();
-
-void initGroupManagement();
