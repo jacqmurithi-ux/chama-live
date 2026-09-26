@@ -221,6 +221,59 @@ function formatMoney(value) {
 
 
 /* =========================================================
+   HISTORICAL PAYMENT METHOD NORMALIZATION
+   ========================================================= */
+
+/*
+ * The deployed canonical RPC accepts only these exact
+ * payment-method values:
+ *
+ *   M-Pesa
+ *   Cash
+ *   Bank transfer
+ *
+ * The UI may return lowercase or differently formatted
+ * values depending on the HTML option values.
+ *
+ * Normalize the UI value before sending it to the RPC.
+ */
+
+function normalizeHistoricalPaymentMethod(value) {
+  const normalized =
+    String(value || "")
+      .trim()
+      .toLowerCase();
+
+  if (
+    normalized === "m-pesa" ||
+    normalized === "mpesa"
+  ) {
+    return "M-Pesa";
+  }
+
+  if (normalized === "cash") {
+    return "Cash";
+  }
+
+  if (
+    normalized === "bank transfer" ||
+    normalized === "bank_transfer" ||
+    normalized === "bank-transfer"
+  ) {
+    return "Bank transfer";
+  }
+
+  /*
+   * Do not invent or silently convert an unknown payment
+   * method. Return it unchanged so the canonical RPC can
+   * reject it explicitly.
+   */
+
+  return String(value || "").trim();
+}
+
+
+/* =========================================================
    LOGIN STATUS
    ========================================================= */
 
@@ -2260,8 +2313,20 @@ async function saveMember(event) {
             paid_through:
               values.historical_paid_through,
 
+            /*
+             * Normalize the frontend value to the exact
+             * payment-method values accepted by the
+             * deployed canonical RPC:
+             *
+             *   M-Pesa
+             *   Cash
+             *   Bank transfer
+             */
+
             payment_method:
-              values.historical_payment_method
+              normalizeHistoricalPaymentMethod(
+                values.historical_payment_method
+              )
           },
 
           p_request_id:
