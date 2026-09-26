@@ -115,8 +115,7 @@ function formatDate(value) {
     return "—";
   }
 
-  const date =
-    new Date(value);
+  const date = new Date(value);
 
   if (
     Number.isNaN(
@@ -353,8 +352,24 @@ function contributionStatusKey(position) {
       position?.credit || 0
     );
 
+  /*
+     Canonical status compatibility.
+
+     get_member_contribution_position()
+     may expose:
+       arrears
+       credit
+       up_to_date
+       paid
+       partial
+       outstanding
+       plan_not_set
+  */
+
   if (
     status === "arrears" ||
+    status === "outstanding" ||
+    status === "partial" ||
     arrears > 0
   ) {
     return "ARREARS";
@@ -368,7 +383,8 @@ function contributionStatusKey(position) {
   }
 
   if (
-    status === "up_to_date"
+    status === "up_to_date" ||
+    status === "paid"
   ) {
     return "UP_TO_DATE";
   }
@@ -399,7 +415,9 @@ function contributionStatusHtml(member) {
         Arrears —
         ${escapeHtml(
           formatMoney(
-            position?.arrears
+            position?.arrears ??
+            position?.outstanding ??
+            0
           )
         )}
       </span>
@@ -1241,7 +1259,10 @@ function updateContributionPreview() {
       "memberContributionPreview"
     );
 
-  const previewText = byId("memberContributionPreviewText");
+  const previewText =
+    byId(
+      "memberContributionPreviewText"
+    );
 
   if (!preview && !previewText) {
     return;
@@ -1252,8 +1273,21 @@ function updateContributionPreview() {
       ? "Set the member's monthly contribution amount."
       : `Monthly contribution: ${formatMoney(amount)}`;
 
-  if (preview) preview.textContent = message;
-  if (previewText) previewText.textContent = message;
+  if (preview) {
+    /*
+      Do not overwrite the complete preview container because
+      it contains the preview label.
+    */
+    if (previewText) {
+      previewText.textContent =
+        message;
+    }
+  }
+
+  if (previewText) {
+    previewText.textContent =
+      message;
+  }
 }
 
 
@@ -1345,10 +1379,20 @@ function updateHistoricalPreview() {
     )?.value ===
     "true";
 
+  const text =
+    byId(
+      "memberHistoricalPreviewText"
+    );
+
   if (!enabled) {
-    preview.hidden = true;
-    const text = byId("memberHistoricalPreviewText");
-    if (text) text.textContent = "Select the member's historical payment period.";
+    preview.hidden =
+      true;
+
+    if (text) {
+      text.textContent =
+        "Select the member's historical payment period.";
+    }
+
     return;
   }
 
@@ -1371,10 +1415,13 @@ function updateHistoricalPreview() {
     preview.hidden =
       false;
 
-    preview.textContent =
+    const message =
       "Select the member's historical payment period.";
-    const text = byId("memberHistoricalPreviewText");
-    if (text) text.textContent = preview.textContent;
+
+    if (text) {
+      text.textContent =
+        message;
+    }
 
     return;
   }
@@ -1401,10 +1448,13 @@ function updateHistoricalPreview() {
     preview.hidden =
       false;
 
-    preview.textContent =
+    const message =
       "Check the historical payment dates.";
-    const text = byId("memberHistoricalPreviewText");
-    if (text) text.textContent = preview.textContent;
+
+    if (text) {
+      text.textContent =
+        message;
+    }
 
     return;
   }
@@ -1444,9 +1494,10 @@ function updateHistoricalPreview() {
       ? `${months} historical month${months === 1 ? "" : "s"} · ${formatMoney(total)}`
       : `${months} historical month${months === 1 ? "" : "s"}`;
 
-  preview.textContent = message;
-  const text = byId("memberHistoricalPreviewText");
-  if (text) text.textContent = message;
+  if (text) {
+    text.textContent =
+      message;
+  }
 }
 
 
@@ -1463,8 +1514,8 @@ function contributionStatusLabel(
     ).toLowerCase();
 
   if (
-    value ===
-    "up_to_date"
+    value === "up_to_date" ||
+    value === "paid"
   ) {
     return "UP TO DATE";
   }
@@ -1476,7 +1527,9 @@ function contributionStatusLabel(
   }
 
   if (
-    value === "arrears"
+    value === "arrears" ||
+    value === "outstanding" ||
+    value === "partial"
   ) {
     return "ARREARS";
   }
@@ -1573,7 +1626,9 @@ function contributionResultMessage(
 
   const arrears =
     formatMoney(
-      result.arrears
+      result.arrears ??
+      result.outstanding ??
+      0
     );
 
   const credit =
@@ -2499,6 +2554,13 @@ function openAddMemberPanel() {
   panel.hidden =
     false;
 
+  panel.removeAttribute(
+    "hidden"
+  );
+
+  panel.style.display =
+    "";
+
   panel.classList.add(
     "is-open"
   );
@@ -2524,6 +2586,14 @@ function closeAddMemberPanel() {
 
   panel.hidden =
     true;
+
+  panel.setAttribute(
+    "hidden",
+    ""
+  );
+
+  panel.style.display =
+    "none";
 
   resetMemberForm();
 }
@@ -2552,6 +2622,9 @@ function openEditMemberPanel(
     );
 
   if (!panel) {
+    showError(
+      "Member edit panel is not available."
+    );
     return;
   }
 
@@ -2579,24 +2652,31 @@ function openEditMemberPanel(
     memberNumber:
       member.member_number ||
       "",
+
     memberNationalId:
       member.national_id ||
       "",
+
     memberName:
       member.name ||
       "",
+
     memberPhone:
       member.phone ||
       "",
+
     memberEmail:
       member.email ||
       "",
+
     memberRole:
       member.role ||
       "member",
+
     memberStatus:
       member.status ||
       "active",
+
     memberJoinDate:
       member.join_date ||
       ""
@@ -2616,8 +2696,26 @@ function openEditMemberPanel(
     }
   );
 
+  /*
+     Critical visibility fix.
+
+     The original implementation only changed
+     the hidden property/class. If the HTML/CSS
+     contains inline display:none, the panel may
+     remain invisible.
+
+     Clear the hidden attribute and inline display
+     state before opening.
+  */
   panel.hidden =
     false;
+
+  panel.removeAttribute(
+    "hidden"
+  );
+
+  panel.style.display =
+    "";
 
   panel.classList.add(
     "is-open"
@@ -2626,6 +2724,11 @@ function openEditMemberPanel(
   clearFormMessage();
 
   updateHistoricalControls();
+
+  panel.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
 }
 
 
@@ -2955,20 +3058,27 @@ async function updateExistingMember(
     .update({
       member_number:
         values.memberNumber,
+
       national_id:
         values.nationalId,
+
       name:
         values.name,
+
       phone:
         values.phone ||
         null,
+
       email:
         values.email ||
         null,
+
       role:
         values.role,
+
       status:
         values.status,
+
       join_date:
         values.joinDate
     })
@@ -3245,6 +3355,7 @@ async function saveMember(
 
       await loadMembers();
       await loadMemberContributionPositions();
+
       renderMembers();
       updateMemberCount();
 
@@ -3290,6 +3401,7 @@ async function saveMember(
 
     await loadMembers();
     await loadMemberContributionPositions();
+
     renderMembers();
     updateMemberCount();
 
@@ -3411,6 +3523,7 @@ async function inviteMember(
     );
 
     await loadMembers();
+
     renderMembers();
     updateMemberCount();
 
@@ -3478,6 +3591,10 @@ function renderMemberContributionPosition(
     panel.hidden =
       false;
 
+    panel.removeAttribute(
+      "hidden"
+    );
+
     setText(
       "viewContributionStatus",
       "Unavailable"
@@ -3519,6 +3636,10 @@ function renderMemberContributionPosition(
   panel.hidden =
     false;
 
+  panel.removeAttribute(
+    "hidden"
+  );
+
   const status =
     contributionStatusLabel(
       position.status
@@ -3536,6 +3657,7 @@ function renderMemberContributionPosition(
 
   const arrears =
     position.arrears ??
+    position.outstanding ??
     0;
 
   const credit =
@@ -3719,8 +3841,28 @@ async function openMemberModal(
     member
   );
 
+  /*
+     Critical modal visibility fix.
+
+     The HTML may contain:
+       hidden
+       style="display:none"
+
+     Setting only modal.hidden=false is not sufficient
+     when inline display:none remains.
+
+     We explicitly clear the hidden state and set the
+     visible display mode.
+  */
   modal.hidden =
     false;
+
+  modal.removeAttribute(
+    "hidden"
+  );
+
+  modal.style.display =
+    "flex";
 
   modal.classList.add(
     "is-open"
@@ -3747,6 +3889,14 @@ function closeMemberModal() {
 
   modal.hidden =
     true;
+
+  modal.setAttribute(
+    "hidden",
+    ""
+  );
+
+  modal.style.display =
+    "none";
 
   document.body.classList.remove(
     "modal-open"
@@ -4124,6 +4274,7 @@ async function init() {
     true;
 
   clearError();
+
   showStatus(
     "Loading members..."
   );
