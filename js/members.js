@@ -224,20 +224,6 @@ function formatMoney(value) {
    HISTORICAL PAYMENT METHOD NORMALIZATION
    ========================================================= */
 
-/*
- * The deployed canonical RPC accepts only these exact
- * payment-method values:
- *
- *   M-Pesa
- *   Cash
- *   Bank transfer
- *
- * The UI may return lowercase or differently formatted
- * values depending on the HTML option values.
- *
- * Normalize the UI value before sending it to the RPC.
- */
-
 function normalizeHistoricalPaymentMethod(value) {
   const normalized =
     String(value || "")
@@ -262,12 +248,6 @@ function normalizeHistoricalPaymentMethod(value) {
   ) {
     return "Bank transfer";
   }
-
-  /*
-   * Do not invent or silently convert an unknown payment
-   * method. Return it unchanged so the canonical RPC can
-   * reject it explicitly.
-   */
 
   return String(value || "").trim();
 }
@@ -466,6 +446,37 @@ function ensureContributionStatusHeader() {
   if (!headerRow) {
     return;
   }
+
+  /*
+   * The current members.html may already contain the
+   * Contribution Status column.
+   *
+   * Do not append another one if the visible header text
+   * already exists.
+   */
+
+  const existingHeaders =
+    Array.from(
+      headerRow.querySelectorAll("th")
+    );
+
+  const hasContributionStatus =
+    existingHeaders.some(
+      th =>
+        String(th.textContent || "")
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, " ") ===
+        "contribution status"
+    );
+
+  if (hasContributionStatus) {
+    return;
+  }
+
+  /*
+   * Compatibility guard for a previously injected header.
+   */
 
   if (
     headerRow.querySelector(
@@ -1112,14 +1123,6 @@ function validateForm(values) {
 
   if (editingMemberId) {
 
-    /*
-     * Do not allow the existing-member edit path to pretend
-     * that historical accounting has been changed.
-     *
-     * create_member_with_historical_contributions() is a
-     * creation RPC and must not be reused here.
-     */
-
     if (
       values.historical_enabled ||
       values.historical_paid_through
@@ -1645,18 +1648,6 @@ function createMemberCard(member) {
 
 function renderMembers() {
 
-  /*
-   * CURRENT members.html CONTRACT
-   *
-   * Desktop:
-   *   #memberRows
-   *
-   * Mobile:
-   *   #memberCards
-   *
-   * Older compatibility IDs are retained.
-   */
-
   const tableBody =
     byId("memberRows") ||
     byId("membersTableBody") ||
@@ -1724,6 +1715,12 @@ function renderMembers() {
     }
   }
 
+  /*
+   * Safe reconciliation with members.html.
+   *
+   * If HTML already owns the Contribution Status header,
+   * this function now leaves it untouched.
+   */
   ensureContributionStatusHeader();
 
 
@@ -2093,14 +2090,6 @@ async function saveMember(event) {
 
     if (editingMemberId) {
 
-      /*
-       * Profile-only update.
-       *
-       * No contribution tables are directly changed.
-       *
-       * No new-member historical RPC is called.
-       */
-
       const {
         error
       } = await supabase
@@ -2181,34 +2170,6 @@ async function saveMember(event) {
       values.historical_enabled
     ) {
 
-      /*
-       * IMPORTANT:
-       *
-       * This RPC creates the NEW MEMBER and its canonical
-       * historical accounting.
-       *
-       * Frontend does not insert:
-       *
-       *   contributions
-       *   contribution_allocations
-       *   contribution_obligations
-       *
-       * The parameter names below MUST match the deployed
-       * canonical RPC contract:
-       *
-       *   p_member
-       *   p_contribution_plan
-       *   p_historical
-       *   p_request_id
-       *
-       * p_contribution_plan MUST be a JSON array.
-       */
-
-
-      /* ---------------------------------------------------
-         BUILD THE HISTORICAL CONTRIBUTION PLAN EXPLICITLY
-         --------------------------------------------------- */
-
       const historicalContributionPlan = [
         {
           contribution_type_id:
@@ -2227,10 +2188,6 @@ async function saveMember(event) {
       ];
 
 
-      /* ---------------------------------------------------
-         CONTRACT GUARD
-         --------------------------------------------------- */
-
       if (
         !Array.isArray(
           historicalContributionPlan
@@ -2241,10 +2198,6 @@ async function saveMember(event) {
         );
       }
 
-
-      /* ---------------------------------------------------
-         CANONICAL HISTORICAL RPC
-         --------------------------------------------------- */
 
       const {
         data,
@@ -2258,15 +2211,6 @@ async function saveMember(event) {
 
             member_number:
               values.member_number,
-
-            /*
-             * The deployed RPC requires both member_number
-             * and membership_number.
-             *
-             * members.html currently exposes one member
-             * number field, so the entered member number is
-             * intentionally mapped to both fields.
-             */
 
             membership_number:
               values.member_number,
@@ -2301,27 +2245,11 @@ async function saveMember(event) {
             enabled:
               true,
 
-            /*
-             * The deployed RPC requires the historical
-             * monthly amount and validates it against the
-             * contribution plan amount.
-             */
-
             monthly_amount:
               values.contribution_amount,
 
             paid_through:
               values.historical_paid_through,
-
-            /*
-             * Normalize the frontend value to the exact
-             * payment-method values accepted by the
-             * deployed canonical RPC:
-             *
-             *   M-Pesa
-             *   Cash
-             *   Bank transfer
-             */
 
             payment_method:
               normalizeHistoricalPaymentMethod(
@@ -3142,21 +3070,43 @@ async function loadMemberContributionPosition(
         ? data[0] || null
         : data || null;
 
-    const totalContributed =
+
+    /* -----------------------------------------------------
+       CANONICAL RPC CONTRACT
+       -----------------------------------------------------
+
+       get_member_contribution_position() returns:
+
+         total_due
+         total_allocated
+         arrears
+         credit
+         status
+
+       It does NOT return:
+
+         allocated
+         total_contributed
+
+       Therefore:
+         allocated = total_allocated
+
+       And for the monthly contribution position:
+         total contributed = allocated + credit
+
+       This is display derivation only. It does not write
+       or alter accounting state.
+       ----------------------------------------------------- */
+
+    const totalAllocated =
       Number(
-        position?.total_contributed ||
+        position?.total_allocated ||
         0
       );
 
     const totalDue =
       Number(
         position?.total_due ||
-        0
-      );
-
-    const allocated =
-      Number(
-        position?.allocated ||
         0
       );
 
@@ -3171,6 +3121,30 @@ async function loadMemberContributionPosition(
         position?.credit ||
         0
       );
+
+    const totalContributed =
+      totalAllocated +
+      credit;
+
+
+    /* -----------------------------------------------------
+       COMPATIBILITY ALIAS
+       -----------------------------------------------------
+
+       Keep a local normalized position object so all
+       existing UI components can use one consistent shape.
+       ----------------------------------------------------- */
+
+    const normalizedPosition = {
+      ...position,
+
+      total_contributed:
+        totalContributed,
+
+      allocated:
+        totalAllocated
+    };
+
 
     const totalElement =
       modal.querySelector(
@@ -3214,7 +3188,7 @@ async function loadMemberContributionPosition(
     if (allocatedElement) {
       allocatedElement.textContent =
         formatMoney(
-          allocated
+          totalAllocated
         );
     }
 
@@ -3240,11 +3214,20 @@ async function loadMemberContributionPosition(
     if (status) {
       status.innerHTML =
         contributionStatusHtml(
-          position
+          normalizedPosition
         );
     }
 
-    return position;
+    /*
+     * Keep the page-level position cache synchronized with
+     * the exact canonical response returned for this member.
+     */
+    contributionPositions.set(
+      memberId,
+      normalizedPosition
+    );
+
+    return normalizedPosition;
 
   } finally {
 
@@ -3507,13 +3490,6 @@ async function openMemberModal(
   }
 
 
-  /*
-   * Always update the member ID.
-   *
-   * This is important because the same modal is reused
-   * for different members.
-   */
-
   reconcileButton.dataset.memberId =
     member.id;
 
@@ -3685,11 +3661,6 @@ async function handleMemberAction(
    ========================================================= */
 
 function bindEvents() {
-
-  /*
-   * Prevent duplicate listeners when the layout calls
-   * the initializer more than once.
-   */
 
   if (eventsBound) {
     return;
@@ -4136,16 +4107,6 @@ async function init() {
 
     /* -----------------------------------------------------
        EVENTS
-       -----------------------------------------------------
-
-       IMPORTANT:
-
-       Bind events immediately after authentication and
-       group resolution.
-
-       This ensures the Add Member button and other page
-       controls remain usable even if contribution metadata
-       or member loading encounters a separate failure.
        ----------------------------------------------------- */
 
     bindEvents();
