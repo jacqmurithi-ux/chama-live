@@ -1,1863 +1,1661 @@
-/* =========================================================
-   CHAMA LIVE — MEMBER ACCOUNTING MVP
-   ---------------------------------------------------------
-   Purpose:
-   - Read-only canonical member accounting UI
-   - Uses get_canonical_member_monthly_status()
-   - Uses get_member_contribution_position() for cumulative
-     member position
-   - No browser-side canonical refresh/rebuild
-   - No direct writes to accounting tables
-   - Preserves filtering, statements, exports and printing
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
 
-   2B APPLICATION CONTRACT:
-   Browser:
-     READ -> get_canonical_member_monthly_status()
-     READ -> get_member_contribution_position()
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
 
-   Server/service-role:
-     REFRESH -> protected canonical accounting refresh path
+  <meta
+    name="description"
+    content="CHAMA LIVE member accounting, monthly outstanding, credit and member statements"
+  >
 
-   IMPORTANT:
-   The browser must NOT call:
-     refresh_canonical_contribution_accounting()
+  <title>Member Accounting | CHAMA LIVE</title>
 
-   MONTHLY STATUS CONTRACT:
-     paid
-     credit
-     partial
-     outstanding
+  <link
+    rel="stylesheet"
+    href="./css/app.css"
+  >
 
-   CUMULATIVE POSITION CONTRACT:
-     ARREARS
-     CREDIT
-     UP_TO_DATE
+  <style>
+    /* =========================================================
+       CHAMA LIVE — MEMBER ACCOUNTING
+       ADDITIVE MVP PAGE
+       ========================================================= */
 
-   IMPORTANT:
-   previous_outstanding is a monthly historical field.
-   It must NOT be relabeled as cumulative ARREARS.
-
-   ========================================================= */
-
-import {
-  supabase
-} from "./supabase.js";
-
-import {
-  requireAuth,
-  getMyMember,
-  getMyGroup
-} from "./auth.js";
-
-
-/* =========================================================
-   STATE
-   ========================================================= */
-
-let groupId = null;
-let currentMember = null;
-let currentGroup = null;
-
-let accountingMonth = "";
-let canonicalRows = [];
-let filteredRows = [];
-
-let selectedMemberId = null;
-
-/*
- * Cumulative positions are loaded separately from the
- * monthly canonical accounting read.
- *
- * Key:
- *   member_id
- *
- * Value:
- *   canonical cumulative contribution position
- */
-const cumulativePositionCache =
-  new Map();
-
-
-/* =========================================================
-   DOM
-   ========================================================= */
-
-const accountingMonthInput =
-  document.getElementById("accountingMonth");
-
-const memberFilter =
-  document.getElementById("memberFilter");
-
-const statusFilter =
-  document.getElementById("statusFilter");
-
-const searchMember =
-  document.getElementById("searchMember");
-
-const refreshButton =
-  document.getElementById("refreshButton");
-
-const resetButton =
-  document.getElementById("resetButton");
-
-const printButton =
-  document.getElementById("printButton");
-
-const csvButton =
-  document.getElementById("csvButton");
-
-const excelButton =
-  document.getElementById("excelButton");
-
-const closeStatementButton =
-  document.getElementById("closeStatementButton");
-
-const groupLabel =
-  document.getElementById("groupLabel");
-
-const statusMessage =
-  document.getElementById("statusMessage");
-
-const memberAccountingBody =
-  document.getElementById("memberAccountingBody");
-
-const tablePeriod =
-  document.getElementById("tablePeriod");
-
-const statementSection =
-  document.getElementById("statementSection");
-
-const cumulativePositionSection =
-  document.getElementById(
-    "memberCumulativePosition"
-  );
-
-const cumulativePositionContent =
-  document.getElementById(
-    "memberCumulativePositionContent"
-  );
-
-const statementTitle =
-  document.getElementById("statementTitle");
-
-const statementMeta =
-  document.getElementById("statementMeta");
-
-const statementDue =
-  document.getElementById("statementDue");
-
-const statementPaid =
-  document.getElementById("statementPaid");
-
-const statementOutstanding =
-  document.getElementById("statementOutstanding");
-
-const statementCredit =
-  document.getElementById("statementCredit");
-
-const statementBody =
-  document.getElementById("statementBody");
-
-const statMembers =
-  document.getElementById("statMembers");
-
-const statDue =
-  document.getElementById("statDue");
-
-const statApplied =
-  document.getElementById("statApplied");
-
-const statOutstanding =
-  document.getElementById("statOutstanding");
-
-const statCredit =
-  document.getElementById("statCredit");
-
-const statAttention =
-  document.getElementById("statAttention");
-
-const quickFilters =
-  document.querySelectorAll("[data-quick]");
-
-
-/* =========================================================
-   HELPERS
-   ========================================================= */
-
-function number(value) {
-  const parsed = Number(value);
-
-  return Number.isFinite(parsed)
-    ? parsed
-    : 0;
-}
-
-
-function formatCurrency(value) {
-  return `KSh ${number(value).toLocaleString("en-KE", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })}`;
-}
-
-
-function formatMonth(month) {
-  if (!month) {
-    return "";
-  }
-
-  const [year, monthNumber] =
-    month.split("-");
-
-  const date =
-    new Date(
-      Number(year),
-      Number(monthNumber) - 1,
-      1
-    );
-
-  return date.toLocaleDateString(
-    "en-KE",
-    {
-      month: "long",
-      year: "numeric"
+    :root {
+      --ma-bg: #f5f7fb;
+      --ma-card: #ffffff;
+      --ma-border: #e4e7ec;
+      --ma-text: #172033;
+      --ma-muted: #667085;
+      --ma-primary: #2563eb;
+      --ma-primary-dark: #1d4ed8;
+      --ma-success: #15803d;
+      --ma-warning: #b45309;
+      --ma-danger: #b91c1c;
+      --ma-purple: #7c3aed;
+      --ma-shadow: 0 10px 28px rgba(15, 23, 42, .07);
+      --ma-radius: 18px;
     }
-  );
-}
 
-
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-
-function normalizeStatus(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase();
-}
-
-
-function getMemberId(row) {
-  return row.member_id ?? "";
-}
-
-
-function getMemberNumber(row) {
-  return row.member_number ?? "";
-}
-
-
-function getMemberName(row) {
-  return row.member_name ??
-    "Unnamed member";
-}
-
-
-function getMonthlyDue(row) {
-  return number(row.monthly_due);
-}
-
-
-function getPreviousOutstanding(row) {
-  return number(
-    row.previous_outstanding
-  );
-}
-
-
-function getPreviousCredit(row) {
-  return number(
-    row.previous_credit
-  );
-}
-
-
-function getCurrentMonthPayment(row) {
-  return number(
-    row.current_month_payment
-  );
-}
-
-
-function getApplied(row) {
-  return number(
-    row.applied_this_month
-  );
-}
-
-
-function getCarryForward(row) {
-  return number(
-    row.carry_forward
-  );
-}
-
-
-function getCurrentOutstanding(row) {
-  return number(
-    row.current_outstanding
-  );
-}
-
-
-function getTotalPaid(row) {
-  return number(
-    row.total_paid_to_date
-  );
-}
-
-
-function getTotalDue(row) {
-  return number(
-    row.total_due_to_date
-  );
-}
-
-
-function getStatus(row) {
-  return row.status ?? "";
-}
-
-
-/* =========================================================
-   CUMULATIVE POSITION HELPERS
-   ========================================================= */
-
-function getCumulativeTotalDue(position) {
-  return number(
-    position?.total_due
-  );
-}
-
-
-function getCumulativeTotalAllocated(
-  position
-) {
-  return number(
-    position?.total_allocated
-  );
-}
-
-
-function getCumulativeArrears(position) {
-  return number(
-    position?.arrears
-  );
-}
-
-
-function getCumulativeCredit(position) {
-  return number(
-    position?.credit
-  );
-}
-
-
-function getCumulativeStatus(position) {
-  return String(
-    position?.status || ""
-  )
-    .trim()
-    .toUpperCase();
-}
-
-
-function getCumulativeStatusLabel(
-  status
-) {
-  switch (
-    getCumulativeStatus({
-      status
-    })
-  ) {
-    case "ARREARS":
-      return "Arrears";
-
-    case "CREDIT":
-      return "Credit";
-
-    case "UP_TO_DATE":
-      return "Up to date";
-
-    default:
-      return status || "—";
-  }
-}
-
-
-function getCumulativeStatusClass(
-  status
-) {
-  switch (
-    getCumulativeStatus({
-      status
-    })
-  ) {
-    case "ARREARS":
-      return "ma-badge-arrears";
-
-    case "CREDIT":
-      return "ma-badge-credit";
-
-    case "UP_TO_DATE":
-      return "ma-badge-paid";
-
-    default:
-      return "ma-badge-neutral";
-  }
-}
-
-
-/* =========================================================
-   STATUS
-   ========================================================= */
-
-function setStatus(
-  message,
-  type = "info"
-) {
-  if (!statusMessage) {
-    return;
-  }
-
-  statusMessage.textContent =
-    message;
-
-  statusMessage.dataset.status =
-    type;
-}
-
-
-function showError(error) {
-  console.error(
-    "Member accounting error:",
-    error
-  );
-
-  setStatus(
-    error?.message ||
-      "Unable to load member accounting.",
-    "error"
-  );
-}
-
-
-/* =========================================================
-   ACCOUNTING PERIOD
-   ========================================================= */
-
-function setAccountingMonth(month) {
-  if (!month) {
-    const now = new Date();
-
-    month =
-      `${now.getFullYear()}-${String(
-        now.getMonth() + 1
-      ).padStart(2, "0")}`;
-  }
-
-  accountingMonth =
-    month;
-
-  if (accountingMonthInput) {
-    accountingMonthInput.value =
-      accountingMonth;
-  }
-
-  renderPeriod();
-}
-
-
-function renderPeriod() {
-  const period =
-    formatMonth(accountingMonth);
-
-  if (tablePeriod) {
-    tablePeriod.textContent =
-      period;
-  }
-
-  if (statementMeta) {
-    statementMeta.textContent =
-      `${period} • Canonical member accounting`;
-  }
-}
-
-
-/* =========================================================
-   CONTEXT
-   ========================================================= */
-
-async function loadContext() {
-  currentMember =
-    await getMyMember();
-
-  currentGroup =
-    await getMyGroup();
-
-  if (!currentMember) {
-    throw new Error(
-      "Your member account could not be loaded."
-    );
-  }
-
-  if (!currentGroup) {
-    throw new Error(
-      "Your group could not be loaded."
-    );
-  }
-
-  groupId =
-    currentGroup.id ??
-    currentGroup.group_id;
-
-  if (!groupId) {
-    throw new Error(
-      "Group ID is missing."
-    );
-  }
-
-  if (groupLabel) {
-    groupLabel.textContent =
-      currentGroup.name ??
-      currentGroup.group_name ??
-      "My Group";
-  }
-}
-
-
-/* =========================================================
-   CANONICAL ACCOUNTING READ
-   =========================================================
-   Browser-side accounting is intentionally read-only.
-
-   IMPORTANT:
-   This function performs ONLY the monthly canonical read.
-
-   It does NOT call:
-     refresh_canonical_contribution_accounting()
-
-   ========================================================= */
-
-async function loadCanonicalRows() {
-  const {
-    data,
-    error
-  } = await supabase.rpc(
-    "get_canonical_member_monthly_status",
-    {
-      p_group_id: groupId,
-      p_month: accountingMonth
+    * {
+      box-sizing: border-box;
     }
-  );
 
-  if (error) {
-    throw error;
-  }
-
-  canonicalRows =
-    Array.isArray(data)
-      ? data
-      : [];
-}
-
-
-/* =========================================================
-   CUMULATIVE POSITION READ
-   =========================================================
-   Canonical cumulative position:
-     get_member_contribution_position(uuid)
-
-   Contract:
-     total_due
-     total_allocated
-     arrears
-     credit
-     status
-
-   This is a read-only RPC.
-   No browser-side accounting mutation occurs here.
-   ========================================================= */
-
-async function loadMemberContributionPosition(
-  memberId
-) {
-  if (!memberId) {
-    return null;
-  }
-
-  const cacheKey =
-    String(memberId);
-
-  if (
-    cumulativePositionCache.has(
-      cacheKey
-    )
-  ) {
-    return cumulativePositionCache.get(
-      cacheKey
-    );
-  }
-
-  const {
-    data,
-    error
-  } = await supabase.rpc(
-    "get_member_contribution_position",
-    {
-      p_member_id: memberId
+    body {
+      margin: 0;
+      background: var(--ma-bg);
+      color: var(--ma-text);
+      font-family:
+        Inter,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
     }
-  );
 
-  if (error) {
-    throw error;
-  }
+    button,
+    input,
+    select {
+      font: inherit;
+    }
 
-  const position =
-    Array.isArray(data)
-      ? data[0] || null
-      : data || null;
+    .member-accounting-page {
+      width: min(1500px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 24px 0 55px;
+    }
 
-  if (!position) {
-    throw new Error(
-      "Cumulative member contribution position returned no result."
-    );
-  }
+    /* =========================================================
+       HERO
+       ========================================================= */
 
-  cumulativePositionCache.set(
-    cacheKey,
-    position
-  );
+    .ma-hero {
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 20px;
+      padding: 30px;
+      border-radius: 24px;
+      color: #fff;
+      background:
+        linear-gradient(
+          135deg,
+          #0f172a 0%,
+          #1e3a8a 52%,
+          #2563eb 100%
+        );
+      box-shadow:
+        0 18px 45px rgba(15, 23, 42, .17);
+    }
 
-  return position;
-}
+    .ma-hero::after {
+      content: "";
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      right: -120px;
+      top: -150px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.08);
+    }
 
+    .ma-hero-content {
+      position: relative;
+      z-index: 1;
+    }
 
-function clearCumulativePositionCache() {
-  cumulativePositionCache.clear();
-}
+    .ma-eyebrow {
+      margin: 0 0 8px;
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      opacity: .82;
+    }
 
+    .ma-title {
+      margin: 0;
+      font-size: clamp(26px, 4vw, 40px);
+      line-height: 1.08;
+      font-weight: 900;
+    }
 
-/* =========================================================
-   CUMULATIVE POSITION RENDER
-   ========================================================= */
+    .ma-subtitle {
+      max-width: 850px;
+      margin: 11px 0 0;
+      color: rgba(255,255,255,.82);
+      font-size: 14px;
+      line-height: 1.65;
+    }
 
-function renderCumulativePosition(
-  position
-) {
-  if (!cumulativePositionContent) {
-    return;
-  }
+    .ma-group-label {
+      display: inline-flex;
+      margin-top: 17px;
+      padding: 8px 13px;
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 999px;
+      background: rgba(255,255,255,.1);
+      font-size: 12px;
+      font-weight: 800;
+    }
 
-  if (!position) {
-    cumulativePositionContent.innerHTML = `
-      <div class="ma-empty">
-        No cumulative contribution position
-        is available for this member.
+    /* =========================================================
+       STATUS
+       ========================================================= */
+
+    .ma-status {
+      min-height: 0;
+      margin: 0 0 14px;
+      color: var(--ma-muted);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .ma-status:empty {
+      display: none;
+    }
+
+    .ma-status.success {
+      padding: 10px 13px;
+      border: 1px solid #bbf7d0;
+      border-radius: 11px;
+      background: #f0fdf4;
+      color: var(--ma-success);
+    }
+
+    .ma-status.error {
+      padding: 11px 13px;
+      border: 1px solid #fecaca;
+      border-radius: 11px;
+      background: #fef2f2;
+      color: var(--ma-danger);
+    }
+
+    /* =========================================================
+       COMMON CARD
+       ========================================================= */
+
+    .ma-card {
+      border: 1px solid var(--ma-border);
+      border-radius: var(--ma-radius);
+      background: var(--ma-card);
+      box-shadow: var(--ma-shadow);
+    }
+
+    /* =========================================================
+       FILTERS
+       ========================================================= */
+
+    .ma-filter-card {
+      margin-bottom: 18px;
+      padding: 20px;
+    }
+
+    .ma-heading {
+      margin-bottom: 16px;
+    }
+
+    .ma-heading h2 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 850;
+    }
+
+    .ma-heading p {
+      margin: 5px 0 0;
+      color: var(--ma-muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .ma-filter-grid {
+      display: grid;
+      grid-template-columns:
+        minmax(170px, 1fr)
+        minmax(190px, 1fr)
+        minmax(190px, 1fr)
+        minmax(230px, 1.4fr);
+      gap: 13px;
+    }
+
+    .ma-field label {
+      display: block;
+      margin-bottom: 7px;
+      color: #344054;
+      font-size: 11px;
+      font-weight: 850;
+    }
+
+    .ma-field input,
+    .ma-field select {
+      width: 100%;
+      min-height: 43px;
+      padding: 9px 12px;
+      border: 1px solid #d0d5dd;
+      border-radius: 11px;
+      outline: none;
+      background: #fff;
+      color: var(--ma-text);
+    }
+
+    .ma-field input:focus,
+    .ma-field select:focus {
+      border-color: var(--ma-primary);
+      box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+    }
+
+    .ma-quick-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #eef0f3;
+    }
+
+    .ma-quick {
+      min-height: 36px;
+      padding: 7px 13px;
+      border: 1px solid #d0d5dd;
+      border-radius: 999px;
+      background: #fff;
+      color: #344054;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 850;
+    }
+
+    .ma-quick:hover,
+    .ma-quick.active {
+      border-color: var(--ma-primary);
+      background: #eff6ff;
+      color: var(--ma-primary-dark);
+    }
+
+    .ma-filter-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 15px;
+    }
+
+    /* =========================================================
+       BUTTONS
+       ========================================================= */
+
+    .ma-button {
+      min-height: 39px;
+      padding: 8px 14px;
+      border: 1px solid #d0d5dd;
+      border-radius: 10px;
+      background: #fff;
+      color: #344054;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 850;
+    }
+
+    .ma-button:hover {
+      box-shadow: 0 4px 12px rgba(15,23,42,.08);
+      transform: translateY(-1px);
+    }
+
+    .ma-button.primary {
+      border-color: var(--ma-primary);
+      background: var(--ma-primary);
+      color: #fff;
+    }
+
+    .ma-button.primary:hover {
+      background: var(--ma-primary-dark);
+    }
+
+    /* =========================================================
+       SUMMARY
+       ========================================================= */
+
+    .ma-summary {
+      display: grid;
+      grid-template-columns:
+        repeat(6, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .ma-stat {
+      padding: 15px;
+      border: 1px solid var(--ma-border);
+      border-radius: 15px;
+      background: #fff;
+      box-shadow: 0 7px 20px rgba(15,23,42,.045);
+    }
+
+    .ma-stat-label {
+      color: var(--ma-muted);
+      font-size: 9px;
+      font-weight: 850;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .ma-stat-value {
+      margin-top: 6px;
+      font-size: 19px;
+      font-weight: 900;
+      line-height: 1.15;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .ma-stat-note {
+      margin-top: 4px;
+      color: var(--ma-muted);
+      font-size: 9px;
+    }
+
+    /* =========================================================
+       TABLE HEADER
+       ========================================================= */
+
+    .ma-table-card {
+      overflow: hidden;
+    }
+
+    .ma-table-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--ma-border);
+    }
+
+    .ma-table-title {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 850;
+    }
+
+    .ma-table-period {
+      margin-top: 4px;
+      color: var(--ma-muted);
+      font-size: 11px;
+    }
+
+    .ma-table-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    /* =========================================================
+       MAIN TABLE
+       ========================================================= */
+
+    .ma-table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .ma-table {
+      width: 100%;
+      min-width: 1100px;
+      border-collapse: collapse;
+    }
+
+    .ma-table th {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--ma-border);
+      background: #f8fafc;
+      color: #475467;
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: .04em;
+      text-align: left;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .ma-table td {
+      padding: 12px;
+      border-bottom: 1px solid #eef0f3;
+      color: #344054;
+      font-size: 11px;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    .ma-table tbody tr {
+      cursor: pointer;
+    }
+
+    .ma-table tbody tr:hover {
+      background: #f8fbff;
+    }
+
+    .ma-number {
+      font-variant-numeric: tabular-nums;
+      font-weight: 750;
+    }
+
+    .ma-member-name {
+      color: var(--ma-text);
+      font-weight: 850;
+    }
+
+    .ma-member-number {
+      margin-top: 3px;
+      color: var(--ma-muted);
+      font-size: 9px;
+    }
+
+    .member-statement-link {
+      display: block;
+      width: 100%;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .member-statement-link:focus-visible {
+      outline: 2px solid var(--ma-primary);
+      outline-offset: 3px;
+      border-radius: 5px;
+    }
+
+    /* =========================================================
+       BADGES
+       ========================================================= */
+
+    .ma-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 24px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 9px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .ma-badge-paid {
+      background: #ecfdf3;
+      color: var(--ma-success);
+    }
+
+    .ma-badge-partial {
+      background: #fff7ed;
+      color: var(--ma-warning);
+    }
+
+    .ma-badge-outstanding {
+      background: #fef2f2;
+      color: var(--ma-danger);
+    }
+
+    .ma-badge-arrears {
+      background: #fef2f2;
+      color: var(--ma-danger);
+    }
+
+    .ma-badge-credit {
+      background: #f5f3ff;
+      color: var(--ma-purple);
+    }
+
+    .ma-badge-neutral {
+      background: #f2f4f7;
+      color: #475467;
+    }
+
+    .ma-empty {
+      padding: 45px 20px !important;
+      text-align: center;
+      color: var(--ma-muted);
+      font-size: 13px !important;
+      cursor: default !important;
+    }
+
+    /* =========================================================
+       MEMBER STATEMENT
+       ========================================================= */
+
+    .ma-statement {
+      display: none;
+      margin-top: 20px;
+      padding: 20px;
+    }
+
+    .ma-statement.visible {
+      display: block;
+    }
+
+    .ma-statement-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 15px;
+      margin-bottom: 17px;
+    }
+
+    .ma-statement-title {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .ma-statement-meta {
+      margin-top: 5px;
+      color: var(--ma-muted);
+      font-size: 11px;
+    }
+
+    .ma-statement-summary {
+      display: grid;
+      grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 17px;
+    }
+
+    .ma-statement-stat {
+      padding: 13px;
+      border: 1px solid #eef0f3;
+      border-radius: 12px;
+      background: #f8fafc;
+    }
+
+    .ma-statement-stat span {
+      display: block;
+      color: var(--ma-muted);
+      font-size: 9px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .ma-statement-stat strong {
+      display: block;
+      margin-top: 5px;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .ma-statement-table {
+      width: 100%;
+      min-width: 500px;
+      border-collapse: collapse;
+    }
+
+    .ma-statement-table th,
+    .ma-statement-table td {
+      padding: 10px 11px;
+      border-bottom: 1px solid #eef0f3;
+      text-align: left;
+      font-size: 11px;
+    }
+
+    .ma-statement-table th {
+      background: #f8fafc;
+      color: #475467;
+      font-size: 9px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    /* =========================================================
+       CUMULATIVE MEMBER POSITION
+       ---------------------------------------------------------
+       IMPORTANT:
+       This deliberately does NOT use .ma-statement.
+       The statement and cumulative position have separate
+       visibility lifecycles in member-accounting.js.
+       ========================================================= */
+
+    .ma-cumulative-position {
+      display: none;
+      margin-top: 20px;
+      padding: 20px;
+    }
+
+    .ma-cumulative-position.visible {
+      display: block;
+    }
+
+    .ma-cumulative-heading {
+      margin-bottom: 15px;
+    }
+
+    .ma-cumulative-heading h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 850;
+    }
+
+    .ma-cumulative-heading p {
+      margin: 5px 0 0;
+      color: var(--ma-muted);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .ma-summary-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .ma-summary-card {
+      padding: 13px;
+      border: 1px solid #eef0f3;
+      border-radius: 12px;
+      background: #f8fafc;
+    }
+
+    .ma-summary-label {
+      display: block;
+      color: var(--ma-muted);
+      font-size: 9px;
+      font-weight: 850;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+    }
+
+    .ma-summary-value {
+      display: block;
+      margin-top: 5px;
+      font-size: 16px;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .ma-cumulative-status {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 12px;
+      padding: 12px 13px;
+      border: 1px solid #eef0f3;
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    /* =========================================================
+       LOADING
+       ========================================================= */
+
+    .ma-loading {
+      padding: 40px !important;
+      text-align: center;
+      color: var(--ma-muted);
+      cursor: default !important;
+    }
+
+    .ma-spinner {
+      width: 25px;
+      height: 25px;
+      margin: 0 auto 10px;
+      border: 3px solid #dbeafe;
+      border-top-color: var(--ma-primary);
+      border-radius: 50%;
+      animation: ma-spin .8s linear infinite;
+    }
+
+    @keyframes ma-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* =========================================================
+       PRINT
+       ========================================================= */
+
+    .ma-print-header {
+      display: none;
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .ma-no-print,
+      .ma-hero,
+      .ma-filter-card,
+      .ma-table-actions,
+      .ma-status,
+      .ma-statement,
+      .ma-cumulative-position {
+        display: none !important;
+      }
+
+      .member-accounting-page {
+        width: 100%;
+        padding: 0;
+        margin: 0;
+      }
+
+      .ma-print-header {
+        display: block;
+        padding-bottom: 12px;
+        margin-bottom: 15px;
+        border-bottom: 2px solid #111827;
+      }
+
+      .ma-print-brand {
+        font-size: 22px;
+        font-weight: 900;
+      }
+
+      .ma-print-title {
+        margin-top: 3px;
+        font-size: 16px;
+        font-weight: 850;
+      }
+
+      .ma-print-meta {
+        margin-top: 6px;
+        color: #475467;
+        font-size: 10px;
+      }
+
+      .ma-summary {
+        grid-template-columns: repeat(6, 1fr);
+        gap: 6px;
+      }
+
+      .ma-stat {
+        padding: 8px;
+        box-shadow: none;
+      }
+
+      .ma-stat-value {
+        font-size: 13px;
+      }
+
+      .ma-table-card {
+        border: 0;
+        box-shadow: none;
+      }
+
+      .ma-table-header {
+        padding: 0 0 8px;
+        border: 0;
+      }
+
+      .ma-table {
+        min-width: 0;
+      }
+
+      .ma-table th,
+      .ma-table td {
+        padding: 6px;
+        font-size: 8px;
+      }
+
+      @page {
+        size: landscape;
+        margin: 10mm;
+      }
+    }
+
+    /* =========================================================
+       RESPONSIVE
+       ========================================================= */
+
+    @media (max-width: 1150px) {
+      .ma-summary {
+        grid-template-columns:
+          repeat(3, minmax(0, 1fr));
+      }
+
+      .ma-filter-grid {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+
+      .ma-summary-grid {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 700px) {
+      .member-accounting-page {
+        width: calc(100% - 18px);
+        padding-top: 10px;
+      }
+
+      .ma-hero {
+        padding: 22px 18px;
+        border-radius: 19px;
+      }
+
+      .ma-title {
+        font-size: 27px;
+      }
+
+      .ma-subtitle {
+        font-size: 13px;
+      }
+
+      .ma-filter-card {
+        padding: 15px;
+      }
+
+      .ma-filter-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .ma-summary {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+        gap: 9px;
+      }
+
+      .ma-table-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .ma-table-actions {
+        width: 100%;
+      }
+
+      .ma-table-actions .ma-button {
+        flex: 1;
+      }
+
+      .ma-statement-header {
+        flex-direction: column;
+      }
+
+      .ma-statement-summary {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+
+      .ma-summary-grid {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+
+      .ma-cumulative-status {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+
+    @media (max-width: 430px) {
+      .ma-summary {
+        grid-template-columns: 1fr;
+      }
+
+      .ma-statement-summary {
+        grid-template-columns: 1fr;
+      }
+
+      .ma-summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .ma-filter-actions,
+      .ma-table-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        width: 100%;
+      }
+
+      .ma-button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="member-accounting-page">
+
+    <!-- =======================================================
+         PRINT HEADER
+         ======================================================= -->
+
+    <header class="ma-print-header">
+
+      <div class="ma-print-brand">
+        CHAMA LIVE
       </div>
-    `;
 
-    return;
-  }
-
-  const totalDue =
-    getCumulativeTotalDue(
-      position
-    );
-
-  const totalAllocated =
-    getCumulativeTotalAllocated(
-      position
-    );
-
-  const arrears =
-    getCumulativeArrears(
-      position
-    );
-
-  const credit =
-    getCumulativeCredit(
-      position
-    );
-
-  const status =
-    getCumulativeStatus(
-      position
-    );
-
-  const statusLabel =
-    getCumulativeStatusLabel(
-      status
-    );
-
-  const statusClass =
-    getCumulativeStatusClass(
-      status
-    );
-
-  cumulativePositionContent.innerHTML = `
-    <div class="ma-summary-grid">
-
-      <div class="ma-summary-card">
-        <span class="ma-summary-label">
-          Total due to date
-        </span>
-
-        <strong class="ma-summary-value">
-          ${formatCurrency(totalDue)}
-        </strong>
+      <div class="ma-print-title">
+        Member Contribution Accounting
       </div>
 
-      <div class="ma-summary-card">
-        <span class="ma-summary-label">
-          Total allocated
-        </span>
-
-        <strong class="ma-summary-value">
-          ${formatCurrency(totalAllocated)}
-        </strong>
-      </div>
-
-      <div class="ma-summary-card">
-        <span class="ma-summary-label">
-          Cumulative arrears
-        </span>
-
-        <strong class="ma-summary-value">
-          ${formatCurrency(arrears)}
-        </strong>
-      </div>
-
-      <div class="ma-summary-card">
-        <span class="ma-summary-label">
-          Cumulative credit
-        </span>
-
-        <strong class="ma-summary-value">
-          ${formatCurrency(credit)}
-        </strong>
-      </div>
-
-    </div>
-
-    <div class="ma-cumulative-status">
-      <span class="ma-summary-label">
-        Cumulative position
-      </span>
-
-      <span
-        class="ma-badge ${statusClass}"
+      <div
+        id="printMeta"
+        class="ma-print-meta"
       >
-        ${escapeHtml(
-          statusLabel
-        )}
-      </span>
-    </div>
-  `;
-}
+        Member accounting report
+      </div>
 
+    </header>
 
-/* =========================================================
-   MEMBER FILTER
-   ========================================================= */
+    <!-- =======================================================
+         HERO
+         ======================================================= -->
 
-function populateMemberFilter() {
-  if (!memberFilter) {
-    return;
-  }
+    <section class="ma-hero">
 
-  const previousValue =
-    memberFilter.value;
+      <div class="ma-hero-content">
 
-  const members =
-    [...canonicalRows].sort(
-      (a, b) =>
-        getMemberName(a).localeCompare(
-          getMemberName(b)
-        )
-    );
+        <p class="ma-eyebrow">
+          CHAMA LIVE • Financial Management
+        </p>
 
-  memberFilter.innerHTML = `
-    <option value="">All members</option>
-    ${members.map(row => `
-      <option value="${escapeHtml(
-        getMemberId(row)
-      )}">
-        ${escapeHtml(
-          getMemberName(row)
-        )}
-      </option>
-    `).join("")}
-  `;
+        <h1 class="ma-title">
+          Member Accounting
+        </h1>
 
-  if (
-    previousValue &&
-    members.some(
-      row =>
-        String(getMemberId(row)) ===
-        String(previousValue)
-    )
-  ) {
-    memberFilter.value =
-      previousValue;
-  }
-}
+        <p class="ma-subtitle">
+          View each active member's monthly obligation,
+          payment, application, previous outstanding,
+          current outstanding and carry-forward position
+          from the canonical chama accounting system.
+        </p>
 
-
-/* =========================================================
-   FILTERING
-   ========================================================= */
-
-function matchesQuickFilter(
-  row,
-  filter
-) {
-  const status =
-    normalizeStatus(
-      getStatus(row)
-    );
-
-  switch (filter) {
-    case "all":
-      return true;
-
-    case "attention":
-      return (
-        getCurrentOutstanding(row) > 0 ||
-        getPreviousOutstanding(row) > 0
-      );
-
-    /*
-     * This quick filter is intentionally based on
-     * previous monthly outstanding.
-     *
-     * It is NOT the cumulative ARREARS position.
-     */
-    case "arrears":
-      return (
-        getPreviousOutstanding(row) > 0
-      );
-
-    case "credit":
-      return (
-        getPreviousCredit(row) > 0 ||
-        getCarryForward(row) > 0
-      );
-
-    default:
-      return status ===
-        normalizeStatus(filter);
-  }
-}
-
-
-function applyFilters() {
-  const selectedMember =
-    memberFilter?.value || "";
-
-  const selectedStatus =
-    statusFilter?.value || "";
-
-  const search =
-    searchMember?.value
-      ?.trim()
-      .toLowerCase() || "";
-
-  filteredRows =
-    canonicalRows.filter(row => {
-      const memberId =
-        String(getMemberId(row));
-
-      const name =
-        String(getMemberName(row))
-          .toLowerCase();
-
-      const memberNumber =
-        String(getMemberNumber(row))
-          .toLowerCase();
-
-      const status =
-        normalizeStatus(
-          getStatus(row)
-        );
-
-      if (
-        selectedMember &&
-        memberId !==
-          String(selectedMember)
-      ) {
-        return false;
-      }
-
-      if (
-        selectedStatus &&
-        status !==
-          normalizeStatus(
-            selectedStatus
-          )
-      ) {
-        return false;
-      }
-
-      if (
-        search &&
-        !name.includes(search) &&
-        !memberNumber.includes(search)
-      ) {
-        return false;
-      }
-
-      return true;
-    });
-
-  renderTable();
-  renderSummary();
-}
-
-
-/* =========================================================
-   TABLE
-   ========================================================= */
-
-function renderTable() {
-  if (!memberAccountingBody) {
-    return;
-  }
-
-  if (!filteredRows.length) {
-    memberAccountingBody.innerHTML = `
-      <tr>
-        <td
-          colspan="11"
-          class="ma-empty"
+        <div
+          id="groupLabel"
+          class="ma-group-label"
         >
-          No member accounting records
-          found for ${escapeHtml(
-            formatMonth(accountingMonth)
-          )}.
-        </td>
-      </tr>
-    `;
+          Loading group…
+        </div>
 
-    return;
-  }
+      </div>
 
-  memberAccountingBody.innerHTML =
-    filteredRows.map(row => {
-      const memberId =
-        getMemberId(row);
+    </section>
 
-      const status =
-        getStatus(row);
+    <!-- =======================================================
+         STATUS MESSAGE
+         ======================================================= -->
 
-      const statusClass =
-        normalizeStatus(status)
-          .replace(/\s+/g, "-");
+    <div
+      id="statusMessage"
+      class="ma-status"
+      aria-live="polite"
+    ></div>
 
-      return `
-        <tr
-          data-member-id="${escapeHtml(
-            memberId
-          )}"
+    <!-- =======================================================
+         FILTER CARD
+         ======================================================= -->
+
+    <section class="ma-card ma-filter-card">
+
+      <div class="ma-heading">
+
+        <h2>
+          Accounting Filters
+        </h2>
+
+        <p>
+          Select a month, member or status. Search by member
+          name or member number, or use a quick filter.
+        </p>
+
+      </div>
+
+      <div class="ma-filter-grid">
+
+        <div class="ma-field">
+
+          <label for="accountingMonth">
+            Accounting Month
+          </label>
+
+          <input
+            id="accountingMonth"
+            type="month"
+          >
+
+        </div>
+
+        <div class="ma-field">
+
+          <label for="memberFilter">
+            Member
+          </label>
+
+          <select id="memberFilter">
+
+            <option value="">
+              All Members
+            </option>
+
+          </select>
+
+        </div>
+
+        <div class="ma-field">
+
+          <label for="statusFilter">
+            Status
+          </label>
+
+          <select id="statusFilter">
+
+            <option value="">
+              All Statuses
+            </option>
+
+            <option value="paid">
+              Paid
+            </option>
+
+            <option value="partial">
+              Partial
+            </option>
+
+            <option value="outstanding">
+              Outstanding
+            </option>
+
+            <option value="credit">
+              Credit / Carry-forward
+            </option>
+
+          </select>
+
+        </div>
+
+        <div class="ma-field">
+
+          <label for="searchMember">
+            Search Member
+          </label>
+
+          <input
+            id="searchMember"
+            type="search"
+            placeholder="Name or member number…"
+            autocomplete="off"
+          >
+
+        </div>
+
+      </div>
+
+      <div
+        class="ma-quick-filters"
+        aria-label="Quick filters"
+      >
+
+        <button
+          type="button"
+          class="ma-quick active"
+          data-quick="all"
         >
-          <td>
-            <button
-              type="button"
-              class="member-statement-link"
-              data-member-id="${escapeHtml(
-                memberId
-              )}"
-            >
-              <span class="ma-member-name">
-                ${escapeHtml(
-                  getMemberName(row)
-                )}
-              </span>
+          All Members
+        </button>
 
-              <span class="ma-member-number">
-                ${escapeHtml(
-                  getMemberNumber(row)
-                )}
-              </span>
-            </button>
-          </td>
+        <button
+          type="button"
+          class="ma-quick"
+          data-quick="attention"
+        >
+          Needs Attention
+        </button>
 
-          <td>
-            ${formatCurrency(
-              getMonthlyDue(row)
-            )}
-          </td>
+        <button
+          type="button"
+          class="ma-quick"
+          data-quick="arrears"
+        >
+          Has Previous Outstanding
+        </button>
 
-          <td>
-            ${formatCurrency(
-              getPreviousOutstanding(row)
-            )}
-          </td>
+        <button
+          type="button"
+          class="ma-quick"
+          data-quick="credit"
+        >
+          Has Credit
+        </button>
 
-          <td>
-            ${formatCurrency(
-              getPreviousCredit(row)
-            )}
-          </td>
+      </div>
 
-          <td>
-            ${formatCurrency(
-              getCurrentMonthPayment(row)
-            )}
-          </td>
+      <div class="ma-filter-actions">
 
-          <td>
-            ${formatCurrency(
-              getApplied(row)
-            )}
-          </td>
+        <button
+          id="refreshButton"
+          type="button"
+          class="ma-button primary"
+        >
+          Refresh Accounting
+        </button>
 
-          <td>
-            ${formatCurrency(
-              getCarryForward(row)
-            )}
-          </td>
+        <button
+          id="resetButton"
+          type="button"
+          class="ma-button"
+        >
+          Reset Filters
+        </button>
 
-          <td>
-            ${formatCurrency(
-              getCurrentOutstanding(row)
-            )}
-          </td>
+      </div>
 
-          <td>
-            ${formatCurrency(
-              getTotalPaid(row)
-            )}
-          </td>
+    </section>
 
-          <td>
-            ${formatCurrency(
-              getTotalDue(row)
-            )}
-          </td>
+    <!-- =======================================================
+         SUMMARY
+         ======================================================= -->
 
-          <td>
-            <span
-              class="ma-badge ${
-                statusClass
-                  ? `ma-badge-${escapeHtml(
-                      statusClass
-                    )}`
-                  : "ma-badge-neutral"
-              }"
-            >
-              ${escapeHtml(
-                status || "—"
-              )}
-            </span>
-          </td>
-        </tr>
-      `;
-    }).join("");
+    <section
+      class="ma-summary"
+      aria-label="Accounting summary"
+    >
 
-  memberAccountingBody
-    .querySelectorAll(
-      ".member-statement-link"
-    )
-    .forEach(button => {
-      button.addEventListener(
-        "click",
-        event => {
-          event.stopPropagation();
+      <article class="ma-stat">
 
-          openMemberStatement(
-            button.dataset.memberId
-          );
-        }
-      );
-    });
-}
+        <div class="ma-stat-label">
+          Members
+        </div>
 
-
-/* =========================================================
-   SUMMARY
-   ========================================================= */
-
-function renderSummary() {
-  const rows =
-    filteredRows;
-
-  const members =
-    rows.length;
-
-  const due =
-    rows.reduce(
-      (sum, row) =>
-        sum + getMonthlyDue(row),
-      0
-    );
-
-  const applied =
-    rows.reduce(
-      (sum, row) =>
-        sum + getApplied(row),
-      0
-    );
-
-  const outstanding =
-    rows.reduce(
-      (sum, row) =>
-        sum +
-        getCurrentOutstanding(row),
-      0
-    );
-
-  const credit =
-    rows.reduce(
-      (sum, row) =>
-        sum +
-        getPreviousCredit(row) +
-        Math.max(
-          getCarryForward(row),
+        <div
+          id="statMembers"
+          class="ma-stat-value"
+        >
           0
-        ),
-      0
-    );
-
-  const attention =
-    rows.filter(
-      row =>
-        getCurrentOutstanding(row) > 0 ||
-        getPreviousOutstanding(row) > 0
-    ).length;
-
-  if (statMembers) {
-    statMembers.textContent =
-      members.toLocaleString(
-        "en-KE"
-      );
-  }
-
-  if (statDue) {
-    statDue.textContent =
-      formatCurrency(due);
-  }
-
-  if (statApplied) {
-    statApplied.textContent =
-      formatCurrency(applied);
-  }
-
-  if (statOutstanding) {
-    statOutstanding.textContent =
-      formatCurrency(outstanding);
-  }
-
-  if (statCredit) {
-    statCredit.textContent =
-      formatCurrency(credit);
-  }
-
-  if (statAttention) {
-    statAttention.textContent =
-      attention.toLocaleString(
-        "en-KE"
-      );
-  }
-}
-
-
-/* =========================================================
-   MEMBER STATEMENT
-   ========================================================= */
-
-async function openMemberStatement(
-  memberId
-) {
-  const row =
-    canonicalRows.find(
-      item =>
-        String(
-          getMemberId(item)
-        ) ===
-        String(memberId)
-    );
-
-  if (!row) {
-    return;
-  }
-
-  selectedMemberId =
-    memberId;
-
-  const name =
-    getMemberName(row);
-
-  const number =
-    getMemberNumber(row);
-
-  if (statementTitle) {
-    statementTitle.textContent =
-      number
-        ? `${number} — ${name}`
-        : name;
-  }
-
-  if (statementMeta) {
-    statementMeta.textContent =
-      `${formatMonth(
-        accountingMonth
-      )} • Canonical member accounting`;
-  }
-
-  if (statementDue) {
-    statementDue.textContent =
-      formatCurrency(
-        getMonthlyDue(row)
-      );
-  }
-
-  if (statementPaid) {
-    statementPaid.textContent =
-      formatCurrency(
-        getCurrentMonthPayment(row)
-      );
-  }
-
-  if (statementOutstanding) {
-    statementOutstanding.textContent =
-      formatCurrency(
-        getCurrentOutstanding(row)
-      );
-  }
-
-  if (statementCredit) {
-    statementCredit.textContent =
-      formatCurrency(
-        getPreviousCredit(row)
-      );
-  }
-
-  if (statementBody) {
-    statementBody.innerHTML = `
-      <tr>
-        <td>Previous outstanding</td>
-        <td>${formatCurrency(
-          getPreviousOutstanding(row)
-        )}</td>
-      </tr>
-
-      <tr>
-        <td>Previous credit</td>
-        <td>${formatCurrency(
-          getPreviousCredit(row)
-        )}</td>
-      </tr>
-
-      <tr>
-        <td>Current month payment</td>
-        <td>${formatCurrency(
-          getCurrentMonthPayment(row)
-        )}</td>
-      </tr>
-
-      <tr>
-        <td>Applied this month</td>
-        <td>${formatCurrency(
-          getApplied(row)
-        )}</td>
-      </tr>
-
-      <tr>
-        <td>Carry-forward credit</td>
-        <td>${formatCurrency(
-          getCarryForward(row)
-        )}</td>
-      </tr>
-
-      <tr>
-        <td>Current outstanding</td>
-        <td>${formatCurrency(
-          getCurrentOutstanding(row)
-        )}</td>
-      </tr>
-
-      <tr>
-        <td>Total paid to date</td>
-        <td>${formatCurrency(
-          getTotalPaid(row)
-        )}</td>
-      </tr>
-
-      <tr>
-        <td>Total due to date</td>
-        <td>${formatCurrency(
-          getTotalDue(row)
-        )}</td>
-      </tr>
-
-      <tr>
-        <td>Monthly status</td>
-        <td>${escapeHtml(
-          getStatus(row) || "—"
-        )}</td>
-      </tr>
-    `;
-  }
-
-  /*
-   * Load cumulative accounting separately.
-   *
-   * Failure here must not silently relabel monthly data
-   * as cumulative data.
-   */
-  try {
-    if (cumulativePositionContent) {
-      cumulativePositionContent.innerHTML = `
-        <div class="ma-empty">
-          Loading cumulative position…
         </div>
-      `;
-    }
 
-    const position =
-      await loadMemberContributionPosition(
-        memberId
-      );
-
-    renderCumulativePosition(
-      position
-    );
-  } catch (error) {
-    console.error(
-      "Cumulative member position error:",
-      error
-    );
-
-    if (cumulativePositionContent) {
-      cumulativePositionContent.innerHTML = `
-        <div class="ma-empty">
-          Cumulative position could not be loaded.
+        <div class="ma-stat-note">
+          Members in current view
         </div>
-      `;
-    }
-  }
 
-  if (statementSection) {
-    statementSection.classList.add(
-      "visible"
-    );
-  }
+      </article>
 
-  if (cumulativePositionSection) {
-    cumulativePositionSection.classList.add(
-      "visible"
-    );
-  }
-}
+      <article class="ma-stat">
 
+        <div class="ma-stat-label">
+          Monthly Due
+        </div>
 
-function closeMemberStatement() {
-  selectedMemberId =
-    null;
+        <div
+          id="statDue"
+          class="ma-stat-value"
+        >
+          KSh 0.00
+        </div>
 
-  if (statementSection) {
-    statementSection.classList.remove(
-      "visible"
-    );
-  }
+        <div class="ma-stat-note">
+          Current obligations
+        </div>
 
-  if (cumulativePositionSection) {
-    cumulativePositionSection.classList.remove(
-      "visible"
-    );
-  }
-}
+      </article>
 
+      <article class="ma-stat">
 
-/* =========================================================
-   QUICK FILTERS
-   ========================================================= */
+        <div class="ma-stat-label">
+          Applied
+        </div>
 
-function applyQuickFilter(
-  filter
-) {
-  const value =
-    String(filter || "")
-      .trim()
-      .toLowerCase();
+        <div
+          id="statApplied"
+          class="ma-stat-value"
+        >
+          KSh 0.00
+        </div>
 
-  quickFilters.forEach(
-    button => {
-      button.classList.toggle(
-        "active",
-        button.dataset.quick ===
-          value
-      );
-    }
-  );
+        <div class="ma-stat-note">
+          Applied this month
+        </div>
 
-  if (value === "all") {
-    if (memberFilter) {
-      memberFilter.value = "";
-    }
+      </article>
 
-    if (statusFilter) {
-      statusFilter.value = "";
-    }
+      <article class="ma-stat">
 
-    applyFilters();
+        <div class="ma-stat-label">
+          Outstanding
+        </div>
 
-    return;
-  }
+        <div
+          id="statOutstanding"
+          class="ma-stat-value"
+        >
+          KSh 0.00
+        </div>
 
-  if (
-    value === "attention" ||
-    value === "arrears" ||
-    value === "credit"
-  ) {
-    filteredRows =
-      canonicalRows.filter(
-        row =>
-          matchesQuickFilter(
-            row,
-            value
-          )
-      );
+        <div class="ma-stat-note">
+          Current outstanding
+        </div>
 
-    renderTable();
-    renderSummary();
+      </article>
 
-    return;
-  }
+      <article class="ma-stat">
 
-  if (statusFilter) {
-    const matchingOption =
-      [...statusFilter.options]
-        .find(
-          option =>
-            normalizeStatus(
-              option.value
-            ) === value ||
-            normalizeStatus(
-              option.textContent
-            ) === value
-        );
+        <div class="ma-stat-label">
+          Credit
+        </div>
 
-    if (matchingOption) {
-      statusFilter.value =
-        matchingOption.value;
+        <div
+          id="statCredit"
+          class="ma-stat-value"
+        >
+          KSh 0.00
+        </div>
 
-      applyFilters();
+        <div class="ma-stat-note">
+          Carry-forward credit
+        </div>
 
-      return;
-    }
-  }
+      </article>
 
-  applyFilters();
-}
+      <article class="ma-stat">
 
+        <div class="ma-stat-label">
+          Attention
+        </div>
 
-/* =========================================================
-   RESET
-   ========================================================= */
+        <div
+          id="statAttention"
+          class="ma-stat-value"
+        >
+          0
+        </div>
 
-function resetFilters() {
-  if (memberFilter) {
-    memberFilter.value = "";
-  }
+        <div class="ma-stat-note">
+          Partial / outstanding
+        </div>
 
-  if (statusFilter) {
-    statusFilter.value = "";
-  }
+      </article>
 
-  if (searchMember) {
-    searchMember.value = "";
-  }
+    </section>
 
-  quickFilters.forEach(
-    button =>
-      button.classList.remove(
-        "active"
-      )
-  );
+    <!-- =======================================================
+         ACCOUNTING TABLE
+         ======================================================= -->
 
-  applyFilters();
-}
+    <section class="ma-card ma-table-card">
 
+      <div class="ma-table-header">
 
-/* =========================================================
-   CSV EXPORT
-   ========================================================= */
+        <div>
 
-function exportCsv() {
-  const headers = [
-    "Member Number",
-    "Member Name",
-    "Monthly Due",
-    "Previous Outstanding",
-    "Previous Credit",
-    "Current Payment",
-    "Applied",
-    "Carry-forward Credit",
-    "Current Outstanding",
-    "Total Paid",
-    "Total Due",
-    "Monthly Status"
-  ];
+          <h2 class="ma-table-title">
+            Member Accounting
+          </h2>
 
-  const rows =
-    filteredRows.map(row => [
-      getMemberNumber(row),
-      getMemberName(row),
-      getMonthlyDue(row),
-      getPreviousOutstanding(row),
-      getPreviousCredit(row),
-      getCurrentMonthPayment(row),
-      getApplied(row),
-      getCarryForward(row),
-      getCurrentOutstanding(row),
-      getTotalPaid(row),
-      getTotalDue(row),
-      getStatus(row)
-    ]);
+          <div
+            id="tablePeriod"
+            class="ma-table-period"
+          >
+            Loading accounting period…
+          </div>
 
-  const csv =
-    [
-      headers,
-      ...rows
-    ]
-      .map(row =>
-        row
-          .map(value =>
-            `"${String(
-              value ?? ""
-            ).replace(
-              /"/g,
-              '""'
-            )}"`
-          )
-          .join(",")
-      )
-      .join("\r\n");
+        </div>
 
-  downloadBlob(
-    csv,
-    `member-accounting-${accountingMonth}.csv`,
-    "text/csv;charset=utf-8;"
-  );
-}
+        <div class="ma-table-actions">
 
+          <button
+            id="printButton"
+            type="button"
+            class="ma-button primary"
+          >
+            Print
+          </button>
 
-/* =========================================================
-   EXCEL-COMPATIBLE EXPORT
-   ========================================================= */
+          <button
+            id="csvButton"
+            type="button"
+            class="ma-button"
+          >
+            CSV
+          </button>
 
-function exportExcel() {
-  const headers = [
-    "Member Number",
-    "Member Name",
-    "Monthly Due",
-    "Previous Outstanding",
-    "Previous Credit",
-    "Current Payment",
-    "Applied",
-    "Carry-forward Credit",
-    "Current Outstanding",
-    "Total Paid",
-    "Total Due",
-    "Monthly Status"
-  ];
+          <button
+            id="excelButton"
+            type="button"
+            class="ma-button"
+          >
+            Excel
+          </button>
 
-  const rows =
-    filteredRows.map(row => [
-      getMemberNumber(row),
-      getMemberName(row),
-      getMonthlyDue(row),
-      getPreviousOutstanding(row),
-      getPreviousCredit(row),
-      getCurrentMonthPayment(row),
-      getApplied(row),
-      getCarryForward(row),
-      getCurrentOutstanding(row),
-      getTotalPaid(row),
-      getTotalDue(row),
-      getStatus(row)
-    ]);
+        </div>
 
-  const html = `
-    <html>
-      <head>
-        <meta charset="UTF-8">
-      </head>
+      </div>
 
-      <body>
-        <table border="1">
+      <div class="ma-table-wrap">
+
+        <table class="ma-table">
+
           <thead>
+
             <tr>
-              ${headers.map(
-                header =>
-                  `<th>${escapeHtml(
-                    header
-                  )}</th>`
-              ).join("")}
+
+              <th>
+                Member
+              </th>
+
+              <th>
+                Monthly Due
+              </th>
+
+              <th>
+                Previous Outstanding
+              </th>
+
+              <th>
+                Previous Credit
+              </th>
+
+              <th>
+                Current Payment
+              </th>
+
+              <th>
+                Applied
+              </th>
+
+              <th>
+                Carry-forward Credit
+              </th>
+
+              <th>
+                Current Outstanding
+              </th>
+
+              <th>
+                Total Paid
+              </th>
+
+              <th>
+                Total Due
+              </th>
+
+              <th>
+                Monthly Status
+              </th>
+
             </tr>
+
           </thead>
 
-          <tbody>
-            ${rows.map(
-              row => `
-                <tr>
-                  ${row.map(
-                    value =>
-                      `<td>${escapeHtml(
-                        value
-                      )}</td>`
-                  ).join("")}
-                </tr>
-              `
-            ).join("")}
+          <tbody id="memberAccountingBody">
+
+            <tr>
+
+              <td
+                colspan="11"
+                class="ma-loading"
+              >
+
+                <div class="ma-spinner"></div>
+
+                Loading member accounting…
+
+              </td>
+
+            </tr>
+
           </tbody>
+
         </table>
-      </body>
-    </html>
-  `;
 
-  downloadBlob(
-    html,
-    `member-accounting-${accountingMonth}.xls`,
-    "application/vnd.ms-excel;charset=utf-8;"
-  );
-}
+      </div>
 
+    </section>
 
-/* =========================================================
-   DOWNLOAD
-   ========================================================= */
+    <!-- =======================================================
+         MEMBER STATEMENT
+         ======================================================= -->
 
-function downloadBlob(
-  content,
-  filename,
-  type
-) {
-  const blob =
-    new Blob(
-      [content],
-      { type }
-    );
+    <section
+      id="statementSection"
+      class="ma-card ma-statement"
+    >
 
-  const url =
-    URL.createObjectURL(blob);
+      <div class="ma-statement-header">
 
-  const anchor =
-    document.createElement("a");
+        <div>
 
-  anchor.href =
-    url;
+          <h2
+            id="statementTitle"
+            class="ma-statement-title"
+          >
+            Member Statement
+          </h2>
 
-  anchor.download =
-    filename;
+          <div
+            id="statementMeta"
+            class="ma-statement-meta"
+          ></div>
 
-  document.body.appendChild(
-    anchor
-  );
+        </div>
 
-  anchor.click();
+        <button
+          id="closeStatementButton"
+          type="button"
+          class="ma-button"
+        >
+          Close Statement
+        </button>
 
-  anchor.remove();
+      </div>
 
-  URL.revokeObjectURL(
-    url
-  );
-}
+      <div class="ma-statement-summary">
 
+        <article class="ma-statement-stat">
 
-/* =========================================================
-   PRINT
-   ========================================================= */
+          <span>
+            Monthly Due
+          </span>
 
-function printAccounting() {
-  window.print();
-}
+          <strong id="statementDue">
+            KSh 0.00
+          </strong>
 
+        </article>
 
-/* =========================================================
-   EVENTS
-   ========================================================= */
+        <article class="ma-statement-stat">
 
-function setupEvents() {
-  if (accountingMonthInput) {
-    accountingMonthInput.addEventListener(
-      "change",
-      async () => {
-        setAccountingMonth(
-          accountingMonthInput.value
-        );
+          <span>
+            Current Month Payment
+          </span>
 
-        clearCumulativePositionCache();
+          <strong id="statementPaid">
+            KSh 0.00
+          </strong>
 
-        await loadAccounting();
-      }
-    );
-  }
+        </article>
 
-  if (memberFilter) {
-    memberFilter.addEventListener(
-      "change",
-      applyFilters
-    );
-  }
+        <article class="ma-statement-stat">
 
-  if (statusFilter) {
-    statusFilter.addEventListener(
-      "change",
-      applyFilters
-    );
-  }
+          <span>
+            Current Outstanding
+          </span>
 
-  if (searchMember) {
-    searchMember.addEventListener(
-      "input",
-      applyFilters
-    );
-  }
+          <strong id="statementOutstanding">
+            KSh 0.00
+          </strong>
 
-  /*
-   * Refresh remains a read-only reload.
-   *
-   * It does NOT invoke:
-   * refresh_canonical_contribution_accounting()
-   */
+        </article>
 
-  if (refreshButton) {
-    refreshButton.addEventListener(
-      "click",
-      async () => {
-        clearCumulativePositionCache();
+        <article class="ma-statement-stat">
 
-        await loadAccounting();
-      }
-    );
-  }
+          <span>
+            Previous Credit
+          </span>
 
-  if (resetButton) {
-    resetButton.addEventListener(
-      "click",
-      resetFilters
-    );
-  }
+          <strong id="statementCredit">
+            KSh 0.00
+          </strong>
 
-  if (printButton) {
-    printButton.addEventListener(
-      "click",
-      printAccounting
-    );
-  }
+        </article>
 
-  if (csvButton) {
-    csvButton.addEventListener(
-      "click",
-      exportCsv
-    );
-  }
+      </div>
 
-  if (excelButton) {
-    excelButton.addEventListener(
-      "click",
-      exportExcel
-    );
-  }
+      <div class="ma-table-wrap">
 
-  if (closeStatementButton) {
-    closeStatementButton.addEventListener(
-      "click",
-      closeMemberStatement
-    );
-  }
+        <table class="ma-statement-table">
 
-  quickFilters.forEach(
-    button => {
-      button.addEventListener(
-        "click",
-        () => {
-          applyQuickFilter(
-            button.dataset.quick
-          );
-        }
-      );
-    }
-  );
-}
+          <thead>
 
+            <tr>
 
-/* =========================================================
-   LOAD
-   ========================================================= */
+              <th>
+                Statement Item
+              </th>
 
-async function loadAccounting() {
-  try {
-    setStatus(
-      `Loading ${formatMonth(
-        accountingMonth
-      )} accounting…`
-    );
+              <th>
+                Amount / Status
+              </th>
 
-    await loadCanonicalRows();
+            </tr>
+
+          </thead>
+
+          <tbody id="statementBody">
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+    <!-- =======================================================
+         CUMULATIVE MEMBER CONTRIBUTION POSITION
+         -------------------------------------------------------
+         Separate from the monthly statement because this
+         section uses the canonical cumulative position RPC:
+
+           get_member_contribution_position(uuid)
+
+         Cumulative statuses:
+           ARREARS
+           CREDIT
+           UP_TO_DATE
+         ======================================================= -->
+
+    <section
+      id="memberCumulativePosition"
+      class="ma-card ma-cumulative-position"
+      aria-label="Cumulative member contribution position"
+    >
+
+      <div class="ma-cumulative-heading">
+
+        <h3>
+          Cumulative Contribution Position
+        </h3>
+
+        <p>
+          Cumulative position across the member's
+          canonical contribution history.
+        </p>
+
+      </div>
+
+      <div
+        id="memberCumulativePositionContent"
+      >
+
+        <div class="ma-empty">
+          Select a member to view the cumulative position.
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- =========================================================
+       MEMBER LAYOUT BOOT
+       ---------------------------------------------------------
+       member-layout.js is the sole feature boot owner.
+
+       It dynamically loads:
+         ./js/member-accounting.js
+
+       and calls:
+         initMemberAccounting()
+
+       This HTML page must NOT directly import or initialize
+       member-accounting.js.
+       ========================================================= -->
+
+  <script type="module">
+    import { boot } from "./js/member-layout.js";
+
+    boot();
+  </script>
+
+  <!-- =========================================================
+       PAGE-LOCAL PRINT METADATA
+       ---------------------------------------------------------
+       This listener does not boot the accounting feature.
+       ========================================================= -->
+
+  <script type="module">
 
     /*
-     * Monthly data has changed, so cumulative
-     * statement reads should not rely on stale cache.
-     */
-    clearCumulativePositionCache();
+      Print metadata is populated from the visible
+      CHAMA LIVE group label after the page loads.
 
-    populateMemberFilter();
+      This listener is page-local and does not boot the
+      accounting feature.
+    */
 
-    applyFilters();
+    window.addEventListener(
+      "beforeprint",
+      () => {
 
-    renderPeriod();
+        const groupLabel =
+          document.getElementById("groupLabel");
 
-    setStatus(
-      `${canonicalRows.length} member accounting record${
-        canonicalRows.length === 1
-          ? ""
-          : "s"
-      } loaded.`,
-      "success"
+        const tablePeriod =
+          document.getElementById("tablePeriod");
+
+        const printMeta =
+          document.getElementById("printMeta");
+
+        if (!printMeta) {
+          return;
+        }
+
+        const group =
+          groupLabel?.textContent?.trim() ||
+          "Current Group";
+
+        const period =
+          tablePeriod?.textContent?.trim() ||
+          "Current Accounting Period";
+
+        const generated =
+          new Intl.DateTimeFormat(
+            "en-KE",
+            {
+              dateStyle: "medium",
+              timeStyle: "short"
+            }
+          ).format(new Date());
+
+        printMeta.textContent =
+          `${group} • ${period} • Generated ${generated}`;
+      }
     );
-  } catch (error) {
-    showError(error);
-  }
-}
 
+  </script>
 
-/* =========================================================
-   INIT
-   =========================================================
-   IMPORTANT:
-   member-layout.js is the sole feature boot owner.
-
-   This module must NOT auto-boot itself.
-   ========================================================= */
-
-export async function initMemberAccounting() {
-  try {
-    setStatus(
-      "Loading member accounting…"
-    );
-
-    await requireAuth();
-
-    setAccountingMonth(
-      accountingMonthInput?.value
-    );
-
-    setupEvents();
-
-    await loadContext();
-
-    await loadAccounting();
-  } catch (error) {
-    showError(error);
-  }
-}
+</body>
+</html>
