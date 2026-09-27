@@ -756,10 +756,6 @@
             }
 
 
-            /*
-             * Large touch target for mobile.
-             */
-
             .monthly-closing-day-select {
                 min-height: 50px;
                 padding: 12px 40px 12px 13px;
@@ -1065,6 +1061,8 @@
                         <div class="form-grid">
 
 
+                            <!-- GROUP NAME -->
+
                             <div
                                 class="form-field full-width"
                             >
@@ -1085,6 +1083,8 @@
 
                             </div>
 
+
+                            <!-- GROUP TYPE -->
 
                             <div
                                 class="form-field"
@@ -1123,6 +1123,38 @@
                             </div>
 
 
+                            <!-- OTHER GROUP TYPE -->
+
+                            <div
+                                id="groupCategoryOtherField"
+                                class="form-field"
+                                hidden
+                            >
+
+                                <label
+                                    for="groupCategoryOther"
+                                >
+                                    Group Type Name
+                                </label>
+
+                                <input
+                                    id="groupCategoryOther"
+                                    name="groupCategoryOther"
+                                    type="text"
+                                    maxlength="120"
+                                    autocomplete="off"
+                                    placeholder="e.g. Investment Group"
+                                >
+
+                                <p class="field-help">
+                                    Enter the type of group.
+                                </p>
+
+                            </div>
+
+
+                            <!-- COUNTRY -->
+
                             <div
                                 class="form-field"
                             >
@@ -1144,6 +1176,8 @@
 
                             </div>
 
+
+                            <!-- MONTHLY CONTRIBUTION -->
 
                             <div
                                 class="form-field full-width"
@@ -1234,7 +1268,6 @@
 
 
                     <div class="form-grid">
-
 
                         <div class="form-field">
 
@@ -1340,6 +1373,7 @@
                     <div class="leadership-actions">
 
                         <div>
+
                             <strong>
                                 Initial officers
                             </strong>
@@ -1349,6 +1383,7 @@
                                 secretary, treasurer and other officers
                                 as applicable.
                             </p>
+
                         </div>
 
 
@@ -1385,458 +1420,3 @@
             >
 
                 <div class="card-header">
-
-                    <div class="card-heading">
-
-                        <h2>
-                            Monthly Contribution Cycle
-                        </h2>
-
-                        <p>
-                            Set the day your group's monthly
-                            contribution cycle closes.
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-                <div class="card-body">
-
-
-                    <!-- =========================================
-                         CURRENT CYCLE
-                    ========================================== -->
-
-                    <div
-                        class="calendar-summary"
-                    >
-
-                        <div
-                            class="calendar-summary-item"
-                        >
-
-                            <span>
-                                Current Cycle
-                            </span>
-
-                            <strong
-                                id="currentContributionCycle"
-                            >
-                                —
-                            </strong>
-
-                        </div>
-
-
-                        <div
-                            class="calendar-summary-item"
-                        >
-
-                            <span>
-                                Opening Date
-                            </span>
-
-                            <strong
-                                id="currentContributionOpeningDate"
-                            >
-                                —
-                            </strong>
-
-                        </div>
-
-
-                        <div
-                            class="calendar-summary-item"
-                        >
-
-                            <span>
-                                Closing Date
-                            </span>
-
-                            <strong
-                                id="currentContributionClosingDate"
-                            >
-                                —
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- =========================================
-                         CONTRIBUTION CALENDAR FORM
-                    ========================================== -->
-
-                    <form
-                        id="contributionCalendarForm"
-                    >
-
-                        <div
-                            class="form-field"
-                        >
-
-                            <label
-                                for="monthlyClosingDay"
-                            >
-                                Monthly Closing Day
-                            </label>
-
-
-                            <select
-                                id="monthlyClosingDay"
-                                name="monthlyClosingDay"
-                                class="monthly-closing-day-select"
-                                required
-                                aria-label="Monthly Closing Day"
-                            >
-                            </select>
-
-
-                            <p class="field-help">
-                                Choose a closing day from 1 to 28.
-                                The opening date is calculated automatically.
-                            </p>
-
-                        </div>
-
-
-                        <div class="calendar-note">
-                            Changing the closing day applies prospectively.
-                            Historical contribution cycles remain unchanged.
-                        </div>
-
-
-                        <div class="form-actions">
-
-                            <button
-                                type="submit"
-                                class="btn btn-primary"
-                                id="saveContributionCalendar"
-                            >
-                                Save Contribution Cycle
-                            </button>
-
-                        </div>
-
-                    </form>
-
-                </div>
-
-            </section>
-
-
-            <!-- =================================================
-                 ACCOUNT
-            ================================================== -->
-
-            <section
-                class="management-card"
-            >
-
-                <div class="card-header">
-
-                    <div class="card-heading">
-
-                        <h2>
-                            Account
-                        </h2>
-
-                        <p>
-                            View your group's billing and
-                            subscription information.
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-                <div class="card-body">
-
-                    <div class="account-content">
-
-                        <div>
-
-                            <p class="account-title">
-                                Billing &amp; Subscription
-                            </p>
-
-                            <p class="account-description">
-                                Review subscription status,
-                                payments, invoices and
-                                account billing.
-                            </p>
-
-                        </div>
-
-
-                        <a
-                            class="account-link"
-                            href="billing.html"
-                        >
-                            Manage Billing
-                        </a>
-
-                    </div>
-
-                </div>
-
-            </section>
-
-
-            <!-- =================================================
-                 SUBSCRIPTION
-            ================================================== -->
-
-            <section
-                class="management-card"
-            >
-
-                <div class="card-header">
-
-                    <div class="card-heading">
-
-                        <h2>
-                            Subscription
-                        </h2>
-
-                        <p>
-                            Current subscription state
-                            for this group.
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-                <div class="card-body">
-
-                    <div
-                        id="subscriptionPanel"
-                        class="subscription-panel"
-                    >
-
-                        <div
-                            class="subscription-row"
-                        >
-
-                            <span
-                                class="subscription-label"
-                            >
-                                Status
-                            </span>
-
-                            <strong
-                                id="subscriptionStatus"
-                                class="subscription-value"
-                            >
-                                —
-                            </strong>
-
-                        </div>
-
-
-                        <div
-                            class="subscription-row"
-                        >
-
-                            <span
-                                class="subscription-label"
-                            >
-                                Plan
-                            </span>
-
-                            <strong
-                                id="subscriptionPlan"
-                                class="subscription-value"
-                            >
-                                —
-                            </strong>
-
-                        </div>
-
-
-                        <div
-                            class="subscription-row"
-                        >
-
-                            <span
-                                class="subscription-label"
-                            >
-                                Renewal / End Date
-                            </span>
-
-                            <strong
-                                id="subscriptionEndDate"
-                                class="subscription-value"
-                            >
-                                —
-                            </strong>
-
-                        </div>
-
-
-                        <div
-                            class="subscription-row"
-                        >
-
-                            <span
-                                class="subscription-label"
-                            >
-                                Amount
-                            </span>
-
-                            <strong
-                                id="subscriptionAmount"
-                                class="subscription-value"
-                            >
-                                —
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </section>
-
-
-            <!-- =================================================
-                 GROUP CONTEXT
-            ================================================== -->
-
-            <section
-                class="management-card full-width"
-            >
-
-                <div class="card-header">
-
-                    <div class="card-heading">
-
-                        <h2>
-                            Group Context
-                        </h2>
-
-                        <p>
-                            Current account and
-                            management context.
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-                <div class="card-body">
-
-                    <div class="context-grid">
-
-
-                        <div class="context-item">
-
-                            <span>
-                                Group
-                            </span>
-
-                            <strong
-                                id="contextGroupName"
-                            >
-                                —
-                            </strong>
-
-                        </div>
-
-
-                        <div class="context-item">
-
-                            <span>
-                                Your Role
-                            </span>
-
-                            <strong
-                                id="contextRole"
-                            >
-                                —
-                            </strong>
-
-                        </div>
-
-
-                        <div class="context-item">
-
-                            <span>
-                                Access
-                            </span>
-
-                            <strong
-                                id="contextAccess"
-                            >
-                                —
-                            </strong>
-
-                        </div>
-
-
-                        <div class="context-item">
-
-                            <span>
-                                Country
-                            </span>
-
-                            <strong
-                                id="contextCountry"
-                            >
-                                —
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </section>
-
-        </div>
-
-
-        <!-- =====================================================
-             PERMISSION MESSAGE
-        ====================================================== -->
-
-        <div
-            id="permissionMessage"
-            class="permission-message hidden"
-        >
-            You do not have permission to manage this group.
-        </div>
-
-    </main>
-
-
-    <!-- =========================================================
-         PAGE MODULES
-         ---------------------------------------------------------
-         admin-layout.js is the sole page-shell boot owner.
-         It is responsible for loading/initializing the
-         group-management page module.
-    ========================================================== -->
-
-    <script type="module">
-
-        import {
-            boot
-        } from "./js/admin-layout.js";
-
-        boot();
-
-    </script>
-
-</body>
-
-</html>
