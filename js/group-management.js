@@ -1,47 +1,34 @@
-/* =========================================================
-   CHAMA LIVE — GROUP MANAGEMENT
-
-   RESPONSIBILITIES
-   ---------------------------------------------------------
-   - Load authenticated group context
-   - Display group information
-   - Update group information
-   - Display member count
-   - Display subscription state
-   - Manage monthly contribution cycle
-   - Keep contribution cycle changes prospective
-   - Manage administrator actual group position
-   - Provide entry point for initial officer onboarding
-
-   GROUP TYPE
-   ---------------------------------------------------------
-   - Chama
-   - CBO
-   - Other
-   - Other reveals a custom group-type field
-   - Custom group type is stored in groups.category
-
-   REMOVED
-   ---------------------------------------------------------
-   - Contribution Initiatives
-   - Initiative creation
-   - Initiative member configuration
-   - Initiative activation
-   - Initiative RPC calls
-   - Initiative DOM/event handlers
-
-   IMPORTANT
-   ---------------------------------------------------------
-   - admin-layout.js remains the page-shell boot owner
-   - No database schema changes are performed here
-   - Group Type maps to groups.category
-   - Monthly Closing Day selector remains openable
-   - Saving the contribution cycle remains permission-controlled
-   - Actual position changes use set_member_actual_position()
-   - No direct position-column writes are performed
-   - Initial actual-position effective date = member.join_date
-   - No module-level auto-boot
-   ========================================================= */
+/*
+ * ================================================================
+ * CHAMA LIVE — GROUP MANAGEMENT
+ * ================================================================
+ *
+ * Responsibilities:
+ *
+ * - Load authenticated group management context.
+ * - Display group information and management permissions.
+ * - Allow authorized users to update group information.
+ * - Support standard and custom group types through groups.category.
+ * - Manage the administrator's actual group position.
+ * - Preserve the separation between:
+ *      system/application role
+ *      actual group position
+ * - Manage the monthly contribution closing day.
+ * - Display subscription/account information.
+ *
+ * IMPORTANT:
+ *
+ * - admin-layout.js is the sole page-shell boot owner.
+ * - This module does NOT auto-boot.
+ * - Actual member positions are changed only through the
+ *   canonical set_member_actual_position(...) RPC.
+ * - No direct writes to actual_position or actual_position_name.
+ * - Monthly contribution-cycle selector remains interactive.
+ * - Group Type "Other" stores the administrator's custom
+ *   group type directly in groups.category.
+ *
+ * ================================================================
+ */
 
 import {
     supabase,
@@ -49,9 +36,9 @@ import {
 } from "./auth.js";
 
 
-/* =========================================================
+/* ================================================================
    CONSTANTS
-   ========================================================= */
+================================================================ */
 
 const ACTUAL_POSITION_VALUES = new Set([
     "chairperson",
@@ -64,20 +51,20 @@ const ACTUAL_POSITION_VALUES = new Set([
     "other"
 ]);
 
-const STANDARD_GROUP_TYPES = new Set([
-    "Chama",
-    "CBO"
+
+const STANDARD_GROUP_TYPES = new Map([
+    ["chama", "Chama"],
+    ["cbo", "CBO"]
 ]);
 
 
-/* =========================================================
-   STATE
-   ========================================================= */
+/* ================================================================
+   PAGE STATE
+================================================================ */
 
 let currentUser = null;
 let currentMember = null;
 let currentGroup = null;
-
 let currentIsOwner = false;
 let currentRole = null;
 let canManageGroup = false;
@@ -89,295 +76,253 @@ let initializationPromise = null;
 let eventsBound = false;
 
 
-/* =========================================================
+/* ================================================================
    DOM REFERENCES
-   ========================================================= */
+================================================================ */
 
 const dom = {
-    statusMessage: document.getElementById("statusMessage"),
-    errorMessage: document.getElementById("errorMessage"),
 
-    adminLoading: document.getElementById("adminLoading"),
-    managementContent: document.getElementById("managementContent"),
-    permissionMessage: document.getElementById("permissionMessage"),
+    statusMessage:
+        document.getElementById("statusMessage"),
 
-    groupNameDisplay: document.getElementById(
-        "groupNameDisplay"
-    ),
+    errorMessage:
+        document.getElementById("errorMessage"),
 
-    groupCategoryDisplay: document.getElementById(
-        "groupCategoryDisplay"
-    ),
+    adminLoading:
+        document.getElementById("adminLoading"),
 
-    groupCountryDisplay: document.getElementById(
-        "groupCountryDisplay"
-    ),
+    managementContent:
+        document.getElementById("managementContent"),
 
-    memberCountDisplay: document.getElementById(
-        "memberCountDisplay"
-    ),
+    permissionMessage:
+        document.getElementById("permissionMessage"),
 
-    permissionBadge: document.getElementById(
-        "permissionBadge"
-    ),
 
-    groupForm: document.getElementById("groupForm"),
+    /* ------------------------------------------------------------
+       GROUP OVERVIEW
+    ------------------------------------------------------------ */
 
-    groupName: document.getElementById(
-        "groupName"
-    ),
+    groupNameDisplay:
+        document.getElementById("groupNameDisplay"),
 
-    groupCategory: document.getElementById(
-        "groupCategory"
-    ),
+    groupCategoryDisplay:
+        document.getElementById("groupCategoryDisplay"),
 
-    groupCategoryOtherField: document.getElementById(
-        "groupCategoryOtherField"
-    ),
+    groupCountryDisplay:
+        document.getElementById("groupCountryDisplay"),
 
-    groupCategoryOther: document.getElementById(
-        "groupCategoryOther"
-    ),
+    memberCountDisplay:
+        document.getElementById("memberCountDisplay"),
 
-    groupCountry: document.getElementById(
-        "groupCountry"
-    ),
+    permissionBadge:
+        document.getElementById("permissionBadge"),
 
-    monthlyContribution: document.getElementById(
-        "monthlyContribution"
-    ),
 
-    saveGroup: document.getElementById(
-        "saveGroup"
-    ),
+    /* ------------------------------------------------------------
+       GROUP FORM
+    ------------------------------------------------------------ */
 
-    /* -----------------------------------------------------
-       LEADERSHIP SETUP
-       ----------------------------------------------------- */
+    groupForm:
+        document.getElementById("groupForm"),
+
+    groupName:
+        document.getElementById("groupName"),
+
+    groupCategory:
+        document.getElementById("groupCategory"),
+
+    groupCategoryOtherField:
+        document.getElementById("groupCategoryOtherField"),
+
+    groupCategoryOther:
+        document.getElementById("groupCategoryOther"),
+
+    groupCountry:
+        document.getElementById("groupCountry"),
+
+    monthlyContribution:
+        document.getElementById("monthlyContribution"),
+
+    saveGroup:
+        document.getElementById("saveGroup"),
+
+
+    /* ------------------------------------------------------------
+       LEADERSHIP
+    ------------------------------------------------------------ */
 
     leadershipSetupCard:
-        document.getElementById(
-            "leadershipSetupCard"
-        ),
+        document.getElementById("leadershipSetupCard"),
 
     leadershipSetupStatus:
-        document.getElementById(
-            "leadershipSetupStatus"
-        ),
+        document.getElementById("leadershipSetupStatus"),
 
     adminActualPosition:
-        document.getElementById(
-            "adminActualPosition"
-        ),
+        document.getElementById("adminActualPosition"),
 
     adminActualPositionNameField:
-        document.getElementById(
-            "adminActualPositionNameField"
-        ),
+        document.getElementById("adminActualPositionNameField"),
 
     adminActualPositionName:
-        document.getElementById(
-            "adminActualPositionName"
-        ),
+        document.getElementById("adminActualPositionName"),
 
     saveAdminActualPosition:
-        document.getElementById(
-            "saveAdminActualPosition"
-        ),
+        document.getElementById("saveAdminActualPosition"),
 
     addInitialOfficerLink:
-        document.getElementById(
-            "addInitialOfficerLink"
-        ),
+        document.getElementById("addInitialOfficerLink"),
 
-    /* -----------------------------------------------------
+
+    /* ------------------------------------------------------------
        CONTRIBUTION CALENDAR
-       ----------------------------------------------------- */
+    ------------------------------------------------------------ */
 
     contributionCalendarForm:
-        document.getElementById(
-            "contributionCalendarForm"
-        ),
+        document.getElementById("contributionCalendarForm"),
 
     monthlyClosingDay:
-        document.getElementById(
-            "monthlyClosingDay"
-        ),
+        document.getElementById("monthlyClosingDay"),
 
     saveContributionCalendar:
-        document.getElementById(
-            "saveContributionCalendar"
-        ),
+        document.getElementById("saveContributionCalendar"),
 
     currentContributionCycle:
-        document.getElementById(
-            "currentContributionCycle"
-        ),
+        document.getElementById("currentContributionCycle"),
 
     currentContributionOpeningDate:
-        document.getElementById(
-            "currentContributionOpeningDate"
-        ),
+        document.getElementById("currentContributionOpeningDate"),
 
     currentContributionClosingDate:
-        document.getElementById(
-            "currentContributionClosingDate"
-        ),
+        document.getElementById("currentContributionClosingDate"),
 
-    /* -----------------------------------------------------
+
+    /* ------------------------------------------------------------
        SUBSCRIPTION
-       ----------------------------------------------------- */
+    ------------------------------------------------------------ */
 
     subscriptionPanel:
-        document.getElementById(
-            "subscriptionPanel"
-        ),
+        document.getElementById("subscriptionPanel"),
 
     subscriptionStatus:
-        document.getElementById(
-            "subscriptionStatus"
-        ),
+        document.getElementById("subscriptionStatus"),
 
     subscriptionPlan:
-        document.getElementById(
-            "subscriptionPlan"
-        ),
+        document.getElementById("subscriptionPlan"),
 
     subscriptionEndDate:
-        document.getElementById(
-            "subscriptionEndDate"
-        ),
+        document.getElementById("subscriptionEndDate"),
 
     subscriptionAmount:
-        document.getElementById(
-            "subscriptionAmount"
-        ),
+        document.getElementById("subscriptionAmount"),
 
-    /* -----------------------------------------------------
+
+    /* ------------------------------------------------------------
        GROUP CONTEXT
-       ----------------------------------------------------- */
+    ------------------------------------------------------------ */
 
     contextGroupName:
-        document.getElementById(
-            "contextGroupName"
-        ),
+        document.getElementById("contextGroupName"),
 
     contextRole:
-        document.getElementById(
-            "contextRole"
-        ),
+        document.getElementById("contextRole"),
 
     contextAccess:
-        document.getElementById(
-            "contextAccess"
-        ),
+        document.getElementById("contextAccess"),
 
     contextCountry:
-        document.getElementById(
-            "contextCountry"
-        )
+        document.getElementById("contextCountry")
 };
 
 
-/* =========================================================
+/* ================================================================
    MESSAGE HELPERS
-   ========================================================= */
+================================================================ */
 
 function clearMessages() {
+
     if (dom.statusMessage) {
         dom.statusMessage.textContent = "";
-        dom.statusMessage.className =
-            "status-message";
+        dom.statusMessage.className = "status-message";
     }
 
     if (dom.errorMessage) {
         dom.errorMessage.textContent = "";
-        dom.errorMessage.className =
-            "status-message error";
+        dom.errorMessage.className = "status-message error";
     }
 }
 
 
-function showStatus(message) {
+function showStatus(message, type = "success") {
+
     if (!dom.statusMessage) {
         return;
     }
 
-    dom.statusMessage.textContent =
-        message;
+    dom.statusMessage.textContent = message;
 
     dom.statusMessage.className =
-        "status-message visible success";
+        `status-message ${type} visible`;
 }
 
 
 function showError(message) {
+
     if (!dom.errorMessage) {
         return;
     }
 
-    dom.errorMessage.textContent =
-        message;
+    dom.errorMessage.textContent = message;
 
     dom.errorMessage.className =
-        "status-message visible error";
+        "status-message error visible";
 }
 
 
-/* =========================================================
-   FORMATTING
-   ========================================================= */
+/* ================================================================
+   GENERAL HELPERS
+================================================================ */
+
+function normalizeValue(value) {
+
+    return String(value ?? "").trim();
+}
+
+
+function normalizeLower(value) {
+
+    return normalizeValue(value).toLowerCase();
+}
+
 
 function formatDate(value) {
+
     if (!value) {
         return "—";
     }
 
-    const date =
-        new Date(value);
+    const date = new Date(value);
 
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
+    if (Number.isNaN(date.getTime())) {
         return "—";
     }
 
-    return new Intl.DateTimeFormat(
-        "en-KE",
+    return date.toLocaleDateString(
+        undefined,
         {
-            day: "2-digit",
+            year: "numeric",
             month: "short",
-            year: "numeric"
+            day: "numeric"
         }
-    ).format(date);
+    );
 }
 
 
-function formatDateRange(
-    startDate,
-    endDate
-) {
-    if (
-        !startDate ||
-        !endDate
-    ) {
-        return "—";
-    }
+function formatCurrency(value) {
 
-    return `${formatDate(startDate)} – ${formatDate(endDate)}`;
-}
+    const amount = Number(value);
 
-
-function formatMoney(value) {
-    const amount =
-        Number(value);
-
-    if (
-        !Number.isFinite(amount)
-    ) {
-        return "—";
+    if (!Number.isFinite(amount)) {
+        return "KSh 0.00";
     }
 
     return new Intl.NumberFormat(
@@ -385,522 +330,397 @@ function formatMoney(value) {
         {
             style: "currency",
             currency: "KES",
+            minimumFractionDigits: 2,
             maximumFractionDigits: 2
         }
     ).format(amount);
 }
 
 
-function formatSubscriptionDate(
-    value
-) {
-    if (!value) {
-        return "—";
+/* ================================================================
+   AUTHORIZATION
+================================================================ */
+
+function calculateManagementAccess() {
+
+    const role =
+        normalizeLower(
+            currentRole
+        );
+
+    currentRole = role || null;
+
+    canManageGroup =
+        Boolean(
+            currentIsOwner ||
+            role === "owner" ||
+            role === "admin" ||
+            role === "administrator"
+        );
+
+    return canManageGroup;
+}
+
+
+function applyAuthorizationUI() {
+
+    calculateManagementAccess();
+
+
+    if (dom.permissionBadge) {
+
+        dom.permissionBadge.textContent =
+            canManageGroup
+                ? "Management access"
+                : "View only";
     }
 
-    return formatDate(value);
-}
 
+    if (dom.permissionMessage) {
 
-function formatSubscriptionAmount(
-    value
-) {
-    if (
-        value === null ||
-        value === undefined ||
-        value === ""
-    ) {
-        return "—";
+        dom.permissionMessage.classList.toggle(
+            "hidden",
+            canManageGroup
+        );
     }
 
-    return formatMoney(value);
-}
 
+    if (dom.groupName) {
+        dom.groupName.disabled = !canManageGroup;
+    }
 
-/* =========================================================
-   GROUP TYPE
-   ========================================================= */
-
-/**
- * Returns true when the supplied category is one of the
- * predefined group types.
- */
-function isStandardGroupType(category) {
-    return STANDARD_GROUP_TYPES.has(
-        String(category || "").trim()
-    );
-}
-
-
-/**
- * Updates the custom Group Type field visibility.
- *
- * Only "Other" exposes the custom input.
- */
-function updateGroupCategoryUI() {
-    const category =
-        dom.groupCategory?.value
-            ?.trim() ||
-        "";
-
-    const isOther =
-        category === "Other";
-
-    if (dom.groupCategoryOtherField) {
-        dom.groupCategoryOtherField.hidden =
-            !isOther;
+    if (dom.groupCategory) {
+        dom.groupCategory.disabled = !canManageGroup;
     }
 
     if (dom.groupCategoryOther) {
-        dom.groupCategoryOther.required =
-            isOther;
+        dom.groupCategoryOther.disabled = !canManageGroup;
+    }
 
-        if (!isOther) {
-            dom.groupCategoryOther.value =
-                "";
-        }
+    if (dom.groupCountry) {
+        dom.groupCountry.disabled = !canManageGroup;
+    }
+
+    if (dom.monthlyContribution) {
+        dom.monthlyContribution.disabled =
+            !canManageGroup;
+    }
+
+    if (dom.saveGroup) {
+        dom.saveGroup.disabled =
+            !canManageGroup;
+    }
+
+
+    if (dom.adminActualPosition) {
+        dom.adminActualPosition.disabled =
+            !canManageGroup;
+    }
+
+    if (dom.adminActualPositionName) {
+        dom.adminActualPositionName.disabled =
+            !canManageGroup;
+    }
+
+    if (dom.saveAdminActualPosition) {
+        dom.saveAdminActualPosition.disabled =
+            !canManageGroup;
+    }
+
+
+    /*
+     * IMPORTANT:
+     *
+     * The monthly closing-day selector remains openable.
+     * Permission is enforced when saving.
+     */
+    if (dom.monthlyClosingDay) {
+        dom.monthlyClosingDay.disabled = false;
+    }
+
+    if (dom.saveContributionCalendar) {
+        dom.saveContributionCalendar.disabled =
+            !canManageGroup;
     }
 }
 
 
-/**
- * Loads an existing groups.category value into the
- * Group Type controls.
+/* ================================================================
+   GROUP TYPE HELPERS
+================================================================ */
+
+/*
+ * Finds the actual <option value=""> used by the HTML select.
  *
- * Standard values remain selected directly.
- *
- * Any existing non-standard category is represented
- * by:
- *
- *     Select = Other
- *     Custom  = stored category
+ * This allows the JavaScript to work whether the HTML values
+ * are "Chama", "CBO", "Other" or lowercase equivalents.
  */
-function renderGroupCategory(
-    category
-) {
-    const normalized =
-        String(category || "").trim();
+function findGroupCategoryOptionValue(value) {
+
+    if (!dom.groupCategory) {
+        return "";
+    }
+
+    const target =
+        normalizeLower(value);
+
+    const option =
+        Array.from(
+            dom.groupCategory.options
+        ).find(
+            option =>
+                normalizeLower(option.value) === target
+        );
+
+    return option
+        ? option.value
+        : "";
+}
+
+
+/*
+ * Sets the Group Type select without assuming
+ * the exact case of its option values.
+ */
+function setGroupCategorySelect(value) {
 
     if (!dom.groupCategory) {
         return;
     }
 
-    if (isStandardGroupType(normalized)) {
-        dom.groupCategory.value =
-            normalized;
+    const optionValue =
+        findGroupCategoryOptionValue(value);
 
-        if (dom.groupCategoryOther) {
-            dom.groupCategoryOther.value =
-                "";
-        }
-    } else if (normalized) {
-        dom.groupCategory.value =
-            "Other";
+    dom.groupCategory.value =
+        optionValue;
+}
 
-        if (dom.groupCategoryOther) {
-            dom.groupCategoryOther.value =
-                normalized;
-        }
-    } else {
-        dom.groupCategory.value =
-            "";
-        
-        if (dom.groupCategoryOther) {
-            dom.groupCategoryOther.value =
-                "";
+
+/*
+ * Shows or hides the custom group-type field.
+ *
+ * "Other" is a UI choice only.
+ * The database stores the actual custom group type
+ * directly in groups.category.
+ */
+function updateGroupCategoryUI() {
+
+    if (!dom.groupCategory) {
+        return;
+    }
+
+    const selected =
+        normalizeLower(
+            dom.groupCategory.value
+        );
+
+    const isOther =
+        selected === "other";
+
+
+    if (dom.groupCategoryOtherField) {
+
+        dom.groupCategoryOtherField.hidden =
+            !isOther;
+    }
+
+
+    if (dom.groupCategoryOther) {
+
+        dom.groupCategoryOther.required =
+            isOther;
+
+        if (!isOther) {
+            dom.groupCategoryOther.value = "";
         }
     }
+}
+
+
+/*
+ * Loads the existing groups.category value into the form.
+ *
+ * Standard:
+ *     Chama
+ *     CBO
+ *
+ * Anything else:
+ *     Other + existing value in custom field
+ */
+function renderGroupCategoryFields() {
+
+    if (!dom.groupCategory) {
+        return;
+    }
+
+    const category =
+        normalizeValue(
+            currentGroup?.category
+        );
+
+    const normalized =
+        normalizeLower(category);
+
+
+    const isStandard =
+        STANDARD_GROUP_TYPES.has(
+            normalized
+        );
+
+
+    if (!category) {
+
+        setGroupCategorySelect("");
+
+        if (dom.groupCategoryOther) {
+            dom.groupCategoryOther.value = "";
+        }
+
+        updateGroupCategoryUI();
+
+        return;
+    }
+
+
+    if (isStandard) {
+
+        setGroupCategorySelect(
+            STANDARD_GROUP_TYPES.get(normalized)
+        );
+
+        if (dom.groupCategoryOther) {
+            dom.groupCategoryOther.value = "";
+        }
+
+    } else {
+
+        setGroupCategorySelect("Other");
+
+        /*
+         * "Other" itself is not a valid custom category.
+         * If an old row contains exactly "Other", leave the
+         * custom field empty so the administrator can specify it.
+         */
+        if (dom.groupCategoryOther) {
+
+            dom.groupCategoryOther.value =
+                normalized === "other"
+                    ? ""
+                    : category;
+        }
+    }
+
 
     updateGroupCategoryUI();
 }
 
 
-/**
- * Returns the actual category that should be persisted.
- *
- * Chama/CBO:
- *     selected value
- *
- * Other:
- *     custom group type
+/*
+ * Converts the form selection into the actual value that
+ * should be stored in groups.category.
  */
-function getGroupCategoryValue() {
-    const selectedCategory =
-        dom.groupCategory?.value
-            ?.trim() ||
-        "";
+function getGroupCategoryForSave() {
 
-    if (selectedCategory !== "Other") {
-        return selectedCategory;
-    }
-
-    return dom.groupCategoryOther?.value
-        ?.trim() || "";
-}
+    const selected =
+        normalizeLower(
+            dom.groupCategory?.value
+        );
 
 
-/**
- * Validates Group Type and returns the value
- * that should be persisted.
- */
-function validateGroupCategory() {
-    const selectedCategory =
-        dom.groupCategory?.value
-            ?.trim() ||
-        "";
-
-    if (!selectedCategory) {
+    if (selected === "chama") {
         return {
-            valid: false,
-            value: "",
-            message:
-                "Group type is required."
+            valid: true,
+            value: "Chama"
         };
     }
 
-    if (selectedCategory === "Other") {
-        const customCategory =
-            dom.groupCategoryOther?.value
-                ?.trim() ||
-            "";
 
-        if (!customCategory) {
+    if (selected === "cbo") {
+        return {
+            valid: true,
+            value: "CBO"
+        };
+    }
+
+
+    if (selected === "other") {
+
+        const custom =
+            normalizeValue(
+                dom.groupCategoryOther?.value
+            );
+
+        if (!custom) {
+
             return {
                 valid: false,
-                value: "",
                 message:
-                    "Specify the group type when selecting Other."
+                    "Please specify the group type when \"Other\" is selected."
             };
         }
 
-        if (customCategory.length > 100) {
-            return {
-                valid: false,
-                value: "",
-                message:
-                    "The specified group type must be 100 characters or fewer."
-            };
-        }
 
         return {
             valid: true,
-            value: customCategory,
-            message: ""
+            value: custom
         };
     }
 
-    if (
-        !isStandardGroupType(
-            selectedCategory
-        )
-    ) {
-        return {
-            valid: false,
-            value: "",
-            message:
-                "Select a valid group type."
-        };
-    }
 
     return {
-        valid: true,
-        value: selectedCategory,
-        message: ""
+        valid: false,
+        message:
+            "Please select a group type."
     };
 }
 
 
-/* =========================================================
-   AUTHORIZATION CONTEXT
-   ---------------------------------------------------------
-   Canonical getMyApplicationContext() contract:
-
-   {
-       user,
-       member,
-       group,
-       isOwner,
-       role
-   }
-
-   Group management permissions:
-
-   - Owner         → management access
-   - Admin         → management access
-   - Administrator → management access
-   - Member        → view only
-   ========================================================= */
-
-async function loadAuthorizationContext() {
-    const context =
-        await getMyApplicationContext();
-
-    if (!context) {
-        throw new Error(
-            "Unable to load your group management context."
-        );
-    }
-
-    currentUser =
-        context.user ||
-        null;
-
-    currentMember =
-        context.member ||
-        null;
-
-    currentGroup =
-        context.group ||
-        null;
-
-    currentRole =
-        context.role ||
-        currentMember?.role ||
-        null;
-
-    currentIsOwner =
-        Boolean(
-            context.isOwner
-        );
-
-    const normalizedRole =
-        String(
-            currentRole || ""
-        )
-            .trim()
-            .toLowerCase();
-
-    canManageGroup =
-        Boolean(
-            currentIsOwner ||
-            normalizedRole === "owner" ||
-            normalizedRole === "admin" ||
-            normalizedRole === "administrator"
-        );
-
-    if (!currentGroup?.id) {
-        throw new Error(
-            "No group is associated with your account."
-        );
-    }
-}
-
-
-/* =========================================================
-   AUTHORIZATION UI
-   ========================================================= */
-
-function applyAuthorizationUI() {
-    const editable =
-        Boolean(
-            canManageGroup
-        );
-
-
-    /* ------------------------------------------------------
-       GROUP INFORMATION
-       ------------------------------------------------------ */
-
-    if (dom.groupName) {
-        dom.groupName.disabled =
-            !editable;
-    }
-
-    if (dom.groupCategory) {
-        dom.groupCategory.disabled =
-            !editable;
-    }
-
-    if (dom.groupCategoryOther) {
-        dom.groupCategoryOther.disabled =
-            !editable;
-    }
-
-    if (dom.groupCountry) {
-        dom.groupCountry.disabled =
-            !editable;
-    }
-
-    if (dom.monthlyContribution) {
-        dom.monthlyContribution.disabled =
-            !editable;
-    }
-
-
-    /* ------------------------------------------------------
-       LEADERSHIP SETUP
-       ------------------------------------------------------ */
-
-    if (dom.adminActualPosition) {
-        dom.adminActualPosition.disabled =
-            !editable;
-    }
-
-    if (dom.adminActualPositionName) {
-        dom.adminActualPositionName.disabled =
-            !editable;
-    }
-
-    if (dom.saveAdminActualPosition) {
-        dom.saveAdminActualPosition.disabled =
-            !editable;
-    }
-
-    if (dom.addInitialOfficerLink) {
-        if (editable) {
-            dom.addInitialOfficerLink.removeAttribute(
-                "aria-disabled"
-            );
-
-            dom.addInitialOfficerLink.tabIndex =
-                0;
-        } else {
-            dom.addInitialOfficerLink.setAttribute(
-                "aria-disabled",
-                "true"
-            );
-
-            dom.addInitialOfficerLink.tabIndex =
-                -1;
-        }
-    }
-
-
-    /* ------------------------------------------------------
-       MONTHLY CONTRIBUTION CYCLE
-       ------------------------------------------------------ */
-
-    if (dom.monthlyClosingDay) {
-        dom.monthlyClosingDay.disabled =
-            false;
-
-        dom.monthlyClosingDay.removeAttribute(
-            "disabled"
-        );
-
-        dom.monthlyClosingDay.removeAttribute(
-            "aria-disabled"
-        );
-    }
-
-
-    /* ------------------------------------------------------
-       SAVE BUTTONS
-       ------------------------------------------------------ */
-
-    if (dom.saveGroup) {
-        dom.saveGroup.disabled =
-            !editable;
-    }
-
-    if (
-        dom.saveContributionCalendar
-    ) {
-        dom.saveContributionCalendar.disabled =
-            !editable;
-    }
-
-
-    /* ------------------------------------------------------
-       PERMISSION BADGE
-       ------------------------------------------------------ */
-
-    if (dom.permissionBadge) {
-        if (editable) {
-            dom.permissionBadge.textContent =
-                currentIsOwner
-                    ? "Owner"
-                    : "Administrator";
-        } else {
-            dom.permissionBadge.textContent =
-                "View only";
-        }
-    }
-
-
-    /* ------------------------------------------------------
-       CONTEXT ROLE
-       ------------------------------------------------------ */
-
-    if (dom.contextRole) {
-        dom.contextRole.textContent =
-            currentRole ||
-            "—";
-    }
-
-
-    /* ------------------------------------------------------
-       CONTEXT ACCESS
-       ------------------------------------------------------ */
-
-    if (dom.contextAccess) {
-        dom.contextAccess.textContent =
-            editable
-                ? "Group management"
-                : "View only";
-    }
-
-
-    /* ------------------------------------------------------
-       PERMISSION MESSAGE
-       ------------------------------------------------------ */
-
-    if (dom.permissionMessage) {
-        if (editable) {
-            dom.permissionMessage.classList.add(
-                "hidden"
-            );
-        } else {
-            dom.permissionMessage.classList.remove(
-                "hidden"
-            );
-        }
-    }
-
-
-    /*
-     * Re-apply Group Type visibility after permission
-     * state changes.
-     */
-    updateGroupCategoryUI();
-}
-
-
-/* =========================================================
+/* ================================================================
    GROUP RENDERING
-   ========================================================= */
+================================================================ */
 
 function renderGroup() {
+
     if (!currentGroup) {
         return;
     }
 
-    const groupName =
-        currentGroup.name ||
-        "—";
+
+    const name =
+        normalizeValue(
+            currentGroup.name
+        ) || "—";
+
 
     const category =
-        currentGroup.category ||
-        "—";
+        normalizeValue(
+            currentGroup.category
+        ) || "—";
+
 
     const country =
-        currentGroup.country ||
-        "—";
+        normalizeValue(
+            currentGroup.country
+        ) || "—";
 
-    const monthlyAmount =
-        currentGroup.monthly_contribution ??
-        0;
+
+    const monthlyContribution =
+        Number(
+            currentGroup.monthly_contribution
+        );
 
 
     if (dom.groupNameDisplay) {
         dom.groupNameDisplay.textContent =
-            groupName;
+            name;
     }
+
 
     if (dom.groupCategoryDisplay) {
         dom.groupCategoryDisplay.textContent =
             category;
     }
+
 
     if (dom.groupCountryDisplay) {
         dom.groupCountryDisplay.textContent =
@@ -910,35 +730,47 @@ function renderGroup() {
 
     if (dom.groupName) {
         dom.groupName.value =
-            currentGroup.name ||
-            "";
+            currentGroup.name || "";
     }
-
-
-    /*
-     * Handle both standard and custom group types.
-     */
-    renderGroupCategory(
-        currentGroup.category
-    );
 
 
     if (dom.groupCountry) {
         dom.groupCountry.value =
-            currentGroup.country ||
-            "Kenya";
+            currentGroup.country || "";
     }
 
+
     if (dom.monthlyContribution) {
+
         dom.monthlyContribution.value =
-            monthlyAmount;
+            Number.isFinite(monthlyContribution)
+                ? monthlyContribution
+                : 0;
     }
+
+
+    renderGroupCategoryFields();
 
 
     if (dom.contextGroupName) {
         dom.contextGroupName.textContent =
-            groupName;
+            name;
     }
+
+
+    if (dom.contextRole) {
+        dom.contextRole.textContent =
+            currentRole || "—";
+    }
+
+
+    if (dom.contextAccess) {
+        dom.contextAccess.textContent =
+            canManageGroup
+                ? "Group management"
+                : "View only";
+    }
+
 
     if (dom.contextCountry) {
         dom.contextCountry.textContent =
@@ -947,117 +779,118 @@ function renderGroup() {
 }
 
 
-/* =========================================================
-   LEADERSHIP SETUP
-   ========================================================= */
+/* ================================================================
+   LEADERSHIP
+================================================================ */
 
 function updateActualPositionNameUI() {
-    const position =
-        dom.adminActualPosition?.value
-            ?.trim()
-            .toLowerCase() ||
-        "";
 
-    const isOther =
-        position === "other";
+    if (!dom.adminActualPosition) {
+        return;
+    }
+
+    const selected =
+        normalizeLower(
+            dom.adminActualPosition.value
+        );
+
+    const needsCustomName =
+        selected === "other";
 
 
-    if (
-        dom.adminActualPositionNameField
-    ) {
+    if (dom.adminActualPositionNameField) {
+
         dom.adminActualPositionNameField.hidden =
-            !isOther;
+            !needsCustomName;
     }
 
 
-    if (
-        !isOther &&
-        dom.adminActualPositionName
-    ) {
-        dom.adminActualPositionName.value =
-            "";
+    if (dom.adminActualPositionName) {
+
+        dom.adminActualPositionName.required =
+            needsCustomName;
+
+        if (!needsCustomName) {
+            dom.adminActualPositionName.value = "";
+        }
     }
 }
 
 
-/* =========================================================
-   LEADERSHIP STATUS
-   ========================================================= */
+function renderLeadershipSetup(positionData) {
 
-function renderLeadershipSetup() {
-    const position =
-        currentMember?.actual_position ||
-        "";
+    if (!positionData) {
 
-    const positionName =
-        currentMember?.actual_position_name ||
-        "";
+        if (dom.leadershipSetupStatus) {
+
+            dom.leadershipSetupStatus.textContent =
+                "Your actual group position has not been recorded.";
+
+            dom.leadershipSetupStatus.className =
+                "leadership-status pending";
+        }
+
+        return;
+    }
+
+
+    const actualPosition =
+        normalizeLower(
+            positionData.actual_position
+        );
+
+
+    const actualPositionName =
+        normalizeValue(
+            positionData.actual_position_name
+        );
 
 
     if (dom.adminActualPosition) {
-        const normalizedPosition =
-            String(position)
-                .trim()
-                .toLowerCase();
 
         dom.adminActualPosition.value =
             ACTUAL_POSITION_VALUES.has(
-                normalizedPosition
+                actualPosition
             )
-                ? normalizedPosition
+                ? actualPosition
                 : "";
     }
 
 
     if (dom.adminActualPositionName) {
+
         dom.adminActualPositionName.value =
-            positionName;
+            actualPositionName;
     }
 
 
     updateActualPositionNameUI();
 
 
-    const hasPosition =
-        ACTUAL_POSITION_VALUES.has(
-            String(position)
-                .trim()
-                .toLowerCase()
-        );
+    if (dom.leadershipSetupStatus) {
 
-
-    if (
-        dom.leadershipSetupStatus
-    ) {
-        if (hasPosition) {
-            const normalizedPosition =
-                String(position)
-                    .trim()
-                    .toLowerCase();
+        if (actualPosition) {
 
             let displayPosition =
-                normalizedPosition
-                    .replaceAll(
-                        "_",
-                        " "
-                    );
+                actualPosition.replace(
+                    /_/g,
+                    " "
+                );
 
             displayPosition =
-                displayPosition
-                    .replace(
-                        /\b\w/g,
-                        (character) =>
-                            character.toUpperCase()
-                    );
+                displayPosition.replace(
+                    /\b\w/g,
+                    character =>
+                        character.toUpperCase()
+                );
 
 
             if (
-                normalizedPosition ===
-                "other" &&
-                positionName
+                actualPosition === "other" &&
+                actualPositionName
             ) {
                 displayPosition =
-                    positionName;
+                    actualPositionName;
             }
 
 
@@ -1068,6 +901,7 @@ function renderLeadershipSetup() {
                 "leadership-status recorded";
 
         } else {
+
             dom.leadershipSetupStatus.textContent =
                 "Your actual group position has not been recorded.";
 
@@ -1078,16 +912,8 @@ function renderLeadershipSetup() {
 }
 
 
-/* =========================================================
-   LOAD LEADERSHIP SETUP
-   ---------------------------------------------------------
-   Read-only load.
-
-   No direct write to actual_position or
-   actual_position_name occurs here.
-   ========================================================= */
-
 async function loadLeadershipSetup() {
+
     if (
         !currentMember?.id ||
         !currentGroup?.id
@@ -1104,63 +930,35 @@ async function loadLeadershipSetup() {
         .select(
             "actual_position, actual_position_name, join_date"
         )
-        .eq(
-            "id",
-            currentMember.id
-        )
-        .eq(
-            "group_id",
-            currentGroup.id
-        )
+        .eq("id", currentMember.id)
+        .eq("group_id", currentGroup.id)
         .maybeSingle();
 
 
     if (error) {
-        console.error(
-            "Failed to load leadership setup:",
-            error
-        );
-
-        renderLeadershipSetup();
-
-        return;
+        throw error;
     }
 
 
-    if (data) {
-        currentMember = {
-            ...currentMember,
-            ...data
-        };
-    }
-
-
-    renderLeadershipSetup();
+    renderLeadershipSetup(
+        data || {
+            actual_position: null,
+            actual_position_name: null,
+            join_date: currentMember.join_date
+        }
+    );
 }
 
 
-/* =========================================================
-   SAVE ADMIN ACTUAL POSITION
-   ---------------------------------------------------------
-   Canonical mutation boundary:
-
-       set_member_actual_position(
-           p_member_id,
-           p_actual_position,
-           p_actual_position_name,
-           p_effective_from
-       )
-
-   IMPORTANT:
-   - No direct UPDATE of members.actual_position.
-   - No direct UPDATE of members.actual_position_name.
-   - Initial effective date = currentMember.join_date.
-   ========================================================= */
-
 async function saveAdminActualPosition() {
+
+    clearMessages();
+
+
     if (!canManageGroup) {
+
         showError(
-            "You do not have permission to change the actual group position."
+            "You do not have permission to update your actual position."
         );
 
         return;
@@ -1171,97 +969,79 @@ async function saveAdminActualPosition() {
         !currentMember?.id ||
         !currentGroup?.id
     ) {
+
         showError(
-            "No member or group context is available."
+            "Your member context is unavailable."
         );
 
         return;
     }
 
 
-    const position =
-        dom.adminActualPosition?.value
-            ?.trim()
-            .toLowerCase() ||
-        "";
-
-    const positionName =
-        dom.adminActualPositionName?.value
-            ?.trim() ||
-        "";
+    const actualPosition =
+        normalizeLower(
+            dom.adminActualPosition?.value
+        );
 
 
     if (
+        !actualPosition ||
         !ACTUAL_POSITION_VALUES.has(
-            position
+            actualPosition
         )
     ) {
+
         showError(
-            "Select a valid actual group position."
+            "Please select your actual group position."
         );
 
         return;
     }
 
 
-    if (
-        position === "other" &&
-        !positionName
-    ) {
-        showError(
-            "Enter the name of the actual position."
-        );
+    let actualPositionName = null;
 
-        return;
+
+    if (actualPosition === "other") {
+
+        actualPositionName =
+            normalizeValue(
+                dom.adminActualPositionName?.value
+            );
+
+
+        if (!actualPositionName) {
+
+            showError(
+                "Please enter the name of the actual position."
+            );
+
+            return;
+        }
     }
 
 
-    const effectiveFrom =
-        currentMember.join_date ||
-        null;
-
-
-    if (!effectiveFrom) {
-        showError(
-            "The administrator's join date is required before recording the actual position."
-        );
-
-        return;
+    if (dom.saveAdminActualPosition) {
+        dom.saveAdminActualPosition.disabled = true;
     }
-
-
-    if (
-        dom.saveAdminActualPosition
-    ) {
-        dom.saveAdminActualPosition.disabled =
-            true;
-
-        dom.saveAdminActualPosition.textContent =
-            "Saving...";
-    }
-
-
-    clearMessages();
 
 
     try {
+
+        const effectiveFrom =
+            currentMember.join_date ||
+            new Date().toISOString().slice(0, 10);
+
+
         const {
-            data,
             error
         } = await supabase.rpc(
             "set_member_actual_position",
             {
-                p_member_id:
-                    currentMember.id,
-
-                p_actual_position:
-                    position,
-
+                p_member_id: currentMember.id,
+                p_actual_position: actualPosition,
                 p_actual_position_name:
-                    position === "other"
-                        ? positionName
-                        : null,
-
+                    actualPositionName,
                 p_effective_from:
                     effectiveFrom
             }
@@ -1273,97 +1053,46 @@ async function saveAdminActualPosition() {
         }
 
 
-        if (
-            data &&
-            typeof data === "object"
-        ) {
-            const returnedMember =
-                data.member ||
-                data;
-
-
-            if (
-                returnedMember &&
-                typeof returnedMember ===
-                    "object"
-            ) {
-                currentMember = {
-                    ...currentMember,
-
-                    ...(returnedMember.actual_position !==
-                        undefined
-                        ? {
-                            actual_position:
-                                returnedMember.actual_position
-                        }
-                        : {}),
-
-                    ...(returnedMember.actual_position_name !==
-                        undefined
-                        ? {
-                            actual_position_name:
-                                returnedMember.actual_position_name
-                        }
-                        : {})
-                };
-            }
-        }
-
-
-        currentMember = {
-            ...currentMember,
-
-            actual_position:
-                position,
-
-            actual_position_name:
-                position === "other"
-                    ? positionName
-                    : null
-        };
-
-
-        renderLeadershipSetup();
+        await loadLeadershipSetup();
 
 
         showStatus(
-            "Your actual group position was recorded successfully."
+            "Your actual group position has been saved.",
+            "success"
         );
 
     } catch (error) {
+
         console.error(
-            "Failed to save actual group position:",
+            "Failed to save actual position:",
             error
         );
 
-
         showError(
             error?.message ||
-            "Unable to save the actual group position."
+            "Unable to save your actual group position."
         );
 
     } finally {
-        if (
-            dom.saveAdminActualPosition
-        ) {
+
+        if (dom.saveAdminActualPosition) {
             dom.saveAdminActualPosition.disabled =
                 !canManageGroup;
-
-            dom.saveAdminActualPosition.textContent =
-                "Save Actual Position";
         }
     }
 }
 
 
-/* =========================================================
+/* ================================================================
    MEMBER COUNT
-   ========================================================= */
+================================================================ */
 
 async function loadMemberCount() {
+
     if (!currentGroup?.id) {
         return;
     }
+
 
     const {
         count,
@@ -1380,316 +1109,190 @@ async function loadMemberCount() {
         .eq(
             "group_id",
             currentGroup.id
-        )
-        .eq(
-            "status",
-            "active"
         );
+
 
     if (error) {
-        console.error(
-            "Failed to load member count:",
-            error
-        );
-
-        if (dom.memberCountDisplay) {
-            dom.memberCountDisplay.textContent =
-                "—";
-        }
-
-        return;
+        throw error;
     }
 
+
     if (dom.memberCountDisplay) {
+
         dom.memberCountDisplay.textContent =
-            String(
-                count ?? 0
-            );
+            Number.isFinite(count)
+                ? String(count)
+                : "0";
     }
 }
 
 
-/* =========================================================
-   MONTHLY CONTRIBUTION CYCLE
-   ========================================================= */
+/* ================================================================
+   CONTRIBUTION CYCLE
+================================================================ */
 
-function getCurrentCycle(
-    closingDay
-) {
+function getCurrentCycle(closingDay) {
+
     const day =
-        Number(closingDay);
+        Math.min(
+            Math.max(
+                Number(closingDay) || 28,
+                1
+            ),
+            28
+        );
 
-    if (
-        !Number.isInteger(day) ||
-        day < 1 ||
-        day > 28
-    ) {
-        return null;
-    }
 
     const today =
         new Date();
 
-    let closingYear =
+
+    const year =
         today.getFullYear();
 
-    let closingMonth =
+
+    const month =
         today.getMonth();
 
 
-    if (
-        today.getDate() >
-        day
-    ) {
-        closingMonth += 1;
+    const currentMonthClosing =
+        new Date(
+            year,
+            month,
+            day
+        );
+
+
+    let cycleYear =
+        year;
+
+    let cycleMonth =
+        month;
+
+
+    if (today > currentMonthClosing) {
+
+        cycleMonth += 1;
+
+        if (cycleMonth > 11) {
+            cycleMonth = 0;
+            cycleYear += 1;
+        }
     }
 
 
     const closingDate =
         new Date(
-            closingYear,
-            closingMonth,
+            cycleYear,
+            cycleMonth,
             day
         );
 
 
     const openingDate =
         new Date(
-            closingDate
+            cycleYear,
+            cycleMonth - 1,
+            day + 1
         );
-
-    openingDate.setDate(
-        openingDate.getDate() - 29
-    );
 
 
     return {
+        cycleYear,
+        cycleMonth,
         openingDate,
         closingDate
     };
 }
 
 
-/* =========================================================
-   CONTRIBUTION PREVIEW
-   ========================================================= */
+function formatCycleMonth(year, month) {
+
+    const date =
+        new Date(
+            year,
+            month,
+            1
+        );
+
+
+    return date.toLocaleDateString(
+        undefined,
+        {
+            year: "numeric",
+            month: "long"
+        }
+    );
+}
+
 
 function updateContributionPreview() {
-    if (!dom.monthlyClosingDay) {
-        return;
-    }
 
     const closingDay =
         Number(
-            dom.monthlyClosingDay.value
+            dom.monthlyClosingDay?.value
         );
 
-    const cycle =
+
+    if (!closingDay) {
+        return;
+    }
+
+
+    const {
+        cycleYear,
+        cycleMonth,
+        openingDate,
+        closingDate
+    } =
         getCurrentCycle(
             closingDay
         );
 
 
-    if (!cycle) {
-        if (
-            dom.currentContributionCycle
-        ) {
-            dom.currentContributionCycle.textContent =
-                "—";
-        }
+    if (dom.currentContributionCycle) {
 
-        if (
-            dom.currentContributionOpeningDate
-        ) {
-            dom.currentContributionOpeningDate.textContent =
-                "—";
-        }
-
-        if (
-            dom.currentContributionClosingDate
-        ) {
-            dom.currentContributionClosingDate.textContent =
-                "—";
-        }
-
-        return;
-    }
-
-
-    if (
-        dom.currentContributionCycle
-    ) {
         dom.currentContributionCycle.textContent =
-            formatDateRange(
-                cycle.openingDate,
-                cycle.closingDate
+            formatCycleMonth(
+                cycleYear,
+                cycleMonth
             );
     }
 
 
-    if (
-        dom.currentContributionOpeningDate
-    ) {
+    if (dom.currentContributionOpeningDate) {
+
         dom.currentContributionOpeningDate.textContent =
             formatDate(
-                cycle.openingDate
+                openingDate
             );
     }
 
 
-    if (
-        dom.currentContributionClosingDate
-    ) {
+    if (dom.currentContributionClosingDate) {
+
         dom.currentContributionClosingDate.textContent =
             formatDate(
-                cycle.closingDate
+                closingDate
             );
     }
 }
 
 
-/* =========================================================
-   SUBSCRIPTION
-   ========================================================= */
+function populateClosingDayOptions(selectedDay) {
 
-async function loadSubscription() {
-    if (!currentGroup?.id) {
-        return;
-    }
-
-    const {
-        data,
-        error
-    } = await supabase.rpc(
-        "get_group_subscription",
-        {
-            p_group_id:
-                currentGroup.id
-        }
-    );
-
-
-    if (error) {
-        console.error(
-            "Failed to load group subscription:",
-            error
-        );
-
-        subscription =
-            null;
-
-        renderSubscription();
-
-        return;
-    }
-
-
-    if (Array.isArray(data)) {
-        subscription =
-            data.length > 0
-                ? data[0]
-                : null;
-    } else {
-        subscription =
-            data;
-    }
-
-
-    renderSubscription();
-}
-
-
-function renderSubscription() {
-    const value =
-        subscription ||
-        {};
-
-
-    const status =
-        value.status ||
-        value.subscription_status ||
-        "—";
-
-
-    const plan =
-        value.plan_name ||
-        value.pricing_tier_code ||
-        value.plan ||
-        "—";
-
-
-    const endDate =
-        value.end_date ||
-        value.current_period_end ||
-        value.renewal_date ||
-        null;
-
-
-    const amount =
-        value.amount ||
-        value.monthly_amount ||
-        value.standard_group_amount ||
-        null;
-
-
-    if (dom.subscriptionStatus) {
-        dom.subscriptionStatus.textContent =
-            String(status);
-    }
-
-
-    if (dom.subscriptionPlan) {
-        dom.subscriptionPlan.textContent =
-            String(plan);
-    }
-
-
-    if (dom.subscriptionEndDate) {
-        dom.subscriptionEndDate.textContent =
-            formatSubscriptionDate(
-                endDate
-            );
-    }
-
-
-    if (dom.subscriptionAmount) {
-        dom.subscriptionAmount.textContent =
-            formatSubscriptionAmount(
-                amount
-            );
-    }
-}
-
-
-/* =========================================================
-   MONTHLY CLOSING DAY OPTIONS
-   ========================================================= */
-
-function populateClosingDayOptions() {
     if (!dom.monthlyClosingDay) {
         return;
     }
 
 
-    const existingValue =
-        contributionSettings?.monthly_closing_day ??
-        dom.monthlyClosingDay.value ??
-        28;
+    dom.monthlyClosingDay.innerHTML = "";
 
 
-    dom.monthlyClosingDay.innerHTML =
-        "";
+    for (let day = 1; day <= 28; day += 1) {
 
-
-    for (
-        let day = 1;
-        day <= 28;
-        day += 1
-    ) {
         const option =
-            document.createElement(
-                "option"
-            );
+            document.createElement("option");
 
         option.value =
             String(day);
@@ -1697,49 +1300,33 @@ function populateClosingDayOptions() {
         option.textContent =
             String(day);
 
+        if (
+            Number(selectedDay) === day
+        ) {
+            option.selected = true;
+        }
+
         dom.monthlyClosingDay.appendChild(
             option
         );
     }
 
 
-    const normalized =
-        Number(
-            existingValue
-        );
-
-
-    dom.monthlyClosingDay.value =
-        Number.isInteger(
-            normalized
-        ) &&
-        normalized >= 1 &&
-        normalized <= 28
-            ? String(normalized)
-            : "28";
-
-
-    dom.monthlyClosingDay.disabled =
-        false;
-
-    dom.monthlyClosingDay.removeAttribute(
-        "disabled"
-    );
-
-    dom.monthlyClosingDay.removeAttribute(
-        "aria-disabled"
-    );
+    /*
+     * IMPORTANT:
+     *
+     * Never disable this selector.
+     * Permission is enforced only on save.
+     */
+    dom.monthlyClosingDay.disabled = false;
 
 
     updateContributionPreview();
 }
 
 
-/* =========================================================
-   CONTRIBUTION SETTINGS
-   ========================================================= */
-
 async function loadContributionSettings() {
+
     if (!currentGroup?.id) {
         return;
     }
@@ -1751,74 +1338,43 @@ async function loadContributionSettings() {
     } = await supabase.rpc(
         "get_group_contribution_settings",
         {
-            p_group_id:
-                currentGroup.id
+            p_group_id: currentGroup.id
         }
     );
 
 
     if (error) {
-        console.error(
-            "Failed to load contribution settings:",
-            error
-        );
-
-
-        contributionSettings = {
-            monthly_closing_day:
-                28
-        };
-
-
-        populateClosingDayOptions();
-
-        return;
+        throw error;
     }
 
 
-    if (Array.isArray(data)) {
-        contributionSettings =
-            data.length > 0
-                ? data[0]
-                : {
-                    monthly_closing_day:
-                        28
-                };
-    } else {
-        contributionSettings =
-            data || {
-                monthly_closing_day:
-                    28
-            };
-    }
+    contributionSettings =
+        Array.isArray(data)
+            ? data[0] || null
+            : data || null;
 
 
-    populateClosingDayOptions();
+    const closingDay =
+        Number(
+            contributionSettings?.monthly_closing_day
+        ) || 28;
+
+
+    populateClosingDayOptions(
+        closingDay
+    );
 }
 
-
-function renderContributionSettings() {
-    populateClosingDayOptions();
-}
-
-
-/* =========================================================
-   SAVE CONTRIBUTION SETTINGS
-   ========================================================= */
 
 async function saveContributionSettings() {
+
+    clearMessages();
+
+
     if (!canManageGroup) {
+
         showError(
-            "You do not have permission to change the contribution cycle."
-        );
-
-        return;
-    }
-
-
-    if (!currentGroup?.id) {
-        showError(
-            "No group is available."
+            "You do not have permission to update the contribution cycle."
         );
 
         return;
@@ -1832,45 +1388,33 @@ async function saveContributionSettings() {
 
 
     if (
-        !Number.isInteger(
-            closingDay
-        ) ||
+        !Number.isInteger(closingDay) ||
         closingDay < 1 ||
         closingDay > 28
     ) {
+
         showError(
-            "Choose a monthly closing day from 1 to 28."
+            "Please select a valid closing day from 1 to 28."
         );
 
         return;
     }
 
 
-    if (
-        dom.saveContributionCalendar
-    ) {
-        dom.saveContributionCalendar.disabled =
-            true;
-
-        dom.saveContributionCalendar.textContent =
-            "Saving...";
+    if (dom.saveContributionCalendar) {
+        dom.saveContributionCalendar.disabled = true;
     }
 
 
-    clearMessages();
-
-
     try {
+
         const {
             error
         } = await supabase.rpc(
             "update_group_contribution_settings",
             {
-                p_group_id:
-                    currentGroup.id,
-
-                p_monthly_closing_day:
-                    closingDay
+                p_group_id: currentGroup.id,
+                p_monthly_closing_day: closingDay
             }
         );
 
@@ -1880,69 +1424,193 @@ async function saveContributionSettings() {
         }
 
 
-        contributionSettings = {
-            ...(contributionSettings || {}),
-
-            monthly_closing_day:
-                closingDay
-        };
-
-
-        renderContributionSettings();
+        await loadContributionSettings();
 
 
         showStatus(
-            "Contribution cycle updated successfully."
+            "Contribution cycle settings saved.",
+            "success"
         );
 
     } catch (error) {
+
         console.error(
             "Failed to save contribution settings:",
             error
         );
 
-
         showError(
             error?.message ||
-            "Unable to update the contribution cycle."
+            "Unable to save contribution cycle settings."
         );
 
     } finally {
+
+        /*
+         * Selector remains openable even after an error.
+         */
         if (dom.monthlyClosingDay) {
-            dom.monthlyClosingDay.disabled =
-                false;
-
-            dom.monthlyClosingDay.removeAttribute(
-                "disabled"
-            );
-
-            dom.monthlyClosingDay.removeAttribute(
-                "aria-disabled"
-            );
+            dom.monthlyClosingDay.disabled = false;
         }
 
-
-        if (
-            dom.saveContributionCalendar
-        ) {
+        if (dom.saveContributionCalendar) {
             dom.saveContributionCalendar.disabled =
                 !canManageGroup;
-
-            dom.saveContributionCalendar.textContent =
-                "Save Contribution Cycle";
         }
     }
 }
 
 
-/* =========================================================
-   SAVE GROUP
-   ========================================================= */
+/* ================================================================
+   SUBSCRIPTION
+================================================================ */
 
-async function saveGroup() {
+function formatSubscriptionAmount(
+    amount,
+    currency = "KES"
+) {
+
+    const numericAmount =
+        Number(amount);
+
+
+    if (!Number.isFinite(numericAmount)) {
+        return "—";
+    }
+
+
+    return new Intl.NumberFormat(
+        "en-KE",
+        {
+            style: "currency",
+            currency,
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }
+    ).format(numericAmount);
+}
+
+
+function renderSubscription() {
+
+    const record =
+        subscription;
+
+
+    if (!record) {
+
+        if (dom.subscriptionStatus) {
+            dom.subscriptionStatus.textContent =
+                "No subscription";
+        }
+
+        if (dom.subscriptionPlan) {
+            dom.subscriptionPlan.textContent =
+                "—";
+        }
+
+        if (dom.subscriptionEndDate) {
+            dom.subscriptionEndDate.textContent =
+                "—";
+        }
+
+        if (dom.subscriptionAmount) {
+            dom.subscriptionAmount.textContent =
+                "—";
+        }
+
+        return;
+    }
+
+
+    if (dom.subscriptionStatus) {
+
+        dom.subscriptionStatus.textContent =
+            normalizeValue(
+                record.status
+            ) || "—";
+    }
+
+
+    if (dom.subscriptionPlan) {
+
+        dom.subscriptionPlan.textContent =
+            normalizeValue(
+                record.plan_name ||
+                record.plan ||
+                record.subscription_plan
+            ) || "—";
+    }
+
+
+    if (dom.subscriptionEndDate) {
+
+        dom.subscriptionEndDate.textContent =
+            formatDate(
+                record.end_date ||
+                record.current_period_end ||
+                record.renewal_date
+            );
+    }
+
+
+    if (dom.subscriptionAmount) {
+
+        dom.subscriptionAmount.textContent =
+            formatSubscriptionAmount(
+                record.amount,
+                record.currency || "KES"
+            );
+    }
+}
+
+
+async function loadSubscription() {
+
+    if (!currentGroup?.id) {
+        return;
+    }
+
+
+    const {
+        data,
+        error
+    } = await supabase.rpc(
+        "get_group_subscription",
+        {
+            p_group_id: currentGroup.id
+        }
+    );
+
+
+    if (error) {
+        throw error;
+    }
+
+
+    subscription =
+        Array.isArray(data)
+            ? data[0] || null
+            : data || null;
+
+
+    renderSubscription();
+}
+
+
+/* ================================================================
+   SAVE GROUP INFORMATION
+================================================================ */
+
+async function saveGroupInformation() {
+
+    clearMessages();
+
+
     if (!canManageGroup) {
+
         showError(
-            "You do not have permission to update group information."
+            "You do not have permission to update this group."
         );
 
         return;
@@ -1950,8 +1618,9 @@ async function saveGroup() {
 
 
     if (!currentGroup?.id) {
+
         showError(
-            "No group is available."
+            "Group context is unavailable."
         );
 
         return;
@@ -1959,15 +1628,15 @@ async function saveGroup() {
 
 
     const name =
-        dom.groupName?.value.trim();
-
-
-    const categoryValidation =
-        validateGroupCategory();
+        normalizeValue(
+            dom.groupName?.value
+        );
 
 
     const country =
-        dom.groupCountry?.value.trim();
+        normalizeValue(
+            dom.groupCountry?.value
+        );
 
 
     const monthlyContribution =
@@ -1977,17 +1646,9 @@ async function saveGroup() {
 
 
     if (!name) {
+
         showError(
-            "Group name is required."
-        );
-
-        return;
-    }
-
-
-    if (!categoryValidation.valid) {
-        showError(
-            categoryValidation.message
+            "Please enter the group name."
         );
 
         return;
@@ -1995,8 +1656,9 @@ async function saveGroup() {
 
 
     if (!country) {
+
         showError(
-            "Country is required."
+            "Please enter the country."
         );
 
         return;
@@ -2004,32 +1666,43 @@ async function saveGroup() {
 
 
     if (
-        !Number.isFinite(
-            monthlyContribution
-        ) ||
+        !Number.isFinite(monthlyContribution) ||
         monthlyContribution < 0
     ) {
+
         showError(
-            "Enter a valid monthly contribution amount."
+            "Please enter a valid monthly contribution amount."
         );
 
         return;
     }
 
 
-    if (dom.saveGroup) {
-        dom.saveGroup.disabled =
-            true;
+    const categoryResult =
+        getGroupCategoryForSave();
 
-        dom.saveGroup.textContent =
-            "Saving...";
+
+    if (!categoryResult.valid) {
+
+        showError(
+            categoryResult.message
+        );
+
+        return;
     }
 
 
-    clearMessages();
+    const category =
+        categoryResult.value;
+
+
+    if (dom.saveGroup) {
+        dom.saveGroup.disabled = true;
+    }
 
 
     try {
+
         const {
             data,
             error
@@ -2037,16 +1710,8 @@ async function saveGroup() {
             .from("groups")
             .update({
                 name,
-
-                /*
-                 * Existing schema contract:
-                 * Group Type → groups.category
-                 */
-                category:
-                    categoryValidation.value,
-
+                category,
                 country,
-
                 monthly_contribution:
                     monthlyContribution
             })
@@ -2063,160 +1728,132 @@ async function saveGroup() {
         }
 
 
-        currentGroup = {
-            ...currentGroup,
-
-            ...(data || {}),
-
-            name,
-
-            category:
-                categoryValidation.value,
-
-            country,
-
-            monthly_contribution:
-                monthlyContribution
-        };
+        currentGroup =
+            data || {
+                ...currentGroup,
+                name,
+                category,
+                country,
+                monthly_contribution:
+                    monthlyContribution
+            };
 
 
         renderGroup();
+        applyAuthorizationUI();
 
 
         showStatus(
-            "Group information updated successfully."
+            "Group information saved.",
+            "success"
         );
 
     } catch (error) {
+
         console.error(
-            "Failed to save group:",
+            "Failed to save group information:",
             error
         );
 
-
         showError(
             error?.message ||
-            "Unable to update group information."
+            "Unable to save group information."
         );
 
     } finally {
+
         if (dom.saveGroup) {
             dom.saveGroup.disabled =
                 !canManageGroup;
-
-            dom.saveGroup.textContent =
-                "Save Group Information";
         }
     }
 }
 
 
-/* =========================================================
-   EVENT HANDLERS
-   ========================================================= */
+/* ================================================================
+   EVENT BINDING
+================================================================ */
 
 function bindEvents() {
+
     if (eventsBound) {
         return;
     }
 
+
     eventsBound = true;
 
 
-    /* ------------------------------------------------------
-       GROUP INFORMATION
-       ------------------------------------------------------ */
-
     if (dom.groupForm) {
+
         dom.groupForm.addEventListener(
             "submit",
-            async (event) => {
+            event => {
+
                 event.preventDefault();
 
-                await saveGroup();
+                saveGroupInformation();
             }
         );
     }
 
 
     if (dom.groupCategory) {
+
         dom.groupCategory.addEventListener(
             "change",
             () => {
+
                 updateGroupCategoryUI();
             }
         );
     }
 
 
-    /* ------------------------------------------------------
-       LEADERSHIP SETUP
-       ------------------------------------------------------ */
+    if (dom.adminActualPosition) {
 
-    if (
-        dom.adminActualPosition
-    ) {
         dom.adminActualPosition.addEventListener(
             "change",
             () => {
+
                 updateActualPositionNameUI();
             }
         );
     }
 
 
-    if (
-        dom.saveAdminActualPosition
-    ) {
+    if (dom.saveAdminActualPosition) {
+
         dom.saveAdminActualPosition.addEventListener(
             "click",
-            async () => {
-                await saveAdminActualPosition();
+            () => {
+
+                saveAdminActualPosition();
             }
         );
     }
 
 
-    if (
-        dom.addInitialOfficerLink
-    ) {
-        dom.addInitialOfficerLink.addEventListener(
-            "click",
-            (event) => {
-                if (!canManageGroup) {
-                    event.preventDefault();
+    if (dom.contributionCalendarForm) {
 
-                    showError(
-                        "You do not have permission to add initial officers."
-                    );
-                }
-            }
-        );
-    }
-
-
-    /* ------------------------------------------------------
-       CONTRIBUTION CALENDAR
-       ------------------------------------------------------ */
-
-    if (
-        dom.contributionCalendarForm
-    ) {
         dom.contributionCalendarForm.addEventListener(
             "submit",
-            async (event) => {
+            event => {
+
                 event.preventDefault();
 
-                await saveContributionSettings();
+                saveContributionSettings();
             }
         );
     }
 
 
     if (dom.monthlyClosingDay) {
+
         dom.monthlyClosingDay.addEventListener(
             "change",
             () => {
+
                 updateContributionPreview();
             }
         );
@@ -2224,22 +1861,12 @@ function bindEvents() {
 }
 
 
-/* =========================================================
-   INITIALIZATION
-   ---------------------------------------------------------
-   BOOT OWNERSHIP
-   ---------------------------------------------------------
-   admin-layout.js is the sole page-shell boot owner.
+/* ================================================================
+   PAGE INITIALIZATION
+================================================================ */
 
-   This module:
-   - exports initGroupManagement()
-   - does not call itself at module scope
-   - binds events once
-   - protects repeated initialization with
-     initializationPromise
-   ========================================================= */
+async function initializeGroupManagement() {
 
-export async function initGroupManagement() {
     if (initializationPromise) {
         return initializationPromise;
     }
@@ -2247,86 +1874,130 @@ export async function initGroupManagement() {
 
     initializationPromise =
         (async () => {
+
             clearMessages();
 
 
+            if (dom.adminLoading) {
+                dom.adminLoading.classList.remove(
+                    "hidden"
+                );
+            }
+
+
+            if (dom.managementContent) {
+                dom.managementContent.classList.add(
+                    "hidden"
+                );
+            }
+
+
+            bindEvents();
+
+
+            /*
+             * Ensure the Group Type UI is initialized
+             * even before group data is loaded.
+             */
+            updateGroupCategoryUI();
+
+
             try {
-                /*
-                 * Bind page events exactly once.
-                 */
-                bindEvents();
+
+                const context =
+                    await getMyApplicationContext();
 
 
-                /*
-                 * Load authentication context.
-                 */
-                await loadAuthorizationContext();
+                if (!context) {
 
-
-                /*
-                 * Render group.
-                 */
-                renderGroup();
-
-
-                /*
-                 * Load and render administrator
-                 * actual-position state.
-                 */
-                await loadLeadershipSetup();
-
-
-                /*
-                 * Apply permissions.
-                 */
-                applyAuthorizationUI();
-
-
-                /*
-                 * Load remaining data.
-                 */
-                await Promise.all([
-                    loadMemberCount(),
-                    loadSubscription(),
-                    loadContributionSettings()
-                ]);
-
-
-                renderContributionSettings();
-
-
-                /*
-                 * Apply permissions one final time.
-                 *
-                 * The closing-day selector is explicitly
-                 * kept enabled by applyAuthorizationUI().
-                 */
-                applyAuthorizationUI();
-
-
-                if (dom.adminLoading) {
-                    dom.adminLoading.classList.add(
-                        "hidden"
+                    throw new Error(
+                        "Unable to load your account context."
                     );
                 }
 
 
-                if (
-                    dom.managementContent
-                ) {
+                currentUser =
+                    context.user || null;
+
+
+                currentMember =
+                    context.member || null;
+
+
+                currentGroup =
+                    context.group || null;
+
+
+                currentIsOwner =
+                    Boolean(
+                        context.isOwner
+                    );
+
+
+                currentRole =
+                    context.role ||
+                    currentMember?.role ||
+                    null;
+
+
+                if (!currentGroup?.id) {
+
+                    throw new Error(
+                        "No active group was found for your account."
+                    );
+                }
+
+
+                calculateManagementAccess();
+
+
+                renderGroup();
+
+
+                applyAuthorizationUI();
+
+
+                await Promise.all([
+                    loadLeadershipSetup(),
+                    loadMemberCount(),
+                    loadContributionSettings(),
+                    loadSubscription()
+                ]);
+
+
+                /*
+                 * Re-apply after async data has populated
+                 * the page.
+                 */
+                renderGroup();
+                applyAuthorizationUI();
+
+
+                if (dom.managementContent) {
+
                     dom.managementContent.classList.remove(
                         "hidden"
                     );
                 }
 
+
+                if (dom.adminLoading) {
+
+                    dom.adminLoading.classList.add(
+                        "hidden"
+                    );
+                }
+
             } catch (error) {
+
                 console.error(
-                    "Group management initialization failed:",
+                    "Failed to initialize group management:",
                     error
                 );
 
 
                 if (dom.adminLoading) {
+
                     dom.adminLoading.textContent =
                         "Unable to load group management.";
                 }
@@ -2336,7 +2007,17 @@ export async function initGroupManagement() {
                     error?.message ||
                     "Unable to load group management."
                 );
+
+
+                if (dom.permissionMessage) {
+
+                    dom.permissionMessage.classList.remove(
+                        "hidden"
+                    );
+                }
+
             }
+
         })();
 
 
@@ -2344,8 +2025,33 @@ export async function initGroupManagement() {
 }
 
 
-/* =========================================================
-   NO MODULE-LEVEL AUTO-BOOT
-   ---------------------------------------------------------
-   admin-layout.js calls initGroupManagement().
-   ========================================================= */
+/* ================================================================
+   PUBLIC MODULE API
+================================================================ */
+
+export {
+    initializeGroupManagement,
+    saveGroupInformation,
+    saveAdminActualPosition,
+    saveContributionSettings,
+    loadContributionSettings,
+    loadLeadershipSetup,
+    loadSubscription
+};
+
+
+/*
+ * ================================================================
+ * NO AUTO-BOOT
+ * ================================================================
+ *
+ * admin-layout.js remains the sole page-shell boot owner.
+ *
+ * This file intentionally does not call:
+ *
+ *     initializeGroupManagement();
+ *
+ * at module scope.
+ *
+ * ================================================================
+ */
