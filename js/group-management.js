@@ -10,6 +10,8 @@
    - Display subscription state
    - Manage monthly contribution cycle
    - Keep contribution cycle changes prospective
+   - Manage administrator actual group position
+   - Provide entry point for initial officer onboarding
 
    REMOVED
    ---------------------------------------------------------
@@ -27,6 +29,9 @@
    - Group Type maps to groups.category
    - Monthly Closing Day selector remains openable
    - Saving the contribution cycle remains permission-controlled
+   - Actual position changes use set_member_actual_position()
+   - No direct position-column writes are performed
+   - Initial actual-position effective date = member.join_date
    - No module-level auto-boot
    ========================================================= */
 
@@ -34,6 +39,22 @@ import {
     supabase,
     getMyApplicationContext
 } from "./auth.js";
+
+
+/* =========================================================
+   CONSTANTS
+   ========================================================= */
+
+const ACTUAL_POSITION_VALUES = new Set([
+    "chairperson",
+    "vice_chairperson",
+    "treasurer",
+    "secretary",
+    "vice_secretary",
+    "committee_member",
+    "member",
+    "other"
+]);
 
 
 /* =========================================================
@@ -109,6 +130,49 @@ const dom = {
         "saveGroup"
     ),
 
+    /* -----------------------------------------------------
+       LEADERSHIP SETUP
+       ----------------------------------------------------- */
+
+    leadershipSetupCard:
+        document.getElementById(
+            "leadershipSetupCard"
+        ),
+
+    leadershipSetupStatus:
+        document.getElementById(
+            "leadershipSetupStatus"
+        ),
+
+    adminActualPosition:
+        document.getElementById(
+            "adminActualPosition"
+        ),
+
+    adminActualPositionNameField:
+        document.getElementById(
+            "adminActualPositionNameField"
+        ),
+
+    adminActualPositionName:
+        document.getElementById(
+            "adminActualPositionName"
+        ),
+
+    saveAdminActualPosition:
+        document.getElementById(
+            "saveAdminActualPosition"
+        ),
+
+    addInitialOfficerLink:
+        document.getElementById(
+            "addInitialOfficerLink"
+        ),
+
+    /* -----------------------------------------------------
+       CONTRIBUTION CALENDAR
+       ----------------------------------------------------- */
+
     contributionCalendarForm:
         document.getElementById(
             "contributionCalendarForm"
@@ -139,6 +203,10 @@ const dom = {
             "currentContributionClosingDate"
         ),
 
+    /* -----------------------------------------------------
+       SUBSCRIPTION
+       ----------------------------------------------------- */
+
     subscriptionPanel:
         document.getElementById(
             "subscriptionPanel"
@@ -163,6 +231,10 @@ const dom = {
         document.getElementById(
             "subscriptionAmount"
         ),
+
+    /* -----------------------------------------------------
+       GROUP CONTEXT
+       ----------------------------------------------------- */
 
     contextGroupName:
         document.getElementById(
@@ -424,6 +496,7 @@ function applyAuthorizationUI() {
             canManageGroup
         );
 
+
     /*
      * ------------------------------------------------------
      * GROUP INFORMATION
@@ -448,6 +521,47 @@ function applyAuthorizationUI() {
     if (dom.monthlyContribution) {
         dom.monthlyContribution.disabled =
             !editable;
+    }
+
+
+    /*
+     * ------------------------------------------------------
+     * LEADERSHIP SETUP
+     * ------------------------------------------------------
+     */
+
+    if (dom.adminActualPosition) {
+        dom.adminActualPosition.disabled =
+            !editable;
+    }
+
+    if (dom.adminActualPositionName) {
+        dom.adminActualPositionName.disabled =
+            !editable;
+    }
+
+    if (dom.saveAdminActualPosition) {
+        dom.saveAdminActualPosition.disabled =
+            !editable;
+    }
+
+    if (dom.addInitialOfficerLink) {
+        if (editable) {
+            dom.addInitialOfficerLink.removeAttribute(
+                "aria-disabled"
+            );
+
+            dom.addInitialOfficerLink.tabIndex =
+                0;
+        } else {
+            dom.addInitialOfficerLink.setAttribute(
+                "aria-disabled",
+                "true"
+            );
+
+            dom.addInitialOfficerLink.tabIndex =
+                -1;
+        }
     }
 
 
@@ -639,6 +753,451 @@ function renderGroup() {
     if (dom.contextCountry) {
         dom.contextCountry.textContent =
             country;
+    }
+}
+
+
+/* =========================================================
+   LEADERSHIP SETUP
+   ========================================================= */
+
+function updateActualPositionNameUI() {
+    const position =
+        dom.adminActualPosition?.value
+            ?.trim()
+            .toLowerCase() ||
+        "";
+
+    const isOther =
+        position === "other";
+
+
+    if (
+        dom.adminActualPositionNameField
+    ) {
+        dom.adminActualPositionNameField.hidden =
+            !isOther;
+    }
+
+
+    if (
+        !isOther &&
+        dom.adminActualPositionName
+    ) {
+        dom.adminActualPositionName.value =
+            "";
+    }
+}
+
+
+/* =========================================================
+   LEADERSHIP STATUS
+   ========================================================= */
+
+function renderLeadershipSetup() {
+    const position =
+        currentMember?.actual_position ||
+        "";
+
+    const positionName =
+        currentMember?.actual_position_name ||
+        "";
+
+
+    if (dom.adminActualPosition) {
+        const normalizedPosition =
+            String(position)
+                .trim()
+                .toLowerCase();
+
+        dom.adminActualPosition.value =
+            ACTUAL_POSITION_VALUES.has(
+                normalizedPosition
+            )
+                ? normalizedPosition
+                : "";
+    }
+
+
+    if (dom.adminActualPositionName) {
+        dom.adminActualPositionName.value =
+            positionName;
+    }
+
+
+    updateActualPositionNameUI();
+
+
+    const hasPosition =
+        ACTUAL_POSITION_VALUES.has(
+            String(position)
+                .trim()
+                .toLowerCase()
+        );
+
+
+    if (
+        dom.leadershipSetupStatus
+    ) {
+        if (hasPosition) {
+
+            const normalizedPosition =
+                String(position)
+                    .trim()
+                    .toLowerCase();
+
+            let displayPosition =
+                normalizedPosition
+                    .replaceAll(
+                        "_",
+                        " "
+                    );
+
+            displayPosition =
+                displayPosition
+                    .replace(
+                        /\b\w/g,
+                        (character) =>
+                            character.toUpperCase()
+                    );
+
+
+            if (
+                normalizedPosition ===
+                "other" &&
+                positionName
+            ) {
+                displayPosition =
+                    positionName;
+            }
+
+
+            dom.leadershipSetupStatus.textContent =
+                `Actual position recorded: ${displayPosition}.`;
+
+            dom.leadershipSetupStatus.className =
+                "leadership-status recorded";
+
+        } else {
+
+            dom.leadershipSetupStatus.textContent =
+                "Your actual group position has not been recorded.";
+
+            dom.leadershipSetupStatus.className =
+                "leadership-status pending";
+        }
+    }
+}
+
+
+/* =========================================================
+   LOAD LEADERSHIP SETUP
+   ---------------------------------------------------------
+   Read-only load.
+
+   No direct write to actual_position or
+   actual_position_name occurs here.
+   ========================================================= */
+
+async function loadLeadershipSetup() {
+    if (
+        !currentMember?.id ||
+        !currentGroup?.id
+    ) {
+        return;
+    }
+
+
+    const {
+        data,
+        error
+    } = await supabase
+        .from("members")
+        .select(
+            "actual_position, actual_position_name, join_date"
+        )
+        .eq(
+            "id",
+            currentMember.id
+        )
+        .eq(
+            "group_id",
+            currentGroup.id
+        )
+        .maybeSingle();
+
+
+    if (error) {
+        console.error(
+            "Failed to load leadership setup:",
+            error
+        );
+
+        /*
+         * Preserve the authorization context already
+         * loaded by getMyApplicationContext().
+         *
+         * The leadership card can remain usable if
+         * the read itself failed, but do not fabricate
+         * a position.
+         */
+        renderLeadershipSetup();
+
+        return;
+    }
+
+
+    if (data) {
+        currentMember = {
+            ...currentMember,
+            ...data
+        };
+    }
+
+
+    renderLeadershipSetup();
+}
+
+
+/* =========================================================
+   SAVE ADMIN ACTUAL POSITION
+   ---------------------------------------------------------
+   Canonical mutation boundary:
+
+       set_member_actual_position(
+           p_member_id,
+           p_actual_position,
+           p_actual_position_name,
+           p_effective_from
+       )
+
+   IMPORTANT:
+   - No direct UPDATE of members.actual_position.
+   - No direct UPDATE of members.actual_position_name.
+   - Initial effective date = currentMember.join_date.
+   ========================================================= */
+
+async function saveAdminActualPosition() {
+
+    if (!canManageGroup) {
+        showError(
+            "You do not have permission to change the actual group position."
+        );
+
+        return;
+    }
+
+
+    if (
+        !currentMember?.id ||
+        !currentGroup?.id
+    ) {
+        showError(
+            "No member or group context is available."
+        );
+
+        return;
+    }
+
+
+    const position =
+        dom.adminActualPosition?.value
+            ?.trim()
+            .toLowerCase() ||
+        "";
+
+
+    const positionName =
+        dom.adminActualPositionName?.value
+            ?.trim() ||
+        "";
+
+
+    /*
+     * Validate against the exact canonical
+     * position values.
+     */
+    if (
+        !ACTUAL_POSITION_VALUES.has(
+            position
+        )
+    ) {
+        showError(
+            "Select a valid actual group position."
+        );
+
+        return;
+    }
+
+
+    /*
+     * Only "other" accepts a position name.
+     */
+    if (
+        position === "other" &&
+        !positionName
+    ) {
+        showError(
+            "Enter the name of the actual position."
+        );
+
+        return;
+    }
+
+
+    /*
+     * The initial administrator position is effective
+     * from the member's existing join_date.
+     *
+     * Do not replace this with today's date.
+     */
+    const effectiveFrom =
+        currentMember.join_date ||
+        null;
+
+
+    if (!effectiveFrom) {
+        showError(
+            "The administrator's join date is required before recording the actual position."
+        );
+
+        return;
+    }
+
+
+    if (
+        dom.saveAdminActualPosition
+    ) {
+        dom.saveAdminActualPosition.disabled =
+            true;
+
+        dom.saveAdminActualPosition.textContent =
+            "Saving...";
+    }
+
+
+    clearMessages();
+
+
+    try {
+
+        const {
+            data,
+            error
+        } = await supabase.rpc(
+            "set_member_actual_position",
+            {
+                p_member_id:
+                    currentMember.id,
+
+                p_actual_position:
+                    position,
+
+                p_actual_position_name:
+                    position === "other"
+                        ? positionName
+                        : null,
+
+                p_effective_from:
+                    effectiveFrom
+            }
+        );
+
+
+        if (error) {
+            throw error;
+        }
+
+
+        /*
+         * The RPC returns the canonical updated
+         * position state. Keep the local state aligned
+         * without performing another direct write.
+         */
+        if (
+            data &&
+            typeof data === "object"
+        ) {
+
+            const returnedMember =
+                data.member ||
+                data;
+
+
+            if (
+                returnedMember &&
+                typeof returnedMember ===
+                    "object"
+            ) {
+                currentMember = {
+                    ...currentMember,
+                    ...(returnedMember.actual_position !==
+                        undefined
+                        ? {
+                            actual_position:
+                                returnedMember.actual_position
+                        }
+                        : {}),
+                    ...(returnedMember.actual_position_name !==
+                        undefined
+                        ? {
+                            actual_position_name:
+                                returnedMember.actual_position_name
+                        }
+                        : {})
+                };
+            }
+        }
+
+
+        /*
+         * Always synchronize local state with the
+         * values that were submitted, even if the RPC
+         * response shape does not contain member data.
+         */
+        currentMember = {
+            ...currentMember,
+
+            actual_position:
+                position,
+
+            actual_position_name:
+                position === "other"
+                    ? positionName
+                    : null
+        };
+
+
+        renderLeadershipSetup();
+
+
+        showStatus(
+            "Your actual group position was recorded successfully."
+        );
+
+    } catch (error) {
+        console.error(
+            "Failed to save actual group position:",
+            error
+        );
+
+
+        showError(
+            error?.message ||
+            "Unable to save the actual group position."
+        );
+
+    } finally {
+
+        if (
+            dom.saveAdminActualPosition
+        ) {
+            dom.saveAdminActualPosition.disabled =
+                !canManageGroup;
+
+            dom.saveAdminActualPosition.textContent =
+                "Save Actual Position";
+        }
     }
 }
 
@@ -1446,6 +2005,61 @@ function bindEvents() {
     }
 
 
+    /*
+     * ------------------------------------------------------
+     * LEADERSHIP SETUP
+     * ------------------------------------------------------
+     */
+
+    if (
+        dom.adminActualPosition
+    ) {
+        dom.adminActualPosition.addEventListener(
+            "change",
+            () => {
+                updateActualPositionNameUI();
+            }
+        );
+    }
+
+
+    if (
+        dom.saveAdminActualPosition
+    ) {
+        dom.saveAdminActualPosition.addEventListener(
+            "click",
+            async () => {
+                await saveAdminActualPosition();
+            }
+        );
+    }
+
+
+    if (
+        dom.addInitialOfficerLink
+    ) {
+        dom.addInitialOfficerLink.addEventListener(
+            "click",
+            (event) => {
+
+                /*
+                 * The link remains a normal navigation
+                 * target. This guard prevents a view-only
+                 * user from entering the officer onboarding
+                 * route through this management control.
+                 */
+                if (!canManageGroup) {
+                    event.preventDefault();
+
+                    showError(
+                        "You do not have permission to add initial officers."
+                    );
+                }
+            }
+        );
+    }
+
+
     if (
         dom.contributionCalendarForm
     ) {
@@ -1516,6 +2130,13 @@ export async function initGroupManagement() {
                  * Render group.
                  */
                 renderGroup();
+
+
+                /*
+                 * Load and render administrator
+                 * actual-position state.
+                 */
+                await loadLeadershipSetup();
 
 
                 /*
