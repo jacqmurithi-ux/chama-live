@@ -390,6 +390,44 @@
       line-height: 1.4;
     }
 
+    /* =====================================================
+       ACTUAL POSITION
+       ===================================================== */
+
+    .member-position-section {
+      margin-top: 22px;
+      padding: 17px;
+      border: 1px solid rgba(124, 58, 237, .12);
+      border-radius: 14px;
+      background: linear-gradient(
+        135deg,
+        rgba(245, 243, 255, .82),
+        rgba(248, 250, 252, .92)
+      );
+    }
+
+    .member-position-section .member-form-section-heading {
+      margin-bottom: 15px;
+    }
+
+    .member-position-note {
+      margin: 0 0 15px;
+      padding: 10px 12px;
+      border-radius: 9px;
+      background: rgba(255, 255, 255, .78);
+      color: #475569;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    #memberActualPositionNameField[hidden] {
+      display: none !important;
+    }
+
+    /* =====================================================
+       CONTRIBUTION SETUP
+       ===================================================== */
+
     .member-contribution-setup {
       margin-top: 22px;
       padding: 17px;
@@ -1775,11 +1813,6 @@
 
             <!-- =================================================
                  MEMBER NUMBER
-
-                 CURRENT PRODUCT CONTRACT:
-                 The single entered member number is currently
-                 used for both member_number and membership_number
-                 when the members.js historical RPC is called.
                  ================================================= -->
 
             <div class="member-form-field">
@@ -1896,13 +1929,21 @@
             </div>
 
 
+            <!-- =================================================
+                 ACCESS ROLE
+
+                 IMPORTANT:
+                 This remains the existing CHAMA LIVE access role.
+                 It is NOT the member's real-world group position.
+                 ================================================= -->
+
             <div class="member-form-field">
 
               <label
                 class="form-section-label"
                 for="memberRole"
               >
-                Role
+                CHAMA LIVE Access Role
               </label>
 
               <select
@@ -1931,6 +1972,11 @@
                 </option>
 
               </select>
+
+              <small class="muted member-form-hint">
+                Controls the member's application access. This is separate
+                from the member's actual group position.
+              </small>
 
             </div>
 
@@ -1978,12 +2024,144 @@
               >
 
               <small class="muted member-form-hint">
-                The date the member joined the group.
+                The date the member joined the group. The initial actual
+                position history uses this date as its effective date.
               </small>
 
             </div>
 
           </div>
+
+
+          <!-- =================================================
+               ACTUAL GROUP POSITION
+
+               CANONICAL POSITION CONTRACT:
+               actual_position
+               actual_position_name
+               actual_position_effective_from
+
+               Position changes after onboarding must use the
+               canonical set_member_actual_position() RPC.
+               ================================================= -->
+
+          <section
+            class="member-position-section"
+            aria-label="Actual group position"
+          >
+
+            <div class="member-form-section-heading">
+
+              <strong>
+                Actual Group Position
+              </strong>
+
+              <span>
+                Record the member's real-world position in the group.
+              </span>
+
+            </div>
+
+
+            <p class="member-position-note">
+              This is separate from the CHAMA LIVE Access Role above.
+              The actual position is the member's group office or membership
+              position, while the access role controls application access.
+            </p>
+
+
+            <div class="member-form-grid">
+
+              <div class="member-form-field">
+
+                <label
+                  class="form-section-label"
+                  for="memberActualPosition"
+                >
+                  Actual Position
+                </label>
+
+                <select
+                  id="memberActualPosition"
+                  name="memberActualPosition"
+                >
+
+                  <option value="">
+                    Select actual position
+                  </option>
+
+                  <option value="chairperson">
+                    Chairperson
+                  </option>
+
+                  <option value="vice_chairperson">
+                    Vice Chairperson
+                  </option>
+
+                  <option value="treasurer">
+                    Treasurer
+                  </option>
+
+                  <option value="secretary">
+                    Secretary
+                  </option>
+
+                  <option value="vice_secretary">
+                    Vice Secretary
+                  </option>
+
+                  <option value="committee_member">
+                    Committee Member
+                  </option>
+
+                  <option value="member">
+                    Member
+                  </option>
+
+                  <option value="other">
+                    Other
+                  </option>
+
+                </select>
+
+                <small class="muted member-form-hint">
+                  Select the member's actual group position.
+                </small>
+
+              </div>
+
+
+              <div
+                class="member-form-field"
+                id="memberActualPositionNameField"
+                hidden
+              >
+
+                <label
+                  class="form-section-label"
+                  for="memberActualPositionName"
+                >
+                  Position Name
+                </label>
+
+                <input
+                  id="memberActualPositionName"
+                  name="memberActualPositionName"
+                  type="text"
+                  maxlength="120"
+                  placeholder="e.g. Welfare Officer"
+                  autocomplete="off"
+                >
+
+                <small class="muted member-form-hint">
+                  Required when Actual Position is Other.
+                </small>
+
+              </div>
+
+            </div>
+
+          </section>
 
 
           <!-- =================================================
@@ -2588,11 +2766,6 @@
             Loading contribution position...
           </div>
 
-
-          <!--
-            This is the completed-state description area.
-            It starts hidden and is not used as the loading indicator.
-          -->
 
           <div
             class="accounting-status"
