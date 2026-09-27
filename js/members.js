@@ -28,7 +28,21 @@
    MEMBER POSITION
    ---------------------------------------------------------
 
-     get_member_contribution_position()
+   Actual group position is collected only when creating a
+   new member.
+
+   The browser does NOT directly update:
+
+     members.actual_position
+     members.actual_position_name
+     member_position_history
+
+   Initial position data is passed through the canonical
+   member-creation RPCs.
+
+   Existing-member position changes must use:
+
+     set_member_actual_position()
 
    ---------------------------------------------------------
    EXISTING PAYMENT RECONCILIATION
@@ -93,6 +107,117 @@ let contributionTypesLoaded = false;
 
 let contributionPositions = new Map();
 let contributionPositionsLoaded = false;
+
+
+/* =========================================================
+   ACTUAL POSITION CONTRACT
+   ---------------------------------------------------------
+   These values must remain synchronized with the canonical
+   database position constraints.
+   ========================================================= */
+
+const ACTUAL_POSITION_VALUES = new Set([
+  "chairperson",
+  "vice_chairperson",
+  "treasurer",
+  "secretary",
+  "vice_secretary",
+  "committee_member",
+  "member",
+  "other"
+]);
+
+
+/* =========================================================
+   ACTUAL POSITION HELPERS
+   ========================================================= */
+
+function normalizeActualPosition(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
+}
+
+
+function formatActualPosition(value) {
+  const normalized =
+    normalizeActualPosition(value);
+
+  if (!normalized) {
+    return "—";
+  }
+
+  return normalized
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, character =>
+      character.toUpperCase()
+    );
+}
+
+
+function isValidActualPosition(value) {
+  return ACTUAL_POSITION_VALUES.has(
+    normalizeActualPosition(value)
+  );
+}
+
+
+function getActualPositionName(values) {
+  const position =
+    normalizeActualPosition(
+      values?.actual_position
+    );
+
+  if (position !== "other") {
+    return "";
+  }
+
+  return String(
+    values?.actual_position_name || ""
+  ).trim();
+}
+
+
+/* =========================================================
+   ACTUAL POSITION UI
+   ========================================================= */
+
+function updateActualPositionNameUI() {
+  const position =
+    normalizeActualPosition(
+      byId(
+        "memberActualPosition"
+      )?.value
+    );
+
+  const field =
+    byId(
+      "memberActualPositionNameField"
+    );
+
+  const name =
+    byId(
+      "memberActualPositionName"
+    );
+
+  const isOther =
+    position === "other";
+
+  if (field) {
+    field.hidden =
+      !isOther;
+  }
+
+  if (name) {
+    name.disabled =
+      !isOther;
+
+    if (!isOther) {
+      name.value =
+        "";
+    }
+  }
+}
 
 
 /* =========================================================
@@ -376,25 +501,6 @@ function contributionStatusHtml(position) {
 
 /* =========================================================
    CANONICAL ACCOUNTING REFRESH
-   ---------------------------------------------------------
-   The browser does not create or modify accounting rows.
-
-   This authenticated wrapper establishes the canonical
-   current-month accounting horizon, then delegates to the
-   existing canonical refresh engine.
-
-   Only the member ID is supplied by the browser.
-
-   The wrapper derives:
-     - group_id
-     - current month
-
-   and enforces:
-     - authenticated session
-     - can_manage_members(group_id)
-
-   The underlying canonical accounting functions remain
-   unchanged.
    ========================================================= */
 
 async function refreshManagedMemberAccounting(
@@ -455,13 +561,6 @@ async function loadMemberContributionPositions() {
   for (const member of members) {
     try {
 
-      /* ---------------------------------------------------
-         CANONICAL ACCOUNTING REFRESH
-         ---------------------------------------------------
-         Refresh first so the subsequent read sees the
-         current canonical obligation horizon.
-         --------------------------------------------------- */
-
       await refreshManagedMemberAccounting(
         member.id
       );
@@ -472,7 +571,8 @@ async function loadMemberContributionPositions() {
       } = await supabase.rpc(
         "get_member_contribution_position",
         {
-          p_member_id: member.id
+          p_member_id:
+            member.id
         },
         {
           get: true
@@ -536,14 +636,6 @@ function ensureContributionStatusHeader() {
     return;
   }
 
-  /*
-   * The current members.html may already contain the
-   * Contribution Status column.
-   *
-   * Do not append another one if the visible header text
-   * already exists.
-   */
-
   const existingHeaders =
     Array.from(
       headerRow.querySelectorAll("th")
@@ -562,10 +654,6 @@ function ensureContributionStatusHeader() {
   if (hasContributionStatus) {
     return;
   }
-
-  /*
-   * Compatibility guard for a previously injected header.
-   */
 
   if (
     headerRow.querySelector(
@@ -639,6 +727,17 @@ function ensureContributionStatusStyles() {
       padding: 2rem;
       text-align: center;
       color: #6b7280;
+    }
+
+    .actual-position-display {
+      display: inline-flex;
+      flex-direction: column;
+      gap: .15rem;
+    }
+
+    .actual-position-display small {
+      color: #6b7280;
+      font-size: .72rem;
     }
   `;
 
@@ -1130,6 +1229,18 @@ function getFormValues() {
       )?.value ||
       "member",
 
+    actual_position:
+      normalizeActualPosition(
+        byId(
+          "memberActualPosition"
+        )?.value
+      ),
+
+    actual_position_name:
+      byId(
+        "memberActualPositionName"
+      )?.value?.trim() || "",
+
     status:
       byId(
         "memberStatus"
@@ -1222,7 +1333,52 @@ function validateForm(values) {
       );
     }
 
+    /*
+     * Actual position is deliberately excluded from the
+     * existing-member edit path.
+     *
+     * Position changes must use:
+     *
+     *   set_member_actual_position()
+     *
+     * through a dedicated authorized workflow.
+     */
+
     return true;
+  }
+
+
+  /* -------------------------------------------------------
+     NEW MEMBER ACTUAL POSITION
+     ------------------------------------------------------- */
+
+  if (
+    values.actual_position &&
+    !isValidActualPosition(
+      values.actual_position
+    )
+  ) {
+    return (
+      "Select a valid actual group position."
+    );
+  }
+
+  if (
+    values.actual_position ===
+    "other" &&
+    !values.actual_position_name
+  ) {
+    return (
+      "Enter the position name when selecting Other."
+    );
+  }
+
+  if (
+    values.actual_position !==
+    "other"
+  ) {
+    values.actual_position_name =
+      "";
   }
 
 
@@ -1256,6 +1412,26 @@ function validateForm(values) {
   ) {
     values.contribution_effective_from =
       values.join_date;
+  }
+
+
+  /* -------------------------------------------------------
+     ACTUAL POSITION EFFECTIVE DATE
+     -------------------------------------------------------
+
+     The initial position history created by the canonical
+     member-creation RPC begins on the member's join date.
+
+     This is intentionally not today's date.
+     ------------------------------------------------------- */
+
+  if (
+    values.actual_position &&
+    !values.join_date
+  ) {
+    return (
+      "Join date is required before an actual position can be recorded."
+    );
   }
 
 
@@ -1501,6 +1677,33 @@ function createMemberRow(member) {
     </td>
 
     <td>
+      <div class="actual-position-display">
+        <strong>
+          ${escapeHtml(
+            formatActualPosition(
+              member.actual_position
+            )
+          )}
+        </strong>
+
+        ${
+          normalizeActualPosition(
+            member.actual_position
+          ) === "other" &&
+          member.actual_position_name
+            ? `
+              <small>
+                ${escapeHtml(
+                  member.actual_position_name
+                )}
+              </small>
+            `
+            : ""
+        }
+      </div>
+    </td>
+
+    <td>
       ${accountStatusHtml(
         member.status
       )}
@@ -1651,6 +1854,33 @@ function createMemberCard(member) {
       </div>
 
       <div>
+        <span>Actual Position</span>
+
+        <strong>
+          ${escapeHtml(
+            formatActualPosition(
+              member.actual_position
+            )
+          )}
+        </strong>
+
+        ${
+          normalizeActualPosition(
+            member.actual_position
+          ) === "other" &&
+          member.actual_position_name
+            ? `
+              <small>
+                ${escapeHtml(
+                  member.actual_position_name
+                )}
+              </small>
+            `
+            : ""
+        }
+      </div>
+
+      <div>
         <span>Login</span>
 
         <strong>
@@ -1760,7 +1990,7 @@ function renderMembers() {
       tableBody.innerHTML = `
         <tr>
           <td
-            colspan="8"
+            colspan="9"
             class="empty-state"
           >
             No members found.
@@ -1804,12 +2034,6 @@ function renderMembers() {
     }
   }
 
-  /*
-   * Safe reconciliation with members.html.
-   *
-   * If HTML already owns the Contribution Status header,
-   * this function now leaves it untouched.
-   */
   ensureContributionStatusHeader();
 
 
@@ -1985,6 +2209,28 @@ function openAddMember() {
     role.value =
       "member";
   }
+
+  const actualPosition =
+    byId(
+      "memberActualPosition"
+    );
+
+  if (actualPosition) {
+    actualPosition.value =
+      "";
+  }
+
+  const actualPositionName =
+    byId(
+      "memberActualPositionName"
+    );
+
+  if (actualPositionName) {
+    actualPositionName.value =
+      "";
+  }
+
+  updateActualPositionNameUI();
 
   const amount =
     byId(
@@ -2179,6 +2425,18 @@ async function saveMember(event) {
 
     if (editingMemberId) {
 
+      /*
+       * IMPORTANT:
+       *
+       * Actual position is deliberately NOT included here.
+       *
+       * This existing-member update remains limited to the
+       * previously supported member-detail fields.
+       *
+       * Position changes use the canonical
+       * set_member_actual_position() workflow instead.
+       */
+
       const {
         error
       } = await supabase
@@ -2320,6 +2578,27 @@ async function saveMember(event) {
             role:
               values.role,
 
+            /*
+             * Actual group position is intentionally
+             * separate from the CHAMA LIVE access role.
+             */
+            actual_position:
+              values.actual_position ||
+              null,
+
+            actual_position_name:
+              values.actual_position ===
+              "other"
+                ? values.actual_position_name
+                : null,
+
+            /*
+             * Initial position history begins on the
+             * member's join date.
+             */
+            actual_position_effective_from:
+              values.join_date,
+
             status:
               values.status,
 
@@ -2395,6 +2674,27 @@ async function saveMember(event) {
 
             role:
               values.role,
+
+            /*
+             * Actual group position is intentionally
+             * separate from the CHAMA LIVE access role.
+             */
+            actual_position:
+              values.actual_position ||
+              null,
+
+            actual_position_name:
+              values.actual_position ===
+              "other"
+                ? values.actual_position_name
+                : null,
+
+            /*
+             * Initial position history begins on the
+             * member's join date.
+             */
+            actual_position_effective_from:
+              values.join_date,
 
             status:
               values.status,
@@ -2755,7 +3055,7 @@ async function openEditMember(
 
   if (description) {
     description.textContent =
-      "Update member details. Historical accounting remains protected by the canonical accounting workflow.";
+      "Update member details. Historical accounting and actual group position remain protected by their canonical workflows.";
   }
 
   const fields = {
@@ -2804,6 +3104,51 @@ async function openEditMember(
         value;
     }
   }
+
+
+  /* -------------------------------------------------------
+     EXISTING MEMBER ACTUAL POSITION
+     -------------------------------------------------------
+     Display only.
+
+     Do NOT permit the normal member edit form to mutate
+     actual_position or actual_position_name.
+     ------------------------------------------------------- */
+
+  const actualPosition =
+    byId(
+      "memberActualPosition"
+    );
+
+  const actualPositionName =
+    byId(
+      "memberActualPositionName"
+    );
+
+  if (actualPosition) {
+    actualPosition.value =
+      isValidActualPosition(
+        member.actual_position
+      )
+        ? normalizeActualPosition(
+            member.actual_position
+          )
+        : "";
+
+    actualPosition.disabled =
+      true;
+  }
+
+  if (actualPositionName) {
+    actualPositionName.value =
+      member.actual_position_name ||
+      "";
+
+    actualPositionName.disabled =
+      true;
+  }
+
+  updateActualPositionNameUI();
 
 
   /* -------------------------------------------------------
@@ -3135,18 +3480,6 @@ async function loadMemberContributionPosition(
 
   try {
 
-    /* -----------------------------------------------------
-       CANONICAL ACCOUNTING REFRESH
-       -----------------------------------------------------
-
-       Establish the current canonical obligation horizon
-       before reading the member's contribution position.
-
-       The wrapper derives the member's group and current
-       month server-side and enforces the existing member
-       management authorization boundary.
-       ----------------------------------------------------- */
-
     await refreshManagedMemberAccounting(
       memberId
     );
@@ -3200,8 +3533,7 @@ async function loadMemberContributionPosition(
        And for the monthly contribution position:
          total contributed = allocated + credit
 
-       This is display derivation only. It does not write
-       or alter accounting state.
+       This is display derivation only.
        ----------------------------------------------------- */
 
     const totalAllocated =
@@ -3232,14 +3564,6 @@ async function loadMemberContributionPosition(
       totalAllocated +
       credit;
 
-
-    /* -----------------------------------------------------
-       COMPATIBILITY ALIAS
-       -----------------------------------------------------
-
-       Keep a local normalized position object so all
-       existing UI components can use one consistent shape.
-       ----------------------------------------------------- */
 
     const normalizedPosition = {
       ...position,
@@ -3324,10 +3648,6 @@ async function loadMemberContributionPosition(
         );
     }
 
-    /*
-     * Keep the page-level position cache synchronized with
-     * the exact canonical response returned for this member.
-     */
     contributionPositions.set(
       memberId,
       normalizedPosition
@@ -3493,6 +3813,41 @@ async function openMemberModal(
           )}
         </strong>
       </div>
+
+      <div>
+        <span>
+          Actual Position
+        </span>
+
+        <strong>
+          ${escapeHtml(
+            formatActualPosition(
+              member.actual_position
+            )
+          )}
+        </strong>
+      </div>
+
+      ${
+        normalizeActualPosition(
+          member.actual_position
+        ) === "other" &&
+        member.actual_position_name
+          ? `
+            <div>
+              <span>
+                Position Name
+              </span>
+
+              <strong>
+                ${escapeHtml(
+                  member.actual_position_name
+                )}
+              </strong>
+            </div>
+          `
+          : ""
+      }
 
       <div>
         <span>
@@ -3662,6 +4017,8 @@ function filterMembers(value) {
           member.phone,
           member.email,
           member.role,
+          member.actual_position,
+          member.actual_position_name,
           member.status
         ]
           .filter(Boolean)
@@ -3848,6 +4205,21 @@ function bindEvents() {
   form?.addEventListener(
     "submit",
     saveMember
+  );
+
+
+  /* -------------------------------------------------------
+     ACTUAL POSITION
+     ------------------------------------------------------- */
+
+  const actualPosition =
+    byId(
+      "memberActualPosition"
+    );
+
+  actualPosition?.addEventListener(
+    "change",
+    updateActualPositionNameUI
   );
 
 
@@ -4210,6 +4582,8 @@ async function init() {
 
     ensureContributionPositionStyles();
 
+    updateActualPositionNameUI();
+
 
     /* -----------------------------------------------------
        EVENTS
@@ -4255,6 +4629,8 @@ async function init() {
     updateContributionPreview();
 
     updateHistoricalControls();
+
+    updateActualPositionNameUI();
 
 
     /* -----------------------------------------------------
