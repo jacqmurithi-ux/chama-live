@@ -317,26 +317,6 @@ function formatDate(value) {
 }
 
 
-function formatCurrency(value) {
-
-    const amount = Number(value);
-
-    if (!Number.isFinite(amount)) {
-        return "KSh 0.00";
-    }
-
-    return new Intl.NumberFormat(
-        "en-KE",
-        {
-            style: "currency",
-            currency: "KES",
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        }
-    ).format(amount);
-}
-
-
 /* ================================================================
    AUTHORIZATION
 ================================================================ */
@@ -344,11 +324,10 @@ function formatCurrency(value) {
 function calculateManagementAccess() {
 
     const role =
-        normalizeLower(
-            currentRole
-        );
+        normalizeLower(currentRole);
 
-    currentRole = role || null;
+    currentRole =
+        role || null;
 
     canManageGroup =
         Boolean(
@@ -386,19 +365,23 @@ function applyAuthorizationUI() {
 
 
     if (dom.groupName) {
-        dom.groupName.disabled = !canManageGroup;
+        dom.groupName.disabled =
+            !canManageGroup;
     }
 
     if (dom.groupCategory) {
-        dom.groupCategory.disabled = !canManageGroup;
+        dom.groupCategory.disabled =
+            !canManageGroup;
     }
 
     if (dom.groupCategoryOther) {
-        dom.groupCategoryOther.disabled = !canManageGroup;
+        dom.groupCategoryOther.disabled =
+            !canManageGroup;
     }
 
     if (dom.groupCountry) {
-        dom.groupCountry.disabled = !canManageGroup;
+        dom.groupCountry.disabled =
+            !canManageGroup;
     }
 
     if (dom.monthlyContribution) {
@@ -628,6 +611,7 @@ function getGroupCategoryForSave() {
 
 
     if (selected === "chama") {
+
         return {
             valid: true,
             value: "Chama"
@@ -636,6 +620,7 @@ function getGroupCategoryForSave() {
 
 
     if (selected === "cbo") {
+
         return {
             valid: true,
             value: "CBO"
@@ -711,30 +696,35 @@ function renderGroup() {
 
 
     if (dom.groupNameDisplay) {
+
         dom.groupNameDisplay.textContent =
             name;
     }
 
 
     if (dom.groupCategoryDisplay) {
+
         dom.groupCategoryDisplay.textContent =
             category;
     }
 
 
     if (dom.groupCountryDisplay) {
+
         dom.groupCountryDisplay.textContent =
             country;
     }
 
 
     if (dom.groupName) {
+
         dom.groupName.value =
             currentGroup.name || "";
     }
 
 
     if (dom.groupCountry) {
+
         dom.groupCountry.value =
             currentGroup.country || "";
     }
@@ -753,18 +743,21 @@ function renderGroup() {
 
 
     if (dom.contextGroupName) {
+
         dom.contextGroupName.textContent =
             name;
     }
 
 
     if (dom.contextRole) {
+
         dom.contextRole.textContent =
             currentRole || "—";
     }
 
 
     if (dom.contextAccess) {
+
         dom.contextAccess.textContent =
             canManageGroup
                 ? "Group management"
@@ -773,6 +766,7 @@ function renderGroup() {
 
 
     if (dom.contextCountry) {
+
         dom.contextCountry.textContent =
             country;
     }
@@ -889,6 +883,7 @@ function renderLeadershipSetup(positionData) {
                 actualPosition === "other" &&
                 actualPositionName
             ) {
+
                 displayPosition =
                     actualPositionName;
             }
@@ -930,8 +925,14 @@ async function loadLeadershipSetup() {
         .select(
             "actual_position, actual_position_name, join_date"
         )
-        .eq("id", currentMember.id)
-        .eq("group_id", currentGroup.id)
+        .eq(
+            "id",
+            currentMember.id
+        )
+        .eq(
+            "group_id",
+            currentGroup.id
+        )
         .maybeSingle();
 
 
@@ -1038,10 +1039,15 @@ async function saveAdminActualPosition() {
         } = await supabase.rpc(
             "set_member_actual_position",
             {
-                p_member_id: currentMember.id,
-                p_actual_position: actualPosition,
+                p_member_id:
+                    currentMember.id,
+
+                p_actual_position:
+                    actualPosition,
+
                 p_actual_position_name:
                     actualPositionName,
+
                 p_effective_from:
                     effectiveFrom
             }
@@ -1076,6 +1082,7 @@ async function saveAdminActualPosition() {
     } finally {
 
         if (dom.saveAdminActualPosition) {
+
             dom.saveAdminActualPosition.disabled =
                 !canManageGroup;
         }
@@ -1175,6 +1182,7 @@ function getCurrentCycle(closingDay) {
         cycleMonth += 1;
 
         if (cycleMonth > 11) {
+
             cycleMonth = 0;
             cycleYear += 1;
         }
@@ -1338,7 +1346,8 @@ async function loadContributionSettings() {
     } = await supabase.rpc(
         "get_group_contribution_settings",
         {
-            p_group_id: currentGroup.id
+            p_group_id:
+                currentGroup.id
         }
     );
 
@@ -1413,8 +1422,11 @@ async function saveContributionSettings() {
         } = await supabase.rpc(
             "update_group_contribution_settings",
             {
-                p_group_id: currentGroup.id,
-                p_monthly_closing_day: closingDay
+                p_group_id:
+                    currentGroup.id,
+
+                p_monthly_closing_day:
+                    closingDay
             }
         );
 
@@ -1454,6 +1466,7 @@ async function saveContributionSettings() {
         }
 
         if (dom.saveContributionCalendar) {
+
             dom.saveContributionCalendar.disabled =
                 !canManageGroup;
         }
@@ -1500,21 +1513,25 @@ function renderSubscription() {
     if (!record) {
 
         if (dom.subscriptionStatus) {
+
             dom.subscriptionStatus.textContent =
                 "No subscription";
         }
 
         if (dom.subscriptionPlan) {
+
             dom.subscriptionPlan.textContent =
                 "—";
         }
 
         if (dom.subscriptionEndDate) {
+
             dom.subscriptionEndDate.textContent =
                 "—";
         }
 
         if (dom.subscriptionAmount) {
+
             dom.subscriptionAmount.textContent =
                 "—";
         }
@@ -1578,7 +1595,8 @@ async function loadSubscription() {
     } = await supabase.rpc(
         "get_group_subscription",
         {
-            p_group_id: currentGroup.id
+            p_group_id:
+                currentGroup.id
         }
     );
 
@@ -1763,6 +1781,7 @@ async function saveGroupInformation() {
     } finally {
 
         if (dom.saveGroup) {
+
             dom.saveGroup.disabled =
                 !canManageGroup;
         }
@@ -1879,6 +1898,7 @@ async function initializeGroupManagement() {
 
 
             if (dom.adminLoading) {
+
                 dom.adminLoading.classList.remove(
                     "hidden"
                 );
@@ -1886,6 +1906,7 @@ async function initializeGroupManagement() {
 
 
             if (dom.managementContent) {
+
                 dom.managementContent.classList.add(
                     "hidden"
                 );
@@ -2015,7 +2036,6 @@ async function initializeGroupManagement() {
                         "hidden"
                     );
                 }
-
             }
 
         })();
@@ -2029,8 +2049,16 @@ async function initializeGroupManagement() {
    PUBLIC MODULE API
 ================================================================ */
 
+/*
+ * admin-layout.js expects the page initializer to be named:
+ *
+ *     initGroupManagement
+ *
+ * Keep initializeGroupManagement as the internal function name,
+ * but expose the required shell-compatible public name.
+ */
 export {
-    initializeGroupManagement,
+    initializeGroupManagement as initGroupManagement,
     saveGroupInformation,
     saveAdminActualPosition,
     saveContributionSettings,
