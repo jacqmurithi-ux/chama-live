@@ -347,6 +347,73 @@
 
 
         /* =====================================================
+           LEADERSHIP SETUP
+        ====================================================== */
+
+        .leadership-status {
+            margin-bottom: 16px;
+            padding: 11px 12px;
+            border-radius: 9px;
+            background: #f8fafc;
+            color: #475569;
+            font-size: 0.82rem;
+        }
+
+
+        .leadership-status.recorded {
+            background: var(--success-bg);
+            color: var(--success-text);
+        }
+
+
+        .leadership-status.pending {
+            background: var(--warning-bg);
+            color: var(--warning-text);
+        }
+
+
+        .leadership-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+
+        .officer-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 40px;
+            padding: 9px 14px;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            color: var(--primary);
+            background: #fff;
+            text-decoration: none;
+            font-size: 0.84rem;
+            font-weight: 650;
+        }
+
+
+        .officer-link:hover {
+            background: #f0fdf4;
+        }
+
+
+        .leadership-note {
+            margin: 14px 0 0;
+            padding: 11px 12px;
+            border-radius: 9px;
+            background: #f8fafc;
+            color: #475569;
+            font-size: 0.78rem;
+        }
+
+
+        /* =====================================================
            MONTHLY CONTRIBUTION CYCLE
         ====================================================== */
 
@@ -712,6 +779,18 @@
             }
 
 
+            .leadership-actions {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+
+            .leadership-actions .btn,
+            .leadership-actions .officer-link {
+                width: 100%;
+            }
+
+
             .account-content {
                 align-items: stretch;
                 flex-direction: column;
@@ -823,8 +902,8 @@
 
             <p>
                 Manage your group's information,
-                contribution cycle, account and
-                subscription settings.
+                contribution cycle, leadership,
+                account and subscription settings.
             </p>
 
         </header>
@@ -1109,6 +1188,187 @@
                         </div>
 
                     </form>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 LEADERSHIP SETUP
+            ================================================== -->
+
+            <section
+                class="management-card"
+                id="leadershipSetupCard"
+            >
+
+                <div class="card-header">
+
+                    <div class="card-heading">
+
+                        <h2>
+                            Leadership Setup
+                        </h2>
+
+                        <p>
+                            Declare your actual group position,
+                            then add and invite the other initial officers.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="card-body">
+
+                    <div
+                        id="leadershipSetupStatus"
+                        class="leadership-status pending"
+                        role="status"
+                        aria-live="polite"
+                    >
+                        Your actual group position has not been recorded.
+                    </div>
+
+
+                    <div class="form-grid">
+
+
+                        <div class="form-field">
+
+                            <label
+                                for="adminActualPosition"
+                            >
+                                Your Actual Position
+                            </label>
+
+                            <select
+                                id="adminActualPosition"
+                                name="adminActualPosition"
+                            >
+
+                                <option value="">
+                                    Select actual position
+                                </option>
+
+                                <option value="chairperson">
+                                    Chairperson
+                                </option>
+
+                                <option value="vice_chairperson">
+                                    Vice Chairperson
+                                </option>
+
+                                <option value="treasurer">
+                                    Treasurer
+                                </option>
+
+                                <option value="secretary">
+                                    Secretary
+                                </option>
+
+                                <option value="vice_secretary">
+                                    Vice Secretary
+                                </option>
+
+                                <option value="committee_member">
+                                    Committee Member
+                                </option>
+
+                                <option value="member">
+                                    Member
+                                </option>
+
+                                <option value="other">
+                                    Other
+                                </option>
+
+                            </select>
+
+                            <p class="field-help">
+                                This is your real-world group office,
+                                separate from your CHAMA LIVE access role.
+                            </p>
+
+                        </div>
+
+
+                        <div
+                            id="adminActualPositionNameField"
+                            class="form-field"
+                            hidden
+                        >
+
+                            <label
+                                for="adminActualPositionName"
+                            >
+                                Position Name
+                            </label>
+
+                            <input
+                                id="adminActualPositionName"
+                                name="adminActualPositionName"
+                                type="text"
+                                maxlength="120"
+                                autocomplete="off"
+                            >
+
+                            <p class="field-help">
+                                Enter the name of the actual position.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="form-actions">
+
+                        <button
+                            type="button"
+                            class="btn btn-primary"
+                            id="saveAdminActualPosition"
+                        >
+                            Save Actual Position
+                        </button>
+
+                    </div>
+
+
+                    <div class="leadership-actions">
+
+                        <div>
+                            <strong>
+                                Initial officers
+                            </strong>
+
+                            <p class="field-help">
+                                Add and invite the chairperson,
+                                secretary, treasurer and other officers
+                                as applicable.
+                            </p>
+                        </div>
+
+
+                        <a
+                            id="addInitialOfficerLink"
+                            class="officer-link"
+                            href="members.html?onboarding=officer"
+                        >
+                            Add Initial Officer
+                        </a>
+
+                    </div>
+
+
+                    <p class="leadership-note">
+                        The administrator's application role does not
+                        automatically determine their actual group position.
+                        Each officer receives their own member record and
+                        position history.
+                    </p>
 
                 </div>
 
@@ -1562,8 +1822,9 @@
     <!-- =========================================================
          PAGE MODULES
          ---------------------------------------------------------
-         admin-layout.js owns the page shell/navigation.
-         group-management.js owns this page's initialization.
+         admin-layout.js is the sole page-shell boot owner.
+         It is responsible for loading/initializing the
+         group-management page module.
     ========================================================== -->
 
     <script type="module">
@@ -1571,8 +1832,6 @@
         import {
             boot
         } from "./js/admin-layout.js";
-
-        import "./js/group-management.js";
 
         boot();
 
