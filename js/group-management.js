@@ -13,6 +13,14 @@
    - Manage administrator actual group position
    - Provide entry point for initial officer onboarding
 
+   GROUP TYPE
+   ---------------------------------------------------------
+   - Chama
+   - CBO
+   - Other
+   - Other reveals a custom group-type field
+   - Custom group type is stored in groups.category
+
    REMOVED
    ---------------------------------------------------------
    - Contribution Initiatives
@@ -54,6 +62,11 @@ const ACTUAL_POSITION_VALUES = new Set([
     "committee_member",
     "member",
     "other"
+]);
+
+const STANDARD_GROUP_TYPES = new Set([
+    "Chama",
+    "CBO"
 ]);
 
 
@@ -116,6 +129,14 @@ const dom = {
 
     groupCategory: document.getElementById(
         "groupCategory"
+    ),
+
+    groupCategoryOtherField: document.getElementById(
+        "groupCategoryOtherField"
+    ),
+
+    groupCategoryOther: document.getElementById(
+        "groupCategoryOther"
     ),
 
     groupCountry: document.getElementById(
@@ -265,14 +286,12 @@ const dom = {
 function clearMessages() {
     if (dom.statusMessage) {
         dom.statusMessage.textContent = "";
-
         dom.statusMessage.className =
             "status-message";
     }
 
     if (dom.errorMessage) {
         dom.errorMessage.textContent = "";
-
         dom.errorMessage.className =
             "status-message error";
     }
@@ -399,6 +418,199 @@ function formatSubscriptionAmount(
 
 
 /* =========================================================
+   GROUP TYPE
+   ========================================================= */
+
+/**
+ * Returns true when the supplied category is one of the
+ * predefined group types.
+ */
+function isStandardGroupType(category) {
+    return STANDARD_GROUP_TYPES.has(
+        String(category || "").trim()
+    );
+}
+
+
+/**
+ * Updates the custom Group Type field visibility.
+ *
+ * Only "Other" exposes the custom input.
+ */
+function updateGroupCategoryUI() {
+    const category =
+        dom.groupCategory?.value
+            ?.trim() ||
+        "";
+
+    const isOther =
+        category === "Other";
+
+    if (dom.groupCategoryOtherField) {
+        dom.groupCategoryOtherField.hidden =
+            !isOther;
+    }
+
+    if (dom.groupCategoryOther) {
+        dom.groupCategoryOther.required =
+            isOther;
+
+        if (!isOther) {
+            dom.groupCategoryOther.value =
+                "";
+        }
+    }
+}
+
+
+/**
+ * Loads an existing groups.category value into the
+ * Group Type controls.
+ *
+ * Standard values remain selected directly.
+ *
+ * Any existing non-standard category is represented
+ * by:
+ *
+ *     Select = Other
+ *     Custom  = stored category
+ */
+function renderGroupCategory(
+    category
+) {
+    const normalized =
+        String(category || "").trim();
+
+    if (!dom.groupCategory) {
+        return;
+    }
+
+    if (isStandardGroupType(normalized)) {
+        dom.groupCategory.value =
+            normalized;
+
+        if (dom.groupCategoryOther) {
+            dom.groupCategoryOther.value =
+                "";
+        }
+    } else if (normalized) {
+        dom.groupCategory.value =
+            "Other";
+
+        if (dom.groupCategoryOther) {
+            dom.groupCategoryOther.value =
+                normalized;
+        }
+    } else {
+        dom.groupCategory.value =
+            "";
+        
+        if (dom.groupCategoryOther) {
+            dom.groupCategoryOther.value =
+                "";
+        }
+    }
+
+    updateGroupCategoryUI();
+}
+
+
+/**
+ * Returns the actual category that should be persisted.
+ *
+ * Chama/CBO:
+ *     selected value
+ *
+ * Other:
+ *     custom group type
+ */
+function getGroupCategoryValue() {
+    const selectedCategory =
+        dom.groupCategory?.value
+            ?.trim() ||
+        "";
+
+    if (selectedCategory !== "Other") {
+        return selectedCategory;
+    }
+
+    return dom.groupCategoryOther?.value
+        ?.trim() || "";
+}
+
+
+/**
+ * Validates Group Type and returns the value
+ * that should be persisted.
+ */
+function validateGroupCategory() {
+    const selectedCategory =
+        dom.groupCategory?.value
+            ?.trim() ||
+        "";
+
+    if (!selectedCategory) {
+        return {
+            valid: false,
+            value: "",
+            message:
+                "Group type is required."
+        };
+    }
+
+    if (selectedCategory === "Other") {
+        const customCategory =
+            dom.groupCategoryOther?.value
+                ?.trim() ||
+            "";
+
+        if (!customCategory) {
+            return {
+                valid: false,
+                value: "",
+                message:
+                    "Specify the group type when selecting Other."
+            };
+        }
+
+        if (customCategory.length > 100) {
+            return {
+                valid: false,
+                value: "",
+                message:
+                    "The specified group type must be 100 characters or fewer."
+            };
+        }
+
+        return {
+            valid: true,
+            value: customCategory,
+            message: ""
+        };
+    }
+
+    if (
+        !isStandardGroupType(
+            selectedCategory
+        )
+    ) {
+        return {
+            valid: false,
+            value: "",
+            message:
+                "Select a valid group type."
+        };
+    }
+
+    return {
+        valid: true,
+        value: selectedCategory,
+        message: ""
+    };
+}
+
+
+/* =========================================================
    AUTHORIZATION CONTEXT
    ---------------------------------------------------------
    Canonical getMyApplicationContext() contract:
@@ -441,12 +653,6 @@ async function loadAuthorizationContext() {
         context.group ||
         null;
 
-    /*
-     * Prefer the canonical role returned by
-     * getMyApplicationContext().
-     *
-     * Fall back to member.role if necessary.
-     */
     currentRole =
         context.role ||
         currentMember?.role ||
@@ -457,9 +663,6 @@ async function loadAuthorizationContext() {
             context.isOwner
         );
 
-    /*
-     * Normalize the role.
-     */
     const normalizedRole =
         String(
             currentRole || ""
@@ -467,9 +670,6 @@ async function loadAuthorizationContext() {
             .trim()
             .toLowerCase();
 
-    /*
-     * Management access.
-     */
     canManageGroup =
         Boolean(
             currentIsOwner ||
@@ -497,11 +697,9 @@ function applyAuthorizationUI() {
         );
 
 
-    /*
-     * ------------------------------------------------------
-     * GROUP INFORMATION
-     * ------------------------------------------------------
-     */
+    /* ------------------------------------------------------
+       GROUP INFORMATION
+       ------------------------------------------------------ */
 
     if (dom.groupName) {
         dom.groupName.disabled =
@@ -510,6 +708,11 @@ function applyAuthorizationUI() {
 
     if (dom.groupCategory) {
         dom.groupCategory.disabled =
+            !editable;
+    }
+
+    if (dom.groupCategoryOther) {
+        dom.groupCategoryOther.disabled =
             !editable;
     }
 
@@ -524,11 +727,9 @@ function applyAuthorizationUI() {
     }
 
 
-    /*
-     * ------------------------------------------------------
-     * LEADERSHIP SETUP
-     * ------------------------------------------------------
-     */
+    /* ------------------------------------------------------
+       LEADERSHIP SETUP
+       ------------------------------------------------------ */
 
     if (dom.adminActualPosition) {
         dom.adminActualPosition.disabled =
@@ -565,20 +766,9 @@ function applyAuthorizationUI() {
     }
 
 
-    /*
-     * ------------------------------------------------------
-     * MONTHLY CONTRIBUTION CYCLE
-     * ------------------------------------------------------
-     *
-     * IMPORTANT:
-     *
-     * Do NOT disable the Monthly Closing Day selector.
-     *
-     * It must remain clickable/openable.
-     *
-     * The actual save operation is protected separately
-     * by saveContributionSettings() and the Supabase RPC.
-     */
+    /* ------------------------------------------------------
+       MONTHLY CONTRIBUTION CYCLE
+       ------------------------------------------------------ */
 
     if (dom.monthlyClosingDay) {
         dom.monthlyClosingDay.disabled =
@@ -594,11 +784,9 @@ function applyAuthorizationUI() {
     }
 
 
-    /*
-     * ------------------------------------------------------
-     * SAVE BUTTONS
-     * ------------------------------------------------------
-     */
+    /* ------------------------------------------------------
+       SAVE BUTTONS
+       ------------------------------------------------------ */
 
     if (dom.saveGroup) {
         dom.saveGroup.disabled =
@@ -613,11 +801,9 @@ function applyAuthorizationUI() {
     }
 
 
-    /*
-     * ------------------------------------------------------
-     * PERMISSION BADGE
-     * ------------------------------------------------------
-     */
+    /* ------------------------------------------------------
+       PERMISSION BADGE
+       ------------------------------------------------------ */
 
     if (dom.permissionBadge) {
         if (editable) {
@@ -632,11 +818,9 @@ function applyAuthorizationUI() {
     }
 
 
-    /*
-     * ------------------------------------------------------
-     * CONTEXT ROLE
-     * ------------------------------------------------------
-     */
+    /* ------------------------------------------------------
+       CONTEXT ROLE
+       ------------------------------------------------------ */
 
     if (dom.contextRole) {
         dom.contextRole.textContent =
@@ -645,11 +829,9 @@ function applyAuthorizationUI() {
     }
 
 
-    /*
-     * ------------------------------------------------------
-     * CONTEXT ACCESS
-     * ------------------------------------------------------
-     */
+    /* ------------------------------------------------------
+       CONTEXT ACCESS
+       ------------------------------------------------------ */
 
     if (dom.contextAccess) {
         dom.contextAccess.textContent =
@@ -659,11 +841,9 @@ function applyAuthorizationUI() {
     }
 
 
-    /*
-     * ------------------------------------------------------
-     * PERMISSION MESSAGE
-     * ------------------------------------------------------
-     */
+    /* ------------------------------------------------------
+       PERMISSION MESSAGE
+       ------------------------------------------------------ */
 
     if (dom.permissionMessage) {
         if (editable) {
@@ -676,6 +856,13 @@ function applyAuthorizationUI() {
             );
         }
     }
+
+
+    /*
+     * Re-apply Group Type visibility after permission
+     * state changes.
+     */
+    updateGroupCategoryUI();
 }
 
 
@@ -727,11 +914,14 @@ function renderGroup() {
             "";
     }
 
-    if (dom.groupCategory) {
-        dom.groupCategory.value =
-            currentGroup.category ||
-            "";
-    }
+
+    /*
+     * Handle both standard and custom group types.
+     */
+    renderGroupCategory(
+        currentGroup.category
+    );
+
 
     if (dom.groupCountry) {
         dom.groupCountry.value =
@@ -840,7 +1030,6 @@ function renderLeadershipSetup() {
         dom.leadershipSetupStatus
     ) {
         if (hasPosition) {
-
             const normalizedPosition =
                 String(position)
                     .trim()
@@ -879,7 +1068,6 @@ function renderLeadershipSetup() {
                 "leadership-status recorded";
 
         } else {
-
             dom.leadershipSetupStatus.textContent =
                 "Your actual group position has not been recorded.";
 
@@ -933,14 +1121,6 @@ async function loadLeadershipSetup() {
             error
         );
 
-        /*
-         * Preserve the authorization context already
-         * loaded by getMyApplicationContext().
-         *
-         * The leadership card can remain usable if
-         * the read itself failed, but do not fabricate
-         * a position.
-         */
         renderLeadershipSetup();
 
         return;
@@ -978,7 +1158,6 @@ async function loadLeadershipSetup() {
    ========================================================= */
 
 async function saveAdminActualPosition() {
-
     if (!canManageGroup) {
         showError(
             "You do not have permission to change the actual group position."
@@ -1006,17 +1185,12 @@ async function saveAdminActualPosition() {
             .toLowerCase() ||
         "";
 
-
     const positionName =
         dom.adminActualPositionName?.value
             ?.trim() ||
         "";
 
 
-    /*
-     * Validate against the exact canonical
-     * position values.
-     */
     if (
         !ACTUAL_POSITION_VALUES.has(
             position
@@ -1030,9 +1204,6 @@ async function saveAdminActualPosition() {
     }
 
 
-    /*
-     * Only "other" accepts a position name.
-     */
     if (
         position === "other" &&
         !positionName
@@ -1045,12 +1216,6 @@ async function saveAdminActualPosition() {
     }
 
 
-    /*
-     * The initial administrator position is effective
-     * from the member's existing join_date.
-     *
-     * Do not replace this with today's date.
-     */
     const effectiveFrom =
         currentMember.join_date ||
         null;
@@ -1080,7 +1245,6 @@ async function saveAdminActualPosition() {
 
 
     try {
-
         const {
             data,
             error
@@ -1109,16 +1273,10 @@ async function saveAdminActualPosition() {
         }
 
 
-        /*
-         * The RPC returns the canonical updated
-         * position state. Keep the local state aligned
-         * without performing another direct write.
-         */
         if (
             data &&
             typeof data === "object"
         ) {
-
             const returnedMember =
                 data.member ||
                 data;
@@ -1131,6 +1289,7 @@ async function saveAdminActualPosition() {
             ) {
                 currentMember = {
                     ...currentMember,
+
                     ...(returnedMember.actual_position !==
                         undefined
                         ? {
@@ -1138,6 +1297,7 @@ async function saveAdminActualPosition() {
                                 returnedMember.actual_position
                         }
                         : {}),
+
                     ...(returnedMember.actual_position_name !==
                         undefined
                         ? {
@@ -1150,11 +1310,6 @@ async function saveAdminActualPosition() {
         }
 
 
-        /*
-         * Always synchronize local state with the
-         * values that were submitted, even if the RPC
-         * response shape does not contain member data.
-         */
         currentMember = {
             ...currentMember,
 
@@ -1188,7 +1343,6 @@ async function saveAdminActualPosition() {
         );
 
     } finally {
-
         if (
             dom.saveAdminActualPosition
         ) {
@@ -1283,10 +1437,6 @@ function getCurrentCycle(
         today.getMonth();
 
 
-    /*
-     * If today is after the closing day,
-     * the current cycle closes next month.
-     */
     if (
         today.getDate() >
         day
@@ -1303,10 +1453,6 @@ function getCurrentCycle(
         );
 
 
-    /*
-     * Opening date is 29 days before
-     * the closing date.
-     */
     const openingDate =
         new Date(
             closingDate
@@ -1535,10 +1681,6 @@ function populateClosingDayOptions() {
         "";
 
 
-    /*
-     * Generate valid closing days 1–28.
-     */
-
     for (
         let day = 1;
         day <= 28;
@@ -1576,11 +1718,6 @@ function populateClosingDayOptions() {
             ? String(normalized)
             : "28";
 
-
-    /*
-     * Make absolutely sure rebuilding
-     * the select did not disable it.
-     */
 
     dom.monthlyClosingDay.disabled =
         false;
@@ -1670,10 +1807,6 @@ function renderContributionSettings() {
    ========================================================= */
 
 async function saveContributionSettings() {
-
-    /*
-     * Permission to save remains protected.
-     */
     if (!canManageGroup) {
         showError(
             "You do not have permission to change the contribution cycle."
@@ -1775,11 +1908,6 @@ async function saveContributionSettings() {
         );
 
     } finally {
-
-        /*
-         * The selector must ALWAYS remain openable.
-         */
-
         if (dom.monthlyClosingDay) {
             dom.monthlyClosingDay.disabled =
                 false;
@@ -1812,10 +1940,6 @@ async function saveContributionSettings() {
    ========================================================= */
 
 async function saveGroup() {
-
-    /*
-     * Permission guard.
-     */
     if (!canManageGroup) {
         showError(
             "You do not have permission to update group information."
@@ -1838,8 +1962,8 @@ async function saveGroup() {
         dom.groupName?.value.trim();
 
 
-    const category =
-        dom.groupCategory?.value.trim();
+    const categoryValidation =
+        validateGroupCategory();
 
 
     const country =
@@ -1861,9 +1985,9 @@ async function saveGroup() {
     }
 
 
-    if (!category) {
+    if (!categoryValidation.valid) {
         showError(
-            "Group type is required."
+            categoryValidation.message
         );
 
         return;
@@ -1913,8 +2037,16 @@ async function saveGroup() {
             .from("groups")
             .update({
                 name,
-                category,
+
+                /*
+                 * Existing schema contract:
+                 * Group Type → groups.category
+                 */
+                category:
+                    categoryValidation.value,
+
                 country,
+
                 monthly_contribution:
                     monthlyContribution
             })
@@ -1937,7 +2069,10 @@ async function saveGroup() {
             ...(data || {}),
 
             name,
-            category,
+
+            category:
+                categoryValidation.value,
+
             country,
 
             monthly_contribution:
@@ -1981,17 +2116,16 @@ async function saveGroup() {
    ========================================================= */
 
 function bindEvents() {
-
-    /*
-     * Prevent duplicate event listeners if the initializer
-     * is ever called more than once by the page shell.
-     */
     if (eventsBound) {
         return;
     }
 
     eventsBound = true;
 
+
+    /* ------------------------------------------------------
+       GROUP INFORMATION
+       ------------------------------------------------------ */
 
     if (dom.groupForm) {
         dom.groupForm.addEventListener(
@@ -2005,11 +2139,19 @@ function bindEvents() {
     }
 
 
-    /*
-     * ------------------------------------------------------
-     * LEADERSHIP SETUP
-     * ------------------------------------------------------
-     */
+    if (dom.groupCategory) {
+        dom.groupCategory.addEventListener(
+            "change",
+            () => {
+                updateGroupCategoryUI();
+            }
+        );
+    }
+
+
+    /* ------------------------------------------------------
+       LEADERSHIP SETUP
+       ------------------------------------------------------ */
 
     if (
         dom.adminActualPosition
@@ -2041,13 +2183,6 @@ function bindEvents() {
         dom.addInitialOfficerLink.addEventListener(
             "click",
             (event) => {
-
-                /*
-                 * The link remains a normal navigation
-                 * target. This guard prevents a view-only
-                 * user from entering the officer onboarding
-                 * route through this management control.
-                 */
                 if (!canManageGroup) {
                     event.preventDefault();
 
@@ -2059,6 +2194,10 @@ function bindEvents() {
         );
     }
 
+
+    /* ------------------------------------------------------
+       CONTRIBUTION CALENDAR
+       ------------------------------------------------------ */
 
     if (
         dom.contributionCalendarForm
@@ -2101,7 +2240,6 @@ function bindEvents() {
    ========================================================= */
 
 export async function initGroupManagement() {
-
     if (initializationPromise) {
         return initializationPromise;
     }
@@ -2113,7 +2251,6 @@ export async function initGroupManagement() {
 
 
             try {
-
                 /*
                  * Bind page events exactly once.
                  */
@@ -2183,7 +2320,6 @@ export async function initGroupManagement() {
                 }
 
             } catch (error) {
-
                 console.error(
                     "Group management initialization failed:",
                     error
