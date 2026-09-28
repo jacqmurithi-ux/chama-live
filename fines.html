@@ -1,7 +1,11 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">  <title>Fines | CHAMA LIVE</title>  <style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fines | CHAMA LIVE</title>
+
+  <style>
     :root {
       --primary: #166534;
       --primary-dark: #14532d;
@@ -674,585 +678,671 @@
         max-width: 180px;
       }
     }
-  </style></head><body>  <header class="topbar">
-    <div class="topbar-inner">  <div class="brand">
-    <div class="brand-mark">CL</div>
+  </style>
+</head>
 
-    <div class="brand-copy">
-      <div class="brand-name">CHAMA LIVE</div>
+<body>
 
-      <div
-        class="brand-group"
-        data-group-name
-      >
-        Loading group…
-      </div>
-    </div>
-  </div>
+  <header class="topbar">
 
-  <div class="topbar-actions">
-    <button
-      type="button"
-      class="btn btn-danger"
-      id="logout"
-    >
-      Logout
-    </button>
-  </div>
+    <div class="topbar-inner">
 
-</div>
+      <div class="brand">
 
-<nav
-  class="top-nav"
-  aria-label="Admin navigation"
-></nav>
-
-  </header>  <div class="layout"><main class="main">
-
-  <div class="page-header">
-    <div>
-      <h1 class="page-title">
-        Fines
-      </h1>
-
-      <p class="page-subtitle">
-        Manage fines using the authoritative accounting actions.
-        Fine balances are calculated by the database.
-      </p>
-    </div>
-
-    <button
-      type="button"
-      class="btn btn-primary"
-      id="refreshFines"
-    >
-      Refresh
-    </button>
-  </div>
-
-
-  <div
-    id="status"
-    class="message status"
-    aria-live="polite"
-  ></div>
-
-  <div
-    id="error"
-    class="message error"
-    role="alert"
-    aria-live="assertive"
-  ></div>
-
-
-  <section
-    class="summary-grid"
-    aria-label="Fine summary"
-  >
-
-    <article class="summary-card">
-      <div class="summary-label">
-        Total Fines
-      </div>
-
-      <div
-        class="summary-value"
-        id="totalFines"
-      >
-        0
-      </div>
-    </article>
-
-
-    <article class="summary-card">
-      <div class="summary-label">
-        Original Amount
-      </div>
-
-      <div
-        class="summary-value money"
-        id="totalOriginal"
-      >
-        KSh 0
-      </div>
-    </article>
-
-
-    <article class="summary-card">
-      <div class="summary-label">
-        Paid
-      </div>
-
-      <div
-        class="summary-value money"
-        id="totalPaid"
-      >
-        KSh 0
-      </div>
-    </article>
-
-
-    <article class="summary-card">
-      <div class="summary-label">
-        Outstanding
-      </div>
-
-      <div
-        class="summary-value money"
-        id="totalOutstanding"
-      >
-        KSh 0
-      </div>
-    </article>
-
-  </section>
-
-
-  <!-- Manual Fine Creation -->
-
-  <section
-    class="section"
-    aria-labelledby="manual-fine-title"
-  >
-
-    <div class="section-header">
-
-      <div>
-        <h2
-          class="section-title"
-          id="manual-fine-title"
-        >
-          Add Fine
-        </h2>
-      </div>
-
-    </div>
-
-    <div class="section-body">
-
-      <form id="manualFineForm">
-
-        <div class="manual-fine-grid">
-
-          <div class="action-field">
-            <label for="manualFineMemberId">
-              Member
-            </label>
-
-            <select
-              id="manualFineMemberId"
-              name="member_id"
-              required
-            >
-              <option value="">
-                Select member
-              </option>
-            </select>
-          </div>
-
-
-          <div class="action-field">
-            <label for="manualFineTriggerType">
-              Fine Type
-            </label>
-
-            <select
-              id="manualFineTriggerType"
-              name="trigger_type"
-              required
-            >
-              <option value="">
-                Select fine type
-              </option>
-
-              <option value="meeting_absence">
-                Absence
-              </option>
-
-              <option value="late_attendance">
-                Late for Meeting
-              </option>
-
-              <option value="custom_event">
-                Other / Custom
-              </option>
-            </select>
-          </div>
-
-
-          <div class="action-field">
-            <label for="manualFineAmount">
-              Amount
-            </label>
-
-            <input
-              type="number"
-              id="manualFineAmount"
-              name="amount"
-              min="0.01"
-              step="0.01"
-              inputmode="decimal"
-              placeholder="e.g. 100"
-              required
-            >
-          </div>
-
-
-          <div class="action-field manual-fine-reason">
-            <label for="manualFineReason">
-              Reason
-            </label>
-
-            <textarea
-              id="manualFineReason"
-              name="reason"
-              maxlength="1000"
-              placeholder="Enter the reason for this fine…"
-              required
-            ></textarea>
-
-            <div class="action-field-note">
-              The reason is stored with the individual fine.
-              The database remains authoritative for authorization,
-              amount, member ownership, accounting month, and fine creation.
-            </div>
-          </div>
-
-
-          <div class="manual-fine-actions">
-            <button
-              type="submit"
-              class="btn btn-primary"
-              id="saveManualFine"
-            >
-              Save Fine
-            </button>
-          </div>
-
+        <div class="brand-mark">
+          CL
         </div>
 
+        <div class="brand-copy">
 
-        <div
-          id="manualFineError"
-          class="manual-fine-error"
-          role="alert"
-          aria-live="assertive"
-        ></div>
+          <div class="brand-name">
+            CHAMA LIVE
+          </div>
 
-      </form>
-
-    </div>
-
-  </section>
-
-
-  <section
-    class="section"
-    aria-labelledby="filters-title"
-  >
-
-    <div class="section-header">
-      <h2
-        class="section-title"
-        id="filters-title"
-      >
-        Filters
-      </h2>
-    </div>
-
-    <div class="section-body">
-
-      <div class="filters">
-
-        <div class="filter-group">
-          <label for="fineSearch">
-            Search
-          </label>
-
-          <input
-            type="search"
-            id="fineSearch"
-            placeholder="Search member, rule, reason, or trigger…"
-            autocomplete="off"
+          <div
+            class="brand-group"
+            data-group-name
           >
+            Loading group…
+          </div>
+
         </div>
 
+      </div>
 
-        <div class="filter-group">
-          <label for="monthFilter">
-            Accounting Month
-          </label>
+      <div class="topbar-actions">
 
-          <select id="monthFilter">
-            <option value="">
-              All months
-            </option>
-          </select>
-        </div>
+        <button
+          type="button"
+          class="btn btn-danger"
+          id="logout"
+        >
+          Logout
+        </button>
+
+      </div>
+
+    </div>
+
+    <nav
+      class="top-nav"
+      aria-label="Admin navigation"
+    ></nav>
+
+  </header>
 
 
-        <div class="filter-group">
-          <label for="statusFilter">
-            Status
-          </label>
+  <div class="layout">
 
-          <select id="statusFilter">
-            <option value="">
-              All statuses
-            </option>
+    <main class="main">
 
-            <option value="OUTSTANDING">
-              Outstanding
-            </option>
-
-            <option value="PARTIALLY_PAID">
-              Partially Paid
-            </option>
-
-            <option value="PAID">
-              Paid
-            </option>
-
-            <option value="WAIVED">
-              Waived
-            </option>
-          </select>
-        </div>
-
+      <div class="page-header">
 
         <div>
-          <button
-            type="button"
-            class="btn"
-            id="clearFilters"
-          >
-            Clear
-          </button>
+
+          <h1 class="page-title">
+            Fines
+          </h1>
+
+          <p class="page-subtitle">
+            Manage fines using the authoritative accounting actions.
+            Fine balances are calculated by the database.
+          </p>
+
         </div>
 
-      </div>
-
-    </div>
-
-  </section>
-
-
-  <section
-    class="section"
-    aria-labelledby="fines-title"
-  >
-
-    <div class="section-header">
-
-      <h2
-        class="section-title"
-        id="fines-title"
-      >
-        Fine Register
-      </h2>
-
-      <span
-        class="muted"
-        id="resultCount"
-      >
-        0 fines
-      </span>
-
-    </div>
-
-
-    <div class="table-wrap">
-
-      <table>
-
-        <thead>
-          <tr>
-            <th>Member</th>
-            <th>Fine</th>
-            <th>Month</th>
-            <th>Original</th>
-            <th>Adjusted</th>
-            <th>Waived</th>
-            <th>Paid</th>
-            <th>Outstanding</th>
-            <th>Status</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-
-        <tbody id="finesBody">
-
-          <tr>
-            <td
-              colspan="10"
-              class="empty-state"
-            >
-              Loading fines…
-            </td>
-          </tr>
-
-        </tbody>
-
-      </table>
-
-    </div>
-
-  </section>
-
-
-  <section
-    class="section detail-panel"
-    id="fineDetail"
-    aria-labelledby="detail-title"
-  >
-
-    <div class="section-header">
-
-      <h2
-        class="section-title"
-        id="detail-title"
-      >
-        Fine Details
-      </h2>
-
-      <button
-        type="button"
-        class="btn"
-        id="closeDetail"
-      >
-        Close
-      </button>
-
-    </div>
-
-
-    <div class="section-body">
-
-      <div
-        class="detail-grid"
-        id="detailGrid"
-      ></div>
-
-
-      <div
-        class="detail-balance"
-        id="detailBalance"
-      ></div>
-
-
-      <div
-        class="detail-actions"
-        id="fineActions"
-        aria-label="Fine actions"
-      >
-
         <button
           type="button"
-          class="btn"
-          id="adjustFine"
+          class="btn btn-primary"
+          id="refreshFines"
         >
-          Adjust
-        </button>
-
-        <button
-          type="button"
-          class="btn"
-          id="waiveFine"
-        >
-          Waive
-        </button>
-
-        <button
-          type="button"
-          class="btn"
-          id="allocateFinePayment"
-        >
-          Allocate Payment
+          Refresh
         </button>
 
       </div>
 
-    </div>
-
-  </section>
-
-</main>
-
-  </div>  <div
-    class="modal"
-    id="fineActionModal"
-    hidden
-    aria-hidden="true"
-  ><div
-  class="modal-backdrop"
-  data-modal-close
-></div>
-
-<div
-  class="modal-dialog"
-  role="dialog"
-  aria-modal="true"
-  aria-labelledby="fineActionTitle"
->
-
-  <div class="modal-header">
-
-    <h2
-      class="section-title"
-      id="fineActionTitle"
-    >
-      Fine Action
-    </h2>
-
-    <button
-      type="button"
-      class="btn"
-      id="closeFineAction"
-    >
-      Close
-    </button>
-
-  </div>
-
-  <div class="section-body">
-
-    <form id="fineActionForm">
 
       <div
-        id="fineActionFields"
+        id="status"
+        class="message status"
+        aria-live="polite"
       ></div>
 
       <div
-        id="fineActionError"
-        class="action-error"
+        id="error"
+        class="message error"
         role="alert"
         aria-live="assertive"
       ></div>
 
-      <div
-        class="row-actions"
-        style="margin-top:16px;"
+
+      <section
+        class="summary-grid"
+        aria-label="Fine summary"
       >
 
-        <button
-          type="submit"
-          class="btn btn-primary"
-          id="submitFineAction"
+        <article class="summary-card">
+
+          <div class="summary-label">
+            Total Fines
+          </div>
+
+          <div
+            class="summary-value"
+            id="totalFines"
+          >
+            0
+          </div>
+
+        </article>
+
+
+        <article class="summary-card">
+
+          <div class="summary-label">
+            Original Amount
+          </div>
+
+          <div
+            class="summary-value money"
+            id="totalOriginal"
+          >
+            KSh 0
+          </div>
+
+        </article>
+
+
+        <article class="summary-card">
+
+          <div class="summary-label">
+            Paid
+          </div>
+
+          <div
+            class="summary-value money"
+            id="totalPaid"
+          >
+            KSh 0
+          </div>
+
+        </article>
+
+
+        <article class="summary-card">
+
+          <div class="summary-label">
+            Outstanding
+          </div>
+
+          <div
+            class="summary-value money"
+            id="totalOutstanding"
+          >
+            KSh 0
+          </div>
+
+        </article>
+
+      </section>
+
+
+      <!-- Manual Fine Creation -->
+
+      <section
+        class="section"
+        aria-labelledby="manual-fine-title"
+      >
+
+        <div class="section-header">
+
+          <div>
+
+            <h2
+              class="section-title"
+              id="manual-fine-title"
+            >
+              Add Fine
+            </h2>
+
+          </div>
+
+        </div>
+
+
+        <div class="section-body">
+
+          <form id="manualFineForm">
+
+            <div class="manual-fine-grid">
+
+              <div class="action-field">
+
+                <label for="manualFineMemberId">
+                  Member
+                </label>
+
+                <select
+                  id="manualFineMemberId"
+                  name="member_id"
+                  required
+                >
+
+                  <option value="">
+                    Select member
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="action-field">
+
+                <label for="manualFineTriggerType">
+                  Fine Type
+                </label>
+
+                <select
+                  id="manualFineTriggerType"
+                  name="trigger_type"
+                  required
+                >
+
+                  <option value="">
+                    Select fine type
+                  </option>
+
+                  <option value="meeting_absence">
+                    Absence
+                  </option>
+
+                  <option value="late_attendance">
+                    Late for Meeting
+                  </option>
+
+                  <option value="custom_event">
+                    Other / Custom
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="action-field">
+
+                <label for="manualFineAmount">
+                  Amount
+                </label>
+
+                <input
+                  type="number"
+                  id="manualFineAmount"
+                  name="amount"
+                  min="0.01"
+                  step="0.01"
+                  inputmode="decimal"
+                  placeholder="e.g. 100"
+                  required
+                >
+
+              </div>
+
+
+              <div class="action-field manual-fine-reason">
+
+                <label for="manualFineReason">
+                  Reason
+                </label>
+
+                <textarea
+                  id="manualFineReason"
+                  name="reason"
+                  maxlength="1000"
+                  placeholder="Enter the reason for this fine…"
+                  required
+                ></textarea>
+
+                <div class="action-field-note">
+                  Enter the reason or description for this fine.
+                  The database remains authoritative for authorization,
+                  amount, member ownership, accounting month, and fine creation.
+                </div>
+
+              </div>
+
+
+              <div class="manual-fine-actions">
+
+                <button
+                  type="submit"
+                  class="btn btn-primary"
+                  id="saveManualFine"
+                >
+                  Save Fine
+                </button>
+
+              </div>
+
+            </div>
+
+
+            <div
+              id="manualFineError"
+              class="manual-fine-error"
+              role="alert"
+              aria-live="assertive"
+            ></div>
+
+          </form>
+
+        </div>
+
+      </section>
+
+
+      <section
+        class="section"
+        aria-labelledby="filters-title"
+      >
+
+        <div class="section-header">
+
+          <h2
+            class="section-title"
+            id="filters-title"
+          >
+            Filters
+          </h2>
+
+        </div>
+
+
+        <div class="section-body">
+
+          <div class="filters">
+
+            <div class="filter-group">
+
+              <label for="fineSearch">
+                Search
+              </label>
+
+              <input
+                type="search"
+                id="fineSearch"
+                placeholder="Search member, rule, or trigger…"
+                autocomplete="off"
+              >
+
+            </div>
+
+
+            <div class="filter-group">
+
+              <label for="monthFilter">
+                Accounting Month
+              </label>
+
+              <select id="monthFilter">
+
+                <option value="">
+                  All months
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <div class="filter-group">
+
+              <label for="statusFilter">
+                Status
+              </label>
+
+              <select id="statusFilter">
+
+                <option value="">
+                  All statuses
+                </option>
+
+                <option value="OUTSTANDING">
+                  Outstanding
+                </option>
+
+                <option value="PARTIALLY_PAID">
+                  Partially Paid
+                </option>
+
+                <option value="PAID">
+                  Paid
+                </option>
+
+                <option value="WAIVED">
+                  Waived
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <div>
+
+              <button
+                type="button"
+                class="btn"
+                id="clearFilters"
+              >
+                Clear
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <section
+        class="section"
+        aria-labelledby="fines-title"
+      >
+
+        <div class="section-header">
+
+          <h2
+            class="section-title"
+            id="fines-title"
+          >
+            Fine Register
+          </h2>
+
+          <span
+            class="muted"
+            id="resultCount"
+          >
+            0 fines
+          </span>
+
+        </div>
+
+
+        <div class="table-wrap">
+
+          <table>
+
+            <thead>
+
+              <tr>
+                <th>Member</th>
+                <th>Fine</th>
+                <th>Month</th>
+                <th>Original</th>
+                <th>Adjusted</th>
+                <th>Waived</th>
+                <th>Paid</th>
+                <th>Outstanding</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+
+            </thead>
+
+
+            <tbody id="finesBody">
+
+              <tr>
+
+                <td
+                  colspan="10"
+                  class="empty-state"
+                >
+                  Loading fines…
+                </td>
+
+              </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </section>
+
+
+      <section
+        class="section detail-panel"
+        id="fineDetail"
+        aria-labelledby="detail-title"
+      >
+
+        <div class="section-header">
+
+          <h2
+            class="section-title"
+            id="detail-title"
+          >
+            Fine Details
+          </h2>
+
+          <button
+            type="button"
+            class="btn"
+            id="closeDetail"
+          >
+            Close
+          </button>
+
+        </div>
+
+
+        <div class="section-body">
+
+          <div
+            class="detail-grid"
+            id="detailGrid"
+          ></div>
+
+
+          <div
+            class="detail-balance"
+            id="detailBalance"
+          ></div>
+
+
+          <div
+            class="detail-actions"
+            id="fineActions"
+            aria-label="Fine actions"
+          >
+
+            <button
+              type="button"
+              class="btn"
+              id="adjustFine"
+            >
+              Adjust
+            </button>
+
+            <button
+              type="button"
+              class="btn"
+              id="waiveFine"
+            >
+              Waive
+            </button>
+
+            <button
+              type="button"
+              class="btn"
+              id="allocateFinePayment"
+            >
+              Allocate Payment
+            </button>
+
+          </div>
+
+        </div>
+
+      </section>
+
+    </main>
+
+  </div>
+
+
+  <div
+    class="modal"
+    id="fineActionModal"
+    hidden
+    aria-hidden="true"
+  >
+
+    <div
+      class="modal-backdrop"
+      data-modal-close
+    ></div>
+
+
+    <div
+      class="modal-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="fineActionTitle"
+    >
+
+      <div class="modal-header">
+
+        <h2
+          class="section-title"
+          id="fineActionTitle"
         >
-          Submit
+          Fine Action
+        </h2>
+
+        <button
+          type="button"
+          class="btn"
+          id="closeFineAction"
+        >
+          Close
         </button>
 
       </div>
 
-    </form>
+
+      <div class="section-body">
+
+        <form id="fineActionForm">
+
+          <div
+            id="fineActionFields"
+          ></div>
+
+
+          <div
+            id="fineActionError"
+            class="action-error"
+            role="alert"
+            aria-live="assertive"
+          ></div>
+
+
+          <div
+            class="row-actions"
+            style="margin-top:16px;"
+          >
+
+            <button
+              type="submit"
+              class="btn btn-primary"
+              id="submitFineAction"
+            >
+              Submit
+            </button>
+
+          </div>
+
+        </form>
+
+      </div>
+
+    </div>
 
   </div>
 
-</div>
 
-  </div>  <script type="module">
+  <script type="module">
     import { boot } from "./js/admin-layout.js";
 
     boot();
-  </script></body>
+  </script>
+
+</body>
 </html>
