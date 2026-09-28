@@ -34,6 +34,14 @@
    billing.html is an admin page.
    billing.js exports initBilling().
 
+   FINES
+   ---------------------------------------------------------
+   fines.html is an admin page.
+   fines.js exports initFines().
+
+   Fines F1 is read-only.
+   No accounting mutations are performed by this layout.
+
    GETTING STARTED
    ---------------------------------------------------------
    Admin Getting Started is currently a shell-only admin
@@ -71,6 +79,7 @@ const ADMIN_PAGES = new Set([
   "members.html",
   "contributions.html",
   "expenses.html",
+  "fines.html",
   "meetings.html",
   "reports.html",
   "monthly-closing.html",
@@ -124,6 +133,11 @@ const PAGE_SCRIPTS = {
   "expenses.html": [
     "./expenses.js",
     "initPage"
+  ],
+
+  "fines.html": [
+    "./fines.js",
+    "initFines"
   ],
 
   "meetings.html": [
@@ -328,6 +342,10 @@ const NAVIGATION_GROUPS = [
       [
         "expenses.html",
         "Expenses"
+      ],
+      [
+        "fines.html",
+        "Fines"
       ],
       [
         "reports.html",
@@ -1795,4 +1813,4 @@ export function getLayoutState() {
 
   };
 
-}1
+}
