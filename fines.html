@@ -47,12 +47,18 @@
 
     button,
     input,
-    select {
+    select,
+    textarea {
       font: inherit;
     }
 
     button {
       cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
     }
 
     .topbar {
@@ -463,6 +469,103 @@
       font-variant-numeric: tabular-nums;
     }
 
+    .detail-actions {
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+
+    .modal[hidden] {
+      display: none;
+    }
+
+    .modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+    }
+
+    .modal-dialog {
+      position: relative;
+      z-index: 1;
+      width: min(560px, 100%);
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 20px 60px rgba(15, 23, 42, 0.2);
+    }
+
+    .modal-header {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .action-field {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      margin-bottom: 16px;
+    }
+
+    .action-field label {
+      font-size: 13px;
+      font-weight: 750;
+      color: #334155;
+    }
+
+    .action-field input,
+    .action-field select,
+    .action-field textarea {
+      width: 100%;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      color: var(--text);
+      border-radius: 9px;
+      padding: 10px 12px;
+      outline: none;
+    }
+
+    .action-field textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    .action-field-note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .action-error {
+      margin-bottom: 16px;
+      padding: 10px 12px;
+      border: 1px solid #fecaca;
+      border-radius: 9px;
+      background: var(--danger-bg);
+      color: var(--danger);
+      font-size: 13px;
+    }
+
+    .action-error:empty {
+      display: none;
+    }
+
     @media (max-width: 1000px) {
       .summary-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -564,8 +667,8 @@
           </h1>
 
           <p class="page-subtitle">
-            View fines and their authoritative accounting balances.
-            This page is read-only.
+            Manage fines using the authoritative accounting actions.
+            Fine balances are calculated by the database.
           </p>
         </div>
 
@@ -849,11 +952,119 @@
             id="detailBalance"
           ></div>
 
+
+          <div
+            class="detail-actions"
+            id="fineActions"
+            aria-label="Fine actions"
+          >
+            <button
+              type="button"
+              class="btn"
+              id="adjustFine"
+            >
+              Adjust
+            </button>
+
+            <button
+              type="button"
+              class="btn"
+              id="waiveFine"
+            >
+              Waive
+            </button>
+
+            <button
+              type="button"
+              class="btn"
+              id="allocateFinePayment"
+            >
+              Allocate Payment
+            </button>
+          </div>
+
         </div>
 
       </section>
 
     </main>
+
+  </div>
+
+
+  <div
+    class="modal"
+    id="fineActionModal"
+    hidden
+    aria-hidden="true"
+  >
+
+    <div
+      class="modal-backdrop"
+      data-modal-close
+    ></div>
+
+    <div
+      class="modal-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="fineActionTitle"
+    >
+
+      <div class="modal-header">
+
+        <h2
+          class="section-title"
+          id="fineActionTitle"
+        >
+          Fine Action
+        </h2>
+
+        <button
+          type="button"
+          class="btn"
+          id="closeFineAction"
+        >
+          Close
+        </button>
+
+      </div>
+
+      <div class="section-body">
+
+        <form id="fineActionForm">
+
+          <div
+            id="fineActionFields"
+          ></div>
+
+          <div
+            id="fineActionError"
+            class="action-error"
+            role="alert"
+            aria-live="assertive"
+          ></div>
+
+          <div
+            class="row-actions"
+            style="margin-top:16px;"
+          >
+
+            <button
+              type="submit"
+              class="btn btn-primary"
+              id="submitFineAction"
+            >
+              Submit
+            </button>
+
+          </div>
+
+        </form>
+
+      </div>
+
+    </div>
 
   </div>
 
