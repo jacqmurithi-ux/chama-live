@@ -1,3842 +1,1348 @@
-/* =========================================================
-   CHAMA LIVE — ADMIN FINES
-   ---------------------------------------------------------
-   Fines v1 MANAGEMENT FEATURE
-
-   RESPONSIBILITIES
-   ---------------------------------------------------------
-   - Load fines belonging to the authenticated admin's group
-   - Load authoritative fine balances
-   - Render fine summary
-   - Filter/search fines
-   - Display fine details
-   - Add a manual fine through the canonical RPC
-   - Perform authorized fine adjustments
-   - Perform authorized fine waivers
-   - Allocate recorded member payments to fines
-
-   IMPORTANT
-   ---------------------------------------------------------
-   All accounting mutations are performed through the
-   canonical database RPCs.
-
-   PROHIBITED:
-   - Direct INSERT into accounting tables
-   - Direct UPDATE of accounting tables
-   - Direct DELETE from accounting tables
-   - Local reconstruction of authoritative balances
-   - Browser-side fine generation
-   - Scheduler execution
-   - Direct writes to fines/fine_rules tables
-
-   MANUAL FINE CREATION
-   ---------------------------------------------------------
-   The Select Member → Enter Fine → Save workflow calls only:
-
-       cl_fine_create_manual()
-
-   The database remains authoritative for:
-   - authentication
-   - role authorization
-   - group ownership
-   - member ownership
-   - member status
-   - accounting period
-   - Manual Fine rule identity
-   - trigger identity
-   - accounting month
-   - persisted fine amount
-   - persisted reason
-========================================================= */
-
-import { supabase } from "./supabase.js";
-import { getLayoutState } from "./admin-layout.js";
-
-
-/* =========================================================
-   STATE
-========================================================= */
-
-const state = {
-  groupId: null,
-  groupName: null,
-  fines: [],
-  balances: new Map(),
-  selectedFineId: null
-};
-
-
-const actionState = {
-  type: null,
-  fineId: null,
-  pending: false
-};
-
-
-const paymentState = {
-  memberId: null,
-  payments: [],
-  loading: false
-};
-
-
-const manualFineState = {
-  members: [],
-  loading: false,
-  pending: false
-};
-
-
-/* =========================================================
-   ELEMENTS
-========================================================= */
-
-const elements = {};
-
-
-/* =========================================================
-   HELPERS
-========================================================= */
-
-function cacheElements() {
-
-  elements.status =
-    document.getElementById("status");
-
-  elements.error =
-    document.getElementById("error");
-
-  elements.totalFines =
-    document.getElementById("totalFines");
-
-  elements.totalOriginal =
-    document.getElementById("totalOriginal");
-
-  elements.totalPaid =
-    document.getElementById("totalPaid");
-
-  elements.totalOutstanding =
-    document.getElementById("totalOutstanding");
-
-  elements.fineSearch =
-    document.getElementById("fineSearch");
-
-  elements.monthFilter =
-    document.getElementById("monthFilter");
-
-  elements.statusFilter =
-    document.getElementById("statusFilter");
-
-  elements.clearFilters =
-    document.getElementById("clearFilters");
-
-  elements.refreshFines =
-    document.getElementById("refreshFines");
-
-  elements.resultCount =
-    document.getElementById("resultCount");
-
-  elements.finesBody =
-    document.getElementById("finesBody");
-
-  elements.fineDetail =
-    document.getElementById("fineDetail");
-
-  elements.detailGrid =
-    document.getElementById("detailGrid");
-
-  elements.detailBalance =
-    document.getElementById("detailBalance");
-
-  elements.closeDetail =
-    document.getElementById("closeDetail");
-
-  elements.fineActions =
-    document.getElementById("fineActions");
-
-  elements.adjustFine =
-    document.getElementById("adjustFine");
-
-  elements.waiveFine =
-    document.getElementById("waiveFine");
-
-  elements.allocateFinePayment =
-    document.getElementById(
-      "allocateFinePayment"
-    );
-
-  elements.fineActionModal =
-    document.getElementById(
-      "fineActionModal"
-    );
-
-  elements.fineActionTitle =
-    document.getElementById(
-      "fineActionTitle"
-    );
-
-  elements.closeFineAction =
-    document.getElementById(
-      "closeFineAction"
-    );
-
-  elements.fineActionForm =
-    document.getElementById(
-      "fineActionForm"
-    );
-
-  elements.fineActionFields =
-    document.getElementById(
-      "fineActionFields"
-    );
-
-  elements.fineActionError =
-    document.getElementById(
-      "fineActionError"
-    );
-
-  elements.submitFineAction =
-    document.getElementById(
-      "submitFineAction"
-    );
-
-  /*
-   * Manual fine form.
-   *
-   * These IDs intentionally match the reconciled fines.html
-   * exactly. There is no manual-fine modal.
-   */
-
-  elements.manualFineForm =
-    document.getElementById(
-      "manualFineForm"
-    );
-
-  elements.manualFineMemberId =
-    document.getElementById(
-      "manualFineMemberId"
-    );
-
-  elements.manualFineTriggerType =
-    document.getElementById(
-      "manualFineTriggerType"
-    );
-
-  elements.manualFineAmount =
-    document.getElementById(
-      "manualFineAmount"
-    );
-
-  elements.manualFineReason =
-    document.getElementById(
-      "manualFineReason"
-    );
-
-  elements.saveManualFine =
-    document.getElementById(
-      "saveManualFine"
-    );
-
-  elements.manualFineError =
-    document.getElementById(
-      "manualFineError"
-    );
-
-}
-
-
-/* =========================================================
-   FORMATTING
-========================================================= */
-
-function money(value) {
-
-  const amount =
-    Number(value);
-
-  if (!Number.isFinite(amount)) {
-    return "KSh 0";
-  }
-
-  return (
-    "KSh " +
-    amount.toLocaleString(
-      "en-KE",
-      {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fines | CHAMA LIVE</title>
+
+  <style>
+    :root {
+      --primary: #166534;
+      --primary-dark: #14532d;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --muted: #64748b;
+      --danger: #b91c1c;
+      --danger-bg: #fef2f2;
+      --success: #166534;
+      --success-bg: #f0fdf4;
+      --warning: #92400e;
+      --warning-bg: #fffbeb;
+      --info: #1d4ed8;
+      --info-bg: #eff6ff;
+      --shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+
+    .topbar-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 800;
+      font-size: 18px;
+    }
+
+    .brand-copy {
+      min-width: 0;
+    }
+
+    .brand-name {
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-group {
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 360px;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      padding: 9px 14px;
+      border-radius: 9px;
+      font-weight: 650;
+    }
+
+    .btn:hover {
+      background: #f8fafc;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      border-color: var(--primary-dark);
+    }
+
+    .btn-danger {
+      background: #fff;
+      color: var(--danger);
+      border-color: #fecaca;
+    }
+
+    .layout {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 28px 24px 48px;
+    }
+
+    .main {
+      min-width: 0;
+    }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .page-title {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+    }
+
+    .page-subtitle {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      max-width: 760px;
+    }
+
+    .message {
+      margin-bottom: 16px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 14px;
+    }
+
+    .message:empty {
+      display: none;
+    }
+
+    .status {
+      background: var(--success-bg);
+      border: 1px solid #bbf7d0;
+      color: var(--success);
+    }
+
+    .error {
+      background: var(--danger-bg);
+      border: 1px solid #fecaca;
+      color: var(--danger);
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .summary-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .summary-label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 650;
+      margin-bottom: 8px;
+    }
+
+    .summary-value {
+      font-size: 26px;
+      line-height: 1.1;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+    }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+
+    .section-header {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .section-title {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .section-body {
+      padding: 20px;
+    }
+
+    .manual-fine-grid {
+      display: grid;
+      grid-template-columns:
+        minmax(220px, 1.2fr)
+        minmax(180px, 1fr)
+        minmax(150px, 180px);
+      gap: 14px;
+      align-items: end;
+    }
+
+    .manual-fine-reason {
+      grid-column: 1 / -1;
+    }
+
+    .manual-fine-actions {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+    }
+
+    .manual-fine-note {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .manual-fine-error {
+      margin-top: 14px;
+      padding: 10px 12px;
+      border: 1px solid #fecaca;
+      border-radius: 9px;
+      background: var(--danger-bg);
+      color: var(--danger);
+      font-size: 13px;
+    }
+
+    .manual-fine-error:empty {
+      display: none;
+    }
+
+    .action-field {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      margin-bottom: 0;
+    }
+
+    .action-field label {
+      font-size: 13px;
+      font-weight: 750;
+      color: #334155;
+    }
+
+    .action-field input,
+    .action-field select,
+    .action-field textarea {
+      width: 100%;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      color: var(--text);
+      border-radius: 9px;
+      padding: 10px 12px;
+      outline: none;
+    }
+
+    .action-field textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    .action-field-note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns:
+        minmax(220px, 1fr)
+        minmax(170px, 220px)
+        minmax(170px, 220px)
+        auto;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .filter-group label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    .filter-group input,
+    .filter-group select {
+      width: 100%;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      color: var(--text);
+      border-radius: 9px;
+      padding: 10px 12px;
+      outline: none;
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1100px;
+    }
+
+    th,
+    td {
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: middle;
+      font-size: 14px;
+    }
+
+    th {
+      background: #f8fafc;
+      color: #475569;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-weight: 800;
+    }
+
+    tbody tr:hover {
+      background: #f8fafc;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .money {
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .member-name {
+      font-weight: 750;
+    }
+
+    .fine-name {
+      font-weight: 650;
+    }
+
+    .fine-meta {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 12px;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+
+    .badge-paid {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .badge-partial {
+      background: var(--info-bg);
+      color: var(--info);
+    }
+
+    .badge-outstanding {
+      background: var(--warning-bg);
+      color: var(--warning);
+    }
+
+    .badge-waived {
+      background: #f1f5f9;
+      color: #475569;
+    }
+
+    .row-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .row-actions .btn {
+      padding: 7px 10px;
+      font-size: 12px;
+    }
+
+    .empty-state {
+      padding: 42px 20px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .empty-state strong {
+      display: block;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .detail-panel {
+      display: none;
+    }
+
+    .detail-panel.open {
+      display: block;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .detail-item {
+      padding: 13px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #f8fafc;
+    }
+
+    .detail-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+
+    .detail-value {
+      font-size: 14px;
+      font-weight: 700;
+      word-break: break-word;
+    }
+
+    .detail-balance {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .balance-item {
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    .balance-label {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
+
+    .balance-value {
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .detail-actions {
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+
+    .modal[hidden] {
+      display: none;
+    }
+
+    .modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+    }
+
+    .modal-dialog {
+      position: relative;
+      z-index: 1;
+      width: min(560px, 100%);
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 20px 60px rgba(15, 23, 42, 0.2);
+    }
+
+    .modal-header {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .action-error {
+      margin-bottom: 16px;
+      padding: 10px 12px;
+      border: 1px solid #fecaca;
+      border-radius: 9px;
+      background: var(--danger-bg);
+      color: var(--danger);
+      font-size: 13px;
+    }
+
+    .action-error:empty {
+      display: none;
+    }
+
+    @media (max-width: 1000px) {
+      .summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
-    )
-  );
 
-}
-
-
-function formatDate(value) {
-
-  if (!value) {
-    return "—";
-  }
-
-  const date =
-    new Date(value);
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-    return String(value);
-  }
-
-  return date.toLocaleDateString(
-    "en-KE",
-    {
-      day: "2-digit",
-      month: "short",
-      year: "numeric"
-    }
-  );
-
-}
-
-
-function formatDateTime(value) {
-
-  if (!value) {
-    return "—";
-  }
-
-  const date =
-    new Date(value);
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-    return String(value);
-  }
-
-  return date.toLocaleString(
-    "en-KE",
-    {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit"
-    }
-  );
-
-}
-
-
-function titleCase(value) {
-
-  return String(value || "")
-    .replace(/[_-]+/g, " ")
-    .replace(/\b\w/g, char =>
-      char.toUpperCase()
-    );
-
-}
-
-
-function escapeHtml(value) {
-
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-
-}
-
-
-function normalizeError(error) {
-
-  if (!error) {
-    return "Something went wrong.";
-  }
-
-  return (
-    error.message ||
-    error.error_description ||
-    error.details ||
-    "Something went wrong."
-  );
-
-}
-
-
-function parsePositiveAmount(value) {
-
-  const amount =
-    Number(value);
-
-  if (
-    !Number.isFinite(amount) ||
-    amount <= 0
-  ) {
-    return null;
-  }
-
-  return amount;
-
-}
-
-
-/* =========================================================
-   MESSAGES
-========================================================= */
-
-function clearMessages() {
-
-  if (elements.status) {
-    elements.status.textContent = "";
-  }
-
-  if (elements.error) {
-    elements.error.textContent = "";
-  }
-
-}
-
-
-function showStatus(message) {
-
-  if (!elements.status) {
-    return;
-  }
-
-  elements.status.textContent =
-    message;
-
-}
-
-
-function showError(message) {
-
-  if (!elements.error) {
-    return;
-  }
-
-  elements.error.textContent =
-    message;
-
-}
-
-
-/* =========================================================
-   MANUAL FINE MESSAGES
-========================================================= */
-
-function clearManualFineError() {
-
-  if (
-    elements.manualFineError
-  ) {
-    elements.manualFineError.textContent =
-      "";
-  }
-
-}
-
-
-function showManualFineError(
-  message
-) {
-
-  if (
-    elements.manualFineError
-  ) {
-    elements.manualFineError.textContent =
-      message;
-  }
-
-}
-
-
-/* =========================================================
-   MANUAL FINE FIELD PRESENTATION
-   ---------------------------------------------------------
-   The existing manualFineReason field is intentionally
-   reused for both ordinary fine reasons and custom fine
-   names/descriptions.
-
-   No additional HTML field is required.
-========================================================= */
-
-function updateManualFineReasonField() {
-
-  const triggerType =
-    String(
-      elements.manualFineTriggerType?.value ||
-      ""
-    )
-      .trim()
-      .toLowerCase();
-
-
-  const reasonField =
-    elements.manualFineReason;
-
-
-  if (!reasonField) {
-    return;
-  }
-
-
-  const reasonLabel =
-    document.querySelector(
-      'label[for="manualFineReason"]'
-    );
-
-
-  if (
-    triggerType ===
-    "custom_event"
-  ) {
-
-    if (reasonLabel) {
-
-      reasonLabel.textContent =
-        "Custom Fine Name / Description";
-
-    }
-
-
-    reasonField.placeholder =
-      "Enter the custom fine name or description…";
-
-    return;
-
-  }
-
-
-  if (reasonLabel) {
-
-    reasonLabel.textContent =
-      "Reason";
-
-  }
-
-
-  reasonField.placeholder =
-    "Enter the reason for this fine…";
-
-}
-
-
-/* =========================================================
-   CONTEXT
-========================================================= */
-
-function loadContext() {
-
-  const context =
-    getLayoutState();
-
-  if (
-    !context?.user ||
-    !context?.member?.group_id
-  ) {
-    throw new Error(
-      "Your account is not linked to a group."
-    );
-  }
-
-  state.groupId =
-    context.member.group_id;
-
-  state.groupName =
-    context.group?.name ||
-    context.member.group_name ||
-    "CHAMA";
-
-  document
-    .querySelectorAll(
-      "[data-group-name]"
-    )
-    .forEach(
-      element => {
-        element.textContent =
-          state.groupName;
+      .filters {
+        grid-template-columns: 1fr 1fr;
       }
-    );
 
-}
+      .manual-fine-grid {
+        grid-template-columns: 1fr 1fr;
+      }
 
+      .manual-fine-reason {
+        grid-column: 1 / -1;
+      }
 
-/* =========================================================
-   LOAD MANUAL FINE MEMBERS
-========================================================= */
+      .detail-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
 
-async function loadManualFineMembers() {
-
-  if (!state.groupId) {
-    throw new Error(
-      "Group context is unavailable."
-    );
-  }
-
-
-  manualFineState.loading =
-    true;
-
-
-  if (
-    elements.manualFineMemberId
-  ) {
-    elements.manualFineMemberId.disabled =
-      true;
-  }
-
-
-  try {
-
-    const {
-      data,
-      error
-    } = await supabase
-      .from("members")
-      .select(`
-        id,
-        name
-      `)
-      .eq(
-        "group_id",
-        state.groupId
-      )
-      .eq(
-        "status",
-        "active"
-      )
-      .eq(
-        "onboarding_status",
-        "active"
-      )
-      .order(
-        "name",
-        {
-          ascending: true
-        }
-      );
-
-
-    if (error) {
-      throw error;
+      .detail-balance {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
     }
 
+    @media (max-width: 720px) {
+      .topbar-inner {
+        padding: 12px 16px;
+      }
 
-    manualFineState.members =
-      Array.isArray(data)
-        ? data
-        : [];
+      .layout {
+        padding: 20px 16px 36px;
+      }
 
+      .page-header {
+        flex-direction: column;
+      }
 
-    if (
-      !elements.manualFineMemberId
-    ) {
-      return;
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .filters {
+        grid-template-columns: 1fr;
+      }
+
+      .manual-fine-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .manual-fine-reason {
+        grid-column: auto;
+      }
+
+      .manual-fine-actions {
+        align-items: stretch;
+      }
+
+      .manual-fine-actions .btn {
+        width: 100%;
+      }
+
+      .detail-grid,
+      .detail-balance {
+        grid-template-columns: 1fr;
+      }
+
+      .brand-group {
+        max-width: 180px;
+      }
     }
+  </style>
+</head>
 
+<body>
 
-    elements.manualFineMemberId.innerHTML =
-      "";
+  <header class="topbar">
 
+    <div class="topbar-inner">
 
-    const placeholder =
-      document.createElement(
-        "option"
-      );
+      <div class="brand">
 
-    placeholder.value =
-      "";
+        <div class="brand-mark">
+          CL
+        </div>
 
-    placeholder.textContent =
-      manualFineState.members.length
-        ? "Select member"
-        : "No active members found";
+        <div class="brand-copy">
 
-    placeholder.selected =
-      true;
+          <div class="brand-name">
+            CHAMA LIVE
+          </div>
 
-    elements.manualFineMemberId.appendChild(
-      placeholder
-    );
+          <div
+            class="brand-group"
+            data-group-name
+          >
+            Loading group…
+          </div>
 
+        </div>
 
-    for (
-      const member
-      of manualFineState.members
-    ) {
+      </div>
 
-      const option =
-        document.createElement(
-          "option"
-        );
+      <div class="topbar-actions">
 
-      option.value =
-        member.id;
-
-      option.textContent =
-        member.name ||
-        "Unnamed member";
-
-      elements.manualFineMemberId.appendChild(
-        option
-      );
-
-    }
-
-  }
-
-  finally {
-
-    manualFineState.loading =
-      false;
-
-    if (
-      elements.manualFineMemberId
-    ) {
-      elements.manualFineMemberId.disabled =
-        false;
-    }
-
-  }
-
-}
-
-
-/* =========================================================
-   MANUAL FINE FORM STATE
-========================================================= */
-
-function resetManualFineForm() {
-
-  if (
-    elements.manualFineForm
-  ) {
-    elements.manualFineForm.reset();
-  }
-
-
-  if (
-    elements.manualFineMemberId
-  ) {
-
-    elements.manualFineMemberId.value =
-      "";
-
-  }
-
-
-  if (
-    elements.manualFineTriggerType
-  ) {
-
-    elements.manualFineTriggerType.value =
-      "";
-
-  }
-
-
-  if (
-    elements.manualFineAmount
-  ) {
-
-    elements.manualFineAmount.value =
-      "";
-
-  }
-
-
-  if (
-    elements.manualFineReason
-  ) {
-
-    elements.manualFineReason.value =
-      "";
-
-  }
-
-
-  updateManualFineReasonField();
-
-  clearManualFineError();
-
-}
-
-
-function setManualFinePending(
-  pending
-) {
-
-  manualFineState.pending =
-    pending;
-
-
-  if (
-    elements.saveManualFine
-  ) {
-
-    elements.saveManualFine.disabled =
-      pending ||
-      manualFineState.loading ||
-      !manualFineState.members.length;
-
-    elements.saveManualFine.textContent =
-      pending
-        ? "Saving…"
-        : "Save Fine";
-
-  }
-
-
-  if (
-    elements.manualFineMemberId
-  ) {
-    elements.manualFineMemberId.disabled =
-      pending ||
-      manualFineState.loading;
-  }
-
-
-  if (
-    elements.manualFineTriggerType
-  ) {
-    elements.manualFineTriggerType.disabled =
-      pending;
-  }
-
-
-  if (
-    elements.manualFineAmount
-  ) {
-    elements.manualFineAmount.disabled =
-      pending;
-  }
-
-
-  if (
-    elements.manualFineReason
-  ) {
-    elements.manualFineReason.disabled =
-      pending;
-  }
-
-}
-
-
-/* =========================================================
-   LOAD FINES
-========================================================= */
-
-async function loadFines() {
-
-  if (!state.groupId) {
-    throw new Error(
-      "Group context is unavailable."
-    );
-  }
-
-
-  if (elements.finesBody) {
-
-    elements.finesBody.innerHTML = `
-      <tr>
-        <td
-          colspan="10"
-          class="empty-state"
+        <button
+          type="button"
+          class="btn btn-danger"
+          id="logout"
         >
-          Loading fines…
-        </td>
-      </tr>
-    `;
-
-  }
-
-
-  /*
-   * READ ONLY.
-   *
-   * The query uses the existing fines foreign keys:
-   *
-   * fines.member_id → members.id
-   * fines.rule_id   → fine_rules.id
-   *
-   * IMPORTANT:
-   *
-   * Do not select fines.reason here.
-   * Production public.fines does not currently expose
-   * that column.
-   *
-   * Manual-fine reason/description is still submitted
-   * through cl_fine_create_manual(p_reason => ...).
-   */
-
-  const {
-    data,
-    error
-  } = await supabase
-    .from("fines")
-    .select(`
-      id,
-      group_id,
-      member_id,
-      rule_id,
-      trigger_type,
-      trigger_id,
-      accounting_month,
-      original_amount,
-      calculation_method,
-      calculation_base,
-      percentage_rate,
-      fixed_amount,
-      minimum_amount,
-      maximum_amount,
-      calculated_amount,
-      resolved_closing_at,
-      triggered_at,
-      created_at,
-      members (
-        id,
-        name
-      ),
-      fine_rules (
-        id,
-        name
-      )
-    `)
-    .eq(
-      "group_id",
-      state.groupId
-    )
-    .order(
-      "triggered_at",
-      {
-        ascending: false
-      }
-    );
-
-
-  if (error) {
-    throw error;
-  }
-
-
-  state.fines =
-    Array.isArray(data)
-      ? data
-      : [];
-
-
-  await loadBalances();
-
-  populateMonthFilter();
-
-  renderSummary();
-
-  renderFines();
-
-
-  if (
-    state.selectedFineId
-  ) {
-
-    const stillExists =
-      state.fines.some(
-        fine =>
-          String(fine.id) ===
-          String(state.selectedFineId)
-      );
+          Logout
+        </button>
 
+      </div>
 
-    if (stillExists) {
+    </div>
 
-      showFineDetail(
-        state.selectedFineId
-      );
+    <nav
+      class="top-nav"
+      aria-label="Admin navigation"
+    ></nav>
 
-    }
+  </header>
 
-    else {
 
-      state.selectedFineId =
-        null;
+  <div class="layout">
 
+    <main class="main">
 
-      if (
-        elements.fineDetail
-      ) {
+      <div class="page-header">
 
-        elements.fineDetail.classList.remove(
-          "open"
-        );
+        <div>
 
-      }
+          <h1 class="page-title">
+            Fines
+          </h1>
 
-    }
+          <p class="page-subtitle">
+            Manage fines using the authoritative accounting actions.
+            Fine balances are calculated by the database.
+          </p>
 
-  }
+        </div>
 
-}
+        <button
+          type="button"
+          class="btn btn-primary"
+          id="refreshFines"
+        >
+          Refresh
+        </button>
 
+      </div>
 
-/* =========================================================
-   AUTHORITATIVE BALANCES
-========================================================= */
 
-async function loadBalances() {
+      <div
+        id="status"
+        class="message status"
+        aria-live="polite"
+      ></div>
 
-  state.balances.clear();
+      <div
+        id="error"
+        class="message error"
+        role="alert"
+        aria-live="assertive"
+      ></div>
 
 
-  if (!state.fines.length) {
-    return;
-  }
+      <section
+        class="summary-grid"
+        aria-label="Fine summary"
+      >
 
+        <article class="summary-card">
 
-  /*
-   * cl_fine_balance() is the authoritative accounting
-   * source for:
-   *
-   * adjustments
-   * waivers
-   * allocated/paid
-   * outstanding
-   * status
-   *
-   * No equivalent balance is reconstructed locally.
-   */
+          <div class="summary-label">
+            Total Fines
+          </div>
 
-  const results =
-    await Promise.all(
-      state.fines.map(
-        async fine => {
+          <div
+            class="summary-value"
+            id="totalFines"
+          >
+            0
+          </div>
 
-          const {
-            data,
-            error
-          } = await supabase.rpc(
-            "cl_fine_balance",
-            {
-              p_fine_id: fine.id
-            }
-          );
+        </article>
 
 
-          if (error) {
-            throw error;
-          }
+        <article class="summary-card">
 
+          <div class="summary-label">
+            Original Amount
+          </div>
 
-          const balance =
-            Array.isArray(data)
-              ? data[0]
-              : data;
+          <div
+            class="summary-value money"
+            id="totalOriginal"
+          >
+            KSh 0
+          </div>
 
+        </article>
 
-          if (!balance) {
-            throw new Error(
-              `No accounting balance was returned for fine ${fine.id}.`
-            );
-          }
 
+        <article class="summary-card">
 
-          return [
-            fine.id,
-            balance
-          ];
+          <div class="summary-label">
+            Paid
+          </div>
 
-        }
-      )
-    );
+          <div
+            class="summary-value money"
+            id="totalPaid"
+          >
+            KSh 0
+          </div>
 
+        </article>
 
-  for (
-    const [
-      fineId,
-      balance
-    ]
-    of results
-  ) {
 
-    state.balances.set(
-      fineId,
-      balance
-    );
+        <article class="summary-card">
 
-  }
+          <div class="summary-label">
+            Outstanding
+          </div>
 
-}
+          <div
+            class="summary-value money"
+            id="totalOutstanding"
+          >
+            KSh 0
+          </div>
 
+        </article>
 
-/* =========================================================
-   MONTH FILTER
-========================================================= */
+      </section>
 
-function populateMonthFilter() {
 
-  if (!elements.monthFilter) {
-    return;
-  }
+      <!-- Manual Fine Creation -->
 
+      <section
+        class="section"
+        aria-labelledby="manual-fine-title"
+      >
 
-  const currentValue =
-    elements.monthFilter.value;
+        <div class="section-header">
 
+          <div>
 
-  const months =
-    Array.from(
-      new Set(
-        state.fines
-          .map(
-            fine =>
-              fine.accounting_month
-          )
-          .filter(Boolean)
-      )
-    )
-    .sort()
-    .reverse();
+            <h2
+              class="section-title"
+              id="manual-fine-title"
+            >
+              Add Fine
+            </h2>
 
+          </div>
 
-  elements.monthFilter.innerHTML =
-    `
-      <option value="">
-        All months
-      </option>
-    ` +
-    months
-      .map(
-        month => `
-          <option value="${escapeHtml(month)}">
-            ${escapeHtml(month)}
-          </option>
-        `
-      )
-      .join("");
+        </div>
 
 
-  if (
-    months.includes(
-      currentValue
-    )
-  ) {
+        <div class="section-body">
 
-    elements.monthFilter.value =
-      currentValue;
+          <form id="manualFineForm">
 
-  }
+            <div class="manual-fine-grid">
 
-}
+              <div class="action-field">
 
+                <label for="manualFineMemberId">
+                  Member
+                </label>
 
-/* =========================================================
-   SUMMARY
-========================================================= */
+                <select
+                  id="manualFineMemberId"
+                  name="member_id"
+                  required
+                >
 
-function renderSummary() {
+                  <option value="">
+                    Select member
+                  </option>
 
-  const fines =
-    state.fines;
+                </select>
 
-  let totalOriginal = 0;
-  let totalPaid = 0;
-  let totalOutstanding = 0;
+              </div>
 
 
-  for (
-    const fine
-    of fines
-  ) {
+              <div class="action-field">
 
-    const balance =
-      state.balances.get(
-        fine.id
-      );
+                <label for="manualFineTriggerType">
+                  Fine Type
+                </label>
 
+                <select
+                  id="manualFineTriggerType"
+                  name="trigger_type"
+                  required
+                >
 
-    totalOriginal +=
-      Number(
-        balance?.original_amount ??
-        fine.original_amount ??
-        0
-      );
+                  <option value="">
+                    Select fine type
+                  </option>
 
+                  <option value="meeting_absence">
+                    Absence
+                  </option>
 
-    totalPaid +=
-      Number(
-        balance?.allocated_amount ??
-        0
-      );
+                  <option value="late_attendance">
+                    Late for Meeting
+                  </option>
 
+                  <option value="custom_event">
+                    Other / Custom
+                  </option>
 
-    totalOutstanding +=
-      Number(
-        balance?.outstanding_amount ??
-        0
-      );
+                </select>
 
-  }
+              </div>
 
 
-  if (elements.totalFines) {
+              <div class="action-field">
 
-    elements.totalFines.textContent =
-      String(fines.length);
+                <label for="manualFineAmount">
+                  Amount
+                </label>
 
-  }
+                <input
+                  type="number"
+                  id="manualFineAmount"
+                  name="amount"
+                  min="0.01"
+                  step="0.01"
+                  inputmode="decimal"
+                  placeholder="e.g. 100"
+                  required
+                >
 
+              </div>
 
-  if (elements.totalOriginal) {
 
-    elements.totalOriginal.textContent =
-      money(totalOriginal);
+              <div class="action-field manual-fine-reason">
 
-  }
+                <label for="manualFineReason">
+                  Reason
+                </label>
 
+                <textarea
+                  id="manualFineReason"
+                  name="reason"
+                  maxlength="1000"
+                  placeholder="Enter the reason for this fine…"
+                  required
+                ></textarea>
 
-  if (elements.totalPaid) {
+                <div class="action-field-note">
+                  Enter the reason or description for this fine.
+                  The database remains authoritative for authorization,
+                  amount, member ownership, accounting month, and fine creation.
+                </div>
 
-    elements.totalPaid.textContent =
-      money(totalPaid);
+              </div>
 
-  }
 
+              <div class="manual-fine-actions">
 
-  if (elements.totalOutstanding) {
+                <button
+                  type="submit"
+                  class="btn btn-primary"
+                  id="saveManualFine"
+                >
+                  Save Fine
+                </button>
 
-    elements.totalOutstanding.textContent =
-      money(totalOutstanding);
+              </div>
 
-  }
+            </div>
 
-}
 
+            <div
+              id="manualFineError"
+              class="manual-fine-error"
+              role="alert"
+              aria-live="assertive"
+            ></div>
 
-/* =========================================================
-   FILTERING
-========================================================= */
+          </form>
 
-function getFilteredFines() {
+        </div>
 
-  const search =
-    String(
-      elements.fineSearch?.value ||
-      ""
-    )
-      .trim()
-      .toLowerCase();
+      </section>
 
 
-  const month =
-    String(
-      elements.monthFilter?.value ||
-      ""
-    )
-      .trim();
+      <section
+        class="section"
+        aria-labelledby="filters-title"
+      >
 
+        <div class="section-header">
 
-  const status =
-    String(
-      elements.statusFilter?.value ||
-      ""
-    )
-      .trim()
-      .toUpperCase();
+          <h2
+            class="section-title"
+            id="filters-title"
+          >
+            Filters
+          </h2>
 
+        </div>
 
-  return state.fines.filter(
-    fine => {
 
-      const balance =
-        state.balances.get(
-          fine.id
-        );
+        <div class="section-body">
 
+          <div class="filters">
 
-      const memberName =
-        fine.members?.name ||
-        "";
+            <div class="filter-group">
 
+              <label for="fineSearch">
+                Search
+              </label>
 
-      const ruleName =
-        fine.fine_rules?.name ||
-        "";
+              <input
+                type="search"
+                id="fineSearch"
+                placeholder="Search member, rule, or trigger…"
+                autocomplete="off"
+              >
 
+            </div>
 
-      /*
-       * Production-compatible search projection.
-       *
-       * fines.reason is intentionally not read because
-       * production public.fines does not currently expose
-       * that column.
-       */
 
-      const searchable = [
-        memberName,
-        ruleName,
-        fine.trigger_type,
-        fine.accounting_month,
-        fine.calculation_method
-      ]
-        .map(
-          value =>
-            String(
-              value || ""
-            ).toLowerCase()
-        )
-        .join(" ");
+            <div class="filter-group">
 
+              <label for="monthFilter">
+                Accounting Month
+              </label>
 
-      const matchesSearch =
-        !search ||
-        searchable.includes(
-          search
-        );
+              <select id="monthFilter">
 
+                <option value="">
+                  All months
+                </option>
 
-      const matchesMonth =
-        !month ||
-        fine.accounting_month ===
-          month;
+              </select>
 
+            </div>
 
-      const matchesStatus =
-        !status ||
-        String(
-          balance?.status || ""
-        ).toUpperCase() ===
-          status;
 
+            <div class="filter-group">
 
-      return (
-        matchesSearch &&
-        matchesMonth &&
-        matchesStatus
-      );
+              <label for="statusFilter">
+                Status
+              </label>
 
-    }
-  );
+              <select id="statusFilter">
 
-}
+                <option value="">
+                  All statuses
+                </option>
 
+                <option value="OUTSTANDING">
+                  Outstanding
+                </option>
 
-/* =========================================================
-   STATUS BADGE
-========================================================= */
+                <option value="PARTIALLY_PAID">
+                  Partially Paid
+                </option>
 
-function statusBadge(status) {
+                <option value="PAID">
+                  Paid
+                </option>
 
-  const normalized =
-    String(
-      status || "OUTSTANDING"
-    )
-      .trim()
-      .toUpperCase();
+                <option value="WAIVED">
+                  Waived
+                </option>
 
+              </select>
 
-  let className =
-    "badge-outstanding";
+            </div>
 
 
-  if (
-    normalized === "PAID"
-  ) {
+            <div>
 
-    className =
-      "badge-paid";
+              <button
+                type="button"
+                class="btn"
+                id="clearFilters"
+              >
+                Clear
+              </button>
 
-  }
+            </div>
 
-  else if (
-    normalized === "PARTIALLY_PAID"
-  ) {
+          </div>
 
-    className =
-      "badge-partial";
+        </div>
 
-  }
+      </section>
 
-  else if (
-    normalized === "WAIVED"
-  ) {
 
-    className =
-      "badge-waived";
+      <section
+        class="section"
+        aria-labelledby="fines-title"
+      >
 
-  }
+        <div class="section-header">
 
+          <h2
+            class="section-title"
+            id="fines-title"
+          >
+            Fine Register
+          </h2>
 
-  return `
-    <span
-      class="badge ${className}"
+          <span
+            class="muted"
+            id="resultCount"
+          >
+            0 fines
+          </span>
+
+        </div>
+
+
+        <div class="table-wrap">
+
+          <table>
+
+            <thead>
+
+              <tr>
+                <th>Member</th>
+                <th>Fine</th>
+                <th>Month</th>
+                <th>Original</th>
+                <th>Adjusted</th>
+                <th>Waived</th>
+                <th>Paid</th>
+                <th>Outstanding</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+
+            </thead>
+
+
+            <tbody id="finesBody">
+
+              <tr>
+
+                <td
+                  colspan="10"
+                  class="empty-state"
+                >
+                  Loading fines…
+                </td>
+
+              </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </section>
+
+
+      <section
+        class="section detail-panel"
+        id="fineDetail"
+        aria-labelledby="detail-title"
+      >
+
+        <div class="section-header">
+
+          <h2
+            class="section-title"
+            id="detail-title"
+          >
+            Fine Details
+          </h2>
+
+          <button
+            type="button"
+            class="btn"
+            id="closeDetail"
+          >
+            Close
+          </button>
+
+        </div>
+
+
+        <div class="section-body">
+
+          <div
+            class="detail-grid"
+            id="detailGrid"
+          ></div>
+
+
+          <div
+            class="detail-balance"
+            id="detailBalance"
+          ></div>
+
+
+          <div
+            class="detail-actions"
+            id="fineActions"
+            aria-label="Fine actions"
+          >
+
+            <button
+              type="button"
+              class="btn"
+              id="adjustFine"
+            >
+              Adjust
+            </button>
+
+            <button
+              type="button"
+              class="btn"
+              id="waiveFine"
+            >
+              Waive
+            </button>
+
+            <button
+              type="button"
+              class="btn"
+              id="allocateFinePayment"
+            >
+              Allocate Payment
+            </button>
+
+          </div>
+
+        </div>
+
+      </section>
+
+    </main>
+
+  </div>
+
+
+  <div
+    class="modal"
+    id="fineActionModal"
+    hidden
+    aria-hidden="true"
+  >
+
+    <div
+      class="modal-backdrop"
+      data-modal-close
+    ></div>
+
+
+    <div
+      class="modal-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="fineActionTitle"
     >
-      ${escapeHtml(
-        titleCase(normalized)
-      )}
-    </span>
-  `;
 
-}
+      <div class="modal-header">
 
-
-/* =========================================================
-   RENDER FINE REGISTER
-========================================================= */
-
-function renderFines() {
-
-  const fines =
-    getFilteredFines();
-
-
-  if (elements.resultCount) {
-
-    elements.resultCount.textContent =
-      `${fines.length} ${
-        fines.length === 1
-          ? "fine"
-          : "fines"
-      }`;
-
-  }
-
-
-  if (!elements.finesBody) {
-    return;
-  }
-
-
-  if (!fines.length) {
-
-    elements.finesBody.innerHTML = `
-      <tr>
-        <td
-          colspan="10"
-          class="empty-state"
+        <h2
+          class="section-title"
+          id="fineActionTitle"
         >
-          <strong>
-            ${
-              state.fines.length
-                ? "No matching fines"
-                : "No fines recorded"
-            }
-          </strong>
-
-          ${
-            state.fines.length
-              ? "Try changing your filters."
-              : "There are currently no fines available for this group."
-          }
-        </td>
-      </tr>
-    `;
-
-    return;
-
-  }
-
-
-  elements.finesBody.innerHTML =
-    fines
-      .map(
-        fine => {
-
-          const balance =
-            state.balances.get(
-              fine.id
-            );
-
-
-          const memberName =
-            fine.members?.name ||
-            "Unknown member";
-
-
-          const ruleName =
-            fine.fine_rules?.name ||
-            "Fine rule";
-
-
-          const adjusted =
-            Number(
-              balance?.adjustments_increase ||
-              0
-            ) -
-            Number(
-              balance?.adjustments_decrease ||
-              0
-            );
-
-
-          const status =
-            balance?.status ||
-            "OUTSTANDING";
-
-
-          return `
-            <tr>
-
-              <td>
-                <div class="member-name">
-                  ${escapeHtml(memberName)}
-                </div>
-              </td>
-
-
-              <td>
-
-                <div class="fine-name">
-                  ${escapeHtml(ruleName)}
-                </div>
-
-                <div class="fine-meta">
-                  ${escapeHtml(
-                    titleCase(
-                      fine.trigger_type
-                    )
-                  )}
-                </div>
-
-              </td>
-
-
-              <td>
-                ${escapeHtml(
-                  fine.accounting_month ||
-                  "—"
-                )}
-              </td>
-
-
-              <td class="money">
-                ${money(
-                  balance?.original_amount ??
-                  fine.original_amount
-                )}
-              </td>
-
-
-              <td class="money">
-                ${money(adjusted)}
-              </td>
-
-
-              <td class="money">
-                ${money(
-                  balance?.waived_amount
-                )}
-              </td>
-
-
-              <td class="money">
-                ${money(
-                  balance?.allocated_amount
-                )}
-              </td>
-
-
-              <td class="money">
-                ${money(
-                  balance?.outstanding_amount
-                )}
-              </td>
-
-
-              <td>
-                ${statusBadge(status)}
-              </td>
-
-
-              <td>
-
-                <div class="row-actions">
-
-                  <button
-                    type="button"
-                    class="btn"
-                    data-action="view"
-                    data-id="${escapeHtml(fine.id)}"
-                  >
-                    View
-                  </button>
-
-                </div>
-
-              </td>
-
-            </tr>
-          `;
-
-        }
-      )
-      .join("");
-
-}
-
-
-/* =========================================================
-   DETAIL VIEW
-========================================================= */
-
-function showFineDetail(
-  fineId
-) {
-
-  const fine =
-    state.fines.find(
-      item =>
-        String(item.id) ===
-        String(fineId)
-    );
-
-
-  if (!fine) {
-
-    showError(
-      "The selected fine could not be found."
-    );
-
-    return;
-
-  }
-
-
-  const balance =
-    state.balances.get(
-      fine.id
-    );
-
-
-  if (!balance) {
-
-    showError(
-      "The authoritative fine balance could not be loaded."
-    );
-
-    return;
-
-  }
-
-
-  const memberName =
-    fine.members?.name ||
-    "Unknown member";
-
-
-  const ruleName =
-    fine.fine_rules?.name ||
-    "Fine rule";
-
-
-  const adjusted =
-    Number(
-      balance.adjustments_increase ||
-      0
-    ) -
-    Number(
-      balance.adjustments_decrease ||
-      0
-    );
-
-
-  if (
-    elements.detailGrid
-  ) {
-
-    elements.detailGrid.innerHTML = `
-
-      <div class="detail-item">
-        <div class="detail-label">
-          Member
-        </div>
-
-        <div class="detail-value">
-          ${escapeHtml(memberName)}
-        </div>
-      </div>
-
-
-      <div class="detail-item">
-        <div class="detail-label">
-          Fine Rule
-        </div>
-
-        <div class="detail-value">
-          ${escapeHtml(ruleName)}
-        </div>
-      </div>
-
-
-      <div class="detail-item">
-        <div class="detail-label">
-          Trigger Type
-        </div>
-
-        <div class="detail-value">
-          ${escapeHtml(
-            titleCase(
-              fine.trigger_type
-            )
-          )}
-        </div>
-      </div>
-
-
-      <div class="detail-item">
-        <div class="detail-label">
-          Accounting Month
-        </div>
-
-        <div class="detail-value">
-          ${escapeHtml(
-            fine.accounting_month
-          )}
-        </div>
-      </div>
-
-
-      <div class="detail-item">
-        <div class="detail-label">
-          Triggered
-        </div>
-
-        <div class="detail-value">
-          ${escapeHtml(
-            formatDateTime(
-              fine.triggered_at
-            )
-          )}
-        </div>
-      </div>
-
-
-      <div class="detail-item">
-        <div class="detail-label">
-          Created
-        </div>
-
-        <div class="detail-value">
-          ${escapeHtml(
-            formatDateTime(
-              fine.created_at
-            )
-          )}
-        </div>
-      </div>
-
-
-      <div class="detail-item">
-        <div class="detail-label">
-          Calculation Method
-        </div>
-
-        <div class="detail-value">
-          ${escapeHtml(
-            titleCase(
-              fine.calculation_method
-            )
-          )}
-        </div>
-      </div>
-
-
-      <div class="detail-item">
-        <div class="detail-label">
-          Calculation Base
-        </div>
-
-        <div class="detail-value">
-          ${money(
-            fine.calculation_base
-          )}
-        </div>
-      </div>
-
-
-      <div class="detail-item">
-        <div class="detail-label">
-          Calculated Amount
-        </div>
-
-        <div class="detail-value">
-          ${money(
-            fine.calculated_amount
-          )}
-        </div>
-      </div>
-
-
-      <div class="detail-item">
-        <div class="detail-label">
-          Trigger ID
-        </div>
-
-        <div class="detail-value">
-          ${escapeHtml(
-            fine.trigger_id ||
-            "—"
-          )}
-        </div>
-      </div>
-
-
-      <div class="detail-item">
-        <div class="detail-label">
-          Resolved Closing
-        </div>
-
-        <div class="detail-value">
-          ${escapeHtml(
-            formatDateTime(
-              fine.resolved_closing_at
-            )
-          )}
-        </div>
-      </div>
-
-
-      <div class="detail-item">
-        <div class="detail-label">
-          Status
-        </div>
-
-        <div class="detail-value">
-          ${statusBadge(
-            balance.status
-          )}
-        </div>
-      </div>
-
-    `;
-
-  }
-
-
-  if (
-    elements.detailBalance
-  ) {
-
-    elements.detailBalance.innerHTML = `
-
-      <div class="balance-item">
-        <div class="balance-label">
-          Original
-        </div>
-
-        <div class="balance-value">
-          ${money(
-            balance.original_amount
-          )}
-        </div>
-      </div>
-
-
-      <div class="balance-item">
-        <div class="balance-label">
-          Adjustments
-        </div>
-
-        <div class="balance-value">
-          ${money(adjusted)}
-        </div>
-      </div>
-
-
-      <div class="balance-item">
-        <div class="balance-label">
-          Waived
-        </div>
-
-        <div class="balance-value">
-          ${money(
-            balance.waived_amount
-          )}
-        </div>
-      </div>
-
-
-      <div class="balance-item">
-        <div class="balance-label">
-          Paid
-        </div>
-
-        <div class="balance-value">
-          ${money(
-            balance.allocated_amount
-          )}
-        </div>
-      </div>
-
-
-      <div class="balance-item">
-        <div class="balance-label">
-          Outstanding
-        </div>
-
-        <div class="balance-value">
-          ${money(
-            balance.outstanding_amount
-          )}
-        </div>
-      </div>
-
-    `;
-
-  }
-
-
-  if (
-    elements.fineDetail
-  ) {
-
-    elements.fineDetail.classList.add(
-      "open"
-    );
-
-  }
-
-
-  state.selectedFineId =
-    fine.id;
-
-
-  updateActionAvailability(
-    fine,
-    balance
-  );
-
-
-  elements.fineDetail?.scrollIntoView({
-    behavior: "smooth",
-    block: "start"
-  });
-
-}
-
-
-/* =========================================================
-   ACTION AVAILABILITY
-========================================================= */
-
-function updateActionAvailability(
-  fine,
-  balance
-) {
-
-  const hasFine =
-    Boolean(fine);
-
-  const hasBalance =
-    Boolean(balance);
-
-
-  if (elements.adjustFine) {
-
-    elements.adjustFine.disabled =
-      !hasFine ||
-      !hasBalance ||
-      actionState.pending;
-
-  }
-
-
-  if (elements.waiveFine) {
-
-    elements.waiveFine.disabled =
-      !hasFine ||
-      !hasBalance ||
-      actionState.pending;
-
-  }
-
-
-  if (elements.allocateFinePayment) {
-
-    elements.allocateFinePayment.disabled =
-      !hasFine ||
-      !hasBalance ||
-      actionState.pending;
-
-  }
-
-}
-
-
-/* =========================================================
-   CLOSE DETAIL
-========================================================= */
-
-function closeFineDetail() {
-
-  elements.fineDetail?.classList.remove(
-    "open"
-  );
-
-
-  state.selectedFineId =
-    null;
-
-
-  actionState.type =
-    null;
-
-
-  actionState.fineId =
-    null;
-
-}
-
-
-/* =========================================================
-   CANONICAL MANUAL FINE RPC
-========================================================= */
-
-async function createManualFine(
-  groupId,
-  memberId,
-  triggerType,
-  amount,
-  reason
-) {
-
-  /*
-   * This is the ONLY accounting mutation used by
-   * the manual-fine creation workflow.
-   *
-   * No direct table INSERT is permitted here.
-   *
-   * p_reason is submitted to the canonical RPC even
-   * though reason is not read from public.fines by this
-   * frontend version.
-   */
-
-  const {
-    data,
-    error
-  } = await supabase.rpc(
-    "cl_fine_create_manual",
-    {
-      p_group_id: groupId,
-      p_member_id: memberId,
-      p_trigger_type: triggerType,
-      p_amount: amount,
-      p_reason: reason
-    }
-  );
-
-
-  if (error) {
-    throw error;
-  }
-
-
-  return data;
-
-}
-
-
-/* =========================================================
-   MANUAL FINE SUBMISSION
-========================================================= */
-
-async function submitManualFine(
-  event
-) {
-
-  event.preventDefault();
-
-
-  if (
-    manualFineState.pending
-  ) {
-    return;
-  }
-
-
-  if (
-    manualFineState.loading
-  ) {
-
-    showManualFineError(
-      "Member list is still loading."
-    );
-
-    return;
-
-  }
-
-
-  if (
-    !elements.manualFineForm
-  ) {
-
-    showManualFineError(
-      "The manual fine form is unavailable."
-    );
-
-    return;
-
-  }
-
-
-  clearManualFineError();
-
-
-  const formData =
-    new FormData(
-      elements.manualFineForm
-    );
-
-
-  const memberId =
-    String(
-      formData.get(
-        "member_id"
-      ) ||
-      ""
-    ).trim();
-
-
-  const triggerType =
-    String(
-      formData.get(
-        "trigger_type"
-      ) ||
-      ""
-    )
-      .trim()
-      .toLowerCase();
-
-
-  const amount =
-    parsePositiveAmount(
-      formData.get(
-        "amount"
-      )
-    );
-
-
-  const reason =
-    String(
-      formData.get(
-        "reason"
-      ) ||
-      ""
-    ).trim();
-
-
-  /*
-   * The member must have come from the loaded member
-   * selection set. The backend remains authoritative,
-   * but this prevents an arbitrary UUID from being treated
-   * as a valid UI selection.
-   */
-
-  const selectedMember =
-    manualFineState.members.find(
-      member =>
-        String(member.id) ===
-        String(memberId)
-    );
-
-
-  if (!memberId) {
-
-    showManualFineError(
-      "Select a member."
-    );
-
-    return;
-
-  }
-
-
-  if (!selectedMember) {
-
-    showManualFineError(
-      "Select a valid active member."
-    );
-
-    return;
-
-  }
-
-
-  if (
-    ![
-      "meeting_absence",
-      "late_attendance",
-      "custom_event"
-    ].includes(
-      triggerType
-    )
-  ) {
-
-    showManualFineError(
-      "Select a valid fine type."
-    );
-
-    return;
-
-  }
-
-
-  if (
-    amount === null
-  ) {
-
-    showManualFineError(
-      "Enter an amount greater than zero."
-    );
-
-    return;
-
-  }
-
-
-  if (!reason) {
-
-    showManualFineError(
-      triggerType ===
-        "custom_event"
-        ? "Enter the custom fine name or description."
-        : "Enter a reason for the fine."
-    );
-
-    return;
-
-  }
-
-
-  if (!state.groupId) {
-
-    showManualFineError(
-      "Group context is unavailable."
-    );
-
-    return;
-
-  }
-
-
-  /*
-   * Optional browser-side consistency check only.
-   *
-   * The backend remains authoritative and independently
-   * verifies member ownership, role, status, accounting
-   * period, amount, reason, trigger type, and group.
-   */
-
-  if (
-    !manualFineState.members.length
-  ) {
-
-    showManualFineError(
-      "No active members are available for this group."
-    );
-
-    return;
-
-  }
-
-
-  setManualFinePending(true);
-
-
-  try {
-
-    const createdFineId =
-      await createManualFine(
-        state.groupId,
-        memberId,
-        triggerType,
-        amount,
-        reason
-      );
-
-
-    /*
-     * The RPC result is not used to construct a local
-     * accounting balance. The authoritative database state
-     * is reloaded instead.
-     */
-
-    resetManualFineForm();
-
-
-    await loadFines();
-
-
-    showStatus(
-      "Fine created and authoritative balances were refreshed."
-    );
-
-
-    /*
-     * If the canonical RPC returned the created fine ID,
-     * select it from the freshly reloaded authoritative data.
-     */
-
-    if (createdFineId) {
-
-      const createdFine =
-        state.fines.find(
-          fine =>
-            String(fine.id) ===
-            String(createdFineId)
-        );
-
-
-      if (createdFine) {
-
-        showFineDetail(
-          createdFine.id
-        );
-
-      }
-
-    }
-
-  }
-
-  catch (error) {
-
-    console.error(
-      "CHAMA LIVE: Manual fine creation failed:",
-      error
-    );
-
-
-    /*
-     * Never display a local success state after failure.
-     *
-     * Reload authoritative accounting in case the backend
-     * committed but the client received a transport-level
-     * error.
-     */
-
-    try {
-
-      await loadFines();
-
-    }
-
-    catch (reloadError) {
-
-      console.error(
-        "CHAMA LIVE: Authoritative fine reload failed:",
-        reloadError
-      );
-
-    }
-
-
-    showManualFineError(
-      normalizeError(error)
-    );
-
-  }
-
-  finally {
-
-    setManualFinePending(false);
-
-  }
-
-}
-
-
-/* =========================================================
-   CANONICAL ACCOUNTING RPC WRAPPERS
-========================================================= */
-
-async function adjustFine(
-  fineId,
-  amount,
-  direction,
-  reason
-) {
-
-  const {
-    data,
-    error
-  } = await supabase.rpc(
-    "cl_fine_adjust",
-    {
-      p_fine_id: fineId,
-      p_amount: amount,
-      p_direction: direction,
-      p_reason: reason
-    }
-  );
-
-
-  if (error) {
-    throw error;
-  }
-
-
-  return data;
-
-}
-
-
-async function waiveFine(
-  fineId,
-  amount,
-  reason
-) {
-
-  const {
-    data,
-    error
-  } = await supabase.rpc(
-    "cl_fine_waive",
-    {
-      p_fine_id: fineId,
-      p_amount: amount,
-      p_reason: reason
-    }
-  );
-
-
-  if (error) {
-    throw error;
-  }
-
-
-  return data;
-
-}
-
-
-async function allocateFinePayment(
-  fineId,
-  paymentId,
-  amount,
-  source
-) {
-
-  const {
-    data,
-    error
-  } = await supabase.rpc(
-    "cl_fine_allocate_payment",
-    {
-      p_fine_id: fineId,
-      p_payment_id: paymentId,
-      p_amount: amount,
-      p_source: source
-    }
-  );
-
-
-  if (error) {
-    throw error;
-  }
-
-
-  return data;
-
-}
-
-
-/* =========================================================
-   PAYMENT LOADING
-========================================================= */
-
-async function loadFinePayments(
-  fine
-) {
-
-  if (!state.groupId) {
-
-    throw new Error(
-      "Group context is unavailable."
-    );
-
-  }
-
-
-  if (!fine?.member_id) {
-
-    throw new Error(
-      "The selected fine has no member."
-    );
-
-  }
-
-
-  paymentState.memberId =
-    fine.member_id;
-
-  paymentState.payments =
-    [];
-
-  paymentState.loading =
-    true;
-
-
-  try {
-
-    const {
-      data,
-      error
-    } = await supabase
-      .from("contributions")
-      .select(`
-        id,
-        member_id,
-        amount,
-        contribution_type,
-        month,
-        payment_method,
-        reference,
-        mpesa_reference,
-        contribution_date,
-        created_at
-      `)
-      .eq(
-        "group_id",
-        state.groupId
-      )
-      .eq(
-        "member_id",
-        fine.member_id
-      )
-      .order(
-        "contribution_date",
-        {
-          ascending: false,
-          nullsFirst: false
-        }
-      )
-      .order(
-        "created_at",
-        {
-          ascending: false
-        }
-      );
-
-
-    if (error) {
-      throw error;
-    }
-
-
-    paymentState.payments =
-      Array.isArray(data)
-        ? data
-        : [];
-
-  }
-
-  finally {
-
-    paymentState.loading =
-      false;
-
-  }
-
-}
-
-
-/* =========================================================
-   PAYMENT OPTION FORMATTING
-========================================================= */
-
-function formatFinePaymentOption(
-  payment
-) {
-
-  const date =
-    payment.contribution_date
-      ? formatDate(
-          payment.contribution_date
-        )
-      : formatDate(
-          payment.created_at
-        );
-
-
-  const amount =
-    money(payment.amount);
-
-
-  const method =
-    titleCase(
-      payment.payment_method ||
-      "Payment"
-    );
-
-
-  const reference =
-    payment.mpesa_reference ||
-    payment.reference ||
-    "";
-
-
-  const referenceText =
-    reference
-      ? ` • ${reference}`
-      : "";
-
-
-  const month =
-    payment.month
-      ? ` • ${payment.month}`
-      : "";
-
-
-  return (
-    `${date} • ${amount} • ` +
-    `${method}${month}${referenceText}`
-  );
-
-}
-
-
-function renderFinePaymentOptions() {
-
-  const select =
-    document.getElementById(
-      "finePaymentId"
-    );
-
-
-  if (!select) {
-    return;
-  }
-
-
-  select.innerHTML =
-    "";
-
-
-  const placeholder =
-    document.createElement(
-      "option"
-    );
-
-
-  placeholder.value =
-    "";
-
-
-  placeholder.textContent =
-    "Select a payment";
-
-
-  placeholder.selected =
-    true;
-
-
-  select.appendChild(
-    placeholder
-  );
-
-
-  for (
-    const payment
-    of paymentState.payments
-  ) {
-
-    const option =
-      document.createElement(
-        "option"
-      );
-
-
-    option.value =
-      payment.id;
-
-
-    option.textContent =
-      formatFinePaymentOption(
-        payment
-      );
-
-
-    select.appendChild(
-      option
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   ACTION MODAL
-========================================================= */
-
-function clearActionError() {
-
-  if (
-    elements.fineActionError
-  ) {
-
-    elements.fineActionError.textContent =
-      "";
-
-  }
-
-}
-
-
-function showActionError(
-  message
-) {
-
-  if (
-    elements.fineActionError
-  ) {
-
-    elements.fineActionError.textContent =
-      message;
-
-  }
-
-}
-
-
-function closeFineActionModal() {
-
-  if (
-    !elements.fineActionModal
-  ) {
-    return;
-  }
-
-
-  elements.fineActionModal.hidden =
-    true;
-
-
-  elements.fineActionModal
-    .setAttribute(
-      "aria-hidden",
-      "true"
-    );
-
-
-  actionState.type =
-    null;
-
-
-  actionState.fineId =
-    null;
-
-
-  clearActionError();
-
-
-  if (
-    elements.fineActionFields
-  ) {
-
-    elements.fineActionFields.innerHTML =
-      "";
-
-  }
-
-
-  if (
-    elements.submitFineAction
-  ) {
-
-    elements.submitFineAction.disabled =
-      false;
-
-
-    elements.submitFineAction.textContent =
-      "Submit";
-
-  }
-
-}
-
-
-async function openFineActionModal(
-  type,
-  fineId
-) {
-
-  const fine =
-    state.fines.find(
-      item =>
-        String(item.id) ===
-        String(fineId)
-    );
-
-
-  if (!fine) {
-
-    showError(
-      "The selected fine could not be found."
-    );
-
-    return;
-
-  }
-
-
-  const balance =
-    state.balances.get(
-      fine.id
-    );
-
-
-  if (!balance) {
-
-    showError(
-      "The authoritative fine balance could not be loaded."
-    );
-
-    return;
-
-  }
-
-
-  if (
-    ![
-      "adjust",
-      "waive",
-      "allocate"
-    ].includes(type)
-  ) {
-
-    showError(
-      "Unsupported fine action."
-    );
-
-    return;
-
-  }
-
-
-  actionState.type =
-    type;
-
-
-  actionState.fineId =
-    fine.id;
-
-
-  clearActionError();
-
-
-  if (
-    type === "adjust"
-  ) {
-
-    elements.fineActionTitle.textContent =
-      "Adjust Fine";
-
-
-    elements.fineActionFields.innerHTML = `
-
-      <div class="action-field">
-
-        <label for="fineAdjustmentDirection">
-          Direction
-        </label>
-
-        <select
-          id="fineAdjustmentDirection"
-          name="direction"
-          required
+          Fine Action
+        </h2>
+
+        <button
+          type="button"
+          class="btn"
+          id="closeFineAction"
         >
-
-          <option value="INCREASE">
-            Increase
-          </option>
-
-          <option value="DECREASE">
-            Decrease
-          </option>
-
-        </select>
+          Close
+        </button>
 
       </div>
 
 
-      <div class="action-field">
+      <div class="section-body">
 
-        <label for="fineAdjustmentAmount">
-          Amount
-        </label>
+        <form id="fineActionForm">
 
-        <input
-          type="number"
-          id="fineAdjustmentAmount"
-          name="amount"
-          min="0.01"
-          step="0.01"
-          inputmode="decimal"
-          required
-        >
-
-      </div>
+          <div
+            id="fineActionFields"
+          ></div>
 
 
-      <div class="action-field">
-
-        <label for="fineAdjustmentReason">
-          Reason
-        </label>
-
-        <textarea
-          id="fineAdjustmentReason"
-          name="reason"
-          required
-        ></textarea>
-
-      </div>
-
-    `;
-
-  }
+          <div
+            id="fineActionError"
+            class="action-error"
+            role="alert"
+            aria-live="assertive"
+          ></div>
 
 
-  if (
-    type === "waive"
-  ) {
+          <div
+            class="row-actions"
+            style="margin-top:16px;"
+          >
 
-    elements.fineActionTitle.textContent =
-      "Waive Fine";
+            <button
+              type="submit"
+              class="btn btn-primary"
+              id="submitFineAction"
+            >
+              Submit
+            </button>
 
+          </div>
 
-    elements.fineActionFields.innerHTML = `
-
-      <div class="action-field">
-
-        <label for="fineWaiverAmount">
-          Amount
-        </label>
-
-        <input
-          type="number"
-          id="fineWaiverAmount"
-          name="amount"
-          min="0.01"
-          step="0.01"
-          inputmode="decimal"
-          required
-        >
-
-        <small class="action-field-note">
-          The database will determine whether this
-          waiver is valid against the authoritative fine balance.
-        </small>
+        </form>
 
       </div>
 
+    </div>
 
-      <div class="action-field">
+  </div>
 
-        <label for="fineWaiverReason">
-          Reason
-        </label>
 
-        <textarea
-          id="fineWaiverReason"
-          name="reason"
-          required
-        ></textarea>
+  <script type="module">
+    import { boot } from "./js/admin-layout.js";
 
-      </div>
+    boot();
+  </script>
 
-    `;
-
-  }
-
-
-  if (
-    type === "allocate"
-  ) {
-
-    elements.fineActionTitle.textContent =
-      "Allocate Payment";
-
-
-    elements.fineActionFields.innerHTML = `
-
-      <div class="action-field">
-
-        <label for="finePaymentId">
-          Payment
-        </label>
-
-        <select
-          id="finePaymentId"
-          name="paymentId"
-          required
-        >
-
-          <option value="">
-            Loading payments…
-          </option>
-
-        </select>
-
-
-        <small class="action-field-note">
-          Only payments recorded for this member are shown.
-          The database remains authoritative for payment ownership,
-          available allocation, and accounting validity.
-        </small>
-
-      </div>
-
-
-      <div class="action-field">
-
-        <label for="finePaymentAmount">
-          Amount
-        </label>
-
-        <input
-          type="number"
-          id="finePaymentAmount"
-          name="amount"
-          min="0.01"
-          step="0.01"
-          inputmode="decimal"
-          required
-        >
-
-      </div>
-
-
-      <div class="action-field">
-
-        <label for="finePaymentSource">
-          Source
-        </label>
-
-        <select
-          id="finePaymentSource"
-          name="source"
-          required
-        >
-
-          <option value="MANUAL">
-            Manual
-          </option>
-
-          <option value="SYSTEM">
-            System
-          </option>
-
-        </select>
-
-      </div>
-
-    `;
-
-
-    try {
-
-      await loadFinePayments(
-        fine
-      );
-
-
-      renderFinePaymentOptions();
-
-
-      const select =
-        document.getElementById(
-          "finePaymentId"
-        );
-
-
-      if (
-        !paymentState.payments.length
-      ) {
-
-        showActionError(
-          "No recorded payments were found for this member."
-        );
-
-      }
-
-
-      if (select) {
-        select.focus();
-      }
-
-    }
-
-    catch (error) {
-
-      console.error(
-        "CHAMA LIVE: Fine payment load failed:",
-        error
-      );
-
-
-      showActionError(
-        normalizeError(error)
-      );
-
-    }
-
-  }
-
-
-  elements.fineActionModal.hidden =
-    false;
-
-
-  elements.fineActionModal
-    .setAttribute(
-      "aria-hidden",
-      "false"
-    );
-
-
-  if (
-    type !== "allocate"
-  ) {
-
-    const firstInput =
-      elements.fineActionFields
-        ?.querySelector(
-          "input, select, textarea"
-        );
-
-
-    firstInput?.focus();
-
-  }
-
-}
-
-
-/* =========================================================
-   ACTION SUBMISSION
-========================================================= */
-
-async function submitFineAction(
-  event
-) {
-
-  event.preventDefault();
-
-
-  if (
-    actionState.pending
-  ) {
-    return;
-  }
-
-
-  const type =
-    actionState.type;
-
-
-  const fineId =
-    actionState.fineId;
-
-
-  if (
-    !type ||
-    !fineId
-  ) {
-
-    showActionError(
-      "No fine action is selected."
-    );
-
-    return;
-
-  }
-
-
-  const fine =
-    state.fines.find(
-      item =>
-        String(item.id) ===
-        String(fineId)
-    );
-
-
-  if (!fine) {
-
-    showActionError(
-      "The selected fine could not be found."
-    );
-
-    return;
-
-  }
-
-
-  const formData =
-    new FormData(
-      elements.fineActionForm
-    );
-
-
-  const amount =
-    parsePositiveAmount(
-      formData.get("amount")
-    );
-
-
-  if (
-    amount === null
-  ) {
-
-    showActionError(
-      "Enter an amount greater than zero."
-    );
-
-    return;
-
-  }
-
-
-  actionState.pending =
-    true;
-
-
-  clearActionError();
-
-
-  if (
-    elements.submitFineAction
-  ) {
-
-    elements.submitFineAction.disabled =
-      true;
-
-
-    elements.submitFineAction.textContent =
-      "Submitting…";
-
-  }
-
-
-  updateActionAvailability(
-    fine,
-    state.balances.get(
-      fine.id
-    )
-  );
-
-
-  try {
-
-    if (
-      type === "adjust"
-    ) {
-
-      const direction =
-        String(
-          formData.get(
-            "direction"
-          ) ||
-          ""
-        )
-          .trim()
-          .toUpperCase();
-
-
-      const reason =
-        String(
-          formData.get(
-            "reason"
-          ) ||
-          ""
-        ).trim();
-
-
-      if (
-        ![
-          "INCREASE",
-          "DECREASE"
-        ].includes(direction)
-      ) {
-
-        throw new Error(
-          "Select a valid adjustment direction."
-        );
-
-      }
-
-
-      if (!reason) {
-
-        throw new Error(
-          "A reason is required for an adjustment."
-        );
-
-      }
-
-
-      await adjustFine(
-        fine.id,
-        amount,
-        direction,
-        reason
-      );
-
-    }
-
-
-    else if (
-      type === "waive"
-    ) {
-
-      const reason =
-        String(
-          formData.get(
-            "reason"
-          ) ||
-          ""
-        ).trim();
-
-
-      if (!reason) {
-
-        throw new Error(
-          "A reason is required for a waiver."
-        );
-
-      }
-
-
-      await waiveFine(
-        fine.id,
-        amount,
-        reason
-      );
-
-    }
-
-
-    else if (
-      type === "allocate"
-    ) {
-
-      const paymentId =
-        String(
-          formData.get(
-            "paymentId"
-          ) ||
-          ""
-        ).trim();
-
-
-      const source =
-        String(
-          formData.get(
-            "source"
-          ) ||
-          ""
-        )
-          .trim()
-          .toUpperCase();
-
-
-      if (!paymentId) {
-
-        throw new Error(
-          "Select a payment."
-        );
-
-      }
-
-
-      if (
-        ![
-          "MANUAL",
-          "SYSTEM"
-        ].includes(source)
-      ) {
-
-        throw new Error(
-          "Select a valid payment source."
-        );
-
-      }
-
-
-      await allocateFinePayment(
-        fine.id,
-        paymentId,
-        amount,
-        source
-      );
-
-    }
-
-
-    else {
-
-      throw new Error(
-        "Unsupported fine action."
-      );
-
-    }
-
-
-    /*
-     * No optimistic accounting update.
-     *
-     * The modal closes only after the canonical RPC
-     * succeeds. loadFines() then reloads the fine and
-     * authoritative cl_fine_balance() result.
-     */
-
-    closeFineActionModal();
-
-
-    await loadFines();
-
-
-    showStatus(
-      "Fine accounting action completed and authoritative balances were refreshed."
-    );
-
-  }
-
-  catch (error) {
-
-    console.error(
-      "CHAMA LIVE: Fine action failed:",
-      error
-    );
-
-
-    /*
-     * Never display a local success state after failure.
-     *
-     * Reload the authoritative state in case the backend
-     * transaction committed before a transport-level error.
-     */
-
-    try {
-
-      await loadFines();
-
-    }
-
-    catch (reloadError) {
-
-      console.error(
-        "CHAMA LIVE: Authoritative fine reload failed:",
-        reloadError
-      );
-
-    }
-
-
-    showActionError(
-      normalizeError(error)
-    );
-
-  }
-
-  finally {
-
-    actionState.pending =
-      false;
-
-
-    if (
-      elements.submitFineAction
-    ) {
-
-      elements.submitFineAction.disabled =
-        false;
-
-
-      elements.submitFineAction.textContent =
-        "Submit";
-
-    }
-
-
-    const currentFine =
-      state.fines.find(
-        item =>
-          String(item.id) ===
-          String(actionState.fineId)
-      );
-
-
-    const currentBalance =
-      currentFine
-        ? state.balances.get(
-            currentFine.id
-          )
-        : null;
-
-
-    updateActionAvailability(
-      currentFine,
-      currentBalance
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   REFRESH
-========================================================= */
-
-async function refresh() {
-
-  clearMessages();
-
-
-  if (
-    elements.refreshFines
-  ) {
-
-    elements.refreshFines.disabled =
-      true;
-
-  }
-
-
-  try {
-
-    await loadFines();
-
-
-    showStatus(
-      "Fines refreshed."
-    );
-
-  }
-
-  catch (error) {
-
-    console.error(
-      "CHAMA LIVE: Fines load failed:",
-      error
-    );
-
-
-    showError(
-      normalizeError(error)
-    );
-
-  }
-
-  finally {
-
-    if (
-      elements.refreshFines
-    ) {
-
-      elements.refreshFines.disabled =
-        false;
-
-    }
-
-  }
-
-}
-
-
-/* =========================================================
-   EVENTS
-========================================================= */
-
-function bindEvents() {
-
-  elements.fineSearch?.addEventListener(
-    "input",
-    renderFines
-  );
-
-
-  elements.monthFilter?.addEventListener(
-    "change",
-    renderFines
-  );
-
-
-  elements.statusFilter?.addEventListener(
-    "change",
-    renderFines
-  );
-
-
-  elements.clearFilters?.addEventListener(
-    "click",
-    () => {
-
-      if (elements.fineSearch) {
-
-        elements.fineSearch.value =
-          "";
-
-      }
-
-
-      if (elements.monthFilter) {
-
-        elements.monthFilter.value =
-          "";
-
-      }
-
-
-      if (elements.statusFilter) {
-
-        elements.statusFilter.value =
-          "";
-
-      }
-
-
-      renderFines();
-
-    }
-  );
-
-
-  elements.refreshFines?.addEventListener(
-    "click",
-    refresh
-  );
-
-
-  /*
-   * Manual Fine:
-   *
-   * Select Member
-   * → Select Fine Type
-   * → Enter Amount
-   * → Enter Reason / Custom Fine Description
-   * → Save Fine
-   *
-   * There is intentionally no manual-fine modal binding.
-   */
-
-  elements.manualFineForm?.addEventListener(
-    "submit",
-    submitManualFine
-  );
-
-
-  elements.manualFineTriggerType?.addEventListener(
-    "change",
-    updateManualFineReasonField
-  );
-
-
-  elements.closeDetail?.addEventListener(
-    "click",
-    closeFineDetail
-  );
-
-
-  elements.adjustFine?.addEventListener(
-    "click",
-    () => {
-
-      if (
-        !state.selectedFineId
-      ) {
-        return;
-      }
-
-
-      openFineActionModal(
-        "adjust",
-        state.selectedFineId
-      );
-
-    }
-  );
-
-
-  elements.waiveFine?.addEventListener(
-    "click",
-    () => {
-
-      if (
-        !state.selectedFineId
-      ) {
-        return;
-      }
-
-
-      openFineActionModal(
-        "waive",
-        state.selectedFineId
-      );
-
-    }
-  );
-
-
-  elements.allocateFinePayment?.addEventListener(
-    "click",
-    () => {
-
-      if (
-        !state.selectedFineId
-      ) {
-        return;
-      }
-
-
-      openFineActionModal(
-        "allocate",
-        state.selectedFineId
-      );
-
-    }
-  );
-
-
-  elements.closeFineAction?.addEventListener(
-    "click",
-    closeFineActionModal
-  );
-
-
-  elements.fineActionModal?.addEventListener(
-    "click",
-    event => {
-
-      if (
-        event.target.matches(
-          "[data-modal-close]"
-        )
-      ) {
-
-        closeFineActionModal();
-
-      }
-
-    }
-  );
-
-
-  elements.fineActionForm?.addEventListener(
-    "submit",
-    submitFineAction
-  );
-
-
-  elements.finesBody?.addEventListener(
-    "click",
-    event => {
-
-      const button =
-        event.target.closest(
-          "[data-action='view']"
-        );
-
-
-      if (!button) {
-        return;
-      }
-
-
-      const fineId =
-        button.dataset.id;
-
-
-      if (!fineId) {
-        return;
-      }
-
-
-      showFineDetail(
-        fineId
-      );
-
-    }
-  );
-
-}
-
-
-/* =========================================================
-   INITIALIZER
-   ---------------------------------------------------------
-   NO AUTO-BOOT.
-   admin-layout.js is the sole boot owner.
-========================================================= */
-
-export async function initFines() {
-
-  cacheElements();
-
-  bindEvents();
-
-  clearMessages();
-
-  clearManualFineError();
-
-  updateManualFineReasonField();
-
-  loadContext();
-
-
-  /*
-   * Load the member selector independently from the fine
-   * register. A member-list failure does not prevent the
-   * already-approved fine register from loading.
-   */
-
-  try {
-
-    await loadManualFineMembers();
-
-  }
-
-  catch (error) {
-
-    console.error(
-      "CHAMA LIVE: Manual fine member load failed:",
-      error
-    );
-
-
-    showManualFineError(
-      normalizeError(error)
-    );
-
-  }
-
-
-  /*
-   * Keep the Save button disabled when there are no
-   * selectable members.
-   */
-
-  if (
-    elements.saveManualFine
-  ) {
-
-    elements.saveManualFine.disabled =
-      manualFineState.loading ||
-      !manualFineState.members.length;
-
-  }
-
-
-  await loadFines();
-
-}
+</body>
+</html>
