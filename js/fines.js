@@ -10,6 +10,7 @@
    - Render fine summary
    - Filter/search fines
    - Display fine details
+   - Add a manual fine through the canonical RPC
    - Perform authorized fine adjustments
    - Perform authorized fine waivers
    - Allocate recorded member payments to fines
@@ -26,7 +27,26 @@
    - Local reconstruction of authoritative balances
    - Browser-side fine generation
    - Scheduler execution
-   - Manual fine creation through a nonexistent RPC
+   - Direct writes to fines/fine_rules tables
+
+   MANUAL FINE CREATION
+   ---------------------------------------------------------
+   The Select Member → Enter Fine → Save workflow calls only:
+
+       cl_fine_create_manual()
+
+   The database remains authoritative for:
+   - authentication
+   - role authorization
+   - group ownership
+   - member ownership
+   - member status
+   - accounting period
+   - Manual Fine rule identity
+   - trigger identity
+   - accounting month
+   - persisted fine amount
+   - persisted reason
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -57,6 +77,13 @@ const paymentState = {
   memberId: null,
   payments: [],
   loading: false
+};
+
+
+const manualFineState = {
+  members: [],
+  loading: false,
+  pending: false
 };
 
 
@@ -105,6 +132,9 @@ function cacheElements() {
 
   elements.refreshFines =
     document.getElementById("refreshFines");
+
+  elements.addManualFine =
+    document.getElementById("addManualFine");
 
   elements.resultCount =
     document.getElementById("resultCount");
@@ -171,6 +201,51 @@ function cacheElements() {
   elements.submitFineAction =
     document.getElementById(
       "submitFineAction"
+    );
+
+  elements.manualFineModal =
+    document.getElementById(
+      "manualFineModal"
+    );
+
+  elements.closeManualFine =
+    document.getElementById(
+      "closeManualFine"
+    );
+
+  elements.manualFineForm =
+    document.getElementById(
+      "manualFineForm"
+    );
+
+  elements.manualFineMember =
+    document.getElementById(
+      "manualFineMember"
+    );
+
+  elements.manualFineType =
+    document.getElementById(
+      "manualFineType"
+    );
+
+  elements.manualFineAmount =
+    document.getElementById(
+      "manualFineAmount"
+    );
+
+  elements.manualFineReason =
+    document.getElementById(
+      "manualFineReason"
+    );
+
+  elements.manualFineError =
+    document.getElementById(
+      "manualFineError"
+    );
+
+  elements.submitManualFine =
+    document.getElementById(
+      "submitManualFine"
     );
 
 }
@@ -436,7 +511,7 @@ async function loadFines() {
    * fines.member_id → members.id
    * fines.rule_id   → fine_rules.id
    *
-   * RLS remains the database authorization boundary.
+   * The database remains the authorization boundary.
    */
 
   const {
@@ -463,6 +538,7 @@ async function loadFines() {
       resolved_closing_at,
       triggered_at,
       created_at,
+      reason,
       members (
         id,
         name
@@ -783,12 +859,17 @@ function getFilteredFines() {
         fine.fine_rules?.name ||
         "";
 
+      const reason =
+        fine.reason ||
+        "";
+
       const searchable = [
         memberName,
         ruleName,
         fine.trigger_type,
         fine.accounting_month,
-        fine.calculation_method
+        fine.calculation_method,
+        reason
       ]
         .map(
           value =>
@@ -1173,6 +1254,20 @@ function showFineDetail(
 
     <div class="detail-item">
       <div class="detail-label">
+        Reason
+      </div>
+
+      <div class="detail-value">
+        ${escapeHtml(
+          fine.reason ||
+          "—"
+        )}
+      </div>
+    </div>
+
+
+    <div class="detail-item">
+      <div class="detail-label">
         Accounting Month
       </div>
 
@@ -1452,6 +1547,603 @@ function closeFineDetail() {
 
 
 /* =========================================================
+   MANUAL FINE
+========================================================= */
+
+function clearManualFineError() {
+
+  if (
+    elements.manualFineError
+  ) {
+    elements.manualFineError.textContent =
+      "";
+  }
+
+}
+
+
+function showManualFineError(
+  message
+) {
+
+  if (
+    elements.manualFineError
+  ) {
+    elements.manualFineError.textContent =
+      message;
+  }
+
+}
+
+
+async function loadManualFineMembers() {
+
+  if (!state.groupId) {
+    throw new Error(
+      "Group context is unavailable."
+    );
+  }
+
+
+  manualFineState.loading =
+    true;
+
+
+  try {
+
+    const {
+      data,
+      error
+    } = await supabase
+      .from("members")
+      .select(`
+        id,
+        name
+      `)
+      .eq(
+        "group_id",
+        state.groupId
+      )
+      .eq(
+        "status",
+        "active"
+      )
+      .eq(
+        "onboarding_status",
+        "active"
+      )
+      .order(
+        "name",
+        {
+          ascending: true
+        }
+      );
+
+
+    if (error) {
+      throw error;
+    }
+
+
+    manualFineState.members =
+      Array.isArray(data)
+        ? data
+        : [];
+
+
+    if (
+      !elements.manualFineMember
+    ) {
+      return;
+    }
+
+
+    elements.manualFineMember.innerHTML =
+      "";
+
+
+    const placeholder =
+      document.createElement(
+        "option"
+      );
+
+    placeholder.value =
+      "";
+
+    placeholder.textContent =
+      manualFineState.members.length
+        ? "Select a member"
+        : "No active members found";
+
+    placeholder.selected =
+      true;
+
+    elements.manualFineMember.appendChild(
+      placeholder
+    );
+
+
+    for (
+      const member
+      of manualFineState.members
+    ) {
+
+      const option =
+        document.createElement(
+          "option"
+        );
+
+      option.value =
+        member.id;
+
+      option.textContent =
+        member.name ||
+        "Unnamed member";
+
+      elements.manualFineMember.appendChild(
+        option
+      );
+
+    }
+
+  }
+
+  finally {
+
+    manualFineState.loading =
+      false;
+
+  }
+
+}
+
+
+function closeManualFineModal() {
+
+  if (
+    !elements.manualFineModal
+  ) {
+    return;
+  }
+
+
+  elements.manualFineModal.hidden =
+    true;
+
+  elements.manualFineModal
+    .setAttribute(
+      "aria-hidden",
+      "true"
+    );
+
+
+  clearManualFineError();
+
+
+  manualFineState.pending =
+    false;
+
+
+  if (
+    elements.manualFineForm
+  ) {
+    elements.manualFineForm.reset();
+  }
+
+
+  if (
+    elements.submitManualFine
+  ) {
+
+    elements.submitManualFine.disabled =
+      false;
+
+    elements.submitManualFine.textContent =
+      "Save Fine";
+
+  }
+
+}
+
+
+async function openManualFineModal() {
+
+  if (
+    manualFineState.pending
+  ) {
+    return;
+  }
+
+
+  clearManualFineError();
+
+
+  if (
+    !elements.manualFineModal
+  ) {
+    return;
+  }
+
+
+  elements.manualFineModal.hidden =
+    false;
+
+  elements.manualFineModal
+    .setAttribute(
+      "aria-hidden",
+      "false"
+    );
+
+
+  if (
+    elements.addManualFine
+  ) {
+    elements.addManualFine.disabled =
+      true;
+  }
+
+
+  if (
+    elements.manualFineMember
+  ) {
+    elements.manualFineMember.disabled =
+      true;
+  }
+
+
+  try {
+
+    await loadManualFineMembers();
+
+
+    if (
+      !manualFineState.members.length
+    ) {
+
+      showManualFineError(
+        "No active members are available for this group."
+      );
+
+    }
+
+
+    if (
+      elements.manualFineMember
+    ) {
+      elements.manualFineMember.disabled =
+        false;
+
+      elements.manualFineMember.focus();
+    }
+
+  }
+
+  catch (error) {
+
+    console.error(
+      "CHAMA LIVE: Manual fine member load failed:",
+      error
+    );
+
+
+    showManualFineError(
+      normalizeError(error)
+    );
+
+  }
+
+  finally {
+
+    if (
+      elements.addManualFine
+    ) {
+      elements.addManualFine.disabled =
+        false;
+    }
+
+    if (
+      elements.manualFineMember
+    ) {
+      elements.manualFineMember.disabled =
+        false;
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   CANONICAL MANUAL FINE RPC
+========================================================= */
+
+async function createManualFine(
+  groupId,
+  memberId,
+  triggerType,
+  amount,
+  reason
+) {
+
+  const {
+    data,
+    error
+  } = await supabase.rpc(
+    "cl_fine_create_manual",
+    {
+      p_group_id: groupId,
+      p_member_id: memberId,
+      p_trigger_type: triggerType,
+      p_amount: amount,
+      p_reason: reason
+    }
+  );
+
+
+  if (error) {
+    throw error;
+  }
+
+
+  return data;
+
+}
+
+
+/* =========================================================
+   MANUAL FINE SUBMISSION
+========================================================= */
+
+async function submitManualFine(
+  event
+) {
+
+  event.preventDefault();
+
+
+  if (
+    manualFineState.pending
+  ) {
+    return;
+  }
+
+
+  if (
+    !elements.manualFineForm
+  ) {
+    return;
+  }
+
+
+  const formData =
+    new FormData(
+      elements.manualFineForm
+    );
+
+
+  const memberId =
+    String(
+      formData.get(
+        "memberId"
+      ) ||
+      ""
+    ).trim();
+
+
+  const triggerType =
+    String(
+      formData.get(
+        "triggerType"
+      ) ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  const amount =
+    parsePositiveAmount(
+      formData.get(
+        "amount"
+      )
+    );
+
+
+  const reason =
+    String(
+      formData.get(
+        "reason"
+      ) ||
+      ""
+    ).trim();
+
+
+  if (!memberId) {
+
+    showManualFineError(
+      "Select a member."
+    );
+
+    return;
+
+  }
+
+
+  if (
+    ![
+      "meeting_absence",
+      "late_attendance",
+      "custom_event"
+    ].includes(
+      triggerType
+    )
+  ) {
+
+    showManualFineError(
+      "Select a valid fine type."
+    );
+
+    return;
+
+  }
+
+
+  if (
+    amount === null
+  ) {
+
+    showManualFineError(
+      "Enter an amount greater than zero."
+    );
+
+    return;
+
+  }
+
+
+  if (!reason) {
+
+    showManualFineError(
+      "Enter a reason for the fine."
+    );
+
+    return;
+
+  }
+
+
+  if (!state.groupId) {
+
+    showManualFineError(
+      "Group context is unavailable."
+    );
+
+    return;
+
+  }
+
+
+  manualFineState.pending =
+    true;
+
+
+  clearManualFineError();
+
+
+  if (
+    elements.submitManualFine
+  ) {
+
+    elements.submitManualFine.disabled =
+      true;
+
+    elements.submitManualFine.textContent =
+      "Saving…";
+
+  }
+
+
+  if (
+    elements.addManualFine
+  ) {
+    elements.addManualFine.disabled =
+      true;
+  }
+
+
+  try {
+
+    await createManualFine(
+      state.groupId,
+      memberId,
+      triggerType,
+      amount,
+      reason
+    );
+
+
+    closeManualFineModal();
+
+
+    await loadFines();
+
+
+    showStatus(
+      "Fine created and authoritative balances were refreshed."
+    );
+
+  }
+
+  catch (error) {
+
+    console.error(
+      "CHAMA LIVE: Manual fine creation failed:",
+      error
+    );
+
+
+    /*
+     * Never display a local success state after failure.
+     *
+     * Reload authoritative accounting in case the
+     * backend committed but the client received a
+     * transport-level error.
+     */
+
+    try {
+
+      await loadFines();
+
+    }
+
+    catch (reloadError) {
+
+      console.error(
+        "CHAMA LIVE: Authoritative fine reload failed:",
+        reloadError
+      );
+
+    }
+
+
+    showManualFineError(
+      normalizeError(error)
+    );
+
+  }
+
+  finally {
+
+    manualFineState.pending =
+      false;
+
+
+    if (
+      elements.submitManualFine
+    ) {
+
+      elements.submitManualFine.disabled =
+        false;
+
+      elements.submitManualFine.textContent =
+        "Save Fine";
+
+    }
+
+
+    if (
+      elements.addManualFine
+    ) {
+      elements.addManualFine.disabled =
+        false;
+    }
+
+  }
+
+}
+
+
+/* =========================================================
    CANONICAL ACCOUNTING RPC WRAPPERS
 ========================================================= */
 
@@ -1630,7 +2322,6 @@ async function loadFinePayments(
         ? data
         : [];
 
-
   }
 
   finally {
@@ -1711,7 +2402,8 @@ function renderFinePaymentOptions() {
   }
 
 
-  select.innerHTML = "";
+  select.innerHTML =
+    "";
 
 
   const placeholder =
@@ -1724,9 +2416,6 @@ function renderFinePaymentOptions() {
 
   placeholder.textContent =
     "Select a payment";
-
-  placeholder.disabled =
-    false;
 
   placeholder.selected =
     true;
@@ -2134,6 +2823,7 @@ async function openFineActionModal(
         );
 
       }
+
 
       if (select) {
         select.focus();
@@ -2559,7 +3249,9 @@ async function refresh() {
 
   clearMessages();
 
-  if (elements.refreshFines) {
+  if (
+    elements.refreshFines
+  ) {
     elements.refreshFines.disabled =
       true;
   }
@@ -2589,7 +3281,9 @@ async function refresh() {
 
   finally {
 
-    if (elements.refreshFines) {
+    if (
+      elements.refreshFines
+    ) {
       elements.refreshFines.disabled =
         false;
     }
@@ -2645,6 +3339,42 @@ function bindEvents() {
   elements.refreshFines?.addEventListener(
     "click",
     refresh
+  );
+
+
+  elements.addManualFine?.addEventListener(
+    "click",
+    openManualFineModal
+  );
+
+
+  elements.closeManualFine?.addEventListener(
+    "click",
+    closeManualFineModal
+  );
+
+
+  elements.manualFineModal?.addEventListener(
+    "click",
+    event => {
+
+      if (
+        event.target.matches(
+          "[data-manual-fine-close]"
+        )
+      ) {
+
+        closeManualFineModal();
+
+      }
+
+    }
+  );
+
+
+  elements.manualFineForm?.addEventListener(
+    "submit",
+    submitManualFine
   );
 
 
@@ -2754,12 +3484,15 @@ function bindEvents() {
         return;
       }
 
+
       const fineId =
         button.dataset.id;
+
 
       if (!fineId) {
         return;
       }
+
 
       showFineDetail(
         fineId
