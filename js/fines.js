@@ -1,7 +1,7 @@
 /* =========================================================
    CHAMA LIVE — ADMIN FINES
    ---------------------------------------------------------
-   F1 READ-ONLY FEATURE
+   Fines v1 MANAGEMENT FEATURE
 
    RESPONSIBILITIES
    ---------------------------------------------------------
@@ -10,19 +10,23 @@
    - Render fine summary
    - Filter/search fines
    - Display fine details
+   - Perform authorized fine adjustments
+   - Perform authorized fine waivers
+   - Allocate recorded member payments to fines
 
    IMPORTANT
    ---------------------------------------------------------
-   This module performs NO financial mutations.
+   All accounting mutations are performed through the
+   canonical database RPCs.
 
    PROHIBITED:
-   - INSERT
-   - UPDATE
-   - DELETE
-   - cl_fine_adjust()
-   - cl_fine_waive()
-   - cl_fine_allocate_payment()
-   - cl_fine_generate_contribution()
+   - Direct INSERT into accounting tables
+   - Direct UPDATE of accounting tables
+   - Direct DELETE from accounting tables
+   - Local reconstruction of authoritative balances
+   - Browser-side fine generation
+   - Scheduler execution
+   - Manual fine creation through a nonexistent RPC
 ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -39,6 +43,20 @@ const state = {
   fines: [],
   balances: new Map(),
   selectedFineId: null
+};
+
+
+const actionState = {
+  type: null,
+  fineId: null,
+  pending: false
+};
+
+
+const paymentState = {
+  memberId: null,
+  payments: [],
+  loading: false
 };
 
 
@@ -105,6 +123,55 @@ function cacheElements() {
 
   elements.closeDetail =
     document.getElementById("closeDetail");
+
+  elements.fineActions =
+    document.getElementById("fineActions");
+
+  elements.adjustFine =
+    document.getElementById("adjustFine");
+
+  elements.waiveFine =
+    document.getElementById("waiveFine");
+
+  elements.allocateFinePayment =
+    document.getElementById(
+      "allocateFinePayment"
+    );
+
+  elements.fineActionModal =
+    document.getElementById(
+      "fineActionModal"
+    );
+
+  elements.fineActionTitle =
+    document.getElementById(
+      "fineActionTitle"
+    );
+
+  elements.closeFineAction =
+    document.getElementById(
+      "closeFineAction"
+    );
+
+  elements.fineActionForm =
+    document.getElementById(
+      "fineActionForm"
+    );
+
+  elements.fineActionFields =
+    document.getElementById(
+      "fineActionFields"
+    );
+
+  elements.fineActionError =
+    document.getElementById(
+      "fineActionError"
+    );
+
+  elements.submitFineAction =
+    document.getElementById(
+      "submitFineAction"
+    );
 
 }
 
@@ -231,6 +298,23 @@ function normalizeError(error) {
     error.details ||
     "Something went wrong."
   );
+
+}
+
+
+function parsePositiveAmount(value) {
+
+  const amount =
+    Number(value);
+
+  if (
+    !Number.isFinite(amount) ||
+    amount <= 0
+  ) {
+    return null;
+  }
+
+  return amount;
 
 }
 
@@ -418,6 +502,28 @@ async function loadFines() {
   renderSummary();
 
   renderFines();
+
+
+  if (
+    state.selectedFineId
+  ) {
+
+    const stillExists =
+      state.fines.some(
+        fine =>
+          String(fine.id) ===
+          String(state.selectedFineId)
+      );
+
+    if (stillExists) {
+
+      showFineDetail(
+        state.selectedFineId
+      );
+
+    }
+
+  }
 
 }
 
@@ -1269,10 +1375,56 @@ function showFineDetail(
     fine.id;
 
 
+  updateActionAvailability(
+    fine,
+    balance
+  );
+
+
   elements.fineDetail.scrollIntoView({
     behavior: "smooth",
     block: "start"
   });
+
+}
+
+
+/* =========================================================
+   ACTION AVAILABILITY
+========================================================= */
+
+function updateActionAvailability(
+  fine,
+  balance
+) {
+
+  const hasFine =
+    Boolean(fine);
+
+  const hasBalance =
+    Boolean(balance);
+
+
+  if (elements.adjustFine) {
+    elements.adjustFine.disabled =
+      !hasFine ||
+      !hasBalance ||
+      actionState.pending;
+  }
+
+  if (elements.waiveFine) {
+    elements.waiveFine.disabled =
+      !hasFine ||
+      !hasBalance ||
+      actionState.pending;
+  }
+
+  if (elements.allocateFinePayment) {
+    elements.allocateFinePayment.disabled =
+      !hasFine ||
+      !hasBalance ||
+      actionState.pending;
+  }
 
 }
 
@@ -1289,6 +1441,1112 @@ function closeFineDetail() {
 
   state.selectedFineId =
     null;
+
+  actionState.type =
+    null;
+
+  actionState.fineId =
+    null;
+
+}
+
+
+/* =========================================================
+   CANONICAL ACCOUNTING RPC WRAPPERS
+========================================================= */
+
+async function adjustFine(
+  fineId,
+  amount,
+  direction,
+  reason
+) {
+
+  const {
+    data,
+    error
+  } = await supabase.rpc(
+    "cl_fine_adjust",
+    {
+      p_fine_id: fineId,
+      p_amount: amount,
+      p_direction: direction,
+      p_reason: reason
+    }
+  );
+
+
+  if (error) {
+    throw error;
+  }
+
+
+  return data;
+
+}
+
+
+async function waiveFine(
+  fineId,
+  amount,
+  reason
+) {
+
+  const {
+    data,
+    error
+  } = await supabase.rpc(
+    "cl_fine_waive",
+    {
+      p_fine_id: fineId,
+      p_amount: amount,
+      p_reason: reason
+    }
+  );
+
+
+  if (error) {
+    throw error;
+  }
+
+
+  return data;
+
+}
+
+
+async function allocateFinePayment(
+  fineId,
+  paymentId,
+  amount,
+  source
+) {
+
+  const {
+    data,
+    error
+  } = await supabase.rpc(
+    "cl_fine_allocate_payment",
+    {
+      p_fine_id: fineId,
+      p_payment_id: paymentId,
+      p_amount: amount,
+      p_source: source
+    }
+  );
+
+
+  if (error) {
+    throw error;
+  }
+
+
+  return data;
+
+}
+
+
+/* =========================================================
+   PAYMENT LOADING
+========================================================= */
+
+async function loadFinePayments(
+  fine
+) {
+
+  if (!state.groupId) {
+    throw new Error(
+      "Group context is unavailable."
+    );
+  }
+
+
+  if (!fine?.member_id) {
+    throw new Error(
+      "The selected fine has no member."
+    );
+  }
+
+
+  paymentState.memberId =
+    fine.member_id;
+
+  paymentState.payments =
+    [];
+
+  paymentState.loading =
+    true;
+
+
+  try {
+
+    const {
+      data,
+      error
+    } = await supabase
+      .from("contributions")
+      .select(`
+        id,
+        member_id,
+        amount,
+        contribution_type,
+        month,
+        payment_method,
+        reference,
+        mpesa_reference,
+        contribution_date,
+        created_at
+      `)
+      .eq(
+        "group_id",
+        state.groupId
+      )
+      .eq(
+        "member_id",
+        fine.member_id
+      )
+      .order(
+        "contribution_date",
+        {
+          ascending: false,
+          nullsFirst: false
+        }
+      )
+      .order(
+        "created_at",
+        {
+          ascending: false
+        }
+      );
+
+
+    if (error) {
+      throw error;
+    }
+
+
+    paymentState.payments =
+      Array.isArray(data)
+        ? data
+        : [];
+
+
+  }
+
+  finally {
+
+    paymentState.loading =
+      false;
+
+  }
+
+}
+
+
+/* =========================================================
+   PAYMENT OPTION FORMATTING
+========================================================= */
+
+function formatFinePaymentOption(
+  payment
+) {
+
+  const date =
+    payment.contribution_date
+      ? formatDate(
+          payment.contribution_date
+        )
+      : formatDate(
+          payment.created_at
+        );
+
+
+  const amount =
+    money(payment.amount);
+
+
+  const method =
+    titleCase(
+      payment.payment_method ||
+      "Payment"
+    );
+
+
+  const reference =
+    payment.mpesa_reference ||
+    payment.reference ||
+    "";
+
+
+  const referenceText =
+    reference
+      ? ` • ${reference}`
+      : "";
+
+
+  const month =
+    payment.month
+      ? ` • ${payment.month}`
+      : "";
+
+
+  return (
+    `${date} • ${amount} • ` +
+    `${method}${month}${referenceText}`
+  );
+
+}
+
+
+function renderFinePaymentOptions() {
+
+  const select =
+    document.getElementById(
+      "finePaymentId"
+    );
+
+
+  if (!select) {
+    return;
+  }
+
+
+  select.innerHTML = "";
+
+
+  const placeholder =
+    document.createElement(
+      "option"
+    );
+
+  placeholder.value =
+    "";
+
+  placeholder.textContent =
+    "Select a payment";
+
+  placeholder.disabled =
+    false;
+
+  placeholder.selected =
+    true;
+
+  select.appendChild(
+    placeholder
+  );
+
+
+  for (
+    const payment
+    of paymentState.payments
+  ) {
+
+    const option =
+      document.createElement(
+        "option"
+      );
+
+    option.value =
+      payment.id;
+
+    option.textContent =
+      formatFinePaymentOption(
+        payment
+      );
+
+    select.appendChild(
+      option
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   ACTION MODAL
+========================================================= */
+
+function clearActionError() {
+
+  if (
+    elements.fineActionError
+  ) {
+    elements.fineActionError.textContent =
+      "";
+  }
+
+}
+
+
+function showActionError(
+  message
+) {
+
+  if (
+    elements.fineActionError
+  ) {
+    elements.fineActionError.textContent =
+      message;
+  }
+
+}
+
+
+function closeFineActionModal() {
+
+  if (
+    !elements.fineActionModal
+  ) {
+    return;
+  }
+
+
+  elements.fineActionModal.hidden =
+    true;
+
+  elements.fineActionModal
+    .setAttribute(
+      "aria-hidden",
+      "true"
+    );
+
+
+  actionState.type =
+    null;
+
+  actionState.fineId =
+    null;
+
+  clearActionError();
+
+
+  if (
+    elements.fineActionFields
+  ) {
+    elements.fineActionFields.innerHTML =
+      "";
+  }
+
+
+  if (
+    elements.submitFineAction
+  ) {
+    elements.submitFineAction.disabled =
+      false;
+  }
+
+}
+
+
+async function openFineActionModal(
+  type,
+  fineId
+) {
+
+  const fine =
+    state.fines.find(
+      item =>
+        String(item.id) ===
+        String(fineId)
+    );
+
+
+  if (!fine) {
+
+    showError(
+      "The selected fine could not be found."
+    );
+
+    return;
+
+  }
+
+
+  const balance =
+    state.balances.get(
+      fine.id
+    );
+
+
+  if (!balance) {
+
+    showError(
+      "The authoritative fine balance could not be loaded."
+    );
+
+    return;
+
+  }
+
+
+  if (
+    ![
+      "adjust",
+      "waive",
+      "allocate"
+    ].includes(type)
+  ) {
+
+    showError(
+      "Unsupported fine action."
+    );
+
+    return;
+
+  }
+
+
+  actionState.type =
+    type;
+
+  actionState.fineId =
+    fine.id;
+
+  clearActionError();
+
+
+  if (
+    type === "adjust"
+  ) {
+
+    elements.fineActionTitle.textContent =
+      "Adjust Fine";
+
+    elements.fineActionFields.innerHTML = `
+
+      <div class="action-field">
+
+        <label for="fineAdjustmentDirection">
+          Direction
+        </label>
+
+        <select
+          id="fineAdjustmentDirection"
+          name="direction"
+          required
+        >
+
+          <option value="INCREASE">
+            Increase
+          </option>
+
+          <option value="DECREASE">
+            Decrease
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <div class="action-field">
+
+        <label for="fineAdjustmentAmount">
+          Amount
+        </label>
+
+        <input
+          type="number"
+          id="fineAdjustmentAmount"
+          name="amount"
+          min="0.01"
+          step="0.01"
+          inputmode="decimal"
+          required
+        >
+
+      </div>
+
+
+      <div class="action-field">
+
+        <label for="fineAdjustmentReason">
+          Reason
+        </label>
+
+        <textarea
+          id="fineAdjustmentReason"
+          name="reason"
+          required
+        ></textarea>
+
+      </div>
+
+    `;
+
+  }
+
+
+  if (
+    type === "waive"
+  ) {
+
+    elements.fineActionTitle.textContent =
+      "Waive Fine";
+
+    elements.fineActionFields.innerHTML = `
+
+      <div class="action-field">
+
+        <label for="fineWaiverAmount">
+          Amount
+        </label>
+
+        <input
+          type="number"
+          id="fineWaiverAmount"
+          name="amount"
+          min="0.01"
+          step="0.01"
+          inputmode="decimal"
+          required
+        >
+
+        <small class="action-field-note">
+          The database will determine whether this
+          waiver is valid against the authoritative fine balance.
+        </small>
+
+      </div>
+
+
+      <div class="action-field">
+
+        <label for="fineWaiverReason">
+          Reason
+        </label>
+
+        <textarea
+          id="fineWaiverReason"
+          name="reason"
+          required
+        ></textarea>
+
+      </div>
+
+    `;
+
+  }
+
+
+  if (
+    type === "allocate"
+  ) {
+
+    elements.fineActionTitle.textContent =
+      "Allocate Payment";
+
+    elements.fineActionFields.innerHTML = `
+
+      <div class="action-field">
+
+        <label for="finePaymentId">
+          Payment
+        </label>
+
+        <select
+          id="finePaymentId"
+          name="paymentId"
+          required
+        >
+          <option value="">
+            Loading payments…
+          </option>
+        </select>
+
+        <small class="action-field-note">
+          Only payments recorded for this member are shown.
+          The database remains authoritative for payment ownership,
+          available allocation, and accounting validity.
+        </small>
+
+      </div>
+
+
+      <div class="action-field">
+
+        <label for="finePaymentAmount">
+          Amount
+        </label>
+
+        <input
+          type="number"
+          id="finePaymentAmount"
+          name="amount"
+          min="0.01"
+          step="0.01"
+          inputmode="decimal"
+          required
+        >
+
+      </div>
+
+
+      <div class="action-field">
+
+        <label for="finePaymentSource">
+          Source
+        </label>
+
+        <select
+          id="finePaymentSource"
+          name="source"
+          required
+        >
+
+          <option value="MANUAL">
+            Manual
+          </option>
+
+          <option value="SYSTEM">
+            System
+          </option>
+
+        </select>
+
+      </div>
+
+    `;
+
+
+    try {
+
+      await loadFinePayments(
+        fine
+      );
+
+      renderFinePaymentOptions();
+
+
+      const select =
+        document.getElementById(
+          "finePaymentId"
+        );
+
+
+      if (
+        !paymentState.payments.length
+      ) {
+
+        showActionError(
+          "No recorded payments were found for this member."
+        );
+
+      }
+
+      if (select) {
+        select.focus();
+      }
+
+    }
+
+    catch (error) {
+
+      console.error(
+        "CHAMA LIVE: Fine payment load failed:",
+        error
+      );
+
+      showActionError(
+        normalizeError(error)
+      );
+
+    }
+
+  }
+
+
+  elements.fineActionModal.hidden =
+    false;
+
+  elements.fineActionModal
+    .setAttribute(
+      "aria-hidden",
+      "false"
+    );
+
+
+  if (
+    type !== "allocate"
+  ) {
+
+    const firstInput =
+      elements.fineActionFields
+        ?.querySelector(
+          "input, select, textarea"
+        );
+
+    firstInput?.focus();
+
+  }
+
+}
+
+
+/* =========================================================
+   ACTION SUBMISSION
+========================================================= */
+
+async function submitFineAction(
+  event
+) {
+
+  event.preventDefault();
+
+
+  if (
+    actionState.pending
+  ) {
+    return;
+  }
+
+
+  const type =
+    actionState.type;
+
+  const fineId =
+    actionState.fineId;
+
+
+  if (
+    !type ||
+    !fineId
+  ) {
+
+    showActionError(
+      "No fine action is selected."
+    );
+
+    return;
+
+  }
+
+
+  const fine =
+    state.fines.find(
+      item =>
+        String(item.id) ===
+        String(fineId)
+    );
+
+
+  if (!fine) {
+
+    showActionError(
+      "The selected fine could not be found."
+    );
+
+    return;
+
+  }
+
+
+  const formData =
+    new FormData(
+      elements.fineActionForm
+    );
+
+
+  const amount =
+    parsePositiveAmount(
+      formData.get("amount")
+    );
+
+
+  if (
+    amount === null
+  ) {
+
+    showActionError(
+      "Enter an amount greater than zero."
+    );
+
+    return;
+
+  }
+
+
+  actionState.pending =
+    true;
+
+
+  clearActionError();
+
+
+  if (
+    elements.submitFineAction
+  ) {
+
+    elements.submitFineAction.disabled =
+      true;
+
+    elements.submitFineAction.textContent =
+      "Submitting…";
+
+  }
+
+
+  updateActionAvailability(
+    fine,
+    state.balances.get(
+      fine.id
+    )
+  );
+
+
+  try {
+
+    if (
+      type === "adjust"
+    ) {
+
+      const direction =
+        String(
+          formData.get(
+            "direction"
+          ) ||
+          ""
+        )
+          .trim()
+          .toUpperCase();
+
+
+      const reason =
+        String(
+          formData.get(
+            "reason"
+          ) ||
+          ""
+        ).trim();
+
+
+      if (
+        ![
+          "INCREASE",
+          "DECREASE"
+        ].includes(direction)
+      ) {
+
+        throw new Error(
+          "Select a valid adjustment direction."
+        );
+
+      }
+
+
+      if (!reason) {
+
+        throw new Error(
+          "A reason is required for an adjustment."
+        );
+
+      }
+
+
+      await adjustFine(
+        fine.id,
+        amount,
+        direction,
+        reason
+      );
+
+    }
+
+
+    else if (
+      type === "waive"
+    ) {
+
+      const reason =
+        String(
+          formData.get(
+            "reason"
+          ) ||
+          ""
+        ).trim();
+
+
+      if (!reason) {
+
+        throw new Error(
+          "A reason is required for a waiver."
+        );
+
+      }
+
+
+      await waiveFine(
+        fine.id,
+        amount,
+        reason
+      );
+
+    }
+
+
+    else if (
+      type === "allocate"
+    ) {
+
+      const paymentId =
+        String(
+          formData.get(
+            "paymentId"
+          ) ||
+          ""
+        ).trim();
+
+
+      const source =
+        String(
+          formData.get(
+            "source"
+          ) ||
+          ""
+        )
+          .trim()
+          .toUpperCase();
+
+
+      if (!paymentId) {
+
+        throw new Error(
+          "Select a payment."
+        );
+
+      }
+
+
+      if (
+        ![
+          "MANUAL",
+          "SYSTEM"
+        ].includes(source)
+      ) {
+
+        throw new Error(
+          "Select a valid payment source."
+        );
+
+      }
+
+
+      await allocateFinePayment(
+        fine.id,
+        paymentId,
+        amount,
+        source
+      );
+
+    }
+
+
+    else {
+
+      throw new Error(
+        "Unsupported fine action."
+      );
+
+    }
+
+
+    /*
+     * No optimistic accounting update.
+     *
+     * The modal closes only after the canonical RPC
+     * succeeds. loadFines() then reloads the fine and
+     * authoritative cl_fine_balance() result.
+     */
+
+    closeFineActionModal();
+
+    await loadFines();
+
+    showStatus(
+      "Fine accounting action completed and authoritative balances were refreshed."
+    );
+
+  }
+
+  catch (error) {
+
+    console.error(
+      "CHAMA LIVE: Fine action failed:",
+      error
+    );
+
+
+    /*
+     * Never display a local success state after failure.
+     *
+     * Reload the authoritative state in case the backend
+     * transaction committed before a transport-level error.
+     */
+
+    try {
+
+      await loadFines();
+
+    }
+
+    catch (reloadError) {
+
+      console.error(
+        "CHAMA LIVE: Authoritative fine reload failed:",
+        reloadError
+      );
+
+    }
+
+
+    showActionError(
+      normalizeError(error)
+    );
+
+  }
+
+  finally {
+
+    actionState.pending =
+      false;
+
+
+    if (
+      elements.submitFineAction
+    ) {
+
+      elements.submitFineAction.disabled =
+        false;
+
+      elements.submitFineAction.textContent =
+        "Submit";
+
+    }
+
+
+    const currentFine =
+      state.fines.find(
+        item =>
+          String(item.id) ===
+          String(actionState.fineId)
+      );
+
+
+    const currentBalance =
+      currentFine
+        ? state.balances.get(
+            currentFine.id
+          )
+        : null;
+
+
+    updateActionAvailability(
+      currentFine,
+      currentBalance
+    );
+
+  }
 
 }
 
@@ -1393,6 +2651,93 @@ function bindEvents() {
   elements.closeDetail?.addEventListener(
     "click",
     closeFineDetail
+  );
+
+
+  elements.adjustFine?.addEventListener(
+    "click",
+    () => {
+
+      if (
+        !state.selectedFineId
+      ) {
+        return;
+      }
+
+      openFineActionModal(
+        "adjust",
+        state.selectedFineId
+      );
+
+    }
+  );
+
+
+  elements.waiveFine?.addEventListener(
+    "click",
+    () => {
+
+      if (
+        !state.selectedFineId
+      ) {
+        return;
+      }
+
+      openFineActionModal(
+        "waive",
+        state.selectedFineId
+      );
+
+    }
+  );
+
+
+  elements.allocateFinePayment?.addEventListener(
+    "click",
+    () => {
+
+      if (
+        !state.selectedFineId
+      ) {
+        return;
+      }
+
+      openFineActionModal(
+        "allocate",
+        state.selectedFineId
+      );
+
+    }
+  );
+
+
+  elements.closeFineAction?.addEventListener(
+    "click",
+    closeFineActionModal
+  );
+
+
+  elements.fineActionModal?.addEventListener(
+    "click",
+    event => {
+
+      if (
+        event.target.matches(
+          "[data-modal-close]"
+        )
+      ) {
+
+        closeFineActionModal();
+
+      }
+
+    }
+  );
+
+
+  elements.fineActionForm?.addEventListener(
+    "submit",
+    submitFineAction
   );
 
 
