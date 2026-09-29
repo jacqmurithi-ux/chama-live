@@ -4,6 +4,9 @@
    File:
    /js/activate-account.js
 
+   Production:
+   https://chamalive.co.ke/
+
    Flow:
    Membership Number
         +
@@ -66,17 +69,22 @@ const successBox =
 ========================================================= */
 
 /*
- * CHAMA LIVE is deployed as a GitHub Pages project site.
+ * CHAMA LIVE production site.
  *
- * Correct:
- * https://jacqmurithi-ux.github.io/chama-live/login.html
+ * Correct production login URL:
+ * https://chamalive.co.ke/login.html
  *
- * NOT:
- * https://jacqmurithi-ux.github.io/login.html
+ * IMPORTANT:
+ * Do NOT append /chama-live/ here.
+ *
+ * The /chama-live/ path belongs to the old GitHub Pages
+ * project-site deployment:
+ *
+ * https://jacqmurithi-ux.github.io/chama-live/
  */
 
 const LOGIN_URL =
-  `${window.location.origin}/chama-live/login.html`;
+  `${window.location.origin}/login.html`;
 
 
 /* =========================================================
@@ -104,7 +112,10 @@ function showError(message) {
     errorBox.hidden = false;
 
     errorBox.textContent =
-      String(message || "Unable to activate account.");
+      String(
+        message ||
+        "Unable to activate account."
+      );
   }
 
   if (successBox) {
@@ -132,7 +143,10 @@ function showSuccess(message) {
     successBox.hidden = false;
 
     successBox.textContent =
-      String(message || "Account activated successfully.");
+      String(
+        message ||
+        "Account activated successfully."
+      );
   }
 
   if (errorBox) {
@@ -239,6 +253,7 @@ async function extractFunctionError(result) {
 
     const functionError =
       result.error;
+
 
     /*
      * Try response body.
@@ -431,11 +446,13 @@ function friendlyError(message) {
     lower.includes(
       "no member record"
     ) ||
-    lower.includes(
-      "membership number"
-    ) &&
-    lower.includes(
-      "email"
+    (
+      lower.includes(
+        "membership number"
+      ) &&
+      lower.includes(
+        "email"
+      )
     )
   ) {
 
@@ -492,11 +509,13 @@ function friendlyError(message) {
     lower.includes(
       "not invited"
     ) ||
-    lower.includes(
-      "invitation"
-    ) &&
-    lower.includes(
-      "not"
+    (
+      lower.includes(
+        "invitation"
+      ) &&
+      lower.includes(
+        "not"
+      )
     )
   ) {
 
@@ -842,6 +861,9 @@ else {
 
         /*
          * Redirect.
+         *
+         * Production:
+         * https://chamalive.co.ke/login.html
          */
 
         setTimeout(
