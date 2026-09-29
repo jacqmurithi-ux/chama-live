@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0"
@@ -9,20 +10,57 @@
 
   <meta
     name="description"
-    content="CHAMA LIVE helps groups manage members, contributions, expenses and reports in one simple digital system."
+    content="CHAMA LIVE helps chamas, CBOs and organised community groups manage members, contributions, expenses, meetings and reports in one simple digital system."
+  >
+
+  <meta
+    name="robots"
+    content="index, follow"
+  >
+
+  <link
+    rel="canonical"
+    href="https://chamalive.co.ke/"
+  >
+
+  <meta
+    property="og:title"
+    content="CHAMA LIVE — Run Your Group Simply"
+  >
+
+  <meta
+    property="og:description"
+    content="Manage members, contributions, expenses, meetings and reports in one organised digital workspace."
+  >
+
+  <meta
+    property="og:url"
+    content="https://chamalive.co.ke/"
+  >
+
+  <meta
+    property="og:type"
+    content="website"
   >
 
   <title>CHAMA LIVE — Run Your Group Simply</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    rel="preconnect"
+    href="https://fonts.gstatic.com"
+    crossorigin
+  >
 
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
     rel="stylesheet"
   >
 
-  <link rel="stylesheet" href="css/landing.css">
+  <link
+    rel="stylesheet"
+    href="css/landing.css"
+  >
 
   <style>
     :root {
@@ -149,7 +187,7 @@
     .desktop-nav {
       display: flex;
       align-items: center;
-      gap: 28px;
+      gap: 26px;
       font-size: 0.9rem;
       color: #53625b;
       font-weight: 500;
@@ -1010,7 +1048,7 @@
        ========================================================= */
 
     footer {
-      padding: 25px 0;
+      padding: 28px 0;
       border-top: 1px solid var(--line);
       background: var(--white);
     }
@@ -1030,6 +1068,8 @@
     .footer-links {
       display: flex;
       gap: 18px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
       color: #65736c;
       font-size: 0.68rem;
       font-weight: 600;
@@ -1217,8 +1257,8 @@
       }
 
       .footer-links {
+        justify-content: flex-start;
         gap: 13px;
-        flex-wrap: wrap;
       }
     }
 
@@ -1269,6 +1309,7 @@
        ======================================================= -->
 
   <header class="site-header">
+
     <div class="container header-inner">
 
       <a
@@ -1287,6 +1328,7 @@
         <a href="#product">Product</a>
         <a href="#pricing">Pricing</a>
         <a href="#how-it-works">How it works</a>
+        <a href="faq.html">FAQ</a>
       </nav>
 
       <div class="header-actions">
@@ -1320,7 +1362,9 @@
 
     </div>
 
+
     <!-- Mobile navigation -->
+
     <div
       id="mobileNavigation"
       hidden
@@ -1329,6 +1373,7 @@
         background: var(--white);
       "
     >
+
       <nav
         class="container"
         aria-label="Mobile navigation"
@@ -1339,6 +1384,7 @@
           padding-bottom: 14px;
         "
       >
+
         <a
           href="#product"
           style="padding: 11px 8px; font-weight: 600;"
@@ -1361,6 +1407,27 @@
         </a>
 
         <a
+          href="faq.html"
+          style="padding: 11px 8px; font-weight: 600;"
+        >
+          FAQ
+        </a>
+
+        <a
+          href="terms.html"
+          style="padding: 11px 8px; font-weight: 600;"
+        >
+          Terms
+        </a>
+
+        <a
+          href="privacy.html"
+          style="padding: 11px 8px; font-weight: 600;"
+        >
+          Privacy
+        </a>
+
+        <a
           href="login.html"
           style="
             padding: 11px 8px;
@@ -1378,8 +1445,11 @@
         >
           Create your group
         </a>
+
       </nav>
+
     </div>
+
   </header>
 
 
@@ -1413,9 +1483,9 @@
           </h1>
 
           <p class="hero-description">
-            CHAMA LIVE brings your members, contributions, expenses
-            and reports into one organised digital workspace — so
-            your group can spend less time chasing records and more
+            CHAMA LIVE brings your members, contributions, expenses,
+            meetings and reports into one organised digital workspace —
+            so your group can spend less time chasing records and more
             time moving forward.
           </p>
 
@@ -1520,7 +1590,7 @@
                   </div>
 
                   <div class="preview-avatar">
-                    E2600
+                    CL
                   </div>
 
                 </div>
@@ -1757,7 +1827,7 @@
 
 
             <a
-              href="login.html"
+              href="member-login.html"
               class="portal-button"
             >
 
@@ -1860,7 +1930,7 @@
             </div>
 
             <div class="price-note">
-              First month free
+              Simple monthly pricing
             </div>
 
             <ul class="price-features">
@@ -1879,6 +1949,10 @@
 
               <li>
                 Expense records
+              </li>
+
+              <li>
+                Meeting records
               </li>
 
               <li>
@@ -1924,7 +1998,7 @@
             </div>
 
             <div class="price-note">
-              First month free
+              Simple monthly pricing
             </div>
 
             <ul class="price-features">
@@ -2024,6 +2098,21 @@
         <p class="pricing-footer-note">
           Member portal access is charged to the group at KSh 20
           per active member login per month.
+        </p>
+
+        <p
+          style="
+            margin: 9px auto 0;
+            max-width: 720px;
+            text-align: center;
+            color: #7b8781;
+            font-size: 0.66rem;
+          "
+        >
+          Pricing and available features may change as CHAMA LIVE
+          continues to develop. Any payment or financial integrations
+          are subject to the capabilities currently enabled for your
+          group.
         </p>
 
       </div>
@@ -2208,6 +2297,26 @@
 
       <div class="footer-links">
 
+        <a href="pricing.html">
+          Pricing
+        </a>
+
+        <a href="faq.html">
+          FAQ
+        </a>
+
+        <a href="terms.html">
+          Terms
+        </a>
+
+        <a href="privacy.html">
+          Privacy
+        </a>
+
+        <a href="sitemap.html">
+          Sitemap
+        </a>
+
         <a href="login.html">
           Sign In
         </a>
@@ -2344,9 +2453,7 @@
       window.addEventListener(
         "resize",
         () => {
-          if (
-            window.innerWidth > 900
-          ) {
+          if (window.innerWidth > 900) {
             closeMobileMenu();
           }
         }
@@ -2358,15 +2465,19 @@
          ------------------------------------------------------- */
 
       function setPricingPeriod(period) {
+
         pricingButtons.forEach((button) => {
+
           button.classList.toggle(
             "active",
             button.dataset.period === period
           );
+
         });
 
 
         priceElements.forEach((element) => {
+
           const amount =
             period === "yearly"
               ? element.dataset.yearly
@@ -2383,19 +2494,25 @@
             " <small>" +
             suffix +
             "</small>";
+
         });
+
       }
 
 
       pricingButtons.forEach((button) => {
+
         button.addEventListener(
           "click",
           () => {
+
             setPricingPeriod(
               button.dataset.period
             );
+
           }
         );
+
       });
 
 
