@@ -1,6 +1,12 @@
 /* =========================================================
    CHAMA LIVE — SIGNUP
 
+   File:
+   /js/signup.js
+
+   Production:
+   https://chamalive.co.ke/
+
    ARCHITECTURE
    ---------------------------------------------------------
    Create Supabase Auth account
@@ -53,14 +59,18 @@
    ---------------------------------------------------------
    confirm.html
 
-   CURRENT GITHUB PAGES BASE URL
+   PRODUCTION AUTH CALLBACK
    ---------------------------------------------------------
-   https://jacqmurithi-ux.github.io/chama-live
+   https://chamalive.co.ke/confirm.html
+
+   IMPORTANT
+   ---------------------------------------------------------
+   This file no longer depends on the old GitHub Pages
+   BASE_URL from auth.js for the confirmation redirect.
 ========================================================= */
 
 import {
-  supabase,
-  BASE_URL
+  supabase
 } from "./auth.js";
 
 
@@ -68,8 +78,22 @@ import {
    CONFIGURATION
 ========================================================= */
 
+/*
+ * Build the confirmation URL from the current site origin.
+ *
+ * Production:
+ * https://chamalive.co.ke/confirm.html
+ *
+ * This avoids the old GitHub Pages path:
+ * https://jacqmurithi-ux.github.io/chama-live/confirm.html
+ *
+ * IMPORTANT:
+ * confirm.html must also be included in the Supabase
+ * Authentication allowed redirect URLs.
+ */
+
 const CONFIRM_PAGE =
-  `${BASE_URL}/confirm.html`;
+  `${window.location.origin}/confirm.html`;
 
 
 /* =========================================================
@@ -495,6 +519,11 @@ async function createAuthAccount(
         values.password,
 
       options: {
+
+        /*
+         * Email confirmation returns the user to
+         * the production confirmation page.
+         */
 
         emailRedirectTo:
           CONFIRM_PAGE,
