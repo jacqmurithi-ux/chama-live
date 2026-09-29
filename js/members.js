@@ -2962,6 +2962,8 @@ async function sendMemberInvitation(
       "Sending member invitation..."
     );
 
+    clearError();
+
     const {
       data,
       error
@@ -2998,9 +3000,87 @@ async function sendMemberInvitation(
       error
     );
 
-    showError(
+    /*
+     * Supabase FunctionsHttpError can contain the actual
+     * JSON response returned by the Edge Function.
+     *
+     * This lets CHAMA LIVE show the backend's real error
+     * instead of only:
+     *
+     *   "Edge Function returned a non-2xx status code"
+     *
+     * This is especially important for HTTP 429 email
+     * rate-limit responses.
+     */
+    let message =
       error?.message ||
-      "Unable to send member invitation."
+      "Unable to send member invitation.";
+
+    try {
+
+      if (
+        error?.context &&
+        typeof error.context.json ===
+          "function"
+      ) {
+
+        const details =
+          await error.context.json();
+
+        if (
+          details?.error
+        ) {
+          message =
+            String(
+              details.error
+            );
+        }
+
+        if (
+          details?.details &&
+          details.details !==
+            details.error
+        ) {
+          message +=
+            ` — ${String(
+              details.details
+            )}`;
+        }
+
+        /*
+         * If the Edge Function explicitly returns an
+         * email_sent flag, provide a useful indication.
+         */
+        if (
+          details?.email_sent ===
+          false &&
+          !message.toLowerCase().includes(
+            "email"
+          )
+        ) {
+          message +=
+            " — Email was not sent.";
+        }
+
+      }
+
+    } catch (
+      responseReadError
+    ) {
+
+      /*
+       * Reading the error body is diagnostic only.
+       * Preserve the original FunctionsHttpError message
+       * if the response body cannot be read.
+       */
+      console.debug(
+        "Could not read invitation error response:",
+        responseReadError
+      );
+    }
+
+    showError(
+      message
     );
   }
 }
