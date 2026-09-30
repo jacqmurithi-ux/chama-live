@@ -14,7 +14,7 @@
           ↓
    Supabase recovery email
           ↓
-   /chama-live/reset-password.html
+   /reset-password.html
           ↓
    New password
           ↓
@@ -22,7 +22,6 @@
 ========================================================= */
 
 import { supabase } from "./supabase.js";
-
 
 console.log(
   "CHAMA LIVE: forgot-password.js loaded"
@@ -60,25 +59,11 @@ const successBox =
 
 
 /* =========================================================
-   CHAMA LIVE BASE URL
+   CHAMA LIVE PRODUCTION URL
 ========================================================= */
 
-/*
- * IMPORTANT:
- *
- * The application is hosted at:
- *
- * https://jacqmurithi-ux.github.io/chama-live/
- *
- * window.location.origin only returns:
- *
- * https://jacqmurithi-ux.github.io
- *
- * Therefore we must include /chama-live/.
- */
-
 const BASE_URL =
-  "https://jacqmurithi-ux.github.io/chama-live";
+  window.location.origin;
 
 
 /* =========================================================
@@ -87,7 +72,6 @@ const BASE_URL =
 
 const RESET_URL =
   `${BASE_URL}/reset-password.html`;
-
 
 console.log(
   "CHAMA LIVE: password reset redirect:",
@@ -112,7 +96,6 @@ function showError(
       message;
 
   }
-
 
   if (successBox) {
 
@@ -145,7 +128,6 @@ function showSuccess(
 
   }
 
-
   if (errorBox) {
 
     errorBox.hidden =
@@ -175,7 +157,6 @@ function clearMessages() {
 
   }
 
-
   if (successBox) {
 
     successBox.hidden =
@@ -201,10 +182,8 @@ function setLoading(
     return;
   }
 
-
   button.disabled =
     loading;
-
 
   button.textContent =
     loading
@@ -228,7 +207,6 @@ function getFriendlyError(
       error ||
       "Unable to send password reset email."
     );
-
 
   const lower =
     message.toLowerCase();
@@ -299,7 +277,6 @@ if (!form) {
 }
 else {
 
-
   /* =======================================================
      SUBMIT
   ======================================================= */
@@ -309,7 +286,6 @@ else {
     async event => {
 
       event.preventDefault();
-
 
       clearMessages();
 
@@ -438,14 +414,6 @@ else {
         console.log(
           "CHAMA LIVE: password reset email sent successfully"
         );
-
-
-        /*
-         * Keep the email in the field.
-         *
-         * This makes it easier for the user
-         * to request another link if necessary.
-         */
 
       }
 
