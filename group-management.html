@@ -31,6 +31,8 @@
             --error-text: #991b1b;
             --warning-bg: #fffbeb;
             --warning-text: #92400e;
+            --info-bg: #eff6ff;
+            --info-text: #1d4ed8;
             --radius: 14px;
             --shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
         }
@@ -124,6 +126,11 @@
         .status-message.warning {
             background: var(--warning-bg);
             color: var(--warning-text);
+        }
+
+        .status-message.info {
+            background: var(--info-bg);
+            color: var(--info-text);
         }
 
         /* =====================================================
@@ -291,6 +298,12 @@
             background: var(--primary-dark);
         }
 
+        .btn-secondary {
+            background: #f8fafc;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
         .btn:disabled {
             opacity: 0.55;
             cursor: not-allowed;
@@ -353,7 +366,8 @@
         }
 
         .leadership-note,
-        .calendar-note {
+        .calendar-note,
+        .payment-note {
             margin: 14px 0 0;
             padding: 11px 12px;
             border-radius: 9px;
@@ -436,6 +450,69 @@
         #contributionCalendarForm {
             position: relative;
             z-index: 10;
+        }
+
+        /* =====================================================
+           PAYMENT COLLECTION
+        ====================================================== */
+
+        .payment-status {
+            margin-bottom: 16px;
+            padding: 11px 12px;
+            border-radius: 9px;
+            background: #f8fafc;
+            color: #475569;
+            font-size: 0.82rem;
+        }
+
+        .payment-status.configured {
+            background: var(--success-bg);
+            color: var(--success-text);
+        }
+
+        .payment-status.pending {
+            background: var(--warning-bg);
+            color: var(--warning-text);
+        }
+
+        .payment-provider-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .payment-provider-grid .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .payment-reference-preview {
+            margin-top: 14px;
+            padding: 13px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: #fafafa;
+        }
+
+        .payment-reference-preview span {
+            display: block;
+            color: var(--muted);
+            font-size: 0.75rem;
+            margin-bottom: 4px;
+        }
+
+        .payment-reference-preview strong {
+            display: block;
+            font-size: 0.9rem;
+            word-break: break-word;
+        }
+
+        .payment-configuration-state {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 9px;
+            background: var(--info-bg);
+            color: var(--info-text);
+            font-size: 0.8rem;
         }
 
         /* =====================================================
@@ -597,12 +674,14 @@
                 padding: 11px;
             }
 
-            .form-grid {
+            .form-grid,
+            .payment-provider-grid {
                 grid-template-columns: 1fr;
                 gap: 12px;
             }
 
-            .form-field.full-width {
+            .form-field.full-width,
+            .payment-provider-grid .full-width {
                 grid-column: auto;
             }
 
@@ -713,13 +792,17 @@
         ====================================================== -->
 
         <header class="page-hero">
-            <h1>Group Management</h1>
+
+            <h1>
+                Group Management
+            </h1>
 
             <p>
                 Manage your group's information,
-                contribution cycle, leadership,
-                account and subscription settings.
+                contribution cycle, payment collection,
+                leadership, account and subscription settings.
             </p>
+
         </header>
 
 
@@ -733,6 +816,7 @@
             role="status"
             aria-live="polite"
         ></div>
+
 
         <div
             id="errorMessage"
@@ -770,26 +854,35 @@
             <section class="management-card overview-card">
 
                 <div class="card-header">
+
                     <div class="card-heading">
-                        <h2>Group Overview</h2>
+
+                        <h2>
+                            Group Overview
+                        </h2>
 
                         <p>
                             Current group account summary.
                         </p>
+
                     </div>
+
                 </div>
+
 
                 <div class="card-body">
 
                     <div class="overview-content">
 
                         <div>
+
                             <h3
                                 id="groupNameDisplay"
                                 class="group-name-display"
                             >
                                 —
                             </h3>
+
 
                             <div class="group-meta">
 
@@ -809,7 +902,9 @@
                                 </span>
 
                             </div>
+
                         </div>
+
 
                         <div
                             id="permissionBadge"
@@ -832,15 +927,22 @@
             <section class="management-card">
 
                 <div class="card-header">
+
                     <div class="card-heading">
-                        <h2>Group Information</h2>
+
+                        <h2>
+                            Group Information
+                        </h2>
 
                         <p>
                             Update the basic information
                             used across CHAMA LIVE.
                         </p>
+
                     </div>
+
                 </div>
+
 
                 <div class="card-body">
 
@@ -876,6 +978,7 @@
                                     name="groupCategory"
                                     required
                                 >
+
                                     <option value="">
                                         Select group type
                                     </option>
@@ -891,6 +994,7 @@
                                     <option value="Other">
                                         Other
                                     </option>
+
                                 </select>
 
                             </div>
@@ -959,6 +1063,9 @@
                                 <p class="field-help">
                                     This is the standard monthly
                                     amount configured for the group.
+                                    Individual member plans remain
+                                    subject to their canonical accounting
+                                    configuration.
                                 </p>
 
                             </div>
@@ -998,7 +1105,9 @@
 
                     <div class="card-heading">
 
-                        <h2>Leadership Setup</h2>
+                        <h2>
+                            Leadership Setup
+                        </h2>
 
                         <p>
                             Declare your actual group position,
@@ -1008,6 +1117,7 @@
                     </div>
 
                 </div>
+
 
                 <div class="card-body">
 
@@ -1124,7 +1234,9 @@
 
                         <div>
 
-                            <strong>Initial officers</strong>
+                            <strong>
+                                Initial officers
+                            </strong>
 
                             <p class="field-help">
                                 Add and invite the chairperson,
@@ -1133,6 +1245,7 @@
                             </p>
 
                         </div>
+
 
                         <a
                             id="addInitialOfficerLink"
@@ -1170,7 +1283,9 @@
 
                     <div class="card-heading">
 
-                        <h2>Monthly Contribution Cycle</h2>
+                        <h2>
+                            Monthly Contribution Cycle
+                        </h2>
 
                         <p>
                             Set the day your group's monthly
@@ -1181,13 +1296,16 @@
 
                 </div>
 
+
                 <div class="card-body">
 
                     <div class="calendar-summary">
 
                         <div class="calendar-summary-item">
 
-                            <span>Current Cycle</span>
+                            <span>
+                                Current Cycle
+                            </span>
 
                             <strong id="currentContributionCycle">
                                 —
@@ -1198,7 +1316,9 @@
 
                         <div class="calendar-summary-item">
 
-                            <span>Opening Date</span>
+                            <span>
+                                Opening Date
+                            </span>
 
                             <strong id="currentContributionOpeningDate">
                                 —
@@ -1209,7 +1329,9 @@
 
                         <div class="calendar-summary-item">
 
-                            <span>Closing Date</span>
+                            <span>
+                                Closing Date
+                            </span>
 
                             <strong id="currentContributionClosingDate">
                                 —
@@ -1270,6 +1392,242 @@
 
 
             <!-- =================================================
+                 PAYMENT COLLECTION CONFIGURATION
+            ================================================== -->
+
+            <section
+                class="management-card full-width"
+                id="paymentCollectionCard"
+            >
+
+                <div class="card-header">
+
+                    <div class="card-heading">
+
+                        <h2>
+                            Payment Collection
+                        </h2>
+
+                        <p>
+                            Configure the group's payment channel and
+                            collection identifiers used for member payments.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="card-body">
+
+                    <div
+                        id="paymentCollectionStatus"
+                        class="payment-status pending"
+                        role="status"
+                        aria-live="polite"
+                    >
+                        Payment collection configuration has not yet been
+                        connected to the group's canonical payment settings.
+                    </div>
+
+
+                    <div class="payment-provider-grid">
+
+                        <div class="form-field">
+
+                            <label for="paymentProvider">
+                                Payment Provider
+                            </label>
+
+                            <select
+                                id="paymentProvider"
+                                name="paymentProvider"
+                                disabled
+                            >
+
+                                <option value="">
+                                    Select provider
+                                </option>
+
+                                <option value="mpesa">
+                                    M-Pesa
+                                </option>
+
+                                <option value="bank">
+                                    Bank
+                                </option>
+
+                                <option value="sacco">
+                                    SACCO
+                                </option>
+
+                                <option value="other">
+                                    Other
+                                </option>
+
+                            </select>
+
+                            <p class="field-help">
+                                The provider through which the group
+                                receives member payments.
+                            </p>
+
+                        </div>
+
+
+                        <div class="form-field">
+
+                            <label for="paymentBusinessNumber">
+                                Business / PayBill Number
+                            </label>
+
+                            <input
+                                id="paymentBusinessNumber"
+                                name="paymentBusinessNumber"
+                                type="text"
+                                inputmode="numeric"
+                                autocomplete="off"
+                                maxlength="20"
+                                disabled
+                            >
+
+                            <p class="field-help">
+                                The provider business number used by
+                                the group for payment collection.
+                            </p>
+
+                        </div>
+
+
+                        <div class="form-field">
+
+                            <label for="paymentGroupAccount">
+                                Group Account
+                            </label>
+
+                            <input
+                                id="paymentGroupAccount"
+                                name="paymentGroupAccount"
+                                type="text"
+                                autocomplete="off"
+                                maxlength="80"
+                                disabled
+                            >
+
+                            <p class="field-help">
+                                The group's account, account number,
+                                or provider-specific collection account.
+                            </p>
+
+                        </div>
+
+
+                        <div class="form-field">
+
+                            <label for="paymentAccountReference">
+                                Account Reference
+                            </label>
+
+                            <input
+                                id="paymentAccountReference"
+                                name="paymentAccountReference"
+                                type="text"
+                                autocomplete="off"
+                                maxlength="12"
+                                disabled
+                            >
+
+                            <p class="field-help">
+                                Provider-specific reference used to identify
+                                the group's collection account.
+                            </p>
+
+                        </div>
+
+
+                        <div class="form-field full-width">
+
+                            <label for="paymentInstructions">
+                                Member Payment Instructions
+                            </label>
+
+                            <input
+                                id="paymentInstructions"
+                                name="paymentInstructions"
+                                type="text"
+                                maxlength="500"
+                                autocomplete="off"
+                                placeholder="Payment instructions shown to members"
+                                disabled
+                            >
+
+                            <p class="field-help">
+                                Clear instructions members can follow when
+                                making payments to the group.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        id="paymentReferencePreview"
+                        class="payment-reference-preview"
+                    >
+
+                        <span>
+                            Collection reference
+                        </span>
+
+                        <strong id="paymentReferencePreviewValue">
+                            Not configured
+                        </strong>
+
+                    </div>
+
+
+                    <div
+                        id="paymentConfigurationState"
+                        class="payment-configuration-state"
+                    >
+                        Payment collection fields are intentionally held
+                        inactive until the canonical payment-intent,
+                        provider-reference, callback/result and execution
+                        transaction contract is connected to the frontend.
+                        No payment credentials or STK transaction is created
+                        by this page.
+                    </div>
+
+
+                    <div class="form-actions">
+
+                        <button
+                            type="button"
+                            class="btn btn-primary"
+                            id="savePaymentCollection"
+                            disabled
+                        >
+                            Save Payment Collection
+                        </button>
+
+                    </div>
+
+
+                    <p class="payment-note">
+                        The group configuration identifies where members
+                        should pay. It does not itself create a payment,
+                        allocation or contribution obligation. Those
+                        accounting actions remain controlled by the canonical
+                        payment and allocation workflows.
+                    </p>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
                  ACCOUNT
             ================================================== -->
 
@@ -1279,7 +1637,9 @@
 
                     <div class="card-heading">
 
-                        <h2>Account</h2>
+                        <h2>
+                            Account
+                        </h2>
 
                         <p>
                             View your group's billing and
@@ -1289,6 +1649,7 @@
                     </div>
 
                 </div>
+
 
                 <div class="card-body">
 
@@ -1333,7 +1694,9 @@
 
                     <div class="card-heading">
 
-                        <h2>Subscription</h2>
+                        <h2>
+                            Subscription
+                        </h2>
 
                         <p>
                             Current subscription state
@@ -1343,6 +1706,7 @@
                     </div>
 
                 </div>
+
 
                 <div class="card-body">
 
@@ -1431,7 +1795,9 @@
 
                     <div class="card-heading">
 
-                        <h2>Group Context</h2>
+                        <h2>
+                            Group Context
+                        </h2>
 
                         <p>
                             Current account and
@@ -1442,13 +1808,16 @@
 
                 </div>
 
+
                 <div class="card-body">
 
                     <div class="context-grid">
 
                         <div class="context-item">
 
-                            <span>Group</span>
+                            <span>
+                                Group
+                            </span>
 
                             <strong id="contextGroupName">
                                 —
@@ -1459,7 +1828,9 @@
 
                         <div class="context-item">
 
-                            <span>Your Role</span>
+                            <span>
+                                Your Role
+                            </span>
 
                             <strong id="contextRole">
                                 —
@@ -1470,7 +1841,9 @@
 
                         <div class="context-item">
 
-                            <span>Access</span>
+                            <span>
+                                Access
+                            </span>
 
                             <strong id="contextAccess">
                                 —
@@ -1481,7 +1854,9 @@
 
                         <div class="context-item">
 
-                            <span>Country</span>
+                            <span>
+                                Country
+                            </span>
 
                             <strong id="contextCountry">
                                 —
@@ -1514,8 +1889,14 @@
 
     <!-- =========================================================
          PAGE SHELL BOOT
+
          admin-layout.js is the sole page-shell boot owner.
-         Do not import or auto-boot group-management.js here.
+
+         group-management.js remains a page initializer and does
+         not auto-boot.
+
+         Payment collection controls are intentionally disabled
+         until the canonical backend contract is connected.
     ========================================================== -->
 
     <script type="module">
