@@ -1,279 +1,370 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1"
-  >
+/* =========================================================
+   CHAMA LIVE — ADMIN LOGIN
+   ---------------------------------------------------------
+   Authority:
+   - Supabase Auth handles credential authentication.
+   - auth.js resolves the authenticated application context.
+   - Owner OR management role may enter the admin portal.
+   - Membership must be active.
+   - Onboarding must be active.
+   - No URL credentials.
+   - No group_id supplied by the browser.
+   ========================================================= */
 
-  <meta
-    name="description"
-    content="Admin Portal sign in — CHAMA LIVE"
-  >
+import {
+  signIn,
+  getMyApplicationContext
+} from "./auth.js";
 
-  <meta
-    name="theme-color"
-    content="#0f766e"
-  >
 
-  <title>Admin Login — CHAMA LIVE</title>
+/* =========================================================
+   ALLOWED MANAGEMENT ROLES
+   ========================================================= */
 
-  <link
-    rel="stylesheet"
-    href="css/app.css"
-  >
+const ADMIN_ROLES = new Set([
+  "admin",
+  "chairperson",
+  "secretary",
+  "treasurer"
+]);
 
-  <style>
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background: #f8fafc;
-      color: #0f172a;
-      font-family:
-        Inter,
-        system-ui,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
+
+/* =========================================================
+   DOM REFERENCES
+   ========================================================= */
+
+const form = document.getElementById("adminLoginForm");
+const emailInput = document.getElementById("email");
+const passwordInput = document.getElementById("password");
+const loginButton = document.getElementById("loginButton");
+const errorBox = document.getElementById("error");
+const successBox = document.getElementById("success");
+
+
+/* =========================================================
+   BASIC PAGE VALIDATION
+   ========================================================= */
+
+if (!form || !emailInput || !passwordInput || !loginButton) {
+  console.error(
+    "CHAMA LIVE admin login: required login elements are missing."
+  );
+}
+
+
+/* =========================================================
+   MESSAGE HELPERS
+   ========================================================= */
+
+function clearMessages() {
+  if (errorBox) {
+    errorBox.hidden = true;
+    errorBox.textContent = "";
+  }
+
+  if (successBox) {
+    successBox.hidden = true;
+    successBox.textContent = "";
+  }
+}
+
+
+function showError(message) {
+  if (!errorBox) {
+    console.error(message);
+    return;
+  }
+
+  if (successBox) {
+    successBox.hidden = true;
+    successBox.textContent = "";
+  }
+
+  errorBox.textContent = message;
+  errorBox.hidden = false;
+}
+
+
+function showSuccess(message) {
+  if (!successBox) {
+    console.info(message);
+    return;
+  }
+
+  if (errorBox) {
+    errorBox.hidden = true;
+    errorBox.textContent = "";
+  }
+
+  successBox.textContent = message;
+  successBox.hidden = false;
+}
+
+
+/* =========================================================
+   ERROR NORMALISATION
+   ========================================================= */
+
+function normalizeError(error) {
+  const message = String(
+    error?.message ||
+    error?.error_description ||
+    error ||
+    ""
+  ).trim();
+
+  const lower = message.toLowerCase();
+
+  if (
+    lower.includes("invalid login credentials") ||
+    lower.includes("invalid credentials")
+  ) {
+    return "Invalid email or password.";
+  }
+
+  if (
+    lower.includes("email not confirmed") ||
+    lower.includes("email_not_confirmed")
+  ) {
+    return "Your email address has not been confirmed.";
+  }
+
+  if (
+    lower.includes("too many requests") ||
+    lower.includes("rate limit") ||
+    lower.includes("over_request_rate_limit")
+  ) {
+    return "Too many login attempts. Please wait a few minutes and try again.";
+  }
+
+  if (
+    lower.includes("failed to fetch") ||
+    lower.includes("networkerror") ||
+    lower.includes("network error") ||
+    lower.includes("fetch")
+  ) {
+    return "Unable to connect to CHAMA LIVE. Check your internet connection and try again.";
+  }
+
+  if (
+    lower.includes("missing") &&
+    lower.includes("group")
+  ) {
+    return "Your account is not linked to a CHAMA LIVE group.";
+  }
+
+  if (
+    lower.includes("not authorized") ||
+    lower.includes("unauthorized") ||
+    lower.includes("permission denied")
+  ) {
+    return "Your account is not authorized to access the Admin Portal.";
+  }
+
+  return message || "Unable to sign in. Please try again.";
+}
+
+
+/* =========================================================
+   LOGIN
+   ========================================================= */
+
+async function performLogin() {
+  clearMessages();
+
+  const email = emailInput.value.trim().toLowerCase();
+  const password = passwordInput.value;
+
+  if (!email) {
+    showError("Enter your email address.");
+    emailInput.focus();
+    return;
+  }
+
+  if (!emailInput.checkValidity()) {
+    showError("Enter a valid email address.");
+    emailInput.focus();
+    return;
+  }
+
+  if (!password) {
+    showError("Enter your password.");
+    passwordInput.focus();
+    return;
+  }
+
+  loginButton.disabled = true;
+  loginButton.textContent = "Signing In…";
+
+  try {
+    /* -------------------------------------------------------
+       STEP 1 — AUTHENTICATE WITH SUPABASE
+       ------------------------------------------------------- */
+
+    await signIn(email, password);
+
+
+    /* -------------------------------------------------------
+       STEP 2 — RESOLVE AUTHORITATIVE APPLICATION CONTEXT
+
+       The authenticated Supabase user is the authority.
+
+       group_id, role and ownership are NOT taken from:
+       - URL parameters
+       - localStorage
+       - form fields
+       - client-supplied values
+       ------------------------------------------------------- */
+
+    const context = await getMyApplicationContext();
+
+    const user = context?.user;
+    const member = context?.member;
+    const group = context?.group;
+
+    if (!user) {
+      throw new Error(
+        "Authenticated user could not be resolved."
+      );
     }
 
-    .login-shell {
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: 24px;
-      box-sizing: border-box;
+    if (!member) {
+      throw new Error(
+        "Your account is not linked to a CHAMA LIVE member record."
+      );
     }
 
-    .login-card {
-      width: min(440px, 100%);
-      padding: 28px;
-      border: 1px solid #dbe4ea;
-      border-radius: 16px;
-      background: #fff;
-      box-shadow:
-        0 18px 50px
-        rgba(15, 23, 42, 0.08);
-      box-sizing: border-box;
+    if (!group) {
+      throw new Error(
+        "Your account is not linked to a CHAMA LIVE group."
+      );
     }
 
-    h1 {
-      margin: 0 0 8px;
+
+    /* -------------------------------------------------------
+       STEP 3 — AUTHORIZE ADMIN / MANAGEMENT ACCESS
+       ------------------------------------------------------- */
+
+    const role = String(
+      context?.role ||
+      member?.role ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+    const isOwner = context?.isOwner === true;
+
+    const hasManagementRole = ADMIN_ROLES.has(role);
+
+    if (!isOwner && !hasManagementRole) {
+      throw new Error(
+        "Your account is not authorized to access the Admin Portal."
+      );
     }
 
-    .intro {
-      margin: 0 0 24px;
-      color: #64748b;
+
+    /* -------------------------------------------------------
+       STEP 4 — REQUIRE ACTIVE MEMBERSHIP
+       ------------------------------------------------------- */
+
+    const memberStatus = String(
+      member?.status || ""
+    )
+      .trim()
+      .toLowerCase();
+
+    if (memberStatus !== "active") {
+      throw new Error(
+        "Your member account is not active."
+      );
     }
 
-    label {
-      display: block;
-      margin: 0 0 6px;
-      font-weight: 600;
+
+    /* -------------------------------------------------------
+       STEP 5 — REQUIRE ACTIVE ONBOARDING
+       ------------------------------------------------------- */
+
+    const onboardingStatus = String(
+      member?.onboarding_status || ""
+    )
+      .trim()
+      .toLowerCase();
+
+    if (onboardingStatus !== "active") {
+      throw new Error(
+        "Your account onboarding is not active. Please complete account onboarding before using the Admin Portal."
+      );
     }
 
-    input {
-      width: 100%;
-      min-height: 46px;
-      box-sizing: border-box;
-      padding: 10px 12px;
-      margin-bottom: 16px;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      font: inherit;
+
+    /* -------------------------------------------------------
+       STEP 6 — SUCCESS
+       ------------------------------------------------------- */
+
+    showSuccess("Sign in successful. Opening Admin Portal…");
+
+    /*
+      Give the browser a moment to persist the Supabase session
+      before navigating to the protected dashboard.
+    */
+    await new Promise((resolve) => {
+      window.setTimeout(resolve, 250);
+    });
+
+    window.location.replace("dashboard.html");
+
+  } catch (error) {
+    console.error(
+      "CHAMA LIVE admin login failed:",
+      error
+    );
+
+    showError(normalizeError(error));
+
+  } finally {
+    loginButton.disabled = false;
+    loginButton.textContent = "Sign In";
+  }
+}
+
+
+/* =========================================================
+   FORM SUBMISSION
+   ========================================================= */
+
+if (form) {
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    await performLogin();
+  });
+}
+
+
+/* =========================================================
+   ENTER-KEY / FIELD BEHAVIOUR
+   ========================================================= */
+
+if (emailInput) {
+  emailInput.addEventListener("input", () => {
+    if (errorBox && !errorBox.hidden) {
+      clearMessages();
     }
+  });
+}
 
-    input:focus {
-      outline: 2px solid rgba(15, 118, 110, 0.2);
-      outline-offset: 1px;
-      border-color: #0f766e;
+if (passwordInput) {
+  passwordInput.addEventListener("input", () => {
+    if (errorBox && !errorBox.hidden) {
+      clearMessages();
     }
+  });
+}
 
-    button {
-      width: 100%;
-      min-height: 46px;
-      border: 0;
-      border-radius: 8px;
-      background: #0f766e;
-      color: #fff;
-      font: inherit;
-      font-weight: 700;
-      cursor: pointer;
-    }
 
-    button:hover:not(:disabled) {
-      background: #115e59;
-    }
+/* =========================================================
+   INITIAL STATE
+   ========================================================= */
 
-    button:focus-visible {
-      outline: 2px solid #0f766e;
-      outline-offset: 2px;
-    }
-
-    button:disabled {
-      opacity: 0.65;
-      cursor: wait;
-    }
-
-    .message {
-      margin: 0 0 16px;
-      padding: 12px;
-      border-radius: 8px;
-      line-height: 1.5;
-    }
-
-    .error {
-      background: #fef2f2;
-      color: #991b1b;
-    }
-
-    .success {
-      background: #ecfdf5;
-      color: #166534;
-    }
-
-    .links {
-      margin-top: 18px;
-      text-align: center;
-    }
-
-    .links p {
-      margin: 8px 0;
-    }
-
-    .links a {
-      color: #0f766e;
-      text-decoration: none;
-    }
-
-    .links a:hover {
-      text-decoration: underline;
-    }
-
-    @media (max-width: 480px) {
-      .login-shell {
-        padding: 16px;
-      }
-
-      .login-card {
-        padding: 22px;
-        border-radius: 12px;
-      }
-    }
-  </style>
-</head>
-
-<body>
-  <main class="login-shell">
-    <section
-      class="login-card"
-      aria-labelledby="loginTitle"
-    >
-      <h1 id="loginTitle">
-        Admin Portal
-      </h1>
-
-      <p class="intro">
-        Sign in to manage your group.
-      </p>
-
-      <div
-        id="error"
-        class="message error"
-        hidden
-        role="alert"
-        aria-live="assertive"
-      ></div>
-
-      <div
-        id="success"
-        class="message success"
-        hidden
-        role="status"
-        aria-live="polite"
-      ></div>
-
-      <form
-        id="adminLoginForm"
-        novalidate
-      >
-        <label for="email">
-          Email address
-        </label>
-
-        <input
-          id="email"
-          name="email"
-          type="email"
-          autocomplete="username"
-          inputmode="email"
-          autocapitalize="none"
-          spellcheck="false"
-          required
-        >
-
-        <label for="password">
-          Password
-        </label>
-
-        <input
-          id="password"
-          name="password"
-          type="password"
-          autocomplete="current-password"
-          required
-        >
-
-        <button
-          id="loginButton"
-          type="submit"
-        >
-          Sign In
-        </button>
-      </form>
-
-      <div class="links">
-        <p>
-          <a href="forgot-password.html">
-            Forgot Password?
-          </a>
-        </p>
-
-        <p>
-          Member account?
-          <a href="member-login.html">
-            Use Member Login
-          </a>
-        </p>
-
-        <p>
-          <a href="index.html">
-            Back to CHAMA LIVE
-          </a>
-        </p>
-      </div>
-    </section>
-  </main>
-
-  <!--
-    ADMIN LOGIN AUTHORITY
-
-    This page intentionally loads admin-login.js.
-    Do not point this page at login.js.
-
-    admin-login.js:
-      - authenticates through Supabase Auth
-      - resolves the authenticated member/group
-      - checks owner/management role
-      - checks active membership
-      - checks active onboarding
-      - redirects successful users to dashboard.html
-  -->
-  <script
-    type="module"
-    src="js/admin-login.js"
-  ></script>
-</body>
-</html>
+clearMessages();
