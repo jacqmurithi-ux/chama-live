@@ -61,7 +61,8 @@
 
         button,
         input,
-        select {
+        select,
+        textarea {
             font: inherit;
         }
 
@@ -241,7 +242,8 @@
         }
 
         .form-field input,
-        .form-field select {
+        .form-field select,
+        .form-field textarea {
             width: 100%;
             min-height: 44px;
             padding: 9px 11px;
@@ -252,14 +254,21 @@
             outline: none;
         }
 
+        .form-field textarea {
+            min-height: 90px;
+            resize: vertical;
+        }
+
         .form-field input:focus,
-        .form-field select:focus {
+        .form-field select:focus,
+        .form-field textarea:focus {
             border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(22, 101, 52, 0.1);
         }
 
         .form-field input:disabled,
-        .form-field select:disabled {
+        .form-field select:disabled,
+        .form-field textarea:disabled {
             background: #f3f4f6;
             color: #6b7280;
             cursor: not-allowed;
@@ -367,7 +376,8 @@
 
         .leadership-note,
         .calendar-note,
-        .payment-note {
+        .payment-note,
+        .program-note {
             margin: 14px 0 0;
             padding: 11px 12px;
             border-radius: 9px;
@@ -450,6 +460,147 @@
         #contributionCalendarForm {
             position: relative;
             z-index: 10;
+        }
+
+        /* =====================================================
+           CONTRIBUTION PROGRAMS
+        ====================================================== */
+
+        .program-status {
+            margin-bottom: 16px;
+            padding: 11px 12px;
+            border-radius: 9px;
+            background: #f8fafc;
+            color: #475569;
+            font-size: 0.82rem;
+        }
+
+        .program-status.ready {
+            background: var(--success-bg);
+            color: var(--success-text);
+        }
+
+        .program-status.restricted {
+            background: var(--warning-bg);
+            color: var(--warning-text);
+        }
+
+        .program-status.error {
+            background: var(--error-bg);
+            color: var(--error-text);
+        }
+
+        .program-section {
+            display: grid;
+            gap: 18px;
+        }
+
+        .program-subsection {
+            padding: 16px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: #fafafa;
+        }
+
+        .program-subsection-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .program-subsection-header h3 {
+            margin: 0 0 3px;
+            font-size: 0.95rem;
+        }
+
+        .program-subsection-header p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.78rem;
+        }
+
+        .program-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .program-item {
+            padding: 13px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: #fff;
+        }
+
+        .program-item-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .program-item-title {
+            margin: 0;
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        .program-item-description {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: 0.78rem;
+        }
+
+        .program-item-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .program-meta {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: #f1f5f9;
+            color: #475569;
+            font-size: 0.72rem;
+            font-weight: 650;
+        }
+
+        .program-meta.active {
+            background: var(--success-bg);
+            color: var(--success-text);
+        }
+
+        .program-meta.draft {
+            background: var(--warning-bg);
+            color: var(--warning-text);
+        }
+
+        .program-meta.closed {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .program-empty {
+            padding: 14px;
+            border: 1px dashed #cbd5e1;
+            border-radius: 10px;
+            color: var(--muted);
+            background: #fff;
+            font-size: 0.8rem;
+        }
+
+        .program-access-note {
+            margin: 0;
+            padding: 12px;
+            border-radius: 9px;
+            background: var(--info-bg);
+            color: var(--info-text);
+            font-size: 0.78rem;
         }
 
         /* =====================================================
@@ -711,6 +862,11 @@
                 width: 100%;
             }
 
+            .program-subsection-header,
+            .program-item-header {
+                flex-direction: column;
+            }
+
             .account-content {
                 align-items: stretch;
                 flex-direction: column;
@@ -799,8 +955,9 @@
 
             <p>
                 Manage your group's information,
-                contribution cycle, payment collection,
-                leadership, account and subscription settings.
+                contribution cycle, contribution programs,
+                payment collection, leadership, account and
+                subscription settings.
             </p>
 
         </header>
@@ -1061,11 +1218,10 @@
                                 >
 
                                 <p class="field-help">
-                                    This is the standard monthly
-                                    amount configured for the group.
-                                    Individual member plans remain
-                                    subject to their canonical accounting
-                                    configuration.
+                                    This is the standard monthly amount
+                                    configured for the group. Individual
+                                    member plans remain subject to their
+                                    canonical accounting configuration.
                                 </p>
 
                             </div>
@@ -1385,6 +1541,182 @@
                         </div>
 
                     </form>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 CONTRIBUTION PROGRAMS & FINE RULES
+            ================================================== -->
+
+            <section
+                class="management-card full-width"
+                id="contributionProgramsCard"
+            >
+
+                <div class="card-header">
+
+                    <div class="card-heading">
+
+                        <h2>
+                            Contribution Programs &amp; Fine Rules
+                        </h2>
+
+                        <p>
+                            View the contribution types, programs and
+                            fine rules already defined for this group.
+                            Configuration actions will use the existing
+                            canonical backend services.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="card-body">
+
+                    <div
+                        id="contributionProgramStatus"
+                        class="program-status"
+                        role="status"
+                        aria-live="polite"
+                    >
+                        Loading contribution programs and fine rules...
+                    </div>
+
+
+                    <div class="program-section">
+
+                        <!-- =========================================
+                             CONTRIBUTION TYPES
+                        ========================================== -->
+
+                        <div class="program-subsection">
+
+                            <div class="program-subsection-header">
+
+                                <div>
+
+                                    <h3>
+                                        Contribution Types
+                                    </h3>
+
+                                    <p>
+                                        Contribution categories used by
+                                        the canonical accounting system.
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+
+                            <div
+                                id="contributionTypesList"
+                                class="program-list"
+                            >
+                                <div class="program-empty">
+                                    Loading contribution types...
+                                </div>
+                            </div>
+
+                        </div>
+
+
+                        <!-- =========================================
+                             CONTRIBUTION PROGRAMS
+                        ========================================== -->
+
+                        <div class="program-subsection">
+
+                            <div class="program-subsection-header">
+
+                                <div>
+
+                                    <h3>
+                                        Contribution Programs
+                                    </h3>
+
+                                    <p>
+                                        Group-specific contribution
+                                        initiatives and their lifecycle.
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+
+                            <div
+                                id="contributionInitiativesList"
+                                class="program-list"
+                            >
+                                <div class="program-empty">
+                                    Loading contribution programs...
+                                </div>
+                            </div>
+
+                        </div>
+
+
+                        <!-- =========================================
+                             FINE RULES
+                        ========================================== -->
+
+                        <div class="program-subsection">
+
+                            <div class="program-subsection-header">
+
+                                <div>
+
+                                    <h3>
+                                        Fine Rules
+                                    </h3>
+
+                                    <p>
+                                        Rules governing fines generated
+                                        from qualifying contribution
+                                        obligations.
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+
+                            <div
+                                id="fineRulesList"
+                                class="program-list"
+                            >
+                                <div class="program-empty">
+                                    Loading fine rules...
+                                </div>
+                            </div>
+
+                        </div>
+
+
+                        <p class="program-access-note">
+                            Contribution programs and fine rules are
+                            controlled by the existing canonical database
+                            services. This page does not calculate fines,
+                            create obligations, create allocations or
+                            write accounting transactions directly.
+                        </p>
+
+                    </div>
+
+
+                    <p class="program-note">
+                        The intended lifecycle is Draft → Configure →
+                        Activate. Activation and downstream obligation
+                        generation remain database-owned operations.
+                        Historical accounting records must remain protected
+                        from configuration changes.
+                    </p>
 
                 </div>
 
@@ -1897,6 +2229,10 @@
 
          Payment collection controls are intentionally disabled
          until the canonical backend contract is connected.
+
+         Contribution Programs & Fine Rules are currently
+         read/display-only until the exact production RPC
+         signatures and authorization contracts are reconciled.
     ========================================================== -->
 
     <script type="module">
