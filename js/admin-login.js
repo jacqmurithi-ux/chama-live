@@ -1,248 +1,279 @@
-import { supabase } from "./supabase.js";
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
 
-import {
-  signIn,
-  getMyApplicationContext
-} from "./auth.js";
+  <meta
+    name="description"
+    content="Admin Portal sign in — CHAMA LIVE"
+  >
 
-const ADMIN_ROLES = new Set([
-  "admin",
-  "chairperson",
-  "secretary",
-  "treasurer"
-]);
+  <meta
+    name="theme-color"
+    content="#0f766e"
+  >
 
-const form = document.getElementById("adminLoginForm");
-const emailInput = document.getElementById("email");
-const passwordInput = document.getElementById("password");
-const button = document.getElementById("loginButton");
-const errorBox = document.getElementById("error");
-const successBox = document.getElementById("success");
+  <title>Admin Login — CHAMA LIVE</title>
 
-let loginInProgress = false;
+  <link
+    rel="stylesheet"
+    href="css/app.css"
+  >
 
-function showError(message) {
-  if (!errorBox) return;
-
-  errorBox.textContent = message;
-  errorBox.hidden = false;
-
-  if (successBox) {
-    successBox.textContent = "";
-    successBox.hidden = true;
-  }
-}
-
-function clearMessages() {
-  if (errorBox) {
-    errorBox.textContent = "";
-    errorBox.hidden = true;
-  }
-
-  if (successBox) {
-    successBox.textContent = "";
-    successBox.hidden = true;
-  }
-}
-
-function setLoading(loading) {
-  if (!button) return;
-
-  button.disabled = loading;
-  button.textContent = loading
-    ? "Signing in..."
-    : "Sign In";
-}
-
-function normalizeError(error) {
-  const message = String(
-    error?.message ||
-    error ||
-    ""
-  ).trim();
-
-  const lower = message.toLowerCase();
-
-  if (lower.includes("invalid login credentials")) {
-    return "Incorrect email or password. Please check your details and try again.";
-  }
-
-  if (lower.includes("email not confirmed")) {
-    return "Your email address has not been confirmed. Please check your email and confirm your account.";
-  }
-
-  if (lower.includes("too many requests")) {
-    return "Too many login attempts. Please wait a few minutes and try again.";
-  }
-
-  if (
-    lower.includes("failed to fetch") ||
-    lower.includes("network")
-  ) {
-    return "Unable to connect to CHAMA LIVE. Please check your internet connection.";
-  }
-
-  return message || "Unable to sign in.";
-}
-
-function validateCredentials() {
-  const email = String(
-    emailInput?.value || ""
-  ).trim().toLowerCase();
-
-  const password = String(
-    passwordInput?.value || ""
-  );
-
-  if (!email) {
-    throw new Error(
-      "Please enter your email address."
-    );
-  }
-
-  if (
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-  ) {
-    throw new Error(
-      "Please enter a valid email address."
-    );
-  }
-
-  if (!password) {
-    throw new Error(
-      "Please enter your password."
-    );
-  }
-
-  return {
-    email,
-    password
-  };
-}
-
-function getMemberStatus(context) {
-  return String(
-    context?.member?.status ||
-    context?.status ||
-    ""
-  ).trim().toLowerCase();
-}
-
-function getOnboardingStatus(context) {
-  return String(
-    context?.member?.onboarding_status ||
-    context?.onboarding_status ||
-    ""
-  ).trim().toLowerCase();
-}
-
-async function denyAccess(message) {
-  await supabase.auth.signOut();
-
-  throw new Error(message);
-}
-
-async function performLogin() {
-  if (loginInProgress) return;
-
-  loginInProgress = true;
-
-  clearMessages();
-  setLoading(true);
-
-  try {
-    const {
-      email,
-      password
-    } = validateCredentials();
-
-    await signIn(
-      email,
-      password
-    );
-
-    const context =
-      await getMyApplicationContext();
-
-    const role = String(
-      context?.role || ""
-    ).trim().toLowerCase();
-
-    const isOwner =
-      context?.isOwner === true;
-
-    /*
-     * Admin Portal boundary:
-     *
-     * Group owners and management roles
-     * may enter the Admin Portal.
-     *
-     * Ordinary members must use the
-     * Member Portal.
-     */
-    if (
-      !isOwner &&
-      !ADMIN_ROLES.has(role)
-    ) {
-      await denyAccess(
-        "Access Denied. Your account is registered for the Member Portal. Please use the Member Login."
-      );
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #f8fafc;
+      color: #0f172a;
+      font-family:
+        Inter,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
     }
 
-    const status =
-      getMemberStatus(context);
-
-    const onboarding =
-      getOnboardingStatus(context);
-
-    /*
-     * Fail closed:
-     *
-     * An Admin Portal account must have
-     * an explicitly active membership status.
-     *
-     * Missing status is not treated as valid.
-     */
-    if (status !== "active") {
-      await denyAccess(
-        "Your account is not active. Please contact your Group Admin."
-      );
+    .login-shell {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      box-sizing: border-box;
     }
 
-    /*
-     * Fail closed:
-     *
-     * An Admin Portal account must also have
-     * an explicitly active onboarding status.
-     *
-     * Missing onboarding status is not treated
-     * as valid.
-     */
-    if (onboarding !== "active") {
-      await denyAccess(
-        "Your account is not yet verified. Please contact your Group Admin."
-      );
+    .login-card {
+      width: min(440px, 100%);
+      padding: 28px;
+      border: 1px solid #dbe4ea;
+      border-radius: 16px;
+      background: #fff;
+      box-shadow:
+        0 18px 50px
+        rgba(15, 23, 42, 0.08);
+      box-sizing: border-box;
     }
 
-    window.location.replace(
-      "dashboard.html"
-    );
-  } catch (error) {
-    showError(
-      normalizeError(error)
-    );
-  } finally {
-    loginInProgress = false;
-    setLoading(false);
-  }
-}
-
-if (form) {
-  form.addEventListener(
-    "submit",
-    (event) => {
-      event.preventDefault();
-      performLogin();
+    h1 {
+      margin: 0 0 8px;
     }
-  );
-}
+
+    .intro {
+      margin: 0 0 24px;
+      color: #64748b;
+    }
+
+    label {
+      display: block;
+      margin: 0 0 6px;
+      font-weight: 600;
+    }
+
+    input {
+      width: 100%;
+      min-height: 46px;
+      box-sizing: border-box;
+      padding: 10px 12px;
+      margin-bottom: 16px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font: inherit;
+    }
+
+    input:focus {
+      outline: 2px solid rgba(15, 118, 110, 0.2);
+      outline-offset: 1px;
+      border-color: #0f766e;
+    }
+
+    button {
+      width: 100%;
+      min-height: 46px;
+      border: 0;
+      border-radius: 8px;
+      background: #0f766e;
+      color: #fff;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:hover:not(:disabled) {
+      background: #115e59;
+    }
+
+    button:focus-visible {
+      outline: 2px solid #0f766e;
+      outline-offset: 2px;
+    }
+
+    button:disabled {
+      opacity: 0.65;
+      cursor: wait;
+    }
+
+    .message {
+      margin: 0 0 16px;
+      padding: 12px;
+      border-radius: 8px;
+      line-height: 1.5;
+    }
+
+    .error {
+      background: #fef2f2;
+      color: #991b1b;
+    }
+
+    .success {
+      background: #ecfdf5;
+      color: #166534;
+    }
+
+    .links {
+      margin-top: 18px;
+      text-align: center;
+    }
+
+    .links p {
+      margin: 8px 0;
+    }
+
+    .links a {
+      color: #0f766e;
+      text-decoration: none;
+    }
+
+    .links a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 480px) {
+      .login-shell {
+        padding: 16px;
+      }
+
+      .login-card {
+        padding: 22px;
+        border-radius: 12px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="login-shell">
+    <section
+      class="login-card"
+      aria-labelledby="loginTitle"
+    >
+      <h1 id="loginTitle">
+        Admin Portal
+      </h1>
+
+      <p class="intro">
+        Sign in to manage your group.
+      </p>
+
+      <div
+        id="error"
+        class="message error"
+        hidden
+        role="alert"
+        aria-live="assertive"
+      ></div>
+
+      <div
+        id="success"
+        class="message success"
+        hidden
+        role="status"
+        aria-live="polite"
+      ></div>
+
+      <form
+        id="adminLoginForm"
+        novalidate
+      >
+        <label for="email">
+          Email address
+        </label>
+
+        <input
+          id="email"
+          name="email"
+          type="email"
+          autocomplete="username"
+          inputmode="email"
+          autocapitalize="none"
+          spellcheck="false"
+          required
+        >
+
+        <label for="password">
+          Password
+        </label>
+
+        <input
+          id="password"
+          name="password"
+          type="password"
+          autocomplete="current-password"
+          required
+        >
+
+        <button
+          id="loginButton"
+          type="submit"
+        >
+          Sign In
+        </button>
+      </form>
+
+      <div class="links">
+        <p>
+          <a href="forgot-password.html">
+            Forgot Password?
+          </a>
+        </p>
+
+        <p>
+          Member account?
+          <a href="member-login.html">
+            Use Member Login
+          </a>
+        </p>
+
+        <p>
+          <a href="index.html">
+            Back to CHAMA LIVE
+          </a>
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <!--
+    ADMIN LOGIN AUTHORITY
+
+    This page intentionally loads admin-login.js.
+    Do not point this page at login.js.
+
+    admin-login.js:
+      - authenticates through Supabase Auth
+      - resolves the authenticated member/group
+      - checks owner/management role
+      - checks active membership
+      - checks active onboarding
+      - redirects successful users to dashboard.html
+  -->
+  <script
+    type="module"
+    src="js/admin-login.js"
+  ></script>
+</body>
+</html>
