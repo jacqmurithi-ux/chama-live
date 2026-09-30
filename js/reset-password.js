@@ -8,9 +8,13 @@
 
    Supabase recovery email
           ↓
-   /chama-live/reset-password.html
+   /reset-password.html
           ↓
-   Supabase recovery session
+   PKCE recovery code
+          ↓
+   exchangeCodeForSession()
+          ↓
+   Recovery session
           ↓
    User enters new password
           ↓
@@ -18,11 +22,12 @@
           ↓
    Password updated
           ↓
-   Redirect to login.html
+   Sign out recovery session
+          ↓
+   login.html
 ========================================================= */
 
 import { supabase } from "./supabase.js";
-
 
 console.log(
   "CHAMA LIVE: reset-password.js loaded"
@@ -65,12 +70,11 @@ const successBox =
 
 
 /* =========================================================
-   BASE URL
+   CHAMA LIVE PRODUCTION URL
 ========================================================= */
 
 const BASE_URL =
-  "https://jacqmurithi-ux.github.io/chama-live";
-
+  window.location.origin;
 
 const LOGIN_URL =
   `${BASE_URL}/login.html`;
@@ -80,11 +84,8 @@ const LOGIN_URL =
    STATE
 ========================================================= */
 
-let recoveryReady =
-  false;
-
-let passwordUpdated =
-  false;
+let recoveryReady = false;
+let passwordUpdated = false;
 
 
 /* =========================================================
@@ -104,7 +105,6 @@ function showError(
       message;
 
   }
-
 
   if (successBox) {
 
@@ -137,7 +137,6 @@ function showSuccess(
 
   }
 
-
   if (errorBox) {
 
     errorBox.hidden =
@@ -167,7 +166,6 @@ function clearMessages() {
 
   }
 
-
   if (successBox) {
 
     successBox.hidden =
@@ -193,10 +191,8 @@ function setLoading(
     return;
   }
 
-
   button.disabled =
     loading;
-
 
   button.textContent =
     loading
@@ -207,215 +203,35 @@ function setLoading(
 
 
 /* =========================================================
-   GET URL PARAMETERS
+   INVALID RECOVERY STATE
 ========================================================= */
 
-function inspectUrl() {
+function disableResetForm(
+  message
+) {
 
-  const url =
-    new URL(
-      window.location.href
-    );
-
-
-  const params =
-    url.searchParams;
-
-
-  const hash =
-    window.location.hash;
-
-
-  console.log(
-    "CHAMA LIVE: reset URL",
-    {
-      pathname:
-        url.pathname,
-
-      search:
-        url.search,
-
-      hash:
-        hash
-    }
+  showError(
+    message
   );
 
+  if (button) {
 
-  /*
-   * Supabase recovery links may contain
-   * access_token / refresh_token in the hash.
-   */
+    button.disabled =
+      true;
 
-  if (
-    hash &&
-    hash.includes(
-      "access_token="
-    )
-  ) {
-
-    console.log(
-      "CHAMA LIVE: recovery tokens detected in URL hash"
-    );
-
-    return true;
+    button.textContent =
+      "Reset Link Invalid";
 
   }
-
-
-  /*
-   * Supabase may redirect using query
-   * parameters such as code.
-   */
-
-  if (
-    params.get(
-      "code"
-    )
-  ) {
-
-    console.log(
-      "CHAMA LIVE: recovery code detected"
-    );
-
-    return true;
-
-  }
-
-
-  /*
-   * Some recovery links use type=recovery.
-   */
-
-  if (
-    params.get(
-      "type"
-    ) ===
-    "recovery"
-  ) {
-
-    console.log(
-      "CHAMA LIVE: recovery type detected"
-    );
-
-    return true;
-
-  }
-
-
-  return false;
 
 }
 
 
 /* =========================================================
-   ESTABLISH RECOVERY SESSION
+   INSPECT RECOVERY URL
 ========================================================= */
 
-async function establishRecoverySession() {
-
-  /*
-   * First check whether Supabase already
-   * has a session.
-   */
-
-  const {
-    data,
-    error
-  } =
-    await supabase.auth.getSession();
-
-
-  if (error) {
-
-    throw error;
-
-  }
-
-
-  if (
-    data?.session
-  ) {
-
-    console.log(
-      "CHAMA LIVE: recovery session already available"
-    );
-
-    recoveryReady =
-      true;
-
-    return data.session;
-
-  }
-
-
-  /*
-   * Inspect URL.
-   */
-
-  const hasRecoveryData =
-    inspectUrl();
-
-
-  if (!hasRecoveryData) {
-
-    throw new Error(
-      "This password reset link is missing or has expired. Please request a new password reset link."
-    );
-
-  }
-
-
-  /*
-   * Supabase JS normally handles the
-   * recovery URL and establishes the session
-   * through the auth state listener.
-   *
-   * Wait briefly for that process.
-   */
-
-  await new Promise(
-    resolve =>
-      setTimeout(
-        resolve,
-        700
-      )
-  );
-
-
-  const {
-    data: retryData,
-    error: retryError
-  } =
-    await supabase.auth.getSession();
-
-
-  if (retryError) {
-
-    throw retryError;
-
-  }
-
-
-  if (
-    retryData?.session
-  ) {
-
-    console.log(
-      "CHAMA LIVE: recovery session established"
-    );
-
-    recoveryReady =
-      true;
-
-    return retryData.session;
-
-  }
-
-
-  /*
-   * Handle OAuth-style `code` recovery
-   * if present.
-   */
+function getRecoveryCode() {
 
   const url =
     new URL(
@@ -427,47 +243,175 @@ async function establishRecoverySession() {
       "code"
     );
 
+  console.log(
+    "CHAMA LIVE: reset URL inspected",
+    {
+      pathname:
+        url.pathname,
 
-  if (code) {
+      hasCode:
+        Boolean(code),
 
-    console.log(
-      "CHAMA LIVE: exchanging recovery code"
+      hashPresent:
+        Boolean(window.location.hash)
+    }
+  );
+
+  return code;
+}
+
+
+/* =========================================================
+   CLEAR AUTH CODE FROM ADDRESS BAR
+========================================================= */
+
+function cleanRecoveryUrl() {
+
+  try {
+
+    const cleanUrl =
+      `${window.location.origin}${window.location.pathname}`;
+
+    window.history.replaceState(
+      {},
+      document.title,
+      cleanUrl
     );
 
+  }
 
-    const {
-      data: exchangeData,
-      error: exchangeError
-    } =
-      await supabase.auth.exchangeCodeForSession(
-        code
-      );
+  catch (error) {
 
+    console.warn(
+      "CHAMA LIVE: unable to clean recovery URL",
+      error
+    );
 
-    if (exchangeError) {
+  }
 
-      throw exchangeError;
-
-    }
+}
 
 
-    if (
-      exchangeData?.session
-    ) {
+/* =========================================================
+   ESTABLISH RECOVERY SESSION
+========================================================= */
 
-      recoveryReady =
-        true;
+async function establishRecoverySession() {
 
-      return exchangeData.session;
+  /*
+   * Because supabase.js intentionally uses:
+   *
+   * detectSessionInUrl: false
+   *
+   * we must explicitly handle the PKCE
+   * recovery code here.
+   */
 
-    }
+  const {
+    data: existingData,
+    error: existingError
+  } =
+    await supabase.auth.getSession();
+
+
+  if (existingError) {
+
+    throw existingError;
 
   }
 
 
-  throw new Error(
-    "Your password reset session could not be established. Please request a new reset link."
+  /*
+   * A recovery session may already exist.
+   */
+
+  if (
+    existingData?.session
+  ) {
+
+    console.log(
+      "CHAMA LIVE: existing recovery session available"
+    );
+
+    recoveryReady =
+      true;
+
+    return existingData.session;
+
+  }
+
+
+  /*
+   * No session exists.
+   *
+   * Look for the PKCE authorization code.
+   */
+
+  const code =
+    getRecoveryCode();
+
+
+  if (!code) {
+
+    throw new Error(
+      "This password reset link is missing or has expired. Please request a new password reset link."
+    );
+
+  }
+
+
+  console.log(
+    "CHAMA LIVE: exchanging password recovery code"
   );
+
+
+  const {
+    data: exchangeData,
+    error: exchangeError
+  } =
+    await supabase.auth.exchangeCodeForSession(
+      code
+    );
+
+
+  if (exchangeError) {
+
+    throw exchangeError;
+
+  }
+
+
+  if (
+    !exchangeData?.session
+  ) {
+
+    throw new Error(
+      "Your password reset session could not be established. Please request a new password reset link."
+    );
+
+  }
+
+
+  recoveryReady =
+    true;
+
+
+  /*
+   * The authorization code is no longer
+   * needed after successful exchange.
+   *
+   * Remove it from the visible URL.
+   */
+
+  cleanRecoveryUrl();
+
+
+  console.log(
+    "CHAMA LIVE: password recovery session established"
+  );
+
+
+  return exchangeData.session;
 
 }
 
@@ -496,21 +440,10 @@ async function checkRecoverySession() {
     );
 
 
-    showError(
+    disableResetForm(
       error?.message ||
       "This password reset link is invalid or has expired. Please request a new one."
     );
-
-
-    if (button) {
-
-      button.disabled =
-        true;
-
-      button.textContent =
-        "Reset Link Invalid";
-
-    }
 
   }
 
@@ -561,8 +494,8 @@ async function updatePassword(
 ) {
 
   /*
-   * Make absolutely sure a recovery
-   * session exists before updating.
+   * Confirm that a valid recovery session
+   * still exists immediately before updating.
    */
 
   const {
@@ -583,18 +516,25 @@ async function updatePassword(
     !data?.session
   ) {
 
-    /*
-     * Try establishing it again.
-     */
+    recoveryReady =
+      false;
 
     await establishRecoverySession();
 
   }
 
 
+  if (!recoveryReady) {
+
+    throw new Error(
+      "Your password reset session is no longer valid. Please request a new password reset link."
+    );
+
+  }
+
+
   /*
-   * Update the authenticated user's
-   * password.
+   * Update the authenticated user's password.
    */
 
   const {
@@ -625,14 +565,13 @@ async function updatePassword(
   }
 
 
-  console.log(
-    "CHAMA LIVE: password updated successfully",
-    updateData.user.id
-  );
-
-
   passwordUpdated =
     true;
+
+
+  console.log(
+    "CHAMA LIVE: password updated successfully"
+  );
 
 }
 
@@ -657,6 +596,13 @@ else {
       event.preventDefault();
 
 
+      if (passwordUpdated) {
+
+        return;
+
+      }
+
+
       clearMessages();
 
 
@@ -675,7 +621,7 @@ else {
 
 
       /* ===================================================
-         VALIDATE
+         VALIDATE PASSWORD
       =================================================== */
 
       try {
@@ -710,7 +656,8 @@ else {
       try {
 
         /*
-         * Make sure recovery session exists.
+         * Establish or verify the recovery
+         * session before changing the password.
          */
 
         if (!recoveryReady) {
@@ -759,16 +706,16 @@ else {
 
 
         /*
-         * Give the user a moment to see
-         * the success message.
+         * Give the user time to see the
+         * success message.
          */
 
         setTimeout(
           async () => {
 
             /*
-             * Sign out the recovery session
-             * before returning to login.
+             * End the recovery session before
+             * returning to the normal login page.
              */
 
             try {
@@ -815,27 +762,19 @@ else {
 
 
         if (
-          lower.includes(
-            "session"
-          ) ||
-          lower.includes(
-            "jwt"
-          ) ||
-          lower.includes(
-            "expired"
-          )
+          lower.includes("session") ||
+          lower.includes("jwt") ||
+          lower.includes("expired") ||
+          lower.includes("invalid")
         ) {
 
           message =
-            "Your password reset link has expired. Please request a new password reset link.";
+            "Your password reset link has expired or is no longer valid. Please request a new password reset link.";
 
         }
 
-
         else if (
-          lower.includes(
-            "same password"
-          )
+          lower.includes("same password")
         ) {
 
           message =
@@ -866,7 +805,7 @@ else {
 ========================================================= */
 
 supabase.auth.onAuthStateChange(
-  async (
+  (
     event,
     session
   ) => {
@@ -888,38 +827,6 @@ supabase.auth.onAuthStateChange(
 
 
       if (session) {
-
-        recoveryReady =
-          true;
-
-      }
-
-    }
-
-
-    if (
-      event ===
-      "SIGNED_IN" &&
-      session
-    ) {
-
-      /*
-       * If this page was opened from a
-       * recovery link, the session is valid.
-       */
-
-      const url =
-        new URL(
-          window.location.href
-        );
-
-
-      if (
-        url.searchParams.get(
-          "type"
-        ) ===
-        "recovery"
-      ) {
 
         recoveryReady =
           true;
