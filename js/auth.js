@@ -1,9 +1,16 @@
 /* =========================================================
    CHAMA LIVE — AUTHENTICATION CORE
 
+   File:
+   /js/auth.js
+
+   PRODUCTION:
+   https://chamalive.co.ke/
+
    AUTHORITY
    ---------------------------------------------------------
    Supabase Auth owns authentication identity and passwords.
+
    The members relationship resolves the authenticated user's
    group context.
 
@@ -19,20 +26,34 @@
         ↓
    groups.id
 
-   The frontend never accepts group_id from a URL, query string,
-   localStorage value, or form field as an authorization source.
+   The frontend never accepts group_id from:
+     - URL parameters
+     - query strings
+     - localStorage
+     - sessionStorage
+     - form fields
+
+   as an authorization source.
+
 
    PORTAL ARCHITECTURE
    ---------------------------------------------------------
    This module authenticates the user and resolves the current
-   member/group context. Portal authorization is handled by the
-   portal guard and, ultimately, by database authorization.
+   member/group context.
+
+   Portal-specific authorization is handled by the portal
+   login/guard layer and, ultimately, by database authorization.
+
 
    IMPORTANT
    ---------------------------------------------------------
    This module contains NO platform-admin account-review flow.
-   There is no redirect to account-review.html and no dependency
-   on group application approval.
+
+   There is no:
+     - account-review.html redirect
+     - application approval dependency
+     - platform-admin review dependency
+
 
    CANONICAL FRONTEND EXPORTS
    ---------------------------------------------------------
@@ -51,11 +72,14 @@
      - showError()
      - clearError()
 
+
    DATABASE
    ---------------------------------------------------------
    No database mutation is performed by this file.
+
    Existing canonical RPC contracts are preserved.
 ========================================================= */
+
 
 import {
   supabase
@@ -72,15 +96,27 @@ export {
 
 
 /* =========================================================
-   BASE URL
+   PRODUCTION BASE URL
+   ---------------------------------------------------------
+   Canonical CHAMA LIVE production deployment.
 ========================================================= */
 
 export const BASE_URL =
-  "https://jacqmurithi-ux.github.io/chama-live";
+  "https://chamalive.co.ke";
 
 
 /* =========================================================
    SIGN IN
+   ---------------------------------------------------------
+   Supabase Auth is the authentication authority.
+
+   This function:
+     1. Validates the basic credentials locally.
+     2. Authenticates through Supabase Auth.
+     3. Requires both user and session.
+     4. Returns the Supabase Auth response.
+
+   No member/group authorization is performed here.
 ========================================================= */
 
 export async function signIn(
@@ -155,29 +191,32 @@ export async function signIn(
 /* =========================================================
    CURRENT USER
    ---------------------------------------------------------
-   Handles an expired/invalid access token by attempting a
-   Supabase session refresh before failing authentication.
+   Returns the currently authenticated Supabase user.
+
+   If Supabase reports an expired/invalid JWT, one session
+   refresh is attempted before authentication is considered
+   failed.
 
    IMPORTANT
    ---------------------------------------------------------
    - Does not change authentication identity.
    - Does not accept identity from the frontend.
    - Does not write application/database records.
-   - Preserves the existing getCurrentUser() contract.
 ========================================================= */
 
 export async function getCurrentUser() {
 
-  let {
+  const {
     data,
     error
   } =
     await supabase.auth.getUser();
 
 
-  /*
-   * Normal authenticated path.
-   */
+  /* -------------------------------------------------------
+     NORMAL AUTHENTICATED PATH
+  ------------------------------------------------------- */
+
   if (
     !error &&
     data?.user
@@ -188,10 +227,10 @@ export async function getCurrentUser() {
   }
 
 
-  /*
-   * Detect the expired/invalid JWT condition returned by
-   * Supabase Auth.
-   */
+  /* -------------------------------------------------------
+     ANALYZE AUTH ERROR
+  ------------------------------------------------------- */
+
   const message =
     String(
       error?.message || ""
@@ -206,10 +245,10 @@ export async function getCurrentUser() {
     message.includes("expired");
 
 
-  /*
-   * Attempt one session refresh when the access token has
-   * expired.
-   */
+  /* -------------------------------------------------------
+     REFRESH EXPIRED SESSION
+  ------------------------------------------------------- */
+
   if (isExpiredToken) {
 
     console.warn(
@@ -224,15 +263,17 @@ export async function getCurrentUser() {
       await supabase.auth.refreshSession();
 
 
-    /*
-     * Refresh failed. The user needs to authenticate again.
-     */
+    /* -----------------------------------------------------
+       REFRESH FAILED
+    ----------------------------------------------------- */
+
     if (refreshError) {
 
       console.warn(
         "CHAMA LIVE: session refresh failed.",
         refreshError
       );
+
 
       throw new Error(
         "Your session has expired. Please sign in again."
@@ -241,10 +282,10 @@ export async function getCurrentUser() {
     }
 
 
-    /*
-     * Refresh completed but did not produce an authenticated
-     * session/user.
-     */
+    /* -----------------------------------------------------
+       REFRESH DID NOT PRODUCE SESSION
+    ----------------------------------------------------- */
+
     if (
       !refreshed?.session?.user
     ) {
@@ -256,10 +297,10 @@ export async function getCurrentUser() {
     }
 
 
-    /*
-     * Retry the authenticated-user request using the refreshed
-     * session.
-     */
+    /* -----------------------------------------------------
+       RETRY AUTHENTICATED USER REQUEST
+    ----------------------------------------------------- */
+
     const retry =
       await supabase.auth.getUser();
 
@@ -289,10 +330,10 @@ export async function getCurrentUser() {
   }
 
 
-  /*
-   * Preserve normal Supabase errors that are not expired-token
-   * conditions.
-   */
+  /* -------------------------------------------------------
+     PRESERVE NORMAL SUPABASE AUTH ERRORS
+  ------------------------------------------------------- */
+
   if (error) {
 
     throw error;
@@ -309,6 +350,12 @@ export async function getCurrentUser() {
 
 /* =========================================================
    CANONICAL MEMBER LOOKUP
+   ---------------------------------------------------------
+   Uses the canonical database RPC:
+
+       get_my_member()
+
+   Identity comes from the authenticated Supabase session.
 ========================================================= */
 
 async function getMemberFromCanonicalRPC() {
@@ -329,6 +376,10 @@ async function getMemberFromCanonicalRPC() {
   }
 
 
+  /* -------------------------------------------------------
+     RPC MAY RETURN A TABLE/ARRAY
+  ------------------------------------------------------- */
+
   if (
     Array.isArray(data)
   ) {
@@ -346,6 +397,10 @@ async function getMemberFromCanonicalRPC() {
 
   }
 
+
+  /* -------------------------------------------------------
+     RPC MAY RETURN A SINGLE OBJECT
+  ------------------------------------------------------- */
 
   if (
     data &&
@@ -365,10 +420,12 @@ async function getMemberFromCanonicalRPC() {
 /* =========================================================
    COMPATIBILITY MEMBER LOOKUP
    ---------------------------------------------------------
-   Retained only for existing deployments where the canonical
-   RPC is temporarily unavailable.
+   Retained for existing deployments where the canonical
+   get_my_member() RPC is temporarily unavailable.
 
    Identity still comes exclusively from Supabase Auth.
+
+   This is NOT a browser-supplied identity lookup.
 ========================================================= */
 
 async function getMemberByAuthUser(
@@ -403,6 +460,10 @@ async function getMemberByAuthUser(
     created_at
   `;
 
+
+  /* -------------------------------------------------------
+     PRIMARY IDENTITY COLUMN
+  ------------------------------------------------------- */
 
   const byAuthUser =
     await supabase
@@ -442,6 +503,10 @@ async function getMemberByAuthUser(
 
   }
 
+
+  /* -------------------------------------------------------
+     LEGACY IDENTITY COLUMN
+  ------------------------------------------------------- */
 
   const byLegacyUserId =
     await supabase
@@ -489,6 +554,16 @@ async function getMemberByAuthUser(
 
 /* =========================================================
    GET MY MEMBER
+   ---------------------------------------------------------
+   Resolution order:
+
+       Supabase Auth
+            ↓
+       get_my_member()
+            ↓
+       compatibility lookup only if RPC unavailable
+
+   The returned member must have a group_id.
 ========================================================= */
 
 export async function getMyMember() {
@@ -561,6 +636,12 @@ export async function getMyMember() {
 
 /* =========================================================
    GET MY GROUP ID
+   ---------------------------------------------------------
+   Primary source:
+       my_group_id()
+
+   Compatibility fallback:
+       member.group_id
 ========================================================= */
 
 export async function getMyGroupId() {
@@ -576,7 +657,10 @@ export async function getMyGroupId() {
       );
 
 
-    if (!error && data) {
+    if (
+      !error &&
+      data
+    ) {
 
       return data;
 
@@ -624,6 +708,11 @@ export async function getMyGroupId() {
 
 /* =========================================================
    GET MY GROUP
+   ---------------------------------------------------------
+   Group identity is derived from the authenticated user's
+   member context.
+
+   The browser does not supply group_id.
 ========================================================= */
 
 export async function getMyGroup() {
@@ -701,7 +790,7 @@ export async function getMyGroup() {
 /* =========================================================
    CANONICAL APPLICATION CONTEXT
    ---------------------------------------------------------
-   This is the single frontend context boundary for:
+   Single frontend context boundary for:
 
      authenticated user
      current member
@@ -709,17 +798,15 @@ export async function getMyGroup() {
      owner state
      member role
 
+   Ownership:
+       user.id === group.owner_user_id
+
+   Member role:
+       member.role
+
    IMPORTANT
    ---------------------------------------------------------
-   Ownership is determined here only.
-
-   Owner identity:
-     user.id === group.owner_user_id
-
-   Member role remains independent:
-     member.role
-
-   Do NOT replace the legacy admin role with OWNER.
+   Do NOT replace the legacy member role with OWNER.
 ========================================================= */
 
 export async function getMyApplicationContext() {
@@ -735,6 +822,10 @@ export async function getMyApplicationContext() {
   const group =
     await getMyGroup();
 
+
+  /* -------------------------------------------------------
+     MEMBER/GROUP CONSISTENCY
+  ------------------------------------------------------- */
 
   if (!member?.group_id) {
 
@@ -757,6 +848,10 @@ export async function getMyApplicationContext() {
   }
 
 
+  /* -------------------------------------------------------
+     OWNER RESOLUTION
+  ------------------------------------------------------- */
+
   const isOwner =
     Boolean(
       user?.id &&
@@ -764,6 +859,10 @@ export async function getMyApplicationContext() {
       user.id === group.owner_user_id
     );
 
+
+  /* -------------------------------------------------------
+     MEMBER ROLE
+  ------------------------------------------------------- */
 
   const role =
     String(
@@ -801,7 +900,8 @@ export async function getMyApplicationContext() {
      - onboarding approval routing
      - platform-admin review dependency
 
-   Portal-specific authorization belongs to portal-guard.js.
+   Portal-specific authorization belongs to the portal
+   guard/login layer.
 ========================================================= */
 
 export async function requireAuth() {
@@ -926,6 +1026,9 @@ export async function signOut() {
 
 /* =========================================================
    LOGIN REDIRECT
+   ---------------------------------------------------------
+   Always returns users to the production CHAMA LIVE login
+   page rather than the obsolete GitHub Pages deployment.
 ========================================================= */
 
 function redirectToLogin() {
@@ -952,7 +1055,9 @@ export function money(
 ) {
 
   const numericAmount =
-    Number(amount || 0);
+    Number(
+      amount || 0
+    );
 
 
   return (
@@ -980,7 +1085,9 @@ export function setText(
 
   const element =
     typeof elementOrId === "string"
-      ? document.getElementById(elementOrId)
+      ? document.getElementById(
+          elementOrId
+        )
       : elementOrId;
 
 
@@ -1011,7 +1118,9 @@ export function showError(
 
   const element =
     typeof elementOrId === "string"
-      ? document.getElementById(elementOrId)
+      ? document.getElementById(
+          elementOrId
+        )
       : elementOrId;
 
 
@@ -1027,7 +1136,8 @@ export function showError(
 
 
   element.textContent =
-    message || "An unexpected error occurred.";
+    message ||
+    "An unexpected error occurred.";
 
 
   element.hidden =
@@ -1049,7 +1159,9 @@ export function clearError(
 
   const element =
     typeof elementOrId === "string"
-      ? document.getElementById(elementOrId)
+      ? document.getElementById(
+          elementOrId
+        )
       : elementOrId;
 
 
@@ -1070,3 +1182,12 @@ export function clearError(
     "none";
 
 }
+
+
+/* =========================================================
+   READY
+========================================================= */
+
+console.log(
+  "CHAMA LIVE: auth.js ready"
+);
