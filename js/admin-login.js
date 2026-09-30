@@ -95,17 +95,23 @@ function validateCredentials() {
   );
 
   if (!email) {
-    throw new Error("Please enter your email address.");
+    throw new Error(
+      "Please enter your email address."
+    );
   }
 
   if (
     !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
   ) {
-    throw new Error("Please enter a valid email address.");
+    throw new Error(
+      "Please enter a valid email address."
+    );
   }
 
   if (!password) {
-    throw new Error("Please enter your password.");
+    throw new Error(
+      "Please enter your password."
+    );
   }
 
   return {
@@ -130,6 +136,12 @@ function getOnboardingStatus(context) {
   ).trim().toLowerCase();
 }
 
+async function denyAccess(message) {
+  await supabase.auth.signOut();
+
+  throw new Error(message);
+}
+
 async function performLogin() {
   if (loginInProgress) return;
 
@@ -144,7 +156,10 @@ async function performLogin() {
       password
     } = validateCredentials();
 
-    await signIn(email, password);
+    await signIn(
+      email,
+      password
+    );
 
     const context =
       await getMyApplicationContext();
@@ -169,9 +184,7 @@ async function performLogin() {
       !isOwner &&
       !ADMIN_ROLES.has(role)
     ) {
-      await supabase.auth.signOut();
-
-      throw new Error(
+      await denyAccess(
         "Access Denied. Your account is registered for the Member Portal. Please use the Member Login."
       );
     }
@@ -182,24 +195,31 @@ async function performLogin() {
     const onboarding =
       getOnboardingStatus(context);
 
-    if (
-      status &&
-      status !== "active"
-    ) {
-      await supabase.auth.signOut();
-
-      throw new Error(
-        "Your account is not yet verified. Please contact your Group Admin."
+    /*
+     * Fail closed:
+     *
+     * An Admin Portal account must have
+     * an explicitly active membership status.
+     *
+     * Missing status is not treated as valid.
+     */
+    if (status !== "active") {
+      await denyAccess(
+        "Your account is not active. Please contact your Group Admin."
       );
     }
 
-    if (
-      onboarding &&
-      onboarding !== "active"
-    ) {
-      await supabase.auth.signOut();
-
-      throw new Error(
+    /*
+     * Fail closed:
+     *
+     * An Admin Portal account must also have
+     * an explicitly active onboarding status.
+     *
+     * Missing onboarding status is not treated
+     * as valid.
+     */
+    if (onboarding !== "active") {
+      await denyAccess(
         "Your account is not yet verified. Please contact your Group Admin."
       );
     }
