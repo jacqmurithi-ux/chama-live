@@ -4,11 +4,12 @@
    RESPONSIBILITIES
    ---------------------------------------------------------
    • Authenticate member portal access.
-   • Enforce member-only portal access.
-   • Redirect admin accounts to the admin dashboard.
+   • Enforce member/member-official portal eligibility.
+   • Allow authorized group officials to view the Member Portal.
    • Own member portal navigation.
    • Own desktop logout.
    • Own mobile member navigation.
+   • Provide an Official Portal switch-back for official roles.
    • Load the current member-page feature.
    • Keep page-specific files focused on page content.
 
@@ -16,7 +17,10 @@
    ---------------------------------------------------------
    • Authentication comes from auth.js.
    • Member/group context comes from getMyApplicationContext().
-   • Admin roles do not remain inside the member portal.
+   • Official roles may enter both portals.
+   • Official Portal permissions remain governed by the
+     existing official-page and feature authorization.
+   • Member feature-specific guards remain authoritative.
    • No financial mutations.
    • No member mutations.
    • No group mutations.
@@ -36,7 +40,20 @@ const ADMIN_ROLES = new Set([
   "admin",
   "chairperson",
   "secretary",
-  "treasurer"
+  "treasurer",
+  "vice chairperson",
+  "vice secretary"
+]);
+
+
+const MEMBER_PORTAL_ROLES = new Set([
+  "member",
+  "admin",
+  "chairperson",
+  "secretary",
+  "treasurer",
+  "vice chairperson",
+  "vice secretary"
 ]);
 
 
@@ -540,6 +557,32 @@ function openMobileMenu() {
     links.appendChild(link);
   });
 
+  /*
+   * Official roles can switch back to the
+   * Official Portal without changing identity.
+   *
+   * This is navigation only. Existing official
+   * page/feature/RPC authorization remains
+   * authoritative.
+   */
+  if (isAdminAccount()) {
+    const officialLink =
+      createNavLink(
+        "Official Portal",
+        "dashboard.html",
+        currentPage
+      );
+
+    officialLink.addEventListener(
+      "click",
+      closeMobileMenu
+    );
+
+    links.appendChild(
+      officialLink
+    );
+  }
+
   menu.appendChild(links);
 
   /*
@@ -770,6 +813,23 @@ function renderDesktopNavigation() {
       )
     );
   });
+
+  /*
+   * Official roles can switch back to the
+   * Official Portal.
+   *
+   * This does not grant permissions; it only
+   * exposes the existing official portal route.
+   */
+  if (isAdminAccount()) {
+    nav.appendChild(
+      createNavLink(
+        "Official Portal",
+        "dashboard.html",
+        currentPage
+      )
+    );
+  }
 
   const existingTopNav =
     document.querySelector(
@@ -1102,21 +1162,23 @@ export async function boot() {
       );
     }
 
-    if (isAdminAccount()) {
-      window.location.href =
-        "dashboard.html";
-
-      return;
-    }
-
     const role =
       normalizeRole(
         context.member.role
       );
 
-    if (role !== "member") {
+    /*
+     * Both ordinary members and authorized
+     * official roles may enter the Member Portal.
+     *
+     * Official roles retain their existing
+     * feature/RPC/RLS permissions.
+     */
+    if (
+      !MEMBER_PORTAL_ROLES.has(role)
+    ) {
       throw new Error(
-        "This portal is available to member accounts."
+        "This portal is available to members and authorized group officials."
       );
     }
 
