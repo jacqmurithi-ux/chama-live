@@ -53,12 +53,19 @@ let contributionSettings = null;
  * One-time participant configuration is governed exclusively by
  * set_contribution_initiative_members().
  *
- * Monthly recurring initiatives use a separate backend contract.
- * Until that recurring contract is available in the target
- * environment, the browser MUST NOT route monthly initiatives
- * through the one-time participant configuration workflow.
+ * Monthly recurring initiatives use a separate recurring backend
+ * contract:
  *
- * Activation and closure remain outside this implementation gate.
+ *     contribution_initiative_member_terms
+ *     set_contribution_initiative_member_term()
+ *     activate_recurring_contribution_initiative()
+ *     ensure_contribution_initiative_period()
+ *     ensure_contribution_initiative_period_obligations()
+ *
+ * The browser never writes directly to recurring accounting tables.
+ *
+ * Payment collection remains outside this implementation because
+ * the separate STK/payment gate has not been cleared.
  */
 let contributionTypes = [];
 let contributionInitiatives = [];
@@ -71,9 +78,9 @@ let fineRules = [];
  *     Read-only list of members belonging to the current group.
  *
  * configuringInitiativeId:
- *     The draft ONE-TIME initiative currently being configured.
+ *     The initiative currently being configured.
  *
- * No participant-table writes occur from state management.
+ * No participant-table writes occur from state management itself.
  */
 let initiativeMembers = [];
 let configuringInitiativeId = null;
@@ -852,7 +859,8 @@ function renderInitiativeContributionTypes() {
     const placeholder =
         document.createElement("option");
 
-    placeholder.value = "";
+    placeholder.value =
+        "";
 
     placeholder.textContent =
         contributionTypes.length
@@ -1001,17 +1009,13 @@ async function createContributionInitiative(event) {
     }
 
     /*
-     * Monthly initiatives may currently be CREATED as Draft.
+     * Monthly initiatives are created as Draft.
      *
-     * Their recurring terms, periods, obligations, activation,
-     * reporting and payment contracts are separate from the
-     * existing one-time initiative contract.
+     * Creation remains owned by the existing canonical
+     * create_contribution_initiative() RPC.
      *
-     * Creation itself is safe because the verified canonical
-     * create_contribution_initiative() RPC stores the initiative
-     * as Draft and creates no obligations.
+     * No obligations are created here.
      */
-
     const requestId =
         crypto.randomUUID();
 
@@ -1063,7 +1067,7 @@ async function createContributionInitiative(event) {
         if (frequency === "monthly") {
 
             elements.contributionProgramStatus.textContent =
-                "Recurring initiative created as Draft. Recurring participant terms and activation remain backend-gated.";
+                "Recurring initiative created as Draft. Configure recurring participants and terms before activation.";
 
         } else {
 
@@ -1082,12 +1086,6 @@ async function createContributionInitiative(event) {
 /* ================================================================
    CONTRIBUTION CONFIGURATION — READ ONLY HELPERS
 ================================================================ */
-
-/*
- * These helpers intentionally render textContent rather than
- * inserting HTML. This keeps the presentation path safe and
- * avoids introducing HTML injection paths.
- */
 
 function appendEmptyState(
     container,
@@ -1272,9 +1270,84 @@ function isOneTimeInitiative(initiative) {
 
 
 /*
+ * Return the first full calendar month whose first day is
+ * on or after the initiative start boundary.
+ *
+ * Example:
+ *
+ *     start 2026-10-15
+ *     first recurring month 2026-11-01
+ *
+ * This helper is UI guidance only.
+ *
+ * The database remains authoritative for period eligibility.
+ */
+function getFirstFullRecurringMonth(
+    startDate
+) {
+
+    const date =
+        new Date(
+            `${startDate}T00:00:00`
+        );
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        throw new Error(
+            "Invalid initiative start date."
+        );
+    }
+
+    const first =
+        new Date(
+            date.getFullYear(),
+            date.getMonth() + 1,
+            1
+        );
+
+    return [
+        first.getFullYear(),
+        String(
+            first.getMonth() + 1
+        ).padStart(
+            2,
+            "0"
+        ),
+        "01"
+    ].join("-");
+}
+
+
+/*
+ * The UI uses the browser calendar only to request the current
+ * period. The backend remains authoritative and will reject an
+ * invalid or ineligible period.
+ */
+function getCurrentRecurringPeriodKey() {
+
+    const now =
+        new Date();
+
+    return [
+        now.getFullYear(),
+        String(
+            now.getMonth() + 1
+        ).padStart(
+            2,
+            "0"
+        )
+    ].join("-");
+}
+
+
+/*
  * Remove any currently open participant editor.
  *
- * Only one draft initiative is configured at a time.
+ * Only one initiative is configured at a time.
  */
 function clearInitiativeParticipantEditor() {
 
@@ -1361,16 +1434,17 @@ async function loadInitiativeMembers() {
  * There is no participant getter RPC in the verified production
  * contract.
  *
- * Therefore this is a READ ONLY query against the participant table.
+ * Therefore this remains a READ ONLY query against the participant
+ * table for ONE-TIME initiatives.
  *
  * The browser MUST NOT insert, update, delete or upsert this table.
  *
- * This helper is intentionally limited to ONE-TIME initiatives.
- * Monthly recurring initiatives must use the future recurring
- * participant-term contract and must never be routed through this
- * legacy participant configuration path.
+ * Monthly recurring initiatives use the recurring participant-term
+ * workflow below.
  */
-async function loadInitiativeParticipants(initiativeId) {
+async function loadInitiativeParticipants(
+    initiativeId
+) {
 
     const initiative =
         getInitiativeById(
@@ -1395,7 +1469,9 @@ async function loadInitiativeParticipants(initiativeId) {
         data,
         error
     } = await supabase
-        .from("contribution_initiative_members")
+        .from(
+            "contribution_initiative_members"
+        )
         .select(
             "member_id, amount"
         )
@@ -1415,7 +1491,116 @@ async function loadInitiativeParticipants(initiativeId) {
 
 
 /* ================================================================
-   INITIATIVE PARTICIPANT EDITOR
+   RECURRING PARTICIPANT STATE — READ ONLY
+================================================================ */
+
+/*
+ * Reads the stable recurring participant identities and their
+ * existing terms.
+ *
+ * No writes occur here.
+ */
+async function loadRecurringParticipantState(
+    initiativeId
+) {
+
+    const {
+        data: participants,
+        error: participantError
+    } = await supabase
+        .from(
+            "contribution_initiative_members"
+        )
+        .select(
+            [
+                "id",
+                "member_id",
+                "amount",
+                "effective_from",
+                "effective_to",
+                "status"
+            ].join(", ")
+        )
+        .eq(
+            "initiative_id",
+            initiativeId
+        )
+        .order(
+            "created_at",
+            {
+                ascending: true
+            }
+        );
+
+    if (participantError) {
+        throw participantError;
+    }
+
+    const participantRows =
+        Array.isArray(participants)
+            ? participants
+            : [];
+
+    if (!participantRows.length) {
+
+        return {
+            participants:
+                participantRows,
+
+            terms:
+                []
+        };
+    }
+
+    const {
+        data: terms,
+        error: termError
+    } = await supabase
+        .from(
+            "contribution_initiative_member_terms"
+        )
+        .select(
+            [
+                "id",
+                "initiative_member_id",
+                "effective_from",
+                "effective_to",
+                "amount",
+                "status"
+            ].join(", ")
+        )
+        .in(
+            "initiative_member_id",
+            participantRows.map(
+                (participant) =>
+                    participant.id
+            )
+        )
+        .order(
+            "effective_from",
+            {
+                ascending: true
+            }
+        );
+
+    if (termError) {
+        throw termError;
+    }
+
+    return {
+        participants:
+            participantRows,
+
+        terms:
+            Array.isArray(terms)
+                ? terms
+                : []
+    };
+}
+
+
+/* ================================================================
+   INITIATIVE PARTICIPANT EDITOR — COMMON UI
 ================================================================ */
 
 function createParticipantStatus(
@@ -1500,9 +1685,11 @@ function createParticipantRow(
 
     const identifiers = [];
 
-    if (member.member_number !== null &&
+    if (
+        member.member_number !== null &&
         member.member_number !== undefined &&
-        member.member_number !== "") {
+        member.member_number !== ""
+    ) {
 
         identifiers.push(
             `Member #${member.member_number}`
@@ -1603,6 +1790,10 @@ function createParticipantRow(
     return row;
 }
 
+
+/* ================================================================
+   ONE-TIME PARTICIPANT EDITOR
+================================================================ */
 
 function renderInitiativeParticipantEditor(
     initiative,
@@ -1784,19 +1975,9 @@ function renderInitiativeParticipantEditor(
         actions
     );
 
-    /*
-     * Status is intentionally retained as a DOM element so the
-     * save handler can update it without using innerHTML.
-     */
     editor._participantStatus =
         status;
 
-    /*
-     * Insert immediately after the initiative list.
-     *
-     * This keeps the editor inside the existing Contribution
-     * Programs section and avoids creating a second program area.
-     */
     container.appendChild(
         editor
     );
@@ -1806,7 +1987,7 @@ function renderInitiativeParticipantEditor(
 
 
 /* ================================================================
-   INITIATIVE PARTICIPANT CONFIGURATION
+   ONE-TIME PARTICIPANT CONFIGURATION
 ================================================================ */
 
 async function configureInitiativeParticipants(
@@ -1840,15 +2021,16 @@ async function configureInitiativeParticipants(
     }
 
     /*
-     * IMPORTANT:
+     * HARD DOMAIN BOUNDARY:
+     *
      * The existing participant RPC is a ONE-TIME initiative
-     * contract. Monthly recurring initiatives must never enter
-     * this workflow.
+     * contract. Monthly recurring initiatives use their own
+     * recurring participant-term workflow.
      */
     if (isMonthlyInitiative(initiative)) {
 
         throw new Error(
-            "Monthly recurring initiatives are not yet available for participant configuration. The recurring participant-term contract is still gated."
+            "Monthly recurring initiatives use the recurring participant-term workflow."
         );
     }
 
@@ -1873,13 +2055,6 @@ async function configureInitiativeParticipants(
     configuringInitiativeId =
         initiative.id;
 
-    /*
-     * Both operations are read-only.
-     *
-     * Members are scoped to the active group.
-     * Existing participants are read from the participant table
-     * because no participant getter RPC currently exists.
-     */
     const [
         members,
         existingParticipants
@@ -1890,10 +2065,6 @@ async function configureInitiativeParticipants(
         )
     ]);
 
-    /*
-     * Guard against the selected initiative changing or becoming
-     * unavailable while the asynchronous reads were in progress.
-     */
     const currentInitiative =
         getInitiativeById(
             initiative.id
@@ -1943,7 +2114,7 @@ async function configureInitiativeParticipants(
 
 
 /* ================================================================
-   INITIATIVE PARTICIPANT SAVE
+   ONE-TIME PARTICIPANT SAVE
 ================================================================ */
 
 async function saveInitiativeParticipants(
@@ -1973,8 +2144,9 @@ async function saveInitiativeParticipants(
     }
 
     /*
-     * Hard boundary:
-     * set_contribution_initiative_members() remains the existing
+     * HARD BOUNDARY:
+     *
+     * Existing set_contribution_initiative_members() remains the
      * ONE-TIME initiative participant contract.
      */
     if (!isOneTimeInitiative(initiative)) {
@@ -2032,13 +2204,6 @@ async function saveInitiativeParticipants(
         const memberId =
             checkbox.dataset.memberId;
 
-        /*
-         * The frontend verifies the selected member belongs to the
-         * already-loaded current-group member set.
-         *
-         * The canonical RPC remains authoritative and performs its
-         * own group-membership validation.
-         */
         if (
             !memberId ||
             !memberIds.has(memberId)
@@ -2049,10 +2214,6 @@ async function saveInitiativeParticipants(
             );
         }
 
-        /*
-         * Prevent duplicate payload entries at the browser layer.
-         * The database unique constraint remains authoritative.
-         */
         if (selectedIds.has(memberId)) {
 
             throw new Error(
@@ -2113,14 +2274,6 @@ async function saveInitiativeParticipants(
         });
     }
 
-    /*
-     * Empty participant arrays are permitted by the currently
-     * verified backend contract.
-     *
-     * Activation policy for zero-participant initiatives remains
-     * a later gate and is not invented here.
-     */
-
     const status =
         editor._participantStatus;
 
@@ -2153,13 +2306,6 @@ async function saveInitiativeParticipants(
 
     try {
 
-        /*
-         * One fresh request ID represents this logical save.
-         *
-         * If the same logical request must be retried, the caller
-         * should reuse the same request ID. A new logical save gets
-         * a new UUID.
-         */
         const requestId =
             crypto.randomUUID();
 
@@ -2183,12 +2329,6 @@ async function saveInitiativeParticipants(
             throw error;
         }
 
-        /*
-         * Refresh only the initiative display.
-         *
-         * The canonical RPC owns participant replacement and
-         * effective-date handling.
-         */
         await loadContributionInitiatives();
 
         clearInitiativeParticipantEditor();
@@ -2224,6 +2364,1181 @@ async function saveInitiativeParticipants(
 
         throw error;
     }
+}
+
+
+/* ================================================================
+   RECURRING PARTICIPANT EDITOR
+================================================================ */
+
+function renderRecurringParticipantEditor(
+    initiative,
+    state
+) {
+
+    const container =
+        elements.contributionInitiativesList;
+
+    if (!container) {
+        return;
+    }
+
+    if (!isMonthlyInitiative(initiative)) {
+
+        throw new Error(
+            "The recurring participant editor requires a monthly initiative."
+        );
+    }
+
+    if (
+        normalizeLower(
+            initiative.status
+        ) !== "draft"
+    ) {
+
+        throw new Error(
+            "Only Draft recurring initiatives can be configured."
+        );
+    }
+
+    clearInitiativeParticipantEditor();
+
+    const existingByMemberId =
+        new Map(
+            (
+                state.participants ||
+                []
+            ).map(
+                (participant) => [
+                    participant.member_id,
+                    participant
+                ]
+            )
+        );
+
+    const termsByParticipant =
+        new Map();
+
+    (
+        state.terms ||
+        []
+    ).forEach(
+        (term) => {
+
+            const current =
+                termsByParticipant.get(
+                    term.initiative_member_id
+                );
+
+            /*
+             * The latest effective term is the useful current
+             * configuration for a Draft recurring initiative.
+             */
+            if (
+                !current ||
+                String(
+                    term.effective_from
+                ) >
+                String(
+                    current.effective_from
+                )
+            ) {
+
+                termsByParticipant.set(
+                    term.initiative_member_id,
+                    term
+                );
+            }
+        }
+    );
+
+    const editor =
+        document.createElement("div");
+
+    editor.className =
+        "initiative-participant-editor recurring-initiative-editor";
+
+    editor.dataset.initiativeId =
+        initiative.id;
+
+    const header =
+        document.createElement("div");
+
+    header.className =
+        "program-subsection-header";
+
+    const heading =
+        document.createElement("h3");
+
+    heading.textContent =
+        "Configure Recurring Participants";
+
+    const description =
+        document.createElement("p");
+
+    description.textContent =
+        `Select members for "${initiative.name}". ` +
+        "Each selected member receives a recurring term with a " +
+        "calendar-month effective date. Changes apply to future " +
+        "periods and do not rewrite generated historical obligations.";
+
+    header.append(
+        heading,
+        description
+    );
+
+    editor.appendChild(
+        header
+    );
+
+    const firstMonth =
+        getFirstFullRecurringMonth(
+            initiative.start_date
+        );
+
+    const instruction =
+        document.createElement("p");
+
+    instruction.className =
+        "program-help";
+
+    instruction.textContent =
+        `First eligible recurring month: ${firstMonth}. ` +
+        "The database remains authoritative for period eligibility.";
+
+    editor.appendChild(
+        instruction
+    );
+
+    const status =
+        createParticipantStatus(
+            editor,
+            initiativeMembers.length
+                ? "Select recurring participants and set their terms."
+                : "No members are currently available in this group."
+        );
+
+    const list =
+        document.createElement("div");
+
+    list.className =
+        "initiative-participant-list";
+
+    if (!initiativeMembers.length) {
+
+        const empty =
+            document.createElement("div");
+
+        empty.className =
+            "initiative-participant-empty";
+
+        empty.textContent =
+            "No group members are available for recurring configuration.";
+
+        list.appendChild(
+            empty
+        );
+
+    } else {
+
+        initiativeMembers.forEach(
+            (member) => {
+
+                const existingParticipant =
+                    existingByMemberId.get(
+                        member.id
+                    );
+
+                const existingTerm =
+                    existingParticipant
+                        ? termsByParticipant.get(
+                            existingParticipant.id
+                        )
+                        : null;
+
+                const row =
+                    createParticipantRow(
+                        member,
+                        existingParticipant
+                            ? {
+                                amount:
+                                    existingTerm?.amount ??
+                                    existingParticipant.amount
+                            }
+                            : null,
+                        initiative.default_amount
+                    );
+
+                const amountField =
+                    row.querySelector(
+                        ".initiative-participant-amount-field"
+                    );
+
+                if (amountField) {
+
+                    const effectiveLabel =
+                        document.createElement(
+                            "label"
+                        );
+
+                    effectiveLabel.className =
+                        "initiative-recurring-effective-field";
+
+                    const effectiveText =
+                        document.createElement(
+                            "span"
+                        );
+
+                    effectiveText.textContent =
+                        "Effective from";
+
+                    const effectiveInput =
+                        document.createElement(
+                            "input"
+                        );
+
+                    effectiveInput.type =
+                        "date";
+
+                    effectiveInput.className =
+                        "initiative-recurring-effective";
+
+                    effectiveInput.dataset.memberId =
+                        member.id;
+
+                    effectiveInput.value =
+                        existingTerm?.effective_from ||
+                        firstMonth;
+
+                    effectiveInput.min =
+                        firstMonth;
+
+                    effectiveLabel.append(
+                        effectiveText,
+                        effectiveInput
+                    );
+
+                    amountField.appendChild(
+                        effectiveLabel
+                    );
+                }
+
+                list.appendChild(
+                    row
+                );
+            }
+        );
+    }
+
+    editor.appendChild(
+        list
+    );
+
+    const actions =
+        document.createElement("div");
+
+    actions.className =
+        "initiative-participant-actions";
+
+    const cancelButton =
+        document.createElement("button");
+
+    cancelButton.type =
+        "button";
+
+    cancelButton.className =
+        "btn btn-secondary";
+
+    cancelButton.dataset.cancelInitiativeParticipants =
+        "true";
+
+    cancelButton.textContent =
+        "Cancel";
+
+    const saveButton =
+        document.createElement("button");
+
+    saveButton.type =
+        "button";
+
+    saveButton.className =
+        "btn btn-primary";
+
+    saveButton.dataset.saveRecurringParticipants =
+        "true";
+
+    saveButton.textContent =
+        "Save Recurring Terms";
+
+    saveButton.disabled =
+        !initiativeMembers.length ||
+        !isInitiativeManager();
+
+    actions.append(
+        cancelButton,
+        saveButton
+    );
+
+    editor.appendChild(
+        actions
+    );
+
+    editor._participantStatus =
+        status;
+
+    container.appendChild(
+        editor
+    );
+
+    return editor;
+}
+
+
+/* ================================================================
+   RECURRING PARTICIPANT CONFIGURATION
+================================================================ */
+
+async function configureRecurringInitiative(
+    initiativeId
+) {
+
+    if (!currentGroup?.id) {
+
+        throw new Error(
+            "No active group is available."
+        );
+    }
+
+    if (!isInitiativeManager()) {
+
+        throw new Error(
+            "Recurring configuration requires an admin or chairperson role."
+        );
+    }
+
+    const initiative =
+        getInitiativeById(
+            initiativeId
+        );
+
+    if (!initiative) {
+
+        throw new Error(
+            "The selected initiative is no longer available."
+        );
+    }
+
+    if (!isMonthlyInitiative(initiative)) {
+
+        throw new Error(
+            "The selected initiative is not a monthly recurring initiative."
+        );
+    }
+
+    if (
+        normalizeLower(
+            initiative.status
+        ) !== "draft"
+    ) {
+
+        throw new Error(
+            "Only Draft recurring initiatives can be configured."
+        );
+    }
+
+    configuringInitiativeId =
+        initiative.id;
+
+    const [
+        members,
+        state
+    ] = await Promise.all([
+        loadInitiativeMembers(),
+        loadRecurringParticipantState(
+            initiative.id
+        )
+    ]);
+
+    const currentInitiative =
+        getInitiativeById(
+            initiative.id
+        );
+
+    if (!currentInitiative) {
+
+        clearInitiativeParticipantEditor();
+
+        throw new Error(
+            "The selected initiative is no longer available."
+        );
+    }
+
+    if (!isMonthlyInitiative(currentInitiative)) {
+
+        clearInitiativeParticipantEditor();
+
+        throw new Error(
+            "The selected initiative is no longer monthly recurring."
+        );
+    }
+
+    if (
+        normalizeLower(
+            currentInitiative.status
+        ) !== "draft"
+    ) {
+
+        clearInitiativeParticipantEditor();
+
+        throw new Error(
+            "Only Draft recurring initiatives can be configured."
+        );
+    }
+
+    initiativeMembers =
+        Array.isArray(members)
+            ? members
+            : [];
+
+    renderRecurringParticipantEditor(
+        currentInitiative,
+        state
+    );
+}
+
+
+/* ================================================================
+   RECURRING PARTICIPANT TERM SAVE
+================================================================ */
+
+async function saveRecurringParticipants(
+    initiative,
+    editor
+) {
+
+    if (!currentGroup?.id) {
+
+        throw new Error(
+            "No active group is available."
+        );
+    }
+
+    if (!isInitiativeManager()) {
+
+        throw new Error(
+            "Recurring configuration requires an admin or chairperson role."
+        );
+    }
+
+    if (!initiative) {
+
+        throw new Error(
+            "The selected initiative is no longer available."
+        );
+    }
+
+    if (!isMonthlyInitiative(initiative)) {
+
+        throw new Error(
+            "The selected initiative is not monthly recurring."
+        );
+    }
+
+    if (
+        normalizeLower(
+            initiative.status
+        ) !== "draft"
+    ) {
+
+        throw new Error(
+            "Only Draft recurring initiatives can be configured."
+        );
+    }
+
+    if (
+        configuringInitiativeId !== initiative.id
+    ) {
+
+        throw new Error(
+            "The recurring participant editor is no longer active."
+        );
+    }
+
+    const memberIds =
+        new Set(
+            initiativeMembers.map(
+                (member) => member.id
+            )
+        );
+
+    const checkboxes =
+        Array.from(
+            editor.querySelectorAll(
+                'input[type="checkbox"][data-member-id]'
+            )
+        );
+
+    const selectedIds =
+        new Set();
+
+    const participants = [];
+
+    const firstMonth =
+        getFirstFullRecurringMonth(
+            initiative.start_date
+        );
+
+    for (const checkbox of checkboxes) {
+
+        if (!checkbox.checked) {
+            continue;
+        }
+
+        const memberId =
+            checkbox.dataset.memberId;
+
+        if (
+            !memberId ||
+            !memberIds.has(memberId)
+        ) {
+
+            throw new Error(
+                "One or more selected members do not belong to the current group."
+            );
+        }
+
+        if (selectedIds.has(memberId)) {
+
+            throw new Error(
+                "A member was selected more than once."
+            );
+        }
+
+        selectedIds.add(
+            memberId
+        );
+
+        const amountInput =
+            Array.from(
+                editor.querySelectorAll(
+                    ".initiative-participant-amount"
+                )
+            ).find(
+                (input) =>
+                    input.dataset.memberId === memberId
+            );
+
+        const effectiveInput =
+            Array.from(
+                editor.querySelectorAll(
+                    ".initiative-recurring-effective"
+                )
+            ).find(
+                (input) =>
+                    input.dataset.memberId === memberId
+            );
+
+        if (!amountInput) {
+
+            throw new Error(
+                "A recurring amount is missing for a selected member."
+            );
+        }
+
+        if (!effectiveInput) {
+
+            throw new Error(
+                "A recurring effective date is missing for a selected member."
+            );
+        }
+
+        const rawAmount =
+            amountInput.value.trim();
+
+        const effectiveFrom =
+            effectiveInput.value.trim();
+
+        if (!rawAmount) {
+
+            throw new Error(
+                "A recurring amount is required for every selected member."
+            );
+        }
+
+        const amount =
+            Number(rawAmount);
+
+        if (
+            !Number.isFinite(amount) ||
+            amount < 0
+        ) {
+
+            throw new Error(
+                "Recurring amounts must be valid non-negative numbers."
+            );
+        }
+
+        if (
+            !/^\d{4}-\d{2}-01$/.test(
+                effectiveFrom
+            )
+        ) {
+
+            throw new Error(
+                "Recurring effective dates must be the first day of a calendar month."
+            );
+        }
+
+        if (
+            effectiveFrom <
+                firstMonth
+        ) {
+
+            throw new Error(
+                "A recurring term cannot begin before the first eligible full calendar month."
+            );
+        }
+
+        if (
+            effectiveFrom >
+                initiative.closing_date
+        ) {
+
+            throw new Error(
+                "A recurring term cannot begin after the initiative closes."
+            );
+        }
+
+        participants.push({
+            member_id:
+                memberId,
+
+            amount:
+                amount,
+
+            effective_from:
+                effectiveFrom
+        });
+    }
+
+    const status =
+        editor._participantStatus;
+
+    const saveButton =
+        editor.querySelector(
+            '[data-save-recurring-participants="true"]'
+        );
+
+    const cancelButton =
+        editor.querySelector(
+            '[data-cancel-initiative-participants="true"]'
+        );
+
+    if (status) {
+
+        status.className =
+            "initiative-participant-status";
+
+        status.textContent =
+            "Saving recurring participant terms…";
+    }
+
+    if (saveButton) {
+        saveButton.disabled = true;
+    }
+
+    if (cancelButton) {
+        cancelButton.disabled = true;
+    }
+
+    try {
+
+        /*
+         * The participant identity itself remains owned by the
+         * canonical participant RPC.
+         *
+         * The participant RPC is used only while the initiative
+         * is Draft, before recurring obligations exist.
+         */
+        const participantRequestId =
+            crypto.randomUUID();
+
+        const {
+            error: participantError
+        } = await supabase.rpc(
+            "set_contribution_initiative_members",
+            {
+                p_initiative_id:
+                    initiative.id,
+
+                p_members:
+                    participants.map(
+                        (participant) => ({
+                            member_id:
+                                participant.member_id,
+
+                            amount:
+                                participant.amount
+                        })
+                    ),
+
+                p_request_id:
+                    participantRequestId
+            }
+        );
+
+        if (participantError) {
+            throw participantError;
+        }
+
+        /*
+         * Resolve the stable initiative-member IDs after the
+         * canonical participant operation.
+         */
+        const {
+            data: currentParticipants,
+            error: currentParticipantError
+        } = await supabase
+            .from(
+                "contribution_initiative_members"
+            )
+            .select(
+                "id, member_id"
+            )
+            .eq(
+                "initiative_id",
+                initiative.id
+            );
+
+        if (currentParticipantError) {
+            throw currentParticipantError;
+        }
+
+        const participantIds =
+            new Map(
+                (
+                    currentParticipants ||
+                    []
+                ).map(
+                    (participant) => [
+                        participant.member_id,
+                        participant.id
+                    ]
+                )
+            );
+
+        /*
+         * Each term is created through the canonical database RPC.
+         *
+         * There are no direct INSERT/UPDATE statements against
+         * contribution_initiative_member_terms.
+         */
+        for (
+            const participant
+            of participants
+        ) {
+
+            const initiativeMemberId =
+                participantIds.get(
+                    participant.member_id
+                );
+
+            if (!initiativeMemberId) {
+
+                throw new Error(
+                    "The database did not return the recurring participant identity."
+                );
+            }
+
+            const {
+                error
+            } = await supabase.rpc(
+                "set_contribution_initiative_member_term",
+                {
+                    p_initiative_member_id:
+                        initiativeMemberId,
+
+                    p_effective_from:
+                        participant.effective_from,
+
+                    p_amount:
+                        participant.amount,
+
+                    p_status:
+                        "active",
+
+                    p_request_id:
+                        crypto.randomUUID()
+                }
+            );
+
+            if (error) {
+                throw error;
+            }
+        }
+
+        await loadContributionInitiatives();
+
+        clearInitiativeParticipantEditor();
+
+        if (elements.contributionProgramStatus) {
+
+            elements.contributionProgramStatus.textContent =
+                "Recurring participant terms saved. The initiative remains Draft until recurring activation.";
+
+            elements.contributionProgramStatus.className =
+                "program-status ready";
+        }
+
+    } catch (error) {
+
+        if (status) {
+
+            status.className =
+                "initiative-participant-status error";
+
+            status.textContent =
+                error?.message ||
+                "Failed to save recurring participant terms.";
+        }
+
+        if (saveButton) {
+            saveButton.disabled = false;
+        }
+
+        if (cancelButton) {
+            cancelButton.disabled = false;
+        }
+
+        throw error;
+    }
+}
+
+
+/* ================================================================
+   RECURRING ACTIVATION
+================================================================ */
+
+async function activateRecurringInitiative(
+    initiativeId
+) {
+
+    if (!currentGroup?.id) {
+
+        throw new Error(
+            "No active group is available."
+        );
+    }
+
+    if (!isInitiativeManager()) {
+
+        throw new Error(
+            "Recurring activation requires an admin or chairperson role."
+        );
+    }
+
+    const initiative =
+        getInitiativeById(
+            initiativeId
+        );
+
+    if (!initiative) {
+
+        throw new Error(
+            "The selected initiative is no longer available."
+        );
+    }
+
+    if (!isMonthlyInitiative(initiative)) {
+
+        throw new Error(
+            "The selected initiative is not monthly recurring."
+        );
+    }
+
+    if (
+        normalizeLower(
+            initiative.status
+        ) !== "draft"
+    ) {
+
+        throw new Error(
+            "Only Draft recurring initiatives can be activated."
+        );
+    }
+
+    const requestId =
+        crypto.randomUUID();
+
+    const {
+        error
+    } = await supabase.rpc(
+        "activate_recurring_contribution_initiative",
+        {
+            p_initiative_id:
+                initiative.id,
+
+            p_request_id:
+                requestId
+        }
+    );
+
+    if (error) {
+        throw error;
+    }
+
+    await loadContributionInitiatives();
+
+    if (elements.contributionProgramStatus) {
+
+        elements.contributionProgramStatus.textContent =
+            "Recurring initiative activated. Prepare an eligible calendar period to generate its obligations.";
+
+        elements.contributionProgramStatus.className =
+            "program-status ready";
+    }
+}
+
+
+/* ================================================================
+   RECURRING PERIOD PREPARATION
+================================================================ */
+
+function extractPeriodId(
+    data
+) {
+
+    /*
+     * The period RPC is database-owned. Depending on whether the
+     * candidate is returning a scalar UUID or JSONB, accept only
+     * the explicit period-id forms expected from the contract.
+     */
+    if (typeof data === "string") {
+        return data;
+    }
+
+    if (!data || typeof data !== "object") {
+        return null;
+    }
+
+    return (
+        data.period_id ||
+        data.id ||
+        data.contribution_initiative_period_id ||
+        null
+    );
+}
+
+
+function extractObligationCount(
+    data
+) {
+
+    if (
+        typeof data === "number" ||
+        typeof data === "string"
+    ) {
+
+        return data;
+    }
+
+    if (!data || typeof data !== "object") {
+        return null;
+    }
+
+    return (
+        data.obligation_count ??
+        data.count ??
+        data.generated_count ??
+        null
+    );
+}
+
+
+async function prepareRecurringCurrentPeriod(
+    initiativeId
+) {
+
+    if (!currentGroup?.id) {
+
+        throw new Error(
+            "No active group is available."
+        );
+    }
+
+    const initiative =
+        getInitiativeById(
+            initiativeId
+        );
+
+    if (!initiative) {
+
+        throw new Error(
+            "The selected initiative is no longer available."
+        );
+    }
+
+    if (!isMonthlyInitiative(initiative)) {
+
+        throw new Error(
+            "The selected initiative is not monthly recurring."
+        );
+    }
+
+    if (
+        normalizeLower(
+            initiative.status
+        ) !== "active"
+    ) {
+
+        throw new Error(
+            "Only active recurring initiatives can prepare a period."
+        );
+    }
+
+    /*
+     * The UI requests the current calendar month.
+     *
+     * The database remains authoritative for:
+     *
+     *     - initiative dates
+     *     - full-month eligibility
+     *     - closing boundary
+     *     - lifecycle
+     *     - idempotency
+     */
+    const periodKey =
+        getCurrentRecurringPeriodKey();
+
+    const {
+        data: periodData,
+        error: periodError
+    } = await supabase.rpc(
+        "ensure_contribution_initiative_period",
+        {
+            p_initiative_id:
+                initiative.id,
+
+            p_period_key:
+                periodKey,
+
+            p_request_id:
+                crypto.randomUUID()
+        }
+    );
+
+    if (periodError) {
+        throw periodError;
+    }
+
+    const periodId =
+        extractPeriodId(
+            periodData
+        );
+
+    if (!periodId) {
+
+        throw new Error(
+            "The period service did not return a valid period ID."
+        );
+    }
+
+    const {
+        data: obligationData,
+        error: obligationError
+    } = await supabase.rpc(
+        "ensure_contribution_initiative_period_obligations",
+        {
+            p_period_id:
+                periodId,
+
+            p_request_id:
+                crypto.randomUUID()
+        }
+    );
+
+    if (obligationError) {
+        throw obligationError;
+    }
+
+    const obligationCount =
+        extractObligationCount(
+            obligationData
+        );
+
+    const {
+        data: status,
+        error: statusError
+    } = await supabase.rpc(
+        "get_contribution_initiative_period_status",
+        {
+            p_initiative_id:
+                initiative.id,
+
+            p_period_key:
+                periodKey
+        }
+    );
+
+    if (statusError) {
+        throw statusError;
+    }
+
+    const resolvedCount =
+        obligationCount ??
+        status?.obligation_count ??
+        status?.generated_obligation_count ??
+        0;
+
+    if (elements.contributionProgramStatus) {
+
+        elements.contributionProgramStatus.textContent =
+            `Recurring period ${periodKey} prepared. ${resolvedCount} obligation(s) are available for this initiative period.`;
+
+        elements.contributionProgramStatus.className =
+            "program-status ready";
+    }
+
+    await loadContributionInitiatives();
+
+    return {
+        periodId,
+        periodKey,
+        obligationCount:
+            resolvedCount,
+        status
+    };
+}
+
+
+/* ================================================================
+   RECURRING PERIOD STATUS
+================================================================ */
+
+async function loadRecurringPeriodStatus(
+    initiativeId,
+    periodKey
+) {
+
+    const {
+        data,
+        error
+    } = await supabase.rpc(
+        "get_contribution_initiative_period_status",
+        {
+            p_initiative_id:
+                initiativeId,
+
+            p_period_key:
+                periodKey
+        }
+    );
+
+    if (error) {
+        throw error;
+    }
+
+    return data;
 }
 
 
@@ -2313,42 +3628,176 @@ function renderContributionInitiatives() {
                 );
             }
 
-            /*
-             * MONTHLY RECURRING BOUNDARY
-             *
-             * Monthly initiatives are intentionally visible, but
-             * they cannot use the existing one-time participant
-             * editor until the recurring participant-term contract
-             * is present and frozen.
-             */
+            /* ----------------------------------------------------
+               MONTHLY RECURRING INITIATIVE
+            ---------------------------------------------------- */
+
             if (
-                isMonthlyInitiative(initiative)
+                isMonthlyInitiative(
+                    initiative
+                )
             ) {
 
                 appendTextRow(
                     item,
                     "Recurring setup",
-                    "Backend contract pending"
-                );
-
-                if (
                     normalizeLower(
                         initiative.status
-                    ) === "draft" &&
+                    ) === "draft"
+                        ? "Recurring participant terms"
+                        : "Calendar periods and obligations"
+                );
+
+                const status =
+                    normalizeLower(
+                        initiative.status
+                    );
+
+                if (
+                    status === "draft" &&
                     isInitiativeManager()
                 ) {
 
-                    const status =
-                        document.createElement("div");
+                    const actions =
+                        document.createElement(
+                            "div"
+                        );
 
-                    status.className =
-                        "program-status";
+                    actions.className =
+                        "program-actions";
 
-                    status.textContent =
-                        "Monthly recurring configuration is gated pending the recurring participant-term contract.";
+                    const configureButton =
+                        document.createElement(
+                            "button"
+                        );
+
+                    configureButton.type =
+                        "button";
+
+                    configureButton.className =
+                        "btn btn-secondary";
+
+                    configureButton.dataset
+                        .configureRecurringInitiative =
+                            initiative.id;
+
+                    configureButton.textContent =
+                        "Configure Recurring Terms";
+
+                    const activateButton =
+                        document.createElement(
+                            "button"
+                        );
+
+                    activateButton.type =
+                        "button";
+
+                    activateButton.className =
+                        "btn btn-primary";
+
+                    activateButton.dataset
+                        .activateRecurringInitiative =
+                            initiative.id;
+
+                    activateButton.textContent =
+                        "Activate Recurring";
+
+                    actions.append(
+                        configureButton,
+                        activateButton
+                    );
 
                     item.appendChild(
-                        status
+                        actions
+                    );
+
+                    const statusMessage =
+                        document.createElement(
+                            "div"
+                        );
+
+                    statusMessage.className =
+                        "program-status";
+
+                    statusMessage.textContent =
+                        "Configure recurring participants and terms before activation.";
+
+                    item.appendChild(
+                        statusMessage
+                    );
+                }
+
+                else if (
+                    status === "active"
+                ) {
+
+                    const actions =
+                        document.createElement(
+                            "div"
+                        );
+
+                    actions.className =
+                        "program-actions";
+
+                    const prepareButton =
+                        document.createElement(
+                            "button"
+                        );
+
+                    prepareButton.type =
+                        "button";
+
+                    prepareButton.className =
+                        "btn btn-primary";
+
+                    prepareButton.dataset
+                        .prepareRecurringPeriod =
+                            initiative.id;
+
+                    prepareButton.textContent =
+                        "Prepare Current Period";
+
+                    actions.appendChild(
+                        prepareButton
+                    );
+
+                    item.appendChild(
+                        actions
+                    );
+
+                    const statusMessage =
+                        document.createElement(
+                            "div"
+                        );
+
+                    statusMessage.className =
+                        "program-status";
+
+                    statusMessage.textContent =
+                        "Period preparation creates only the eligible recurring period obligations through the canonical database service.";
+
+                    item.appendChild(
+                        statusMessage
+                    );
+                }
+
+                else if (
+                    status === "closed"
+                ) {
+
+                    const statusMessage =
+                        document.createElement(
+                            "div"
+                        );
+
+                    statusMessage.className =
+                        "program-status";
+
+                    statusMessage.textContent =
+                        "Recurring initiative is closed. Historical periods and accounting remain preserved.";
+
+                    item.appendChild(
+                        statusMessage
                     );
                 }
 
@@ -2359,13 +3808,14 @@ function renderContributionInitiatives() {
                 return;
             }
 
-            /*
-             * ONE-TIME PARTICIPANT CONFIGURATION
-             *
-             * This remains the existing canonical workflow.
-             */
+            /* ----------------------------------------------------
+               ONE-TIME INITIATIVE
+            ---------------------------------------------------- */
+
             if (
-                isOneTimeInitiative(initiative) &&
+                isOneTimeInitiative(
+                    initiative
+                ) &&
                 normalizeLower(
                     initiative.status
                 ) === "draft" &&
@@ -2373,13 +3823,17 @@ function renderContributionInitiatives() {
             ) {
 
                 const actions =
-                    document.createElement("div");
+                    document.createElement(
+                        "div"
+                    );
 
                 actions.className =
                     "program-actions";
 
                 const configureButton =
-                    document.createElement("button");
+                    document.createElement(
+                        "button"
+                    );
 
                 configureButton.type =
                     "button";
@@ -2387,8 +3841,9 @@ function renderContributionInitiatives() {
                 configureButton.className =
                     "btn btn-secondary";
 
-                configureButton.dataset.configureInitiative =
-                    initiative.id;
+                configureButton.dataset
+                    .configureInitiative =
+                        initiative.id;
 
                 configureButton.textContent =
                     "Configure Participants";
@@ -2420,7 +3875,9 @@ async function loadContributionInitiatives() {
         data,
         error
     } = await supabase
-        .from("contribution_initiatives")
+        .from(
+            "contribution_initiatives"
+        )
         .select(
             [
                 "id",
@@ -2645,6 +4102,7 @@ async function loadApplicationContext() {
         );
 
     applyAuthorization();
+
     renderGroup();
 }
 
@@ -2765,12 +4223,16 @@ function bindEvents() {
      * Contribution initiative controls are rendered dynamically.
      *
      * Delegation keeps one event owner on the existing list rather
-     * than attaching listeners repeatedly every time the list
+     * than attaching listeners repeatedly whenever the list
      * refreshes.
      */
     elements.contributionInitiativesList?.addEventListener(
         "click",
         async (event) => {
+
+            /* ----------------------------------------------------
+               ONE-TIME CONFIGURATION
+            ---------------------------------------------------- */
 
             const configureButton =
                 event.target.closest(
@@ -2780,7 +4242,8 @@ function bindEvents() {
             if (configureButton) {
 
                 const initiativeId =
-                    configureButton.dataset.configureInitiative;
+                    configureButton.dataset
+                        .configureInitiative;
 
                 if (!initiativeId) {
                     return;
@@ -2802,7 +4265,9 @@ function bindEvents() {
                         error
                     );
 
-                    if (elements.contributionProgramStatus) {
+                    if (
+                        elements.contributionProgramStatus
+                    ) {
 
                         elements.contributionProgramStatus.textContent =
                             error?.message ||
@@ -2814,11 +4279,6 @@ function bindEvents() {
 
                 } finally {
 
-                    /*
-                     * The initiative list may have been re-rendered
-                     * during the operation. Only restore the original
-                     * button if it is still connected.
-                     */
                     if (
                         configureButton.isConnected
                     ) {
@@ -2831,6 +4291,274 @@ function bindEvents() {
                 return;
             }
 
+
+            /* ----------------------------------------------------
+               RECURRING CONFIGURATION
+            ---------------------------------------------------- */
+
+            const recurringConfigureButton =
+                event.target.closest(
+                    "[data-configure-recurring-initiative]"
+                );
+
+            if (recurringConfigureButton) {
+
+                const initiativeId =
+                    recurringConfigureButton.dataset
+                        .configureRecurringInitiative;
+
+                if (!initiativeId) {
+                    return;
+                }
+
+                recurringConfigureButton.disabled =
+                    true;
+
+                try {
+
+                    await configureRecurringInitiative(
+                        initiativeId
+                    );
+
+                } catch (error) {
+
+                    console.error(
+                        "Failed to configure recurring initiative:",
+                        error
+                    );
+
+                    if (
+                        elements.contributionProgramStatus
+                    ) {
+
+                        elements.contributionProgramStatus.textContent =
+                            error?.message ||
+                            "Failed to open recurring configuration.";
+
+                        elements.contributionProgramStatus.className =
+                            "program-status error";
+                    }
+
+                } finally {
+
+                    if (
+                        recurringConfigureButton.isConnected
+                    ) {
+
+                        recurringConfigureButton.disabled =
+                            false;
+                    }
+                }
+
+                return;
+            }
+
+
+            /* ----------------------------------------------------
+               RECURRING ACTIVATION
+            ---------------------------------------------------- */
+
+            const recurringActivateButton =
+                event.target.closest(
+                    "[data-activate-recurring-initiative]"
+                );
+
+            if (recurringActivateButton) {
+
+                const initiativeId =
+                    recurringActivateButton.dataset
+                        .activateRecurringInitiative;
+
+                if (!initiativeId) {
+                    return;
+                }
+
+                recurringActivateButton.disabled =
+                    true;
+
+                try {
+
+                    await activateRecurringInitiative(
+                        initiativeId
+                    );
+
+                } catch (error) {
+
+                    console.error(
+                        "Failed to activate recurring initiative:",
+                        error
+                    );
+
+                    if (
+                        elements.contributionProgramStatus
+                    ) {
+
+                        elements.contributionProgramStatus.textContent =
+                            error?.message ||
+                            "Failed to activate recurring initiative.";
+
+                        elements.contributionProgramStatus.className =
+                            "program-status error";
+                    }
+
+                } finally {
+
+                    if (
+                        recurringActivateButton.isConnected
+                    ) {
+
+                        recurringActivateButton.disabled =
+                            false;
+                    }
+                }
+
+                return;
+            }
+
+
+            /* ----------------------------------------------------
+               RECURRING CURRENT PERIOD PREPARATION
+            ---------------------------------------------------- */
+
+            const prepareRecurringButton =
+                event.target.closest(
+                    "[data-prepare-recurring-period]"
+                );
+
+            if (prepareRecurringButton) {
+
+                const initiativeId =
+                    prepareRecurringButton.dataset
+                        .prepareRecurringPeriod;
+
+                if (!initiativeId) {
+                    return;
+                }
+
+                prepareRecurringButton.disabled =
+                    true;
+
+                try {
+
+                    await prepareRecurringCurrentPeriod(
+                        initiativeId
+                    );
+
+                } catch (error) {
+
+                    console.error(
+                        "Failed to prepare recurring period:",
+                        error
+                    );
+
+                    if (
+                        elements.contributionProgramStatus
+                    ) {
+
+                        elements.contributionProgramStatus.textContent =
+                            error?.message ||
+                            "Failed to prepare recurring period.";
+
+                        elements.contributionProgramStatus.className =
+                            "program-status error";
+                    }
+
+                } finally {
+
+                    if (
+                        prepareRecurringButton.isConnected
+                    ) {
+
+                        prepareRecurringButton.disabled =
+                            false;
+                    }
+                }
+
+                return;
+            }
+
+
+            /* ----------------------------------------------------
+               RECURRING PARTICIPANT TERM SAVE
+            ---------------------------------------------------- */
+
+            const saveRecurringButton =
+                event.target.closest(
+                    '[data-save-recurring-participants="true"]'
+                );
+
+            if (saveRecurringButton) {
+
+                const editor =
+                    saveRecurringButton.closest(
+                        ".initiative-participant-editor"
+                    );
+
+                if (!editor) {
+                    return;
+                }
+
+                const initiativeId =
+                    editor.dataset.initiativeId;
+
+                const initiative =
+                    getInitiativeById(
+                        initiativeId
+                    );
+
+                if (!initiative) {
+
+                    if (
+                        elements.contributionProgramStatus
+                    ) {
+
+                        elements.contributionProgramStatus.textContent =
+                            "The selected initiative is no longer available.";
+
+                        elements.contributionProgramStatus.className =
+                            "program-status error";
+                    }
+
+                    clearInitiativeParticipantEditor();
+
+                    return;
+                }
+
+                try {
+
+                    await saveRecurringParticipants(
+                        initiative,
+                        editor
+                    );
+
+                } catch (error) {
+
+                    console.error(
+                        "Failed to save recurring participant terms:",
+                        error
+                    );
+
+                    if (
+                        elements.contributionProgramStatus
+                    ) {
+
+                        elements.contributionProgramStatus.textContent =
+                            error?.message ||
+                            "Failed to save recurring participant terms.";
+
+                        elements.contributionProgramStatus.className =
+                            "program-status error";
+                    }
+                }
+
+                return;
+            }
+
+
+            /* ----------------------------------------------------
+               CANCEL PARTICIPANT EDITOR
+            ---------------------------------------------------- */
+
             const cancelButton =
                 event.target.closest(
                     '[data-cancel-initiative-participants="true"]'
@@ -2840,7 +4568,9 @@ function bindEvents() {
 
                 clearInitiativeParticipantEditor();
 
-                if (elements.contributionProgramStatus) {
+                if (
+                    elements.contributionProgramStatus
+                ) {
 
                     elements.contributionProgramStatus.textContent =
                         "Participant configuration cancelled.";
@@ -2851,6 +4581,11 @@ function bindEvents() {
 
                 return;
             }
+
+
+            /* ----------------------------------------------------
+               ONE-TIME PARTICIPANT SAVE
+            ---------------------------------------------------- */
 
             const saveButton =
                 event.target.closest(
@@ -2878,7 +4613,9 @@ function bindEvents() {
 
                 if (!initiative) {
 
-                    if (elements.contributionProgramStatus) {
+                    if (
+                        elements.contributionProgramStatus
+                    ) {
 
                         elements.contributionProgramStatus.textContent =
                             "The selected initiative is no longer available.";
@@ -2906,7 +4643,9 @@ function bindEvents() {
                         error
                     );
 
-                    if (elements.contributionProgramStatus) {
+                    if (
+                        elements.contributionProgramStatus
+                    ) {
 
                         elements.contributionProgramStatus.textContent =
                             error?.message ||
@@ -2916,6 +4655,8 @@ function bindEvents() {
                             "program-status error";
                     }
                 }
+
+                return;
             }
         }
     );
@@ -3006,5 +4747,10 @@ export {
     loadFineRules,
     createContributionInitiative,
     configureInitiativeParticipants,
-    saveInitiativeParticipants
+    saveInitiativeParticipants,
+    configureRecurringInitiative,
+    saveRecurringParticipants,
+    activateRecurringInitiative,
+    prepareRecurringCurrentPeriod,
+    loadRecurringPeriodStatus
 };
