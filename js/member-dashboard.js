@@ -28,6 +28,8 @@
    • Group contribution data is resolved through members.
    • Member contribution position is resolved through
      get_my_contribution_position().
+   • Group monthly participation is resolved through
+     get_canonical_monthly_accounting_summary().
    • member-layout.js owns portal navigation/auth/logout.
    ========================================================= */
 
@@ -44,6 +46,7 @@ let memberId = null;
 let groupMembers = [];
 let groupContributions = [];
 let groupExpenses = [];
+let groupMonthlyAccountingSummary = null;
 
 let initialized = false;
 
@@ -716,13 +719,51 @@ async function loadGroupReadData() {
 
 
 /* =========================================================
+   CANONICAL GROUP MONTHLY ACCOUNTING
+   ========================================================= */
+
+async function loadGroupMonthlyAccountingSummary() {
+  const {
+    data,
+    error
+  } = await supabase.rpc(
+    "get_canonical_monthly_accounting_summary",
+    {
+      p_group_id: groupId,
+      p_month:
+        currentMonthStart().slice(
+          0,
+          7
+        )
+    }
+  );
+
+  if (error) {
+    throw error;
+  }
+
+  groupMonthlyAccountingSummary =
+    data || null;
+}
+
+
+/* =========================================================
    GROUP FINANCIAL HEALTH
    ========================================================= */
 
-function renderGroupFinancialHealth() {
+function renderGroupFinancialHealth(
+  accountingSummary
+) {
   const monthStart =
     currentMonthStart();
 
+  /*
+   * These values are intentionally retained as
+   * cash / transaction metrics.
+   *
+   * They are NOT canonical contribution-allocation
+   * metrics.
+   */
   const monthlyContributions =
     groupContributions
       .filter(
@@ -775,48 +816,46 @@ function renderGroupFinancialHealth() {
     monthlyContributions -
     monthlyExpenses;
 
+  /*
+   * CANONICAL PARTICIPATION
+   *
+   * Do not derive participation from raw contribution
+   * rows in the browser.
+   *
+   * The canonical monthly accounting contract defines
+   * participation from:
+   *
+   *   members_paid
+   *   +
+   *   partial_payments
+   *
+   * divided by:
+   *
+   *   active_members
+   */
   const activeMembers =
-    groupMembers.filter(
-      member =>
-        String(
-          member.status || ""
-        ).toLowerCase() ===
-          "active"
+    numberValue(
+      accountingSummary?.active_members
     );
 
-  const activeMemberIds =
-    new Set(
-      activeMembers.map(
-        member =>
-          member.id
-      )
+  const membersPaid =
+    numberValue(
+      accountingSummary?.members_paid
     );
 
-  const activeContributors =
-    new Set(
-      groupContributions
-        .filter(
-          contribution =>
-            activeMemberIds.has(
-              contribution.member_id
-            ) &&
-            contribution.contribution_date &&
-            String(
-              contribution.contribution_date
-            ).slice(0, 10) >=
-              monthStart
-        )
-        .map(
-          contribution =>
-            contribution.member_id
-        )
+  const partialPayments =
+    numberValue(
+      accountingSummary?.partial_payments
     );
 
   const participation =
-    activeMembers.length
+    activeMembers
       ? (
-          activeContributors.size /
-          activeMembers.length
+          (
+            membersPaid +
+            partialPayments
+          ) /
+          activeMembers
         ) * 100
       : 0;
 
@@ -1664,6 +1703,7 @@ async function loadDashboard() {
         loadMyContributions(),
         loadMyContributionPosition(),
         loadGroupReadData(),
+        loadGroupMonthlyAccountingSummary(),
         loadMeetings(),
         loadActivities(),
         loadPlansAndGoals(),
@@ -1674,24 +1714,43 @@ async function loadDashboard() {
       myContributionsResult,
       myContributionPositionResult,
       groupDataResult,
+      groupAccountingResult,
       meetingsResult,
       activitiesResult,
       plansResult,
       assetsResult
     ] = results;
 
+    /*
+     * Group Financial Health requires BOTH:
+     *
+     * 1. Group read data
+     * 2. Canonical monthly accounting summary
+     *
+     * There is intentionally no fallback to the old
+     * browser-side raw-contribution participation
+     * calculation.
+     */
     if (
       groupDataResult.status ===
-      "fulfilled"
+        "fulfilled" &&
+      groupAccountingResult.status ===
+        "fulfilled"
     ) {
-      renderGroupFinancialHealth();
+      renderGroupFinancialHealth(
+        groupMonthlyAccountingSummary
+      );
+
       renderRecentGroupContributions();
       renderRecentGroupExpenses();
 
     } else {
       console.warn(
-        "Member dashboard group read data failed:",
-        groupDataResult.reason
+        "Member dashboard group financial data failed:",
+        groupDataResult.status ===
+          "rejected"
+          ? groupDataResult.reason
+          : groupAccountingResult.reason
       );
 
       setText(
@@ -1794,6 +1853,7 @@ async function loadDashboard() {
 
     void myContributionsResult;
     void myContributionPositionResult;
+    void groupAccountingResult;
     void meetingsResult;
     void activitiesResult;
     void plansResult;
