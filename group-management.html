@@ -263,7 +263,8 @@
         .form-field select:focus,
         .form-field textarea:focus {
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(22, 101, 52, 0.1);
+            box-shadow:
+                0 0 0 3px rgba(22, 101, 52, 0.1);
         }
 
         .form-field input:disabled,
@@ -442,7 +443,8 @@
         .monthly-closing-day-select:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(22, 101, 52, 0.1);
+            box-shadow:
+                0 0 0 3px rgba(22, 101, 52, 0.1);
         }
 
         .monthly-closing-day-select:disabled {
@@ -641,6 +643,116 @@
         }
 
         /* =====================================================
+           INITIATIVE PARTICIPANT CONFIGURATION
+        ====================================================== */
+
+        .initiative-configure-note {
+            margin-bottom: 10px;
+            padding: 10px 11px;
+            border-radius: 8px;
+            background: var(--info-bg);
+            color: var(--info-text);
+            font-size: 0.76rem;
+        }
+
+        .initiative-participant-editor {
+            margin-top: 14px;
+            padding: 14px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: #fafafa;
+        }
+
+        .initiative-participant-status {
+            margin-bottom: 12px;
+            padding: 9px 10px;
+            border-radius: 8px;
+            background: #f8fafc;
+            color: #475569;
+            font-size: 0.78rem;
+        }
+
+        .initiative-participant-status.error {
+            background: var(--error-bg);
+            color: var(--error-text);
+        }
+
+        .initiative-participant-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .initiative-participant-row {
+            display: grid;
+            grid-template-columns:
+                auto
+                minmax(0, 1fr)
+                minmax(120px, 160px);
+            gap: 10px;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            background: #fff;
+        }
+
+        .initiative-participant-member {
+            min-width: 0;
+        }
+
+        .initiative-participant-member strong,
+        .initiative-participant-member span {
+            display: block;
+        }
+
+        .initiative-participant-member strong {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .initiative-participant-member span {
+            color: var(--muted);
+            font-size: 0.74rem;
+        }
+
+        .initiative-participant-amount {
+            width: 100%;
+            min-height: 40px;
+            padding: 8px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: #fff;
+            color: var(--text);
+        }
+
+        .initiative-participant-amount:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow:
+                0 0 0 3px rgba(22, 101, 52, 0.1);
+        }
+
+        .initiative-participant-amount:disabled {
+            background: #f3f4f6;
+            color: #6b7280;
+            cursor: not-allowed;
+        }
+
+        .initiative-participant-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .initiative-participant-empty {
+            padding: 10px;
+            color: var(--muted);
+            font-size: 0.78rem;
+        }
+
+        /* =====================================================
            PAYMENT COLLECTION
         ====================================================== */
 
@@ -824,6 +936,7 @@
         ====================================================== */
 
         @media (max-width: 800px) {
+
             .group-management-page {
                 padding: 16px;
             }
@@ -873,6 +986,24 @@
 
             .program-item-header {
                 flex-direction: column;
+            }
+
+            .initiative-participant-row {
+                grid-template-columns:
+                    auto
+                    minmax(0, 1fr);
+            }
+
+            .initiative-participant-amount {
+                grid-column: 2;
+            }
+
+            .initiative-participant-actions {
+                flex-direction: column-reverse;
+            }
+
+            .initiative-participant-actions .btn {
+                width: 100%;
             }
         }
     </style>
@@ -1316,129 +1447,37 @@
                                     class="monthly-closing-day-select"
                                 >
 
-                                    <option value="1">
-                                        1
-                                    </option>
-
-                                    <option value="2">
-                                        2
-                                    </option>
-
-                                    <option value="3">
-                                        3
-                                    </option>
-
-                                    <option value="4">
-                                        4
-                                    </option>
-
-                                    <option value="5">
-                                        5
-                                    </option>
-
-                                    <option value="6">
-                                        6
-                                    </option>
-
-                                    <option value="7">
-                                        7
-                                    </option>
-
-                                    <option value="8">
-                                        8
-                                    </option>
-
-                                    <option value="9">
-                                        9
-                                    </option>
-
-                                    <option value="10">
-                                        10
-                                    </option>
-
-                                    <option value="11">
-                                        11
-                                    </option>
-
-                                    <option value="12">
-                                        12
-                                    </option>
-
-                                    <option value="13">
-                                        13
-                                    </option>
-
-                                    <option value="14">
-                                        14
-                                    </option>
-
-                                    <option value="15">
-                                        15
-                                    </option>
-
-                                    <option value="16">
-                                        16
-                                    </option>
-
-                                    <option value="17">
-                                        17
-                                    </option>
-
-                                    <option value="18">
-                                        18
-                                    </option>
-
-                                    <option value="19">
-                                        19
-                                    </option>
-
-                                    <option value="20">
-                                        20
-                                    </option>
-
-                                    <option value="21">
-                                        21
-                                    </option>
-
-                                    <option value="22">
-                                        22
-                                    </option>
-
-                                    <option value="23">
-                                        23
-                                    </option>
-
-                                    <option value="24">
-                                        24
-                                    </option>
-
-                                    <option value="25">
-                                        25
-                                    </option>
-
-                                    <option value="26">
-                                        26
-                                    </option>
-
-                                    <option value="27">
-                                        27
-                                    </option>
-
-                                    <option value="28">
-                                        28
-                                    </option>
-
-                                    <option value="29">
-                                        29
-                                    </option>
-
-                                    <option value="30">
-                                        30
-                                    </option>
-
-                                    <option value="31">
-                                        31
-                                    </option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                    <option value="6">6</option>
+                                    <option value="7">7</option>
+                                    <option value="8">8</option>
+                                    <option value="9">9</option>
+                                    <option value="10">10</option>
+                                    <option value="11">11</option>
+                                    <option value="12">12</option>
+                                    <option value="13">13</option>
+                                    <option value="14">14</option>
+                                    <option value="15">15</option>
+                                    <option value="16">16</option>
+                                    <option value="17">17</option>
+                                    <option value="18">18</option>
+                                    <option value="19">19</option>
+                                    <option value="20">20</option>
+                                    <option value="21">21</option>
+                                    <option value="22">22</option>
+                                    <option value="23">23</option>
+                                    <option value="24">24</option>
+                                    <option value="25">25</option>
+                                    <option value="26">26</option>
+                                    <option value="27">27</option>
+                                    <option value="28">28</option>
+                                    <option value="29">29</option>
+                                    <option value="30">30</option>
+                                    <option value="31">31</option>
 
                                 </select>
 
@@ -1514,8 +1553,9 @@
                         </h2>
 
                         <p>
-                            Configure group contribution programs and review
-                            the rules used by the canonical accounting system.
+                            Configure contribution programs and participating
+                            members, then review the rules used by the
+                            canonical accounting system.
                         </p>
 
                     </div>
@@ -1806,11 +1846,22 @@
 
                                     <p>
                                         Group-specific contribution
-                                        initiatives and their lifecycle.
+                                        initiatives, participant configuration
+                                        and lifecycle state.
                                     </p>
 
                                 </div>
 
+                            </div>
+
+
+                            <div class="initiative-configure-note">
+                                Draft programs can be configured with
+                                participating members and member-specific
+                                amounts. Saving participant configuration
+                                keeps the initiative in Draft. Activation is
+                                a separate database-owned operation and is not
+                                performed here yet.
                             </div>
 
 
@@ -1866,20 +1917,28 @@
                         <p class="program-access-note">
                             Contribution programs and fine rules are
                             controlled by the existing canonical database
-                            services. This page does not calculate fines,
-                            create obligations, create allocations or
-                            write accounting transactions directly.
+                            services. Participant configuration is also
+                            performed through the canonical initiative
+                            participant service. This page does not directly
+                            write participant rows, calculate fines, create
+                            obligations, create allocations or write
+                            accounting transactions.
                         </p>
 
                     </div>
 
 
                     <p class="program-note">
-                        The intended lifecycle is Draft → Configure →
-                        Activate. Activation and downstream obligation
-                        generation remain database-owned operations.
-                        Historical accounting records must remain protected
-                        from configuration changes.
+                        The intended lifecycle is
+                        <strong>
+                            Draft → Configure Participants → Activate
+                        </strong>.
+                        Participant configuration uses the canonical
+                        database service and does not create obligations.
+                        Activation and downstream obligation generation
+                        remain database-owned operations. Historical
+                        accounting records remain protected from configuration
+                        changes.
                     </p>
 
                 </div>
@@ -2394,11 +2453,15 @@
          Payment collection controls are intentionally disabled
          until the canonical payment contract is connected.
 
-         Contribution Programs now expose only the first governed
-         lifecycle action: Create → Draft.
+         Contribution Programs expose the governed lifecycle:
 
-         Participant configuration, activation and closing remain
-         subsequent gated operations.
+         Create → Draft
+                 ↓
+         Configure Participants
+                 ↓
+         Remain Draft
+                 ↓
+         Activate (future gated operation)
     ========================================================== -->
 
     <script type="module">
