@@ -50,8 +50,13 @@ let contributionSettings = null;
  * Initiative creation is governed exclusively by
  * create_contribution_initiative().
  *
- * Participant configuration is governed exclusively by
+ * One-time participant configuration is governed exclusively by
  * set_contribution_initiative_members().
+ *
+ * Monthly recurring initiatives use a separate backend contract.
+ * Until that recurring contract is available in the target
+ * environment, the browser MUST NOT route monthly initiatives
+ * through the one-time participant configuration workflow.
  *
  * Activation and closure remain outside this implementation gate.
  */
@@ -66,7 +71,7 @@ let fineRules = [];
  *     Read-only list of members belonging to the current group.
  *
  * configuringInitiativeId:
- *     The draft initiative currently being configured.
+ *     The draft ONE-TIME initiative currently being configured.
  *
  * No participant-table writes occur from state management.
  */
@@ -996,9 +1001,17 @@ async function createContributionInitiative(event) {
     }
 
     /*
-     * A fresh request ID is generated for each logical creation
-     * operation. The canonical RPC owns idempotency handling.
+     * Monthly initiatives may currently be CREATED as Draft.
+     *
+     * Their recurring terms, periods, obligations, activation,
+     * reporting and payment contracts are separate from the
+     * existing one-time initiative contract.
+     *
+     * Creation itself is safe because the verified canonical
+     * create_contribution_initiative() RPC stores the initiative
+     * as Draft and creates no obligations.
      */
+
     const requestId =
         crypto.randomUUID();
 
@@ -1041,18 +1054,22 @@ async function createContributionInitiative(event) {
         throw error;
     }
 
-    /*
-     * The canonical RPC creates the initiative as Draft.
-     * No browser-side obligation creation occurs here.
-     */
     await loadContributionInitiatives();
 
     resetCreateInitiativeForm();
 
     if (elements.contributionProgramStatus) {
 
-        elements.contributionProgramStatus.textContent =
-            "Initiative created as Draft. Configure participants before activation.";
+        if (frequency === "monthly") {
+
+            elements.contributionProgramStatus.textContent =
+                "Recurring initiative created as Draft. Recurring participant terms and activation remain backend-gated.";
+
+        } else {
+
+            elements.contributionProgramStatus.textContent =
+                "One-time initiative created as Draft. Configure participants before activation.";
+        }
 
         elements.contributionProgramStatus.className =
             "program-status ready";
@@ -1238,6 +1255,22 @@ function getInitiativeById(initiativeId) {
 }
 
 
+function isMonthlyInitiative(initiative) {
+
+    return normalizeLower(
+        initiative?.frequency
+    ) === "monthly";
+}
+
+
+function isOneTimeInitiative(initiative) {
+
+    return normalizeLower(
+        initiative?.frequency
+    ) === "one_time";
+}
+
+
 /*
  * Remove any currently open participant editor.
  *
@@ -1331,6 +1364,11 @@ async function loadInitiativeMembers() {
  * Therefore this is a READ ONLY query against the participant table.
  *
  * The browser MUST NOT insert, update, delete or upsert this table.
+ *
+ * This helper is intentionally limited to ONE-TIME initiatives.
+ * Monthly recurring initiatives must use the future recurring
+ * participant-term contract and must never be routed through this
+ * legacy participant configuration path.
  */
 async function loadInitiativeParticipants(initiativeId) {
 
@@ -1343,6 +1381,13 @@ async function loadInitiativeParticipants(initiativeId) {
 
         throw new Error(
             "The selected initiative is no longer available."
+        );
+    }
+
+    if (!isOneTimeInitiative(initiative)) {
+
+        throw new Error(
+            "Monthly recurring initiatives use the recurring participant-term workflow."
         );
     }
 
@@ -1571,6 +1616,17 @@ function renderInitiativeParticipantEditor(
         return;
     }
 
+    /*
+     * This editor is exclusively for the existing ONE-TIME
+     * participant contract.
+     */
+    if (!isOneTimeInitiative(initiative)) {
+
+        throw new Error(
+            "Monthly recurring initiatives cannot use the one-time participant editor."
+        );
+    }
+
     clearInitiativeParticipantEditor();
 
     const existingByMemberId =
@@ -1602,7 +1658,7 @@ function renderInitiativeParticipantEditor(
         document.createElement("h3");
 
     heading.textContent =
-        "Configure Participants";
+        "Configure One-Time Participants";
 
     const description =
         document.createElement("p");
@@ -1610,6 +1666,7 @@ function renderInitiativeParticipantEditor(
     description.textContent =
         `Select members participating in "${initiative.name}". ` +
         "Set the amount for each selected member. " +
+        "This configuration applies to the existing one-time initiative contract. " +
         "The initiative remains Draft after saving.";
 
     header.append(
@@ -1782,6 +1839,26 @@ async function configureInitiativeParticipants(
         );
     }
 
+    /*
+     * IMPORTANT:
+     * The existing participant RPC is a ONE-TIME initiative
+     * contract. Monthly recurring initiatives must never enter
+     * this workflow.
+     */
+    if (isMonthlyInitiative(initiative)) {
+
+        throw new Error(
+            "Monthly recurring initiatives are not yet available for participant configuration. The recurring participant-term contract is still gated."
+        );
+    }
+
+    if (!isOneTimeInitiative(initiative)) {
+
+        throw new Error(
+            "The initiative frequency is not supported by this participant configuration workflow."
+        );
+    }
+
     if (
         normalizeLower(
             initiative.status
@@ -1844,6 +1921,15 @@ async function configureInitiativeParticipants(
         );
     }
 
+    if (!isOneTimeInitiative(currentInitiative)) {
+
+        clearInitiativeParticipantEditor();
+
+        throw new Error(
+            "Monthly recurring initiatives use the recurring participant-term workflow."
+        );
+    }
+
     initiativeMembers =
         Array.isArray(members)
             ? members
@@ -1883,6 +1969,18 @@ async function saveInitiativeParticipants(
 
         throw new Error(
             "The selected initiative is no longer available."
+        );
+    }
+
+    /*
+     * Hard boundary:
+     * set_contribution_initiative_members() remains the existing
+     * ONE-TIME initiative participant contract.
+     */
+    if (!isOneTimeInitiative(initiative)) {
+
+        throw new Error(
+            "Monthly recurring initiatives cannot use the one-time participant configuration contract."
         );
     }
 
@@ -2098,7 +2196,7 @@ async function saveInitiativeParticipants(
         if (elements.contributionProgramStatus) {
 
             elements.contributionProgramStatus.textContent =
-                "Participant configuration saved. Initiative remains Draft.";
+                "One-time participant configuration saved. Initiative remains Draft.";
 
             elements.contributionProgramStatus.className =
                 "program-status ready";
@@ -2216,12 +2314,58 @@ function renderContributionInitiatives() {
             }
 
             /*
-             * Participant configuration is available only while
-             * the initiative is Draft and only to admin/chairperson.
+             * MONTHLY RECURRING BOUNDARY
              *
-             * No activation or closure controls are added here.
+             * Monthly initiatives are intentionally visible, but
+             * they cannot use the existing one-time participant
+             * editor until the recurring participant-term contract
+             * is present and frozen.
              */
             if (
+                isMonthlyInitiative(initiative)
+            ) {
+
+                appendTextRow(
+                    item,
+                    "Recurring setup",
+                    "Backend contract pending"
+                );
+
+                if (
+                    normalizeLower(
+                        initiative.status
+                    ) === "draft" &&
+                    isInitiativeManager()
+                ) {
+
+                    const status =
+                        document.createElement("div");
+
+                    status.className =
+                        "program-status";
+
+                    status.textContent =
+                        "Monthly recurring configuration is gated pending the recurring participant-term contract.";
+
+                    item.appendChild(
+                        status
+                    );
+                }
+
+                container.appendChild(
+                    item
+                );
+
+                return;
+            }
+
+            /*
+             * ONE-TIME PARTICIPANT CONFIGURATION
+             *
+             * This remains the existing canonical workflow.
+             */
+            if (
+                isOneTimeInitiative(initiative) &&
                 normalizeLower(
                     initiative.status
                 ) === "draft" &&
