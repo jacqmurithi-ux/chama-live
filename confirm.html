@@ -74,8 +74,22 @@ import {
    CONFIGURATION
 ======================================================= */
 
+/*
+ * CHAMA LIVE production URL.
+ *
+ * Keep this explicit rather than deriving it from
+ * window.location.origin.
+ *
+ * This prevents an accidental staging/legacy host from
+ * becoming the authentication callback destination.
+ */
+
 const APP_URL =
-  window.location.origin;
+  "https://chamalive.co.ke";
+
+
+const CONFIRM_URL =
+  `${APP_URL}/confirm.html`;
 
 
 const LOGIN_URL =
@@ -107,7 +121,9 @@ function setStatus(message) {
   if (status) {
 
     status.textContent =
-      message;
+      String(
+        message || ""
+      );
 
   }
 
@@ -130,8 +146,10 @@ function showError(message) {
   if (error) {
 
     error.textContent =
-      message ||
-      "Unable to complete account confirmation.";
+      String(
+        message ||
+        "Unable to complete account confirmation."
+      );
 
     error.hidden =
       false;
@@ -171,14 +189,8 @@ async function submitGroupApplication(
 ) {
 
   const metadata =
-    user.user_metadata ||
+    user?.user_metadata ||
     {};
-
-
-  console.log(
-    "CHAMA LIVE CONFIRMED USER:",
-    user.id
-  );
 
 
   /* =====================================================
@@ -383,9 +395,14 @@ async function submitGroupApplication(
   }
 
 
+  /*
+   * Do not log the complete application response.
+   *
+   * It may contain identifiers or application data.
+   */
+
   console.log(
-    "CHAMA LIVE GROUP APPLICATION RESULT:",
-    application
+    "CHAMA LIVE: group application submission completed."
   );
 
 
@@ -486,7 +503,7 @@ async function init() {
 
 
     /* ===================================================
-       STEP 1 — CHECK AUTH CALLBACK
+       STEP 1 — READ AUTH CALLBACK
     =================================================== */
 
     const url =
@@ -522,15 +539,12 @@ async function init() {
     =================================================== */
 
     /*
-     * CHAMA LIVE uses:
+     * Supabase PKCE redirects normally contain:
      *
-     *   flowType: "pkce"
+     *   ?code=<authorization-code>
      *
-     * When Supabase returns an authorization code,
-     * explicitly exchange that code for the authenticated
-     * session.
-     *
-     * This is the critical session-establishment step.
+     * The authorization code must be exchanged for
+     * a session.
      */
 
     setStatus(
@@ -549,11 +563,6 @@ async function init() {
 
 
     if (code) {
-
-      console.log(
-        "CHAMA LIVE: PKCE authorization code detected."
-      );
-
 
       const {
         data: exchangeData,
@@ -584,20 +593,16 @@ async function init() {
 
       }
 
-
-      console.log(
-        "CHAMA LIVE: PKCE session established."
-      );
-
     }
 
 
+    /* ===================================================
+       STEP 3 — EXISTING SESSION FALLBACK
+    =================================================== */
+
     /*
-     * If there was no authorization code, check whether
-     * Supabase already has an authenticated session.
-     *
-     * This also supports callbacks where the Supabase
-     * client has already processed the authentication URL.
+     * Supabase may already have processed the callback
+     * automatically during client initialization.
      */
 
     if (!session) {
@@ -624,16 +629,12 @@ async function init() {
 
 
     /* ===================================================
-       STEP 3 — WAIT FOR AUTH SESSION
+       STEP 4 — AUTH STATE FALLBACK
     =================================================== */
 
     /*
-     * Normally the PKCE exchange above establishes the
-     * session immediately.
-     *
-     * The fallback listener protects against a small
-     * initialization race in which the Supabase client
-     * has not finished restoring the session yet.
+     * If automatic URL processing is still completing,
+     * wait briefly for the authenticated session.
      */
 
     if (!session) {
@@ -698,12 +699,6 @@ async function init() {
                   event,
                   nextSession
                 ) => {
-
-                  console.log(
-                    "CHAMA LIVE AUTH EVENT:",
-                    event
-                  );
-
 
                   if (
                     nextSession &&
@@ -776,9 +771,8 @@ async function init() {
             /*
              * Re-check after registering the listener.
              *
-             * This prevents a race where the session
-             * becomes available between the first
-             * getSession() call and listener setup.
+             * This protects against a small initialization
+             * race.
              */
 
             try {
@@ -819,6 +813,10 @@ async function init() {
     }
 
 
+    /* ===================================================
+       STEP 5 — REQUIRE SESSION
+    =================================================== */
+
     if (!session) {
 
       throw new Error(
@@ -829,24 +827,23 @@ async function init() {
 
 
     /* ===================================================
-       STEP 4 — CLEAN AUTH CALLBACK URL
+       STEP 6 — CLEAN CALLBACK URL
     =================================================== */
 
     /*
-     * Remove the PKCE code and authentication parameters
-     * from the browser URL after the session has been
-     * established.
+     * Remove the authorization code and other callback
+     * parameters after the session has been established.
      */
 
     window.history.replaceState(
       {},
       document.title,
-      `${APP_URL}/confirm.html`
+      CONFIRM_URL
     );
 
 
     /* ===================================================
-       STEP 5 — GET CURRENT USER
+       STEP 7 — GET AUTHENTICATED USER
     =================================================== */
 
     setStatus(
@@ -881,14 +878,8 @@ async function init() {
     }
 
 
-    console.log(
-      "CHAMA LIVE CONFIRMED USER:",
-      user.id
-    );
-
-
     /* ===================================================
-       STEP 6 — SUBMIT GROUP APPLICATION
+       STEP 8 — SUBMIT GROUP APPLICATION
     =================================================== */
 
     await submitGroupApplication(
