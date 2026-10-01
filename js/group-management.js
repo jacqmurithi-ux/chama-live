@@ -50,12 +50,28 @@ let contributionSettings = null;
  * Initiative creation is governed exclusively by
  * create_contribution_initiative().
  *
- * Participant configuration, activation and closure remain
- * outside this implementation gate.
+ * Participant configuration is governed exclusively by
+ * set_contribution_initiative_members().
+ *
+ * Activation and closure remain outside this implementation gate.
  */
 let contributionTypes = [];
 let contributionInitiatives = [];
 let fineRules = [];
+
+/*
+ * Initiative participant configuration state.
+ *
+ * initiativeMembers:
+ *     Read-only list of members belonging to the current group.
+ *
+ * configuringInitiativeId:
+ *     The draft initiative currently being configured.
+ *
+ * No participant-table writes occur from state management.
+ */
+let initiativeMembers = [];
+let configuringInitiativeId = null;
 
 let initializationPromise = null;
 let eventsBound = false;
@@ -190,6 +206,12 @@ function isInitiativeManager() {
     const role =
         normalizeLower(currentRole);
 
+    /*
+     * Mirrors the verified production backend contract:
+     *
+     * public.can_manage_members(group_id)
+     *     = current_user_role IN ('admin', 'chairperson')
+     */
     return (
         role === "admin" ||
         role === "chairperson"
@@ -1041,13 +1063,13 @@ async function createContributionInitiative(event) {
 
 
 /* ================================================================
-   CONTRIBUTION CONFIGURATION — READ ONLY
+   CONTRIBUTION CONFIGURATION — READ ONLY HELPERS
 ================================================================ */
 
 /*
  * These helpers intentionally render textContent rather than
- * inserting HTML. This keeps this integration pass
- * presentation-only and avoids introducing HTML injection paths.
+ * inserting HTML. This keeps the presentation path safe and
+ * avoids introducing HTML injection paths.
  */
 
 function appendEmptyState(
@@ -1204,7 +1226,911 @@ async function loadContributionTypes() {
 
 
 /* ================================================================
-   CONTRIBUTION INITIATIVES — READ ONLY LIST
+   INITIATIVE HELPERS
+================================================================ */
+
+function getInitiativeById(initiativeId) {
+
+    return contributionInitiatives.find(
+        (initiative) =>
+            initiative.id === initiativeId
+    ) || null;
+}
+
+
+/*
+ * Remove any currently open participant editor.
+ *
+ * Only one draft initiative is configured at a time.
+ */
+function clearInitiativeParticipantEditor() {
+
+    configuringInitiativeId =
+        null;
+
+    document
+        .querySelectorAll(
+            ".initiative-participant-editor"
+        )
+        .forEach((editor) => {
+
+            editor.remove();
+        });
+}
+
+
+/* ================================================================
+   INITIATIVE MEMBERS — READ ONLY
+================================================================ */
+
+/*
+ * Reads members belonging to the current group.
+ *
+ * This is intentionally scoped by currentGroup.id.
+ *
+ * No member-table writes occur here.
+ * members.js remains the owner of ordinary member management.
+ */
+async function loadInitiativeMembers() {
+
+    if (!currentGroup?.id) {
+
+        throw new Error(
+            "No active group is available."
+        );
+    }
+
+    const {
+        data,
+        error
+    } = await supabase
+        .from("members")
+        .select(
+            [
+                "id",
+                "member_number",
+                "membership_number",
+                "name",
+                "status",
+                "onboarding_status"
+            ].join(", ")
+        )
+        .eq(
+            "group_id",
+            currentGroup.id
+        )
+        .order(
+            "member_number",
+            {
+                ascending: true,
+                nullsFirst: false
+            }
+        );
+
+    if (error) {
+        throw error;
+    }
+
+    initiativeMembers =
+        Array.isArray(data)
+            ? data
+            : [];
+
+    return initiativeMembers;
+}
+
+
+/* ================================================================
+   INITIATIVE PARTICIPANTS — READ ONLY EXISTING STATE
+================================================================ */
+
+/*
+ * There is no participant getter RPC in the verified production
+ * contract.
+ *
+ * Therefore this is a READ ONLY query against the participant table.
+ *
+ * The browser MUST NOT insert, update, delete or upsert this table.
+ */
+async function loadInitiativeParticipants(initiativeId) {
+
+    const initiative =
+        getInitiativeById(
+            initiativeId
+        );
+
+    if (!initiative) {
+
+        throw new Error(
+            "The selected initiative is no longer available."
+        );
+    }
+
+    const {
+        data,
+        error
+    } = await supabase
+        .from("contribution_initiative_members")
+        .select(
+            "member_id, amount"
+        )
+        .eq(
+            "initiative_id",
+            initiative.id
+        );
+
+    if (error) {
+        throw error;
+    }
+
+    return Array.isArray(data)
+        ? data
+        : [];
+}
+
+
+/* ================================================================
+   INITIATIVE PARTICIPANT EDITOR
+================================================================ */
+
+function createParticipantStatus(
+    editor,
+    message,
+    isError = false
+) {
+
+    const status =
+        document.createElement("div");
+
+    status.className =
+        isError
+            ? "initiative-participant-status error"
+            : "initiative-participant-status";
+
+    status.setAttribute(
+        "role",
+        "status"
+    );
+
+    status.setAttribute(
+        "aria-live",
+        "polite"
+    );
+
+    status.textContent =
+        message;
+
+    editor.appendChild(
+        status
+    );
+
+    return status;
+}
+
+
+function createParticipantRow(
+    member,
+    existingParticipant,
+    defaultAmount
+) {
+
+    const row =
+        document.createElement("div");
+
+    row.className =
+        "initiative-participant-row";
+
+    const memberContainer =
+        document.createElement("label");
+
+    memberContainer.className =
+        "initiative-participant-member";
+
+    const checkbox =
+        document.createElement("input");
+
+    checkbox.type =
+        "checkbox";
+
+    checkbox.dataset.memberId =
+        member.id;
+
+    checkbox.checked =
+        Boolean(existingParticipant);
+
+    const memberText =
+        document.createElement("div");
+
+    const name =
+        document.createElement("strong");
+
+    name.textContent =
+        member.name ||
+        member.membership_number ||
+        member.member_number ||
+        member.id;
+
+    const metadata =
+        document.createElement("span");
+
+    const identifiers = [];
+
+    if (member.member_number !== null &&
+        member.member_number !== undefined &&
+        member.member_number !== "") {
+
+        identifiers.push(
+            `Member #${member.member_number}`
+        );
+    }
+
+    if (member.membership_number) {
+
+        identifiers.push(
+            `Membership: ${member.membership_number}`
+        );
+    }
+
+    if (member.status) {
+
+        identifiers.push(
+            `Status: ${member.status}`
+        );
+    }
+
+    metadata.textContent =
+        identifiers.length
+            ? identifiers.join(" • ")
+            : "Group member";
+
+    memberText.append(
+        name,
+        metadata
+    );
+
+    memberContainer.append(
+        checkbox,
+        memberText
+    );
+
+    const amountContainer =
+        document.createElement("label");
+
+    amountContainer.className =
+        "initiative-participant-amount-field";
+
+    const amountLabel =
+        document.createElement("span");
+
+    amountLabel.textContent =
+        "Amount";
+
+    const amountInput =
+        document.createElement("input");
+
+    amountInput.type =
+        "number";
+
+    amountInput.inputMode =
+        "decimal";
+
+    amountInput.step =
+        "0.01";
+
+    amountInput.min =
+        "0";
+
+    amountInput.className =
+        "initiative-participant-amount";
+
+    amountInput.dataset.memberId =
+        member.id;
+
+    const existingAmount =
+        existingParticipant?.amount;
+
+    const initialAmount =
+        existingAmount !== null &&
+        existingAmount !== undefined
+            ? existingAmount
+            : defaultAmount;
+
+    if (
+        initialAmount !== null &&
+        initialAmount !== undefined &&
+        initialAmount !== ""
+    ) {
+
+        amountInput.value =
+            String(initialAmount);
+    }
+
+    amountContainer.append(
+        amountLabel,
+        amountInput
+    );
+
+    row.append(
+        memberContainer,
+        amountContainer
+    );
+
+    return row;
+}
+
+
+function renderInitiativeParticipantEditor(
+    initiative,
+    existingParticipants
+) {
+
+    const container =
+        elements.contributionInitiativesList;
+
+    if (!container) {
+        return;
+    }
+
+    clearInitiativeParticipantEditor();
+
+    const existingByMemberId =
+        new Map(
+            existingParticipants.map(
+                (participant) => [
+                    participant.member_id,
+                    participant
+                ]
+            )
+        );
+
+    const editor =
+        document.createElement("div");
+
+    editor.className =
+        "initiative-participant-editor";
+
+    editor.dataset.initiativeId =
+        initiative.id;
+
+    const header =
+        document.createElement("div");
+
+    header.className =
+        "program-subsection-header";
+
+    const heading =
+        document.createElement("h3");
+
+    heading.textContent =
+        "Configure Participants";
+
+    const description =
+        document.createElement("p");
+
+    description.textContent =
+        `Select members participating in "${initiative.name}". ` +
+        "Set the amount for each selected member. " +
+        "The initiative remains Draft after saving.";
+
+    header.append(
+        heading,
+        description
+    );
+
+    editor.appendChild(
+        header
+    );
+
+    const status =
+        createParticipantStatus(
+            editor,
+            initiativeMembers.length
+                ? "Select the members who should participate."
+                : "No members are currently available in this group."
+        );
+
+    const list =
+        document.createElement("div");
+
+    list.className =
+        "initiative-participant-list";
+
+    if (!initiativeMembers.length) {
+
+        const empty =
+            document.createElement("div");
+
+        empty.className =
+            "initiative-participant-empty";
+
+        empty.textContent =
+            "No group members are available for participant configuration.";
+
+        list.appendChild(
+            empty
+        );
+
+    } else {
+
+        initiativeMembers.forEach(
+            (member) => {
+
+                const existingParticipant =
+                    existingByMemberId.get(
+                        member.id
+                    );
+
+                const row =
+                    createParticipantRow(
+                        member,
+                        existingParticipant,
+                        initiative.default_amount
+                    );
+
+                list.appendChild(
+                    row
+                );
+            }
+        );
+    }
+
+    editor.appendChild(
+        list
+    );
+
+    const actions =
+        document.createElement("div");
+
+    actions.className =
+        "initiative-participant-actions";
+
+    const cancelButton =
+        document.createElement("button");
+
+    cancelButton.type =
+        "button";
+
+    cancelButton.className =
+        "btn btn-secondary";
+
+    cancelButton.dataset.cancelInitiativeParticipants =
+        "true";
+
+    cancelButton.textContent =
+        "Cancel";
+
+    const saveButton =
+        document.createElement("button");
+
+    saveButton.type =
+        "button";
+
+    saveButton.className =
+        "btn btn-primary";
+
+    saveButton.dataset.saveInitiativeParticipants =
+        "true";
+
+    saveButton.textContent =
+        "Save Participants";
+
+    saveButton.disabled =
+        !initiativeMembers.length ||
+        !isInitiativeManager();
+
+    actions.append(
+        cancelButton,
+        saveButton
+    );
+
+    editor.appendChild(
+        actions
+    );
+
+    /*
+     * Status is intentionally retained as a DOM element so the
+     * save handler can update it without using innerHTML.
+     */
+    editor._participantStatus =
+        status;
+
+    /*
+     * Insert immediately after the initiative list.
+     *
+     * This keeps the editor inside the existing Contribution
+     * Programs section and avoids creating a second program area.
+     */
+    container.appendChild(
+        editor
+    );
+
+    return editor;
+}
+
+
+/* ================================================================
+   INITIATIVE PARTICIPANT CONFIGURATION
+================================================================ */
+
+async function configureInitiativeParticipants(
+    initiativeId
+) {
+
+    if (!currentGroup?.id) {
+
+        throw new Error(
+            "No active group is available."
+        );
+    }
+
+    if (!isInitiativeManager()) {
+
+        throw new Error(
+            "Participant configuration requires an admin or chairperson role."
+        );
+    }
+
+    const initiative =
+        getInitiativeById(
+            initiativeId
+        );
+
+    if (!initiative) {
+
+        throw new Error(
+            "The selected initiative is no longer available."
+        );
+    }
+
+    if (
+        normalizeLower(
+            initiative.status
+        ) !== "draft"
+    ) {
+
+        throw new Error(
+            "Only Draft initiatives can be configured."
+        );
+    }
+
+    configuringInitiativeId =
+        initiative.id;
+
+    /*
+     * Both operations are read-only.
+     *
+     * Members are scoped to the active group.
+     * Existing participants are read from the participant table
+     * because no participant getter RPC currently exists.
+     */
+    const [
+        members,
+        existingParticipants
+    ] = await Promise.all([
+        loadInitiativeMembers(),
+        loadInitiativeParticipants(
+            initiative.id
+        )
+    ]);
+
+    /*
+     * Guard against the selected initiative changing or becoming
+     * unavailable while the asynchronous reads were in progress.
+     */
+    const currentInitiative =
+        getInitiativeById(
+            initiative.id
+        );
+
+    if (!currentInitiative) {
+
+        clearInitiativeParticipantEditor();
+
+        throw new Error(
+            "The selected initiative is no longer available."
+        );
+    }
+
+    if (
+        normalizeLower(
+            currentInitiative.status
+        ) !== "draft"
+    ) {
+
+        clearInitiativeParticipantEditor();
+
+        throw new Error(
+            "Only Draft initiatives can be configured."
+        );
+    }
+
+    initiativeMembers =
+        Array.isArray(members)
+            ? members
+            : [];
+
+    renderInitiativeParticipantEditor(
+        currentInitiative,
+        existingParticipants
+    );
+}
+
+
+/* ================================================================
+   INITIATIVE PARTICIPANT SAVE
+================================================================ */
+
+async function saveInitiativeParticipants(
+    initiative,
+    editor
+) {
+
+    if (!currentGroup?.id) {
+
+        throw new Error(
+            "No active group is available."
+        );
+    }
+
+    if (!isInitiativeManager()) {
+
+        throw new Error(
+            "Participant configuration requires an admin or chairperson role."
+        );
+    }
+
+    if (!initiative) {
+
+        throw new Error(
+            "The selected initiative is no longer available."
+        );
+    }
+
+    if (
+        normalizeLower(
+            initiative.status
+        ) !== "draft"
+    ) {
+
+        throw new Error(
+            "Only Draft initiatives can be configured."
+        );
+    }
+
+    if (
+        configuringInitiativeId !== initiative.id
+    ) {
+
+        throw new Error(
+            "The participant editor is no longer active."
+        );
+    }
+
+    const memberIds =
+        new Set(
+            initiativeMembers.map(
+                (member) => member.id
+            )
+        );
+
+    const checkboxes =
+        Array.from(
+            editor.querySelectorAll(
+                'input[type="checkbox"][data-member-id]'
+            )
+        );
+
+    const selectedIds =
+        new Set();
+
+    const participants = [];
+
+    for (const checkbox of checkboxes) {
+
+        if (!checkbox.checked) {
+            continue;
+        }
+
+        const memberId =
+            checkbox.dataset.memberId;
+
+        /*
+         * The frontend verifies the selected member belongs to the
+         * already-loaded current-group member set.
+         *
+         * The canonical RPC remains authoritative and performs its
+         * own group-membership validation.
+         */
+        if (
+            !memberId ||
+            !memberIds.has(memberId)
+        ) {
+
+            throw new Error(
+                "One or more selected members do not belong to the current group."
+            );
+        }
+
+        /*
+         * Prevent duplicate payload entries at the browser layer.
+         * The database unique constraint remains authoritative.
+         */
+        if (selectedIds.has(memberId)) {
+
+            throw new Error(
+                "A member was selected more than once."
+            );
+        }
+
+        selectedIds.add(
+            memberId
+        );
+
+        const amountInput =
+            Array.from(
+                editor.querySelectorAll(
+                    ".initiative-participant-amount"
+                )
+            ).find(
+                (input) =>
+                    input.dataset.memberId === memberId
+            );
+
+        if (!amountInput) {
+
+            throw new Error(
+                "A contribution amount is missing for a selected member."
+            );
+        }
+
+        const rawAmount =
+            amountInput.value.trim();
+
+        if (!rawAmount) {
+
+            throw new Error(
+                "A contribution amount is required for every selected member."
+            );
+        }
+
+        const amount =
+            Number(rawAmount);
+
+        if (
+            !Number.isFinite(amount) ||
+            amount < 0
+        ) {
+
+            throw new Error(
+                "Participant amounts must be valid non-negative numbers."
+            );
+        }
+
+        participants.push({
+            member_id:
+                memberId,
+
+            amount:
+                amount
+        });
+    }
+
+    /*
+     * Empty participant arrays are permitted by the currently
+     * verified backend contract.
+     *
+     * Activation policy for zero-participant initiatives remains
+     * a later gate and is not invented here.
+     */
+
+    const status =
+        editor._participantStatus;
+
+    const saveButton =
+        editor.querySelector(
+            '[data-save-initiative-participants="true"]'
+        );
+
+    const cancelButton =
+        editor.querySelector(
+            '[data-cancel-initiative-participants="true"]'
+        );
+
+    if (status) {
+
+        status.className =
+            "initiative-participant-status";
+
+        status.textContent =
+            "Saving participant configuration…";
+    }
+
+    if (saveButton) {
+        saveButton.disabled = true;
+    }
+
+    if (cancelButton) {
+        cancelButton.disabled = true;
+    }
+
+    try {
+
+        /*
+         * One fresh request ID represents this logical save.
+         *
+         * If the same logical request must be retried, the caller
+         * should reuse the same request ID. A new logical save gets
+         * a new UUID.
+         */
+        const requestId =
+            crypto.randomUUID();
+
+        const {
+            error
+        } = await supabase.rpc(
+            "set_contribution_initiative_members",
+            {
+                p_initiative_id:
+                    initiative.id,
+
+                p_members:
+                    participants,
+
+                p_request_id:
+                    requestId
+            }
+        );
+
+        if (error) {
+            throw error;
+        }
+
+        /*
+         * Refresh only the initiative display.
+         *
+         * The canonical RPC owns participant replacement and
+         * effective-date handling.
+         */
+        await loadContributionInitiatives();
+
+        clearInitiativeParticipantEditor();
+
+        if (elements.contributionProgramStatus) {
+
+            elements.contributionProgramStatus.textContent =
+                "Participant configuration saved. Initiative remains Draft.";
+
+            elements.contributionProgramStatus.className =
+                "program-status ready";
+        }
+
+    } catch (error) {
+
+        if (status) {
+
+            status.className =
+                "initiative-participant-status error";
+
+            status.textContent =
+                error?.message ||
+                "Failed to save participant configuration.";
+        }
+
+        if (saveButton) {
+            saveButton.disabled = false;
+        }
+
+        if (cancelButton) {
+            cancelButton.disabled = false;
+        }
+
+        throw error;
+    }
+}
+
+
+/* ================================================================
+   CONTRIBUTION INITIATIVES — LIST
 ================================================================ */
 
 function renderContributionInitiatives() {
@@ -1215,6 +2141,11 @@ function renderContributionInitiatives() {
     if (!container) {
         return;
     }
+
+    /*
+     * Re-rendering removes any stale participant editor.
+     */
+    clearInitiativeParticipantEditor();
 
     container.replaceChildren();
 
@@ -1236,6 +2167,9 @@ function renderContributionInitiatives() {
 
             item.className =
                 "program-item";
+
+            item.dataset.initiativeId =
+                initiative.id;
 
             appendTextRow(
                 item,
@@ -1278,6 +2212,49 @@ function renderContributionInitiatives() {
                     String(
                         initiative.default_amount
                     )
+                );
+            }
+
+            /*
+             * Participant configuration is available only while
+             * the initiative is Draft and only to admin/chairperson.
+             *
+             * No activation or closure controls are added here.
+             */
+            if (
+                normalizeLower(
+                    initiative.status
+                ) === "draft" &&
+                isInitiativeManager()
+            ) {
+
+                const actions =
+                    document.createElement("div");
+
+                actions.className =
+                    "program-actions";
+
+                const configureButton =
+                    document.createElement("button");
+
+                configureButton.type =
+                    "button";
+
+                configureButton.className =
+                    "btn btn-secondary";
+
+                configureButton.dataset.configureInitiative =
+                    initiative.id;
+
+                configureButton.textContent =
+                    "Configure Participants";
+
+                actions.appendChild(
+                    configureButton
+                );
+
+                item.appendChild(
+                    actions
                 );
             }
 
@@ -1640,6 +2617,165 @@ function bindEvents() {
         }
     );
 
+    /*
+     * Contribution initiative controls are rendered dynamically.
+     *
+     * Delegation keeps one event owner on the existing list rather
+     * than attaching listeners repeatedly every time the list
+     * refreshes.
+     */
+    elements.contributionInitiativesList?.addEventListener(
+        "click",
+        async (event) => {
+
+            const configureButton =
+                event.target.closest(
+                    "[data-configure-initiative]"
+                );
+
+            if (configureButton) {
+
+                const initiativeId =
+                    configureButton.dataset.configureInitiative;
+
+                if (!initiativeId) {
+                    return;
+                }
+
+                configureButton.disabled =
+                    true;
+
+                try {
+
+                    await configureInitiativeParticipants(
+                        initiativeId
+                    );
+
+                } catch (error) {
+
+                    console.error(
+                        "Failed to configure initiative participants:",
+                        error
+                    );
+
+                    if (elements.contributionProgramStatus) {
+
+                        elements.contributionProgramStatus.textContent =
+                            error?.message ||
+                            "Failed to open participant configuration.";
+
+                        elements.contributionProgramStatus.className =
+                            "program-status error";
+                    }
+
+                } finally {
+
+                    /*
+                     * The initiative list may have been re-rendered
+                     * during the operation. Only restore the original
+                     * button if it is still connected.
+                     */
+                    if (
+                        configureButton.isConnected
+                    ) {
+
+                        configureButton.disabled =
+                            false;
+                    }
+                }
+
+                return;
+            }
+
+            const cancelButton =
+                event.target.closest(
+                    '[data-cancel-initiative-participants="true"]'
+                );
+
+            if (cancelButton) {
+
+                clearInitiativeParticipantEditor();
+
+                if (elements.contributionProgramStatus) {
+
+                    elements.contributionProgramStatus.textContent =
+                        "Participant configuration cancelled.";
+
+                    elements.contributionProgramStatus.className =
+                        "program-status";
+                }
+
+                return;
+            }
+
+            const saveButton =
+                event.target.closest(
+                    '[data-save-initiative-participants="true"]'
+                );
+
+            if (saveButton) {
+
+                const editor =
+                    saveButton.closest(
+                        ".initiative-participant-editor"
+                    );
+
+                if (!editor) {
+                    return;
+                }
+
+                const initiativeId =
+                    editor.dataset.initiativeId;
+
+                const initiative =
+                    getInitiativeById(
+                        initiativeId
+                    );
+
+                if (!initiative) {
+
+                    if (elements.contributionProgramStatus) {
+
+                        elements.contributionProgramStatus.textContent =
+                            "The selected initiative is no longer available.";
+
+                        elements.contributionProgramStatus.className =
+                            "program-status error";
+                    }
+
+                    clearInitiativeParticipantEditor();
+
+                    return;
+                }
+
+                try {
+
+                    await saveInitiativeParticipants(
+                        initiative,
+                        editor
+                    );
+
+                } catch (error) {
+
+                    console.error(
+                        "Failed to save initiative participants:",
+                        error
+                    );
+
+                    if (elements.contributionProgramStatus) {
+
+                        elements.contributionProgramStatus.textContent =
+                            error?.message ||
+                            "Failed to save participant configuration.";
+
+                        elements.contributionProgramStatus.className =
+                            "program-status error";
+                    }
+                }
+            }
+        }
+    );
+
     elements.groupCategory?.addEventListener(
         "change",
         () => {
@@ -1724,5 +2860,7 @@ export {
     loadContributionTypes,
     loadContributionInitiatives,
     loadFineRules,
-    createContributionInitiative
+    createContributionInitiative,
+    configureInitiativeParticipants,
+    saveInitiativeParticipants
 };
