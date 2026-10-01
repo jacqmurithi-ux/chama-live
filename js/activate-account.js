@@ -69,22 +69,18 @@ const successBox =
 ========================================================= */
 
 /*
- * CHAMA LIVE production site.
- *
- * Correct production login URL:
- * https://chamalive.co.ke/login.html
+ * CHAMA LIVE production login URL.
  *
  * IMPORTANT:
- * Do NOT append /chama-live/ here.
+ * Keep this explicitly pinned to production.
  *
- * The /chama-live/ path belongs to the old GitHub Pages
- * project-site deployment:
- *
- * https://jacqmurithi-ux.github.io/chama-live/
+ * Do NOT use window.location.origin here because the same
+ * JavaScript could otherwise redirect to an old/staging host
+ * if this file is accidentally served from another origin.
  */
 
 const LOGIN_URL =
-  `${window.location.origin}/login.html`;
+  "https://chamalive.co.ke/login.html";
 
 
 /* =========================================================
@@ -673,16 +669,6 @@ async function activateAccount(payload) {
     "CHAMA LIVE: calling activate-account Edge Function"
   );
 
-  console.log(
-    "CHAMA LIVE: membership number:",
-    payload.membership_number
-  );
-
-  console.log(
-    "CHAMA LIVE: email:",
-    payload.email
-  );
-
 
   /*
    * Call Supabase Edge Function.
@@ -829,8 +815,7 @@ else {
 
 
         console.log(
-          "CHAMA LIVE: account activation completed:",
-          response
+          "CHAMA LIVE: account activation completed"
         );
 
 
@@ -958,7 +943,7 @@ try {
 catch (error) {
 
   console.warn(
-    "CHAMA LIVE: URL parameter processing failed:",
+    "CHAMA LIVE: URL parameter processing failed",
     error
   );
 }
