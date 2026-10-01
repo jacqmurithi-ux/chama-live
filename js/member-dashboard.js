@@ -30,6 +30,8 @@
      get_my_contribution_position().
    • Group monthly participation is resolved through
      get_canonical_monthly_accounting_summary().
+   • Group monthly cash contributions are resolved through
+     get_monthly_accounting_summary().
    • member-layout.js owns portal navigation/auth/logout.
    ========================================================= */
 
@@ -47,6 +49,7 @@ let groupMembers = [];
 let groupContributions = [];
 let groupExpenses = [];
 let groupMonthlyAccountingSummary = null;
+let groupMonthlyFinancialSummary = null;
 
 let initialized = false;
 
@@ -748,6 +751,35 @@ async function loadGroupMonthlyAccountingSummary() {
 
 
 /* =========================================================
+   GROUP MONTHLY FINANCIAL SUMMARY
+   ========================================================= */
+
+async function loadGroupMonthlyFinancialSummary() {
+  const {
+    data,
+    error
+  } = await supabase.rpc(
+    "get_monthly_accounting_summary",
+    {
+      p_group_id: groupId,
+      p_month:
+        currentMonthStart().slice(
+          0,
+          7
+        )
+    }
+  );
+
+  if (error) {
+    throw error;
+  }
+
+  groupMonthlyFinancialSummary =
+    data || null;
+}
+
+
+/* =========================================================
    GROUP FINANCIAL HEALTH
    ========================================================= */
 
@@ -758,33 +790,19 @@ function renderGroupFinancialHealth(
     currentMonthStart();
 
   /*
-   * These values are intentionally retained as
-   * cash / transaction metrics.
+   * Cash / transaction metrics:
+   *   - monthlyContributions comes from the monthly financial
+   *     report contract's total_contributions_collected.
+   *   - monthlyExpenses remains based on the read-only
+   *     expense transaction data loaded above.
    *
-   * They are NOT canonical contribution-allocation
-   * metrics.
+   * These are NOT canonical contribution-allocation metrics.
    */
   const monthlyContributions =
-    groupContributions
-      .filter(
-        contribution =>
-          contribution.contribution_date &&
-          String(
-            contribution.contribution_date
-          ).slice(0, 10) >=
-            monthStart
-      )
-      .reduce(
-        (
-          sum,
-          contribution
-        ) =>
-          sum +
-          numberValue(
-            contribution.amount
-          ),
-        0
-      );
+    numberValue(
+      groupMonthlyFinancialSummary
+        ?.total_contributions_collected
+    );
 
   const monthlyExpenses =
     groupExpenses
@@ -1704,6 +1722,7 @@ async function loadDashboard() {
         loadMyContributionPosition(),
         loadGroupReadData(),
         loadGroupMonthlyAccountingSummary(),
+        loadGroupMonthlyFinancialSummary(),
         loadMeetings(),
         loadActivities(),
         loadPlansAndGoals(),
@@ -1715,6 +1734,7 @@ async function loadDashboard() {
       myContributionPositionResult,
       groupDataResult,
       groupAccountingResult,
+      groupFinancialSummaryResult,
       meetingsResult,
       activitiesResult,
       plansResult,
@@ -1722,19 +1742,25 @@ async function loadDashboard() {
     ] = results;
 
     /*
-     * Group Financial Health requires BOTH:
+     * Group Financial Health requires ALL THREE:
      *
      * 1. Group read data
      * 2. Canonical monthly accounting summary
+     * 3. Monthly financial summary for cash received
      *
-     * There is intentionally no fallback to the old
-     * browser-side raw-contribution participation
-     * calculation.
+     * There is intentionally no fallback to:
+     *   • raw 50-row contribution aggregation
+     *   • browser-side raw-contribution participation
+     *
+     * This prevents an incomplete transaction query from
+     * being presented as the group's monthly cash total.
      */
     if (
       groupDataResult.status ===
         "fulfilled" &&
       groupAccountingResult.status ===
+        "fulfilled" &&
+      groupFinancialSummaryResult.status ===
         "fulfilled"
     ) {
       renderGroupFinancialHealth(
@@ -1747,10 +1773,25 @@ async function loadDashboard() {
     } else {
       console.warn(
         "Member dashboard group financial data failed:",
-        groupDataResult.status ===
-          "rejected"
-          ? groupDataResult.reason
-          : groupAccountingResult.reason
+        {
+          groupData:
+            groupDataResult.status ===
+            "rejected"
+              ? groupDataResult.reason
+              : null,
+
+          groupAccounting:
+            groupAccountingResult.status ===
+            "rejected"
+              ? groupAccountingResult.reason
+              : null,
+
+          groupFinancialSummary:
+            groupFinancialSummaryResult.status ===
+            "rejected"
+              ? groupFinancialSummaryResult.reason
+              : null
+        }
       );
 
       setText(
@@ -1854,6 +1895,7 @@ async function loadDashboard() {
     void myContributionsResult;
     void myContributionPositionResult;
     void groupAccountingResult;
+    void groupFinancialSummaryResult;
     void meetingsResult;
     void activitiesResult;
     void plansResult;
