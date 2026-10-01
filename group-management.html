@@ -603,6 +603,43 @@
             font-size: 0.78rem;
         }
 
+        .initiative-create-form {
+            margin-bottom: 18px;
+            padding: 16px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: #fff;
+        }
+
+        .initiative-create-status {
+            margin-bottom: 14px;
+            padding: 10px 12px;
+            border-radius: 9px;
+            background: #f8fafc;
+            color: #475569;
+            font-size: 0.8rem;
+        }
+
+        .initiative-create-status.success {
+            background: var(--success-bg);
+            color: var(--success-text);
+        }
+
+        .initiative-create-status.error {
+            background: var(--error-bg);
+            color: var(--error-text);
+        }
+
+        .initiative-create-status.warning {
+            background: var(--warning-bg);
+            color: var(--warning-text);
+        }
+
+        .initiative-create-status.info {
+            background: var(--info-bg);
+            color: var(--info-text);
+        }
+
         /* =====================================================
            PAYMENT COLLECTION
         ====================================================== */
@@ -799,36 +836,17 @@
             .management-card,
             .management-card.full-width,
             .overview-card {
-                grid-column: auto;
-            }
-
-            .card-header {
-                padding: 14px 15px 11px;
-            }
-
-            .card-body {
-                padding: 15px;
+                grid-column: 1;
             }
 
             .overview-content {
                 grid-template-columns: 1fr;
-                gap: 12px;
-            }
-
-            .calendar-summary {
-                grid-template-columns: 1fr;
-                gap: 8px;
-                margin-bottom: 15px;
-            }
-
-            .calendar-summary-item {
-                padding: 11px;
             }
 
             .form-grid,
-            .payment-provider-grid {
+            .payment-provider-grid,
+            .context-grid {
                 grid-template-columns: 1fr;
-                gap: 12px;
             }
 
             .form-field.full-width,
@@ -836,112 +854,37 @@
                 grid-column: auto;
             }
 
-            .monthly-closing-day-select {
-                min-height: 50px;
-                padding: 12px 40px 12px 13px;
-                font-size: 1rem;
-                pointer-events: auto;
-                touch-action: manipulation;
-            }
-
-            .form-actions {
-                justify-content: stretch;
-            }
-
-            .form-actions .btn {
-                width: 100%;
-            }
-
-            .leadership-actions {
-                align-items: stretch;
-                flex-direction: column;
-            }
-
-            .leadership-actions .btn,
-            .leadership-actions .officer-link {
-                width: 100%;
-            }
-
-            .program-subsection-header,
-            .program-item-header {
-                flex-direction: column;
+            .calendar-summary {
+                grid-template-columns: 1fr;
             }
 
             .account-content {
-                align-items: stretch;
+                align-items: flex-start;
                 flex-direction: column;
-                gap: 12px;
             }
 
             .account-link {
                 width: 100%;
             }
 
-            .context-grid {
-                grid-template-columns: 1fr;
-                gap: 8px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .group-management-page {
-                padding: 12px;
-            }
-
-            .page-hero {
-                margin-bottom: 14px;
-            }
-
-            .page-hero h1 {
-                font-size: 1.45rem;
-            }
-
-            .page-hero p {
-                font-size: 0.84rem;
-            }
-
-            .card-header {
-                padding: 13px;
-            }
-
-            .card-body {
-                padding: 13px;
-            }
-
-            .group-meta {
+            .program-subsection-header {
                 flex-direction: column;
-                gap: 3px;
             }
 
-            .permission-badge {
-                width: fit-content;
-            }
-
-            .calendar-summary-item {
-                padding: 10px;
-            }
-
-            .monthly-closing-day-select {
-                min-height: 52px;
-                font-size: 1rem;
-            }
-
-            .subscription-row {
-                align-items: flex-start;
+            .program-item-header {
                 flex-direction: column;
-                gap: 2px;
-            }
-
-            .subscription-value {
-                text-align: left;
             }
         }
     </style>
 </head>
 
+
 <body>
 
-    <main class="group-management-page">
+    <main
+        class="group-management-page"
+        id="groupManagementPage"
+    >
 
         <!-- =====================================================
              HERO
@@ -954,32 +897,22 @@
             </h1>
 
             <p>
-                Manage your group's information,
-                contribution cycle, contribution programs,
-                payment collection, leadership, account and
-                subscription settings.
+                Manage your group's profile, leadership,
+                contribution configuration and account settings.
             </p>
 
         </header>
 
 
         <!-- =====================================================
-             STATUS
+             GLOBAL STATUS
         ====================================================== -->
 
         <div
-            id="statusMessage"
+            id="groupManagementStatus"
             class="status-message"
             role="status"
             aria-live="polite"
-        ></div>
-
-
-        <div
-            id="errorMessage"
-            class="status-message error"
-            role="alert"
-            aria-live="assertive"
         ></div>
 
 
@@ -1008,7 +941,10 @@
                  GROUP OVERVIEW
             ================================================== -->
 
-            <section class="management-card overview-card">
+            <section
+                class="management-card overview-card"
+                id="groupOverviewCard"
+            >
 
                 <div class="card-header">
 
@@ -1019,7 +955,7 @@
                         </h2>
 
                         <p>
-                            Current group account summary.
+                            Current group identity and management access.
                         </p>
 
                     </div>
@@ -1033,27 +969,32 @@
 
                         <div>
 
-                            <h3
+                            <p
                                 id="groupNameDisplay"
                                 class="group-name-display"
                             >
                                 —
-                            </h3>
-
+                            </p>
 
                             <div class="group-meta">
 
-                                <span id="groupCategoryDisplay">
-                                    —
+                                <span>
+                                    Type:
+                                    <strong id="groupTypeDisplay">
+                                        —
+                                    </strong>
                                 </span>
 
-                                <span id="groupCountryDisplay">
-                                    —
+                                <span>
+                                    Country:
+                                    <strong id="groupCountryDisplay">
+                                        —
+                                    </strong>
                                 </span>
 
                                 <span>
                                     Members:
-                                    <strong id="memberCountDisplay">
+                                    <strong id="groupMemberCountDisplay">
                                         —
                                     </strong>
                                 </span>
@@ -1063,12 +1004,12 @@
                         </div>
 
 
-                        <div
+                        <span
                             id="permissionBadge"
                             class="permission-badge"
                         >
-                            —
-                        </div>
+                            Checking access…
+                        </span>
 
                     </div>
 
@@ -1081,7 +1022,10 @@
                  GROUP INFORMATION
             ================================================== -->
 
-            <section class="management-card">
+            <section
+                class="management-card full-width"
+                id="groupInformationCard"
+            >
 
                 <div class="card-header">
 
@@ -1092,8 +1036,8 @@
                         </h2>
 
                         <p>
-                            Update the basic information
-                            used across CHAMA LIVE.
+                            Basic identity and contribution settings
+                            for this group.
                         </p>
 
                     </div>
@@ -1103,11 +1047,14 @@
 
                 <div class="card-body">
 
-                    <form id="groupForm">
+                    <form
+                        id="groupInformationForm"
+                        novalidate
+                    >
 
                         <div class="form-grid">
 
-                            <div class="form-field full-width">
+                            <div class="form-field">
 
                                 <label for="groupName">
                                     Group Name
@@ -1117,6 +1064,7 @@
                                     id="groupName"
                                     name="groupName"
                                     type="text"
+                                    maxlength="120"
                                     autocomplete="organization"
                                     required
                                 >
@@ -1126,59 +1074,24 @@
 
                             <div class="form-field">
 
-                                <label for="groupCategory">
+                                <label for="groupType">
                                     Group Type
                                 </label>
 
                                 <select
-                                    id="groupCategory"
-                                    name="groupCategory"
-                                    required
+                                    id="groupType"
+                                    name="groupType"
                                 >
 
-                                    <option value="">
-                                        Select group type
-                                    </option>
-
-                                    <option value="Chama">
+                                    <option value="chama">
                                         Chama
                                     </option>
 
-                                    <option value="CBO">
+                                    <option value="cbo">
                                         CBO
                                     </option>
 
-                                    <option value="Other">
-                                        Other
-                                    </option>
-
                                 </select>
-
-                            </div>
-
-
-                            <div
-                                id="groupCategoryOtherField"
-                                class="form-field"
-                                hidden
-                            >
-
-                                <label for="groupCategoryOther">
-                                    Group Type Name
-                                </label>
-
-                                <input
-                                    id="groupCategoryOther"
-                                    name="groupCategoryOther"
-                                    type="text"
-                                    maxlength="120"
-                                    autocomplete="off"
-                                    placeholder="e.g. Investment Group"
-                                >
-
-                                <p class="field-help">
-                                    Enter the type of group.
-                                </p>
 
                             </div>
 
@@ -1193,18 +1106,17 @@
                                     id="groupCountry"
                                     name="groupCountry"
                                     type="text"
-                                    value="Kenya"
+                                    maxlength="80"
                                     autocomplete="country-name"
-                                    required
                                 >
 
                             </div>
 
 
-                            <div class="form-field full-width">
+                            <div class="form-field">
 
                                 <label for="monthlyContribution">
-                                    Standard Monthly Contribution
+                                    Monthly Contribution
                                 </label>
 
                                 <input
@@ -1214,14 +1126,11 @@
                                     min="0"
                                     step="0.01"
                                     inputmode="decimal"
-                                    required
                                 >
 
                                 <p class="field-help">
-                                    This is the standard monthly amount
-                                    configured for the group. Individual
-                                    member plans remain subject to their
-                                    canonical accounting configuration.
+                                    Default monthly contribution amount
+                                    used by the group's contribution cycle.
                                 </p>
 
                             </div>
@@ -1234,7 +1143,7 @@
                             <button
                                 type="submit"
                                 class="btn btn-primary"
-                                id="saveGroup"
+                                id="saveGroupInformation"
                             >
                                 Save Group Information
                             </button>
@@ -1249,12 +1158,12 @@
 
 
             <!-- =================================================
-                 LEADERSHIP SETUP
+                 LEADERSHIP
             ================================================== -->
 
             <section
-                class="management-card"
-                id="leadershipSetupCard"
+                class="management-card full-width"
+                id="leadershipCard"
             >
 
                 <div class="card-header">
@@ -1266,8 +1175,8 @@
                         </h2>
 
                         <p>
-                            Declare your actual group position,
-                            then add and invite the other initial officers.
+                            Configure the group's recognised leadership
+                            positions through the canonical member workflow.
                         </p>
 
                     </div>
@@ -1278,147 +1187,37 @@
                 <div class="card-body">
 
                     <div
-                        id="leadershipSetupStatus"
-                        class="leadership-status pending"
+                        id="leadershipStatus"
+                        class="leadership-status"
                         role="status"
                         aria-live="polite"
                     >
-                        Your actual group position has not been recorded.
+                        Loading leadership setup…
                     </div>
 
 
-                    <div class="form-grid">
-
-                        <div class="form-field">
-
-                            <label for="adminActualPosition">
-                                Your Actual Position
-                            </label>
-
-                            <select
-                                id="adminActualPosition"
-                                name="adminActualPosition"
-                            >
-
-                                <option value="">
-                                    Select actual position
-                                </option>
-
-                                <option value="chairperson">
-                                    Chairperson
-                                </option>
-
-                                <option value="vice_chairperson">
-                                    Vice Chairperson
-                                </option>
-
-                                <option value="treasurer">
-                                    Treasurer
-                                </option>
-
-                                <option value="secretary">
-                                    Secretary
-                                </option>
-
-                                <option value="vice_secretary">
-                                    Vice Secretary
-                                </option>
-
-                                <option value="committee_member">
-                                    Committee Member
-                                </option>
-
-                                <option value="member">
-                                    Member
-                                </option>
-
-                                <option value="other">
-                                    Other
-                                </option>
-
-                            </select>
-
-                            <p class="field-help">
-                                This is your real-world group office,
-                                separate from your CHAMA LIVE access role.
-                            </p>
-
-                        </div>
-
-
-                        <div
-                            id="adminActualPositionNameField"
-                            class="form-field"
-                            hidden
-                        >
-
-                            <label for="adminActualPositionName">
-                                Position Name
-                            </label>
-
-                            <input
-                                id="adminActualPositionName"
-                                name="adminActualPositionName"
-                                type="text"
-                                maxlength="120"
-                                autocomplete="off"
-                            >
-
-                            <p class="field-help">
-                                Enter the name of the actual position.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="form-actions">
-
-                        <button
-                            type="button"
-                            class="btn btn-primary"
-                            id="saveAdminActualPosition"
-                        >
-                            Save Actual Position
-                        </button>
-
-                    </div>
+                    <div
+                        id="leadershipList"
+                        class="program-list"
+                    ></div>
 
 
                     <div class="leadership-actions">
 
-                        <div>
-
-                            <strong>
-                                Initial officers
-                            </strong>
-
-                            <p class="field-help">
-                                Add and invite the chairperson,
-                                secretary, treasurer and other officers
-                                as applicable.
-                            </p>
-
-                        </div>
-
-
                         <a
-                            id="addInitialOfficerLink"
                             class="officer-link"
-                            href="members.html?onboarding=officer"
+                            href="members.html"
                         >
-                            Add Initial Officer
+                            Manage Members
                         </a>
 
                     </div>
 
 
                     <p class="leadership-note">
-                        The administrator's application role does not
-                        automatically determine their actual group position.
-                        Each officer receives their own member record and
-                        position history.
+                        Leadership positions are recorded through the
+                        canonical member-position service. This page does
+                        not directly update member records.
                     </p>
 
                 </div>
@@ -1427,11 +1226,11 @@
 
 
             <!-- =================================================
-                 MONTHLY CONTRIBUTION CYCLE
+                 CONTRIBUTION CYCLE
             ================================================== -->
 
             <section
-                class="management-card"
+                class="management-card full-width"
                 id="contributionCalendarCard"
             >
 
@@ -1444,8 +1243,8 @@
                         </h2>
 
                         <p>
-                            Set the day your group's monthly
-                            contribution cycle closes.
+                            View and configure the group's recurring
+                            contribution cycle.
                         </p>
 
                     </div>
@@ -1460,10 +1259,10 @@
                         <div class="calendar-summary-item">
 
                             <span>
-                                Current Cycle
+                                Contribution Amount
                             </span>
 
-                            <strong id="currentContributionCycle">
+                            <strong id="calendarContributionAmount">
                                 —
                             </strong>
 
@@ -1473,10 +1272,10 @@
                         <div class="calendar-summary-item">
 
                             <span>
-                                Opening Date
+                                Closing Day
                             </span>
 
-                            <strong id="currentContributionOpeningDate">
+                            <strong id="calendarClosingDay">
                                 —
                             </strong>
 
@@ -1486,10 +1285,10 @@
                         <div class="calendar-summary-item">
 
                             <span>
-                                Closing Date
+                                Cycle Status
                             </span>
 
-                            <strong id="currentContributionClosingDate">
+                            <strong id="calendarCycleStatus">
                                 —
                             </strong>
 
@@ -1498,33 +1297,175 @@
                     </div>
 
 
-                    <form id="contributionCalendarForm">
+                    <form
+                        id="contributionCalendarForm"
+                        novalidate
+                    >
 
-                        <div class="form-field">
+                        <div class="form-grid">
 
-                            <label for="monthlyClosingDay">
-                                Monthly Closing Day
-                            </label>
+                            <div class="form-field">
 
-                            <select
-                                id="monthlyClosingDay"
-                                name="monthlyClosingDay"
-                                class="monthly-closing-day-select"
-                                required
-                                aria-label="Monthly Closing Day"
-                            ></select>
+                                <label for="monthlyClosingDay">
+                                    Monthly Closing Day
+                                </label>
 
-                            <p class="field-help">
-                                Choose a closing day from 1 to 28.
-                                The opening date is calculated automatically.
-                            </p>
+                                <select
+                                    id="monthlyClosingDay"
+                                    name="monthlyClosingDay"
+                                    class="monthly-closing-day-select"
+                                >
 
-                        </div>
+                                    <option value="1">
+                                        1
+                                    </option>
+
+                                    <option value="2">
+                                        2
+                                    </option>
+
+                                    <option value="3">
+                                        3
+                                    </option>
+
+                                    <option value="4">
+                                        4
+                                    </option>
+
+                                    <option value="5">
+                                        5
+                                    </option>
+
+                                    <option value="6">
+                                        6
+                                    </option>
+
+                                    <option value="7">
+                                        7
+                                    </option>
+
+                                    <option value="8">
+                                        8
+                                    </option>
+
+                                    <option value="9">
+                                        9
+                                    </option>
+
+                                    <option value="10">
+                                        10
+                                    </option>
+
+                                    <option value="11">
+                                        11
+                                    </option>
+
+                                    <option value="12">
+                                        12
+                                    </option>
+
+                                    <option value="13">
+                                        13
+                                    </option>
+
+                                    <option value="14">
+                                        14
+                                    </option>
+
+                                    <option value="15">
+                                        15
+                                    </option>
+
+                                    <option value="16">
+                                        16
+                                    </option>
+
+                                    <option value="17">
+                                        17
+                                    </option>
+
+                                    <option value="18">
+                                        18
+                                    </option>
+
+                                    <option value="19">
+                                        19
+                                    </option>
+
+                                    <option value="20">
+                                        20
+                                    </option>
+
+                                    <option value="21">
+                                        21
+                                    </option>
+
+                                    <option value="22">
+                                        22
+                                    </option>
+
+                                    <option value="23">
+                                        23
+                                    </option>
+
+                                    <option value="24">
+                                        24
+                                    </option>
+
+                                    <option value="25">
+                                        25
+                                    </option>
+
+                                    <option value="26">
+                                        26
+                                    </option>
+
+                                    <option value="27">
+                                        27
+                                    </option>
+
+                                    <option value="28">
+                                        28
+                                    </option>
+
+                                    <option value="29">
+                                        29
+                                    </option>
+
+                                    <option value="30">
+                                        30
+                                    </option>
+
+                                    <option value="31">
+                                        31
+                                    </option>
+
+                                </select>
+
+                                <p class="field-help">
+                                    The configured monthly cycle closing day.
+                                </p>
+
+                            </div>
 
 
-                        <div class="calendar-note">
-                            Changing the closing day applies prospectively.
-                            Historical contribution cycles remain unchanged.
+                            <div class="form-field">
+
+                                <label for="calendarContributionAmountInput">
+                                    Monthly Contribution Amount
+                                </label>
+
+                                <input
+                                    id="calendarContributionAmountInput"
+                                    name="calendarContributionAmountInput"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    inputmode="decimal"
+                                >
+
+                            </div>
+
                         </div>
 
 
@@ -1542,13 +1483,21 @@
 
                     </form>
 
+
+                    <p class="calendar-note">
+                        Monthly contribution settings are configuration
+                        values. Existing accounting history and already
+                        recorded transactions are not rewritten by changing
+                        the cycle configuration.
+                    </p>
+
                 </div>
 
             </section>
 
 
             <!-- =================================================
-                 CONTRIBUTION PROGRAMS & FINE RULES
+                 CONTRIBUTION PROGRAMS / FINE RULES
             ================================================== -->
 
             <section
@@ -1565,10 +1514,8 @@
                         </h2>
 
                         <p>
-                            View the contribution types, programs and
-                            fine rules already defined for this group.
-                            Configuration actions will use the existing
-                            canonical backend services.
+                            Configure group contribution programs and review
+                            the rules used by the canonical accounting system.
                         </p>
 
                     </div>
@@ -1584,7 +1531,7 @@
                         role="status"
                         aria-live="polite"
                     >
-                        Loading contribution programs and fine rules...
+                        Loading contribution configuration…
                     </div>
 
 
@@ -1619,9 +1566,226 @@
                                 class="program-list"
                             >
                                 <div class="program-empty">
-                                    Loading contribution types...
+                                    Loading contribution types…
                                 </div>
                             </div>
+
+                        </div>
+
+
+                        <!-- =========================================
+                             CREATE CONTRIBUTION INITIATIVE
+                        ========================================== -->
+
+                        <div class="program-subsection">
+
+                            <div class="program-subsection-header">
+
+                                <div>
+
+                                    <h3>
+                                        Create Contribution Program
+                                    </h3>
+
+                                    <p>
+                                        Create a new contribution initiative
+                                        in Draft status using the canonical
+                                        database service.
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+
+                            <form
+                                id="createInitiativeForm"
+                                class="initiative-create-form"
+                                novalidate
+                            >
+
+                                <div
+                                    id="initiativeCreateStatus"
+                                    class="initiative-create-status"
+                                    role="status"
+                                    aria-live="polite"
+                                >
+                                    New initiatives are created as Draft.
+                                </div>
+
+
+                                <div class="form-grid">
+
+                                    <div class="form-field full-width">
+
+                                        <label for="initiativeName">
+                                            Program Name
+                                        </label>
+
+                                        <input
+                                            id="initiativeName"
+                                            name="initiativeName"
+                                            type="text"
+                                            maxlength="160"
+                                            autocomplete="off"
+                                            required
+                                        >
+
+                                        <p class="field-help">
+                                            A clear name for this contribution
+                                            initiative.
+                                        </p>
+
+                                    </div>
+
+
+                                    <div class="form-field full-width">
+
+                                        <label for="initiativeDescription">
+                                            Description
+                                        </label>
+
+                                        <textarea
+                                            id="initiativeDescription"
+                                            name="initiativeDescription"
+                                            maxlength="1000"
+                                        ></textarea>
+
+                                        <p class="field-help">
+                                            Optional description of the
+                                            initiative and its purpose.
+                                        </p>
+
+                                    </div>
+
+
+                                    <div class="form-field">
+
+                                        <label for="initiativeContributionType">
+                                            Contribution Type
+                                        </label>
+
+                                        <select
+                                            id="initiativeContributionType"
+                                            name="initiativeContributionType"
+                                            required
+                                        >
+
+                                            <option value="">
+                                                Select contribution type
+                                            </option>
+
+                                        </select>
+
+                                        <p class="field-help">
+                                            Only contribution types belonging
+                                            to this group can be selected.
+                                        </p>
+
+                                    </div>
+
+
+                                    <div class="form-field">
+
+                                        <label for="initiativeFrequency">
+                                            Frequency
+                                        </label>
+
+                                        <select
+                                            id="initiativeFrequency"
+                                            name="initiativeFrequency"
+                                            required
+                                        >
+
+                                            <option value="one_time">
+                                                One Time
+                                            </option>
+
+                                            <option value="monthly">
+                                                Monthly
+                                            </option>
+
+                                        </select>
+
+                                    </div>
+
+
+                                    <div class="form-field">
+
+                                        <label for="initiativeStartDate">
+                                            Start Date
+                                        </label>
+
+                                        <input
+                                            id="initiativeStartDate"
+                                            name="initiativeStartDate"
+                                            type="date"
+                                            required
+                                        >
+
+                                    </div>
+
+
+                                    <div class="form-field">
+
+                                        <label for="initiativeClosingDate">
+                                            Closing Date
+                                        </label>
+
+                                        <input
+                                            id="initiativeClosingDate"
+                                            name="initiativeClosingDate"
+                                            type="date"
+                                            required
+                                        >
+
+                                        <p class="field-help">
+                                            Closing date must not be before
+                                            the start date.
+                                        </p>
+
+                                    </div>
+
+
+                                    <div class="form-field">
+
+                                        <label for="initiativeDefaultAmount">
+                                            Default Amount
+                                        </label>
+
+                                        <input
+                                            id="initiativeDefaultAmount"
+                                            name="initiativeDefaultAmount"
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            inputmode="decimal"
+                                            required
+                                        >
+
+                                        <p class="field-help">
+                                            Default contribution amount for
+                                            the initiative.
+                                        </p>
+
+                                    </div>
+
+                                </div>
+
+
+                                <div class="form-actions">
+
+                                    <button
+                                        type="submit"
+                                        class="btn btn-primary"
+                                        id="createInitiativeButton"
+                                    >
+                                        Create Draft Program
+                                    </button>
+
+                                </div>
+
+                            </form>
 
                         </div>
 
@@ -1655,7 +1819,7 @@
                                 class="program-list"
                             >
                                 <div class="program-empty">
-                                    Loading contribution programs...
+                                    Loading contribution programs…
                                 </div>
                             </div>
 
@@ -1692,7 +1856,7 @@
                                 class="program-list"
                             >
                                 <div class="program-empty">
-                                    Loading fine rules...
+                                    Loading fine rules…
                                 </div>
                             </div>
 
@@ -2228,11 +2392,13 @@
          not auto-boot.
 
          Payment collection controls are intentionally disabled
-         until the canonical backend contract is connected.
+         until the canonical payment contract is connected.
 
-         Contribution Programs & Fine Rules are currently
-         read/display-only until the exact production RPC
-         signatures and authorization contracts are reconciled.
+         Contribution Programs now expose only the first governed
+         lifecycle action: Create → Draft.
+
+         Participant configuration, activation and closing remain
+         subsequent gated operations.
     ========================================================== -->
 
     <script type="module">
