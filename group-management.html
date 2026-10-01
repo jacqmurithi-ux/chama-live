@@ -561,6 +561,10 @@
             margin-top: 10px;
         }
 
+        .program-item-meta strong {
+            margin-right: 4px;
+        }
+
         .program-meta {
             display: inline-flex;
             align-items: center;
@@ -643,6 +647,19 @@
         }
 
         /* =====================================================
+           RECURRING INITIATIVE BOUNDARY
+        ====================================================== */
+
+        .recurring-gated-note {
+            margin-top: 12px;
+            padding: 10px 11px;
+            border-radius: 8px;
+            background: var(--warning-bg);
+            color: var(--warning-text);
+            font-size: 0.76rem;
+        }
+
+        /* =====================================================
            INITIATIVE PARTICIPANT CONFIGURATION
         ====================================================== */
 
@@ -661,6 +678,10 @@
             border: 1px solid var(--border);
             border-radius: 10px;
             background: #fafafa;
+        }
+
+        .initiative-participant-editor .program-subsection-header {
+            margin-bottom: 12px;
         }
 
         .initiative-participant-status {
@@ -685,7 +706,6 @@
         .initiative-participant-row {
             display: grid;
             grid-template-columns:
-                auto
                 minmax(0, 1fr)
                 minmax(120px, 160px);
             gap: 10px;
@@ -697,7 +717,15 @@
         }
 
         .initiative-participant-member {
+            display: flex;
+            align-items: flex-start;
+            gap: 9px;
             min-width: 0;
+        }
+
+        .initiative-participant-member input {
+            flex: 0 0 auto;
+            margin-top: 3px;
         }
 
         .initiative-participant-member strong,
@@ -714,6 +742,17 @@
         .initiative-participant-member span {
             color: var(--muted);
             font-size: 0.74rem;
+        }
+
+        .initiative-participant-amount-field {
+            display: block;
+        }
+
+        .initiative-participant-amount-field > span {
+            display: block;
+            margin-bottom: 4px;
+            color: var(--muted);
+            font-size: 0.72rem;
         }
 
         .initiative-participant-amount {
@@ -989,13 +1028,11 @@
             }
 
             .initiative-participant-row {
-                grid-template-columns:
-                    auto
-                    minmax(0, 1fr);
+                grid-template-columns: 1fr;
             }
 
-            .initiative-participant-amount {
-                grid-column: 2;
+            .initiative-participant-amount-field {
+                margin-left: 28px;
             }
 
             .initiative-participant-actions {
@@ -1111,7 +1148,7 @@
 
                                 <span>
                                     Type:
-                                    <strong id="groupTypeDisplay">
+                                    <strong id="groupCategoryDisplay">
                                         —
                                     </strong>
                                 </span>
@@ -1125,7 +1162,7 @@
 
                                 <span>
                                     Members:
-                                    <strong id="groupMemberCountDisplay">
+                                    <strong id="memberCount">
                                         —
                                     </strong>
                                 </span>
@@ -1179,7 +1216,7 @@
                 <div class="card-body">
 
                     <form
-                        id="groupInformationForm"
+                        id="groupForm"
                         novalidate
                     >
 
@@ -1205,13 +1242,13 @@
 
                             <div class="form-field">
 
-                                <label for="groupType">
+                                <label for="groupCategory">
                                     Group Type
                                 </label>
 
                                 <select
-                                    id="groupType"
-                                    name="groupType"
+                                    id="groupCategory"
+                                    name="groupCategory"
                                 >
 
                                     <option value="chama">
@@ -1222,7 +1259,33 @@
                                         CBO
                                     </option>
 
+                                    <option value="other">
+                                        Other
+                                    </option>
+
                                 </select>
+
+                                <div
+                                    id="groupCategoryOtherField"
+                                    class="hidden"
+                                >
+
+                                    <label
+                                        for="groupCategoryOther"
+                                        style="margin-top: 8px;"
+                                    >
+                                        Other Group Type
+                                    </label>
+
+                                    <input
+                                        id="groupCategoryOther"
+                                        name="groupCategoryOther"
+                                        type="text"
+                                        maxlength="80"
+                                        autocomplete="off"
+                                    >
+
+                                </div>
 
                             </div>
 
@@ -1307,7 +1370,7 @@
 
                         <p>
                             Configure the group's recognised leadership
-                            positions through the canonical member workflow.
+                            position through the canonical member workflow.
                         </p>
 
                     </div>
@@ -1325,6 +1388,109 @@
                     >
                         Loading leadership setup…
                     </div>
+
+
+                    <form
+                        id="leadershipForm"
+                        novalidate
+                    >
+
+                        <div class="form-grid">
+
+                            <div class="form-field">
+
+                                <label for="adminPosition">
+                                    Actual Position
+                                </label>
+
+                                <select
+                                    id="adminPosition"
+                                    name="adminPosition"
+                                >
+
+                                    <option value="chairperson">
+                                        Chairperson
+                                    </option>
+
+                                    <option value="vice_chairperson">
+                                        Vice Chairperson
+                                    </option>
+
+                                    <option value="treasurer">
+                                        Treasurer
+                                    </option>
+
+                                    <option value="secretary">
+                                        Secretary
+                                    </option>
+
+                                    <option value="vice_secretary">
+                                        Vice Secretary
+                                    </option>
+
+                                    <option value="committee_member">
+                                        Committee Member
+                                    </option>
+
+                                    <option value="member">
+                                        Member
+                                    </option>
+
+                                    <option value="other">
+                                        Other
+                                    </option>
+
+                                </select>
+
+                            </div>
+
+
+                            <div class="form-field">
+
+                                <label for="adminPositionName">
+                                    Position Name
+                                </label>
+
+                                <input
+                                    id="adminPositionName"
+                                    name="adminPositionName"
+                                    type="text"
+                                    maxlength="120"
+                                >
+
+                            </div>
+
+
+                            <div class="form-field">
+
+                                <label for="adminEffectiveFrom">
+                                    Effective From
+                                </label>
+
+                                <input
+                                    id="adminEffectiveFrom"
+                                    name="adminEffectiveFrom"
+                                    type="date"
+                                >
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="form-actions">
+
+                            <button
+                                type="submit"
+                                class="btn btn-primary"
+                                id="saveLeadership"
+                            >
+                                Save Leadership Position
+                            </button>
+
+                        </div>
+
+                    </form>
 
 
                     <div
@@ -1437,13 +1603,13 @@
 
                             <div class="form-field">
 
-                                <label for="monthlyClosingDay">
+                                <label for="closingDay">
                                     Monthly Closing Day
                                 </label>
 
                                 <select
-                                    id="monthlyClosingDay"
-                                    name="monthlyClosingDay"
+                                    id="closingDay"
+                                    name="closingDay"
                                     class="monthly-closing-day-select"
                                 >
 
@@ -1553,9 +1719,8 @@
                         </h2>
 
                         <p>
-                            Configure contribution programs and participating
-                            members, then review the rules used by the
-                            canonical accounting system.
+                            Configure contribution programs and review the
+                            rules used by the canonical accounting system.
                         </p>
 
                     </div>
@@ -1747,6 +1912,13 @@
 
                                         </select>
 
+                                        <p class="field-help">
+                                            Monthly means a recurring calendar-
+                                            month initiative. Recurring setup
+                                            remains backend-gated until its
+                                            dedicated contract is integrated.
+                                        </p>
+
                                     </div>
 
 
@@ -1804,8 +1976,10 @@
                                         >
 
                                         <p class="field-help">
-                                            Default contribution amount for
-                                            the initiative.
+                                            Default contribution amount stored
+                                            with the initiative. Participant
+                                            amounts remain authoritative for
+                                            the existing one-time workflow.
                                         </p>
 
                                     </div>
@@ -1856,12 +2030,18 @@
 
 
                             <div class="initiative-configure-note">
-                                Draft programs can be configured with
-                                participating members and member-specific
-                                amounts. Saving participant configuration
-                                keeps the initiative in Draft. Activation is
-                                a separate database-owned operation and is not
-                                performed here yet.
+                                <strong>One-time programs:</strong>
+                                Draft participant configuration uses the
+                                existing canonical participant service and
+                                keeps the initiative in Draft.
+                                <br><br>
+                                <strong>Monthly programs:</strong>
+                                Draft creation is available, but recurring
+                                participant terms, calendar periods,
+                                recurring obligations, activation and
+                                recurring payment remain separately gated.
+                                Monthly programs are not routed through the
+                                one-time participant service.
                             </div>
 
 
@@ -1917,28 +2097,31 @@
                         <p class="program-access-note">
                             Contribution programs and fine rules are
                             controlled by the existing canonical database
-                            services. Participant configuration is also
+                            services. One-time participant configuration is
                             performed through the canonical initiative
-                            participant service. This page does not directly
-                            write participant rows, calculate fines, create
-                            obligations, create allocations or write
-                            accounting transactions.
+                            participant service.
+                            <strong>
+                                Monthly recurring initiatives do not use that
+                                one-time participant service.
+                            </strong>
+                            This page does not directly write participant
+                            rows, calculate fines, create obligations, create
+                            allocations or write accounting transactions.
                         </p>
 
                     </div>
 
 
                     <p class="program-note">
-                        The intended lifecycle is
-                        <strong>
-                            Draft → Configure Participants → Activate
-                        </strong>.
-                        Participant configuration uses the canonical
-                        database service and does not create obligations.
-                        Activation and downstream obligation generation
-                        remain database-owned operations. Historical
-                        accounting records remain protected from configuration
-                        changes.
+                        <strong>One-time lifecycle:</strong>
+                        Draft → Configure Participants → Activate.
+                        <br>
+                        <strong>Monthly lifecycle:</strong>
+                        Draft → Recurring Participant Terms → Recurring
+                        Activation → Calendar Periods → Period Obligations.
+                        The recurring lifecycle is intentionally not activated
+                        by this page until its dedicated backend contract is
+                        available and verified.
                     </p>
 
                 </div>
@@ -2374,7 +2557,7 @@
                                 Group
                             </span>
 
-                            <strong id="contextGroupName">
+                            <strong id="groupContextName">
                                 —
                             </strong>
 
@@ -2387,7 +2570,7 @@
                                 Your Role
                             </span>
 
-                            <strong id="contextRole">
+                            <strong id="groupContextRole">
                                 —
                             </strong>
 
@@ -2413,7 +2596,7 @@
                                 Country
                             </span>
 
-                            <strong id="contextCountry">
+                            <strong id="groupContextCountry">
                                 —
                             </strong>
 
@@ -2450,18 +2633,22 @@
          group-management.js remains a page initializer and does
          not auto-boot.
 
-         Payment collection controls are intentionally disabled
-         until the canonical payment contract is connected.
+         Payment collection controls remain disabled until the
+         canonical payment-intent → provider-reference →
+         callback/result → execution transaction contract is
+         connected.
 
-         Contribution Programs expose the governed lifecycle:
+         Contribution Programs:
 
-         Create → Draft
-                 ↓
-         Configure Participants
-                 ↓
-         Remain Draft
-                 ↓
-         Activate (future gated operation)
+         ONE-TIME
+         Create → Draft → Configure Participants → Activate
+
+         MONTHLY
+         Create → Draft → Recurring Terms → Recurring Activation
+                → Calendar Periods → Period Obligations
+
+         Monthly recurring configuration is intentionally gated
+         and is NOT routed through the one-time participant RPC.
     ========================================================== -->
 
     <script type="module">
