@@ -202,6 +202,10 @@ export async function signIn(
    - Does not change authentication identity.
    - Does not accept identity from the frontend.
    - Does not write application/database records.
+
+   Supabase's getUser() performs an Auth-server request and
+   therefore provides a stronger identity boundary than
+   relying only on the locally stored session user.
 ========================================================= */
 
 export async function getCurrentUser() {
@@ -270,8 +274,7 @@ export async function getCurrentUser() {
     if (refreshError) {
 
       console.warn(
-        "CHAMA LIVE: session refresh failed.",
-        refreshError
+        "CHAMA LIVE: session refresh failed."
       );
 
 
@@ -356,6 +359,18 @@ export async function getCurrentUser() {
        get_my_member()
 
    Identity comes from the authenticated Supabase session.
+
+   IMPORTANT
+   ---------------------------------------------------------
+   Errors from the canonical RPC are NOT silently converted
+   into a direct table lookup.
+
+   A canonical authorization/database error must remain
+   visible to the caller.
+
+   A null/empty canonical result is handled as "no canonical
+   member returned" and may proceed to the retained
+   compatibility lookup.
 ========================================================= */
 
 async function getMemberFromCanonicalRPC() {
@@ -421,7 +436,7 @@ async function getMemberFromCanonicalRPC() {
    COMPATIBILITY MEMBER LOOKUP
    ---------------------------------------------------------
    Retained for existing deployments where the canonical
-   get_my_member() RPC is temporarily unavailable.
+   get_my_member() RPC returns no member.
 
    Identity still comes exclusively from Supabase Auth.
 
@@ -485,8 +500,7 @@ async function getMemberByAuthUser(
   if (byAuthUser.error) {
 
     console.error(
-      "CHAMA LIVE: auth_user_id member lookup failed",
-      byAuthUser.error
+      "CHAMA LIVE: auth_user_id member lookup failed."
     );
 
     throw byAuthUser.error;
@@ -528,8 +542,7 @@ async function getMemberByAuthUser(
   if (byLegacyUserId.error) {
 
     console.error(
-      "CHAMA LIVE: user_id member lookup failed",
-      byLegacyUserId.error
+      "CHAMA LIVE: user_id member lookup failed."
     );
 
     throw byLegacyUserId.error;
@@ -561,7 +574,16 @@ async function getMemberByAuthUser(
             ↓
        get_my_member()
             ↓
-       compatibility lookup only if RPC unavailable
+       compatibility lookup only when canonical RPC
+       returns no member
+
+   IMPORTANT
+   ---------------------------------------------------------
+   A canonical RPC ERROR is not treated as a compatibility
+   condition.
+
+   This prevents authorization/database failures from being
+   silently downgraded into a different access path.
 
    The returned member must have a group_id.
 ========================================================= */
@@ -572,46 +594,44 @@ export async function getMyMember() {
     await getCurrentUser();
 
 
-  try {
-
-    const member =
-      await getMemberFromCanonicalRPC();
+  const member =
+    await getMemberFromCanonicalRPC();
 
 
-    if (member) {
+  /* -------------------------------------------------------
+     CANONICAL MEMBER FOUND
+  ------------------------------------------------------- */
 
-      if (!member.group_id) {
+  if (member) {
 
-        throw new Error(
-          "Your member record has no group."
-        );
+    if (!member.group_id) {
 
-      }
-
-
-      return member;
+      throw new Error(
+        "Your member record has no group."
+      );
 
     }
 
-  }
 
-  catch (rpcError) {
-
-    console.warn(
-      "CHAMA LIVE: get_my_member RPC unavailable; using compatibility lookup.",
-      rpcError
-    );
+    return member;
 
   }
 
 
-  const member =
+  /* -------------------------------------------------------
+     RETAINED COMPATIBILITY PATH
+     -------------------------------------------------------
+     Only reached when the canonical RPC completed without
+     an error but returned no member.
+  ------------------------------------------------------- */
+
+  const compatibilityMember =
     await getMemberByAuthUser(
       user.id
     );
 
 
-  if (!member) {
+  if (!compatibilityMember) {
 
     throw new Error(
       "No member record is linked to this account."
@@ -620,7 +640,7 @@ export async function getMyMember() {
   }
 
 
-  if (!member.group_id) {
+  if (!compatibilityMember.group_id) {
 
     throw new Error(
       "Your member record has no group."
@@ -629,7 +649,7 @@ export async function getMyMember() {
   }
 
 
-  return member;
+  return compatibilityMember;
 
 }
 
@@ -642,6 +662,13 @@ export async function getMyMember() {
 
    Compatibility fallback:
        member.group_id
+
+   IMPORTANT
+   ---------------------------------------------------------
+   The browser never supplies group_id.
+
+   The compatibility path remains based on the authenticated
+   user's member relationship.
 ========================================================= */
 
 export async function getMyGroupId() {
@@ -657,22 +684,16 @@ export async function getMyGroupId() {
       );
 
 
-    if (
-      !error &&
-      data
-    ) {
-
-      return data;
-
-    }
-
-
     if (error) {
 
       console.warn(
-        "CHAMA LIVE: my_group_id RPC unavailable; using member group_id.",
-        error
+        "CHAMA LIVE: my_group_id RPC failed; using member group_id."
       );
+
+    }
+    else if (data) {
+
+      return data;
 
     }
 
@@ -681,8 +702,7 @@ export async function getMyGroupId() {
   catch (error) {
 
     console.warn(
-      "CHAMA LIVE: my_group_id RPC failed; using member group_id.",
-      error
+      "CHAMA LIVE: my_group_id RPC failed; using member group_id."
     );
 
   }
@@ -761,8 +781,7 @@ export async function getMyGroup() {
   if (error) {
 
     console.error(
-      "CHAMA LIVE: group lookup failed",
-      error
+      "CHAMA LIVE: group lookup failed."
     );
 
     throw error;
@@ -902,29 +921,43 @@ export async function getMyApplicationContext() {
 
    Portal-specific authorization belongs to the portal
    guard/login layer.
+
+   IMPORTANT
+   ---------------------------------------------------------
+   Identity is established through getCurrentUser(), not
+   through the locally stored session.user object.
+
+   Supabase documents getUser() as the Auth-server-backed
+   user lookup, while getSession() is primarily for obtaining
+   the current session itself.
 ========================================================= */
 
 export async function requireAuth() {
 
-  const {
-    data,
-    error
-  } =
-    await supabase.auth.getSession();
+  let user;
 
 
-  if (error) {
+  try {
+
+    user =
+      await getCurrentUser();
+
+  }
+
+  catch (error) {
+
+    console.error(
+      "CHAMA LIVE: authentication verification failed."
+    );
+
+    redirectToLogin();
 
     throw error;
 
   }
 
 
-  const session =
-    data?.session;
-
-
-  if (!session?.user) {
+  if (!user?.id) {
 
     redirectToLogin();
 
@@ -948,8 +981,7 @@ export async function requireAuth() {
   catch (error) {
 
     console.error(
-      "CHAMA LIVE: authenticated member resolution failed",
-      error
+      "CHAMA LIVE: authenticated member resolution failed."
     );
 
     redirectToLogin();
@@ -984,7 +1016,22 @@ export async function requireAuth() {
     status === "rejected"
   ) {
 
-    await supabase.auth.signOut();
+    try {
+
+      await supabase.auth.signOut({
+        scope: "local"
+      });
+
+    }
+
+    catch (signOutError) {
+
+      console.warn(
+        "CHAMA LIVE: local sign-out failed during inactive-account handling."
+      );
+
+    }
+
 
     redirectToLogin();
 
@@ -995,13 +1042,22 @@ export async function requireAuth() {
   }
 
 
-  return session.user;
+  return user;
 
 }
 
 
 /* =========================================================
    SIGN OUT
+   ---------------------------------------------------------
+   Normal portal logout terminates only the current browser
+   session.
+
+   Other devices/sessions remain active.
+
+   A deliberate global revocation should be implemented as
+   a separate security operation rather than as the normal
+   logout path.
 ========================================================= */
 
 export async function signOut() {
@@ -1009,7 +1065,9 @@ export async function signOut() {
   const {
     error
   } =
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({
+      scope: "local"
+    });
 
 
   if (error) {
