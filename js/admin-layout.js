@@ -66,7 +66,9 @@ const ADMIN_ROLES = new Set([
   "admin",
   "chairperson",
   "secretary",
-  "treasurer"
+  "treasurer",
+  "vice chairperson",
+  "vice secretary"
 ]);
 
 
@@ -817,6 +819,23 @@ function renderDesktopNavigation() {
   );
 
 
+  /*
+   * Official users can switch to their existing
+   * Member Portal / My Account without changing
+   * authentication identity.
+   *
+   * This is navigation only. Member feature guards,
+   * RPC authorization and RLS remain authoritative.
+   */
+
+  nav.appendChild(
+    createNavLink(
+      "member-dashboard.html",
+      "View My Account"
+    )
+  );
+
+
   target.appendChild(
     nav
   );
@@ -1183,6 +1202,21 @@ function renderMobileNavigation() {
     createNavLink(
       "billing.html",
       "Billing"
+    )
+  );
+
+
+  /*
+   * Return to the same user's Member Portal /
+   * My Account context.
+   *
+   * Navigation only — no permission escalation.
+   */
+
+  accountSection.appendChild(
+    createNavLink(
+      "member-dashboard.html",
+      "View My Account"
     )
   );
 
