@@ -14,15 +14,17 @@
           ↓
    exchangeCodeForSession()
           ↓
-   Recovery session
+   Verified recovery session
           ↓
    User enters new password
+          ↓
+   getUser()
           ↓
    supabase.auth.updateUser()
           ↓
    Password updated
           ↓
-   Sign out recovery session
+   Local recovery session sign-out
           ↓
    login.html
 ========================================================= */
@@ -84,8 +86,14 @@ const LOGIN_URL =
    STATE
 ========================================================= */
 
-let recoveryReady = false;
-let passwordUpdated = false;
+let recoveryReady =
+  false;
+
+let recoveryFlowEstablished =
+  false;
+
+let passwordUpdated =
+  false;
 
 
 /* =========================================================
@@ -283,11 +291,50 @@ function cleanRecoveryUrl() {
   catch (error) {
 
     console.warn(
-      "CHAMA LIVE: unable to clean recovery URL",
-      error
+      "CHAMA LIVE: unable to clean recovery URL"
     );
 
   }
+
+}
+
+
+/* =========================================================
+   VERIFY AUTHENTICATED USER
+========================================================= */
+
+async function verifyRecoveryUser() {
+
+  const {
+    data,
+    error
+  } =
+    await supabase.auth.getUser();
+
+
+  if (error) {
+
+    throw error;
+
+  }
+
+
+  if (!data?.user) {
+
+    recoveryReady =
+      false;
+
+    recoveryFlowEstablished =
+      false;
+
+    throw new Error(
+      "Your password reset session is no longer valid. Please request a new password reset link."
+    );
+
+  }
+
+
+  return data.user;
 
 }
 
@@ -299,57 +346,25 @@ function cleanRecoveryUrl() {
 async function establishRecoverySession() {
 
   /*
-   * Because supabase.js intentionally uses:
+   * CHAMA LIVE intentionally uses:
    *
    * detectSessionInUrl: false
    *
-   * we must explicitly handle the PKCE
-   * recovery code here.
-   */
-
-  const {
-    data: existingData,
-    error: existingError
-  } =
-    await supabase.auth.getSession();
-
-
-  if (existingError) {
-
-    throw existingError;
-
-  }
-
-
-  /*
-   * A recovery session may already exist.
-   */
-
-  if (
-    existingData?.session
-  ) {
-
-    console.log(
-      "CHAMA LIVE: existing recovery session available"
-    );
-
-    recoveryReady =
-      true;
-
-    return existingData.session;
-
-  }
-
-
-  /*
-   * No session exists.
+   * therefore the PKCE recovery code must be
+   * explicitly exchanged here.
    *
-   * Look for the PKCE authorization code.
+   * An arbitrary existing browser session is
+   * NOT accepted as proof of a recovery flow.
    */
 
   const code =
     getRecoveryCode();
 
+
+  /*
+   * A recovery flow must begin with the
+   * authorization code.
+   */
 
   if (!code) {
 
@@ -392,7 +407,18 @@ async function establishRecoverySession() {
   }
 
 
+  /*
+   * Confirm that Auth recognizes an actual
+   * authenticated user after the PKCE exchange.
+   */
+
+  await verifyRecoveryUser();
+
+
   recoveryReady =
+    true;
+
+  recoveryFlowEstablished =
     true;
 
 
@@ -435,14 +461,13 @@ async function checkRecoverySession() {
   catch (error) {
 
     console.error(
-      "CHAMA LIVE: recovery session error",
-      error
+      "CHAMA LIVE: recovery session error"
     );
 
 
     disableResetForm(
       error?.message ||
-      "This password reset link is invalid or has expired. Please request a new one."
+      "This password reset link is invalid or has expired. Please request a new password reset link."
     );
 
   }
@@ -494,8 +519,8 @@ async function updatePassword(
 ) {
 
   /*
-   * Confirm that a valid recovery session
-   * still exists immediately before updating.
+   * A password update requires an authenticated
+   * user. Confirm the session still exists.
    */
 
   const {
@@ -512,6 +537,14 @@ async function updatePassword(
   }
 
 
+  /*
+   * If the session disappeared after initial
+   * recovery, the recovery authorization is
+   * no longer valid.
+   *
+   * Do NOT accept an arbitrary existing session.
+   */
+
   if (
     !data?.session
   ) {
@@ -519,18 +552,35 @@ async function updatePassword(
     recoveryReady =
       false;
 
-    await establishRecoverySession();
-
-  }
-
-
-  if (!recoveryReady) {
+    recoveryFlowEstablished =
+      false;
 
     throw new Error(
       "Your password reset session is no longer valid. Please request a new password reset link."
     );
 
   }
+
+
+  if (
+    !recoveryReady ||
+    !recoveryFlowEstablished
+  ) {
+
+    throw new Error(
+      "Your password reset session is no longer valid. Please request a new password reset link."
+    );
+
+  }
+
+
+  /*
+   * Verify the authenticated user with the
+   * Supabase Auth server immediately before
+   * changing the password.
+   */
+
+  await verifyRecoveryUser();
 
 
   /*
@@ -636,7 +686,8 @@ else {
       catch (error) {
 
         showError(
-          error.message
+          error?.message ||
+          "Please enter a valid password."
         );
 
         return;
@@ -656,11 +707,14 @@ else {
       try {
 
         /*
-         * Establish or verify the recovery
-         * session before changing the password.
+         * Establish the recovery flow if it
+         * has not already been established.
          */
 
-        if (!recoveryReady) {
+        if (
+          !recoveryReady ||
+          !recoveryFlowEstablished
+        ) {
 
           await establishRecoverySession();
 
@@ -714,21 +768,38 @@ else {
           async () => {
 
             /*
-             * End the recovery session before
-             * returning to the normal login page.
+             * End only the current recovery
+             * session before returning to login.
+             *
+             * This avoids signing the user out
+             * on other devices.
              */
 
             try {
 
-              await supabase.auth.signOut();
+              const {
+                error: signOutError
+              } =
+                await supabase.auth.signOut({
+                  scope:
+                    "local"
+                });
+
+
+              if (signOutError) {
+
+                console.warn(
+                  "CHAMA LIVE: sign out after password reset failed"
+                );
+
+              }
 
             }
 
             catch (signOutError) {
 
               console.warn(
-                "CHAMA LIVE: sign out after password reset failed",
-                signOutError
+                "CHAMA LIVE: sign out after password reset failed"
               );
 
             }
@@ -747,8 +818,7 @@ else {
       catch (error) {
 
         console.error(
-          "CHAMA LIVE: password update failed",
-          error
+          "CHAMA LIVE: password update failed"
         );
 
 
@@ -761,24 +831,51 @@ else {
           message.toLowerCase();
 
 
+        /*
+         * Same-password response.
+         */
+
         if (
-          lower.includes("session") ||
-          lower.includes("jwt") ||
-          lower.includes("expired") ||
-          lower.includes("invalid")
-        ) {
-
-          message =
-            "Your password reset link has expired or is no longer valid. Please request a new password reset link.";
-
-        }
-
-        else if (
-          lower.includes("same password")
+          error?.code ===
+            "same_password" ||
+          lower.includes(
+            "same password"
+          )
         ) {
 
           message =
             "Please choose a different password.";
+
+        }
+
+
+        /*
+         * Recovery/session failures.
+         *
+         * Do not classify every generic
+         * "invalid" error as an expired link.
+         */
+
+        else if (
+          error?.code ===
+            "invalid_token" ||
+          error?.code ===
+            "session_not_found" ||
+          error?.code ===
+            "refresh_token_not_found" ||
+          lower.includes(
+            "jwt"
+          ) ||
+          lower.includes(
+            "session"
+          ) ||
+          lower.includes(
+            "expired"
+          )
+        ) {
+
+          message =
+            "Your password reset session has expired or is no longer valid. Please request a new password reset link.";
 
         }
 
@@ -804,39 +901,45 @@ else {
    AUTH STATE LISTENER
 ========================================================= */
 
-supabase.auth.onAuthStateChange(
-  (
-    event,
-    session
-  ) => {
-
-    console.log(
-      "CHAMA LIVE: auth state changed",
-      event
-    );
-
-
-    if (
-      event ===
-      "PASSWORD_RECOVERY"
-    ) {
+const {
+  data: authListener
+} =
+  supabase.auth.onAuthStateChange(
+    (
+      event,
+      session
+    ) => {
 
       console.log(
-        "CHAMA LIVE: PASSWORD_RECOVERY event received"
+        "CHAMA LIVE: auth state changed",
+        event
       );
 
 
-      if (session) {
+      if (
+        event ===
+        "PASSWORD_RECOVERY"
+      ) {
 
-        recoveryReady =
-          true;
+        console.log(
+          "CHAMA LIVE: PASSWORD_RECOVERY event received"
+        );
+
+
+        if (session) {
+
+          recoveryReady =
+            true;
+
+          recoveryFlowEstablished =
+            true;
+
+        }
 
       }
 
     }
-
-  }
-);
+  );
 
 
 /* =========================================================
