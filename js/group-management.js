@@ -53,6 +53,9 @@ let contributionSettings = null;
  * One-time participant configuration is governed exclusively by
  * set_contribution_initiative_members().
  *
+ * One-time activation is governed exclusively by
+ * activate_contribution_initiative().
+ *
  * Monthly recurring initiatives use a separate recurring backend
  * contract:
  *
@@ -2368,6 +2371,116 @@ async function saveInitiativeParticipants(
 
 
 /* ================================================================
+   ONE-TIME ACTIVATION
+================================================================ */
+
+/*
+ * Activates an existing ONE-TIME Draft initiative through the
+ * canonical production RPC.
+ *
+ * This function intentionally does NOT:
+ *
+ *     - write directly to contribution_initiative_obligations
+ *     - write directly to contributions
+ *     - alter recurring activation
+ *     - alter participant configuration
+ *     - create or modify database objects
+ *
+ * The database remains authoritative for authorization,
+ * lifecycle validation, participant validation, idempotency and
+ * obligation creation.
+ */
+async function activateInitiative(
+    initiativeId
+) {
+
+    if (!currentGroup?.id) {
+
+        throw new Error(
+            "No active group is available."
+        );
+    }
+
+    if (!isInitiativeManager()) {
+
+        throw new Error(
+            "One-time activation requires an admin or chairperson role."
+        );
+    }
+
+    const initiative =
+        getInitiativeById(
+            initiativeId
+        );
+
+    if (!initiative) {
+
+        throw new Error(
+            "The selected initiative is no longer available."
+        );
+    }
+
+    if (!isOneTimeInitiative(initiative)) {
+
+        throw new Error(
+            "The selected initiative is not a one-time initiative."
+        );
+    }
+
+    if (
+        normalizeLower(
+            initiative.status
+        ) !== "draft"
+    ) {
+
+        throw new Error(
+            "Only Draft one-time initiatives can be activated."
+        );
+    }
+
+    const requestId =
+        crypto.randomUUID();
+
+    const {
+        data,
+        error
+    } = await supabase.rpc(
+        "activate_contribution_initiative",
+        {
+            p_initiative_id:
+                initiative.id,
+
+            p_request_id:
+                requestId
+        }
+    );
+
+    if (error) {
+        throw error;
+    }
+
+    await loadContributionInitiatives();
+
+    if (elements.contributionProgramStatus) {
+
+        const obligationCount =
+            data?.obligations_created;
+
+        elements.contributionProgramStatus.textContent =
+            obligationCount !== undefined &&
+            obligationCount !== null
+                ? `One-time initiative activated. ${obligationCount} obligation(s) created.`
+                : "One-time initiative activated.";
+
+        elements.contributionProgramStatus.className =
+            "program-status ready";
+    }
+
+    return data;
+}
+
+
+/* ================================================================
    RECURRING PARTICIPANT EDITOR
 ================================================================ */
 
@@ -3848,12 +3961,46 @@ function renderContributionInitiatives() {
                 configureButton.textContent =
                     "Configure Participants";
 
-                actions.appendChild(
-                    configureButton
+                const activateButton =
+                    document.createElement(
+                        "button"
+                    );
+
+                activateButton.type =
+                    "button";
+
+                activateButton.className =
+                    "btn btn-primary";
+
+                activateButton.dataset
+                    .activateInitiative =
+                        initiative.id;
+
+                activateButton.textContent =
+                    "Activate";
+
+                actions.append(
+                    configureButton,
+                    activateButton
                 );
 
                 item.appendChild(
                     actions
+                );
+
+                const statusMessage =
+                    document.createElement(
+                        "div"
+                    );
+
+                statusMessage.className =
+                    "program-status";
+
+                statusMessage.textContent =
+                    "Configure participants before activating this one-time initiative.";
+
+                item.appendChild(
+                    statusMessage
                 );
             }
 
@@ -4284,6 +4431,68 @@ function bindEvents() {
                     ) {
 
                         configureButton.disabled =
+                            false;
+                    }
+                }
+
+                return;
+            }
+
+
+            /* ----------------------------------------------------
+               ONE-TIME ACTIVATION
+            ---------------------------------------------------- */
+
+            const activateButton =
+                event.target.closest(
+                    "[data-activate-initiative]"
+                );
+
+            if (activateButton) {
+
+                const initiativeId =
+                    activateButton.dataset
+                        .activateInitiative;
+
+                if (!initiativeId) {
+                    return;
+                }
+
+                activateButton.disabled =
+                    true;
+
+                try {
+
+                    await activateInitiative(
+                        initiativeId
+                    );
+
+                } catch (error) {
+
+                    console.error(
+                        "Failed to activate one-time initiative:",
+                        error
+                    );
+
+                    if (
+                        elements.contributionProgramStatus
+                    ) {
+
+                        elements.contributionProgramStatus.textContent =
+                            error?.message ||
+                            "Failed to activate one-time initiative.";
+
+                        elements.contributionProgramStatus.className =
+                            "program-status error";
+                    }
+
+                } finally {
+
+                    if (
+                        activateButton.isConnected
+                    ) {
+
+                        activateButton.disabled =
                             false;
                     }
                 }
@@ -4748,6 +4957,7 @@ export {
     createContributionInitiative,
     configureInitiativeParticipants,
     saveInitiativeParticipants,
+    activateInitiative,
     configureRecurringInitiative,
     saveRecurringParticipants,
     activateRecurringInitiative,
