@@ -45,8 +45,13 @@ let subscription = null;
 let contributionSettings = null;
 
 /*
- * Contribution configuration is intentionally read-only in this
- * integration gate.
+ * Contribution types remain read-only.
+ *
+ * Initiative creation is governed exclusively by
+ * create_contribution_initiative().
+ *
+ * Participant configuration, activation and closure remain
+ * outside this implementation gate.
  */
 let contributionTypes = [];
 let contributionInitiatives = [];
@@ -134,7 +139,37 @@ const elements = {
         document.getElementById("contributionInitiativesList"),
 
     fineRulesList:
-        document.getElementById("fineRulesList")
+        document.getElementById("fineRulesList"),
+
+    contributionProgramStatus:
+        document.getElementById("contributionProgramStatus"),
+
+    createInitiativeForm:
+        document.getElementById("createInitiativeForm"),
+
+    initiativeName:
+        document.getElementById("initiativeName"),
+
+    initiativeDescription:
+        document.getElementById("initiativeDescription"),
+
+    initiativeContributionType:
+        document.getElementById("initiativeContributionType"),
+
+    initiativeStartDate:
+        document.getElementById("initiativeStartDate"),
+
+    initiativeClosingDate:
+        document.getElementById("initiativeClosingDate"),
+
+    initiativeDefaultAmount:
+        document.getElementById("initiativeDefaultAmount"),
+
+    initiativeFrequency:
+        document.getElementById("initiativeFrequency"),
+
+    createInitiativeButton:
+        document.getElementById("createInitiativeButton")
 };
 
 
@@ -147,6 +182,18 @@ function normalizeLower(value) {
     return typeof value === "string"
         ? value.trim().toLowerCase()
         : "";
+}
+
+
+function isInitiativeManager() {
+
+    const role =
+        normalizeLower(currentRole);
+
+    return (
+        role === "admin" ||
+        role === "chairperson"
+    );
 }
 
 
@@ -210,6 +257,25 @@ function applyAuthorizationUI() {
             disabled;
     }
 
+    /*
+     * Initiative authorization mirrors the canonical backend
+     * can_manage_members() contract:
+     *
+     *     admin OR chairperson
+     */
+    if (elements.createInitiativeButton) {
+
+        elements.createInitiativeButton.disabled =
+            !isInitiativeManager();
+    }
+
+    if (elements.initiativeContributionType) {
+
+        elements.initiativeContributionType.disabled =
+            !isInitiativeManager() ||
+            contributionTypes.length === 0;
+    }
+
     if (elements.permissionMessage) {
 
         elements.permissionMessage.hidden =
@@ -260,6 +326,7 @@ function setGroupCategoryValue(category) {
             normalized;
 
         if (elements.groupCategoryOther) {
+
             elements.groupCategoryOther.value =
                 "";
         }
@@ -271,6 +338,7 @@ function setGroupCategoryValue(category) {
         "other";
 
     if (elements.groupCategoryOther) {
+
         elements.groupCategoryOther.value =
             category || "";
     }
@@ -307,6 +375,7 @@ function renderGroup() {
     }
 
     if (elements.groupName) {
+
         elements.groupName.value =
             currentGroup.name || "";
     }
@@ -316,21 +385,25 @@ function renderGroup() {
     );
 
     if (elements.groupCountry) {
+
         elements.groupCountry.value =
             currentGroup.country || "";
     }
 
     if (elements.monthlyContribution) {
+
         elements.monthlyContribution.value =
             currentGroup.monthly_contribution ?? "";
     }
 
     if (elements.groupNameDisplay) {
+
         elements.groupNameDisplay.textContent =
             currentGroup.name || "—";
     }
 
     if (elements.groupCategoryDisplay) {
+
         elements.groupCategoryDisplay.textContent =
             getCategoryDisplayValue(
                 currentGroup.category
@@ -338,16 +411,19 @@ function renderGroup() {
     }
 
     if (elements.groupCountryDisplay) {
+
         elements.groupCountryDisplay.textContent =
             currentGroup.country || "—";
     }
 
     if (elements.groupContextName) {
+
         elements.groupContextName.textContent =
             currentGroup.name || "—";
     }
 
     if (elements.groupContextRole) {
+
         elements.groupContextRole.textContent =
             currentRole || "—";
     }
@@ -383,18 +459,21 @@ async function saveGroupInformation(event) {
         );
 
     if (!name) {
+
         throw new Error(
             "Group name is required."
         );
     }
 
     if (!category) {
+
         throw new Error(
             "Group category is required."
         );
     }
 
     if (!Number.isFinite(monthlyContribution)) {
+
         throw new Error(
             "Monthly contribution must be a valid number."
         );
@@ -412,7 +491,10 @@ async function saveGroupInformation(event) {
             monthly_contribution:
                 monthlyContribution
         })
-        .eq("id", currentGroup.id)
+        .eq(
+            "id",
+            currentGroup.id
+        )
         .select()
         .single();
 
@@ -445,8 +527,14 @@ async function loadLeadershipSetup() {
         .select(
             "id, actual_position, actual_position_name, join_date"
         )
-        .eq("group_id", currentGroup.id)
-        .eq("id", currentMember?.id)
+        .eq(
+            "group_id",
+            currentGroup.id
+        )
+        .eq(
+            "id",
+            currentMember?.id
+        )
         .maybeSingle();
 
     if (error) {
@@ -458,20 +546,27 @@ async function loadLeadershipSetup() {
     }
 
     if (elements.adminPosition) {
+
         elements.adminPosition.value =
             ACTUAL_POSITION_VALUES.has(
-                normalizeLower(data.actual_position)
+                normalizeLower(
+                    data.actual_position
+                )
             )
-                ? normalizeLower(data.actual_position)
+                ? normalizeLower(
+                    data.actual_position
+                )
                 : "other";
     }
 
     if (elements.adminPositionName) {
+
         elements.adminPositionName.value =
             data.actual_position_name || "";
     }
 
     if (elements.adminEffectiveFrom) {
+
         elements.adminEffectiveFrom.value =
             data.join_date || "";
     }
@@ -500,6 +595,7 @@ async function saveAdminActualPosition(event) {
         elements.adminEffectiveFrom?.value || null;
 
     if (!ACTUAL_POSITION_VALUES.has(actualPosition)) {
+
         throw new Error(
             "Invalid actual position."
         );
@@ -554,13 +650,17 @@ async function loadMemberCount() {
                 head: true
             }
         )
-        .eq("group_id", currentGroup.id);
+        .eq(
+            "group_id",
+            currentGroup.id
+        );
 
     if (error) {
         throw error;
     }
 
     if (elements.memberCount) {
+
         elements.memberCount.textContent =
             String(count ?? 0);
     }
@@ -601,6 +701,7 @@ async function loadContributionSettings() {
         elements.closingDay &&
         contributionSettings
     ) {
+
         elements.closingDay.value =
             contributionSettings.monthly_closing_day ?? "";
     }
@@ -627,6 +728,7 @@ async function saveContributionSettings(event) {
         closingDay < 1 ||
         closingDay > 31
     ) {
+
         throw new Error(
             "Closing day must be between 1 and 31."
         );
@@ -684,11 +786,13 @@ async function loadSubscription() {
             : data || null;
 
     if (elements.subscriptionStatus) {
+
         elements.subscriptionStatus.textContent =
             subscription?.status || "—";
     }
 
     if (elements.subscriptionPlan) {
+
         elements.subscriptionPlan.textContent =
             subscription?.plan_name ||
             subscription?.plan ||
@@ -696,9 +800,243 @@ async function loadSubscription() {
     }
 
     if (elements.subscriptionAmount) {
+
         elements.subscriptionAmount.textContent =
             subscription?.amount ?? "—";
     }
+}
+
+
+/* ================================================================
+   CONTRIBUTION INITIATIVE — CREATE DRAFT
+================================================================ */
+
+function renderInitiativeContributionTypes() {
+
+    const select =
+        elements.initiativeContributionType;
+
+    if (!select) {
+        return;
+    }
+
+    select.replaceChildren();
+
+    const placeholder =
+        document.createElement("option");
+
+    placeholder.value = "";
+
+    placeholder.textContent =
+        contributionTypes.length
+            ? "Select contribution type"
+            : "No contribution types available";
+
+    select.appendChild(
+        placeholder
+    );
+
+    contributionTypes.forEach((type) => {
+
+        const option =
+            document.createElement("option");
+
+        option.value =
+            type.id;
+
+        option.textContent =
+            type.code
+                ? `${type.name} (${type.code})`
+                : type.name;
+
+        select.appendChild(
+            option
+        );
+    });
+
+    select.disabled =
+        contributionTypes.length === 0 ||
+        !isInitiativeManager();
+}
+
+
+function resetCreateInitiativeForm() {
+
+    if (!elements.createInitiativeForm) {
+        return;
+    }
+
+    elements.createInitiativeForm.reset();
+
+    renderInitiativeContributionTypes();
+}
+
+
+async function createContributionInitiative(event) {
+
+    if (event) {
+        event.preventDefault();
+    }
+
+    if (!currentGroup?.id) {
+
+        throw new Error(
+            "No active group is available."
+        );
+    }
+
+    /*
+     * This mirrors the verified backend authorization contract:
+     *
+     * public.can_manage_members(group_id)
+     *     = current_user_role IN ('admin', 'chairperson')
+     *
+     * The database remains authoritative.
+     */
+    if (!isInitiativeManager()) {
+
+        throw new Error(
+            "Initiative creation requires an admin or chairperson role."
+        );
+    }
+
+    const name =
+        elements.initiativeName?.value.trim() || "";
+
+    const description =
+        elements.initiativeDescription?.value.trim() || null;
+
+    const contributionTypeId =
+        elements.initiativeContributionType?.value || "";
+
+    const startDate =
+        elements.initiativeStartDate?.value || "";
+
+    const closingDate =
+        elements.initiativeClosingDate?.value || "";
+
+    const defaultAmount =
+        Number(
+            elements.initiativeDefaultAmount?.value
+        );
+
+    const frequency =
+        normalizeLower(
+            elements.initiativeFrequency?.value
+        );
+
+    if (!name) {
+
+        throw new Error(
+            "Initiative name is required."
+        );
+    }
+
+    if (!contributionTypeId) {
+
+        throw new Error(
+            "A contribution type is required."
+        );
+    }
+
+    if (!startDate || !closingDate) {
+
+        throw new Error(
+            "Start date and closing date are required."
+        );
+    }
+
+    if (closingDate < startDate) {
+
+        throw new Error(
+            "Closing date cannot be earlier than the start date."
+        );
+    }
+
+    if (
+        !Number.isFinite(defaultAmount) ||
+        defaultAmount <= 0
+    ) {
+
+        throw new Error(
+            "Default amount must be greater than zero."
+        );
+    }
+
+    if (
+        frequency !== "one_time" &&
+        frequency !== "monthly"
+    ) {
+
+        throw new Error(
+            "Invalid initiative frequency."
+        );
+    }
+
+    /*
+     * A fresh request ID is generated for each logical creation
+     * operation. The canonical RPC owns idempotency handling.
+     */
+    const requestId =
+        crypto.randomUUID();
+
+    const {
+        data,
+        error
+    } = await supabase.rpc(
+        "create_contribution_initiative",
+        {
+            p_group_id:
+                currentGroup.id,
+
+            p_name:
+                name,
+
+            p_description:
+                description,
+
+            p_contribution_type_id:
+                contributionTypeId,
+
+            p_start_date:
+                startDate,
+
+            p_closing_date:
+                closingDate,
+
+            p_default_amount:
+                defaultAmount,
+
+            p_frequency:
+                frequency,
+
+            p_request_id:
+                requestId
+        }
+    );
+
+    if (error) {
+        throw error;
+    }
+
+    /*
+     * The canonical RPC creates the initiative as Draft.
+     * No browser-side obligation creation occurs here.
+     */
+    await loadContributionInitiatives();
+
+    resetCreateInitiativeForm();
+
+    if (elements.contributionProgramStatus) {
+
+        elements.contributionProgramStatus.textContent =
+            "Initiative created as Draft. Configure participants before activation.";
+
+        elements.contributionProgramStatus.className =
+            "program-status ready";
+    }
+
+    return data;
 }
 
 
@@ -712,7 +1050,10 @@ async function loadSubscription() {
  * presentation-only and avoids introducing HTML injection paths.
  */
 
-function appendEmptyState(container, message) {
+function appendEmptyState(
+    container,
+    message
+) {
 
     if (!container) {
         return;
@@ -858,11 +1199,12 @@ async function loadContributionTypes() {
             : [];
 
     renderContributionTypes();
+    renderInitiativeContributionTypes();
 }
 
 
 /* ================================================================
-   CONTRIBUTION INITIATIVES — READ ONLY
+   CONTRIBUTION INITIATIVES — READ ONLY LIST
 ================================================================ */
 
 function renderContributionInitiatives() {
@@ -1133,6 +1475,60 @@ async function loadFineRules() {
 
 
 /* ================================================================
+   APPLICATION CONTEXT
+================================================================ */
+
+async function loadApplicationContext() {
+
+    const {
+        data,
+        error
+    } = await getMyApplicationContext();
+
+    if (error) {
+        throw error;
+    }
+
+    const context =
+        Array.isArray(data)
+            ? data[0] || null
+            : data || null;
+
+    if (!context) {
+
+        throw new Error(
+            "Unable to determine the current group context."
+        );
+    }
+
+    currentUser =
+        context.user || null;
+
+    currentMember =
+        context.member || null;
+
+    currentGroup =
+        context.group || null;
+
+    currentIsOwner =
+        Boolean(
+            context.is_owner ||
+            context.isOwner
+        );
+
+    currentRole =
+        normalizeLower(
+            context.role ||
+            context.application_role ||
+            context.member_role
+        );
+
+    applyAuthorization();
+    renderGroup();
+}
+
+
+/* ================================================================
    EVENT BINDING
 ================================================================ */
 
@@ -1142,18 +1538,20 @@ function bindEvents() {
         return;
     }
 
-    eventsBound =
-        true;
+    eventsBound = true;
 
     elements.groupForm?.addEventListener(
         "submit",
         async (event) => {
 
             try {
+
                 await saveGroupInformation(
                     event
                 );
+
             } catch (error) {
+
                 console.error(
                     "Failed to save group information:",
                     error
@@ -1167,12 +1565,15 @@ function bindEvents() {
         async (event) => {
 
             try {
+
                 await saveAdminActualPosition(
                     event
                 );
+
             } catch (error) {
+
                 console.error(
-                    "Failed to save leadership setup:",
+                    "Failed to save actual position:",
                     error
                 );
             }
@@ -1184,10 +1585,13 @@ function bindEvents() {
         async (event) => {
 
             try {
+
                 await saveContributionSettings(
                     event
                 );
+
             } catch (error) {
+
                 console.error(
                     "Failed to save contribution settings:",
                     error
@@ -1196,16 +1600,65 @@ function bindEvents() {
         }
     );
 
+    elements.createInitiativeForm?.addEventListener(
+        "submit",
+        async (event) => {
+
+            if (elements.createInitiativeButton) {
+
+                elements.createInitiativeButton.disabled =
+                    true;
+            }
+
+            try {
+
+                await createContributionInitiative(
+                    event
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "Failed to create contribution initiative:",
+                    error
+                );
+
+                if (elements.contributionProgramStatus) {
+
+                    elements.contributionProgramStatus.textContent =
+                        error?.message ||
+                        "Failed to create contribution initiative.";
+
+                    elements.contributionProgramStatus.className =
+                        "program-status error";
+                }
+
+            } finally {
+
+                applyAuthorizationUI();
+            }
+        }
+    );
+
     elements.groupCategory?.addEventListener(
         "change",
         () => {
 
-            if (!elements.groupCategoryOther) {
-                return;
-            }
+            const selected =
+                normalizeLower(
+                    elements.groupCategory?.value
+                );
 
-            elements.groupCategoryOther.disabled =
-                elements.groupCategory.value !== "other";
+            const field =
+                document.getElementById(
+                    "groupCategoryOtherField"
+                );
+
+            if (field) {
+
+                field.hidden =
+                    selected !== "other";
+            }
         }
     );
 }
@@ -1224,35 +1677,9 @@ async function initializeGroupManagement() {
     initializationPromise =
         (async () => {
 
-            const context =
-                await getMyApplicationContext();
-
-            currentUser =
-                context?.user || null;
-
-            currentMember =
-                context?.member || null;
-
-            currentGroup =
-                context?.group || null;
-
-            currentIsOwner =
-                Boolean(
-                    context?.is_owner
-                );
-
-            currentRole =
-                context?.role ||
-                context?.member?.actual_position ||
-                null;
-
-            applyAuthorization();
-
-            renderGroup();
-
-            applyAuthorizationUI();
-
             bindEvents();
+
+            await loadApplicationContext();
 
             await Promise.all([
                 loadLeadershipSetup(),
@@ -1263,9 +1690,22 @@ async function initializeGroupManagement() {
                 loadContributionInitiatives(),
                 loadFineRules()
             ]);
+
+            applyAuthorizationUI();
+
         })();
 
-    return initializationPromise;
+    try {
+
+        await initializationPromise;
+
+    } catch (error) {
+
+        initializationPromise =
+            null;
+
+        throw error;
+    }
 }
 
 
@@ -1283,5 +1723,6 @@ export {
     loadSubscription,
     loadContributionTypes,
     loadContributionInitiatives,
-    loadFineRules
+    loadFineRules,
+    createContributionInitiative
 };
