@@ -14,6 +14,7 @@
  *      system/application role
  *      actual group position
  * - Manage the monthly contribution closing day.
+ * - Display contribution configuration.
  * - Display subscription/account information.
  *
  * IMPORTANT:
@@ -26,6 +27,8 @@
  * - Monthly contribution-cycle selector remains interactive.
  * - Group Type "Other" stores the administrator's custom
  *   group type directly in groups.category.
+ * - Contribution configuration added here is READ ONLY.
+ * - No direct accounting-table writes are performed by this module.
  *
  * ================================================================
  */
@@ -71,6 +74,14 @@ let canManageGroup = false;
 
 let subscription = null;
 let contributionSettings = null;
+
+/*
+ * Contribution configuration is intentionally read-only in this
+ * first integration gate.
+ */
+let contributionTypes = [];
+let contributionInitiatives = [];
+let fineRules = [];
 
 let initializationPromise = null;
 let eventsBound = false;
@@ -194,6 +205,20 @@ const dom = {
 
     currentContributionClosingDate:
         document.getElementById("currentContributionClosingDate"),
+
+
+    /* ------------------------------------------------------------
+       CONTRIBUTION CONFIGURATION — READ ONLY
+    ------------------------------------------------------------ */
+
+    contributionTypesList:
+        document.getElementById("contributionTypesList"),
+
+    contributionInitiativesList:
+        document.getElementById("contributionInitiativesList"),
+
+    fineRulesList:
+        document.getElementById("fineRulesList"),
 
 
     /* ------------------------------------------------------------
@@ -1475,6 +1500,503 @@ async function saveContributionSettings() {
 
 
 /* ================================================================
+   CONTRIBUTION CONFIGURATION — READ ONLY
+================================================================ */
+
+/*
+ * These helpers intentionally render textContent rather than
+ * inserting HTML. This keeps this first integration pass
+ * presentation-only and avoids introducing HTML injection paths.
+ */
+
+function appendEmptyState(container, message) {
+
+    if (!container) {
+        return;
+    }
+
+    const item =
+        document.createElement("div");
+
+    item.className =
+        "management-list-empty";
+
+    item.textContent =
+        message;
+
+    container.appendChild(
+        item
+    );
+}
+
+
+function appendTextRow(
+    container,
+    label,
+    value
+) {
+
+    const row =
+        document.createElement("div");
+
+    row.className =
+        "management-list-row";
+
+    const labelElement =
+        document.createElement("strong");
+
+    labelElement.textContent =
+        label;
+
+    const valueElement =
+        document.createElement("span");
+
+    valueElement.textContent =
+        value;
+
+    row.append(
+        labelElement,
+        valueElement
+    );
+
+    container.appendChild(
+        row
+    );
+}
+
+
+/* ---------------------------------------------------------------
+   CONTRIBUTION TYPES
+---------------------------------------------------------------- */
+
+function renderContributionTypes() {
+
+    const container =
+        dom.contributionTypesList;
+
+    if (!container) {
+        return;
+    }
+
+    container.replaceChildren();
+
+
+    if (!contributionTypes.length) {
+
+        appendEmptyState(
+            container,
+            "No contribution types are configured."
+        );
+
+        return;
+    }
+
+
+    contributionTypes.forEach(
+        type => {
+
+            const item =
+                document.createElement("div");
+
+            item.className =
+                "management-list-item";
+
+
+            appendTextRow(
+                item,
+                "Name",
+                normalizeValue(
+                    type.name
+                ) || "—"
+            );
+
+
+            if (
+                normalizeValue(
+                    type.code
+                )
+            ) {
+
+                appendTextRow(
+                    item,
+                    "Code",
+                    normalizeValue(
+                        type.code
+                    )
+                );
+            }
+
+
+            container.appendChild(
+                item
+            );
+        }
+    );
+}
+
+
+async function loadContributionTypes() {
+
+    if (!currentGroup?.id) {
+        return;
+    }
+
+
+    const {
+        data,
+        error
+    } = await supabase
+        .from("contribution_types")
+        .select(
+            "id, name, code, created_at"
+        )
+        .eq(
+            "group_id",
+            currentGroup.id
+        )
+        .order(
+            "created_at",
+            {
+                ascending: true
+            }
+        );
+
+
+    if (error) {
+        throw error;
+    }
+
+
+    contributionTypes =
+        Array.isArray(data)
+            ? data
+            : [];
+
+
+    renderContributionTypes();
+}
+
+
+/* ---------------------------------------------------------------
+   CONTRIBUTION INITIATIVES
+---------------------------------------------------------------- */
+
+function renderContributionInitiatives() {
+
+    const container =
+        dom.contributionInitiativesList;
+
+    if (!container) {
+        return;
+    }
+
+    container.replaceChildren();
+
+
+    if (!contributionInitiatives.length) {
+
+        appendEmptyState(
+            container,
+            "No contribution initiatives are configured."
+        );
+
+        return;
+    }
+
+
+    contributionInitiatives.forEach(
+        initiative => {
+
+            const item =
+                document.createElement("div");
+
+            item.className =
+                "management-list-item";
+
+
+            appendTextRow(
+                item,
+                "Name",
+                normalizeValue(
+                    initiative.name
+                ) || "—"
+            );
+
+
+            appendTextRow(
+                item,
+                "Status",
+                normalizeValue(
+                    initiative.status
+                ) || "—"
+            );
+
+
+            appendTextRow(
+                item,
+                "Frequency",
+                normalizeValue(
+                    initiative.frequency
+                ) || "—"
+            );
+
+
+            appendTextRow(
+                item,
+                "Start",
+                formatDate(
+                    initiative.start_date
+                )
+            );
+
+
+            appendTextRow(
+                item,
+                "Closing",
+                formatDate(
+                    initiative.closing_date
+                )
+            );
+
+
+            if (
+                initiative.default_amount !== null &&
+                initiative.default_amount !== undefined
+            ) {
+
+                appendTextRow(
+                    item,
+                    "Default amount",
+                    String(
+                        initiative.default_amount
+                    )
+                );
+            }
+
+
+            container.appendChild(
+                item
+            );
+        }
+    );
+}
+
+
+async function loadContributionInitiatives() {
+
+    if (!currentGroup?.id) {
+        return;
+    }
+
+
+    const {
+        data,
+        error
+    } = await supabase
+        .from("contribution_initiatives")
+        .select(
+            [
+                "id",
+                "contribution_type_id",
+                "name",
+                "description",
+                "start_date",
+                "closing_date",
+                "default_amount",
+                "frequency",
+                "status",
+                "created_at",
+                "updated_at"
+            ].join(", ")
+        )
+        .eq(
+            "group_id",
+            currentGroup.id
+        )
+        .order(
+            "created_at",
+            {
+                ascending: false
+            }
+        );
+
+
+    if (error) {
+        throw error;
+    }
+
+
+    contributionInitiatives =
+        Array.isArray(data)
+            ? data
+            : [];
+
+
+    renderContributionInitiatives();
+}
+
+
+/* ---------------------------------------------------------------
+   FINE RULES
+---------------------------------------------------------------- */
+
+function renderFineRules() {
+
+    const container =
+        dom.fineRulesList;
+
+    if (!container) {
+        return;
+    }
+
+    container.replaceChildren();
+
+
+    if (!fineRules.length) {
+
+        appendEmptyState(
+            container,
+            "No fine rules are visible for your account."
+        );
+
+        return;
+    }
+
+
+    fineRules.forEach(
+        rule => {
+
+            const item =
+                document.createElement("div");
+
+            item.className =
+                "management-list-item";
+
+
+            appendTextRow(
+                item,
+                "Name",
+                normalizeValue(
+                    rule.name
+                ) || "—"
+            );
+
+
+            appendTextRow(
+                item,
+                "Trigger",
+                normalizeValue(
+                    rule.trigger_type
+                ) || "—"
+            );
+
+
+            appendTextRow(
+                item,
+                "Calculation",
+                normalizeValue(
+                    rule.calculation_method
+                ) || "—"
+            );
+
+
+            appendTextRow(
+                item,
+                "Priority",
+                rule.priority === null ||
+                rule.priority === undefined
+                    ? "—"
+                    : String(
+                        rule.priority
+                    )
+            );
+
+
+            appendTextRow(
+                item,
+                "Status",
+                normalizeValue(
+                    rule.status
+                ) || "—"
+            );
+
+
+            container.appendChild(
+                item
+            );
+        }
+    );
+}
+
+
+async function loadFineRules() {
+
+    if (!currentGroup?.id) {
+        return;
+    }
+
+
+    const {
+        data,
+        error
+    } = await supabase
+        .from("fine_rules")
+        .select(
+            [
+                "id",
+                "name",
+                "description",
+                "trigger_type",
+                "specificity_level",
+                "priority",
+                "calculation_method",
+                "fixed_amount",
+                "percentage_rate",
+                "minimum_amount",
+                "maximum_amount",
+                "grace_period_value",
+                "grace_period_unit",
+                "applicability_mode",
+                "effective_from",
+                "effective_until",
+                "status",
+                "created_at"
+            ].join(", ")
+        )
+        .eq(
+            "group_id",
+            currentGroup.id
+        )
+        .order(
+            "priority",
+            {
+                ascending: true
+            }
+        )
+        .order(
+            "created_at",
+            {
+                ascending: true
+            }
+        );
+
+
+    if (error) {
+        throw error;
+    }
+
+
+    fineRules =
+        Array.isArray(data)
+            ? data
+            : [];
+
+
+    renderFineRules();
+}
+
+
+/* ================================================================
    SUBSCRIPTION
 ================================================================ */
 
@@ -1982,7 +2504,15 @@ async function initializeGroupManagement() {
                     loadLeadershipSetup(),
                     loadMemberCount(),
                     loadContributionSettings(),
-                    loadSubscription()
+                    loadSubscription(),
+
+                    /*
+                     * READ ONLY:
+                     * Contribution configuration loaders.
+                     */
+                    loadContributionTypes(),
+                    loadContributionInitiatives(),
+                    loadFineRules()
                 ]);
 
 
@@ -2064,7 +2594,16 @@ export {
     saveContributionSettings,
     loadContributionSettings,
     loadLeadershipSetup,
-    loadSubscription
+    loadSubscription,
+
+    /*
+     * Read-only contribution configuration API.
+     *
+     * No mutation functions are exported here.
+     */
+    loadContributionTypes,
+    loadContributionInitiatives,
+    loadFineRules
 };
 
 
