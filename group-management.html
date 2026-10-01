@@ -647,7 +647,7 @@
         }
 
         /* =====================================================
-           RECURRING INITIATIVE BOUNDARY
+           RECURRING INITIATIVE
         ====================================================== */
 
         .recurring-gated-note {
@@ -656,6 +656,24 @@
             border-radius: 8px;
             background: var(--warning-bg);
             color: var(--warning-text);
+            font-size: 0.76rem;
+        }
+
+        .recurring-ready-note {
+            margin-top: 12px;
+            padding: 10px 11px;
+            border-radius: 8px;
+            background: var(--success-bg);
+            color: var(--success-text);
+            font-size: 0.76rem;
+        }
+
+        .recurring-period-status {
+            margin-top: 12px;
+            padding: 10px 11px;
+            border-radius: 8px;
+            background: var(--info-bg);
+            color: var(--info-text);
             font-size: 0.76rem;
         }
 
@@ -1913,10 +1931,11 @@
                                         </select>
 
                                         <p class="field-help">
-                                            Monthly means a recurring calendar-
-                                            month initiative. Recurring setup
-                                            remains backend-gated until its
-                                            dedicated contract is integrated.
+                                            Monthly creates a recurring
+                                            calendar-month initiative with
+                                            participant terms, period
+                                            obligations and recurring
+                                            initiative accounting.
                                         </p>
 
                                     </div>
@@ -1953,7 +1972,9 @@
 
                                         <p class="field-help">
                                             Closing date must not be before
-                                            the start date.
+                                            the start date. A recurring
+                                            initiative generates only complete
+                                            calendar-month periods.
                                         </p>
 
                                     </div>
@@ -1976,10 +1997,10 @@
                                         >
 
                                         <p class="field-help">
-                                            Default contribution amount stored
-                                            with the initiative. Participant
-                                            amounts remain authoritative for
-                                            the existing one-time workflow.
+                                            Default amount stored with the
+                                            initiative. For participant-based
+                                            programs, the configured
+                                            participant amount is authoritative.
                                         </p>
 
                                     </div>
@@ -2036,12 +2057,13 @@
                                 keeps the initiative in Draft.
                                 <br><br>
                                 <strong>Monthly programs:</strong>
-                                Draft creation is available, but recurring
-                                participant terms, calendar periods,
-                                recurring obligations, activation and
-                                recurring payment remain separately gated.
-                                Monthly programs are not routed through the
-                                one-time participant service.
+                                Draft participant configuration uses the
+                                recurring participant-term contract. Terms
+                                determine participant amounts for future
+                                calendar-month periods. Recurring activation,
+                                just-in-time period generation and period
+                                obligation generation use dedicated database
+                                services.
                             </div>
 
 
@@ -2097,16 +2119,16 @@
                         <p class="program-access-note">
                             Contribution programs and fine rules are
                             controlled by the existing canonical database
-                            services. One-time participant configuration is
-                            performed through the canonical initiative
-                            participant service.
+                            services. One-time participant configuration uses
+                            the existing one-time participant service.
                             <strong>
-                                Monthly recurring initiatives do not use that
-                                one-time participant service.
+                                Monthly recurring initiatives use their
+                                dedicated recurring participant-term,
+                                period and obligation services.
                             </strong>
                             This page does not directly write participant
-                            rows, calculate fines, create obligations, create
-                            allocations or write accounting transactions.
+                            rows, recurring terms, obligations, allocations,
+                            credits or accounting transactions.
                         </p>
 
                     </div>
@@ -2117,11 +2139,13 @@
                         Draft → Configure Participants → Activate.
                         <br>
                         <strong>Monthly lifecycle:</strong>
-                        Draft → Recurring Participant Terms → Recurring
-                        Activation → Calendar Periods → Period Obligations.
-                        The recurring lifecycle is intentionally not activated
-                        by this page until its dedicated backend contract is
-                        available and verified.
+                        Draft → Recurring Participant Terms →
+                        Recurring Activation → Calendar Periods →
+                        Period Obligations → Recurring Payment/Allocation.
+                        <br><br>
+                        Recurring monthly initiatives use a separate
+                        initiative-domain accounting path and are not routed
+                        through the ordinary 2B monthly obligation engine.
                     </p>
 
                 </div>
@@ -2633,22 +2657,31 @@
          group-management.js remains a page initializer and does
          not auto-boot.
 
+         PAYMENT COLLECTION
+
          Payment collection controls remain disabled until the
          canonical payment-intent → provider-reference →
          callback/result → execution transaction contract is
          connected.
 
-         Contribution Programs:
+         CONTRIBUTION PROGRAMS
 
          ONE-TIME
          Create → Draft → Configure Participants → Activate
+         → Existing Initiative Payment Path
 
          MONTHLY
-         Create → Draft → Recurring Terms → Recurring Activation
-                → Calendar Periods → Period Obligations
+         Create → Draft → Recurring Participant Terms
+                → Recurring Activation
+                → Calendar Periods
+                → Period Obligations
+                → Recurring Initiative Payment / Allocation
 
-         Monthly recurring configuration is intentionally gated
-         and is NOT routed through the one-time participant RPC.
+         Monthly recurring initiatives use their dedicated
+         recurring-domain contracts and are NOT routed through
+         the ordinary 2B monthly accounting engine.
+
+         Existing one-time initiative contracts remain unchanged.
     ========================================================== -->
 
     <script type="module">
