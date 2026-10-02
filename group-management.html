@@ -16,6 +16,8 @@
 
     <title>Group Management | CHAMA LIVE</title>
 
+    <link rel="stylesheet" href="css/app.css">
+
     <style>
         :root {
             --page-bg: #f7f9fc;
@@ -23,16 +25,22 @@
             --border: #e5e7eb;
             --text: #111827;
             --muted: #6b7280;
+
             --primary: #166534;
             --primary-dark: #14532d;
+
             --success-bg: #ecfdf5;
             --success-text: #166534;
+
             --error-bg: #fef2f2;
             --error-text: #991b1b;
+
             --warning-bg: #fffbeb;
             --warning-text: #92400e;
+
             --info-bg: #eff6ff;
             --info-text: #1d4ed8;
+
             --radius: 14px;
             --shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
         }
@@ -145,6 +153,7 @@
         }
 
         .management-card {
+            min-width: 0;
             background: var(--card-bg);
             border: 1px solid var(--border);
             border-radius: var(--radius);
@@ -207,6 +216,7 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            min-height: 30px;
             padding: 6px 10px;
             border-radius: 999px;
             background: #f0fdf4;
@@ -304,7 +314,7 @@
             color: #fff;
         }
 
-        .btn-primary:hover {
+        .btn-primary:hover:not(:disabled) {
             background: var(--primary-dark);
         }
 
@@ -312,6 +322,10 @@
             background: #f8fafc;
             color: var(--text);
             border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #f1f5f9;
         }
 
         .btn:disabled {
@@ -498,6 +512,7 @@
         }
 
         .program-subsection {
+            min-width: 0;
             padding: 16px;
             border: 1px solid var(--border);
             border-radius: 12px;
@@ -559,10 +574,6 @@
             flex-wrap: wrap;
             gap: 6px;
             margin-top: 10px;
-        }
-
-        .program-item-meta strong {
-            margin-right: 4px;
         }
 
         .program-meta {
@@ -852,9 +863,9 @@
 
         .payment-reference-preview span {
             display: block;
+            margin-bottom: 4px;
             color: var(--muted);
             font-size: 0.75rem;
-            margin-bottom: 4px;
         }
 
         .payment-reference-preview strong {
@@ -1064,7 +1075,6 @@
     </style>
 </head>
 
-
 <body>
 
     <main
@@ -1148,7 +1158,6 @@
 
                 </div>
 
-
                 <div class="card-body">
 
                     <div class="overview-content">
@@ -1189,7 +1198,6 @@
 
                         </div>
 
-
                         <span
                             id="permissionBadge"
                             class="permission-badge"
@@ -1229,7 +1237,6 @@
                     </div>
 
                 </div>
-
 
                 <div class="card-body">
 
@@ -1349,7 +1356,6 @@
 
                         </div>
 
-
                         <div class="form-actions">
 
                             <button
@@ -1394,7 +1400,6 @@
                     </div>
 
                 </div>
-
 
                 <div class="card-body">
 
@@ -1495,7 +1500,6 @@
 
                         </div>
 
-
                         <div class="form-actions">
 
                             <button
@@ -1565,7 +1569,6 @@
                     </div>
 
                 </div>
-
 
                 <div class="card-body">
 
@@ -1691,7 +1694,6 @@
 
                         </div>
 
-
                         <div class="form-actions">
 
                             <button
@@ -1744,7 +1746,6 @@
                     </div>
 
                 </div>
-
 
                 <div class="card-body">
 
@@ -2051,11 +2052,14 @@
 
 
                             <div class="initiative-configure-note">
+
                                 <strong>One-time programs:</strong>
                                 Draft participant configuration uses the
                                 existing canonical participant service and
                                 keeps the initiative in Draft.
+
                                 <br><br>
+
                                 <strong>Monthly programs:</strong>
                                 Draft participant configuration uses the
                                 recurring participant-term contract. Terms
@@ -2064,6 +2068,7 @@
                                 just-in-time period generation and period
                                 obligation generation use dedicated database
                                 services.
+
                             </div>
 
 
@@ -2071,9 +2076,11 @@
                                 id="contributionInitiativesList"
                                 class="program-list"
                             >
+
                                 <div class="program-empty">
                                     Loading contribution programs…
                                 </div>
+
                             </div>
 
                         </div>
@@ -2108,44 +2115,58 @@
                                 id="fineRulesList"
                                 class="program-list"
                             >
+
                                 <div class="program-empty">
                                     Loading fine rules…
                                 </div>
+
                             </div>
 
                         </div>
 
 
                         <p class="program-access-note">
+
                             Contribution programs and fine rules are
                             controlled by the existing canonical database
-                            services. One-time participant configuration uses
-                            the existing one-time participant service.
+                            services.
+
+                            One-time participant configuration uses the
+                            existing one-time participant service.
+
                             <strong>
                                 Monthly recurring initiatives use their
                                 dedicated recurring participant-term,
                                 period and obligation services.
                             </strong>
+
                             This page does not directly write participant
                             rows, recurring terms, obligations, allocations,
                             credits or accounting transactions.
+
                         </p>
 
                     </div>
 
 
                     <p class="program-note">
+
                         <strong>One-time lifecycle:</strong>
                         Draft → Configure Participants → Activate.
+
                         <br>
+
                         <strong>Monthly lifecycle:</strong>
                         Draft → Recurring Participant Terms →
                         Recurring Activation → Calendar Periods →
                         Period Obligations → Recurring Payment/Allocation.
+
                         <br><br>
+
                         Recurring monthly initiatives use a separate
                         initiative-domain accounting path and are not routed
                         through the ordinary 2B monthly obligation engine.
+
                     </p>
 
                 </div>
@@ -2642,6 +2663,7 @@
         <div
             id="permissionMessage"
             class="permission-message hidden"
+            role="alert"
         >
             You do not have permission to manage this group.
         </div>
