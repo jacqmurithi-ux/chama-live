@@ -45,27 +45,29 @@ let subscription = null;
 let contributionSettings = null;
 
 /*
- * Contribution types remain read-only.
+ * Contribution types are read-only in this page.
  *
- * Initiative creation is governed exclusively by
- * create_contribution_initiative().
+ * Initiative creation:
+ *     create_contribution_initiative()
  *
- * One-time participant configuration is governed exclusively by
- * set_contribution_initiative_members().
+ * One-time participant configuration:
+ *     set_contribution_initiative_members()
  *
- * One-time activation is governed exclusively by
- * activate_contribution_initiative().
+ * One-time activation:
+ *     activate_contribution_initiative()
  *
- * Monthly recurring initiatives use a separate recurring backend
- * contract:
+ * Initiative closing:
+ *     close_contribution_initiative()
  *
- *     contribution_initiative_member_terms
+ * Monthly recurring initiatives:
+ *     set_contribution_initiative_members()
  *     set_contribution_initiative_member_term()
  *     activate_recurring_contribution_initiative()
  *     ensure_contribution_initiative_period()
  *     ensure_contribution_initiative_period_obligations()
+ *     get_contribution_initiative_period_status()
  *
- * The browser never writes directly to recurring accounting tables.
+ * The browser never writes directly to accounting tables.
  *
  * Payment collection remains outside this implementation because
  * the separate STK/payment gate has not been cleared.
@@ -74,6 +76,7 @@ let contributionTypes = [];
 let contributionInitiatives = [];
 let fineRules = [];
 
+
 /*
  * Initiative participant configuration state.
  *
@@ -81,7 +84,7 @@ let fineRules = [];
  *     Read-only list of members belonging to the current group.
  *
  * configuringInitiativeId:
- *     The initiative currently being configured.
+ *     Initiative currently being configured.
  *
  * No participant-table writes occur from state management itself.
  */
@@ -209,7 +212,6 @@ const elements = {
 ================================================================ */
 
 function normalizeLower(value) {
-
     return typeof value === "string"
         ? value.trim().toLowerCase()
         : "";
@@ -222,10 +224,9 @@ function isInitiativeManager() {
         normalizeLower(currentRole);
 
     /*
-     * Mirrors the verified production backend contract:
+     * Canonical initiative management contract:
      *
-     * public.can_manage_members(group_id)
-     *     = current_user_role IN ('admin', 'chairperson')
+     * admin OR chairperson
      */
     return (
         role === "admin" ||
@@ -294,12 +295,6 @@ function applyAuthorizationUI() {
             disabled;
     }
 
-    /*
-     * Initiative authorization mirrors the canonical backend
-     * can_manage_members() contract:
-     *
-     *     admin OR chairperson
-     */
     if (elements.createInitiativeButton) {
 
         elements.createInitiativeButton.disabled =
@@ -496,21 +491,18 @@ async function saveGroupInformation(event) {
         );
 
     if (!name) {
-
         throw new Error(
             "Group name is required."
         );
     }
 
     if (!category) {
-
         throw new Error(
             "Group category is required."
         );
     }
 
     if (!Number.isFinite(monthlyContribution)) {
-
         throw new Error(
             "Monthly contribution must be a valid number."
         );
@@ -956,28 +948,24 @@ async function createContributionInitiative(event) {
         );
 
     if (!name) {
-
         throw new Error(
             "Initiative name is required."
         );
     }
 
     if (!contributionTypeId) {
-
         throw new Error(
             "A contribution type is required."
         );
     }
 
     if (!startDate || !closingDate) {
-
         throw new Error(
             "Start date and closing date are required."
         );
     }
 
     if (closingDate < startDate) {
-
         throw new Error(
             "Closing date cannot be earlier than the start date."
         );
@@ -1051,16 +1039,10 @@ async function createContributionInitiative(event) {
 
     if (elements.contributionProgramStatus) {
 
-        if (frequency === "monthly") {
-
-            elements.contributionProgramStatus.textContent =
-                "Recurring initiative created as Draft. Configure recurring participants and terms before activation.";
-
-        } else {
-
-            elements.contributionProgramStatus.textContent =
-                "One-time initiative created as Draft. Configure participants before activation.";
-        }
+        elements.contributionProgramStatus.textContent =
+            frequency === "monthly"
+                ? "Recurring initiative created as Draft. Configure recurring participants and terms before activation."
+                : "One-time initiative created as Draft. Configure participants before activation.";
 
         elements.contributionProgramStatus.className =
             "program-status ready";
@@ -1256,20 +1238,14 @@ function isOneTimeInitiative(initiative) {
 }
 
 
-function getFirstFullRecurringMonth(
-    startDate
-) {
+function getFirstFullRecurringMonth(startDate) {
 
     const date =
         new Date(
             `${startDate}T00:00:00`
         );
 
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
+    if (Number.isNaN(date.getTime())) {
 
         throw new Error(
             "Invalid initiative start date."
@@ -1287,10 +1263,7 @@ function getFirstFullRecurringMonth(
         first.getFullYear(),
         String(
             first.getMonth() + 1
-        ).padStart(
-            2,
-            "0"
-        ),
+        ).padStart(2, "0"),
         "01"
     ].join("-");
 }
@@ -1305,10 +1278,7 @@ function getCurrentRecurringPeriodKey() {
         now.getFullYear(),
         String(
             now.getMonth() + 1
-        ).padStart(
-            2,
-            "0"
-        )
+        ).padStart(2, "0")
     ].join("-");
 }
 
@@ -1383,7 +1353,7 @@ async function loadInitiativeMembers() {
 
 
 /* ================================================================
-   INITIATIVE PARTICIPANTS — READ ONLY
+   ONE-TIME PARTICIPANTS — READ ONLY
 ================================================================ */
 
 async function loadInitiativeParticipants(
@@ -1484,7 +1454,6 @@ async function loadRecurringParticipantState(
         return {
             participants:
                 participantRows,
-
             terms:
                 []
         };
@@ -1538,7 +1507,7 @@ async function loadRecurringParticipantState(
 
 
 /* ================================================================
-   INITIATIVE PARTICIPANT EDITOR — COMMON UI
+   PARTICIPANT EDITOR STATUS
 ================================================================ */
 
 function createParticipantStatus(
@@ -1575,6 +1544,10 @@ function createParticipantStatus(
     return status;
 }
 
+
+/* ================================================================
+   PARTICIPANT ROW
+================================================================ */
 
 function createParticipantRow(
     member,
@@ -1791,7 +1764,6 @@ function renderInitiativeParticipantEditor(
     description.textContent =
         `Select members participating in "${initiative.name}". ` +
         "Set the amount for each selected member. " +
-        "This configuration applies to the existing one-time initiative contract. " +
         "The initiative remains Draft after saving.";
 
     header.append(
@@ -1992,6 +1964,11 @@ async function configureInitiativeParticipants(
         )
     ]);
 
+    initiativeMembers =
+        Array.isArray(members)
+            ? members
+            : [];
+
     const currentInitiative =
         getInitiativeById(
             initiative.id
@@ -2018,20 +1995,6 @@ async function configureInitiativeParticipants(
             "Only Draft initiatives can be configured."
         );
     }
-
-    if (!isOneTimeInitiative(currentInitiative)) {
-
-        clearInitiativeParticipantEditor();
-
-        throw new Error(
-            "Monthly recurring initiatives use the recurring participant-term workflow."
-        );
-    }
-
-    initiativeMembers =
-        Array.isArray(members)
-            ? members
-            : [];
 
     renderInitiativeParticipantEditor(
         currentInitiative,
@@ -2373,6 +2336,102 @@ async function activateInitiative(
             obligationCount !== null
                 ? `One-time initiative activated. ${obligationCount} obligation(s) created.`
                 : "One-time initiative activated.";
+
+        elements.contributionProgramStatus.className =
+            "program-status ready";
+    }
+
+    return data;
+}
+
+
+/* ================================================================
+   INITIATIVE CLOSING
+================================================================ */
+
+/*
+ * Closing is deliberately delegated to the canonical backend RPC.
+ *
+ * The browser does not:
+ *     - update initiative status directly
+ *     - delete participants
+ *     - alter obligations
+ *     - alter allocations
+ *     - calculate accounting
+ *
+ * The database remains authoritative.
+ */
+async function closeContributionInitiative(
+    initiativeId
+) {
+
+    if (!currentGroup?.id) {
+
+        throw new Error(
+            "No active group is available."
+        );
+    }
+
+    if (!isInitiativeManager()) {
+
+        throw new Error(
+            "Closing an initiative requires an admin or chairperson role."
+        );
+    }
+
+    const initiative =
+        getInitiativeById(
+            initiativeId
+        );
+
+    if (!initiative) {
+
+        throw new Error(
+            "The selected initiative is no longer available."
+        );
+    }
+
+    const status =
+        normalizeLower(
+            initiative.status
+        );
+
+    if (
+        status !== "active"
+    ) {
+
+        throw new Error(
+            "Only active initiatives can be closed."
+        );
+    }
+
+    const requestId =
+        crypto.randomUUID();
+
+    const {
+        data,
+        error
+    } = await supabase.rpc(
+        "close_contribution_initiative",
+        {
+            p_initiative_id:
+                initiative.id,
+
+            p_request_id:
+                requestId
+        }
+    );
+
+    if (error) {
+        throw error;
+    }
+
+    await loadContributionInitiatives();
+
+    if (elements.contributionProgramStatus) {
+
+        elements.contributionProgramStatus.textContent =
+            "Contribution initiative closed. Historical accounting remains preserved.";
 
         elements.contributionProgramStatus.className =
             "program-status ready";
@@ -2770,6 +2829,11 @@ async function configureRecurringInitiative(
         )
     ]);
 
+    initiativeMembers =
+        Array.isArray(members)
+            ? members
+            : [];
+
     const currentInitiative =
         getInitiativeById(
             initiative.id
@@ -2805,11 +2869,6 @@ async function configureRecurringInitiative(
             "Only Draft recurring initiatives can be configured."
         );
     }
-
-    initiativeMembers =
-        Array.isArray(members)
-            ? members
-            : [];
 
     renderRecurringParticipantEditor(
         currentInitiative,
@@ -3002,7 +3061,7 @@ async function saveRecurringParticipants(
 
         if (
             effectiveFrom <
-                firstMonth
+            firstMonth
         ) {
 
             throw new Error(
@@ -3012,7 +3071,7 @@ async function saveRecurringParticipants(
 
         if (
             effectiveFrom >
-                initiative.closing_date
+            initiative.closing_date
         ) {
 
             throw new Error(
@@ -3298,9 +3357,7 @@ async function activateRecurringInitiative(
    RECURRING PERIOD PREPARATION
 ================================================================ */
 
-function extractPeriodId(
-    data
-) {
+function extractPeriodId(data) {
 
     if (typeof data === "string") {
         return data;
@@ -3319,9 +3376,7 @@ function extractPeriodId(
 }
 
 
-function extractObligationCount(
-    data
-) {
+function extractObligationCount(data) {
 
     if (
         typeof data === "number" ||
@@ -3521,7 +3576,7 @@ async function loadRecurringPeriodStatus(
 
 
 /* ================================================================
-   CONTRIBUTION INITIATIVES — LIST
+   CONTRIBUTION INITIATIVES — RENDER
 ================================================================ */
 
 function renderContributionInitiatives() {
@@ -3603,6 +3658,17 @@ function renderContributionInitiatives() {
                 );
             }
 
+            const status =
+                normalizeLower(
+                    initiative.status
+                );
+
+            /*
+             * =====================================================
+             * MONTHLY RECURRING INITIATIVE
+             * =====================================================
+             */
+
             if (
                 isMonthlyInitiative(
                     initiative
@@ -3612,17 +3678,10 @@ function renderContributionInitiatives() {
                 appendTextRow(
                     item,
                     "Recurring setup",
-                    normalizeLower(
-                        initiative.status
-                    ) === "draft"
+                    status === "draft"
                         ? "Recurring participant terms"
                         : "Calendar periods and obligations"
                 );
-
-                const status =
-                    normalizeLower(
-                        initiative.status
-                    );
 
                 if (
                     status === "draft" &&
@@ -3731,6 +3790,31 @@ function renderContributionInitiatives() {
                         prepareButton
                     );
 
+                    if (isInitiativeManager()) {
+
+                        const closeButton =
+                            document.createElement(
+                                "button"
+                            );
+
+                        closeButton.type =
+                            "button";
+
+                        closeButton.className =
+                            "btn btn-secondary";
+
+                        closeButton.dataset
+                            .closeInitiative =
+                            initiative.id;
+
+                        closeButton.textContent =
+                            "Close Initiative";
+
+                        actions.appendChild(
+                            closeButton
+                        );
+                    }
+
                     item.appendChild(
                         actions
                     );
@@ -3744,7 +3828,7 @@ function renderContributionInitiatives() {
                         "program-status";
 
                     statusMessage.textContent =
-                        "Period preparation creates only the eligible recurring period obligations through the canonical database service.";
+                        "Period preparation creates only eligible recurring period obligations through the canonical database service.";
 
                     item.appendChild(
                         statusMessage
@@ -3777,83 +3861,150 @@ function renderContributionInitiatives() {
                 return;
             }
 
+
+            /*
+             * =====================================================
+             * ONE-TIME INITIATIVE
+             * =====================================================
+             */
+
             if (
                 isOneTimeInitiative(
                     initiative
-                ) &&
-                normalizeLower(
-                    initiative.status
-                ) === "draft" &&
-                isInitiativeManager()
+                )
             ) {
 
-                const actions =
-                    document.createElement(
-                        "div"
+                if (
+                    status === "draft" &&
+                    isInitiativeManager()
+                ) {
+
+                    const actions =
+                        document.createElement(
+                            "div"
+                        );
+
+                    actions.className =
+                        "program-actions";
+
+                    const configureButton =
+                        document.createElement(
+                            "button"
+                        );
+
+                    configureButton.type =
+                        "button";
+
+                    configureButton.className =
+                        "btn btn-secondary";
+
+                    configureButton.dataset
+                        .configureInitiative =
+                        initiative.id;
+
+                    configureButton.textContent =
+                        "Configure Participants";
+
+                    const activateButton =
+                        document.createElement(
+                            "button"
+                        );
+
+                    activateButton.type =
+                        "button";
+
+                    activateButton.className =
+                        "btn btn-primary";
+
+                    activateButton.dataset
+                        .activateInitiative =
+                        initiative.id;
+
+                    activateButton.textContent =
+                        "Activate";
+
+                    actions.append(
+                        configureButton,
+                        activateButton
                     );
 
-                actions.className =
-                    "program-actions";
-
-                const configureButton =
-                    document.createElement(
-                        "button"
+                    item.appendChild(
+                        actions
                     );
 
-                configureButton.type =
-                    "button";
+                    const statusMessage =
+                        document.createElement(
+                            "div"
+                        );
 
-                configureButton.className =
-                    "btn btn-secondary";
+                    statusMessage.className =
+                        "program-status";
 
-                configureButton.dataset
-                    .configureInitiative =
-                    initiative.id;
+                    statusMessage.textContent =
+                        "Configure participants before activating this one-time initiative.";
 
-                configureButton.textContent =
-                    "Configure Participants";
-
-                const activateButton =
-                    document.createElement(
-                        "button"
+                    item.appendChild(
+                        statusMessage
                     );
 
-                activateButton.type =
-                    "button";
+                } else if (
+                    status === "active" &&
+                    isInitiativeManager()
+                ) {
 
-                activateButton.className =
-                    "btn btn-primary";
+                    const actions =
+                        document.createElement(
+                            "div"
+                        );
 
-                activateButton.dataset
-                    .activateInitiative =
-                    initiative.id;
+                    actions.className =
+                        "program-actions";
 
-                activateButton.textContent =
-                    "Activate";
+                    const closeButton =
+                        document.createElement(
+                            "button"
+                        );
 
-                actions.append(
-                    configureButton,
-                    activateButton
-                );
+                    closeButton.type =
+                        "button";
 
-                item.appendChild(
-                    actions
-                );
+                    closeButton.className =
+                        "btn btn-secondary";
 
-                const statusMessage =
-                    document.createElement(
-                        "div"
+                    closeButton.dataset
+                        .closeInitiative =
+                        initiative.id;
+
+                    closeButton.textContent =
+                        "Close Initiative";
+
+                    actions.appendChild(
+                        closeButton
                     );
 
-                statusMessage.className =
-                    "program-status";
+                    item.appendChild(
+                        actions
+                    );
 
-                statusMessage.textContent =
-                    "Configure participants before activating this one-time initiative.";
+                } else if (
+                    status === "closed"
+                ) {
 
-                item.appendChild(
-                    statusMessage
-                );
+                    const statusMessage =
+                        document.createElement(
+                            "div"
+                        );
+
+                    statusMessage.className =
+                        "program-status";
+
+                    statusMessage.textContent =
+                        "One-time initiative is closed. Historical accounting remains preserved.";
+
+                    item.appendChild(
+                        statusMessage
+                    );
+                }
             }
 
             container.appendChild(
@@ -4057,27 +4208,6 @@ async function loadFineRules() {
 
 async function loadApplicationContext() {
 
-    /*
-     * IMPORTANT:
-     *
-     * getMyApplicationContext() returns the application context
-     * object directly.
-     *
-     * It does NOT return a Supabase response:
-     *
-     *     { data, error }
-     *
-     * Expected auth.js contract:
-     *
-     *     {
-     *         user,
-     *         member,
-     *         group,
-     *         isOwner,
-     *         role
-     *     }
-     */
-
     const context =
         await getMyApplicationContext();
 
@@ -4128,6 +4258,11 @@ function bindEvents() {
 
     eventsBound = true;
 
+
+    /* ------------------------------------------------------------
+       GROUP
+    ------------------------------------------------------------ */
+
     elements.groupForm?.addEventListener(
         "submit",
         async (event) => {
@@ -4147,6 +4282,11 @@ function bindEvents() {
             }
         }
     );
+
+
+    /* ------------------------------------------------------------
+       LEADERSHIP
+    ------------------------------------------------------------ */
 
     elements.leadershipForm?.addEventListener(
         "submit",
@@ -4168,6 +4308,11 @@ function bindEvents() {
         }
     );
 
+
+    /* ------------------------------------------------------------
+       CONTRIBUTION SETTINGS
+    ------------------------------------------------------------ */
+
     elements.saveContributionSettings?.addEventListener(
         "click",
         async (event) => {
@@ -4187,6 +4332,11 @@ function bindEvents() {
             }
         }
     );
+
+
+    /* ------------------------------------------------------------
+       CREATE INITIATIVE
+    ------------------------------------------------------------ */
 
     elements.createInitiativeForm?.addEventListener(
         "submit",
@@ -4228,9 +4378,19 @@ function bindEvents() {
         }
     );
 
+
+    /* ------------------------------------------------------------
+       INITIATIVE ACTIONS
+    ------------------------------------------------------------ */
+
     elements.contributionInitiativesList?.addEventListener(
         "click",
         async (event) => {
+
+
+            /* ====================================================
+               ONE-TIME CONFIGURE
+            ==================================================== */
 
             const configureButton =
                 event.target.closest(
@@ -4290,6 +4450,10 @@ function bindEvents() {
             }
 
 
+            /* ====================================================
+               ONE-TIME ACTIVATE
+            ==================================================== */
+
             const activateButton =
                 event.target.closest(
                     "[data-activate-initiative]"
@@ -4347,6 +4511,10 @@ function bindEvents() {
                 return;
             }
 
+
+            /* ====================================================
+               RECURRING CONFIGURE
+            ==================================================== */
 
             const recurringConfigureButton =
                 event.target.closest(
@@ -4406,6 +4574,10 @@ function bindEvents() {
             }
 
 
+            /* ====================================================
+               RECURRING ACTIVATE
+            ==================================================== */
+
             const recurringActivateButton =
                 event.target.closest(
                     "[data-activate-recurring-initiative]"
@@ -4464,6 +4636,10 @@ function bindEvents() {
             }
 
 
+            /* ====================================================
+               RECURRING PERIOD PREPARATION
+            ==================================================== */
+
             const prepareRecurringButton =
                 event.target.closest(
                     "[data-prepare-recurring-period]"
@@ -4521,6 +4697,72 @@ function bindEvents() {
                 return;
             }
 
+
+            /* ====================================================
+               CLOSE INITIATIVE
+            ==================================================== */
+
+            const closeButton =
+                event.target.closest(
+                    "[data-close-initiative]"
+                );
+
+            if (closeButton) {
+
+                const initiativeId =
+                    closeButton.dataset
+                        .closeInitiative;
+
+                if (!initiativeId) {
+                    return;
+                }
+
+                closeButton.disabled =
+                    true;
+
+                try {
+
+                    await closeContributionInitiative(
+                        initiativeId
+                    );
+
+                } catch (error) {
+
+                    console.error(
+                        "Failed to close contribution initiative:",
+                        error
+                    );
+
+                    if (
+                        elements.contributionProgramStatus
+                    ) {
+
+                        elements.contributionProgramStatus.textContent =
+                            error?.message ||
+                            "Failed to close contribution initiative.";
+
+                        elements.contributionProgramStatus.className =
+                            "program-status error";
+                    }
+
+                } finally {
+
+                    if (
+                        closeButton.isConnected
+                    ) {
+
+                        closeButton.disabled =
+                            false;
+                    }
+                }
+
+                return;
+            }
+
+
+            /* ====================================================
+               RECURRING TERM SAVE
+            ==================================================== */
 
             const saveRecurringButton =
                 event.target.closest(
@@ -4595,6 +4837,10 @@ function bindEvents() {
             }
 
 
+            /* ====================================================
+               CANCEL PARTICIPANT EDITOR
+            ==================================================== */
+
             const cancelButton =
                 event.target.closest(
                     '[data-cancel-initiative-participants="true"]'
@@ -4618,6 +4864,10 @@ function bindEvents() {
                 return;
             }
 
+
+            /* ====================================================
+               ONE-TIME PARTICIPANT SAVE
+            ==================================================== */
 
             const saveButton =
                 event.target.closest(
@@ -4692,6 +4942,11 @@ function bindEvents() {
             }
         }
     );
+
+
+    /* ------------------------------------------------------------
+       CATEGORY OTHER
+    ------------------------------------------------------------ */
 
     elements.groupCategory?.addEventListener(
         "change",
@@ -4768,22 +5023,31 @@ async function initializeGroupManagement() {
 
 export {
     initializeGroupManagement as initGroupManagement,
+
     saveGroupInformation,
     saveAdminActualPosition,
     saveContributionSettings,
+
     loadContributionSettings,
     loadLeadershipSetup,
     loadSubscription,
+
     loadContributionTypes,
     loadContributionInitiatives,
     loadFineRules,
+
     createContributionInitiative,
+
     configureInitiativeParticipants,
     saveInitiativeParticipants,
     activateInitiative,
+
     configureRecurringInitiative,
     saveRecurringParticipants,
     activateRecurringInitiative,
+
     prepareRecurringCurrentPeriod,
-    loadRecurringPeriodStatus
+    loadRecurringPeriodStatus,
+
+    closeContributionInitiative
 };
