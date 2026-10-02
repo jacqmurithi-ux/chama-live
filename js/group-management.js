@@ -923,14 +923,6 @@ async function createContributionInitiative(event) {
         );
     }
 
-    /*
-     * This mirrors the verified backend authorization contract:
-     *
-     * public.can_manage_members(group_id)
-     *     = current_user_role IN ('admin', 'chairperson')
-     *
-     * The database remains authoritative.
-     */
     if (!isInitiativeManager()) {
 
         throw new Error(
@@ -1011,14 +1003,6 @@ async function createContributionInitiative(event) {
         );
     }
 
-    /*
-     * Monthly initiatives are created as Draft.
-     *
-     * Creation remains owned by the existing canonical
-     * create_contribution_initiative() RPC.
-     *
-     * No obligations are created here.
-     */
     const requestId =
         crypto.randomUUID();
 
@@ -1272,19 +1256,6 @@ function isOneTimeInitiative(initiative) {
 }
 
 
-/*
- * Return the first full calendar month whose first day is
- * on or after the initiative start boundary.
- *
- * Example:
- *
- *     start 2026-10-15
- *     first recurring month 2026-11-01
- *
- * This helper is UI guidance only.
- *
- * The database remains authoritative for period eligibility.
- */
 function getFirstFullRecurringMonth(
     startDate
 ) {
@@ -1325,11 +1296,6 @@ function getFirstFullRecurringMonth(
 }
 
 
-/*
- * The UI uses the browser calendar only to request the current
- * period. The backend remains authoritative and will reject an
- * invalid or ineligible period.
- */
 function getCurrentRecurringPeriodKey() {
 
     const now =
@@ -1347,11 +1313,6 @@ function getCurrentRecurringPeriodKey() {
 }
 
 
-/*
- * Remove any currently open participant editor.
- *
- * Only one initiative is configured at a time.
- */
 function clearInitiativeParticipantEditor() {
 
     configuringInitiativeId =
@@ -1372,14 +1333,6 @@ function clearInitiativeParticipantEditor() {
    INITIATIVE MEMBERS — READ ONLY
 ================================================================ */
 
-/*
- * Reads members belonging to the current group.
- *
- * This is intentionally scoped by currentGroup.id.
- *
- * No member-table writes occur here.
- * members.js remains the owner of ordinary member management.
- */
 async function loadInitiativeMembers() {
 
     if (!currentGroup?.id) {
@@ -1430,21 +1383,9 @@ async function loadInitiativeMembers() {
 
 
 /* ================================================================
-   INITIATIVE PARTICIPANTS — READ ONLY EXISTING STATE
+   INITIATIVE PARTICIPANTS — READ ONLY
 ================================================================ */
 
-/*
- * There is no participant getter RPC in the verified production
- * contract.
- *
- * Therefore this remains a READ ONLY query against the participant
- * table for ONE-TIME initiatives.
- *
- * The browser MUST NOT insert, update, delete or upsert this table.
- *
- * Monthly recurring initiatives use the recurring participant-term
- * workflow below.
- */
 async function loadInitiativeParticipants(
     initiativeId
 ) {
@@ -1497,12 +1438,6 @@ async function loadInitiativeParticipants(
    RECURRING PARTICIPANT STATE — READ ONLY
 ================================================================ */
 
-/*
- * Reads the stable recurring participant identities and their
- * existing terms.
- *
- * No writes occur here.
- */
 async function loadRecurringParticipantState(
     initiativeId
 ) {
@@ -1810,10 +1745,6 @@ function renderInitiativeParticipantEditor(
         return;
     }
 
-    /*
-     * This editor is exclusively for the existing ONE-TIME
-     * participant contract.
-     */
     if (!isOneTimeInitiative(initiative)) {
 
         throw new Error(
@@ -2023,13 +1954,6 @@ async function configureInitiativeParticipants(
         );
     }
 
-    /*
-     * HARD DOMAIN BOUNDARY:
-     *
-     * The existing participant RPC is a ONE-TIME initiative
-     * contract. Monthly recurring initiatives use their own
-     * recurring participant-term workflow.
-     */
     if (isMonthlyInitiative(initiative)) {
 
         throw new Error(
@@ -2146,12 +2070,6 @@ async function saveInitiativeParticipants(
         );
     }
 
-    /*
-     * HARD BOUNDARY:
-     *
-     * Existing set_contribution_initiative_members() remains the
-     * ONE-TIME initiative participant contract.
-     */
     if (!isOneTimeInitiative(initiative)) {
 
         throw new Error(
@@ -2374,22 +2292,6 @@ async function saveInitiativeParticipants(
    ONE-TIME ACTIVATION
 ================================================================ */
 
-/*
- * Activates an existing ONE-TIME Draft initiative through the
- * canonical production RPC.
- *
- * This function intentionally does NOT:
- *
- *     - write directly to contribution_initiative_obligations
- *     - write directly to contributions
- *     - alter recurring activation
- *     - alter participant configuration
- *     - create or modify database objects
- *
- * The database remains authoritative for authorization,
- * lifecycle validation, participant validation, idempotency and
- * obligation creation.
- */
 async function activateInitiative(
     initiativeId
 ) {
@@ -2543,10 +2445,6 @@ function renderRecurringParticipantEditor(
                     term.initiative_member_id
                 );
 
-            /*
-             * The latest effective term is the useful current
-             * configuration for a Draft recurring initiative.
-             */
             if (
                 !current ||
                 String(
@@ -3166,13 +3064,6 @@ async function saveRecurringParticipants(
 
     try {
 
-        /*
-         * The participant identity itself remains owned by the
-         * canonical participant RPC.
-         *
-         * The participant RPC is used only while the initiative
-         * is Draft, before recurring obligations exist.
-         */
         const participantRequestId =
             crypto.randomUUID();
 
@@ -3204,10 +3095,6 @@ async function saveRecurringParticipants(
             throw participantError;
         }
 
-        /*
-         * Resolve the stable initiative-member IDs after the
-         * canonical participant operation.
-         */
         const {
             data: currentParticipants,
             error: currentParticipantError
@@ -3240,12 +3127,6 @@ async function saveRecurringParticipants(
                 )
             );
 
-        /*
-         * Each term is created through the canonical database RPC.
-         *
-         * There are no direct INSERT/UPDATE statements against
-         * contribution_initiative_member_terms.
-         */
         for (
             const participant
             of participants
@@ -3421,11 +3302,6 @@ function extractPeriodId(
     data
 ) {
 
-    /*
-     * The period RPC is database-owned. Depending on whether the
-     * candidate is returning a scalar UUID or JSONB, accept only
-     * the explicit period-id forms expected from the contract.
-     */
     if (typeof data === "string") {
         return data;
     }
@@ -3509,17 +3385,6 @@ async function prepareRecurringCurrentPeriod(
         );
     }
 
-    /*
-     * The UI requests the current calendar month.
-     *
-     * The database remains authoritative for:
-     *
-     *     - initiative dates
-     *     - full-month eligibility
-     *     - closing boundary
-     *     - lifecycle
-     *     - idempotency
-     */
     const periodKey =
         getCurrentRecurringPeriodKey();
 
@@ -3668,9 +3533,6 @@ function renderContributionInitiatives() {
         return;
     }
 
-    /*
-     * Re-rendering removes any stale participant editor.
-     */
     clearInitiativeParticipantEditor();
 
     container.replaceChildren();
@@ -3741,10 +3603,6 @@ function renderContributionInitiatives() {
                 );
             }
 
-            /* ----------------------------------------------------
-               MONTHLY RECURRING INITIATIVE
-            ---------------------------------------------------- */
-
             if (
                 isMonthlyInitiative(
                     initiative
@@ -3792,7 +3650,7 @@ function renderContributionInitiatives() {
 
                     configureButton.dataset
                         .configureRecurringInitiative =
-                            initiative.id;
+                        initiative.id;
 
                     configureButton.textContent =
                         "Configure Recurring Terms";
@@ -3810,7 +3668,7 @@ function renderContributionInitiatives() {
 
                     activateButton.dataset
                         .activateRecurringInitiative =
-                            initiative.id;
+                        initiative.id;
 
                     activateButton.textContent =
                         "Activate Recurring";
@@ -3838,9 +3696,8 @@ function renderContributionInitiatives() {
                     item.appendChild(
                         statusMessage
                     );
-                }
 
-                else if (
+                } else if (
                     status === "active"
                 ) {
 
@@ -3865,7 +3722,7 @@ function renderContributionInitiatives() {
 
                     prepareButton.dataset
                         .prepareRecurringPeriod =
-                            initiative.id;
+                        initiative.id;
 
                     prepareButton.textContent =
                         "Prepare Current Period";
@@ -3892,9 +3749,8 @@ function renderContributionInitiatives() {
                     item.appendChild(
                         statusMessage
                     );
-                }
 
-                else if (
+                } else if (
                     status === "closed"
                 ) {
 
@@ -3920,10 +3776,6 @@ function renderContributionInitiatives() {
 
                 return;
             }
-
-            /* ----------------------------------------------------
-               ONE-TIME INITIATIVE
-            ---------------------------------------------------- */
 
             if (
                 isOneTimeInitiative(
@@ -3956,7 +3808,7 @@ function renderContributionInitiatives() {
 
                 configureButton.dataset
                     .configureInitiative =
-                        initiative.id;
+                    initiative.id;
 
                 configureButton.textContent =
                     "Configure Participants";
@@ -3974,7 +3826,7 @@ function renderContributionInitiatives() {
 
                 activateButton.dataset
                     .activateInitiative =
-                        initiative.id;
+                    initiative.id;
 
                 activateButton.textContent =
                     "Activate";
@@ -4205,19 +4057,29 @@ async function loadFineRules() {
 
 async function loadApplicationContext() {
 
-    const {
-        data,
-        error
-    } = await getMyApplicationContext();
-
-    if (error) {
-        throw error;
-    }
+    /*
+     * IMPORTANT:
+     *
+     * getMyApplicationContext() returns the application context
+     * object directly.
+     *
+     * It does NOT return a Supabase response:
+     *
+     *     { data, error }
+     *
+     * Expected auth.js contract:
+     *
+     *     {
+     *         user,
+     *         member,
+     *         group,
+     *         isOwner,
+     *         role
+     *     }
+     */
 
     const context =
-        Array.isArray(data)
-            ? data[0] || null
-            : data || null;
+        await getMyApplicationContext();
 
     if (!context) {
 
@@ -4366,20 +4228,9 @@ function bindEvents() {
         }
     );
 
-    /*
-     * Contribution initiative controls are rendered dynamically.
-     *
-     * Delegation keeps one event owner on the existing list rather
-     * than attaching listeners repeatedly whenever the list
-     * refreshes.
-     */
     elements.contributionInitiativesList?.addEventListener(
         "click",
         async (event) => {
-
-            /* ----------------------------------------------------
-               ONE-TIME CONFIGURATION
-            ---------------------------------------------------- */
 
             const configureButton =
                 event.target.closest(
@@ -4439,10 +4290,6 @@ function bindEvents() {
             }
 
 
-            /* ----------------------------------------------------
-               ONE-TIME ACTIVATION
-            ---------------------------------------------------- */
-
             const activateButton =
                 event.target.closest(
                     "[data-activate-initiative]"
@@ -4500,10 +4347,6 @@ function bindEvents() {
                 return;
             }
 
-
-            /* ----------------------------------------------------
-               RECURRING CONFIGURATION
-            ---------------------------------------------------- */
 
             const recurringConfigureButton =
                 event.target.closest(
@@ -4563,10 +4406,6 @@ function bindEvents() {
             }
 
 
-            /* ----------------------------------------------------
-               RECURRING ACTIVATION
-            ---------------------------------------------------- */
-
             const recurringActivateButton =
                 event.target.closest(
                     "[data-activate-recurring-initiative]"
@@ -4625,10 +4464,6 @@ function bindEvents() {
             }
 
 
-            /* ----------------------------------------------------
-               RECURRING CURRENT PERIOD PREPARATION
-            ---------------------------------------------------- */
-
             const prepareRecurringButton =
                 event.target.closest(
                     "[data-prepare-recurring-period]"
@@ -4686,10 +4521,6 @@ function bindEvents() {
                 return;
             }
 
-
-            /* ----------------------------------------------------
-               RECURRING PARTICIPANT TERM SAVE
-            ---------------------------------------------------- */
 
             const saveRecurringButton =
                 event.target.closest(
@@ -4764,10 +4595,6 @@ function bindEvents() {
             }
 
 
-            /* ----------------------------------------------------
-               CANCEL PARTICIPANT EDITOR
-            ---------------------------------------------------- */
-
             const cancelButton =
                 event.target.closest(
                     '[data-cancel-initiative-participants="true"]'
@@ -4791,10 +4618,6 @@ function bindEvents() {
                 return;
             }
 
-
-            /* ----------------------------------------------------
-               ONE-TIME PARTICIPANT SAVE
-            ---------------------------------------------------- */
 
             const saveButton =
                 event.target.closest(
