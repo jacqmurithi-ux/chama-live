@@ -27,7 +27,6 @@
    ---------------------------------------------------------
    MEMBER POSITION
    ---------------------------------------------------------
-
    Actual group position is collected only when creating a
    new member.
 
@@ -60,12 +59,10 @@
 
    Before reading a member's contribution position, the page
    invokes the authenticated canonical refresh boundary.
-   That wrapper derives the member's group and current month
-   server-side and delegates to the existing canonical
-   accounting engine.
 
    ---------------------------------------------------------
-   IMPORTANT:
+   IMPORTANT
+   ---------------------------------------------------------
    create_member_with_historical_contributions() creates a
    NEW member. It must NEVER be used to edit an existing
    member.
@@ -73,6 +70,8 @@
    Existing-member historical accounting changes require a
    verified canonical database workflow before being wired
    into this page.
+
+   Member contribution rules are displayed read-only.
    ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -108,12 +107,12 @@ let contributionTypesLoaded = false;
 let contributionPositions = new Map();
 let contributionPositionsLoaded = false;
 
+let memberContributionRules = new Map();
+let memberContributionRulesLoaded = false;
+
 
 /* =========================================================
    ACTUAL POSITION CONTRACT
-   ---------------------------------------------------------
-   These values must remain synchronized with the canonical
-   database position constraints.
    ========================================================= */
 
 const ACTUAL_POSITION_VALUES = new Set([
@@ -212,7 +211,7 @@ function updateActualPositionNameUI() {
     name.disabled =
       !isOther;
 
-    if (!isOther) {
+    if (!isOther && !editingMemberId) {
       name.value =
         "";
     }
@@ -312,6 +311,18 @@ function displayRole(role) {
     return "Secretary";
   }
 
+  if (value === "chairperson") {
+    return "Chairperson";
+  }
+
+  if (value === "vice chairperson") {
+    return "Vice Chairperson";
+  }
+
+  if (value === "vice secretary") {
+    return "Vice Secretary";
+  }
+
   return "Member";
 }
 
@@ -343,6 +354,35 @@ function accountStatusHtml(status) {
 
   return `
     <span class="status-badge status-${escapeHtml(value)}">
+      ${escapeHtml(label)}
+    </span>
+  `;
+}
+
+
+function onboardingStatusHtml(status) {
+  const value =
+    String(status || "pending")
+      .trim()
+      .toLowerCase();
+
+  const labels = {
+    pending: "Pending",
+    invited: "Invited",
+    active: "Active",
+    completed: "Completed",
+    suspended: "Suspended"
+  };
+
+  const label =
+    labels[value] ||
+    value ||
+    "Pending";
+
+  return `
+    <span class="onboarding-status onboarding-status-${escapeHtml(
+      value || "pending"
+    )}">
       ${escapeHtml(label)}
     </span>
   `;
@@ -595,9 +635,25 @@ async function loadMemberContributionPositions() {
           : data || null;
 
       if (position) {
+        const totalAllocated =
+          Number(
+            position.total_allocated || 0
+          );
+
+        const credit =
+          Number(
+            position.credit || 0
+          );
+
         contributionPositions.set(
           member.id,
-          position
+          {
+            ...position,
+            allocated:
+              totalAllocated,
+            total_contributed:
+              totalAllocated + credit
+          }
         );
       }
 
@@ -614,6 +670,263 @@ async function loadMemberContributionPositions() {
 
   contributionPositionsLoaded =
     true;
+}
+
+
+/* =========================================================
+   MEMBER CONTRIBUTION RULES
+   ---------------------------------------------------------
+   READ ONLY.
+
+   The authoritative table is:
+
+     member_contribution_rules
+
+   No browser-side mutation is performed here because the
+   current backend audit did not identify a canonical member
+   contribution-rule update RPC.
+   ========================================================= */
+
+async function loadMemberContributionRules() {
+  memberContributionRules =
+    new Map();
+
+  memberContributionRulesLoaded =
+    false;
+
+  if (!members.length) {
+    memberContributionRulesLoaded =
+      true;
+
+    return;
+  }
+
+  const memberIds =
+    members
+      .map(member => member.id)
+      .filter(Boolean);
+
+  if (!memberIds.length) {
+    memberContributionRulesLoaded =
+      true;
+
+    return;
+  }
+
+  const {
+    data,
+    error
+  } = await supabase
+    .from("member_contribution_rules")
+    .select("*")
+    .in(
+      "member_id",
+      memberIds
+    );
+
+  if (error) {
+    /*
+     * The table may be protected by RLS according to the
+     * caller's role. Do not fail the entire members page
+     * merely because rule visibility is restricted.
+     */
+    console.warn(
+      "Member contribution rules could not be loaded:",
+      error
+    );
+
+    memberContributionRulesLoaded =
+      true;
+
+    return;
+  }
+
+  const rows =
+    Array.isArray(data)
+      ? data
+      : [];
+
+  for (const row of rows) {
+    const id =
+      row.member_id;
+
+    if (!id) {
+      continue;
+    }
+
+    if (
+      !memberContributionRules.has(id)
+    ) {
+      memberContributionRules.set(
+        id,
+        []
+      );
+    }
+
+    memberContributionRules
+      .get(id)
+      .push(row);
+  }
+
+  memberContributionRulesLoaded =
+    true;
+}
+
+
+function getMemberRules(memberId) {
+  return (
+    memberContributionRules.get(
+      memberId
+    ) || []
+  );
+}
+
+
+function formatFrequency(value) {
+  const normalized =
+    String(value || "")
+      .trim()
+      .toLowerCase();
+
+  if (!normalized) {
+    return "—";
+  }
+
+  return normalized
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, character =>
+      character.toUpperCase()
+    );
+}
+
+
+function formatRuleStatus(value) {
+  const normalized =
+    String(value || "")
+      .trim()
+      .toLowerCase();
+
+  if (!normalized) {
+    return "—";
+  }
+
+  return normalized
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, character =>
+      character.toUpperCase()
+    );
+}
+
+
+function memberRulesHtml(memberId) {
+  const rules =
+    getMemberRules(
+      memberId
+    );
+
+  if (!rules.length) {
+    return `
+      <div class="member-rule-empty">
+        No contribution rule is visible for this member.
+      </div>
+    `;
+  }
+
+  return `
+    <div class="member-contribution-rules">
+
+      ${rules.map(rule => {
+
+        const amount =
+          Number(
+            rule.amount || 0
+          );
+
+        return `
+          <div class="member-contribution-rule">
+
+            <div>
+              <span>
+                Amount
+              </span>
+
+              <strong>
+                ${formatMoney(amount)}
+              </strong>
+            </div>
+
+            <div>
+              <span>
+                Frequency
+              </span>
+
+              <strong>
+                ${escapeHtml(
+                  formatFrequency(
+                    rule.frequency
+                  )
+                )}
+              </strong>
+            </div>
+
+            <div>
+              <span>
+                Effective From
+              </span>
+
+              <strong>
+                ${formatDate(
+                  rule.effective_from
+                )}
+              </strong>
+            </div>
+
+            <div>
+              <span>
+                Effective To
+              </span>
+
+              <strong>
+                ${formatDate(
+                  rule.effective_to
+                )}
+              </strong>
+            </div>
+
+            <div>
+              <span>
+                First Period
+              </span>
+
+              <strong>
+                ${escapeHtml(
+                  formatRuleStatus(
+                    rule.first_period_rule
+                  )
+                )}
+              </strong>
+            </div>
+
+            <div>
+              <span>
+                Status
+              </span>
+
+              <strong>
+                ${escapeHtml(
+                  formatRuleStatus(
+                    rule.status
+                  )
+                )}
+              </strong>
+            </div>
+
+          </div>
+        `;
+      }).join("")}
+
+    </div>
+  `;
 }
 
 
@@ -738,6 +1051,84 @@ function ensureContributionStatusStyles() {
     .actual-position-display small {
       color: #6b7280;
       font-size: .72rem;
+    }
+
+    .member-contribution-rules {
+      display: grid;
+      gap: .75rem;
+      margin-top: .75rem;
+    }
+
+    .member-contribution-rule {
+      display: grid;
+      grid-template-columns:
+        repeat(auto-fit, minmax(130px, 1fr));
+      gap: .75rem;
+      padding: .75rem;
+      border: 1px solid rgba(127,127,127,.18);
+      border-radius: .65rem;
+    }
+
+    .member-contribution-rule > div {
+      display: flex;
+      flex-direction: column;
+      gap: .2rem;
+    }
+
+    .member-contribution-rule span,
+    .member-contribution-position span {
+      color: #6b7280;
+      font-size: .78rem;
+    }
+
+    .member-rule-empty {
+      color: #6b7280;
+      padding: .75rem 0;
+    }
+
+    .member-onboarding {
+      display: inline-flex;
+      align-items: center;
+      padding: .2rem .5rem;
+      border-radius: 999px;
+      font-size: .72rem;
+      font-weight: 600;
+      white-space: nowrap;
+      background: rgba(107,114,128,.10);
+      color: #4b5563;
+    }
+
+    .onboarding-status {
+      display: inline-flex;
+      align-items: center;
+      padding: .2rem .5rem;
+      border-radius: 999px;
+      font-size: .72rem;
+      font-weight: 600;
+      white-space: nowrap;
+      background: rgba(107,114,128,.10);
+      color: #4b5563;
+    }
+
+    .onboarding-status-active,
+    .onboarding-status-completed {
+      background: rgba(22,163,74,.12);
+      color: #15803d;
+    }
+
+    .onboarding-status-invited {
+      background: rgba(37,99,235,.12);
+      color: #1d4ed8;
+    }
+
+    .onboarding-status-pending {
+      background: rgba(234,179,8,.14);
+      color: #a16207;
+    }
+
+    .onboarding-status-suspended {
+      background: rgba(220,38,38,.12);
+      color: #b91c1c;
     }
   `;
 
@@ -893,25 +1284,15 @@ function ensureNationalIdUI() {
    ========================================================= */
 
 function ensureContributionUI() {
-  const form =
-    byId("addMemberForm") ||
-    byId("memberForm");
-
-  if (!form) {
-    return;
-  }
-
   const amount =
     byId(
       "memberContributionAmount"
     );
 
-  if (amount) {
-    amount.addEventListener(
-      "input",
-      updateContributionPreview
-    );
-  }
+  amount?.addEventListener(
+    "input",
+    updateContributionPreview
+  );
 }
 
 
@@ -963,6 +1344,13 @@ async function loadMonthlyContributionType() {
 
   monthlyContributionType =
     activeRows.find(row =>
+      String(row.code || "")
+        .trim()
+        .toLowerCase() ===
+      "monthly"
+    ) ||
+
+    activeRows.find(row =>
       String(row.name || "")
         .trim()
         .toLowerCase() ===
@@ -975,15 +1363,6 @@ async function loadMonthlyContributionType() {
         .toLowerCase() ===
       "monthly"
     ) ||
-
-    activeRows.find(row =>
-      String(row.code || "")
-        .trim()
-        .toLowerCase() ===
-      "monthly"
-    ) ||
-
-    activeRows[0] ||
 
     null;
 
@@ -1203,6 +1582,11 @@ function getFormValues() {
         "memberNumber"
       )?.value?.trim() || "",
 
+    membership_number:
+      byId(
+        "memberMembershipNumber"
+      )?.value?.trim() || "",
+
     name:
       byId(
         "memberName"
@@ -1333,17 +1717,6 @@ function validateForm(values) {
       );
     }
 
-    /*
-     * Actual position is deliberately excluded from the
-     * existing-member edit path.
-     *
-     * Position changes must use:
-     *
-     *   set_member_actual_position()
-     *
-     * through a dedicated authorized workflow.
-     */
-
     return true;
   }
 
@@ -1414,23 +1787,12 @@ function validateForm(values) {
       values.join_date;
   }
 
-
-  /* -------------------------------------------------------
-     ACTUAL POSITION EFFECTIVE DATE
-     -------------------------------------------------------
-
-     The initial position history created by the canonical
-     member-creation RPC begins on the member's join date.
-
-     This is intentionally not today's date.
-     ------------------------------------------------------- */
-
   if (
-    values.actual_position &&
-    !values.join_date
+    values.contribution_effective_from <
+    values.join_date
   ) {
     return (
-      "Join date is required before an actual position can be recorded."
+      "Contribution effective date cannot be before the join date."
     );
   }
 
@@ -1710,6 +2072,12 @@ function createMemberRow(member) {
     </td>
 
     <td>
+      ${onboardingStatusHtml(
+        member.onboarding_status
+      )}
+    </td>
+
+    <td>
       ${loginStatusHtml(
         member
       )}
@@ -1881,6 +2249,19 @@ function createMemberCard(member) {
       </div>
 
       <div>
+        <span>Onboarding</span>
+
+        <strong>
+          ${escapeHtml(
+            String(
+              member.onboarding_status ||
+              "pending"
+            )
+          )}
+        </strong>
+      </div>
+
+      <div>
         <span>Login</span>
 
         <strong>
@@ -1990,7 +2371,7 @@ function renderMembers() {
       tableBody.innerHTML = `
         <tr>
           <td
-            colspan="9"
+            colspan="10"
             class="empty-state"
           >
             No members found.
@@ -2216,6 +2597,9 @@ function openAddMember() {
     );
 
   if (actualPosition) {
+    actualPosition.disabled =
+      false;
+
     actualPosition.value =
       "";
   }
@@ -2226,6 +2610,9 @@ function openAddMember() {
     );
 
   if (actualPositionName) {
+    actualPositionName.disabled =
+      true;
+
     actualPositionName.value =
       "";
   }
@@ -2267,6 +2654,20 @@ function openAddMember() {
     effectiveDate.value =
       joinDate?.value ||
       getToday();
+  }
+
+  const membershipNumber =
+    byId(
+      "memberMembershipNumber"
+    );
+
+  if (
+    membershipNumber &&
+    byId("memberNumber")
+  ) {
+    membershipNumber.value =
+      byId("memberNumber").value ||
+      "";
   }
 
   const historical =
@@ -2387,6 +2788,18 @@ async function saveMember(event) {
   const values =
     getFormValues();
 
+  /*
+   * If membership number is not separately supplied, use
+   * member number as the compatibility/default value.
+   */
+  if (
+    !values.membership_number &&
+    values.member_number
+  ) {
+    values.membership_number =
+      values.member_number;
+  }
+
   const validation =
     validateForm(
       values
@@ -2430,44 +2843,62 @@ async function saveMember(event) {
        *
        * Actual position is deliberately NOT included here.
        *
-       * This existing-member update remains limited to the
-       * previously supported member-detail fields.
+       * Historical accounting is deliberately NOT included.
        *
-       * Position changes use the canonical
-       * set_member_actual_position() workflow instead.
+       * The ordinary edit path updates only member-detail
+       * fields that are not protected by the position-history
+       * or accounting workflows.
        */
+
+      const updatePayload = {
+        member_number:
+          values.member_number,
+
+        name:
+          values.name,
+
+        national_id:
+          values.national_id,
+
+        phone:
+          values.phone,
+
+        email:
+          values.email ||
+          null,
+
+        role:
+          values.role,
+
+        status:
+          values.status,
+
+        join_date:
+          values.join_date ||
+          null
+      };
+
+      /*
+       * Membership number is included only when the current
+       * schema exposes the field through the page contract.
+       *
+       * It is intentionally sent as a normal member-detail
+       * field rather than touching accounting.
+       */
+      if (
+        values.membership_number
+      ) {
+        updatePayload.membership_number =
+          values.membership_number;
+      }
 
       const {
         error
       } = await supabase
         .from("members")
-        .update({
-          member_number:
-            values.member_number,
-
-          name:
-            values.name,
-
-          national_id:
-            values.national_id,
-
-          phone:
-            values.phone,
-
-          email:
-            values.email ||
-            null,
-
-          role:
-            values.role,
-
-          status:
-            values.status,
-
-          join_date:
-            values.join_date ||
-            null
-        })
+        .update(
+          updatePayload
+        )
         .eq(
           "id",
           editingMemberId
@@ -2483,6 +2914,8 @@ async function saveMember(event) {
 
 
       await loadMembers();
+
+      await loadMemberContributionRules();
 
       await loadMemberContributionPositions();
 
@@ -2510,6 +2943,96 @@ async function saveMember(event) {
 
 
     /* -----------------------------------------------------
+       MEMBER PAYLOAD
+       ----------------------------------------------------- */
+
+    const memberPayload = {
+      group_id:
+        groupId,
+
+      member_number:
+        values.member_number,
+
+      membership_number:
+        values.membership_number ||
+        values.member_number,
+
+      name:
+        values.name,
+
+      national_id:
+        values.national_id,
+
+      phone:
+        values.phone,
+
+      email:
+        values.email ||
+        null,
+
+      role:
+        values.role,
+
+      /*
+       * Actual group position is intentionally separate from
+       * the CHAMA LIVE access role.
+       */
+      actual_position:
+        values.actual_position ||
+        null,
+
+      actual_position_name:
+        values.actual_position ===
+        "other"
+          ? values.actual_position_name
+          : null,
+
+      /*
+       * Initial position history begins on the member's join
+       * date through the canonical creation RPC.
+       */
+      actual_position_effective_from:
+        values.join_date,
+
+      status:
+        values.status,
+
+      join_date:
+        values.join_date
+    };
+
+
+    /* -----------------------------------------------------
+       CANONICAL CONTRIBUTION PLAN
+       ----------------------------------------------------- */
+
+    const contributionPlan = [
+      {
+        contribution_type_id:
+          monthlyContributionType.id,
+
+        amount:
+          values.contribution_amount,
+
+        frequency:
+          "monthly",
+
+        effective_from:
+          values.contribution_effective_from,
+
+        effective_to:
+          null,
+
+        first_period_rule:
+          values.first_period_rule,
+
+        status:
+          "active"
+      }
+    ];
+
+
+    /* -----------------------------------------------------
        NEW MEMBER WITH HISTORICAL CONTRIBUTIONS
        ----------------------------------------------------- */
 
@@ -2517,97 +3040,17 @@ async function saveMember(event) {
       values.historical_enabled
     ) {
 
-      const historicalContributionPlan = [
-        {
-          contribution_type_id:
-            monthlyContributionType?.id ||
-            null,
-
-          amount:
-            values.contribution_amount,
-
-          first_period_rule:
-            values.first_period_rule,
-
-          effective_from:
-            values.contribution_effective_from
-        }
-      ];
-
-
-      if (
-        !Array.isArray(
-          historicalContributionPlan
-        )
-      ) {
-        throw new Error(
-          "Historical contribution plan must be a JSON array."
-        );
-      }
-
-
       const {
         data,
         error
       } = await supabase.rpc(
         "create_member_with_historical_contributions",
         {
-          p_member: {
-            group_id:
-              groupId,
-
-            member_number:
-              values.member_number,
-
-            membership_number:
-              values.member_number,
-
-            name:
-              values.name,
-
-            national_id:
-              values.national_id,
-
-            phone:
-              values.phone,
-
-            email:
-              values.email ||
-              null,
-
-            role:
-              values.role,
-
-            /*
-             * Actual group position is intentionally
-             * separate from the CHAMA LIVE access role.
-             */
-            actual_position:
-              values.actual_position ||
-              null,
-
-            actual_position_name:
-              values.actual_position ===
-              "other"
-                ? values.actual_position_name
-                : null,
-
-            /*
-             * Initial position history begins on the
-             * member's join date.
-             */
-            actual_position_effective_from:
-              values.join_date,
-
-            status:
-              values.status,
-
-            join_date:
-              values.join_date
-          },
+          p_member:
+            memberPayload,
 
           p_contribution_plan:
-            historicalContributionPlan,
+            contributionPlan,
 
           p_historical: {
             enabled:
@@ -2644,6 +3087,18 @@ async function saveMember(event) {
 
       /* ---------------------------------------------------
          NEW MEMBER WITHOUT HISTORICAL CONTRIBUTIONS
+
+         CURRENT CANONICAL CONTRACT:
+
+           create_member_with_contribution_plan(
+             p_member jsonb,
+             p_contribution_plan jsonb
+           )
+
+         Do NOT use the obsolete:
+           p_contribution_rule
+
+         Do NOT pass accounting-table rows directly.
          --------------------------------------------------- */
 
       const {
@@ -2652,74 +3107,11 @@ async function saveMember(event) {
       } = await supabase.rpc(
         "create_member_with_contribution_plan",
         {
-          p_member: {
-            group_id:
-              groupId,
+          p_member:
+            memberPayload,
 
-            member_number:
-              values.member_number,
-
-            name:
-              values.name,
-
-            national_id:
-              values.national_id,
-
-            phone:
-              values.phone,
-
-            email:
-              values.email ||
-              null,
-
-            role:
-              values.role,
-
-            /*
-             * Actual group position is intentionally
-             * separate from the CHAMA LIVE access role.
-             */
-            actual_position:
-              values.actual_position ||
-              null,
-
-            actual_position_name:
-              values.actual_position ===
-              "other"
-                ? values.actual_position_name
-                : null,
-
-            /*
-             * Initial position history begins on the
-             * member's join date.
-             */
-            actual_position_effective_from:
-              values.join_date,
-
-            status:
-              values.status,
-
-            join_date:
-              values.join_date
-          },
-
-          p_contribution_rule: {
-            contribution_type_id:
-              monthlyContributionType?.id ||
-              null,
-
-            amount:
-              values.contribution_amount,
-
-            first_period_rule:
-              values.first_period_rule,
-
-            effective_from:
-              values.contribution_effective_from
-          },
-
-          p_idempotency_key:
-            crypto.randomUUID()
+          p_contribution_plan:
+            contributionPlan
         }
       );
 
@@ -2739,6 +3131,8 @@ async function saveMember(event) {
        ===================================================== */
 
     await loadMembers();
+
+    await loadMemberContributionRules();
 
     await loadMemberContributionPositions();
 
@@ -2889,6 +3283,8 @@ async function handleHistoricalReconciliation(
 
     await loadMembers();
 
+    await loadMemberContributionRules();
+
     await loadMemberContributionPositions();
 
     renderMembers();
@@ -2987,6 +3383,21 @@ async function sendMemberInvitation(
       "Member invitation sent."
     );
 
+    /*
+     * Reload member data because the Edge Function may update:
+     *
+     *   auth_user_id
+     *   invited_at
+     *   onboarding_status
+     */
+    await loadMembers();
+
+    await loadMemberContributionRules();
+
+    renderMembers();
+
+    updateMemberCount();
+
     if (reopenModal) {
       await openMemberModal(
         member.id
@@ -3000,18 +3411,6 @@ async function sendMemberInvitation(
       error
     );
 
-    /*
-     * Supabase FunctionsHttpError can contain the actual
-     * JSON response returned by the Edge Function.
-     *
-     * This lets CHAMA LIVE show the backend's real error
-     * instead of only:
-     *
-     *   "Edge Function returned a non-2xx status code"
-     *
-     * This is especially important for HTTP 429 email
-     * rate-limit responses.
-     */
     let message =
       error?.message ||
       "Unable to send member invitation.";
@@ -3047,10 +3446,6 @@ async function sendMemberInvitation(
             )}`;
         }
 
-        /*
-         * If the Edge Function explicitly returns an
-         * email_sent flag, provide a useful indication.
-         */
         if (
           details?.email_sent ===
           false &&
@@ -3061,18 +3456,12 @@ async function sendMemberInvitation(
           message +=
             " — Email was not sent.";
         }
-
       }
 
     } catch (
       responseReadError
     ) {
 
-      /*
-       * Reading the error body is diagnostic only.
-       * Preserve the original FunctionsHttpError message
-       * if the response body cannot be read.
-       */
       console.debug(
         "Could not read invitation error response:",
         responseReadError
@@ -3143,6 +3532,11 @@ async function openEditMember(
       member.member_number ||
       "",
 
+    memberMembershipNumber:
+      member.membership_number ||
+      member.member_number ||
+      "",
+
     memberName:
       member.name ||
       "",
@@ -3188,11 +3582,6 @@ async function openEditMember(
 
   /* -------------------------------------------------------
      EXISTING MEMBER ACTUAL POSITION
-     -------------------------------------------------------
-     Display only.
-
-     Do NOT permit the normal member edit form to mutate
-     actual_position or actual_position_name.
      ------------------------------------------------------- */
 
   const actualPosition =
@@ -3529,15 +3918,6 @@ function setContributionPositionLoading(
 }
 
 
-function contributionPositionStatusClass(
-  position
-) {
-  return contributionStatusKey(
-    position
-  );
-}
-
-
 /* =========================================================
    LOAD MEMBER POSITION
    ========================================================= */
@@ -3564,7 +3944,6 @@ async function loadMemberContributionPosition(
       memberId
     );
 
-
     const {
       data,
       error
@@ -3588,33 +3967,6 @@ async function loadMemberContributionPosition(
       Array.isArray(data)
         ? data[0] || null
         : data || null;
-
-
-    /* -----------------------------------------------------
-       CANONICAL RPC CONTRACT
-       -----------------------------------------------------
-
-       get_member_contribution_position() returns:
-
-         total_due
-         total_allocated
-         arrears
-         credit
-         status
-
-       It does NOT return:
-
-         allocated
-         total_contributed
-
-       Therefore:
-         allocated = total_allocated
-
-       And for the monthly contribution position:
-         total contributed = allocated + credit
-
-       This is display derivation only.
-       ----------------------------------------------------- */
 
     const totalAllocated =
       Number(
@@ -3640,10 +3992,17 @@ async function loadMemberContributionPosition(
         0
       );
 
+    /*
+     * Display derivation only:
+     *
+     * total_contributed =
+     *     total_allocated + credit
+     *
+     * No accounting row is created or changed here.
+     */
     const totalContributed =
       totalAllocated +
       credit;
-
 
     const normalizedPosition = {
       ...position,
@@ -3654,7 +4013,6 @@ async function loadMemberContributionPosition(
       allocated:
         totalAllocated
     };
-
 
     const totalElement =
       modal.querySelector(
@@ -3835,6 +4193,7 @@ async function openMemberModal(
 
         <strong>
           ${escapeHtml(
+            member.membership_number ||
             member.member_number ||
             "—"
           )}
@@ -3946,6 +4305,21 @@ async function openMemberModal(
 
       <div>
         <span>
+          Onboarding
+        </span>
+
+        <strong>
+          ${escapeHtml(
+            String(
+              member.onboarding_status ||
+              "pending"
+            )
+          )}
+        </strong>
+      </div>
+
+      <div>
+        <span>
           Login
         </span>
 
@@ -3983,6 +4357,61 @@ async function openMemberModal(
         </strong>
       </div>
     `;
+  }
+
+
+  /* -------------------------------------------------------
+     CONTRIBUTION RULES
+     ------------------------------------------------------- */
+
+  let rulesSection =
+    modal.querySelector(
+      "[data-member-contribution-rules]"
+    );
+
+  if (!rulesSection) {
+
+    rulesSection =
+      document.createElement(
+        "section"
+      );
+
+    rulesSection.dataset.memberContributionRules =
+      "true";
+
+    rulesSection.innerHTML = `
+      <h3>
+        Contribution Rules
+      </h3>
+
+      <div data-member-rules-content>
+      </div>
+    `;
+
+    const container =
+      modal.querySelector(
+        ".member-modal-body"
+      ) ||
+      modal.querySelector(
+        ".modal-body"
+      ) ||
+      modal;
+
+    container.appendChild(
+      rulesSection
+    );
+  }
+
+  const rulesContent =
+    rulesSection.querySelector(
+      "[data-member-rules-content]"
+    );
+
+  if (rulesContent) {
+    rulesContent.innerHTML =
+      memberRulesHtml(
+        member.id
+      );
   }
 
 
@@ -4093,13 +4522,15 @@ function filterMembers(value) {
         const haystack = [
           member.name,
           member.member_number,
+          member.membership_number,
           member.national_id,
           member.phone,
           member.email,
           member.role,
           member.actual_position,
           member.actual_position_name,
-          member.status
+          member.status,
+          member.onboarding_status
         ]
           .filter(Boolean)
           .join(" ")
@@ -4300,6 +4731,41 @@ function bindEvents() {
   actualPosition?.addEventListener(
     "change",
     updateActualPositionNameUI
+  );
+
+
+  /* -------------------------------------------------------
+     MEMBER NUMBER → MEMBERSHIP NUMBER
+     ------------------------------------------------------- */
+
+  const memberNumber =
+    byId(
+      "memberNumber"
+    );
+
+  const membershipNumber =
+    byId(
+      "memberMembershipNumber"
+    );
+
+  memberNumber?.addEventListener(
+    "input",
+    () => {
+
+      if (
+        editingMemberId ||
+        !membershipNumber
+      ) {
+        return;
+      }
+
+      if (
+        !membershipNumber.value
+      ) {
+        membershipNumber.value =
+          memberNumber.value;
+      }
+    }
   );
 
 
@@ -4687,6 +5153,13 @@ async function init() {
 
 
     /* -----------------------------------------------------
+       CONTRIBUTION RULES
+       ----------------------------------------------------- */
+
+    await loadMemberContributionRules();
+
+
+    /* -----------------------------------------------------
        CONTRIBUTION POSITIONS
        ----------------------------------------------------- */
 
@@ -4744,6 +5217,8 @@ async function init() {
 export async function refreshMembers() {
 
   await loadMembers();
+
+  await loadMemberContributionRules();
 
   await loadMemberContributionPositions();
 
