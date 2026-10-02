@@ -51,7 +51,7 @@
        - Contribution Goals
 
    IMPORTANT:
-       layout.js is the page bootloader.
+       admin-layout.js is the page bootloader.
 
        Therefore this module does NOT auto-run
        initDashboard() at the bottom.
@@ -89,12 +89,12 @@ let contributions = [];
 let expenses = [];
 let meetings = [];
 
-let supportCases = [];
-let plans = [];
-let activities = [];
-let milestones = [];
-let assets = [];
-let contributionGoals = [];
+let supportCases = 0;
+let plans = 0;
+let activities = 0;
+let milestones = 0;
+let assets = 0;
+let contributionGoals = 0;
 
 let monthlyStatus = [];
 let canonicalSummary = null;
@@ -124,9 +124,7 @@ let initialized = false;
 
 function el(id) {
 
-  return document.getElementById(
-    id
-  );
+  return document.getElementById(id);
 
 }
 
@@ -153,7 +151,7 @@ function setText(id, value) {
 function money(value) {
 
   const amount =
-    Number(value || 0);
+    numberValue(value);
 
   return (
     "KSh " +
@@ -175,8 +173,18 @@ function money(value) {
 
 function numberValue(value) {
 
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return 0;
+  }
+
+
   const number =
     Number(value);
+
 
   return Number.isFinite(number)
     ? number
@@ -267,6 +275,7 @@ function showError(error) {
     error
   );
 
+
   const message =
     error?.message ||
     String(error) ||
@@ -275,6 +284,7 @@ function showError(error) {
 
   const errorElement =
     el("error");
+
 
   if (errorElement) {
 
@@ -289,6 +299,7 @@ function showError(error) {
 
   const statusElement =
     el("status");
+
 
   if (
     statusElement &&
@@ -311,9 +322,11 @@ function clearError() {
   const errorElement =
     el("error");
 
+
   if (!errorElement) {
     return;
   }
+
 
   errorElement.hidden =
     true;
@@ -334,6 +347,7 @@ function normalizeDate(value) {
     return "";
   }
 
+
   return String(value)
     .substring(
       0,
@@ -347,6 +361,7 @@ function getToday() {
 
   const date =
     new Date();
+
 
   return [
     date.getFullYear(),
@@ -386,14 +401,17 @@ function formatDate(value) {
   const dateValue =
     normalizeDate(value);
 
+
   if (!dateValue) {
     return "—";
   }
+
 
   const date =
     new Date(
       `${dateValue}T00:00:00`
     );
+
 
   if (
     Number.isNaN(
@@ -404,6 +422,7 @@ function formatDate(value) {
     return dateValue;
 
   }
+
 
   return date.toLocaleDateString(
     "en-KE",
@@ -423,10 +442,12 @@ function formatMonth(month) {
     return "—";
   }
 
+
   const date =
     new Date(
       `${month}-01T00:00:00`
     );
+
 
   if (
     Number.isNaN(
@@ -437,6 +458,7 @@ function formatMonth(month) {
     return month;
 
   }
+
 
   return date.toLocaleDateString(
     "en-KE",
@@ -457,6 +479,7 @@ async function loadContext() {
 
   const context =
     await getMyApplicationContext();
+
 
   if (!context) {
 
@@ -526,6 +549,17 @@ async function loadContext() {
 
     throw new Error(
       "Group information could not be found."
+    );
+
+  }
+
+
+  if (
+    !currentGroup.id
+  ) {
+
+    throw new Error(
+      "Current group information has no group ID."
     );
 
   }
@@ -628,13 +662,26 @@ async function loadMembers() {
 
 
   members =
-    data || [];
+    Array.isArray(data)
+      ? data
+      : [];
 
 }
 
 
 /* =========================================================
    LOAD CONTRIBUTIONS
+=========================================================
+
+   READ ONLY.
+
+   These rows are used for the recent-contribution display
+   and the separate cash-position display.
+
+   They are NOT used to calculate canonical member
+   obligation status.
+
+   Canonical accounting comes only from the approved RPCs.
 ========================================================= */
 
 async function loadContributions() {
@@ -651,12 +698,8 @@ async function loadContributions() {
         member_id,
         amount,
         contribution_type,
-        month,
         payment_method,
-        reference,
-        recorded_by,
         contribution_date,
-        notes,
         created_at
       `)
       .eq(
@@ -677,7 +720,9 @@ async function loadContributions() {
 
 
   contributions =
-    data || [];
+    Array.isArray(data)
+      ? data
+      : [];
 
 }
 
@@ -724,7 +769,9 @@ async function loadExpenses() {
 
 
   expenses =
-    data || [];
+    Array.isArray(data)
+      ? data
+      : [];
 
 }
 
@@ -771,7 +818,9 @@ async function loadMeetings() {
 
 
   meetings =
-    data || [];
+    Array.isArray(data)
+      ? data
+      : [];
 
 }
 
@@ -788,10 +837,13 @@ async function loadSupportCases() {
   } =
     await supabase
       .from("group_support_cases")
-      .select("id", {
-        count: "exact",
-        head: true
-      })
+      .select(
+        "id",
+        {
+          count: "exact",
+          head: true
+        }
+      )
       .eq(
         "group_id",
         currentGroupId
@@ -823,10 +875,13 @@ async function loadPlans() {
   } =
     await supabase
       .from("group_plans")
-      .select("id", {
-        count: "exact",
-        head: true
-      })
+      .select(
+        "id",
+        {
+          count: "exact",
+          head: true
+        }
+      )
       .eq(
         "group_id",
         currentGroupId
@@ -858,10 +913,13 @@ async function loadActivities() {
   } =
     await supabase
       .from("group_activities")
-      .select("id", {
-        count: "exact",
-        head: true
-      })
+      .select(
+        "id",
+        {
+          count: "exact",
+          head: true
+        }
+      )
       .eq(
         "group_id",
         currentGroupId
@@ -893,10 +951,13 @@ async function loadMilestones() {
   } =
     await supabase
       .from("group_milestones")
-      .select("id", {
-        count: "exact",
-        head: true
-      })
+      .select(
+        "id",
+        {
+          count: "exact",
+          head: true
+        }
+      )
       .eq(
         "group_id",
         currentGroupId
@@ -928,10 +989,13 @@ async function loadAssets() {
   } =
     await supabase
       .from("group_assets")
-      .select("id", {
-        count: "exact",
-        head: true
-      })
+      .select(
+        "id",
+        {
+          count: "exact",
+          head: true
+        }
+      )
       .eq(
         "group_id",
         currentGroupId
@@ -963,10 +1027,13 @@ async function loadContributionGoals() {
   } =
     await supabase
       .from("contribution_goals")
-      .select("id", {
-        count: "exact",
-        head: true
-      })
+      .select(
+        "id",
+        {
+          count: "exact",
+          head: true
+        }
+      )
       .eq(
         "group_id",
         currentGroupId
@@ -1100,6 +1167,7 @@ async function loadCanonicalMemberStatus(
       error
     );
 
+
     throw new Error(
       `Canonical monthly accounting could not be loaded: ${error.message}`
     );
@@ -1108,76 +1176,77 @@ async function loadCanonicalMemberStatus(
 
 
   monthlyStatus =
-    (data || []).map(
-      row => {
+    (Array.isArray(data) ? data : [])
+      .map(
+        row => {
 
-        return {
+          return {
 
-          memberId:
-            row.member_id,
+            memberId:
+              row.member_id,
 
-          memberNumber:
-            row.member_number,
+            memberNumber:
+              row.member_number,
 
-          memberName:
-            row.member_name ||
-            memberName(
-              row.member_id
-            ),
+            memberName:
+              row.member_name ||
+              memberName(
+                row.member_id
+              ),
 
-          monthlyDue:
-            numberValue(
-              row.monthly_due
-            ),
+            monthlyDue:
+              numberValue(
+                row.monthly_due
+              ),
 
-          previousOutstanding:
-            numberValue(
-              row.previous_outstanding
-            ),
+            previousOutstanding:
+              numberValue(
+                row.previous_outstanding
+              ),
 
-          previousCredit:
-            numberValue(
-              row.previous_credit
-            ),
+            previousCredit:
+              numberValue(
+                row.previous_credit
+              ),
 
-          currentMonthPayment:
-            numberValue(
-              row.current_month_payment
-            ),
+            currentMonthPayment:
+              numberValue(
+                row.current_month_payment
+              ),
 
-          appliedThisMonth:
-            numberValue(
-              row.applied_this_month
-            ),
+            appliedThisMonth:
+              numberValue(
+                row.applied_this_month
+              ),
 
-          carryForward:
-            numberValue(
-              row.carry_forward
-            ),
+            carryForward:
+              numberValue(
+                row.carry_forward
+              ),
 
-          currentOutstanding:
-            numberValue(
-              row.current_outstanding
-            ),
+            currentOutstanding:
+              numberValue(
+                row.current_outstanding
+              ),
 
-          totalPaidToDate:
-            numberValue(
-              row.total_paid_to_date
-            ),
+            totalPaidToDate:
+              numberValue(
+                row.total_paid_to_date
+              ),
 
-          totalDueToDate:
-            numberValue(
-              row.total_due_to_date
-            ),
+            totalDueToDate:
+              numberValue(
+                row.total_due_to_date
+              ),
 
-          status:
-            row.status ||
-            "outstanding"
+            status:
+              row.status ||
+              "outstanding"
 
-        };
+          };
 
-      }
-    );
+        }
+      );
 
 
   return monthlyStatus;
@@ -1216,6 +1285,7 @@ async function loadCanonicalSummary(
       error
     );
 
+
     throw new Error(
       `Canonical monthly summary could not be loaded: ${error.message}`
     );
@@ -1253,6 +1323,18 @@ async function loadCanonicalSummary(
   }
 
 
+  if (
+    canonicalSummary === null ||
+    typeof canonicalSummary !== "object"
+  ) {
+
+    throw new Error(
+      "Canonical monthly summary returned an invalid result."
+    );
+
+  }
+
+
   return canonicalSummary;
 
 }
@@ -1275,13 +1357,10 @@ async function loadCanonicalSummary(
        credit
        status
 
-   Status precedence is defined by the canonical RPC:
+   Status precedence is defined by the canonical RPC.
 
-       ARREARS
-       CREDIT
-       UP_TO_DATE
-
-   We do not infer cumulative status from monthly fields.
+   We do not reconstruct cumulative accounting from the
+   monthly result.
 ========================================================= */
 
 async function loadCumulativePosition(
@@ -1320,6 +1399,7 @@ async function loadCumulativePosition(
       }
     );
 
+
     throw new Error(
       `Cumulative member accounting could not be loaded: ${error.message}`
     );
@@ -1350,11 +1430,27 @@ async function loadCumulativePosition(
   }
 
 
+  const returnedMemberId =
+    row.member_id ||
+    memberId;
+
+
+  if (
+    String(returnedMemberId) !==
+    String(memberId)
+  ) {
+
+    throw new Error(
+      "Cumulative accounting returned a position for a different member."
+    );
+
+  }
+
+
   return {
 
     memberId:
-      row.member_id ||
-      memberId,
+      returnedMemberId,
 
     groupId:
       row.group_id ||
@@ -1382,7 +1478,9 @@ async function loadCumulativePosition(
 
     status:
       normalizeCumulativeStatus(
-        row.status
+        row.status,
+        row.arrears,
+        row.credit
       )
 
   };
@@ -1395,7 +1493,9 @@ async function loadCumulativePosition(
 ========================================================= */
 
 function normalizeCumulativeStatus(
-  value
+  value,
+  arrearsValue = 0,
+  creditValue = 0
 ) {
 
   const status =
@@ -1405,7 +1505,7 @@ function normalizeCumulativeStatus(
       .trim()
       .toUpperCase()
       .replace(
-        /\s+/g,
+        /[\s-]+/g,
         "_"
       );
 
@@ -1443,16 +1543,38 @@ function normalizeCumulativeStatus(
 
 
   /*
-     Do not invent a cumulative state.
+     The canonical RPC is expected to return a documented
+     status.
 
-     The canonical function should normally return one
-     of the three documented values. If it returns an
-     unexpected value, preserve the data as UP_TO_DATE
-     only when there is no arrears or credit amount.
+     If it does not, do not invent a new financial state.
 
-     Otherwise derive the only state supported by the
-     canonical amounts.
+     Amounts are used only as a defensive fallback:
+       arrears > 0 → ARREARS
+       credit > 0  → CREDIT
+       otherwise   → UP_TO_DATE
   */
+
+  const arrears =
+    numberValue(
+      arrearsValue
+    );
+
+
+  const credit =
+    numberValue(
+      creditValue
+    );
+
+
+  if (arrears > 0) {
+    return "ARREARS";
+  }
+
+
+  if (credit > 0) {
+    return "CREDIT";
+  }
+
 
   return "UP_TO_DATE";
 
@@ -1474,8 +1596,11 @@ function normalizeCumulativeStatus(
 
 async function loadCumulativePositions() {
 
-  cumulativePositions = [];
-  cumulativePositionsComplete = false;
+  cumulativePositions =
+    [];
+
+  cumulativePositionsComplete =
+    false;
 
 
   const activeMembers =
@@ -1530,6 +1655,56 @@ async function loadCumulativePositions() {
     throw new Error(
       "Cumulative accounting returned a position outside the current group."
     );
+
+  }
+
+
+  /*
+     Also verify that the result set contains exactly one
+     position for each active member.
+
+     This protects the dashboard from duplicate or missing
+     canonical rows.
+  */
+
+  const returnedMemberIds =
+    new Set(
+      results.map(
+        position =>
+          String(
+            position.memberId
+          )
+      )
+    );
+
+
+  if (
+    returnedMemberIds.size !==
+    results.length
+  ) {
+
+    throw new Error(
+      "Cumulative accounting returned duplicate member positions."
+    );
+
+  }
+
+
+  for (
+    const member of activeMembers
+  ) {
+
+    if (
+      !returnedMemberIds.has(
+        String(member.id)
+      )
+    ) {
+
+      throw new Error(
+        "Cumulative accounting did not return a position for every active member."
+      );
+
+    }
 
   }
 
@@ -1628,6 +1803,32 @@ async function loadCanonicalAccounting() {
 
 async function loadData() {
 
+  /*
+     Reset read-only collections before a fresh load.
+
+     This prevents stale rows from surviving a refresh
+     after a failed or changed query.
+  */
+
+  members = [];
+  contributions = [];
+  expenses = [];
+  meetings = [];
+
+  supportCases = 0;
+  plans = 0;
+  activities = 0;
+  milestones = 0;
+  assets = 0;
+  contributionGoals = 0;
+
+  monthlyStatus = [];
+  canonicalSummary = null;
+
+  cumulativePositions = [];
+  cumulativePositionsComplete = false;
+
+
   await Promise.all([
     loadMembers(),
     loadContributions(),
@@ -1640,6 +1841,7 @@ async function loadData() {
     loadAssets(),
     loadContributionGoals()
   ]);
+
 
   await loadCanonicalAccounting();
 
@@ -1690,73 +1892,134 @@ function getMonthlySummary() {
     );
 
 
+  const summaryActiveMembers =
+    Number(
+      summary.active_members
+    );
+
+
   const canonicalActiveMembers =
     Number.isFinite(
-      Number(
-        summary.active_members
-      )
+      summaryActiveMembers
     )
-      ? Number(
-          summary.active_members
-        )
+      ? summaryActiveMembers
       : activeMembers.length;
 
 
-  let membersPaid =
-    numberValue(
-      summary.members_paid
+  /*
+     IMPORTANT:
+
+     A value of zero can be a legitimate canonical result.
+
+     Therefore we only fall back to the member-level rows
+     when the summary field is actually absent/non-numeric,
+     rather than testing whether it equals zero.
+  */
+
+  const hasMembersPaid =
+    Number.isFinite(
+      Number(
+        summary.members_paid
+      )
     );
+
+
+  const hasPartialPayments =
+    Number.isFinite(
+      Number(
+        summary.partial_payments
+      )
+    );
+
+
+  const hasOutstandingMembers =
+    Number.isFinite(
+      Number(
+        summary.outstanding_members
+      )
+    );
+
+
+  let membersPaid =
+    hasMembersPaid
+      ? numberValue(
+          summary.members_paid
+        )
+      : 0;
 
 
   let partialPayments =
-    numberValue(
-      summary.partial_payments
-    );
+    hasPartialPayments
+      ? numberValue(
+          summary.partial_payments
+        )
+      : 0;
 
 
   let outstandingMembers =
-    numberValue(
-      summary.outstanding_members
-    );
+    hasOutstandingMembers
+      ? numberValue(
+          summary.outstanding_members
+        )
+      : 0;
 
+
+  /*
+     If any of the member-count fields are absent from the
+     canonical summary, derive only the missing fields from
+     the canonical member-status result.
+
+     We do NOT use these calculations to replace a valid
+     canonical summary value of zero.
+  */
 
   if (
-    membersPaid === 0 &&
-    partialPayments === 0 &&
     monthlyStatus.length > 0
   ) {
 
-    membersPaid =
-      monthlyStatus.filter(
-        row =>
-          String(
-            row.status || ""
-          )
-            .trim()
-            .toLowerCase() ===
-          "paid"
-      ).length;
+    if (!hasMembersPaid) {
+
+      membersPaid =
+        monthlyStatus.filter(
+          row =>
+            String(
+              row.status || ""
+            )
+              .trim()
+              .toLowerCase() ===
+            "paid"
+        ).length;
+
+    }
 
 
-    partialPayments =
-      monthlyStatus.filter(
-        row =>
-          String(
-            row.status || ""
-          )
-            .trim()
-            .toLowerCase() ===
-          "partial"
-      ).length;
+    if (!hasPartialPayments) {
+
+      partialPayments =
+        monthlyStatus.filter(
+          row =>
+            String(
+              row.status || ""
+            )
+              .trim()
+              .toLowerCase() ===
+            "partial"
+        ).length;
+
+    }
 
 
-    outstandingMembers =
-      monthlyStatus.filter(
-        row =>
-          numberValue(
-            row.currentOutstanding
-          ) > 0
-      ).length;
+    if (!hasOutstandingMembers) {
+
+      outstandingMembers =
+        monthlyStatus.filter(
+          row =>
+            numberValue(
+              row.currentOutstanding
+            ) > 0
+        ).length;
+
+    }
 
   }
 
@@ -1775,27 +2038,23 @@ function getMonthlySummary() {
       : 0;
 
 
-  let collectionRate =
+  const summaryCollectionRate =
     Number(
       summary.collection_rate
     );
 
 
-  if (
-    !Number.isFinite(
-      collectionRate
+  const collectionRate =
+    Number.isFinite(
+      summaryCollectionRate
     )
-  ) {
-
-    collectionRate =
-      expected > 0
+      ? summaryCollectionRate
+      : expected > 0
         ? (
             applied /
             expected
           ) * 100
         : 0;
-
-  }
 
 
   return {
@@ -1844,7 +2103,7 @@ function getMonthlySummary() {
 
    Cash balance:
        opening balance
-       + all cash contributions received
+       + recorded cash contributions
        - approved expenses
 
    Monthly obligation accounting:
@@ -1854,6 +2113,12 @@ function getMonthlySummary() {
        canonical cumulative RPC
 
    These are different calculations.
+
+   This function is NOT used for member obligation,
+   arrears, credit, or monthly accounting status.
+
+   It is only the dashboard's read-only cash-position
+   display based on the currently exposed cash records.
 ========================================================= */
 
 function getGroupBalance() {
@@ -1953,6 +2218,12 @@ function renderSummary() {
   );
 
 
+  /*
+     The dashboard's collection display follows the
+     canonical applied amount, not the raw contributions
+     table total.
+  */
+
   setText(
     "monthlyCollected",
     money(
@@ -1966,8 +2237,8 @@ function renderSummary() {
       0,
       Math.min(
         100,
-        Number(
-          summary.collectionRate || 0
+        numberValue(
+          summary.collectionRate
         )
       )
     );
@@ -2008,14 +2279,14 @@ function renderSummary() {
     progressBar.style.width =
       `${percentage}%`;
 
+
     progressBar.setAttribute(
       "aria-valuenow",
       String(
         Math.round(
           percentage
         )
-      )
-    );
+      );
 
   }
 
@@ -2164,10 +2435,15 @@ function renderMemberStatus() {
 
 
           const statusClass =
-            status.replace(
-              /\s+/g,
-              "-"
-            );
+            status
+              .replace(
+                /\s+/g,
+                "-"
+              )
+              .replace(
+                /[^a-z0-9_-]/g,
+                ""
+              );
 
 
           return `
@@ -2286,7 +2562,9 @@ function getCumulativeSummary() {
 
       const status =
         normalizeCumulativeStatus(
-          position.status
+          position.status,
+          position.arrears,
+          position.credit
         );
 
 
@@ -2415,15 +2693,6 @@ function cumulativeStatusClass(
 ========================================================= */
 
 function renderCumulativePosition() {
-
-  /*
-     Summary cards are optional until the corresponding
-     dashboard HTML is added.
-
-     Therefore this renderer is safe against the current
-     HTML while preparing the exact IDs for the reconciled
-     candidate HTML.
-  */
 
   const summary =
     getCumulativeSummary();
@@ -2558,7 +2827,9 @@ function renderCumulativePosition() {
 
           const status =
             normalizeCumulativeStatus(
-              position.status
+              position.status,
+              position.arrears,
+              position.credit
             );
 
 
@@ -2566,6 +2837,29 @@ function renderCumulativePosition() {
             cumulativeStatusClass(
               status
             );
+
+
+          let statusAmount = 0;
+
+
+          if (
+            status ===
+            "ARREARS"
+          ) {
+
+            statusAmount =
+              position.arrears;
+
+          }
+          else if (
+            status ===
+            "CREDIT"
+          ) {
+
+            statusAmount =
+              position.credit;
+
+          }
 
 
           return `
@@ -2599,15 +2893,9 @@ function renderCumulativePosition() {
 
               <td>
                 ${escapeHtml(
-                  status === "ARREARS"
-                    ? money(
-                        position.arrears
-                      )
-                    : status === "CREDIT"
-                      ? money(
-                          position.credit
-                        )
-                      : money(0)
+                  money(
+                    statusAmount
+                  )
                 )}
               </td>
 
@@ -2674,7 +2962,7 @@ function renderRecentContributions() {
                 a.contribution_date
               )
             )
-        )
+      )
       .slice(
         0,
         5
@@ -2809,7 +3097,7 @@ function renderRecentExpenses() {
                 a.date
               )
             )
-        )
+      )
       .slice(
         0,
         5
@@ -2847,6 +3135,18 @@ function renderRecentExpenses() {
             );
 
 
+          const statusClass =
+            status
+              .replace(
+                /\s+/g,
+                "-"
+              )
+              .replace(
+                /[^a-z0-9_-]/g,
+                ""
+              );
+
+
           return `
             <tr>
 
@@ -2877,7 +3177,7 @@ function renderRecentExpenses() {
               <td>
                 <span
                   class="status-badge status-${escapeHtml(
-                    status ||
+                    statusClass ||
                     "unknown"
                   )}"
                 >
@@ -2946,7 +3246,7 @@ function renderUpcomingMeetings() {
                 b.date
               )
             )
-        )
+      )
       .slice(
         0,
         5
@@ -3098,10 +3398,10 @@ function renderDashboard() {
 export async function initDashboard() {
 
   /*
-     layout.js owns initialization.
+     admin-layout.js owns initialization.
 
      This guard prevents accidental duplicate
-     initialization if layout.js invokes the
+     initialization if admin-layout.js invokes the
      function more than once.
   */
 
@@ -3254,7 +3554,7 @@ export async function refreshDashboard() {
 
    dashboard.html
        ↓
-   layout.js
+   admin-layout.js
        ↓
    dynamic import("./dashboard.js")
        ↓
@@ -3267,7 +3567,7 @@ export async function refreshDashboard() {
 
    here.
 
-   layout.js is the sole page bootloader.
+   admin-layout.js remains the sole page bootloader.
 ========================================================= */
 
 console.log(
