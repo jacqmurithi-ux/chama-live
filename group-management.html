@@ -1,2717 +1,2141 @@
 <!doctype html>
 <html lang="en">
-
 <head>
-    <meta charset="utf-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1"
-    >
-
-    <meta
-        name="description"
-        content="CHAMA LIVE — Group management"
-    >
-
-    <title>Group Management | CHAMA LIVE</title>
-
-    <link rel="stylesheet" href="css/app.css">
-
-    <style>
-        :root {
-            --page-bg: #f7f9fc;
-            --card-bg: #ffffff;
-            --border: #e5e7eb;
-            --text: #111827;
-            --muted: #6b7280;
-
-            --primary: #166534;
-            --primary-dark: #14532d;
-
-            --success-bg: #ecfdf5;
-            --success-text: #166534;
-
-            --error-bg: #fef2f2;
-            --error-text: #991b1b;
-
-            --warning-bg: #fffbeb;
-            --warning-text: #92400e;
-
-            --info-bg: #eff6ff;
-            --info-text: #1d4ed8;
-
-            --radius: 14px;
-            --shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
-        html {
-            min-height: 100%;
-        }
-
-        body {
-            margin: 0;
-            min-height: 100%;
-            background: var(--page-bg);
-            color: var(--text);
-            font-family:
-                system-ui,
-                -apple-system,
-                BlinkMacSystemFont,
-                "Segoe UI",
-                sans-serif;
-            line-height: 1.5;
-        }
-
-        button,
-        input,
-        select,
-        textarea {
-            font: inherit;
-        }
-
-        button {
-            cursor: pointer;
-        }
-
-        .group-management-page {
-            width: 100%;
-            max-width: 1180px;
-            margin: 0 auto;
-            padding: 24px;
-        }
-
-        /* =====================================================
-           HERO
-        ====================================================== */
-
-        .page-hero {
-            margin-bottom: 20px;
-        }
-
-        .page-hero h1 {
-            margin: 0 0 6px;
-            font-size: clamp(1.55rem, 3vw, 2rem);
-            line-height: 1.15;
-            letter-spacing: -0.02em;
-        }
-
-        .page-hero p {
-            margin: 0;
-            color: var(--muted);
-            font-size: 0.95rem;
-        }
-
-        /* =====================================================
-           STATUS
-        ====================================================== */
-
-        .status-message {
-            display: none;
-            margin-bottom: 16px;
-            padding: 12px 14px;
-            border-radius: 10px;
-            font-size: 0.9rem;
-        }
-
-        .status-message.visible {
-            display: block;
-        }
-
-        .status-message.success {
-            background: var(--success-bg);
-            color: var(--success-text);
-        }
-
-        .status-message.error {
-            background: var(--error-bg);
-            color: var(--error-text);
-        }
-
-        .status-message.warning {
-            background: var(--warning-bg);
-            color: var(--warning-text);
-        }
-
-        .status-message.info {
-            background: var(--info-bg);
-            color: var(--info-text);
-        }
-
-        /* =====================================================
-           MANAGEMENT GRID
-        ====================================================== */
-
-        .management-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 18px;
-        }
-
-        .management-card {
-            min-width: 0;
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            overflow: hidden;
-        }
-
-        .management-card.full-width,
-        .overview-card {
-            grid-column: 1 / -1;
-        }
-
-        .card-header {
-            padding: 18px 20px 14px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .card-heading h2 {
-            margin: 0 0 4px;
-            font-size: 1.05rem;
-            line-height: 1.3;
-        }
-
-        .card-heading p {
-            margin: 0;
-            color: var(--muted);
-            font-size: 0.86rem;
-        }
-
-        .card-body {
-            padding: 20px;
-        }
-
-        /* =====================================================
-           GROUP OVERVIEW
-        ====================================================== */
-
-        .overview-content {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) auto;
-            gap: 20px;
-            align-items: center;
-        }
-
-        .group-name-display {
-            margin: 0 0 4px;
-            font-size: 1.3rem;
-            font-weight: 700;
-        }
-
-        .group-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px 16px;
-            color: var(--muted);
-            font-size: 0.86rem;
-        }
-
-        .permission-badge {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 30px;
-            padding: 6px 10px;
-            border-radius: 999px;
-            background: #f0fdf4;
-            color: #166534;
-            font-size: 0.78rem;
-            font-weight: 700;
-            white-space: nowrap;
-        }
-
-        /* =====================================================
-           FORM
-        ====================================================== */
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 16px;
-        }
-
-        .form-field {
-            min-width: 0;
-        }
-
-        .form-field.full-width {
-            grid-column: 1 / -1;
-        }
-
-        .form-field label {
-            display: block;
-            margin-bottom: 6px;
-            font-size: 0.86rem;
-            font-weight: 650;
-        }
-
-        .form-field input,
-        .form-field select,
-        .form-field textarea {
-            width: 100%;
-            min-height: 44px;
-            padding: 9px 11px;
-            border: 1px solid #d1d5db;
-            border-radius: 9px;
-            background: #fff;
-            color: var(--text);
-            outline: none;
-        }
-
-        .form-field textarea {
-            min-height: 90px;
-            resize: vertical;
-        }
-
-        .form-field input:focus,
-        .form-field select:focus,
-        .form-field textarea:focus {
-            border-color: var(--primary);
-            box-shadow:
-                0 0 0 3px rgba(22, 101, 52, 0.1);
-        }
-
-        .form-field input:disabled,
-        .form-field select:disabled,
-        .form-field textarea:disabled {
-            background: #f3f4f6;
-            color: #6b7280;
-            cursor: not-allowed;
-        }
-
-        .field-help {
-            margin: 6px 0 0;
-            color: var(--muted);
-            font-size: 0.78rem;
-        }
-
-        .form-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-top: 18px;
-        }
-
-        .btn {
-            min-height: 40px;
-            padding: 9px 15px;
-            border: 0;
-            border-radius: 9px;
-            font-weight: 650;
-            transition:
-                background-color 0.15s ease,
-                opacity 0.15s ease;
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            color: #fff;
-        }
-
-        .btn-primary:hover:not(:disabled) {
-            background: var(--primary-dark);
-        }
-
-        .btn-secondary {
-            background: #f8fafc;
-            color: var(--text);
-            border: 1px solid var(--border);
-        }
-
-        .btn-secondary:hover:not(:disabled) {
-            background: #f1f5f9;
-        }
-
-        .btn:disabled {
-            opacity: 0.55;
-            cursor: not-allowed;
-        }
-
-        /* =====================================================
-           LEADERSHIP
-        ====================================================== */
-
-        .leadership-status {
-            margin-bottom: 16px;
-            padding: 11px 12px;
-            border-radius: 9px;
-            background: #f8fafc;
-            color: #475569;
-            font-size: 0.82rem;
-        }
-
-        .leadership-status.recorded {
-            background: var(--success-bg);
-            color: var(--success-text);
-        }
-
-        .leadership-status.pending {
-            background: var(--warning-bg);
-            color: var(--warning-text);
-        }
-
-        .leadership-actions {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin-top: 18px;
-        }
-
-        .officer-link,
-        .account-link {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid var(--border);
-            border-radius: 9px;
-            color: var(--primary);
-            background: #fff;
-            text-decoration: none;
-            font-weight: 650;
-        }
-
-        .officer-link {
-            min-height: 40px;
-            padding: 9px 14px;
-            font-size: 0.84rem;
-        }
-
-        .officer-link:hover,
-        .account-link:hover {
-            background: #f0fdf4;
-        }
-
-        .leadership-note,
-        .calendar-note,
-        .payment-note,
-        .program-note {
-            margin: 14px 0 0;
-            padding: 11px 12px;
-            border-radius: 9px;
-            background: #f8fafc;
-            color: #475569;
-            font-size: 0.78rem;
-        }
-
-        /* =====================================================
-           CONTRIBUTION CYCLE
-        ====================================================== */
-
-        .calendar-summary {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .calendar-summary-item {
-            padding: 13px;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            background: #fafafa;
-        }
-
-        .calendar-summary-item span {
-            display: block;
-            margin-bottom: 4px;
-            color: var(--muted);
-            font-size: 0.75rem;
-        }
-
-        .calendar-summary-item strong {
-            display: block;
-            font-size: 0.9rem;
-        }
-
-        .monthly-closing-day-select {
-            display: block;
-            position: relative;
-            z-index: 30;
-            width: 100%;
-            min-height: 46px;
-            padding: 10px 40px 10px 12px;
-            border: 1px solid #cbd5e1;
-            border-radius: 10px;
-            background: #fff;
-            color: #111827;
-            cursor: pointer;
-            pointer-events: auto;
-            touch-action: manipulation;
-            appearance: auto;
-            -webkit-appearance: menulist;
-        }
-
-        .monthly-closing-day-select:enabled {
-            cursor: pointer;
-            pointer-events: auto;
-        }
-
-        .monthly-closing-day-select:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow:
-                0 0 0 3px rgba(22, 101, 52, 0.1);
-        }
-
-        .monthly-closing-day-select:disabled {
-            cursor: pointer;
-            pointer-events: auto;
-            opacity: 1;
-            background: #fff;
-            color: #111827;
-        }
-
-        #contributionCalendarCard {
-            position: relative;
-        }
-
-        #contributionCalendarForm {
-            position: relative;
-            z-index: 10;
-        }
-
-        /* =====================================================
-           CONTRIBUTION PROGRAMS
-        ====================================================== */
-
-        .program-status {
-            margin-bottom: 16px;
-            padding: 11px 12px;
-            border-radius: 9px;
-            background: #f8fafc;
-            color: #475569;
-            font-size: 0.82rem;
-        }
-
-        .program-status.ready {
-            background: var(--success-bg);
-            color: var(--success-text);
-        }
-
-        .program-status.restricted {
-            background: var(--warning-bg);
-            color: var(--warning-text);
-        }
-
-        .program-status.error {
-            background: var(--error-bg);
-            color: var(--error-text);
-        }
-
-        .program-section {
-            display: grid;
-            gap: 18px;
-        }
-
-        .program-subsection {
-            min-width: 0;
-            padding: 16px;
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            background: #fafafa;
-        }
-
-        .program-subsection-header {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 16px;
-            margin-bottom: 12px;
-        }
-
-        .program-subsection-header h3 {
-            margin: 0 0 3px;
-            font-size: 0.95rem;
-        }
-
-        .program-subsection-header p {
-            margin: 0;
-            color: var(--muted);
-            font-size: 0.78rem;
-        }
-
-        .program-list {
-            display: grid;
-            gap: 10px;
-        }
-
-        .program-item {
-            padding: 13px;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            background: #fff;
-        }
-
-        .program-item-header {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 12px;
-        }
-
-        .program-item-title {
-            margin: 0;
-            font-size: 0.9rem;
-            font-weight: 700;
-        }
-
-        .program-item-description {
-            margin: 4px 0 0;
-            color: var(--muted);
-            font-size: 0.78rem;
-        }
-
-        .program-item-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-top: 10px;
-        }
-
-        .program-meta {
-            display: inline-flex;
-            align-items: center;
-            padding: 4px 8px;
-            border-radius: 999px;
-            background: #f1f5f9;
-            color: #475569;
-            font-size: 0.72rem;
-            font-weight: 650;
-        }
-
-        .program-meta.active {
-            background: var(--success-bg);
-            color: var(--success-text);
-        }
-
-        .program-meta.draft {
-            background: var(--warning-bg);
-            color: var(--warning-text);
-        }
-
-        .program-meta.closed {
-            background: #f1f5f9;
-            color: #475569;
-        }
-
-        .program-empty {
-            padding: 14px;
-            border: 1px dashed #cbd5e1;
-            border-radius: 10px;
-            color: var(--muted);
-            background: #fff;
-            font-size: 0.8rem;
-        }
-
-        .program-access-note {
-            margin: 0;
-            padding: 12px;
-            border-radius: 9px;
-            background: var(--info-bg);
-            color: var(--info-text);
-            font-size: 0.78rem;
-        }
-
-        .initiative-create-form {
-            margin-bottom: 18px;
-            padding: 16px;
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            background: #fff;
-        }
-
-        .initiative-create-status {
-            margin-bottom: 14px;
-            padding: 10px 12px;
-            border-radius: 9px;
-            background: #f8fafc;
-            color: #475569;
-            font-size: 0.8rem;
-        }
-
-        .initiative-create-status.success {
-            background: var(--success-bg);
-            color: var(--success-text);
-        }
-
-        .initiative-create-status.error {
-            background: var(--error-bg);
-            color: var(--error-text);
-        }
-
-        .initiative-create-status.warning {
-            background: var(--warning-bg);
-            color: var(--warning-text);
-        }
-
-        .initiative-create-status.info {
-            background: var(--info-bg);
-            color: var(--info-text);
-        }
-
-        /* =====================================================
-           RECURRING INITIATIVE
-        ====================================================== */
-
-        .recurring-gated-note {
-            margin-top: 12px;
-            padding: 10px 11px;
-            border-radius: 8px;
-            background: var(--warning-bg);
-            color: var(--warning-text);
-            font-size: 0.76rem;
-        }
-
-        .recurring-ready-note {
-            margin-top: 12px;
-            padding: 10px 11px;
-            border-radius: 8px;
-            background: var(--success-bg);
-            color: var(--success-text);
-            font-size: 0.76rem;
-        }
-
-        .recurring-period-status {
-            margin-top: 12px;
-            padding: 10px 11px;
-            border-radius: 8px;
-            background: var(--info-bg);
-            color: var(--info-text);
-            font-size: 0.76rem;
-        }
-
-        /* =====================================================
-           INITIATIVE PARTICIPANT CONFIGURATION
-        ====================================================== */
-
-        .initiative-configure-note {
-            margin-bottom: 10px;
-            padding: 10px 11px;
-            border-radius: 8px;
-            background: var(--info-bg);
-            color: var(--info-text);
-            font-size: 0.76rem;
-        }
-
-        .initiative-participant-editor {
-            margin-top: 14px;
-            padding: 14px;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            background: #fafafa;
-        }
-
-        .initiative-participant-editor .program-subsection-header {
-            margin-bottom: 12px;
-        }
-
-        .initiative-participant-status {
-            margin-bottom: 12px;
-            padding: 9px 10px;
-            border-radius: 8px;
-            background: #f8fafc;
-            color: #475569;
-            font-size: 0.78rem;
-        }
-
-        .initiative-participant-status.error {
-            background: var(--error-bg);
-            color: var(--error-text);
-        }
-
-        .initiative-participant-list {
-            display: grid;
-            gap: 8px;
-        }
-
-        .initiative-participant-row {
-            display: grid;
-            grid-template-columns:
-                minmax(0, 1fr)
-                minmax(120px, 160px);
-            gap: 10px;
-            align-items: center;
-            padding: 10px;
-            border: 1px solid var(--border);
-            border-radius: 9px;
-            background: #fff;
-        }
-
-        .initiative-participant-member {
-            display: flex;
-            align-items: flex-start;
-            gap: 9px;
-            min-width: 0;
-        }
-
-        .initiative-participant-member input {
-            flex: 0 0 auto;
-            margin-top: 3px;
-        }
-
-        .initiative-participant-member strong,
-        .initiative-participant-member span {
-            display: block;
-        }
-
-        .initiative-participant-member strong {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .initiative-participant-member span {
-            color: var(--muted);
-            font-size: 0.74rem;
-        }
-
-        .initiative-participant-amount-field {
-            display: block;
-        }
-
-        .initiative-participant-amount-field > span {
-            display: block;
-            margin-bottom: 4px;
-            color: var(--muted);
-            font-size: 0.72rem;
-        }
-
-        .initiative-participant-amount {
-            width: 100%;
-            min-height: 40px;
-            padding: 8px 10px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            background: #fff;
-            color: var(--text);
-        }
-
-        .initiative-participant-amount:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow:
-                0 0 0 3px rgba(22, 101, 52, 0.1);
-        }
-
-        .initiative-participant-amount:disabled {
-            background: #f3f4f6;
-            color: #6b7280;
-            cursor: not-allowed;
-        }
-
-        .initiative-participant-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 8px;
-            margin-top: 12px;
-        }
-
-        .initiative-participant-empty {
-            padding: 10px;
-            color: var(--muted);
-            font-size: 0.78rem;
-        }
-
-        /* =====================================================
-           PAYMENT COLLECTION
-        ====================================================== */
-
-        .payment-status {
-            margin-bottom: 16px;
-            padding: 11px 12px;
-            border-radius: 9px;
-            background: #f8fafc;
-            color: #475569;
-            font-size: 0.82rem;
-        }
-
-        .payment-status.configured {
-            background: var(--success-bg);
-            color: var(--success-text);
-        }
-
-        .payment-status.pending {
-            background: var(--warning-bg);
-            color: var(--warning-text);
-        }
-
-        .payment-provider-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 16px;
-        }
-
-        .payment-provider-grid .full-width {
-            grid-column: 1 / -1;
-        }
-
-        .payment-reference-preview {
-            margin-top: 14px;
-            padding: 13px;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            background: #fafafa;
-        }
-
-        .payment-reference-preview span {
-            display: block;
-            margin-bottom: 4px;
-            color: var(--muted);
-            font-size: 0.75rem;
-        }
-
-        .payment-reference-preview strong {
-            display: block;
-            font-size: 0.9rem;
-            word-break: break-word;
-        }
-
-        .payment-configuration-state {
-            margin-top: 16px;
-            padding: 12px;
-            border-radius: 9px;
-            background: var(--info-bg);
-            color: var(--info-text);
-            font-size: 0.8rem;
-        }
-
-        /* =====================================================
-           ACCOUNT
-        ====================================================== */
-
-        .account-content {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 16px;
-        }
-
-        .account-title {
-            margin: 0 0 4px;
-            font-size: 0.95rem;
-            font-weight: 700;
-        }
-
-        .account-description {
-            margin: 0;
-            color: var(--muted);
-            font-size: 0.82rem;
-        }
-
-        .account-link {
-            min-height: 38px;
-            padding: 8px 13px;
-            white-space: nowrap;
-            font-size: 0.82rem;
-        }
-
-        /* =====================================================
-           SUBSCRIPTION
-        ====================================================== */
-
-        .subscription-panel {
-            display: grid;
-            gap: 10px;
-        }
-
-        .subscription-row {
-            display: flex;
-            justify-content: space-between;
-            gap: 14px;
-            padding-bottom: 9px;
-            border-bottom: 1px solid #f1f5f9;
-        }
-
-        .subscription-row:last-child {
-            padding-bottom: 0;
-            border-bottom: 0;
-        }
-
-        .subscription-label {
-            color: var(--muted);
-            font-size: 0.8rem;
-        }
-
-        .subscription-value {
-            font-size: 0.82rem;
-            font-weight: 650;
-            text-align: right;
-        }
-
-        /* =====================================================
-           GROUP CONTEXT
-        ====================================================== */
-
-        .context-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 12px;
-        }
-
-        .context-item {
-            padding: 12px;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            background: #fafafa;
-        }
-
-        .context-item span {
-            display: block;
-            margin-bottom: 3px;
-            color: var(--muted);
-            font-size: 0.75rem;
-        }
-
-        .context-item strong {
-            display: block;
-            font-size: 0.85rem;
-        }
-
-        /* =====================================================
-           LOADING / PERMISSION
-        ====================================================== */
-
-        .admin-loading {
-            padding: 40px 20px;
-            color: var(--muted);
-            text-align: center;
-            font-size: 0.9rem;
-        }
-
-        .permission-message {
-            margin-top: 16px;
-            padding: 14px;
-            border-radius: 10px;
-            background: var(--error-bg);
-            color: var(--error-text);
-            font-size: 0.85rem;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        /* =====================================================
-           MOBILE
-        ====================================================== */
-
-        @media (max-width: 800px) {
-
-            .group-management-page {
-                padding: 16px;
-            }
-
-            .management-grid {
-                grid-template-columns: 1fr;
-                gap: 12px;
-            }
-
-            .management-card,
-            .management-card.full-width,
-            .overview-card {
-                grid-column: 1;
-            }
-
-            .overview-content {
-                grid-template-columns: 1fr;
-            }
-
-            .form-grid,
-            .payment-provider-grid,
-            .context-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .form-field.full-width,
-            .payment-provider-grid .full-width {
-                grid-column: auto;
-            }
-
-            .calendar-summary {
-                grid-template-columns: 1fr;
-            }
-
-            .account-content {
-                align-items: flex-start;
-                flex-direction: column;
-            }
-
-            .account-link {
-                width: 100%;
-            }
-
-            .program-subsection-header {
-                flex-direction: column;
-            }
-
-            .program-item-header {
-                flex-direction: column;
-            }
-
-            .initiative-participant-row {
-                grid-template-columns: 1fr;
-            }
-
-            .initiative-participant-amount-field {
-                margin-left: 28px;
-            }
-
-            .initiative-participant-actions {
-                flex-direction: column-reverse;
-            }
-
-            .initiative-participant-actions .btn {
-                width: 100%;
-            }
-        }
-    </style>
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <meta
+    name="description"
+    content="Manage your CHAMA LIVE group information, leadership, contribution cycle, contribution programs, payment settings, subscription, and group context."
+  >
+
+  <meta
+    name="color-scheme"
+    content="light"
+  >
+
+  <title>Group Management — CHAMA LIVE</title>
+
+  <link rel="stylesheet" href="css/app.css">
+
+  <style>
+    /* =====================================================
+       CHAMA LIVE — GROUP MANAGEMENT
+       ===================================================== */
+
+    :root {
+      --gm-primary: #15803d;
+      --gm-primary-dark: #166534;
+      --gm-primary-light: #f0fdf4;
+      --gm-border: #e5e7eb;
+      --gm-border-soft: #edf0f2;
+      --gm-text: #111827;
+      --gm-muted: #6b7280;
+      --gm-bg: #f8faf9;
+      --gm-card: #ffffff;
+      --gm-danger: #b91c1c;
+      --gm-danger-bg: #fef2f2;
+      --gm-warning: #92400e;
+      --gm-warning-bg: #fffbeb;
+      --gm-success: #166534;
+      --gm-success-bg: #f0fdf4;
+      --gm-info: #1d4ed8;
+      --gm-info-bg: #eff6ff;
+      --gm-radius: 14px;
+      --gm-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background: var(--gm-bg);
+      color: var(--gm-text);
+      font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+      line-height: 1.5;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:disabled,
+    input:disabled,
+    select:disabled,
+    textarea:disabled {
+      cursor: not-allowed;
+    }
+
+    a {
+      color: var(--gm-primary);
+    }
+
+    /* =====================================================
+       PAGE
+       ===================================================== */
+
+    .management-page {
+      width: 100%;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .management-hero {
+      margin-bottom: 22px;
+    }
+
+    .management-hero h1 {
+      margin: 0;
+      font-size: clamp(1.6rem, 3vw, 2.1rem);
+      line-height: 1.15;
+      font-weight: 750;
+      letter-spacing: -0.025em;
+    }
+
+    .management-hero p {
+      margin: 8px 0 0;
+      color: var(--gm-muted);
+      max-width: 760px;
+      font-size: 0.95rem;
+    }
+
+    /* =====================================================
+       GLOBAL STATUS
+       ===================================================== */
+
+    .management-status {
+      display: none;
+      margin: 0 0 18px;
+      padding: 12px 14px;
+      border: 1px solid var(--gm-border);
+      border-radius: 10px;
+      background: #fff;
+      color: var(--gm-text);
+      font-size: 0.9rem;
+    }
+
+    .management-status.is-visible {
+      display: block;
+    }
+
+    .management-status.success {
+      border-color: #bbf7d0;
+      background: var(--gm-success-bg);
+      color: var(--gm-success);
+    }
+
+    .management-status.error {
+      border-color: #fecaca;
+      background: var(--gm-danger-bg);
+      color: var(--gm-danger);
+    }
+
+    .management-status.warning {
+      border-color: #fde68a;
+      background: var(--gm-warning-bg);
+      color: var(--gm-warning);
+    }
+
+    .management-status.info {
+      border-color: #bfdbfe;
+      background: var(--gm-info-bg);
+      color: var(--gm-info);
+    }
+
+    /* =====================================================
+       LOADING
+       ===================================================== */
+
+    .management-loading {
+      padding: 32px 20px;
+      text-align: center;
+      color: var(--gm-muted);
+      border: 1px solid var(--gm-border);
+      border-radius: var(--gm-radius);
+      background: var(--gm-card);
+      box-shadow: var(--gm-shadow);
+    }
+
+    .management-loading strong {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--gm-text);
+    }
+
+    /* =====================================================
+       MAIN GRID
+       ===================================================== */
+
+    .management-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .management-card {
+      min-width: 0;
+      background: var(--gm-card);
+      border: 1px solid var(--gm-border);
+      border-radius: var(--gm-radius);
+      box-shadow: var(--gm-shadow);
+      overflow: hidden;
+    }
+
+    .management-card.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .management-card-header {
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid var(--gm-border-soft);
+    }
+
+    .management-card-header h2 {
+      margin: 0;
+      font-size: 1.05rem;
+      line-height: 1.3;
+      font-weight: 700;
+    }
+
+    .management-card-header p {
+      margin: 5px 0 0;
+      color: var(--gm-muted);
+      font-size: 0.85rem;
+    }
+
+    .management-card-body {
+      padding: 20px;
+    }
+
+    /* =====================================================
+       OVERVIEW
+       ===================================================== */
+
+    .overview-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .overview-item {
+      padding: 14px;
+      border: 1px solid var(--gm-border-soft);
+      border-radius: 10px;
+      background: #fafafa;
+    }
+
+    .overview-label {
+      margin-bottom: 5px;
+      color: var(--gm-muted);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .overview-value {
+      color: var(--gm-text);
+      font-size: 0.95rem;
+      font-weight: 650;
+      word-break: break-word;
+    }
+
+    /* =====================================================
+       FORMS
+       ===================================================== */
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .form-field {
+      min-width: 0;
+    }
+
+    .form-field.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .form-field label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--gm-text);
+      font-size: 0.83rem;
+      font-weight: 650;
+    }
+
+    .form-field .field-help {
+      margin-top: 5px;
+      color: var(--gm-muted);
+      font-size: 0.75rem;
+    }
+
+    .form-field input,
+    .form-field select,
+    .form-field textarea {
+      width: 100%;
+      min-height: 42px;
+      padding: 9px 11px;
+      border: 1px solid #d1d5db;
+      border-radius: 9px;
+      outline: none;
+      background: #fff;
+      color: var(--gm-text);
+      transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
+    }
+
+    .form-field textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    .form-field input:focus,
+    .form-field select:focus,
+    .form-field textarea:focus {
+      border-color: var(--gm-primary);
+      box-shadow: 0 0 0 3px rgba(21, 128, 61, 0.10);
+    }
+
+    .form-field input:disabled,
+    .form-field select:disabled,
+    .form-field textarea:disabled {
+      background: #f3f4f6;
+      color: #9ca3af;
+    }
+
+    .form-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .primary-button,
+    .secondary-button,
+    .danger-button {
+      min-height: 40px;
+      padding: 9px 15px;
+      border-radius: 9px;
+      font-weight: 650;
+      border: 1px solid transparent;
+      transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        opacity 0.15s ease;
+    }
+
+    .primary-button {
+      background: var(--gm-primary);
+      color: #fff;
+      border-color: var(--gm-primary);
+    }
+
+    .primary-button:hover:not(:disabled) {
+      background: var(--gm-primary-dark);
+      border-color: var(--gm-primary-dark);
+    }
+
+    .secondary-button {
+      background: #fff;
+      color: var(--gm-text);
+      border-color: #d1d5db;
+    }
+
+    .secondary-button:hover:not(:disabled) {
+      background: #f9fafb;
+    }
+
+    .danger-button {
+      background: #fff;
+      color: var(--gm-danger);
+      border-color: #fecaca;
+    }
+
+    .danger-button:hover:not(:disabled) {
+      background: var(--gm-danger-bg);
+    }
+
+    .primary-button:disabled,
+    .secondary-button:disabled,
+    .danger-button:disabled {
+      opacity: 0.55;
+    }
+
+    /* =====================================================
+       BADGES
+       ===================================================== */
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 27px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: #f3f4f6;
+      color: #4b5563;
+      font-size: 0.72rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .status-badge.success {
+      background: var(--gm-success-bg);
+      color: var(--gm-success);
+    }
+
+    .status-badge.warning {
+      background: var(--gm-warning-bg);
+      color: var(--gm-warning);
+    }
+
+    .status-badge.info {
+      background: var(--gm-info-bg);
+      color: var(--gm-info);
+    }
+
+    /* =====================================================
+       LEADERSHIP
+       ===================================================== */
+
+    .leadership-status {
+      margin-bottom: 14px;
+      padding: 10px 12px;
+      border-radius: 9px;
+      background: #f9fafb;
+      color: var(--gm-muted);
+      font-size: 0.82rem;
+    }
+
+    .leadership-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .leadership-item {
+      padding: 13px;
+      border: 1px solid var(--gm-border-soft);
+      border-radius: 10px;
+      background: #fafafa;
+    }
+
+    .leadership-item-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .leadership-item-title {
+      font-weight: 700;
+    }
+
+    .leadership-item-meta {
+      margin-top: 5px;
+      color: var(--gm-muted);
+      font-size: 0.78rem;
+    }
+
+    .members-link {
+      display: inline-flex;
+      margin-top: 14px;
+      font-size: 0.85rem;
+      font-weight: 650;
+      text-decoration: none;
+    }
+
+    .members-link:hover {
+      text-decoration: underline;
+    }
+
+    /* =====================================================
+       CONTRIBUTION CALENDAR
+       ===================================================== */
+
+    .calendar-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .calendar-summary-item {
+      padding: 13px;
+      border: 1px solid var(--gm-border-soft);
+      border-radius: 10px;
+      background: #fafafa;
+    }
+
+    .calendar-summary-label {
+      color: var(--gm-muted);
+      font-size: 0.73rem;
+      font-weight: 600;
+    }
+
+    .calendar-summary-value {
+      margin-top: 4px;
+      font-size: 0.94rem;
+      font-weight: 700;
+    }
+
+    /* =====================================================
+       CONTRIBUTION PROGRAMS
+       ===================================================== */
+
+    .program-section {
+      margin-bottom: 24px;
+    }
+
+    .program-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .program-section-header {
+      margin-bottom: 10px;
+    }
+
+    .program-section-header h3 {
+      margin: 0;
+      font-size: 0.94rem;
+      font-weight: 700;
+    }
+
+    .program-section-header p {
+      margin: 3px 0 0;
+      color: var(--gm-muted);
+      font-size: 0.77rem;
+    }
+
+    .program-list {
+      display: grid;
+      gap: 9px;
+    }
+
+    .program-empty {
+      padding: 14px;
+      border: 1px dashed #d1d5db;
+      border-radius: 10px;
+      color: var(--gm-muted);
+      font-size: 0.8rem;
+      background: #fafafa;
+    }
+
+    .program-item {
+      padding: 13px;
+      border: 1px solid var(--gm-border-soft);
+      border-radius: 10px;
+      background: #fff;
+    }
+
+    .program-item-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .program-item-title {
+      font-weight: 700;
+    }
+
+    .program-item-description {
+      margin-top: 4px;
+      color: var(--gm-muted);
+      font-size: 0.78rem;
+    }
+
+    .program-item-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 9px;
+    }
+
+    .program-meta {
+      padding: 4px 7px;
+      border-radius: 6px;
+      background: #f3f4f6;
+      color: #4b5563;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+
+    .initiative-create-form {
+      margin-bottom: 18px;
+      padding: 16px;
+      border: 1px solid var(--gm-border-soft);
+      border-radius: 11px;
+      background: #fafafa;
+    }
+
+    .initiative-create-form .form-grid {
+      gap: 13px;
+    }
+
+    .initiative-note {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-left: 3px solid var(--gm-primary);
+      background: var(--gm-primary-light);
+      color: #365314;
+      font-size: 0.77rem;
+    }
+
+    /* =====================================================
+       RECURRING INITIATIVE / PARTICIPANTS
+       ===================================================== */
+
+    .recurring-note {
+      margin-top: 12px;
+      padding: 11px 12px;
+      border: 1px solid #bfdbfe;
+      border-radius: 9px;
+      background: var(--gm-info-bg);
+      color: #1e3a8a;
+      font-size: 0.78rem;
+    }
+
+    .participant-editor {
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px solid var(--gm-border);
+      border-radius: 10px;
+      background: #fff;
+    }
+
+    .participant-editor-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .participant-editor-header h4 {
+      margin: 0;
+      font-size: 0.9rem;
+    }
+
+    .participant-editor-header p {
+      margin: 3px 0 0;
+      color: var(--gm-muted);
+      font-size: 0.75rem;
+    }
+
+    .participant-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .participant-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px;
+      border: 1px solid var(--gm-border-soft);
+      border-radius: 8px;
+      background: #fafafa;
+    }
+
+    /* =====================================================
+       PAYMENT COLLECTION
+       ===================================================== */
+
+    .payment-gated-notice {
+      margin-bottom: 16px;
+      padding: 12px 13px;
+      border: 1px solid #fde68a;
+      border-radius: 10px;
+      background: var(--gm-warning-bg);
+      color: var(--gm-warning);
+      font-size: 0.8rem;
+    }
+
+    .payment-preview {
+      margin-top: 16px;
+      padding: 14px;
+      border: 1px solid var(--gm-border-soft);
+      border-radius: 10px;
+      background: #fafafa;
+    }
+
+    .payment-preview-label {
+      color: var(--gm-muted);
+      font-size: 0.74rem;
+      font-weight: 600;
+    }
+
+    .payment-preview-value {
+      margin-top: 5px;
+      font-weight: 750;
+      word-break: break-word;
+    }
+
+    .payment-state-note {
+      margin-top: 12px;
+      color: var(--gm-muted);
+      font-size: 0.75rem;
+    }
+
+    /* =====================================================
+       ACCOUNT / SUBSCRIPTION
+       ===================================================== */
+
+    .account-panel {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      padding: 14px;
+      border: 1px solid var(--gm-border-soft);
+      border-radius: 10px;
+      background: #fafafa;
+    }
+
+    .account-panel strong {
+      display: block;
+    }
+
+    .account-panel span {
+      display: block;
+      margin-top: 3px;
+      color: var(--gm-muted);
+      font-size: 0.76rem;
+    }
+
+    .subscription-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .subscription-item {
+      padding: 13px;
+      border: 1px solid var(--gm-border-soft);
+      border-radius: 10px;
+      background: #fafafa;
+    }
+
+    .subscription-label {
+      color: var(--gm-muted);
+      font-size: 0.73rem;
+    }
+
+    .subscription-value {
+      margin-top: 4px;
+      font-weight: 700;
+    }
+
+    /* =====================================================
+       GROUP CONTEXT
+       ===================================================== */
+
+    .context-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .context-item {
+      padding: 13px;
+      border: 1px solid var(--gm-border-soft);
+      border-radius: 10px;
+      background: #fafafa;
+    }
+
+    .context-label {
+      color: var(--gm-muted);
+      font-size: 0.73rem;
+      font-weight: 600;
+    }
+
+    .context-value {
+      margin-top: 4px;
+      font-weight: 650;
+      word-break: break-word;
+    }
+
+    /* =====================================================
+       PERMISSION
+       ===================================================== */
+
+    .permission-message {
+      display: none;
+      padding: 16px;
+      border: 1px solid #fecaca;
+      border-radius: 10px;
+      background: var(--gm-danger-bg);
+      color: var(--gm-danger);
+      font-size: 0.85rem;
+    }
+
+    .permission-message.is-visible {
+      display: block;
+    }
+
+    /* =====================================================
+       SMALL HELP / INFORMATION
+       ===================================================== */
+
+    .section-note {
+      margin-top: 10px;
+      color: var(--gm-muted);
+      font-size: 0.76rem;
+    }
+
+    .muted {
+      color: var(--gm-muted);
+    }
+
+    /* =====================================================
+       RESPONSIVE
+       ===================================================== */
+
+    @media (max-width: 900px) {
+      .management-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .management-card.full-width {
+        grid-column: auto;
+      }
+    }
+
+    @media (max-width: 680px) {
+      .management-page {
+        padding: 16px;
+      }
+
+      .management-card-body,
+      .management-card-header {
+        padding-left: 15px;
+        padding-right: 15px;
+      }
+
+      .overview-grid,
+      .form-grid,
+      .subscription-grid,
+      .context-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .form-field.full-width {
+        grid-column: auto;
+      }
+
+      .calendar-summary {
+        grid-template-columns: 1fr;
+      }
+
+      .account-panel {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .program-item-header,
+      .participant-editor-header {
+        flex-direction: column;
+      }
+
+      .form-actions {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .form-actions button,
+      .form-actions a {
+        width: 100%;
+        text-align: center;
+      }
+    }
+  </style>
 </head>
 
 <body>
 
-    <main
-        class="group-management-page"
-        id="groupManagementPage"
+  <main class="management-page">
+
+    <!-- ===================================================
+         HERO
+         =================================================== -->
+
+    <header class="management-hero">
+      <h1>Group Management</h1>
+
+      <p>
+        Manage your group's basic information, leadership, contribution
+        settings, programs, payment configuration, subscription, and access
+        context from one place.
+      </p>
+    </header>
+
+    <!-- ===================================================
+         GLOBAL STATUS
+         =================================================== -->
+
+    <div
+      id="groupManagementStatus"
+      class="management-status"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    ></div>
+
+    <!-- ===================================================
+         LOADING
+         =================================================== -->
+
+    <div
+      id="adminLoading"
+      class="management-loading"
+      aria-live="polite"
+    >
+      <strong>Loading group management...</strong>
+      <span>Please wait while your group context is loaded.</span>
+    </div>
+
+    <!-- ===================================================
+         PERMISSION MESSAGE
+         =================================================== -->
+
+    <div
+      id="permissionMessage"
+      class="permission-message"
+      role="alert"
+      aria-live="assertive"
+    ></div>
+
+    <!-- ===================================================
+         MANAGEMENT CONTENT
+         =================================================== -->
+
+    <div
+      id="managementContent"
+      class="management-grid"
+      hidden
     >
 
-        <!-- =====================================================
-             HERO
-        ====================================================== -->
+      <!-- =================================================
+           GROUP OVERVIEW
+           ================================================= -->
 
-        <header class="page-hero">
+      <section
+        class="management-card"
+        aria-labelledby="groupOverviewHeading"
+      >
+        <div class="management-card-header">
+          <h2 id="groupOverviewHeading">Group Overview</h2>
 
-            <h1>
-                Group Management
-            </h1>
+          <p>
+            Current information for the active group.
+          </p>
+        </div>
 
-            <p>
-                Manage your group's profile, leadership,
-                contribution configuration and account settings.
-            </p>
+        <div class="management-card-body">
+          <div class="overview-grid">
 
-        </header>
+            <div class="overview-item">
+              <div class="overview-label">Group Name</div>
 
+              <div
+                id="groupNameDisplay"
+                class="overview-value"
+              >
+                —
+              </div>
+            </div>
 
-        <!-- =====================================================
-             GLOBAL STATUS
-        ====================================================== -->
+            <div class="overview-item">
+              <div class="overview-label">Group Type</div>
 
-        <div
-            id="groupManagementStatus"
-            class="status-message"
+              <div
+                id="groupCategoryDisplay"
+                class="overview-value"
+              >
+                —
+              </div>
+            </div>
+
+            <div class="overview-item">
+              <div class="overview-label">Country</div>
+
+              <div
+                id="groupCountryDisplay"
+                class="overview-value"
+              >
+                —
+              </div>
+            </div>
+
+            <div class="overview-item">
+              <div class="overview-label">Members</div>
+
+              <div
+                id="memberCount"
+                class="overview-value"
+              >
+                —
+              </div>
+            </div>
+
+            <div class="overview-item">
+              <div class="overview-label">Access</div>
+
+              <div
+                id="permissionBadge"
+                class="overview-value"
+              >
+                —
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- =================================================
+           GROUP INFORMATION
+           ================================================= -->
+
+      <section
+        class="management-card"
+        aria-labelledby="groupInformationHeading"
+      >
+        <div class="management-card-header">
+          <h2 id="groupInformationHeading">Group Information</h2>
+
+          <p>
+            Update the basic profile and normal monthly contribution amount
+            for the group.
+          </p>
+        </div>
+
+        <div class="management-card-body">
+
+          <form
+            id="groupForm"
+            autocomplete="off"
+          >
+
+            <div class="form-grid">
+
+              <div class="form-field">
+                <label for="groupName">
+                  Group Name
+                </label>
+
+                <input
+                  id="groupName"
+                  name="groupName"
+                  type="text"
+                  maxlength="150"
+                  required
+                  autocomplete="organization"
+                >
+              </div>
+
+              <div class="form-field">
+                <label for="groupCategory">
+                  Group Type
+                </label>
+
+                <select
+                  id="groupCategory"
+                  name="groupCategory"
+                  required
+                >
+                  <option value="">Select group type</option>
+                  <option value="chama">Chama</option>
+                  <option value="cbo">CBO</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              <div
+                class="form-field"
+                id="otherGroupTypeField"
+              >
+                <label for="otherGroupType">
+                  Other Group Type
+                </label>
+
+                <input
+                  id="otherGroupType"
+                  name="otherGroupType"
+                  type="text"
+                  maxlength="100"
+                  placeholder="Enter group type"
+                >
+
+                <div class="field-help">
+                  Complete this only when "Other" is selected.
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label for="groupCountry">
+                  Country
+                </label>
+
+                <input
+                  id="groupCountry"
+                  name="groupCountry"
+                  type="text"
+                  maxlength="100"
+                  value="Kenya"
+                  autocomplete="country-name"
+                >
+              </div>
+
+              <div class="form-field">
+                <label for="monthlyContribution">
+                  Monthly Contribution
+                </label>
+
+                <input
+                  id="monthlyContribution"
+                  name="monthlyContribution"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  inputmode="decimal"
+                  placeholder="0.00"
+                >
+
+                <div class="field-help">
+                  This is the group's normal monthly contribution setting.
+                  Other contribution programs are configured separately.
+                </div>
+              </div>
+
+            </div>
+
+            <div class="form-actions">
+
+              <button
+                id="saveGroupInformation"
+                type="submit"
+                class="primary-button"
+              >
+                Save Group Information
+              </button>
+
+            </div>
+
+          </form>
+
+        </div>
+      </section>
+
+      <!-- =================================================
+           LEADERSHIP SETUP
+           ================================================= -->
+
+      <section
+        id="leadershipCard"
+        class="management-card"
+        aria-labelledby="leadershipHeading"
+      >
+        <div class="management-card-header">
+          <h2 id="leadershipHeading">Leadership Setup</h2>
+
+          <p>
+            Manage the group's leadership assignments through the authorized
+            group-management workflow.
+          </p>
+        </div>
+
+        <div class="management-card-body">
+
+          <div
+            id="leadershipStatus"
+            class="leadership-status"
             role="status"
             aria-live="polite"
-        ></div>
+          >
+            Loading leadership information...
+          </div>
 
+          <form
+            id="leadershipForm"
+            autocomplete="off"
+          >
 
-        <!-- =====================================================
-             LOADING
-        ====================================================== -->
+            <div class="form-grid">
 
-        <div
-            id="adminLoading"
-            class="admin-loading"
-        >
-            Loading group management...
-        </div>
+              <div class="form-field">
+                <label for="adminPosition">
+                  Position
+                </label>
 
+                <select
+                  id="adminPosition"
+                  name="adminPosition"
+                  required
+                >
+                  <option value="">Select position</option>
+                  <option value="chairperson">Chairperson</option>
+                  <option value="secretary">Secretary</option>
+                  <option value="treasurer">Treasurer</option>
+                  <option value="admin">Administrator</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
 
-        <!-- =====================================================
-             MANAGEMENT CONTENT
-        ====================================================== -->
+              <div class="form-field">
+                <label for="adminPositionName">
+                  Member / Person
+                </label>
 
-        <div
-            id="managementContent"
-            class="management-grid hidden"
-        >
+                <input
+                  id="adminPositionName"
+                  name="adminPositionName"
+                  type="text"
+                  maxlength="150"
+                  placeholder="Select or enter authorized member"
+                  required
+                >
 
-            <!-- =================================================
-                 GROUP OVERVIEW
-            ================================================== -->
-
-            <section
-                class="management-card overview-card"
-                id="groupOverviewCard"
-            >
-
-                <div class="card-header">
-
-                    <div class="card-heading">
-
-                        <h2>
-                            Group Overview
-                        </h2>
-
-                        <p>
-                            Current group identity and management access.
-                        </p>
-
-                    </div>
-
+                <div class="field-help">
+                  Leadership assignments must remain subject to the group's
+                  authorized membership and role controls.
                 </div>
-
-                <div class="card-body">
-
-                    <div class="overview-content">
-
-                        <div>
-
-                            <p
-                                id="groupNameDisplay"
-                                class="group-name-display"
-                            >
-                                —
-                            </p>
-
-                            <div class="group-meta">
-
-                                <span>
-                                    Type:
-                                    <strong id="groupCategoryDisplay">
-                                        —
-                                    </strong>
-                                </span>
-
-                                <span>
-                                    Country:
-                                    <strong id="groupCountryDisplay">
-                                        —
-                                    </strong>
-                                </span>
-
-                                <span>
-                                    Members:
-                                    <strong id="memberCount">
-                                        —
-                                    </strong>
-                                </span>
-
-                            </div>
-
-                        </div>
-
-                        <span
-                            id="permissionBadge"
-                            class="permission-badge"
-                        >
-                            Checking access…
-                        </span>
-
-                    </div>
-
-                </div>
-
-            </section>
-
-
-            <!-- =================================================
-                 GROUP INFORMATION
-            ================================================== -->
-
-            <section
-                class="management-card full-width"
-                id="groupInformationCard"
-            >
-
-                <div class="card-header">
-
-                    <div class="card-heading">
-
-                        <h2>
-                            Group Information
-                        </h2>
-
-                        <p>
-                            Basic identity and contribution settings
-                            for this group.
-                        </p>
-
-                    </div>
-
-                </div>
-
-                <div class="card-body">
-
-                    <form
-                        id="groupForm"
-                        novalidate
-                    >
-
-                        <div class="form-grid">
-
-                            <div class="form-field">
-
-                                <label for="groupName">
-                                    Group Name
-                                </label>
-
-                                <input
-                                    id="groupName"
-                                    name="groupName"
-                                    type="text"
-                                    maxlength="120"
-                                    autocomplete="organization"
-                                    required
-                                >
-
-                            </div>
-
-
-                            <div class="form-field">
-
-                                <label for="groupCategory">
-                                    Group Type
-                                </label>
-
-                                <select
-                                    id="groupCategory"
-                                    name="groupCategory"
-                                >
-
-                                    <option value="chama">
-                                        Chama
-                                    </option>
-
-                                    <option value="cbo">
-                                        CBO
-                                    </option>
-
-                                    <option value="other">
-                                        Other
-                                    </option>
-
-                                </select>
-
-                                <div
-                                    id="groupCategoryOtherField"
-                                    class="hidden"
-                                >
-
-                                    <label
-                                        for="groupCategoryOther"
-                                        style="margin-top: 8px;"
-                                    >
-                                        Other Group Type
-                                    </label>
-
-                                    <input
-                                        id="groupCategoryOther"
-                                        name="groupCategoryOther"
-                                        type="text"
-                                        maxlength="80"
-                                        autocomplete="off"
-                                    >
-
-                                </div>
-
-                            </div>
-
-
-                            <div class="form-field">
-
-                                <label for="groupCountry">
-                                    Country
-                                </label>
-
-                                <input
-                                    id="groupCountry"
-                                    name="groupCountry"
-                                    type="text"
-                                    maxlength="80"
-                                    autocomplete="country-name"
-                                >
-
-                            </div>
-
-
-                            <div class="form-field">
-
-                                <label for="monthlyContribution">
-                                    Monthly Contribution
-                                </label>
-
-                                <input
-                                    id="monthlyContribution"
-                                    name="monthlyContribution"
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    inputmode="decimal"
-                                >
-
-                                <p class="field-help">
-                                    Default monthly contribution amount
-                                    used by the group's contribution cycle.
-                                </p>
-
-                            </div>
-
-                        </div>
-
-                        <div class="form-actions">
-
-                            <button
-                                type="submit"
-                                class="btn btn-primary"
-                                id="saveGroupInformation"
-                            >
-                                Save Group Information
-                            </button>
-
-                        </div>
-
-                    </form>
-
-                </div>
-
-            </section>
-
-
-            <!-- =================================================
-                 LEADERSHIP
-            ================================================== -->
-
-            <section
-                class="management-card full-width"
-                id="leadershipCard"
-            >
-
-                <div class="card-header">
-
-                    <div class="card-heading">
-
-                        <h2>
-                            Leadership Setup
-                        </h2>
-
-                        <p>
-                            Configure the group's recognised leadership
-                            position through the canonical member workflow.
-                        </p>
-
-                    </div>
-
-                </div>
-
-                <div class="card-body">
-
-                    <div
-                        id="leadershipStatus"
-                        class="leadership-status"
-                        role="status"
-                        aria-live="polite"
-                    >
-                        Loading leadership setup…
-                    </div>
-
-
-                    <form
-                        id="leadershipForm"
-                        novalidate
-                    >
-
-                        <div class="form-grid">
-
-                            <div class="form-field">
-
-                                <label for="adminPosition">
-                                    Actual Position
-                                </label>
-
-                                <select
-                                    id="adminPosition"
-                                    name="adminPosition"
-                                >
-
-                                    <option value="chairperson">
-                                        Chairperson
-                                    </option>
-
-                                    <option value="vice_chairperson">
-                                        Vice Chairperson
-                                    </option>
-
-                                    <option value="treasurer">
-                                        Treasurer
-                                    </option>
-
-                                    <option value="secretary">
-                                        Secretary
-                                    </option>
-
-                                    <option value="vice_secretary">
-                                        Vice Secretary
-                                    </option>
-
-                                    <option value="committee_member">
-                                        Committee Member
-                                    </option>
-
-                                    <option value="member">
-                                        Member
-                                    </option>
-
-                                    <option value="other">
-                                        Other
-                                    </option>
-
-                                </select>
-
-                            </div>
-
-
-                            <div class="form-field">
-
-                                <label for="adminPositionName">
-                                    Position Name
-                                </label>
-
-                                <input
-                                    id="adminPositionName"
-                                    name="adminPositionName"
-                                    type="text"
-                                    maxlength="120"
-                                >
-
-                            </div>
-
-
-                            <div class="form-field">
-
-                                <label for="adminEffectiveFrom">
-                                    Effective From
-                                </label>
-
-                                <input
-                                    id="adminEffectiveFrom"
-                                    name="adminEffectiveFrom"
-                                    type="date"
-                                >
-
-                            </div>
-
-                        </div>
-
-                        <div class="form-actions">
-
-                            <button
-                                type="submit"
-                                class="btn btn-primary"
-                                id="saveLeadership"
-                            >
-                                Save Leadership Position
-                            </button>
-
-                        </div>
-
-                    </form>
-
-
-                    <div
-                        id="leadershipList"
-                        class="program-list"
-                    ></div>
-
-
-                    <div class="leadership-actions">
-
-                        <a
-                            class="officer-link"
-                            href="members.html"
-                        >
-                            Manage Members
-                        </a>
-
-                    </div>
-
-
-                    <p class="leadership-note">
-                        Leadership positions are recorded through the
-                        canonical member-position service. This page does
-                        not directly update member records.
-                    </p>
-
-                </div>
-
-            </section>
-
-
-            <!-- =================================================
-                 CONTRIBUTION CYCLE
-            ================================================== -->
-
-            <section
-                class="management-card full-width"
-                id="contributionCalendarCard"
-            >
-
-                <div class="card-header">
-
-                    <div class="card-heading">
-
-                        <h2>
-                            Monthly Contribution Cycle
-                        </h2>
-
-                        <p>
-                            View and configure the group's recurring
-                            contribution cycle.
-                        </p>
-
-                    </div>
-
-                </div>
-
-                <div class="card-body">
-
-                    <div class="calendar-summary">
-
-                        <div class="calendar-summary-item">
-
-                            <span>
-                                Contribution Amount
-                            </span>
-
-                            <strong id="calendarContributionAmount">
-                                —
-                            </strong>
-
-                        </div>
-
-
-                        <div class="calendar-summary-item">
-
-                            <span>
-                                Closing Day
-                            </span>
-
-                            <strong id="calendarClosingDay">
-                                —
-                            </strong>
-
-                        </div>
-
-
-                        <div class="calendar-summary-item">
-
-                            <span>
-                                Cycle Status
-                            </span>
-
-                            <strong id="calendarCycleStatus">
-                                —
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-
-                    <form
-                        id="contributionCalendarForm"
-                        novalidate
-                    >
-
-                        <div class="form-grid">
-
-                            <div class="form-field">
-
-                                <label for="closingDay">
-                                    Monthly Closing Day
-                                </label>
-
-                                <select
-                                    id="closingDay"
-                                    name="closingDay"
-                                    class="monthly-closing-day-select"
-                                >
-
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                    <option value="5">5</option>
-                                    <option value="6">6</option>
-                                    <option value="7">7</option>
-                                    <option value="8">8</option>
-                                    <option value="9">9</option>
-                                    <option value="10">10</option>
-                                    <option value="11">11</option>
-                                    <option value="12">12</option>
-                                    <option value="13">13</option>
-                                    <option value="14">14</option>
-                                    <option value="15">15</option>
-                                    <option value="16">16</option>
-                                    <option value="17">17</option>
-                                    <option value="18">18</option>
-                                    <option value="19">19</option>
-                                    <option value="20">20</option>
-                                    <option value="21">21</option>
-                                    <option value="22">22</option>
-                                    <option value="23">23</option>
-                                    <option value="24">24</option>
-                                    <option value="25">25</option>
-                                    <option value="26">26</option>
-                                    <option value="27">27</option>
-                                    <option value="28">28</option>
-                                    <option value="29">29</option>
-                                    <option value="30">30</option>
-                                    <option value="31">31</option>
-
-                                </select>
-
-                                <p class="field-help">
-                                    The configured monthly cycle closing day.
-                                </p>
-
-                            </div>
-
-
-                            <div class="form-field">
-
-                                <label for="calendarContributionAmountInput">
-                                    Monthly Contribution Amount
-                                </label>
-
-                                <input
-                                    id="calendarContributionAmountInput"
-                                    name="calendarContributionAmountInput"
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    inputmode="decimal"
-                                >
-
-                            </div>
-
-                        </div>
-
-                        <div class="form-actions">
-
-                            <button
-                                type="submit"
-                                class="btn btn-primary"
-                                id="saveContributionSettings"
-                            >
-                                Save Contribution Cycle
-                            </button>
-
-                        </div>
-
-                    </form>
-
-
-                    <p class="calendar-note">
-                        Monthly contribution settings are configuration
-                        values. Existing accounting history and already
-                        recorded transactions are not rewritten by changing
-                        the cycle configuration.
-                    </p>
-
-                </div>
-
-            </section>
-
-
-            <!-- =================================================
-                 CONTRIBUTION PROGRAMS / FINE RULES
-            ================================================== -->
-
-            <section
-                class="management-card full-width"
-                id="contributionProgramsCard"
-            >
-
-                <div class="card-header">
-
-                    <div class="card-heading">
-
-                        <h2>
-                            Contribution Programs &amp; Fine Rules
-                        </h2>
-
-                        <p>
-                            Configure contribution programs and review the
-                            rules used by the canonical accounting system.
-                        </p>
-
-                    </div>
-
-                </div>
-
-                <div class="card-body">
-
-                    <div
-                        id="contributionProgramStatus"
-                        class="program-status"
-                        role="status"
-                        aria-live="polite"
-                    >
-                        Loading contribution configuration…
-                    </div>
-
-
-                    <div class="program-section">
-
-                        <!-- =========================================
-                             CONTRIBUTION TYPES
-                        ========================================== -->
-
-                        <div class="program-subsection">
-
-                            <div class="program-subsection-header">
-
-                                <div>
-
-                                    <h3>
-                                        Contribution Types
-                                    </h3>
-
-                                    <p>
-                                        Contribution categories used by
-                                        the canonical accounting system.
-                                    </p>
-
-                                </div>
-
-                            </div>
-
-
-                            <div
-                                id="contributionTypesList"
-                                class="program-list"
-                            >
-                                <div class="program-empty">
-                                    Loading contribution types…
-                                </div>
-                            </div>
-
-                        </div>
-
-
-                        <!-- =========================================
-                             CREATE CONTRIBUTION INITIATIVE
-                        ========================================== -->
-
-                        <div class="program-subsection">
-
-                            <div class="program-subsection-header">
-
-                                <div>
-
-                                    <h3>
-                                        Create Contribution Program
-                                    </h3>
-
-                                    <p>
-                                        Create a new contribution initiative
-                                        in Draft status using the canonical
-                                        database service.
-                                    </p>
-
-                                </div>
-
-                            </div>
-
-
-                            <form
-                                id="createInitiativeForm"
-                                class="initiative-create-form"
-                                novalidate
-                            >
-
-                                <div
-                                    id="initiativeCreateStatus"
-                                    class="initiative-create-status"
-                                    role="status"
-                                    aria-live="polite"
-                                >
-                                    New initiatives are created as Draft.
-                                </div>
-
-
-                                <div class="form-grid">
-
-                                    <div class="form-field full-width">
-
-                                        <label for="initiativeName">
-                                            Program Name
-                                        </label>
-
-                                        <input
-                                            id="initiativeName"
-                                            name="initiativeName"
-                                            type="text"
-                                            maxlength="160"
-                                            autocomplete="off"
-                                            required
-                                        >
-
-                                        <p class="field-help">
-                                            A clear name for this contribution
-                                            initiative.
-                                        </p>
-
-                                    </div>
-
-
-                                    <div class="form-field full-width">
-
-                                        <label for="initiativeDescription">
-                                            Description
-                                        </label>
-
-                                        <textarea
-                                            id="initiativeDescription"
-                                            name="initiativeDescription"
-                                            maxlength="1000"
-                                        ></textarea>
-
-                                        <p class="field-help">
-                                            Optional description of the
-                                            initiative and its purpose.
-                                        </p>
-
-                                    </div>
-
-
-                                    <div class="form-field">
-
-                                        <label for="initiativeContributionType">
-                                            Contribution Type
-                                        </label>
-
-                                        <select
-                                            id="initiativeContributionType"
-                                            name="initiativeContributionType"
-                                            required
-                                        >
-
-                                            <option value="">
-                                                Select contribution type
-                                            </option>
-
-                                        </select>
-
-                                        <p class="field-help">
-                                            Only contribution types belonging
-                                            to this group can be selected.
-                                        </p>
-
-                                    </div>
-
-
-                                    <div class="form-field">
-
-                                        <label for="initiativeFrequency">
-                                            Frequency
-                                        </label>
-
-                                        <select
-                                            id="initiativeFrequency"
-                                            name="initiativeFrequency"
-                                            required
-                                        >
-
-                                            <option value="one_time">
-                                                One Time
-                                            </option>
-
-                                            <option value="monthly">
-                                                Monthly
-                                            </option>
-
-                                        </select>
-
-                                        <p class="field-help">
-                                            Monthly creates a recurring
-                                            calendar-month initiative with
-                                            participant terms, period
-                                            obligations and recurring
-                                            initiative accounting.
-                                        </p>
-
-                                    </div>
-
-
-                                    <div class="form-field">
-
-                                        <label for="initiativeStartDate">
-                                            Start Date
-                                        </label>
-
-                                        <input
-                                            id="initiativeStartDate"
-                                            name="initiativeStartDate"
-                                            type="date"
-                                            required
-                                        >
-
-                                    </div>
-
-
-                                    <div class="form-field">
-
-                                        <label for="initiativeClosingDate">
-                                            Closing Date
-                                        </label>
-
-                                        <input
-                                            id="initiativeClosingDate"
-                                            name="initiativeClosingDate"
-                                            type="date"
-                                            required
-                                        >
-
-                                        <p class="field-help">
-                                            Closing date must not be before
-                                            the start date. A recurring
-                                            initiative generates only complete
-                                            calendar-month periods.
-                                        </p>
-
-                                    </div>
-
-
-                                    <div class="form-field">
-
-                                        <label for="initiativeDefaultAmount">
-                                            Default Amount
-                                        </label>
-
-                                        <input
-                                            id="initiativeDefaultAmount"
-                                            name="initiativeDefaultAmount"
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            inputmode="decimal"
-                                            required
-                                        >
-
-                                        <p class="field-help">
-                                            Default amount stored with the
-                                            initiative. For participant-based
-                                            programs, the configured
-                                            participant amount is authoritative.
-                                        </p>
-
-                                    </div>
-
-                                </div>
-
-
-                                <div class="form-actions">
-
-                                    <button
-                                        type="submit"
-                                        class="btn btn-primary"
-                                        id="createInitiativeButton"
-                                    >
-                                        Create Draft Program
-                                    </button>
-
-                                </div>
-
-                            </form>
-
-                        </div>
-
-
-                        <!-- =========================================
-                             CONTRIBUTION PROGRAMS
-                        ========================================== -->
-
-                        <div class="program-subsection">
-
-                            <div class="program-subsection-header">
-
-                                <div>
-
-                                    <h3>
-                                        Contribution Programs
-                                    </h3>
-
-                                    <p>
-                                        Group-specific contribution
-                                        initiatives, participant configuration
-                                        and lifecycle state.
-                                    </p>
-
-                                </div>
-
-                            </div>
-
-
-                            <div class="initiative-configure-note">
-
-                                <strong>One-time programs:</strong>
-                                Draft participant configuration uses the
-                                existing canonical participant service and
-                                keeps the initiative in Draft.
-
-                                <br><br>
-
-                                <strong>Monthly programs:</strong>
-                                Draft participant configuration uses the
-                                recurring participant-term contract. Terms
-                                determine participant amounts for future
-                                calendar-month periods. Recurring activation,
-                                just-in-time period generation and period
-                                obligation generation use dedicated database
-                                services.
-
-                            </div>
-
-
-                            <div
-                                id="contributionInitiativesList"
-                                class="program-list"
-                            >
-
-                                <div class="program-empty">
-                                    Loading contribution programs…
-                                </div>
-
-                            </div>
-
-                        </div>
-
-
-                        <!-- =========================================
-                             FINE RULES
-                        ========================================== -->
-
-                        <div class="program-subsection">
-
-                            <div class="program-subsection-header">
-
-                                <div>
-
-                                    <h3>
-                                        Fine Rules
-                                    </h3>
-
-                                    <p>
-                                        Rules governing fines generated
-                                        from qualifying contribution
-                                        obligations.
-                                    </p>
-
-                                </div>
-
-                            </div>
-
-
-                            <div
-                                id="fineRulesList"
-                                class="program-list"
-                            >
-
-                                <div class="program-empty">
-                                    Loading fine rules…
-                                </div>
-
-                            </div>
-
-                        </div>
-
-
-                        <p class="program-access-note">
-
-                            Contribution programs and fine rules are
-                            controlled by the existing canonical database
-                            services.
-
-                            One-time participant configuration uses the
-                            existing one-time participant service.
-
-                            <strong>
-                                Monthly recurring initiatives use their
-                                dedicated recurring participant-term,
-                                period and obligation services.
-                            </strong>
-
-                            This page does not directly write participant
-                            rows, recurring terms, obligations, allocations,
-                            credits or accounting transactions.
-
-                        </p>
-
-                    </div>
-
-
-                    <p class="program-note">
-
-                        <strong>One-time lifecycle:</strong>
-                        Draft → Configure Participants → Activate.
-
-                        <br>
-
-                        <strong>Monthly lifecycle:</strong>
-                        Draft → Recurring Participant Terms →
-                        Recurring Activation → Calendar Periods →
-                        Period Obligations → Recurring Payment/Allocation.
-
-                        <br><br>
-
-                        Recurring monthly initiatives use a separate
-                        initiative-domain accounting path and are not routed
-                        through the ordinary 2B monthly obligation engine.
-
-                    </p>
-
-                </div>
-
-            </section>
-
-
-            <!-- =================================================
-                 PAYMENT COLLECTION CONFIGURATION
-            ================================================== -->
-
-            <section
-                class="management-card full-width"
-                id="paymentCollectionCard"
-            >
-
-                <div class="card-header">
-
-                    <div class="card-heading">
-
-                        <h2>
-                            Payment Collection
-                        </h2>
-
-                        <p>
-                            Configure the group's payment channel and
-                            collection identifiers used for member payments.
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-                <div class="card-body">
-
-                    <div
-                        id="paymentCollectionStatus"
-                        class="payment-status pending"
-                        role="status"
-                        aria-live="polite"
-                    >
-                        Payment collection configuration has not yet been
-                        connected to the group's canonical payment settings.
-                    </div>
-
-
-                    <div class="payment-provider-grid">
-
-                        <div class="form-field">
-
-                            <label for="paymentProvider">
-                                Payment Provider
-                            </label>
-
-                            <select
-                                id="paymentProvider"
-                                name="paymentProvider"
-                                disabled
-                            >
-
-                                <option value="">
-                                    Select provider
-                                </option>
-
-                                <option value="mpesa">
-                                    M-Pesa
-                                </option>
-
-                                <option value="bank">
-                                    Bank
-                                </option>
-
-                                <option value="sacco">
-                                    SACCO
-                                </option>
-
-                                <option value="other">
-                                    Other
-                                </option>
-
-                            </select>
-
-                            <p class="field-help">
-                                The provider through which the group
-                                receives member payments.
-                            </p>
-
-                        </div>
-
-
-                        <div class="form-field">
-
-                            <label for="paymentBusinessNumber">
-                                Business / PayBill Number
-                            </label>
-
-                            <input
-                                id="paymentBusinessNumber"
-                                name="paymentBusinessNumber"
-                                type="text"
-                                inputmode="numeric"
-                                autocomplete="off"
-                                maxlength="20"
-                                disabled
-                            >
-
-                            <p class="field-help">
-                                The provider business number used by
-                                the group for payment collection.
-                            </p>
-
-                        </div>
-
-
-                        <div class="form-field">
-
-                            <label for="paymentGroupAccount">
-                                Group Account
-                            </label>
-
-                            <input
-                                id="paymentGroupAccount"
-                                name="paymentGroupAccount"
-                                type="text"
-                                autocomplete="off"
-                                maxlength="80"
-                                disabled
-                            >
-
-                            <p class="field-help">
-                                The group's account, account number,
-                                or provider-specific collection account.
-                            </p>
-
-                        </div>
-
-
-                        <div class="form-field">
-
-                            <label for="paymentAccountReference">
-                                Account Reference
-                            </label>
-
-                            <input
-                                id="paymentAccountReference"
-                                name="paymentAccountReference"
-                                type="text"
-                                autocomplete="off"
-                                maxlength="12"
-                                disabled
-                            >
-
-                            <p class="field-help">
-                                Provider-specific reference used to identify
-                                the group's collection account.
-                            </p>
-
-                        </div>
-
-
-                        <div class="form-field full-width">
-
-                            <label for="paymentInstructions">
-                                Member Payment Instructions
-                            </label>
-
-                            <input
-                                id="paymentInstructions"
-                                name="paymentInstructions"
-                                type="text"
-                                maxlength="500"
-                                autocomplete="off"
-                                placeholder="Payment instructions shown to members"
-                                disabled
-                            >
-
-                            <p class="field-help">
-                                Clear instructions members can follow when
-                                making payments to the group.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-
-                    <div
-                        id="paymentReferencePreview"
-                        class="payment-reference-preview"
-                    >
-
-                        <span>
-                            Collection reference
-                        </span>
-
-                        <strong id="paymentReferencePreviewValue">
-                            Not configured
-                        </strong>
-
-                    </div>
-
-
-                    <div
-                        id="paymentConfigurationState"
-                        class="payment-configuration-state"
-                    >
-                        Payment collection fields are intentionally held
-                        inactive until the canonical payment-intent,
-                        provider-reference, callback/result and execution
-                        transaction contract is connected to the frontend.
-                        No payment credentials or STK transaction is created
-                        by this page.
-                    </div>
-
-
-                    <div class="form-actions">
-
-                        <button
-                            type="button"
-                            class="btn btn-primary"
-                            id="savePaymentCollection"
-                            disabled
-                        >
-                            Save Payment Collection
-                        </button>
-
-                    </div>
-
-
-                    <p class="payment-note">
-                        The group configuration identifies where members
-                        should pay. It does not itself create a payment,
-                        allocation or contribution obligation. Those
-                        accounting actions remain controlled by the canonical
-                        payment and allocation workflows.
-                    </p>
-
-                </div>
-
-            </section>
-
-
-            <!-- =================================================
-                 ACCOUNT
-            ================================================== -->
-
-            <section class="management-card">
-
-                <div class="card-header">
-
-                    <div class="card-heading">
-
-                        <h2>
-                            Account
-                        </h2>
-
-                        <p>
-                            View your group's billing and
-                            subscription information.
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-                <div class="card-body">
-
-                    <div class="account-content">
-
-                        <div>
-
-                            <p class="account-title">
-                                Billing &amp; Subscription
-                            </p>
-
-                            <p class="account-description">
-                                Review subscription status,
-                                payments, invoices and
-                                account billing.
-                            </p>
-
-                        </div>
-
-
-                        <a
-                            class="account-link"
-                            href="billing.html"
-                        >
-                            Manage Billing
-                        </a>
-
-                    </div>
-
-                </div>
-
-            </section>
-
-
-            <!-- =================================================
-                 SUBSCRIPTION
-            ================================================== -->
-
-            <section class="management-card">
-
-                <div class="card-header">
-
-                    <div class="card-heading">
-
-                        <h2>
-                            Subscription
-                        </h2>
-
-                        <p>
-                            Current subscription state
-                            for this group.
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-                <div class="card-body">
-
-                    <div
-                        id="subscriptionPanel"
-                        class="subscription-panel"
-                    >
-
-                        <div class="subscription-row">
-
-                            <span class="subscription-label">
-                                Status
-                            </span>
-
-                            <strong
-                                id="subscriptionStatus"
-                                class="subscription-value"
-                            >
-                                —
-                            </strong>
-
-                        </div>
-
-
-                        <div class="subscription-row">
-
-                            <span class="subscription-label">
-                                Plan
-                            </span>
-
-                            <strong
-                                id="subscriptionPlan"
-                                class="subscription-value"
-                            >
-                                —
-                            </strong>
-
-                        </div>
-
-
-                        <div class="subscription-row">
-
-                            <span class="subscription-label">
-                                Renewal / End Date
-                            </span>
-
-                            <strong
-                                id="subscriptionEndDate"
-                                class="subscription-value"
-                            >
-                                —
-                            </strong>
-
-                        </div>
-
-
-                        <div class="subscription-row">
-
-                            <span class="subscription-label">
-                                Amount
-                            </span>
-
-                            <strong
-                                id="subscriptionAmount"
-                                class="subscription-value"
-                            >
-                                —
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </section>
-
-
-            <!-- =================================================
-                 GROUP CONTEXT
-            ================================================== -->
-
-            <section class="management-card full-width">
-
-                <div class="card-header">
-
-                    <div class="card-heading">
-
-                        <h2>
-                            Group Context
-                        </h2>
-
-                        <p>
-                            Current account and
-                            management context.
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-                <div class="card-body">
-
-                    <div class="context-grid">
-
-                        <div class="context-item">
-
-                            <span>
-                                Group
-                            </span>
-
-                            <strong id="groupContextName">
-                                —
-                            </strong>
-
-                        </div>
-
-
-                        <div class="context-item">
-
-                            <span>
-                                Your Role
-                            </span>
-
-                            <strong id="groupContextRole">
-                                —
-                            </strong>
-
-                        </div>
-
-
-                        <div class="context-item">
-
-                            <span>
-                                Access
-                            </span>
-
-                            <strong id="contextAccess">
-                                —
-                            </strong>
-
-                        </div>
-
-
-                        <div class="context-item">
-
-                            <span>
-                                Country
-                            </span>
-
-                            <strong id="groupContextCountry">
-                                —
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </section>
+              </div>
+
+              <div class="form-field">
+                <label for="adminEffectiveFrom">
+                  Effective From
+                </label>
+
+                <input
+                  id="adminEffectiveFrom"
+                  name="adminEffectiveFrom"
+                  type="date"
+                  required
+                >
+              </div>
+
+            </div>
+
+            <div class="form-actions">
+
+              <button
+                id="saveLeadership"
+                type="submit"
+                class="primary-button"
+              >
+                Save Leadership
+              </button>
+
+            </div>
+
+          </form>
+
+          <div
+            id="leadershipList"
+            class="leadership-list"
+            aria-live="polite"
+          ></div>
+
+          <a
+            class="members-link"
+            href="members.html"
+          >
+            Manage group members →
+          </a>
 
         </div>
+      </section>
 
+      <!-- =================================================
+           MONTHLY CONTRIBUTION CYCLE
+           ================================================= -->
 
-        <!-- =====================================================
-             PERMISSION MESSAGE
-        ====================================================== -->
+      <section
+        id="contributionCalendarCard"
+        class="management-card"
+        aria-labelledby="contributionCalendarHeading"
+      >
+        <div class="management-card-header">
+          <h2 id="contributionCalendarHeading">
+            Monthly Contribution Cycle
+          </h2>
 
-        <div
-            id="permissionMessage"
-            class="permission-message hidden"
-            role="alert"
-        >
-            You do not have permission to manage this group.
+          <p>
+            Configure the group's normal monthly contribution cycle.
+          </p>
         </div>
 
-    </main>
+        <div class="management-card-body">
 
+          <div class="calendar-summary">
 
-    <!-- =========================================================
-         PAGE SHELL BOOT
+            <div class="calendar-summary-item">
+              <div class="calendar-summary-label">
+                Contribution Amount
+              </div>
 
-         admin-layout.js is the sole page-shell boot owner.
+              <div
+                id="calendarContributionAmount"
+                class="calendar-summary-value"
+              >
+                —
+              </div>
+            </div>
 
-         group-management.js remains a page initializer and does
-         not auto-boot.
+            <div class="calendar-summary-item">
+              <div class="calendar-summary-label">
+                Closing Day
+              </div>
 
-         PAYMENT COLLECTION
+              <div
+                id="calendarClosingDay"
+                class="calendar-summary-value"
+              >
+                —
+              </div>
+            </div>
 
-         Payment collection controls remain disabled until the
-         canonical payment-intent → provider-reference →
-         callback/result → execution transaction contract is
-         connected.
+            <div class="calendar-summary-item">
+              <div class="calendar-summary-label">
+                Cycle Status
+              </div>
 
-         CONTRIBUTION PROGRAMS
+              <div
+                id="calendarCycleStatus"
+                class="calendar-summary-value"
+              >
+                —
+              </div>
+            </div>
 
-         ONE-TIME
-         Create → Draft → Configure Participants → Activate
-         → Existing Initiative Payment Path
+          </div>
 
-         MONTHLY
-         Create → Draft → Recurring Participant Terms
-                → Recurring Activation
-                → Calendar Periods
-                → Period Obligations
-                → Recurring Initiative Payment / Allocation
+          <form
+            id="contributionCalendarForm"
+            autocomplete="off"
+          >
 
-         Monthly recurring initiatives use their dedicated
-         recurring-domain contracts and are NOT routed through
-         the ordinary 2B monthly accounting engine.
+            <div class="form-grid">
 
-         Existing one-time initiative contracts remain unchanged.
-    ========================================================== -->
+              <div class="form-field">
+                <label for="closingDay">
+                  Monthly Closing Day
+                </label>
 
-    <script type="module">
-        import { boot } from "./js/admin-layout.js";
+                <select
+                  id="closingDay"
+                  name="closingDay"
+                >
+                  <option value="">Select closing day</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                  <option value="7">7</option>
+                  <option value="8">8</option>
+                  <option value="9">9</option>
+                  <option value="10">10</option>
+                  <option value="11">11</option>
+                  <option value="12">12</option>
+                  <option value="13">13</option>
+                  <option value="14">14</option>
+                  <option value="15">15</option>
+                  <option value="16">16</option>
+                  <option value="17">17</option>
+                  <option value="18">18</option>
+                  <option value="19">19</option>
+                  <option value="20">20</option>
+                  <option value="21">21</option>
+                  <option value="22">22</option>
+                  <option value="23">23</option>
+                  <option value="24">24</option>
+                  <option value="25">25</option>
+                  <option value="26">26</option>
+                  <option value="27">27</option>
+                  <option value="28">28</option>
+                  <option value="29">29</option>
+                  <option value="30">30</option>
+                  <option value="31">31</option>
+                </select>
 
-        boot();
-    </script>
+                <div class="field-help">
+                  The selected day controls the normal monthly contribution
+                  cycle. Financial-period rules remain backend-controlled.
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label for="calendarContributionAmountInput">
+                  Contribution Amount
+                </label>
+
+                <input
+                  id="calendarContributionAmountInput"
+                  name="calendarContributionAmountInput"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  inputmode="decimal"
+                  placeholder="0.00"
+                >
+
+                <div class="field-help">
+                  This setting applies to the normal monthly contribution
+                  cycle, not separately configured initiatives.
+                </div>
+              </div>
+
+            </div>
+
+            <div class="form-actions">
+
+              <button
+                id="saveContributionSettings"
+                type="submit"
+                class="primary-button"
+              >
+                Save Contribution Settings
+              </button>
+
+            </div>
+
+          </form>
+
+        </div>
+      </section>
+
+      <!-- =================================================
+           CONTRIBUTION PROGRAMS & FINE RULES
+           ================================================= -->
+
+      <section
+        id="contributionProgramsCard"
+        class="management-card full-width"
+        aria-labelledby="contributionProgramsHeading"
+      >
+        <div class="management-card-header">
+          <h2 id="contributionProgramsHeading">
+            Contribution Programs &amp; Fine Rules
+          </h2>
+
+          <p>
+            Configure additional contribution programs and review the group's
+            fine rules. Accounting and fine generation remain controlled by
+            the canonical backend services.
+          </p>
+        </div>
+
+        <div class="management-card-body">
+
+          <div
+            id="contributionProgramStatus"
+            class="leadership-status"
+            role="status"
+            aria-live="polite"
+          >
+            Loading contribution programs...
+          </div>
+
+          <!-- =============================================
+               CONTRIBUTION TYPES
+               ============================================= -->
+
+          <div class="program-section">
+
+            <div class="program-section-header">
+              <h3>Contribution Types</h3>
+
+              <p>
+                Available contribution classifications used by the group.
+              </p>
+            </div>
+
+            <div
+              id="contributionTypesList"
+              class="program-list"
+              aria-live="polite"
+            ></div>
+
+          </div>
+
+          <!-- =============================================
+               CREATE CONTRIBUTION PROGRAM
+               ============================================= -->
+
+          <div class="program-section">
+
+            <div class="program-section-header">
+              <h3>Create Contribution Program</h3>
+
+              <p>
+                New programs begin in Draft status. Activation and accounting
+                execution are controlled by the authorized backend workflow.
+              </p>
+            </div>
+
+            <div class="initiative-create-form">
+
+              <form
+                id="createInitiativeForm"
+                autocomplete="off"
+              >
+
+                <div class="form-grid">
+
+                  <div class="form-field full-width">
+                    <label for="initiativeStatus">
+                      Program Status
+                    </label>
+
+                    <input
+                      id="initiativeStatus"
+                      name="initiativeStatus"
+                      type="text"
+                      value="Draft"
+                      readonly
+                    >
+
+                    <div class="field-help">
+                      New programs are created as Draft before activation.
+                    </div>
+                  </div>
+
+                  <div class="form-field">
+                    <label for="initiativeName">
+                      Program Name
+                    </label>
+
+                    <input
+                      id="initiativeName"
+                      name="initiativeName"
+                      type="text"
+                      maxlength="150"
+                      required
+                      placeholder="e.g. Welfare Fund"
+                    >
+                  </div>
+
+                  <div class="form-field">
+                    <label for="initiativeContributionType">
+                      Contribution Type
+                    </label>
+
+                    <select
+                      id="initiativeContributionType"
+                      name="initiativeContributionType"
+                      required
+                    >
+                      <option value="">
+                        Select contribution type
+                      </option>
+                    </select>
+                  </div>
+
+                  <div class="form-field full-width">
+                    <label for="initiativeDescription">
+                      Description
+                    </label>
+
+                    <textarea
+                      id="initiativeDescription"
+                      name="initiativeDescription"
+                      maxlength="1000"
+                      placeholder="Describe the purpose of this contribution program."
+                    ></textarea>
+                  </div>
+
+                  <div class="form-field">
+                    <label for="initiativeFrequency">
+                      Frequency
+                    </label>
+
+                    <select
+                      id="initiativeFrequency"
+                      name="initiativeFrequency"
+                      required
+                    >
+                      <option value="one_time">
+                        One-time
+                      </option>
+
+                      <option value="monthly">
+                        Monthly / Recurring
+                      </option>
+                    </select>
+
+                    <div class="field-help">
+                      Recurring programs follow the recurring initiative
+                      lifecycle and are not routed through the normal monthly
+                      contribution engine.
+                    </div>
+                  </div>
+
+                  <div class="form-field">
+                    <label for="initiativeStartDate">
+                      Start Date
+                    </label>
+
+                    <input
+                      id="initiativeStartDate"
+                      name="initiativeStartDate"
+                      type="date"
+                      required
+                    >
+                  </div>
+
+                  <div class="form-field">
+                    <label for="initiativeClosingDate">
+                      Closing Date
+                    </label>
+
+                    <input
+                      id="initiativeClosingDate"
+                      name="initiativeClosingDate"
+                      type="date"
+                    >
+
+                    <div class="field-help">
+                      Use when the program has a defined closing date.
+                    </div>
+                  </div>
+
+                  <div class="form-field">
+                    <label for="initiativeDefaultAmount">
+                      Default Amount
+                    </label>
+
+                    <input
+                      id="initiativeDefaultAmount"
+                      name="initiativeDefaultAmount"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      inputmode="decimal"
+                      placeholder="0.00"
+                    >
+                  </div>
+
+                </div>
+
+                <div class="initiative-note">
+                  Saving a program creates its configured draft through the
+                  canonical service. It does not by itself create a payment,
+                  obligation, allocation, contribution, or fine.
+                </div>
+
+                <div class="form-actions">
+
+                  <button
+                    id="createInitiativeButton"
+                    type="submit"
+                    class="primary-button"
+                  >
+                    Save Program as Draft
+                  </button>
+
+                </div>
+
+              </form>
+
+            </div>
+
+          </div>
+
+          <!-- =============================================
+               INITIATIVES
+               ============================================= -->
+
+          <div class="program-section">
+
+            <div class="program-section-header">
+              <h3>Contribution Initiatives</h3>
+
+              <p>
+                Review configured initiatives and their current lifecycle
+                status.
+              </p>
+            </div>
+
+            <div
+              id="contributionInitiativesList"
+              class="program-list"
+              aria-live="polite"
+            ></div>
+
+          </div>
+
+          <!-- =============================================
+               FINE RULES
+               ============================================= -->
+
+          <div class="program-section">
+
+            <div class="program-section-header">
+              <h3>Fine Rules</h3>
+
+              <p>
+                Fine rules are displayed here for group management. Fine
+                generation and accounting remain backend-owned.
+              </p>
+            </div>
+
+            <div
+              id="fineRulesList"
+              class="program-list"
+              aria-live="polite"
+            ></div>
+
+          </div>
+
+          <!-- =============================================
+               RECURRING INITIATIVE NOTE
+               ============================================= -->
+
+          <div class="recurring-note">
+            <strong>Recurring initiatives:</strong>
+            recurring programs use their own lifecycle:
+            Draft → Recurring Participant Terms → Recurring Activation →
+            Calendar Periods → Period Obligations → Recurring Payment /
+            Allocation. They must not be treated as ordinary monthly
+            contribution obligations.
+          </div>
+
+        </div>
+      </section>
+
+      <!-- =================================================
+           PAYMENT COLLECTION
+           ================================================= -->
+
+      <section
+        id="paymentCollectionCard"
+        class="management-card full-width"
+        aria-labelledby="paymentCollectionHeading"
+      >
+        <div class="management-card-header">
+          <h2 id="paymentCollectionHeading">
+            Payment Collection
+          </h2>
+
+          <p>
+            Group-level payment collection configuration.
+          </p>
+        </div>
+
+        <div class="management-card-body">
+
+          <div class="payment-gated-notice">
+            <strong>Configuration is currently gated.</strong>
+            Payment provider settings must be connected to the approved
+            canonical payment contract before live collection credentials or
+            execution settings are enabled here.
+          </div>
+
+          <div class="form-grid">
+
+            <div class="form-field">
+              <label for="paymentProvider">
+                Payment Provider
+              </label>
+
+              <select
+                id="paymentProvider"
+                name="paymentProvider"
+                disabled
+              >
+                <option value="">
+                  Select provider
+                </option>
+
+                <option value="mpesa">
+                  M-Pesa / Daraja
+                </option>
+              </select>
+            </div>
+
+            <div class="form-field">
+              <label for="paymentBusinessNumber">
+                Business / PayBill / Till Number
+              </label>
+
+              <input
+                id="paymentBusinessNumber"
+                name="paymentBusinessNumber"
+                type="text"
+                maxlength="20"
+                disabled
+              >
+            </div>
+
+            <div class="form-field">
+              <label for="paymentGroupAccount">
+                Group Account
+              </label>
+
+              <input
+                id="paymentGroupAccount"
+                name="paymentGroupAccount"
+                type="text"
+                maxlength="100"
+                disabled
+              >
+
+              <div class="field-help">
+                Group-level payment configuration is separate from CHAMA LIVE
+                platform subscription billing.
+              </div>
+            </div>
+
+            <div class="form-field">
+              <label for="paymentAccountReference">
+                Account Reference
+              </label>
+
+              <input
+                id="paymentAccountReference"
+                name="paymentAccountReference"
+                type="text"
+                maxlength="12"
+                disabled
+              >
+
+              <div class="field-help">
+                Provider-specific reference length and format must follow the
+                approved payment contract.
+              </div>
+            </div>
+
+            <div class="form-field full-width">
+              <label for="paymentInstructions">
+                Payment Instructions
+              </label>
+
+              <textarea
+                id="paymentInstructions"
+                name="paymentInstructions"
+                maxlength="1000"
+                disabled
+                placeholder="Payment instructions will be enabled after the payment configuration gate is cleared."
+              ></textarea>
+            </div>
+
+          </div>
+
+          <div class="payment-preview">
+
+            <div class="payment-preview-label">
+              Payment Reference Preview
+            </div>
+
+            <div
+              id="paymentReferencePreviewValue"
+              class="payment-preview-value"
+            >
+              —
+            </div>
+
+          </div>
+
+          <div class="payment-state-note">
+            Live payment execution must follow the approved sequence:
+            payment intent → provider reference → callback/result →
+            execution transaction → contribution/accounting chain.
+          </div>
+
+          <div class="form-actions">
+
+            <button
+              id="savePaymentCollection"
+              type="button"
+              class="primary-button"
+              disabled
+            >
+              Save Payment Collection
+            </button>
+
+          </div>
+
+        </div>
+      </section>
+
+      <!-- =================================================
+           ACCOUNT
+           ================================================= -->
+
+      <section
+        class="management-card"
+        aria-labelledby="accountHeading"
+      >
+        <div class="management-card-header">
+          <h2 id="accountHeading">Account</h2>
+
+          <p>
+            Manage the group's CHAMA LIVE subscription account separately
+            from group financial accounting.
+          </p>
+        </div>
+
+        <div class="management-card-body">
+
+          <div class="account-panel">
+
+            <div>
+              <strong>Platform Account</strong>
+
+              <span>
+                Subscription and platform billing are separate from group
+                member contributions and other group accounting.
+              </span>
+            </div>
+
+            <a
+              class="secondary-button"
+              href="billing.html"
+              style="text-decoration:none;"
+            >
+              Open Billing
+            </a>
+
+          </div>
+
+        </div>
+      </section>
+
+      <!-- =================================================
+           SUBSCRIPTION
+           ================================================= -->
+
+      <section
+        class="management-card"
+        aria-labelledby="subscriptionHeading"
+      >
+        <div class="management-card-header">
+          <h2 id="subscriptionHeading">Subscription</h2>
+
+          <p>
+            Current CHAMA LIVE platform subscription information.
+          </p>
+        </div>
+
+        <div class="management-card-body">
+
+          <div class="subscription-grid">
+
+            <div class="subscription-item">
+              <div class="subscription-label">
+                Status
+              </div>
+
+              <div
+                id="subscriptionStatus"
+                class="subscription-value"
+              >
+                —
+              </div>
+            </div>
+
+            <div class="subscription-item">
+              <div class="subscription-label">
+                Plan
+              </div>
+
+              <div
+                id="subscriptionPlan"
+                class="subscription-value"
+              >
+                —
+              </div>
+            </div>
+
+            <div class="subscription-item">
+              <div class="subscription-label">
+                End Date
+              </div>
+
+              <div
+                id="subscriptionEndDate"
+                class="subscription-value"
+              >
+                —
+              </div>
+            </div>
+
+            <div class="subscription-item">
+              <div class="subscription-label">
+                Amount
+              </div>
+
+              <div
+                id="subscriptionAmount"
+                class="subscription-value"
+              >
+                —
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      <!-- =================================================
+           GROUP CONTEXT
+           ================================================= -->
+
+      <section
+        class="management-card full-width"
+        aria-labelledby="groupContextHeading"
+      >
+        <div class="management-card-header">
+          <h2 id="groupContextHeading">Group Context</h2>
+
+          <p>
+            Current group and access context used by the management page.
+          </p>
+        </div>
+
+        <div class="management-card-body">
+
+          <div class="context-grid">
+
+            <div class="context-item">
+              <div class="context-label">
+                Group
+              </div>
+
+              <div
+                id="groupContextName"
+                class="context-value"
+              >
+                —
+              </div>
+            </div>
+
+            <div class="context-item">
+              <div class="context-label">
+                Role
+              </div>
+
+              <div
+                id="groupContextRole"
+                class="context-value"
+              >
+                —
+              </div>
+            </div>
+
+            <div class="context-item">
+              <div class="context-label">
+                Access
+              </div>
+
+              <div
+                id="contextAccess"
+                class="context-value"
+              >
+                —
+              </div>
+            </div>
+
+            <div class="context-item">
+              <div class="context-label">
+                Country
+              </div>
+
+              <div
+                id="groupContextCountry"
+                class="context-value"
+              >
+                —
+              </div>
+            </div>
+
+          </div>
+
+          <div class="section-note">
+            Access permissions are determined by the authenticated user's
+            authorized group role and the applicable backend authorization
+            rules.
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- =====================================================
+       PAGE BOOT
+       =====================================================
+
+       admin-layout.js remains the sole shell/page boot owner.
+       Do not separately import or auto-run group-management.js
+       here, which could create duplicate initialization.
+       ===================================================== -->
+
+  <noscript>
+    <div
+      style="
+        margin:20px;
+        padding:14px;
+        border:1px solid #fecaca;
+        border-radius:10px;
+        background:#fef2f2;
+        color:#b91c1c;
+        font-family:system-ui,sans-serif;
+      "
+    >
+      CHAMA LIVE Group Management requires JavaScript to load and manage
+      your group securely.
+    </div>
+  </noscript>
+
+  <script type="module">
+    import { boot } from "./js/admin-layout.js";
+
+    /*
+     * admin-layout.js is the single page-shell boot owner.
+     * It is responsible for establishing the authenticated admin
+     * context and loading the appropriate page initializer.
+     */
+    boot();
+  </script>
 
 </body>
-
 </html>
