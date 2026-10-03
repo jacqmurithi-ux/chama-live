@@ -920,11 +920,25 @@
     <div
       id="adminLoading"
       class="management-loading"
+      data-admin-loading
       aria-live="polite"
     >
       <strong>Loading group management...</strong>
       <span>Please wait while your group context is loaded.</span>
     </div>
+
+    <!-- ===================================================
+         INITIALIZATION ERROR
+         =================================================== -->
+
+    <div
+      id="error"
+      class="management-status error"
+      role="alert"
+      aria-live="assertive"
+      aria-atomic="true"
+      hidden
+    ></div>
 
     <!-- ===================================================
          PERMISSION MESSAGE
