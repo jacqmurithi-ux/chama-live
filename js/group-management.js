@@ -1,6 +1,5 @@
 /* ================================================================
    CHAMA LIVE — ADMIN GROUP MANAGEMENT
-   PART 1
 ================================================================ */
 
 import {
@@ -23,7 +22,6 @@ const ACTUAL_POSITION_VALUES = new Set([
     "member",
     "other"
 ]);
-
 
 const STANDARD_GROUP_TYPES = new Map([
     ["chama", "Chama"],
@@ -114,196 +112,121 @@ const elements = {
 
 function refreshDomReferences() {
     elements.groupForm =
-        document.getElementById(
-            "groupForm"
-        );
+        document.getElementById("groupForm");
 
     elements.groupName =
-        document.getElementById(
-            "groupName"
-        );
+        document.getElementById("groupName");
 
     elements.groupCategory =
-        document.getElementById(
-            "groupCategory"
-        );
+        document.getElementById("groupCategory");
 
     elements.groupCategoryOther =
-        document.getElementById(
-            "groupCategoryOther"
-        );
+        document.getElementById("groupCategoryOther");
 
     elements.groupCountry =
-        document.getElementById(
-            "groupCountry"
-        );
+        document.getElementById("groupCountry");
 
     elements.monthlyContribution =
-        document.getElementById(
-            "monthlyContribution"
-        );
+        document.getElementById("monthlyContribution");
 
     elements.groupContextName =
-        document.getElementById(
-            "groupContextName"
-        );
+        document.getElementById("groupContextName");
 
     elements.groupContextRole =
-        document.getElementById(
-            "groupContextRole"
-        );
+        document.getElementById("groupContextRole");
 
     elements.permissionMessage =
-        document.getElementById(
-            "permissionMessage"
-        );
+        document.getElementById("permissionMessage");
 
     elements.memberCount =
-        document.getElementById(
-            "memberCount"
-        );
+        document.getElementById("memberCount");
 
     elements.leadershipForm =
-        document.getElementById(
-            "leadershipForm"
-        );
+        document.getElementById("leadershipForm");
 
     elements.actualPosition =
-        document.getElementById(
-            "actualPosition"
-        );
+        document.getElementById("actualPosition");
 
     elements.leadershipStatus =
-        document.getElementById(
-            "leadershipStatus"
-        );
+        document.getElementById("leadershipStatus");
 
     elements.closingDay =
-        document.getElementById(
-            "closingDay"
-        );
+        document.getElementById("closingDay");
 
     elements.saveContributionSettings =
-        document.getElementById(
-            "saveContributionSettings"
-        );
+        document.getElementById("saveContributionSettings");
 
     elements.calendarContributionAmount =
-        document.getElementById(
-            "calendarContributionAmount"
-        );
+        document.getElementById("calendarContributionAmount");
 
     elements.calendarClosingDay =
-        document.getElementById(
-            "calendarClosingDay"
-        );
+        document.getElementById("calendarClosingDay");
 
     elements.calendarCycleStatus =
-        document.getElementById(
-            "calendarCycleStatus"
-        );
+        document.getElementById("calendarCycleStatus");
 
     elements.subscriptionStatus =
-        document.getElementById(
-            "subscriptionStatus"
-        );
+        document.getElementById("subscriptionStatus");
 
     elements.subscriptionPlan =
-        document.getElementById(
-            "subscriptionPlan"
-        );
+        document.getElementById("subscriptionPlan");
 
     elements.subscriptionAmount =
-        document.getElementById(
-            "subscriptionAmount"
-        );
+        document.getElementById("subscriptionAmount");
 
     elements.contributionTypesList =
-        document.getElementById(
-            "contributionTypesList"
-        );
+        document.getElementById("contributionTypesList");
 
     elements.createInitiativeForm =
-        document.getElementById(
-            "createInitiativeForm"
-        );
+        document.getElementById("createInitiativeForm");
 
     elements.createInitiativeButton =
-        document.getElementById(
-            "createInitiativeButton"
-        );
+        document.getElementById("createInitiativeButton");
 
     elements.initiativeContributionType =
-        document.getElementById(
-            "initiativeContributionType"
-        );
+        document.getElementById("initiativeContributionType");
 
     elements.initiativeName =
-        document.getElementById(
-            "initiativeName"
-        );
+        document.getElementById("initiativeName");
 
     elements.initiativeDescription =
-        document.getElementById(
-            "initiativeDescription"
-        );
+        document.getElementById("initiativeDescription");
 
     elements.initiativeStartDate =
-        document.getElementById(
-            "initiativeStartDate"
-        );
+        document.getElementById("initiativeStartDate");
 
     elements.initiativeClosingDate =
-        document.getElementById(
-            "initiativeClosingDate"
-        );
+        document.getElementById("initiativeClosingDate");
 
     elements.initiativeDefaultAmount =
-        document.getElementById(
-            "initiativeDefaultAmount"
-        );
+        document.getElementById("initiativeDefaultAmount");
 
     elements.initiativeFrequency =
-        document.getElementById(
-            "initiativeFrequency"
-        );
+        document.getElementById("initiativeFrequency");
 
     elements.contributionInitiativesList =
-        document.getElementById(
-            "contributionInitiativesList"
-        );
+        document.getElementById("contributionInitiativesList");
 
     elements.contributionProgramStatus =
-        document.getElementById(
-            "contributionProgramStatus"
-        );
+        document.getElementById("contributionProgramStatus");
 
     elements.fineRulesList =
-        document.getElementById(
-            "fineRulesList"
-        );
+        document.getElementById("fineRulesList");
 }
 
 
 function ensureDomReady() {
-    if (
-        document.readyState ===
-        "loading"
-    ) {
-        return new Promise(
-            (resolve) => {
-                document.addEventListener(
-                    "DOMContentLoaded",
-                    () => {
-                        refreshDomReferences();
-                        resolve();
-                    },
-                    {
-                        once: true
-                    }
-                );
-            }
-        );
+    if (document.readyState === "loading") {
+        return new Promise((resolve) => {
+            document.addEventListener(
+                "DOMContentLoaded",
+                () => {
+                    refreshDomReferences();
+                    resolve();
+                },
+                { once: true }
+            );
+        });
     }
 
     refreshDomReferences();
@@ -316,12 +239,8 @@ function ensureDomReady() {
    GENERAL HELPERS
 ================================================================ */
 
-function normalizeLower(
-    value
-) {
-    return String(
-        value ?? ""
-    )
+function normalizeLower(value) {
+    return String(value ?? "")
         .trim()
         .toLowerCase();
 }
@@ -348,65 +267,44 @@ function applyAuthorization() {
 
 function applyAuthorizationUI() {
     const manager =
-        Boolean(
-            canManageGroup
-        );
+        Boolean(canManageGroup);
 
-    if (
-        elements.groupForm
-    ) {
+    if (elements.groupForm) {
         elements.groupForm
             .querySelectorAll(
                 "input, select, textarea, button"
             )
-            .forEach(
-                (element) => {
-                    element.disabled =
-                        !manager;
-                }
-            );
+            .forEach((element) => {
+                element.disabled = !manager;
+            });
     }
 
-    if (
-        elements.leadershipForm
-    ) {
+    if (elements.leadershipForm) {
         elements.leadershipForm
             .querySelectorAll(
                 "input, select, textarea, button"
             )
-            .forEach(
-                (element) => {
-                    element.disabled =
-                        !manager;
-                }
-            );
+            .forEach((element) => {
+                element.disabled = !manager;
+            });
     }
 
-    if (
-        elements.saveContributionSettings
-    ) {
+    if (elements.saveContributionSettings) {
         elements.saveContributionSettings.disabled =
             !manager;
     }
 
-    if (
-        elements.createInitiativeForm
-    ) {
+    if (elements.createInitiativeForm) {
         elements.createInitiativeForm
             .querySelectorAll(
                 "input, select, textarea, button"
             )
-            .forEach(
-                (element) => {
-                    element.disabled =
-                        !manager;
-                }
-            );
+            .forEach((element) => {
+                element.disabled = !manager;
+            });
     }
 
-    if (
-        elements.permissionMessage
-    ) {
+    if (elements.permissionMessage) {
         elements.permissionMessage.hidden =
             manager;
     }
@@ -423,37 +321,24 @@ function getGroupCategoryValue() {
             elements.groupCategory?.value
         );
 
-    if (
-        category === "other"
-    ) {
+    if (category === "other") {
         return (
-            elements.groupCategoryOther?.value
-                ?.trim() ||
+            elements.groupCategoryOther?.value?.trim() ||
             "other"
         );
     }
 
-    return (
-        STANDARD_GROUP_TYPES.has(
-            category
-        )
-            ? category
-            : category
-    );
+    return STANDARD_GROUP_TYPES.has(category)
+        ? category
+        : category;
 }
 
 
-function setGroupCategoryValue(
-    category
-) {
+function setGroupCategoryValue(category) {
     const normalized =
-        normalizeLower(
-            category
-        );
+        normalizeLower(category);
 
-    if (
-        elements.groupCategory
-    ) {
+    if (elements.groupCategory) {
         if (
             STANDARD_GROUP_TYPES.has(
                 normalized
@@ -467,13 +352,9 @@ function setGroupCategoryValue(
         }
     }
 
-    if (
-        elements.groupCategoryOther
-    ) {
+    if (elements.groupCategoryOther) {
         elements.groupCategoryOther.value =
-            STANDARD_GROUP_TYPES.has(
-                normalized
-            )
+            STANDARD_GROUP_TYPES.has(normalized)
                 ? ""
                 : category || "";
     }
@@ -483,9 +364,14 @@ function setGroupCategoryValue(
 
 
 function syncGroupCategoryOtherVisibility() {
+    /*
+     * HTML uses "otherGroupTypeField".
+     * The previous JavaScript selector used
+     * "groupCategoryOtherField", which does not exist.
+     */
     const wrapper =
         document.getElementById(
-            "groupCategoryOtherField"
+            "otherGroupTypeField"
         );
 
     if (!wrapper) {
@@ -497,8 +383,7 @@ function syncGroupCategoryOtherVisibility() {
             elements.groupCategory?.value
         ) === "other";
 
-    wrapper.hidden =
-        !isOther;
+    wrapper.hidden = !isOther;
 }
 
 
@@ -513,9 +398,7 @@ function renderContributionCycleSummary() {
     const closingDay =
         contributionSettings?.monthly_closing_day;
 
-    if (
-        elements.calendarContributionAmount
-    ) {
+    if (elements.calendarContributionAmount) {
         elements.calendarContributionAmount.textContent =
             amount !== null &&
             amount !== undefined &&
@@ -524,9 +407,7 @@ function renderContributionCycleSummary() {
                 : "—";
     }
 
-    if (
-        elements.calendarClosingDay
-    ) {
+    if (elements.calendarClosingDay) {
         elements.calendarClosingDay.textContent =
             closingDay !== null &&
             closingDay !== undefined &&
@@ -535,9 +416,7 @@ function renderContributionCycleSummary() {
                 : "—";
     }
 
-    if (
-        elements.calendarCycleStatus
-    ) {
+    if (elements.calendarCycleStatus) {
         elements.calendarCycleStatus.textContent =
             closingDay !== null &&
             closingDay !== undefined &&
@@ -557,9 +436,7 @@ function renderGroup() {
         return;
     }
 
-    if (
-        elements.groupName
-    ) {
+    if (elements.groupName) {
         elements.groupName.value =
             currentGroup.name || "";
     }
@@ -568,32 +445,23 @@ function renderGroup() {
         currentGroup.category || ""
     );
 
-    if (
-        elements.groupCountry
-    ) {
+    if (elements.groupCountry) {
         elements.groupCountry.value =
             currentGroup.country || "";
     }
 
-    if (
-        elements.monthlyContribution
-    ) {
+    if (elements.monthlyContribution) {
         elements.monthlyContribution.value =
-            currentGroup.monthly_contribution ??
-            "";
+            currentGroup.monthly_contribution ?? "";
     }
 
-    if (
-        elements.groupContextName
-    ) {
+    if (elements.groupContextName) {
         elements.groupContextName.textContent =
             currentGroup.name ||
             "Current group";
     }
 
-    if (
-        elements.groupContextRole
-    ) {
+    if (elements.groupContextRole) {
         elements.groupContextRole.textContent =
             currentRole ||
             "—";
@@ -609,9 +477,7 @@ function renderGroup() {
    GROUP INFORMATION SAVE
 ================================================================ */
 
-async function saveGroupInformation(
-    event
-) {
+async function saveGroupInformation(event) {
     event?.preventDefault();
 
     if (!currentGroup?.id) {
@@ -627,20 +493,17 @@ async function saveGroupInformation(
     }
 
     const name =
-        elements.groupName?.value
-            ?.trim();
+        elements.groupName?.value?.trim();
 
     const category =
         getGroupCategoryValue();
 
     const country =
-        elements.groupCountry?.value
-            ?.trim();
+        elements.groupCountry?.value?.trim();
 
     const monthlyContribution =
         Number(
-            elements.monthlyContribution?.value ||
-            0
+            elements.monthlyContribution?.value || 0
         );
 
     if (!name) {
@@ -650,9 +513,7 @@ async function saveGroupInformation(
     }
 
     if (
-        !Number.isFinite(
-            monthlyContribution
-        ) ||
+        !Number.isFinite(monthlyContribution) ||
         monthlyContribution < 0
     ) {
         throw new Error(
@@ -660,21 +521,20 @@ async function saveGroupInformation(
         );
     }
 
-    const {
-        error
-    } = await supabase
-        .from("groups")
-        .update({
-            name,
-            category,
-            country,
-            monthly_contribution:
-                monthlyContribution
-        })
-        .eq(
-            "id",
-            currentGroup.id
-        );
+    const { error } =
+        await supabase
+            .from("groups")
+            .update({
+                name,
+                category,
+                country,
+                monthly_contribution:
+                    monthlyContribution
+            })
+            .eq(
+                "id",
+                currentGroup.id
+            );
 
     if (error) {
         throw error;
@@ -691,9 +551,7 @@ async function saveGroupInformation(
 
     renderGroup();
 
-    if (
-        elements.contributionProgramStatus
-    ) {
+    if (elements.contributionProgramStatus) {
         elements.contributionProgramStatus.textContent =
             "Group information saved successfully.";
 
@@ -712,16 +570,14 @@ async function loadLeadershipSetup() {
         return;
     }
 
-    const {
-        data,
-        error
-    } = await supabase.rpc(
-        "get_group_leadership_setup",
-        {
-            p_group_id:
-                currentGroup.id
-        }
-    );
+    const { data, error } =
+        await supabase.rpc(
+            "get_group_leadership_setup",
+            {
+                p_group_id:
+                    currentGroup.id
+            }
+        );
 
     if (error) {
         throw error;
@@ -732,17 +588,12 @@ async function loadLeadershipSetup() {
             ? data[0] || null
             : data || null;
 
-    if (
-        elements.actualPosition
-    ) {
+    if (elements.actualPosition) {
         elements.actualPosition.value =
-            leadership?.actual_position ||
-            "";
+            leadership?.actual_position || "";
     }
 
-    if (
-        elements.leadershipStatus
-    ) {
+    if (elements.leadershipStatus) {
         elements.leadershipStatus.textContent =
             leadership?.actual_position
                 ? "Leadership position loaded."
@@ -751,9 +602,7 @@ async function loadLeadershipSetup() {
 }
 
 
-async function saveAdminActualPosition(
-    event
-) {
+async function saveAdminActualPosition(event) {
     event?.preventDefault();
 
     if (!currentGroup?.id) {
@@ -774,35 +623,29 @@ async function saveAdminActualPosition(
         );
 
     if (
-        !ACTUAL_POSITION_VALUES.has(
-            position
-        )
+        !ACTUAL_POSITION_VALUES.has(position)
     ) {
         throw new Error(
             "Please select a valid leadership position."
         );
     }
 
-    const {
-        error
-    } = await supabase.rpc(
-        "set_group_admin_actual_position",
-        {
-            p_group_id:
-                currentGroup.id,
-
-            p_actual_position:
-                position
-        }
-    );
+    const { error } =
+        await supabase.rpc(
+            "set_group_admin_actual_position",
+            {
+                p_group_id:
+                    currentGroup.id,
+                p_actual_position:
+                    position
+            }
+        );
 
     if (error) {
         throw error;
     }
 
-    if (
-        elements.leadershipStatus
-    ) {
+    if (elements.leadershipStatus) {
         elements.leadershipStatus.textContent =
             "Leadership position saved successfully.";
 
@@ -842,13 +685,9 @@ async function loadMemberCount() {
         throw error;
     }
 
-    if (
-        elements.memberCount
-    ) {
+    if (elements.memberCount) {
         elements.memberCount.textContent =
-            String(
-                count ?? 0
-            );
+            String(count ?? 0);
     }
 }
 
@@ -895,9 +734,7 @@ async function loadContributionSettings() {
 }
 
 
-async function saveContributionSettings(
-    event
-) {
+async function saveContributionSettings(event) {
     event?.preventDefault();
 
     if (!currentGroup?.id) {
@@ -913,19 +750,14 @@ async function saveContributionSettings(
     }
 
     const rawClosingDay =
-        elements.closingDay?.value
-            ?.trim();
+        elements.closingDay?.value?.trim();
 
     const closingDay =
-        Number(
-            rawClosingDay
-        );
+        Number(rawClosingDay);
 
     if (
         !rawClosingDay ||
-        !Number.isInteger(
-            closingDay
-        ) ||
+        !Number.isInteger(closingDay) ||
         closingDay < 1 ||
         closingDay > 31
     ) {
@@ -934,18 +766,16 @@ async function saveContributionSettings(
         );
     }
 
-    const {
-        error
-    } = await supabase.rpc(
-        "update_group_contribution_settings",
-        {
-            p_group_id:
-                currentGroup.id,
-
-            p_monthly_closing_day:
-                closingDay
-        }
-    );
+    const { error } =
+        await supabase.rpc(
+            "update_group_contribution_settings",
+            {
+                p_group_id:
+                    currentGroup.id,
+                p_monthly_closing_day:
+                    closingDay
+            }
+        );
 
     if (error) {
         throw error;
@@ -953,9 +783,7 @@ async function saveContributionSettings(
 
     await loadContributionSettings();
 
-    if (
-        elements.contributionProgramStatus
-    ) {
+    if (elements.contributionProgramStatus) {
         elements.contributionProgramStatus.textContent =
             "Contribution closing day saved successfully.";
 
@@ -994,32 +822,23 @@ async function loadSubscription() {
             ? data[0] || null
             : data || null;
 
-    if (
-        elements.subscriptionStatus
-    ) {
+    if (elements.subscriptionStatus) {
         elements.subscriptionStatus.textContent =
-            subscription?.status ||
-            "—";
+            subscription?.status || "—";
     }
 
-    if (
-        elements.subscriptionPlan
-    ) {
+    if (elements.subscriptionPlan) {
         elements.subscriptionPlan.textContent =
             subscription?.plan_name ||
             subscription?.plan ||
             "—";
     }
 
-    if (
-        elements.subscriptionAmount
-    ) {
+    if (elements.subscriptionAmount) {
         elements.subscriptionAmount.textContent =
             subscription?.amount !== null &&
             subscription?.amount !== undefined
-                ? String(
-                    subscription.amount
-                )
+                ? String(subscription.amount)
                 : "—";
     }
 }
@@ -1043,51 +862,36 @@ function renderContributionTypeOptions() {
     select.replaceChildren();
 
     const placeholder =
-        document.createElement(
-            "option"
-        );
+        document.createElement("option");
 
-    placeholder.value =
-        "";
-
+    placeholder.value = "";
     placeholder.textContent =
         "Select contribution type";
 
-    select.appendChild(
-        placeholder
-    );
+    select.appendChild(placeholder);
 
-    contributionTypes.forEach(
-        (type) => {
-            const option =
-                document.createElement(
-                    "option"
-                );
+    contributionTypes.forEach((type) => {
+        const option =
+            document.createElement("option");
 
-            option.value =
-                type.id;
+        option.value = type.id;
 
-            option.textContent =
-                type.name ||
-                type.code ||
-                "Contribution type";
+        option.textContent =
+            type.name ||
+            type.code ||
+            "Contribution type";
 
-            select.appendChild(
-                option
-            );
-        }
-    );
+        select.appendChild(option);
+    });
 
     if (
         currentValue &&
         contributionTypes.some(
             (type) =>
-                type.id ===
-                currentValue
+                type.id === currentValue
         )
     ) {
-        select.value =
-            currentValue;
+        select.value = currentValue;
     }
 }
 
@@ -1113,39 +917,33 @@ function renderContributionTypes() {
         return;
     }
 
-    contributionTypes.forEach(
-        (type) => {
-            const item =
-                document.createElement(
-                    "div"
-                );
+    contributionTypes.forEach((type) => {
+        const item =
+            document.createElement("div");
 
-            item.className =
-                "program-item";
+        item.className =
+            "program-item";
 
-            appendTextRow(
-                item,
-                "Name",
-                type.name || "—"
-            );
+        appendTextRow(
+            item,
+            "Name",
+            type.name || "—"
+        );
 
-            appendTextRow(
-                item,
-                "Code",
-                type.code || "—"
-            );
+        appendTextRow(
+            item,
+            "Code",
+            type.code || "—"
+        );
 
-            appendTextRow(
-                item,
-                "Status",
-                type.status || "—"
-            );
+        appendTextRow(
+            item,
+            "Status",
+            type.status || "—"
+        );
 
-            container.appendChild(
-                item
-            );
-        }
-    );
+        container.appendChild(item);
+    });
 
     renderContributionTypeOptions();
 }
@@ -1160,9 +958,7 @@ async function loadContributionTypes() {
         data,
         error
     } = await supabase
-        .from(
-            "contribution_types"
-        )
+        .from("contribution_types")
         .select(
             [
                 "id",
@@ -1207,17 +1003,13 @@ function appendTextRow(
     value
 ) {
     const row =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     row.className =
         "program-row";
 
     const labelElement =
-        document.createElement(
-            "span"
-        );
+        document.createElement("span");
 
     labelElement.className =
         "program-label";
@@ -1226,9 +1018,7 @@ function appendTextRow(
         label;
 
     const valueElement =
-        document.createElement(
-            "span"
-        );
+        document.createElement("span");
 
     valueElement.className =
         "program-value";
@@ -1241,9 +1031,7 @@ function appendTextRow(
         valueElement
     );
 
-    container.appendChild(
-        row
-    );
+    container.appendChild(row);
 }
 
 
@@ -1252,9 +1040,7 @@ function appendEmptyState(
     message
 ) {
     const empty =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     empty.className =
         "program-empty";
@@ -1262,9 +1048,7 @@ function appendEmptyState(
     empty.textContent =
         message;
 
-    container.appendChild(
-        empty
-    );
+    container.appendChild(empty);
 }
 
 
@@ -1278,10 +1062,8 @@ function getInitiativeById(
     return (
         contributionInitiatives.find(
             (initiative) =>
-                initiative.id ===
-                initiativeId
-        ) ||
-        null
+                initiative.id === initiativeId
+        ) || null
     );
 }
 
@@ -1300,16 +1082,15 @@ function isMonthlyInitiative(
 function isOneTimeInitiative(
     initiative
 ) {
+    const frequency =
+        normalizeLower(
+            initiative?.frequency
+        );
+
     return (
-        normalizeLower(
-            initiative?.frequency
-        ) === "one_time" ||
-        normalizeLower(
-            initiative?.frequency
-        ) === "once" ||
-        normalizeLower(
-            initiative?.frequency
-        ) === "one-time"
+        frequency === "one_time" ||
+        frequency === "once" ||
+        frequency === "one-time"
     );
 }
 
@@ -1349,10 +1130,7 @@ function getFirstFullRecurringMonth(
         first.getFullYear(),
         String(
             first.getMonth() + 1
-        ).padStart(
-            2,
-            "0"
-        ),
+        ).padStart(2, "0"),
         "01"
     ].join("-");
 }
@@ -1366,11 +1144,203 @@ function getCurrentRecurringPeriodKey() {
         now.getFullYear(),
         String(
             now.getMonth() + 1
-        ).padStart(
-            2,
-            "0"
-        )
+        ).padStart(2, "0")
     ].join("-");
+}
+
+
+/* ================================================================
+   CREATE CONTRIBUTION INITIATIVE
+================================================================ */
+
+async function createContributionInitiative(
+    event
+) {
+    event?.preventDefault();
+
+    if (!currentGroup?.id) {
+        throw new Error(
+            "No active group is available."
+        );
+    }
+
+    if (!isInitiativeManager()) {
+        throw new Error(
+            "Initiative creation requires an admin or chairperson role."
+        );
+    }
+
+    const contributionTypeId =
+        elements.initiativeContributionType?.value?.trim();
+
+    const name =
+        elements.initiativeName?.value?.trim();
+
+    const description =
+        elements.initiativeDescription?.value?.trim() ||
+        null;
+
+    const startDate =
+        elements.initiativeStartDate?.value?.trim();
+
+    const closingDate =
+        elements.initiativeClosingDate?.value?.trim();
+
+    const rawAmount =
+        elements.initiativeDefaultAmount?.value?.trim();
+
+    const frequency =
+        normalizeLower(
+            elements.initiativeFrequency?.value
+        );
+
+    if (!contributionTypeId) {
+        throw new Error(
+            "Please select a contribution type."
+        );
+    }
+
+    if (
+        !contributionTypes.some(
+            (type) =>
+                type.id === contributionTypeId
+        )
+    ) {
+        throw new Error(
+            "The selected contribution type is not available for the current group."
+        );
+    }
+
+    if (!name) {
+        throw new Error(
+            "Initiative name is required."
+        );
+    }
+
+    if (!startDate) {
+        throw new Error(
+            "Initiative start date is required."
+        );
+    }
+
+    if (!closingDate) {
+        throw new Error(
+            "Initiative closing date is required."
+        );
+    }
+
+    if (
+        closingDate <
+        startDate
+    ) {
+        throw new Error(
+            "Initiative closing date cannot be before the start date."
+        );
+    }
+
+    if (
+        frequency !== "monthly" &&
+        !isOneTimeInitiative({
+            frequency
+        })
+    ) {
+        throw new Error(
+            "Please select a valid initiative frequency."
+        );
+    }
+
+    let defaultAmount = null;
+
+    if (rawAmount) {
+        defaultAmount =
+            Number(rawAmount);
+
+        if (
+            !Number.isFinite(
+                defaultAmount
+            ) ||
+            defaultAmount < 0
+        ) {
+            throw new Error(
+                "Default amount must be a valid non-negative number."
+            );
+        }
+    }
+
+    const payload = {
+        group_id:
+            currentGroup.id,
+
+        contribution_type_id:
+            contributionTypeId,
+
+        name,
+
+        description,
+
+        start_date:
+            startDate,
+
+        closing_date:
+            closingDate,
+
+        default_amount:
+            defaultAmount,
+
+        frequency,
+
+        status:
+            "draft"
+    };
+
+    const {
+        data,
+        error
+    } = await supabase
+        .from("contribution_initiatives")
+        .insert(payload)
+        .select(
+            [
+                "id",
+                "contribution_type_id",
+                "name",
+                "description",
+                "start_date",
+                "closing_date",
+                "default_amount",
+                "frequency",
+                "status",
+                "created_at",
+                "updated_at"
+            ].join(", ")
+        )
+        .single();
+
+    if (error) {
+        throw error;
+    }
+
+    await loadContributionInitiatives();
+
+    if (
+        elements.createInitiativeForm
+    ) {
+        elements.createInitiativeForm.reset();
+    }
+
+    renderContributionTypeOptions();
+
+    if (
+        elements.contributionProgramStatus
+    ) {
+        elements.contributionProgramStatus.textContent =
+            `Contribution initiative "${data?.name || name}" created as Draft. Configure its participants before activation.`;
+
+        elements.contributionProgramStatus.className =
+            "program-status ready";
+    }
+
+    return data;
 }
 
 
@@ -1494,8 +1464,7 @@ function getParticipantStatus(
             (participant) =>
                 participant.member_id ===
                 memberId
-        ) ||
-        null
+        ) || null
     );
 }
 
@@ -1510,9 +1479,7 @@ function createParticipantRow(
     } = options;
 
     const row =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     row.className =
         "initiative-participant-row";
@@ -1521,9 +1488,7 @@ function createParticipantRow(
         member.id;
 
     const checkbox =
-        document.createElement(
-            "input"
-        );
+        document.createElement("input");
 
     checkbox.type =
         "checkbox";
@@ -1532,14 +1497,10 @@ function createParticipantRow(
         member.id;
 
     checkbox.checked =
-        Boolean(
-            participant
-        );
+        Boolean(participant);
 
     const name =
-        document.createElement(
-            "span"
-        );
+        document.createElement("span");
 
     name.className =
         "initiative-participant-name";
@@ -1555,9 +1516,7 @@ function createParticipantRow(
 
     if (recurring) {
         const amount =
-            document.createElement(
-                "input"
-            );
+            document.createElement("input");
 
         amount.type =
             "number";
@@ -1575,16 +1534,13 @@ function createParticipantRow(
             member.id;
 
         amount.value =
-            participant?.amount ??
-            "";
+            participant?.amount ?? "";
 
         amount.placeholder =
             "Amount";
 
         const effective =
-            document.createElement(
-                "input"
-            );
+            document.createElement("input");
 
         effective.type =
             "date";
@@ -1596,8 +1552,7 @@ function createParticipantRow(
             member.id;
 
         effective.value =
-            participant?.effective_from ??
-            "";
+            participant?.effective_from ?? "";
 
         row.append(
             amount,
@@ -1627,9 +1582,7 @@ function renderOneTimeParticipantEditor(
     clearInitiativeParticipantEditor();
 
     const editor =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     editor.className =
         "initiative-participant-editor";
@@ -1638,62 +1591,46 @@ function renderOneTimeParticipantEditor(
         initiative.id;
 
     const heading =
-        document.createElement(
-            "h4"
-        );
+        document.createElement("h4");
 
     heading.textContent =
         `Configure participants — ${initiative.name || "Initiative"}`;
 
-    editor.appendChild(
-        heading
-    );
+    editor.appendChild(heading);
 
     const description =
-        document.createElement(
-            "p"
-        );
+        document.createElement("p");
 
     description.textContent =
         "Select the members who should participate in this one-time initiative.";
 
-    editor.appendChild(
-        description
-    );
+    editor.appendChild(description);
 
     const list =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     list.className =
         "initiative-participant-list";
 
-    initiativeMembers.forEach(
-        (member) => {
-            const participant =
-                getParticipantStatus(
-                    state,
-                    member.id
-                );
-
-            list.appendChild(
-                createParticipantRow(
-                    member,
-                    participant
-                )
+    initiativeMembers.forEach((member) => {
+        const participant =
+            getParticipantStatus(
+                state,
+                member.id
             );
-        }
-    );
 
-    editor.appendChild(
-        list
-    );
+        list.appendChild(
+            createParticipantRow(
+                member,
+                participant
+            )
+        );
+    });
+
+    editor.appendChild(list);
 
     const status =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     status.className =
         "initiative-participant-status";
@@ -1701,22 +1638,16 @@ function renderOneTimeParticipantEditor(
     editor._participantStatus =
         status;
 
-    editor.appendChild(
-        status
-    );
+    editor.appendChild(status);
 
     const actions =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     actions.className =
         "program-actions";
 
     const saveButton =
-        document.createElement(
-            "button"
-        );
+        document.createElement("button");
 
     saveButton.type =
         "button";
@@ -1732,9 +1663,7 @@ function renderOneTimeParticipantEditor(
         "Save Participants";
 
     const cancelButton =
-        document.createElement(
-            "button"
-        );
+        document.createElement("button");
 
     cancelButton.type =
         "button";
@@ -1754,13 +1683,9 @@ function renderOneTimeParticipantEditor(
         cancelButton
     );
 
-    editor.appendChild(
-        actions
-    );
+    editor.appendChild(actions);
 
-    container.appendChild(
-        editor
-    );
+    container.appendChild(editor);
 }
 
 
@@ -1886,14 +1811,11 @@ async function saveInitiativeParticipants(
         );
 
     for (
-        const memberId
-        of selectedIds
+        const memberId of selectedIds
     ) {
         if (
             !memberId ||
-            !memberIds.has(
-                memberId
-            )
+            !memberIds.has(memberId)
         ) {
             throw new Error(
                 "One or more selected members do not belong to the current group."
@@ -1923,13 +1845,11 @@ async function saveInitiativeParticipants(
     }
 
     if (saveButton) {
-        saveButton.disabled =
-            true;
+        saveButton.disabled = true;
     }
 
     if (cancelButton) {
-        cancelButton.disabled =
-            true;
+        cancelButton.disabled = true;
     }
 
     try {
@@ -1977,13 +1897,11 @@ async function saveInitiativeParticipants(
         }
 
         if (saveButton) {
-            saveButton.disabled =
-                false;
+            saveButton.disabled = false;
         }
 
         if (cancelButton) {
-            cancelButton.disabled =
-                false;
+            cancelButton.disabled = false;
         }
 
         throw error;
@@ -2100,9 +2018,7 @@ function renderRecurringParticipantEditor(
     clearInitiativeParticipantEditor();
 
     const editor =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     editor.className =
         "initiative-participant-editor";
@@ -2111,66 +2027,49 @@ function renderRecurringParticipantEditor(
         initiative.id;
 
     const heading =
-        document.createElement(
-            "h4"
-        );
+        document.createElement("h4");
 
     heading.textContent =
         `Configure recurring participants — ${initiative.name || "Initiative"}`;
 
-    editor.appendChild(
-        heading
-    );
+    editor.appendChild(heading);
 
     const description =
-        document.createElement(
-            "p"
-        );
+        document.createElement("p");
 
     description.textContent =
         "Select each participating member and define the amount and first effective calendar month for the recurring term.";
 
-    editor.appendChild(
-        description
-    );
+    editor.appendChild(description);
 
     const list =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     list.className =
         "initiative-participant-list";
 
-    initiativeMembers.forEach(
-        (member) => {
-            const participant =
-                getParticipantStatus(
-                    state,
-                    member.id
-                );
-
-            list.appendChild(
-                createParticipantRow(
-                    member,
-                    participant,
-                    {
-                        recurring:
-                            true
-                    }
-                )
+    initiativeMembers.forEach((member) => {
+        const participant =
+            getParticipantStatus(
+                state,
+                member.id
             );
-        }
-    );
 
-    editor.appendChild(
-        list
-    );
+        list.appendChild(
+            createParticipantRow(
+                member,
+                participant,
+                {
+                    recurring: true
+                }
+            )
+        );
+    });
+
+    editor.appendChild(list);
 
     const status =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     status.className =
         "initiative-participant-status";
@@ -2178,22 +2077,16 @@ function renderRecurringParticipantEditor(
     editor._participantStatus =
         status;
 
-    editor.appendChild(
-        status
-    );
+    editor.appendChild(status);
 
     const actions =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     actions.className =
         "program-actions";
 
     const saveButton =
-        document.createElement(
-            "button"
-        );
+        document.createElement("button");
 
     saveButton.type =
         "button";
@@ -2209,9 +2102,7 @@ function renderRecurringParticipantEditor(
         "Save Recurring Terms";
 
     const cancelButton =
-        document.createElement(
-            "button"
-        );
+        document.createElement("button");
 
     cancelButton.type =
         "button";
@@ -2231,14 +2122,12 @@ function renderRecurringParticipantEditor(
         cancelButton
     );
 
-    editor.appendChild(
-        actions
-    );
+    editor.appendChild(actions);
 
-    container.appendChild(
-        editor
-    );
+    container.appendChild(editor);
 }
+
+
 /* ================================================================
    RECURRING PARTICIPANT CONFIGURATION
 ================================================================ */
@@ -2436,18 +2325,14 @@ async function saveRecurringParticipants(
         }
 
         if (
-            selectedIds.has(
-                memberId
-            )
+            selectedIds.has(memberId)
         ) {
             throw new Error(
                 "A member was selected more than once."
             );
         }
 
-        selectedIds.add(
-            memberId
-        );
+        selectedIds.add(memberId);
 
         const amountInput =
             Array.from(
@@ -2608,11 +2493,6 @@ async function saveRecurringParticipants(
             throw participantError;
         }
 
-        /*
-         * Preserve the existing frontend contract:
-         * the member-term RPC requires the canonical
-         * contribution_initiative_members identity.
-         */
         const {
             data: currentParticipants,
             error: currentParticipantError
@@ -2646,8 +2526,7 @@ async function saveRecurringParticipants(
             );
 
         for (
-            const participant
-            of participants
+            const participant of participants
         ) {
             const initiativeMemberId =
                 participantIds.get(
@@ -2660,27 +2539,26 @@ async function saveRecurringParticipants(
                 );
             }
 
-            const {
-                error
-            } = await supabase.rpc(
-                "set_contribution_initiative_member_term",
-                {
-                    p_initiative_member_id:
-                        initiativeMemberId,
+            const { error } =
+                await supabase.rpc(
+                    "set_contribution_initiative_member_term",
+                    {
+                        p_initiative_member_id:
+                            initiativeMemberId,
 
-                    p_effective_from:
-                        participant.effective_from,
+                        p_effective_from:
+                            participant.effective_from,
 
-                    p_amount:
-                        participant.amount,
+                        p_amount:
+                            participant.amount,
 
-                    p_status:
-                        "active",
+                        p_status:
+                            "active",
 
-                    p_request_id:
-                        crypto.randomUUID()
-                }
-            );
+                        p_request_id:
+                            crypto.randomUUID()
+                    }
+                );
 
             if (error) {
                 throw error;
@@ -2691,7 +2569,9 @@ async function saveRecurringParticipants(
 
         clearInitiativeParticipantEditor();
 
-        if (elements.contributionProgramStatus) {
+        if (
+            elements.contributionProgramStatus
+        ) {
             elements.contributionProgramStatus.textContent =
                 "Recurring participant terms saved. The initiative remains Draft until recurring activation.";
 
@@ -2770,18 +2650,17 @@ async function activateRecurringInitiative(
     const requestId =
         crypto.randomUUID();
 
-    const {
-        error
-    } = await supabase.rpc(
-        "activate_recurring_contribution_initiative",
-        {
-            p_initiative_id:
-                initiative.id,
+    const { error } =
+        await supabase.rpc(
+            "activate_recurring_contribution_initiative",
+            {
+                p_initiative_id:
+                    initiative.id,
 
-            p_request_id:
-                requestId
-        }
-    );
+                p_request_id:
+                    requestId
+            }
+        );
 
     if (error) {
         throw error;
@@ -2789,7 +2668,9 @@ async function activateRecurringInitiative(
 
     await loadContributionInitiatives();
 
-    if (elements.contributionProgramStatus) {
+    if (
+        elements.contributionProgramStatus
+    ) {
         elements.contributionProgramStatus.textContent =
             "Recurring initiative activated. Prepare an eligible calendar period to generate its obligations.";
 
@@ -2966,7 +2847,9 @@ async function prepareRecurringCurrentPeriod(
         status?.generated_obligation_count ??
         0;
 
-    if (elements.contributionProgramStatus) {
+    if (
+        elements.contributionProgramStatus
+    ) {
         elements.contributionProgramStatus.textContent =
             `Recurring period ${periodKey} prepared. ${resolvedCount} obligation(s) are available for this initiative period.`;
 
@@ -3013,6 +2896,95 @@ async function loadRecurringPeriodStatus(
     }
 
     return data;
+}
+
+
+/* ================================================================
+   CLOSE CONTRIBUTION INITIATIVE
+================================================================ */
+
+async function closeContributionInitiative(
+    initiativeId
+) {
+    if (!currentGroup?.id) {
+        throw new Error(
+            "No active group is available."
+        );
+    }
+
+    if (!isInitiativeManager()) {
+        throw new Error(
+            "Initiative closure requires an admin or chairperson role."
+        );
+    }
+
+    const initiative =
+        getInitiativeById(
+            initiativeId
+        );
+
+    if (!initiative) {
+        throw new Error(
+            "The selected initiative is no longer available."
+        );
+    }
+
+    if (
+        normalizeLower(
+            initiative.status
+        ) !== "active"
+    ) {
+        throw new Error(
+            "Only active initiatives can be closed."
+        );
+    }
+
+    const confirmed =
+        window.confirm(
+            `Close "${initiative.name || "this initiative"}"? Historical accounting will remain preserved.`
+        );
+
+    if (!confirmed) {
+        return {
+            cancelled: true
+        };
+    }
+
+    const {
+        error
+    } = await supabase
+        .from("contribution_initiatives")
+        .update({
+            status: "closed"
+        })
+        .eq(
+            "id",
+            initiative.id
+        )
+        .eq(
+            "group_id",
+            currentGroup.id
+        );
+
+    if (error) {
+        throw error;
+    }
+
+    await loadContributionInitiatives();
+
+    if (
+        elements.contributionProgramStatus
+    ) {
+        elements.contributionProgramStatus.textContent =
+            "Contribution initiative closed successfully. Historical accounting remains preserved.";
+
+        elements.contributionProgramStatus.className =
+            "program-status ready";
+    }
+
+    return {
+        success: true
+    };
 }
 
 
@@ -3166,9 +3138,7 @@ function renderContributionInitiatives() {
                         activateButton
                     );
 
-                    item.appendChild(
-                        actions
-                    );
+                    item.appendChild(actions);
 
                     const statusMessage =
                         document.createElement(
@@ -3243,9 +3213,7 @@ function renderContributionInitiatives() {
                         );
                     }
 
-                    item.appendChild(
-                        actions
-                    );
+                    item.appendChild(actions);
 
                     const statusMessage =
                         document.createElement(
@@ -3280,9 +3248,7 @@ function renderContributionInitiatives() {
                     );
                 }
 
-                container.appendChild(
-                    item
-                );
+                container.appendChild(item);
 
                 return;
             }
@@ -3345,9 +3311,7 @@ function renderContributionInitiatives() {
                         activateButton
                     );
 
-                    item.appendChild(
-                        actions
-                    );
+                    item.appendChild(actions);
 
                     const statusMessage =
                         document.createElement(
@@ -3397,9 +3361,7 @@ function renderContributionInitiatives() {
                         closeButton
                     );
 
-                    item.appendChild(
-                        actions
-                    );
+                    item.appendChild(actions);
                 } else if (
                     status === "closed"
                 ) {
@@ -3420,9 +3382,7 @@ function renderContributionInitiatives() {
                 }
             }
 
-            container.appendChild(
-                item
-            );
+            container.appendChild(item);
         }
     );
 }
@@ -3544,9 +3504,7 @@ function renderFineRules() {
                 rule.status || "—"
             );
 
-            container.appendChild(
-                item
-            );
+            container.appendChild(item);
         }
     );
 }
@@ -3693,9 +3651,7 @@ function reportInitializationError(
 
         if (stored) {
             const parsed =
-                JSON.parse(
-                    stored
-                );
+                JSON.parse(stored);
 
             if (Array.isArray(parsed)) {
                 errors = parsed;
@@ -3710,16 +3666,12 @@ function reportInitializationError(
         errors = [];
     }
 
-    errors.push(
-        message
-    );
+    errors.push(message);
 
     elements.contributionProgramStatus
         .dataset
         .initializationErrors =
-        JSON.stringify(
-            errors
-        );
+        JSON.stringify(errors);
 
     elements.contributionProgramStatus.textContent =
         errors.join(" ");
@@ -3729,9 +3681,7 @@ function reportInitializationError(
 }
 
 
-function renderInitializationFailure(
-    error
-) {
+function renderInitializationFailure(error) {
     console.error(
         "[Group Management] Initialization failed:",
         error
@@ -3778,9 +3728,6 @@ function bindEvents() {
         return;
     }
 
-    /*
-     * DOM references must already have been resolved.
-     */
     refreshDomReferences();
 
 
@@ -3792,9 +3739,7 @@ function bindEvents() {
         "submit",
         async (event) => {
             try {
-                await saveGroupInformation(
-                    event
-                );
+                await saveGroupInformation(event);
             } catch (error) {
                 console.error(
                     "Failed to save group information:",
@@ -4361,12 +4306,6 @@ function bindEvents() {
         }
     );
 
-    /*
-     * Synchronize the initial state as well.
-     * This prevents the "Other" field from remaining visible
-     * simply because the page loaded before the user changed
-     * the category selector.
-     */
     syncGroupCategoryOtherVisibility();
 
     eventsBound = true;
@@ -4385,117 +4324,63 @@ async function initializeGroupManagement() {
     initializationPromise =
         (async () => {
 
-            /*
-             * ----------------------------------------------------
-             * STEP 0 — WAIT FOR DOM AND RESOLVE PAGE ELEMENTS
-             *
-             * This must happen before bindEvents().
-             *
-             * The admin loader may import this module before the
-             * page DOM has completed parsing.
-             * ----------------------------------------------------
-             */
             await ensureDomReady();
 
-
-            /*
-             * ----------------------------------------------------
-             * STEP 1 — BIND EVENTS
-             * ----------------------------------------------------
-             */
             bindEvents();
 
-
-            /*
-             * ----------------------------------------------------
-             * STEP 2 — LOAD APPLICATION CONTEXT
-             * ----------------------------------------------------
-             */
             await loadApplicationContext();
 
-
-            /*
-             * ----------------------------------------------------
-             * STEP 3 — APPLY AUTHORIZATION IMMEDIATELY
-             * ----------------------------------------------------
-             */
             applyAuthorizationUI();
 
-
-            /*
-             * ----------------------------------------------------
-             * STEP 4 — CLEAR PREVIOUS INITIALIZATION ERRORS
-             * ----------------------------------------------------
-             */
             if (
                 elements.contributionProgramStatus
             ) {
-                delete elements.contributionProgramStatus
+                delete elements
+                    .contributionProgramStatus
                     .dataset
                     .initializationErrors;
             }
 
-
-            /*
-             * ----------------------------------------------------
-             * STEP 5 — LOAD INDEPENDENT SECTIONS
-             *
-             * One failed section must not block the others.
-             * ----------------------------------------------------
-             */
             const loaders = [
                 {
                     section:
                         "leadership",
-
                     loader:
                         loadLeadershipSetup
                 },
-
                 {
                     section:
                         "member count",
-
                     loader:
                         loadMemberCount
                 },
-
                 {
                     section:
                         "contribution settings",
-
                     loader:
                         loadContributionSettings
                 },
-
                 {
                     section:
                         "subscription",
-
                     loader:
                         loadSubscription
                 },
-
                 {
                     section:
                         "contribution types",
-
                     loader:
                         loadContributionTypes
                 },
-
                 {
                     section:
                         "contribution initiatives",
-
                     loader:
                         loadContributionInitiatives
                 },
-
                 {
                     section:
                         "fine rules",
-
                     loader:
                         loadFineRules
                 }
@@ -4526,7 +4411,6 @@ async function initializeGroupManagement() {
                                     section,
                                     success:
                                         false,
-
                                     error
                                 };
                             }
@@ -4534,20 +4418,8 @@ async function initializeGroupManagement() {
                     )
                 );
 
-
-            /*
-             * ----------------------------------------------------
-             * STEP 6 — REAPPLY AUTHORIZATION
-             * ----------------------------------------------------
-             */
             applyAuthorizationUI();
 
-
-            /*
-             * ----------------------------------------------------
-             * STEP 7 — REPORT PARTIAL INITIALIZATION
-             * ----------------------------------------------------
-             */
             const failedSections =
                 results
                     .filter(
