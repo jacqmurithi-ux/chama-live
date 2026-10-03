@@ -16,10 +16,16 @@
        getMyApplicationContext()
 
    MEMBERSHIP RULE:
-       members.status controls membership accounting.
+       Every member row belonging to the current group is
+       part of the group membership population.
 
-       onboarding_status is NOT used to determine whether
-       a member is financially active.
+       members.status is NOT used to exclude a member from
+       group membership.
+
+       onboarding_status is NOT used to determine membership.
+
+       Financial/accounting status is separate and comes
+       from the canonical accounting RPCs.
 
    CANONICAL MONTHLY ACCOUNTING:
        get_canonical_member_monthly_status()
@@ -104,7 +110,7 @@ let canonicalSummary = null;
    from monthlyStatus and canonicalSummary.
 
    cumulativePositions contains one canonical position
-   per active member:
+   per group member:
 
        total_due
        total_allocated
@@ -1054,56 +1060,28 @@ async function loadContributionGoals() {
 
 
 /* =========================================================
-   ACTIVE MEMBER RULE
+   GROUP MEMBERSHIP RULE
 =========================================================
 
-   THIS IS THE ONLY MEMBERSHIP RULE USED BY DASHBOARD.
+   GROUP MEMBERSHIP IS DETERMINED BY THE MEMBERS TABLE.
 
-   ACTIVE:
-       status is NOT inactive
-       status is NOT suspended
-       status is NOT removed
+   Every member row returned for the current group is part
+   of the group membership population.
 
-   IMPORTANT:
-       onboarding_status is ignored.
+   members.status is NOT used to exclude a member from the
+   group membership count.
 
-   Therefore:
+   onboarding_status is NOT used to determine membership.
 
-       status=active
-       onboarding_status=pending
-
-   remains an active chama member.
-
-   Login status is separate from financial membership.
-========================================================= */
-
-function isActiveMember(member) {
-
-  const status =
-    String(
-      member?.status || ""
-    )
-      .trim()
-      .toLowerCase();
-
-
-  return ![
-    "inactive",
-    "suspended",
-    "removed"
-  ].includes(status);
-
-}
-
-
-/* =========================================================
-   ACTIVE MEMBERS
+   Financial/accounting status is a separate concern and is
+   supplied by the canonical accounting RPCs.
 ========================================================= */
 
 function getActiveMembers() {
 
   return members.filter(
-    isActiveMember
+    member =>
+      Boolean(member?.id)
   );
 
 }
@@ -1589,7 +1567,7 @@ function normalizeCumulativeStatus(
 
    Promise.all() is intentional.
 
-   If any active-member cumulative read fails, the entire
+   If any member cumulative read fails, the entire
    cumulative load fails rather than displaying a partial
    distribution as though it were complete.
 ========================================================= */
@@ -1660,8 +1638,7 @@ async function loadCumulativePositions() {
 
 
   /*
-     Also verify that the result set contains exactly one
-     position for each active member.
+     Verify exactly one position per group member.
 
      This protects the dashboard from duplicate or missing
      canonical rows.
@@ -1701,7 +1678,7 @@ async function loadCumulativePositions() {
     ) {
 
       throw new Error(
-        "Cumulative accounting did not return a position for every active member."
+        "Cumulative accounting did not return a position for every group member."
       );
 
     }
@@ -1898,12 +1875,42 @@ function getMonthlySummary() {
     );
 
 
-  const canonicalActiveMembers =
-    Number.isFinite(
+  /*
+     The canonical summary's member population must agree
+     with the current group's members table.
+
+     We do not silently substitute one population for the
+     other because that could display accounting against
+     a different membership population.
+  */
+
+  if (
+    !Number.isFinite(
       summaryActiveMembers
     )
-      ? summaryActiveMembers
-      : activeMembers.length;
+  ) {
+
+    throw new Error(
+      "Canonical monthly summary did not return a valid member population."
+    );
+
+  }
+
+
+  const canonicalActiveMembers =
+    summaryActiveMembers;
+
+
+  if (
+    canonicalActiveMembers !==
+    activeMembers.length
+  ) {
+
+    throw new Error(
+      `Canonical accounting member count (${canonicalActiveMembers}) does not match the group member list (${activeMembers.length}).`
+    );
+
+  }
 
 
   /*
@@ -2279,14 +2286,14 @@ function renderSummary() {
     progressBar.style.width =
       `${percentage}%`;
 
-
     progressBar.setAttribute(
       "aria-valuenow",
       String(
         Math.round(
           percentage
         )
-      );
+      )
+    );
 
   }
 
@@ -2406,7 +2413,7 @@ function renderMemberStatus() {
       <tr>
         <td colspan="7">
           <div class="empty-state">
-            <strong>No active members</strong>
+            <strong>No member accounting rows</strong>
             <span>
               No canonical member accounting rows were returned.
             </span>
@@ -2787,7 +2794,7 @@ function renderCumulativePosition() {
         <td colspan="5">
           <div class="empty-state">
             <strong>
-              No active members
+              No group members
             </strong>
             <span>
               No cumulative accounting positions were returned.
