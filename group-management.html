@@ -1,26 +1,22 @@
 <!doctype html>
-
 <html lang="en">
 <head>
   <meta charset="utf-8">
 
-<meta
-name="viewport"
-content="width=device-width, initial-scale=1"
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
 
->
+  <meta
+    name="description"
+    content="Manage your CHAMA LIVE group information, leadership, contribution cycle, contribution programs, payment settings, subscription, and group context."
+  >
 
-<meta
-name="description"
-content="Manage your CHAMA LIVE group information, leadership, contribution cycle, contribution programs, payment settings, subscription, and group context."
-
->
-
-<meta
-name="color-scheme"
-content="light"
-
->
+  <meta
+    name="color-scheme"
+    content="light"
+  >
 
   <title>Group Management — CHAMA LIVE</title>
 
@@ -334,6 +330,18 @@ content="light"
     .form-field textarea:disabled {
       background: #f3f4f6;
       color: #9ca3af;
+    }
+
+    .readonly-value {
+      width: 100%;
+      min-height: 42px;
+      padding: 9px 11px;
+      border: 1px solid var(--gm-border-soft);
+      border-radius: 9px;
+      background: #f9fafb;
+      color: var(--gm-text);
+      display: flex;
+      align-items: center;
     }
 
     .form-actions {
@@ -885,799 +893,690 @@ content="light"
       }
     }
   </style>
-
 </head>
 
 <body>
 
   <main class="management-page">
 
-```
-<!-- ===================================================
-     HERO
-     =================================================== -->
+    <!-- ===================================================
+         HERO
+         =================================================== -->
 
-<header class="management-hero">
-  <h1>Group Management</h1>
-
-  <p>
-    Manage your group's basic information, leadership, contribution
-    settings, programs, payment configuration, subscription, and access
-    context from one place.
-  </p>
-</header>
-
-<!-- ===================================================
-     GLOBAL STATUS
-     =================================================== -->
-
-<div
-  id="groupManagementStatus"
-  class="management-status"
-  role="status"
-  aria-live="polite"
-  aria-atomic="true"
-></div>
-
-<!-- ===================================================
-     LOADING
-     =================================================== -->
-
-<div
-  id="adminLoading"
-  class="management-loading"
-  data-admin-loading
-  aria-live="polite"
->
-  <strong>Loading group management...</strong>
-  <span>Please wait while your group context is loaded.</span>
-</div>
-
-<!-- ===================================================
-     INITIALIZATION ERROR
-     =================================================== -->
-
-<div
-  id="error"
-  class="management-status error"
-  role="alert"
-  aria-live="assertive"
-  aria-atomic="true"
-  hidden
-></div>
-
-<!-- ===================================================
-     PERMISSION MESSAGE
-     =================================================== -->
-
-<div
-  id="permissionMessage"
-  class="permission-message"
-  role="alert"
-  aria-live="assertive"
-></div>
-
-<!-- ===================================================
-     MANAGEMENT CONTENT
-     =================================================== -->
-
-<div
-  id="managementContent"
-  class="management-grid"
-  hidden
->
-
-  <!-- =================================================
-       GROUP OVERVIEW
-       ================================================= -->
-
-  <section
-    class="management-card"
-    aria-labelledby="groupOverviewHeading"
-  >
-    <div class="management-card-header">
-      <h2 id="groupOverviewHeading">Group Overview</h2>
+    <header class="management-hero">
+      <h1>Group Management</h1>
 
       <p>
-        Current information for the active group.
+        Manage your group's basic information, leadership, contribution
+        settings, programs, payment configuration, subscription, and
+        access context from one place.
       </p>
+    </header>
+
+    <!-- ===================================================
+         GLOBAL STATUS
+         =================================================== -->
+
+    <div
+      id="groupManagementStatus"
+      class="management-status"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    ></div>
+
+    <!-- ===================================================
+         LOADING
+         =================================================== -->
+
+    <div
+      id="adminLoading"
+      class="management-loading"
+      data-admin-loading
+      aria-live="polite"
+    >
+      <strong>Loading group management...</strong>
+      <span>Please wait while your group context is loaded.</span>
     </div>
 
-    <div class="management-card-body">
-      <div class="overview-grid">
+    <!-- ===================================================
+         INITIALIZATION ERROR
+         =================================================== -->
 
-        <div class="overview-item">
-          <div class="overview-label">Group Name</div>
+    <div
+      id="error"
+      class="management-status error"
+      role="alert"
+      aria-live="assertive"
+      aria-atomic="true"
+      hidden
+    ></div>
 
-          <div
-            id="groupNameDisplay"
-            class="overview-value"
-          >
-            —
-          </div>
-        </div>
+    <!-- ===================================================
+         PERMISSION MESSAGE
+         =================================================== -->
 
-        <div class="overview-item">
-          <div class="overview-label">Group Type</div>
+    <div
+      id="permissionMessage"
+      class="permission-message"
+      role="alert"
+      aria-live="assertive"
+    ></div>
 
-          <div
-            id="groupCategoryDisplay"
-            class="overview-value"
-          >
-            —
-          </div>
-        </div>
+    <!-- ===================================================
+         MANAGEMENT CONTENT
+         =================================================== -->
 
-        <div class="overview-item">
-          <div class="overview-label">Country</div>
+    <div
+      id="managementContent"
+      class="management-grid"
+      hidden
+    >
 
-          <div
-            id="groupCountryDisplay"
-            class="overview-value"
-          >
-            —
-          </div>
-        </div>
+      <!-- =================================================
+           GROUP OVERVIEW
+           ================================================= -->
 
-        <div class="overview-item">
-          <div class="overview-label">Members</div>
-
-          <div
-            id="memberCount"
-            class="overview-value"
-          >
-            —
-          </div>
-        </div>
-
-        <div class="overview-item">
-          <div class="overview-label">Access</div>
-
-          <div
-            id="permissionBadge"
-            class="overview-value"
-          >
-            —
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </section>
-
-  <!-- =================================================
-       GROUP INFORMATION
-       ================================================= -->
-
-  <section
-    class="management-card"
-    aria-labelledby="groupInformationHeading"
-  >
-    <div class="management-card-header">
-      <h2 id="groupInformationHeading">Group Information</h2>
-
-      <p>
-        Update the basic profile and normal monthly contribution amount
-        for the group.
-      </p>
-    </div>
-
-    <div class="management-card-body">
-
-      <form
-        id="groupForm"
-        autocomplete="off"
+      <section
+        class="management-card"
+        aria-labelledby="groupOverviewHeading"
       >
-
-        <div class="form-grid">
-
-          <div class="form-field">
-            <label for="groupName">
-              Group Name
-            </label>
-
-            <input
-              id="groupName"
-              name="groupName"
-              type="text"
-              maxlength="150"
-              required
-              autocomplete="organization"
-            >
-          </div>
-
-          <div class="form-field">
-            <label for="groupCategory">
-              Group Type
-            </label>
-
-            <select
-              id="groupCategory"
-              name="groupCategory"
-              required
-            >
-              <option value="">Select group type</option>
-              <option value="chama">Chama</option>
-              <option value="cbo">CBO</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-
-          <div
-            class="form-field"
-            id="otherGroupTypeField"
-          >
-            <label for="otherGroupType">
-              Other Group Type
-            </label>
-
-            <input
-              id="otherGroupType"
-              name="otherGroupType"
-              type="text"
-              maxlength="100"
-              placeholder="Enter group type"
-            >
-
-            <div class="field-help">
-              Complete this only when "Other" is selected.
-            </div>
-          </div>
-
-          <div class="form-field">
-            <label for="groupCountry">
-              Country
-            </label>
-
-            <input
-              id="groupCountry"
-              name="groupCountry"
-              type="text"
-              maxlength="100"
-              value="Kenya"
-              autocomplete="country-name"
-            >
-          </div>
-
-          <div class="form-field">
-            <label for="monthlyContribution">
-              Monthly Contribution
-            </label>
-
-            <input
-              id="monthlyContribution"
-              name="monthlyContribution"
-              type="number"
-              min="0"
-              step="0.01"
-              inputmode="decimal"
-              placeholder="0.00"
-            >
-
-            <div class="field-help">
-              This is the group's normal monthly contribution setting.
-              Other contribution programs are configured separately.
-            </div>
-          </div>
-
-        </div>
-
-        <div class="form-actions">
-
-          <button
-            id="saveGroupInformation"
-            type="submit"
-            class="primary-button"
-          >
-            Save Group Information
-          </button>
-
-        </div>
-
-      </form>
-
-    </div>
-  </section>
-
-  <!-- =================================================
-       LEADERSHIP SETUP
-       ================================================= -->
-
-  <section
-    id="leadershipCard"
-    class="management-card"
-    aria-labelledby="leadershipHeading"
-  >
-    <div class="management-card-header">
-      <h2 id="leadershipHeading">Leadership Setup</h2>
-
-      <p>
-        Manage the group's leadership assignments through the authorized
-        group-management workflow.
-      </p>
-    </div>
-
-    <div class="management-card-body">
-
-      <div
-        id="leadershipStatus"
-        class="leadership-status"
-        role="status"
-        aria-live="polite"
-      >
-        Loading leadership information...
-      </div>
-
-      <form
-        id="leadershipForm"
-        autocomplete="off"
-      >
-
-        <div class="form-grid">
-
-          <div class="form-field">
-            <label for="adminPosition">
-              Position
-            </label>
-
-            <select
-              id="adminPosition"
-              name="adminPosition"
-              required
-            >
-              <option value="">Select position</option>
-              <option value="chairperson">Chairperson</option>
-              <option value="secretary">Secretary</option>
-              <option value="treasurer">Treasurer</option>
-              <option value="admin">Administrator</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-
-          <div class="form-field">
-            <label for="adminPositionName">
-              Member / Person
-            </label>
-
-            <input
-              id="adminPositionName"
-              name="adminPositionName"
-              type="text"
-              maxlength="150"
-              placeholder="Select or enter authorized member"
-              required
-            >
-
-            <div class="field-help">
-              Leadership assignments must remain subject to the group's
-              authorized membership and role controls.
-            </div>
-          </div>
-
-          <div class="form-field">
-            <label for="adminEffectiveFrom">
-              Effective From
-            </label>
-
-            <input
-              id="adminEffectiveFrom"
-              name="adminEffectiveFrom"
-              type="date"
-              required
-            >
-          </div>
-
-        </div>
-
-        <div class="form-actions">
-
-          <button
-            id="saveLeadership"
-            type="submit"
-            class="primary-button"
-          >
-            Save Leadership
-          </button>
-
-        </div>
-
-      </form>
-
-      <div
-        id="leadershipList"
-        class="leadership-list"
-        aria-live="polite"
-      ></div>
-
-      <a
-        class="members-link"
-        href="members.html"
-      >
-        Manage group members →
-      </a>
-
-    </div>
-  </section>
-
-  <!-- =================================================
-       MONTHLY CONTRIBUTION CYCLE
-       ================================================= -->
-
-  <section
-    id="contributionCalendarCard"
-    class="management-card"
-    aria-labelledby="contributionCalendarHeading"
-  >
-    <div class="management-card-header">
-      <h2 id="contributionCalendarHeading">
-        Monthly Contribution Cycle
-      </h2>
-
-      <p>
-        Configure the group's normal monthly contribution cycle.
-      </p>
-    </div>
-
-    <div class="management-card-body">
-
-      <div class="calendar-summary">
-
-        <div class="calendar-summary-item">
-          <div class="calendar-summary-label">
-            Contribution Amount
-          </div>
-
-          <div
-            id="calendarContributionAmount"
-            class="calendar-summary-value"
-          >
-            —
-          </div>
-        </div>
-
-        <div class="calendar-summary-item">
-          <div class="calendar-summary-label">
-            Closing Day
-          </div>
-
-          <div
-            id="calendarClosingDay"
-            class="calendar-summary-value"
-          >
-            —
-          </div>
-        </div>
-
-        <div class="calendar-summary-item">
-          <div class="calendar-summary-label">
-            Cycle Status
-          </div>
-
-          <div
-            id="calendarCycleStatus"
-            class="calendar-summary-value"
-          >
-            —
-          </div>
-        </div>
-
-      </div>
-
-      <form
-        id="contributionCalendarForm"
-        autocomplete="off"
-      >
-
-        <div class="form-grid">
-
-          <div class="form-field">
-            <label for="closingDay">
-              Monthly Closing Day
-            </label>
-
-            <select
-              id="closingDay"
-              name="closingDay"
-            >
-              <option value="">Select closing day</option>
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
-              <option value="6">6</option>
-              <option value="7">7</option>
-              <option value="8">8</option>
-              <option value="9">9</option>
-              <option value="10">10</option>
-              <option value="11">11</option>
-              <option value="12">12</option>
-              <option value="13">13</option>
-              <option value="14">14</option>
-              <option value="15">15</option>
-              <option value="16">16</option>
-              <option value="17">17</option>
-              <option value="18">18</option>
-              <option value="19">19</option>
-              <option value="20">20</option>
-              <option value="21">21</option>
-              <option value="22">22</option>
-              <option value="23">23</option>
-              <option value="24">24</option>
-              <option value="25">25</option>
-              <option value="26">26</option>
-              <option value="27">27</option>
-              <option value="28">28</option>
-              <option value="29">29</option>
-              <option value="30">30</option>
-              <option value="31">31</option>
-            </select>
-
-            <div class="field-help">
-              The selected day controls the normal monthly contribution
-              cycle. Financial-period rules remain backend-controlled.
-            </div>
-          </div>
-
-          <div class="form-field">
-            <label for="calendarContributionAmountInput">
-              Contribution Amount
-            </label>
-
-            <input
-              id="calendarContributionAmountInput"
-              name="calendarContributionAmountInput"
-              type="number"
-              min="0"
-              step="0.01"
-              inputmode="decimal"
-              placeholder="0.00"
-            >
-
-            <div class="field-help">
-              This setting applies to the normal monthly contribution
-              cycle, not separately configured initiatives.
-            </div>
-          </div>
-
-        </div>
-
-        <div class="form-actions">
-
-          <button
-            id="saveContributionSettings"
-            type="submit"
-            class="primary-button"
-          >
-            Save Contribution Settings
-          </button>
-
-        </div>
-
-      </form>
-
-    </div>
-  </section>
-
-  <!-- =================================================
-       CONTRIBUTION PROGRAMS & FINE RULES
-       ================================================= -->
-
-  <section
-    id="contributionProgramsCard"
-    class="management-card full-width"
-    aria-labelledby="contributionProgramsHeading"
-  >
-    <div class="management-card-header">
-      <h2 id="contributionProgramsHeading">
-        Contribution Programs &amp; Fine Rules
-      </h2>
-
-      <p>
-        Configure additional contribution programs and review the group's
-        fine rules. Accounting and fine generation remain controlled by
-        the canonical backend services.
-      </p>
-    </div>
-
-    <div class="management-card-body">
-
-      <div
-        id="contributionProgramStatus"
-        class="leadership-status"
-        role="status"
-        aria-live="polite"
-      >
-        Loading contribution programs...
-      </div>
-
-      <div class="program-section">
-
-        <div class="program-section-header">
-          <h3>Contribution Types</h3>
+        <div class="management-card-header">
+          <h2 id="groupOverviewHeading">Group Overview</h2>
 
           <p>
-            Available contribution classifications used by the group.
+            Current information for the active group.
           </p>
         </div>
 
-        <div
-          id="contributionTypesList"
-          class="program-list"
-          aria-live="polite"
-        ></div>
+        <div class="management-card-body">
 
-      </div>
+          <div class="overview-grid">
 
-      <div class="program-section">
+            <div class="overview-item">
+              <div class="overview-label">Group Name</div>
 
-        <div class="program-section-header">
-          <h3>Create Contribution Program</h3>
+              <div
+                id="groupNameDisplay"
+                class="overview-value"
+              >
+                —
+              </div>
+            </div>
+
+            <div class="overview-item">
+              <div class="overview-label">Group Type</div>
+
+              <div
+                id="groupCategoryDisplay"
+                class="overview-value"
+              >
+                —
+              </div>
+            </div>
+
+            <div class="overview-item">
+              <div class="overview-label">Country</div>
+
+              <div
+                id="groupCountryDisplay"
+                class="overview-value"
+              >
+                —
+              </div>
+            </div>
+
+            <div class="overview-item">
+              <div class="overview-label">Members</div>
+
+              <div
+                id="memberCount"
+                class="overview-value"
+              >
+                —
+              </div>
+            </div>
+
+            <div class="overview-item">
+              <div class="overview-label">Access</div>
+
+              <div
+                id="permissionBadge"
+                class="overview-value"
+              >
+                —
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+
+      <!-- =================================================
+           GROUP INFORMATION
+           ================================================= -->
+
+      <section
+        class="management-card"
+        aria-labelledby="groupInformationHeading"
+      >
+        <div class="management-card-header">
+
+          <h2 id="groupInformationHeading">
+            Group Information
+          </h2>
 
           <p>
-            New programs begin in Draft status. Activation and accounting
-            execution are controlled by the authorized backend workflow.
+            Update the basic profile and normal monthly contribution
+            amount for the group.
           </p>
+
         </div>
 
-        <div class="initiative-create-form">
+        <div class="management-card-body">
 
           <form
-            id="createInitiativeForm"
+            id="groupForm"
             autocomplete="off"
           >
 
             <div class="form-grid">
 
-              <div class="form-field full-width">
-                <label for="initiativeStatus">
-                  Program Status
-                </label>
-
-                <input
-                  id="initiativeStatus"
-                  name="initiativeStatus"
-                  type="text"
-                  value="Draft"
-                  readonly
-                >
-
-                <div class="field-help">
-                  New programs are created as Draft before activation.
-                </div>
-              </div>
-
               <div class="form-field">
-                <label for="initiativeName">
-                  Program Name
+
+                <label for="groupName">
+                  Group Name
                 </label>
 
                 <input
-                  id="initiativeName"
-                  name="initiativeName"
+                  id="groupName"
+                  name="groupName"
                   type="text"
                   maxlength="150"
                   required
-                  placeholder="e.g. Welfare Fund"
+                  autocomplete="organization"
                 >
+
               </div>
 
+
               <div class="form-field">
-                <label for="initiativeContributionType">
-                  Contribution Type
+
+                <label for="groupCategory">
+                  Group Type
                 </label>
 
                 <select
-                  id="initiativeContributionType"
-                  name="initiativeContributionType"
+                  id="groupCategory"
+                  name="groupCategory"
                   required
                 >
                   <option value="">
-                    Select contribution type
-                  </option>
-                </select>
-              </div>
-
-              <div class="form-field full-width">
-                <label for="initiativeDescription">
-                  Description
-                </label>
-
-                <textarea
-                  id="initiativeDescription"
-                  name="initiativeDescription"
-                  maxlength="1000"
-                  placeholder="Describe the purpose of this contribution program."
-                ></textarea>
-              </div>
-
-              <div class="form-field">
-                <label for="initiativeFrequency">
-                  Frequency
-                </label>
-
-                <select
-                  id="initiativeFrequency"
-                  name="initiativeFrequency"
-                  required
-                >
-                  <option value="one_time">
-                    One-time
+                    Select group type
                   </option>
 
-                  <option value="monthly">
-                    Monthly / Recurring
+                  <option value="chama">
+                    Chama
+                  </option>
+
+                  <option value="cbo">
+                    CBO
+                  </option>
+
+                  <option value="other">
+                    Other
                   </option>
                 </select>
 
-                <div class="field-help">
-                  Recurring programs follow the recurring initiative
-                  lifecycle and are not routed through the normal monthly
-                  contribution engine.
-                </div>
               </div>
 
-              <div class="form-field">
-                <label for="initiativeStartDate">
-                  Start Date
+
+              <div
+                class="form-field"
+                id="otherGroupTypeField"
+              >
+
+                <label for="groupCategoryOther">
+                  Other Group Type
                 </label>
 
                 <input
-                  id="initiativeStartDate"
-                  name="initiativeStartDate"
-                  type="date"
-                  required
-                >
-              </div>
-
-              <div class="form-field">
-                <label for="initiativeClosingDate">
-                  Closing Date
-                </label>
-
-                <input
-                  id="initiativeClosingDate"
-                  name="initiativeClosingDate"
-                  type="date"
+                  id="groupCategoryOther"
+                  name="groupCategoryOther"
+                  type="text"
+                  maxlength="100"
+                  placeholder="Enter group type"
                 >
 
                 <div class="field-help">
-                  Use when the program has a defined closing date.
+                  Complete this only when "Other" is selected.
                 </div>
+
               </div>
 
+
               <div class="form-field">
-                <label for="initiativeDefaultAmount">
-                  Default Amount
+
+                <label for="groupCountry">
+                  Country
                 </label>
 
                 <input
-                  id="initiativeDefaultAmount"
-                  name="initiativeDefaultAmount"
+                  id="groupCountry"
+                  name="groupCountry"
+                  type="text"
+                  maxlength="100"
+                  value="Kenya"
+                  autocomplete="country-name"
+                >
+
+              </div>
+
+
+              <!--
+                IMPORTANT:
+                This is the ONLY editable normal monthly
+                contribution amount on the page.
+              -->
+              <div class="form-field">
+
+                <label for="monthlyContribution">
+                  Monthly Contribution
+                </label>
+
+                <input
+                  id="monthlyContribution"
+                  name="monthlyContribution"
                   type="number"
                   min="0"
                   step="0.01"
                   inputmode="decimal"
                   placeholder="0.00"
                 >
+
+                <div class="field-help">
+                  This is the group's normal monthly contribution setting.
+                  Other contribution programs are configured separately.
+                </div>
+
               </div>
 
             </div>
 
-            <div class="initiative-note">
-              Saving a program creates its configured draft through the
-              canonical service. It does not by itself create a payment,
-              obligation, allocation, contribution, or fine.
-            </div>
 
             <div class="form-actions">
 
               <button
-                id="createInitiativeButton"
+                id="saveGroupInformation"
                 type="submit"
                 class="primary-button"
               >
-                Save Program as Draft
+                Save Group Information
+              </button>
+
+            </div>
+
+          </form>
+
+        </div>
+      </section>
+
+
+      <!-- =================================================
+           LEADERSHIP SETUP — ONE COPY ONLY
+           ================================================= -->
+
+      <section
+        id="leadershipCard"
+        class="management-card"
+        aria-labelledby="leadershipHeading"
+      >
+
+        <div class="management-card-header">
+
+          <h2 id="leadershipHeading">
+            Leadership Setup
+          </h2>
+
+          <p>
+            Manage the group's leadership assignments through the
+            authorized group-management workflow.
+          </p>
+
+        </div>
+
+
+        <div class="management-card-body">
+
+          <div
+            id="leadershipStatus"
+            class="leadership-status"
+            role="status"
+            aria-live="polite"
+          >
+            Loading leadership information...
+          </div>
+
+
+          <form
+            id="leadershipForm"
+            autocomplete="off"
+          >
+
+            <div class="form-grid">
+
+              <div class="form-field">
+
+                <label for="adminPosition">
+                  Position
+                </label>
+
+                <select
+                  id="adminPosition"
+                  name="adminPosition"
+                  required
+                >
+
+                  <option value="">
+                    Select position
+                  </option>
+
+                  <option value="chairperson">
+                    Chairperson
+                  </option>
+
+                  <option value="secretary">
+                    Secretary
+                  </option>
+
+                  <option value="treasurer">
+                    Treasurer
+                  </option>
+
+                  <option value="admin">
+                    Administrator
+                  </option>
+
+                  <option value="other">
+                    Other
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="form-field">
+
+                <label for="adminPositionName">
+                  Member / Person
+                </label>
+
+                <input
+                  id="adminPositionName"
+                  name="adminPositionName"
+                  type="text"
+                  maxlength="150"
+                  placeholder="Select or enter authorized member"
+                  required
+                >
+
+                <div class="field-help">
+                  Leadership assignments must remain subject to the
+                  group's authorized membership and role controls.
+                </div>
+
+              </div>
+
+
+              <div class="form-field">
+
+                <label for="adminEffectiveFrom">
+                  Effective From
+                </label>
+
+                <input
+                  id="adminEffectiveFrom"
+                  name="adminEffectiveFrom"
+                  type="date"
+                  required
+                >
+
+              </div>
+
+            </div>
+
+
+            <div class="form-actions">
+
+              <button
+                id="saveLeadership"
+                type="submit"
+                class="primary-button"
+              >
+                Save Leadership
+              </button>
+
+            </div>
+
+          </form>
+
+
+          <div
+            id="leadershipList"
+            class="leadership-list"
+            aria-live="polite"
+          ></div>
+
+
+          <a
+            class="members-link"
+            href="members.html"
+          >
+            Manage group members →
+          </a>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           MONTHLY CONTRIBUTION CYCLE — ONE COPY ONLY
+           ================================================= -->
+
+      <section
+        id="contributionCalendarCard"
+        class="management-card"
+        aria-labelledby="contributionCalendarHeading"
+      >
+
+        <div class="management-card-header">
+
+          <h2 id="contributionCalendarHeading">
+            Monthly Contribution Cycle
+          </h2>
+
+          <p>
+            Configure the group's normal monthly contribution cycle.
+          </p>
+
+        </div>
+
+
+        <div class="management-card-body">
+
+          <!-- Current cycle summary -->
+
+          <div class="calendar-summary">
+
+            <div class="calendar-summary-item">
+
+              <div class="calendar-summary-label">
+                Contribution Amount
+              </div>
+
+              <div
+                id="calendarContributionAmount"
+                class="calendar-summary-value"
+              >
+                —
+              </div>
+
+            </div>
+
+
+            <div class="calendar-summary-item">
+
+              <div class="calendar-summary-label">
+                Closing Day
+              </div>
+
+              <div
+                id="calendarClosingDay"
+                class="calendar-summary-value"
+              >
+                —
+              </div>
+
+            </div>
+
+
+            <div class="calendar-summary-item">
+
+              <div class="calendar-summary-label">
+                Cycle Status
+              </div>
+
+              <div
+                id="calendarCycleStatus"
+                class="calendar-summary-value"
+              >
+                —
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <form
+            id="contributionCalendarForm"
+            autocomplete="off"
+          >
+
+            <div class="form-grid">
+
+              <!--
+                The closing day is the editable cycle setting.
+              -->
+
+              <div class="form-field">
+
+                <label for="closingDay">
+                  Monthly Closing Day
+                </label>
+
+                <select
+                  id="closingDay"
+                  name="closingDay"
+                >
+
+                  <option value="">
+                    Select closing day
+                  </option>
+
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                  <option value="7">7</option>
+                  <option value="8">8</option>
+                  <option value="9">9</option>
+                  <option value="10">10</option>
+                  <option value="11">11</option>
+                  <option value="12">12</option>
+                  <option value="13">13</option>
+                  <option value="14">14</option>
+                  <option value="15">15</option>
+                  <option value="16">16</option>
+                  <option value="17">17</option>
+                  <option value="18">18</option>
+                  <option value="19">19</option>
+                  <option value="20">20</option>
+                  <option value="21">21</option>
+                  <option value="22">22</option>
+                  <option value="23">23</option>
+                  <option value="24">24</option>
+                  <option value="25">25</option>
+                  <option value="26">26</option>
+                  <option value="27">27</option>
+                  <option value="28">28</option>
+                  <option value="29">29</option>
+                  <option value="30">30</option>
+                  <option value="31">31</option>
+
+                </select>
+
+
+                <div class="field-help">
+                  The selected day controls the normal monthly contribution
+                  cycle. Financial-period rules remain backend-controlled.
+                </div>
+
+              </div>
+
+
+              <!--
+                IMPORTANT:
+                There is deliberately NO second editable monthly
+                contribution input here.
+
+                The amount above is sourced from the group's normal
+                monthly contribution setting in Group Information.
+              -->
+
+              <div class="form-field">
+
+                <label>
+                  Contribution Amount
+                </label>
+
+                <div
+                  id="calendarContributionAmountReadonly"
+                  class="readonly-value"
+                >
+                  The normal monthly contribution amount is configured
+                  in <strong style="margin-left:4px;">Group Information</strong>.
+                </div>
+
+                <div class="field-help">
+                  This cycle setting controls the closing day only.
+                  It does not create a second monthly contribution amount.
+                </div>
+
+              </div>
+
+            </div>
+
+
+            <div class="form-actions">
+
+              <!--
+                Current group-management.js binds CLICK to this
+                button, so this must remain type="button".
+              -->
+
+              <button
+                id="saveContributionSettings"
+                type="button"
+                class="primary-button"
+              >
+                Save Contribution Settings
               </button>
 
             </div>
@@ -1686,434 +1585,854 @@ content="light"
 
         </div>
 
-      </div>
+      </section>
 
-      <div class="program-section">
 
-        <div class="program-section-header">
-          <h3>Contribution Initiatives</h3>
+      <!-- =================================================
+           CONTRIBUTION PROGRAMS & FINE RULES
+           ================================================= -->
 
-          <p>
-            Review configured initiatives and their current lifecycle
-            status.
-          </p>
-        </div>
+      <section
+        id="contributionProgramsCard"
+        class="management-card full-width"
+        aria-labelledby="contributionProgramsHeading"
+      >
 
-        <div
-          id="contributionInitiativesList"
-          class="program-list"
-          aria-live="polite"
-        ></div>
+        <div class="management-card-header">
 
-      </div>
-
-      <div class="program-section">
-
-        <div class="program-section-header">
-          <h3>Fine Rules</h3>
+          <h2 id="contributionProgramsHeading">
+            Contribution Programs &amp; Fine Rules
+          </h2>
 
           <p>
-            Fine rules are displayed here for group management. Fine
-            generation and accounting remain backend-owned.
+            Configure additional contribution programs and review the
+            group's fine rules. Accounting and fine generation remain
+            controlled by the canonical backend services.
           </p>
+
         </div>
 
-        <div
-          id="fineRulesList"
-          class="program-list"
-          aria-live="polite"
-        ></div>
 
-      </div>
-
-      <div class="recurring-note">
-        <strong>Recurring initiatives:</strong>
-        recurring programs use their own lifecycle:
-        Draft → Recurring Participant Terms → Recurring Activation →
-        Calendar Periods → Period Obligations → Recurring Payment /
-        Allocation. They must not be treated as ordinary monthly
-        contribution obligations.
-      </div>
-
-    </div>
-  </section>
-
-  <!-- =================================================
-       PAYMENT COLLECTION
-       ================================================= -->
-
-  <section
-    id="paymentCollectionCard"
-    class="management-card full-width"
-    aria-labelledby="paymentCollectionHeading"
-  >
-    <div class="management-card-header">
-      <h2 id="paymentCollectionHeading">
-        Payment Collection
-      </h2>
-
-      <p>
-        Group-level payment collection configuration.
-      </p>
-    </div>
-
-    <div class="management-card-body">
-
-      <div class="payment-gated-notice">
-        <strong>Configuration is currently gated.</strong>
-        Payment provider settings must be connected to the approved
-        canonical payment contract before live collection credentials or
-        execution settings are enabled here.
-      </div>
-
-      <div class="form-grid">
-
-        <div class="form-field">
-          <label for="paymentProvider">
-            Payment Provider
-          </label>
-
-          <select
-            id="paymentProvider"
-            name="paymentProvider"
-            disabled
-          >
-            <option value="">
-              Select provider
-            </option>
-
-            <option value="mpesa">
-              M-Pesa / Daraja
-            </option>
-          </select>
-        </div>
-
-        <div class="form-field">
-          <label for="paymentBusinessNumber">
-            Business / PayBill / Till Number
-          </label>
-
-          <input
-            id="paymentBusinessNumber"
-            name="paymentBusinessNumber"
-            type="text"
-            maxlength="20"
-            disabled
-          >
-        </div>
-
-        <div class="form-field">
-          <label for="paymentGroupAccount">
-            Group Account
-          </label>
-
-          <input
-            id="paymentGroupAccount"
-            name="paymentGroupAccount"
-            type="text"
-            maxlength="100"
-            disabled
-          >
-
-          <div class="field-help">
-            Group-level payment configuration is separate from CHAMA LIVE
-            platform subscription billing.
-          </div>
-        </div>
-
-        <div class="form-field">
-          <label for="paymentAccountReference">
-            Account Reference
-          </label>
-
-          <input
-            id="paymentAccountReference"
-            name="paymentAccountReference"
-            type="text"
-            maxlength="12"
-            disabled
-          >
-
-          <div class="field-help">
-            Provider-specific reference length and format must follow the
-            approved payment contract.
-          </div>
-        </div>
-
-        <div class="form-field full-width">
-          <label for="paymentInstructions">
-            Payment Instructions
-          </label>
-
-          <textarea
-            id="paymentInstructions"
-            name="paymentInstructions"
-            maxlength="1000"
-            disabled
-            placeholder="Payment instructions will be enabled after the payment configuration gate is cleared."
-          ></textarea>
-        </div>
-
-      </div>
-
-      <div class="payment-preview">
-
-        <div class="payment-preview-label">
-          Payment Reference Preview
-        </div>
-
-        <div
-          id="paymentReferencePreviewValue"
-          class="payment-preview-value"
-        >
-          —
-        </div>
-
-      </div>
-
-      <div class="payment-state-note">
-        Live payment execution must follow the approved sequence:
-        payment intent → provider reference → callback/result →
-        execution transaction → contribution/accounting chain.
-      </div>
-
-      <div class="form-actions">
-
-        <button
-          id="savePaymentCollection"
-          type="button"
-          class="primary-button"
-          disabled
-        >
-          Save Payment Collection
-        </button>
-
-      </div>
-
-    </div>
-  </section>
-
-  <!-- =================================================
-       ACCOUNT
-       ================================================= -->
-
-  <section
-    class="management-card"
-    aria-labelledby="accountHeading"
-  >
-    <div class="management-card-header">
-      <h2 id="accountHeading">Account</h2>
-
-      <p>
-        Manage the group's CHAMA LIVE subscription account separately
-        from group financial accounting.
-      </p>
-    </div>
-
-    <div class="management-card-body">
-
-      <div class="account-panel">
-
-        <div>
-          <strong>Platform Account</strong>
-
-          <span>
-            Subscription and platform billing are separate from group
-            member contributions and other group accounting.
-          </span>
-        </div>
-
-        <a
-          class="secondary-button"
-          href="billing.html"
-          style="text-decoration:none;"
-        >
-          Open Billing
-        </a>
-
-      </div>
-
-    </div>
-  </section>
-
-  <!-- =================================================
-       SUBSCRIPTION
-       ================================================= -->
-
-  <section
-    class="management-card"
-    aria-labelledby="subscriptionHeading"
-  >
-    <div class="management-card-header">
-      <h2 id="subscriptionHeading">Subscription</h2>
-
-      <p>
-        Current CHAMA LIVE platform subscription information.
-      </p>
-    </div>
-
-    <div class="management-card-body">
-
-      <div class="subscription-grid">
-
-        <div class="subscription-item">
-          <div class="subscription-label">
-            Status
-          </div>
+        <div class="management-card-body">
 
           <div
-            id="subscriptionStatus"
-            class="subscription-value"
+            id="contributionProgramStatus"
+            class="leadership-status"
+            role="status"
+            aria-live="polite"
           >
-            —
+            Loading contribution programs...
           </div>
+
+
+          <!-- =================================================
+               CONTRIBUTION TYPES
+               ================================================= -->
+
+          <div class="program-section">
+
+            <div class="program-section-header">
+
+              <h3>
+                Contribution Types
+              </h3>
+
+              <p>
+                Available contribution classifications used by the group.
+              </p>
+
+            </div>
+
+
+            <div
+              id="contributionTypesList"
+              class="program-list"
+              aria-live="polite"
+            ></div>
+
+          </div>
+
+
+          <!-- =================================================
+               CREATE CONTRIBUTION PROGRAM
+               ================================================= -->
+
+          <div class="program-section">
+
+            <div class="program-section-header">
+
+              <h3>
+                Create Contribution Program
+              </h3>
+
+              <p>
+                New programs begin in Draft status. Activation and
+                accounting execution are controlled by the authorized
+                backend workflow.
+              </p>
+
+            </div>
+
+
+            <div class="initiative-create-form">
+
+              <form
+                id="createInitiativeForm"
+                autocomplete="off"
+              >
+
+                <div class="form-grid">
+
+
+                  <div class="form-field full-width">
+
+                    <label for="initiativeStatus">
+                      Program Status
+                    </label>
+
+                    <input
+                      id="initiativeStatus"
+                      name="initiativeStatus"
+                      type="text"
+                      value="Draft"
+                      readonly
+                    >
+
+                    <div class="field-help">
+                      New programs are created as Draft before activation.
+                    </div>
+
+                  </div>
+
+
+                  <div class="form-field">
+
+                    <label for="initiativeName">
+                      Program Name
+                    </label>
+
+                    <input
+                      id="initiativeName"
+                      name="initiativeName"
+                      type="text"
+                      maxlength="150"
+                      required
+                      placeholder="e.g. Welfare Fund"
+                    >
+
+                  </div>
+
+
+                  <div class="form-field">
+
+                    <label for="initiativeContributionType">
+                      Contribution Type
+                    </label>
+
+                    <select
+                      id="initiativeContributionType"
+                      name="initiativeContributionType"
+                      required
+                    >
+
+                      <option value="">
+                        Select contribution type
+                      </option>
+
+                    </select>
+
+                  </div>
+
+
+                  <div class="form-field full-width">
+
+                    <label for="initiativeDescription">
+                      Description
+                    </label>
+
+                    <textarea
+                      id="initiativeDescription"
+                      name="initiativeDescription"
+                      maxlength="1000"
+                      placeholder="Describe the purpose of this contribution program."
+                    ></textarea>
+
+                  </div>
+
+
+                  <div class="form-field">
+
+                    <label for="initiativeFrequency">
+                      Frequency
+                    </label>
+
+                    <select
+                      id="initiativeFrequency"
+                      name="initiativeFrequency"
+                      required
+                    >
+
+                      <option value="one_time">
+                        One-time
+                      </option>
+
+                      <option value="monthly">
+                        Recurring (monthly periods)
+                      </option>
+
+                    </select>
+
+                    <div class="field-help">
+                      Recurring programs follow the recurring initiative
+                      lifecycle and are not routed through the normal
+                      monthly contribution engine.
+                    </div>
+
+                  </div>
+
+
+                  <div class="form-field">
+
+                    <label for="initiativeStartDate">
+                      Start Date
+                    </label>
+
+                    <input
+                      id="initiativeStartDate"
+                      name="initiativeStartDate"
+                      type="date"
+                      required
+                    >
+
+                  </div>
+
+
+                  <div class="form-field">
+
+                    <label for="initiativeClosingDate">
+                      Closing Date
+                    </label>
+
+                    <input
+                      id="initiativeClosingDate"
+                      name="initiativeClosingDate"
+                      type="date"
+                    >
+
+                    <div class="field-help">
+                      Use when the program has a defined closing date.
+                    </div>
+
+                  </div>
+
+
+                  <div class="form-field">
+
+                    <label for="initiativeDefaultAmount">
+                      Default Amount
+                    </label>
+
+                    <input
+                      id="initiativeDefaultAmount"
+                      name="initiativeDefaultAmount"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      inputmode="decimal"
+                      placeholder="0.00"
+                    >
+
+                    <div class="field-help">
+                      This amount belongs to this program only. It does
+                      not change the group's normal monthly contribution.
+                    </div>
+
+                  </div>
+
+                </div>
+
+
+                <div class="initiative-note">
+
+                  Saving a program creates its configured draft through
+                  the canonical service. It does not by itself create a
+                  payment, obligation, allocation, contribution, or fine.
+
+                </div>
+
+
+                <div class="form-actions">
+
+                  <button
+                    id="createInitiativeButton"
+                    type="submit"
+                    class="primary-button"
+                  >
+                    Save Program as Draft
+                  </button>
+
+                </div>
+
+              </form>
+
+            </div>
+
+          </div>
+
+
+          <!-- =================================================
+               EXISTING CONTRIBUTION INITIATIVES
+               ================================================= -->
+
+          <div class="program-section">
+
+            <div class="program-section-header">
+
+              <h3>
+                Contribution Initiatives
+              </h3>
+
+              <p>
+                Review configured initiatives and their current lifecycle
+                status.
+              </p>
+
+            </div>
+
+
+            <div
+              id="contributionInitiativesList"
+              class="program-list"
+              aria-live="polite"
+            ></div>
+
+          </div>
+
+
+          <!-- =================================================
+               FINE RULES
+               ================================================= -->
+
+          <div class="program-section">
+
+            <div class="program-section-header">
+
+              <h3>
+                Fine Rules
+              </h3>
+
+              <p>
+                Fine rules are displayed here for group management.
+                Fine generation and accounting remain backend-owned.
+              </p>
+
+            </div>
+
+
+            <div
+              id="fineRulesList"
+              class="program-list"
+              aria-live="polite"
+            ></div>
+
+          </div>
+
+
+          <!-- =================================================
+               RECURRING LIFECYCLE
+               ================================================= -->
+
+          <div class="recurring-note">
+
+            <strong>Recurring initiatives:</strong>
+
+            recurring programs use their own lifecycle:
+
+            Draft →
+            Recurring Participant Terms →
+            Recurring Activation →
+            Calendar Periods →
+            Period Obligations →
+            Recurring Payment / Allocation.
+
+            They must not be treated as ordinary monthly contribution
+            obligations.
+
+          </div>
+
         </div>
 
-        <div class="subscription-item">
-          <div class="subscription-label">
-            Plan
-          </div>
+      </section>
 
-          <div
-            id="subscriptionPlan"
-            class="subscription-value"
-          >
-            —
-          </div>
+
+      <!-- =================================================
+           PAYMENT COLLECTION
+           ================================================= -->
+
+      <section
+        id="paymentCollectionCard"
+        class="management-card full-width"
+        aria-labelledby="paymentCollectionHeading"
+      >
+
+        <div class="management-card-header">
+
+          <h2 id="paymentCollectionHeading">
+            Payment Collection
+          </h2>
+
+          <p>
+            Group-level payment collection configuration.
+          </p>
+
         </div>
 
-        <div class="subscription-item">
-          <div class="subscription-label">
-            End Date
+
+        <div class="management-card-body">
+
+          <div class="payment-gated-notice">
+
+            <strong>
+              Configuration is currently gated.
+            </strong>
+
+            Payment provider settings must be connected to the approved
+            canonical payment contract before live collection credentials
+            or execution settings are enabled here.
+
           </div>
 
-          <div
-            id="subscriptionEndDate"
-            class="subscription-value"
-          >
-            —
+
+          <div class="form-grid">
+
+
+            <div class="form-field">
+
+              <label for="paymentProvider">
+                Payment Provider
+              </label>
+
+              <select
+                id="paymentProvider"
+                name="paymentProvider"
+                disabled
+              >
+
+                <option value="">
+                  Select provider
+                </option>
+
+                <option value="mpesa">
+                  M-Pesa / Daraja
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <div class="form-field">
+
+              <label for="paymentBusinessNumber">
+                Business / PayBill / Till Number
+              </label>
+
+              <input
+                id="paymentBusinessNumber"
+                name="paymentBusinessNumber"
+                type="text"
+                maxlength="20"
+                disabled
+              >
+
+            </div>
+
+
+            <div class="form-field">
+
+              <label for="paymentGroupAccount">
+                Group Account
+              </label>
+
+              <input
+                id="paymentGroupAccount"
+                name="paymentGroupAccount"
+                type="text"
+                maxlength="100"
+                disabled
+              >
+
+              <div class="field-help">
+                Group-level payment configuration is separate from
+                CHAMA LIVE platform subscription billing.
+              </div>
+
+            </div>
+
+
+            <div class="form-field">
+
+              <label for="paymentAccountReference">
+                Account Reference
+              </label>
+
+              <input
+                id="paymentAccountReference"
+                name="paymentAccountReference"
+                type="text"
+                maxlength="12"
+                disabled
+              >
+
+              <div class="field-help">
+                Provider-specific reference length and format must follow
+                the approved payment contract.
+              </div>
+
+            </div>
+
+
+            <div class="form-field full-width">
+
+              <label for="paymentInstructions">
+                Payment Instructions
+              </label>
+
+              <textarea
+                id="paymentInstructions"
+                name="paymentInstructions"
+                maxlength="1000"
+                disabled
+                placeholder="Payment instructions will be enabled after the payment configuration gate is cleared."
+              ></textarea>
+
+            </div>
+
           </div>
+
+
+          <div class="payment-preview">
+
+            <div class="payment-preview-label">
+              Payment Reference Preview
+            </div>
+
+            <div
+              id="paymentReferencePreviewValue"
+              class="payment-preview-value"
+            >
+              —
+            </div>
+
+          </div>
+
+
+          <div class="payment-state-note">
+
+            Live payment execution must follow the approved sequence:
+
+            payment intent →
+            provider reference →
+            callback/result →
+            execution transaction →
+            contribution/accounting chain.
+
+          </div>
+
+
+          <div class="form-actions">
+
+            <button
+              id="savePaymentCollection"
+              type="button"
+              class="primary-button"
+              disabled
+            >
+              Save Payment Collection
+            </button>
+
+          </div>
+
         </div>
 
-        <div class="subscription-item">
-          <div class="subscription-label">
-            Amount
-          </div>
+      </section>
 
-          <div
-            id="subscriptionAmount"
-            class="subscription-value"
-          >
-            —
-          </div>
+
+      <!-- =================================================
+           ACCOUNT
+           ================================================= -->
+
+      <section
+        class="management-card"
+        aria-labelledby="accountHeading"
+      >
+
+        <div class="management-card-header">
+
+          <h2 id="accountHeading">
+            Account
+          </h2>
+
+          <p>
+            Manage the group's CHAMA LIVE subscription account separately
+            from group financial accounting.
+          </p>
+
         </div>
 
-      </div>
+
+        <div class="management-card-body">
+
+          <div class="account-panel">
+
+            <div>
+
+              <strong>
+                Platform Account
+              </strong>
+
+              <span>
+                Subscription and platform billing are separate from group
+                member contributions and other group accounting.
+              </span>
+
+            </div>
+
+
+            <a
+              class="secondary-button"
+              href="billing.html"
+              style="text-decoration:none;"
+            >
+              Open Billing
+            </a>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           SUBSCRIPTION
+           ================================================= -->
+
+      <section
+        class="management-card"
+        aria-labelledby="subscriptionHeading"
+      >
+
+        <div class="management-card-header">
+
+          <h2 id="subscriptionHeading">
+            Subscription
+          </h2>
+
+          <p>
+            Current CHAMA LIVE platform subscription information.
+          </p>
+
+        </div>
+
+
+        <div class="management-card-body">
+
+          <div class="subscription-grid">
+
+
+            <div class="subscription-item">
+
+              <div class="subscription-label">
+                Status
+              </div>
+
+              <div
+                id="subscriptionStatus"
+                class="subscription-value"
+              >
+                —
+              </div>
+
+            </div>
+
+
+            <div class="subscription-item">
+
+              <div class="subscription-label">
+                Plan
+              </div>
+
+              <div
+                id="subscriptionPlan"
+                class="subscription-value"
+              >
+                —
+              </div>
+
+            </div>
+
+
+            <div class="subscription-item">
+
+              <div class="subscription-label">
+                End Date
+              </div>
+
+              <div
+                id="subscriptionEndDate"
+                class="subscription-value"
+              >
+                —
+              </div>
+
+            </div>
+
+
+            <div class="subscription-item">
+
+              <div class="subscription-label">
+                Amount
+              </div>
+
+              <div
+                id="subscriptionAmount"
+                class="subscription-value"
+              >
+                —
+              </div>
+
+            </div>
+
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
+           GROUP CONTEXT
+           ================================================= -->
+
+      <section
+        class="management-card full-width"
+        aria-labelledby="groupContextHeading"
+      >
+
+        <div class="management-card-header">
+
+          <h2 id="groupContextHeading">
+            Group Context
+          </h2>
+
+          <p>
+            Current group and access context used by the management page.
+          </p>
+
+        </div>
+
+
+        <div class="management-card-body">
+
+          <div class="context-grid">
+
+
+            <div class="context-item">
+
+              <div class="context-label">
+                Group
+              </div>
+
+              <div
+                id="groupContextName"
+                class="context-value"
+              >
+                —
+              </div>
+
+            </div>
+
+
+            <div class="context-item">
+
+              <div class="context-label">
+                Role
+              </div>
+
+              <div
+                id="groupContextRole"
+                class="context-value"
+              >
+                —
+              </div>
+
+            </div>
+
+
+            <div class="context-item">
+
+              <div class="context-label">
+                Access
+              </div>
+
+              <div
+                id="contextAccess"
+                class="context-value"
+              >
+                —
+              </div>
+
+            </div>
+
+
+            <div class="context-item">
+
+              <div class="context-label">
+                Country
+              </div>
+
+              <div
+                id="groupContextCountry"
+                class="context-value"
+              >
+                —
+              </div>
+
+            </div>
+
+
+          </div>
+
+
+          <div class="section-note">
+
+            Access permissions are determined by the authenticated
+            user's authorized group role and the applicable backend
+            authorization rules.
+
+          </div>
+
+        </div>
+
+      </section>
 
     </div>
-  </section>
-
-  <!-- =================================================
-       GROUP CONTEXT
-       ================================================= -->
-
-  <section
-    class="management-card full-width"
-    aria-labelledby="groupContextHeading"
-  >
-    <div class="management-card-header">
-      <h2 id="groupContextHeading">Group Context</h2>
-
-      <p>
-        Current group and access context used by the management page.
-      </p>
-    </div>
-
-    <div class="management-card-body">
-
-      <div class="context-grid">
-
-        <div class="context-item">
-          <div class="context-label">
-            Group
-          </div>
-
-          <div
-            id="groupContextName"
-            class="context-value"
-          >
-            —
-          </div>
-        </div>
-
-        <div class="context-item">
-          <div class="context-label">
-            Role
-          </div>
-
-          <div
-            id="groupContextRole"
-            class="context-value"
-          >
-            —
-          </div>
-        </div>
-
-        <div class="context-item">
-          <div class="context-label">
-            Access
-          </div>
-
-          <div
-            id="contextAccess"
-            class="context-value"
-          >
-            —
-          </div>
-        </div>
-
-        <div class="context-item">
-          <div class="context-label">
-            Country
-          </div>
-
-          <div
-            id="groupContextCountry"
-            class="context-value"
-          >
-            —
-          </div>
-        </div>
-
-      </div>
-
-      <div class="section-note">
-        Access permissions are determined by the authenticated user's
-        authorized group role and the applicable backend authorization
-        rules.
-      </div>
-
-    </div>
-  </section>
-
-</div>
-```
 
   </main>
 
+
   <!-- =====================================================
        PAGE BOOT
-       =====================================================
 
        admin-layout.js remains the sole shell/page boot owner.
        Do not separately import or auto-run group-management.js
-       here, which could create duplicate initialization.
-
-       The guarded boot below only adds failure handling.
-       It does NOT create a second page initializer.
+       here.
        ===================================================== -->
 
   <noscript>
+
     <div
       style="
         margin:20px;
@@ -2128,9 +2447,12 @@ content="light"
       CHAMA LIVE Group Management requires JavaScript to load and manage
       your group securely.
     </div>
+
   </noscript>
 
+
   <script type="module">
+
     import { boot } from "./js/admin-layout.js";
 
     /*
@@ -2140,39 +2462,63 @@ content="light"
      * It only prevents an import/boot failure from leaving the page
      * permanently displaying "Loading group management...".
      */
+
     try {
+
       await boot();
+
     } catch (error) {
+
       console.error(
         "CHAMA LIVE Group Management boot failed:",
         error
       );
 
-      const loading = document.getElementById("adminLoading");
-      const errorBox = document.getElementById("error");
-      const status = document.getElementById("groupManagementStatus");
+      const loading =
+        document.getElementById("adminLoading");
+
+      const errorBox =
+        document.getElementById("error");
+
+      const status =
+        document.getElementById("groupManagementStatus");
+
 
       if (loading) {
+
         loading.hidden = true;
         loading.style.display = "none";
+
       }
+
 
       const message =
         error?.message ||
         "The Group Management page could not be initialized.";
 
+
       if (errorBox) {
+
         errorBox.hidden = false;
+
         errorBox.textContent =
           `Group Management could not be loaded. ${message}`;
+
       }
 
+
       if (status) {
-        status.className = "management-status error is-visible";
+
+        status.className =
+          "management-status error is-visible";
+
         status.textContent =
           `Group Management could not be loaded. ${message}`;
+
       }
+
     }
+
   </script>
 
 </body>
