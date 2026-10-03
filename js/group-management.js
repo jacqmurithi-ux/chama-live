@@ -27,7 +27,8 @@ let currentMember = null;
 let currentGroup = null;
 let currentIsOwner = false;
 let currentRole = null;
-let canManageGroup = false;
+let canEditGroupDetails = false;
+let canEditContributionSettings = false;
 
 let subscription = null;
 let contributionSettings = null;
@@ -236,35 +237,29 @@ function isInitiativeManager() {
 
 
 function applyAuthorization() {
-    // The groups update policy and contribution-settings RPC require admin.
-    canManageGroup = currentRole === "admin";
+    // Keep each client gate aligned with its distinct backend operation.
+    canEditGroupDetails = currentRole === "admin";
+    canEditContributionSettings = currentRole === "admin";
 }
 
 
 function applyAuthorizationUI() {
-    const manager =
-        Boolean(canManageGroup);
-
     if (elements.groupForm) {
         elements.groupForm
-            .querySelectorAll(
-                "input, select, textarea, button"
-            )
+            .querySelectorAll("input, select, textarea, button")
             .forEach((element) => {
-                element.disabled = !manager;
+                element.disabled = !canEditGroupDetails;
             });
     }
 
     if (elements.saveContributionSettings) {
         elements.saveContributionSettings.disabled =
-            !manager;
+            !canEditContributionSettings;
     }
 
     if (elements.createInitiativeForm) {
         elements.createInitiativeForm
-            .querySelectorAll(
-                "input, select, textarea, button"
-            )
+            .querySelectorAll("input, select, textarea, button")
             .forEach((element) => {
                 element.disabled = !isInitiativeManager();
             });
@@ -272,7 +267,7 @@ function applyAuthorizationUI() {
 
     if (elements.permissionMessage) {
         elements.permissionMessage.hidden =
-            manager;
+            canEditGroupDetails && canEditContributionSettings;
     }
 }
 
@@ -452,7 +447,7 @@ async function saveGroupInformation(event) {
         );
     }
 
-    if (!canManageGroup) {
+    if (!canEditGroupDetails) {
         throw new Error(
             "You do not have permission to update group information."
         );
@@ -485,13 +480,6 @@ async function saveGroupInformation(event) {
         throw new Error(
             "Monthly contribution must be a valid non-negative number."
         );
-    }
-
-    const rawClosingDay = elements.closingDay?.value?.trim();
-    const closingDay = Number(rawClosingDay);
-
-    if (!rawClosingDay || !Number.isInteger(closingDay) || closingDay < 1 || closingDay > 31) {
-        throw new Error("Closing day must be a whole number between 1 and 31.");
     }
 
     const { error } =
@@ -663,7 +651,7 @@ async function saveContributionSettings(event) {
         );
     }
 
-    if (!canManageGroup) {
+    if (!canEditContributionSettings) {
         throw new Error(
             "You do not have permission to update contribution settings."
         );
