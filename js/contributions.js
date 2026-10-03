@@ -4,6 +4,8 @@
 
    MEMBER PAYMENT EVIDENCE INTEGRATION
    ---------------------------------------------------------
+   ACCOUNTING BOUNDARIES
+   ---------------------------------------------------------
    • Ordinary members submit payment evidence only.
    • Member evidence is inserted into
      member_payment_evidence.
@@ -12,14 +14,16 @@
    • Frontend never directly inserts into contributions
      for the member-evidence workflow.
    • Verification is performed by the database
-     verify_member_payment_evidence() RPC through the
-     authorised verifier workflow.
+     verify_member_payment_evidence() RPC.
    • Existing canonical contribution recording remains
      through cl_2b_record_contribution().
    • Verifier reads are limited to pending evidence in
      the current group.
    • Verifier writes occur only through
      verify_member_payment_evidence().
+   • Canonical accounting remains backend-owned.
+   • Closed financial-period enforcement remains
+     backend-owned.
 ========================================================= */
 
 import {
@@ -159,12 +163,6 @@ const memberEvidenceText =
     "memberEvidenceText"
   );
 
-/*
- * IMPORTANT:
- * This is the DOM button reference.
- * It must not use the same identifier as the
- * submitMemberPaymentEvidence() function below.
- */
 const submitMemberPaymentEvidenceButton =
   document.getElementById(
     "submitMemberPaymentEvidence"
@@ -263,6 +261,24 @@ const MEMBER_EVIDENCE_STATUSES = {
 };
 
 
+/*
+ * Roles allowed to use the manual canonical
+ * contribution recorder surface.
+ *
+ * Database authorization remains authoritative.
+ */
+const RECORDER_ROLES = new Set([
+
+  "admin",
+
+  "chairperson"
+
+]);
+
+
+/*
+ * Roles allowed to review member payment evidence.
+ */
 const VERIFIER_ROLES = new Set([
 
   "admin",
@@ -467,7 +483,9 @@ function buildAccountingMonthOptions() {
     options
       .map(
         month => `
-          <option value="${month}">
+          <option value="${escapeHtml(
+            month
+          )}">
             ${escapeHtml(
               formatAccountingMonth(
                 month
@@ -831,6 +849,15 @@ function isOrdinaryMember() {
 }
 
 
+function isAuthorizedRecorder() {
+
+  return RECORDER_ROLES.has(
+    getCurrentMemberRole()
+  );
+
+}
+
+
 function isAuthorizedVerifier() {
 
   return VERIFIER_ROLES.has(
@@ -967,10 +994,8 @@ function renderMemberPaymentEvidence() {
           colspan="7"
           class="cl-evidence-empty"
         >
-
           You have not submitted any payment
           evidence yet.
-
         </td>
 
       </tr>
@@ -1014,21 +1039,17 @@ function renderMemberPaymentEvidence() {
             <tr>
 
               <td data-label="Date">
-
                 ${escapeHtml(
                   formatDate(
                     evidence.payment_date
                   )
                 )}
-
               </td>
-
 
               <td
                 data-label="Amount"
                 class="cl-money-cell"
               >
-
                 <strong>
                   ${escapeHtml(
                     money(
@@ -1036,80 +1057,56 @@ function renderMemberPaymentEvidence() {
                     )
                   )}
                 </strong>
-
               </td>
 
-
               <td data-label="Method">
-
-                <span
-                  class="cl-payment-badge"
-                >
-
+                <span class="cl-payment-badge">
                   ${escapeHtml(
                     method
                   )}
-
                 </span>
-
               </td>
 
-
               <td data-label="Reference">
-
                 ${escapeHtml(
                   reference
                 )}
-
               </td>
 
-
               <td data-label="Submitted">
-
                 ${escapeHtml(
                   formatDate(
                     evidence.submitted_at
                   )
                 )}
-
               </td>
 
-
               <td data-label="Status">
-
                 <span
                   class="
                     cl-evidence-status-badge
                     ${statusClass}
                   "
                 >
-
                   ${escapeHtml(
                     status
                   )}
-
                 </span>
-
               </td>
-
 
               <td data-label="Details">
 
                 ${
                   rejectionReason
                     ? `
-                      <span
-                        class="cl-evidence-reason"
-                      >
+                      <span class="cl-evidence-reason">
                         ${escapeHtml(
                           rejectionReason
                         )}
                       </span>
                     `
                     : `
-                      <span
-                        class="cl-evidence-reason"
-                      >
+                      <span class="cl-evidence-reason">
                         ${escapeHtml(
                           evidence.evidence_text ||
                           "Payment submitted for verification."
@@ -1212,6 +1209,9 @@ function configureMemberPaymentEvidence() {
   const show =
     isOrdinaryMember();
 
+  memberPaymentEvidenceCard.hidden =
+    !show;
+
   memberPaymentEvidenceCard.classList.toggle(
     "cl-member-evidence-visible",
     show
@@ -1221,10 +1221,8 @@ function configureMemberPaymentEvidence() {
     recordContributionCard
   ) {
 
-    recordContributionCard.style.display =
-      show
-        ? "none"
-        : "";
+    recordContributionCard.hidden =
+      !isAuthorizedRecorder();
 
   }
 
@@ -1293,7 +1291,7 @@ async function submitMemberPaymentEvidence(
       memberEvidenceMethod?.value
     );
 
-  const mpesaReference =
+  const mpesaReferenceValue =
     memberEvidenceMpesaReference?.value
       ?.trim() ||
     "";
@@ -1348,7 +1346,7 @@ async function submitMemberPaymentEvidence(
   if (
     paymentMethod ===
       PAYMENT_METHODS.MPESA &&
-    !mpesaReference
+    !mpesaReferenceValue
   ) {
 
     showMemberEvidenceMessage(
@@ -1405,9 +1403,9 @@ async function submitMemberPaymentEvidence(
      * MEMBER EVIDENCE WRITE BOUNDARY
      *
      * This is the only client-side write performed
-     * by the member evidence submission workflow.
+     * by the member evidence workflow.
      *
-     * It creates a pending evidence row only.
+     * It creates pending evidence only.
      * It does not create a contribution.
      */
 
@@ -1434,7 +1432,7 @@ async function submitMemberPaymentEvidence(
           mpesa_reference:
             paymentMethod ===
               PAYMENT_METHODS.MPESA
-              ? mpesaReference
+              ? mpesaReferenceValue
               : null,
 
           payment_date:
@@ -1557,7 +1555,8 @@ function configureVerifierPaymentEvidence() {
       verifierPaymentEvidenceRows
     ) {
 
-      verifierPaymentEvidenceRows.innerHTML = "";
+      verifierPaymentEvidenceRows.innerHTML =
+        "";
 
     }
 
@@ -1598,10 +1597,8 @@ function renderVerifierPaymentEvidence() {
           colspan="7"
           class="cl-evidence-empty"
         >
-
           No pending payment evidence requires
           verification.
-
         </td>
 
       </tr>
@@ -1645,7 +1642,6 @@ function renderVerifierPaymentEvidence() {
 
               </td>
 
-
               <td
                 data-label="Amount"
                 class="cl-money-cell"
@@ -1661,7 +1657,6 @@ function renderVerifierPaymentEvidence() {
 
               </td>
 
-
               <td data-label="Payment Date">
 
                 ${escapeHtml(
@@ -1672,21 +1667,15 @@ function renderVerifierPaymentEvidence() {
 
               </td>
 
-
               <td data-label="Method">
 
-                <span
-                  class="cl-payment-badge"
-                >
-
+                <span class="cl-payment-badge">
                   ${escapeHtml(
                     method
                   )}
-
                 </span>
 
               </td>
-
 
               <td data-label="Reference">
 
@@ -1695,7 +1684,6 @@ function renderVerifierPaymentEvidence() {
                 )}
 
               </td>
-
 
               <td data-label="Submitted">
 
@@ -1706,7 +1694,6 @@ function renderVerifierPaymentEvidence() {
                 )}
 
               </td>
-
 
               <td data-label="Action">
 
@@ -1784,35 +1771,21 @@ function showVerifierPaymentEvidenceDetail(
 
   verifierPaymentEvidenceDetail.innerHTML = `
 
-    <div
-      class="cl-verifier-detail"
-    >
+    <div class="cl-verifier-detail">
 
-      <div
-        class="cl-verifier-detail-grid"
-      >
+      <div class="cl-verifier-detail-grid">
 
         <div>
-
-          <span>
-            Member
-          </span>
-
+          <span>Member</span>
           <strong>
             ${escapeHtml(
               memberName
             )}
           </strong>
-
         </div>
 
-
         <div>
-
-          <span>
-            Amount
-          </span>
-
+          <span>Amount</span>
           <strong>
             ${escapeHtml(
               money(
@@ -1820,16 +1793,10 @@ function showVerifierPaymentEvidenceDetail(
               )
             )}
           </strong>
-
         </div>
 
-
         <div>
-
-          <span>
-            Payment date
-          </span>
-
+          <span>Payment date</span>
           <strong>
             ${escapeHtml(
               formatDate(
@@ -1837,46 +1804,28 @@ function showVerifierPaymentEvidenceDetail(
               )
             )}
           </strong>
-
         </div>
 
-
         <div>
-
-          <span>
-            Payment method
-          </span>
-
+          <span>Payment method</span>
           <strong>
             ${escapeHtml(
               method
             )}
           </strong>
-
         </div>
 
-
         <div>
-
-          <span>
-            M-Pesa reference
-          </span>
-
+          <span>M-Pesa reference</span>
           <strong>
             ${escapeHtml(
               reference
             )}
           </strong>
-
         </div>
 
-
         <div>
-
-          <span>
-            Submitted
-          </span>
-
+          <span>Submitted</span>
           <strong>
             ${escapeHtml(
               formatDate(
@@ -1884,15 +1833,11 @@ function showVerifierPaymentEvidenceDetail(
               )
             )}
           </strong>
-
         </div>
 
       </div>
 
-
-      <div
-        class="cl-verifier-detail-evidence"
-      >
+      <div class="cl-verifier-detail-evidence">
 
         <span>
           Payment details
@@ -1907,10 +1852,7 @@ function showVerifierPaymentEvidenceDetail(
 
       </div>
 
-
-      <div
-        class="cl-verifier-detail-actions"
-      >
+      <div class="cl-verifier-detail-actions">
 
         <button
           type="button"
@@ -1925,7 +1867,6 @@ function showVerifierPaymentEvidenceDetail(
           Verify Payment
         </button>
 
-
         <button
           type="button"
           class="
@@ -1938,7 +1879,6 @@ function showVerifierPaymentEvidenceDetail(
         >
           Reject Payment
         </button>
-
 
         <button
           type="button"
@@ -1992,6 +1932,15 @@ async function loadVerifierPaymentEvidence() {
     return;
 
   }
+
+  /*
+   * READ BOUNDARY
+   *
+   * Only pending evidence for the current group
+   * is requested by the verifier surface.
+   *
+   * Database RLS remains authoritative.
+   */
 
   const {
     data,
@@ -2111,13 +2060,11 @@ async function verifyPaymentEvidence(
      * VERIFIER WRITE BOUNDARY
      * =====================================================
      *
-     * This is the ONLY verifier write.
+     * No browser UPDATE is performed.
+     * No browser INSERT into contributions is performed.
      *
-     * The browser does not directly UPDATE the evidence
-     * row and does not directly INSERT a contribution.
-     *
-     * The SECURITY DEFINER RPC is the authoritative
-     * verification and accounting boundary.
+     * The database RPC is the authoritative verification
+     * and accounting boundary.
      */
 
     const {
@@ -3096,8 +3043,6 @@ function contributionTypeLabel(item) {
 
     monthly: "Monthly",
 
-    other: "Other",
-
     welfare: "Welfare",
 
     emergency: "Emergency",
@@ -3120,165 +3065,6 @@ function contributionTypeLabel(item) {
           type.slice(1)
         : "—"
     )
-  );
-
-}
-
-
-/* =========================================================
-   OTHER CONTRIBUTION FIELD
-========================================================= */
-
-let otherTypeWrap = null;
-
-let otherTypeInput = null;
-
-
-function createOtherContributionField() {
-
-  otherTypeWrap =
-    document.getElementById(
-      "otherContributionTypeWrap"
-    );
-
-  otherTypeInput =
-    document.getElementById(
-      "otherContributionType"
-    );
-
-  updateOtherContributionType();
-
-}
-
-
-/* =========================================================
-   UPDATE OTHER FIELD
-========================================================= */
-
-function updateOtherContributionType() {
-
-  if (
-    !typeSelect ||
-    !otherTypeWrap ||
-    !otherTypeInput
-  ) {
-
-    return;
-
-  }
-
-  const isOther =
-    String(
-      typeSelect.value ||
-      ""
-    )
-      .trim()
-      .toLowerCase() ===
-    "other";
-
-  otherTypeWrap.hidden =
-    !isOther;
-
-  otherTypeInput.required =
-    isOther;
-
-  if (!isOther) {
-
-    otherTypeInput.value =
-      "";
-
-  }
-
-}
-
-
-/* =========================================================
-   BUILD NOTES
-========================================================= */
-
-function buildContributionNotes(
-  contributionType,
-  otherDetails,
-  normalNotes
-) {
-
-  const notes =
-    String(
-      normalNotes || ""
-    ).trim();
-
-  if (
-    String(
-      contributionType || ""
-    ).toLowerCase() !==
-    "other"
-  ) {
-
-    return notes || null;
-
-  }
-
-  const details =
-    String(
-      otherDetails || ""
-    ).trim();
-
-  if (!details) {
-
-    return notes || null;
-
-  }
-
-  const otherLine =
-    `Other contribution: ${details}`;
-
-  if (!notes) {
-
-    return otherLine;
-
-  }
-
-  return (
-    `${otherLine}\n${notes}`
-  );
-
-}
-
-
-/* =========================================================
-   EXTRACT OTHER DETAILS
-========================================================= */
-
-function extractOtherDetails(item) {
-
-  const type =
-    String(
-      item?.contribution_type ||
-      ""
-    ).toLowerCase();
-
-  if (
-    type !== "other"
-  ) {
-
-    return "";
-
-  }
-
-  const notes =
-    String(
-      item?.notes ||
-      ""
-    );
-
-  const match =
-    notes.match(
-      /Other contribution:\s*(.+?)(?:\n|$)/i
-    );
-
-  return (
-    match?.[1]?.trim() ||
-    ""
   );
 
 }
@@ -3390,11 +3176,6 @@ function renderLedger() {
               item
             );
 
-          const otherDetails =
-            extractOtherDetails(
-              item
-            );
-
           const goalName =
             getGoalName(
               item.goal_id
@@ -3412,7 +3193,6 @@ function renderLedger() {
 
               </td>
 
-
               <td data-label="Member">
 
                 <strong>
@@ -3424,7 +3204,6 @@ function renderLedger() {
                 </strong>
 
               </td>
-
 
               <td
                 data-label="Amount"
@@ -3439,44 +3218,23 @@ function renderLedger() {
 
               </td>
 
-
               <td data-label="Type">
 
-                <span
-                  class="cl-type-badge"
-                >
+                <span class="cl-type-badge">
                   ${escapeHtml(type)}
                 </span>
 
-                ${
-                  otherDetails
-                    ? `
-                      <small
-                        class="cl-sub-detail"
-                      >
-                        ${escapeHtml(
-                          otherDetails
-                        )}
-                      </small>
-                    `
-                    : ""
-                }
-
               </td>
-
 
               <td data-label="Payment Method">
 
-                <span
-                  class="cl-payment-badge"
-                >
+                <span class="cl-payment-badge">
                   ${escapeHtml(
                     paymentMethod
                   )}
                 </span>
 
               </td>
-
 
               <td data-label="Goal">
 
@@ -3486,7 +3244,6 @@ function renderLedger() {
 
               </td>
 
-
               <td data-label="Reference">
 
                 ${escapeHtml(
@@ -3495,15 +3252,12 @@ function renderLedger() {
 
               </td>
 
-
               <td data-label="Notes">
 
                 ${
                   item.notes
                     ? `
-                      <span
-                        class="cl-note-text"
-                      >
+                      <span class="cl-note-text">
                         ${escapeHtml(
                           item.notes
                         )}
@@ -3739,31 +3493,25 @@ function renderMemberStatus() {
 
                 </td>
 
-
                 <td data-label="Current Due">
                   —
                 </td>
-
 
                 <td data-label="Previous Arrears">
                   —
                 </td>
 
-
                 <td data-label="Current Paid">
                   —
                 </td>
-
 
                 <td data-label="Carry Forward">
                   —
                 </td>
 
-
                 <td data-label="Outstanding">
                   —
                 </td>
-
 
                 <td data-label="Status">
 
@@ -3846,7 +3594,6 @@ function renderMemberStatus() {
 
               </td>
 
-
               <td
                 data-label="Current Due"
                 class="cl-money-cell"
@@ -3858,17 +3605,12 @@ function renderMemberStatus() {
 
               </td>
 
-
-              <td
-                data-label="Previous Arrears"
-              >
+              <td data-label="Previous Arrears">
 
                 ${
                   previousArrears > 0
                     ? `
-                      <span
-                        class="cl-arrears"
-                      >
+                      <span class="cl-arrears">
                         ${escapeHtml(
                           money(
                             previousArrears
@@ -3877,9 +3619,7 @@ function renderMemberStatus() {
                       </span>
                     `
                     : `
-                      <span
-                        class="cl-zero"
-                      >
+                      <span class="cl-zero">
                         —
                       </span>
                     `
@@ -3887,14 +3627,9 @@ function renderMemberStatus() {
 
               </td>
 
+              <td data-label="Current Paid">
 
-              <td
-                data-label="Current Paid"
-              >
-
-                <div
-                  class="cl-paid-cell"
-                >
+                <div class="cl-paid-cell">
 
                   <strong>
                     ${escapeHtml(
@@ -3910,16 +3645,12 @@ function renderMemberStatus() {
                   >
 
                     <span
-                      style="
-                        width:${progress}%;
-                      "
+                      style="width:${progress}%;"
                     ></span>
 
                   </div>
 
-                  <small
-                    class="cl-sub-detail"
-                  >
+                  <small class="cl-sub-detail">
 
                     Applied:
                     ${escapeHtml(
@@ -3934,17 +3665,12 @@ function renderMemberStatus() {
 
               </td>
 
-
-              <td
-                data-label="Carry Forward"
-              >
+              <td data-label="Carry Forward">
 
                 ${
                   carryForward > 0
                     ? `
-                      <span
-                        class="cl-carry-forward"
-                      >
+                      <span class="cl-carry-forward">
                         ${escapeHtml(
                           money(
                             carryForward
@@ -3953,9 +3679,7 @@ function renderMemberStatus() {
                       </span>
                     `
                     : `
-                      <span
-                        class="cl-zero"
-                      >
+                      <span class="cl-zero">
                         —
                       </span>
                     `
@@ -3963,10 +3687,7 @@ function renderMemberStatus() {
 
               </td>
 
-
-              <td
-                data-label="Outstanding"
-              >
+              <td data-label="Outstanding">
 
                 ${
                   outstanding > 0
@@ -3982,9 +3703,7 @@ function renderMemberStatus() {
                       </strong>
                     `
                     : `
-                      <span
-                        class="cl-zero"
-                      >
+                      <span class="cl-zero">
                         —
                       </span>
                     `
@@ -3992,10 +3711,7 @@ function renderMemberStatus() {
 
               </td>
 
-
-              <td
-                data-label="Status"
-              >
+              <td data-label="Status">
 
                 <span
                   class="
@@ -4084,9 +3800,7 @@ function renderSummary() {
 
   container.innerHTML = `
 
-    <div
-      class="cl-contribution-summary-card"
-    >
+    <div class="cl-contribution-summary-card">
 
       <span>
         TOTAL RECORDED
@@ -4105,9 +3819,7 @@ function renderSummary() {
     </div>
 
 
-    <div
-      class="cl-contribution-summary-card"
-    >
+    <div class="cl-contribution-summary-card">
 
       <span>
         ${escapeHtml(
@@ -4130,9 +3842,7 @@ function renderSummary() {
     </div>
 
 
-    <div
-      class="cl-contribution-summary-card"
-    >
+    <div class="cl-contribution-summary-card">
 
       <span>
         MONTHLY RATE
@@ -4153,9 +3863,7 @@ function renderSummary() {
     </div>
 
 
-    <div
-      class="cl-contribution-summary-card"
-    >
+    <div class="cl-contribution-summary-card">
 
       <span>
         NEEDS ATTENTION
@@ -4259,13 +3967,9 @@ function renderContributionGoals() {
 
           return `
 
-            <div
-              class="cl-goal-card"
-            >
+            <div class="cl-goal-card">
 
-              <div
-                class="cl-goal-top"
-              >
+              <div class="cl-goal-top">
 
                 <div>
 
@@ -4298,23 +4002,15 @@ function renderContributionGoals() {
 
               </div>
 
-
-              <div
-                class="cl-goal-progress"
-              >
+              <div class="cl-goal-progress">
 
                 <span
-                  style="
-                    width:${percentage}%;
-                  "
+                  style="width:${percentage}%;"
                 ></span>
 
               </div>
 
-
-              <div
-                class="cl-goal-bottom"
-              >
+              <div class="cl-goal-bottom">
 
                 <span>
                   ${escapeHtml(
@@ -4357,6 +4053,24 @@ async function recordContribution(event) {
   clearError();
 
 
+  /*
+   * Frontend role gating is for the UI only.
+   * Database authorization remains authoritative.
+   */
+
+  if (!isAuthorizedRecorder()) {
+
+    showError(
+      new Error(
+        "You are not authorised to record canonical contributions."
+      )
+    );
+
+    return;
+
+  }
+
+
   const memberId =
     memberSelect?.value ||
     "";
@@ -4377,11 +4091,6 @@ async function recordContribution(event) {
     )
       .trim()
       .toLowerCase();
-
-  const otherDetails =
-    otherTypeInput?.value
-      ?.trim() ||
-    "";
 
   const paymentMethod =
     normalizePaymentMethod(
@@ -4463,6 +4172,10 @@ async function recordContribution(event) {
   }
 
 
+  /*
+   * Canonical 2B contribution recording through this
+   * page is monthly-only.
+   */
   if (
     contributionType !==
     "monthly"
@@ -4473,24 +4186,6 @@ async function recordContribution(event) {
         "Only Monthly contributions can be recorded through the canonical 2B accounting workflow."
       )
     );
-
-    return;
-
-  }
-
-
-  if (
-    contributionType === "other" &&
-    !otherDetails
-  ) {
-
-    showError(
-      new Error(
-        "Please specify what the Other contribution is for."
-      )
-    );
-
-    otherTypeInput?.focus();
 
     return;
 
@@ -4553,64 +4248,64 @@ async function recordContribution(event) {
   }
 
 
-  if (
-    contributionType ===
-    "monthly"
-  ) {
+  /*
+   * Warn when a monthly payment already exists for
+   * the member/month.
+   *
+   * The canonical backend remains authoritative and
+   * determines the resulting accounting state.
+   */
 
-    const existing =
-      contributions.some(
-        item =>
+  const existing =
+    contributions.some(
+      item =>
 
-          String(
-            item.member_id
-          ) ===
-          String(memberId) &&
+        String(
+          item.member_id
+        ) ===
+        String(memberId) &&
 
-          String(
-            item.contribution_type ||
-            ""
-          ).toLowerCase() ===
-          "monthly" &&
+        String(
+          item.contribution_type ||
+          ""
+        ).toLowerCase() ===
+        "monthly" &&
 
-          getContributionMonth(
-            item
-          ) ===
-          month
+        getContributionMonth(
+          item
+        ) ===
+        month
+    );
+
+
+  if (existing) {
+
+    const proceed =
+      window.confirm(
+
+        `This member already has a monthly contribution for ${month}.\n\n` +
+
+        `You can still record another payment. ` +
+
+        `Any excess payment will be handled by canonical accounting.\n\n` +
+
+        `Continue?`
+
       );
 
 
-    if (existing) {
-
-      const proceed =
-        window.confirm(
-
-          `This member already has a monthly contribution for ${month}.\n\n` +
-
-          `You can still record another payment. ` +
-
-          `Any excess payment will become carry-forward credit.\n\n` +
-
-          `Continue?`
-
-        );
-
-
-      if (!proceed) {
-        return;
-      }
-
+    if (!proceed) {
+      return;
     }
 
   }
 
 
   const finalNotes =
-    buildContributionNotes(
-      contributionType,
-      otherDetails,
+    String(
       normalNotes
-    );
+    ).trim() ||
+    null;
 
 
   let idempotencyKey;
@@ -4655,9 +4350,14 @@ async function recordContribution(event) {
   try {
 
     /*
-     * CANONICAL 2B WRITE
+     * =====================================================
+     * CANONICAL 2B WRITE BOUNDARY
+     * =====================================================
      *
-     * This existing workflow remains untouched.
+     * The frontend does NOT insert into contributions.
+     *
+     * All canonical contribution accounting is delegated
+     * to cl_2b_record_contribution().
      */
 
     const {
@@ -4723,33 +4423,25 @@ async function recordContribution(event) {
     );
 
 
+    accountingMonth =
+      month;
+
+
     if (
-      contributionType ===
-      "monthly"
+      accountingMonthSelect
     ) {
 
-      accountingMonth =
-        month;
-
-
-      if (
-        accountingMonthSelect
-      ) {
-
-        accountingMonthSelect.value =
-          accountingMonth;
-
-      }
-
-      renderAccountingMonthLabel();
+      accountingMonthSelect.value =
+        accountingMonth;
 
     }
+
+    renderAccountingMonthLabel();
 
 
     await loadCanonicalMemberStatus(
       accountingMonth
     );
-
 
     await loadContributions();
 
@@ -4798,8 +4490,6 @@ async function recordContribution(event) {
     }
 
 
-    updateOtherContributionType();
-
     updatePaymentMethod();
 
 
@@ -4813,6 +4503,11 @@ async function recordContribution(event) {
 
     }
 
+
+    /*
+     * New transaction gets a fresh key only after
+     * successful completion.
+     */
 
     resetContributionIdempotencyKey();
 
@@ -4836,7 +4531,12 @@ async function recordContribution(event) {
   catch (error) {
 
     /*
+     * IMPORTANT:
+     *
      * Do NOT reset the idempotency key on failure.
+     *
+     * This permits safe replay if the request outcome
+     * is uncertain.
      */
 
     showError(error);
@@ -4891,6 +4591,11 @@ export async function initContributions() {
     currentMember =
       await getMyMember();
 
+
+    /*
+     * Role-dependent surfaces are configured only
+     * after currentMember has been resolved.
+     */
 
     configureMemberPaymentEvidence();
 
@@ -4991,10 +4696,6 @@ export async function initContributions() {
     }
 
 
-    createOtherContributionField();
-
-    updateOtherContributionType();
-
     updatePaymentMethod();
 
     updateMemberEvidencePaymentMethod();
@@ -5012,11 +4713,13 @@ export async function initContributions() {
 
 
     /*
-     * Ordinary members retain their existing
-     * payment-evidence workflow.
+     * Configure role-controlled surfaces after
+     * group/member data has been resolved.
      */
 
     configureMemberPaymentEvidence();
+
+    configureVerifierPaymentEvidence();
 
 
     if (
@@ -5026,18 +4729,6 @@ export async function initContributions() {
       await loadMemberPaymentEvidence();
 
     }
-
-
-    /*
-     * Verifier surface is loaded only for the
-     * authorised verifier roles.
-     *
-     * The frontend role check controls visibility.
-     * Database RLS remains the authoritative read
-     * boundary.
-     */
-
-    configureVerifierPaymentEvidence();
 
 
     if (
@@ -5131,24 +4822,6 @@ if (
   methodSelect.addEventListener(
     "change",
     updatePaymentMethod
-  );
-
-}
-
-
-if (
-  typeSelect &&
-  !typeSelect.dataset.clTypeBound
-) {
-
-  typeSelect.dataset
-    .clTypeBound =
-    "true";
-
-
-  typeSelect.addEventListener(
-    "change",
-    updateOtherContributionType
   );
 
 }
@@ -5276,5 +4949,5 @@ else {
 
 
 console.log(
-  "CHAMA LIVE: contributions.js loaded"
+  "CHAMA LIVE: contributions.js ready"
 );
