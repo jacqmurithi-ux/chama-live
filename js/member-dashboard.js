@@ -6,37 +6,59 @@
    PURPOSE
    ---------------------------------------------------------
    • Show the authenticated member's own account information.
-   • Show the member's own contribution summary.
-   • Show canonical member contribution status.
+   • Show the member's own canonical contribution position.
    • Show read-only group-level information.
-   • Provide navigation into the member portal.
+   • Show canonical monthly participation.
+   • Show canonical monthly cash contribution totals.
+   • Provide read-only activity information.
 
    SECURITY CONTRACT
    ---------------------------------------------------------
-   • Member identity comes from the authenticated session.
-   • Member/group context comes from getMyApplicationContext().
+   • member-layout.js owns authentication/context resolution.
+   • member-layout.js passes the resolved application context
+     into initMemberDashboard(context).
    • This page is READ-ONLY.
-   • No INSERT / UPDATE / DELETE.
+   • No INSERT.
+   • No UPDATE.
+   • No DELETE.
    • No financial mutation.
    • No member mutation.
    • No group mutation.
    • No admin mutation.
 
+   ACCOUNTING CONTRACT
+   ---------------------------------------------------------
+   Canonical member position:
+
+       get_my_contribution_position()
+
+   Canonical group monthly participation:
+
+       get_canonical_monthly_accounting_summary()
+
+   Canonical group monthly cash contributions:
+
+       get_monthly_accounting_summary()
+
    IMPORTANT
    ---------------------------------------------------------
    • Do not assume contributions.group_id exists.
-   • Group contribution data is resolved through members.
-   • Member contribution position is resolved through
-     get_my_contribution_position().
-   • Group monthly participation is resolved through
-     get_canonical_monthly_accounting_summary().
-   • Group monthly cash contributions are resolved through
-     get_monthly_accounting_summary().
+   • Group contribution activity is resolved through members.
+   • Raw contribution rows are NOT used to calculate:
+       - group participation
+       - monthly canonical contribution totals
+       - member arrears
+       - member credit
+       - member canonical allocated position
    • member-layout.js owns portal navigation/auth/logout.
    ========================================================= */
 
 import { supabase } from "./supabase.js";
-import { getMyApplicationContext } from "./auth.js";
+
+
+/* =========================================================
+   STATE
+   ========================================================= */
 
 let currentUser = null;
 let currentMember = null;
@@ -48,6 +70,7 @@ let memberId = null;
 let groupMembers = [];
 let groupContributions = [];
 let groupExpenses = [];
+
 let groupMonthlyAccountingSummary = null;
 let groupMonthlyFinancialSummary = null;
 
@@ -60,6 +83,15 @@ let initialized = false;
 
 function byId(id) {
   return document.getElementById(id);
+}
+
+
+function setText(id, value) {
+  const element = byId(id);
+
+  if (element) {
+    element.textContent = value ?? "—";
+  }
 }
 
 
@@ -83,266 +115,23 @@ function numberValue(value) {
 
 
 function formatMoney(value) {
-  return new Intl.NumberFormat("en-KE", {
-    style: "currency",
-    currency: "KES",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(
+  return new Intl.NumberFormat(
+    "en-KE",
+    {
+      style: "currency",
+      currency: "KES",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }
+  ).format(
     numberValue(value)
   );
 }
 
 
 /* =========================================================
-   CANONICAL CONTRIBUTION POSITION
+   DATE HELPERS
    ========================================================= */
-
-function contributionPositionStatus(
-  position
-) {
-  if (!position) {
-    return "UNKNOWN";
-  }
-
-  const status =
-    String(
-      position.status || ""
-    )
-      .trim()
-      .toUpperCase();
-
-  const arrears =
-    numberValue(
-      position.arrears
-    );
-
-  const credit =
-    numberValue(
-      position.credit
-    );
-
-  if (
-    status === "ARREARS" ||
-    arrears > 0
-  ) {
-    return "ARREARS";
-  }
-
-  if (
-    status === "CREDIT" ||
-    credit > 0
-  ) {
-    return "CREDIT";
-  }
-
-  return "UP_TO_DATE";
-}
-
-
-function renderMyContributionPosition(
-  position
-) {
-  const statusElement =
-    byId(
-      "myContributionStatus"
-    );
-
-  /*
-   * IMPORTANT:
-   * member-dashboard.html uses:
-   *   id="myContributionPositionTotal"
-   *
-   * The previous JavaScript used:
-   *   myContributionTotalPosition
-   *
-   * That mismatch prevented the value from rendering.
-   */
-  const totalElement =
-    byId(
-      "myContributionPositionTotal"
-    );
-
-  const arrearsElement =
-    byId(
-      "myContributionArrears"
-    );
-
-  const creditElement =
-    byId(
-      "myContributionCredit"
-    );
-
-  if (!position) {
-    if (statusElement) {
-      statusElement.className =
-        "member-finance-status-value status-unknown";
-
-      statusElement.textContent =
-        "Unavailable";
-    }
-
-    if (totalElement) {
-      totalElement.textContent =
-        "—";
-    }
-
-    if (arrearsElement) {
-      arrearsElement.textContent =
-        "—";
-    }
-
-    if (creditElement) {
-      creditElement.textContent =
-        "—";
-    }
-
-    return;
-  }
-
-  const status =
-    contributionPositionStatus(
-      position
-    );
-
-  if (statusElement) {
-    statusElement.className =
-      "member-finance-status-value";
-
-    if (status === "ARREARS") {
-      statusElement.classList.add(
-        "status-arrears"
-      );
-
-      statusElement.textContent =
-        "ARREARS";
-
-    } else if (status === "CREDIT") {
-      statusElement.classList.add(
-        "status-credit"
-      );
-
-      statusElement.textContent =
-        "CREDIT";
-
-    } else {
-      statusElement.classList.add(
-        "status-up-to-date"
-      );
-
-      statusElement.textContent =
-        "UP TO DATE";
-    }
-  }
-
-  /*
-   * get_my_contribution_position()
-   * returns:
-   *   total_due
-   *   total_allocated
-   *   arrears
-   *   credit
-   *   status
-   *
-   * It does NOT return total_contributed.
-   *
-   * The "Total Contributed" field in this canonical
-   * contribution-position block therefore uses
-   * total_allocated.
-   */
-  if (totalElement) {
-    totalElement.textContent =
-      formatMoney(
-        position.total_allocated
-      );
-  }
-
-  if (arrearsElement) {
-    arrearsElement.textContent =
-      formatMoney(
-        position.arrears
-      );
-  }
-
-  if (creditElement) {
-    creditElement.textContent =
-      formatMoney(
-        position.credit
-      );
-  }
-}
-
-
-async function loadMyContributionPosition() {
-  const statusElement =
-    byId(
-      "myContributionStatus"
-    );
-
-  if (!statusElement) {
-    return;
-  }
-
-  statusElement.className =
-    "member-finance-status-value status-unknown";
-
-  statusElement.textContent =
-    "Loading...";
-
-  setText(
-    "myContributionPositionTotal",
-    "—"
-  );
-
-  setText(
-    "myContributionArrears",
-    "—"
-  );
-
-  setText(
-    "myContributionCredit",
-    "—"
-  );
-
-  try {
-    const {
-      data,
-      error
-    } = await supabase.rpc(
-      "get_my_contribution_position"
-    );
-
-    if (error) {
-      throw error;
-    }
-
-    const position =
-      Array.isArray(data)
-        ? data[0]
-        : data;
-
-    if (!position) {
-      throw new Error(
-        "Contribution position returned no result."
-      );
-    }
-
-    renderMyContributionPosition(
-      position
-    );
-
-  } catch (error) {
-    console.warn(
-      "Member contribution position could not be loaded:",
-      error
-    );
-
-    renderMyContributionPosition(
-      null
-    );
-  }
-}
-
 
 function formatDate(value) {
   if (!value) {
@@ -351,11 +140,7 @@ function formatDate(value) {
 
   const date = new Date(value);
 
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
+  if (Number.isNaN(date.getTime())) {
     return String(value);
   }
 
@@ -405,6 +190,29 @@ function currentMonthStart() {
 }
 
 
+function currentMonthKey() {
+  return currentMonthStart()
+    .slice(0, 7);
+}
+
+
+/* =========================================================
+   RPC RESULT NORMALIZATION
+   ========================================================= */
+
+function firstRpcRow(data) {
+  if (Array.isArray(data)) {
+    return data[0] || null;
+  }
+
+  return data || null;
+}
+
+
+/* =========================================================
+   DISPLAY HELPERS
+   ========================================================= */
+
 function displayRole(role) {
   if (!role) {
     return "Member";
@@ -441,20 +249,6 @@ function displayStatus(status) {
 }
 
 
-function setText(
-  id,
-  value
-) {
-  const element =
-    byId(id);
-
-  if (element) {
-    element.textContent =
-      value ?? "—";
-  }
-}
-
-
 /* =========================================================
    LOADING / ERROR
    ========================================================= */
@@ -466,8 +260,7 @@ function showLoading(show) {
     );
 
   if (loading) {
-    loading.hidden =
-      !show;
+    loading.hidden = !show;
   }
 }
 
@@ -499,6 +292,260 @@ function clearError() {
   if (error) {
     error.hidden = true;
     error.textContent = "";
+  }
+}
+
+
+/* =========================================================
+   CANONICAL MEMBER CONTRIBUTION POSITION
+   ========================================================= */
+
+function contributionPositionStatus(position) {
+  if (!position) {
+    return "UNKNOWN";
+  }
+
+  const status =
+    String(
+      position.status || ""
+    )
+      .trim()
+      .toUpperCase();
+
+  const arrears =
+    numberValue(
+      position.arrears
+    );
+
+  const credit =
+    numberValue(
+      position.credit
+    );
+
+  if (
+    status === "ARREARS" ||
+    arrears > 0
+  ) {
+    return "ARREARS";
+  }
+
+  if (
+    status === "CREDIT" ||
+    credit > 0
+  ) {
+    return "CREDIT";
+  }
+
+  return "UP_TO_DATE";
+}
+
+
+function renderMyContributionPosition(position) {
+  const statusElement =
+    byId(
+      "myContributionStatus"
+    );
+
+  const totalElement =
+    byId(
+      "myContributionPositionTotal"
+    );
+
+  const arrearsElement =
+    byId(
+      "myContributionArrears"
+    );
+
+  const creditElement =
+    byId(
+      "myContributionCredit"
+    );
+
+  if (!position) {
+    if (statusElement) {
+      statusElement.className =
+        "member-finance-status-value status-unknown";
+
+      statusElement.textContent =
+        "Unavailable";
+    }
+
+    if (totalElement) {
+      totalElement.textContent = "—";
+    }
+
+    if (arrearsElement) {
+      arrearsElement.textContent = "—";
+    }
+
+    if (creditElement) {
+      creditElement.textContent = "—";
+    }
+
+    /*
+     * Compatibility with the existing dashboard field.
+     *
+     * This deliberately uses no raw contribution aggregation.
+     */
+    setText(
+      "myContributionTotal",
+      "—"
+    );
+
+    return;
+  }
+
+  const status =
+    contributionPositionStatus(
+      position
+    );
+
+  if (statusElement) {
+    statusElement.className =
+      "member-finance-status-value";
+
+    if (status === "ARREARS") {
+      statusElement.classList.add(
+        "status-arrears"
+      );
+
+      statusElement.textContent =
+        "ARREARS";
+
+    } else if (status === "CREDIT") {
+      statusElement.classList.add(
+        "status-credit"
+      );
+
+      statusElement.textContent =
+        "CREDIT";
+
+    } else {
+      statusElement.classList.add(
+        "status-up-to-date"
+      );
+
+      statusElement.textContent =
+        "UP TO DATE";
+    }
+  }
+
+  /*
+   * Canonical position contract:
+   *
+   *   total_due
+   *   total_allocated
+   *   arrears
+   *   credit
+   *   status
+   *
+   * total_allocated is the canonical amount allocated
+   * against this member's obligations.
+   */
+  if (totalElement) {
+    totalElement.textContent =
+      formatMoney(
+        position.total_allocated
+      );
+  }
+
+  if (arrearsElement) {
+    arrearsElement.textContent =
+      formatMoney(
+        position.arrears
+      );
+  }
+
+  if (creditElement) {
+    creditElement.textContent =
+      formatMoney(
+        position.credit
+      );
+  }
+
+  /*
+   * Existing dashboard compatibility field.
+   *
+   * It deliberately mirrors the canonical allocated amount
+   * rather than independently summing contribution rows.
+   */
+  setText(
+    "myContributionTotal",
+    formatMoney(
+      position.total_allocated
+    )
+  );
+}
+
+
+async function loadMyContributionPosition() {
+  const statusElement =
+    byId(
+      "myContributionStatus"
+    );
+
+  if (statusElement) {
+    statusElement.className =
+      "member-finance-status-value status-unknown";
+
+    statusElement.textContent =
+      "Loading...";
+  }
+
+  setText(
+    "myContributionPositionTotal",
+    "—"
+  );
+
+  setText(
+    "myContributionArrears",
+    "—"
+  );
+
+  setText(
+    "myContributionCredit",
+    "—"
+  );
+
+  setText(
+    "myContributionTotal",
+    "—"
+  );
+
+  try {
+    const {
+      data,
+      error
+    } = await supabase.rpc(
+      "get_my_contribution_position"
+    );
+
+    if (error) {
+      throw error;
+    }
+
+    const position =
+      firstRpcRow(data);
+
+    if (!position) {
+      throw new Error(
+        "Contribution position returned no result."
+      );
+    }
+
+    renderMyContributionPosition(
+      position
+    );
+
+  } catch (error) {
+    console.warn(
+      "Member contribution position could not be loaded:",
+      error
+    );
+
+    renderMyContributionPosition(
+      null
+    );
   }
 }
 
@@ -557,62 +604,59 @@ function renderAccount() {
 
 
 /* =========================================================
-   MEMBER CONTRIBUTIONS
+   MEMBER CONTRIBUTION ACTIVITY COUNT
+   ---------------------------------------------------------
+   ACTIVITY ONLY.
+
+   NOT used to calculate:
+     • arrears
+     • credit
+     • canonical total allocated
+     • monthly participation
+     • monthly cash contribution total
    ========================================================= */
 
-async function loadMyContributions() {
-  const {
-    data,
-    error
-  } = await supabase
-    .from("contributions")
-    .select(
-      "id, member_id, amount, contribution_date, contribution_type, payment_method"
-    )
-    .eq(
-      "member_id",
-      memberId
-    )
-    .order(
-      "contribution_date",
-      {
-        ascending: false
-      }
+async function loadMyContributionActivity() {
+  try {
+    const {
+      count,
+      error
+    } = await supabase
+      .from("contributions")
+      .select(
+        "id",
+        {
+          count: "exact",
+          head: true
+        }
+      )
+      .eq(
+        "member_id",
+        memberId
+      );
+
+    if (error) {
+      throw error;
+    }
+
+    setText(
+      "myContributionCount",
+      String(
+        numberValue(count)
+      )
     );
 
-  if (error) {
-    throw error;
+  } catch (error) {
+    console.warn(
+      "Member contribution activity count could not be loaded:",
+      error
+    );
+
+    setText(
+      "myContributionCount",
+      "—"
+    );
   }
-
-  const contributions =
-    Array.isArray(data)
-      ? data
-      : [];
-
-  const total =
-    contributions.reduce(
-      (
-        sum,
-        contribution
-      ) =>
-        sum +
-        numberValue(
-          contribution.amount
-        ),
-      0
-    );
-
-  setText(
-    "myContributionTotal",
-    formatMoney(total)
-  );
-
-  setText(
-    "myContributionCount",
-    String(
-      contributions.length
-    )
-  );
 }
 
 
@@ -675,6 +719,12 @@ async function loadGroupReadData() {
       ? expensesResult.data
       : [];
 
+  /*
+   * contributions has no assumed group_id.
+   *
+   * Resolve group contribution activity through
+   * members belonging to the current group.
+   */
   const memberIds =
     groupMembers
       .map(
@@ -706,9 +756,7 @@ async function loadGroupReadData() {
       )
       .limit(50);
 
-  if (
-    contributionsResult.error
-  ) {
+  if (contributionsResult.error) {
     throw contributionsResult.error;
   }
 
@@ -732,12 +780,11 @@ async function loadGroupMonthlyAccountingSummary() {
   } = await supabase.rpc(
     "get_canonical_monthly_accounting_summary",
     {
-      p_group_id: groupId,
+      p_group_id:
+        groupId,
+
       p_month:
-        currentMonthStart().slice(
-          0,
-          7
-        )
+        currentMonthKey()
     }
   );
 
@@ -746,7 +793,13 @@ async function loadGroupMonthlyAccountingSummary() {
   }
 
   groupMonthlyAccountingSummary =
-    data || null;
+    firstRpcRow(data);
+
+  if (!groupMonthlyAccountingSummary) {
+    throw new Error(
+      "Canonical monthly accounting returned no result."
+    );
+  }
 }
 
 
@@ -761,12 +814,11 @@ async function loadGroupMonthlyFinancialSummary() {
   } = await supabase.rpc(
     "get_monthly_accounting_summary",
     {
-      p_group_id: groupId,
+      p_group_id:
+        groupId,
+
       p_month:
-        currentMonthStart().slice(
-          0,
-          7
-        )
+        currentMonthKey()
     }
   );
 
@@ -775,7 +827,13 @@ async function loadGroupMonthlyFinancialSummary() {
   }
 
   groupMonthlyFinancialSummary =
-    data || null;
+    firstRpcRow(data);
+
+  if (!groupMonthlyFinancialSummary) {
+    throw new Error(
+      "Monthly accounting summary returned no result."
+    );
+  }
 }
 
 
@@ -790,13 +848,10 @@ function renderGroupFinancialHealth(
     currentMonthStart();
 
   /*
-   * Cash / transaction metrics:
-   *   - monthlyContributions comes from the monthly financial
-   *     report contract's total_contributions_collected.
-   *   - monthlyExpenses remains based on the read-only
-   *     expense transaction data loaded above.
+   * Monthly cash contribution total comes ONLY from
+   * the canonical monthly financial RPC.
    *
-   * These are NOT canonical contribution-allocation metrics.
+   * It is never reconstructed from groupContributions.
    */
   const monthlyContributions =
     numberValue(
@@ -804,6 +859,12 @@ function renderGroupFinancialHealth(
         ?.total_contributions_collected
     );
 
+  /*
+   * Expenses are read-only transaction data.
+   *
+   * Only approved current-month expenses are included
+   * in the net movement calculation.
+   */
   const monthlyExpenses =
     groupExpenses
       .filter(
@@ -837,19 +898,16 @@ function renderGroupFinancialHealth(
   /*
    * CANONICAL PARTICIPATION
    *
-   * Do not derive participation from raw contribution
-   * rows in the browser.
+   * Do NOT calculate participation from raw
+   * contribution rows.
    *
-   * The canonical monthly accounting contract defines
-   * participation from:
+   * Canonical formula:
    *
    *   members_paid
    *   +
    *   partial_payments
-   *
-   * divided by:
-   *
-   *   active_members
+   * ---------------------
+   *     active_members
    */
   const activeMembers =
     numberValue(
@@ -867,7 +925,7 @@ function renderGroupFinancialHealth(
     );
 
   const participation =
-    activeMembers
+    activeMembers > 0
       ? (
           (
             membersPaid +
@@ -899,15 +957,11 @@ function renderGroupFinancialHealth(
   let expenseActivity =
     "Quiet";
 
-  if (
-    expenseCount >= 5
-  ) {
+  if (expenseCount >= 5) {
     expenseActivity =
       "Active";
 
-  } else if (
-    expenseCount >= 1
-  ) {
+  } else if (expenseCount >= 1) {
     expenseActivity =
       "Normal";
   }
@@ -996,6 +1050,8 @@ function renderGroupFinancialHealth(
 
 /* =========================================================
    RECENT GROUP CONTRIBUTIONS
+   ---------------------------------------------------------
+   READ-ONLY ACTIVITY ONLY.
    ========================================================= */
 
 function renderRecentGroupContributions() {
@@ -1008,9 +1064,7 @@ function renderRecentGroupContributions() {
     return;
   }
 
-  if (
-    !groupContributions.length
-  ) {
+  if (!groupContributions.length) {
     container.innerHTML =
       "<p>No recent group contributions recorded.</p>";
 
@@ -1045,33 +1099,35 @@ function renderRecentGroupContributions() {
             "Member";
 
           return `
-        <div class="member-dashboard-list-item">
-          <div>
-            <strong>${escapeHtml(name)}</strong>
+            <div class="member-dashboard-list-item">
+              <div>
+                <strong>
+                  ${escapeHtml(name)}
+                </strong>
 
-            <small>
-              ${escapeHtml(
-                contribution.contribution_type ||
-                "Contribution"
-              )}
-              ·
-              ${escapeHtml(
-                formatDate(
-                  contribution.contribution_date
-                )
-              )}
-            </small>
-          </div>
+                <small>
+                  ${escapeHtml(
+                    contribution.contribution_type ||
+                    "Contribution"
+                  )}
+                  ·
+                  ${escapeHtml(
+                    formatDate(
+                      contribution.contribution_date
+                    )
+                  )}
+                </small>
+              </div>
 
-          <strong>
-            ${escapeHtml(
-              formatMoney(
-                contribution.amount
-              )
-            )}
-          </strong>
-        </div>
-      `;
+              <strong>
+                ${escapeHtml(
+                  formatMoney(
+                    contribution.amount
+                  )
+                )}
+              </strong>
+            </div>
+          `;
         }
       )
       .join("");
@@ -1092,9 +1148,7 @@ function renderRecentGroupExpenses() {
     return;
   }
 
-  if (
-    !groupExpenses.length
-  ) {
+  if (!groupExpenses.length) {
     container.innerHTML =
       "<p>No recent group expenses recorded.</p>";
 
@@ -1119,48 +1173,48 @@ function renderRecentGroupExpenses() {
             String(
               status
             ).toLowerCase() ===
-              "approved";
+            "approved";
 
           return `
-        <div class="member-dashboard-list-item">
-          <div>
-            <strong>
-              ${escapeHtml(
-                expense.description ||
-                expense.category ||
-                "Expense"
-              )}
-            </strong>
+            <div class="member-dashboard-list-item">
+              <div>
+                <strong>
+                  ${escapeHtml(
+                    expense.description ||
+                    expense.category ||
+                    "Expense"
+                  )}
+                </strong>
 
-            <small>
-              ${escapeHtml(
-                expense.category ||
-                "Expense"
-              )}
-              ·
-              ${escapeHtml(
-                formatDate(
-                  expense.date
-                )
-              )}
-              ·
-              ${escapeHtml(status)}
-            </small>
-          </div>
+                <small>
+                  ${escapeHtml(
+                    expense.category ||
+                    "Expense"
+                  )}
+                  ·
+                  ${escapeHtml(
+                    formatDate(
+                      expense.date
+                    )
+                  )}
+                  ·
+                  ${escapeHtml(status)}
+                </small>
+              </div>
 
-          <strong${
-            approved
-              ? ""
-              : ' style="opacity:.75;"'
-          }>
-            ${escapeHtml(
-              formatMoney(
-                expense.amount
-              )
-            )}
-          </strong>
-        </div>
-      `;
+              <strong${
+                approved
+                  ? ""
+                  : ' style="opacity:.75;"'
+              }>
+                ${escapeHtml(
+                  formatMoney(
+                    expense.amount
+                  )
+                )}
+              </strong>
+            </div>
+          `;
         }
       )
       .join("");
@@ -1225,39 +1279,39 @@ async function loadMeetings() {
     meetings
       .map(
         meeting => `
-      <div class="member-dashboard-list-item">
-        <div>
-          <strong>
-            ${escapeHtml(
-              meeting.title ||
-              "Meeting"
-            )}
-          </strong>
+          <div class="member-dashboard-list-item">
+            <div>
+              <strong>
+                ${escapeHtml(
+                  meeting.title ||
+                  "Meeting"
+                )}
+              </strong>
 
-          <small>
-            ${escapeHtml(
-              formatDate(
-                meeting.date
-              )
-            )}
-            ${
-              meeting.venue
-                ? ` · ${escapeHtml(
-                    meeting.venue
-                  )}`
-                : ""
-            }
-          </small>
-        </div>
+              <small>
+                ${escapeHtml(
+                  formatDate(
+                    meeting.date
+                  )
+                )}
+                ${
+                  meeting.venue
+                    ? ` · ${escapeHtml(
+                        meeting.venue
+                      )}`
+                    : ""
+                }
+              </small>
+            </div>
 
-        <span>
-          ${escapeHtml(
-            meeting.status ||
-            "Scheduled"
-          )}
-        </span>
-      </div>
-    `
+            <span>
+              ${escapeHtml(
+                meeting.status ||
+                "Scheduled"
+              )}
+            </span>
+          </div>
+        `
       )
       .join("");
 }
@@ -1318,39 +1372,39 @@ async function loadActivities() {
     activities
       .map(
         activity => `
-      <div class="member-dashboard-list-item">
-        <div>
-          <strong>
-            ${escapeHtml(
-              activity.title ||
-              "Activity"
-            )}
-          </strong>
+          <div class="member-dashboard-list-item">
+            <div>
+              <strong>
+                ${escapeHtml(
+                  activity.title ||
+                  "Activity"
+                )}
+              </strong>
 
-          <small>
-            ${escapeHtml(
-              activity.status ||
-              "Planned"
-            )}
-            ${
-              activity.due_date
-                ? ` · Due ${escapeHtml(
-                    formatDate(
-                      activity.due_date
-                    )
-                  )}`
-                : ""
-            }
-          </small>
-        </div>
+              <small>
+                ${escapeHtml(
+                  activity.status ||
+                  "Planned"
+                )}
+                ${
+                  activity.due_date
+                    ? ` · Due ${escapeHtml(
+                        formatDate(
+                          activity.due_date
+                        )
+                      )}`
+                    : ""
+                }
+              </small>
+            </div>
 
-        <span>
-          ${numberValue(
-            activity.progress_percent
-          )}%
-        </span>
-      </div>
-    `
+            <span>
+              ${numberValue(
+                activity.progress_percent
+              )}%
+            </span>
+          </div>
+        `
       )
       .join("");
 }
@@ -1411,15 +1465,11 @@ async function loadPlansAndGoals() {
       .limit(5)
   ]);
 
-  if (
-    plansResult.error
-  ) {
+  if (plansResult.error) {
     throw plansResult.error;
   }
 
-  if (
-    goalsResult.error
-  ) {
+  if (goalsResult.error) {
     throw goalsResult.error;
   }
 
@@ -1441,7 +1491,8 @@ async function loadPlansAndGoals() {
     ...plans.map(
       plan => ({
         type: "Plan",
-        title: plan.title,
+        title:
+          plan.title,
         description:
           plan.description,
         status:
@@ -1471,25 +1522,27 @@ async function loadPlansAndGoals() {
   ]
     .sort(
       (
-        a,
-        b
+        first,
+        second
       ) => {
-        const first =
-          a.date
+        const firstDate =
+          first.date
             ? new Date(
-                a.date
+                first.date
               ).getTime()
             : Number.MAX_SAFE_INTEGER;
 
-        const second =
-          b.date
+        const secondDate =
+          second.date
             ? new Date(
-                b.date
+                second.date
               ).getTime()
             : Number.MAX_SAFE_INTEGER;
 
-        return first -
-          second;
+        return (
+          firstDate -
+          secondDate
+        );
       }
     )
     .slice(
@@ -1497,9 +1550,7 @@ async function loadPlansAndGoals() {
       5
     );
 
-  if (
-    !combined.length
-  ) {
+  if (!combined.length) {
     container.innerHTML =
       "<p>No plans or goals recorded.</p>";
 
@@ -1510,50 +1561,50 @@ async function loadPlansAndGoals() {
     combined
       .map(
         item => `
-      <div class="member-dashboard-list-item">
-        <div>
-          <strong>
-            ${escapeHtml(
-              item.title ||
-              item.type
-            )}
-          </strong>
+          <div class="member-dashboard-list-item">
+            <div>
+              <strong>
+                ${escapeHtml(
+                  item.title ||
+                  item.type
+                )}
+              </strong>
 
-          <small>
-            ${escapeHtml(
-              item.type
-            )}
-            ${
-              item.status
-                ? ` · ${escapeHtml(
-                    item.status
-                  )}`
-                : ""
-            }
-            ${
-              item.date
-                ? ` · ${escapeHtml(
-                    formatDate(
-                      item.date
-                    )
-                  )}`
-                : ""
-            }
-          </small>
-        </div>
+              <small>
+                ${escapeHtml(
+                  item.type
+                )}
+                ${
+                  item.status
+                    ? ` · ${escapeHtml(
+                        item.status
+                      )}`
+                    : ""
+                }
+                ${
+                  item.date
+                    ? ` · ${escapeHtml(
+                        formatDate(
+                          item.date
+                        )
+                      )}`
+                    : ""
+                }
+              </small>
+            </div>
 
-        <span>
-          ${
-            item.progress !== null &&
-            item.progress !== undefined
-              ? `${numberValue(
-                  item.progress
-                )}%`
-              : ""
-          }
-        </span>
-      </div>
-    `
+            <span>
+              ${
+                item.progress !== null &&
+                item.progress !== undefined
+                  ? `${numberValue(
+                      item.progress
+                    )}%`
+                  : ""
+              }
+            </span>
+          </div>
+        `
       )
       .join("");
 }
@@ -1613,51 +1664,51 @@ async function loadAssets() {
     assets
       .map(
         asset => `
-      <div class="member-dashboard-list-item">
-        <div>
-          <strong>
-            ${escapeHtml(
-              asset.asset_name ||
-              "Asset"
-            )}
-          </strong>
+          <div class="member-dashboard-list-item">
+            <div>
+              <strong>
+                ${escapeHtml(
+                  asset.asset_name ||
+                  "Asset"
+                )}
+              </strong>
 
-          <small>
-            ${escapeHtml(
-              asset.category ||
-              "Asset"
-            )}
-            ${
-              asset.location
-                ? ` · ${escapeHtml(
-                    asset.location
-                  )}`
-                : ""
-            }
-            ${
-              asset.status
-                ? ` · ${escapeHtml(
-                    asset.status
-                  )}`
-                : ""
-            }
-          </small>
-        </div>
+              <small>
+                ${escapeHtml(
+                  asset.category ||
+                  "Asset"
+                )}
+                ${
+                  asset.location
+                    ? ` · ${escapeHtml(
+                        asset.location
+                      )}`
+                    : ""
+                }
+                ${
+                  asset.status
+                    ? ` · ${escapeHtml(
+                        asset.status
+                      )}`
+                    : ""
+                }
+              </small>
+            </div>
 
-        <span>
-          ${
-            asset.current_value !== null &&
-            asset.current_value !== undefined
-              ? escapeHtml(
-                  formatMoney(
-                    asset.current_value
-                  )
-                )
-              : ""
-          }
-        </span>
-      </div>
-    `
+            <span>
+              ${
+                asset.current_value !== null &&
+                asset.current_value !== undefined
+                  ? escapeHtml(
+                      formatMoney(
+                        asset.current_value
+                      )
+                    )
+                  : ""
+              }
+            </span>
+          </div>
+        `
       )
       .join("");
 }
@@ -1665,6 +1716,19 @@ async function loadAssets() {
 
 /* =========================================================
    DASHBOARD LOAD
+   ---------------------------------------------------------
+   CONTEXT OWNERSHIP
+   ---------------------------------------------------------
+   member-layout.js resolves:
+     • authenticated user
+     • member
+     • group
+
+   It then calls:
+
+       initMemberDashboard(context)
+
+   This module does not independently resolve auth/context.
    ========================================================= */
 
 async function loadDashboard() {
@@ -1672,30 +1736,6 @@ async function loadDashboard() {
   showLoading(true);
 
   try {
-    const context =
-      await getMyApplicationContext();
-
-    currentUser =
-      context?.user ||
-      null;
-
-    currentMember =
-      context?.member ||
-      null;
-
-    currentGroup =
-      context?.group ||
-      null;
-
-    groupId =
-      currentMember?.group_id ||
-      currentGroup?.id ||
-      null;
-
-    memberId =
-      currentMember?.id ||
-      null;
-
     if (!currentMember) {
       throw new Error(
         "Your member account could not be loaded."
@@ -1716,10 +1756,16 @@ async function loadDashboard() {
 
     renderAccount();
 
+    /*
+     * Independent read-only dashboard sections.
+     *
+     * A failure in one optional section does not destroy
+     * successfully loaded canonical member accounting data.
+     */
     const results =
       await Promise.allSettled([
-        loadMyContributions(),
         loadMyContributionPosition(),
+        loadMyContributionActivity(),
         loadGroupReadData(),
         loadGroupMonthlyAccountingSummary(),
         loadGroupMonthlyFinancialSummary(),
@@ -1730,37 +1776,40 @@ async function loadDashboard() {
       ]);
 
     const [
-      myContributionsResult,
-      myContributionPositionResult,
+      myPositionResult,
+      myActivityResult,
       groupDataResult,
       groupAccountingResult,
-      groupFinancialSummaryResult,
+      groupFinancialResult,
       meetingsResult,
       activitiesResult,
       plansResult,
       assetsResult
     ] = results;
 
+
+    /* =====================================================
+       GROUP FINANCIAL HEALTH GATE
+       ===================================================== */
+
     /*
-     * Group Financial Health requires ALL THREE:
+     * Financial health is rendered only when all required
+     * source contracts are available:
      *
-     * 1. Group read data
-     * 2. Canonical monthly accounting summary
-     * 3. Monthly financial summary for cash received
+     *   A. group read data
+     *   B. canonical monthly accounting
+     *   C. monthly financial summary
      *
-     * There is intentionally no fallback to:
-     *   • raw 50-row contribution aggregation
-     *   • browser-side raw-contribution participation
-     *
-     * This prevents an incomplete transaction query from
-     * being presented as the group's monthly cash total.
+     * There is NO fallback to raw contribution aggregation.
      */
     if (
       groupDataResult.status ===
         "fulfilled" &&
+
       groupAccountingResult.status ===
         "fulfilled" &&
-      groupFinancialSummaryResult.status ===
+
+      groupFinancialResult.status ===
         "fulfilled"
     ) {
       renderGroupFinancialHealth(
@@ -1786,10 +1835,10 @@ async function loadDashboard() {
               ? groupAccountingResult.reason
               : null,
 
-          groupFinancialSummary:
-            groupFinancialSummaryResult.status ===
+          groupFinancial:
+            groupFinancialResult.status ===
             "rejected"
-              ? groupFinancialSummaryResult.reason
+              ? groupFinancialResult.reason
               : null
         }
       );
@@ -1844,9 +1893,7 @@ async function loadDashboard() {
           "memberRecentContributions"
         );
 
-      if (
-        contributionContainer
-      ) {
+      if (contributionContainer) {
         contributionContainer.innerHTML =
           "<p>Group contribution data could not be loaded.</p>";
       }
@@ -1856,13 +1903,16 @@ async function loadDashboard() {
           "memberRecentExpenses"
         );
 
-      if (
-        expenseContainer
-      ) {
+      if (expenseContainer) {
         expenseContainer.innerHTML =
           "<p>Group expense data could not be loaded.</p>";
       }
     }
+
+
+    /* =====================================================
+       FAILURE REPORTING
+       ===================================================== */
 
     const failures =
       results.filter(
@@ -1871,9 +1921,7 @@ async function loadDashboard() {
           "rejected"
       );
 
-    if (
-      failures.length
-    ) {
+    if (failures.length) {
       console.warn(
         "Some member dashboard sections failed to load:",
         failures.map(
@@ -1883,6 +1931,11 @@ async function loadDashboard() {
       );
     }
 
+
+    /*
+     * The dashboard should fail completely only when every
+     * requested section failed.
+     */
     if (
       failures.length ===
       results.length
@@ -1892,10 +1945,14 @@ async function loadDashboard() {
       );
     }
 
-    void myContributionsResult;
-    void myContributionPositionResult;
-    void groupAccountingResult;
-    void groupFinancialSummaryResult;
+
+    /*
+     * Explicit references retained for readability and
+     * future debugging of individual section results.
+     */
+    void currentUser;
+    void myPositionResult;
+    void myActivityResult;
     void meetingsResult;
     void activitiesResult;
     void plansResult;
@@ -1920,11 +1977,75 @@ async function loadDashboard() {
 
 /* =========================================================
    INITIALIZER
+   ---------------------------------------------------------
+   member-layout.js remains the owner of:
+     • authentication
+     • context resolution
+     • navigation
+     • logout
+
+   Expected call:
+
+       initMemberDashboard(context)
+
+   where context contains:
+     {
+       user,
+       member,
+       group
+     }
    ========================================================= */
 
-export async function initMemberDashboard() {
+export async function initMemberDashboard(
+  context
+) {
   if (initialized) {
     return;
+  }
+
+  if (!context) {
+    throw new Error(
+      "Member application context was not provided."
+    );
+  }
+
+  currentUser =
+    context.user ||
+    null;
+
+  currentMember =
+    context.member ||
+    null;
+
+  currentGroup =
+    context.group ||
+    null;
+
+  groupId =
+    currentMember?.group_id ||
+    currentGroup?.id ||
+    null;
+
+  memberId =
+    currentMember?.id ||
+    null;
+
+  if (!currentMember) {
+    throw new Error(
+      "Your member account could not be loaded."
+    );
+  }
+
+  if (!groupId) {
+    throw new Error(
+      "Your group could not be identified."
+    );
+  }
+
+  if (!memberId) {
+    throw new Error(
+      "Your member identity could not be identified."
+    );
   }
 
   initialized = true;
