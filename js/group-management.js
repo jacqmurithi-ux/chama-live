@@ -12,17 +12,6 @@ import {
    CONSTANTS
 ================================================================ */
 
-const ACTUAL_POSITION_VALUES = new Set([
-    "chairperson",
-    "vice_chairperson",
-    "treasurer",
-    "secretary",
-    "vice_secretary",
-    "committee_member",
-    "member",
-    "other"
-]);
-
 const STANDARD_GROUP_TYPES = new Map([
     ["chama", "Chama"],
     ["cbo", "CBO"]
@@ -45,7 +34,6 @@ let contributionSettings = null;
 
 let contributionTypes = [];
 let contributionInitiatives = [];
-let fineRules = [];
 
 let initiativeMembers = [];
 let configuringInitiativeId = null;
@@ -72,9 +60,8 @@ const elements = {
 
     memberCount: null,
 
-    leadershipForm: null,
-    actualPosition: null,
     leadershipStatus: null,
+    leadershipList: null,
 
     closingDay: null,
     saveContributionSettings: null,
@@ -102,7 +89,6 @@ const elements = {
     contributionInitiativesList: null,
     contributionProgramStatus: null,
 
-    fineRulesList: null
 };
 
 
@@ -141,14 +127,11 @@ function refreshDomReferences() {
     elements.memberCount =
         document.getElementById("memberCount");
 
-    elements.leadershipForm =
-        document.getElementById("leadershipForm");
-
-    elements.actualPosition =
-        document.getElementById("actualPosition");
-
     elements.leadershipStatus =
         document.getElementById("leadershipStatus");
+
+    elements.leadershipList =
+        document.getElementById("leadershipList");
 
     elements.closingDay =
         document.getElementById("closingDay");
@@ -210,8 +193,6 @@ function refreshDomReferences() {
     elements.contributionProgramStatus =
         document.getElementById("contributionProgramStatus");
 
-    elements.fineRulesList =
-        document.getElementById("fineRulesList");
 }
 
 
@@ -256,12 +237,8 @@ function isInitiativeManager() {
 
 
 function applyAuthorization() {
-    canManageGroup =
-        Boolean(
-            currentIsOwner ||
-            currentRole === "admin" ||
-            currentRole === "chairperson"
-        );
+    // The groups update policy and contribution-settings RPC require admin.
+    canManageGroup = currentRole === "admin";
 }
 
 
@@ -271,16 +248,6 @@ function applyAuthorizationUI() {
 
     if (elements.groupForm) {
         elements.groupForm
-            .querySelectorAll(
-                "input, select, textarea, button"
-            )
-            .forEach((element) => {
-                element.disabled = !manager;
-            });
-    }
-
-    if (elements.leadershipForm) {
-        elements.leadershipForm
             .querySelectorAll(
                 "input, select, textarea, button"
             )
@@ -300,7 +267,7 @@ function applyAuthorizationUI() {
                 "input, select, textarea, button"
             )
             .forEach((element) => {
-                element.disabled = !manager;
+                element.disabled = !isInitiativeManager();
             });
     }
 
@@ -521,6 +488,13 @@ async function saveGroupInformation(event) {
         );
     }
 
+    const rawClosingDay = elements.closingDay?.value?.trim();
+    const closingDay = Number(rawClosingDay);
+
+    if (!rawClosingDay || !Number.isInteger(closingDay) || closingDay < 1 || closingDay > 31) {
+        throw new Error("Closing day must be a whole number between 1 and 31.");
+    }
+
     const { error } =
         await supabase
             .from("groups")
@@ -539,6 +513,8 @@ async function saveGroupInformation(event) {
     if (error) {
         throw error;
     }
+
+    await saveContributionSettings();
 
     currentGroup = {
         ...currentGroup,
@@ -566,92 +542,37 @@ async function saveGroupInformation(event) {
 ================================================================ */
 
 async function loadLeadershipSetup() {
-    if (!currentGroup?.id) {
+    if (!currentGroup?.id || !elements.leadershipList) return;
+
+    const { data, error } = await supabase
+        .from("members")
+        .select("id, name, actual_position, actual_position_name")
+        .eq("group_id", currentGroup.id)
+        .not("actual_position", "is", null)
+        .order("name", { ascending: true });
+
+    if (error) throw error;
+
+    const leadership = Array.isArray(data) ? data : [];
+    elements.leadershipList.replaceChildren();
+
+    if (!leadership.length) {
+        elements.leadershipStatus.textContent = "No leadership positions are assigned.";
         return;
     }
 
-    const { data, error } =
-        await supabase.rpc(
-            "get_group_leadership_setup",
-            {
-                p_group_id:
-                    currentGroup.id
-            }
-        );
+    leadership.forEach((member) => {
+        const item = document.createElement("div");
+        item.className = "leadership-item";
+        const position = document.createElement("strong");
+        position.textContent = (member.actual_position_name || member.actual_position || "Position").replaceAll("_", " ");
+        const name = document.createElement("span");
+        name.textContent = member.name || "Group member";
+        item.append(position, name);
+        elements.leadershipList.appendChild(item);
+    });
 
-    if (error) {
-        throw error;
-    }
-
-    const leadership =
-        Array.isArray(data)
-            ? data[0] || null
-            : data || null;
-
-    if (elements.actualPosition) {
-        elements.actualPosition.value =
-            leadership?.actual_position || "";
-    }
-
-    if (elements.leadershipStatus) {
-        elements.leadershipStatus.textContent =
-            leadership?.actual_position
-                ? "Leadership position loaded."
-                : "No leadership position configured.";
-    }
-}
-
-
-async function saveAdminActualPosition(event) {
-    event?.preventDefault();
-
-    if (!currentGroup?.id) {
-        throw new Error(
-            "No active group is available."
-        );
-    }
-
-    if (!canManageGroup) {
-        throw new Error(
-            "You do not have permission to update leadership settings."
-        );
-    }
-
-    const position =
-        normalizeLower(
-            elements.actualPosition?.value
-        );
-
-    if (
-        !ACTUAL_POSITION_VALUES.has(position)
-    ) {
-        throw new Error(
-            "Please select a valid leadership position."
-        );
-    }
-
-    const { error } =
-        await supabase.rpc(
-            "set_group_admin_actual_position",
-            {
-                p_group_id:
-                    currentGroup.id,
-                p_actual_position:
-                    position
-            }
-        );
-
-    if (error) {
-        throw error;
-    }
-
-    if (elements.leadershipStatus) {
-        elements.leadershipStatus.textContent =
-            "Leadership position saved successfully.";
-
-        elements.leadershipStatus.className =
-            "program-status ready";
-    }
+    elements.leadershipStatus.textContent = leadership.length + " leadership assignment" + (leadership.length === 1 ? "" : "s") + ". Manage position changes in Members.";
 }
 
 
@@ -1297,24 +1218,16 @@ async function createContributionInitiative(
         data,
         error
     } = await supabase
-        .from("contribution_initiatives")
-        .insert(payload)
-        .select(
-            [
-                "id",
-                "contribution_type_id",
-                "name",
-                "description",
-                "start_date",
-                "closing_date",
-                "default_amount",
-                "frequency",
-                "status",
-                "created_at",
-                "updated_at"
-            ].join(", ")
-        )
-        .single();
+        .rpc("create_contribution_initiative", {
+            p_group_id: payload.group_id,
+            p_contribution_type_id: payload.contribution_type_id,
+            p_name: payload.name,
+            p_description: payload.description,
+            p_start_date: payload.start_date,
+            p_closing_date: payload.closing_date,
+            p_default_amount: payload.default_amount,
+            p_frequency: payload.frequency
+        });
 
     if (error) {
         throw error;
@@ -3440,139 +3353,6 @@ async function loadContributionInitiatives() {
 
 
 /* ================================================================
-   FINE RULES — READ ONLY
-================================================================ */
-
-function renderFineRules() {
-    const container =
-        elements.fineRulesList;
-
-    if (!container) {
-        return;
-    }
-
-    container.replaceChildren();
-
-    if (!fineRules.length) {
-        appendEmptyState(
-            container,
-            "No fine rules are visible for your account."
-        );
-
-        return;
-    }
-
-    fineRules.forEach(
-        (rule) => {
-            const item =
-                document.createElement(
-                    "div"
-                );
-
-            item.className =
-                "program-item";
-
-            appendTextRow(
-                item,
-                "Name",
-                rule.name || "—"
-            );
-
-            appendTextRow(
-                item,
-                "Trigger",
-                rule.trigger_type || "—"
-            );
-
-            appendTextRow(
-                item,
-                "Calculation",
-                rule.calculation_method || "—"
-            );
-
-            appendTextRow(
-                item,
-                "Priority",
-                String(
-                    rule.priority ?? "—"
-                )
-            );
-
-            appendTextRow(
-                item,
-                "Status",
-                rule.status || "—"
-            );
-
-            container.appendChild(item);
-        }
-    );
-}
-
-
-async function loadFineRules() {
-    if (!currentGroup?.id) {
-        return;
-    }
-
-    const {
-        data,
-        error
-    } = await supabase
-        .from("fine_rules")
-        .select(
-            [
-                "id",
-                "name",
-                "description",
-                "trigger_type",
-                "specificity_level",
-                "priority",
-                "calculation_method",
-                "fixed_amount",
-                "percentage_rate",
-                "minimum_amount",
-                "maximum_amount",
-                "grace_period_value",
-                "grace_period_unit",
-                "applicability_mode",
-                "effective_from",
-                "effective_until",
-                "status",
-                "created_at"
-            ].join(", ")
-        )
-        .eq(
-            "group_id",
-            currentGroup.id
-        )
-        .order(
-            "priority",
-            {
-                ascending: true
-            }
-        )
-        .order(
-            "created_at",
-            {
-                ascending: true
-            }
-        );
-
-    if (error) {
-        throw error;
-    }
-
-    fineRules =
-        Array.isArray(data)
-            ? data
-            : [];
-
-    renderFineRules();
-}
-
-
-/* ================================================================
    APPLICATION CONTEXT
 ================================================================ */
 
@@ -3753,23 +3533,6 @@ function bindEvents() {
     /* ------------------------------------------------------------
        LEADERSHIP
     ------------------------------------------------------------ */
-
-    elements.leadershipForm?.addEventListener(
-        "submit",
-        async (event) => {
-            try {
-                await saveAdminActualPosition(
-                    event
-                );
-            } catch (error) {
-                console.error(
-                    "Failed to save actual position:",
-                    error
-                );
-            }
-        }
-    );
-
 
     /* ------------------------------------------------------------
        CONTRIBUTION SETTINGS
@@ -4378,12 +4141,6 @@ async function initializeGroupManagement() {
                     loader:
                         loadContributionInitiatives
                 },
-                {
-                    section:
-                        "fine rules",
-                    loader:
-                        loadFineRules
-                }
             ];
 
             const results =
@@ -4477,7 +4234,6 @@ export {
     initializeGroupManagement as initGroupManagement,
 
     saveGroupInformation,
-    saveAdminActualPosition,
     saveContributionSettings,
 
     loadContributionSettings,
@@ -4486,7 +4242,6 @@ export {
 
     loadContributionTypes,
     loadContributionInitiatives,
-    loadFineRules,
 
     createContributionInitiative,
 
