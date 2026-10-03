@@ -805,48 +805,7 @@ function renderContributionTypeOptions() {
 
 
 function renderContributionTypes() {
-    const container =
-        elements.contributionTypesList;
-
-    if (!container) {
-        return;
-    }
-
-    container.replaceChildren();
-
-    if (!contributionTypes.length) {
-        appendEmptyState(
-            container,
-            "No contribution types are configured."
-        );
-
-        renderContributionTypeOptions();
-
-        return;
-    }
-
-    contributionTypes.forEach((type) => {
-        const item =
-            document.createElement("div");
-
-        item.className =
-            "program-item";
-
-        appendTextRow(
-            item,
-            "Name",
-            type.name || "—"
-        );
-
-        appendTextRow(
-            item,
-            "Code",
-            type.code || "—"
-        );
-
-        container.appendChild(item);
-    });
-
+    // Contribution types are only a selector for program creation.
     renderContributionTypeOptions();
 }
 
