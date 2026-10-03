@@ -30,18 +30,18 @@
    Actual group position is collected only when creating a
    new member.
 
+   Initial position data is passed through the canonical
+   member-creation RPC.
+
+   Existing-member position changes MUST use:
+
+     set_member_actual_position()
+
    The browser does NOT directly update:
 
      members.actual_position
      members.actual_position_name
      member_position_history
-
-   Initial position data is passed through the canonical
-   member-creation RPCs.
-
-   Existing-member position changes must use:
-
-     set_member_actual_position()
 
    ---------------------------------------------------------
    EXISTING PAYMENT RECONCILIATION
@@ -55,8 +55,6 @@
 
      refresh_my_managed_member_accounting()
 
-   The browser does NOT directly modify accounting tables.
-
    Before reading a member's contribution position, the page
    invokes the authenticated canonical refresh boundary.
 
@@ -67,11 +65,29 @@
    NEW member. It must NEVER be used to edit an existing
    member.
 
-   Existing-member historical accounting changes require a
-   verified canonical database workflow before being wired
-   into this page.
+   Existing-member historical accounting changes require the
+   verified canonical accounting workflow.
 
    Member contribution rules are displayed read-only.
+
+   ---------------------------------------------------------
+   GROUP MEMBER POPULATION
+   ---------------------------------------------------------
+   Every row returned for the current group is a group member.
+
+   status and onboarding_status do NOT determine whether a
+   member belongs in the member list.
+
+   Financial contribution status is separate from account
+   status and onboarding status.
+
+   ---------------------------------------------------------
+   PRODUCTION SAFETY
+   ---------------------------------------------------------
+   This file contains frontend-only changes.
+
+   No SQL, migration, RLS, DDL, DML, or accounting-table
+   mutation is performed here.
    ========================================================= */
 
 import { supabase } from "./supabase.js";
@@ -134,7 +150,9 @@ const ACTUAL_POSITION_VALUES = new Set([
 function normalizeActualPosition(value) {
   return String(value || "")
     .trim()
-    .toLowerCase();
+    .toLowerCase()
+    .replaceAll(" ", "_")
+    .replaceAll("-", "_");
 }
 
 
@@ -295,42 +313,36 @@ function getInitials(name) {
 
 
 function displayRole(role) {
-  const value =
+  const normalized =
     String(role || "member")
-      .toLowerCase();
+      .trim()
+      .toLowerCase()
+      .replaceAll("_", " ");
 
-  if (value === "admin") {
-    return "Admin";
-  }
+  const labels = {
+    admin: "Admin",
+    treasurer: "Treasurer",
+    secretary: "Secretary",
+    chairperson: "Chairperson",
+    "vice chairperson": "Vice Chairperson",
+    "vice secretary": "Vice Secretary",
+    member: "Member"
+  };
 
-  if (value === "treasurer") {
-    return "Treasurer";
-  }
-
-  if (value === "secretary") {
-    return "Secretary";
-  }
-
-  if (value === "chairperson") {
-    return "Chairperson";
-  }
-
-  if (value === "vice chairperson") {
-    return "Vice Chairperson";
-  }
-
-  if (value === "vice secretary") {
-    return "Vice Secretary";
-  }
-
-  return "Member";
+  return (
+    labels[normalized] ||
+    "Member"
+  );
 }
 
 
 function roleBadgeHtml(role) {
   return `
     <span class="role-badge role-${escapeHtml(
-      String(role || "member").toLowerCase()
+      String(role || "member")
+        .toLowerCase()
+        .replaceAll(" ", "-")
+        .replaceAll("_", "-")
     )}">
       ${escapeHtml(displayRole(role))}
     </span>
@@ -649,8 +661,10 @@ async function loadMemberContributionPositions() {
           member.id,
           {
             ...position,
+
             allocated:
               totalAllocated,
+
             total_contributed:
               totalAllocated + credit
           }
@@ -677,14 +691,6 @@ async function loadMemberContributionPositions() {
    MEMBER CONTRIBUTION RULES
    ---------------------------------------------------------
    READ ONLY.
-
-   The authoritative table is:
-
-     member_contribution_rules
-
-   No browser-side mutation is performed here because the
-   current backend audit did not identify a canonical member
-   contribution-rule update RPC.
    ========================================================= */
 
 async function loadMemberContributionRules() {
@@ -725,11 +731,6 @@ async function loadMemberContributionRules() {
     );
 
   if (error) {
-    /*
-     * The table may be protected by RLS according to the
-     * caller's role. Do not fail the entire members page
-     * merely because rule visibility is restricted.
-     */
     console.warn(
       "Member contribution rules could not be loaded:",
       error
@@ -846,9 +847,7 @@ function memberRulesHtml(memberId) {
           <div class="member-contribution-rule">
 
             <div>
-              <span>
-                Amount
-              </span>
+              <span>Amount</span>
 
               <strong>
                 ${formatMoney(amount)}
@@ -856,9 +855,7 @@ function memberRulesHtml(memberId) {
             </div>
 
             <div>
-              <span>
-                Frequency
-              </span>
+              <span>Frequency</span>
 
               <strong>
                 ${escapeHtml(
@@ -870,9 +867,7 @@ function memberRulesHtml(memberId) {
             </div>
 
             <div>
-              <span>
-                Effective From
-              </span>
+              <span>Effective From</span>
 
               <strong>
                 ${formatDate(
@@ -882,9 +877,7 @@ function memberRulesHtml(memberId) {
             </div>
 
             <div>
-              <span>
-                Effective To
-              </span>
+              <span>Effective To</span>
 
               <strong>
                 ${formatDate(
@@ -894,9 +887,7 @@ function memberRulesHtml(memberId) {
             </div>
 
             <div>
-              <span>
-                First Period
-              </span>
+              <span>First Period</span>
 
               <strong>
                 ${escapeHtml(
@@ -908,9 +899,7 @@ function memberRulesHtml(memberId) {
             </div>
 
             <div>
-              <span>
-                Status
-              </span>
+              <span>Status</span>
 
               <strong>
                 ${escapeHtml(
@@ -1086,18 +1075,7 @@ function ensureContributionStatusStyles() {
       padding: .75rem 0;
     }
 
-    .member-onboarding {
-      display: inline-flex;
-      align-items: center;
-      padding: .2rem .5rem;
-      border-radius: 999px;
-      font-size: .72rem;
-      font-weight: 600;
-      white-space: nowrap;
-      background: rgba(107,114,128,.10);
-      color: #4b5563;
-    }
-
+    .member-onboarding,
     .onboarding-status {
       display: inline-flex;
       align-items: center;
@@ -1129,6 +1107,43 @@ function ensureContributionStatusStyles() {
     .onboarding-status-suspended {
       background: rgba(220,38,38,.12);
       color: #b91c1c;
+    }
+
+    .member-position-change {
+      margin-top: 1rem;
+      padding: 1rem;
+      border: 1px solid rgba(127,127,127,.2);
+      border-radius: .75rem;
+    }
+
+    .member-position-change-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(auto-fit, minmax(180px, 1fr));
+      gap: .75rem;
+      margin-top: .75rem;
+    }
+
+    .member-position-change-field {
+      display: flex;
+      flex-direction: column;
+      gap: .3rem;
+    }
+
+    .member-position-change-field label {
+      font-size: .78rem;
+      color: #6b7280;
+    }
+
+    .member-position-change-field input,
+    .member-position-change-field select {
+      width: 100%;
+    }
+
+    .member-position-change-help {
+      margin-top: .6rem;
+      color: #6b7280;
+      font-size: .78rem;
     }
   `;
 
@@ -1625,6 +1640,11 @@ function getFormValues() {
         "memberActualPositionName"
       )?.value?.trim() || "",
 
+    actual_position_effective_from:
+      byId(
+        "memberActualPositionEffectiveFrom"
+      )?.value || "",
+
     status:
       byId(
         "memberStatus"
@@ -1717,6 +1737,17 @@ function validateForm(values) {
       );
     }
 
+    /*
+     * Actual position is deliberately excluded from the
+     * ordinary edit path.
+     *
+     * Existing-member position changes use:
+     *
+     *   set_member_actual_position()
+     *
+     * through the dedicated position workflow.
+     */
+
     return true;
   }
 
@@ -1754,6 +1785,26 @@ function validateForm(values) {
       "";
   }
 
+  if (!values.join_date) {
+    return "Join date is required.";
+  }
+
+  if (
+    !values.actual_position_effective_from
+  ) {
+    values.actual_position_effective_from =
+      values.join_date;
+  }
+
+  if (
+    values.actual_position_effective_from <
+    values.join_date
+  ) {
+    return (
+      "Actual position effective date cannot be before the join date."
+    );
+  }
+
 
   /* -------------------------------------------------------
      NEW MEMBER ACCOUNTING
@@ -1776,13 +1827,7 @@ function validateForm(values) {
     );
   }
 
-  if (!values.join_date) {
-    return "Join date is required.";
-  }
-
-  if (
-    !values.contribution_effective_from
-  ) {
+  if (!values.contribution_effective_from) {
     values.contribution_effective_from =
       values.join_date;
   }
@@ -1882,6 +1927,10 @@ async function checkDuplicateMemberNumber(
 
 /* =========================================================
    LOAD MEMBERS
+   ---------------------------------------------------------
+   IMPORTANT:
+   Every returned row for this group is a group member.
+   Do NOT filter by status or onboarding_status.
    ========================================================= */
 
 async function loadMembers() {
@@ -2003,6 +2052,7 @@ function createMemberRow(member) {
   tr.innerHTML = `
     <td>
       <div class="member-identity">
+
         <div class="member-avatar">
           ${escapeHtml(
             getInitials(member.name)
@@ -2023,6 +2073,7 @@ function createMemberRow(member) {
             )}
           </div>
         </div>
+
       </div>
     </td>
 
@@ -2040,6 +2091,7 @@ function createMemberRow(member) {
 
     <td>
       <div class="actual-position-display">
+
         <strong>
           ${escapeHtml(
             formatActualPosition(
@@ -2062,6 +2114,7 @@ function createMemberRow(member) {
             `
             : ""
         }
+
       </div>
     </td>
 
@@ -2617,7 +2670,32 @@ function openAddMember() {
       "";
   }
 
+  const actualPositionEffectiveFrom =
+    byId(
+      "memberActualPositionEffectiveFrom"
+    );
+
+  const joinDate =
+    byId(
+      "memberJoinDate"
+    );
+
+  if (joinDate) {
+    joinDate.value =
+      getToday();
+  }
+
+  if (actualPositionEffectiveFrom) {
+    actualPositionEffectiveFrom.value =
+      joinDate?.value ||
+      getToday();
+
+    actualPositionEffectiveFrom.disabled =
+      false;
+  }
+
   updateActualPositionNameUI();
+
 
   const amount =
     byId(
@@ -2635,15 +2713,6 @@ function openAddMember() {
       );
   }
 
-  const joinDate =
-    byId(
-      "memberJoinDate"
-    );
-
-  if (joinDate) {
-    joinDate.value =
-      getToday();
-  }
 
   const effectiveDate =
     byId(
@@ -2655,6 +2724,7 @@ function openAddMember() {
       joinDate?.value ||
       getToday();
   }
+
 
   const membershipNumber =
     byId(
@@ -2670,6 +2740,7 @@ function openAddMember() {
       "";
   }
 
+
   const historical =
     byId(
       "memberHistoricalEnabled"
@@ -2682,6 +2753,7 @@ function openAddMember() {
     historical.checked =
       false;
   }
+
 
   const paidThrough =
     byId(
@@ -2696,6 +2768,7 @@ function openAddMember() {
       "";
   }
 
+
   const paymentMethod =
     byId(
       "memberHistoricalPaymentMethod"
@@ -2706,15 +2779,12 @@ function openAddMember() {
       true;
   }
 
-  const contributionAmount =
-    byId(
-      "memberContributionAmount"
-    );
 
-  if (contributionAmount) {
-    contributionAmount.disabled =
+  if (amount) {
+    amount.disabled =
       false;
   }
+
 
   const firstPeriod =
     byId(
@@ -2725,6 +2795,7 @@ function openAddMember() {
     firstPeriod.disabled =
       false;
   }
+
 
   if (effectiveDate) {
     effectiveDate.disabled =
@@ -2788,10 +2859,6 @@ async function saveMember(event) {
   const values =
     getFormValues();
 
-  /*
-   * If membership number is not separately supplied, use
-   * member number as the compatibility/default value.
-   */
   if (
     !values.membership_number &&
     values.member_number
@@ -2841,13 +2908,15 @@ async function saveMember(event) {
       /*
        * IMPORTANT:
        *
-       * Actual position is deliberately NOT included here.
+       * These are deliberately excluded:
        *
-       * Historical accounting is deliberately NOT included.
+       *   actual_position
+       *   actual_position_name
+       *   member_position_history
        *
-       * The ordinary edit path updates only member-detail
-       * fields that are not protected by the position-history
-       * or accounting workflows.
+       * Position changes use set_member_actual_position().
+       *
+       * Historical accounting is also deliberately excluded.
        */
 
       const updatePayload = {
@@ -2878,19 +2947,14 @@ async function saveMember(event) {
           null
       };
 
-      /*
-       * Membership number is included only when the current
-       * schema exposes the field through the page contract.
-       *
-       * It is intentionally sent as a normal member-detail
-       * field rather than touching accounting.
-       */
+
       if (
         values.membership_number
       ) {
         updatePayload.membership_number =
           values.membership_number;
       }
+
 
       const {
         error
@@ -2924,7 +2988,7 @@ async function saveMember(event) {
       updateMemberCount();
 
       showStatus(
-        "Member details updated. No historical accounting entries were changed."
+        "Member details updated. No historical accounting or position-history entries were changed."
       );
 
       closeAddMember();
@@ -2973,10 +3037,6 @@ async function saveMember(event) {
       role:
         values.role,
 
-      /*
-       * Actual group position is intentionally separate from
-       * the CHAMA LIVE access role.
-       */
       actual_position:
         values.actual_position ||
         null,
@@ -2988,10 +3048,11 @@ async function saveMember(event) {
           : null,
 
       /*
-       * Initial position history begins on the member's join
-       * date through the canonical creation RPC.
+       * Initial position history is created by the canonical
+       * member-creation RPC.
        */
       actual_position_effective_from:
+        values.actual_position_effective_from ||
         values.join_date,
 
       status:
@@ -3082,23 +3143,19 @@ async function saveMember(event) {
           ? data[0] || data
           : data;
 
-
     } else {
 
       /* ---------------------------------------------------
          NEW MEMBER WITHOUT HISTORICAL CONTRIBUTIONS
 
-         CURRENT CANONICAL CONTRACT:
+         Canonical contract:
 
            create_member_with_contribution_plan(
              p_member jsonb,
              p_contribution_plan jsonb
            )
 
-         Do NOT use the obsolete:
-           p_contribution_rule
-
-         Do NOT pass accounting-table rows directly.
+         No obsolete p_contribution_rule.
          --------------------------------------------------- */
 
       const {
@@ -3156,6 +3213,7 @@ async function saveMember(event) {
        ===================================================== */
 
     try {
+
       const createdMemberId =
         Array.isArray(result)
           ? (
@@ -3316,6 +3374,560 @@ async function handleHistoricalReconciliation(
 
 
 /* =========================================================
+   EXISTING MEMBER POSITION CHANGE
+   ---------------------------------------------------------
+   CANONICAL RPC ONLY.
+
+   RPC:
+     set_member_actual_position(
+       p_member_id,
+       p_actual_position,
+       p_actual_position_name,
+       p_effective_from
+     )
+
+   No direct update to members.actual_position,
+   members.actual_position_name, or member_position_history.
+   ========================================================= */
+
+async function setMemberActualPosition(
+  memberId,
+  actualPosition,
+  actualPositionName,
+  effectiveFrom
+) {
+  if (!memberId) {
+    throw new Error(
+      "Member ID is required."
+    );
+  }
+
+  const position =
+    normalizeActualPosition(
+      actualPosition
+    );
+
+  if (
+    !isValidActualPosition(
+      position
+    )
+  ) {
+    throw new Error(
+      "Select a valid actual group position."
+    );
+  }
+
+  const name =
+    position === "other"
+      ? String(
+          actualPositionName || ""
+        ).trim()
+      : null;
+
+  if (
+    position === "other" &&
+    !name
+  ) {
+    throw new Error(
+      "Enter the position name when selecting Other."
+    );
+  }
+
+  if (!effectiveFrom) {
+    throw new Error(
+      "Position effective date is required."
+    );
+  }
+
+  const {
+    data,
+    error
+  } = await supabase.rpc(
+    "set_member_actual_position",
+    {
+      p_member_id:
+        memberId,
+
+      p_actual_position:
+        position,
+
+      p_actual_position_name:
+        name,
+
+      p_effective_from:
+        effectiveFrom
+    }
+  );
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+
+/* =========================================================
+   POSITION CHANGE UI
+   ========================================================= */
+
+function ensureMemberPositionChangeUI(
+  member
+) {
+  const modal =
+    getMemberViewModal();
+
+  if (!modal) {
+    return;
+  }
+
+  let section =
+    modal.querySelector(
+      "[data-member-position-change]"
+    );
+
+  if (!section) {
+
+    section =
+      document.createElement(
+        "section"
+      );
+
+    section.dataset.memberPositionChange =
+      "true";
+
+    section.className =
+      "member-position-change";
+
+    section.innerHTML = `
+      <h3>
+        Change Actual Group Position
+      </h3>
+
+      <div class="member-position-change-grid">
+
+        <div class="member-position-change-field">
+
+          <label
+            for="memberPositionChangeValue"
+          >
+            Actual Position
+          </label>
+
+          <select
+            id="memberPositionChangeValue"
+          >
+            <option value="">
+              Select position
+            </option>
+
+            <option value="chairperson">
+              Chairperson
+            </option>
+
+            <option value="vice_chairperson">
+              Vice Chairperson
+            </option>
+
+            <option value="treasurer">
+              Treasurer
+            </option>
+
+            <option value="secretary">
+              Secretary
+            </option>
+
+            <option value="vice_secretary">
+              Vice Secretary
+            </option>
+
+            <option value="committee_member">
+              Committee Member
+            </option>
+
+            <option value="member">
+              Member
+            </option>
+
+            <option value="other">
+              Other
+            </option>
+          </select>
+
+        </div>
+
+        <div
+          class="member-position-change-field"
+          id="memberPositionChangeNameField"
+          hidden
+        >
+
+          <label
+            for="memberPositionChangeName"
+          >
+            Position Name
+          </label>
+
+          <input
+            type="text"
+            id="memberPositionChangeName"
+            autocomplete="off"
+          />
+
+        </div>
+
+        <div class="member-position-change-field">
+
+          <label
+            for="memberPositionChangeEffectiveFrom"
+          >
+            Effective From
+          </label>
+
+          <input
+            type="date"
+            id="memberPositionChangeEffectiveFrom"
+          />
+
+        </div>
+
+      </div>
+
+      <div class="member-position-change-help">
+        Position changes are recorded through the canonical
+        position-history workflow. The role used for system
+        access is not changed here.
+      </div>
+
+      <div
+        class="member-position-change-actions"
+        style="margin-top:.75rem"
+      >
+
+        <button
+          type="button"
+          data-action="save-position"
+        >
+          Save Position Change
+        </button>
+
+      </div>
+
+      <div
+        data-position-change-message
+        hidden
+        style="margin-top:.5rem"
+      ></div>
+    `;
+
+    const container =
+      modal.querySelector(
+        ".member-modal-body"
+      ) ||
+      modal.querySelector(
+        ".modal-body"
+      ) ||
+      modal;
+
+    container.appendChild(
+      section
+    );
+
+
+    const positionSelect =
+      section.querySelector(
+        "#memberPositionChangeValue"
+      );
+
+    positionSelect?.addEventListener(
+      "change",
+      () => {
+
+        const field =
+          section.querySelector(
+            "#memberPositionChangeNameField"
+          );
+
+        const name =
+          section.querySelector(
+            "#memberPositionChangeName"
+          );
+
+        const isOther =
+          normalizeActualPosition(
+            positionSelect.value
+          ) === "other";
+
+        if (field) {
+          field.hidden =
+            !isOther;
+        }
+
+        if (name) {
+          name.disabled =
+            !isOther;
+
+          if (!isOther) {
+            name.value =
+              "";
+          }
+        }
+      }
+    );
+  }
+
+
+  const positionSelect =
+    section.querySelector(
+      "#memberPositionChangeValue"
+    );
+
+  const positionName =
+    section.querySelector(
+      "#memberPositionChangeName"
+    );
+
+  const effectiveFrom =
+    section.querySelector(
+      "#memberPositionChangeEffectiveFrom"
+    );
+
+  const message =
+    section.querySelector(
+      "[data-position-change-message]"
+    );
+
+  if (positionSelect) {
+    positionSelect.value =
+      isValidActualPosition(
+        member.actual_position
+      )
+        ? normalizeActualPosition(
+            member.actual_position
+          )
+        : "";
+  }
+
+  if (positionName) {
+    positionName.value =
+      member.actual_position_name ||
+      "";
+  }
+
+  if (effectiveFrom) {
+    effectiveFrom.value =
+      getToday();
+  }
+
+  if (message) {
+    message.textContent =
+      "";
+
+    message.hidden =
+      true;
+  }
+
+  section.dataset.memberId =
+    member.id;
+}
+
+
+/* =========================================================
+   SAVE POSITION CHANGE
+   ========================================================= */
+
+async function handlePositionChange(
+  memberId
+) {
+  const member =
+    findMember(
+      memberId
+    );
+
+  if (!member) {
+    showError(
+      "Member could not be found."
+    );
+
+    return;
+  }
+
+  const modal =
+    getMemberViewModal();
+
+  if (!modal) {
+    return;
+  }
+
+  const section =
+    modal.querySelector(
+      "[data-member-position-change]"
+    );
+
+  if (!section) {
+    return;
+  }
+
+  const position =
+    section.querySelector(
+      "#memberPositionChangeValue"
+    )?.value || "";
+
+  const positionName =
+    section.querySelector(
+      "#memberPositionChangeName"
+    )?.value?.trim() || "";
+
+  const effectiveFrom =
+    section.querySelector(
+      "#memberPositionChangeEffectiveFrom"
+    )?.value || "";
+
+  const message =
+    section.querySelector(
+      "[data-position-change-message]"
+    );
+
+  const setMessage =
+    (text, type = "info") => {
+
+      if (!message) {
+        return;
+      }
+
+      message.textContent =
+        text || "";
+
+      message.dataset.type =
+        type;
+
+      message.hidden =
+        !text;
+    };
+
+
+  if (
+    !isValidActualPosition(
+      position
+    )
+  ) {
+    setMessage(
+      "Select a valid actual group position.",
+      "error"
+    );
+
+    return;
+  }
+
+  if (
+    normalizeActualPosition(
+      position
+    ) === "other" &&
+    !positionName
+  ) {
+    setMessage(
+      "Enter the position name when selecting Other.",
+      "error"
+    );
+
+    return;
+  }
+
+  if (!effectiveFrom) {
+    setMessage(
+      "Position effective date is required.",
+      "error"
+    );
+
+    return;
+  }
+
+
+  const confirmed =
+    window.confirm(
+      `Set ${member.name}'s actual position to "${formatActualPosition(
+        position
+      )}" effective ${formatDate(
+        effectiveFrom
+      )}?`
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  try {
+
+    setMessage(
+      "Saving position change..."
+    );
+
+    clearError();
+
+    await setMemberActualPosition(
+      member.id,
+      position,
+      positionName,
+      effectiveFrom
+    );
+
+
+    /*
+     * Reload the member row from the database so the page
+     * never relies on a browser-side representation as the
+     * authoritative position.
+     */
+
+    await loadMembers();
+
+    await loadMemberContributionRules();
+
+    await loadMemberContributionPositions();
+
+    renderMembers();
+
+    updateMemberCount();
+
+
+    setMessage(
+      "Actual group position updated successfully.",
+      "success"
+    );
+
+    showStatus(
+      "Member actual group position updated."
+    );
+
+
+    const refreshedMember =
+      findMember(
+        member.id
+      );
+
+    if (refreshedMember) {
+      ensureMemberPositionChangeUI(
+        refreshedMember
+      );
+    }
+
+  } catch (error) {
+
+    console.error(
+      "set_member_actual_position failed:",
+      error
+    );
+
+    setMessage(
+      error?.message ||
+      "Unable to update the member's actual group position.",
+      "error"
+    );
+  }
+}
+
+
+/* =========================================================
    INVITATION
    ========================================================= */
 
@@ -3383,13 +3995,7 @@ async function sendMemberInvitation(
       "Member invitation sent."
     );
 
-    /*
-     * Reload member data because the Edge Function may update:
-     *
-     *   auth_user_id
-     *   invited_at
-     *   onboarding_status
-     */
+
     await loadMembers();
 
     await loadMemberContributionRules();
@@ -3398,10 +4004,18 @@ async function sendMemberInvitation(
 
     updateMemberCount();
 
+
     if (reopenModal) {
-      await openMemberModal(
-        member.id
-      );
+      const refreshed =
+        findMember(
+          member.id
+        );
+
+      if (refreshed) {
+        await openMemberModal(
+          refreshed.id
+        );
+      }
     }
 
   } catch (error) {
@@ -3594,6 +4208,11 @@ async function openEditMember(
       "memberActualPositionName"
     );
 
+  const actualPositionEffectiveFrom =
+    byId(
+      "memberActualPositionEffectiveFrom"
+    );
+
   if (actualPosition) {
     actualPosition.value =
       isValidActualPosition(
@@ -3614,6 +4233,15 @@ async function openEditMember(
       "";
 
     actualPositionName.disabled =
+      true;
+  }
+
+  if (actualPositionEffectiveFrom) {
+    actualPositionEffectiveFrom.value =
+      member.join_date ||
+      "";
+
+    actualPositionEffectiveFrom.disabled =
       true;
   }
 
@@ -3668,6 +4296,7 @@ async function openEditMember(
   }
 
   updateHistoricalControls();
+
 
   const panel =
     byId(
@@ -3760,9 +4389,7 @@ function ensureContributionPositionUI() {
       >
 
         <div>
-          <span>
-            Total Contributed
-          </span>
+          <span>Total Contributed</span>
 
           <strong
             data-position-total-contributed
@@ -3772,9 +4399,7 @@ function ensureContributionPositionUI() {
         </div>
 
         <div>
-          <span>
-            Total Due
-          </span>
+          <span>Total Due</span>
 
           <strong
             data-position-total-due
@@ -3784,9 +4409,7 @@ function ensureContributionPositionUI() {
         </div>
 
         <div>
-          <span>
-            Allocated
-          </span>
+          <span>Allocated</span>
 
           <strong
             data-position-allocated
@@ -3796,9 +4419,7 @@ function ensureContributionPositionUI() {
         </div>
 
         <div>
-          <span>
-            Arrears
-          </span>
+          <span>Arrears</span>
 
           <strong
             data-position-arrears
@@ -3808,9 +4429,7 @@ function ensureContributionPositionUI() {
         </div>
 
         <div>
-          <span>
-            Credit
-          </span>
+          <span>Credit</span>
 
           <strong
             data-position-credit
@@ -3992,14 +4611,13 @@ async function loadMemberContributionPosition(
         0
       );
 
+
     /*
-     * Display derivation only:
-     *
-     * total_contributed =
-     *     total_allocated + credit
+     * Display derivation only.
      *
      * No accounting row is created or changed here.
      */
+
     const totalContributed =
       totalAllocated +
       credit;
@@ -4013,6 +4631,7 @@ async function loadMemberContributionPosition(
       allocated:
         totalAllocated
     };
+
 
     const totalElement =
       modal.querySelector(
@@ -4038,6 +4657,7 @@ async function loadMemberContributionPosition(
       modal.querySelector(
         "[data-position-credit]"
       );
+
 
     if (totalElement) {
       totalElement.textContent =
@@ -4074,6 +4694,7 @@ async function loadMemberContributionPosition(
         );
     }
 
+
     const status =
       modal.querySelector(
         "[data-position-status]"
@@ -4085,6 +4706,7 @@ async function loadMemberContributionPosition(
           normalizedPosition
         );
     }
+
 
     contributionPositions.set(
       memberId,
@@ -4137,6 +4759,9 @@ async function openMemberModal(
 
   ensureContributionPositionStyles();
 
+  ensureContributionStatusStyles();
+
+
   const name =
     modal.querySelector(
       "[data-member-name]"
@@ -4150,6 +4775,7 @@ async function openMemberModal(
       member.name ||
       "Member";
   }
+
 
   const number =
     modal.querySelector(
@@ -4165,6 +4791,7 @@ async function openMemberModal(
       "—";
   }
 
+
   const details =
     modal.querySelector(
       "[data-member-profile]"
@@ -4174,9 +4801,7 @@ async function openMemberModal(
 
     details.innerHTML = `
       <div>
-        <span>
-          Member No
-        </span>
+        <span>Member No</span>
 
         <strong>
           ${escapeHtml(
@@ -4187,9 +4812,7 @@ async function openMemberModal(
       </div>
 
       <div>
-        <span>
-          Membership
-        </span>
+        <span>Membership</span>
 
         <strong>
           ${escapeHtml(
@@ -4201,9 +4824,7 @@ async function openMemberModal(
       </div>
 
       <div>
-        <span>
-          National ID
-        </span>
+        <span>National ID</span>
 
         <strong>
           ${escapeHtml(
@@ -4214,9 +4835,7 @@ async function openMemberModal(
       </div>
 
       <div>
-        <span>
-          Phone
-        </span>
+        <span>Phone</span>
 
         <strong>
           ${escapeHtml(
@@ -4227,9 +4846,7 @@ async function openMemberModal(
       </div>
 
       <div>
-        <span>
-          Email
-        </span>
+        <span>Email</span>
 
         <strong>
           ${escapeHtml(
@@ -4240,9 +4857,7 @@ async function openMemberModal(
       </div>
 
       <div>
-        <span>
-          Role
-        </span>
+        <span>Role</span>
 
         <strong>
           ${escapeHtml(
@@ -4254,9 +4869,7 @@ async function openMemberModal(
       </div>
 
       <div>
-        <span>
-          Actual Position
-        </span>
+        <span>Actual Position</span>
 
         <strong>
           ${escapeHtml(
@@ -4274,9 +4887,7 @@ async function openMemberModal(
         member.actual_position_name
           ? `
             <div>
-              <span>
-                Position Name
-              </span>
+              <span>Position Name</span>
 
               <strong>
                 ${escapeHtml(
@@ -4289,9 +4900,7 @@ async function openMemberModal(
       }
 
       <div>
-        <span>
-          Status
-        </span>
+        <span>Status</span>
 
         <strong>
           ${escapeHtml(
@@ -4304,9 +4913,7 @@ async function openMemberModal(
       </div>
 
       <div>
-        <span>
-          Onboarding
-        </span>
+        <span>Onboarding</span>
 
         <strong>
           ${escapeHtml(
@@ -4319,9 +4926,7 @@ async function openMemberModal(
       </div>
 
       <div>
-        <span>
-          Login
-        </span>
+        <span>Login</span>
 
         <strong>
           ${escapeHtml(
@@ -4333,9 +4938,7 @@ async function openMemberModal(
       </div>
 
       <div>
-        <span>
-          Join Date
-        </span>
+        <span>Join Date</span>
 
         <strong>
           ${formatDate(
@@ -4345,9 +4948,7 @@ async function openMemberModal(
       </div>
 
       <div>
-        <span>
-          Group
-        </span>
+        <span>Group</span>
 
         <strong>
           ${escapeHtml(
@@ -4402,6 +5003,7 @@ async function openMemberModal(
     );
   }
 
+
   const rulesContent =
     rulesSection.querySelector(
       "[data-member-rules-content]"
@@ -4413,6 +5015,15 @@ async function openMemberModal(
         member.id
       );
   }
+
+
+  /* -------------------------------------------------------
+     POSITION CHANGE
+     ------------------------------------------------------- */
+
+  ensureMemberPositionChangeUI(
+    member
+  );
 
 
   /* -------------------------------------------------------
@@ -4459,9 +5070,9 @@ async function openMemberModal(
     }
   }
 
-
   reconcileButton.dataset.memberId =
     member.id;
+
 
   modal.hidden =
     false;
@@ -4469,6 +5080,7 @@ async function openMemberModal(
   modal.classList.add(
     "open"
   );
+
 
   await loadMemberContributionPosition(
     member.id
@@ -4580,7 +5192,10 @@ async function handleMemberAction(
     target.dataset.action;
 
   const memberId =
-    target.dataset.memberId;
+    target.dataset.memberId ||
+    target.closest(
+      "[data-member-id]"
+    )?.dataset.memberId;
 
   if (
     !memberId &&
@@ -4593,6 +5208,7 @@ async function handleMemberAction(
     return;
   }
 
+
   switch (action) {
 
     case "view":
@@ -4601,11 +5217,13 @@ async function handleMemberAction(
       );
       break;
 
+
     case "edit":
       await openEditMember(
         memberId
       );
       break;
+
 
     case "invite":
       await sendMemberInvitation(
@@ -4614,15 +5232,25 @@ async function handleMemberAction(
       );
       break;
 
+
     case "reconcile":
       await handleHistoricalReconciliation(
         memberId
       );
       break;
 
+
+    case "save-position":
+      await handlePositionChange(
+        memberId
+      );
+      break;
+
+
     case "close":
       closeMemberModal();
       break;
+
 
     default:
       break;
@@ -5002,11 +5630,24 @@ function bindEvents() {
           "memberContributionEffectiveFrom"
         );
 
+      const positionEffective =
+        byId(
+          "memberActualPositionEffectiveFrom"
+        );
+
       if (
         effective &&
         !editingMemberId
       ) {
         effective.value =
+          joinDate.value;
+      }
+
+      if (
+        positionEffective &&
+        !editingMemberId
+      ) {
+        positionEffective.value =
           joinDate.value;
       }
 
