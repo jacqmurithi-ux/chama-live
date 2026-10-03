@@ -447,6 +447,11 @@ function normalizeHistoricalPaymentMethod(value) {
 
 /* =========================================================
    LOGIN STATUS
+   ---------------------------------------------------------
+   A member's email address does NOT prove that a Supabase
+   authentication account exists.
+
+   user_id is the authoritative member → auth-user link.
    ========================================================= */
 
 function getLoginStatus(member) {
@@ -457,7 +462,7 @@ function getLoginStatus(member) {
     };
   }
 
-  if (!member.email) {
+  if (!member.user_id) {
     return {
       key: "no-login",
       label: "No Login"
@@ -579,15 +584,13 @@ async function refreshManagedMemberAccounting(
     throw error;
   }
 
-  if (
-    !data ||
-    data.ok !== true
-  ) {
-    throw new Error(
-      "Canonical member accounting refresh did not complete successfully."
-    );
-  }
-
+  /*
+   * The RPC is the canonical refresh boundary.
+   *
+   * Its verified database contract returns jsonb, but the
+   * frontend must not invent an `ok === true` requirement
+   * that is not part of that return contract.
+   */
   return data;
 }
 
@@ -1737,17 +1740,6 @@ function validateForm(values) {
       );
     }
 
-    /*
-     * Actual position is deliberately excluded from the
-     * ordinary edit path.
-     *
-     * Existing-member position changes use:
-     *
-     *   set_member_actual_position()
-     *
-     * through the dedicated position workflow.
-     */
-
     return true;
   }
 
@@ -2512,14 +2504,14 @@ function updateMemberCount() {
     members.filter(
       member =>
         Boolean(
-          member.email
+          member.user_id
         )
     ).length;
 
   const noLogin =
     members.filter(
       member =>
-        !member.email
+        !member.user_id
     ).length;
 
   const totalElement =
@@ -2905,20 +2897,6 @@ async function saveMember(event) {
 
     if (editingMemberId) {
 
-      /*
-       * IMPORTANT:
-       *
-       * These are deliberately excluded:
-       *
-       *   actual_position
-       *   actual_position_name
-       *   member_position_history
-       *
-       * Position changes use set_member_actual_position().
-       *
-       * Historical accounting is also deliberately excluded.
-       */
-
       const updatePayload = {
         member_number:
           values.member_number,
@@ -3047,10 +3025,6 @@ async function saveMember(event) {
           ? values.actual_position_name
           : null,
 
-      /*
-       * Initial position history is created by the canonical
-       * member-creation RPC.
-       */
       actual_position_effective_from:
         values.actual_position_effective_from ||
         values.join_date,
@@ -3147,15 +3121,6 @@ async function saveMember(event) {
 
       /* ---------------------------------------------------
          NEW MEMBER WITHOUT HISTORICAL CONTRIBUTIONS
-
-         Canonical contract:
-
-           create_member_with_contribution_plan(
-             p_member jsonb,
-             p_contribution_plan jsonb
-           )
-
-         No obsolete p_contribution_rule.
          --------------------------------------------------- */
 
       const {
@@ -3377,17 +3342,6 @@ async function handleHistoricalReconciliation(
    EXISTING MEMBER POSITION CHANGE
    ---------------------------------------------------------
    CANONICAL RPC ONLY.
-
-   RPC:
-     set_member_actual_position(
-       p_member_id,
-       p_actual_position,
-       p_actual_position_name,
-       p_effective_from
-     )
-
-   No direct update to members.actual_position,
-   members.actual_position_name, or member_position_history.
    ========================================================= */
 
 async function setMemberActualPosition(
@@ -3872,12 +3826,6 @@ async function handlePositionChange(
       effectiveFrom
     );
 
-
-    /*
-     * Reload the member row from the database so the page
-     * never relies on a browser-side representation as the
-     * authoritative position.
-     */
 
     await loadMembers();
 
@@ -4611,12 +4559,6 @@ async function loadMemberContributionPosition(
         0
       );
 
-
-    /*
-     * Display derivation only.
-     *
-     * No accounting row is created or changed here.
-     */
 
     const totalContributed =
       totalAllocated +
@@ -5871,14 +5813,18 @@ export async function refreshMembers() {
 
 /* =========================================================
    PAGE LAYOUT CONTRACT
+   ---------------------------------------------------------
+   Admin layout loads:
+
+     members.html → ./members.js → init
+
+   refreshMembers remains publicly available for explicit
+   refreshes from the page/application.
    ========================================================= */
 
 export {
   init
 };
-
-export const loadPage =
-  init;
 
 
 /* =========================================================
