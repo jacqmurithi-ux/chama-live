@@ -84,8 +84,8 @@
     }
 
     .hero-chip {
-      background: rgba(255,255,255,.12);
-      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255, 255, 255, .12);
+      border: 1px solid rgba(255, 255, 255, .18);
       border-radius: 999px;
       padding: 7px 12px;
       font-size: 13px;
@@ -157,7 +157,7 @@
     .filter-field select:focus,
     .filter-field input:focus {
       border-color: var(--report-primary);
-      box-shadow: 0 0 0 3px rgba(37,99,235,.10);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, .10);
     }
 
     .filter-span-2 {
@@ -275,7 +275,7 @@
       border: 1px solid var(--report-border);
       border-radius: 15px;
       padding: 16px;
-      box-shadow: 0 4px 14px rgba(15,23,42,.04);
+      box-shadow: 0 4px 14px rgba(15, 23, 42, .04);
       min-width: 0;
     }
 
@@ -1613,14 +1613,22 @@
 
   <!-- =====================================================
        SHARED ADMIN PORTAL BOOT
+
+       IMPORTANT:
+       admin-layout.js is the sole boot owner.
+
+       Canonical mapping:
+       reports.html
+         → ./reports.js
+         → initPage()
+
+       Do not call boot() inline here.
+       Do not import reports.js directly here.
   ====================================================== -->
 
-  <script type="module">
-    import {
-      boot
-    } from "./js/admin-layout.js";
-
-    boot();
+  <script
+    type="module"
+    src="./js/admin-layout.js">
   </script>
 
 </body>
