@@ -1,29 +1,46 @@
 /* =========================================================
-   CHAMA LIVE — MY PROFILE
+   CHAMA LIVE — MEMBER ACCOUNTING
    ---------------------------------------------------------
    MEMBER PORTAL
 
    PURPOSE
    ---------------------------------------------------------
-   Read-only view of the authenticated member's profile.
+   Read-only canonical contribution accounting.
+
+   ACCOUNTING CHAIN
+   ---------------------------------------------------------
+   Obligation
+        ↓
+   Payment
+        ↓
+   Allocation
+        ↓
+   Arrears / Credit
+
+   CANONICAL READ RPCs
+   ---------------------------------------------------------
+   • get_canonical_member_monthly_status()
+   • get_member_contribution_position()
 
    SECURITY
    ---------------------------------------------------------
-   • Member identity comes from auth.js.
+   • Authentication/context is owned by member-layout.js.
    • No member ID is accepted from the URL.
-   • No profile data is written from this page.
-   • Database/RLS remains authoritative.
+   • No direct accounting-table reads are performed.
+   • No accounting rows are inserted or updated.
+   • No refresh/write RPC is called.
 
-   NO INSERT
-   NO UPDATE
-   NO DELETE
-   NO RPC
-   NO SCHEMA CHANGE
+   FEATURE BOOT
+   ---------------------------------------------------------
+   member-layout.js calls:
+
+     initMemberAccounting(context)
+
 ========================================================= */
 
 import {
-  getMyMember
-} from "./auth.js";
+  supabase
+} from "./supabase.js";
 
 
 /* =========================================================
@@ -31,8 +48,29 @@ import {
 ========================================================= */
 
 const state = {
-  member: null,
-  initialized: false
+
+  context: null,
+
+  currentUser: null,
+
+  currentMember: null,
+
+  currentGroup: null,
+
+  groupId: null,
+
+  memberId: null,
+
+  accountingMonth: null,
+
+  monthlyRows: [],
+
+  cumulativePosition: null,
+
+  initialized: false,
+
+  statementMemberId: null
+
 };
 
 
@@ -41,70 +79,182 @@ const state = {
 ========================================================= */
 
 const els = {
-  loading:
+
+  accountingMonth:
     document.getElementById(
-      "memberProfileLoading"
+      "accountingMonth"
     ),
 
-  error:
+  memberFilter:
     document.getElementById(
-      "memberProfileError"
+      "memberFilter"
     ),
 
-  content:
+  statusFilter:
     document.getElementById(
-      "memberProfileContent"
+      "statusFilter"
     ),
 
-  avatar:
+  searchMember:
     document.getElementById(
-      "memberProfileAvatar"
+      "searchMember"
     ),
 
-  name:
+  refreshButton:
     document.getElementById(
-      "memberProfileName"
+      "refreshButton"
     ),
 
-  number:
+  resetButton:
     document.getElementById(
-      "memberProfileNumber"
+      "resetButton"
     ),
 
-  status:
+  printButton:
     document.getElementById(
-      "memberProfileStatus"
+      "printButton"
     ),
 
-  nameValue:
+  csvButton:
     document.getElementById(
-      "memberProfileNameValue"
+      "csvButton"
     ),
 
-  numberValue:
+  excelButton:
     document.getElementById(
-      "memberProfileNumberValue"
+      "excelButton"
     ),
 
-  role:
+  closeStatementButton:
     document.getElementById(
-      "memberProfileRole"
+      "closeStatementButton"
     ),
 
-  statusValue:
+  groupLabel:
     document.getElementById(
-      "memberProfileStatusValue"
+      "groupLabel"
     ),
 
-  group:
+  statusMessage:
     document.getElementById(
-      "memberProfileGroup"
+      "statusMessage"
     ),
 
-  created:
+  memberAccountingBody:
     document.getElementById(
-      "memberProfileCreated"
+      "memberAccountingBody"
+    ),
+
+  tablePeriod:
+    document.getElementById(
+      "tablePeriod"
+    ),
+
+  statementSection:
+    document.getElementById(
+      "statementSection"
+    ),
+
+  statementTitle:
+    document.getElementById(
+      "statementTitle"
+    ),
+
+  statementMeta:
+    document.getElementById(
+      "statementMeta"
+    ),
+
+  statementBody:
+    document.getElementById(
+      "statementBody"
+    ),
+
+  statementDue:
+    document.getElementById(
+      "statementDue"
+    ),
+
+  statementPaid:
+    document.getElementById(
+      "statementPaid"
+    ),
+
+  statementOutstanding:
+    document.getElementById(
+      "statementOutstanding"
+    ),
+
+  statementCredit:
+    document.getElementById(
+      "statementCredit"
+    ),
+
+  statMembers:
+    document.getElementById(
+      "statMembers"
+    ),
+
+  statDue:
+    document.getElementById(
+      "statDue"
+    ),
+
+  statApplied:
+    document.getElementById(
+      "statApplied"
+    ),
+
+  statOutstanding:
+    document.getElementById(
+      "statOutstanding"
+    ),
+
+  statCredit:
+    document.getElementById(
+      "statCredit"
+    ),
+
+  statAttention:
+    document.getElementById(
+      "statAttention"
+    ),
+
+  memberCumulativePosition:
+    document.getElementById(
+      "memberCumulativePosition"
+    ),
+
+  memberCumulativePositionContent:
+    document.getElementById(
+      "memberCumulativePositionContent"
+    ),
+
+  cumulativeStatus:
+    document.getElementById(
+      "cumulativeStatus"
+    ),
+
+  cumulativeDue:
+    document.getElementById(
+      "cumulativeDue"
+    ),
+
+  cumulativeAllocated:
+    document.getElementById(
+      "cumulativeAllocated"
+    ),
+
+  cumulativeArrears:
+    document.getElementById(
+      "cumulativeArrears"
+    ),
+
+  cumulativeCredit:
+    document.getElementById(
+      "cumulativeCredit"
     )
+
 };
 
 
@@ -112,7 +262,32 @@ const els = {
    HELPERS
 ========================================================= */
 
+function firstRpcRow(data) {
+
+  if (Array.isArray(data)) {
+    return data[0] || null;
+  }
+
+  return data || null;
+}
+
+
+function normalizeRows(data) {
+
+  if (Array.isArray(data)) {
+    return data;
+  }
+
+  if (data) {
+    return [data];
+  }
+
+  return [];
+}
+
+
 function displayValue(value) {
+
   if (
     value === null ||
     value === undefined ||
@@ -125,76 +300,37 @@ function displayValue(value) {
 }
 
 
-function displayStatus(value) {
-  const status =
-    displayValue(
-      value
-    );
+function numericValue(value) {
 
-  if (
-    status === "—"
-  ) {
-    return status;
-  }
+  const number =
+    Number(value);
+
+  return Number.isFinite(number)
+    ? number
+    : 0;
+}
+
+
+function formatMoney(value) {
+
+  const amount =
+    numericValue(value);
 
   return (
-    status.charAt(0).toUpperCase() +
-    status.slice(1)
+    "KSh " +
+    amount.toLocaleString(
+      "en-KE",
+      {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }
+    )
   );
 }
 
 
-function displayRole(value) {
-  const role =
-    displayValue(
-      value
-    );
-
-  if (
-    role === "—"
-  ) {
-    return role;
-  }
-
-  return role
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, letter =>
-      letter.toUpperCase()
-    );
-}
-
-
-function initials(name) {
-  const value =
-    String(
-      name ?? ""
-    ).trim();
-
-  if (!value) {
-    return "M";
-  }
-
-  const parts =
-    value
-      .split(/\s+/)
-      .filter(Boolean);
-
-  if (
-    parts.length === 1
-  ) {
-    return parts[0]
-      .slice(0, 2)
-      .toUpperCase();
-  }
-
-  return (
-    parts[0][0] +
-    parts[parts.length - 1][0]
-  ).toUpperCase();
-}
-
-
 function formatDate(value) {
+
   if (!value) {
     return "—";
   }
@@ -228,161 +364,1411 @@ function formatDate(value) {
 }
 
 
-/* =========================================================
-   UI STATE
-========================================================= */
+function currentMonthValue() {
 
-function showLoading() {
-  if (els.loading) {
-    els.loading.hidden = false;
-  }
+  const now =
+    new Date();
 
-  if (els.error) {
-    els.error.hidden = true;
-  }
+  const year =
+    now.getFullYear();
 
-  if (els.content) {
-    els.content.hidden = true;
-  }
+  const month =
+    String(
+      now.getMonth() + 1
+    ).padStart(
+      2,
+      "0"
+    );
+
+  return `${year}-${month}`;
 }
 
 
-function showError(message) {
-  if (els.loading) {
-    els.loading.hidden = true;
-  }
-
-  if (els.content) {
-    els.content.hidden = true;
-  }
-
-  if (els.error) {
-    els.error.textContent =
-      message ||
-      "Unable to load your profile.";
-
-    els.error.hidden = false;
-  }
-}
-
-
-function showContent() {
-  if (els.loading) {
-    els.loading.hidden = true;
-  }
-
-  if (els.error) {
-    els.error.hidden = true;
-  }
-
-  if (els.content) {
-    els.content.hidden = false;
-  }
-}
-
-
-/* =========================================================
-   RENDER PROFILE
-========================================================= */
-
-function renderProfile() {
-  const member =
-    state.member;
+function memberName(member) {
 
   if (!member) {
-    throw new Error(
-      "Your member profile could not be found."
-    );
+    return "Member";
   }
+
+  return (
+    member.name ||
+    member.full_name ||
+    member.member_name ||
+    member.member_number ||
+    "Member"
+  );
+}
+
+
+function memberIdOf(member) {
+
+  return (
+    member?.id ||
+    member?.member_id ||
+    null
+  );
+}
+
+
+function rowMemberId(row) {
+
+  return (
+    row?.member_id ||
+    row?.id ||
+    null
+  );
+}
+
+
+function rowMemberName(row) {
+
+  return (
+    row?.member_name ||
+    row?.name ||
+    row?.full_name ||
+    row?.member_number ||
+    "Member"
+  );
+}
+
+
+function normalizeStatus(value) {
+
+  const raw =
+    String(
+      value ?? ""
+    )
+      .trim()
+      .toUpperCase();
+
+  if (
+    raw === "ARREARS" ||
+    raw === "OVERDUE" ||
+    raw === "OUTSTANDING"
+  ) {
+    return "ARREARS";
+  }
+
+  if (
+    raw === "CREDIT"
+  ) {
+    return "CREDIT";
+  }
+
+  return "CURRENT";
+}
+
+
+/* =========================================================
+   UI
+========================================================= */
+
+function setStatus(message, isError = false) {
+
+  if (!els.statusMessage) {
+    return;
+  }
+
+  els.statusMessage.textContent =
+    message || "";
+
+  els.statusMessage.className =
+    isError
+      ? "member-accounting-message member-accounting-error"
+      : "member-accounting-message member-accounting-status";
+}
+
+
+function setGroupLabel() {
+
+  if (!els.groupLabel) {
+    return;
+  }
+
+  const group =
+    state.currentGroup;
 
   const name =
-    displayValue(
-      member.name
+    group?.name ||
+    group?.group_name ||
+    group?.group_number ||
+    group?.id ||
+    "—";
+
+  els.groupLabel.textContent =
+    `Group: ${name}`;
+}
+
+
+function setInitialMonth() {
+
+  if (!els.accountingMonth) {
+    return;
+  }
+
+  if (!els.accountingMonth.value) {
+    els.accountingMonth.value =
+      currentMonthValue();
+  }
+
+  state.accountingMonth =
+    els.accountingMonth.value;
+}
+
+
+function renderCumulativePosition(position) {
+
+  state.cumulativePosition =
+    position || null;
+
+  if (!position) {
+
+    if (els.cumulativeStatus) {
+      els.cumulativeStatus.textContent =
+        "—";
+    }
+
+    if (els.cumulativeDue) {
+      els.cumulativeDue.textContent =
+        "—";
+    }
+
+    if (els.cumulativeAllocated) {
+      els.cumulativeAllocated.textContent =
+        "—";
+    }
+
+    if (els.cumulativeArrears) {
+      els.cumulativeArrears.textContent =
+        "—";
+    }
+
+    if (els.cumulativeCredit) {
+      els.cumulativeCredit.textContent =
+        "—";
+    }
+
+    return;
+  }
+
+  if (els.cumulativeStatus) {
+    els.cumulativeStatus.textContent =
+      displayValue(
+        position.status
+      );
+  }
+
+  if (els.cumulativeDue) {
+    els.cumulativeDue.textContent =
+      formatMoney(
+        position.total_due
+      );
+  }
+
+  if (els.cumulativeAllocated) {
+    els.cumulativeAllocated.textContent =
+      formatMoney(
+        position.total_allocated
+      );
+  }
+
+  if (els.cumulativeArrears) {
+    els.cumulativeArrears.textContent =
+      formatMoney(
+        position.arrears
+      );
+  }
+
+  if (els.cumulativeCredit) {
+    els.cumulativeCredit.textContent =
+      formatMoney(
+        position.credit
+      );
+  }
+}
+
+
+/* =========================================================
+   RPC — CUMULATIVE MEMBER POSITION
+========================================================= */
+
+async function loadCumulativePosition(
+  memberId = state.memberId
+) {
+
+  if (!memberId) {
+    throw new Error(
+      "Member context is unavailable."
+    );
+  }
+
+  const {
+    data,
+    error
+  } =
+    await supabase.rpc(
+      "get_member_contribution_position",
+      {
+        p_member_id:
+          memberId
+      }
     );
 
-  const memberNumber =
-    displayValue(
-      member.member_number
+  if (error) {
+    throw error;
+  }
+
+  const position =
+    firstRpcRow(data);
+
+  renderCumulativePosition(
+    position
+  );
+
+  return position;
+}
+
+
+/* =========================================================
+   RPC — CANONICAL MONTHLY STATUS
+========================================================= */
+
+async function loadMonthlyStatus() {
+
+  if (!state.groupId) {
+    throw new Error(
+      "Group context is unavailable."
     );
+  }
+
+  if (!state.accountingMonth) {
+    setInitialMonth();
+  }
+
+  const {
+    data,
+    error
+  } =
+    await supabase.rpc(
+      "get_canonical_member_monthly_status",
+      {
+        p_group_id:
+          state.groupId,
+
+        p_month:
+          state.accountingMonth
+      }
+    );
+
+  if (error) {
+    throw error;
+  }
+
+  state.monthlyRows =
+    normalizeRows(data);
+
+  return state.monthlyRows;
+}
+
+
+/* =========================================================
+   FILTERING
+========================================================= */
+
+function filteredRows() {
+
+  const search =
+    String(
+      els.searchMember?.value ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
 
   const status =
-    displayStatus(
-      member.status
+    String(
+      els.statusFilter?.value ||
+      ""
+    )
+      .trim()
+      .toUpperCase();
+
+  const selectedMemberId =
+    els.memberFilter?.value ||
+    "";
+
+  return state.monthlyRows
+    .filter(row => {
+
+      if (
+        selectedMemberId &&
+        String(
+          rowMemberId(row)
+        ) !== String(
+          selectedMemberId
+        )
+      ) {
+        return false;
+      }
+
+      if (status) {
+
+        if (
+          normalizeStatus(
+            row.status
+          ) !== status
+        ) {
+          return false;
+        }
+
+      }
+
+      if (search) {
+
+        const haystack =
+          [
+            rowMemberName(row),
+            row?.member_number,
+            row?.member_id
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+
+        if (
+          !haystack.includes(search)
+        ) {
+          return false;
+        }
+
+      }
+
+      return true;
+
+    });
+}
+
+
+/* =========================================================
+   MEMBER FILTER
+========================================================= */
+
+function populateMemberFilter() {
+
+  if (!els.memberFilter) {
+    return;
+  }
+
+  const previous =
+    els.memberFilter.value;
+
+  const unique =
+    new Map();
+
+  for (
+    const row of state.monthlyRows
+  ) {
+
+    const id =
+      rowMemberId(row);
+
+    if (!id) {
+      continue;
+    }
+
+    if (
+      !unique.has(
+        String(id)
+      )
+    ) {
+
+      unique.set(
+        String(id),
+        rowMemberName(row)
+      );
+
+    }
+
+  }
+
+  els.memberFilter.innerHTML =
+    "";
+
+  const ownOption =
+    document.createElement(
+      "option"
     );
 
-  const role =
-    displayRole(
-      member.role
+  ownOption.value =
+    state.memberId || "";
+
+  ownOption.textContent =
+    "My account";
+
+  els.memberFilter.appendChild(
+    ownOption
+  );
+
+  for (
+    const [
+      id,
+      name
+    ] of unique
+  ) {
+
+    if (
+      String(id) ===
+      String(state.memberId)
+    ) {
+      continue;
+    }
+
+    const option =
+      document.createElement(
+        "option"
+      );
+
+    option.value =
+      id;
+
+    option.textContent =
+      name;
+
+    els.memberFilter.appendChild(
+      option
     );
 
-  if (els.avatar) {
-    els.avatar.textContent =
-      initials(
-        member.name
+  }
+
+  if (
+    previous &&
+    Array.from(
+      els.memberFilter.options
+    ).some(
+      option =>
+        option.value === previous
+    )
+  ) {
+    els.memberFilter.value =
+      previous;
+  }
+
+}
+
+
+/* =========================================================
+   RENDER TABLE
+========================================================= */
+
+function renderMonthlyTable() {
+
+  if (!els.memberAccountingBody) {
+    return;
+  }
+
+  const rows =
+    filteredRows();
+
+  if (!rows.length) {
+
+    els.memberAccountingBody.innerHTML =
+      `
+        <tr>
+          <td
+            colspan="11"
+            class="member-accounting-empty"
+          >
+            No canonical accounting records
+            match the selected filters.
+          </td>
+        </tr>
+      `;
+
+    return;
+  }
+
+  els.memberAccountingBody.innerHTML =
+    rows.map(
+      row => {
+
+        const memberId =
+          rowMemberId(row);
+
+        const status =
+          normalizeStatus(
+            row.status
+          );
+
+        return `
+          <tr data-member-id="${escapeHtml(
+            memberId || ""
+          )}">
+
+            <td>
+              <button
+                type="button"
+                class="member-statement-link"
+                data-member-statement="${escapeHtml(
+                  memberId || ""
+                )}"
+              >
+                ${escapeHtml(
+                  rowMemberName(row)
+                )}
+              </button>
+            </td>
+
+            <td>
+              ${escapeHtml(
+                row.period ||
+                row.month ||
+                state.accountingMonth ||
+                "—"
+              )}
+            </td>
+
+            <td>
+              ${formatMoney(
+                row.monthly_due
+              )}
+            </td>
+
+            <td>
+              ${formatMoney(
+                row.previous_outstanding
+              )}
+            </td>
+
+            <td>
+              ${formatMoney(
+                row.previous_credit
+              )}
+            </td>
+
+            <td>
+              ${formatMoney(
+                row.current_month_payment
+              )}
+            </td>
+
+            <td>
+              ${formatMoney(
+                row.applied_this_month
+              )}
+            </td>
+
+            <td>
+              ${formatMoney(
+                row.carry_forward
+              )}
+            </td>
+
+            <td>
+              ${formatMoney(
+                row.current_outstanding
+              )}
+            </td>
+
+            <td>
+              ${formatMoney(
+                row.total_paid_to_date
+              )}
+            </td>
+
+            <td>
+              <span class="member-accounting-status-badge">
+                ${escapeHtml(
+                  status
+                )}
+              </span>
+            </td>
+
+          </tr>
+        `;
+
+      }
+    ).join("");
+
+}
+
+
+/* =========================================================
+   SUMMARY
+========================================================= */
+
+function renderSummary() {
+
+  const rows =
+    filteredRows();
+
+  const members =
+    rows.length;
+
+  const due =
+    rows.reduce(
+      (
+        total,
+        row
+      ) =>
+        total +
+        numericValue(
+          row.monthly_due
+        ),
+      0
+    );
+
+  const applied =
+    rows.reduce(
+      (
+        total,
+        row
+      ) =>
+        total +
+        numericValue(
+          row.applied_this_month
+        ),
+      0
+    );
+
+  const outstanding =
+    rows.reduce(
+      (
+        total,
+        row
+      ) =>
+        total +
+        numericValue(
+          row.current_outstanding
+        ),
+      0
+    );
+
+  const credit =
+    rows.reduce(
+      (
+        total,
+        row
+      ) =>
+        total +
+        numericValue(
+          row.previous_credit
+        ),
+      0
+    );
+
+  const attention =
+    rows.filter(
+      row =>
+        normalizeStatus(
+          row.status
+        ) === "ARREARS"
+    ).length;
+
+  if (els.statMembers) {
+    els.statMembers.textContent =
+      String(members);
+  }
+
+  if (els.statDue) {
+    els.statDue.textContent =
+      formatMoney(due);
+  }
+
+  if (els.statApplied) {
+    els.statApplied.textContent =
+      formatMoney(applied);
+  }
+
+  if (els.statOutstanding) {
+    els.statOutstanding.textContent =
+      formatMoney(outstanding);
+  }
+
+  if (els.statCredit) {
+    els.statCredit.textContent =
+      formatMoney(credit);
+  }
+
+  if (els.statAttention) {
+    els.statAttention.textContent =
+      String(attention);
+  }
+
+}
+
+
+/* =========================================================
+   STATEMENT
+========================================================= */
+
+function openStatement(memberId) {
+
+  const row =
+    state.monthlyRows.find(
+      item =>
+        String(
+          rowMemberId(item)
+        ) === String(
+          memberId
+        )
+    );
+
+  if (!row) {
+    return;
+  }
+
+  state.statementMemberId =
+    memberId;
+
+  if (els.statementSection) {
+    els.statementSection.classList.add(
+      "is-visible"
+    );
+  }
+
+  if (els.statementTitle) {
+    els.statementTitle.textContent =
+      `${rowMemberName(row)} — Statement`;
+  }
+
+  if (els.statementMeta) {
+    els.statementMeta.textContent =
+      `Accounting month: ${
+        row.period ||
+        row.month ||
+        state.accountingMonth ||
+        "—"
+      }`;
+  }
+
+  if (els.statementDue) {
+    els.statementDue.textContent =
+      formatMoney(
+        row.monthly_due
       );
   }
 
-  if (els.name) {
-    els.name.textContent =
-      name;
-  }
-
-  if (els.number) {
-    els.number.textContent =
-      memberNumber === "—"
-        ? "Member"
-        : `Member #${memberNumber}`;
-  }
-
-  if (els.status) {
-    els.status.textContent =
-      status;
-  }
-
-  if (els.nameValue) {
-    els.nameValue.textContent =
-      name;
-  }
-
-  if (els.numberValue) {
-    els.numberValue.textContent =
-      memberNumber;
-  }
-
-  if (els.role) {
-    els.role.textContent =
-      role;
-  }
-
-  if (els.statusValue) {
-    els.statusValue.textContent =
-      status;
-  }
-
-  if (els.group) {
-    els.group.textContent =
-      displayValue(
-        member.group_name ||
-        member.group?.name
+  if (els.statementPaid) {
+    els.statementPaid.textContent =
+      formatMoney(
+        row.current_month_payment
       );
   }
+
+  if (els.statementOutstanding) {
+    els.statementOutstanding.textContent =
+      formatMoney(
+        row.current_outstanding
+      );
+  }
+
+  if (els.statementCredit) {
+    els.statementCredit.textContent =
+      formatMoney(
+        row.previous_credit
+      );
+  }
+
+  if (!els.statementBody) {
+    return;
+  }
+
+  const statementRows = [
+
+    [
+      "Previous Outstanding",
+      formatMoney(
+        row.previous_outstanding
+      )
+    ],
+
+    [
+      "Previous Credit",
+      formatMoney(
+        row.previous_credit
+      )
+    ],
+
+    [
+      "Monthly Due",
+      formatMoney(
+        row.monthly_due
+      )
+    ],
+
+    [
+      "Current Month Payment",
+      formatMoney(
+        row.current_month_payment
+      )
+    ],
+
+    [
+      "Applied This Month",
+      formatMoney(
+        row.applied_this_month
+      )
+    ],
+
+    [
+      "Carry Forward",
+      formatMoney(
+        row.carry_forward
+      )
+    ],
+
+    [
+      "Current Outstanding",
+      formatMoney(
+        row.current_outstanding
+      )
+    ],
+
+    [
+      "Total Paid To Date",
+      formatMoney(
+        row.total_paid_to_date
+      )
+    ],
+
+    [
+      "Status",
+      normalizeStatus(
+        row.status
+      )
+    ]
+
+  ];
+
+  els.statementBody.innerHTML =
+    statementRows
+      .map(
+        ([label, value]) =>
+          `
+            <tr>
+              <td>
+                ${escapeHtml(label)}
+              </td>
+              <td>
+                ${escapeHtml(value)}
+              </td>
+            </tr>
+          `
+      )
+      .join("");
+
+}
+
+
+function closeStatement() {
+
+  state.statementMemberId =
+    null;
+
+  if (els.statementSection) {
+    els.statementSection.classList.remove(
+      "is-visible"
+    );
+  }
+
+}
+
+
+/* =========================================================
+   ESCAPING
+========================================================= */
+
+function escapeHtml(value) {
+
+  return String(
+    value ?? ""
+  )
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
+
+}
+
+
+/* =========================================================
+   EXPORT
+========================================================= */
+
+function exportCsv() {
+
+  const rows =
+    filteredRows();
+
+  if (!rows.length) {
+    return;
+  }
+
+  const headers = [
+
+    "Member",
+    "Period",
+    "Monthly Due",
+    "Previous Outstanding",
+    "Previous Credit",
+    "Current Month Payment",
+    "Applied This Month",
+    "Carry Forward",
+    "Current Outstanding",
+    "Total Paid To Date",
+    "Status"
+
+  ];
+
+  const csvRows = [
+    headers
+  ];
+
+  for (
+    const row of rows
+  ) {
+
+    csvRows.push([
+
+      rowMemberName(row),
+
+      row.period ||
+      row.month ||
+      state.accountingMonth ||
+      "",
+
+      row.monthly_due ?? "",
+
+      row.previous_outstanding ?? "",
+
+      row.previous_credit ?? "",
+
+      row.current_month_payment ?? "",
+
+      row.applied_this_month ?? "",
+
+      row.carry_forward ?? "",
+
+      row.current_outstanding ?? "",
+
+      row.total_paid_to_date ?? "",
+
+      normalizeStatus(
+        row.status
+      )
+
+    ]);
+
+  }
+
+  const csv =
+    csvRows
+      .map(
+        row =>
+          row
+            .map(
+              value =>
+                `"${String(
+                  value ?? ""
+                ).replace(
+                  /"/g,
+                  '""'
+                )}"`
+            )
+            .join(",")
+      )
+      .join("\r\n");
+
+  downloadBlob(
+    csv,
+    `chama-live-accounting-${
+      state.accountingMonth ||
+      "report"
+    }.csv`,
+    "text/csv;charset=utf-8"
+  );
+
+}
+
+
+function exportExcel() {
 
   /*
-   * Canonical member date field:
-   *   members.join_date
-   *
-   * Do not use:
-   *   member.created_at
-   *
-   * The member profile contract uses join_date
-   * for the member's joining date.
+   * Preserve the existing Excel control without
+   * introducing a new dependency.
+
+   * CSV is the canonical browser-side export.
+   * The file opens directly in Excel.
    */
-  if (els.created) {
-    els.created.textContent =
-      formatDate(
-        member.join_date
-      );
+
+  exportCsv();
+
+}
+
+
+/* =========================================================
+   DOWNLOAD
+========================================================= */
+
+function downloadBlob(
+  content,
+  filename,
+  type
+) {
+
+  const blob =
+    new Blob(
+      [content],
+      { type }
+    );
+
+  const url =
+    URL.createObjectURL(
+      blob
+    );
+
+  const link =
+    document.createElement(
+      "a"
+    );
+
+  link.href =
+    url;
+
+  link.download =
+    filename;
+
+  document.body.appendChild(
+    link
+  );
+
+  link.click();
+
+  link.remove();
+
+  URL.revokeObjectURL(
+    url
+  );
+
+}
+
+
+/* =========================================================
+   LOAD
+========================================================= */
+
+async function loadAccounting() {
+
+  setStatus(
+    "Loading canonical contribution accounting…"
+  );
+
+  if (els.memberAccountingBody) {
+
+    els.memberAccountingBody.innerHTML =
+      `
+        <tr>
+          <td
+            colspan="11"
+            class="member-accounting-empty"
+          >
+            Loading accounting…
+          </td>
+        </tr>
+      `;
+
   }
+
+  try {
+
+    await Promise.all([
+
+      loadMonthlyStatus(),
+
+      loadCumulativePosition()
+
+    ]);
+
+    populateMemberFilter();
+
+    renderMonthlyTable();
+
+    renderSummary();
+
+    setStatus(
+      `Canonical accounting loaded for ${
+        state.accountingMonth
+      }.`
+    );
+
+  } catch (error) {
+
+    console.error(
+      "CHAMA LIVE: Member Accounting",
+      error
+    );
+
+    if (els.memberAccountingBody) {
+
+      els.memberAccountingBody.innerHTML =
+        `
+          <tr>
+            <td
+              colspan="11"
+              class="member-accounting-empty"
+            >
+              Unable to load canonical accounting.
+            </td>
+          </tr>
+        `;
+
+    }
+
+    setStatus(
+      error?.message ||
+      "Unable to load canonical contribution accounting.",
+      true
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   RESET
+========================================================= */
+
+function resetFilters() {
+
+  if (els.accountingMonth) {
+    els.accountingMonth.value =
+      currentMonthValue();
+  }
+
+  state.accountingMonth =
+    els.accountingMonth?.value ||
+    currentMonthValue();
+
+  if (els.memberFilter) {
+    els.memberFilter.value =
+      state.memberId || "";
+  }
+
+  if (els.statusFilter) {
+    els.statusFilter.value =
+      "";
+  }
+
+  if (els.searchMember) {
+    els.searchMember.value =
+      "";
+  }
+
+  closeStatement();
+
+  renderMonthlyTable();
+
+  renderSummary();
+
+}
+
+
+/* =========================================================
+   EVENTS
+========================================================= */
+
+function bindEvents() {
+
+  els.accountingMonth?.addEventListener(
+    "change",
+    async () => {
+
+      state.accountingMonth =
+        els.accountingMonth.value;
+
+      await loadAccounting();
+
+    }
+  );
+
+
+  els.memberFilter?.addEventListener(
+    "change",
+    () => {
+
+      renderMonthlyTable();
+
+      renderSummary();
+
+    }
+  );
+
+
+  els.statusFilter?.addEventListener(
+    "change",
+    () => {
+
+      renderMonthlyTable();
+
+      renderSummary();
+
+    }
+  );
+
+
+  els.searchMember?.addEventListener(
+    "input",
+    () => {
+
+      renderMonthlyTable();
+
+      renderSummary();
+
+    }
+  );
+
+
+  els.refreshButton?.addEventListener(
+    "click",
+    async () => {
+
+      await loadAccounting();
+
+    }
+  );
+
+
+  els.resetButton?.addEventListener(
+    "click",
+    () => {
+
+      resetFilters();
+
+    }
+  );
+
+
+  els.printButton?.addEventListener(
+    "click",
+    () => {
+
+      window.print();
+
+    }
+  );
+
+
+  els.csvButton?.addEventListener(
+    "click",
+    () => {
+
+      exportCsv();
+
+    }
+  );
+
+
+  els.excelButton?.addEventListener(
+    "click",
+    () => {
+
+      exportExcel();
+
+    }
+  );
+
+
+  els.closeStatementButton?.addEventListener(
+    "click",
+    () => {
+
+      closeStatement();
+
+    }
+  );
+
+
+  els.memberAccountingBody?.addEventListener(
+    "click",
+    event => {
+
+      const button =
+        event.target.closest(
+          "[data-member-statement]"
+        );
+
+      if (!button) {
+        return;
+      }
+
+      const memberId =
+        button.getAttribute(
+          "data-member-statement"
+        );
+
+      if (memberId) {
+        openStatement(
+          memberId
+        );
+      }
+
+    }
+  );
+
+
+  document
+    .querySelectorAll(
+      "[data-quick]"
+    )
+    .forEach(
+      element => {
+
+        element.addEventListener(
+          "click",
+          () => {
+
+            const value =
+              element.getAttribute(
+                "data-quick"
+              );
+
+            if (
+              els.statusFilter &&
+              value
+            ) {
+
+              els.statusFilter.value =
+                value;
+
+              renderMonthlyTable();
+
+              renderSummary();
+
+            }
+
+          }
+        );
+
+      }
+    );
+
 }
 
 
@@ -390,7 +1776,10 @@ function renderProfile() {
    INITIALIZE
 ========================================================= */
 
-export async function initMemberProfile() {
+export async function initMemberAccounting(
+  context
+) {
+
   if (
     state.initialized
   ) {
@@ -400,38 +1789,65 @@ export async function initMemberProfile() {
   state.initialized =
     true;
 
-  showLoading();
+  state.context =
+    context || null;
 
-  try {
+  state.currentUser =
+    context?.user ||
+    context?.currentUser ||
+    null;
 
-    const member =
-      await getMyMember();
+  state.currentMember =
+    context?.member ||
+    context?.currentMember ||
+    null;
 
-    state.member =
-      member || null;
+  state.currentGroup =
+    context?.group ||
+    context?.currentGroup ||
+    null;
 
-    if (!state.member) {
-      throw new Error(
-        "No member profile is associated with your account."
-      );
-    }
+  state.groupId =
+    context?.groupId ||
+    state.currentGroup?.id ||
+    null;
 
-    renderProfile();
+  state.memberId =
+    context?.memberId ||
+    state.currentMember?.id ||
+    state.currentMember?.member_id ||
+    null;
 
-    showContent();
+  if (!state.groupId) {
 
-  } catch (error) {
-
-    console.error(
-      "CHAMA LIVE: Member Profile",
-      error
+    setStatus(
+      "Your group context could not be resolved.",
+      true
     );
 
-    showError(
-      error?.message ||
-      "Unable to load your profile."
-    );
+    return;
+
   }
+
+  if (!state.memberId) {
+
+    setStatus(
+      "Your member context could not be resolved.",
+      true
+    );
+
+    return;
+
+  }
+
+  setInitialMonth();
+
+  setGroupLabel();
+
+  bindEvents();
+
+  await loadAccounting();
+
 }
 
 
@@ -440,5 +1856,5 @@ export async function initMemberProfile() {
 ========================================================= */
 
 console.log(
-  "CHAMA LIVE: member-profile.js loaded"
+  "CHAMA LIVE: member-accounting.js loaded"
 );
