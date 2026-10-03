@@ -237,7 +237,7 @@ function isInitiativeManager() {
 function applyAuthorization() {
     // Keep each client gate aligned with its distinct backend operation.
     canEditGroupDetails = currentRole === "admin";
-    canEditContributionSettings = currentRole === "admin";
+    canEditContributionSettings = isInitiativeManager();
 }
 
 
@@ -264,8 +264,11 @@ function applyAuthorizationUI() {
     }
 
     if (elements.permissionMessage) {
-        elements.permissionMessage.hidden =
-            canEditGroupDetails && canEditContributionSettings;
+        elements.permissionMessage.hidden = canEditGroupDetails;
+
+        elements.permissionMessage.textContent = isInitiativeManager()
+            ? "Group details require an admin role. You can manage contribution settings and programs."
+            : "You can view group information. Admins can update group details and contribution settings; admins and chairpersons can manage programs.";
     }
 }
 
@@ -636,10 +639,10 @@ async function saveContributionSettings(event) {
         !rawClosingDay ||
         !Number.isInteger(closingDay) ||
         closingDay < 1 ||
-        closingDay > 31
+        closingDay > 28
     ) {
         throw new Error(
-            "Closing day must be a whole number between 1 and 31."
+            "Closing day must be a whole number between 1 and 28."
         );
     }
 
