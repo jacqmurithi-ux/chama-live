@@ -229,7 +229,6 @@ function normalizeLower(value) {
 
 function isInitiativeManager() {
     return (
-        currentIsOwner ||
         currentRole === "admin" ||
         currentRole === "chairperson"
     );
@@ -1218,7 +1217,8 @@ async function createContributionInitiative(
             p_start_date: payload.start_date,
             p_closing_date: payload.closing_date,
             p_default_amount: payload.default_amount,
-            p_frequency: payload.frequency
+            p_frequency: payload.frequency,
+            p_request_id: crypto.randomUUID()
         });
 
     if (error) {
@@ -1306,11 +1306,13 @@ async function loadOneTimeParticipantState(
     const {
         data,
         error
-    } = await supabase
-        .from("contribution_initiative_members")
-        .select("member_id")
-        .eq("initiative_id", initiativeId)
-        .eq("status", "active");
+    } = await supabase.rpc(
+        "get_contribution_initiative_participants",
+        {
+            p_initiative_id:
+                initiativeId
+        }
+    );
 
     if (error) {
         throw error;
@@ -1318,7 +1320,9 @@ async function loadOneTimeParticipantState(
 
     return Array.isArray(data)
         ? data
-        : [];
+        : data
+            ? [data]
+            : [];
 }
 
 
@@ -1757,13 +1761,21 @@ async function saveInitiativeParticipants(
         const {
             error
         } = await supabase.rpc(
-            "set_contribution_initiative_participants",
+            "set_contribution_initiative_members",
             {
                 p_initiative_id:
                     initiative.id,
 
-                p_member_ids:
-                    selectedIds,
+                p_members:
+                    selectedIds.map(
+                        (memberId) => ({
+                            member_id:
+                                memberId,
+
+                            amount:
+                                Number(initiative.default_amount ?? 0)
+                        })
+                    ),
 
                 p_request_id:
                     crypto.randomUUID()
@@ -2397,17 +2409,13 @@ async function saveRecurringParticipants(
         const {
             data: currentParticipants,
             error: currentParticipantError
-        } = await supabase
-            .from(
-                "contribution_initiative_members"
-            )
-            .select(
-                "id, member_id"
-            )
-            .eq(
-                "initiative_id",
-                initiative.id
-            );
+        } = await supabase.rpc(
+            "get_contribution_initiative_recurring_participants",
+            {
+                p_initiative_id:
+                    initiative.id
+            }
+        );
 
         if (currentParticipantError) {
             throw currentParticipantError;
@@ -2421,7 +2429,7 @@ async function saveRecurringParticipants(
                 ).map(
                     (participant) => [
                         participant.member_id,
-                        participant.id
+                        participant.initiative_member_id
                     ]
                 )
             );
