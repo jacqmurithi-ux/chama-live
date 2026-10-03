@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
   <meta charset="UTF-8">
 
   <meta
@@ -13,7 +15,9 @@
     content="#0f766e"
   >
 
-  <title>Member Dashboard — CHAMA LIVE</title>
+  <title>
+    Member Dashboard — CHAMA LIVE
+  </title>
 
   <link
     rel="stylesheet"
@@ -21,12 +25,18 @@
   >
 
   <style>
+
+    /* =====================================================
+       MEMBER FINANCE SUMMARY
+    ====================================================== */
+
     .member-finance-summary {
       margin-top: 14px;
       padding: 12px 14px;
       border-radius: 12px;
       background: #f8fafc;
     }
+
 
     .member-finance-summary-grid {
       display: grid;
@@ -35,12 +45,14 @@
       gap: 10px;
     }
 
+
     .member-finance-summary-item {
       min-width: 0;
       padding: 10px;
       border-radius: 9px;
       background: #fff;
     }
+
 
     .member-finance-summary-label {
       display: block;
@@ -52,6 +64,7 @@
       color: #64748b;
     }
 
+
     .member-finance-summary-value {
       display: block;
       font-size: 14px;
@@ -60,6 +73,11 @@
       word-break: break-word;
     }
 
+
+    /* =====================================================
+       MEMBER FINANCE STATUS
+    ====================================================== */
+
     .member-finance-status-value {
       display: inline-flex;
       align-items: center;
@@ -67,6 +85,7 @@
       font-size: 14px;
       font-weight: 700;
     }
+
 
     .member-finance-status-value::before {
       content: "";
@@ -77,35 +96,69 @@
       background: #94a3b8;
     }
 
+
     .member-finance-status-value.status-arrears {
       color: #b91c1c;
     }
+
 
     .member-finance-status-value.status-arrears::before {
       background: #dc2626;
     }
 
+
     .member-finance-status-value.status-credit {
       color: #1d4ed8;
     }
+
 
     .member-finance-status-value.status-credit::before {
       background: #2563eb;
     }
 
+
     .member-finance-status-value.status-up-to-date {
       color: #15803d;
     }
+
 
     .member-finance-status-value.status-up-to-date::before {
       background: #16a34a;
     }
 
+
     .member-finance-status-value.status-unknown {
       color: #64748b;
     }
+
+
+    /* =====================================================
+       MOBILE FINANCE GRID
+    ====================================================== */
+
+    @media (max-width: 760px) {
+
+      .member-finance-summary-grid {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+
+    }
+
+
+    @media (max-width: 480px) {
+
+      .member-finance-summary-grid {
+        grid-template-columns:
+          1fr;
+      }
+
+    }
+
   </style>
+
 </head>
+
 
 <body>
 
@@ -125,8 +178,8 @@
       • logout
 
     member-dashboard.js owns:
-      • member contribution summary
-      • canonical member contribution position
+      • member contribution position
+      • member contribution activity count
       • group financial overview
       • recent group contributions
       • recent group expenses
@@ -144,10 +197,25 @@
       • No group mutation
       • No member mutation
 
+    ACCOUNTING CONTRACT:
+      • Member position:
+          get_my_contribution_position()
+
+      • Monthly participation:
+          get_canonical_monthly_accounting_summary()
+
+      • Monthly cash contributions:
+          get_monthly_accounting_summary()
+
     IMPORTANT:
-      This page does not independently resolve authentication.
-      member-layout.js resolves the authenticated context and
-      passes it to initMemberDashboard(context).
+      member-dashboard.js does not perform any financial
+      mutation.
+
+      Raw contribution rows are used only for read-only
+      activity display/counts.
+
+      Canonical accounting values are never reconstructed
+      from the browser's limited contribution query.
     =========================================================
   -->
 
@@ -157,6 +225,7 @@
   ======================================================== -->
 
   <main class="member-dashboard">
+
 
     <!-- =====================================================
          MEMBER HERO
@@ -232,22 +301,35 @@
           My Contributions
         </h2>
 
+
+        <!-- =================================================
+             CANONICAL MEMBER SUMMARY
+
+             Source:
+               get_my_contribution_position()
+
+             Total Allocated is canonical accounting data.
+             It is NOT calculated from browser-side raw
+             contribution rows.
+        ================================================== -->
+
         <div class="member-summary">
 
           <div class="member-summary-item">
 
             <span class="member-summary-label">
-              Total Recorded
+              Total Allocated
             </span>
 
             <span
               id="myContributionTotal"
               class="member-summary-value"
             >
-              KSh 0.00
+              —
             </span>
 
           </div>
+
 
           <div class="member-summary-item">
 
@@ -259,21 +341,16 @@
               id="myContributionCount"
               class="member-summary-value"
             >
-              0
+              —
             </span>
 
           </div>
 
         </div>
 
+
         <!-- =================================================
              CANONICAL CONTRIBUTION POSITION
-             -------------------------------------------------
-             Read-only position from:
-               get_my_contribution_position()
-
-             This is intentionally separate from the raw
-             contribution totals above.
         ================================================== -->
 
         <div
@@ -282,6 +359,9 @@
         >
 
           <div class="member-finance-summary-grid">
+
+
+            <!-- STATUS -->
 
             <div class="member-finance-summary-item">
 
@@ -300,6 +380,8 @@
             </div>
 
 
+            <!-- TOTAL ALLOCATED -->
+
             <div class="member-finance-summary-item">
 
               <span class="member-finance-summary-label">
@@ -316,6 +398,8 @@
             </div>
 
 
+            <!-- ARREARS -->
+
             <div class="member-finance-summary-item">
 
               <span class="member-finance-summary-label">
@@ -326,11 +410,13 @@
                 id="myContributionArrears"
                 class="member-finance-summary-value"
               >
-                KSh 0.00
+                —
               </span>
 
             </div>
 
+
+            <!-- CREDIT -->
 
             <div class="member-finance-summary-item">
 
@@ -342,7 +428,7 @@
                 id="myContributionCredit"
                 class="member-finance-summary-value"
               >
-                KSh 0.00
+                —
               </span>
 
             </div>
@@ -350,6 +436,9 @@
           </div>
 
         </div>
+
+
+        <!-- MEMBER CONTRIBUTIONS -->
 
         <div
           class="member-actions"
@@ -393,7 +482,9 @@
           My Account
         </h2>
 
+
         <div class="member-account-row">
+
 
           <div class="member-account-item">
 
@@ -410,6 +501,7 @@
 
           </div>
 
+
           <div class="member-account-item">
 
             <span class="member-account-label">
@@ -425,6 +517,7 @@
 
           </div>
 
+
           <div class="member-account-item">
 
             <span class="member-account-label">
@@ -439,6 +532,7 @@
             </span>
 
           </div>
+
 
           <div class="member-account-item">
 
@@ -456,6 +550,7 @@
           </div>
 
         </div>
+
 
         <div
           class="member-actions"
@@ -502,7 +597,11 @@
           Group Financial Health
         </h2>
 
+
         <div class="member-financial-health">
+
+
+          <!-- MEMBERS -->
 
           <div class="member-health-item">
 
@@ -520,6 +619,8 @@
           </div>
 
 
+          <!-- MONTHLY CONTRIBUTIONS -->
+
           <div class="member-health-item">
 
             <span class="member-health-label">
@@ -535,6 +636,8 @@
 
           </div>
 
+
+          <!-- MONTHLY EXPENSES -->
 
           <div class="member-health-item">
 
@@ -552,6 +655,8 @@
           </div>
 
 
+          <!-- NET MOVEMENT -->
+
           <div class="member-health-item">
 
             <span class="member-health-label">
@@ -568,6 +673,8 @@
           </div>
 
 
+          <!-- PARTICIPATION -->
+
           <div class="member-health-item">
 
             <span class="member-health-label">
@@ -580,6 +687,7 @@
             >
               —
             </span>
+
 
             <div
               class="member-progress"
@@ -599,6 +707,8 @@
 
           </div>
 
+
+          <!-- EXPENSE ACTIVITY -->
 
           <div class="member-health-item">
 
@@ -705,6 +815,7 @@
           Loading group activities...
         </div>
 
+
         <div
           class="member-actions"
           style="margin-top:16px;"
@@ -802,6 +913,7 @@
           Loading group assets...
         </div>
 
+
         <div
           class="member-actions"
           style="margin-top:16px;"
@@ -844,7 +956,9 @@
           Your Group Today
         </h2>
 
+
         <div class="member-financial-health">
+
 
           <div class="member-health-item">
 
@@ -917,6 +1031,7 @@
           information available to members of your group.
         </p>
 
+
         <div
           class="member-actions"
           style="
@@ -926,6 +1041,7 @@
             gap:10px;
           "
         >
+
 
           <a
             class="member-action"
@@ -1034,12 +1150,23 @@
   <!-- =======================================================
        MEMBER PORTAL BOOT
        -------------------------------------------------------
-       member-layout.js:
-         • resolves authentication
-         • protects the portal
-         • renders navigation
-         • loads member-dashboard.js
-         • passes authenticated context
+       member-layout.js owns:
+
+         • authentication
+         • authorization
+         • member/group context
+         • portal navigation
+         • logout
+         • current-page initialization
+
+       It should call:
+
+         initMemberDashboard(context)
+
+       where context is the already-resolved application
+       context.
+
+       member-dashboard.js remains read-only.
   ======================================================== -->
 
   <script type="module">
@@ -1052,5 +1179,7 @@
 
   </script>
 
+
 </body>
+
 </html>
