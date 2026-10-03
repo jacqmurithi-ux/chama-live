@@ -2738,7 +2738,7 @@ async function closeContributionInitiative(
 
     const {
         error
-    } = await groupManagementApi.closeInitiative(currentGroup.id,initiative.id);
+    } = await groupManagementApi.closeInitiative(initiative.id);
 
     if (error) {
         throw error;
