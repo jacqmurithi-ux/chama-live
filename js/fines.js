@@ -1,47 +1,1212 @@
-/* =========================================================
-   MANUAL FINE FORM LABEL / PLACEHOLDER
-========================================================= */
+<!doctype html>
+<html lang="en">
 
-function updateManualFineReasonField() {
+<head>
 
-  const triggerType =
-    String(
-      elements.manualFineTriggerType?.value ||
-      ""
-    ).trim().toLowerCase();
+  <meta charset="utf-8">
 
-  const reasonField =
-    elements.manualFineReason;
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
 
-  if (!reasonField) {
-    return;
-  }
+  <meta
+    name="description"
+    content="CHAMA LIVE — Fine ledger and fine-rule management"
+  >
 
-  const reasonLabel =
-    document.querySelector(
-      'label[for="manualFineReason"]'
-    );
+  <title>
+    Fines — CHAMA LIVE
+  </title>
 
-  if (
-    triggerType === "custom_event"
-  ) {
+  <link
+    rel="stylesheet"
+    href="css/app.css"
+  >
 
-    if (reasonLabel) {
-      reasonLabel.textContent =
-        "Custom Fine Name / Description";
+  <style>
+
+    /* =====================================================
+       CHAMA LIVE — FINES
+       ===================================================== */
+
+    .fines-page {
+      width: 100%;
     }
 
-    reasonField.placeholder =
-      "Enter the custom fine name or description…";
+    .fines-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
 
-    return;
-  }
+    .fines-header h1 {
+      margin: 0 0 6px;
+    }
 
-  if (reasonLabel) {
-    reasonLabel.textContent =
-      "Reason";
-  }
+    .fines-header p {
+      margin: 0;
+      color: #64748b;
+    }
 
-  reasonField.placeholder =
-    "Enter the reason for this fine…";
-}
+    .fines-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .fines-toolbar {
+      display: grid;
+      grid-template-columns:
+        minmax(180px, 1fr)
+        minmax(160px, 220px)
+        auto;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .fines-toolbar .field {
+      margin: 0;
+    }
+
+    .fines-toolbar button {
+      align-self: end;
+    }
+
+    .fine-summary-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .fine-summary-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      background: #fff;
+      padding: 16px;
+      box-shadow:
+        0 4px 14px rgba(15, 23, 42, 0.04);
+    }
+
+    .fine-summary-label {
+      font-size: 0.82rem;
+      color: #64748b;
+      margin-bottom: 6px;
+    }
+
+    .fine-summary-value {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .fine-section {
+      margin-bottom: 22px;
+    }
+
+    .fine-section-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .fine-section-header h2 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+
+    .fine-section-header p {
+      margin: 3px 0 0;
+      color: #64748b;
+      font-size: 0.88rem;
+    }
+
+    .fine-card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow:
+        0 4px 14px rgba(15, 23, 42, 0.04);
+    }
+
+    .fine-table-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    .fine-table {
+      width: 100%;
+      min-width: 920px;
+      border-collapse: collapse;
+    }
+
+    .fine-table th,
+    .fine-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #e2e8f0;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .fine-table th {
+      background: #f8fafc;
+      color: #475569;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+
+    .fine-table td {
+      font-size: 0.9rem;
+      color: #1e293b;
+    }
+
+    .fine-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .fine-table .amount {
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .fine-muted {
+      color: #64748b;
+    }
+
+    .fine-status {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      background: #f1f5f9;
+      color: #475569;
+    }
+
+    .fine-status.active {
+      background: #ecfdf5;
+      color: #047857;
+    }
+
+    .fine-status.inactive {
+      background: #f1f5f9;
+      color: #64748b;
+    }
+
+    .fine-status.outstanding {
+      background: #fff7ed;
+      color: #c2410c;
+    }
+
+    .fine-status.settled {
+      background: #ecfdf5;
+      color: #047857;
+    }
+
+    .fine-empty {
+      padding: 28px 18px;
+      text-align: center;
+      color: #64748b;
+    }
+
+    .fine-message {
+      display: none;
+      margin-bottom: 16px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+    }
+
+    .fine-message.visible {
+      display: block;
+    }
+
+    .fine-message.error {
+      background: #fef2f2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+    }
+
+    .fine-message.success {
+      background: #ecfdf5;
+      color: #047857;
+      border: 1px solid #a7f3d0;
+    }
+
+    .fine-message.info {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+    }
+
+    .fine-form-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      padding: 18px;
+    }
+
+    .fine-form-grid .full {
+      grid-column: 1 / -1;
+    }
+
+    .fine-form-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 0 18px 18px;
+    }
+
+    .fine-rule-note {
+      margin: 0 18px 18px;
+      padding: 11px 13px;
+      border-radius: 10px;
+      background: #f8fafc;
+      color: #475569;
+      font-size: 0.84rem;
+      line-height: 1.5;
+    }
+
+    .fine-readonly-note {
+      padding: 14px 16px;
+      background: #f8fafc;
+      color: #475569;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 0.88rem;
+    }
+
+    .fine-hidden {
+      display: none !important;
+    }
+
+    .fine-mobile-list {
+      display: none;
+    }
+
+    .fine-mobile-item {
+      padding: 15px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .fine-mobile-item:last-child {
+      border-bottom: 0;
+    }
+
+    .fine-mobile-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .fine-mobile-name {
+      font-weight: 750;
+    }
+
+    .fine-mobile-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+      gap: 8px 14px;
+      font-size: 0.82rem;
+    }
+
+    .fine-mobile-label {
+      display: block;
+      color: #64748b;
+      margin-bottom: 2px;
+    }
+
+    .fine-mobile-value {
+      color: #1e293b;
+      font-weight: 600;
+    }
+
+    @media (max-width: 900px) {
+
+      .fine-summary-grid {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+
+      .fines-toolbar {
+        grid-template-columns:
+          1fr 1fr;
+      }
+
+      .fines-toolbar button {
+        width: 100%;
+      }
+
+    }
+
+    @media (max-width: 700px) {
+
+      .fine-form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .fine-form-grid .full {
+        grid-column: auto;
+      }
+
+      .fine-table-wrap {
+        display: none;
+      }
+
+      .fine-mobile-list {
+        display: block;
+      }
+
+      .fines-toolbar {
+        grid-template-columns: 1fr;
+      }
+
+    }
+
+    @media (max-width: 520px) {
+
+      .fine-summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .fine-mobile-grid {
+        grid-template-columns: 1fr;
+      }
+
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+  <!-- ===================================================
+       ADMIN LAYOUT
+       =================================================== -->
+
+  <div id="adminLayout">
+
+    <header class="admin-topbar">
+
+      <div class="admin-topbar-inner">
+
+        <div class="admin-brand">
+          <a href="dashboard.html">
+            CHAMA LIVE
+          </a>
+        </div>
+
+        <div class="admin-page-label">
+          Fines
+        </div>
+
+      </div>
+
+    </header>
+
+
+    <main class="page-content fines-page">
+
+      <!-- ================================================
+           MESSAGES
+           ================================================ -->
+
+      <div
+        id="fineMessage"
+        class="fine-message"
+        role="status"
+        aria-live="polite"
+      ></div>
+
+
+      <!-- ================================================
+           HEADER
+           ================================================ -->
+
+      <section class="fines-header">
+
+        <div>
+
+          <h1>
+            Fines
+          </h1>
+
+          <p>
+            View the fine ledger and manage authorised fine rules.
+          </p>
+
+        </div>
+
+        <div class="fines-actions">
+
+          <button
+            id="refreshFines"
+            type="button"
+            class="button secondary"
+          >
+            Refresh
+          </button>
+
+        </div>
+
+      </section>
+
+
+      <!-- ================================================
+           FILTERS
+           ================================================ -->
+
+      <section class="fine-section">
+
+        <div class="fine-card">
+
+          <div class="fines-toolbar">
+
+            <div class="field">
+
+              <label for="accountingMonth">
+                Accounting month
+              </label>
+
+              <select id="accountingMonth">
+                <option value="">
+                  All months
+                </option>
+              </select>
+
+            </div>
+
+
+            <div class="field">
+
+              <label for="fineMember">
+                Member
+              </label>
+
+              <select id="fineMember">
+
+                <option value="">
+                  All members
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <button
+              id="clearFineFilters"
+              type="button"
+              class="button secondary"
+            >
+              Clear filters
+            </button>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ================================================
+           SUMMARY
+           ================================================ -->
+
+      <section class="fine-summary-grid">
+
+        <article class="fine-summary-card">
+
+          <div class="fine-summary-label">
+            Total fines
+          </div>
+
+          <div
+            id="totalFineAmount"
+            class="fine-summary-value"
+          >
+            KSh 0.00
+          </div>
+
+        </article>
+
+
+        <article class="fine-summary-card">
+
+          <div class="fine-summary-label">
+            Outstanding
+          </div>
+
+          <div
+            id="outstandingFineAmount"
+            class="fine-summary-value"
+          >
+            KSh 0.00
+          </div>
+
+        </article>
+
+
+        <article class="fine-summary-card">
+
+          <div class="fine-summary-label">
+            Allocated
+          </div>
+
+          <div
+            id="allocatedFineAmount"
+            class="fine-summary-value"
+          >
+            KSh 0.00
+          </div>
+
+        </article>
+
+
+        <article class="fine-summary-card">
+
+          <div class="fine-summary-label">
+            Fine records
+          </div>
+
+          <div
+            id="fineRecordCount"
+            class="fine-summary-value"
+          >
+            0
+          </div>
+
+        </article>
+
+      </section>
+
+
+      <!-- ================================================
+           FINE LEDGER
+           ================================================ -->
+
+      <section class="fine-section">
+
+        <div class="fine-section-header">
+
+          <div>
+
+            <h2>
+              Fine ledger
+            </h2>
+
+            <p>
+              Authoritative fine records generated by the Fine Ledger.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="fine-card">
+
+          <div
+            id="fineLedgerTableWrap"
+            class="fine-table-wrap"
+          >
+
+            <table class="fine-table">
+
+              <thead>
+
+                <tr>
+
+                  <th>
+                    Member
+                  </th>
+
+                  <th>
+                    Trigger
+                  </th>
+
+                  <th>
+                    Month
+                  </th>
+
+                  <th>
+                    Fine
+                  </th>
+
+                  <th>
+                    Allocated
+                  </th>
+
+                  <th>
+                    Outstanding
+                  </th>
+
+                  <th>
+                    Triggered
+                  </th>
+
+                </tr>
+
+              </thead>
+
+              <tbody id="fineRows">
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+
+          <div
+            id="fineMobileList"
+            class="fine-mobile-list"
+          ></div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ================================================
+           FINE RULES
+           ================================================ -->
+
+      <section class="fine-section">
+
+        <div class="fine-section-header">
+
+          <div>
+
+            <h2>
+              Fine rules
+            </h2>
+
+            <p>
+              Active rules determine how authorised fine generation is calculated.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="fine-card">
+
+          <div
+            id="fineRulesReadonlyNote"
+            class="fine-readonly-note"
+          >
+            Fine rules are read-only for this role.
+          </div>
+
+
+          <div class="fine-table-wrap">
+
+            <table class="fine-table">
+
+              <thead>
+
+                <tr>
+
+                  <th>
+                    Name
+                  </th>
+
+                  <th>
+                    Trigger
+                  </th>
+
+                  <th>
+                    Calculation
+                  </th>
+
+                  <th>
+                    Grace
+                  </th>
+
+                  <th>
+                    Effective
+                  </th>
+
+                  <th>
+                    Status
+                  </th>
+
+                </tr>
+
+              </thead>
+
+              <tbody id="fineRuleRows">
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ================================================
+           CREATE FINE RULE
+           ================================================ -->
+
+      <section
+        id="fineRuleFormCard"
+        class="fine-section fine-hidden"
+      >
+
+        <div class="fine-section-header">
+
+          <div>
+
+            <h2>
+              Create fine rule
+            </h2>
+
+            <p>
+              Rule creation is authorised only for chairperson and treasurer.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="fine-card">
+
+          <form id="fineRuleForm">
+
+            <div class="fine-form-grid">
+
+              <div class="field">
+
+                <label for="ruleName">
+                  Rule name
+                </label>
+
+                <input
+                  id="ruleName"
+                  name="ruleName"
+                  type="text"
+                  maxlength="160"
+                  required
+                >
+
+              </div>
+
+
+              <div class="field">
+
+                <label for="ruleTriggerType">
+                  Trigger
+                </label>
+
+                <select
+                  id="ruleTriggerType"
+                  name="ruleTriggerType"
+                  required
+                >
+
+                  <option value="missed_contribution">
+                    Missed contribution
+                  </option>
+
+                  <option value="meeting_absence">
+                    Meeting absence
+                  </option>
+
+                  <option value="late_attendance">
+                    Late attendance
+                  </option>
+
+                  <option value="custom_event">
+                    Custom event
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="field">
+
+                <label for="ruleSpecificity">
+                  Specificity level
+                </label>
+
+                <select
+                  id="ruleSpecificity"
+                  name="ruleSpecificity"
+                  required
+                >
+
+                  <option value="1">
+                    1 — General
+                  </option>
+
+                  <option value="2">
+                    2 — Specific
+                  </option>
+
+                  <option value="3">
+                    3 — Most specific
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="field">
+
+                <label for="rulePriority">
+                  Priority
+                </label>
+
+                <input
+                  id="rulePriority"
+                  name="rulePriority"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value="0"
+                  required
+                >
+
+              </div>
+
+
+              <div class="field">
+
+                <label for="ruleCalculationMethod">
+                  Calculation method
+                </label>
+
+                <select
+                  id="ruleCalculationMethod"
+                  name="ruleCalculationMethod"
+                  required
+                >
+
+                  <option value="FIXED">
+                    Fixed amount
+                  </option>
+
+                  <option value="PERCENTAGE">
+                    Percentage
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div
+                id="fixedAmountField"
+                class="field"
+              >
+
+                <label for="ruleFixedAmount">
+                  Fixed amount
+                </label>
+
+                <input
+                  id="ruleFixedAmount"
+                  name="ruleFixedAmount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                >
+
+              </div>
+
+
+              <div
+                id="percentageField"
+                class="field fine-hidden"
+              >
+
+                <label for="rulePercentageRate">
+                  Percentage rate
+                </label>
+
+                <input
+                  id="rulePercentageRate"
+                  name="rulePercentageRate"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.0001"
+                  placeholder="0.00"
+                >
+
+              </div>
+
+
+              <div class="field">
+
+                <label for="ruleMinimumAmount">
+                  Minimum amount
+                </label>
+
+                <input
+                  id="ruleMinimumAmount"
+                  name="ruleMinimumAmount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Optional"
+                >
+
+              </div>
+
+
+              <div class="field">
+
+                <label for="ruleMaximumAmount">
+                  Maximum amount
+                </label>
+
+                <input
+                  id="ruleMaximumAmount"
+                  name="ruleMaximumAmount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Optional"
+                >
+
+              </div>
+
+
+              <div class="field">
+
+                <label for="ruleGraceValue">
+                  Grace period
+                </label>
+
+                <input
+                  id="ruleGraceValue"
+                  name="ruleGraceValue"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value="0"
+                  required
+                >
+
+              </div>
+
+
+              <div class="field">
+
+                <label for="ruleGraceUnit">
+                  Grace unit
+                </label>
+
+                <select
+                  id="ruleGraceUnit"
+                  name="ruleGraceUnit"
+                  required
+                >
+
+                  <option value="DAY">
+                    Days
+                  </option>
+
+                  <option value="WEEK">
+                    Weeks
+                  </option>
+
+                  <option value="MONTH">
+                    Months
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="field">
+
+                <label for="ruleApplicability">
+                  Applicability
+                </label>
+
+                <select
+                  id="ruleApplicability"
+                  name="ruleApplicability"
+                  required
+                >
+
+                  <option value="ALL">
+                    All applicable contributions
+                  </option>
+
+                  <option value="SELECTED">
+                    Selected contribution types
+                  </option>
+
+                  <option value="ALL_MEETINGS">
+                    All meetings
+                  </option>
+
+                  <option value="SELECTED_MEETINGS">
+                    Selected meetings
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="field">
+
+                <label for="ruleEffectiveFrom">
+                  Effective from
+                </label>
+
+                <input
+                  id="ruleEffectiveFrom"
+                  name="ruleEffectiveFrom"
+                  type="datetime-local"
+                  required
+                >
+
+              </div>
+
+
+              <div class="field">
+
+                <label for="ruleEffectiveUntil">
+                  Effective until
+                </label>
+
+                <input
+                  id="ruleEffectiveUntil"
+                  name="ruleEffectiveUntil"
+                  type="datetime-local"
+                >
+
+              </div>
+
+
+              <div class="field full">
+
+                <label for="ruleDescription">
+                  Description
+                </label>
+
+                <textarea
+                  id="ruleDescription"
+                  name="ruleDescription"
+                  rows="3"
+                  maxlength="1000"
+                  placeholder="Describe when this rule applies."
+                ></textarea>
+
+              </div>
+
+
+              <div
+                id="contributionTypeField"
+                class="field full"
+              >
+
+                <label for="ruleContributionTypes">
+                  Contribution types
+                </label>
+
+                <select
+                  id="ruleContributionTypes"
+                  name="ruleContributionTypes"
+                  multiple
+                  size="5"
+                ></select>
+
+                <small>
+                  Required when applicability is Selected.
+                </small>
+
+              </div>
+
+            </div>
+
+
+            <div class="fine-rule-note">
+
+              Fine-rule configuration is validated again by the database.
+              The browser does not create fine ledger records directly.
+
+            </div>
+
+
+            <div class="fine-form-actions">
+
+              <button
+                id="saveFineRule"
+                type="submit"
+                class="button"
+              >
+                Create rule
+              </button>
+
+              <button
+                id="resetFineRule"
+                type="button"
+                class="button secondary"
+              >
+                Reset
+              </button>
+
+            </div>
+
+          </form>
+
+        </div>
+
+      </section>
+
+    </main>
+
+  </div>
+
+
+  <!-- ===================================================
+       SOLE ADMIN-LAYOUT BOOT
+       =================================================== -->
+
+  <script type="module">
+
+    import {
+      boot
+    } from "./js/admin-layout.js";
+
+    boot();
+
+  </script>
+
+</body>
+
+</html>
