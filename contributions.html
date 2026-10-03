@@ -12,7 +12,7 @@
 
   <meta
     name="description"
-    content="CHAMA LIVE — Contribution management"
+    content="CHAMA LIVE — Canonical contribution accounting and payment evidence"
   >
 
   <title>
@@ -28,6 +28,7 @@
 
     /* =====================================================
        CHAMA LIVE — CONTRIBUTIONS
+       CANONICAL 2B ACCOUNTING SURFACE
        LIGHT / MOBILE-FIRST ADMIN SURFACE
     ====================================================== */
 
@@ -448,30 +449,22 @@
 
 
     /* =====================================================
-       OTHER CONTRIBUTION
+       CANONICAL RECORDING NOTE
     ====================================================== */
 
-    .cl-other-type-wrap {
-      padding: 12px;
-      border: 1px solid #99f6e4;
-      border-radius: 11px;
+    .cl-canonical-note {
+      margin: 0 0 15px;
+      padding: 11px 13px;
+      border: 1px solid #ccfbf1;
+      border-radius: 10px;
       background: #f0fdfa;
+      color: #115e59;
+      font-size: 10px;
+      line-height: 1.5;
     }
 
-    .cl-other-type-wrap[hidden] {
-      display: none;
-    }
-
-    .cl-other-type-wrap small {
-      display: block;
-      margin-top: 4px;
-    }
-
-    .cl-form-note {
-      display: block;
-      margin-top: 4px;
-      font-size: 9px;
-      line-height: 1.4;
+    .cl-canonical-note strong {
+      color: #0f766e;
     }
 
 
@@ -485,6 +478,19 @@
       border: 0;
       border-radius: 10px;
       font-weight: 800;
+    }
+
+
+    /* =====================================================
+       FORM NOTE
+    ====================================================== */
+
+    .cl-form-note {
+      display: block;
+      margin-top: 4px;
+      color: #64748b;
+      font-size: 9px;
+      line-height: 1.4;
     }
 
 
@@ -1131,9 +1137,9 @@
       </h1>
 
       <p class="muted">
-        Record canonical monthly contributions, track
-        member payment positions and manage payment
-        evidence through one connected ledger.
+        Manage canonical monthly contribution accounting,
+        member payment evidence and authorised verification
+        within the current group.
       </p>
 
     </section>
@@ -1171,7 +1177,7 @@
           </h2>
 
           <p class="muted">
-            Send payment details for verification.
+            Send payment details for authorised verification.
           </p>
 
         </div>
@@ -1180,9 +1186,10 @@
 
 
       <p class="cl-evidence-intro">
-        Submit your payment details after making a
-        contribution. Your submission remains pending
-        until an authorised group verifier reviews it.
+        Ordinary members submit payment evidence only.
+        A submission remains pending until an authorised
+        group verifier reviews it. Submission does not
+        directly create a contribution record.
       </p>
 
 
@@ -1212,6 +1219,7 @@
             min="0.01"
             step="0.01"
             placeholder="200"
+            inputmode="decimal"
             required
           >
 
@@ -1333,7 +1341,7 @@
           </h2>
 
           <p class="muted">
-            Submitted payment evidence and verification status.
+            Submitted evidence and its current verification status.
           </p>
 
         </div>
@@ -1398,7 +1406,7 @@
 
           <p class="muted">
             Review pending member payment evidence before
-            it enters canonical accounting.
+            authorised verification enters canonical accounting.
           </p>
 
         </div>
@@ -1407,9 +1415,9 @@
 
 
       <p class="cl-verifier-intro">
-        Pending payment evidence is shown only for your
-        current group. Verification uses the authorised
-        canonical database workflow.
+        This review surface is intended for authorised
+        group finance roles. Backend authorisation and
+        row-level security remain authoritative.
       </p>
 
 
@@ -1467,6 +1475,7 @@
 
     <!-- ===================================================
          RECORD CONTRIBUTION
+         CANONICAL 2B PRIVILEGED PATH
     ==================================================== -->
 
     <section
@@ -1479,14 +1488,26 @@
         <div>
 
           <h2>
-            Record Contribution
+            Record Monthly Contribution
           </h2>
 
           <p class="muted">
-            Record a contribution for a group member.
+            Record a canonical monthly contribution for a
+            group member.
           </p>
 
         </div>
+
+      </div>
+
+
+      <div class="cl-canonical-note">
+
+        <strong>Canonical accounting:</strong>
+        this recording surface is for authorised
+        monthly contribution recording. The accounting
+        backend remains responsible for canonical
+        allocation and member monthly status.
 
       </div>
 
@@ -1530,6 +1551,7 @@
             min="0.01"
             step="0.01"
             placeholder="200"
+            inputmode="decimal"
             required
           >
 
@@ -1568,38 +1590,21 @@
               Monthly Contribution
             </option>
 
-            <option value="welfare">
-              Welfare
-            </option>
-
-            <option value="emergency">
-              Emergency
-            </option>
-
-            <option value="fundraising">
-              Fundraising
-            </option>
-
-            <option value="project">
-              Project
-            </option>
-
-            <option value="event">
-              Event
-            </option>
-
-            <option value="other">
-              Other
-            </option>
-
           </select>
 
-          <small class="muted cl-form-note">
-            The canonical 2B recording workflow currently accepts Monthly Contribution only. Other contribution categories remain available for compatibility with existing contribution history.
+          <small class="cl-form-note">
+            Canonical 2B recording through this form is
+            restricted to Monthly Contribution.
           </small>
 
         </div>
 
+
+        <!--
+          Compatibility target retained for contributions.js.
+          The canonical recording form does not expose
+          non-monthly categories as writable options.
+        -->
 
         <div
           id="otherContributionTypeWrap"
@@ -1621,7 +1626,8 @@
           >
 
           <small class="muted">
-            Enter the name of this contribution.
+            Non-monthly categories are not part of the
+            canonical 2B recording path.
           </small>
 
         </div>
@@ -1681,6 +1687,11 @@
 
         </div>
 
+
+        <!--
+          Idempotency remains part of the canonical
+          contribution recording contract.
+        -->
 
         <input
           id="contributionIdempotencyKey"
@@ -1795,8 +1806,8 @@
           </h2>
 
           <p class="muted">
-            Canonical monthly accounting for the selected
-            accounting month.
+            Canonical monthly accounting returned by the
+            accounting system for the selected month.
           </p>
 
         </div>
@@ -1836,8 +1847,10 @@
 
         </div>
 
+
         <small class="muted cl-accounting-month-note">
-          Changing the month refreshes canonical member accounting for that month.
+          Changing the month refreshes the canonical
+          member accounting returned for that month.
         </small>
 
       </div>
@@ -1895,7 +1908,7 @@
           </h2>
 
           <p class="muted">
-            Track progress toward active group goals.
+            View progress toward active group goals.
           </p>
 
         </div>
@@ -1929,7 +1942,8 @@
           </h2>
 
           <p class="muted">
-            Recent contribution records for this group.
+            Recent canonical contribution records for this
+            group.
           </p>
 
         </div>
@@ -1982,8 +1996,10 @@
     <section class="card">
 
       <p class="muted">
-        All contribution records are scoped to the
-        currently authenticated group.
+        All contribution and payment-evidence views are
+        scoped to the currently authenticated group.
+        Backend authorisation and database controls remain
+        authoritative.
       </p>
 
     </section>
@@ -1994,6 +2010,7 @@
 
   <!-- =====================================================
        ADMIN PORTAL BOOT
+       Sole page boot owner
   ====================================================== -->
 
   <script type="module">
