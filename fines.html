@@ -1,1252 +1,1188 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fines | CHAMA LIVE</title>
+
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <meta
+    name="description"
+    content="CHAMA LIVE — Fine ledger and fine-rule management"
+  >
+
+  <title>
+    Fines — CHAMA LIVE
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="css/app.css"
+  >
 
   <style>
-    :root {
-      --primary: #166534;
-      --primary-dark: #14532d;
-      --bg: #f8fafc;
-      --surface: #ffffff;
-      --border: #e2e8f0;
-      --text: #0f172a;
-      --muted: #64748b;
-      --danger: #b91c1c;
-      --danger-bg: #fef2f2;
-      --success: #166534;
-      --success-bg: #f0fdf4;
-      --warning: #92400e;
-      --warning-bg: #fffbeb;
-      --info: #1d4ed8;
-      --info-bg: #eff6ff;
-      --shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
-      --radius: 12px;
-    }
 
-    * {
-      box-sizing: border-box;
-    }
+    /* =====================================================
+       CHAMA LIVE — FINES
+       ===================================================== */
 
-    body {
-      margin: 0;
-      font-family:
-        Inter,
-        ui-sans-serif,
-        system-ui,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-      background: var(--bg);
-      color: var(--text);
-    }
-
-    button,
-    input,
-    select,
-    textarea {
-      font: inherit;
-    }
-
-    button {
-      cursor: pointer;
-    }
-
-    button:disabled {
-      cursor: not-allowed;
-      opacity: 0.6;
-    }
-
-    .topbar {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      box-shadow: var(--shadow);
-    }
-
-    .topbar-inner {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 14px 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      min-width: 0;
-    }
-
-    .brand-mark {
-      width: 42px;
-      height: 42px;
-      border-radius: 10px;
-      display: grid;
-      place-items: center;
-      background: var(--primary);
-      color: #fff;
-      font-weight: 800;
-      font-size: 18px;
-    }
-
-    .brand-copy {
-      min-width: 0;
-    }
-
-    .brand-name {
-      font-weight: 800;
-      letter-spacing: -0.02em;
-    }
-
-    .brand-group {
-      color: var(--muted);
-      font-size: 13px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 360px;
-    }
-
-    .topbar-actions {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .btn {
-      border: 1px solid var(--border);
-      background: #fff;
-      color: var(--text);
-      padding: 9px 14px;
-      border-radius: 9px;
-      font-weight: 650;
-    }
-
-    .btn:hover {
-      background: #f8fafc;
-    }
-
-    .btn-primary {
-      background: var(--primary);
-      color: #fff;
-      border-color: var(--primary);
-    }
-
-    .btn-primary:hover {
-      background: var(--primary-dark);
-      border-color: var(--primary-dark);
-    }
-
-    .btn-danger {
-      background: #fff;
-      color: var(--danger);
-      border-color: #fecaca;
-    }
-
-    .layout {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 28px 24px 48px;
-    }
-
-    .main {
-      min-width: 0;
-    }
-
-    .page-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 20px;
-      margin-bottom: 24px;
-    }
-
-    .page-title {
-      margin: 0;
-      font-size: 28px;
-      line-height: 1.15;
-      letter-spacing: -0.03em;
-    }
-
-    .page-subtitle {
-      margin: 8px 0 0;
-      color: var(--muted);
-      font-size: 14px;
-      max-width: 760px;
-    }
-
-    .message {
-      margin-bottom: 16px;
-      padding: 12px 14px;
-      border-radius: 10px;
-      font-size: 14px;
-    }
-
-    .message:empty {
-      display: none;
-    }
-
-    .status {
-      background: var(--success-bg);
-      border: 1px solid #bbf7d0;
-      color: var(--success);
-    }
-
-    .error {
-      background: var(--danger-bg);
-      border: 1px solid #fecaca;
-      color: var(--danger);
-    }
-
-    .summary-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .summary-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 18px;
-      box-shadow: var(--shadow);
-    }
-
-    .summary-label {
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 650;
-      margin-bottom: 8px;
-    }
-
-    .summary-value {
-      font-size: 26px;
-      line-height: 1.1;
-      font-weight: 800;
-      letter-spacing: -0.025em;
-    }
-
-    .section {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      margin-bottom: 24px;
-      overflow: hidden;
-    }
-
-    .section-header {
-      padding: 18px 20px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-    }
-
-    .section-title {
-      margin: 0;
-      font-size: 18px;
-    }
-
-    .section-body {
-      padding: 20px;
-    }
-
-    .manual-fine-grid {
-      display: grid;
-      grid-template-columns:
-        minmax(220px, 1.2fr)
-        minmax(180px, 1fr)
-        minmax(150px, 180px);
-      gap: 14px;
-      align-items: end;
-    }
-
-    .manual-fine-reason {
-      grid-column: 1 / -1;
-    }
-
-    .manual-fine-actions {
-      display: flex;
-      align-items: flex-end;
-      gap: 10px;
-    }
-
-    .manual-fine-note {
-      margin-top: 14px;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.5;
-    }
-
-    .manual-fine-error {
-      margin-top: 14px;
-      padding: 10px 12px;
-      border: 1px solid #fecaca;
-      border-radius: 9px;
-      background: var(--danger-bg);
-      color: var(--danger);
-      font-size: 13px;
-    }
-
-    .manual-fine-error:empty {
-      display: none;
-    }
-
-    .action-field {
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
-      margin-bottom: 0;
-    }
-
-    .action-field label {
-      font-size: 13px;
-      font-weight: 750;
-      color: #334155;
-    }
-
-    .action-field input,
-    .action-field select,
-    .action-field textarea {
+    .fines-page {
       width: 100%;
-      border: 1px solid #cbd5e1;
-      background: #fff;
-      color: var(--text);
-      border-radius: 9px;
-      padding: 10px 12px;
-      outline: none;
     }
 
-    .action-field textarea {
-      min-height: 90px;
-      resize: vertical;
-    }
-
-    .action-field-note {
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.45;
-    }
-
-    .filters {
-      display: grid;
-      grid-template-columns:
-        minmax(220px, 1fr)
-        minmax(170px, 220px)
-        minmax(170px, 220px)
-        auto;
-      gap: 10px;
-      align-items: end;
-    }
-
-    .filter-group {
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
-    }
-
-    .filter-group label {
-      font-size: 13px;
-      font-weight: 700;
-      color: #334155;
-    }
-
-    .filter-group input,
-    .filter-group select {
-      width: 100%;
-      border: 1px solid #cbd5e1;
-      background: #fff;
-      color: var(--text);
-      border-radius: 9px;
-      padding: 10px 12px;
-      outline: none;
-    }
-
-    .table-wrap {
-      width: 100%;
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 1100px;
-    }
-
-    th,
-    td {
-      padding: 13px 14px;
-      border-bottom: 1px solid var(--border);
-      text-align: left;
-      vertical-align: middle;
-      font-size: 14px;
-    }
-
-    th {
-      background: #f8fafc;
-      color: #475569;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      font-weight: 800;
-    }
-
-    tbody tr:hover {
-      background: #f8fafc;
-    }
-
-    tbody tr:last-child td {
-      border-bottom: 0;
-    }
-
-    .money {
-      white-space: nowrap;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .muted {
-      color: var(--muted);
-    }
-
-    .member-name {
-      font-weight: 750;
-    }
-
-    .fine-name {
-      font-weight: 650;
-    }
-
-    .fine-meta {
-      margin-top: 3px;
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      border-radius: 999px;
-      padding: 4px 9px;
-      font-size: 12px;
-      font-weight: 750;
-      white-space: nowrap;
-    }
-
-    .badge-paid {
-      background: #dcfce7;
-      color: #166534;
-    }
-
-    .badge-partial {
-      background: var(--info-bg);
-      color: var(--info);
-    }
-
-    .badge-outstanding {
-      background: var(--warning-bg);
-      color: var(--warning);
-    }
-
-    .badge-waived {
-      background: #f1f5f9;
-      color: #475569;
-    }
-
-    .row-actions {
+    .fines-header {
       display: flex;
       flex-wrap: wrap;
-      gap: 7px;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 20px;
     }
 
-    .row-actions .btn {
-      padding: 7px 10px;
-      font-size: 12px;
+    .fines-header h1 {
+      margin: 0 0 6px;
     }
 
-    .empty-state {
-      padding: 42px 20px;
-      text-align: center;
-      color: var(--muted);
+    .fines-header p {
+      margin: 0;
+      color: #64748b;
     }
 
-    .empty-state strong {
-      display: block;
-      color: var(--text);
-      margin-bottom: 6px;
-    }
-
-    .detail-panel {
-      display: none;
-    }
-
-    .detail-panel.open {
-      display: block;
-    }
-
-    .detail-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 14px;
-    }
-
-    .detail-item {
-      padding: 13px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: #f8fafc;
-    }
-
-    .detail-label {
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 700;
-      margin-bottom: 5px;
-    }
-
-    .detail-value {
-      font-size: 14px;
-      font-weight: 700;
-      word-break: break-word;
-    }
-
-    .detail-balance {
-      margin-top: 18px;
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 10px;
-    }
-
-    .balance-item {
-      padding: 14px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-    }
-
-    .balance-label {
-      color: var(--muted);
-      font-size: 12px;
-      margin-bottom: 5px;
-    }
-
-    .balance-value {
-      font-weight: 800;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .detail-actions {
-      margin-top: 18px;
+    .fines-actions {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
     }
 
-    .modal {
-      position: fixed;
-      inset: 0;
-      z-index: 1000;
+    .fines-toolbar {
       display: grid;
-      place-items: center;
-      padding: 20px;
+      grid-template-columns:
+        minmax(180px, 1fr)
+        minmax(160px, 220px)
+        auto;
+      gap: 12px;
+      margin-bottom: 20px;
     }
 
-    .modal[hidden] {
-      display: none;
+    .fines-toolbar .field {
+      margin: 0;
     }
 
-    .modal-backdrop {
-      position: absolute;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.45);
+    .fines-toolbar button {
+      align-self: end;
     }
 
-    .modal-dialog {
-      position: relative;
-      z-index: 1;
-      width: min(560px, 100%);
-      max-height: calc(100vh - 40px);
-      overflow-y: auto;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: 0 20px 60px rgba(15, 23, 42, 0.2);
+    .fine-summary-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
     }
 
-    .modal-header {
-      padding: 18px 20px;
-      border-bottom: 1px solid var(--border);
+    .fine-summary-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      background: #fff;
+      padding: 16px;
+      box-shadow:
+        0 4px 14px rgba(15, 23, 42, 0.04);
+    }
+
+    .fine-summary-label {
+      font-size: 0.82rem;
+      color: #64748b;
+      margin-bottom: 6px;
+    }
+
+    .fine-summary-value {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .fine-section {
+      margin-bottom: 22px;
+    }
+
+    .fine-section-header {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
+      gap: 12px;
+      margin-bottom: 12px;
     }
 
-    .action-error {
+    .fine-section-header h2 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+
+    .fine-section-header p {
+      margin: 3px 0 0;
+      color: #64748b;
+      font-size: 0.88rem;
+    }
+
+    .fine-card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow:
+        0 4px 14px rgba(15, 23, 42, 0.04);
+    }
+
+    .fine-table-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    .fine-table {
+      width: 100%;
+      min-width: 920px;
+      border-collapse: collapse;
+    }
+
+    .fine-table th,
+    .fine-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #e2e8f0;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .fine-table th {
+      background: #f8fafc;
+      color: #475569;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+
+    .fine-table td {
+      font-size: 0.9rem;
+      color: #1e293b;
+    }
+
+    .fine-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .fine-table .amount {
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .fine-muted {
+      color: #64748b;
+    }
+
+    .fine-status {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      background: #f1f5f9;
+      color: #475569;
+    }
+
+    .fine-status.active {
+      background: #ecfdf5;
+      color: #047857;
+    }
+
+    .fine-status.inactive {
+      background: #f1f5f9;
+      color: #64748b;
+    }
+
+    .fine-status.outstanding {
+      background: #fff7ed;
+      color: #c2410c;
+    }
+
+    .fine-status.settled {
+      background: #ecfdf5;
+      color: #047857;
+    }
+
+    .fine-empty {
+      padding: 28px 18px;
+      text-align: center;
+      color: #64748b;
+    }
+
+    .fine-message {
+      display: none;
       margin-bottom: 16px;
-      padding: 10px 12px;
-      border: 1px solid #fecaca;
-      border-radius: 9px;
-      background: var(--danger-bg);
-      color: var(--danger);
-      font-size: 13px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 0.9rem;
     }
 
-    .action-error:empty {
+    .fine-message.visible {
+      display: block;
+    }
+
+    .fine-message.error {
+      background: #fef2f2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+    }
+
+    .fine-message.success {
+      background: #ecfdf5;
+      color: #047857;
+      border: 1px solid #a7f3d0;
+    }
+
+    .fine-message.info {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+    }
+
+    .fine-form-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      padding: 18px;
+    }
+
+    .fine-form-grid .full {
+      grid-column: 1 / -1;
+    }
+
+    .fine-form-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 0 18px 18px;
+    }
+
+    .fine-rule-note {
+      margin: 0 18px 18px;
+      padding: 11px 13px;
+      border-radius: 10px;
+      background: #f8fafc;
+      color: #475569;
+      font-size: 0.84rem;
+      line-height: 1.5;
+    }
+
+    .fine-readonly-note {
+      padding: 14px 16px;
+      background: #f8fafc;
+      color: #475569;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 0.88rem;
+    }
+
+    .fine-hidden {
+      display: none !important;
+    }
+
+    .fine-mobile-list {
       display: none;
     }
 
-    @media (max-width: 1000px) {
-      .summary-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .filters {
-        grid-template-columns: 1fr 1fr;
-      }
-
-      .manual-fine-grid {
-        grid-template-columns: 1fr 1fr;
-      }
-
-      .manual-fine-reason {
-        grid-column: 1 / -1;
-      }
-
-      .detail-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .detail-balance {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-      }
+    .fine-mobile-item {
+      padding: 15px;
+      border-bottom: 1px solid #e2e8f0;
     }
 
-    @media (max-width: 720px) {
-      .topbar-inner {
-        padding: 12px 16px;
+    .fine-mobile-item:last-child {
+      border-bottom: 0;
+    }
+
+    .fine-mobile-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .fine-mobile-name {
+      font-weight: 750;
+    }
+
+    .fine-mobile-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+      gap: 8px 14px;
+      font-size: 0.82rem;
+    }
+
+    .fine-mobile-label {
+      display: block;
+      color: #64748b;
+      margin-bottom: 2px;
+    }
+
+    .fine-mobile-value {
+      color: #1e293b;
+      font-weight: 600;
+    }
+
+    @media (max-width: 900px) {
+
+      .fine-summary-grid {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
       }
 
-      .layout {
-        padding: 20px 16px 36px;
+      .fines-toolbar {
+        grid-template-columns:
+          1fr 1fr;
       }
 
-      .page-header {
-        flex-direction: column;
-      }
-
-      .summary-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .filters {
-        grid-template-columns: 1fr;
-      }
-
-      .manual-fine-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .manual-fine-reason {
-        grid-column: auto;
-      }
-
-      .manual-fine-actions {
-        align-items: stretch;
-      }
-
-      .manual-fine-actions .btn {
+      .fines-toolbar button {
         width: 100%;
       }
 
-      .detail-grid,
-      .detail-balance {
+    }
+
+    @media (max-width: 700px) {
+
+      .fine-form-grid {
         grid-template-columns: 1fr;
       }
 
-      .brand-group {
-        max-width: 180px;
+      .fine-form-grid .full {
+        grid-column: auto;
       }
+
+      .fine-table-wrap {
+        display: none;
+      }
+
+      .fine-mobile-list {
+        display: block;
+      }
+
+      .fines-toolbar {
+        grid-template-columns: 1fr;
+      }
+
     }
+
+    @media (max-width: 520px) {
+
+      .fine-summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .fine-mobile-grid {
+        grid-template-columns: 1fr;
+      }
+
+    }
+
   </style>
+
 </head>
 
 <body>
 
-  <header class="topbar">
+  <!-- ===================================================
+       ADMIN LAYOUT
+       =================================================== -->
 
-    <div class="topbar-inner">
+  <div id="adminLayout">
 
-      <div class="brand">
+    <header class="admin-topbar">
 
-        <div class="brand-mark">
-          CL
-        </div>
+      <div class="admin-topbar-inner">
 
-        <div class="brand-copy">
-
-          <div class="brand-name">
+        <div class="admin-brand">
+          <a href="dashboard.html">
             CHAMA LIVE
-          </div>
+          </a>
+        </div>
 
-          <div
-            class="brand-group"
-            data-group-name
-          >
-            Loading group…
-          </div>
-
+        <div class="admin-page-label">
+          Fines
         </div>
 
       </div>
 
-      <div class="topbar-actions">
-
-        <button
-          type="button"
-          class="btn btn-danger"
-          id="logout"
-        >
-          Logout
-        </button>
-
-      </div>
-
-    </div>
-
-    <nav
-      class="top-nav"
-      aria-label="Admin navigation"
-    ></nav>
-
-  </header>
+    </header>
 
 
-  <div class="layout">
+    <main class="page-content fines-page">
 
-    <main class="main">
+      <!-- ================================================
+           MESSAGES
+           ================================================ -->
 
-      <div class="page-header">
+      <div
+        id="fineMessage"
+        class="fine-message"
+        role="status"
+        aria-live="polite"
+      ></div>
+
+
+      <!-- ================================================
+           HEADER
+           ================================================ -->
+
+      <section class="fines-header">
 
         <div>
 
-          <h1 class="page-title">
+          <h1>
             Fines
           </h1>
 
-          <p class="page-subtitle">
-            Manage fines using the authoritative accounting actions.
-            Fine balances are calculated by the database.
+          <p>
+            View the fine ledger and manage authorised fine rules.
           </p>
 
         </div>
 
-        <button
-          type="button"
-          class="btn btn-primary"
-          id="refreshFines"
-        >
-          Refresh
-        </button>
+        <div class="fines-actions">
 
-      </div>
+          <button
+            id="refreshFines"
+            type="button"
+            class="button secondary"
+          >
+            Refresh
+          </button>
 
+        </div>
 
-      <div
-        id="status"
-        class="message status"
-        aria-live="polite"
-      ></div>
-
-      <div
-        id="error"
-        class="message error"
-        role="alert"
-        aria-live="assertive"
-      ></div>
+      </section>
 
 
-      <section
-        class="summary-grid"
-        aria-label="Fine summary"
-      >
+      <!-- ================================================
+           FILTERS
+           ================================================ -->
 
-        <article class="summary-card">
+      <section class="fine-section">
 
-          <div class="summary-label">
-            Total Fines
+        <div class="fine-card">
+
+          <div class="fines-toolbar">
+
+            <div class="field">
+
+              <label for="accountingMonth">
+                Accounting month
+              </label>
+
+              <select id="accountingMonth">
+                <option value="">
+                  All months
+                </option>
+              </select>
+
+            </div>
+
+
+            <div class="field">
+
+              <label for="fineMember">
+                Member
+              </label>
+
+              <select id="fineMember">
+
+                <option value="">
+                  All members
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <button
+              id="clearFineFilters"
+              type="button"
+              class="button secondary"
+            >
+              Clear filters
+            </button>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ================================================
+           SUMMARY
+           ================================================ -->
+
+      <section class="fine-summary-grid">
+
+        <article class="fine-summary-card">
+
+          <div class="fine-summary-label">
+            Total fines
           </div>
 
           <div
-            class="summary-value"
-            id="totalFines"
+            id="totalFineAmount"
+            class="fine-summary-value"
+          >
+            KSh 0.00
+          </div>
+
+        </article>
+
+
+        <article class="fine-summary-card">
+
+          <div class="fine-summary-label">
+            Outstanding
+          </div>
+
+          <div
+            id="outstandingFineAmount"
+            class="fine-summary-value"
+          >
+            KSh 0.00
+          </div>
+
+        </article>
+
+
+        <article class="fine-summary-card">
+
+          <div class="fine-summary-label">
+            Allocated
+          </div>
+
+          <div
+            id="allocatedFineAmount"
+            class="fine-summary-value"
+          >
+            KSh 0.00
+          </div>
+
+        </article>
+
+
+        <article class="fine-summary-card">
+
+          <div class="fine-summary-label">
+            Fine records
+          </div>
+
+          <div
+            id="fineRecordCount"
+            class="fine-summary-value"
           >
             0
           </div>
 
         </article>
 
-
-        <article class="summary-card">
-
-          <div class="summary-label">
-            Original Amount
-          </div>
-
-          <div
-            class="summary-value money"
-            id="totalOriginal"
-          >
-            KSh 0
-          </div>
-
-        </article>
-
-
-        <article class="summary-card">
-
-          <div class="summary-label">
-            Paid
-          </div>
-
-          <div
-            class="summary-value money"
-            id="totalPaid"
-          >
-            KSh 0
-          </div>
-
-        </article>
-
-
-        <article class="summary-card">
-
-          <div class="summary-label">
-            Outstanding
-          </div>
-
-          <div
-            class="summary-value money"
-            id="totalOutstanding"
-          >
-            KSh 0
-          </div>
-
-        </article>
-
       </section>
 
 
-      <!-- Manual Fine Creation -->
+      <!-- ================================================
+           FINE LEDGER
+           ================================================ -->
 
-      <section
-        class="section"
-        aria-labelledby="manual-fine-title"
-      >
+      <section class="fine-section">
 
-        <div class="section-header">
+        <div class="fine-section-header">
 
           <div>
 
-            <h2
-              class="section-title"
-              id="manual-fine-title"
-            >
-              Add Fine
+            <h2>
+              Fine ledger
             </h2>
+
+            <p>
+              Authoritative fine records generated by the Fine Ledger.
+            </p>
 
           </div>
 
         </div>
 
 
-        <div class="section-body">
+        <div class="fine-card">
 
-          <form id="manualFineForm">
+          <div
+            id="fineLedgerTableWrap"
+            class="fine-table-wrap"
+          >
 
-            <div class="manual-fine-grid">
+            <table class="fine-table">
 
-              <div class="action-field">
+              <thead>
 
-                <label for="manualFineMemberId">
-                  Member
-                </label>
+                <tr>
 
-                <select
-                  id="manualFineMemberId"
-                  name="member_id"
-                  required
-                >
+                  <th>
+                    Member
+                  </th>
 
-                  <option value="">
-                    Select member
-                  </option>
+                  <th>
+                    Trigger
+                  </th>
 
-                </select>
+                  <th>
+                    Month
+                  </th>
 
-              </div>
+                  <th>
+                    Fine
+                  </th>
 
+                  <th>
+                    Allocated
+                  </th>
 
-              <div class="action-field">
+                  <th>
+                    Outstanding
+                  </th>
 
-                <label for="manualFineTriggerType">
-                  Fine Type
-                </label>
+                  <th>
+                    Triggered
+                  </th>
 
-                <select
-                  id="manualFineTriggerType"
-                  name="trigger_type"
-                  required
-                >
+                </tr>
 
-                  <option value="">
-                    Select fine type
-                  </option>
+              </thead>
 
-                  <option value="meeting_absence">
-                    Absence
-                  </option>
+              <tbody id="fineRows">
 
-                  <option value="late_attendance">
-                    Late for Meeting
-                  </option>
+              </tbody>
 
-                  <option value="custom_event">
-                    Other / Custom
-                  </option>
+            </table>
 
-                </select>
-
-              </div>
+          </div>
 
 
-              <div class="action-field">
-
-                <label for="manualFineAmount">
-                  Amount
-                </label>
-
-                <input
-                  type="number"
-                  id="manualFineAmount"
-                  name="amount"
-                  min="0.01"
-                  step="0.01"
-                  inputmode="decimal"
-                  placeholder="e.g. 100"
-                  required
-                >
-
-              </div>
-
-
-              <div class="action-field manual-fine-reason">
-
-                <label for="manualFineReason">
-                  Reason
-                </label>
-
-                <textarea
-                  id="manualFineReason"
-                  name="reason"
-                  maxlength="1000"
-                  placeholder="Enter the reason for this fine…"
-                  required
-                ></textarea>
-
-                <div class="action-field-note">
-                  Enter the reason or description for this fine.
-                  The database remains authoritative for authorization,
-                  amount, member ownership, accounting month, and fine creation.
-                </div>
-
-              </div>
-
-
-              <div class="manual-fine-actions">
-
-                <button
-                  type="submit"
-                  class="btn btn-primary"
-                  id="saveManualFine"
-                >
-                  Save Fine
-                </button>
-
-              </div>
-
-            </div>
-
-
-            <div
-              id="manualFineError"
-              class="manual-fine-error"
-              role="alert"
-              aria-live="assertive"
-            ></div>
-
-          </form>
+          <div
+            id="fineMobileList"
+            class="fine-mobile-list"
+          ></div>
 
         </div>
 
       </section>
 
 
-      <section
-        class="section"
-        aria-labelledby="filters-title"
-      >
+      <!-- ================================================
+           FINE RULES
+           ================================================ -->
 
-        <div class="section-header">
+      <section class="fine-section">
 
-          <h2
-            class="section-title"
-            id="filters-title"
-          >
-            Filters
-          </h2>
+        <div class="fine-section-header">
+
+          <div>
+
+            <h2>
+              Fine rules
+            </h2>
+
+            <p>
+              Active rules determine how authorised fine generation is calculated.
+            </p>
+
+          </div>
 
         </div>
 
 
-        <div class="section-body">
+        <div class="fine-card">
 
-          <div class="filters">
+          <div
+            id="fineRulesReadonlyNote"
+            class="fine-readonly-note"
+          >
+            Fine rules are read-only for this role.
+          </div>
 
-            <div class="filter-group">
 
-              <label for="fineSearch">
-                Search
-              </label>
+          <div class="fine-table-wrap">
 
-              <input
-                type="search"
-                id="fineSearch"
-                placeholder="Search member, rule, or trigger…"
-                autocomplete="off"
+            <table class="fine-table">
+
+              <thead>
+
+                <tr>
+
+                  <th>
+                    Name
+                  </th>
+
+                  <th>
+                    Trigger
+                  </th>
+
+                  <th>
+                    Calculation
+                  </th>
+
+                  <th>
+                    Grace
+                  </th>
+
+                  <th>
+                    Effective
+                  </th>
+
+                  <th>
+                    Status
+                  </th>
+
+                </tr>
+
+              </thead>
+
+              <tbody id="fineRuleRows">
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ================================================
+           CREATE FINE RULE
+           ================================================ -->
+
+      <section
+        id="fineRuleFormCard"
+        class="fine-section fine-hidden"
+      >
+
+        <div class="fine-section-header">
+
+          <div>
+
+            <h2>
+              Create fine rule
+            </h2>
+
+            <p>
+              Rule creation is authorised only for chairperson and treasurer.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="fine-card">
+
+          <form id="fineRuleForm">
+
+            <div class="fine-form-grid">
+
+              <div class="field">
+
+                <label for="ruleName">
+                  Rule name
+                </label>
+
+                <input
+                  id="ruleName"
+                  name="ruleName"
+                  type="text"
+                  maxlength="160"
+                  required
+                >
+
+              </div>
+
+
+              <div class="field">
+
+                <label for="ruleTriggerType">
+                  Trigger
+                </label>
+
+                <select
+                  id="ruleTriggerType"
+                  name="ruleTriggerType"
+                  required
+                >
+
+                  <option value="missed_contribution">
+                    Missed contribution
+                  </option>
+
+                  <option value="meeting_absence">
+                    Meeting absence
+                  </option>
+
+                  <option value="late_attendance">
+                    Late attendance
+                  </option>
+
+                  <option value="custom_event">
+                    Custom event
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="field">
+
+                <label for="ruleSpecificity">
+                  Specificity level
+                </label>
+
+                <select
+                  id="ruleSpecificity"
+                  name="ruleSpecificity"
+                  required
+                >
+
+                  <option value="1">
+                    1 — General
+                  </option>
+
+                  <option value="2">
+                    2 — Specific
+                  </option>
+
+                  <option value="3">
+                    3 — Most specific
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="field">
+
+                <label for="rulePriority">
+                  Priority
+                </label>
+
+                <input
+                  id="rulePriority"
+                  name="rulePriority"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value="0"
+                  required
+                >
+
+              </div>
+
+
+              <div class="field">
+
+                <label for="ruleCalculationMethod">
+                  Calculation method
+                </label>
+
+                <select
+                  id="ruleCalculationMethod"
+                  name="ruleCalculationMethod"
+                  required
+                >
+
+                  <option value="FIXED">
+                    Fixed amount
+                  </option>
+
+                  <option value="PERCENTAGE">
+                    Percentage
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div
+                id="fixedAmountField"
+                class="field"
               >
 
+                <label for="ruleFixedAmount">
+                  Fixed amount
+                </label>
+
+                <input
+                  id="ruleFixedAmount"
+                  name="ruleFixedAmount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                >
+
+              </div>
+
+
+              <div
+                id="percentageField"
+                class="field fine-hidden"
+              >
+
+                <label for="rulePercentageRate">
+                  Percentage rate
+                </label>
+
+                <input
+                  id="rulePercentageRate"
+                  name="rulePercentageRate"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.0001"
+                  placeholder="0.00"
+                >
+
+              </div>
+
+
+              <div class="field">
+
+                <label for="ruleMinimumAmount">
+                  Minimum amount
+                </label>
+
+                <input
+                  id="ruleMinimumAmount"
+                  name="ruleMinimumAmount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Optional"
+                >
+
+              </div>
+
+
+              <div class="field">
+
+                <label for="ruleMaximumAmount">
+                  Maximum amount
+                </label>
+
+                <input
+                  id="ruleMaximumAmount"
+                  name="ruleMaximumAmount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Optional"
+                >
+
+              </div>
+
+
+              <div class="field">
+
+                <label for="ruleGraceValue">
+                  Grace period
+                </label>
+
+                <input
+                  id="ruleGraceValue"
+                  name="ruleGraceValue"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value="0"
+                  required
+                >
+
+              </div>
+
+
+              <div class="field">
+
+                <label for="ruleGraceUnit">
+                  Grace unit
+                </label>
+
+                <select
+                  id="ruleGraceUnit"
+                  name="ruleGraceUnit"
+                  required
+                >
+
+                  <option value="DAY">
+                    Days
+                  </option>
+
+                  <option value="WEEK">
+                    Weeks
+                  </option>
+
+                  <option value="MONTH">
+                    Months
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="field">
+
+                <label for="ruleApplicability">
+                  Applicability
+                </label>
+
+                <select
+                  id="ruleApplicability"
+                  name="ruleApplicability"
+                  required
+                >
+
+                  <option value="ALL">
+                    All applicable contributions
+                  </option>
+
+                  <option value="SELECTED">
+                    Selected contribution types
+                  </option>
+
+                  <option value="ALL_MEETINGS">
+                    All meetings
+                  </option>
+
+                  <option value="SELECTED_MEETINGS">
+                    Selected meetings
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="field">
+
+                <label for="ruleEffectiveFrom">
+                  Effective from
+                </label>
+
+                <input
+                  id="ruleEffectiveFrom"
+                  name="ruleEffectiveFrom"
+                  type="datetime-local"
+                  required
+                >
+
+              </div>
+
+
+              <div class="field">
+
+                <label for="ruleEffectiveUntil">
+                  Effective until
+                </label>
+
+                <input
+                  id="ruleEffectiveUntil"
+                  name="ruleEffectiveUntil"
+                  type="datetime-local"
+                >
+
+              </div>
+
+
+              <div class="field full">
+
+                <label for="ruleDescription">
+                  Description
+                </label>
+
+                <textarea
+                  id="ruleDescription"
+                  name="ruleDescription"
+                  rows="3"
+                  maxlength="1000"
+                  placeholder="Describe when this rule applies."
+                ></textarea>
+
+              </div>
+
+
+              <div
+                id="contributionTypeField"
+                class="field full"
+              >
+
+                <label for="ruleContributionTypes">
+                  Contribution types
+                </label>
+
+                <select
+                  id="ruleContributionTypes"
+                  name="ruleContributionTypes"
+                  multiple
+                  size="5"
+                ></select>
+
+                <small>
+                  Required when applicability is Selected.
+                </small>
+
+              </div>
+
             </div>
 
 
-            <div class="filter-group">
+            <div class="fine-rule-note">
 
-              <label for="monthFilter">
-                Accounting Month
-              </label>
-
-              <select id="monthFilter">
-
-                <option value="">
-                  All months
-                </option>
-
-              </select>
+              Fine-rule configuration is validated again by the database.
+              The browser does not create fine ledger records directly.
 
             </div>
 
 
-            <div class="filter-group">
-
-              <label for="statusFilter">
-                Status
-              </label>
-
-              <select id="statusFilter">
-
-                <option value="">
-                  All statuses
-                </option>
-
-                <option value="OUTSTANDING">
-                  Outstanding
-                </option>
-
-                <option value="PARTIALLY_PAID">
-                  Partially Paid
-                </option>
-
-                <option value="PAID">
-                  Paid
-                </option>
-
-                <option value="WAIVED">
-                  Waived
-                </option>
-
-              </select>
-
-            </div>
-
-
-            <div>
+            <div class="fine-form-actions">
 
               <button
-                type="button"
-                class="btn"
-                id="clearFilters"
+                id="saveFineRule"
+                type="submit"
+                class="button"
               >
-                Clear
+                Create rule
+              </button>
+
+              <button
+                id="resetFineRule"
+                type="button"
+                class="button secondary"
+              >
+                Reset
               </button>
 
             </div>
 
-          </div>
-
-        </div>
-
-      </section>
-
-
-      <section
-        class="section"
-        aria-labelledby="fines-title"
-      >
-
-        <div class="section-header">
-
-          <h2
-            class="section-title"
-            id="fines-title"
-          >
-            Fine Register
-          </h2>
-
-          <span
-            class="muted"
-            id="resultCount"
-          >
-            0 fines
-          </span>
-
-        </div>
-
-
-        <div class="table-wrap">
-
-          <table>
-
-            <thead>
-
-              <tr>
-                <th>Member</th>
-                <th>Fine</th>
-                <th>Month</th>
-                <th>Original</th>
-                <th>Adjusted</th>
-                <th>Waived</th>
-                <th>Paid</th>
-                <th>Outstanding</th>
-                <th>Status</th>
-                <th>Action</th>
-              </tr>
-
-            </thead>
-
-
-            <tbody id="finesBody">
-
-              <tr>
-
-                <td
-                  colspan="10"
-                  class="empty-state"
-                >
-                  Loading fines…
-                </td>
-
-              </tr>
-
-            </tbody>
-
-          </table>
-
-        </div>
-
-      </section>
-
-
-      <section
-        class="section detail-panel"
-        id="fineDetail"
-        aria-labelledby="detail-title"
-      >
-
-        <div class="section-header">
-
-          <h2
-            class="section-title"
-            id="detail-title"
-          >
-            Fine Details
-          </h2>
-
-          <button
-            type="button"
-            class="btn"
-            id="closeDetail"
-          >
-            Close
-          </button>
-
-        </div>
-
-
-        <div class="section-body">
-
-          <div
-            class="detail-grid"
-            id="detailGrid"
-          ></div>
-
-
-          <div
-            class="detail-balance"
-            id="detailBalance"
-          ></div>
-
-
-          <div
-            class="detail-actions"
-            id="fineActions"
-            aria-label="Fine actions"
-          >
-
-            <button
-              type="button"
-              class="btn"
-              id="adjustFine"
-            >
-              Adjust
-            </button>
-
-            <button
-              type="button"
-              class="btn"
-              id="waiveFine"
-            >
-              Waive
-            </button>
-
-            <button
-              type="button"
-              class="btn"
-              id="allocateFinePayment"
-            >
-              Allocate Payment
-            </button>
-
-          </div>
+          </form>
 
         </div>
 
@@ -1257,92 +1193,20 @@
   </div>
 
 
-  <div
-    class="modal"
-    id="fineActionModal"
-    hidden
-    aria-hidden="true"
-  >
-
-    <div
-      class="modal-backdrop"
-      data-modal-close
-    ></div>
-
-
-    <div
-      class="modal-dialog"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="fineActionTitle"
-    >
-
-      <div class="modal-header">
-
-        <h2
-          class="section-title"
-          id="fineActionTitle"
-        >
-          Fine Action
-        </h2>
-
-        <button
-          type="button"
-          class="btn"
-          id="closeFineAction"
-        >
-          Close
-        </button>
-
-      </div>
-
-
-      <div class="section-body">
-
-        <form id="fineActionForm">
-
-          <div
-            id="fineActionFields"
-          ></div>
-
-
-          <div
-            id="fineActionError"
-            class="action-error"
-            role="alert"
-            aria-live="assertive"
-          ></div>
-
-
-          <div
-            class="row-actions"
-            style="margin-top:16px;"
-          >
-
-            <button
-              type="submit"
-              class="btn btn-primary"
-              id="submitFineAction"
-            >
-              Submit
-            </button>
-
-          </div>
-
-        </form>
-
-      </div>
-
-    </div>
-
-  </div>
-
+  <!-- ===================================================
+       SOLE ADMIN-LAYOUT BOOT
+       =================================================== -->
 
   <script type="module">
-    import { boot } from "./js/admin-layout.js";
+
+    import {
+      boot
+    } from "./js/admin-layout.js";
 
     boot();
+
   </script>
 
 </body>
+
 </html>
