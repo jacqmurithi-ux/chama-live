@@ -1,3 +1,4 @@
+javascript
 /* =========================================================
    CHAMA LIVE — MEMBERS
    Pilot-ready members management
@@ -57,6 +58,10 @@
 
    Before reading a member's contribution position, the page
    invokes the authenticated canonical refresh boundary.
+
+   Refresh and read are deliberately handled independently:
+   a refresh error is reported/logged but does not prevent
+   the read-only position RPC from being attempted.
 
    ---------------------------------------------------------
    IMPORTANT
@@ -447,11 +452,6 @@ function normalizeHistoricalPaymentMethod(value) {
 
 /* =========================================================
    LOGIN STATUS
-   ---------------------------------------------------------
-   A member's email address does NOT prove that a Supabase
-   authentication account exists.
-
-   user_id is the authoritative member → auth-user link.
    ========================================================= */
 
 function getLoginStatus(member) {
@@ -536,7 +536,7 @@ function contributionStatusLabel(position) {
     return "Up to Date";
   }
 
-  return "Unknown";
+  return "Unavailable";
 }
 
 
@@ -584,19 +584,17 @@ async function refreshManagedMemberAccounting(
     throw error;
   }
 
-  /*
-   * The RPC is the canonical refresh boundary.
-   *
-   * Its verified database contract returns jsonb, but the
-   * frontend must not invent an `ok === true` requirement
-   * that is not part of that return contract.
-   */
   return data;
 }
 
 
 /* =========================================================
    CONTRIBUTION POSITION — ALL MEMBERS
+   ---------------------------------------------------------
+   REFRESH AND READ ARE INDEPENDENT.
+
+   A failure at the canonical refresh boundary must not
+   suppress the subsequent read-only position RPC.
    ========================================================= */
 
 async function loadMemberContributionPositions() {
@@ -614,11 +612,37 @@ async function loadMemberContributionPositions() {
   }
 
   for (const member of members) {
+
+    if (!member?.id) {
+      continue;
+    }
+
+
+    /* -----------------------------------------------------
+       CANONICAL REFRESH
+       ----------------------------------------------------- */
+
     try {
 
       await refreshManagedMemberAccounting(
         member.id
       );
+
+    } catch (refreshError) {
+
+      console.warn(
+        "Canonical accounting refresh failed; continuing with read:",
+        member.id,
+        refreshError
+      );
+    }
+
+
+    /* -----------------------------------------------------
+       READ-ONLY POSITION
+       ----------------------------------------------------- */
+
+    try {
 
       const {
         data,
@@ -628,15 +652,12 @@ async function loadMemberContributionPositions() {
         {
           p_member_id:
             member.id
-        },
-        {
-          get: true
         }
       );
 
       if (error) {
         console.warn(
-          "Contribution position failed for member:",
+          "Contribution position read failed for member:",
           member.id,
           error
         );
@@ -650,15 +671,19 @@ async function loadMemberContributionPositions() {
           : data || null;
 
       if (position) {
-        const totalAllocated =
-          Number(
-            position.total_allocated || 0
-          );
 
-        const credit =
-          Number(
-            position.credit || 0
-          );
+        /*
+         * IMPORTANT:
+         *
+         * total_contributed is a backend value when supplied
+         * by the canonical read RPC.
+         *
+         * Do NOT derive it as:
+         *
+         *     allocated + credit
+         *
+         * Credit is a separate accounting state.
+         */
 
         contributionPositions.set(
           member.id,
@@ -666,22 +691,20 @@ async function loadMemberContributionPositions() {
             ...position,
 
             allocated:
-              totalAllocated,
-
-            total_contributed:
-              totalAllocated + credit
+              Number(
+                position.total_allocated ?? 0
+              )
           }
         );
       }
 
-    } catch (error) {
-      console.warn(
-        "Canonical member accounting refresh/position failed:",
-        member.id,
-        error
-      );
+    } catch (readError) {
 
-      continue;
+      console.warn(
+        "Contribution position read failed:",
+        member.id,
+        readError
+      );
     }
   }
 
@@ -1009,8 +1032,8 @@ function ensureContributionStatusStyles() {
     }
 
     .contribution-status-credit {
-      background: rgba(22, 163, 74, .12);
-      color: #15803d;
+      background: rgba(37, 99, 235, .12);
+      color: #1d4ed8;
     }
 
     .contribution-status-arrears {
@@ -1019,8 +1042,8 @@ function ensureContributionStatusStyles() {
     }
 
     .contribution-status-up-to-date {
-      background: rgba(37, 99, 235, .12);
-      color: #1d4ed8;
+      background: rgba(22, 163, 74, .12);
+      color: #15803d;
     }
 
     .contribution-status-unknown {
@@ -1299,6 +1322,11 @@ function ensureNationalIdUI() {
 
 /* =========================================================
    CONTRIBUTION UI
+   ---------------------------------------------------------
+   ONE AUTHORITATIVE CONTRIBUTION-AMOUNT LISTENER.
+
+   Historical preview is updated here as well so the amount
+   field has one listener only.
    ========================================================= */
 
 function ensureContributionUI() {
@@ -1307,9 +1335,26 @@ function ensureContributionUI() {
       "memberContributionAmount"
     );
 
-  amount?.addEventListener(
+  if (!amount) {
+    return;
+  }
+
+  if (
+    amount.dataset.contributionPreviewBound ===
+    "true"
+  ) {
+    return;
+  }
+
+  amount.dataset.contributionPreviewBound =
+    "true";
+
+  amount.addEventListener(
     "input",
-    updateContributionPreview
+    () => {
+      updateContributionPreview();
+      updateHistoricalPreview();
+    }
   );
 }
 
@@ -1919,10 +1964,6 @@ async function checkDuplicateMemberNumber(
 
 /* =========================================================
    LOAD MEMBERS
-   ---------------------------------------------------------
-   IMPORTANT:
-   Every returned row for this group is a group member.
-   Do NOT filter by status or onboarding_status.
    ========================================================= */
 
 async function loadMembers() {
@@ -2027,6 +2068,24 @@ function contributionResultMessage(
 
 /* =========================================================
    MEMBER ROW
+   ---------------------------------------------------------
+   EXACTLY 13 TABLE COLUMNS:
+
+   1  Member No.
+   2  National ID
+   3  Membership No.
+   4  Member
+   5  Phone
+   6  Email
+   7  Role
+   8  Actual Position
+   9  Account Status
+   10 Onboarding
+   11 Contribution Status
+   12 Login
+   13 Actions
+
+   Credit is deliberately NOT a table column.
    ========================================================= */
 
 function createMemberRow(member) {
@@ -2043,6 +2102,28 @@ function createMemberRow(member) {
 
   tr.innerHTML = `
     <td>
+      ${escapeHtml(
+        member.member_number ||
+        "—"
+      )}
+    </td>
+
+    <td>
+      ${escapeHtml(
+        member.national_id ||
+        "—"
+      )}
+    </td>
+
+    <td>
+      ${escapeHtml(
+        member.membership_number ||
+        member.member_number ||
+        "—"
+      )}
+    </td>
+
+    <td>
       <div class="member-identity">
 
         <div class="member-avatar">
@@ -2057,13 +2138,6 @@ function createMemberRow(member) {
               member.name
             )}
           </div>
-
-          <div class="member-number">
-            ${escapeHtml(
-              member.member_number ||
-              "—"
-            )}
-          </div>
         </div>
 
       </div>
@@ -2071,7 +2145,15 @@ function createMemberRow(member) {
 
     <td>
       ${escapeHtml(
-        member.phone || "—"
+        member.phone ||
+        "—"
+      )}
+    </td>
+
+    <td>
+      ${escapeHtml(
+        member.email ||
+        "—"
       )}
     </td>
 
@@ -2122,12 +2204,6 @@ function createMemberRow(member) {
       )}
     </td>
 
-    <td>
-      ${loginStatusHtml(
-        member
-      )}
-    </td>
-
     <td data-column="contribution-status">
       ${contributionStatusHtml(
         position
@@ -2135,8 +2211,8 @@ function createMemberRow(member) {
     </td>
 
     <td>
-      ${formatMoney(
-        position?.credit || 0
+      ${loginStatusHtml(
+        member
       )}
     </td>
 
@@ -2245,11 +2321,46 @@ function createMemberCard(member) {
     <div class="member-card-body">
 
       <div>
+        <span>National ID</span>
+
+        <strong>
+          ${escapeHtml(
+            member.national_id ||
+            "—"
+          )}
+        </strong>
+      </div>
+
+      <div>
+        <span>Membership No.</span>
+
+        <strong>
+          ${escapeHtml(
+            member.membership_number ||
+            member.member_number ||
+            "—"
+          )}
+        </strong>
+      </div>
+
+      <div>
         <span>Phone</span>
 
         <strong>
           ${escapeHtml(
-            member.phone || "—"
+            member.phone ||
+            "—"
+          )}
+        </strong>
+      </div>
+
+      <div>
+        <span>Email</span>
+
+        <strong>
+          ${escapeHtml(
+            member.email ||
+            "—"
           )}
         </strong>
       </div>
@@ -2416,7 +2527,7 @@ function renderMembers() {
       tableBody.innerHTML = `
         <tr>
           <td
-            colspan="10"
+            colspan="13"
             class="empty-state"
           >
             No members found.
@@ -2984,10 +3095,6 @@ async function saveMember(event) {
       null;
 
 
-    /* -----------------------------------------------------
-       MEMBER PAYLOAD
-       ----------------------------------------------------- */
-
     const memberPayload = {
       group_id:
         groupId,
@@ -3037,10 +3144,6 @@ async function saveMember(event) {
     };
 
 
-    /* -----------------------------------------------------
-       CANONICAL CONTRIBUTION PLAN
-       ----------------------------------------------------- */
-
     const contributionPlan = [
       {
         contribution_type_id:
@@ -3066,10 +3169,6 @@ async function saveMember(event) {
       }
     ];
 
-
-    /* -----------------------------------------------------
-       NEW MEMBER WITH HISTORICAL CONTRIBUTIONS
-       ----------------------------------------------------- */
 
     if (
       values.historical_enabled
@@ -3119,10 +3218,6 @@ async function saveMember(event) {
 
     } else {
 
-      /* ---------------------------------------------------
-         NEW MEMBER WITHOUT HISTORICAL CONTRIBUTIONS
-         --------------------------------------------------- */
-
       const {
         data,
         error
@@ -3148,10 +3243,6 @@ async function saveMember(event) {
     }
 
 
-    /* =====================================================
-       REFRESH ACCOUNTING STATE
-       ===================================================== */
-
     await loadMembers();
 
     await loadMemberContributionRules();
@@ -3172,10 +3263,6 @@ async function saveMember(event) {
 
     closeAddMember();
 
-
-    /* =====================================================
-       ONBOARDING EVENT
-       ===================================================== */
 
     try {
 
@@ -3205,9 +3292,7 @@ async function saveMember(event) {
       );
 
     } catch {
-      /*
-       * Session storage is non-critical.
-       */
+      /* Session storage is non-critical. */
     }
 
 
@@ -3340,8 +3425,6 @@ async function handleHistoricalReconciliation(
 
 /* =========================================================
    EXISTING MEMBER POSITION CHANGE
-   ---------------------------------------------------------
-   CANONICAL RPC ONLY.
    ========================================================= */
 
 async function setMemberActualPosition(
@@ -3948,6 +4031,8 @@ async function sendMemberInvitation(
 
     await loadMemberContributionRules();
 
+    await loadMemberContributionPositions();
+
     renderMembers();
 
     updateMemberCount();
@@ -4142,10 +4227,6 @@ async function openEditMember(
   }
 
 
-  /* -------------------------------------------------------
-     EXISTING MEMBER ACTUAL POSITION
-     ------------------------------------------------------- */
-
   const actualPosition =
     byId(
       "memberActualPosition"
@@ -4195,10 +4276,6 @@ async function openEditMember(
 
   updateActualPositionNameUI();
 
-
-  /* -------------------------------------------------------
-     EXISTING MEMBER ACCOUNTING FIELDS
-     ------------------------------------------------------- */
 
   const contributionAmount =
     byId(
@@ -4487,6 +4564,12 @@ function setContributionPositionLoading(
 
 /* =========================================================
    LOAD MEMBER POSITION
+   ---------------------------------------------------------
+   REFRESH AND READ ARE INDEPENDENT.
+
+   IMPORTANT:
+   total_contributed is never calculated from allocated +
+   credit. The canonical read result is displayed as returned.
    ========================================================= */
 
 async function loadMemberContributionPosition(
@@ -4505,11 +4588,34 @@ async function loadMemberContributionPosition(
     true
   );
 
+  let position =
+    null;
+
   try {
 
-    await refreshManagedMemberAccounting(
-      memberId
-    );
+    /* -----------------------------------------------------
+       CANONICAL REFRESH
+       ----------------------------------------------------- */
+
+    try {
+
+      await refreshManagedMemberAccounting(
+        memberId
+      );
+
+    } catch (refreshError) {
+
+      console.warn(
+        "Canonical accounting refresh failed; continuing with position read:",
+        memberId,
+        refreshError
+      );
+    }
+
+
+    /* -----------------------------------------------------
+       READ-ONLY POSITION
+       ----------------------------------------------------- */
 
     const {
       data,
@@ -4520,9 +4626,6 @@ async function loadMemberContributionPosition(
         {
           p_member_id:
             memberId
-        },
-        {
-          get: true
         }
       );
 
@@ -4530,45 +4633,118 @@ async function loadMemberContributionPosition(
       throw error;
     }
 
-    const position =
+    position =
       Array.isArray(data)
         ? data[0] || null
         : data || null;
 
+
+    if (!position) {
+      contributionPositions.delete(
+        memberId
+      );
+
+      const totalElement =
+        modal.querySelector(
+          "[data-position-total-contributed]"
+        );
+
+      const dueElement =
+        modal.querySelector(
+          "[data-position-total-due]"
+        );
+
+      const allocatedElement =
+        modal.querySelector(
+          "[data-position-allocated]"
+        );
+
+      const arrearsElement =
+        modal.querySelector(
+          "[data-position-arrears]"
+        );
+
+      const creditElement =
+        modal.querySelector(
+          "[data-position-credit]"
+        );
+
+      if (totalElement) {
+        totalElement.textContent =
+          "—";
+      }
+
+      if (dueElement) {
+        dueElement.textContent =
+          "—";
+      }
+
+      if (allocatedElement) {
+        allocatedElement.textContent =
+          "—";
+      }
+
+      if (arrearsElement) {
+        arrearsElement.textContent =
+          "—";
+      }
+
+      if (creditElement) {
+        creditElement.textContent =
+          "—";
+      }
+
+      const status =
+        modal.querySelector(
+          "[data-position-status]"
+        );
+
+      if (status) {
+        status.innerHTML =
+          contributionStatusHtml(
+            null
+          );
+      }
+
+      return null;
+    }
+
+
     const totalAllocated =
       Number(
-        position?.total_allocated ||
-        0
+        position.total_allocated ?? 0
       );
 
     const totalDue =
       Number(
-        position?.total_due ||
-        0
+        position.total_due ?? 0
       );
 
     const arrears =
       Number(
-        position?.arrears ||
-        0
+        position.arrears ?? 0
       );
 
     const credit =
       Number(
-        position?.credit ||
-        0
+        position.credit ?? 0
       );
 
 
-    const totalContributed =
-      totalAllocated +
-      credit;
+    /*
+     * DO NOT CALCULATE:
+     *
+     *     total_contributed =
+     *       totalAllocated + credit
+     *
+     * The canonical RPC owns this value.
+     *
+     * If the RPC returns total_contributed it is used.
+     * If it does not, the UI displays "—".
+     */
 
     const normalizedPosition = {
       ...position,
-
-      total_contributed:
-        totalContributed,
 
       allocated:
         totalAllocated
@@ -4603,9 +4779,11 @@ async function loadMemberContributionPosition(
 
     if (totalElement) {
       totalElement.textContent =
-        formatMoney(
-          totalContributed
-        );
+        position.total_contributed == null
+          ? "—"
+          : formatMoney(
+              position.total_contributed
+            );
     }
 
     if (dueElement) {
@@ -4990,6 +5168,9 @@ async function openMemberModal(
     reconcileButton.dataset.action =
       "reconcile";
 
+    reconcileButton.id =
+      "reconcileHistoricalPayments";
+
     reconcileButton.textContent =
       "Reconcile Historical Contributions";
 
@@ -5023,6 +5204,23 @@ async function openMemberModal(
     "open"
   );
 
+  modal.style.display =
+    "";
+
+
+  const closeButton =
+    byId(
+      "closeMemberModal"
+    );
+
+  if (closeButton) {
+    try {
+      closeButton.focus();
+    } catch {
+      /* Focus is non-critical. */
+    }
+  }
+
 
   await loadMemberContributionPosition(
     member.id
@@ -5042,11 +5240,34 @@ function closeMemberModal() {
     return;
   }
 
+  /*
+   * Prevent focus remaining inside a hidden dialog.
+   */
+
+  const active =
+    document.activeElement;
+
+  if (
+    active &&
+    modal.contains(active) &&
+    typeof active.blur ===
+      "function"
+  ) {
+    active.blur();
+  }
+
   modal.hidden =
     true;
 
+  modal.style.display =
+    "none";
+
   modal.classList.remove(
     "open"
+  );
+
+  modal.classList.remove(
+    "modal-open"
   );
 }
 
@@ -5113,89 +5334,108 @@ function filterMembers(value) {
 
 /* =========================================================
    MEMBER ACTION DELEGATION
+   ---------------------------------------------------------
+   Defensive + promise-safe.
+
+   No unhandled rejected promise may escape an event handler.
    ========================================================= */
 
 async function handleMemberAction(
   event
 ) {
-  const target =
-    event.target.closest(
-      "[data-action]"
+  try {
+
+    const target =
+      event.target?.closest?.(
+        "[data-action]"
+      );
+
+    if (!target) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const action =
+      target.dataset.action;
+
+    const memberId =
+      target.dataset.memberId ||
+      target.closest(
+        "[data-member-id]"
+      )?.dataset.memberId;
+
+    if (
+      !memberId &&
+      action !== "close"
+    ) {
+      showError(
+        "The member action is missing a member ID."
+      );
+
+      return;
+    }
+
+
+    switch (action) {
+
+      case "view":
+        await openMemberModal(
+          memberId
+        );
+        break;
+
+
+      case "edit":
+        await openEditMember(
+          memberId
+        );
+        break;
+
+
+      case "invite":
+        await sendMemberInvitation(
+          memberId,
+          false
+        );
+        break;
+
+
+      case "reconcile":
+        await handleHistoricalReconciliation(
+          memberId
+        );
+        break;
+
+
+      case "save-position":
+        await handlePositionChange(
+          memberId
+        );
+        break;
+
+
+      case "close":
+        closeMemberModal();
+        break;
+
+
+      default:
+        break;
+    }
+
+  } catch (error) {
+
+    console.error(
+      "Member action failed:",
+      error
     );
 
-  if (!target) {
-    return;
-  }
-
-  event.preventDefault();
-  event.stopPropagation();
-
-  const action =
-    target.dataset.action;
-
-  const memberId =
-    target.dataset.memberId ||
-    target.closest(
-      "[data-member-id]"
-    )?.dataset.memberId;
-
-  if (
-    !memberId &&
-    action !== "close"
-  ) {
     showError(
-      "The member action is missing a member ID."
+      error?.message ||
+      "The requested member action could not be completed."
     );
-
-    return;
-  }
-
-
-  switch (action) {
-
-    case "view":
-      await openMemberModal(
-        memberId
-      );
-      break;
-
-
-    case "edit":
-      await openEditMember(
-        memberId
-      );
-      break;
-
-
-    case "invite":
-      await sendMemberInvitation(
-        memberId,
-        false
-      );
-      break;
-
-
-    case "reconcile":
-      await handleHistoricalReconciliation(
-        memberId
-      );
-      break;
-
-
-    case "save-position":
-      await handlePositionChange(
-        memberId
-      );
-      break;
-
-
-    case "close":
-      closeMemberModal();
-      break;
-
-
-    default:
-      break;
   }
 }
 
@@ -5285,7 +5525,20 @@ function bindEvents() {
 
   form?.addEventListener(
     "submit",
-    saveMember
+    event => {
+      void saveMember(event)
+        .catch(error => {
+          console.error(
+            "Member form submission failed:",
+            error
+          );
+
+          showError(
+            error?.message ||
+            "Unable to save the member."
+          );
+        });
+    }
   );
 
 
@@ -5412,7 +5665,11 @@ function bindEvents() {
 
   tableBody?.addEventListener(
     "click",
-    handleMemberAction
+    event => {
+      void handleMemberAction(
+        event
+      );
+    }
   );
 
 
@@ -5433,7 +5690,11 @@ function bindEvents() {
 
   cards?.addEventListener(
     "click",
-    handleMemberAction
+    event => {
+      void handleMemberAction(
+        event
+      );
+    }
   );
 
 
@@ -5449,12 +5710,12 @@ function bindEvents() {
     event => {
 
       const actionTarget =
-        event.target.closest(
+        event.target?.closest?.(
           "[data-action]"
         );
 
       if (actionTarget) {
-        handleMemberAction(
+        void handleMemberAction(
           event
         );
 
@@ -5472,11 +5733,22 @@ function bindEvents() {
 
   /* -------------------------------------------------------
      MODAL CLOSE BUTTONS
+     -------------------------------------------------------
+     All supported close controls use the same canonical
+     closeMemberModal() function.
+
+       [data-member-modal-close]
+       #closeMemberModal
+       #closeMemberModalFooter
      ------------------------------------------------------- */
 
   const closeModalButtons =
     document.querySelectorAll(
-      "[data-member-modal-close]"
+      [
+        "[data-member-modal-close]",
+        "#closeMemberModal",
+        "#closeMemberModalFooter"
+      ].join(",")
     );
 
   closeModalButtons.forEach(
@@ -5484,7 +5756,13 @@ function bindEvents() {
 
       button.addEventListener(
         "click",
-        closeMemberModal
+        event => {
+
+          event.preventDefault();
+          event.stopPropagation();
+
+          closeMemberModal();
+        }
       );
 
     }
@@ -5536,22 +5814,14 @@ function bindEvents() {
   );
 
 
-  /* -------------------------------------------------------
-     CONTRIBUTION AMOUNT
-     ------------------------------------------------------- */
-
-  const contributionAmount =
-    byId(
-      "memberContributionAmount"
-    );
-
-  contributionAmount?.addEventListener(
-    "input",
-    () => {
-      updateContributionPreview();
-      updateHistoricalPreview();
-    }
-  );
+  /*
+   * IMPORTANT:
+   *
+   * There is intentionally NO second
+   * memberContributionAmount input listener here.
+   *
+   * ensureContributionUI() owns that listener.
+   */
 
 
   /* -------------------------------------------------------
@@ -5834,3 +6104,4 @@ export {
 console.log(
   "CHAMA LIVE: members.js ready"
 );
+
