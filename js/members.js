@@ -95,6 +95,7 @@
    ========================================================= */
 
 import { supabase } from "./supabase.js";
+import { membersApi } from "./api/members.js";
 
 import {
   requireAuth,
