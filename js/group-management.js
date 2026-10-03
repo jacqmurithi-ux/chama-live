@@ -857,12 +857,6 @@ function renderContributionTypes() {
             type.code || "—"
         );
 
-        appendTextRow(
-            item,
-            "Status",
-            type.status || "—"
-        );
-
         container.appendChild(item);
     });
 
@@ -885,8 +879,6 @@ async function loadContributionTypes() {
                 "id",
                 "name",
                 "code",
-                "description",
-                "status",
                 "created_at"
             ].join(", ")
         )
@@ -1276,7 +1268,7 @@ async function loadInitiativeMembers() {
                 "id",
                 "group_id",
                 "user_id",
-                "full_name",
+                "name",
                 "status"
             ].join(", ")
         )
@@ -1285,7 +1277,7 @@ async function loadInitiativeMembers() {
             currentGroup.id
         )
         .order(
-            "full_name",
+            "name",
             {
                 ascending: true
             }
@@ -1314,13 +1306,11 @@ async function loadOneTimeParticipantState(
     const {
         data,
         error
-    } = await supabase.rpc(
-        "get_contribution_initiative_participants",
-        {
-            p_initiative_id:
-                initiativeId
-        }
-    );
+    } = await supabase
+        .from("contribution_initiative_members")
+        .select("member_id")
+        .eq("initiative_id", initiativeId)
+        .eq("status", "active");
 
     if (error) {
         throw error;
@@ -1328,9 +1318,7 @@ async function loadOneTimeParticipantState(
 
     return Array.isArray(data)
         ? data
-        : data
-            ? [data]
-            : [];
+        : [];
 }
 
 
@@ -1419,7 +1407,7 @@ function createParticipantRow(
         "initiative-participant-name";
 
     name.textContent =
-        member.full_name ||
+        member.name ||
         "Member";
 
     row.append(
