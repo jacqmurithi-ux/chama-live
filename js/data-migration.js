@@ -452,8 +452,7 @@ async function recoverBatch(batchId) {
   const { data: batch, error: batchError } =
     await supabase
       .from("data_import_batches")
-      .select("*")
-      .eq("id", batchId)
+      .select("id, group_id, source_name, source_type, started_at, completed_at, status, created_by, summary")     .eq("id", batchId)
       .eq("group_id", state.groupId)
       .maybeSingle();
 
@@ -470,8 +469,7 @@ async function recoverBatch(batchId) {
   const { data: rows, error: rowsError } =
     await supabase
       .from("data_import_rows")
-      .select("*")
-      .eq("batch_id", batchId)
+      .select("id, batch_id, source_sheet, source_row_number, entity_type, raw_data, normalized_data, status, error_message, target_id, created_at")     .eq("batch_id", batchId)
       .order("row_number", {
         ascending: true
       });
@@ -483,8 +481,7 @@ async function recoverBatch(batchId) {
   const { data: mappings, error: mappingsError } =
     await supabase
       .from("data_import_mappings")
-      .select("*")
-      .eq("batch_id", batchId);
+      .select("id, batch_id, source_column, target_field, mapping_type, created_at")     .eq("batch_id", batchId);
 
   if (mappingsError) {
     throw mappingsError;

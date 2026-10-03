@@ -571,7 +571,7 @@ async function refreshManagedMemberAccounting(
   const {
     data,
     error
-  } = await supabase.rpc(
+  } = await membersApi.rpc(
     "refresh_my_managed_member_accounting",
     {
       p_member_id:
@@ -646,7 +646,7 @@ async function loadMemberContributionPositions() {
       const {
         data,
         error
-      } = await supabase.rpc(
+      } = await membersApi.rpc(
         "get_member_contribution_position",
         {
           p_member_id:
@@ -747,14 +747,7 @@ async function loadMemberContributionRules() {
   const {
     data,
     error
-  } = await supabase
-    .from("member_contribution_rules")
-    .select("*")
-    .in(
-      "member_id",
-      memberIds
-    );
-
+  } = await membersApi.contributionRules(groupId, memberIds);
   if (error) {
     console.warn(
       "Member contribution rules could not be loaded:",
@@ -1376,11 +1369,7 @@ async function loadMonthlyContributionType() {
   const {
     data,
     error
-  } = await supabase
-    .from("contribution_types")
-    .select("*")
-    .eq("group_id", groupId);
-
+  } = await membersApi.contributionTypes(groupId);
   if (error) {
     throw error;
   }
@@ -1975,21 +1964,7 @@ async function loadMembers() {
   const {
     data,
     error
-  } = await supabase
-    .from("members")
-    .select("*")
-    .eq(
-      "group_id",
-      groupId
-    )
-    .order(
-      "member_number",
-      {
-        ascending: true,
-        nullsFirst: false
-      }
-    );
-
+  } = await membersApi.list(groupId);
   if (error) {
     throw error;
   }
@@ -3046,21 +3021,8 @@ async function saveMember(event) {
 
       const {
         error
-      } = await supabase
-        .from("members")
-        .update(
-          updatePayload
-        )
-        .eq(
-          "id",
-          editingMemberId
-        )
-        .eq(
-          "group_id",
-          groupId
-        );
-
-      if (error) {
+      } = await membersApi.updateMember(groupId, editingMemberId, updatePayload);
+  if (error) {
         throw error;
       }
 
@@ -3176,7 +3138,7 @@ async function saveMember(event) {
       const {
         data,
         error
-      } = await supabase.rpc(
+      } = await membersApi.rpc(
         "create_member_with_historical_contributions",
         {
           p_member:
@@ -3220,7 +3182,7 @@ async function saveMember(event) {
       const {
         data,
         error
-      } = await supabase.rpc(
+      } = await membersApi.rpc(
         "create_member_with_contribution_plan",
         {
           p_member:
@@ -3328,7 +3290,7 @@ async function reconcileMemberHistoricalPayments(
   const {
     data,
     error
-  } = await supabase.rpc(
+  } = await membersApi.rpc(
     "reconcile_member_historical_payments",
     {
       p_member_id:
@@ -3478,7 +3440,7 @@ async function setMemberActualPosition(
   const {
     data,
     error
-  } = await supabase.rpc(
+  } = await membersApi.rpc(
     "set_member_actual_position",
     {
       p_member_id:
@@ -4620,7 +4582,7 @@ async function loadMemberContributionPosition(
       data,
       error
     } =
-      await supabase.rpc(
+      await membersApi.rpc(
         "get_member_contribution_position",
         {
           p_member_id:

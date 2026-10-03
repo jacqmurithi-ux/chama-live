@@ -305,8 +305,7 @@ async function loadCycles() {
   } =
     await supabase
       .from("subscription_cycles")
-      .select("*")
-      .eq(
+      .select("id, subscription_id, cycle_number, starts_at, ends_at, member_count_snapshot, pricing_tier_code, standard_group_amount, group_discount_percent, group_amount, standard_member_login_amount, member_login_discount_percent, member_login_unit_amount, currency, status, created_at")     .eq(
         "subscription_id",
         subscriptionId
       )
@@ -352,8 +351,7 @@ async function loadInvoices() {
   } =
     await supabase
       .from("subscription_invoices")
-      .select("*")
-      .eq(
+      .select("id, group_id, subscription_id, cycle_id, invoice_number, member_count_snapshot, pricing_tier_code, standard_group_amount, group_discount_amount, group_amount, member_login_count, member_login_unit_amount, member_login_amount, subtotal, total_discount, total_amount, currency, status, issued_at, due_at, paid_at, created_at")     .eq(
         "subscription_id",
         subscriptionId
       )
@@ -400,8 +398,7 @@ async function loadPayments() {
   } =
     await supabase
       .from("subscription_payments")
-      .select("*")
-      .eq(
+      .select("id, invoice_id, group_id, amount, payment_method, provider, provider_reference, status, paid_at, created_at")     .eq(
         "group_id",
         groupId
       )

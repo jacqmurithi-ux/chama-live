@@ -10,7 +10,7 @@
 
   <meta
     name="description"
-    content="Manage your CHAMA LIVE group information, leadership, contribution cycle, contribution programs, payment settings, subscription, and group context."
+    content="Manage group details, leadership, contribution programs, and the CHAMA LIVE account."
   >
 
   <meta
@@ -1174,9 +1174,6 @@
                   <option value="26">26</option>
                   <option value="27">27</option>
                   <option value="28">28</option>
-                  <option value="29">29</option>
-                  <option value="30">30</option>
-                  <option value="31">31</option>
 
                 </select>
 
@@ -1305,32 +1302,9 @@
           </div>
 
 
-          <!-- =================================================
-               CONTRIBUTION TYPES
-               ================================================= -->
-
-          <div class="program-section">
-
-            <div class="program-section-header">
-
-              <h3>
-                Contribution Types
-              </h3>
-
-              <p>
-                Available contribution classifications used by the group.
-              </p>
-
-            </div>
-
-
-            <div
-              id="contributionTypesList"
-              class="program-list"
-              aria-live="polite"
-            ></div>
-
-          </div>
+          <!-- Keep the established element ID while omitting a duplicate list.
+               Contribution types remain available in the program selector. -->
+          <div id="contributionTypesList" hidden aria-hidden="true"></div>
 
 
           <!-- =================================================
