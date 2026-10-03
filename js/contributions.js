@@ -278,6 +278,8 @@ const RECORDER_ROLES = new Set([
 
 /*
  * Roles allowed to review member payment evidence.
+ *
+ * Database authorization remains authoritative.
  */
 const VERIFIER_ROLES = new Set([
 
@@ -1406,7 +1408,8 @@ async function submitMemberPaymentEvidence(
      * by the member evidence workflow.
      *
      * It creates pending evidence only.
-     * It does not create a contribution.
+     *
+     * It does NOT create a contribution.
      */
 
     const {
@@ -1993,6 +1996,10 @@ async function loadVerifierPaymentEvidence() {
 }
 
 
+/* =========================================================
+   VERIFY PAYMENT EVIDENCE
+========================================================= */
+
 async function verifyPaymentEvidence(
   evidenceId
 ) {
@@ -2056,15 +2063,13 @@ async function verifyPaymentEvidence(
     }
 
     /*
-     * =====================================================
      * VERIFIER WRITE BOUNDARY
-     * =====================================================
      *
-     * No browser UPDATE is performed.
-     * No browser INSERT into contributions is performed.
+     * No browser UPDATE.
+     * No browser INSERT into contributions.
      *
-     * The database RPC is the authoritative verification
-     * and accounting boundary.
+     * The database RPC is the authoritative
+     * verification/accounting boundary.
      */
 
     const {
@@ -2099,7 +2104,6 @@ async function verifyPaymentEvidence(
       }
     );
 
-
     selectedVerifierEvidenceId =
       null;
 
@@ -2115,23 +2119,17 @@ async function verifyPaymentEvidence(
 
     }
 
+    await Promise.all([
 
-    await loadVerifierPaymentEvidence();
+      loadVerifierPaymentEvidence(),
 
-    await loadContributions();
+      loadContributions(),
 
-    await loadCanonicalMemberStatus(
-      accountingMonth
-    );
+      loadCanonicalMemberStatus(
+        accountingMonth
+      )
 
-
-    renderLedger();
-
-    renderMemberStatus();
-
-    renderSummary();
-
-    renderContributionGoals();
+    ]);
 
 
     if (
@@ -2141,6 +2139,15 @@ async function verifyPaymentEvidence(
       await loadMemberPaymentEvidence();
 
     }
+
+
+    renderLedger();
+
+    renderMemberStatus();
+
+    renderSummary();
+
+    renderContributionGoals();
 
 
     showVerifierPaymentEvidenceMessage(
@@ -2172,6 +2179,10 @@ async function verifyPaymentEvidence(
 
 }
 
+
+/* =========================================================
+   REJECT PAYMENT EVIDENCE
+========================================================= */
 
 async function rejectPaymentEvidence(
   evidenceId
@@ -2258,12 +2269,10 @@ async function rejectPaymentEvidence(
     }
 
     /*
-     * =====================================================
-     * VERIFIER WRITE BOUNDARY
-     * =====================================================
+     * REJECTION WRITE BOUNDARY
      *
-     * Rejection also goes exclusively through the
-     * canonical verification RPC.
+     * Rejection also goes exclusively through
+     * the canonical verification RPC.
      */
 
     const {
@@ -2298,7 +2307,6 @@ async function rejectPaymentEvidence(
       }
     );
 
-
     selectedVerifierEvidenceId =
       null;
 
@@ -2313,7 +2321,6 @@ async function rejectPaymentEvidence(
         "";
 
     }
-
 
     await loadVerifierPaymentEvidence();
 
@@ -2357,6 +2364,10 @@ async function rejectPaymentEvidence(
 }
 
 
+/* =========================================================
+   VERIFIER EVENT DELEGATION
+========================================================= */
+
 function handleVerifierPaymentEvidenceClick(
   event
 ) {
@@ -2392,7 +2403,7 @@ function handleVerifierPaymentEvidenceClick(
       verifyButton.dataset
         .verifyEvidenceId;
 
-    verifyPaymentEvidence(
+    void verifyPaymentEvidence(
       evidenceId
     );
 
@@ -2412,7 +2423,7 @@ function handleVerifierPaymentEvidenceClick(
       rejectButton.dataset
         .rejectEvidenceId;
 
-    rejectPaymentEvidence(
+    void rejectPaymentEvidence(
       evidenceId
     );
 
@@ -3404,6 +3415,7 @@ function canonicalProgress(
 
 /* =========================================================
    MONTHLY STATUS
+   DISPLAY ONLY — VALUES COME FROM CANONICAL RPC
 ========================================================= */
 
 function renderMemberStatus() {
@@ -4043,7 +4055,7 @@ function renderContributionGoals() {
 
 /* =========================================================
    RECORD CONTRIBUTION
-   EXISTING CANONICAL PATH
+   CANONICAL 2B PATH
 ========================================================= */
 
 async function recordContribution(event) {
@@ -4054,7 +4066,7 @@ async function recordContribution(event) {
 
 
   /*
-   * Frontend role gating is for the UI only.
+   * Frontend role gating is a UI boundary only.
    * Database authorization remains authoritative.
    */
 
@@ -4173,8 +4185,8 @@ async function recordContribution(event) {
 
 
   /*
-   * Canonical 2B contribution recording through this
-   * page is monthly-only.
+   * Canonical 2B recording through this page is
+   * deliberately restricted to Monthly Contribution.
    */
   if (
     contributionType !==
@@ -4249,11 +4261,10 @@ async function recordContribution(event) {
 
 
   /*
-   * Warn when a monthly payment already exists for
-   * the member/month.
+   * Informational duplicate warning only.
    *
-   * The canonical backend remains authoritative and
-   * determines the resulting accounting state.
+   * The backend remains authoritative and determines
+   * the actual accounting result.
    */
 
   const existing =
@@ -4354,10 +4365,10 @@ async function recordContribution(event) {
      * CANONICAL 2B WRITE BOUNDARY
      * =====================================================
      *
-     * The frontend does NOT insert into contributions.
+     * The frontend never inserts into contributions.
      *
-     * All canonical contribution accounting is delegated
-     * to cl_2b_record_contribution().
+     * Canonical accounting is delegated to the
+     * cl_2b_record_contribution() database RPC.
      */
 
     const {
@@ -4414,7 +4425,8 @@ async function recordContribution(event) {
         groupId,
         memberId,
         amount,
-        contributionType,
+        contributionType:
+          "monthly",
         contributionDate,
         paymentMethod,
         idempotencyKey,
@@ -4439,11 +4451,15 @@ async function recordContribution(event) {
     renderAccountingMonthLabel();
 
 
-    await loadCanonicalMemberStatus(
-      accountingMonth
-    );
+    await Promise.all([
 
-    await loadContributions();
+      loadCanonicalMemberStatus(
+        accountingMonth
+      ),
+
+      loadContributions()
+
+    ]);
 
 
     renderLedger();
@@ -4505,8 +4521,10 @@ async function recordContribution(event) {
 
 
     /*
-     * New transaction gets a fresh key only after
-     * successful completion.
+     * Only successful completion receives a fresh key.
+     *
+     * Failure deliberately preserves the key so an
+     * uncertain request can safely be retried.
      */
 
     resetContributionIdempotencyKey();
@@ -4533,10 +4551,7 @@ async function recordContribution(event) {
     /*
      * IMPORTANT:
      *
-     * Do NOT reset the idempotency key on failure.
-     *
-     * This permits safe replay if the request outcome
-     * is uncertain.
+     * Do not reset the idempotency key on failure.
      */
 
     showError(error);
@@ -4568,7 +4583,6 @@ export async function initContributions() {
   if (initialized) {
     return;
   }
-
 
   initialized =
     true;
@@ -4924,7 +4938,7 @@ if (
         !window.__CHAMA_LIVE_LAYOUT_LOADING__
       ) {
 
-        initContributions();
+        void initContributions();
 
       }
 
@@ -4941,7 +4955,7 @@ else {
     !window.__CHAMA_LIVE_LAYOUT_LOADING__
   ) {
 
-    initContributions();
+    void initContributions();
 
   }
 
