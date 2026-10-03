@@ -2,10 +2,8 @@
    CHAMA LIVE — ADMIN GROUP MANAGEMENT
 ================================================================ */
 
-import {
-    supabase,
-    getMyApplicationContext
-} from "./auth.js";
+import { getMyApplicationContext } from "./auth.js";
+import { groupManagementApi } from "./api/group-management.js";
 
 
 /* ================================================================
@@ -483,19 +481,7 @@ async function saveGroupInformation(event) {
     }
 
     const { error } =
-        await supabase
-            .from("groups")
-            .update({
-                name,
-                category,
-                country,
-                monthly_contribution:
-                    monthlyContribution
-            })
-            .eq(
-                "id",
-                currentGroup.id
-            );
+        await groupManagementApi.updateGroup(currentGroup.id,{name,category,country,monthly_contribution:monthlyContribution});
 
     if (error) {
         throw error;
@@ -531,12 +517,7 @@ async function saveGroupInformation(event) {
 async function loadLeadershipSetup() {
     if (!currentGroup?.id || !elements.leadershipList) return;
 
-    const { data, error } = await supabase
-        .from("members")
-        .select("id, name, actual_position, actual_position_name")
-        .eq("group_id", currentGroup.id)
-        .not("actual_position", "is", null)
-        .order("name", { ascending: true });
+    const { data, error } = await groupManagementApi.getLeadershipMembers(currentGroup.id);
 
     if (error) throw error;
 
@@ -575,19 +556,7 @@ async function loadMemberCount() {
     const {
         count,
         error
-    } = await supabase
-        .from("members")
-        .select(
-            "id",
-            {
-                count: "exact",
-                head: true
-            }
-        )
-        .eq(
-            "group_id",
-            currentGroup.id
-        );
+    } = await groupManagementApi.countMembers(currentGroup.id);
 
     if (error) {
         throw error;
@@ -612,7 +581,7 @@ async function loadContributionSettings() {
     const {
         data,
         error
-    } = await supabase.rpc(
+    } = await groupManagementApi.rpc(
         "get_group_contribution_settings",
         {
             p_group_id:
@@ -675,7 +644,7 @@ async function saveContributionSettings(event) {
     }
 
     const { error } =
-        await supabase.rpc(
+        await groupManagementApi.rpc(
             "update_group_contribution_settings",
             {
                 p_group_id:
@@ -713,7 +682,7 @@ async function loadSubscription() {
     const {
         data,
         error
-    } = await supabase.rpc(
+    } = await groupManagementApi.rpc(
         "get_group_subscription",
         {
             p_group_id:
@@ -818,26 +787,7 @@ async function loadContributionTypes() {
     const {
         data,
         error
-    } = await supabase
-        .from("contribution_types")
-        .select(
-            [
-                "id",
-                "name",
-                "code",
-                "created_at"
-            ].join(", ")
-        )
-        .eq(
-            "group_id",
-            currentGroup.id
-        )
-        .order(
-            "created_at",
-            {
-                ascending: true
-            }
-        );
+    } = await groupManagementApi.listContributionTypes(currentGroup.id);
 
     if (error) {
         throw error;
@@ -1208,27 +1158,7 @@ async function loadInitiativeMembers() {
     const {
         data,
         error
-    } = await supabase
-        .from("members")
-        .select(
-            [
-                "id",
-                "group_id",
-                "user_id",
-                "name",
-                "status"
-            ].join(", ")
-        )
-        .eq(
-            "group_id",
-            currentGroup.id
-        )
-        .order(
-            "name",
-            {
-                ascending: true
-            }
-        );
+    } = await groupManagementApi.listInitiativeMembers(currentGroup.id);
 
     if (error) {
         throw error;
@@ -1253,7 +1183,7 @@ async function loadOneTimeParticipantState(
     const {
         data,
         error
-    } = await supabase.rpc(
+    } = await groupManagementApi.rpc(
         "get_contribution_initiative_participants",
         {
             p_initiative_id:
@@ -1283,7 +1213,7 @@ async function loadRecurringParticipantState(
     const {
         data,
         error
-    } = await supabase.rpc(
+    } = await groupManagementApi.rpc(
         "get_contribution_initiative_recurring_participants",
         {
             p_initiative_id:
@@ -1707,7 +1637,7 @@ async function saveInitiativeParticipants(
     try {
         const {
             error
-        } = await supabase.rpc(
+        } = await groupManagementApi.rpc(
             "set_contribution_initiative_members",
             {
                 p_initiative_id:
@@ -1811,7 +1741,7 @@ async function activateInitiative(
 
     const {
         error
-    } = await supabase.rpc(
+    } = await groupManagementApi.rpc(
         "activate_contribution_initiative",
         {
             p_initiative_id:
@@ -2327,7 +2257,7 @@ async function saveRecurringParticipants(
 
         const {
             error: participantError
-        } = await supabase.rpc(
+        } = await groupManagementApi.rpc(
             "set_contribution_initiative_members",
             {
                 p_initiative_id:
@@ -2356,7 +2286,7 @@ async function saveRecurringParticipants(
         const {
             data: currentParticipants,
             error: currentParticipantError
-        } = await supabase.rpc(
+        } = await groupManagementApi.rpc(
             "get_contribution_initiative_recurring_participants",
             {
                 p_initiative_id:
@@ -2396,7 +2326,7 @@ async function saveRecurringParticipants(
             }
 
             const { error } =
-                await supabase.rpc(
+                await groupManagementApi.rpc(
                     "set_contribution_initiative_member_term",
                     {
                         p_initiative_member_id:
@@ -2507,7 +2437,7 @@ async function activateRecurringInitiative(
         crypto.randomUUID();
 
     const { error } =
-        await supabase.rpc(
+        await groupManagementApi.rpc(
             "activate_recurring_contribution_initiative",
             {
                 p_initiative_id:
@@ -2627,7 +2557,7 @@ async function prepareRecurringCurrentPeriod(
     const {
         data: periodData,
         error: periodError
-    } = await supabase.rpc(
+    } = await groupManagementApi.rpc(
         "ensure_contribution_initiative_period",
         {
             p_initiative_id:
@@ -2659,7 +2589,7 @@ async function prepareRecurringCurrentPeriod(
     const {
         data: obligationData,
         error: obligationError
-    } = await supabase.rpc(
+    } = await groupManagementApi.rpc(
         "ensure_contribution_initiative_period_obligations",
         {
             p_period_id:
@@ -2682,7 +2612,7 @@ async function prepareRecurringCurrentPeriod(
     const {
         data: status,
         error: statusError
-    } = await supabase.rpc(
+    } = await groupManagementApi.rpc(
         "get_contribution_initiative_period_status",
         {
             p_initiative_id:
@@ -2736,7 +2666,7 @@ async function loadRecurringPeriodStatus(
     const {
         data,
         error
-    } = await supabase.rpc(
+    } = await groupManagementApi.rpc(
         "get_contribution_initiative_period_status",
         {
             p_initiative_id:
@@ -2808,19 +2738,7 @@ async function closeContributionInitiative(
 
     const {
         error
-    } = await supabase
-        .from("contribution_initiatives")
-        .update({
-            status: "closed"
-        })
-        .eq(
-            "id",
-            initiative.id
-        )
-        .eq(
-            "group_id",
-            currentGroup.id
-        );
+    } = await groupManagementApi.closeInitiative(currentGroup.id,initiative.id);
 
     if (error) {
         throw error;
@@ -3252,35 +3170,7 @@ async function loadContributionInitiatives() {
     const {
         data,
         error
-    } = await supabase
-        .from(
-            "contribution_initiatives"
-        )
-        .select(
-            [
-                "id",
-                "contribution_type_id",
-                "name",
-                "description",
-                "start_date",
-                "closing_date",
-                "default_amount",
-                "frequency",
-                "status",
-                "created_at",
-                "updated_at"
-            ].join(", ")
-        )
-        .eq(
-            "group_id",
-            currentGroup.id
-        )
-        .order(
-            "created_at",
-            {
-                ascending: false
-            }
-        );
+    } = await groupManagementApi.listInitiatives(currentGroup.id);
 
     if (error) {
         throw error;
