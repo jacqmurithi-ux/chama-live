@@ -229,7 +229,6 @@ function normalizeLower(value) {
 
 function isInitiativeManager() {
     return (
-        currentIsOwner ||
         currentRole === "admin" ||
         currentRole === "chairperson"
     );
