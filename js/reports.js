@@ -75,7 +75,9 @@ import {
 
    BOOT OWNERSHIP
 
-   admin-layout.js is the sole page bootloader for this page.
+   This module only exports initPage().
+   It does NOT auto-run.
+   It does NOT import admin-layout.js.
 ========================================================= */
 
 console.log("CHAMA LIVE: reports.js loaded");
@@ -893,6 +895,29 @@ async function loadMembers() {
 
 /* =========================================================
    LOAD CONTRIBUTIONS
+=========================================================
+
+   IMPORTANT SCHEMA SAFETY:
+
+   This query intentionally uses only the contribution
+   columns already established for the current reporting
+   path.
+
+   The following previously requested columns are NOT
+   selected because their current production presence has
+   not been confirmed:
+
+   - month
+   - recorded_by
+   - reference
+   - goal_id
+   - notes
+   - mpesa_reference
+
+   Reports do not require those fields for canonical
+   accounting.
+
+   No accounting mutation occurs here.
 ========================================================= */
 
 async function loadContributions() {
@@ -908,15 +933,9 @@ async function loadContributions() {
         "member_id",
         "amount",
         "contribution_type",
-        "month",
         "payment_method",
-        "reference",
-        "recorded_by",
         "created_at",
-        "goal_id",
-        "contribution_date",
-        "notes",
-        "mpesa_reference"
+        "contribution_date"
       ].join(",")
     )
     .eq(
@@ -1392,8 +1411,6 @@ function filteredCanonicalStatus() {
        * QUICK FILTER SEMANTICS
        * -----------------------------------------------------
        *
-       * These are evaluated separately from statusFilter.
-       *
        * Has Previous Outstanding:
        * previous_outstanding > 0
        *
@@ -1469,10 +1486,6 @@ function filteredCanonicalStatus() {
        * Cumulative filter values belong to
        * cumulative report types and must not
        * accidentally filter monthly RPC rows.
-       *
-       * The cumulative report renderer handles
-       * those values independently through
-       * cumulativePositions.
        */
       if (
         selectedStatus ===
@@ -1867,7 +1880,7 @@ function renderContributionEntries(rows) {
     target.innerHTML = `
       <tr>
         <td
-          colspan="6"
+          colspan="5"
           class="report-empty">
           No data.
         </td>
@@ -1912,14 +1925,6 @@ function renderContributionEntries(rows) {
                 paymentMethodLabel(
                   row.payment_method
                 )
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                row.reference ||
-                row.mpesa_reference ||
-                "—"
               )}
             </td>
 
@@ -3546,13 +3551,16 @@ function exportCSV() {
 
   rows.push([]);
 
+  /*
+   * Contribution export intentionally contains only
+   * fields loaded by the schema-safe contribution query.
+   */
   rows.push([
     "Contribution Date",
     "Member",
     "Member Number",
     "Contribution Type",
     "Payment Method",
-    "Reference",
     "Amount"
   ]);
 
@@ -3579,10 +3587,6 @@ function exportCSV() {
         paymentMethodLabel(
           row.payment_method
         ),
-
-        row.reference ||
-          row.mpesa_reference ||
-          "",
 
         number(row.amount)
           .toFixed(2)
@@ -3748,14 +3752,6 @@ function exportExcel() {
                 paymentMethodLabel(
                   row.payment_method
                 )
-              )}
-            </td>
-
-            <td>
-              ${escapeHtml(
-                row.reference ||
-                row.mpesa_reference ||
-                ""
               )}
             </td>
 
@@ -3990,7 +3986,6 @@ function exportExcel() {
         <th>Member Number</th>
         <th>Type</th>
         <th>Payment Method</th>
-        <th>Reference</th>
         <th>Amount</th>
       </tr>
     </thead>
@@ -4000,7 +3995,7 @@ function exportExcel() {
         contributionHtml ||
         `
           <tr>
-            <td colspan="7">
+            <td colspan="6">
               No contribution records.
             </td>
           </tr>
@@ -4226,17 +4221,6 @@ function bindEvents() {
   /*
    * Status filter has its own listener because it must
    * remain independent from the quick-filter semantics.
-   *
-   * Examples:
-   *
-   * statusFilter = outstanding
-   *     → current-month outstanding
-   *
-   * statusFilter = credit
-   *     → monthly credit
-   *
-   * cumulative-* values
-   *     → handled by cumulative report types
    */
   $("statusFilter")
     ?.addEventListener(
@@ -4280,7 +4264,13 @@ function bindEvents() {
 /* =========================================================
    INITIALISATION
 
-   admin-layout.js calls this exported initializer.
+   Page boot ownership is external.
+
+   This module:
+   - exports initPage()
+   - does not import admin-layout.js
+   - does not call initPage()
+   - does not auto-boot
 ========================================================= */
 
 export async function initPage() {
@@ -4320,8 +4310,6 @@ export const initReports =
 
 /* =========================================================
    NO AUTO BOOT
-
-   admin-layout.js is the sole page bootloader.
 ========================================================= */
 
 console.log(
