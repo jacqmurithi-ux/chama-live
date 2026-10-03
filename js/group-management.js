@@ -44,50 +44,10 @@ let canManageGroup = false;
 let subscription = null;
 let contributionSettings = null;
 
-/*
- * Contribution types are read-only in this page.
- *
- * Initiative creation:
- *     create_contribution_initiative()
- *
- * One-time participant configuration:
- *     set_contribution_initiative_members()
- *
- * One-time activation:
- *     activate_contribution_initiative()
- *
- * Initiative closing:
- *     close_contribution_initiative()
- *
- * Monthly recurring initiatives:
- *     set_contribution_initiative_members()
- *     set_contribution_initiative_member_term()
- *     activate_recurring_contribution_initiative()
- *     ensure_contribution_initiative_period()
- *     ensure_contribution_initiative_period_obligations()
- *     get_contribution_initiative_period_status()
- *
- * The browser never writes directly to accounting tables.
- *
- * Payment collection remains outside this implementation because
- * the separate STK/payment gate has not been cleared.
- */
 let contributionTypes = [];
 let contributionInitiatives = [];
 let fineRules = [];
 
-
-/*
- * Initiative participant configuration state.
- *
- * initiativeMembers:
- *     Read-only list of members belonging to the current group.
- *
- * configuringInitiativeId:
- *     Initiative currently being configured.
- *
- * No participant-table writes occur from state management itself.
- */
 let initiativeMembers = [];
 let configuringInitiativeId = null;
 
@@ -97,114 +57,217 @@ let eventsBound = false;
 
 /* ================================================================
    DOM REFERENCES
+   ---------------------------------------------------------------
+   IMPORTANT:
+   These references are intentionally resolved lazily.
+
+   The previous implementation captured elements immediately when
+   this ES module was evaluated. If the admin loader imported this
+   module before the page DOM had been parsed, every reference could
+   become null permanently.
+
+   Group Management now refreshes these references during
+   initialization after DOM readiness has been established.
 ================================================================ */
 
 const elements = {
-    groupForm:
-        document.getElementById("groupForm"),
+    groupForm: null,
+    groupName: null,
+    groupCategory: null,
+    groupCategoryOther: null,
+    groupCountry: null,
+    monthlyContribution: null,
 
-    groupName:
-        document.getElementById("groupName"),
+    groupNameDisplay: null,
+    groupCategoryDisplay: null,
+    groupCountryDisplay: null,
 
-    groupCategory:
-        document.getElementById("groupCategory"),
+    memberCount: null,
 
-    groupCategoryOther:
-        document.getElementById("groupCategoryOther"),
+    adminPosition: null,
+    adminPositionName: null,
+    adminEffectiveFrom: null,
+    leadershipForm: null,
 
-    groupCountry:
-        document.getElementById("groupCountry"),
+    closingDay: null,
+    saveContributionSettings: null,
 
-    monthlyContribution:
-        document.getElementById("monthlyContribution"),
+    subscriptionStatus: null,
+    subscriptionPlan: null,
+    subscriptionAmount: null,
 
-    groupNameDisplay:
-        document.getElementById("groupNameDisplay"),
+    groupContextName: null,
+    groupContextRole: null,
+    permissionMessage: null,
 
-    groupCategoryDisplay:
-        document.getElementById("groupCategoryDisplay"),
+    contributionTypesList: null,
+    contributionInitiativesList: null,
+    fineRulesList: null,
 
-    groupCountryDisplay:
-        document.getElementById("groupCountryDisplay"),
+    contributionProgramStatus: null,
 
-    memberCount:
-        document.getElementById("memberCount"),
-
-    adminPosition:
-        document.getElementById("adminPosition"),
-
-    adminPositionName:
-        document.getElementById("adminPositionName"),
-
-    adminEffectiveFrom:
-        document.getElementById("adminEffectiveFrom"),
-
-    leadershipForm:
-        document.getElementById("leadershipForm"),
-
-    closingDay:
-        document.getElementById("closingDay"),
-
-    saveContributionSettings:
-        document.getElementById("saveContributionSettings"),
-
-    subscriptionStatus:
-        document.getElementById("subscriptionStatus"),
-
-    subscriptionPlan:
-        document.getElementById("subscriptionPlan"),
-
-    subscriptionAmount:
-        document.getElementById("subscriptionAmount"),
-
-    groupContextName:
-        document.getElementById("groupContextName"),
-
-    groupContextRole:
-        document.getElementById("groupContextRole"),
-
-    permissionMessage:
-        document.getElementById("permissionMessage"),
-
-    contributionTypesList:
-        document.getElementById("contributionTypesList"),
-
-    contributionInitiativesList:
-        document.getElementById("contributionInitiativesList"),
-
-    fineRulesList:
-        document.getElementById("fineRulesList"),
-
-    contributionProgramStatus:
-        document.getElementById("contributionProgramStatus"),
-
-    createInitiativeForm:
-        document.getElementById("createInitiativeForm"),
-
-    initiativeName:
-        document.getElementById("initiativeName"),
-
-    initiativeDescription:
-        document.getElementById("initiativeDescription"),
-
-    initiativeContributionType:
-        document.getElementById("initiativeContributionType"),
-
-    initiativeStartDate:
-        document.getElementById("initiativeStartDate"),
-
-    initiativeClosingDate:
-        document.getElementById("initiativeClosingDate"),
-
-    initiativeDefaultAmount:
-        document.getElementById("initiativeDefaultAmount"),
-
-    initiativeFrequency:
-        document.getElementById("initiativeFrequency"),
-
-    createInitiativeButton:
-        document.getElementById("createInitiativeButton")
+    createInitiativeForm: null,
+    initiativeName: null,
+    initiativeDescription: null,
+    initiativeContributionType: null,
+    initiativeStartDate: null,
+    initiativeClosingDate: null,
+    initiativeDefaultAmount: null,
+    initiativeFrequency: null,
+    createInitiativeButton: null
 };
+
+
+/* ================================================================
+   DOM RESOLUTION
+================================================================ */
+
+function refreshDomReferences() {
+
+    elements.groupForm =
+        document.getElementById("groupForm");
+
+    elements.groupName =
+        document.getElementById("groupName");
+
+    elements.groupCategory =
+        document.getElementById("groupCategory");
+
+    elements.groupCategoryOther =
+        document.getElementById("groupCategoryOther");
+
+    elements.groupCountry =
+        document.getElementById("groupCountry");
+
+    elements.monthlyContribution =
+        document.getElementById("monthlyContribution");
+
+    elements.groupNameDisplay =
+        document.getElementById("groupNameDisplay");
+
+    elements.groupCategoryDisplay =
+        document.getElementById("groupCategoryDisplay");
+
+    elements.groupCountryDisplay =
+        document.getElementById("groupCountryDisplay");
+
+    elements.memberCount =
+        document.getElementById("memberCount");
+
+    elements.adminPosition =
+        document.getElementById("adminPosition");
+
+    elements.adminPositionName =
+        document.getElementById("adminPositionName");
+
+    elements.adminEffectiveFrom =
+        document.getElementById("adminEffectiveFrom");
+
+    elements.leadershipForm =
+        document.getElementById("leadershipForm");
+
+    elements.closingDay =
+        document.getElementById("closingDay");
+
+    elements.saveContributionSettings =
+        document.getElementById("saveContributionSettings");
+
+    elements.subscriptionStatus =
+        document.getElementById("subscriptionStatus");
+
+    elements.subscriptionPlan =
+        document.getElementById("subscriptionPlan");
+
+    elements.subscriptionAmount =
+        document.getElementById("subscriptionAmount");
+
+    elements.groupContextName =
+        document.getElementById("groupContextName");
+
+    elements.groupContextRole =
+        document.getElementById("groupContextRole");
+
+    elements.permissionMessage =
+        document.getElementById("permissionMessage");
+
+    elements.contributionTypesList =
+        document.getElementById("contributionTypesList");
+
+    elements.contributionInitiativesList =
+        document.getElementById("contributionInitiativesList");
+
+    elements.fineRulesList =
+        document.getElementById("fineRulesList");
+
+    elements.contributionProgramStatus =
+        document.getElementById("contributionProgramStatus");
+
+    elements.createInitiativeForm =
+        document.getElementById("createInitiativeForm");
+
+    elements.initiativeName =
+        document.getElementById("initiativeName");
+
+    elements.initiativeDescription =
+        document.getElementById("initiativeDescription");
+
+    elements.initiativeContributionType =
+        document.getElementById(
+            "initiativeContributionType"
+        );
+
+    elements.initiativeStartDate =
+        document.getElementById(
+            "initiativeStartDate"
+        );
+
+    elements.initiativeClosingDate =
+        document.getElementById(
+            "initiativeClosingDate"
+        );
+
+    elements.initiativeDefaultAmount =
+        document.getElementById(
+            "initiativeDefaultAmount"
+        );
+
+    elements.initiativeFrequency =
+        document.getElementById(
+            "initiativeFrequency"
+        );
+
+    elements.createInitiativeButton =
+        document.getElementById(
+            "createInitiativeButton"
+        );
+}
+
+
+/* ================================================================
+   DOM READY
+================================================================ */
+
+async function ensureDomReady() {
+
+    if (
+        document.readyState ===
+        "loading"
+    ) {
+
+        await new Promise((resolve) => {
+
+            document.addEventListener(
+                "DOMContentLoaded",
+                resolve,
+                {
+                    once: true
+                }
+            );
+        });
+    }
+
+    refreshDomReferences();
+}
 
 
 /* ================================================================
@@ -212,6 +275,7 @@ const elements = {
 ================================================================ */
 
 function normalizeLower(value) {
+
     return typeof value === "string"
         ? value.trim().toLowerCase()
         : "";
@@ -223,11 +287,6 @@ function isInitiativeManager() {
     const role =
         normalizeLower(currentRole);
 
-    /*
-     * Canonical initiative management contract:
-     *
-     * admin OR chairperson
-     */
     return (
         role === "admin" ||
         role === "chairperson"
@@ -336,7 +395,10 @@ function getCategoryDisplayValue(category) {
         normalizeLower(category);
 
     if (STANDARD_GROUP_TYPES.has(normalized)) {
-        return STANDARD_GROUP_TYPES.get(normalized);
+
+        return STANDARD_GROUP_TYPES.get(
+            normalized
+        );
     }
 
     return category || "Other";
@@ -491,18 +553,21 @@ async function saveGroupInformation(event) {
         );
 
     if (!name) {
+
         throw new Error(
             "Group name is required."
         );
     }
 
     if (!category) {
+
         throw new Error(
             "Group category is required."
         );
     }
 
     if (!Number.isFinite(monthlyContribution)) {
+
         throw new Error(
             "Monthly contribution must be a valid number."
         );
@@ -955,24 +1020,28 @@ async function createContributionInitiative(event) {
         );
 
     if (!name) {
+
         throw new Error(
             "Initiative name is required."
         );
     }
 
     if (!contributionTypeId) {
+
         throw new Error(
             "A contribution type is required."
         );
     }
 
     if (!startDate || !closingDate) {
+
         throw new Error(
             "Start date and closing date are required."
         );
     }
 
     if (closingDate < startDate) {
+
         throw new Error(
             "Closing date cannot be earlier than the start date."
         );
@@ -2356,18 +2425,6 @@ async function activateInitiative(
    INITIATIVE CLOSING
 ================================================================ */
 
-/*
- * Closing is deliberately delegated to the canonical backend RPC.
- *
- * The browser does not:
- *     - update initiative status directly
- *     - delete participants
- *     - alter obligations
- *     - alter allocations
- *     - calculate accounting
- *
- * The database remains authoritative.
- */
 async function closeContributionInitiative(
     initiativeId
 ) {
@@ -2403,9 +2460,7 @@ async function closeContributionInitiative(
             initiative.status
         );
 
-    if (
-        status !== "active"
-    ) {
+    if (status !== "active") {
 
         throw new Error(
             "Only active initiatives can be closed."
@@ -2769,8 +2824,6 @@ function renderRecurringParticipantEditor(
 
     return editor;
 }
-
-
 /* ================================================================
    RECURRING PARTICIPANT CONFIGURATION
 ================================================================ */
@@ -3670,12 +3723,6 @@ function renderContributionInitiatives() {
                     initiative.status
                 );
 
-            /*
-             * =====================================================
-             * MONTHLY RECURRING INITIATIVE
-             * =====================================================
-             */
-
             if (
                 isMonthlyInitiative(
                     initiative
@@ -3868,12 +3915,6 @@ function renderContributionInitiatives() {
                 return;
             }
 
-
-            /*
-             * =====================================================
-             * ONE-TIME INITIATIVE
-             * =====================================================
-             */
 
             if (
                 isOneTimeInitiative(
@@ -4247,11 +4288,6 @@ async function loadApplicationContext() {
             context.member_role
         );
 
-    /*
-     * Group Management cannot operate without an active group.
-     * Treat this as a hard initialization failure rather than
-     * allowing the page to remain in an ambiguous loading state.
-     */
     if (!currentGroup?.id) {
 
         throw new Error(
@@ -4310,8 +4346,7 @@ function reportInitializationError(
     } catch (parseError) {
 
         console.warn(
-            "[Group Management] " +
-            "Could not parse previous initialization errors.",
+            "[Group Management] Could not parse previous initialization errors.",
             parseError
         );
 
@@ -4391,7 +4426,10 @@ function bindEvents() {
         return;
     }
 
-    eventsBound = true;
+    /*
+     * DOM references must already have been resolved.
+     */
+    refreshDomReferences();
 
 
     /* ------------------------------------------------------------
@@ -4522,11 +4560,6 @@ function bindEvents() {
         "click",
         async (event) => {
 
-
-            /* ====================================================
-               ONE-TIME CONFIGURE
-            ==================================================== */
-
             const configureButton =
                 event.target.closest(
                     "[data-configure-initiative]"
@@ -4584,10 +4617,6 @@ function bindEvents() {
                 return;
             }
 
-
-            /* ====================================================
-               ONE-TIME ACTIVATE
-            ==================================================== */
 
             const activateButton =
                 event.target.closest(
@@ -4647,10 +4676,6 @@ function bindEvents() {
             }
 
 
-            /* ====================================================
-               RECURRING CONFIGURE
-            ==================================================== */
-
             const recurringConfigureButton =
                 event.target.closest(
                     "[data-configure-recurring-initiative]"
@@ -4708,10 +4733,6 @@ function bindEvents() {
                 return;
             }
 
-
-            /* ====================================================
-               RECURRING ACTIVATE
-            ==================================================== */
 
             const recurringActivateButton =
                 event.target.closest(
@@ -4771,10 +4792,6 @@ function bindEvents() {
             }
 
 
-            /* ====================================================
-               RECURRING PERIOD PREPARATION
-            ==================================================== */
-
             const prepareRecurringButton =
                 event.target.closest(
                     "[data-prepare-recurring-period]"
@@ -4833,10 +4850,6 @@ function bindEvents() {
             }
 
 
-            /* ====================================================
-               CLOSE INITIATIVE
-            ==================================================== */
-
             const closeButton =
                 event.target.closest(
                     "[data-close-initiative]"
@@ -4894,10 +4907,6 @@ function bindEvents() {
                 return;
             }
 
-
-            /* ====================================================
-               RECURRING TERM SAVE
-            ==================================================== */
 
             const saveRecurringButton =
                 event.target.closest(
@@ -4972,10 +4981,6 @@ function bindEvents() {
             }
 
 
-            /* ====================================================
-               CANCEL PARTICIPANT EDITOR
-            ==================================================== */
-
             const cancelButton =
                 event.target.closest(
                     '[data-cancel-initiative-participants="true"]'
@@ -4999,10 +5004,6 @@ function bindEvents() {
                 return;
             }
 
-
-            /* ====================================================
-               ONE-TIME PARTICIPANT SAVE
-            ==================================================== */
 
             const saveButton =
                 event.target.closest(
@@ -5104,6 +5105,9 @@ function bindEvents() {
             }
         }
     );
+
+
+    eventsBound = true;
 }
 
 
@@ -5122,6 +5126,19 @@ async function initializeGroupManagement() {
 
             /*
              * ----------------------------------------------------
+             * STEP 0 — WAIT FOR DOM AND RESOLVE PAGE ELEMENTS
+             *
+             * This must happen before bindEvents().
+             *
+             * The admin loader may import this module before the
+             * page DOM has completed parsing.
+             * ----------------------------------------------------
+             */
+            await ensureDomReady();
+
+
+            /*
+             * ----------------------------------------------------
              * STEP 1 — BIND EVENTS
              * ----------------------------------------------------
              */
@@ -5131,9 +5148,6 @@ async function initializeGroupManagement() {
             /*
              * ----------------------------------------------------
              * STEP 2 — LOAD APPLICATION CONTEXT
-             *
-             * This is the hard dependency. Without the group
-             * context there is no safe way to initialize the page.
              * ----------------------------------------------------
              */
             await loadApplicationContext();
@@ -5166,10 +5180,7 @@ async function initializeGroupManagement() {
              * ----------------------------------------------------
              * STEP 5 — LOAD INDEPENDENT SECTIONS
              *
-             * Promise.all() is deliberately NOT used here.
-             *
-             * One failed query/RPC must not prevent the remaining
-             * sections from rendering.
+             * One failed section must not block the others.
              * ----------------------------------------------------
              */
             const loaders = [
@@ -5300,17 +5311,12 @@ async function initializeGroupManagement() {
             if (failedSections.length) {
 
                 console.warn(
-                    "[Group Management] " +
-                    "Some sections failed to load:",
+                    "[Group Management] Some sections failed to load:",
                     failedSections
                 );
             }
 
 
-            /*
-             * The page itself has initialized successfully even
-             * when one or more optional sections failed.
-             */
             return {
                 success:
                     true,
@@ -5332,13 +5338,6 @@ async function initializeGroupManagement() {
 
     } catch (error) {
 
-        /*
-         * Only hard initialization failures reach this block.
-         *
-         * Example:
-         *     application context unavailable
-         *     group context unavailable
-         */
         initializationPromise =
             null;
 
