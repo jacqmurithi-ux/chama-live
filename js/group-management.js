@@ -548,6 +548,13 @@ async function loadLeadershipSetup() {
         return;
     }
 
+    if (!currentMember?.id) {
+
+        throw new Error(
+            "No current member context is available for leadership setup."
+        );
+    }
+
     const {
         data,
         error
@@ -562,7 +569,7 @@ async function loadLeadershipSetup() {
         )
         .eq(
             "id",
-            currentMember?.id
+            currentMember.id
         )
         .maybeSingle();
 
@@ -4240,9 +4247,137 @@ async function loadApplicationContext() {
             context.member_role
         );
 
+    /*
+     * Group Management cannot operate without an active group.
+     * Treat this as a hard initialization failure rather than
+     * allowing the page to remain in an ambiguous loading state.
+     */
+    if (!currentGroup?.id) {
+
+        throw new Error(
+            "Unable to determine the current group."
+        );
+    }
+
     applyAuthorization();
 
     renderGroup();
+}
+
+
+/* ================================================================
+   INITIALIZATION ERROR HANDLING
+================================================================ */
+
+function reportInitializationError(
+    section,
+    error
+) {
+
+    console.error(
+        `[Group Management] Failed to load ${section}:`,
+        error
+    );
+
+    const message =
+        `${section} could not be loaded. ` +
+        `${error?.message || "Please refresh and try again."}`;
+
+    if (!elements.contributionProgramStatus) {
+        return;
+    }
+
+    let errors = [];
+
+    try {
+
+        const stored =
+            elements.contributionProgramStatus.dataset
+                .initializationErrors;
+
+        if (stored) {
+
+            const parsed =
+                JSON.parse(
+                    stored
+                );
+
+            if (Array.isArray(parsed)) {
+                errors = parsed;
+            }
+        }
+
+    } catch (parseError) {
+
+        console.warn(
+            "[Group Management] " +
+            "Could not parse previous initialization errors.",
+            parseError
+        );
+
+        errors = [];
+    }
+
+    errors.push(
+        message
+    );
+
+    elements.contributionProgramStatus.dataset
+        .initializationErrors =
+        JSON.stringify(
+            errors
+        );
+
+    elements.contributionProgramStatus.textContent =
+        errors.join(" ");
+
+    elements.contributionProgramStatus.className =
+        "program-status error";
+}
+
+
+function renderInitializationFailure(
+    error
+) {
+
+    console.error(
+        "[Group Management] Initialization failed:",
+        error
+    );
+
+    const message =
+        error?.message ||
+        "Group management could not be initialized.";
+
+    if (elements.permissionMessage) {
+
+        elements.permissionMessage.hidden =
+            false;
+
+        elements.permissionMessage.textContent =
+            message;
+    }
+
+    if (elements.groupContextName) {
+
+        elements.groupContextName.textContent =
+            "Unable to load";
+    }
+
+    if (elements.groupContextRole) {
+
+        elements.groupContextRole.textContent =
+            "—";
+    }
+
+    if (elements.contributionProgramStatus) {
+
+        elements.contributionProgramStatus.textContent =
+            message;
+
+        elements.contributionProgramStatus.className =
+            "program-status error";
+    }
 }
 
 
@@ -4985,32 +5120,231 @@ async function initializeGroupManagement() {
     initializationPromise =
         (async () => {
 
+            /*
+             * ----------------------------------------------------
+             * STEP 1 — BIND EVENTS
+             * ----------------------------------------------------
+             */
             bindEvents();
 
+
+            /*
+             * ----------------------------------------------------
+             * STEP 2 — LOAD APPLICATION CONTEXT
+             *
+             * This is the hard dependency. Without the group
+             * context there is no safe way to initialize the page.
+             * ----------------------------------------------------
+             */
             await loadApplicationContext();
 
-            await Promise.all([
-                loadLeadershipSetup(),
-                loadMemberCount(),
-                loadContributionSettings(),
-                loadSubscription(),
-                loadContributionTypes(),
-                loadContributionInitiatives(),
-                loadFineRules()
-            ]);
 
+            /*
+             * ----------------------------------------------------
+             * STEP 3 — APPLY AUTHORIZATION IMMEDIATELY
+             * ----------------------------------------------------
+             */
             applyAuthorizationUI();
+
+
+            /*
+             * ----------------------------------------------------
+             * STEP 4 — CLEAR PREVIOUS INITIALIZATION ERRORS
+             * ----------------------------------------------------
+             */
+            if (
+                elements.contributionProgramStatus
+            ) {
+
+                delete elements.contributionProgramStatus
+                    .dataset
+                    .initializationErrors;
+            }
+
+
+            /*
+             * ----------------------------------------------------
+             * STEP 5 — LOAD INDEPENDENT SECTIONS
+             *
+             * Promise.all() is deliberately NOT used here.
+             *
+             * One failed query/RPC must not prevent the remaining
+             * sections from rendering.
+             * ----------------------------------------------------
+             */
+            const loaders = [
+                {
+                    section:
+                        "leadership",
+
+                    loader:
+                        loadLeadershipSetup
+                },
+
+                {
+                    section:
+                        "member count",
+
+                    loader:
+                        loadMemberCount
+                },
+
+                {
+                    section:
+                        "contribution settings",
+
+                    loader:
+                        loadContributionSettings
+                },
+
+                {
+                    section:
+                        "subscription",
+
+                    loader:
+                        loadSubscription
+                },
+
+                {
+                    section:
+                        "contribution types",
+
+                    loader:
+                        loadContributionTypes
+                },
+
+                {
+                    section:
+                        "contribution initiatives",
+
+                    loader:
+                        loadContributionInitiatives
+                },
+
+                {
+                    section:
+                        "fine rules",
+
+                    loader:
+                        loadFineRules
+                }
+            ];
+
+
+            const results =
+                await Promise.allSettled(
+                    loaders.map(
+                        async ({
+                            section,
+                            loader
+                        }) => {
+
+                            try {
+
+                                await loader();
+
+                                return {
+                                    section,
+                                    success:
+                                        true
+                                };
+
+                            } catch (error) {
+
+                                reportInitializationError(
+                                    section,
+                                    error
+                                );
+
+                                return {
+                                    section,
+                                    success:
+                                        false,
+
+                                    error
+                                };
+                            }
+                        }
+                    )
+                );
+
+
+            /*
+             * ----------------------------------------------------
+             * STEP 6 — REAPPLY AUTHORIZATION
+             * ----------------------------------------------------
+             */
+            applyAuthorizationUI();
+
+
+            /*
+             * ----------------------------------------------------
+             * STEP 7 — REPORT PARTIAL INITIALIZATION
+             * ----------------------------------------------------
+             */
+            const failedSections =
+                results
+                    .filter(
+                        (result) =>
+                            result.status ===
+                                "fulfilled" &&
+                            result.value?.success ===
+                                false
+                    )
+                    .map(
+                        (result) =>
+                            result.value.section
+                    );
+
+
+            if (failedSections.length) {
+
+                console.warn(
+                    "[Group Management] " +
+                    "Some sections failed to load:",
+                    failedSections
+                );
+            }
+
+
+            /*
+             * The page itself has initialized successfully even
+             * when one or more optional sections failed.
+             */
+            return {
+                success:
+                    true,
+
+                partial:
+                    failedSections.length > 0,
+
+                failedSections,
+
+                results
+            };
 
         })();
 
+
     try {
 
-        await initializationPromise;
+        return await initializationPromise;
 
     } catch (error) {
 
+        /*
+         * Only hard initialization failures reach this block.
+         *
+         * Example:
+         *     application context unavailable
+         *     group context unavailable
+         */
         initializationPromise =
             null;
+
+        renderInitializationFailure(
+            error
+        );
 
         throw error;
     }
