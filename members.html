@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1"
@@ -245,6 +246,7 @@
     }
 
     .member-preview {
+      grid-column: 1 / -1;
       margin-top: 8px;
       padding: 10px 12px;
       border-radius: 8px;
@@ -272,6 +274,7 @@
     ========================================================= */
 
     .historical-controls {
+      grid-column: 1 / -1;
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 16px;
@@ -609,6 +612,7 @@
     ========================================================= */
 
     @media (max-width: 900px) {
+
       .members-stats {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
@@ -627,6 +631,7 @@
     }
 
     @media (max-width: 700px) {
+
       .members-page {
         padding: 15px;
       }
@@ -694,12 +699,14 @@
     <header class="members-page-header">
 
       <div>
+
         <h1>Members</h1>
 
         <p>
           Manage your group's members, membership details,
           positions, onboarding and contribution setup.
         </p>
+
       </div>
 
       <div class="members-header-actions">
@@ -754,8 +761,9 @@
     >
 
       <article class="member-stat-card">
+
         <span class="member-stat-label">
-          Total Members
+          Group Members
         </span>
 
         <strong
@@ -764,12 +772,14 @@
         >
           0
         </strong>
+
       </article>
 
 
       <article class="member-stat-card">
+
         <span class="member-stat-label">
-          Active Members
+          Status: Active
         </span>
 
         <strong
@@ -778,10 +788,12 @@
         >
           0
         </strong>
+
       </article>
 
 
       <article class="member-stat-card">
+
         <span class="member-stat-label">
           Login Enabled
         </span>
@@ -792,10 +804,12 @@
         >
           0
         </strong>
+
       </article>
 
 
       <article class="member-stat-card">
+
         <span class="member-stat-label">
           No Login
         </span>
@@ -806,6 +820,7 @@
         >
           0
         </strong>
+
       </article>
 
     </section>
@@ -825,6 +840,7 @@
       <div class="member-form-header">
 
         <div>
+
           <h2 id="memberFormTitle">
             Add Member
           </h2>
@@ -833,6 +849,7 @@
             Create a member record and configure the
             member's initial contribution plan.
           </p>
+
         </div>
 
         <button
@@ -870,8 +887,6 @@
           </div>
 
 
-          <!-- Member Number -->
-
           <div class="member-form-field">
 
             <label
@@ -896,8 +911,6 @@
 
           </div>
 
-
-          <!-- Membership Number -->
 
           <div class="member-form-field">
 
@@ -925,8 +938,6 @@
           </div>
 
 
-          <!-- Name -->
-
           <div class="member-form-field">
 
             <label
@@ -948,8 +959,6 @@
           </div>
 
 
-          <!-- National ID -->
-
           <div class="member-form-field">
 
             <label
@@ -969,8 +978,6 @@
 
           </div>
 
-
-          <!-- Phone -->
 
           <div class="member-form-field">
 
@@ -992,8 +999,6 @@
           </div>
 
 
-          <!-- Email -->
-
           <div class="member-form-field">
 
             <label
@@ -1013,8 +1018,6 @@
 
           </div>
 
-
-          <!-- Role -->
 
           <div class="member-form-field">
 
@@ -1062,13 +1065,11 @@
 
             <small class="member-form-hint">
               Security role controls system permissions.
-              It is separate from actual group position.
+              It is separate from the actual group position.
             </small>
 
           </div>
 
-
-          <!-- Status -->
 
           <div class="member-form-field">
 
@@ -1094,10 +1095,14 @@
 
             </select>
 
+            <small class="member-form-hint">
+              Administrative status only. This does not
+              remove the member from the group's membership
+              population.
+            </small>
+
           </div>
 
-
-          <!-- Join Date -->
 
           <div class="member-form-field">
 
@@ -1129,14 +1134,12 @@
             <p class="member-form-section-description">
               This records the member's actual position in
               the group. It is separate from the security role.
-              Position changes are governed by the backend
+              Position changes are governed by backend
               position-history rules.
             </p>
 
           </div>
 
-
-          <!-- Actual Position -->
 
           <div class="member-form-field">
 
@@ -1198,8 +1201,6 @@
           </div>
 
 
-          <!-- Position Name -->
-
           <div
             id="memberActualPositionNameField"
             class="member-form-field"
@@ -1223,8 +1224,6 @@
 
           </div>
 
-
-          <!-- Position Effective From -->
 
           <div class="member-form-field">
 
@@ -1258,13 +1257,12 @@
 
             <p class="member-form-section-description">
               Configure the member's initial contribution
-              obligation. Accounting records remain backend-owned.
+              obligation. Accounting records remain
+              backend-owned.
             </p>
 
           </div>
 
-
-          <!-- Contribution Amount -->
 
           <div class="member-form-field">
 
@@ -1286,8 +1284,6 @@
 
           </div>
 
-
-          <!-- First Period Rule -->
 
           <div class="member-form-field">
 
@@ -1316,8 +1312,6 @@
           </div>
 
 
-          <!-- Effective From -->
-
           <div class="member-form-field">
 
             <label
@@ -1337,13 +1331,13 @@
           </div>
 
 
-          <!-- Contribution Preview -->
-
           <div
             id="memberContributionPreview"
             class="member-preview"
           >
             Contribution obligation preview will appear here.
+            Final obligations are created and controlled by
+            the backend accounting workflow.
           </div>
 
 
@@ -1356,14 +1350,14 @@
             <h3>Historical Contributions</h3>
 
             <p class="member-form-section-description">
-              Use this only when the member is being onboarded
-              with historical contribution information.
+              Use this only when onboarding a member with
+              historical contribution information. Historical
+              accounting must be processed through the
+              controlled backend workflow.
             </p>
 
           </div>
 
-
-          <!-- Historical Enabled -->
 
           <div class="member-form-field">
 
@@ -1398,8 +1392,6 @@
             hidden
           >
 
-            <!-- Paid Through -->
-
             <div class="member-form-field">
 
               <label
@@ -1417,8 +1409,6 @@
 
             </div>
 
-
-            <!-- Payment Method -->
 
             <div class="member-form-field">
 
@@ -1464,17 +1454,18 @@
               class="historical-preview"
             >
               Historical contribution preview will appear here.
+              No contribution record is created by this
+              preview.
             </div>
 
           </div>
 
-
         </div>
 
 
-        <!-- ===================================================
+        <!-- =================================================
              FORM MESSAGE
-        ==================================================== -->
+        ================================================== -->
 
         <div
           id="formMessage"
@@ -1484,9 +1475,9 @@
         ></div>
 
 
-        <!-- ===================================================
+        <!-- =================================================
              FORM ACTIONS
-        ==================================================== -->
+        ================================================== -->
 
         <div class="member-form-actions">
 
@@ -1559,8 +1550,6 @@
       aria-label="Members list"
     >
 
-      <!-- Desktop -->
-
       <div class="members-table-wrap">
 
         <table class="members-table">
@@ -1569,62 +1558,23 @@
 
             <tr>
 
-              <th>
-                Member No.
-              </th>
-
-              <th>
-                Membership No.
-              </th>
-
-              <th>
-                Member
-              </th>
-
-              <th>
-                National ID
-              </th>
-
-              <th>
-                Phone
-              </th>
-
-              <th>
-                Email
-              </th>
-
-              <th>
-                Role
-              </th>
-
-              <th>
-                Actual Position
-              </th>
-
-              <th>
-                Status
-              </th>
-
-              <th>
-                Onboarding
-              </th>
-
-              <th>
-                Contribution Status
-              </th>
-
-              <th>
-                Login
-              </th>
-
-              <th>
-                Actions
-              </th>
+              <th>Member No.</th>
+              <th>Membership No.</th>
+              <th>Member</th>
+              <th>National ID</th>
+              <th>Phone</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Actual Position</th>
+              <th>Status</th>
+              <th>Onboarding</th>
+              <th>Contribution Status</th>
+              <th>Login</th>
+              <th>Actions</th>
 
             </tr>
 
           </thead>
-
 
           <tbody id="memberRows">
 
@@ -1646,8 +1596,6 @@
       </div>
 
 
-      <!-- Mobile -->
-
       <div
         id="memberCards"
         class="member-cards"
@@ -1660,7 +1608,6 @@
       </div>
 
     </section>
-
 
   </main>
 
@@ -1679,8 +1626,6 @@
   >
 
     <div class="member-modal-dialog">
-
-      <!-- Header -->
 
       <header class="member-modal-header">
 
@@ -1720,11 +1665,11 @@
       </header>
 
 
-      <!-- Body -->
-
       <div class="member-modal-body">
 
-        <!-- Member Profile -->
+        <!-- =================================================
+             MEMBER PROFILE
+        ================================================== -->
 
         <section
           class="member-modal-section"
@@ -1936,7 +1881,7 @@
           </h3>
 
           <p class="member-modal-section-description">
-            Current contribution rules are displayed from the
+            Current contribution rules are displayed from
             authoritative member contribution records.
             This section is read-only.
           </p>
@@ -1967,7 +1912,9 @@
 
           <p class="member-modal-section-description">
             Accounting values are read from the group's
-            accounting system.
+            authoritative accounting system. This page does
+            not directly create, edit or delete accounting
+            records.
           </p>
 
 
@@ -1975,9 +1922,7 @@
 
             <div class="member-accounting-card">
 
-              <span>
-                Status
-              </span>
+              <span>Status</span>
 
               <strong id="viewContributionStatus">
                 —
@@ -1988,9 +1933,7 @@
 
             <div class="member-accounting-card">
 
-              <span>
-                Total
-              </span>
+              <span>Total</span>
 
               <strong id="viewContributionTotal">
                 —
@@ -2001,9 +1944,7 @@
 
             <div class="member-accounting-card">
 
-              <span>
-                Due
-              </span>
+              <span>Due</span>
 
               <strong id="viewContributionDue">
                 —
@@ -2014,9 +1955,7 @@
 
             <div class="member-accounting-card">
 
-              <span>
-                Allocated
-              </span>
+              <span>Allocated</span>
 
               <strong id="viewContributionAllocated">
                 —
@@ -2027,9 +1966,7 @@
 
             <div class="member-accounting-card">
 
-              <span>
-                Arrears
-              </span>
+              <span>Arrears</span>
 
               <strong id="viewContributionArrears">
                 —
@@ -2040,9 +1977,7 @@
 
             <div class="member-accounting-card">
 
-              <span>
-                Credit
-              </span>
+              <span>Credit</span>
 
               <strong id="viewContributionCredit">
                 —
@@ -2069,8 +2004,6 @@
 
       </div>
 
-
-      <!-- Footer -->
 
       <footer class="member-modal-footer">
 
