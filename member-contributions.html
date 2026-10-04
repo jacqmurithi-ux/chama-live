@@ -872,5 +872,24 @@
     src="./js/member-contributions.js"
   ></script>
 
+  <script type="module">
+    import { supabase } from "./js/supabase.js";
+    import { getMyMember } from "./js/auth.js";
+    const money=v=>`KSh ${Number(v||0).toLocaleString("en-KE",{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+    async function showCanonicalBreakdown(){
+      try{
+        const m=await getMyMember(); if(!m?.id||!m?.group_id)return;
+        const month=new Date(); const p_month=`${month.getFullYear()}-${String(month.getMonth()+1).padStart(2,"0")}`;
+        const {data,error}=await supabase.rpc("get_canonical_member_monthly_status",{p_group_id:m.group_id,p_month});
+        if(error)throw error;
+        const row=(Array.isArray(data)?data:[]).find(x=>String(x.member_id)===String(m.id)); if(!row)return;
+        let box=document.getElementById("canonicalAllocationBreakdown");
+        if(!box){box=document.createElement("div");box.id="canonicalAllocationBreakdown";box.style.cssText="margin:16px 0;padding:16px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc";document.getElementById("memberContributionContent")?.appendChild(box);}
+        const credit=Math.max(Number(row.current_credit??row.credit??row.carry_forward??0),0);
+        box.innerHTML=`<strong>Canonical payment allocation</strong><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin-top:12px;font-size:.9rem"><div>Current due<br><b>${money(row.monthly_due)}</b></div><div>Previous arrears<br><b>${money(row.previous_outstanding)}</b></div><div>Payment received<br><b>${money(row.current_month_payment)}</b></div><div>Applied to obligations<br><b>${money(row.applied_this_month)}</b></div><div>Outstanding<br><b>${money(row.current_outstanding)}</b></div><div>Credit / unapplied<br><b>${money(credit)}</b></div></div><small style="display:block;margin-top:10px;color:#64748b">Payments settle eligible obligations first. Any remaining amount is shown as credit/unapplied value.</small>`;
+      }catch(e){console.warn("Canonical allocation UI:",e)}
+    }
+    window.addEventListener("load",showCanonicalBreakdown);
+  </script>
 </body>
 </html>
