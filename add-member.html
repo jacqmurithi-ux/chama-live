@@ -435,6 +435,10 @@
               <label for="historicalPaidThrough">Paid Through</label>
               <input id="historicalPaidThrough" name="historicalPaidThrough" type="month">
             </div>
+            <div>
+              <label for="historicalTotalPaid">Historical Total Paid</label>
+              <input id="historicalTotalPaid" name="historicalTotalPaid" type="number" min="0.01" step="0.01" placeholder="Defaults to paid months × monthly amount">
+            </div>
           </div>
           <p class="muted" id="historicalPreview">Enter the number of paid months and the month covered. CHAMA LIVE will calculate the member's opening position as up to date, arrears, or credit.</p>
         </div>
