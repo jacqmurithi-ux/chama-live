@@ -27,6 +27,8 @@ async function init() {
 
     bindHistoricalControls();
     bindContributionPreview();
+    bindPositionControls();
+    $("joinDate")?.addEventListener("change", syncEffectiveDates);
     setStatus("You can add members to this group.");
   } catch (e) {
     showError(e);
@@ -49,6 +51,26 @@ function updateHistoricalVisibility() {
     if ($("historicalPaidMonths")) $("historicalPaidMonths").value = "";
     if ($("historicalPaidThrough")) $("historicalPaidThrough").value = "";
   }
+}
+
+function bindPositionControls() {
+  const position = $("actualPosition");
+  const wrap = $("actualPositionNameWrap");
+  const name = $("actualPositionName");
+  const update = () => {
+    const isOther = position?.value === "other";
+    if (wrap) wrap.hidden = !isOther;
+    if (!isOther && name) name.value = "";
+  };
+  position?.addEventListener("change", update);
+  update();
+}
+
+function syncEffectiveDates() {
+  const joinDate = $("joinDate")?.value;
+  if (!joinDate) return;
+  if ($("contributionEffectiveFrom")) $("contributionEffectiveFrom").value = joinDate;
+  if ($("positionEffectiveFrom")) $("positionEffectiveFrom").value = joinDate;
 }
 
 function bindContributionPreview() {
