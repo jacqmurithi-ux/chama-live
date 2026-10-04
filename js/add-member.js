@@ -109,6 +109,10 @@ async function submitMember(event) {
   const historical = document.querySelector('input[name="historicalContributions"]:checked')?.value === "yes";
   const historicalPaidMonths = Number($("historicalPaidMonths")?.value || 0);
   const historicalPaidThrough = $("historicalPaidThrough")?.value || null;
+  const historicalTotalPaidInput = $("historicalTotalPaid")?.value;
+  const historicalTotalPaid = historicalTotalPaidInput === "" || historicalTotalPaidInput == null
+    ? historicalPaidMonths * monthlyAmount
+    : Number(historicalTotalPaidInput);
 
   if (!name) return showError("Please enter the full name.");
   if (!memberNumber) return showError("Please enter the member number.");
@@ -125,6 +129,7 @@ async function submitMember(event) {
       return showError("Enter the number of historical paid months.");
     }
     if (!historicalPaidThrough) return showError("Select the month through which the member has paid.");
+    if (!(historicalTotalPaid > 0)) return showError("Enter a valid historical total paid amount.");
   }
 
   button.disabled = true;
@@ -184,6 +189,7 @@ async function submitMember(event) {
         historicalPaidMonths,
         historicalPaidThrough,
         monthlyAmount,
+        historicalTotalPaid,
         contributionEffectiveFrom
       );
 
@@ -237,7 +243,7 @@ async function submitMember(event) {
   }
 }
 
-function buildHistoricalPayments(paidMonths, paidThrough, amount, effectiveFrom) {
+function buildHistoricalPayments(paidMonths, paidThrough, monthlyAmount, totalPaid, effectiveFrom) {
   const [year, month] = paidThrough.split("-").map(Number);
   const end = new Date(Date.UTC(year, month - 1, 1));
   const start = new Date(end);
@@ -254,14 +260,20 @@ function buildHistoricalPayments(paidMonths, paidThrough, amount, effectiveFrom)
   }
 
   const payments = [];
+  let remaining = Number(totalPaid.toFixed(2));
   for (let i = 0; i < paidMonths; i += 1) {
     const d = new Date(start);
     d.setUTCMonth(start.getUTCMonth() + i);
     const monthKey = d.toISOString().slice(0, 7);
+    const amount = i === paidMonths - 1
+      ? Number(remaining.toFixed(2))
+      : Number(Math.min(monthlyAmount, remaining).toFixed(2));
+    if (amount <= 0) break;
+    remaining = Number((remaining - amount).toFixed(2));
     payments.push({
       payment_id: crypto.randomUUID(),
       payment_date: `${monthKey}-01`,
-      amount: Number(amount.toFixed(2)),
+      amount,
       payment_method: "Cash",
       reference: `HISTORICAL-${monthKey}`,
       notes: "Historical onboarding payment reconstructed from paid months"
