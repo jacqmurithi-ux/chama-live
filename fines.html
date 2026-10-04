@@ -1203,7 +1203,7 @@
     import { getMyGroup } from "./js/auth.js";
 
     const money = value => `KSh ${Number(value || 0).toLocaleString("en-KE",{minimumFractionDigits:2,maximumFractionDigits:2})}`;
-    const esc = value => String(value ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\\\"":"&quot;"}[c]));
+    const esc = value => String(value ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",\"":"&quot;"}[c]));
     const date = value => value ? new Date(value).toLocaleDateString("en-KE",{day:"2-digit",month:"short",year:"numeric"}) : "—";
 
     async function loadFineLedgerUI() {
