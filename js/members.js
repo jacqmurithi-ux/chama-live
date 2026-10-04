@@ -499,24 +499,36 @@ function contributionStatusKey(position) {
     return "unknown";
   }
 
-  const credit =
-    Number(position.credit || 0);
+  /*
+   * The database is authoritative for financial status.
+   *
+   * get_member_contribution_position() returns:
+   *
+   *   UP_TO_DATE
+   *   ARREARS
+   *   CREDIT
+   *
+   * The frontend must display that status rather than
+   * deriving it from credit/arrears amounts.
+   */
+  const status =
+    String(position.status || "")
+      .trim()
+      .toUpperCase();
 
-  const arrears =
-    Number(position.arrears || 0);
-
-  if (
-    credit > 0 &&
-    arrears <= 0
-  ) {
-    return "credit";
+  if (status === "UP_TO_DATE") {
+    return "up-to-date";
   }
 
-  if (arrears > 0) {
+  if (status === "ARREARS") {
     return "arrears";
   }
 
-  return "up-to-date";
+  if (status === "CREDIT") {
+    return "credit";
+  }
+
+  return "unknown";
 }
 
 
@@ -2405,13 +2417,11 @@ function createMemberCard(member) {
       </div>
 
       <div>
-        <span>Contribution</span>
+        <span>Financial Status</span>
 
         <strong>
-          ${escapeHtml(
-            contributionStatusLabel(
-              position
-            )
+          ${contributionStatusHtml(
+            position
           )}
         </strong>
       </div>
