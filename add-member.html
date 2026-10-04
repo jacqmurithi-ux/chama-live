@@ -276,25 +276,29 @@
 
 
 
-          <!-- FULL NAME -->
-
+          <!-- MEMBERSHIP NUMBER -->
           <div>
-
-            <label for="memberName">
-              Full Name
-            </label>
-
-            <input
-              id="memberName"
-              name="memberName"
-              type="text"
-              placeholder="Member full name"
-              required
-            >
-
+            <label for="membershipNumber">Membership Number</label>
+            <input id="membershipNumber" name="membershipNumber" type="text" placeholder="Blank uses Member Number">
           </div>
 
+          <!-- FULL NAME -->
+          <div>
+            <label for="memberName">Full Name</label>
+            <input id="memberName" name="memberName" type="text" placeholder="Member full name" required>
+          </div>
 
+          <!-- NATIONAL ID -->
+          <div>
+            <label for="nationalId">National ID</label>
+            <input id="nationalId" name="nationalId" type="text" placeholder="National ID">
+          </div>
+
+          <!-- JOIN DATE -->
+          <div>
+            <label for="joinDate">Join Date</label>
+            <input id="joinDate" name="joinDate" type="date" required>
+          </div>
 
           <!-- PHONE -->
 
@@ -336,45 +340,39 @@
 
 
           <!-- ROLE -->
-
           <div>
-
-            <label for="memberRole">
-              Role
-            </label>
-
-            <select
-              id="memberRole"
-              name="memberRole"
-            >
-
-              <option value="member">
-                Member
-              </option>
-
-              <option value="admin">
-                Admin
-              </option>
-
-              <option value="chairperson">
-                Chairperson
-              </option>
-
-              <option value="secretary">
-                Secretary
-              </option>
-
-              <option value="treasurer">
-                Treasurer
-              </option>
-
+            <label for="memberRole">Security Role</label>
+            <select id="memberRole" name="memberRole">
+              <option value="member">Member</option><option value="admin">Admin</option>
+              <option value="chairperson">Chairperson</option><option value="secretary">Secretary</option><option value="treasurer">Treasurer</option>
             </select>
-
           </div>
 
-
-
           <!-- STATUS -->
+          <div>
+            <label for="memberStatus">Member Status</label>
+            <select id="memberStatus" name="memberStatus"><option value="active">Active</option><option value="inactive">Inactive</option></select>
+          </div>
+
+          <!-- ACTUAL POSITION -->
+          <div>
+            <label for="actualPosition">Actual Group Position</label>
+            <select id="actualPosition" name="actualPosition">
+              <option value="">No position recorded</option><option value="chairperson">Chairperson</option><option value="vice_chairperson">Vice Chairperson</option>
+              <option value="treasurer">Treasurer</option><option value="secretary">Secretary</option><option value="vice_secretary">Vice Secretary</option>
+              <option value="committee_member">Committee Member</option><option value="member">Member</option><option value="other">Other</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="positionEffectiveFrom">Position Effective From</label>
+            <input id="positionEffectiveFrom" name="positionEffectiveFrom" type="date">
+          </div>
+
+          <div id="actualPositionNameWrap" hidden>
+            <label for="actualPositionName">Position Name</label>
+            <input id="actualPositionName" name="actualPositionName" type="text" placeholder="Enter the actual position">
+          </div>
 
           <div>
 
@@ -402,7 +400,48 @@
 
         </div>
 
+        <hr style="margin:24px 0;">
+        <h3>Contribution Setup</h3>
+        <div class="grid grid-2">
+          <div>
+            <label for="monthlyContributionAmount">Monthly Contribution Amount</label>
+            <input id="monthlyContributionAmount" name="monthlyContributionAmount" type="number" min="0.01" step="0.01" placeholder="e.g. 200.00" required>
+            <small class="muted" id="monthlyContributionPreview"></small>
+          </div>
+          <div>
+            <label for="firstPeriodRule">First Period Rule</label>
+            <select id="firstPeriodRule" name="firstPeriodRule"><option value="full_period">Full Period</option><option value="next_full_period">From Next Full Period</option></select>
+          </div>
+          <div>
+            <label for="contributionEffectiveFrom">Contribution Effective From</label>
+            <input id="contributionEffectiveFrom" name="contributionEffectiveFrom" type="date" required>
+          </div>
+        </div>
 
+        <hr style="margin:24px 0;">
+        <h3>Historical Contributions</h3>
+        <p class="muted">Use this only when onboarding a member with historical contribution information. Historical accounting is processed through the controlled backend workflow.</p>
+        <div>
+          <label><input type="radio" name="historicalContributions" value="no" checked> No</label>
+          <label style="margin-left:20px;"><input type="radio" name="historicalContributions" value="yes"> Yes</label>
+        </div>
+        <div id="historicalContributionSection" hidden style="margin-top:16px;">
+          <div class="grid grid-2">
+            <div>
+              <label for="historicalPaidMonths">Paid Months</label>
+              <input id="historicalPaidMonths" name="historicalPaidMonths" type="number" min="1" step="1" placeholder="e.g. 6">
+            </div>
+            <div>
+              <label for="historicalPaidThrough">Paid Through</label>
+              <input id="historicalPaidThrough" name="historicalPaidThrough" type="month">
+            </div>
+            <div>
+              <label for="historicalTotalPaid">Historical Total Paid</label>
+              <input id="historicalTotalPaid" name="historicalTotalPaid" type="number" min="0.01" step="0.01" placeholder="Defaults to paid months × monthly amount">
+            </div>
+          </div>
+          <p class="muted" id="historicalPreview">Enter the number of paid months and the month covered. CHAMA LIVE will calculate the member's opening position as up to date, arrears, or credit.</p>
+        </div>
 
         <!-- BUTTONS -->
 
