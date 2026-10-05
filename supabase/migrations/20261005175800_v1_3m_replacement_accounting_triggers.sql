@@ -192,7 +192,7 @@ BEGIN
   IF EXISTS (
     SELECT 1
     FROM public.contribution_obligations o
-    WHERE o.id IN (OLD.obligation_id, NEW.obligation_id)
+    WHERE o.id IN (CASE WHEN TG_OP = 'UPDATE' THEN OLD.obligation_id ELSE NULL END, NEW.obligation_id)
       AND o.group_id IS DISTINCT FROM v_group_id
   ) THEN
     RAISE EXCEPTION
@@ -212,7 +212,7 @@ BEGIN
   IF EXISTS (
     SELECT 1
     FROM public.contribution_obligations o
-    WHERE o.id IN (OLD.obligation_id, NEW.obligation_id)
+    WHERE o.id IN (CASE WHEN TG_OP = 'UPDATE' THEN OLD.obligation_id ELSE NULL END, NEW.obligation_id)
       AND o.economic_month IS NULL
   ) THEN
     RAISE EXCEPTION
@@ -232,7 +232,7 @@ BEGIN
   FROM (
     SELECT date_trunc('month', p.contribution_date)::date AS month_start
     FROM public.contributions p
-    WHERE p.id IN (OLD.payment_id, NEW.payment_id)
+    WHERE p.id IN (CASE WHEN TG_OP = 'UPDATE' THEN OLD.payment_id ELSE NULL END, NEW.payment_id)
       AND TG_OP = 'UPDATE'
 
     UNION
@@ -245,7 +245,7 @@ BEGIN
 
     SELECT o.economic_month
     FROM public.contribution_obligations o
-    WHERE o.id IN (OLD.obligation_id, NEW.obligation_id)
+    WHERE o.id IN (CASE WHEN TG_OP = 'UPDATE' THEN OLD.obligation_id ELSE NULL END, NEW.obligation_id)
       AND TG_OP = 'UPDATE'
 
     UNION
@@ -275,7 +275,7 @@ BEGIN
     FROM (
       SELECT date_trunc('month', p.contribution_date)::date AS month_start
       FROM public.contributions p
-      WHERE p.id IN (OLD.payment_id, NEW.payment_id)
+      WHERE p.id IN (CASE WHEN TG_OP = 'UPDATE' THEN OLD.payment_id ELSE NULL END, NEW.payment_id)
         AND TG_OP = 'UPDATE'
 
       UNION
@@ -286,7 +286,7 @@ BEGIN
       UNION
       SELECT o.economic_month
       FROM public.contribution_obligations o
-      WHERE o.id IN (OLD.obligation_id, NEW.obligation_id)
+      WHERE o.id IN (CASE WHEN TG_OP = 'UPDATE' THEN OLD.obligation_id ELSE NULL END, NEW.obligation_id)
         AND TG_OP = 'UPDATE'
 
       UNION
@@ -317,8 +317,7 @@ BEGIN
   FOR v_payment_id IN
     SELECT DISTINCT payment_id
     FROM (
-      SELECT OLD.payment_id AS payment_id
-      WHERE TG_OP = 'UPDATE'
+      SELECT CASE WHEN TG_OP = 'UPDATE' THEN OLD.payment_id ELSE NULL END AS payment_id
       UNION
       SELECT NEW.payment_id
     ) p
@@ -348,8 +347,8 @@ BEGIN
     v_post_payment_allocated :=
       v_payment_allocated
       - CASE
-          WHEN TG_OP = 'UPDATE' AND OLD.payment_id = v_payment_id
-          THEN OLD.amount
+          WHEN TG_OP = 'UPDATE' THEN
+            CASE WHEN OLD.payment_id = v_payment_id THEN OLD.amount ELSE 0 END
           ELSE 0
         END
       + CASE
@@ -375,8 +374,7 @@ BEGIN
   FOR v_obligation_id IN
     SELECT DISTINCT obligation_id
     FROM (
-      SELECT OLD.obligation_id AS obligation_id
-      WHERE TG_OP = 'UPDATE'
+      SELECT CASE WHEN TG_OP = 'UPDATE' THEN OLD.obligation_id ELSE NULL END AS obligation_id
       UNION
       SELECT NEW.obligation_id
     ) o
@@ -403,8 +401,8 @@ BEGIN
     v_post_obligation_allocated :=
       v_obligation_allocated
       - CASE
-          WHEN TG_OP = 'UPDATE' AND OLD.obligation_id = v_obligation_id
-          THEN OLD.amount
+          WHEN TG_OP = 'UPDATE' THEN
+            CASE WHEN OLD.obligation_id = v_obligation_id THEN OLD.amount ELSE 0 END
           ELSE 0
         END
       + CASE
