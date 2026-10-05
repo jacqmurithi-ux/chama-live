@@ -242,11 +242,11 @@ function refreshDomReferences() {
     elements.customContributionAmount = document.getElementById("customContributionAmount");
     elements.customContributionStartDate = document.getElementById("customContributionStartDate");
     elements.customContributionEndDate = document.getElementById("customContributionEndDate");
-    elements.customContributionFrequency = document.getElementById("customContributionFrequency");
+    elements.customContributionFrequency = null;
     elements.customContributionCycle = document.getElementById("customContributionCycle");
     elements.customContributionDueDate = document.getElementById("customContributionDueDate");
     elements.customContributionDescription = document.getElementById("customContributionDescription");
-    elements.customGracePeriodDays = document.getElementById("customGracePeriodDays");
+    elements.customGracePeriodDays = null;
     elements.customGraceDays = document.getElementById("customGraceDays");
     elements.customFineEnabled = document.querySelector('input[name="customFineMode"]:checked')?.value === "yes";
     elements.customFineMode = document.querySelectorAll('input[name="customFineMode"]');
@@ -645,16 +645,16 @@ function syncContributionRuleUI(kind) {
     const fineAmount = isMonthly ? elements.monthlyFineAmount : elements.customFineAmount;
     const summary = isMonthly ? elements.monthlyRuleSummary : elements.customRuleSummary;
 
-    if (!graceDays || !fineEnabled || !fineAmount || !summary) return;
+    if (!graceDays || !fineAmount || !summary) return;
 
     graceDays.disabled = graceMode !== "days" || !canEditContributionSettings;
-    fineAmount.disabled = !fineEnabled.checked || !canEditContributionSettings;
+    fineAmount.disabled = !fineEnabled || !canEditContributionSettings;
 
     const graceText = graceMode === "days"
         ? `${graceDays.value || "0"} day${Number(graceDays.value) === 1 ? "" : "s"} grace period`
         : "No grace period";
 
-    const fineText = fineEnabled.checked
+    const fineText = fineEnabled
         ? `Fine KSh ${fineAmount.value || "0"} after grace period`
         : "No fine applies";
 
