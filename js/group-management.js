@@ -905,7 +905,7 @@ async function initializeGroupManagement() {
                 elements.groupManagementStatus
             ) {
                 delete elements
-                    .contributionProgramStatus
+                    .groupManagementStatus
                     .dataset
                     .initializationErrors;
             }
