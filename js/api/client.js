@@ -37,6 +37,16 @@ function safeError(error, scope) {
   const code = String(error?.code || "");
   const rawMessage = String(error?.message || "").trim();
 
+  // Diagnostic-only: preserve the provider error for browser-console
+  // inspection while keeping the user-facing message sanitized.
+  console.error("[CHAMA LIVE API] Supabase error", {
+    scope,
+    code: error?.code ?? null,
+    message: error?.message ?? null,
+    details: error?.details ?? null,
+    hint: error?.hint ?? null
+  });
+
   if (SAFE_DB_MESSAGES.has(rawMessage)) {
     return {
       code: code || "CLIENT_ERROR",
