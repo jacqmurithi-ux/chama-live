@@ -208,6 +208,15 @@ function refreshDomReferences() {
         document.getElementById("subscriptionAmount");
 
     elements.groupManagementStatus = document.getElementById("groupManagementStatus");
+
+    elements.newCustomContributionButton =
+        document.getElementById("newCustomContributionButton");
+
+    elements.customContributionEditor =
+        document.getElementById("customContributionEditor");
+
+    elements.cancelCustomContribution =
+        document.getElementById("cancelCustomContribution");
 }
 
 
