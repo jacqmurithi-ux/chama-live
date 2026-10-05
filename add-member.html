@@ -344,7 +344,8 @@
             <label for="memberRole">Security Role</label>
             <select id="memberRole" name="memberRole">
               <option value="member">Member</option><option value="admin">Admin</option>
-              <option value="chairperson">Chairperson</option><option value="secretary">Secretary</option><option value="treasurer">Treasurer</option>
+              <option value="chairperson">Chairperson</option><option value="vice_chairperson">Vice Chairperson</option>
+              <option value="secretary">Secretary</option><option value="vice_secretary">Vice Secretary</option><option value="treasurer">Treasurer</option>
             </select>
           </div>
 
@@ -373,30 +374,6 @@
             <label for="actualPositionName">Position Name</label>
             <input id="actualPositionName" name="actualPositionName" type="text" placeholder="Enter the actual position">
           </div>
-
-          <div>
-
-            <label for="memberStatus">
-              Status
-            </label>
-
-            <select
-              id="memberStatus"
-              name="memberStatus"
-            >
-
-              <option value="active">
-                Active
-              </option>
-
-              <option value="inactive">
-                Inactive
-              </option>
-
-            </select>
-
-          </div>
-
 
         </div>
 
@@ -438,6 +415,14 @@
             <div>
               <label for="historicalTotalPaid">Historical Total Paid</label>
               <input id="historicalTotalPaid" name="historicalTotalPaid" type="number" min="0.01" step="0.01" placeholder="Defaults to paid months × monthly amount">
+            </div>
+            <div>
+              <label for="historicalPaymentMethod">Historical Payment Method</label>
+              <select id="historicalPaymentMethod" name="historicalPaymentMethod">
+                <option value="Cash">Cash</option>
+                <option value="M-Pesa">M-Pesa</option>
+                <option value="Bank transfer">Bank transfer</option>
+              </select>
             </div>
           </div>
           <p class="muted" id="historicalPreview">Enter the number of paid months and the month covered. CHAMA LIVE will calculate the member's opening position as up to date, arrears, or credit.</p>
