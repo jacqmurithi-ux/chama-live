@@ -182,7 +182,7 @@ BEGIN
   IF EXISTS (
     SELECT 1
     FROM public.contributions c
-    WHERE c.id IN (OLD.payment_id, NEW.payment_id)
+    WHERE c.id IN (CASE WHEN TG_OP = 'UPDATE' THEN OLD.payment_id ELSE NULL END, NEW.payment_id)
       AND c.group_id IS DISTINCT FROM v_group_id
   ) THEN
     RAISE EXCEPTION
@@ -202,7 +202,7 @@ BEGIN
   IF EXISTS (
     SELECT 1
     FROM public.contributions c
-    WHERE c.id IN (OLD.payment_id, NEW.payment_id)
+    WHERE c.id IN (CASE WHEN TG_OP = 'UPDATE' THEN OLD.payment_id ELSE NULL END, NEW.payment_id)
       AND c.contribution_date IS NULL
   ) THEN
     RAISE EXCEPTION
