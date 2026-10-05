@@ -1,44 +1,16 @@
 import { supabase } from "../supabase.js";
 import { createApiClient } from "./client.js";
 
-const INITIATIVE_CACHE = ["initiatives:"];
-const MEMBER_CACHE = ["leadership:", "member-count:", "initiative-members:"];
+const MEMBER_CACHE = ["leadership:", "member-count:"];
 const CONTRIBUTION_TYPE_CACHE = ["contribution-types:"];
-
-const INITIATIVE_WRITE_RPCS = [
-  "create_contribution_initiative",
-  "set_contribution_initiative_members",
-  "activate_contribution_initiative",
-  "set_contribution_initiative_member_term",
-  "activate_recurring_contribution_initiative",
-  "ensure_contribution_initiative_period",
-  "ensure_contribution_initiative_period_obligations",
-  "close_contribution_initiative"
-];
-
-const INVALIDATE_BY_RPC = Object.fromEntries(
-  INITIATIVE_WRITE_RPCS.map((name) => [name, INITIATIVE_CACHE])
-);
 
 const api = createApiClient(supabase, {
   allowedRpcs: [
     "get_group_contribution_settings",
     "update_group_contribution_settings",
     "get_group_subscription",
-    "create_contribution_initiative",
-    "get_contribution_initiative_participants",
-    "get_contribution_initiative_recurring_participants",
-    "set_contribution_initiative_members",
-    "activate_contribution_initiative",
-    "set_contribution_initiative_member_term",
-    "activate_recurring_contribution_initiative",
-    "ensure_contribution_initiative_period",
-    "ensure_contribution_initiative_period_obligations",
-    "get_contribution_initiative_period_status",
-    "close_contribution_initiative"
   ],
-  errorScope: "Group information",
-  invalidateByRpc: INVALIDATE_BY_RPC
+  errorScope: "Group information"
 });
 
 export const groupManagementApi = Object.freeze({
@@ -81,39 +53,6 @@ export const groupManagementApi = Object.freeze({
           .select("id, name, code, created_at")
           .eq("group_id", groupId)
           .order("created_at", { ascending: true })
-    );
-  },
-
-  listInitiativeMembers(groupId) {
-    return api.readCached(
-      `initiative-members:${groupId}`,
-      () =>
-        supabase
-          .from("members")
-          .select("id, group_id, user_id, name, status")
-          .eq("group_id", groupId)
-          .order("name", { ascending: true })
-    );
-  },
-
-  closeInitiative(initiativeId) {
-    return api.rpc("close_contribution_initiative", {
-      p_initiative_id: initiativeId,
-      p_request_id: crypto.randomUUID()
-    });
-  },
-
-  listInitiatives(groupId) {
-    return api.readCached(
-      `initiatives:${groupId}`,
-      () =>
-        supabase
-          .from("contribution_initiatives")
-          .select(
-            "id, contribution_type_id, name, description, start_date, closing_date, default_amount, frequency, status, created_at, updated_at"
-          )
-          .eq("group_id", groupId)
-          .order("created_at", { ascending: false })
     );
   },
 
