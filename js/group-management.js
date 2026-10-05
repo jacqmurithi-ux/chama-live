@@ -90,10 +90,6 @@ const elements = {
 
     groupManagementStatus: null,
     monthlyContributionStartDate: null,
-    monthlyContributionClosingDay: null,
-    monthlyGracePeriodDays: null,
-    monthlyFineEnabled: null,
-    monthlyFineAmount: null,
     newCustomContributionButton: null,
     customContributionEditor: null,
     customContributionName: null,
@@ -102,8 +98,6 @@ const elements = {
     customContributionEndDate: null,
     customContributionDueDate: null,
     customContributionDescription: null,
-    customFineEnabled: null,
-    customFineAmount: null,
     saveCustomContribution: null,
     cancelCustomContribution: null,
 
@@ -169,7 +163,7 @@ function refreshDomReferences() {
     elements.saveCustomContribution =
         document.getElementById("saveCustomContribution");
     elements.customContributionList =
-        document.getElementById("customContributionList");
+        document.getElementById("customContributionsList");
 
     elements.groupContextName =
         document.getElementById("groupContextName");
@@ -908,9 +902,11 @@ function getGraceDays(prefix) {
 }
 
 function updateFineSummary(prefix) {
-    const summary = elements[prefix + "FineStartSummary"];
+    const summary = prefix === "custom"
+        ? elements.customRuleSummary
+        : elements.monthlyRuleSummary;
     if (!summary) return;
-    const enabled = Boolean(elements[prefix + "FineEnabled"]?.checked);
+    const enabled = isFineEnabled(prefix);
     const graceDays = getGraceDays(prefix);
     summary.textContent = !enabled ? "No fine configured" : graceDays > 0 ? "After closing date + " + graceDays + " day" + (graceDays === 1 ? "" : "s") + " grace" : "Immediately after the closing date";
 }
@@ -1244,8 +1240,6 @@ function bindEvents() {
     document.querySelectorAll('input[name="customGraceMode"]').forEach((input) => {
         input.addEventListener("change", () => syncContributionRuleUI("custom"));
     });
-    elements.monthlyFineEnabled?.addEventListener("change", () => syncContributionRuleUI("monthly"));
-    elements.customFineEnabled?.addEventListener("change", () => syncContributionRuleUI("custom"));
     elements.monthlyGraceDays?.addEventListener("input", () => syncContributionRuleUI("monthly"));
     elements.monthlyFineAmount?.addEventListener("input", () => syncContributionRuleUI("monthly"));
     elements.customGraceDays?.addEventListener("input", () => syncContributionRuleUI("custom"));
@@ -1468,7 +1462,6 @@ export {
 
     saveGroupInformation,
     saveContributionSettings,
-    saveMonthlyContributionUiSettings,
     saveMonthlyContribution,
     saveCustomContribution,
 
