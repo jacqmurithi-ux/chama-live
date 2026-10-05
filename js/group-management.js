@@ -980,11 +980,7 @@ function resetCustomContributionForm() {
     syncFineControls("custom");
 }
 
-function showContributionStatus(message, type = "info") {
-    if (!elements.groupManagementStatus) return;
-    elements.groupManagementStatus.textContent = message;
-    elements.groupManagementStatus.className = `management-status is-visible ${type}`;
-}
+
 
 /* ================================================================
    SUBSCRIPTION
