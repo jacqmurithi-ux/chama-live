@@ -30,6 +30,7 @@ let canEditContributionSettings = false;
 
 let subscription = null;
 let contributionSettings = null;
+let customContributionDrafts = [];
 
 let initializationPromise = null;
 
@@ -90,6 +91,29 @@ const elements = {
     subscriptionAmount: null,
 
     groupManagementStatus: null,
+    monthlyContributionStartDate: null,
+    monthlyContributionClosingDay: null,
+    monthlyGracePeriodDays: null,
+    monthlyFineEnabled: null,
+    monthlyFineAmount: null,
+    monthlyFineStartSummary: null,
+    saveMonthlyContributionSettings: null,
+    newCustomContributionButton: null,
+    customContributionEditor: null,
+    customContributionName: null,
+    customContributionAmount: null,
+    customContributionStartDate: null,
+    customContributionEndDate: null,
+    customContributionFrequency: null,
+    customContributionDueDate: null,
+    customContributionDescription: null,
+    customGracePeriodDays: null,
+    customFineEnabled: null,
+    customFineAmount: null,
+    customFineStartSummary: null,
+    saveCustomContribution: null,
+    cancelCustomContribution: null,
+    customContributionsList: null,
 
 };
 
@@ -201,8 +225,30 @@ function refreshDomReferences() {
     elements.subscriptionAmount =
         document.getElementById("subscriptionAmount");
 
-    elements.groupManagementStatus =
-        document.getElementById("groupManagementStatus");
+    elements.groupManagementStatus = document.getElementById("groupManagementStatus");
+    elements.monthlyContributionStartDate = document.getElementById("monthlyContributionStartDate");
+    elements.monthlyContributionClosingDay = document.getElementById("monthlyContributionClosingDay");
+    elements.monthlyGracePeriodDays = document.getElementById("monthlyGracePeriodDays");
+    elements.monthlyFineEnabled = document.getElementById("monthlyFineEnabled");
+    elements.monthlyFineAmount = document.getElementById("monthlyFineAmount");
+    elements.monthlyFineStartSummary = document.getElementById("monthlyFineStartSummary");
+    elements.saveMonthlyContributionSettings = document.getElementById("saveMonthlyContributionSettings");
+    elements.newCustomContributionButton = document.getElementById("newCustomContributionButton");
+    elements.customContributionEditor = document.getElementById("customContributionEditor");
+    elements.customContributionName = document.getElementById("customContributionName");
+    elements.customContributionAmount = document.getElementById("customContributionAmount");
+    elements.customContributionStartDate = document.getElementById("customContributionStartDate");
+    elements.customContributionEndDate = document.getElementById("customContributionEndDate");
+    elements.customContributionFrequency = document.getElementById("customContributionFrequency");
+    elements.customContributionDueDate = document.getElementById("customContributionDueDate");
+    elements.customContributionDescription = document.getElementById("customContributionDescription");
+    elements.customGracePeriodDays = document.getElementById("customGracePeriodDays");
+    elements.customFineEnabled = document.getElementById("customFineEnabled");
+    elements.customFineAmount = document.getElementById("customFineAmount");
+    elements.customFineStartSummary = document.getElementById("customFineStartSummary");
+    elements.saveCustomContribution = document.getElementById("saveCustomContribution");
+    elements.cancelCustomContribution = document.getElementById("cancelCustomContribution");
+    elements.customContributionsList = document.getElementById("customContributionsList");
 
 }
 
@@ -762,6 +808,122 @@ async function saveContributionSettings(event) {
 
 
 /* ================================================================
+   CONTRIBUTION SETTINGS — UI GATE
+================================================================ */
+
+function getGraceDays(prefix) {
+    const name = prefix === "monthly" ? "monthlyGracePeriodMode" : "customGracePeriodMode";
+    const selected = Array.from(document.querySelectorAll('input[name="' + name + '"]')).find((radio) => radio.checked);
+    if (!selected || selected.value !== "days") return 0;
+    const value = Number(elements[prefix + "GracePeriodDays"]?.value || 0);
+    return Number.isInteger(value) && value >= 0 ? value : 0;
+}
+
+function updateFineSummary(prefix) {
+    const summary = elements[prefix + "FineStartSummary"];
+    if (!summary) return;
+    const enabled = Boolean(elements[prefix + "FineEnabled"]?.checked);
+    const graceDays = getGraceDays(prefix);
+    summary.textContent = !enabled ? "No fine configured" : graceDays > 0 ? "After closing date + " + graceDays + " day" + (graceDays === 1 ? "" : "s") + " grace" : "Immediately after the closing date";
+}
+
+function syncGracePeriodControls(prefix) {
+    const name = prefix === "monthly" ? "monthlyGracePeriodMode" : "customGracePeriodMode";
+    const enabled = Array.from(document.querySelectorAll('input[name="' + name + '"]')).some((radio) => radio.checked && radio.value === "days");
+    const days = elements[prefix + "GracePeriodDays"];
+    if (days) { days.disabled = !enabled; if (!enabled) days.value = "0"; }
+    updateFineSummary(prefix);
+}
+
+function syncFineControls(prefix) {
+    const enabled = Boolean(elements[prefix + "FineEnabled"]?.checked);
+    const amount = elements[prefix + "FineAmount"];
+    if (amount) { amount.disabled = !enabled; if (!enabled) amount.value = ""; }
+    updateFineSummary(prefix);
+}
+
+function renderCustomContributionDrafts() {
+    if (!elements.customContributionsList) return;
+    elements.customContributionsList.replaceChildren();
+    if (!customContributionDrafts.length) {
+        const empty = document.createElement("div");
+        empty.className = "custom-contribution-empty";
+        empty.textContent = "No custom contributions have been added in this UI session.";
+        elements.customContributionsList.appendChild(empty);
+        return;
+    }
+    customContributionDrafts.forEach((item) => {
+        const card = document.createElement("div");
+        card.className = "custom-contribution-summary";
+        const title = document.createElement("strong");
+        title.textContent = item.name;
+        const meta = document.createElement("div");
+        meta.className = "custom-contribution-summary-meta";
+        meta.textContent = "KSh " + item.amount.toLocaleString() + " · " + item.startDate + " to " + item.endDate + " · " + item.frequencyLabel;
+        const rules = document.createElement("div");
+        rules.className = "custom-contribution-summary-meta";
+        rules.textContent = item.fineEnabled ? "Grace period: " + item.graceDays + " day" + (item.graceDays === 1 ? "" : "s") + " · Fine: KSh " + item.fineAmount.toLocaleString() : "Grace period: " + item.graceDays + " day" + (item.graceDays === 1 ? "" : "s") + " · No fine";
+        card.append(title, meta, rules);
+        elements.customContributionsList.appendChild(card);
+    });
+}
+
+function resetCustomContributionForm() {
+    ["customContributionName","customContributionAmount","customContributionStartDate","customContributionEndDate","customContributionDueDate","customContributionDescription","customFineAmount"].forEach((key) => { if (elements[key]) elements[key].value = ""; });
+    if (elements.customContributionFrequency) elements.customContributionFrequency.value = "one_time";
+    document.querySelectorAll('input[name="customGracePeriodMode"]').forEach((radio) => { radio.checked = radio.value === "none"; });
+    if (elements.customGracePeriodDays) elements.customGracePeriodDays.value = "0";
+    if (elements.customFineEnabled) elements.customFineEnabled.checked = false;
+    syncGracePeriodControls("custom");
+    syncFineControls("custom");
+}
+
+function showContributionStatus(message, type = "info") {
+    if (!elements.groupManagementStatus) return;
+    elements.groupManagementStatus.textContent = message;
+    elements.groupManagementStatus.className = "management-status is-visible " + type;
+}
+
+function saveCustomContributionDraft() {
+    if (!canEditContributionSettings) throw new Error("You do not have permission to configure contributions.");
+    const name = elements.customContributionName?.value.trim();
+    const amount = Number(elements.customContributionAmount?.value || 0);
+    const startDate = elements.customContributionStartDate?.value;
+    const endDate = elements.customContributionEndDate?.value;
+    const dueDate = elements.customContributionDueDate?.value;
+    const frequency = elements.customContributionFrequency?.value || "one_time";
+    const description = elements.customContributionDescription?.value.trim() || "";
+    const graceDays = getGraceDays("custom");
+    const fineEnabled = Boolean(elements.customFineEnabled?.checked);
+    const fineAmount = Number(elements.customFineAmount?.value || 0);
+    if (!name) throw new Error("Custom contribution name is required.");
+    if (!Number.isFinite(amount) || amount <= 0) throw new Error("Amount due must be greater than zero.");
+    if (!startDate || !endDate) throw new Error("Start date and end date are required.");
+    if (endDate < startDate) throw new Error("End date cannot be before the start date.");
+    if (dueDate && (dueDate < startDate || dueDate > endDate)) throw new Error("Due date must fall between the start and end dates.");
+    if (fineEnabled && (!Number.isFinite(fineAmount) || fineAmount <= 0)) throw new Error("Fine amount must be greater than zero when a fine is enabled.");
+    const frequencyLabels = { one_time: "One-time", monthly: "Monthly", quarterly: "Quarterly", annual: "Annual" };
+    customContributionDrafts.push({name, amount, startDate, endDate, dueDate, frequency, frequencyLabel: frequencyLabels[frequency] || frequency, description, graceDays, fineEnabled, fineAmount});
+    renderCustomContributionDrafts();
+    resetCustomContributionForm();
+    elements.customContributionEditor.hidden = true;
+    showContributionStatus("Custom contribution validated and added to this UI session. Backend persistence is intentionally not connected in this gate.", "info");
+}
+
+function saveMonthlyContributionUiSettings() {
+    if (!canEditContributionSettings) throw new Error("You do not have permission to configure contributions.");
+    const startDate = elements.monthlyContributionStartDate?.value;
+    const closingDay = Number(elements.monthlyContributionClosingDay?.value || elements.closingDay?.value || 0);
+    const fineEnabled = Boolean(elements.monthlyFineEnabled?.checked);
+    const fineAmount = Number(elements.monthlyFineAmount?.value || 0);
+    if (!startDate) throw new Error("Monthly contribution start date is required.");
+    if (!Number.isInteger(closingDay) || closingDay < 1 || closingDay > 28) throw new Error("Monthly closing day must be between 1 and 28.");
+    if (fineEnabled && (!Number.isFinite(fineAmount) || fineAmount <= 0)) throw new Error("Fine amount must be greater than zero when a fine is enabled.");
+    if (elements.closingDay) elements.closingDay.value = String(closingDay);
+    showContributionStatus("Monthly contribution settings validated. Existing backend persistence remains governed by the current contribution-settings contract.", "info");
+}
+
+/* ================================================================
    SUBSCRIPTION
 ================================================================ */
 
@@ -1031,6 +1193,34 @@ function bindEvents() {
 
 
     /* ------------------------------------------------------------
+       CONTRIBUTION SETTINGS UI
+    ------------------------------------------------------------ */
+
+    elements.newCustomContributionButton?.addEventListener("click", () => {
+        elements.customContributionEditor.hidden = false;
+        elements.customContributionName?.focus();
+    });
+    elements.cancelCustomContribution?.addEventListener("click", () => {
+        resetCustomContributionForm();
+        elements.customContributionEditor.hidden = true;
+    });
+    elements.saveCustomContribution?.addEventListener("click", () => {
+        try { saveCustomContributionDraft(); } catch (error) { showContributionStatus(error.message, "error"); }
+    });
+    elements.saveMonthlyContributionSettings?.addEventListener("click", () => {
+        try { saveMonthlyContributionUiSettings(); } catch (error) { showContributionStatus(error.message, "error"); }
+    });
+    document.querySelectorAll('input[name="monthlyGracePeriodMode"]').forEach((radio) => radio.addEventListener("change", () => syncGracePeriodControls("monthly")));
+    document.querySelectorAll('input[name="customGracePeriodMode"]').forEach((radio) => radio.addEventListener("change", () => syncGracePeriodControls("custom")));
+    elements.monthlyFineEnabled?.addEventListener("change", () => syncFineControls("monthly"));
+    elements.customFineEnabled?.addEventListener("change", () => syncFineControls("custom"));
+    syncGracePeriodControls("monthly");
+    syncGracePeriodControls("custom");
+    syncFineControls("monthly");
+    syncFineControls("custom");
+    renderCustomContributionDrafts();
+
+    /* ------------------------------------------------------------
        CATEGORY OTHER
     ------------------------------------------------------------ */
 
@@ -1197,6 +1387,8 @@ export {
 
     saveGroupInformation,
     saveContributionSettings,
+    saveCustomContributionDraft,
+    saveMonthlyContributionUiSettings,
     saveMonthlyContribution,
     saveCustomContribution,
 
