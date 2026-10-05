@@ -107,12 +107,16 @@ async function submitMember(event) {
   const firstPeriodRule = $("firstPeriodRule")?.value || "full_period";
   const contributionEffectiveFrom = $("contributionEffectiveFrom")?.value || joinDate;
   const historical = document.querySelector('input[name="historicalContributions"]:checked')?.value === "yes";
+  const historicalEffectiveFrom = historical
+    ? contributionEffectiveFrom.slice(0, 7) + "-01"
+    : contributionEffectiveFrom;
   const historicalPaidMonths = Number($("historicalPaidMonths")?.value || 0);
   const historicalPaidThrough = $("historicalPaidThrough")?.value || null;
   const historicalTotalPaidInput = $("historicalTotalPaid")?.value;
   const historicalTotalPaid = historicalTotalPaidInput === "" || historicalTotalPaidInput == null
     ? historicalPaidMonths * monthlyAmount
     : Number(historicalTotalPaidInput);
+  const historicalPaymentMethod = $("historicalPaymentMethod")?.value || "Cash";
 
   if (!name) return showError("Please enter the full name.");
   if (!memberNumber) return showError("Please enter the member number.");
@@ -130,6 +134,21 @@ async function submitMember(event) {
     }
     if (!historicalPaidThrough) return showError("Select the month through which the member has paid.");
     if (!(historicalTotalPaid > 0)) return showError("Enter a valid historical total paid amount.");
+    if (historicalPaidThrough < historicalEffectiveFrom.slice(0, 7)) {
+      return showError("Paid Through cannot be before the contribution effective month.");
+    }
+  }
+
+  let historicalPayments = null;
+  if (historical) {
+    historicalPayments = buildHistoricalPayments(
+      historicalPaidMonths,
+      historicalPaidThrough,
+      monthlyAmount,
+      historicalTotalPaid,
+      historicalEffectiveFrom,
+      historicalPaymentMethod
+    );
   }
 
   button.disabled = true;
@@ -185,14 +204,6 @@ async function submitMember(event) {
     let accountingResult = createdRow;
 
     if (historical) {
-      const payments = buildHistoricalPayments(
-        historicalPaidMonths,
-        historicalPaidThrough,
-        monthlyAmount,
-        historicalTotalPaid,
-        contributionEffectiveFrom
-      );
-
       const requestId = crypto.randomUUID();
       const { data: historicalResult, error: historicalError } = await supabase.rpc(
         "record_existing_member_historical_payments",
@@ -200,10 +211,10 @@ async function submitMember(event) {
           p_request_id: requestId,
           p_member_id: createdRow.member_id,
           p_monthly_amount: monthlyAmount,
-          p_effective_from: contributionEffectiveFrom,
+          p_effective_from: historicalEffectiveFrom,
           p_effective_to: null,
           p_first_period_rule: firstPeriodRule,
-          p_payments: payments
+          p_payments: historicalPayments
         }
       );
 
@@ -243,7 +254,7 @@ async function submitMember(event) {
   }
 }
 
-function buildHistoricalPayments(paidMonths, paidThrough, monthlyAmount, totalPaid, effectiveFrom) {
+function buildHistoricalPayments(paidMonths, paidThrough, monthlyAmount, totalPaid, effectiveFrom, paymentMethod) {
   const [year, month] = paidThrough.split("-").map(Number);
   const end = new Date(Date.UTC(year, month - 1, 1));
   const start = new Date(end);
@@ -268,16 +279,19 @@ function buildHistoricalPayments(paidMonths, paidThrough, monthlyAmount, totalPa
     const amount = i === paidMonths - 1
       ? Number(remaining.toFixed(2))
       : Number(Math.min(monthlyAmount, remaining).toFixed(2));
-    if (amount <= 0) break;
+    if (amount <= 0) throw new Error("Historical total paid is too small for the selected paid months.");
     remaining = Number((remaining - amount).toFixed(2));
     payments.push({
       payment_id: crypto.randomUUID(),
       payment_date: `${monthKey}-01`,
       amount,
-      payment_method: "Cash",
+      payment_method: paymentMethod,
       reference: `HISTORICAL-${monthKey}`,
       notes: "Historical onboarding payment reconstructed from paid months"
     });
+  }
+  if (payments.length !== paidMonths) {
+    throw new Error("Historical payment reconstruction did not produce all selected paid months.");
   }
   return payments;
 }
