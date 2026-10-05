@@ -983,7 +983,7 @@ function resetCustomContributionForm() {
 function showContributionStatus(message, type = "info") {
     if (!elements.groupManagementStatus) return;
     elements.groupManagementStatus.textContent = message;
-    elements.groupManagementStatus.className = "management-status is-visible " + type;
+    elements.groupManagementStatus.className = `management-status is-visible ${type}`;
 }
 
 /* ================================================================
@@ -1398,28 +1398,3 @@ async function initializeGroupManagement() {
                 },
                 {
                     section:
-                        "subscription",
-                    loader:
-                        loadSubscription
-                },
-            ];
-
-            const results =
-                await Promise.allSettled(
-                    loaders.map(
-                        async ({
-                            section,
-                            loader
-                        }) => {
-                            try {
-                                await loader();
-
-                                return {
-                                    section,
-                                    success:
-                                        true
-                                };
-                            } catch (error) {
-                                reportInitializationError(
-                                    section,
-                                    error
