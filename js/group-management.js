@@ -66,7 +66,6 @@ const elements = {
     customFineAmount: null,
     customRuleSummary: null,
     saveCustomContribution: null,
-    customContributionDueDate: null,
     customContributionsList: null,
 
     groupContextName: null,
