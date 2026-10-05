@@ -176,6 +176,57 @@ BEGIN
     RAISE EXCEPTION 'Allocation payment does not exist';
   END IF;
 
+  -- Every affected payment and obligation must remain in the same group.
+  -- This is checked before the accounting envelope is acquired so a
+  -- cross-group UPDATE cannot lock only the NEW group.
+  IF EXISTS (
+    SELECT 1
+    FROM public.contributions c
+    WHERE c.id IN (OLD.payment_id, NEW.payment_id)
+      AND c.group_id IS DISTINCT FROM v_group_id
+  ) THEN
+    RAISE EXCEPTION
+      'Allocation payment targets must belong to the same group';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM public.contribution_obligations o
+    WHERE o.id IN (OLD.obligation_id, NEW.obligation_id)
+      AND o.group_id IS DISTINCT FROM v_group_id
+  ) THEN
+    RAISE EXCEPTION
+      'Allocation obligation targets must belong to the same group';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM public.contributions c
+    WHERE c.id IN (OLD.payment_id, NEW.payment_id)
+      AND c.contribution_date IS NULL
+  ) THEN
+    RAISE EXCEPTION
+      'All affected allocation payments require contribution_date';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM public.contribution_obligations o
+    WHERE o.id IN (OLD.obligation_id, NEW.obligation_id)
+      AND o.economic_month IS NULL
+  ) THEN
+    RAISE EXCEPTION
+      'All affected allocation obligations require economic_month';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM public.contribution_obligations o
+    WHERE o.id = NEW.obligation_id
+  ) THEN
+    RAISE EXCEPTION 'Allocation obligation does not exist';
+  END IF;
+
   SELECT MIN(x.month_start), MAX(x.month_start)
     INTO v_lock_start, v_lock_end
   FROM (
