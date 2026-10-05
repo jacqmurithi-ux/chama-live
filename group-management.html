@@ -1039,13 +1039,12 @@
                   <label>Grace period</label>
                   <label class="radio-row"><input type="radio" name="monthlyGraceMode" value="none" checked> No grace period</label>
                   <label class="radio-row"><input type="radio" name="monthlyGraceMode" value="days"> Grace period</label>
-                  <input id="monthlyGraceDays" type="number" min="1" max="365" step="1" placeholder="Days" disabled>
+                  <input id="monthlyGraceDays" type="number" min="0" max="365" step="1" placeholder="0 or more days" disabled>
                 </div>
                 <div class="form-field">
-                  <label for="monthlyFineEnabled" class="checkbox-row">
-                    <input id="monthlyFineEnabled" type="checkbox">
-                    Apply fine after grace period
-                  </label>
+                  <label>Apply fine</label>
+                  <label class="radio-row"><input type="radio" name="monthlyFineMode" value="no" checked> No</label>
+                  <label class="radio-row"><input type="radio" name="monthlyFineMode" value="yes"> Yes</label>
                   <label for="monthlyFineAmount">Fine amount</label>
                   <input id="monthlyFineAmount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" disabled>
                 </div>
@@ -1063,11 +1062,13 @@
           <div class="contribution-panel">
             <div class="contribution-panel-header">
               <div>
-                <h3>New Custom Contribution</h3>
-                <p>For named contributions such as School Fund, Welfare Fund, or a time-bound project.</p>
+                <h3>Custom Contributions</h3>
+                <p>Create a named contribution as a draft. Activation and accounting remain locked.</p>
               </div>
+              <button id="newCustomContributionButton" type="button" class="secondary-button">+ New Custom Contribution</button>
             </div>
 
+            <div id="customContributionEditor" hidden>
             <form id="customContributionForm" autocomplete="off">
               <div class="form-grid">
                 <div class="form-field full-width">
@@ -1113,13 +1114,12 @@
                     <label>Grace period</label>
                     <label class="radio-row"><input type="radio" name="customGraceMode" value="none" checked> No grace period</label>
                     <label class="radio-row"><input type="radio" name="customGraceMode" value="days"> Grace period</label>
-                    <input id="customGraceDays" type="number" min="1" max="365" step="1" placeholder="Days" disabled>
+                    <input id="customGraceDays" type="number" min="0" max="365" step="1" placeholder="0 or more days" disabled>
                   </div>
                   <div class="form-field">
-                    <label for="customFineEnabled" class="checkbox-row">
-                      <input id="customFineEnabled" type="checkbox">
-                      Apply fine after grace period
-                    </label>
+                    <label>Apply fine</label>
+                    <label class="radio-row"><input type="radio" name="customFineMode" value="no" checked> No</label>
+                    <label class="radio-row"><input type="radio" name="customFineMode" value="yes"> Yes</label>
                     <label for="customFineAmount">Fine amount</label>
                     <input id="customFineAmount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" disabled>
                   </div>
@@ -1132,8 +1132,9 @@
               </div>
               <div class="backend-pending-note">Saving creates a backend-owned <strong>draft</strong> contribution definition only. Activation, member obligations, payments, allocations, and accounting remain locked.</div>
             </form>
+            </div>
 
-            <div id="customContributionList" class="custom-contribution-list" aria-live="polite">
+            <div id="customContributionList class="custom-contribution-list" aria-live="polite">
               <div class="custom-contribution-empty">No custom contributions configured in this UI session.</div>
             </div>
           </div>
