@@ -1357,13 +1357,11 @@ function ensureContributionUI() {
    ========================================================= */
 
 async function loadMonthlyContributionType() {
+  monthlyContributionType = null;
+  contributionTypesLoaded = false;
+
   if (!groupId) {
-    monthlyContributionType =
-      null;
-
-    contributionTypesLoaded =
-      true;
-
+    contributionTypesLoaded = true;
     return;
   }
 
@@ -1371,8 +1369,20 @@ async function loadMonthlyContributionType() {
     data,
     error
   } = await membersApi.contributionTypes(groupId);
+
   if (error) {
-    throw error;
+    /*
+     * The Members page must remain usable when the optional
+     * contribution-type lookup is unavailable. Member listing
+     * is read-only and must not be blocked by form metadata.
+     */
+    console.warn(
+      "Monthly contribution type could not be loaded:",
+      error
+    );
+
+    contributionTypesLoaded = true;
+    return;
   }
 
   const rows =
@@ -1422,8 +1432,8 @@ async function loadMonthlyContributionType() {
     true;
 
   if (!monthlyContributionType) {
-    throw new Error(
-      "The group's Monthly contribution type could not be found."
+    console.warn(
+      "The group's Monthly contribution type could not be found; member listing remains available."
     );
   }
 }
@@ -1484,9 +1494,9 @@ function updateHistoricalControls() {
   }
 
   const enabled =
-    Boolean(
-      enabledInput.checked
-    );
+    String(
+      enabledInput.value || ""
+    ).trim().toLowerCase() === "true";
 
   if (controls) {
     controls.hidden =
@@ -1536,7 +1546,9 @@ function updateHistoricalPreview() {
     );
 
   if (
-    !enabledInput?.checked
+    String(
+      enabledInput?.value || ""
+    ).trim().toLowerCase() !== "true"
   ) {
     preview.textContent =
       "";
@@ -1712,11 +1724,11 @@ function getFormValues() {
       )?.value || "",
 
     historical_enabled:
-      Boolean(
+      String(
         byId(
           "memberHistoricalEnabled"
-        )?.checked
-      ),
+        )?.value || ""
+      ).trim().toLowerCase() === "true",
 
     historical_paid_through:
       byId(
