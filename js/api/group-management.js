@@ -10,8 +10,7 @@ const api = createApiClient(supabase, {
     "update_group_contribution_settings",
     "get_group_subscription",
   ],
-  errorScope: "Group information",
-  invalidateByRpc: INVALIDATE_BY_RPC
+  errorScope: "Group information"
 });
 
 export const groupManagementApi = Object.freeze({
