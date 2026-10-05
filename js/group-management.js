@@ -696,6 +696,15 @@ async function saveMonthlyContribution(event) {
 
     validateContributionRuleUI("monthly");
 
+    if (currentRole === "admin") {
+        const groupResult = await groupManagementApi.updateGroup(
+            currentGroup.id,
+            { monthly_contribution: amount }
+        );
+
+        if (groupResult.error) throw groupResult.error;
+    }
+
     const settingsResult = await groupManagementApi.rpc(
         "update_group_contribution_settings",
         {
@@ -715,7 +724,9 @@ async function saveMonthlyContribution(event) {
     renderGroup();
 
     showContributionStatus(
-        "Monthly closing day saved. The amount, start date, and rule/fine fields are shown in this UI gate but their new persistence contract is still pending.",
+        currentRole === "admin"
+            ? "Monthly contribution amount and closing day saved. Rule/fine values remain UI-only until the backend rule contract is approved."
+            : "Monthly closing day saved. Monthly amount changes require an admin role; rule/fine values remain UI-only until the backend rule contract is approved.",
         "success"
     );
 }
