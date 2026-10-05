@@ -95,6 +95,7 @@ const elements = {
     monthlyContributionClosingDay: null,
     monthlyGracePeriodDays: null,
     monthlyFineEnabled: null,
+    monthlyFineMode: null,
     monthlyFineAmount: null,
     monthlyFineStartSummary: null,
     saveMonthlyContributionSettings: null,
@@ -109,6 +110,7 @@ const elements = {
     customContributionDescription: null,
     customGracePeriodDays: null,
     customFineEnabled: null,
+    customFineMode: null,
     customFineAmount: null,
     customFineStartSummary: null,
     saveCustomContribution: null,
@@ -229,7 +231,8 @@ function refreshDomReferences() {
     elements.monthlyContributionStartDate = document.getElementById("monthlyContributionStartDate");
     elements.monthlyContributionClosingDay = document.getElementById("monthlyContributionClosingDay");
     elements.monthlyGracePeriodDays = document.getElementById("monthlyGracePeriodDays");
-    elements.monthlyFineEnabled = document.getElementById("monthlyFineEnabled");
+    elements.monthlyFineEnabled = document.querySelector('input[name="monthlyFineMode"]:checked')?.value === "yes";
+    elements.monthlyFineMode = document.querySelectorAll('input[name="monthlyFineMode"]');
     elements.monthlyFineAmount = document.getElementById("monthlyFineAmount");
     elements.monthlyFineStartSummary = document.getElementById("monthlyFineStartSummary");
     elements.saveMonthlyContributionSettings = document.getElementById("saveMonthlyContributionSettings");
@@ -240,12 +243,13 @@ function refreshDomReferences() {
     elements.customContributionStartDate = document.getElementById("customContributionStartDate");
     elements.customContributionEndDate = document.getElementById("customContributionEndDate");
     elements.customContributionFrequency = document.getElementById("customContributionFrequency");
-    elements.customContributionCycle = document.getElementById("customContributionFrequency");
+    elements.customContributionCycle = document.getElementById("customContributionCycle");
     elements.customContributionDueDate = document.getElementById("customContributionDueDate");
     elements.customContributionDescription = document.getElementById("customContributionDescription");
     elements.customGracePeriodDays = document.getElementById("customGracePeriodDays");
-    elements.customGraceDays = document.getElementById("customGracePeriodDays");
-    elements.customFineEnabled = document.getElementById("customFineEnabled");
+    elements.customGraceDays = document.getElementById("customGraceDays");
+    elements.customFineEnabled = document.querySelector('input[name="customFineMode"]:checked')?.value === "yes";
+    elements.customFineMode = document.querySelectorAll('input[name="customFineMode"]');
     elements.customFineAmount = document.getElementById("customFineAmount");
     elements.customFineStartSummary = document.getElementById("customFineStartSummary");
     elements.saveCustomContribution = document.getElementById("saveCustomContribution");
@@ -570,7 +574,12 @@ async function loadLeadershipSetup() {
 
     const { data, error } = await groupManagementApi.getLeadershipMembers(currentGroup.id);
 
-    if (error) throw error;
+    if (error) {
+        if (elements.leadershipStatus) {
+            elements.leadershipStatus.textContent = "Leadership could not be loaded.";
+        }
+        throw error;
+    }
 
     const leadership = Array.isArray(data) ? data : [];
     elements.leadershipList.replaceChildren();
@@ -632,7 +641,7 @@ function syncContributionRuleUI(kind) {
     const isMonthly = kind === "monthly";
     const graceMode = getCheckedValue(isMonthly ? "monthlyGraceMode" : "customGraceMode");
     const graceDays = isMonthly ? elements.monthlyGraceDays : elements.customGraceDays;
-    const fineEnabled = isMonthly ? elements.monthlyFineEnabled : elements.customFineEnabled;
+    const fineEnabled = isMonthly ? isFineEnabled("monthly") : isFineEnabled("custom");
     const fineAmount = isMonthly ? elements.monthlyFineAmount : elements.customFineAmount;
     const summary = isMonthly ? elements.monthlyRuleSummary : elements.customRuleSummary;
 
@@ -656,14 +665,14 @@ function validateContributionRuleUI(kind) {
     const isMonthly = kind === "monthly";
     const graceMode = getCheckedValue(isMonthly ? "monthlyGraceMode" : "customGraceMode");
     const graceDays = isMonthly ? elements.monthlyGraceDays : elements.customGraceDays;
-    const fineEnabled = isMonthly ? elements.monthlyFineEnabled : elements.customFineEnabled;
+    const fineEnabled = isMonthly ? isFineEnabled("monthly") : isFineEnabled("custom");
     const fineAmount = isMonthly ? elements.monthlyFineAmount : elements.customFineAmount;
 
-    if (graceMode === "days" && (!Number.isInteger(Number(graceDays.value)) || Number(graceDays.value) < 1)) {
+    if (graceMode === "days" && (!Number.isInteger(Number(graceDays.value)) || Number(graceDays.value) < 0)) {
         throw new Error("Grace period must be a whole number of days.");
     }
 
-    if (fineEnabled.checked && (!Number.isFinite(Number(fineAmount.value)) || Number(fineAmount.value) <= 0)) {
+    if (fineEnabled && (!Number.isFinite(Number(fineAmount.value)) || Number(fineAmount.value) <= 0)) {
         throw new Error("Fine amount must be greater than zero when a fine is enabled.");
     }
 }
@@ -798,7 +807,7 @@ async function saveCustomContribution(event) {
     const dueDate = elements.customContributionDueDate?.value;
     const closingDate = elements.customContributionEndDate?.value;
     const graceDays = getGraceDays("custom");
-    const applyFine = Boolean(elements.customFineEnabled?.checked);
+    const applyFine = isFineEnabled("custom");
     const fineAmount = Number(elements.customFineAmount?.value || 0);
 
     if (!name) throw new Error("Contribution name is required.");
@@ -949,20 +958,28 @@ function updateFineSummary(prefix) {
 }
 
 function syncGracePeriodControls(prefix) {
-    const name = prefix === "monthly" ? "monthlyGracePeriodMode" : "customGracePeriodMode";
+    const name = prefix === "monthly" ? "monthlyGraceMode" : "customGraceMode";
     const enabled = Array.from(document.querySelectorAll('input[name="' + name + '"]')).some((radio) => radio.checked && radio.value === "days");
-    const days =
-        prefix === "custom"
-            ? elements.customGraceDays
-            : elements.monthlyGraceDays;
-    if (days) { days.disabled = !enabled; if (!enabled) days.value = "0"; }
+    const days = prefix === "custom" ? elements.customGraceDays : elements.monthlyGraceDays;
+    if (days) {
+        days.disabled = !enabled;
+        if (!enabled) days.value = "0";
+    }
     updateFineSummary(prefix);
 }
 
+function isFineEnabled(prefix) {
+    const name = prefix === "monthly" ? "monthlyFineMode" : "customFineMode";
+    return Array.from(document.querySelectorAll('input[name="' + name + '"]')).some((radio) => radio.checked && radio.value === "yes");
+}
+
 function syncFineControls(prefix) {
-    const enabled = Boolean(elements[prefix + "FineEnabled"]?.checked);
-    const amount = elements[prefix + "FineAmount"];
-    if (amount) { amount.disabled = !enabled; if (!enabled) amount.value = ""; }
+    const enabled = isFineEnabled(prefix);
+    const amount = prefix === "custom" ? elements.customFineAmount : elements.monthlyFineAmount;
+    if (amount) {
+        amount.disabled = !enabled;
+        if (!enabled) amount.value = "";
+    }
     updateFineSummary(prefix);
 }
 
@@ -997,7 +1014,7 @@ function resetCustomContributionForm() {
     if (elements.customContributionCycle) elements.customContributionCycle.value = "one_time";
     document.querySelectorAll('input[name="customGraceMode"]').forEach((radio) => { radio.checked = radio.value === "none"; });
     if (elements.customGraceDays) elements.customGraceDays.value = "0";
-    if (elements.customFineEnabled) elements.customFineEnabled.checked = false;
+    document.querySelectorAll('input[name="customFineMode"]').forEach((radio) => { radio.checked = radio.value === "no"; });
     syncGracePeriodControls("custom");
     syncFineControls("custom");
 }
@@ -1295,21 +1312,23 @@ function bindEvents() {
     ------------------------------------------------------------ */
 
     elements.newCustomContributionButton?.addEventListener("click", () => {
-        elements.customContributionEditor.hidden = false;
+        if (!canEditContributionSettings) return;
+        if (elements.customContributionEditor) elements.customContributionEditor.hidden = false;
         elements.customContributionName?.focus();
     });
     elements.cancelCustomContribution?.addEventListener("click", () => {
         resetCustomContributionForm();
-        elements.customContributionEditor.hidden = true;
+        if (elements.customContributionEditor) elements.customContributionEditor.hidden = true;
     });
     /* Custom contribution uses the form submit handler above. */
     elements.saveMonthlyContributionSettings?.addEventListener("click", () => {
         try { saveMonthlyContributionUiSettings(); } catch (error) { showContributionStatus(error.message, "error"); }
     });
-    document.querySelectorAll('input[name="monthlyGracePeriodMode"]').forEach((radio) => radio.addEventListener("change", () => syncGracePeriodControls("monthly")));
+    document.querySelectorAll('input[name="monthlyGraceMode"]').forEach((radio) => radio.addEventListener("change", () => syncGracePeriodControls("monthly")));
     document.querySelectorAll('input[name="customGraceMode"]').forEach((radio) => radio.addEventListener("change", () => syncGracePeriodControls("custom")));
-    elements.monthlyFineEnabled?.addEventListener("change", () => syncFineControls("monthly"));
-    elements.customFineEnabled?.addEventListener("change", () => syncFineControls("custom"));
+    document.querySelectorAll('input[name="customFineMode"]').forEach((radio) => radio.addEventListener("change", () => syncFineControls("custom")));
+    document.querySelectorAll('input[name="monthlyFineMode"]').forEach((radio) => radio.addEventListener("change", () => syncFineControls("monthly")));
+    document.querySelectorAll('input[name="customFineMode"]').forEach((radio) => radio.addEventListener("change", () => syncFineControls("custom")));
     syncGracePeriodControls("monthly");
     syncGracePeriodControls("custom");
     syncFineControls("monthly");
