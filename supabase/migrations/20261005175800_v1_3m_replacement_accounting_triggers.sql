@@ -424,12 +424,65 @@ BEGIN
   END LOOP;
 
   /*
-    Authoritative NEW lineage validation after all relevant row locks.
+    Authoritative final validation after all relevant row locks.
+    Re-read every affected OLD/NEW target; do not rely on the last
+    loop variable. No additional accounting lock is acquired here.
   */
+  FOR v_payment_id IN
+    SELECT DISTINCT payment_id
+    FROM (
+      SELECT CASE WHEN TG_OP = 'UPDATE' THEN OLD.payment_id ELSE NULL END AS payment_id
+      UNION
+      SELECT NEW.payment_id
+    ) p
+    WHERE payment_id IS NOT NULL
+    ORDER BY payment_id
+  LOOP
+    SELECT c.group_id, c.member_id, c.amount
+      INTO v_payment_group_id, v_payment_member_id, v_payment_amount
+    FROM public.contributions c
+    WHERE c.id = v_payment_id
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'Affected allocation payment % does not exist', v_payment_id;
+    END IF;
+
+    IF v_payment_group_id IS DISTINCT FROM v_group_id THEN
+      RAISE EXCEPTION 'Affected allocation payment % changed group during validation', v_payment_id;
+    END IF;
+  END LOOP;
+
+  FOR v_obligation_id IN
+    SELECT DISTINCT obligation_id
+    FROM (
+      SELECT CASE WHEN TG_OP = 'UPDATE' THEN OLD.obligation_id ELSE NULL END AS obligation_id
+      UNION
+      SELECT NEW.obligation_id
+    ) o
+    WHERE obligation_id IS NOT NULL
+    ORDER BY obligation_id
+  LOOP
+    SELECT o.group_id, o.member_id, o.due_amount
+      INTO v_obligation_group_id, v_obligation_member_id, v_obligation_due
+    FROM public.contribution_obligations o
+    WHERE o.id = v_obligation_id
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'Affected allocation obligation % does not exist', v_obligation_id;
+    END IF;
+
+    IF v_obligation_group_id IS DISTINCT FROM v_group_id THEN
+      RAISE EXCEPTION 'Affected allocation obligation % changed group during validation', v_obligation_id;
+    END IF;
+  END LOOP;
+
+  /* Final NEW payment/obligation lineage must still match exactly. */
   SELECT c.group_id, c.member_id, c.amount
     INTO v_payment_group_id, v_payment_member_id, v_payment_amount
   FROM public.contributions c
-  WHERE c.id = v_payment_id
+  WHERE c.id = NEW.payment_id
   FOR UPDATE;
 
   IF NOT FOUND THEN
@@ -505,6 +558,9 @@ EXECUTE FUNCTION public.cl_guard_open_financial_period();
 DROP TRIGGER IF EXISTS trg_cl_guard_contribution_allocation
   ON public.contribution_allocations;
 
+DROP TRIGGER IF EXISTS trg_validate_monthly_allocation_domain
+  ON public.contribution_allocations;
+
 CREATE TRIGGER trg_cl_guard_contribution_allocation
 BEFORE INSERT OR UPDATE
 ON public.contribution_allocations
@@ -513,9 +569,20 @@ EXECUTE FUNCTION public.cl_guard_contribution_allocation();
 
 -- NOTE:
 -- trg_cl_other_obligation_lineage is intentionally preserved.
+-- trg_validate_monthly_allocation_domain is retired because it is
+-- Initiative-specific and is superseded by the replacement allocation guard.
 -- validate_monthly_payment_domain() is intentionally NOT replaced by
 -- another contribution_type/initiative domain rule.
 
+
+-- ================================================================
+-- D. ROLLBACK ARTIFACT — REVIEW ONLY
+-- ================================================================
+-- Exact rollback SQL is maintained separately at:
+-- supabase/rollback/v1_3m_replacement_accounting_triggers_rollback.sql
+-- It restores the exact pre-migration trigger inventory verified on
+-- production before this candidate was authored. It is NOT executed by
+-- this migration and requires a separate explicit deployment decision.
 
 -- ================================================================
 -- D. VERIFICATION QUERIES — REVIEW ONLY
