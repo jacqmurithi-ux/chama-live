@@ -93,8 +93,6 @@ const elements = {
     monthlyContributionStartDate: null,
     newCustomContributionButton: null,
     customContributionEditor: null,
-    newCustomContributionButton: null,
-    customContributionEditor: null,
     customContributionDueDate: null,
     cancelCustomContribution: null,
 
