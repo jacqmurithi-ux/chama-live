@@ -696,13 +696,6 @@ async function saveMonthlyContribution(event) {
 
     validateContributionRuleUI("monthly");
 
-    const groupResult = await groupManagementApi.updateGroup(
-        currentGroup.id,
-        { monthly_contribution: amount }
-    );
-
-    if (groupResult.error) throw groupResult.error;
-
     const settingsResult = await groupManagementApi.rpc(
         "update_group_contribution_settings",
         {
@@ -722,7 +715,7 @@ async function saveMonthlyContribution(event) {
     renderGroup();
 
     showContributionStatus(
-        "Monthly contribution amount and closing day saved. Rule/fine values are UI-only until the backend contribution-rule contract is approved.",
+        "Monthly closing day saved. The amount, start date, and rule/fine fields are shown in this UI gate but their new persistence contract is still pending.",
         "success"
     );
 }
