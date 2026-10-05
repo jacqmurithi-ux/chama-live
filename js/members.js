@@ -1898,6 +1898,18 @@ function validateForm(values) {
       return "Historical payment method is required.";
     }
 
+    const historicalPaymentMethod =
+      String(values.historical_payment_method || "")
+        .trim()
+        .toLowerCase();
+
+    if (
+      !["cash", "mpesa", "bank_transfer", "bank"]
+        .includes(historicalPaymentMethod)
+    ) {
+      return "Select Cash, M-Pesa, or Bank transfer for historical payments.";
+    }
+
     if (
       values.historical_paid_through <
       values.join_date
