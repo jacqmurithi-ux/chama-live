@@ -1083,6 +1083,7 @@
                   <label for="customContributionCycle">Cycle</label>
                   <select id="customContributionCycle" required>
                     <option value="one_time">One-time</option>
+                    <option value="weekly">Weekly</option>
                     <option value="monthly">Monthly</option>
                     <option value="quarterly">Quarterly</option>
                     <option value="annual">Annual</option>
@@ -1128,7 +1129,8 @@
               </div>
 
               <div class="form-actions">
-                <button id="saveCustomContribution" type="submit" class="primary-button">Save Contribution</button>
+                <button id="saveCustomContribution" type="submit" class="primary-button">Save Draft</button>
+                <button id="cancelCustomContribution" type="button" class="secondary-button">Cancel</button>
               </div>
               <div class="backend-pending-note">Saving creates a backend-owned <strong>draft</strong> contribution definition only. Activation, member obligations, payments, allocations, and accounting remain locked.</div>
             </form>
