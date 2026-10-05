@@ -328,18 +328,9 @@ BEGIN
     );
 
     -- ------------------------------------------------------------
-    -- F. Deterministic business identity
+    -- F. Contribution type
     -- ------------------------------------------------------------
 
-    v_period_key :=
-        'custom:v1:' ||
-        '<TYPE_ID_PLACEHOLDER>:' ||
-        to_char(p_start_date, 'YYYY-MM-DD') || ':' ||
-        to_char(p_due_date, 'YYYY-MM-DD') || ':' ||
-        to_char(p_closing_date, 'YYYY-MM-DD');
-
-    -- The contribution type must be created first so its UUID can
-    -- participate in the final period_key.
     INSERT INTO public.contribution_types (
         group_id,
         name,
@@ -354,6 +345,8 @@ BEGIN
     )
     RETURNING id INTO v_type_id;
 
+    -- Deterministic business identity. request_id remains the
+    -- client operation identity and is deliberately not embedded.
     v_period_key :=
         'custom:v1:' ||
         v_type_id::text || ':' ||
@@ -544,18 +537,16 @@ COMMIT;
 /*
   DEPLOYMENT NOTE
 
-  The v_period_key placeholder above is intentionally resolved after
-  the contribution type INSERT. The placeholder assignment is dead
-  intermediate state and may be removed during the final deployment
-  packaging. The final v_period_key assignment immediately following
-  the type INSERT is authoritative.
+  This is a candidate SQL artifact, not an executed migration.
 
-  Before production deployment, run:
-    - static SQL parse/compile check
-    - Supabase DB advisors
-    - privilege inspection
-    - constraint/index inspection
-    - authenticated positive/negative tests in an isolated project
+  Before production deployment:
+    - create the final migration through the Supabase CLI workflow
+    - run SQL parse/compile checks in an isolated project
+    - run Supabase DB advisors
+    - inspect privileges and constraints
+    - run authenticated positive/negative tests
+    - verify replay behavior
+    - verify no accounting/obligation/payment side effects
 
   DO NOT execute this candidate against production until the separate
   "Production Deployment Authorization — Custom Contribution v1.2"
