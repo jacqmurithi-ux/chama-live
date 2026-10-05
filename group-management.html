@@ -1177,7 +1177,12 @@
                   <input id="customContributionStartDate" type="date" required>
                 </div>
                 <div class="form-field">
-                  <label for="customContributionEndDate">End date</label>
+                  <label for="customContributionDueDate">Due date</label>
+                  <input id="customContributionDueDate" type="date" required>
+                  <div class="field-help">The date the contribution becomes due. It must fall between the start and closing dates.</div>
+                </div>
+                <div class="form-field">
+                  <label for="customContributionEndDate">Closing date</label>
                   <input id="customContributionEndDate" type="date" required>
                 </div>
                 <div class="form-field full-width">
@@ -1210,7 +1215,7 @@
               <div class="form-actions">
                 <button id="saveCustomContribution" type="submit" class="primary-button">Save Contribution</button>
               </div>
-              <div class="backend-pending-note">Custom contribution persistence is intentionally not wired to the database in this UI gate. The accounting model remains Contribution Type → Cycle/Period → Amount Due → Member Obligation → Payment → Allocation.</div>
+              <div class="backend-pending-note">Saving creates a backend-owned <strong>draft</strong> contribution definition only. Activation, member obligations, payments, allocations, and accounting remain locked.</div>
             </form>
 
             <div id="customContributionList" class="custom-contribution-list" aria-live="polite">
