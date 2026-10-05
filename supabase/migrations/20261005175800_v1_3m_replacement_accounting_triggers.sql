@@ -575,6 +575,12 @@ EXECUTE FUNCTION public.cl_guard_contribution_allocation();
 -- another contribution_type/initiative domain rule.
 
 
+-- SECURITY DEFINER execution is intentionally restricted. These functions are
+-- trigger entry points, not public RPC APIs. Trigger execution does not
+-- require PUBLIC/anon/authenticated EXECUTE grants.
+REVOKE EXECUTE ON FUNCTION public.cl_guard_open_financial_period() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.cl_guard_contribution_allocation() FROM PUBLIC;
+
 -- ================================================================
 -- D. ROLLBACK ARTIFACT — REVIEW ONLY
 -- ================================================================
