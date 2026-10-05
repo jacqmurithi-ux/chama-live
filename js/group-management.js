@@ -66,7 +66,6 @@ const elements = {
     customFineAmount: null,
     customRuleSummary: null,
     saveCustomContribution: null,
-    customContributionDueDate: null,
     customContributionsList: null,
 
     groupContextName: null,
@@ -91,8 +90,6 @@ const elements = {
 
     groupManagementStatus: null,
     monthlyContributionStartDate: null,
-    newCustomContributionButton: null,
-    customContributionEditor: null,
     newCustomContributionButton: null,
     customContributionEditor: null,
     customContributionDueDate: null,
