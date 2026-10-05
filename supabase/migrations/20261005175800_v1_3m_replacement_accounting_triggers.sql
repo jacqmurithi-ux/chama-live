@@ -429,7 +429,7 @@ BEGIN
   SELECT c.group_id, c.member_id, c.amount
     INTO v_payment_group_id, v_payment_member_id, v_payment_amount
   FROM public.contributions c
-  WHERE c.id = NEW.payment_id
+  WHERE c.id = v_payment_id
   FOR UPDATE;
 
   IF NOT FOUND THEN
