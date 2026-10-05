@@ -66,7 +66,8 @@ const elements = {
     customFineAmount: null,
     customRuleSummary: null,
     saveCustomContribution: null,
-    customContributionList: null,
+    customContributionDueDate: null,
+    customContributionsList: null,
 
     groupContextName: null,
     groupContextRole: null,
@@ -92,13 +93,9 @@ const elements = {
     monthlyContributionStartDate: null,
     newCustomContributionButton: null,
     customContributionEditor: null,
-    customContributionName: null,
-    customContributionAmount: null,
-    customContributionStartDate: null,
-    customContributionEndDate: null,
+    newCustomContributionButton: null,
+    customContributionEditor: null,
     customContributionDueDate: null,
-    customContributionDescription: null,
-    saveCustomContribution: null,
     cancelCustomContribution: null,
 
 };
@@ -162,7 +159,7 @@ function refreshDomReferences() {
         document.getElementById("customRuleSummary");
     elements.saveCustomContribution =
         document.getElementById("saveCustomContribution");
-    elements.customContributionList =
+    elements.customContributionsList =
         document.getElementById("customContributionsList");
 
     elements.groupContextName =
@@ -256,6 +253,7 @@ function applyAuthorization() {
     // Keep each client gate aligned with its distinct backend operation.
     canEditGroupDetails = currentRole === "admin";
     canEditContributionSettings =
+        currentIsOwner ||
         currentRole === "admin" ||
         currentRole === "chairperson";
 }
@@ -982,11 +980,7 @@ function resetCustomContributionForm() {
     syncFineControls("custom");
 }
 
-function showContributionStatus(message, type = "info") {
-    if (!elements.groupManagementStatus) return;
-    elements.groupManagementStatus.textContent = message;
-    elements.groupManagementStatus.className = "management-status is-visible " + type;
-}
+
 
 /* ================================================================
    SUBSCRIPTION
@@ -1222,7 +1216,7 @@ function bindEvents() {
     ------------------------------------------------------------ */
 
     /* ------------------------------------------------------------
-       CONTRIBUTION SETTINGS
+       CONTRIBUTION SETTINGS — CANONICAL EVENT PATH
     ------------------------------------------------------------ */
 
     elements.monthlyContributionForm?.addEventListener("submit", async (event) => {
@@ -1230,7 +1224,10 @@ function bindEvents() {
             await saveMonthlyContribution(event);
         } catch (error) {
             console.error("Failed to save monthly contribution:", error);
-            showContributionStatus(error?.message || "Monthly contribution could not be saved.", "error");
+            showContributionStatus(
+                error?.message || "Monthly contribution could not be saved.",
+                "error"
+            );
         }
     });
 
@@ -1238,64 +1235,88 @@ function bindEvents() {
         try {
             await saveCustomContribution(event);
         } catch (error) {
-            console.error("Failed to validate custom contribution:", error);
-            showContributionStatus(error?.message || "Custom contribution could not be saved.", "error");
+            console.error("Failed to save custom contribution:", error);
+            showContributionStatus(
+                error?.message || "Custom contribution could not be saved.",
+                "error"
+            );
         }
     });
-
-    document.querySelectorAll('input[name="monthlyGraceMode"]').forEach((input) => {
-        input.addEventListener("change", () => syncContributionRuleUI("monthly"));
-    });
-    document.querySelectorAll('input[name="customGraceMode"]').forEach((input) => {
-        input.addEventListener("change", () => syncContributionRuleUI("custom"));
-    });
-    elements.monthlyGraceDays?.addEventListener("input", () => syncContributionRuleUI("monthly"));
-    elements.monthlyFineAmount?.addEventListener("input", () => syncContributionRuleUI("monthly"));
-    elements.customGraceDays?.addEventListener("input", () => syncContributionRuleUI("custom"));
-    elements.customFineAmount?.addEventListener("input", () => syncContributionRuleUI("custom"));
-
-
-    /* ------------------------------------------------------------
-       CONTRIBUTION SETTINGS UI
-    ------------------------------------------------------------ */
 
     elements.newCustomContributionButton?.addEventListener("click", () => {
-        if (!canEditContributionSettings) return;
-        if (elements.customContributionEditor) {
-            elements.customContributionEditor.hidden = false;
+        if (!canEditContributionSettings) {
+            showContributionStatus(
+                "You do not have permission to create custom contribution drafts.",
+                "error"
+            );
+            return;
         }
+
+        if (!elements.customContributionEditor) {
+            showContributionStatus(
+                "Custom contribution editor is unavailable.",
+                "error"
+            );
+            return;
+        }
+
+        resetCustomContributionForm();
+        elements.customContributionEditor.hidden = false;
         elements.customContributionName?.focus();
     });
 
     elements.cancelCustomContribution?.addEventListener("click", () => {
         resetCustomContributionForm();
+
         if (elements.customContributionEditor) {
             elements.customContributionEditor.hidden = true;
         }
     });
 
-    document.querySelectorAll('input[name="monthlyGraceMode"]').forEach((radio) =>
-        radio.addEventListener("change", () => syncContributionRuleUI("monthly"))
-    );
-    document.querySelectorAll('input[name="customGraceMode"]').forEach((radio) =>
-        radio.addEventListener("change", () => syncContributionRuleUI("custom"))
-    );
-    document.querySelectorAll('input[name="monthlyFineMode"]').forEach((radio) =>
-        radio.addEventListener("change", () => syncContributionRuleUI("monthly"))
-    );
-    document.querySelectorAll('input[name="customFineMode"]').forEach((radio) =>
-        radio.addEventListener("change", () => syncContributionRuleUI("custom"))
-    );
+    document
+        .querySelectorAll('input[name="monthlyGraceMode"]')
+        .forEach((radio) =>
+            radio.addEventListener("change", () =>
+                syncContributionRuleUI("monthly")
+            )
+        );
+
+    document
+        .querySelectorAll('input[name="monthlyFineMode"]')
+        .forEach((radio) =>
+            radio.addEventListener("change", () =>
+                syncContributionRuleUI("monthly")
+            )
+        );
+
+    document
+        .querySelectorAll('input[name="customGraceMode"]')
+        .forEach((radio) =>
+            radio.addEventListener("change", () =>
+                syncContributionRuleUI("custom")
+            )
+        );
+
+    document
+        .querySelectorAll('input[name="customFineMode"]')
+        .forEach((radio) =>
+            radio.addEventListener("change", () =>
+                syncContributionRuleUI("custom")
+            )
+        );
 
     elements.monthlyGraceDays?.addEventListener("input", () =>
         syncContributionRuleUI("monthly")
     );
+
     elements.monthlyFineAmount?.addEventListener("input", () =>
         syncContributionRuleUI("monthly")
     );
+
     elements.customGraceDays?.addEventListener("input", () =>
         syncContributionRuleUI("custom")
     );
+
     elements.customFineAmount?.addEventListener("input", () =>
         syncContributionRuleUI("custom")
     );
@@ -1373,108 +1394,3 @@ async function initializeGroupManagement() {
                 },
                 {
                     section:
-                        "subscription",
-                    loader:
-                        loadSubscription
-                },
-            ];
-
-            const results =
-                await Promise.allSettled(
-                    loaders.map(
-                        async ({
-                            section,
-                            loader
-                        }) => {
-                            try {
-                                await loader();
-
-                                return {
-                                    section,
-                                    success:
-                                        true
-                                };
-                            } catch (error) {
-                                reportInitializationError(
-                                    section,
-                                    error
-                                );
-
-                                return {
-                                    section,
-                                    success:
-                                        false,
-                                    error
-                                };
-                            }
-                        }
-                    )
-                );
-
-            applyAuthorizationUI();
-
-            const failedSections =
-                results
-                    .filter(
-                        (result) =>
-                            result.status ===
-                                "fulfilled" &&
-                            result.value?.success ===
-                                false
-                    )
-                    .map(
-                        (result) =>
-                            result.value.section
-                    );
-
-            if (failedSections.length) {
-                console.warn(
-                    "[Group Management] Some sections failed to load:",
-                    failedSections
-                );
-            }
-
-            return {
-                success:
-                    true,
-
-                partial:
-                    failedSections.length > 0,
-
-                failedSections,
-
-                results
-            };
-        })();
-
-    try {
-        return await initializationPromise;
-    } catch (error) {
-        initializationPromise =
-            null;
-
-        renderInitializationFailure(
-            error
-        );
-
-        throw error;
-    }
-}
-
-
-/* ================================================================
-   PUBLIC API
-================================================================ */
-
-export {
-    initializeGroupManagement as initGroupManagement,
-
-    saveGroupInformation,
-    saveContributionSettings,
-    saveMonthlyContribution,
-    saveCustomContribution,
-
-    loadContributionSettings,
-    loadLeadershipSetup,
-    loadSubscription
-};
