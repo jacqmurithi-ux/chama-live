@@ -836,6 +836,146 @@ function getSelectedAccountingMonth() {
 
 }
 
+/* =========================================================
+   CANONICAL ACCOUNTING MONTH REFRESH
+========================================================= */
+
+/*
+ * Refresh canonical accounting through the selected month.
+ *
+ * The frontend does not create obligations, allocations,
+ * arrears, credits, or balances. The existing canonical
+ * refresh RPC remains authoritative for all accounting work.
+ */
+async function refreshCanonicalAccountingThroughMonth(
+  month
+) {
+
+  if (!groupId) {
+
+    throw new Error(
+      "No current group is available."
+    );
+
+  }
+
+  if (
+    !/^\d{4}-\d{2}$/.test(
+      String(month || "")
+    )
+  ) {
+
+    throw new Error(
+      "Accounting month must use YYYY-MM format."
+    );
+
+  }
+
+  const {
+    data,
+    error
+  } =
+    await supabase.rpc(
+      "refresh_canonical_contribution_accounting",
+      {
+        p_group_id:
+          groupId,
+
+        p_through_month:
+          month,
+
+        p_member_id:
+          null
+      }
+    );
+
+  if (error) {
+
+    throw error;
+
+  }
+
+  console.log(
+    "CHAMA LIVE: Canonical group accounting refreshed",
+    {
+      groupId,
+      month,
+      result: data
+    }
+  );
+
+  return data;
+
+}
+
+
+/* =========================================================
+   ACCOUNTING MONTH CHANGE
+========================================================= */
+
+/*
+ * Change the selected accounting month, refresh the existing
+ * canonical accounting chain through that month, then read
+ * canonical monthly status for display.
+ *
+ * No frontend accounting calculation or direct accounting
+ * table mutation is performed here.
+ */
+async function changeAccountingMonth() {
+
+  const selected =
+    getSelectedAccountingMonth();
+
+  accountingMonth =
+    selected;
+
+  renderAccountingMonthLabel();
+
+  clearError();
+
+  if (statusEl) {
+
+    statusEl.hidden =
+      false;
+
+    statusEl.textContent =
+      `Refreshing ${formatAccountingMonth(
+        accountingMonth
+      )} canonical accounting...`;
+
+  }
+
+  try {
+
+    await refreshCanonicalAccountingThroughMonth(
+      accountingMonth
+    );
+
+    await loadCanonicalMemberStatus(
+      accountingMonth
+    );
+
+    renderSummary();
+
+    if (statusEl) {
+
+      statusEl.textContent =
+        `${formatAccountingMonth(
+          accountingMonth
+        )} accounting loaded.`;
+
+    }
+
+  }
+  catch (error) {
+
+    showError(error);
+
+  }
+
+}
+
+
 
 function getContributionMonth(item) {
 
