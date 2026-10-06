@@ -699,37 +699,36 @@ async function saveMonthlyContribution(event) {
     }
 
     const amount = Number(elements.monthlyContribution?.value || 0);
-    const rawClosingDay = elements.openingDay?.value?.trim();
-    const openingDay = Number(rawClosingDay);
+    const rawOpeningDay = elements.openingDay?.value?.trim();
+    const openingDay = Number(rawOpeningDay);
 
     if (!Number.isFinite(amount) || amount < 0) {
         throw new Error("Monthly contribution must be a valid non-negative number.");
     }
 
-    if (!rawClosingDay || !Number.isInteger(openingDay) || openingDay < 1 || openingDay > 28) {
+    if (
+        !rawOpeningDay ||
+        !Number.isInteger(openingDay) ||
+        openingDay < 1 ||
+        openingDay > 28
+    ) {
         throw new Error("Opening day must be a whole number between 1 and 28.");
     }
 
     validateContributionRuleUI("monthly");
 
-    if (currentRole === "admin") {
-        const groupResult = await groupManagementApi.updateGroup(
-            currentGroup.id,
-            { monthly_contribution: amount }
-        );
-
-        if (groupResult.error) throw groupResult.error;
-    }
-
     const settingsResult = await groupManagementApi.rpc(
         "update_group_contribution_settings",
         {
             p_group_id: currentGroup.id,
+            p_monthly_contribution: amount,
             p_monthly_opening_day: openingDay
         }
     );
 
-    if (settingsResult.error) throw settingsResult.error;
+    if (settingsResult.error) {
+        throw settingsResult.error;
+    }
 
     currentGroup = {
         ...currentGroup,
@@ -740,9 +739,7 @@ async function saveMonthlyContribution(event) {
     renderGroup();
 
     showContributionStatus(
-        currentRole === "admin"
-            ? "Monthly contribution amount and opening day saved. Rule/fine values remain UI-only until the backend rule contract is approved."
-            : "Monthly opening day saved. Monthly amount changes require an admin role; rule/fine values remain UI-only until the backend rule contract is approved.",
+        "Monthly contribution amount and opening day saved. Rule/fine values remain UI-only until the backend rule contract is approved.",
         "success"
     );
 }
