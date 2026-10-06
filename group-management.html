@@ -726,6 +726,35 @@
       display: block;
     }
 
+    .action-primary,
+    .action-info,
+    .action-neutral {
+      min-height: 42px;
+      font-weight: 800;
+    }
+
+    .action-primary {
+      background: #0f766e;
+      color: #fff;
+    }
+
+    .action-info {
+      background: #2563eb;
+      color: #fff;
+    }
+
+    .action-neutral {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .action-primary:disabled,
+    .action-info:disabled,
+    .action-neutral:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+
     /* =====================================================
        RESPONSIVE
        ===================================================== */
@@ -811,9 +840,9 @@
       </h1>
 
       <p>
-        Manage your group's basic information, leadership, contribution
-        settings, programs, payment configuration, subscription, and
-        access context from one place.
+        Manage the group's basic information, review leadership, configure
+        contribution settings and custom contributions, and view the group's
+        subscription and management context from one place.
       </p>
 
     </header>
@@ -1021,7 +1050,7 @@
               <button
                 id="saveGroupInformation"
                 type="submit"
-                class="primary-button"
+                class="primary-button action-primary"
               >
                 Save Group Settings
               </button>
@@ -1379,7 +1408,7 @@
               <button
                 id="saveMonthlyContribution"
                 type="submit"
-                class="primary-button"
+                class="primary-button action-primary"
               >
                 Save Monthly Contribution
               </button>
@@ -1423,7 +1452,7 @@
               <button
                 id="newCustomContributionButton"
                 type="button"
-                class="secondary-button"
+                class="secondary-button action-info"
               >
                 + New Custom Contribution
               </button>
