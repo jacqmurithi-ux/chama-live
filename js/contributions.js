@@ -1077,43 +1077,158 @@ async function loadActiveCustomContributions() {
 
   }
 
+  /*
+   * contribution_types stores the contribution definition only.
+   * Active/ongoing state belongs to contribution_periods.status.
+   *
+   * Do not call a non-existent aggregate RPC here and do not
+   * add status/description columns to contribution_types.
+   */
   const {
-    data,
-    error
+    data: contributionTypes,
+    error: contributionTypeError
   } =
-    await supabase.rpc(
-      "get_group_active_contributions",
-      {
-        p_group_id:
-          groupId
-      }
-    );
+    await supabase
+      .from("contribution_types")
+      .select(
+        "id,group_id,name,code"
+      )
+      .eq(
+        "group_id",
+        groupId
+      )
+      .eq(
+        "code",
+        "custom"
+      );
 
-  if (error) {
+  if (contributionTypeError) {
 
-    throw error;
+    throw contributionTypeError;
 
   }
 
+  const customTypes =
+    Array.isArray(
+      contributionTypes
+    )
+      ? contributionTypes
+      : [];
+
+  if (!customTypes.length) {
+
+    return [];
+
+  }
+
+  const customTypeIds =
+    customTypes.map(
+      type =>
+        type.id
+    );
+
+  const {
+    data: periods,
+    error: periodError
+  } =
+    await supabase
+      .from("contribution_periods")
+      .select(
+        [
+          "id",
+          "group_id",
+          "contribution_type_id",
+          "period_key",
+          "opening_date",
+          "due_date",
+          "closing_date",
+          "amount",
+          "frequency",
+          "status",
+          "description",
+          "grace_period_value",
+          "fine_rule_id"
+        ].join(",")
+      )
+      .eq(
+        "group_id",
+        groupId
+      )
+      .in(
+        "contribution_type_id",
+        customTypeIds
+      )
+      .in(
+        "status",
+        [
+          "open",
+          "due",
+          "grace"
+        ]
+      )
+      .order(
+        "opening_date",
+        {
+          ascending: false
+        }
+      );
+
+  if (periodError) {
+
+    throw periodError;
+
+  }
+
+  const typeById =
+    new Map(
+      customTypes.map(
+        type => [
+          type.id,
+          type
+        ]
+      )
+    );
+
   activeCustomContributions =
-    (data || [])
+    (
+      Array.isArray(periods)
+        ? periods
+        : []
+    )
       .filter(
-        item =>
-          String(
-            item.contribution_code ||
-            ""
+        period =>
+          typeById.has(
+            period.contribution_type_id
           )
-            .trim()
-            .toLowerCase() !==
-          "monthly"
       )
       .map(
-        item => ({
-          ...item,
+        period => {
 
-          contributionTypeId:
-            item.contribution_type_id
-        })
+          const type =
+            typeById.get(
+              period.contribution_type_id
+            );
+
+          return {
+            ...period,
+
+            contributionTypeId:
+              period.contribution_type_id,
+
+            contribution_name:
+              type?.name ||
+              "Custom Contribution",
+
+            name:
+              type?.name ||
+              "Custom Contribution",
+
+            contribution_code:
+              type?.code ||
+              "custom"
+          };
+
+        }
       );
 
   return activeCustomContributions;
