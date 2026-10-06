@@ -1160,6 +1160,90 @@
 
 
     <!-- ===================================================
+         CUSTOM CONTRIBUTION EDITOR
+    ==================================================== -->
+    <section
+      id="customContributionEditorCard"
+      class="card"
+      hidden
+    >
+      <div class="card-header">
+        <div>
+          <h2>New Custom Contribution</h2>
+          <p class="muted">Create a backend-owned draft. Activation and accounting remain locked.</p>
+        </div>
+      </div>
+
+      <div id="customContributionEditorMessage" class="cl-evidence-message" hidden aria-live="polite"></div>
+
+      <form id="customContributionForm" novalidate>
+        <div class="form-group">
+          <label for="customContributionName">Contribution name</label>
+          <input id="customContributionName" type="text" maxlength="150" placeholder="e.g. School Fund" required>
+        </div>
+
+        <div class="form-group">
+          <label for="customContributionAmount">Amount due</label>
+          <input id="customContributionAmount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" required>
+        </div>
+
+        <div class="form-group">
+          <label for="customContributionCycle">Cycle</label>
+          <select id="customContributionCycle" required>
+            <option value="one_time">One-time</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="quarterly">Quarterly</option>
+            <option value="annual">Annual</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="customContributionStartDate">Start date</label>
+          <input id="customContributionStartDate" type="date" required>
+        </div>
+
+        <div class="form-group">
+          <label for="customContributionDueDate">Due date</label>
+          <input id="customContributionDueDate" type="date" required>
+        </div>
+
+        <div class="form-group">
+          <label for="customContributionClosingDate">Closing date</label>
+          <input id="customContributionClosingDate" type="date" required>
+        </div>
+
+        <div class="form-group">
+          <label for="customContributionDescription">Description</label>
+          <textarea id="customContributionDescription" maxlength="500" placeholder="Optional description"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="customContributionGraceDays">Grace period (days)</label>
+          <input id="customContributionGraceDays" type="number" min="0" step="1" value="0" inputmode="numeric">
+        </div>
+
+        <div class="form-group">
+          <label>
+            <input id="customContributionApplyFine" type="checkbox">
+            Apply fine
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label for="customContributionFineAmount">Fine amount</label>
+          <input id="customContributionFineAmount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" disabled>
+        </div>
+
+        <div class="form-actions">
+          <button id="saveCustomContribution" type="submit" class="btn btn-primary">Save Draft</button>
+          <button id="cancelCustomContribution" type="button" class="btn btn-secondary">Cancel</button>
+        </div>
+      </form>
+    </section>
+
+
+    <!-- ===================================================
          MEMBER PAYMENT EVIDENCE
     ==================================================== -->
 
