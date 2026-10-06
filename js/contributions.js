@@ -496,6 +496,60 @@ function todayString() {
 }
 
 
+/*
+ * Canonical date-only value for RPC parameters.
+ *
+ * HTML date inputs already expose YYYY-MM-DD, but normalize
+ * and validate explicitly before sending the value to Supabase.
+ * This prevents locale/timezone conversions from changing the
+ * accounting date.
+ */
+function normalizeContributionDate(value) {
+
+  const date =
+    String(value || "").trim();
+
+  if (
+    !/^\\d{4}-\\d{2}-\\d{2}$/.test(
+      date
+    )
+  ) {
+
+    return "";
+
+  }
+
+  const [year, month, day] =
+    date.split("-").map(Number);
+
+  const parsed =
+    new Date(
+      Date.UTC(
+        year,
+        month - 1,
+        day
+      )
+    );
+
+  if (
+    parsed.getUTCFullYear() !== year ||
+    parsed.getUTCMonth() !== month - 1 ||
+    parsed.getUTCDate() !== day
+  ) {
+
+    return "";
+
+  }
+
+  return [
+    String(year).padStart(4, "0"),
+    String(month).padStart(2, "0"),
+    String(day).padStart(2, "0")
+  ].join("-");
+
+}
+
+
 function getCurrentMonth() {
 
   const now =
@@ -5632,15 +5686,16 @@ async function recordContribution(event) {
     "";
 
 
-  const amount =
+  let amount =
     number(
       amountInput?.value
     );
 
 
   const contributionDate =
-    dateInput?.value ||
-    "";
+    normalizeContributionDate(
+      dateInput?.value
+    );
 
 
   const contributionType =
@@ -5709,7 +5764,7 @@ async function recordContribution(event) {
 
     showError(
       new Error(
-        "Please select the contribution date."
+        "Please select a valid contribution date in YYYY-MM-DD format."
       )
     );
 
@@ -5798,8 +5853,15 @@ async function recordContribution(event) {
       number(activeCustom.amount) > 0
     ) {
 
-      amountInput.value =
+      amount =
         number(activeCustom.amount);
+
+      if (amountInput) {
+
+        amountInput.value =
+          amount;
+
+      }
 
     }
 
@@ -5838,6 +5900,10 @@ async function recordContribution(event) {
   }
 
 
+  /*
+   * contributionDate is now guaranteed to be an exact
+   * PostgreSQL date-compatible YYYY-MM-DD value.
+   */
   const month =
     contributionDate.slice(
       0,
